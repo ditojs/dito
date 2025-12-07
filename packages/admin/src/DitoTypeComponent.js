@@ -18,6 +18,7 @@ export default {
   defaultValue: null,
   defaultNested: true,
   defaultVisible: true,
+  defaultMultiple: false,
   generateLabel: true,
   excludeValue: false,
   ignoreMissingValue: null,

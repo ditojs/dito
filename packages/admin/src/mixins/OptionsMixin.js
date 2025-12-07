@@ -1,6 +1,10 @@
 import DitoContext from '../DitoContext.js'
 import DataMixin from './DataMixin.js'
-import { hasViewSchema, getViewEditPath } from '../utils/schema.js'
+import {
+  hasViewSchema,
+  getViewEditPath,
+  getMultipleValue
+} from '../utils/schema.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
 import { setTemporaryId, isReference } from '../utils/data.js'
 import {
@@ -20,7 +24,7 @@ export default {
   computed: {
     // @overridable
     multiple() {
-      return false
+      return getMultipleValue(this.schema)
     },
 
     selectedValue: {
@@ -281,7 +285,7 @@ export default {
       const processRelate = value => (value ? { id: value.id } : value)
       // Selected options can be both objects & arrays, e.g. 'checkboxes':
       value =
-        this.multiple && isArray(value)
+        getMultipleValue(schema) && isArray(value)
           ? value.map(processRelate)
           : processRelate(value)
     }

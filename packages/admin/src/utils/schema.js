@@ -670,6 +670,10 @@ export function shouldIgnoreMissingValue(schema, context) {
   return !!getTypeOptions(schema)?.ignoreMissingValue?.(getContext(context))
 }
 
+export function getMultipleValue(schema) {
+  return schema.multiple ?? !!getTypeOptions(schema)?.defaultMultiple
+}
+
 export function setDefaultValues(schema, data = {}, component) {
   const options = { component, rootData: data }
 

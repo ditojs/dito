@@ -29,6 +29,7 @@ export default DitoTypeComponent.register('checkboxes', {
   nativeField: true,
   defaultValue: [],
   defaultWidth: 'auto',
+  defaultMultiple: true,
 
   computed: {
     // @override
