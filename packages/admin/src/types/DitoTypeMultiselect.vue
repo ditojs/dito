@@ -104,6 +104,7 @@ export default DitoTypeComponent.register('multiselect', {
       return this.searchedOptions || this.options
     },
 
+    // @override
     multiple: getSchemaAccessor('multiple', {
       type: Boolean,
       default: false

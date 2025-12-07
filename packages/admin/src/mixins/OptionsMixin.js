@@ -18,6 +18,11 @@ export default {
   mixins: [DataMixin],
 
   computed: {
+    // @overridable
+    multiple() {
+      return false
+    },
+
     selectedValue: {
       get() {
         const convertValue = value => {
@@ -33,7 +38,7 @@ export default {
         }
 
         const value =
-          this.relate && isArray(this.value)
+          this.multiple && isArray(this.value)
             ? this.value.map(convertValue).filter(value => value !== null)
             : convertValue(this.value)
 
@@ -61,7 +66,7 @@ export default {
             : value
 
         this.value =
-          this.relate && isArray(value)
+          this.multiple && isArray(value)
             ? value.map(convertValue)
             : convertValue(value)
       }
@@ -275,9 +280,10 @@ export default {
       // TODO: Convert to using `relateBy`:
       const processRelate = value => (value ? { id: value.id } : value)
       // Selected options can be both objects & arrays, e.g. 'checkboxes':
-      value = isArray(value)
-        ? value.map(processRelate)
-        : processRelate(value)
+      value =
+        this.multiple && isArray(value)
+          ? value.map(processRelate)
+          : processRelate(value)
     }
     return value
   }

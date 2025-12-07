@@ -31,6 +31,11 @@ export default DitoTypeComponent.register('checkboxes', {
   defaultWidth: 'auto',
 
   computed: {
+    // @override
+    multiple() {
+      return true
+    },
+
     selectedOptions: {
       get() {
         return (this.selectedValue || []).filter(value => value)
