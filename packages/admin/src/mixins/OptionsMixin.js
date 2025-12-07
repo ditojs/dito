@@ -32,9 +32,10 @@ export default {
             : value
         }
 
-        const value = isArray(this.value)
-          ? this.value.map(convertValue).filter(value => value !== null)
-          : convertValue(this.value)
+        const value =
+          this.relate && isArray(this.value)
+            ? this.value.map(convertValue).filter(value => value !== null)
+            : convertValue(this.value)
 
         if (
           // As soon as the options are available, and...
@@ -59,9 +60,10 @@ export default {
             ? this.getOptionForValue(value)
             : value
 
-        this.value = isArray(value)
-          ? value.map(convertValue)
-          : convertValue(value)
+        this.value =
+          this.relate && isArray(value)
+            ? value.map(convertValue)
+            : convertValue(value)
       }
     },
 
