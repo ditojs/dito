@@ -25,7 +25,10 @@
     "lint:fix": "yarn run eslint:fix && yarn run penere:fix && yarn run stylelint:fix",
     "link:objection": "yarn link ../objection --all --relative --private",
     "link:knex": "yarn link ../knex --all --relative --private",
-    "link:all": "yarn link:objection && yarn link:knex"
+    "link:all": "yarn link:objection && yarn link:knex",
+    "unlink:objection": "yarn unlink ../objection --all",
+    "unlink:knex": "yarn unlink ../knex --all",
+    "unlink:all": "yarn unlink:objection && yarn unlink:knex"
   },
   "lint-staged": {
     "packages/**/src/**/*.{js,ts}": [
@@ -76,9 +79,5 @@
     "vue-eslint-parser": "^10.2.0",
     "vue-eslint-parser-template-tokenizer-pug": "^1.0.0"
   },
-  "packageManager": "yarn@4.10.3",
-  "resolutions": {
-    "objection": "portal:../objection",
-    "knex": "portal:../knex"
-  }
+  "packageManager": "yarn@4.10.3"
 }

@@ -4779,6 +4779,20 @@ __metadata:
   languageName: node
   linkType: hard
 
+"ajv-formats@npm:^2.1.1":
+  version: 2.1.1
+  resolution: "ajv-formats@npm:2.1.1"
+  dependencies:
+    ajv: "npm:^8.0.0"
+  peerDependencies:
+    ajv: ^8.0.0
+  peerDependenciesMeta:
+    ajv:
+      optional: true
+  checksum: 10/70c263ded219bf277ffd9127f793b625f10a46113b2e901e150da41931fcfd7f5592da6d66862f4449bb157ffe65867c3294a7df1d661cc232c4163d5a1718ed
+  languageName: node
+  linkType: hard
+
 "ajv-formats@npm:^3.0.1":
   version: 3.0.1
   resolution: "ajv-formats@npm:3.0.1"
@@ -9542,9 +9556,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"knex@portal:../knex::locator=dito%40workspace%3A.":
-  version: 0.0.0-use.local
-  resolution: "knex@portal:../knex::locator=dito%40workspace%3A."
+"knex@npm:^3.1.0":
+  version: 3.1.0
+  resolution: "knex@npm:3.1.0"
   dependencies:
     colorette: "npm:2.0.19"
     commander: "npm:^10.0.0"
@@ -9576,9 +9590,10 @@ __metadata:
     tedious:
       optional: true
   bin:
-    knex: ./bin/cli.js
+    knex: bin/cli.js
+  checksum: 10/12eb978ebec9944d6d0225d33d31d44feb54046b3a02f9f14dfa33a4e665a54d784290991b17a68fd8141a14a3336b325c7706af35557f845dae9e500f3c8aae
   languageName: node
-  linkType: soft
+  linkType: hard
 
 "known-css-properties@npm:^0.37.0":
   version: 0.37.0
@@ -11119,17 +11134,18 @@ __metadata:
   languageName: node
   linkType: hard
 
-"objection@portal:../objection::locator=dito%40workspace%3A.":
-  version: 0.0.0-use.local
-  resolution: "objection@portal:../objection::locator=dito%40workspace%3A."
+"objection@npm:^3.1.5":
+  version: 3.1.5
+  resolution: "objection@npm:3.1.5"
   dependencies:
     ajv: "npm:^8.17.1"
-    ajv-formats: "npm:^3.0.1"
+    ajv-formats: "npm:^2.1.1"
     db-errors: "npm:^0.2.3"
   peerDependencies:
     knex: ">=1.0.1"
+  checksum: 10/fdfad4a37b3ee14750fc0ec120e55c4e9d4c976ce5a78264310dc4cfc5985c3cc673793b229f74d511d2b094733f97f081e2d5517a84a1355e537e5f1ad450fe
   languageName: node
-  linkType: soft
+  linkType: hard
 
 "obug@npm:^2.1.1":
   version: 2.1.1
