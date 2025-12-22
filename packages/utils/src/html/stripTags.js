@@ -1,3 +1,5 @@
+// TODO: Rename to stripHtml()
+
 export function stripTags(html) {
   return html != null
     ? html
