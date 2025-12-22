@@ -78,6 +78,7 @@ exports[`index > exports all symbols 1`] = `
   "setDataPathEntries": [Function],
   "setValueAtDataPath": [Function],
   "shuffle": [Function],
+  "stripHtml": [Function],
   "stripTags": [Function],
   "toAsync": [Function],
   "toCallback": [Function],

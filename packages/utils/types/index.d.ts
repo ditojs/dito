@@ -702,6 +702,14 @@ export function escapeHtml(html: string): string
  * @param html The string to strip.
  * @returns The newly stripped string.
  */
+export function stripHtml(html: string): string
+
+/**
+ * Strips HTML tags from the string.
+ * @param html The string to strip.
+ * @returns The newly stripped string.
+ * @deprecated Use stripHtml() instead
+ */
 export function stripTags(html: string): string
 
 /* -------------------------- typescript utilities -------------------------- */

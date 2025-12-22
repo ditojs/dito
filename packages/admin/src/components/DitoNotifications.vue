@@ -14,7 +14,7 @@
 
 <script>
 import DitoComponent from '../DitoComponent.js'
-import { asArray, stripTags } from '@ditojs/utils'
+import { asArray, stripHtml } from '@ditojs/utils'
 
 // @vue/component
 export default DitoComponent.component('DitoNotifications', {
@@ -48,7 +48,7 @@ export default DitoComponent.component('DitoNotifications', {
       // eslint-disable-next-line no-console
       console[log](
         ...[
-          stripTags(text),
+          stripHtml(text),
           ...(type === 'error' && error ? [error] : [])
         ]
       )

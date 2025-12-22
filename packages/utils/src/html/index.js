@@ -1,2 +1,2 @@
 export * from './escapeHtml.js'
-export * from './stripTags.js'
+export * from './stripHtml.js'
