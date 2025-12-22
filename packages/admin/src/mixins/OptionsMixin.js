@@ -143,6 +143,11 @@ export default {
       }
     }),
 
+    optionEquals: getSchemaAccessor('options.equals', {
+      type: Function,
+      default: null
+    }),
+
     // TODO: Consider moving search to `options.search`?
     searchFilter: getSchemaAccessor('search', {
       type: [Object, Function],
@@ -237,8 +242,13 @@ export default {
             if (found) {
               return found
             }
-          } else if (value === this.getValueForOption(option)) {
-            return option
+          } else {
+            const matches = this.optionEquals
+              ? this.optionEquals(new DitoContext(this, { value, option }))
+              : value === this.getValueForOption(option)
+            if (matches) {
+              return option
+            }
           }
         }
       }
