@@ -435,10 +435,12 @@ export class Controller {
       }
     }
 
-    const handleAuthorize = authorize => {
+    const handleAuthorize = (authorize, allowOverride) => {
       const add = (key, value) => {
         if (key in values && includeKey(key)) {
-          authorizeMap[key] = value
+          if (allowOverride || !(key in authorizeMap)) {
+            authorizeMap[key] = value
+          }
         }
       }
 
@@ -466,14 +468,14 @@ export class Controller {
 
     for (const current of chain) {
       handleAllow(getOwnProperty(current, 'allow'), current)
-      handleAuthorize(getOwnProperty(current, 'authorize'))
+      handleAuthorize(getOwnProperty(current, 'authorize'), true)
     }
 
     // At the end of the chain, also support authorize settings on the
-    // controller-level, and thus applied to all action objects in the
-    // controller.
+    // controller-level, acting as a fallback for actions that don't already
+    // have authorization.
     if (this.authorize) {
-      handleAuthorize(this.authorize)
+      handleAuthorize(this.authorize, false)
     }
 
     return {
