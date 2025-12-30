@@ -7,7 +7,7 @@ ul.dito-menu(
     v-for="item in items"
   )
     template(
-      v-if="shouldRenderSchema(item)"
+      v-if="shouldShowItem(item)"
     )
       a.dito-link(
         :href="getItemHref(item)"
@@ -45,6 +45,15 @@ export default DitoComponent.component('DitoMenu', {
   },
 
   methods: {
+    shouldShowItem(item) {
+      return (
+        this.shouldRenderSchema(item) && (
+          !item.items ||
+          Object.values(item.items).some(this.shouldRenderSchema)
+        )
+      )
+    },
+
     onResize({ contentRect: { width } }) {
       if (width) {
         this.width = width
