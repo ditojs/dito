@@ -1,6 +1,6 @@
 <template lang="pug">
 template(
-  v-if="user"
+  v-if="user && shouldRenderSchema(viewSchema)"
 )
   //- Only render DitoView when it is active, otherwise a normal router-view
   //- instead, to nest further route components.
@@ -11,7 +11,7 @@ template(
     :key="name"
   )
   .dito-view.dito-scroll-parent(
-    v-else-if="shouldRenderSchema(viewSchema)"
+    v-else
     :data-resource="sourceSchema.path"
   )
     DitoSchema(
@@ -59,7 +59,7 @@ export default DitoComponent.component('DitoView', {
 
   computed: {
     schema() {
-      return this.meta.schema
+      return this.meta.schema ?? {}
     },
 
     name() {
@@ -112,6 +112,13 @@ export default DitoComponent.component('DitoView', {
           this.data = {}
         }
       }
+    }
+  },
+
+  mounted() {
+    // Prevent bypassing of if-condition by direct URL access.
+    if (!this.shouldRenderSchema(this.viewSchema)) {
+      this.$router.replace({ path: '/' })
     }
   },
 

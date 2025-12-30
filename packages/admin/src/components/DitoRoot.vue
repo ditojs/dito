@@ -52,8 +52,7 @@ import DitoDialog from './DitoDialog.vue'
 import {
   processView,
   resolveViews,
-  processSchemaComponents,
-  shouldRenderSchema
+  processSchemaComponents
 } from '../utils/schema.js'
 
 // @vue/component
@@ -411,18 +410,14 @@ export default DitoComponent.component('DitoRoot', {
       // new routes, and restore the current path.
       const { fullPath } = this.$route
       this.removeRoutes?.()
-      this.removeRoutes = addRoutes(
-        this.$router,
-        [
-          {
-            name: 'root',
-            path: '/',
-            components: {}
-          },
-          ...routes.flat()
-        ],
-        this.context
-      )
+      this.removeRoutes = addRoutes(this.$router, [
+        {
+          name: 'root',
+          path: '/',
+          components: {}
+        },
+        ...routes.flat()
+      ])
       this.$router.replace(fullPath)
     },
 
@@ -434,25 +429,13 @@ export default DitoComponent.component('DitoRoot', {
 
 let dialogId = 0
 
-function addRoutes(router, routes, context) {
+function addRoutes(router, routes) {
   const removers = []
   for (const route of routes) {
     removers.push(
       router.addRoute(route)
     )
   }
-
-  removers.push(
-    // Add navigation guard to check if: conditions
-    router.beforeEach((to, from, next) => {
-      for (const record of to.matched) {
-        if (!shouldRenderSchema(record.meta.schema, context)) {
-          return next('/')
-        }
-      }
-      next()
-    })
-  )
 
   return () => {
     for (const remove of removers) {
