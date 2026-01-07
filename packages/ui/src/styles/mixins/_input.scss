@@ -9,11 +9,8 @@
 
   &:focus,
   &:focus-within,
-  &.dito-focus {
-    &,
-    .dito-inherit-focus {
-      border-color: $color-active;
-    }
+  &.dito-input--focus {
+    border-color: $color-active;
   }
 }
 

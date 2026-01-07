@@ -20,7 +20,7 @@
     @input-filter="onInputFilter"
     @input-file="onInputFile"
   )
-  table.dito-table.dito-table-separators.dito-table-background
+  table.dito-table.dito-table--separators.dito-table--background
     //- Styling comes from `DitoTableHead`
     thead.dito-table-head
       tr
@@ -92,9 +92,9 @@
               v-else
             )
               | Stored
-          td.dito-cell-edit-buttons
-            .dito-buttons.dito-buttons-round
-              button.dito-button.dito-button-upload(
+          td.dito-table__buttons
+            .dito-buttons.dito-buttons--round
+              button.dito-button.dito-button--upload(
                 v-if="!multiple"
                 :title="uploadTitle"
                 @click="onClickUpload"
@@ -121,13 +121,13 @@
               :value="uploadProgress"
               max="100"
             )
-            .dito-buttons.dito-buttons-round
+            .dito-buttons.dito-buttons--round
               button.dito-button(
                 v-if="isUploadActive"
                 type="button"
                 @click.prevent="upload.active = false"
               ) Cancel
-              button.dito-button.dito-button-upload(
+              button.dito-button.dito-button--upload(
                 v-if="multiple || !hasFiles"
                 :title="uploadTitle"
                 @click="onClickUpload"
@@ -473,7 +473,7 @@ function asFiles(value) {
 .dito-upload {
   .dito-table {
     tr,
-    .dito-cell-edit-buttons {
+    .dito-table__buttons {
       vertical-align: middle;
     }
   }

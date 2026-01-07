@@ -74,6 +74,7 @@ slot(name="before")
             :padding="padding"
             :single="!inlined && !hasMainPane"
             :disabled="disabled"
+            :compact="compact"
             :generateLabels="generateLabels"
             :accumulatedBasis="accumulatedBasis"
           )
@@ -88,6 +89,7 @@ slot(name="before")
         :padding="padding"
         :single="!inlined && !hasTabs"
         :disabled="disabled"
+        :compact="compact"
         :generateLabels="generateLabels"
         :accumulatedBasis="accumulatedBasis"
       )
@@ -158,6 +160,7 @@ export default DitoComponent.component('DitoSchema', {
     active: { type: Boolean, default: true },
     inlined: { type: Boolean, default: false },
     disabled: { type: Boolean, default: false },
+    compact: { type: Boolean, default: false },
     collapsed: { type: Boolean, default: false },
     collapsible: { type: Boolean, default: false },
     scrollable: { type: Boolean, default: false },

@@ -3,10 +3,10 @@
   template(
     v-for="(tabSchema, key) in tabs"
   )
-    a.dito-link(
+    a.dito-tabs__link(
       v-if="shouldRenderSchema(tabSchema)"
       :key="key"
-      :class="{ 'dito-active': modelValue === key }"
+      :class="{ 'dito-tabs__link--active': modelValue === key }"
       @click="$emit('update:modelValue', key)"
     ) {{ getLabel(tabSchema, key) }}
 </template>
@@ -31,7 +31,7 @@ export default DitoComponent.component('DitoTabs', {
 .dito-tabs {
   display: flex;
 
-  .dito-link {
+  &__link {
     @include user-select(none);
 
     display: block;
@@ -53,7 +53,7 @@ export default DitoComponent.component('DitoTabs', {
         background: $color-lightest;
       }
 
-      &.dito-active {
+      &--active {
         background: $color-lightest;
       }
     }
@@ -81,7 +81,7 @@ export default DitoComponent.component('DitoTabs', {
         background: $color-lighter;
       }
 
-      &.dito-active {
+      &--active {
         background: $color-active;
         border-color: color.adjust($color-active, $lightness: -10%);
         color: $color-white;

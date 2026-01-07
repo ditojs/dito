@@ -31,7 +31,7 @@
     box-shadow: inset 0 1px 2px 0 $color-shadow;
   }
 
-  &.dito-selected {
+  &--selected {
     background: $button-color-active;
 
     &:hover {
@@ -39,7 +39,7 @@
     }
   }
 
-  &.dito-active,
+  &--active,
   &[type='submit'] {
     color: $color-text-inverted;
     background: $color-active;
@@ -58,7 +58,7 @@
     }
   }
 
-  &.dito-disabled,
+  &--disabled,
   &[disabled] {
     @extend %button-disabled;
   }
@@ -72,7 +72,7 @@
   white-space: nowrap;
 
   &,
-  .dito-button-group {
+  &__group {
     > * {
       margin-left: var(--button-margin);
 
@@ -82,11 +82,11 @@
     }
   }
 
-  .dito-button-group + .dito-button-group {
+  &__group + &__group {
     margin-left: 1.5em;
   }
 
-  &.dito-buttons-round {
+  &--round {
     .dito-button {
       padding: $button-round-padding;
       min-width: $input-height;
@@ -95,16 +95,16 @@
     }
   }
 
-  &.dito-buttons-small {
+  &--small {
     --button-margin: 1px;
   }
 
-  &.dito-buttons-round,
-  &.dito-buttons-small {
+  &--round,
+  &--small {
     line-height: 1em;
   }
 
-  &.dito-buttons-toolbar {
+  &--toolbar {
     justify-content: flex-start;
 
     .dito-button {

@@ -32,7 +32,7 @@
         v-else-if="selectedOption"
       )
         option(:value="selectedValue") {{ getLabelForOption(selectedOption) }}
-    button.dito-button-clear.dito-button-overlay(
+    button.dito-button--clear.dito-button--overlay(
       v-if="showClearButton"
       :disabled="disabled"
       @click="clear"
@@ -96,6 +96,10 @@ export default DitoTypeComponent.register('select', {
       position: absolute;
       bottom: $select-arrow-bottom;
       right: $select-arrow-right;
+
+      .dito-container--disabled & {
+        border-color: $color-disabled;
+      }
     }
   }
 
@@ -103,15 +107,11 @@ export default DitoTypeComponent.register('select', {
     margin-left: $form-spacing-half;
   }
 
-  // Handle .dito-width-fill separately due to required nesting of select:
-  &.dito-width-fill {
+  // Handle width fill separately due to required nesting of select:
+  &.dito-component--fill {
     select {
       width: 100%;
     }
-  }
-
-  &.dito-disabled::after {
-    border-color: $border-color;
   }
 }
 </style>

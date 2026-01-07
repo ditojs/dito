@@ -19,7 +19,7 @@ thead.dito-table-head
             :class="getSortClass(column)"
             @click="navigate"
           )
-            .dito-order-arrows
+            .dito-button__order-arrows
             span {{ getLabel(column) }}
         span(
           v-else
@@ -55,12 +55,12 @@ export default DitoComponent.component('DitoTableHead', {
 
   methods: {
     getColumnClass(column) {
-      return `dito-column-${hyphenate(column.name)}`
+      return `dito-column--${hyphenate(column.name)}`
     },
 
     getSortClass(column) {
       return this.sort.name === column.name
-        ? `dito-selected dito-order-${this.sort.order}`
+        ? `dito-button--selected dito-button--order-${this.sort.order}`
         : null
     },
 

@@ -2,7 +2,7 @@
 
 .dito-button {
   // .dito-button with order-arrows:
-  .dito-order-arrows {
+  &__order-arrows {
     display: inline-block;
     width: math.round($button-order-arrow-size * $math-sqrt2);
     padding-left: $form-spacing;
@@ -22,7 +22,7 @@
     }
   }
 
-  &.dito-order-asc .dito-order-arrows {
+  &--order-asc &__order-arrows {
     &::before {
       bottom: 0;
     }
@@ -32,7 +32,7 @@
     }
   }
 
-  &.dito-order-desc .dito-order-arrows {
+  &--order-desc &__order-arrows {
     &::before {
       display: none;
     }
@@ -41,80 +41,110 @@
       top: 0;
     }
   }
-}
 
-.dito-button-create:empty::before {
-  content: 'Create';
-}
+  &--create:empty::before {
+    content: 'Create';
+  }
 
-.dito-button-add:empty::before {
-  content: 'Add';
-}
+  &--add:empty::before {
+    content: 'Add';
+  }
 
-.dito-button-delete:empty::before {
-  content: 'Delete';
-}
+  &--delete:empty::before {
+    content: 'Delete';
+  }
 
-.dito-button-remove:empty::before {
-  content: 'Remove';
-}
+  &--remove:empty::before {
+    content: 'Remove';
+  }
 
-.dito-button-edit:empty::before {
-  content: 'Edit';
-}
+  &--edit:empty::before {
+    content: 'Edit';
+  }
 
-.dito-button-clear:empty::before {
-  content: 'Clear';
-}
+  &--clear:empty::before {
+    content: 'Clear';
+  }
 
-.dito-button-save:empty::before {
-  content: 'Save';
-}
+  &--save:empty::before {
+    content: 'Save';
+  }
 
-.dito-button-apply:empty::before {
-  content: 'Apply';
-}
+  &--apply:empty::before {
+    content: 'Apply';
+  }
 
-.dito-button-login:empty::before {
-  content: 'Login';
-}
+  &--login:empty::before {
+    content: 'Login';
+  }
 
-.dito-button-ok:empty::before {
-  content: 'OK';
-}
+  &--ok:empty::before {
+    content: 'OK';
+  }
 
-.dito-button-cancel:empty::before {
-  content: 'Cancel';
-}
+  &--cancel:empty::before {
+    content: 'Cancel';
+  }
 
-.dito-button-close:empty::before {
-  content: 'Close';
-}
+  &--close:empty::before {
+    content: 'Close';
+  }
 
-.dito-button-drag:empty::before {
-  content: 'Drag';
-}
+  &--drag:empty::before {
+    content: 'Drag';
+  }
 
-.dito-button-copy:empty::before {
-  content: 'Copy';
-}
+  &--copy:empty::before {
+    content: 'Copy';
+  }
 
-.dito-button-paste:empty::before {
-  content: 'Paste';
-}
+  &--paste:empty::before {
+    content: 'Paste';
+  }
 
-.dito-button-drag {
-  cursor: grab;
+  &--drag {
+    cursor: grab;
 
-  &:active {
-    cursor: grabbing;
+    &:active {
+      cursor: grabbing;
+    }
+  }
+
+  &--overlay {
+    position: absolute;
+    inset: $border-width;
+    left: unset;
+    padding: 0;
+    border: 0;
+    border-radius: $border-radius;
+    cursor: pointer;
+
+    &.dito-button--clear {
+      width: 2em;
+      background: $color-white;
+      display: none;
+
+      @at-root .dito-component:hover:not(:has(.dito-component)) & {
+        display: block;
+      }
+
+      &::before {
+        @extend %icon-clear;
+
+        color: $color-grey;
+      }
+
+      &:hover::before {
+        color: $color-black;
+      }
+    }
   }
 }
 
 .dito-buttons {
   // TODO: BEM
 
-  &.dito-buttons-large {
+  &--large {
     --button-margin: 3px;
 
     font-size: $header-font-size;
@@ -133,11 +163,11 @@
     }
   }
 
-  &.dito-buttons-main {
+  &--main {
     border-top: $border-style;
   }
 
-  &.dito-buttons-sticky {
+  &--sticky {
     align-self: flex-end;
     position: sticky;
     bottom: 0;
@@ -153,69 +183,39 @@
     }
   }
 
-  &.dito-buttons-round,
-  &.dito-buttons-small {
+  &--round,
+  &--small {
     // For now, nothing for these:
-    // .dito-button-create:empty::before,
-    // .dito-button-add:empty::before
+    // .dito-button--create:empty::before,
+    // .dito-button--add:empty::before
 
-    .dito-button-upload:empty::before {
+    .dito-button--upload:empty::before {
       @extend %icon-upload;
     }
 
-    .dito-button-delete:empty::before,
-    .dito-button-remove:empty::before {
+    .dito-button--delete:empty::before,
+    .dito-button--remove:empty::before {
       @extend %icon-remove;
     }
 
-    .dito-button-edit:empty::before {
+    .dito-button--edit:empty::before {
       @extend %icon-edit;
     }
 
-    .dito-button-clear:empty::before {
+    .dito-button--clear:empty::before {
       @extend %icon-clear;
     }
 
-    .dito-button-drag:empty::before {
+    .dito-button--drag:empty::before {
       @extend %icon-drag;
     }
 
-    .dito-button-copy:empty::before {
+    .dito-button--copy:empty::before {
       @extend %icon-copy;
     }
 
-    .dito-button-paste:empty::before {
+    .dito-button--paste:empty::before {
       @extend %icon-paste;
-    }
-  }
-}
-
-.dito-button-overlay {
-  position: absolute;
-  inset: $border-width;
-  left: unset;
-  padding: 0;
-  border: 0;
-  border-radius: $border-radius;
-  cursor: pointer;
-
-  &.dito-button-clear {
-    width: 2em;
-    background: $color-white;
-    display: none;
-
-    @at-root .dito-component:hover:not(:has(.dito-component)) & {
-      display: block;
-    }
-
-    &::before {
-      @extend %icon-clear;
-
-      color: $color-grey;
-    }
-
-    &:hover::before {
-      color: $color-black;
     }
   }
 }

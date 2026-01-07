@@ -9,7 +9,7 @@
   )
     button.dito-button(
       type="button"
-      :class="{ 'dito-selected': scope.name === query.scope }"
+      :class="{ 'dito-button--selected': scope.name === query.scope }"
       :title="scope.hint || getLabel(scope)"
       @click="navigate"
     ) {{ getLabel(scope) }}

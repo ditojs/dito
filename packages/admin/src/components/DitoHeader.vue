@@ -62,19 +62,6 @@ export default DitoComponent.component('DitoHeader', {
     }
   }
 
-  .dito-dirty {
-    &::after {
-      content: '';
-      display: inline-block;
-      background-color: $color-white;
-      width: 8px;
-      height: 8px;
-      margin: 2px;
-      margin-left: 0.5em;
-      border-radius: 100%;
-    }
-  }
-
   &__teleport {
     // Align the teleported schema headers on top of to the header menu.
     position: absolute;

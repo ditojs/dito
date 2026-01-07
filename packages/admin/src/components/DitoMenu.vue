@@ -3,20 +3,19 @@ ul.dito-menu(
   v-resize="onResize"
   :style="{ '--width': width ? `${width}px` : null }"
 )
-  li(
+  li.dito-menu__item(
     v-for="item in items"
   )
     template(
       v-if="shouldShowItem(item)"
     )
-      a.dito-link(
+      a.dito-menu__link(
         :href="getItemHref(item)"
-        :class="getItemClass(item, 'dito-sub-menu-link')"
+        :class="{ 'dito-menu__link--active': isActiveItem(item) }"
         @click.prevent.stop="onClickItem(item)"
       ) {{ getLabel(item) }}
-      DitoMenu(
+      DitoMenu.dito-menu__sub(
         v-if="item.items"
-        :class="getItemClass(item, 'dito-sub-menu')"
         :items="item.items"
         :path="getItemPath(item, false)"
       )
@@ -60,13 +59,6 @@ export default DitoComponent.component('DitoMenu', {
       }
     },
 
-    getItemClass(item, subMenuClass) {
-      return {
-        [subMenuClass]: !!item.items,
-        'dito-active': this.isActiveItem(item)
-      }
-    },
-
     getItemPath(item, firstChild) {
       const path = item.path ? `${this.path}/${item.path}` : null
       return firstChild && path && item.items
@@ -101,20 +93,24 @@ export default DitoComponent.component('DitoMenu', {
 @import '../styles/_imports';
 
 .dito-menu {
+  $self: &;
   $item-height: $menu-font-size + 2 * $menu-padding-ver;
+
+  --menu-active-color: #{$color-white};
+  --menu-active-background: #{$color-active};
 
   border-right: $border-style;
   padding: 0 $menu-spacing;
 
-  li {
-    &:has(.dito-sub-menu:not(.dito-active)) {
+  &__item {
+    &:has(#{$self}__sub):not(:has(#{$self}__link--active)) {
       // Pop-out sub-menus on hover:
       &:hover {
-        .dito-sub-menu-link {
+        > #{$self}__link {
           background: $color-lightest;
         }
 
-        .dito-sub-menu {
+        #{$self}__sub {
           display: block;
           position: absolute;
           width: var(--width);
@@ -122,8 +118,8 @@ export default DitoComponent.component('DitoMenu', {
           transform: translateX(calc(var(--width) + 2 * $menu-spacing))
             translateY(-$item-height);
 
-          li:first-child {
-            .dito-link {
+          #{$self}__item:first-child {
+            #{$self}__link {
               margin-top: 0;
             }
           }
@@ -140,22 +136,21 @@ export default DitoComponent.component('DitoMenu', {
           }
         }
 
-        // .dito-sub-menu-link,
-        .dito-sub-menu {
+        #{$self}__sub {
           box-shadow: $shadow-window;
         }
       }
     }
   }
 
-  .dito-link {
+  &__link {
     display: block;
     padding: $menu-padding;
     line-height: $menu-line-height;
     border-radius: $border-radius;
     margin-top: $menu-spacing;
 
-    &:focus:not(:active, .dito-active) {
+    &:focus:not(:active, &--active) {
       box-shadow: $shadow-focus;
     }
 
@@ -163,28 +158,29 @@ export default DitoComponent.component('DitoMenu', {
       background: rgb(255, 255, 255, 0.5);
     }
 
-    &.dito-active {
-      color: $color-white;
-      background: $color-active;
+    &--active {
+      &,
+      &:hover {
+        color: var(--menu-active-color);
+        background: var(--menu-active-background);
+      }
+
+      &:has(+ #{$self}__sub) {
+        --menu-active-background: #{color.adjust($color-active, $alpha: -0.3)};
+      }
     }
   }
 
-  .dito-sub-menu-link {
-    &.dito-active {
-      background: color.adjust($color-active, $alpha: -0.3);
-    }
-  }
-
-  .dito-sub-menu {
+  &__sub {
     display: none;
     border-right: 0;
     padding: 0;
     border-radius: $border-radius;
     background: $color-lightest;
+  }
 
-    &.dito-active {
-      display: block;
-    }
+  &__link--active + &__sub {
+    display: block;
   }
 }
 </style>

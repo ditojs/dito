@@ -14,9 +14,9 @@
       store
     }, index in componentSchemas`
   )
-    //- Use <span> for .dito-break so we can use `.dito-container:first-of-type`
-    //- selector.
-    span.dito-break(
+    //- Use <span> for .dito-pane__break so we can use the
+    //- `.dito-container:first-of-type` selector.
+    span.dito-pane__break(
       v-if="['before', 'both'].includes(schema.break)"
     )
     DitoContainer(
@@ -32,11 +32,12 @@
       :single="isSingleComponent"
       :nested="nested"
       :disabled="disabled"
+      :compact="compact"
       :generateLabels="generateLabels"
       :verticalLabels="isInLabeledRow(index)"
       :accumulatedBasis="accumulatedBasis"
     )
-    span.dito-break(
+    span.dito-pane__break(
       v-if="['after', 'both'].includes(schema.break)"
     )
 </template>
@@ -67,6 +68,7 @@ export default DitoComponent.component('DitoPane', {
     padding: { type: String, default: null },
     single: { type: Boolean, default: false },
     disabled: { type: Boolean, default: false },
+    compact: { type: Boolean, default: false },
     generateLabels: { type: Boolean, default: false },
     accumulatedBasis: { type: Number, default: null }
   },
@@ -261,7 +263,7 @@ export default DitoComponent.component('DitoPane', {
   margin: -$form-spacing-half;
   padding: var(--pane-padding);
   // Use `flex: 0%` for all `.dito-pane` except `.dito-pane__main`,
-  // so that the `.dito-buttons-main` can be moved all the way to the bottom.
+  // so that the `.dito-buttons--main` can be moved all the way to the bottom.
   flex: 0%;
 
   &__main {
@@ -299,7 +301,7 @@ export default DitoComponent.component('DitoPane', {
       }
     }
 
-    &__main + .dito-buttons-main {
+    &__main + .dito-buttons--main {
       // Needed forms with sticky main buttons.
       margin: $content-padding;
       margin-bottom: 0;
@@ -319,8 +321,8 @@ export default DitoComponent.component('DitoPane', {
     }
   }
 
-  .dito-break {
-    // `.dito-break` is rendered as <span> so we can use the
+  &__break {
+    // `&_break` is rendered as <span> so we can use the
     // `.dito-container:first-of-type` selector to match the first container
     // even if it has a break before it.
     display: block;

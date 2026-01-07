@@ -37,7 +37,7 @@ export default DitoTypeComponent.register(
       },
 
       buttonClass() {
-        return this.verb ? `dito-button-${this.verb}` : null
+        return this.verb ? `dito-button--${this.verb}` : null
       },
 
       text: getSchemaAccessor('text', {

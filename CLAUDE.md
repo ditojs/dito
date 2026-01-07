@@ -73,11 +73,55 @@ yarn clean
 
 - **80 character line limit** enforced by ESLint
 - **PascalCase** for Vue components
-- **camelCase** for props and variables  
+- **camelCase** for props and variables
 - **kebab-case** for Vue slots
 - Vue attribute hyphenation disabled (use camelCase)
 - Pug templates supported in Vue files
 - ESM modules throughout (type: "module")
+
+## CSS Architecture
+
+Dito Admin and UI packages use strict BEM methodology:
+
+### Naming Convention
+- **Blocks**: `.dito-[block]` (e.g., `.dito-button`, `.dito-table`)
+- **Elements**: `.dito-[block]__[element]` (e.g., `.dito-label__prefix`)
+- **Modifiers**: `.dito-[block]--[modifier]` (e.g., `.dito-buttons--large`)
+
+### State Representation
+State is always represented through block-specific modifiers:
+- `.dito-menu__link--active` (not `.dito-active`)
+- `.dito-pulldown--open` (not `.dito-open`)
+- `.dito-container--disabled` (not `.dito-disabled`)
+- `.dito-input--focus` (not `.dito-focus`)
+- `.dito-button--selected` (not `.dito-selected`)
+
+### Utilities (Exceptions to BEM)
+Only these classes remain as utilities:
+- `.dito-scroll`, `.dito-scroll-parent` - Scroll container infrastructure
+- `.dito-layout--vertical`, `.dito-layout--horizontal` - Layout direction
+
+**Why these remain as utilities:**
+- Same behavior everywhere (no per-block overrides or variations)
+- Well-defined contracts (infrastructure patterns)
+- Single responsibility (manage specific cross-cutting concerns)
+- No coupling or specificity issues
+
+All other styling uses strict BEM. No shared utilities with overrides.
+
+### Schema-Driven Classes
+Schema values map to CSS modifiers programmatically:
+- `layout: 'horizontal'` → `.dito-layout--horizontal`
+- `padding: 'nested'` → `.dito-pane--padding-nested`
+- Column names → `.dito-column--{name}`, `.dito-cell--{name}`
+
+### Component Width Modifiers
+Width/flex behavior is block-specific:
+- `.dito-component--fill`, `.dito-component--grow`, `.dito-component--shrink`
+- `.dito-label--fill`, `.dito-label--grow`, `.dito-label--shrink`
+- `.dito-select--fill`
+
+Managed via `getLayoutClasses(prefix)` helper method in DitoContainer.
 
 ## Application Structure (for Dito.js projects)
 

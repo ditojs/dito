@@ -48,7 +48,9 @@
   border-bottom-right-radius: $border-radius;
 }
 
-table.dito-table {
+.dito-table {
+  $self: &;
+
   --separator-width: #{$border-width};
 
   width: 100%;
@@ -67,24 +69,24 @@ table.dito-table {
         &:last-child {
           padding-right: $form-spacing;
         }
-
-        &.dito-cell-edit-buttons {
-          width: 1%;
-
-          &,
-          .dito-button {
-            // To align better with `vertical-align: baseline` in normal td:
-            vertical-align: top;
-          }
-        }
       }
     }
   }
 
-  &.dito-table-larger-padding {
+  &__buttons {
+    width: 1%;
+
+    &,
+    .dito-button {
+      // To align better with `vertical-align: baseline` in normal td:
+      vertical-align: top;
+    }
+  }
+
+  &--larger-padding {
     // Add more spacing to cells in tables except those containing edit buttons,
     // to better align cell texts with edit buttons.
-    td:not(.dito-cell-edit-buttons) {
+    td:not(#{$self}__buttons) {
       $padding: $form-spacing * 1.5;
 
       padding: $padding 0 $padding $padding;
@@ -92,7 +94,7 @@ table.dito-table {
     // Variants of list styles: separators and alternate colors.
   }
 
-  &.dito-table-separators {
+  &--separators {
     > tbody > tr + tr,
     > tbody:not(:empty) + tfoot > tr {
       > td {
@@ -101,16 +103,16 @@ table.dito-table {
     }
   }
 
-  &.dito-table-alternate-colors {
+  &--alternate-colors {
     > tbody > tr:nth-child(odd),
-    &.dito-table-even-count > tfoot > tr {
+    &#{$self}--even-count > tfoot > tr {
       > td {
         background: $color-white;
       }
     }
   }
 
-  &.dito-table-background {
+  &--background {
     > tbody,
     > tfoot {
       > tr > td {
@@ -152,7 +154,7 @@ table.dito-table {
       &:focus {
         z-index: 1;
       }
-      // Add left/rigth borders to the normal tbody cells.
+      // Add left/right borders to the normal tbody cells.
     }
   }
 
@@ -212,11 +214,10 @@ table.dito-table {
     &:last-child {
       @include table-border-bottom-right;
     }
-    // Nested .dito-table:
   }
-}
 
-table.dito-table table.dito-table,
-.dito-form-nested table.dito-table {
-  margin: 0;
+  #{$self} & {
+    // Nested .dito-table
+    margin: 0;
+  }
 }

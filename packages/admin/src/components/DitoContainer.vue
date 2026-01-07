@@ -69,6 +69,7 @@ export default DitoComponent.component('DitoContainer', {
     single: { type: Boolean, default: false },
     nested: { type: Boolean, default: true },
     disabled: { type: Boolean, required: true },
+    compact: { type: Boolean, default: false },
     generateLabels: { type: Boolean, default: false },
     verticalLabels: { type: Boolean, default: false },
     accumulatedBasis: { type: Number, default: null }
@@ -191,8 +192,9 @@ export default DitoComponent.component('DitoContainer', {
       const prefix = 'dito-container'
       return {
         [`${prefix}--single`]: this.single,
-        'dito-disabled': this.componentDisabled,
-        'dito-has-errors': !!this.errors,
+        [`${prefix}--disabled`]: this.componentDisabled,
+        [`${prefix}--has-errors`]: !!this.errors,
+        [`${prefix}--compact`]: this.compact,
         [`${prefix}--label-vertical`]: this.verticalLabels,
         [`${prefix}--omit-spacing`]: omitSpacing(this.schema),
         ...(isString(classes) ? { [classes]: true } : classes)
@@ -214,23 +216,15 @@ export default DitoComponent.component('DitoContainer', {
 
     componentClasses() {
       return {
-        'dito-single': this.single,
-        ...this.layoutClasses
-      }
-    },
-
-    layoutClasses() {
-      return {
-        'dito-width-fill': this.width === 'fill' || this.flexBasis !== 'auto',
-        'dito-width-grow': this.flexGrow,
-        'dito-width-shrink': this.flexShrink
+        'dito-component--single': this.single,
+        ...this.getLayoutClasses('dito-component')
       }
     },
 
     labelClasses() {
       return {
         'dito-label--visible': this.isLabel,
-        ...this.layoutClasses
+        ...this.getLayoutClasses('dito-label')
       }
     },
 
@@ -246,6 +240,14 @@ export default DitoComponent.component('DitoContainer', {
   },
 
   methods: {
+    getLayoutClasses(prefix) {
+      return {
+        [`${prefix}--fill`]: this.width === 'fill' || this.flexBasis !== 'auto',
+        [`${prefix}--grow`]: this.flexGrow,
+        [`${prefix}--shrink`]: this.flexShrink
+      }
+    },
+
     onErrors(errors) {
       this.errors = errors
     }
@@ -319,6 +321,14 @@ export default DitoComponent.component('DitoContainer', {
     }
   }
 
+  &--compact:not(&--label-vertical) {
+    // Display labels in compact schema as inline-blocks, to allow compact
+    // layouts with `width: 'auto'` elements:
+    display: flex;
+    flex-flow: row wrap;
+    align-items: center;
+  }
+
   &--omit-spacing {
     padding: 0;
 
@@ -328,12 +338,10 @@ export default DitoComponent.component('DitoContainer', {
   }
 }
 
-// NOTE: This is not nested inside `.dito-container` so that other
-// type components can override `.dito-width-fill` class (filter precedence).
 .dito-component {
   position: relative;
 
-  &.dito-width-fill {
+  &--fill {
     width: 100%;
 
     &.dito-checkbox,

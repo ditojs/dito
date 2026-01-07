@@ -278,7 +278,7 @@ export default {
 
     getButtonAttributes(verb) {
       return {
-        class: `dito-button-${verb}`,
+        class: `dito-button--${verb}`,
         title: labelize(verb)
       }
     },

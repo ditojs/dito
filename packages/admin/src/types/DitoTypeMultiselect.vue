@@ -31,7 +31,7 @@
       @tag="onAddTag"
       @search-change="onSearchChange"
     )
-    button.dito-button-clear.dito-button-overlay(
+    button.dito-button--clear.dito-button--overlay(
       v-if="showClearButton"
       type="button"
       :disabled="disabled"
@@ -267,7 +267,7 @@ $tag-line-height: 1em;
       // So tags can float on multiple lines and have proper margins:
       padding-bottom: $tag-margin;
 
-      .dito-has-errors & {
+      .dito-container--has-errors & {
         border-color: $color-error;
       }
     }

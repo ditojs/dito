@@ -1,8 +1,5 @@
 <template lang="pug">
-.dito-form.dito-scroll-parent(
-  :class="{ 'dito-form-nested': isNestedRoute }"
-  :data-resource="sourceSchema.path"
-)
+.dito-form.dito-scroll-parent(:data-resource="sourceSchema.path")
   //- Only render a router-view here if this isn't the last data route and not a
   //- nested form route, which will appear elsewhere in its own view.
   RouterView(
@@ -37,8 +34,8 @@
       generateLabels
     )
       template(#buttons)
-        DitoButtons.dito-buttons-round.dito-buttons-large.dito-buttons-main(
-          :class="{ 'dito-buttons-sticky': !isNestedRoute }"
+        DitoButtons.dito-buttons--round.dito-buttons--large.dito-buttons--main(
+          :class="{ 'dito-buttons--sticky': !isNestedRoute }"
           :buttons="buttonSchemas"
           :dataPath="dataPath"
           :data="data"

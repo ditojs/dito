@@ -2,8 +2,8 @@
 .dito-tree-item(
   :id="dataPath"
   :class=`{
-    'dito-dragging': isDragging,
-    'dito-active': active
+    'dito-tree-item--dragging': isDragging,
+    'dito-tree-item--active': active
   }`
   :style="level > 0 && { '--level': level }"
   :data-path="path"
@@ -17,7 +17,7 @@
     )
       .dito-chevron(
         v-if="numEntries"
-        :class="{ 'dito-open': opened }"
+        :class="{ 'dito-chevron--open': opened }"
       )
       .dito-tree-label(
         v-html="label"
@@ -31,7 +31,7 @@
       .dito-tree-label(
         v-html="label"
       )
-    .dito-buttons.dito-buttons-small(
+    .dito-buttons.dito-buttons--small(
       v-if="hasEditButtons"
     )
       //- Firefox doesn't like <button> here, so use <a> instead:
@@ -294,7 +294,7 @@ export default DitoComponent.component('DitoTreeItem', {
       SortableMixin.methods.onEndDrag.call(this, event)
       const { item } = event
       // Preserve active state of edited sub-items, by editing their new path.
-      if (item.classList.contains('dito-active')) {
+      if (item.classList.contains('dito-tree-item--active')) {
         this.$nextTick(() => {
           this.editPath(event.item.dataset.path)
         })
@@ -315,7 +315,7 @@ export default DitoComponent.component('DitoTreeItem', {
     > .dito-tree-leaf {
       // Use `--level` CSS variable to calculated the accumulated indent
       // padding directly instead of having it accumulate in nested CSS.
-      // This way, we can keep the .dito-active area cover the full width:
+      // This way, we can keep the &--active area cover the full width:
       padding-left: calc(var(--chevron-indent) * (var(--level, 1) - 1));
     }
   }
@@ -361,7 +361,7 @@ export default DitoComponent.component('DitoTreeItem', {
     } // Hide buttons during dragging
   }
 
-  &.dito-dragging {
+  &--dragging {
     .dito-tree-header {
       > .dito-buttons {
         visibility: hidden;
@@ -369,7 +369,7 @@ export default DitoComponent.component('DitoTreeItem', {
     }
   }
 
-  &.dito-active {
+  &--active {
     > .dito-tree-header {
       background: $color-active;
       padding: 0 $input-padding-hor;

@@ -24,10 +24,10 @@
     )
   table.dito-table(
     :class=`{
-      'dito-table-separators': isInlined,
-      'dito-table-larger-padding': hasEditButtons && !isInlined,
-      'dito-table-alternate-colors': !isInlined,
-      'dito-table-even-count': hasEvenCount
+      'dito-table--separators': isInlined,
+      'dito-table--larger-padding': hasEditButtons && !isInlined,
+      'dito-table--alternate-colors': !isInlined,
+      'dito-table--even-count': hasEvenCount
     }`
   )
     DitoTableHead(
@@ -103,7 +103,7 @@
               v-else
               v-html="getItemLabel(schema, item, { index })"
             )
-        td.dito-cell-edit-buttons(
+        td.dito-table__buttons(
           v-if="hasCellEditButtons"
         )
           DitoEditButtons(
@@ -124,7 +124,7 @@
       v-if="hasListButtons && !single"
     )
       tr
-        td.dito-cell-edit-buttons(:colspan="numColumns")
+        td.dito-table__buttons(:colspan="numColumns")
           DitoEditButtons(
             :buttons="buttonSchemas"
             :schema="schema"
@@ -138,7 +138,7 @@
             :createPath="path"
           )
   //- Render create buttons outside table when in a single component view:
-  DitoEditButtons.dito-buttons-large.dito-buttons-main.dito-buttons-sticky(
+  DitoEditButtons.dito-buttons--large.dito-buttons--main.dito-buttons--sticky(
     v-if="hasListButtons && single"
     :buttons="buttonSchemas"
     :schema="schema"
@@ -257,7 +257,7 @@ export default DitoTypeComponent.register('list', {
     },
 
     getCellClass(column) {
-      return `dito-cell-${hyphenate(column.name)}`
+      return `dito-cell--${hyphenate(column.name)}`
     },
 
     getContext(item, index) {
@@ -333,7 +333,7 @@ export default DitoTypeComponent.register('list', {
     }
   }
 
-  &.dito-single {
+  &.dito-component--single {
     // So that list buttons can be sticky to the bottom:
     display: grid;
     grid-template-rows: min-content;

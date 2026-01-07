@@ -6,12 +6,12 @@
   padding: $input-padding;
   background: $color-white;
 
-  .dito-has-errors & {
+  .dito-container--has-errors & {
     border-color: $color-error;
   }
 
   &:disabled,
-  .dito-disabled & {
+  .dito-container--disabled & {
     color: $color-disabled;
     pointer-events: none;
     cursor: text;

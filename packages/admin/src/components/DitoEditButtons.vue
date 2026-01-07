@@ -1,6 +1,6 @@
 <template lang="pug">
 //- Set `@click.stop` to prevent click events from bubbling to dito-label.
-DitoButtons.dito-edit-buttons.dito-buttons-round(
+DitoButtons.dito-edit-buttons.dito-buttons--round(
   :buttons="buttons"
   :dataPath="dataPath"
   :data="data"
@@ -12,12 +12,12 @@ DitoButtons.dito-edit-buttons.dito-buttons-round(
   //- Firefox doesn't like <button> here, so use <a> instead:
   a.dito-button(
     v-if="draggable"
-    :class="{ 'dito-disabled': isDraggableDisabled }"
+    :class="{ 'dito-button--disabled': isDraggableDisabled }"
     v-bind="getButtonAttributes(verbs.drag)"
   )
   RouterLink.dito-button(
     v-if="editable"
-    :class="{ 'dito-disabled': isEditableDisabled }"
+    :class="{ 'dito-button--disabled': isEditableDisabled }"
     :to="editPath ? { path: editPath } : {}"
     v-bind="getButtonAttributes(verbs.edit)"
   )

@@ -16,13 +16,15 @@
       v-bind="getButtonAttributes(verb)"
       @mousedown.stop="onPulldownMouseDown()"
     ) {{ text }}
-    ul.dito-pulldown(:class="{ 'dito-open': pulldown.open }")
+    ul.dito-pulldown(:class="{ 'dito-pulldown--open': pulldown.open }")
       li(
         v-for="(form, type) in creatableForms"
+        v-show="shouldShowSchema(form)"
       )
-        a(
-          v-show="shouldShowSchema(form)"
-          :class="getFormClass(form, type)"
+        a.dito-pulldown__item(
+          :class=`{
+            'dito-pulldown__item--disabled': shouldDisableSchema(form)
+          }`
           @mousedown.stop="onPulldownMouseDown(type)"
           @mouseup="onPulldownMouseUp(type)"
         ) {{ getLabel(form) }}
@@ -113,13 +115,6 @@ export default DitoComponent.component('DitoCreateButton', {
       }
     },
 
-    getFormClass(form, type) {
-      return {
-        [`dito-type-${type}`]: true,
-        'dito-disabled': this.shouldDisableSchema(form)
-      }
-    },
-
     onPulldownSelect(type) {
       this.createItem(this.forms[type], type)
       this.setPulldownOpen(false)
@@ -135,7 +130,7 @@ export default DitoComponent.component('DitoCreateButton', {
   .dito-pulldown {
     right: 0;
 
-    .dito-buttons-sticky & {
+    .dito-buttons--sticky & {
       top: unset;
       right: unset;
       bottom: 0;

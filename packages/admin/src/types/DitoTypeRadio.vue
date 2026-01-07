@@ -1,7 +1,7 @@
 <template lang="pug">
 ul.dito-radio-buttons(
   :id="dataPath"
-  :class="`dito-layout-${schema.layout || 'vertical'}`"
+  :class="`dito-layout--${schema.layout || 'vertical'}`"
 )
   li(
     v-for="option in options"

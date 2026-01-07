@@ -4,7 +4,7 @@ Trigger.dito-color(
   trigger="focus"
 )
   template(#trigger)
-    .dito-input(:class="{ 'dito-focus': showPopup }")
+    .dito-input(:class="{ 'dito-input--focus': showPopup }")
       input(
         :id="dataPath"
         ref="element"
@@ -13,17 +13,17 @@ Trigger.dito-color(
         size="8"
         v-bind="attributes"
       )
-      .dito-color-preview.dito-inherit-focus(
+      .dito-color__preview(
         v-if="value"
       )
         div(:style="{ background: `#${hexValue || '00000000'}` }")
-      button.dito-button-clear.dito-button-overlay(
+      button.dito-button--clear.dito-button--overlay(
         v-if="showClearButton"
         :disabled="disabled"
         @click.stop="clear"
       )
   template(#popup)
-    SketchPicker.dito-color-picker(
+    SketchPicker.dito-color__picker(
       v-model="colorValue"
       :disableAlpha="!alpha"
       :disableFields="!inputs"
@@ -224,11 +224,11 @@ $color-swatch-radius: $border-radius - $border-width;
     }
   }
 
-  .dito-button-clear {
+  .dito-button--clear {
     margin-right: $color-swatch-width;
   }
 
-  .dito-color-picker {
+  &__picker {
     margin: $popup-margin;
     border: $border-style;
     border-radius: $border-radius;
@@ -236,7 +236,7 @@ $color-swatch-radius: $border-radius - $border-width;
     box-shadow: $shadow-window;
   }
 
-  .dito-color-preview {
+  &__preview {
     background: $pattern-transparency;
     border-left: $border-style;
 
@@ -250,6 +250,12 @@ $color-swatch-radius: $border-radius - $border-width;
       border-top-right-radius: $color-swatch-radius;
       border-bottom-right-radius: $color-swatch-radius;
     }
+  }
+
+  // Inherit input focus state
+  .dito-input:focus-within &__preview,
+  .dito-input--focus &__preview {
+    border-left-color: $color-active;
   }
 }
 </style>

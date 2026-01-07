@@ -1,12 +1,13 @@
 <template lang="pug">
 .dito-date-time-picker(ref="picker")
-  .dito-date-time-picker__inner(:class="{ 'dito-focus': focused }")
+  .dito-date-time-picker__inner(
+    :class="{ 'dito-date-time-picker__inner--focus': focused }"
+  )
     InputField.dito-date-time-picker__input(
       ref="input"
       v-model="currentText"
       type="text"
-      :class="{ 'dito-focus': focused }"
-      v-bind="{ placeholder, disabled, ...$attrs }"
+      v-bind="{ placeholder, disabled, focused, ...$attrs }"
       @focus="onFocus(true)"
       @blur="onFocus(false)"
       @keydown="onKeyDown"

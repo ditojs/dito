@@ -4,12 +4,14 @@
     li(
       v-for="component in trail"
     )
-      a.dito-link(
-        :class="getLinkClass(component)"
+      a.dito-trail__link(
+        :class="{ 'dito-trail__link--active': component.path === $route.path }"
         :href="getComponentHref(component)"
         @click.prevent.stop="onClickComponent(component)"
       )
-        span(:class="getSpanClass(component)")
+        span.dito-trail__text(
+          :class="{ 'dito-trail__text--dirty': component.isDirty }"
+        )
           | {{ component.breadcrumb }}
   slot
 </template>
@@ -45,18 +47,6 @@ export default DitoComponent.component('DitoTrail', {
         path: this.getComponentPath(component),
         force: true
       })
-    },
-
-    getLinkClass(component) {
-      return {
-        'dito-active': component.path === this.$route.path
-      }
-    },
-
-    getSpanClass(component) {
-      return {
-        'dito-dirty': component.isDirty
-      }
     }
   }
 })
@@ -66,6 +56,8 @@ export default DitoComponent.component('DitoTrail', {
 @import '../styles/_imports';
 
 .dito-trail {
+  $self: &;
+
   display: flex;
   box-sizing: border-box;
   height: 3em;
@@ -78,18 +70,31 @@ export default DitoComponent.component('DitoTrail', {
     white-space: nowrap;
   }
 
-  a {
+  &__link {
     position: relative;
     display: block;
 
     &:hover {
-      span {
+      #{$self}__text {
         color: $color-light;
       }
     }
   }
 
-  li:not(:last-child) a {
+  &__text--dirty {
+    &::after {
+      content: '';
+      display: inline-block;
+      background-color: $color-white;
+      width: 8px;
+      height: 8px;
+      margin: 2px;
+      margin-left: 0.5em;
+      border-radius: 100%;
+    }
+  }
+
+  li:not(:last-child) &__link {
     $angle: 33deg;
 
     &::before,

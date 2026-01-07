@@ -33,21 +33,25 @@ export default {
     disabled: { type: Boolean, default: false },
     readonly: { type: Boolean, default: false },
     autofocus: { type: Boolean, default: false },
+    focused: { type: Boolean, default: false },
     placeholder: { type: String, default: null },
     autocomplete: { type: String, default: 'off' }
   },
 
   data() {
     return {
-      currentValue: this.modelValue,
-      hovering: false,
-      focused: false
+      currentValue: this.modelValue
     }
   },
 
   computed: {
     classes() {
-      return this.$attrs.class
+      return [
+        this.$attrs.class,
+        {
+          'dito-input--focus': this.focused
+        }
+      ]
     },
 
     attributes() {

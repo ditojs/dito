@@ -1,15 +1,15 @@
 <template lang="pug">
-.dito-clipboard.dito-buttons.dito-buttons-round(
+.dito-clipboard.dito-buttons.dito-buttons--round(
   v-if="clipboard"
 )
-  button.dito-button.dito-button-copy(
+  button.dito-button.dito-button--copy(
     ref="copyData"
     type="button"
     title="Copy Data"
     :disabled="!copyEnabled"
     @click="onCopy"
   )
-  button.dito-button.dito-button-paste(
+  button.dito-button.dito-button--paste(
     type="button"
     title="Paste Data"
     :disabled="!pasteEnabled"

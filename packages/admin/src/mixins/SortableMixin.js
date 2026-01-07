@@ -11,7 +11,7 @@ export default {
       const prefix = 'dito-draggable'
       return {
         animation: 150,
-        handle: '.dito-button-drag',
+        handle: '.dito-button--drag',
         dragClass: `${prefix}__drag`,
         chosenClass: `${prefix}__chosen`,
         ghostClass: `${prefix}__ghost`,

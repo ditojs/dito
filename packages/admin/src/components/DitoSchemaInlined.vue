@@ -1,6 +1,5 @@
 <template lang="pug">
 DitoSchema.dito-schema-inlined(
-  :class="{ 'dito-schema-compact': isCompact }"
   :schema="schema"
   :dataPath="dataPath"
   :data="data"
@@ -10,6 +9,7 @@ DitoSchema.dito-schema-inlined(
   :padding="padding ?? 'inlined'"
   :inlined="true"
   :disabled="disabled"
+  :compact="isCompact"
   :collapsed="collapsed"
   :collapsible="collapsible"
   :generateLabels="!isCompact"

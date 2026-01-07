@@ -4,7 +4,7 @@
     @mousedown.stop="onPulldownMouseDown()"
   )
     span {{ user.username }}
-  ul.dito-pulldown(:class="{ 'dito-open': pulldown.open }")
+  ul.dito-pulldown(:class="{ 'dito-pulldown--open': pulldown.open }")
     li(
       v-for="(label, value) of items"
     )

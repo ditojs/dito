@@ -1,6 +1,8 @@
 @import '../styles/_imports';
 
-ul.dito-pulldown {
+.dito-pulldown {
+  $self: &;
+
   display: none;
   position: absolute;
   top: 0;
@@ -9,28 +11,28 @@ ul.dito-pulldown {
   box-shadow: $shadow-window;
   overflow: hidden;
 
-  &.dito-open {
+  &--open {
     display: block;
   }
 
   li {
     @include user-select(none);
+  }
 
-    a {
-      display: block;
-      padding: $pulldown-padding;
-      line-height: 1;
-      background: $button-color;
+  &__item {
+    display: block;
+    padding: $pulldown-padding;
+    line-height: 1;
+    background: $button-color;
 
-      &.dito-disabled {
-        color: $color-disabled;
-        cursor: default;
-      }
+    &--disabled {
+      color: $color-disabled;
+      cursor: default;
+    }
 
-      &:not(.dito-disabled):hover {
-        background: $color-active;
-        color: $color-white;
-      }
+    &:not(&--disabled):hover {
+      background: $color-active;
+      color: $color-white;
     }
   }
 }

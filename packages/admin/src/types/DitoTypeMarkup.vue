@@ -1,15 +1,15 @@
 <template lang="pug">
 .dito-markup(:id="dataPath")
-  .dito-buttons.dito-buttons-toolbar(
+  .dito-buttons.dito-buttons--toolbar(
     v-if="groupedButtons.length > 0"
   )
-    .dito-button-group(
+    .dito-buttons__group(
       v-for="buttons in groupedButtons"
     )
       button.dito-button(
         v-for="{ name, icon, isActive, onClick } in buttons"
         :key="name"
-        :class="{ 'dito-active': isActive }"
+        :class="{ 'dito-button--active': isActive }"
         @click="onClick"
       )
         Icon(:name="icon")
@@ -552,7 +552,7 @@ const LinkWithTitle = Link.extend({
     padding-right: $input-padding-hor;
   }
 
-  .dito-buttons-toolbar {
+  .dito-buttons--toolbar {
     margin: 0;
   }
 

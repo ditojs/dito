@@ -3,7 +3,7 @@
   :class="classes"
   :style="styles"
 )
-  .dito-switch-pane
+  .dito-switch__pane
     input(
       :id="id"
       ref="input"
@@ -13,8 +13,8 @@
       :name="name"
       :disabled="disabled"
     )
-    .dito-switch-button
-    span.dito-switch-label(
+    .dito-switch__button
+    span.dito-switch__label(
       v-if="labels"
     )
       slot(
@@ -48,11 +48,12 @@ export default {
 
   computed: {
     classes() {
+      const prefix = 'dito-switch'
       return [
         this.$attrs.class,
         {
-          'dito-checked': this.checked,
-          'dito-disabled': this.disabled
+          [`${prefix}--checked`]: this.checked,
+          [`${prefix}--disabled`]: this.disabled
         }
       ]
     },
@@ -97,6 +98,8 @@ export default {
 @import '../styles/_imports';
 
 .dito-switch {
+  $self: &;
+
   // Use whole multiples of `rem` for sizes and `px` margins/padding along
   // with `calc()` to end up with even pixel sizes.
   --switch-width: 4em;
@@ -116,14 +119,14 @@ export default {
   vertical-align: bottom;
   @include user-select(none);
 
-  .dito-switch-pane {
+  &__pane {
     position: relative;
     width: var(--width);
     height: var(--height);
   }
 
-  .dito-switch-pane,
-  .dito-switch-label {
+  &__pane,
+  &__label {
     top: 50%;
     transform: translateY(-50%);
   }
@@ -140,7 +143,7 @@ export default {
       background-color 0.3s;
   }
 
-  .dito-switch-button {
+  &__button {
     --size: calc(var(--height) - 2 * var(--switch-padding));
 
     position: absolute;
@@ -155,39 +158,39 @@ export default {
     transform: translateX(0);
   }
 
-  .dito-switch-button,
-  .dito-switch-label {
+  &__button,
+  &__label {
     pointer-events: none;
   }
 
-  .dito-switch-label {
+  &__label {
     position: absolute;
     right: var(--label-margin);
     text-transform: uppercase;
     color: $color-white;
   }
 
-  &.dito-checked {
+  &--checked {
     input {
       background: $color-active;
     }
 
-    .dito-switch-button {
+    #{$self}__button {
       transform: translateX(var(--offset));
     }
 
-    .dito-switch-label {
+    #{$self}__label {
       left: var(--label-margin);
       right: unset;
     }
   }
 
-  &.dito-disabled {
+  &--disabled {
     @extend %button-disabled;
   }
 
   &:focus-within:not(:hover) {
-    .dito-switch-button {
+    #{$self}__button {
       box-shadow: $shadow-focus;
     }
   }

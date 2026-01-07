@@ -5,7 +5,7 @@ textarea.dito-textarea.dito-input(
   v-model="value"
   v-bind="attributes"
   :rows="lines"
-  :class="{ 'dito-resizable': resizable }"
+  :class="{ 'dito-textarea--resizable': resizable }"
 )
 </template>
 
@@ -41,7 +41,7 @@ export default DitoTypeComponent.register('textarea', {
   resize: none;
   min-height: calc(1em * var(--line-height) + #{2 * $input-padding-ver});
 
-  &.dito-resizable {
+  &--resizable {
     resize: vertical;
   }
 }

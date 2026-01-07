@@ -24,7 +24,7 @@
         generateLabels
       )
         template(#buttons)
-          DitoButtons.dito-buttons-large(
+          DitoButtons.dito-buttons--large(
             :buttons="buttonSchemas"
             :data="dialogData"
           )

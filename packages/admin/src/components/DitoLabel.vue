@@ -3,11 +3,11 @@ component.dito-label(
   v-if="text || collapsible"
   :is="as"
   v-bind="attributes"
-  :class="{ 'dito-active': isActive }"
+  :class="{ 'dito-label--active': isActive }"
 )
   .dito-chevron(
     v-if="collapsible"
-    :class="{ 'dito-open': !collapsed }"
+    :class="{ 'dito-chevron--open': !collapsed }"
   )
   .dito-label__inner(
     v-if="text || prefixes.length > 0 || suffixes.length > 0"
@@ -59,7 +59,7 @@ export default DitoComponent.component('DitoLabel', {
 
   computed: {
     as() {
-      return this.collapsible ? 'a' : 'div'
+      return this.collapsible ? 'button' : 'div'
     },
 
     text() {
@@ -194,7 +194,7 @@ export default DitoComponent.component('DitoLabel', {
     padding: var(--label-padding);
   }
 
-  &.dito-width-fill {
+  &--fill {
     width: 100%;
 
     // In order for ellipsis to work on labels without affecting other layout,
@@ -219,32 +219,21 @@ export default DitoComponent.component('DitoLabel', {
   .dito-info {
     margin-left: 0.35em;
   }
-}
 
-a.dito-label {
-  &:hover {
-    .dito-chevron {
-      color: $color-darker;
+  @at-root button#{&} {
+    border: 0;
+    padding: 0;
+    text-align: start;
+
+    &:hover {
+      .dito-chevron {
+        color: $color-darker;
+      }
     }
-  }
 
-  &:focus:not(:active, .dito-active) {
-    .dito-chevron {
-      -webkit-text-stroke: $border-width $color-active;
-    }
-    // Display labels in compact schema as inline-blocks, to allow compact
-    // layouts with `width: 'auto'` elements:
-    // TODO: Find a better way to control this behavior.
-  }
-}
-
-.dito-schema-compact {
-  > .dito-schema-content {
-    > .dito-pane {
-      > .dito-container:not(.dito-container--label-vertical) {
-        display: flex;
-        flex-flow: row wrap;
-        align-items: center;
+    &:focus:not(:active, &--active) {
+      .dito-chevron {
+        -webkit-text-stroke: $border-width $color-active;
       }
     }
   }

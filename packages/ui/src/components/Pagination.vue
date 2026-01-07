@@ -7,7 +7,7 @@
     template(
       v-if="total > 0"
     ) {{ first }} – {{ last }} / {{ total }}
-  .dito-buttons.dito-buttons-round(
+  .dito-buttons.dito-buttons--round(
     v-if="numPages > 1"
   )
     button.dito-button(
@@ -136,13 +136,11 @@ export default {
 
   methods: {
     getButtonClasses(button) {
-      const classes = {
-        'dito-selected': button.active
+      const prefix = 'dito-button'
+      return {
+        [`${prefix}--${button.type}`]: button.type,
+        [`${prefix}--active`]: button.active
       }
-      if (button.type) {
-        classes[`dito-button-${button.type}`] = true
-      }
-      return classes
     },
 
     onClickButton(button) {
@@ -180,19 +178,19 @@ export default {
     font-variant-numeric: tabular-nums;
     padding: 0 0.5em;
 
-    &-prev,
-    &-next {
+    &--prev,
+    &--next {
       &::before {
         @extend %icon-arrow;
       }
     }
 
-    &-prev::before {
+    &--prev::before {
       transform: scaleX(-1);
     }
 
-    &-ellipsis-prev,
-    &-ellipsis-next {
+    &--ellipsis-prev,
+    &--ellipsis-next {
       background: none;
       border: 0;
       padding: 0;
@@ -216,7 +214,7 @@ export default {
       }
     }
 
-    &-ellipsis-prev::before {
+    &--ellipsis-prev::before {
       transform: scaleX(-1);
     }
   }

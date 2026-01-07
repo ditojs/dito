@@ -1,17 +1,19 @@
-.dito-layout-vertical,
-.dito-layout-horizontal {
-  display: flex;
-
-  > * {
-    flex: 0 0 auto;
+.dito-layout {
+  &--vertical,
+  &--horizontal {
     display: flex;
+
+    > * {
+      flex: 0 0 auto;
+      display: flex;
+    }
   }
-}
 
-.dito-layout-horizontal {
-  gap: $form-spacing;
-}
+  &--horizontal {
+    gap: $form-spacing;
+  }
 
-.dito-layout-vertical {
-  flex-direction: column;
+  &--vertical {
+    flex-direction: column;
+  }
 }
