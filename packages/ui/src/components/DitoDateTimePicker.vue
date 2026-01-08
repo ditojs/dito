@@ -3,7 +3,7 @@
   .dito-date-time-picker__inner(
     :class="{ 'dito-date-time-picker__inner--focus': focused }"
   )
-    InputField.dito-date-time-picker__input(
+    DitoInput.dito-date-time-picker__input(
       ref="input"
       v-model="currentText"
       type="text"
@@ -16,13 +16,13 @@
       template(#before)
         slot(name="before")
       template(#after)
-        Icon(
+        DitoIcon(
           name="calendar"
           :disabled="disabled"
           @mousedown.prevent="onMouseDown(true)"
         )
         slot(name="after")
-    DatePicker(
+    DitoDatePicker(
       ref="date"
       v-model="currentValue"
       v-model:show="showDate"
@@ -32,7 +32,7 @@
     )
       template(#trigger)
         //- Intentionally empty
-    TimePicker(
+    DitoTimePicker(
       ref="time"
       v-model="currentValue"
       v-model:show="showTime"
@@ -46,16 +46,16 @@
 
 <script>
 import { format, defaultFormats, assignDeeply } from '@ditojs/utils'
-import InputField from './InputField.vue'
-import DatePicker from './DatePicker.vue'
-import TimePicker from './TimePicker.vue'
-import Icon from './Icon.vue'
+import DitoInput from './DitoInput.vue'
+import DitoDatePicker from './DitoDatePicker.vue'
+import DitoTimePicker from './DitoTimePicker.vue'
+import DitoIcon from './DitoIcon.vue'
 import { parseDate } from '../utils/date.js'
 import { getSelection, setSelection } from '../utils/selection.js'
 import { getKeyNavigation } from '../utils/event.js'
 
 export default {
-  components: { InputField, DatePicker, TimePicker, Icon },
+  components: { DitoInput, DitoDatePicker, DitoTimePicker, DitoIcon },
   emits: ['update:modelValue', 'change', 'focus', 'blur'],
   inheritAttrs: false,
 

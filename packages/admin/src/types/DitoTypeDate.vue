@@ -21,14 +21,18 @@
 <script>
 import DitoTypeComponent from '../DitoTypeComponent.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
-import { DatePicker, TimePicker, DateTimePicker } from '@ditojs/ui/src'
+import {
+  DitoDatePicker,
+  DitoTimePicker,
+  DitoDateTimePicker
+} from '@ditojs/ui/src'
 import { isDate, assignDeeply } from '@ditojs/utils'
 
 export default DitoTypeComponent.register(
   ['date', 'datetime', 'time'],
   // @vue/component
   {
-    components: { DatePicker, TimePicker, DateTimePicker },
+    components: { DitoDatePicker, DitoTimePicker, DitoDateTimePicker },
     // TODO: This is only here so we get placeholder added. Come up with a
     // better way to support attributes per component (a list of actually
     // supported attributes)
@@ -65,9 +69,9 @@ export default DitoTypeComponent.register(
     methods: {
       getComponent(type) {
         return {
-          date: 'date-picker',
-          time: 'time-picker',
-          datetime: 'date-time-picker'
+          date: 'dito-date-picker',
+          time: 'dito-time-picker',
+          datetime: 'dito-date-time-picker'
         }[type]
       }
     },

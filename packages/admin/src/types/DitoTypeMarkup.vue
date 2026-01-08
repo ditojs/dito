@@ -12,7 +12,7 @@
         :class="{ 'dito-button--active': isActive }"
         @click="onClick"
       )
-        Icon(:name="icon")
+        DitoIcon(:name="icon")
   EditorContent.dito-markup-editor(
     ref="editor"
     :editor="editor"
@@ -66,7 +66,7 @@ import { Footnotes, FootnoteReference, Footnote } from 'tiptap-footnotes'
 // Tools:
 import { History } from '@tiptap/extension-history'
 
-import { Icon } from '@ditojs/ui/src'
+import { DitoIcon } from '@ditojs/ui/src'
 import { isArray, isObject, hyphenate, debounce, camelize } from '@ditojs/utils'
 
 // @vue/component
@@ -74,7 +74,7 @@ export default DitoTypeComponent.register('markup', {
   mixins: [DomMixin],
   components: {
     EditorContent,
-    Icon
+    DitoIcon
   },
 
   data() {
@@ -298,6 +298,7 @@ export default DitoTypeComponent.register('markup', {
     async onClickLink(editor) {
       const attributes = await this.rootComponent.showDialog({
         components: {
+          DitoIcon,
           href: {
             type: 'url',
             label: 'Link',

@@ -10,7 +10,7 @@
     :max="max"
     :step="stepValue"
   )
-  InputField.dito-number(
+  DitoInput.dito-number(
     v-if="input"
     v-model="inputValue"
     type="number"
@@ -25,12 +25,12 @@
 import DitoTypeComponent from '../DitoTypeComponent.js'
 import NumberMixin from '../mixins/NumberMixin.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
-import { InputField } from '@ditojs/ui/src'
+import { DitoInput } from '@ditojs/ui/src'
 
 // @vue/component
 export default DitoTypeComponent.register('slider', {
   mixins: [NumberMixin],
-  components: { InputField },
+  components: { DitoInput },
   nativeField: true,
 
   computed: {

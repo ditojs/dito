@@ -1,5 +1,5 @@
 <template lang="pug">
-Trigger.dito-color(
+DitoTrigger.dito-color(
   v-model:show="showPopup"
   trigger="focus"
 )
@@ -35,7 +35,7 @@ Trigger.dito-color(
 import tinycolor from 'tinycolor2'
 import { Sketch as SketchPicker } from '@lk77/vue3-color'
 import { isObject, isString } from '@ditojs/utils'
-import { Trigger } from '@ditojs/ui/src'
+import { DitoTrigger } from '@ditojs/ui/src'
 import DitoTypeComponent from '../DitoTypeComponent.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
 
@@ -48,7 +48,7 @@ SketchPicker.computed.hex = function () {
 
 // @vue/component
 export default DitoTypeComponent.register('color', {
-  components: { Trigger, SketchPicker },
+  components: { DitoTrigger, SketchPicker },
 
   data() {
     return {

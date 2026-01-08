@@ -7,7 +7,7 @@ Pagination(
 </template>
 
 <script>
-import { Pagination } from '@ditojs/ui/src'
+import { DitoPagination as Pagination } from '@ditojs/ui/src'
 import DitoComponent from '../DitoComponent.js'
 
 // @vue/component

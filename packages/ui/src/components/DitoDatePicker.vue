@@ -1,6 +1,6 @@
 <!-- Derived from ATUI, and further extended: https://aliqin.github.io/atui/ -->
 <template lang="pug">
-Trigger.dito-date-picker(
+DitoTrigger.dito-date-picker(
   ref="trigger"
   v-model:show="showPopup"
   trigger="focus"
@@ -11,7 +11,7 @@ Trigger.dito-date-picker(
       v-if="$slots.trigger"
       name="trigger"
     )
-    InputField.dito-date-picker-input(
+    DitoInput.dito-date-picker-input(
       v-else
       ref="input"
       v-model="currentText"
@@ -25,14 +25,14 @@ Trigger.dito-date-picker(
       template(#before)
         slot(name="before")
       template(#after)
-        Icon(
+        DitoIcon(
           name="calendar"
           :disabled="disabled"
           @mousedown.prevent="onMouseDown(true)"
         )
         slot(name="after")
   template(#popup)
-    Calendar.dito-date-picker-popup(
+    DitoCalendar.dito-date-picker-popup(
       ref="calendar"
       v-model="currentValue"
       v-bind="{ locale, disabledDate }"
@@ -42,17 +42,17 @@ Trigger.dito-date-picker(
 
 <script>
 import { format, defaultFormats } from '@ditojs/utils'
-import Trigger from './Trigger.vue'
-import Calendar from './Calendar.vue'
-import InputField from './InputField.vue'
-import Icon from './Icon.vue'
+import DitoTrigger from './DitoTrigger.vue'
+import DitoCalendar from './DitoCalendar.vue'
+import DitoInput from './DitoInput.vue'
+import DitoIcon from './DitoIcon.vue'
 import { parseDate, getDatePartAtPosition } from '../utils/date.js'
 import { getSelection, setSelection } from '../utils/selection.js'
 import { getKeyNavigation } from '../utils/event.js'
 import { getTarget } from '../utils/trigger.js'
 
 export default {
-  components: { Trigger, Calendar, InputField, Icon },
+  components: { DitoTrigger, DitoCalendar, DitoInput, DitoIcon },
   emits: ['update:modelValue', 'update:show', 'change', 'focus', 'blur'],
   inheritAttrs: false,
 

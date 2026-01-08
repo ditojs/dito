@@ -1,5 +1,5 @@
 <template lang="pug">
-SwitchButton.dito-switch(
+DitoSwitch.dito-switch(
   :id="dataPath"
   ref="element"
   v-model="value"
@@ -10,7 +10,7 @@ SwitchButton.dito-switch(
 
 <script>
 import DitoTypeComponent from '../DitoTypeComponent.js'
-import { SwitchButton } from '@ditojs/ui/src'
+import { DitoSwitch } from '@ditojs/ui/src'
 
 // @vue/component
 export default DitoTypeComponent.register('switch', {
@@ -18,7 +18,7 @@ export default DitoTypeComponent.register('switch', {
   defaultWidth: 'auto',
 
   components: {
-    SwitchButton
+    DitoSwitch
   },
 
   computed: {

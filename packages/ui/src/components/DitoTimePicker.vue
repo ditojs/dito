@@ -1,6 +1,6 @@
 <!-- Derived from ATUI, and further extended: https://aliqin.github.io/atui/ -->
 <template lang="pug">
-Trigger.dito-time-picker(
+DitoTrigger.dito-time-picker(
   ref="trigger"
   v-model:show="showPopup"
   trigger="focus"
@@ -11,7 +11,7 @@ Trigger.dito-time-picker(
       v-if="$slots.trigger"
       name="trigger"
     )
-    InputField.dito-time-picker-input(
+    DitoInput.dito-time-picker-input(
       v-else
       ref="input"
       v-model="currentText"
@@ -25,7 +25,7 @@ Trigger.dito-time-picker(
       template(#before)
         slot(name="before")
       template(#after)
-        Icon(
+        DitoIcon(
           name="clock"
           :disabled="disabled"
           @mousedown.prevent="onMouseDown(true)"
@@ -67,16 +67,16 @@ Trigger.dito-time-picker(
 
 <script>
 import { format, defaultFormats } from '@ditojs/utils'
-import Trigger from './Trigger.vue'
-import InputField from './InputField.vue'
-import Icon from './Icon.vue'
+import DitoTrigger from './DitoTrigger.vue'
+import DitoInput from './DitoInput.vue'
+import DitoIcon from './DitoIcon.vue'
 import { alterDate, parseDate, getDatePartAtPosition } from '../utils/date.js'
 import { getSelection, setSelection } from '../utils/selection.js'
 import { getKeyNavigation } from '../utils/event.js'
 import { getTarget } from '../utils/trigger.js'
 
 export default {
-  components: { Trigger, InputField, Icon },
+  components: { DitoTrigger, DitoInput, DitoIcon },
   emits: ['update:modelValue', 'update:show', 'change', 'focus', 'blur'],
   inheritAttrs: false,
 

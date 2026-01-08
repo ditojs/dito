@@ -1,5 +1,5 @@
 <template lang="pug">
-InputField.dito-number(
+DitoInput.dito-number(
   :id="dataPath"
   ref="element"
   v-model="inputValue"
@@ -20,14 +20,14 @@ InputField.dito-number(
 <script>
 import DitoTypeComponent from '../DitoTypeComponent.js'
 import NumberMixin from '../mixins/NumberMixin.js'
-import { InputField } from '@ditojs/ui/src'
+import { DitoInput } from '@ditojs/ui/src'
 
 export default DitoTypeComponent.register(
   ['number', 'integer'],
   // @vue/component
   {
     mixins: [NumberMixin],
-    components: { InputField },
+    components: { DitoInput },
     nativeField: true,
     textField: true,
 

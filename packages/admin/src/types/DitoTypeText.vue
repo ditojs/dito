@@ -1,5 +1,5 @@
 <template lang="pug">
-InputField.dito-text(
+DitoInput.dito-text(
   :id="dataPath"
   ref="element"
   v-model="inputValue"
@@ -17,7 +17,7 @@ InputField.dito-text(
 <script>
 import DitoTypeComponent from '../DitoTypeComponent.js'
 import TextMixin from '../mixins/TextMixin'
-import { InputField } from '@ditojs/ui/src'
+import { DitoInput } from '@ditojs/ui/src'
 
 const maskedPassword = '****************'
 
@@ -35,7 +35,7 @@ export default DitoTypeComponent.register(
   // @vue/component
   {
     mixins: [TextMixin],
-    components: { InputField },
+    components: { DitoInput },
     nativeField: true,
     textField: true,
     ignoreMissingValue: ({ schema }) => schema.type === 'password',
