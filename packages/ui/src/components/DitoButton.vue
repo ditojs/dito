@@ -35,7 +35,10 @@ export default {
 
   computed: {
     hasAffixes() {
-      return hasSlotContent('prefix') || hasSlotContent('suffix')
+      return (
+        hasSlotContent(this.$slots.prefix) ||
+        hasSlotContent(this.$slots.suffix)
+      )
     },
 
     classes() {
@@ -46,10 +49,6 @@ export default {
       const { class: _, ...attributes } = this.$attrs
       return attributes
     }
-  },
-
-  methods: {
-    hasSlotContent
   }
 }
 </script>
