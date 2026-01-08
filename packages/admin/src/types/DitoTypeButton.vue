@@ -44,6 +44,12 @@ export default DitoTypeComponent.register(
     defaultWidth: 'auto',
     generateLabel: false,
 
+    data() {
+      return {
+        isRunning: false
+      }
+    },
+
     computed: {
       verb() {
         return this.verbs[this.name]
@@ -92,15 +98,31 @@ export default DitoTypeComponent.register(
       },
 
       async onClick() {
-        const res = await this.emitEvent('click', {
-          parent: this.schemaComponent
-        })
-        // Have buttons that define resources call `this.submit()` by default:
-        if (
-          res === undefined && // Meaning: don't prevent default.
-          hasResource(this.schema)
-        ) {
-          await this.submit()
+        this.isRunning = true
+        try {
+          const res = await this.emitEvent('click', {
+            parent: this.schemaComponent
+          })
+          // Have buttons that define resources call `this.submit()` by default:
+          if (
+            res === undefined && // Meaning: don't prevent default.
+            hasResource(this.schema)
+          ) {
+            await this.submit()
+          }
+        } catch (error) {
+          const res = await this.emitEvent('error', { error })
+          if (res === undefined) {
+            if (error instanceof AggregateError) {
+              for (const err of error.errors) {
+                this.notify({ type: 'error', text: err })
+              }
+            } else {
+              this.notify({ type: 'error', text: error })
+            }
+          }
+        } finally {
+          this.isRunning = false
         }
       }
     }

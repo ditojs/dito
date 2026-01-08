@@ -91,6 +91,7 @@ export default {
             const entry = queue.shift()
             if (entry) {
               let result
+              const errors = []
               for (const callback of callbacks) {
                 try {
                   const res = await callback.apply(this, entry.args)
@@ -98,15 +99,20 @@ export default {
                     result = res
                   }
                 } catch (error) {
-                  console.error(
-                    `Error during event handler for '${event}':`,
-                    error
-                  )
+                  errors.push(error)
                 }
               }
-              // Resolve the promise that was added to the queue for the event
-              // that was just completed by the wrapper that called `next()`
-              entry.resolve(result)
+              if (errors.length > 0) {
+                const error = new AggregateError(
+                  errors,
+                  `Errors during event handler for '${event}'`
+                )
+                entry.resolve(Promise.reject(error))
+              } else {
+                // Resolve the promise that was added to the queue for the event
+                // that was just completed by the wrapper that called `next()`
+                entry.resolve(result)
+              }
               next()
             }
           }

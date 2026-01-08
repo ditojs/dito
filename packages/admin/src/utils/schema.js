@@ -332,7 +332,10 @@ export async function processView(component, api, schema, name, fullPath = '') {
 }
 
 export function processSchemaDefaults(api, schema) {
-  let defaults = api.defaults[schema.type]
+  let defaults = (
+    api.defaults[schema.type] ||
+    api.defaults[camelize(schema.type)]
+  )
   if (defaults) {
     if (isFunction(defaults)) {
       defaults = defaults(schema)

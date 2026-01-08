@@ -276,6 +276,14 @@ export default class DitoContext {
     return get(this, 'wasNotified', false)
   }
 
+  get isRunning() {
+    return get(this, 'isRunning', false)
+  }
+
+  set isRunning(value) {
+    set(this, 'isRunning', value)
+  }
+
   // Helper Methods
 
   get request() {
