@@ -9,7 +9,16 @@ DitoInput.dito-number(
   :max="max"
   :step="stepValue"
 )
-  template(#after)
+  template(#prefix)
+    DitoAffixes(
+      :items="schema.prefix"
+      :parentContext="context"
+    )
+  template(#suffix)
+    DitoAffixes(
+      :items="schema.suffix"
+      :parentContext="context"
+    )
     button.dito-button--clear.dito-button--overlay(
       v-if="showClearButton"
       :disabled="disabled"
@@ -20,6 +29,7 @@ DitoInput.dito-number(
 <script>
 import DitoTypeComponent from '../DitoTypeComponent.js'
 import NumberMixin from '../mixins/NumberMixin.js'
+import DitoAffixes from '../components/DitoAffixes.vue'
 import { DitoInput } from '@ditojs/ui/src'
 
 export default DitoTypeComponent.register(
@@ -27,7 +37,7 @@ export default DitoTypeComponent.register(
   // @vue/component
   {
     mixins: [NumberMixin],
-    components: { DitoInput },
+    components: { DitoInput, DitoAffixes },
     nativeField: true,
     textField: true,
 

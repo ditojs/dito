@@ -18,7 +18,7 @@ component.dito-panel(
     :hasOwnData="hasOwnData"
     generateLabels
   )
-    template(#before)
+    template(#prepend)
       h2.dito-panel__header(:class="{ 'dito-panel__header--sticky': sticky }")
         span {{ getLabel(schema) }}
         DitoButtons.dito-buttons--small(

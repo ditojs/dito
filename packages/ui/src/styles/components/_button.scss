@@ -17,6 +17,27 @@
   min-height: 1.5em;
   @include user-select(none);
 
+  &--affixed {
+    display: inline-grid;
+    grid-template-columns: 1fr auto 1fr;
+  }
+
+  &__text,
+  &__prefix,
+  &__suffix {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__prefix {
+    justify-content: flex-start;
+  }
+
+  &__suffix {
+    justify-content: flex-end;
+  }
+
   &:focus {
     border-color: $color-active;
   }

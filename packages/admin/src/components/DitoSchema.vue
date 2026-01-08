@@ -1,5 +1,5 @@
 <template lang="pug">
-slot(name="before")
+slot(name="prepend")
 .dito-schema(
   :class="{ 'dito-scroll-parent': scrollable, 'dito-schema--open': opened }"
   v-bind="$attrs"
@@ -101,7 +101,7 @@ slot(name="before")
     v-if="inlined && !hasHeader"
     name="edit-buttons"
   )
-slot(name="after")
+slot(name="append")
 </template>
 
 <script>

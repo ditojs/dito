@@ -9,7 +9,16 @@
     :format="formats"
     v-bind="attributes"
   )
-    template(#after)
+    template(#prefix)
+      DitoAffixes(
+        :items="schema.prefix"
+        :parentContext="context"
+      )
+    template(#suffix)
+      DitoAffixes(
+        :items="schema.suffix"
+        :parentContext="context"
+      )
       button.dito-button--clear.dito-button--overlay(
         v-if="showClearButton"
         :disabled="disabled"
@@ -21,6 +30,7 @@
 <script>
 import DitoTypeComponent from '../DitoTypeComponent.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
+import DitoAffixes from '../components/DitoAffixes.vue'
 import {
   DitoDatePicker,
   DitoTimePicker,
@@ -32,7 +42,7 @@ export default DitoTypeComponent.register(
   ['date', 'datetime', 'time'],
   // @vue/component
   {
-    components: { DitoDatePicker, DitoTimePicker, DitoDateTimePicker },
+    components: { DitoAffixes },
     // TODO: This is only here so we get placeholder added. Come up with a
     // better way to support attributes per component (a list of actually
     // supported attributes)
@@ -69,9 +79,9 @@ export default DitoTypeComponent.register(
     methods: {
       getComponent(type) {
         return {
-          date: 'dito-date-picker',
-          time: 'dito-time-picker',
-          datetime: 'dito-date-time-picker'
+          date: DitoDatePicker,
+          time: DitoTimePicker,
+          datetime: DitoDateTimePicker
         }[type]
       }
     },

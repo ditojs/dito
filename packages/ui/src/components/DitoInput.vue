@@ -1,6 +1,9 @@
 <template lang="pug">
-.dito-input(:class="classes")
-  slot(name="before")
+.dito-input(
+  :class="classes"
+  @mousedown.prevent="onMouseDown"
+)
+  slot(name="prefix")
   input(
     :id="id"
     ref="input"
@@ -16,7 +19,7 @@
     :aria-label="title"
     v-bind="attributes"
   )
-  slot(name="after")
+  slot(name="suffix")
 </template>
 
 <script>
@@ -92,6 +95,14 @@ export default {
 
     blur() {
       this.input.blur()
+    },
+
+    onMouseDown() {
+      // Focus the input when the outer container is clicked, e.g. when clicking
+      // on affixes.
+      if (!this.disabled && !this.readonly) {
+        this.focus()
+      }
     }
   }
 }
@@ -101,15 +112,17 @@ export default {
 @import '../styles/_imports';
 
 .dito-input {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
 
   @extend %input;
 
   input {
     // Inherit all styling from .dito-input
     all: inherit;
+    flex: 1;
+    min-width: 0;
     display: inline-block;
-    width: 100%;
     border: 0;
     margin: 0;
     padding: 0;

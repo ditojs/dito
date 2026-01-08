@@ -22,15 +22,15 @@ DitoTrigger.dito-time-picker(
       @keydown="onKeyDown"
       @mousedown.stop="onMouseDown(false)"
     )
-      template(#before)
-        slot(name="before")
-      template(#after)
+      template(#prefix)
+        slot(name="prefix")
+      template(#suffix)
         DitoIcon(
           name="clock"
           :disabled="disabled"
           @mousedown.prevent="onMouseDown(true)"
         )
-        slot(name="after")
+        slot(name="suffix")
   template(#popup)
     .dito-time-picker-popup
       .dito-time-picker-panel

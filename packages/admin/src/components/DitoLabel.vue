@@ -12,29 +12,19 @@ component.dito-label(
   .dito-label__inner(
     v-if="text || prefixes.length > 0 || suffixes.length > 0"
   )
-    .dito-label__prefix(
-      v-if="prefixes.length > 0"
+    DitoAffixes.dito-label__prefix(
+      :items="prefixes"
+      :parentContext="context"
     )
-      DitoElement(
-        v-for="(prefix, index) of prefixes"
-        :key="`prefix-${index}`"
-        as="span"
-        :content="prefix"
-      )
     label(
       v-if="text"
       :for="dataPath"
       v-html="text"
     )
-    .dito-label__suffix(
-      v-if="suffixes.length > 0"
+    DitoAffixes.dito-label__suffix(
+      :items="suffixes"
+      :parentContext="context"
     )
-      DitoElement(
-        v-for="(suffix, index) of suffixes"
-        :key="`suffix-${index}`"
-        as="span"
-        :content="suffix"
-      )
     .dito-info(
       v-if="info"
       :data-info="info"
@@ -43,10 +33,13 @@ component.dito-label(
 
 <script>
 import DitoComponent from '../DitoComponent.js'
+import DitoAffixes from './DitoAffixes.vue'
 import { isObject, asArray } from '@ditojs/utils'
 
 // @vue/component
 export default DitoComponent.component('DitoLabel', {
+  components: { DitoAffixes },
+
   emits: ['open'],
 
   props: {

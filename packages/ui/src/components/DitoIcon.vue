@@ -1,10 +1,5 @@
 <template lang="pug">
-i.dito-icon(
-  :class=`{
-    ['dito-icon--' + name]: true,
-    'dito-icon--disabled': disabled
-  }`
-)
+i.dito-icon(:class="classes")
 </template>
 
 <script>
@@ -17,6 +12,16 @@ export default {
     disabled: {
       type: Boolean,
       default: false
+    }
+  },
+
+  computed: {
+    classes() {
+      const prefix = 'dito-icon'
+      return {
+        [`${prefix}--${this.name}`]: true,
+        [`${prefix}--disabled`]: this.disabled
+      }
     }
   }
 }
@@ -40,17 +45,17 @@ export default {
 }
 
 .dito-icon {
+  position: relative;
+  width: 1em;
+  height: 1em;
+
   @at-root .dito-input & {
-    position: absolute;
-    inset: $border-width;
-    left: unset;
-    width: 2em;
     font-style: normal;
     border-radius: $border-radius;
     color: $color-grey;
     background: $color-white;
 
-    &--disabled {
+    &.dito-icon--disabled {
       color: $color-light;
     }
   }

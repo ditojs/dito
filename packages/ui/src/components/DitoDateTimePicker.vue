@@ -13,15 +13,15 @@
       @keydown="onKeyDown"
       @mousedown.stop="onMouseDown(false)"
     )
-      template(#before)
-        slot(name="before")
-      template(#after)
+      template(#prefix)
+        slot(name="prefix")
+      template(#suffix)
         DitoIcon(
           name="calendar"
           :disabled="disabled"
           @mousedown.prevent="onMouseDown(true)"
         )
-        slot(name="after")
+        slot(name="suffix")
     DitoDatePicker(
       ref="date"
       v-model="currentValue"

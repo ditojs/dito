@@ -1,31 +1,44 @@
 <template lang="pug">
-button.dito-button(
+DitoButton.dito-button(
   :id="dataPath"
   ref="element"
   :type="type"
+  :text="text"
   :title="title"
   :class="buttonClass"
   v-bind="attributes"
 )
-  .dito-button__text(
-    v-if="text"
-  ) {{ text }}
-  .dito-info(
-    v-if="!label && info"
-    :data-info="info"
-  )
+  template(#prefix)
+    DitoAffixes(
+      v-if="prefixes.length > 0"
+      :items="prefixes"
+      :parentContext="context"
+    )
+  template(#suffix)
+    DitoAffixes(
+      v-if="suffixes.length > 0"
+      :items="suffixes"
+      :parentContext="context"
+    )
+    .dito-info(
+      v-if="!label && info"
+      :data-info="info"
+    )
 </template>
 
 <script>
 import DitoTypeComponent from '../DitoTypeComponent.js'
+import DitoAffixes from '../components/DitoAffixes.vue'
+import { DitoButton } from '@ditojs/ui/src'
 import { getSchemaAccessor } from '../utils/accessor.js'
 import { hasResource } from '../utils/resource.js'
-import { labelize } from '@ditojs/utils'
+import { labelize, asArray } from '@ditojs/utils'
 
 export default DitoTypeComponent.register(
   ['button', 'submit'],
   // @vue/component
   {
+    components: { DitoAffixes, DitoButton },
     defaultValue: () => undefined, // Callback to override `defaultValue: null`
     excludeValue: true,
     defaultWidth: 'auto',
@@ -52,6 +65,14 @@ export default DitoTypeComponent.register(
         type: String,
         default: null
       }),
+
+      prefixes() {
+        return asArray(this.schema.prefix)
+      },
+
+      suffixes() {
+        return asArray(this.schema.suffix)
+      },
 
       closeForm: getSchemaAccessor('closeForm', {
         type: Boolean,

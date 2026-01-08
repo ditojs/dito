@@ -1,3 +1,4 @@
+export { default as DitoButton } from './DitoButton.vue'
 export { default as DitoCalendar } from './DitoCalendar.vue'
 export { default as DitoDatePicker } from './DitoDatePicker.vue'
 export { default as DitoDateTimePicker } from './DitoDateTimePicker.vue'
