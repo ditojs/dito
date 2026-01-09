@@ -1,7 +1,8 @@
 <template lang="pug">
 component.dito-label(
   v-if="text || collapsible"
-  :is="as"
+  :is="collapsible ? 'button' : 'div'"
+  :type="collapsible ? 'button' : null"
   v-bind="attributes"
   :class="{ 'dito-label--active': isActive }"
 )
@@ -51,10 +52,6 @@ export default DitoComponent.component('DitoLabel', {
   },
 
   computed: {
-    as() {
-      return this.collapsible ? 'button' : 'div'
-    },
-
     text() {
       const { label } = this
       return isObject(label) ? label?.text : label
