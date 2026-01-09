@@ -5,6 +5,7 @@ DitoButton.dito-button(
   :type="type"
   :text="text"
   :title="title"
+  :disabled="disabled"
   :class="buttonClass"
   v-bind="attributes"
 )
