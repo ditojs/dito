@@ -1,7 +1,7 @@
 <template lang="pug">
 .dito-input(
   :class="classes"
-  @mousedown.prevent="onMouseDown"
+  @mousedown="onMouseDown"
 )
   slot(name="prefix")
   input(
@@ -18,6 +18,7 @@
     :autocomplete="autocomplete"
     :aria-label="title"
     v-bind="attributes"
+    @mousedown="onMouseDown"
   )
   slot(name="suffix")
 </template>
@@ -97,11 +98,18 @@ export default {
       this.input.blur()
     },
 
-    onMouseDown() {
-      // Focus the input when the outer container is clicked, e.g. when clicking
-      // on affixes.
-      if (!this.disabled && !this.readonly) {
-        this.focus()
+    onMouseDown(event) {
+      if (event.target === this.input) {
+        // When directly clicking the input, do not propagate the event and
+        // avoid `preventDefault()` below, to keep supporting selection.
+        event.stopPropagation()
+      } else {
+        // When clicking outside the input, e.g. on affixes, bring the focus
+        // back to the input.
+        if (!this.disabled && !this.readonly) {
+          this.focus()
+          event.preventDefault()
+        }
       }
     }
   }
