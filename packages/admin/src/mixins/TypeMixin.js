@@ -7,6 +7,7 @@ import { asArray, camelize } from '@ditojs/utils'
 // @vue/component
 export default {
   mixins: [ValueMixin, ContextMixin, ValidationMixin],
+  emits: ['update:component'],
 
   props: {
     schema: { type: Object, required: true },
@@ -20,7 +21,6 @@ export default {
     label: { type: String, default: null },
     single: { type: Boolean, default: false },
     nested: { type: Boolean, default: true },
-    disabled: { type: Boolean, default: false },
     accumulatedBasis: { type: Number, default: null }
   },
 
@@ -82,6 +82,11 @@ export default {
       get(clearable) {
         return clearable && !this.readonly
       }
+    }),
+
+    disabled: getSchemaAccessor('disabled', {
+      type: Boolean,
+      default: false
     }),
 
     maxLength: getSchemaAccessor('maxLength', {
@@ -167,6 +172,8 @@ export default {
 
   methods: {
     _register(add) {
+      // Provide component to container for schema accessor evaluation.
+      this.$emit('update:component', add ? this : null)
       // Prevent unnested type components from overriding parent data paths
       if (this.nested) {
         this.schemaComponent._registerComponent(this, add)

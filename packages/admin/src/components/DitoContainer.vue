@@ -36,9 +36,9 @@
     :label="label"
     :single="single"
     :nested="nested"
-    :disabled="componentDisabled"
     :accumulatedBasis="combinedBasis"
     @errors="onErrors"
+    @update:component="value => (component = value)"
   )
   DitoErrors(:errors="errors")
 </template>
@@ -48,6 +48,7 @@ import { isString, isNumber } from '@ditojs/utils'
 import DitoComponent from '../DitoComponent.js'
 import ValueMixin from '../mixins/ValueMixin.js'
 import ContextMixin from '../mixins/ContextMixin.js'
+import DitoContext from '../DitoContext.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
 import {
   getAllPanelEntries,
@@ -77,11 +78,29 @@ export default DitoComponent.component('DitoContainer', {
 
   data() {
     return {
-      errors: null
+      errors: null,
+      // The nested type component instance, for context-based schema accessor
+      // evaluation.
+      component: null
     }
   },
 
   computed: {
+    context() {
+      return new DitoContext(
+        // When available, use the type component for context-based schema
+        // accessors, but fall back to container.
+        // TODO: Consider architectural inversion to eliminate timing issues:
+        // - Type components render DitoContainer at their root
+        // - Pass type component content through container's default slot
+        // - DitoPane/DitoButtons render type components directly
+        // - Eliminates need for component instance synchronization
+        // - Provides true synchronous access to component context
+        this.component ?? this,
+        { nested: this.nested }
+      )
+    },
+
     name() {
       return this.schema.name
     },
