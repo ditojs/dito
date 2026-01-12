@@ -213,6 +213,7 @@ export default DitoComponent.component('DitoLabel', {
   @at-root button#{&} {
     border: 0;
     padding: 0;
+    background: none;
     text-align: start;
 
     &:hover {
