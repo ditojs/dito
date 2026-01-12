@@ -17,6 +17,7 @@ DitoTrigger.dito-color(
         DitoAffixes(
           :items="schema.prefix"
           position="prefix"
+          mode="input"
           :disabled="disabled"
           :parentContext="context"
         )
@@ -24,6 +25,7 @@ DitoTrigger.dito-color(
         DitoAffixes(
           :items="schema.suffix"
           position="suffix"
+          mode="input"
           :clearable="showClearButton"
           :disabled="disabled"
           :parentContext="context"

@@ -5,6 +5,7 @@
     DitoAffixes(
       :items="schema.prefix"
       position="prefix"
+      mode="input"
       absolute
       :disabled="disabled"
       :parentContext="context"
@@ -42,6 +43,7 @@
     DitoAffixes(
       :items="schema.suffix"
       position="suffix"
+      mode="input"
       absolute
       :clearable="showClearButton"
       :disabled="disabled"

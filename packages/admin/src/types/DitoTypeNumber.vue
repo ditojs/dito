@@ -13,6 +13,7 @@ DitoInput.dito-number(
     DitoAffixes(
       :items="schema.prefix"
       position="prefix"
+      mode="input"
       :disabled="disabled"
       :parentContext="context"
     )
@@ -20,6 +21,7 @@ DitoInput.dito-number(
     DitoAffixes(
       :items="schema.suffix"
       position="suffix"
+      mode="input"
       :clearable="showClearButton"
       :disabled="disabled"
       :parentContext="context"

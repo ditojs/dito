@@ -1,11 +1,11 @@
 <template lang="pug">
 component(
   v-if="item.type === 'text'"
-  :is="item.as || 'span'"
+  :is="item.as || 'div'"
 ) {{ item.text }}
 component(
   v-else-if="item.type === 'html'"
-  :is="item.as || 'span'"
+  :is="item.as || 'div'"
   v-html="item.html"
 )
 DitoSpinner(
@@ -48,9 +48,21 @@ export default DitoComponent.component('DitoAffix', {
 </script>
 
 <style lang="scss">
+@import '../styles/_imports';
+
 .dito-affix {
+  &--html,
   &--text {
     display: inline-block;
+  }
+
+  &--ellipsis {
+    @include ellipsis;
+
+    flex: 1;
+    display: block;
+    min-width: 0;
+    width: 0;
   }
 }
 </style>

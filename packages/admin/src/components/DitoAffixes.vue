@@ -7,7 +7,7 @@
   DitoAffix.dito-affix(
     v-for="(item, index) in visibleItems"
     :key="index"
-    :class="[`dito-affix--${item.type}`, item.class]"
+    :class="getItemClasses(item)"
     :style="item.style"
     :item="item"
     :parentContext="parentContext"
@@ -36,6 +36,7 @@ export default DitoComponent.component('DitoAffixes', {
 
   props: {
     items: { type: [String, Object, Array], default: null },
+    mode: { type: String, default: null },
     position: { type: String, default: null },
     absolute: { type: Boolean, default: false },
     clearable: { type: Boolean, default: false },
@@ -75,6 +76,7 @@ export default DitoComponent.component('DitoAffixes', {
       const prefix = 'dito-affixes'
       return {
         [`${prefix}--${this.position}`]: this.position,
+        [`${prefix}--${this.mode}`]: this.mode,
         [`${prefix}--absolute`]: this.absolute
       }
     },
@@ -86,6 +88,21 @@ export default DitoComponent.component('DitoAffixes', {
         hasSlotContent(this.$slots.prepend) ||
         hasSlotContent(this.$slots.append)
       )
+    }
+  },
+
+  methods: {
+    getItemClasses(item) {
+      const prefix = 'dito-affix'
+      return [
+        {
+          [`${prefix}--${item.type}`]: item.type,
+          [`${prefix}--ellipsis`]: (
+            this.mode === 'ellipsis' && ['text', 'html'].includes(item.type)
+          )
+        },
+        item.class
+      ]
     }
   }
 })
@@ -122,16 +139,20 @@ export default DitoComponent.component('DitoAffixes', {
     }
   }
 
-  @at-root .dito-component & {
+  &--ellipsis {
+    flex: 1;
+  }
+
+  &--input {
     color: $color-grey;
 
     .dito-icon--disabled {
       color: $color-light;
     }
-  }
 
-  @at-root .dito-component:focus-within:not(:has(.dito-component)) & {
-    color: $color-active;
+    @at-root .dito-component:not(:has(.dito-component)):focus-within & {
+      color: $color-active;
+    }
   }
 
   &__clear {
@@ -148,7 +169,7 @@ export default DitoComponent.component('DitoAffixes', {
     padding: 0;
     border: 0;
 
-    @at-root .dito-component:hover:not(:has(.dito-component)) & {
+    @at-root .dito-component:not(:has(.dito-component)):hover & {
       display: block;
     }
 

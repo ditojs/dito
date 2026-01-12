@@ -13,7 +13,7 @@ component.dito-label(
   .dito-label__inner(
     v-if="text || prefixes.length > 0 || suffixes.length > 0"
   )
-    DitoAffixes.dito-label__prefix(
+    DitoAffixes(
       :items="prefixes"
       position="prefix"
       :parentContext="context"
@@ -23,8 +23,9 @@ component.dito-label(
       :for="dataPath"
       v-html="text"
     )
-    DitoAffixes.dito-label__suffix(
+    DitoAffixes(
       :items="suffixes"
+      mode="ellipsis"
       position="suffix"
       :parentContext="context"
     )
@@ -117,6 +118,7 @@ export default DitoComponent.component('DitoLabel', {
     display: flex;
     align-items: center;
     overflow: hidden;
+    gap: $input-padding-hor;
   }
 
   label {
@@ -138,44 +140,6 @@ export default DitoComponent.component('DitoLabel', {
 
   sup {
     transform: translateY(-4px);
-  }
-
-  &__prefix,
-  &__suffix {
-    flex: 1;
-    position: relative;
-    line-height: $input-height;
-
-    // For ellipsis to work on prefix and suffix with flex layout, we need to
-    // use a nested absolutely positioned span.
-
-    &::before {
-      content: '\200b'; // zero-width space to keep container from collapsing.
-    }
-
-    span {
-      position: absolute;
-      inset: 0;
-    }
-  }
-
-  label,
-  &__prefix span,
-  &__suffix span {
-    @include user-select(none);
-    @include ellipsis;
-
-    white-space: nowrap;
-  }
-
-  &__prefix + label,
-  label + &__suffix {
-    &,
-    span {
-      &::before {
-        content: '\a0'; // &nbsp;
-      }
-    }
   }
 
   .dito-buttons {
