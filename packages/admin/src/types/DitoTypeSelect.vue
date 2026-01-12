@@ -2,6 +2,13 @@
 //- Nesting is needed to make an arrow appear over the select item:
 .dito-select
   .dito-select__inner
+    DitoAffixes(
+      :items="schema.prefix"
+      position="prefix"
+      absolute
+      :disabled="disabled"
+      :parentContext="context"
+    )
     select(
       :id="dataPath"
       ref="element"
@@ -32,10 +39,14 @@
         v-else-if="selectedOption"
       )
         option(:value="selectedValue") {{ getLabelForOption(selectedOption) }}
-    button.dito-button--clear.dito-button--overlay(
-      v-if="showClearButton"
+    DitoAffixes(
+      :items="schema.suffix"
+      position="suffix"
+      absolute
+      :clearable="showClearButton"
       :disabled="disabled"
-      @click="clear"
+      :parentContext="context"
+      @clear="clear"
     )
   //- Edit button is never disabled, even if the field is disabled.
   DitoEditButtons(
@@ -54,10 +65,12 @@
 <script>
 import DitoTypeComponent from '../DitoTypeComponent.js'
 import OptionsMixin from '../mixins/OptionsMixin.js'
+import DitoAffixes from '../components/DitoAffixes.vue'
 
 // @vue/component
 export default DitoTypeComponent.register('select', {
   mixins: [OptionsMixin],
+  components: { DitoAffixes },
 
   nativeField: true,
 

@@ -13,12 +13,16 @@ DitoButton.dito-button(
     DitoAffixes(
       v-if="prefixes.length > 0"
       :items="prefixes"
+      position="prefix"
+      :disabled="disabled"
       :parentContext="context"
     )
   template(#suffix)
     DitoAffixes(
       v-if="suffixes.length > 0"
       :items="suffixes"
+      position="suffix"
+      :disabled="disabled"
       :parentContext="context"
     )
     .dito-info(

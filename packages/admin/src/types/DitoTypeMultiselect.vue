@@ -1,14 +1,17 @@
 <template lang="pug">
 .dito-multiselect
   .dito-multiselect__inner
+    DitoAffixes(
+      :items="schema.prefix"
+      position="prefix"
+      absolute
+      :disabled="disabled"
+      :parentContext="context"
+    )
     VueMultiselect(
       ref="element"
       v-model="selectedOptions"
-      :class=`{
-        'multiselect--multiple': multiple,
-        'multiselect--loading': isLoading,
-        'multiselect--highlight': showHighlight
-      }`
+      :class="multiselectClasses"
       :showLabels="false"
       :placeholder="placeholder"
       tagPlaceholder="Press enter to add new tag"
@@ -31,11 +34,14 @@
       @tag="onAddTag"
       @search-change="onSearchChange"
     )
-    button.dito-button--clear.dito-button--overlay(
-      v-if="showClearButton"
-      type="button"
+    DitoAffixes(
+      :items="schema.suffix"
+      position="suffix"
+      absolute
+      :clearable="showClearButton"
       :disabled="disabled"
-      @click="clear"
+      :parentContext="context"
+      @clear="clear"
     )
   //- Edit button is never disabled, even if the field is disabled.
   DitoEditButtons(
@@ -56,6 +62,7 @@ import DitoTypeComponent from '../DitoTypeComponent.js'
 import DitoContext from '../DitoContext.js'
 import TypeMixin from '../mixins/TypeMixin.js'
 import OptionsMixin from '../mixins/OptionsMixin.js'
+import DitoAffixes from '../components/DitoAffixes.vue'
 import VueMultiselect from 'vue-multiselect'
 import { getSchemaAccessor } from '../utils/accessor.js'
 import { isBoolean } from '@ditojs/utils'
@@ -63,7 +70,7 @@ import { isBoolean } from '@ditojs/utils'
 // @vue/component
 export default DitoTypeComponent.register('multiselect', {
   mixins: [OptionsMixin],
-  components: { VueMultiselect },
+  components: { DitoAffixes, VueMultiselect },
 
   data() {
     return {
@@ -124,6 +131,15 @@ export default DitoTypeComponent.register('multiselect', {
       type: Boolean,
       default: false
     }),
+
+    multiselectClasses() {
+      const prefix = 'multiselect'
+      return {
+        [`${prefix}--multiple`]: this.multiple,
+        [`${prefix}--loading`]: this.isLoading,
+        [`${prefix}--highlight`]: this.showHighlight
+      }
+    },
 
     placeholder() {
       let { placeholder, searchable, taggable } = this.schema
@@ -239,6 +255,8 @@ $tag-line-height: 1em;
   &__inner {
     flex: 1;
     position: relative;
+    display: flex;
+    align-items: center;
   }
 
   .dito-edit-buttons {

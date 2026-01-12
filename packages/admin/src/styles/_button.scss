@@ -109,37 +109,6 @@
       cursor: grabbing;
     }
   }
-
-  &--overlay {
-    $overlay-inset: calc(2 * $border-width);
-
-    position: absolute;
-    inset: $overlay-inset;
-    left: unset;
-    padding: 0;
-    border: 0;
-    border-radius: $border-radius;
-    cursor: pointer;
-
-    &.dito-button--clear {
-      width: calc(2em - 2 * ($border-width + $overlay-inset));
-      display: none;
-
-      @at-root .dito-component:hover:not(:has(.dito-component)) & {
-        display: block;
-      }
-
-      &::before {
-        @extend %icon-clear;
-
-        color: $color-grey;
-      }
-
-      &:hover::before {
-        color: $color-black;
-      }
-    }
-  }
 }
 
 .dito-buttons {

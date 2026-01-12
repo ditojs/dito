@@ -12,18 +12,20 @@
     template(#prefix)
       DitoAffixes(
         :items="schema.prefix"
+        position="prefix"
+        absolute
+        :disabled="disabled"
         :parentContext="context"
       )
     template(#suffix)
       DitoAffixes(
         :items="schema.suffix"
-        :parentContext="context"
-      )
-      button.dito-button--clear.dito-button--overlay(
-        v-if="showClearButton"
+        position="suffix"
+        absolute
+        :clearable="showClearButton"
         :disabled="disabled"
-        @click.stop="clear"
-        @mousedown.stop
+        :parentContext="context"
+        @clear="clear"
       )
 </template>
 

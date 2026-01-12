@@ -4,24 +4,36 @@ DitoTrigger.dito-color(
   trigger="focus"
 )
   template(#trigger)
-    .dito-input(:class="{ 'dito-input--focus': showPopup }")
-      input(
-        :id="dataPath"
-        ref="element"
-        v-model="hexValue"
-        type="input"
-        size="8"
-        v-bind="attributes"
-      )
-      .dito-color__preview(
-        v-if="value"
-      )
-        div(:style="{ background: `#${hexValue || '00000000'}` }")
-      button.dito-button--clear.dito-button--overlay(
-        v-if="showClearButton"
-        :disabled="disabled"
-        @click.stop="clear"
-      )
+    DitoInput(
+      :id="dataPath"
+      ref="element"
+      v-model="hexValue"
+      type="input"
+      size="8"
+      :focused="showPopup"
+      v-bind="attributes"
+    )
+      template(#prefix)
+        DitoAffixes(
+          :items="schema.prefix"
+          position="prefix"
+          :disabled="disabled"
+          :parentContext="context"
+        )
+      template(#suffix)
+        DitoAffixes(
+          :items="schema.suffix"
+          position="suffix"
+          :clearable="showClearButton"
+          :disabled="disabled"
+          :parentContext="context"
+          @clear="clear"
+        )
+          template(#append)
+            .dito-color__preview(
+              v-if="value"
+            )
+              div(:style="{ background: `#${hexValue || '00000000'}` }")
   template(#popup)
     SketchPicker.dito-color__picker(
       v-model="colorValue"
@@ -35,8 +47,9 @@ DitoTrigger.dito-color(
 import tinycolor from 'tinycolor2'
 import { Sketch as SketchPicker } from '@lk77/vue3-color'
 import { isObject, isString } from '@ditojs/utils'
-import { DitoTrigger } from '@ditojs/ui/src'
+import { DitoTrigger, DitoInput } from '@ditojs/ui/src'
 import DitoTypeComponent from '../DitoTypeComponent.js'
+import DitoAffixes from '../components/DitoAffixes.vue'
 import { getSchemaAccessor } from '../utils/accessor.js'
 
 // Monkey-patch the `SketchPicker's` `hex` computed property to return lowercase
@@ -48,7 +61,7 @@ SketchPicker.computed.hex = function () {
 
 // @vue/component
 export default DitoTypeComponent.register('color', {
-  components: { DitoTrigger, SketchPicker },
+  components: { DitoTrigger, DitoInput, DitoAffixes, SketchPicker },
 
   data() {
     return {
@@ -214,7 +227,7 @@ $color-swatch-radius: $border-radius - $border-width;
 
 .dito-color {
   .dito-input {
-    display: block;
+    display: flex;
     position: relative;
 
     input {
@@ -222,10 +235,6 @@ $color-swatch-radius: $border-radius - $border-width;
       font-variant-numeric: tabular-nums;
       padding-right: $color-swatch-width;
     }
-  }
-
-  .dito-button--clear {
-    margin-right: $color-swatch-width;
   }
 
   &__picker {
@@ -238,15 +247,14 @@ $color-swatch-radius: $border-radius - $border-width;
 
   &__preview {
     background: $pattern-transparency;
+    margin: (-$input-padding-ver) (-$input-padding-hor);
+    margin-left: 0;
     border-left: $border-style;
 
     &,
     div {
-      position: absolute;
       width: $color-swatch-width;
-      top: 0;
-      right: 0;
-      bottom: 0;
+      height: calc($input-height - 2 * $border-width);
       border-top-right-radius: $color-swatch-radius;
       border-bottom-right-radius: $color-swatch-radius;
     }

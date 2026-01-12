@@ -411,7 +411,7 @@ function getLocaleNames(locale) {
     display: inline-block;
     width: calc(100% / 7);
     height: $input-height;
-    line-height: calc(#{$input-height} - 2px);
+    line-height: calc($input-height - 2 * $border-width);
     box-sizing: border-box;
     border-radius: $border-radius;
     border: $border-width solid transparent;

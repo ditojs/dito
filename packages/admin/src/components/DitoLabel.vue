@@ -15,6 +15,7 @@ component.dito-label(
   )
     DitoAffixes.dito-label__prefix(
       :items="prefixes"
+      position="prefix"
       :parentContext="context"
     )
     label(
@@ -24,6 +25,7 @@ component.dito-label(
     )
     DitoAffixes.dito-label__suffix(
       :items="suffixes"
+      position="suffix"
       :parentContext="context"
     )
     .dito-info(
