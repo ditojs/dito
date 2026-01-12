@@ -15,6 +15,7 @@
   button.dito-affixes__clear(
     v-if="clearable"
     type="button"
+    title="Clear"
     :disabled="disabled"
     @click.stop="$emit('clear')"
     @mousedown.stop
