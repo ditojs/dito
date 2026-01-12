@@ -20,5 +20,18 @@ describe('stripHtml()', () => {
   it('should convert <br> tags to line-breaks', () => {
     expect(stripHtml('hello<br>world')).toBe('hello\nworld')
     expect(stripHtml('hello<br/>world')).toBe('hello\nworld')
+    expect(stripHtml('hello<br />world')).toBe('hello\nworld')
+  })
+
+  it('should convert <p> tags to line-breaks', () => {
+    expect(stripHtml('<p>First paragraph</p><p>Second paragraph</p>'))
+      .toBe('First paragraph\nSecond paragraph')
+    expect(stripHtml('<p>Only paragraph</p>'))
+      .toBe('Only paragraph')
+  })
+
+  it('should trim leading and trailing whitespace', () => {
+    expect(stripHtml('  <p>text</p>  ')).toBe('text')
+    expect(stripHtml('<p>  text  </p>')).toBe('text')
   })
 })
