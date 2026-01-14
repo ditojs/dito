@@ -122,6 +122,8 @@ export default DitoComponent.component('DitoLabel', {
   }
 
   label {
+    @include ellipsis;
+
     cursor: inherit;
     font-weight: bold;
     line-height: $input-height;
