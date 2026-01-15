@@ -23,7 +23,7 @@ export default DitoComponent.component('DitoNotifications', {
   },
 
   methods: {
-    notify({ type = 'info', title, text, error } = {}) {
+    notify({ type = 'info', title, text, error, duration } = {}) {
       title ||= (
         {
           warning: 'Warning',
@@ -59,8 +59,13 @@ export default DitoComponent.component('DitoNotifications', {
         // amount of milliseconds multiplied with the amount of characters
         // displayed in the notification, plus 40 (40 + title + message):
         const { durationFactor = 20 } = notifications
-        const duration = (40 + text.length + title.length) * durationFactor
-        this.$notify({ type, title, text, duration })
+        duration ??= (40 + text.length + title.length) * durationFactor
+        this.$notify({
+          type,
+          title,
+          text,
+          duration: duration === 0 ? -1 : duration // < 0 -> <= 0 = sticky
+        })
       }
     },
 
