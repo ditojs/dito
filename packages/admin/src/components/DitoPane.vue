@@ -65,8 +65,8 @@ export default DitoComponent.component('DitoPane', {
     meta: { type: Object, required: true },
     store: { type: Object, required: true },
     tab: { type: String, default: null },
-    padding: { type: String, default: null },
     single: { type: Boolean, default: false },
+    padding: { type: String, default: null },
     disabled: { type: Boolean, default: false },
     compact: { type: Boolean, default: false },
     generateLabels: { type: Boolean, default: false },
@@ -86,9 +86,10 @@ export default DitoComponent.component('DitoPane', {
     },
 
     classes() {
+      const prefix = 'dito-pane'
       return {
-        'dito-pane--single': this.isSingleComponent,
-        [`dito-pane--padding-${this.padding}`]: !!this.padding
+        [`${prefix}--single`]: this.isSingleComponent,
+        [`${prefix}--padding-${this.padding}`]: !!this.padding
       }
     },
 

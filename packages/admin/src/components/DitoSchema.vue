@@ -72,7 +72,7 @@ slot(name="prepend")
             :meta="meta"
             :store="store"
             :padding="padding"
-            :single="!inlined && !hasMainPane"
+            :single="single && !inlined && !hasMainPane"
             :disabled="disabled"
             :compact="compact"
             :generateLabels="generateLabels"
@@ -87,7 +87,7 @@ slot(name="prepend")
         :meta="meta"
         :store="store"
         :padding="padding"
-        :single="!inlined && !hasTabs"
+        :single="single && !inlined && !hasTabs"
         :disabled="disabled"
         :compact="compact"
         :generateLabels="generateLabels"
@@ -156,6 +156,7 @@ export default DitoComponent.component('DitoSchema', {
     meta: { type: Object, default: () => ({}) },
     store: { type: Object, default: () => ({}) },
     label: { type: [String, Object], default: null },
+    single: { type: Boolean, default: false },
     padding: { type: String, default: null },
     active: { type: Boolean, default: true },
     inlined: { type: Boolean, default: false },

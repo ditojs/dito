@@ -23,6 +23,7 @@ template(
       padding="root"
       :disabled="isLoading"
       scrollable
+      single
     )
 </template>
 

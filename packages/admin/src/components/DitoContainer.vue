@@ -210,9 +210,9 @@ export default DitoComponent.component('DitoContainer', {
       const { class: classes } = this.schema
       const prefix = 'dito-container'
       return {
-        [`${prefix}--single`]: this.single,
         [`${prefix}--disabled`]: this.componentDisabled,
         [`${prefix}--has-errors`]: !!this.errors,
+        [`${prefix}--single`]: this.single,
         [`${prefix}--compact`]: this.compact,
         [`${prefix}--label-vertical`]: this.verticalLabels,
         [`${prefix}--omit-spacing`]: omitSpacing(this.schema),
