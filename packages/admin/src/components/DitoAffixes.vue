@@ -21,6 +21,10 @@
     @mousedown.stop
   )
   slot(name="append")
+  .dito-info(
+    v-if="inlineInfo"
+    :data-info="inlineInfo"
+  )
 </template>
 
 <script>
@@ -41,6 +45,7 @@ export default DitoComponent.component('DitoAffixes', {
     absolute: { type: Boolean, default: false },
     clearable: { type: Boolean, default: false },
     disabled: { type: Boolean, default: false },
+    inlineInfo: { type: String, default: null },
     parentContext: { type: Object, required: true }
   },
 
@@ -85,6 +90,7 @@ export default DitoComponent.component('DitoAffixes', {
       return (
         this.visibleItems.length > 0 ||
         this.clearable ||
+        this.inlineInfo ||
         hasSlotContent(this.$slots.prepend) ||
         hasSlotContent(this.$slots.append)
       )

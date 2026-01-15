@@ -72,11 +72,6 @@ export default DitoTypeComponent.register(
         return this.text || labelize(this.verb)
       },
 
-      info: getSchemaAccessor('info', {
-        type: String,
-        default: null
-      }),
-
       prefixes() {
         return asArray(this.schema.prefix)
       },

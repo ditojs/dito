@@ -28,6 +28,7 @@ DitoTrigger.dito-color(
           mode="input"
           :clearable="showClearButton"
           :disabled="disabled"
+          :inlineInfo="inlineInfo"
           :parentContext="context"
           @clear="clear"
         )

@@ -101,6 +101,17 @@ export default {
       type: String
     }),
 
+    info: getSchemaAccessor('info', {
+      type: String,
+      default: null
+    }),
+
+    inlineInfo() {
+      // When a label is present, info is shown in the label component.
+      // Otherwise, we have to show it inline.
+      return !this.label ? this.info : null
+    },
+
     events() {
       const events = this.getEvents()
       // Register callbacks for all provides non-recognized events,
