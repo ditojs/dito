@@ -32,6 +32,26 @@ describe('hyphenate()', () => {
       })
     }
   )
+
+  it('should hyphenate single space between words', () => {
+    expect(hyphenate('Foo Bar')).toBe('foo-bar')
+  })
+
+  it('should hyphenate multiple spaces', () => {
+    expect(hyphenate('Foo  Bar')).toBe('foo-bar')
+  })
+
+  it('should trim leading whitespace', () => {
+    expect(hyphenate('  Foo Bar')).toBe('foo-bar')
+  })
+
+  it('should trim trailing whitespace', () => {
+    expect(hyphenate('Foo Bar  ')).toBe('foo-bar')
+  })
+
+  it('should hyphenate special characters correctly', () => {
+    expect(hyphenate('Foo & Bar')).toBe('foo-&-bar')
+  })
 })
 
 describe('underscore()', () => {
@@ -44,4 +64,20 @@ describe('underscore()', () => {
       })
     }
   )
+
+  it('should underscore multiple spaces', () => {
+    expect(underscore('Foo  Bar')).toBe('foo_bar')
+  })
+
+  it('should trim leading whitespace', () => {
+    expect(underscore('  Foo Bar')).toBe('foo_bar')
+  })
+
+  it('should trim trailing whitespace', () => {
+    expect(underscore('Foo Bar  ')).toBe('foo_bar')
+  })
+
+  it('should underscore special characters correctly', () => {
+    expect(underscore('Foo & Bar')).toBe('foo_&_bar')
+  })
 })

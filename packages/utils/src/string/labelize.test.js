@@ -3,6 +3,8 @@ import { labelize } from './labelize.js'
 describe('labelize()', () => {
   it('should labelize hyphenated text', () => {
     expect(labelize('some-hyphenated-text')).toBe('Some Hyphenated Text')
+    expect(labelize('one-&-two', true)).toBe('One & Two')
+    expect(labelize('one-2-three', true)).toBe('One 2 Three')
   })
 
   it('should labelize underscored text', () => {
