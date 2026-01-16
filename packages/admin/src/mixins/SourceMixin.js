@@ -188,13 +188,16 @@ export default {
         // the route query parameters to override them.
         const {
           scope = this.defaultScope?.name,
-          page = this.schema.page
+          page = this.schema.page,
+          type
         } = this.query
-        // Preserve / merge currently stored values.
+        // Preserve / merge currently stored values, including any custom query
+        // parameters added by creatable.query
         query = {
           ...this.query,
           ...(scope != null && { scope }),
           ...(page != null && { page }),
+          ...(type != null && { type }),
           ...query
         }
         if (!equals(query, this.$route.query)) {

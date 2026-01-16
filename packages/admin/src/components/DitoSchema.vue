@@ -396,7 +396,10 @@ export default DitoComponent.component('DitoSchema', {
         const tab = this.shouldRenderSchema(this.tabs[newTab])
           ? newTab
           : this.defaultTab
-        this.$router.replace({ hash: tab ? `#${tab}` : null })
+        this.$router.replace({
+          query: this.$route.query,
+          hash: tab ? `#${tab}` : null
+        })
       }
       if (this.hasErrors) {
         this.repositionErrors()
