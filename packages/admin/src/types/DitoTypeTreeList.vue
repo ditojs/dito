@@ -15,7 +15,7 @@
       @update:data="data => (value = data)"
     )
     .dito-tree-form-container(
-      v-if="hasEditableForms"
+      v-if="editPath && hasEditableForms"
     )
       //- Include a router-view for the optional DitoFormInlined
       RouterView
@@ -52,7 +52,8 @@ export default DitoTypeComponent.register(
 
       editPath() {
         // Accessed from DitoTreeItem through `container.editPath`:
-        return this.$route.path.slice(this.path?.length)
+        const path = this.$route.path.slice(this.path?.length)
+        return path.startsWith(`/${this.schema.path}`) ? path : ''
       },
 
       treeData() {
