@@ -283,6 +283,10 @@ export default class DitoContext {
     set(this, 'isRunning', value)
   }
 
+  get query() {
+    return this.component.$route.query
+  }
+
   // Helper Methods
 
   get request() {

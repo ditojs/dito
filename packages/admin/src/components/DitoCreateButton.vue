@@ -105,9 +105,14 @@ export default DitoComponent.component('DitoCreateButton', {
         if (this.isInlined) {
           this.sourceComponent.createItem(form, type)
         } else {
+          const { creatable } = this.schema
+          const query = {
+            ...(type && { type }),
+            ...creatable?.query?.(this.context)
+          }
           this.$router.push({
             path: `${this.path}/create`,
-            query: { type }
+            query
           })
         }
       } else {
