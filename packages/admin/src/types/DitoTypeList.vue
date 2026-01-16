@@ -107,6 +107,7 @@
           v-if="hasCellEditButtons"
         )
           DitoEditButtons(
+            nested
             :schema="getItemFormSchema(schema, item, context)"
             :dataPath="getDataPath(index)"
             :data="item"
@@ -132,7 +133,6 @@
             :data="listData"
             :meta="meta"
             :store="store"
-            :nested="nested"
             :disabled="disabled || isLoading"
             :creatable="creatable"
             :createPath="createPath"
