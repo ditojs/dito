@@ -231,8 +231,8 @@ export default DitoComponent.component('DitoRoot', {
       })
     },
 
-    notify({ type = 'info', title, text, error } = {}) {
-      this.notifications.notify({ type, title, text, error })
+    notify({ type = 'info', title, text, error, duration } = {}) {
+      this.notifications.notify({ type, title, text, error, duration })
     },
 
     closeNotifications() {
