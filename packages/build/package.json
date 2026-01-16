@@ -1,6 +1,6 @@
 {
   "name": "@ditojs/build",
-  "version": "2.76.0",
+  "version": "2.77.0",
   "type": "module",
   "repository": "https://github.com/ditojs/dito/tree/master/packages/build",
   "author": "Jürg Lehni <juerg@scratchdisk.com> (http://scratchdisk.com)",
@@ -23,7 +23,7 @@
     "node >= 18"
   ],
   "dependencies": {
-    "@ditojs/utils": "^2.76.0",
+    "@ditojs/utils": "^2.77.0",
     "@vitejs/plugin-vue": "^6.0.3",
     "autoprefixer": "^10.4.23",
     "mime": "^4.1.0",

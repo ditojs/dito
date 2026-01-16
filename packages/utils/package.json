@@ -1,6 +1,6 @@
 {
   "name": "@ditojs/utils",
-  "version": "2.76.0",
+  "version": "2.77.0",
   "type": "module",
   "description": "Dito.js Utility Functions – Dito.js is a declarative and modern web framework, based on Objection.js, Koa.js and Vue.js",
   "repository": "https://github.com/ditojs/dito/tree/master/packages/utils",
