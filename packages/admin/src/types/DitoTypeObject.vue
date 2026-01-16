@@ -51,7 +51,7 @@
     :store="store"
     :disabled="disabled || isLoading"
     :creatable="creatable"
-    :createPath="path"
+    :createPath="createPath"
   )
 </template>
 

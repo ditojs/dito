@@ -135,7 +135,7 @@
             :nested="nested"
             :disabled="disabled || isLoading"
             :creatable="creatable"
-            :createPath="path"
+            :createPath="createPath"
           )
   //- Render create buttons outside table when in a single component view:
   DitoEditButtons.dito-buttons--large.dito-buttons--main.dito-buttons--sticky(
@@ -148,7 +148,7 @@
     :store="store"
     :disabled="disabled || isLoading"
     :creatable="creatable"
-    :createPath="path"
+    :createPath="createPath"
   )
 </template>
 

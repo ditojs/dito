@@ -491,15 +491,19 @@ export function hasViewSchema(schema, context) {
   return !!getViewSchema(schema, context)
 }
 
-export function getViewEditPath(schema, id, context) {
+export function getViewPath(schema, context) {
   const view = getViewSchema(schema, context)
   if (view) {
-    const path = isSingleComponentView(view)
+    return isSingleComponentView(view)
       ? view.fullPath
       : `${view.fullPath}/${view.path}`
-    return `${path}/${id}`
   }
   return null
+}
+
+export function getViewEditPath(schema, id, context) {
+  const path = getViewPath(schema, context)
+  return path ? `${path}/${id}` : null
 }
 
 export function getFormSchemas(schema, context, modifyForm) {

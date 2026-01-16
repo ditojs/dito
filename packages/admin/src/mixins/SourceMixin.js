@@ -13,6 +13,7 @@ import {
   hasFormSchema,
   getFormSchemas,
   getViewSchema,
+  getViewPath,
   isCompact,
   isInlined,
   isObjectSource,
@@ -337,7 +338,17 @@ export default {
     maxDepth: getSchemaAccessor('maxDepth', {
       type: Number,
       default: 1
-    })
+    }),
+
+    createPath() {
+      if (this.creatable) {
+        return (
+          getViewPath(this.schema, this.context) ||
+          this.path
+        )
+      }
+      return null
+    }
   },
 
   watch: {
