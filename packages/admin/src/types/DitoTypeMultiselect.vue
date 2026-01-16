@@ -222,14 +222,14 @@ export default DitoTypeComponent.register('multiselect', {
       }
     },
 
-    async onSearchChange(query) {
+    async onSearchChange(searchTerm) {
       if (this.searchFilter) {
-        if (query) {
+        if (searchTerm) {
           // Set `searchedOptions` to an empty array, before it will be
           // populated asynchronously with the actual results.
           this.searchedOptions = []
           this.searchedOptions = await this.resolveData(
-            () => this.searchFilter(new DitoContext(this, { query }))
+            () => this.searchFilter(new DitoContext(this, { searchTerm }))
           )
         } else {
           // Clear `searchedOptions` when the query is cleared.

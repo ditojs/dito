@@ -260,10 +260,9 @@ export default class DitoContext {
     return get(this, 'open', undefined)
   }
 
-  // TODO: Rename this to `searchTerm` or `searchQuery`, to perhaps free `query`
-  // for the actual `resourceComponent.query` object?
-  get query() {
-    return get(this, 'query', undefined)
+  // For search term in selects:
+  get searchTerm() {
+    return get(this, 'searchTerm', undefined)
   }
 
   // The error field is only populated in the context of buttons that send
