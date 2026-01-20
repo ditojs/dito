@@ -27,6 +27,7 @@ slot(name="prepend")
       DitoLabel(
         v-if="hasLabel"
         :label="label"
+        :info="info"
         :dataPath="dataPath"
         :collapsible="collapsible"
         :collapsed="!opened"
@@ -156,6 +157,7 @@ export default DitoComponent.component('DitoSchema', {
     meta: { type: Object, default: () => ({}) },
     store: { type: Object, default: () => ({}) },
     label: { type: [String, Object], default: null },
+    info: { type: String, default: null },
     single: { type: Boolean, default: false },
     padding: { type: String, default: null },
     active: { type: Boolean, default: true },

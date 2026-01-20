@@ -18,8 +18,8 @@
   DitoLabel(
     v-if="hasLabel"
     :class="labelClasses"
-    :label="label"
     :dataPath="labelDataPath"
+    :label="label"
     :info="info"
   )
   component.dito-component(

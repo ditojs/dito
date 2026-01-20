@@ -1,12 +1,13 @@
 <template lang="pug">
 .dito-section(:class="{ 'dito-section--labelled': hasLabel }")
   DitoSchemaInlined.dito-section__schema(
-    :label="label"
     :schema="getItemFormSchema(schema, item, context)"
     :dataPath="dataPath"
     :data="item"
     :meta="meta"
     :store="store"
+    :label="label"
+    :info="info"
     :padding="hasLabel ? 'nested' : 'inlined'"
     :disabled="disabled"
     :collapsed="collapsed"

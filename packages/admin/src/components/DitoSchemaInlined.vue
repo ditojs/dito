@@ -6,6 +6,7 @@ DitoSchema.dito-schema-inlined(
   :meta="meta"
   :store="store"
   :label="isCompact ? null : label"
+  :info="info"
   :padding="padding ?? 'inlined'"
   :inlined="true"
   :disabled="disabled"
@@ -49,6 +50,7 @@ export default DitoComponent.component('DitoSchemaInlined', {
     meta: { type: Object, required: true },
     store: { type: Object, required: true },
     label: { type: [String, Object], default: null },
+    info: { type: String, default: null },
     padding: { type: String, default: null },
     disabled: { type: Boolean, required: true },
     collapsed: { type: Boolean, default: false },
