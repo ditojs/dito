@@ -314,8 +314,12 @@ export function underscore(str: string): string
  */
 export function deindent(
   strings: OrArrayOf<string>,
-  ...values: Array<string>
+  ...values: Array<any>
 ): string
+/**
+ * Escapes special characters in a string for use in a regular expression.
+ */
+export function escapeRegexp(string: string): string
 /**
  * Returns the longest prefix string that is common to the supplied strings.
  */
@@ -338,6 +342,11 @@ export function isAbsoluteUrl(str: string): boolean
  * Determines whether the supplied string is a valid creditcard number.
  */
 export function isCreditCard(str: string): boolean
+/**
+ * Determines whether the supplied string is a valid domain name.
+ * Supports internationalized domain names with punycode.
+ */
+export function isDomain(str: string): boolean
 /**
  * Determines whether the supplied string is a valid email address.
  */
@@ -443,7 +452,36 @@ export function format(
     number?: boolean | NumberFormat
   }
 ): string
+/**
+ * Formats a date value as a string. If the value is not a Date,
+ * attempts to convert it to a Date first.
+ */
+export function formatDate(
+  value: any,
+  options?: {
+    /**
+     * @default 'en-US'
+     */
+    locale?: string
+    /**
+     * @default true
+     */
+    date?: boolean | DateFormat
+    /**
+     * @default true
+     */
+    time?: boolean | TimeFormat
+  }
+): string
 /* -------------------------------- function -------------------------------- */
+
+/**
+ * Logs a deprecation warning message to the console. Each unique message
+ * is only logged once.
+ *
+ * @param message The deprecation message to log.
+ */
+export function deprecate(message: string): void
 
 /**
  * Creates a debounced function that delays invoking func until after wait
@@ -695,6 +733,21 @@ export function toPromiseCallback<T, R>(
 
 /* -------------------------------- dataPath -------------------------------- */
 
+/**
+ * Gets entries at a data path, supporting wildcards (* and **).
+ * Wildcard * matches direct children, ** matches recursively.
+ *
+ * @param obj The object to query.
+ * @param path The data path (supports wildcards).
+ * @param handleError Optional error handler called when path is invalid.
+ * @returns Object with normalized paths as keys and values at those paths.
+ */
+export function getEntriesAtDataPath(
+  obj: any,
+  path: OrArrayOf<string>,
+  handleError?: (obj: any, part: string, index: number) => any
+): Record<string, any>
+
 export function getValueAtDataPath(
   obj: any,
   path: OrArrayOf<string>,
@@ -705,11 +758,36 @@ export function normalizeDataPath(path: OrArrayOf<string>): string
 
 export function parseDataPath(path: OrArrayOf<string>): string
 
+/**
+ * Sets multiple values at data paths from an entries object.
+ *
+ * @param obj The object to modify.
+ * @param entries Object with data paths as keys and values to set.
+ * @returns The modified object.
+ */
+export function setDataPathEntries<O>(
+  obj: O,
+  entries: Record<string, any>
+): O
+
 export function setValueAtDataPath<O>(
   obj: O,
   path: OrArrayOf<string>,
   value: any
 ): O
+
+/* --------------------------------- class ---------------------------------- */
+
+/**
+ * Creates a mixin decorator that applies a mixin function to a class.
+ * Prevents duplicate application of the same mixin in the inheritance chain.
+ *
+ * @param mixinFunction Function that takes a class and returns a mixed class.
+ * @returns Decorator function that applies the mixin to a target class.
+ */
+export function mixin<T extends new (...args: any[]) => any>(
+  mixinFunction: (targetClass: T) => T
+): (targetClass: T) => T
 
 /* ---------------------------------- html ---------------------------------- */
 
