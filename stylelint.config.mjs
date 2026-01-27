@@ -82,8 +82,6 @@ export default {
     'scss/at-else-empty-line-before': 'never',
     'scss/at-if-closing-brace-newline-after': 'always-last-in-chain',
     'scss/at-if-closing-brace-space-after': 'always-intermediate',
-    'scss/at-import-no-partial-leading-underscore': null,
-    'scss/at-import-partial-extension': null,
     'scss/comment-no-empty': null,
     'scss/dollar-variable-colon-space-after': 'always-single-line',
     'scss/dollar-variable-colon-space-before': 'never',
