@@ -31,4 +31,40 @@ describe('groupBy()', () => {
     const actual = groupBy({ a: 6.1, b: 4.2, c: 6.3 }, Math.floor)
     expect(actual).toStrictEqual({ 4: [4.2], 6: [6.1, 6.3] })
   })
+
+  it('should support string property accessor', () => {
+    const array = [
+      { category: 'fruit', name: 'apple' },
+      { category: 'vegetable', name: 'carrot' },
+      { category: 'fruit', name: 'banana' }
+    ]
+    const actual = groupBy(array, 'category')
+    expect(actual).toStrictEqual({
+      fruit: [
+        { category: 'fruit', name: 'apple' },
+        { category: 'fruit', name: 'banana' }
+      ],
+      vegetable: [
+        { category: 'vegetable', name: 'carrot' }
+      ]
+    })
+  })
+
+  it('should group by string property with numbers', () => {
+    const array = [
+      { id: 1, value: 'a' },
+      { id: 2, value: 'b' },
+      { id: 1, value: 'c' }
+    ]
+    const actual = groupBy(array, 'id')
+    expect(actual).toStrictEqual({
+      1: [
+        { id: 1, value: 'a' },
+        { id: 1, value: 'c' }
+      ],
+      2: [
+        { id: 2, value: 'b' }
+      ]
+    })
+  })
 })

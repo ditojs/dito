@@ -1,3 +1,4 @@
+export * from './asCallback.js'
 export * from './clone.js'
 export * from './equals.js'
 export * from './groupBy.js'
