@@ -142,9 +142,16 @@ export function clone<T>(value: T, options?: {
  */
 export function equals(arg1: any, arg2: any): boolean
 
-// TODO: document groupBy
+/**
+ * Groups items in a collection by a key returned from the callback function,
+ * or by a property name when a string is provided.
+ */
+export function groupBy<T, K extends keyof T>(
+  collection: T[] | Record<string, T>,
+  callback: K
+): Record<string, T[]>
 export function groupBy<T, K extends string | number | symbol>(
-  list: T[],
+  collection: T[] | Record<string, T>,
   callback: (item: T) => K
 ): Record<K, T[]>
 
@@ -217,10 +224,16 @@ export function pick<ArgA, ArgB, ArgC, ArgD, ArgE>(
 export function pick(...args: any[]): any
 /**
  * Creates an object composed of the object properties predicate returns
- * truthy for.
+ * truthy for. When a string is provided, filters by the truthiness of that
+ * property on each value.
  * @param object The source object.
- * @param callback Callback invoked with three arguments: (value, key, item).
+ * @param callback Callback invoked with three arguments: (value, key, item),
+ * or a property name string to check for truthiness.
  */
+export function pickBy<T extends Dictionary<any>, K extends keyof T[keyof T]>(
+  object: T,
+  callback: K
+): Partial<T>
 export function pickBy<T extends Dictionary<any>>(
   object: T,
   callback?: (value: T[keyof T], key: keyof T, object: T) => any
@@ -231,6 +244,17 @@ export function mapKeys<T extends Dictionary<any>, K extends keyof any>(
   callback?: (key: keyof T, value: T[keyof T], object: T) => K
 ): Record<K, T[keyof T]>
 
+/**
+ * Maps the values of an object using a callback function, or extracts a
+ * property when a string is provided.
+ */
+export function mapValues<
+  T extends Dictionary<any>,
+  K extends keyof T[keyof T]
+>(
+  object: T,
+  callback: K
+): Record<keyof T, T[keyof T][K]>
 export function mapValues<T extends Dictionary<any>, K>(
   object: T,
   callback?: (value: T[keyof T], key: keyof T, object: T) => K
