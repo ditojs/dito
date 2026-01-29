@@ -107,26 +107,27 @@ export function convertSchema(
           // TODO: Consider moving to `model` keyword instead that would support
           // model validation and still could be combined with other keywords.
           schema.$ref = type
-          // `$ref` doesn't play with `nullable`, so convert to `oneOf`
-          if (schema.nullable) {
-            delete schema.nullable
-            schema = {
-              oneOf: [
-                { type: 'null' },
-                schema
-              ]
-            }
-          }
         }
       }
     }
     if (excludeDefaults[schema.default]) {
       delete schema.default
     }
-    // Make nullable work with enum, see the issue for more details:
-    // https://github.com/ajv-validator/ajv/issues/1471
-    if (schema.nullable && schema.enum && !schema.enum.includes(null)) {
-      schema.enum.push(null)
+    if (schema.nullable) {
+      if (schema.$ref) {
+        // `$ref` doesn't play with `nullable`, so convert to `oneOf`
+        delete schema.nullable
+        schema = {
+          oneOf: [
+            { type: 'null' },
+            schema
+          ]
+        }
+      } else if (schema.enum && !schema.enum.includes(null)) {
+        // Make nullable work with enum, see the issue for more details:
+        // https://github.com/ajv-validator/ajv/issues/1471
+        schema.enum.push(null)
+      }
     }
 
     // Convert properties last. This is needed for circular references
