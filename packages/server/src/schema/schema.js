@@ -29,7 +29,11 @@ export function convertSchema(
         mergeDefinitions(parentEntry.definitions, definitions)
       }
     }
-    return schema
+    // When the schema is null, a circular reference is being processed.
+    // Break the chain by cloning the original schema and converting it again:
+    return schema === null
+      ? convertSchema({ ...original }, options, parentEntry)
+      : schema
   }
 
   const entry = {
