@@ -207,6 +207,7 @@ export default DitoTypeComponent.register('markup', {
   },
 
   created() {
+    let changed = false
     let ignoreWatch = false
 
     const onFocus = () => this.onFocus()
@@ -232,10 +233,12 @@ export default DitoTypeComponent.register('markup', {
         ? content.replace(/^<p>(.*?)<\/p>$/s, '$1')
         : content
       if (value !== this.value) {
+        changed = true
         this.value = value
-        if (!this.focused) {
-          this.onChange()
-        }
+      }
+      if (!this.focused && changed) {
+        this.onChange()
+        changed = false
       }
     }
 
