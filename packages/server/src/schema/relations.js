@@ -225,7 +225,7 @@ export function convertRelation(schema, models) {
       const origModify = modify
       modify = query => {
         query.applyScope(
-          scope,
+          ...asArray(scope),
           // Pass `false` for `checkAllowedScopes`, to always allow scopes
           // that are defined on relations to be applied.
           false
