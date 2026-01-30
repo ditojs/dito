@@ -146,6 +146,7 @@ export function convertRelation(schema, models) {
   let {
     relation,
     // Dito.js-style relation description:
+    modelClass,
     from,
     to,
     through,
@@ -234,9 +235,18 @@ export function convertRelation(schema, models) {
         }
       }
     }
+    if (isString(modelClass)) {
+      const modelName = modelClass
+      modelClass = models[modelName]
+      if (!modelClass) {
+        throw new RelationError(
+          `Unknown model class: ${modelName}`
+        )
+      }
+    }
     return {
       relation: relationClass,
-      modelClass: to.modelClass,
+      modelClass: modelClass ?? to.modelClass,
       join: {
         from: from.toValue(),
         to: to.toValue(),
