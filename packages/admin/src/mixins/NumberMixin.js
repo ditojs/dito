@@ -27,11 +27,9 @@ export default {
     stepValue() {
       // Don't show steps if the input is also clearable, since the step buttons
       // would collide with the clear button.
-      return this.clearable
-        ? null
-        : this.step == null && !this.isInteger
-          ? 'any'
-          : this.step
+      return this.step == null && !this.isInteger
+        ? 'any'
+        : this.step
     },
 
     decimals: getSchemaAccessor('decimals', {
