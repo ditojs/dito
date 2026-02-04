@@ -146,15 +146,17 @@ export function convertSchema(
       }
       hasConvertedProperties = true
     }
-    if (schema.patternProperties) {
-      // TODO: Don't we need to handle required here too?
-      const { properties } = convertProperties(
-        schema.patternProperties,
-        options,
-        entry
-      )
-      schema.patternProperties = properties
-      hasConvertedProperties = true
+    for (const key of ['additionalProperties', 'patternProperties']) {
+      if (isObject(schema[key])) {
+        // TODO: Don't we need to handle required here too?
+        const { properties } = convertProperties(
+          schema[key],
+          options,
+          entry
+        )
+        schema[key] = properties
+        hasConvertedProperties = true
+      }
     }
     if (
       jsonType &&
