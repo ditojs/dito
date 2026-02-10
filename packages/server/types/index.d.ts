@@ -494,6 +494,13 @@ export interface ModelRelation {
    */
   scope?: string
   /**
+   * Optionally, a filter can be defined to be applied when loading the
+   * relation's models. The filter needs to be defined in the related model
+   * class' filters definitions. Can be a single filter name or an object with
+   * filter names as keys and argument arrays as values.
+   */
+  filter?: string | { [name: string]: any[] }
+  /**
    * Controls whether the auto-inserted foreign key property should be marked as
    * nullable. This only makes sense on a 'belongsTo' relation, where the model
    * class holds the foreign key, and only when the foreign key isn't already

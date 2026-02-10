@@ -10,6 +10,7 @@ import {
   isObject,
   isArray,
   isString,
+  isFunction,
   asArray,
   capitalize,
   camelize
@@ -153,9 +154,9 @@ export function convertRelation(schema, models) {
     inverse,
     modify,
     scope,
+    filter,
     // Objection.js-style relation description (`modify` is shared)
     join,
-    filter,
     // Pluck Dito.js-related properties that should not end up in `rest`:
     nullable,
     owner,
@@ -213,15 +214,20 @@ export function convertRelation(schema, models) {
     } else if (through) {
       throw new RelationError('Unsupported through join definition')
     }
-    // Combine `modify` and `filter`. Setting both together is not supported.
-    modify ||= filter
+    // Combine `modify` and `filter` when `filter` is a function (Objection.js
+    // backward-compatible style). Otherwise, handle `filter` as a Dito.js-style
+    // filter name/array below.
+    if (isFunction(filter)) {
+      modify ||= filter
+      filter = null
+    }
     if (isObject(modify)) {
       // Convert a find-filter object to a filter function, same as in the
       // handling of definition.scopes, see Model.js
       modify = query => query.find(modify)
     }
     if (scope) {
-      // Create a new modify function that merges scope and modify them:
+      // Create a new modify function that merges scope and modify:
       const origModify = modify
       modify = query => {
         query.applyScope(
@@ -230,6 +236,16 @@ export function convertRelation(schema, models) {
           // that are defined on relations to be applied.
           false
         )
+        if (origModify) {
+          query.modify(origModify)
+        }
+      }
+    }
+    if (filter) {
+      // Create a new modify function that merges filter and modify:
+      const origModify = modify
+      modify = query => {
+        query.applyFilter(filter)
         if (origModify) {
           query.modify(origModify)
         }
