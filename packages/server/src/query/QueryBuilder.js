@@ -305,6 +305,14 @@ export class QueryBuilder extends objection.QueryBuilder {
   }
 
   applyFilter(name, ...args) {
+    if (isObject(name)) {
+      // Multiple filters: applyFilter({ active: [], recent: [30] })
+      for (const [key, value] of Object.entries(name)) {
+        this.applyFilter(key, ...asArray(value))
+      }
+      return this
+    }
+
     if (this.#allowFilters && !this.#allowFilters[name]) {
       throw new QueryBuilderError(`Query filter '${name}' is not allowed.`)
     }

@@ -1471,7 +1471,11 @@ export class QueryBuilder<
   applyScope: (...scopes: string[]) => this
   allowScope: (...scopes: string[]) => void
   clearAllowScope: () => void
-  applyFilter: (name: string, ...args: any[]) => this
+  applyFilter: {
+    (name: string, ...args: any[]): this
+    (filters: { [name: string]: any[] }): this
+  }
+
   allowFilter: (...filters: string[]) => void
   withGraph: (
     expr: objection.RelationExpression<M>,
