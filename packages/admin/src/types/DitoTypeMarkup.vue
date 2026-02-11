@@ -28,7 +28,9 @@
 import DitoTypeComponent from '../DitoTypeComponent.js'
 import DomMixin from '../mixins/DomMixin.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
+// Tiptap:
 import { Editor, EditorContent, Mark, getMarkAttributes } from '@tiptap/vue-3'
+import { Slice, Fragment } from '@tiptap/pm/model'
 // Essentials:
 import { Document } from '@tiptap/extension-document'
 import { Text } from '@tiptap/extension-text'
@@ -171,7 +173,41 @@ export default DitoTypeComponent.register('markup', {
         autoFocus: this.autofocus,
         disableInputRules: !this.enableRules.input,
         disablePasteRules: !this.enableRules.paste,
-        parseOptions: this.parseOptions
+        parseOptions: this.parseOptions,
+        editorProps: this.hardBreak
+          ? {
+              handlePaste: (view, event, slice) => {
+                const nodes = []
+
+                slice.content.forEach((node, offset, index) => {
+                  if (index > 0 && node.type.name === 'paragraph') {
+                    // Add hard break between paragraphs
+                    nodes.push(view.state.schema.nodes.hardBreak.create())
+                  }
+
+                  // Extract content from paragraphs, keep other nodes as-is
+                  if (node.type.name === 'paragraph') {
+                    node.content.forEach(child => nodes.push(child))
+                  } else {
+                    nodes.push(node)
+                  }
+                })
+
+                const paragraph = view.state.schema.nodes.paragraph.create(
+                  null,
+                  Fragment.from(nodes)
+                )
+
+                view.dispatch(
+                  view.state.tr.replaceSelection(
+                    new Slice(Fragment.from(paragraph), 0, 0)
+                  )
+                )
+
+                return true
+              }
+            }
+          : {}
       }
     },
 
