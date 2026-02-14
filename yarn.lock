@@ -10379,18 +10379,18 @@ __metadata:
   linkType: hard
 
 "markdown-it@npm:^14.0.0":
-  version: 14.0.0
-  resolution: "markdown-it@npm:14.0.0"
+  version: 14.1.1
+  resolution: "markdown-it@npm:14.1.1"
   dependencies:
     argparse: "npm:^2.0.1"
     entities: "npm:^4.4.0"
     linkify-it: "npm:^5.0.0"
     mdurl: "npm:^2.0.0"
     punycode.js: "npm:^2.3.1"
-    uc.micro: "npm:^2.0.0"
+    uc.micro: "npm:^2.1.0"
   bin:
     markdown-it: bin/markdown-it.mjs
-  checksum: 10/ae319aa4dd02b79d305fa0ff55020f8a3f728793938de5c8849c265a62a558f3968a3c023709d3a25aa0ce3287dc5a1faf33201f41efaf578dcf5d75b20462e8
+  checksum: 10/088822c8aa9346ba4af6a205f6ee0f4baae55e3314f040dc5c28c897d57d0f979840c71872b3582a6a6e572d8c851c54e323c82f4559011dfa2e96224fc20fc2
   languageName: node
   linkType: hard
 
@@ -14608,6 +14608,13 @@ __metadata:
   version: 2.0.0
   resolution: "uc.micro@npm:2.0.0"
   checksum: 10/86e142c239ed01360b9d705a9e194cfb55cfee2dbd22ffa52465a6270e3308dfc23347550d46836e60ea97dcf6cf57eef9531e5ac22e418fb994c0f761a74fa0
+  languageName: node
+  linkType: hard
+
+"uc.micro@npm:^2.1.0":
+  version: 2.1.0
+  resolution: "uc.micro@npm:2.1.0"
+  checksum: 10/37197358242eb9afe367502d4638ac8c5838b78792ab218eafe48287b0ed28aaca268ec0392cc5729f6c90266744de32c06ae938549aee041fc93b0f9672d6b2
   languageName: node
   linkType: hard
 
