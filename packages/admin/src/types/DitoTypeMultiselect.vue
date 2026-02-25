@@ -218,6 +218,7 @@ export default DitoTypeComponent.register('multiselect', {
     onAddTag(tag) {
       const option = this.addTagOption(tag)
       if (option) {
+        this.value ??= []
         this.value.push(this.getValueForOption(option))
       }
     },
@@ -383,9 +384,11 @@ $tag-line-height: 1em;
       padding: $input-padding;
 
       &::after {
-        // Instruction text for options
-        padding: $input-padding;
-        line-height: $tag-line-height;
+        // Instruction text for options (e.g. "Press enter to add new tag")
+        position: static;
+        height: auto;
+        line-height: inherit;
+        padding-left: $input-padding-hor;
       }
 
       // Only show the highlight once the pulldown has received mouse or
@@ -401,8 +404,6 @@ $tag-line-height: 1em;
 
       &--highlight {
         &::after {
-          display: block;
-          position: absolute;
           background: transparent;
           color: $color-white;
         }
