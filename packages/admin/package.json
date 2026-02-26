@@ -83,7 +83,7 @@
     "tippy.js": "^6.3.7",
     "tiptap-footnotes": "^3.0.1",
     "type-fest": "^5.4.4",
-    "vue": "^3.5.28",
+    "vue": "^3.5.29",
     "vue-multiselect": "^3.4.0",
     "vue-router": "^5.0.3",
     "vue-upload-component": "^3.1.17"
