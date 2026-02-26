@@ -8,7 +8,7 @@
     li(
       v-for="(label, value) of items"
     )
-      a(
+      a.dito-pulldown__item(
         @mousedown.stop="onPulldownMouseDown(value)"
         @mouseup="onPulldownMouseUp(value)"
       ) {{ label }}
