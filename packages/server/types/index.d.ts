@@ -39,6 +39,16 @@ export type Page<$Model extends Model = Model> = {
   results: $Model[]
 }
 
+/** Result of compiling action parameter definitions. */
+export type CompiledParametersValidator = {
+  list: Array<{ name: string | null } & Schema>
+  schema: Schema | null
+  asObject: boolean
+  dataName: string
+  validate: ((data: unknown) => boolean | PromiseLike<boolean>) | null
+  hasModelRefs: boolean
+}
+
 export type ApplicationConfig = {
   /** @defaultValue `production` */
   env?: 'production' | 'development'
@@ -126,7 +136,7 @@ export type ApplicationConfig = {
      */
     helmet?: boolean | Parameters<typeof helmet>[0]
     logger?: {
-      prettyPrint: PrettyOptions
+      prettyPrint?: PrettyOptions
     } & PinoLoggerOptions
     /**
      * Configure body parser.
@@ -179,21 +189,36 @@ export type ApplicationConfig = {
     // See https://github.com/brianc/node-pg-types/blob/master/index.d.ts#L67
     typeParsers?: Record<number, <I extends string | Buffer>(value: I) => any>
   }
-  /** Service configurations. Pass `false` as a value to disable a service. */
-  services?: Services
+  /**
+   * Service configurations keyed by service name. Pass
+   * `false` as a value to disable a service.
+   */
+  services?: Record<string, Record<string, unknown> | false>
   storages?: StorageConfigs
+  /** Logger configuration at the application level. */
+  logger?: {
+    prettyPrint?: PrettyOptions
+  } & PinoLoggerOptions
   assets?: {
     /**
-     * Threshold after which unused assets that haven't seen changes for given
-     * timeframe are removed.
+     * Threshold after which unused assets that haven't
+     * seen changes for given timeframe are removed.
      *
-     * @example
-     *   '1 hr 20 mins'
-     *
-     * @default `0`
+     * @example '1 hr 20 mins'
+     * @defaultValue `'24h'`
      * @see https://www.npmjs.com/package/parse-duration
      */
     cleanupTimeThreshold?: string | number
+    /**
+     * Threshold after which dangling assets (uploaded
+     * but never persisted) are removed. Cannot be set to
+     * 0 as the file would be deleted immediately after
+     * upload.
+     *
+     * @defaultValue `'24h'`
+     * @see https://www.npmjs.com/package/parse-duration
+     */
+    danglingTimeThreshold?: string | number
   }
 }
 
@@ -205,7 +230,7 @@ export type MulterS3File = {
   contentDisposition: null
   storageClass: string
   serverSideEncryption: null
-  metadata: any
+  metadata: Record<string, string>
   location: string
   etag: string
 }
@@ -300,7 +325,7 @@ export interface ApiConfig {
    * prefer to use another path normalization algorithm, they can be defined the
    * api settings passed to the DitoAdmin constructor.
    *
-   * @default Defaults to Application.config.app.normalizePaths and then
+   * @defaultValue Application.config.app.normalizePaths
    */
   normalizePaths?: boolean
   /** Auth resources */
@@ -329,9 +354,8 @@ export interface ApiConfig {
   resources?: Record<string, (resource: ApiResource | string) => string>
 
   /**
-   * Optionally override / extend headers
-   *
-   * @defaultValue `
+   * Optionally override / extend headers sent with API
+   * requests.
    */
   headers?: Record<string, string>
 }
@@ -355,41 +379,261 @@ export class Application<$Models extends Models = Models> {
     basePath?: string
     config?: ApplicationConfig
     validator?: Validator
-    // TODO: router types
-    router?: any
+    router?: {
+      add(
+        method: string,
+        path: string,
+        handler: Function
+      ): this
+      find(
+        method: string,
+        path: string
+      ): {
+        status: number
+        handler?: Function
+        params?: Record<string, string>
+        allowed: string[]
+      }
+      getAllowedMethods(
+        path?: string | null,
+        exclude?: string | null
+      ): string[]
+      normalizePath(path: string): string
+    }
     /**
      * Subscribe to application events. Event names: `'before:start'`,
      * `'after:start'`, `'before:stop'`, `'after:stop'`, `'error'`
      */
-    events?: Record<string, (this: Application<$Models>, ...args: []) => void>
-    models: $Models
+    events?: Record<
+      string,
+      (this: Application<$Models>, ...args: any[]) => void
+    >
+    models?: $Models
     controllers?: ApplicationControllers
-    // TODO: services docs
+    /** Service classes or instances to register. */
     services?: Services
     middleware?: Koa.Middleware
   })
 
+  /** The base path for resolving relative paths. */
+  basePath: string
+  /** The merged application configuration. */
+  config: ApplicationConfig
+  /** The Knex instance for database access. */
+  knex: Knex
+  /** The HTTP server instance, or `null` if not started. */
+  server: import('http').Server | null
+  /** Whether the application is currently running. */
+  isRunning: boolean
+  /** The schema validator instance. */
+  validator: Validator
+  /** Registered storage instances by name. */
+  storages: Record<string, Storage>
+  /** Registered service instances by name. */
+  services: Record<string, Service>
+  /** Registered controller instances by name. */
+  controllers: Record<string, Controller>
   models: $Models
+
   setup(): Promise<void>
+  /** Calls `start()` and exits the process on failure. */
   execute(): Promise<void>
   start(): Promise<void>
   stop(timeout?: number): Promise<void>
-  addStorage(storage: StorageConfig): void
+
+  /** Configures the pino logger instance. */
+  setupLogger(): void
+  /** Configures the Knex database connection. */
+  setupKnex(): void
+  /**
+   * Configures all Koa middleware (logger, error
+   * handling, CORS, compression, session, passport,
+   * etc.).
+   */
+  setupMiddleware(middleware?: Koa.Middleware): void
+
+  addStorage(
+    config: StorageConfig | Storage,
+    name?: string
+  ): Storage
+
   addStorages(storages: StorageConfigs): void
   setupStorages(): Promise<void>
-  addService(service: Service): void
+  /** Returns a storage by name, or `null` if not found. */
+  getStorage(name: string): Storage | null
+
+  addService(
+    service: Service | Class<Service>,
+    name?: string
+  ): void
+
   addServices(services: Services): void
   setupServices(): Promise<void>
+  /** Returns a service by name. */
+  getService(name: string): Service | null
+  /** Finds a service matching the given predicate. */
+  findService(
+    callback: (service: Service) => boolean
+  ): Service | null
+
   addModel(model: Class<Model>): void
   addModels(models: Models): void
   setupModels(): Promise<void>
-  addController(controllers: Controller, namespace?: string): void
-  addControllers(controllers: ApplicationControllers, namespace?: string): void
+  /**
+   * Returns a model class by name. Also looks up
+   * `${name}Model` if the name doesn't already end in
+   * 'Model'.
+   */
+  getModel(name: string): Class<Model> | null
+  /** Finds a model class matching the given predicate. */
+  findModel(
+    callback: (model: Class<Model>) => boolean
+  ): Class<Model> | null
+
+  addController(
+    controller: Controller | Class<Controller>,
+    namespace?: string
+  ): void
+
+  addControllers(
+    controllers: ApplicationControllers,
+    namespace?: string
+  ): void
+
   setupControllers(): Promise<void>
-  defineAdminViteConfig(config?: UserConfig): UserConfig
+  /** Returns a controller by its URL. */
+  getController(url: string): Controller | null
+  /**
+   * Finds a controller matching the given predicate.
+   */
+  findController(
+    callback: (controller: Controller) => boolean
+  ): Controller | null
+
+  /** Returns the admin controller, if registered. */
+  getAdminController(): AdminController | null
+
+  /** Compiles a JSON schema into a validation function. */
+  compileValidator(
+    jsonSchema: Schema,
+    options?: Record<string, any>
+  ): Ajv.ValidateFunction | null
+
+  /**
+   * Compiles action parameter definitions into a
+   * validation function and metadata.
+   */
+  compileParametersValidator(
+    parameters:
+      | Record<string, Schema>
+      | Array<{ name?: string } & Schema>,
+    options?: Record<string, any>
+  ): CompiledParametersValidator
+
+  /** Creates a ValidationError from raw error data. */
+  createValidationError(error: {
+    type: string
+    message?: string
+    errors: Ajv.ErrorObject[]
+    options?: Record<string, any>
+    json?: any
+  }): ValidationError
+
+  /** Creates a DatabaseError from a native DB error. */
+  createDatabaseError(error: dbErrors.DBError): DatabaseError
+
+  /**
+   * Wraps a database identifier through Knex's
+   * `wrapIdentifier` (e.g. camelCase to snake_case).
+   */
+  normalizeIdentifier(identifier: string): string
+  /**
+   * Reverses a database identifier through Knex's
+   * `postProcessResponse` (e.g. snake_case to camelCase).
+   */
+  denormalizeIdentifier(identifier: string): string
+  /** Normalizes a URL path. */
+  normalizePath(path: string): string
+
+  /** Formats an error for logging/response. */
+  formatError(error: Error | ResponseError): unknown
+
+  /** Logs an error to the application logger. */
+  logError(error: Error | ResponseError, ctx?: KoaContext): void
+  /** Releases unused assets past the cleanup threshold. */
+  releaseUnusedAssets(options?: {
+    timeThreshold?: string | number | null
+    transaction?: objection.Transaction | null
+    concurrency?: number
+  }): Promise<Model[] | undefined>
+
+  /**
+   * Creates Asset model records for the given files.
+   * Returns inserted assets, or `null` if no AssetModel
+   * is registered.
+   */
+  createAssets(
+    storage: Storage,
+    files: AssetFile[],
+    count?: number,
+    transaction?: objection.Transaction | null
+  ): Promise<Model[] | null>
+
+  /**
+   * Handles added, removed, and changed asset files.
+   * Imports foreign assets, updates counts, and schedules
+   * cleanup. Returns imported files when an AssetModel is
+   * registered.
+   */
+  handleAddedAndRemovedAssets(
+    storage: Storage,
+    addedFiles: AssetFile[],
+    removedFiles: AssetFile[],
+    changedFiles: AssetFile[],
+    transaction?: objection.Transaction | null
+  ): Promise<AssetFile[] | undefined>
+
+  /**
+   * Finds and imports missing assets from external
+   * sources (data URIs, file:// URLs, or HTTP URLs).
+   * Returns the list of imported files.
+   */
+  addForeignAssets(
+    storage: Storage,
+    files: AssetFile[],
+    transaction?: objection.Transaction | null
+  ): Promise<AssetFile[]>
+
+  /**
+   * Handles modifications to existing asset files by
+   * updating their stored data. Returns the list of
+   * modified files.
+   */
+  handleModifiedAssets(
+    storage: Storage,
+    files: AssetFile[],
+    transaction?: objection.Transaction | null
+  ): Promise<AssetFile[]>
+
+  addRoute(
+    method: HTTPMethod,
+    path: string,
+    transacted: boolean,
+    middlewares: OrArrayOf<(ctx: KoaContext, next: Function) => void>,
+    controller?: Controller | null,
+    action?: any
+  ): void
+
+  loadAdminViteConfig(): Promise<UserConfig | null>
+  getAssetConfig(options?: {
+    models?: string[]
+    normalizeDbNames?: boolean
+  }): Record<string, Record<string, Record<string, any>>>
+
+  defineAdminViteConfig(config?: UserConfig): UserConfig | null
   logger: PinoLogger
   requestStorage: AsyncLocalStorage<AsyncRequestLocals>
-  requestLocals: AsyncRequestLocals
+  requestLocals: Partial<AsyncRequestLocals>
 }
 
 export interface Application
@@ -513,6 +757,26 @@ export interface ModelRelation {
    * their owner.
    */
   owner?: boolean
+  /**
+   * An optional modify callback or find-filter object to scope the relation
+   * query. This is the Objection.js-native way to modify relation queries.
+   *
+   * As a function: `modify: query => query.where('active', true)`
+   * As an object: `modify: { active: true }` (converted to a find-filter)
+   */
+  modify?:
+    | ((query: QueryBuilder) => void)
+    | Record<string, any>
+  /**
+   * An alias for `modify`. An optional filter callback or find-filter object
+   * to scope the relation query, e.g.:
+   * `filter: query => query.where('type', 'active')`
+   *
+   * Only one of `modify` or `filter` should be set.
+   */
+  filter?:
+    | ((query: QueryBuilder) => void)
+    | Record<string, any>
 }
 
 export type ModelProperty<T = any> = Schema<T> & {
@@ -544,8 +808,9 @@ export type ModelProperty<T = any> = Schema<T> & {
    */
   unique?: boolean | string
   /**
-   * Marks the column for a property of type 'integer' to be unsigned in the
-   * migrations, by calling the .index() method.calling the .unsigned() method.
+   * Marks the column for a property of type 'integer' to be
+   * unsigned in the migrations, by calling the .unsigned()
+   * method.
    */
   unsigned?: boolean
   /**
@@ -567,45 +832,89 @@ export type ModelProperty<T = any> = Schema<T> & {
   hidden?: boolean
 }
 
+/**
+ * A scope function that modifies a query builder in-place
+ * to apply filtering or ordering logic. The return value
+ * is ignored at runtime.
+ *
+ * @see {@link https://github.com/ditojs/dito/blob/master/docs/model-scopes.md|Model Scopes}
+ */
 export type ModelScope<$Model extends Model = Model> = (
-  this: $Model,
-  query: QueryBuilder<$Model>,
-  applyParentScope: (query: QueryBuilder<$Model>) => QueryBuilder<$Model>
+  query: QueryBuilder<$Model>
 ) => QueryBuilder<$Model, any> | void
 
+/**
+ * Map of scope names to scope functions. Scopes can be
+ * applied via `withScope()` on queries or set as defaults
+ * on controllers.
+ *
+ * @see {@link https://github.com/ditojs/dito/blob/master/docs/model-scopes.md|Model Scopes}
+ */
 export type ModelScopes<$Model extends Model = Model> = Record<
   string,
   ModelScope<$Model>
 >
 
+/**
+ * A filter handler function that modifies a query builder
+ * based on external parameters (e.g. from URL query strings).
+ */
 export type ModelFilterFunction<$Model extends Model = Model> = (
   queryBuilder: QueryBuilder<$Model>,
   ...args: any[]
 ) => void
 
+/**
+ * A model filter definition. Can be one of:
+ *
+ * - A **built-in filter** reference (`{ filter: 'text' }` or
+ *   `{ filter: 'date-range' }`) with optional `properties`.
+ * - A **custom filter** with a `handler` function, optional
+ *   `parameters` schema for validation, and optional
+ *   `response` schema.
+ * - A bare **handler function** as shorthand.
+ *
+ * @see {@link https://github.com/ditojs/dito/blob/master/docs/model-filters.md|Model Filters}
+ */
 export type ModelFilter<$Model extends Model = Model> =
   | {
-      filter: 'text' | 'date-range'
+      filter: LiteralUnion<'text' | 'date-range'>
       properties?: string[]
     }
   | {
       handler: ModelFilterFunction<$Model>
       parameters?: { [key: string]: Schema }
+      response?: Schema
       // TODO: validate type
       validate?: any
     }
   | ModelFilterFunction<$Model>
 
+/**
+ * Map of filter names to filter definitions.
+ *
+ * @see {@link https://github.com/ditojs/dito/blob/master/docs/model-filters.md|Model Filters}
+ */
 export type ModelFilters<$Model extends Model = Model> = Record<
   string,
   ModelFilter<$Model>
 >
 
+/**
+ * Configuration for a model asset property, linking it to a
+ * named storage backend.
+ */
 export interface ModelAsset {
+  /** The name of the storage backend to use. */
   storage: string
+  /**
+   * Whether to read image dimensions (width/height) on
+   * upload.
+   */
   readDimensions?: boolean
 }
 
+/** Map of property names to their asset configurations. */
 export type ModelAssets = Record<string, ModelAsset>
 
 export interface ModelOptions extends objection.ModelOptions {
@@ -618,6 +927,23 @@ type ModelHookFunction<$Model extends Model> = (
   args: objection.StaticHookArguments<$Model>
 ) => void
 
+/**
+ * Map of lifecycle hook names to handler functions. Hook
+ * names follow the pattern `'before:operation'` or
+ * `'after:operation'` where operation is `find`, `insert`,
+ * `update`, or `delete`.
+ *
+ * @example
+ * ```ts
+ * static hooks: ModelHooks<MyModel> = {
+ *   'before:insert': ({ items }) => {
+ *     for (const item of items) {
+ *       item.createdAt = new Date()
+ *     }
+ *   }
+ * }
+ * ```
+ */
 export type ModelHooks<$Model extends Model = Model> = {
   [key in `${'before' | 'after'}:${
     | 'find'
@@ -628,6 +954,8 @@ export type ModelHooks<$Model extends Model = Model> = {
 }
 
 export class Model extends objection.Model {
+  constructor(json?: Record<string, any>)
+
   /** @see {@link https://github.com/ditojs/dito/blob/master/docs/model-properties.md|Model Properties} */
   static properties: ModelProperties
 
@@ -644,32 +972,357 @@ export class Model extends objection.Model {
 
   static assets: ModelAssets
 
-  static getPropertyOrRelationAtDataPath: (dataPath: OrArrayOf<string>) => any
+  /** The merged definition object, assembled from the class hierarchy. */
+  static get definition(): {
+    properties: ModelProperties
+    relations: ModelRelations
+    scopes: ModelScopes
+    filters: ModelFilters
+    hooks: ModelHooks
+    assets: ModelAssets
+    options: Record<string, any>
+    modifiers: Record<
+      string,
+      (
+        builder: objection.QueryBuilder<any, any>,
+        ...args: any[]
+      ) => void
+    >
+    schema: Record<string, any>
+    [key: string]: any
+  }
 
-  static count: {
-    (column?: objection.ColumnRef, options?: { as: string }): number
-    (aliasToColumnDict: Record<string, string | string[]>): number
-    (...columns: objection.ColumnRef[]): number
+  /** Derived from class name (removes 'Model' suffix). */
+  static get tableName(): string
+  /** Returns the primary key column(s). */
+  static get idColumn(): string | string[]
+  /**
+   * Returns the cached converted relation mappings for
+   * the model.
+   */
+  static get relationMappings(): Record<
+    string,
+    objection.RelationMapping<Model>
+  >
+
+  /** Returns the cached converted JSON schema. */
+  static get jsonSchema(): Record<string, any>
+  /** Aliases `computedAttributes`. */
+  static get virtualAttributes(): string[]
+
+  static get jsonAttributes(): string[]
+  static get booleanAttributes(): string[]
+  static get dateAttributes(): string[]
+  static get computedAttributes(): string[]
+  static get hiddenAttributes(): string[]
+
+  /** The application instance this model is registered with. */
+  static app: Application<Models>
+  /** Whether the model has been initialized by the application. */
+  static initialized: boolean
+  /** The QueryBuilder class used by this model. */
+  static QueryBuilder: typeof QueryBuilder
+  /** Whether to deep-clone object attributes on read. */
+  static cloneObjectAttributes: boolean
+  /**
+   * Only pick properties defined in jsonSchema
+   * for database JSON.
+   */
+  static pickJsonSchemaProperties: boolean
+  /** Whether to use LIMIT 1 in first() queries. */
+  static useLimitInFirst: boolean
+
+  /** Called by the application during model registration. */
+  static configure(app: Application<Models>): void
+  /** Sets up model schema, relations, and scopes. */
+  static setup(): void
+  /**
+   * Async initialization hook. Override in subclasses for
+   * setup that requires async operations.
+   * @overridable
+   */
+  static initialize(): Promise<void>
+
+  /**
+   * Creates a model instance from JSON data. Dito's
+   * override adds async validation support: returns a
+   * Promise when `options.async` is true.
+   * @override
+   */
+  static fromJson<M extends Model>(
+    this: Constructor<M>,
+    json: Record<string, any>,
+    options?: ModelOptions
+  ): M | Promise<M>
+
+  /** Returns the named scope function, if defined. */
+  static getScope(name: string): ModelScope | undefined
+  /** Returns whether the model has the named scope. */
+  static hasScope(name: string): boolean
+  /**
+   * Creates a reference instance containing only the
+   * identifier properties.
+   */
+  static getReference(
+    modelOrId: Model | Id,
+    includeProperties?: string[]
+  ): Model
+
+  /** Returns whether the given value is a model reference. */
+  static isReference(obj: unknown): boolean
+  /** Returns the named property definition, if found. */
+  static getProperty(name: string): ModelProperty | null
+  /** Returns the model's query modifiers. */
+  static getModifiers(): Record<string, Function>
+  /**
+   * Returns property names matching the given filter
+   * function.
+   */
+  static getAttributes(
+    filter?: (property: ModelProperty) => boolean
+  ): string[]
+
+  /** Returns relations where this model is the related side. */
+  static getRelatedRelations(): objection.Relation[]
+
+  /**
+   * Maps property names to column names (identity
+   * function — naming is handled at Knex level).
+   * @override
+   */
+  static propertyNameToColumnName(
+    propertyName: string
+  ): string
+
+  /**
+   * Maps column names to property names (identity
+   * function — naming is handled at Knex level).
+   * @override
+   */
+  static columnNameToPropertyName(
+    columnName: string
+  ): string
+
+  /**
+   * Handles modifiers not found directly on the model by
+   * checking scopes and special prefixes.
+   * @override
+   */
+  static modifierNotFound(
+    query: QueryBuilder<Model>,
+    modifier: string | Function
+  ): void
+
+  /**
+   * Creates a NotFoundError with model context.
+   * @override
+   */
+  static createNotFoundError(
+    ctx: Record<string, any>,
+    error?: Error
+  ): NotFoundError
+
+  /**
+   * Returns the shared application validator.
+   * @override
+   */
+  static createValidator(): Validator
+
+  /**
+   * Creates a typed validation or relation error from
+   * raw error data.
+   * @override
+   */
+  static createValidationError(error: {
+    type: string
+    message?: string
+    errors: any[]
+    options?: Record<string, any>
+    json?: any
+  }): ResponseError
+
+  /** Starts a new transaction. */
+  static transaction(): Promise<objection.Transaction>
+  /** Runs a callback within a transaction. */
+  static transaction(
+    handler: (trx: objection.Transaction) => Promise<any>
+  ): Promise<any>
+
+  static transaction(
+    trx: objection.Transaction,
+    handler: (trx: objection.Transaction) => Promise<any>
+  ): Promise<any>
+
+  static getPropertyOrRelationAtDataPath(
+    dataPath: OrArrayOf<string>
+  ): {
+    property?: ModelProperty | null
+    relation?: objection.Relation | null
+    wildcard?: string | null
+    dataPath?: string | null
+    nestedDataPath?: string | null
+    name?: string
+    expression?: string | null
   }
 
   /**
-   * Dito.js automatically adds an `id` property if a model property with the
-   * `primary: true` setting is not already explicitly defined.
+   * Creates a query builder for a relation. Unlike
+   * Objection.js, Dito automatically aliases the query
+   * to the relation name.
+   * @override
+   */
+  static relatedQuery<M extends Model>(
+    this: Constructor<M>,
+    relationName: string,
+    trx?: objection.Transaction
+  ): QueryBuilder<M>
+
+  /**
+   * Hook called before find queries.
+   * @overridable
+   */
+  static beforeFind(
+    args: objection.StaticHookArguments<Model>
+  ): Promise<void>
+
+  /**
+   * Hook called after find queries.
+   * @overridable
+   */
+  static afterFind(
+    args: objection.StaticHookArguments<Model>
+  ): Promise<void>
+
+  /**
+   * Hook called before insert queries.
+   * @overridable
+   */
+  static beforeInsert(
+    args: objection.StaticHookArguments<Model>
+  ): Promise<void>
+
+  /**
+   * Hook called after insert queries.
+   * @overridable
+   */
+  static afterInsert(
+    args: objection.StaticHookArguments<Model>
+  ): Promise<void>
+
+  /**
+   * Hook called before update queries.
+   * @overridable
+   */
+  static beforeUpdate(
+    args: objection.StaticHookArguments<Model>
+  ): Promise<void>
+
+  /**
+   * Hook called after update queries.
+   * @overridable
+   */
+  static afterUpdate(
+    args: objection.StaticHookArguments<Model>
+  ): Promise<void>
+
+  /**
+   * Hook called before delete queries.
+   * @overridable
+   */
+  static beforeDelete(
+    args: objection.StaticHookArguments<Model>
+  ): Promise<void>
+
+  /**
+   * Hook called after delete queries.
+   * @overridable
+   */
+  static afterDelete(
+    args: objection.StaticHookArguments<Model>
+  ): Promise<void>
+
+  static count: {
+    (column?: objection.ColumnRef, options?: { as: string }): Promise<number>
+    (aliasToColumnDict: Record<string, string | string[]>): Promise<number>
+    (...columns: objection.ColumnRef[]): Promise<number>
+  }
+
+  /**
+   * Filters a model graph using a relation expression,
+   * removing any data not matching the expression.
+   */
+  static filterGraph(
+    modelGraph: Model | Model[],
+    expr: string | objection.RelationExpression<Model>
+  ): Model | Model[]
+
+  /**
+   * Populates a model graph by loading relations defined
+   * in the given expression.
+   */
+  static populateGraph(
+    modelGraph: Model | Model[],
+    expr: string | objection.RelationExpression<Model>,
+    trx?: objection.Transaction
+  ): Promise<Model | Model[]>
+
+  /**
+   * Dito.js automatically adds an `id` property if a model
+   * property with the `primary: true` setting is not
+   * already explicitly defined.
    */
   readonly id: Id
 
   /**
-   * Dito.js automatically adds a `foreignKeyId` property if foreign keys
-   * occurring in relations definitions are not explicitly defined in the
-   * properties.
+   * Dito.js automatically adds a `foreignKeyId` property
+   * if foreign keys occurring in relations definitions are
+   * not explicitly defined in the properties.
    */
   readonly foreignKeyId: Id
 
   QueryBuilderType: QueryBuilder<this, this[]>
 
-  // Todo: include application settings
   $app: Application<Models>
+  /**
+   * Called after model construction. Override in subclasses
+   * for custom instance initialization.
+   * @overridable
+   */
+  $initialize(): void
   $is(model: Model): boolean
+  /** Returns `true` if all named properties are defined. */
+  $has(...properties: string[]): boolean
+  /** Runs a callback within a transaction. */
+  $transaction(
+    handler: (trx: objection.Transaction) => Promise<any>
+  ): Promise<any>
+
+  $transaction(
+    trx: objection.Transaction,
+    handler: (trx: objection.Transaction) => Promise<any>
+  ): Promise<any>
+
+  /** Emits an event on this model instance. */
+  $emit(event: string, ...args: any[]): Promise<any[]>
+  /**
+   * Filters a model graph using a relation expression,
+   * removing data not matching the expression.
+   */
+  $filterGraph(
+    modelGraph: Model | Model[],
+    expr: string | objection.RelationExpression<Model>
+  ): Model | Model[]
+
+  /**
+   * Populates a model graph by loading relations defined
+   * in the given expression.
+   */
+  $populateGraph(
+    modelGraph: Model | Model[],
+    expr: string | objection.RelationExpression<Model>,
+    trx?: objection.Transaction
+  ): Promise<Model | Model[]>
+
   $update(
     attributes: Partial<ExtractModelProperties<this>>,
     trx?: objection.Transaction
@@ -683,9 +1336,59 @@ export class Model extends objection.Model {
   $validate<$JSON extends null | {}>(
     json?: $JSON,
     options?: ModelOptions & Record<string, any>
-  ): Promise<$JSON | this>
+  ): ($JSON | this) | Promise<$JSON | this>
 
-  $validateGraph(options: ModelOptions & Record<string, any>): Promise<this>
+  $validateGraph(
+    options: ModelOptions & Record<string, any>
+  ): Promise<this>
+
+  /**
+   * Sets JSON data on the model instance. Triggers
+   * `$initialize()` when appropriate.
+   * @override
+   */
+  $setJson(
+    json: Record<string, any>,
+    options?: ModelOptions
+  ): this
+
+  /**
+   * Formats data for database storage. Converts dates to
+   * ISO strings, handles boolean conversion for SQLite,
+   * and removes computed properties.
+   * @override @overridable
+   */
+  $formatDatabaseJson(
+    json: Record<string, any>
+  ): Record<string, any>
+
+  /**
+   * Parses data from the database. Converts SQLite
+   * booleans back and delegates to `$parseJson()` for
+   * date and AssetFile handling.
+   * @override @overridable
+   */
+  $parseDatabaseJson(
+    json: Record<string, any>
+  ): Record<string, any>
+
+  /**
+   * Parses general JSON data. Converts date strings to
+   * Date objects and handles asset file conversion.
+   * @override @overridable
+   */
+  $parseJson(
+    json: Record<string, any>
+  ): Record<string, any>
+
+  /**
+   * Formats data for API output. Removes hidden
+   * attributes from the JSON representation.
+   * @override @overridable
+   */
+  $formatJson(
+    json: Record<string, any>
+  ): Record<string, any>
 
   /* -------------------- Start QueryBuilder.mixin(Model) ------------------- */
   static first: StaticQueryBuilderMethod<'first'>
@@ -708,12 +1411,14 @@ export class Model extends objection.Model {
   static insert: StaticQueryBuilderMethod<'insert'>
   static upsert: StaticQueryBuilderMethod<'upsert'>
   static update: StaticQueryBuilderMethod<'update'>
-  static relate: StaticQueryBuilderMethod<'relate'>
   static patch: StaticQueryBuilderMethod<'patch'>
+  static delete: StaticQueryBuilderMethod<'delete'>
+
+  static updateById: StaticQueryBuilderMethod<'updateById'>
+  static patchById: StaticQueryBuilderMethod<'patchById'>
+  static deleteById: StaticQueryBuilderMethod<'deleteById'>
 
   static truncate: StaticQueryBuilderMethod<'truncate'>
-  static delete: StaticQueryBuilderMethod<'delete'>
-  static deleteById: StaticQueryBuilderMethod<'deleteById'>
 
   static insertAndFetch: StaticQueryBuilderMethod<'insertAndFetch'>
   static upsertAndFetch: StaticQueryBuilderMethod<'upsertAndFetch'>
@@ -756,7 +1461,7 @@ export class Model extends objection.Model {
   static whereNotColumn: StaticQueryBuilderMethod<'whereNotColumn'>
   static whereComposite: StaticQueryBuilderMethod<'whereComposite'>
   static whereInComposite: StaticQueryBuilderMethod<'whereInComposite'>
-  static whereNotInComposite: StaticQueryBuilderMethod<'whereInComposite'> // TODO: `whereNotInComposite`
+  static whereNotInComposite: StaticQueryBuilderMethod<'whereNotInComposite'>
   static whereJsonHasAny: StaticQueryBuilderMethod<'whereJsonHasAny'>
   static whereJsonHasAll: StaticQueryBuilderMethod<'whereJsonHasAll'>
   static whereJsonIsArray: StaticQueryBuilderMethod<'whereJsonIsArray'>
@@ -803,6 +1508,13 @@ export type ModelRelations = Record<string, ModelRelation>
 
 export type ModelProperties = Record<string, ModelProperty>
 
+/**
+ * A controller action definition. Either an options object
+ * with `handler`, `method`, `path`, `authorize`, etc., or a
+ * bare handler function. The HTTP method and path are
+ * derived from the action name key (e.g. `'postImport'`
+ * maps to `POST /import`).
+ */
 export type ControllerAction<$Controller extends Controller = Controller> =
   | ControllerActionOptions<$Controller>
   | ControllerActionHandler<$Controller>
@@ -810,29 +1522,47 @@ export type ControllerAction<$Controller extends Controller = Controller> =
 export class Controller {
   app: Application
   /**
-   * Optionally provide the controller path. A default is deducted from the
-   * normalized class name otherwise.
+   * Optionally provide the controller path. A default is
+   * deducted from the normalized class name otherwise.
    */
   path?: string
   /**
-   * The controller's name. If not provided, it is automatically deducted from
-   * the controller class name. If this name ends in 'Controller', that is
-   * stripped off the name, so 'GreetingsController' turns into 'Greetings'.
+   * The controller's name. If not provided, it is
+   * automatically deducted from the controller class name.
+   * If this name ends in 'Controller', that is stripped
+   * off the name, so 'GreetingsController' turns into
+   * 'Greetings'.
    */
   name?: string
   /**
-   * The controller's namespace, which is prepended to path to generate the
-   * absolute controller route. Note that it is rare to provide this manually.
-   * Usually Dito.js determines the namespace automatically from the controller
-   * object passed to the Dito.js application's constructor and its
-   * sub-objects.
+   * The controller's namespace, which is prepended to path
+   * to generate the absolute controller route. Note that
+   * it is rare to provide this manually. Usually Dito.js
+   * determines the namespace automatically from the
+   * controller object passed to the Dito.js application's
+   * constructor and its sub-objects.
    *
    * @see {@link https://github.com/ditojs/dito/blob/master/docs/controllers.md#namespaces Namespaces}
    */
   namespace?: string
+  /** The fully resolved URL for this controller. */
+  url?: string
   /**
-   * A list of allowed actions. If provided, only the action names listed here
-   * as strings will be mapped to routes, everything else will be omitted.
+   * Whether actions should be transacted by default.
+   * Can be overridden per-action.
+   */
+  transacted?: boolean
+  /** Whether this controller has been initialized. */
+  initialized: boolean
+  /** The nesting level of this controller. */
+  level: number
+  /** Whether to log routes during setup. */
+  logRoutes: boolean
+
+  /**
+   * A list of allowed actions. If provided, only the
+   * action names listed here as strings will be mapped to
+   * routes, everything else will be omitted.
    */
   allow?: OrReadOnly<ControllerActionName[]>
 
@@ -840,9 +1570,26 @@ export class Controller {
   authorize?: Authorize
   actions?: ControllerActions<this>
 
+  /** Returns the logger, optionally scoped to a context. */
+  getLogger(ctx?: KoaContext): PinoLogger
+  /** The controller's logger instance. */
+  get logger(): PinoLogger
   /**
-   * `configure()` is called right after the constructor, but before `setup()`
-   * which sets up the actions and routes, and the custom `async initialize()`.
+   * Returns a member model for the request context.
+   * No-op in the base class; override in subclasses.
+   */
+  getMember(
+    ctx: KoaContext,
+    base?: any,
+    options?: {
+      query?: Record<string, any>
+      modify?: (query: QueryBuilder<Model>) => QueryBuilder<Model>
+      forUpdate?: boolean
+    }
+  ): Promise<Model | null>
+
+  /**
+   * Called right after the constructor, before `setup()` and `initialize()`.
    * @overridable
    */
   configure(): void
@@ -853,8 +1600,6 @@ export class Controller {
    * @overridable
    */
   initialize(): Promise<void>
-  // TODO: type reflectActionsObject
-  reflectActionsObject(): any
   /**
    * @overridable
    */
@@ -874,8 +1619,8 @@ export class Controller {
     handlers: ((ctx: KoaContext, next: Function) => void)[]
   ): void
 
-  setupActions(type: string): string[]
-  setupActionRoute(type: any, action: any): void
+  setupActions(type: string): any
+  setupActionRoute(type: string, action: ControllerAction): void
   setupAssets(): any
   setupAssetRoute(
     dataPath: OrArrayOf<string>,
@@ -892,32 +1637,54 @@ export class Controller {
   /** To be overridden by sub-classes. */
   getPath(type: string, path: string): string
   getUrl(type: string, path: string): string
-  inheritValues(type: string): any
-  processValues(values: any): {
-    // Create a filtered `values` object that only contains the allowed fields
-    values: any
+  inheritValues(type: string): Record<string, unknown> | undefined
+  processValues(values: Record<string, unknown>): {
+    values: Record<string, unknown>
     allow: string[]
-    authorize: Authorize
+    authorize: Record<string, Authorize>
   }
 
   emitHook(
     type: string,
-    handleResult: any,
-    ctx: any,
+    handleResult: boolean,
+    ctx: KoaContext,
     ...args: any[]
   ): Promise<any>
 
-  processAuthorize(authorize: any): any
-  describeAuthorize(authorize: any): string
-  handleAuthorization(): Promise<void>
+  processAuthorize(
+    authorize: Authorize
+  ): (ctx: KoaContext, member?: Model) => OrPromiseOf<boolean>
+
+  describeAuthorize(authorize: Authorize): string
+  handleAuthorization(
+    authorization: (
+      ctx: KoaContext,
+      member?: Model
+    ) => OrPromiseOf<boolean>,
+    ctx: KoaContext,
+    member?: Model
+  ): Promise<void>
 }
 
+export interface Controller extends EventEmitter {}
+
+/** A named action parameter with a JSON Schema definition. */
 export type ActionParameter = Schema & { name: string }
 
+/**
+ * Handler function for a model controller action. Receives
+ * the Koa context and any resolved action parameters. `this`
+ * is bound to the controller instance.
+ */
 export type ModelControllerActionHandler<
   $ModelController extends ModelController = ModelController
 > = (this: $ModelController, ctx: KoaContext, ...args: any[]) => any
 
+/**
+ * Handler function for a controller action. Receives the Koa
+ * context and any resolved action parameters. `this` is
+ * bound to the controller instance.
+ */
 export type ControllerActionHandler<
   $Controller extends Controller = Controller
 > = (this: $Controller, ctx: KoaContext, ...args: any[]) => any
@@ -927,8 +1694,6 @@ export type ExtractModelProperties<$Model extends Model = Model> = {
     ? ExtractModelProperties<$Model[K]>
     : $Model[K]
 }
-
-export type Extends<$A, $B> = $A extends $B ? 1 : 0
 
 export type SelectModelPropertyKeys<$Model extends Model> = {
   [K in keyof $Model]-?: K extends
@@ -941,6 +1706,21 @@ export type SelectModelPropertyKeys<$Model extends Model> = {
       : K
 }[keyof $Model]
 
+/**
+ * Authorization configuration for controllers and actions.
+ *
+ * - `boolean`: `true` requires authentication, `false` is
+ *   public.
+ * - `'$self'`: Authorized only if the member matches the
+ *   authenticated user.
+ * - `'$owner'`: Authorized if the member is owned by the
+ *   authenticated user (via `Model.$hasOwner()`).
+ * - Any other `string`: Checked as a role via
+ *   `UserModel.$hasRole()`.
+ * - `function`: Dynamically resolves to any of the above.
+ * - `Record<HTTPMethod, string | string[]>`: Per-method
+ *   role authorization.
+ */
 export type Authorize =
   | boolean
   | OrArrayOf<LiteralUnion<'$self' | '$owner'>>
@@ -1039,12 +1819,21 @@ export type MemberActionParameter<$Model extends Model = Model> =
       modify?: (query: QueryBuilder<$Model>) => QueryBuilder<$Model>
     }
 
+/**
+ * A model controller action: either an options object with
+ * `handler` or a bare handler function.
+ */
 export type ModelControllerAction<
   $ModelController extends ModelController = ModelController
 > =
   | ModelControllerActionOptions<$ModelController>
   | ModelControllerActionHandler<$ModelController>
 
+/**
+ * Map of action names to action definitions for a model
+ * controller's collection-level actions (e.g. `getList`,
+ * `postCreate`).
+ */
 export type ModelControllerActions<
   $ModelController extends ModelController = ModelController
 > = {
@@ -1065,6 +1854,12 @@ type ModelControllerMemberAction<
     })
   | ModelControllerActionHandler<$ModelController>
 
+/**
+ * Map of action names to action definitions for a model
+ * controller's member-level actions (e.g. `get`, `patch`,
+ * `delete`). Member actions can use `{ from: 'member' }`
+ * parameters to receive the resolved member model.
+ */
 export type ModelControllerMemberActions<
   $ModelController extends ModelController = ModelController
 > = {
@@ -1073,15 +1868,33 @@ export type ModelControllerMemberActions<
   authorize?: Authorize
 }
 
+/**
+ * Action name pattern: an HTTP method followed by an
+ * optional suffix, e.g. `'getStats'`, `'postImport'`,
+ * `'deleteAll'`.
+ */
 export type ControllerActionName = `${HTTPMethod}${string}`
 
+/**
+ * Map of action names to action definitions for a
+ * controller. Supports `allow` to whitelist specific
+ * actions and `authorize` for group-level authorization.
+ */
 export type ControllerActions<$Controller extends Controller = Controller> = {
   [name: ControllerActionName]: ControllerAction<$Controller>
   allow?: OrReadOnly<ControllerActionName[]>
   authorize?: Authorize
 }
 
-export class UsersController<M extends Model> extends ModelController<M> {}
+export class UsersController<
+  M extends Model = Model
+> extends ModelController<M> {
+  /**
+   * Returns whether the current request is authenticated
+   * and the user is an instance of the controller's model.
+   */
+  isAuthenticated(ctx: KoaContext): boolean
+}
 
 export class AdminController extends Controller {
   config: AdminConfig
@@ -1097,8 +1910,8 @@ export class AdminController extends Controller {
 
   sendDitoObject(ctx: Koa.Context): void
   middleware(): Koa.Middleware
-  setupViteServer(): void
-  defineViteConfig(config: UserConfig): UserConfig
+  setupViteServer(): Promise<void>
+  defineViteConfig(config?: UserConfig): UserConfig
 }
 type ModelControllerHookType = 'collection' | 'member'
 type ModelControllerHookKeys<
@@ -1122,8 +1935,6 @@ type ModelControllerHook<
   ctx: KoaContext,
   result: objection.Page<ModelFromModelController<$ModelController>>
 ) => any
-
-type HookHandler = () => void
 
 type HookKeysFromController<$ModelController extends ModelController> =
   | ModelControllerHookKeys<
@@ -1161,38 +1972,182 @@ type ModelControllerHooks<
 > = {
   [$Key in HookKeysFromController<$ModelController>]?: HandlerFromHookKey<
     $ModelController,
-    HookKeysFromController<$ModelController>
+    $Key
   >
 }
 
+/**
+ * Scope(s) to apply to all queries in a model controller.
+ * A single scope name or an array of scope names.
+ */
 export type ModelControllerScope = OrArrayOf<string>
 
-export class ModelController<$Model extends Model = Model> extends Controller {
+/**
+ * Abstract base class for controllers that operate on
+ * model collections. Provides CRUD action infrastructure,
+ * query building, and member resolution.
+ */
+export class CollectionController<
+  $Model extends Model = Model
+> extends Controller {
   /**
-   * The model class that this controller represents. If none is provided, the
-   * singularized controller name is used to look up the model class in models
-   * registered with the application. As a convention, model controller names
-   * should always be provided in pluralized form.
+   * The model class this controller operates on. Set by
+   * subclasses during configuration.
    */
   modelClass?: Class<$Model>
   /**
-   * The controller's collection actions. Instead of being provided on the
-   * instance level as in the controller base class, they are to be wrapped in a
-   * designated object in order to be assigned to the collection.
+   * Whether to use graph methods for insert/update/patch.
    *
-   * To limit which collection actions will be mapped to routes, supply an array
-   * of action names under the `allow` key. Only the action names listed there
-   * will be mapped to routes, everything else will be omitted.
+   * @defaultValue `false`
+   */
+  graph?: boolean
+  /** Whether the controller handles relate operations. */
+  relate?: boolean
+  /**
+   * Whether the controller handles unrelate operations.
+   */
+  unrelate?: boolean
+  /** Whether this is a one-to-one relation controller. */
+  isOneToOne: boolean
+  /** The route parameter name for the member id. */
+  idParam: string
+  /**
+   * The scope(s) to apply to every query executed through
+   * this controller.
+   */
+  scope?: ModelControllerScope
+  allowScope?: boolean | OrArrayOf<string>
+  allowFilter?: boolean | OrArrayOf<string>
+  allowParam?: OrArrayOf<LiteralUnion<keyof QueryParameterOptions>>
+
+  /**
+   * The controller's collection actions with built-in CRUD
+   * defaults.
+   */
+  collection?: ModelControllerActions<CollectionController<$Model>>
+  /**
+   * The controller's member actions with built-in CRUD
+   * defaults.
+   */
+  member?: ModelControllerMemberActions<CollectionController<$Model>>
+
+  /** Creates a query builder for this controller's model. */
+  query(trx?: objection.Transaction): QueryBuilder<$Model>
+  /**
+   * Applies controller-level scopes and configuration to
+   * a query builder.
+   */
+  setupQuery(
+    query: QueryBuilder<$Model>,
+    base?: any
+  ): QueryBuilder<$Model>
+
+  /**
+   * Extracts the member id from the request context's
+   * route parameters.
+   */
+  getMemberId(ctx: KoaContext): Id | Id[]
+  /**
+   * Retrieves the model id from a model instance.
+   */
+  getModelId(model: $Model): Id | Id[]
+  /**
+   * Retrieves a member model from the database for the
+   * current request context.
+   */
+  getMember(
+    ctx: KoaContext,
+    base?: any,
+    options?: {
+      query?: Record<string, any>
+      modify?: (query: QueryBuilder<$Model>) => QueryBuilder<$Model>
+      forUpdate?: boolean
+    }
+  ): Promise<$Model | null>
+
+  /**
+   * Executes a controller action within a transaction
+   * context.
+   */
+  execute(
+    ctx: KoaContext,
+    execute: (
+      query: QueryBuilder<$Model>,
+      trx?: objection.Transaction
+    ) => any
+  ): Promise<any>
+
+  /**
+   * Extracts model IDs from the request body collection,
+   * validating each ID.
+   */
+  getCollectionIds(ctx: KoaContext): Array<Id | Id[]>
+  /**
+   * Returns relevant IDs for the current request: from
+   * route params for member requests, from body for
+   * collection requests.
+   */
+  getIds(ctx: KoaContext): Array<Id | Id[]>
+  /**
+   * Returns the request context extended with a memberId
+   * property.
+   */
+  getContextWithMemberId(
+    ctx: KoaContext,
+    memberId?: Id | Id[]
+  ): KoaContext
+
+  /**
+   * Validates and coerces a model ID using the model
+   * class's reference mechanism.
+   */
+  validateId(id: any): Id | Id[]
+
+  /**
+   * Executes an insert/update/patch action and fetches
+   * the result. Supports both normal and DitoGraph modes.
+   */
+  executeAndFetch(
+    action: string,
+    ctx: KoaContext,
+    modify?: (query: QueryBuilder<$Model>) => void,
+    body?: Record<string, any>
+  ): Promise<$Model>
+
+  /**
+   * Executes a by-id mutation action and fetches the
+   * result. Throws NotFoundError if not found.
+   */
+  executeAndFetchById(
+    action: string,
+    ctx: KoaContext,
+    modify?: (query: QueryBuilder<$Model>) => void,
+    body?: Record<string, any>
+  ): Promise<$Model>
+}
+
+/**
+ * Controller for a top-level model resource. Extends
+ * CollectionController with relation and asset setup.
+ */
+export class ModelController<
+  $Model extends Model = Model
+> extends CollectionController<$Model> {
+  /**
+   * The model class this controller represents. If not
+   * provided, the singularized controller name is used
+   * to look up the model class in models registered with
+   * the application.
+   */
+  modelClass?: Class<$Model>
+  /**
+   * The controller's collection actions. Wrap actions in
+   * this object to assign them to the collection.
    */
   collection?: ModelControllerActions<ModelController<$Model>>
   /**
-   * The controller's member actions. Instead of being provided on the instance
-   * level as in the controller base class, they are to be wrapped in a
-   * designated object in order to be assigned to the member.
-   *
-   * To limit which member actions will be mapped to routes, supply an array of
-   * action names under the `allow` key. Only the action names listed there will
-   * be mapped to routes, everything else will be omitted.
+   * The controller's member actions. Wrap actions in this
+   * object to assign them to the member.
    */
   member?: ModelControllerMemberActions<ModelController<$Model>>
   assets?:
@@ -1203,51 +2158,33 @@ export class ModelController<$Model extends Model = Model> extends Controller {
       }
 
   /**
-   * When nothing is returned from a hook, the standard action result is used.
+   * When nothing is returned from a hook, the standard
+   * action result is used.
    */
   hooks?: ModelControllerHooks<ModelController<$Model>>
-  /**
-   * Controls whether normal database methods should be used, or their …Graph…
-   * counterparts.
-   *
-   * @see {@link https://github.com/ditojs/dito/blob/master/docs/model-queries.md#graph-methods Model Queries – Graph Methods}
-   */
-  graph?: boolean
-  /**
-   * The query parameter(s) allowed to be passed to the default model actions,
-   * both on `collection` and `member` level. If none is provided, every
-   * supported parameter is allowed.
-   *
-   * @see {@link https://github.com/ditojs/dito/blob/master/docs/model-queries.md#find-methods) Model Queries – Find Methods}
-   */
-  allowParam?: OrArrayOf<LiteralUnion<keyof QueryParameterOptions>>
-  /**
-   * The scope(s) allowed to be requested when passing the 'scope' query
-   * parameter to the default model actions. If none is provided, every
-   * supported scope is allowed.
-   *
-   * @see {@link https://github.com/ditojs/dito/blob/master/docs/model-scopes.md Model Scopes}
-   */
-  allowScope?: boolean | OrArrayOf<string>
-  /**
-   * The filter(s) allowed to be requested when passing the 'filter' query
-   * parameter to the default model actions. If none is provided, every
-   * supported filter is allowed.
-   *
-   * @see {@link https://github.com/ditojs/dito/blob/master/docs/model-filters.md Model Filters}
-   */
-  allowFilter?: boolean | OrArrayOf<string>
-  /**
-   * The scope(s) to be applied to every query executed through this controller.
-   *
-   * @see {@link https://github.com/ditojs/dito/blob/master/docs/model-scopes.md Model Scopes}
-   */
-  scope?: ModelControllerScope
-  query(): QueryBuilder<$Model>
+  /** Map of relation name to RelationController instance. */
+  relations?: Record<string, RelationController>
+}
+
+/**
+ * Controller for nested relation resources. Created
+ * automatically by ModelController during relation setup.
+ */
+export class RelationController<
+  $Model extends Model = Model
+> extends CollectionController<$Model> {
+  /** The parent controller that owns this relation. */
+  parent: ModelController
+
+  /** The Objection.js relation instance. */
+  relationInstance: objection.Relation
+
+  /** The raw relation definition from the parent. */
+  relationDefinition: Record<string, unknown>
 }
 
 export class Validator extends objection.Validator {
-  constructor(schema?: {
+  constructor(options?: {
     options?: {
       /** @defaultValue `false` */
       async?: boolean
@@ -1274,15 +2211,66 @@ export class Validator extends objection.Validator {
     }
     keywords?: Record<string, Keyword>
     formats?: Record<string, Format>
+    types?: Record<string, any>
   })
+
+  /**
+   * Compiles a JSON schema into a validation function.
+   * Supports sync, async, and throwing modes via options.
+   */
+  compile(
+    jsonSchema: Schema,
+    options?: Record<string, any>
+  ): Ajv.ValidateFunction
+
+  /** Adds a schema to all cached Ajv instances. */
+  addSchema(jsonSchema: Schema): void
+
+  /**
+   * Returns a cached Ajv instance for the given options,
+   * creating one if needed.
+   */
+  getAjv(options?: Record<string, any>): Ajv.default
+
+  /** Creates a new Ajv instance with the given options. */
+  createAjv(options?: Record<string, any>): Ajv.default
+
+  /**
+   * Converts Ajv validation errors into an Objection.js
+   * style error hash.
+   */
+  parseErrors(
+    errors: Ajv.ErrorObject[],
+    options?: Record<string, any>
+  ): Record<string, any[]>
+
+  /**
+   * Processes a JSON schema for patch or async validation
+   * modes.
+   */
+  processSchema(
+    jsonSchema: Schema,
+    options?: Record<string, any>
+  ): Schema
+
+  /** Returns a registered keyword definition by name. */
+  getKeyword(name: string): Keyword | undefined
+
+  /** Returns a registered format definition by name. */
+  getFormat(name: string): Format | undefined
+
+  /** Prefixes error instance paths with a given prefix. */
+  prefixInstancePaths(
+    errors: Ajv.ErrorObject[],
+    prefix: string
+  ): Ajv.ErrorObject[]
 }
 
 // NOTE: Because EventEmitter overrides a number of EventEmitter2 methods with
 // changed signatures, we are unable to extend it.
 export class EventEmitter {
-  static mixin: (target: any) => {}
+  static mixin: (target: any) => void
   constructor(options?: EventEmitter2.ConstructorOptions)
-  responds(event: EventEmitter2.event): boolean
   emit(
     event: EventEmitter2.event | EventEmitter2.eventNS,
     ...values: any[]
@@ -1293,9 +2281,27 @@ export class EventEmitter {
     listener: EventEmitter2.ListenerFn
   ): this
 
+  on(
+    event: string[],
+    listener: EventEmitter2.ListenerFn
+  ): this
+
+  on(
+    event: Record<string, EventEmitter2.ListenerFn>
+  ): this
+
   off(
     event: EventEmitter2.event | EventEmitter2.eventNS,
     listener: EventEmitter2.ListenerFn
+  ): this
+
+  off(
+    event: string[],
+    listener: EventEmitter2.ListenerFn
+  ): this
+
+  off(
+    event: Record<string, EventEmitter2.ListenerFn>
   ): this
 
   once(
@@ -1303,10 +2309,14 @@ export class EventEmitter {
     listener: EventEmitter2.ListenerFn
   ): this
 
-  setupEmitter(
-    events: Record<string, EventEmitter2.ListenerFn>,
-    options: EventEmitter2.ConstructorOptions
-  ): void
+  once(
+    event: string[],
+    listener: EventEmitter2.ListenerFn
+  ): this
+
+  once(
+    event: Record<string, EventEmitter2.ListenerFn>
+  ): this
 
   // From EventEmitter2:
   emitAsync(
@@ -1402,9 +2412,9 @@ export class EventEmitter {
   stopListeningTo(
     target?: EventEmitter2.GeneralEventEmitter,
     event?: EventEmitter2.event | EventEmitter2.eventNS
-  ): Boolean
+  ): boolean
 
-  hasListeners(event?: String): Boolean
+  hasListeners(event?: string): boolean
   static once(
     emitter: EventEmitter2.EventEmitter2,
     event: EventEmitter2.event | EventEmitter2.eventNS,
@@ -1414,13 +2424,49 @@ export class EventEmitter {
   static defaultMaxListeners: number
 }
 
+/**
+ * Options for Dito.js graph operations (`insertDitoGraph`,
+ * `upsertDitoGraph`, `updateDitoGraph`, `patchDitoGraph`).
+ * Controls how nested relation graphs are persisted.
+ */
 export interface DitoGraphOptions {
+  /**
+   * Strategy for fetching existing data before upserting.
+   *
+   * - `'OnlyNeeded'`: Fetch only data needed to determine
+   *   changes.
+   * - `'OnlyIdentifiers'`: Fetch only IDs for comparison.
+   * - `'Everything'`: Fetch all existing graph data.
+   */
   fetchStrategy?: 'OnlyNeeded' | 'OnlyIdentifiers' | 'Everything'
+  /**
+   * Whether to relate existing models found in the graph
+   * instead of inserting new ones.
+   */
   relate?: boolean
+  /** Whether to allow `#ref` references in the graph. */
   allowRefs?: boolean
+  /**
+   * Whether to insert models that don't exist in the
+   * database yet during an upsert.
+   */
   insertMissing?: boolean
+  /**
+   * Whether to unrelate models removed from the graph
+   * (sets the foreign key to `null` instead of deleting).
+   */
   unrelate?: boolean
+  /**
+   * Whether to update existing models found in the graph
+   * (as opposed to only inserting new ones).
+   */
   update?: boolean
+  /**
+   * Enables special handling for cyclic graph upserts,
+   * where self-referential relations are broken into two
+   * phases.
+   */
+  cyclic?: boolean
 }
 
 export type QueryParameterOptions = {
@@ -1434,22 +2480,37 @@ export type QueryParameterOptions = {
   range?: [number, number] | string
   limit?: number
   offset?: number
-  order?: 'asc' | 'desc'
+  order?: OrArrayOf<string>
 }
 export type QueryParameterOptionKey = keyof QueryParameterOptions
 
 export class Service {
   constructor(app: Application<Models>, name?: string)
-  setup(config: any): void
+
+  /** The application instance. */
+  app: Application<Models>
+  /** The camelized service name. */
+  name: string
+  /** The service configuration. */
+  config: Record<string, unknown> | null
+  /** Whether this service has been initialized. */
+  initialized: boolean
+
+  setup(config: Record<string, unknown>): void
+
   /**
-   * To be overridden in sub-classes, if the service needs to initialize.
+   * Override in sub-classes if the service needs async
+   * initialization.
    * @overridable
    */
   initialize(): Promise<void>
+
   /** @overridable */
   start(): Promise<void>
+
   /** @overridable */
   stop(): Promise<void>
+
   get logger(): PinoLogger
 }
 export type Services = Record<string, Class<Service> | Service>
@@ -1458,6 +2519,24 @@ export class QueryBuilder<
   M extends Model,
   R = M[]
 > extends objection.QueryBuilder<M, R> {
+  /** Clones the query with scope/filter state. */
+  clone(): QueryBuilder<M, R>
+  /**
+   * Inherits scopes from a parent query.
+   * @override
+   */
+  childQueryOf(
+    query: QueryBuilder<Model>,
+    options?: Record<string, any>
+  ): this
+
+  /**
+   * Creates a find-only copy of this query (clears
+   * `runAfter` callbacks).
+   * @override
+   */
+  toFindQuery(): QueryBuilder<M, M[]>
+
   /**
    * Returns true if the query defines normal selects: select(), column(),
    * columns()
@@ -1479,27 +2558,28 @@ export class QueryBuilder<
   allowScope: (...scopes: string[]) => void
   clearAllowScope: () => void
   applyFilter: {
-    (name: string, ...args: any[]): this
-    (filters: { [name: string]: any[] }): this
+    (name: string, ...args: unknown[]): this
+    (filters: { [name: string]: unknown[] }): this
   }
-
   allowFilter: (...filters: string[]) => void
+  /** Omits properties from the query result. */
+  omit: (...properties: string[]) => void
   withGraph: (
     expr: objection.RelationExpression<M>,
-    options?: objection.GraphOptions & { algorithm: 'fetch' | 'join' }
+    options?: objection.GraphOptions & {
+      algorithm?: 'fetch' | 'join'
+    }
   ) => this
 
-  toSQL: () => string
+  toSQL: () => { sql: string; bindings: unknown[] }
   raw: Knex.RawBuilder
   selectRaw: SetReturnType<Knex.RawBuilder, this>
-  // TODO: add type for Dito's pluck method, which has a different method
-  // signature than the objection one:
-  // pluck: <K extends objection.ModelProps<M>>(
-  //   key: K
-  // ) => QueryBuilder<M, ReflectArrayType<R, M[K]>>
+  pluck: (key: string) => this
   loadDataPath: (
     dataPath: string[] | string,
-    options: objection.GraphOptions & { algorithm: 'fetch' | 'join' }
+    options?: objection.GraphOptions & {
+      algorithm?: 'fetch' | 'join'
+    }
   ) => this
 
   upsert: (
@@ -1515,7 +2595,7 @@ export class QueryBuilder<
     allowParam?:
       | QueryParameterOptionKey[]
       | {
-          [key in keyof QueryParameterOptionKey]: boolean
+          [key in QueryParameterOptionKey]?: boolean
         }
   ) => this
 
@@ -1537,17 +2617,21 @@ export class QueryBuilder<
     options?: DitoGraphOptions
   ) => this
 
-  upsertDitoGraphAndFetch: (data: any, options?: DitoGraphOptions) => this
+  upsertDitoGraphAndFetch: (
+    data: PartialDitoModelGraph<M>,
+    options?: DitoGraphOptions
+  ) => this
+
   upsertDitoGraphAndFetchById: (
     id: Id,
-    data: any,
+    data: PartialDitoModelGraph<M>,
     options?: DitoGraphOptions
   ) => QueryBuilder<M, M>
 
   updateDitoGraph: (
     data: PartialDitoModelGraph<M>,
     options?: DitoGraphOptions
-  ) => Promise<any>
+  ) => this
 
   updateDitoGraphAndFetch: (
     data: PartialDitoModelGraph<M>,
@@ -1556,7 +2640,7 @@ export class QueryBuilder<
 
   updateDitoGraphAndFetchById: (
     id: Id,
-    data: any,
+    data: PartialDitoModelGraph<M>,
     options?: DitoGraphOptions
   ) => QueryBuilder<M, M>
 
@@ -1575,7 +2659,8 @@ export class QueryBuilder<
     data: PartialDitoModelGraph<M>,
     options?: DitoGraphOptions
   ) => QueryBuilder<M, M>
-  // TODO: static mixin(target)
+
+  truncate: (options?: { restart?: boolean; cascade?: boolean }) => this
 
   ArrayQueryBuilderType: QueryBuilder<M, M[]>
   SingleQueryBuilderType: QueryBuilder<M, M>
@@ -1584,6 +2669,51 @@ export class QueryBuilder<
   MaybeSingleQueryBuilderType: QueryBuilder<M, M | undefined>
 }
 export interface QueryBuilder<M extends Model, R = M[]> extends KnexHelper {}
+
+/**
+ * Registry of built-in query parameter handlers (scope,
+ * filter, range, limit, offset, order). Used by
+ * `QueryBuilder.find()` to apply URL query parameters.
+ */
+type QueryParameterHandler = (
+  query: QueryBuilder<Model>,
+  key: string,
+  value: unknown
+) => void
+
+export const QueryParameters: {
+  register(name: string, handler: QueryParameterHandler): void
+  register(
+    handlers: Record<string, QueryParameterHandler>
+  ): void
+  get(name: string): QueryParameterHandler | undefined
+  has(name: string): boolean
+  getAllowed(): Record<string, boolean>
+}
+
+export type QueryFilterDefinition = {
+  parameters?: Record<string, Schema>
+  handler: (
+    query: QueryBuilder<Model>,
+    property: string,
+    ...args: unknown[]
+  ) => void
+}
+
+/**
+ * Registry of built-in query filters (text, date-range).
+ * Provides reusable filter implementations that can be
+ * referenced by name in model filter definitions.
+ */
+export const QueryFilters: {
+  register(name: string, definition: QueryFilterDefinition): void
+  register(
+    definitions: Record<string, QueryFilterDefinition>
+  ): void
+  get(name: string): QueryFilterDefinition | undefined
+  has(name: string): boolean
+  getAllowed(): Record<string, boolean>
+}
 
 export type PartialModelObject<T extends Model> = {
   [K in objection.NonFunctionPropertyNames<T>]?: objection.Defined<
@@ -1620,17 +2750,22 @@ export class ResponseError extends Error {
           /** The error message. */
           message?: string
           /**
-           * An optional code to be used to distinguish different error
-           * instances.
+           * An optional code to be used to distinguish
+           * different error instances.
            */
           code?: string | number
         }
+      | Error
       | string,
-    defaults?: { message?: string; status?: number }
+    defaults?: { message?: string; status?: number },
+    overrides?: Record<string, unknown>
   )
 
   status: number
   code?: string | number
+  /** Additional error data. */
+  data?: Record<string, unknown>
+  toJSON(): Record<string, unknown>
 }
 export class AssetError extends ResponseError {}
 export class AuthenticationError extends ResponseError {}
@@ -1642,12 +2777,13 @@ export class DatabaseError extends ResponseError {
       | dbErrors.NotNullViolationError
       | dbErrors.ConstraintViolationError
       | dbErrors.DataError
-      | dbErrors.DBError
+      | dbErrors.DBError,
+    overrides?: Record<string, unknown>
   )
 }
 export class GraphError extends ResponseError {}
 export class ModelError extends ResponseError {
-  constructor(model: Class<Model> | Model)
+  constructor(model: Class<Model> | Model, error?: unknown)
 }
 export class NotFoundError extends ResponseError {}
 export class NotImplementedError extends ResponseError {}
@@ -1655,18 +2791,176 @@ export class QueryBuilderError extends ResponseError {}
 export class RelationError extends ResponseError {}
 export class ValidationError extends ResponseError {}
 export class ControllerError extends ResponseError {
-  constructor(controller: { name: string } | { constructor: { name: string } })
+  constructor(
+    controller:
+      | Function
+      | { constructor: { name: string } },
+    error?: unknown
+  )
 }
 /* ------------------------------- End Errors ------------------------------ */
 
-/* ------------------------------ Start Mixins ----------------------------- */
-export type Mixin = (
-  target: Object,
-  propertyName: string,
-  propertyDescriptor: PropertyDescriptor
-) => void
+/* ----------------------------- Start Storage ----------------------------- */
+/**
+ * Base class for file storage backends. Subclasses handle
+ * disk and S3 storage.
+ */
+export class Storage {
+  constructor(app: Application<Models>, config: StorageConfig)
+  /** The application instance. */
+  app: Application<Models>
+  /** The storage configuration. */
+  config: StorageConfig
+  /** The storage name. */
+  name: string
+  /** The base URL for accessing stored files. */
+  url?: string
+  /** The file system path for disk storage. */
+  path?: string
+  /**
+   * Upload concurrency limit.
+   *
+   * @defaultValue `8`
+   */
+  concurrency: number
+  /** Whether this storage has been initialized. */
+  initialized: boolean
 
-type AssetFileObject = {
+  /** Sets up the storage backend. */
+  setup(): Promise<void>
+  /**
+   * Override in sub-classes for async initialization.
+   * @overridable
+   */
+  initialize(): Promise<void>
+  /**
+   * Returns a multer-compatible storage object for handling
+   * uploads, or null if no underlying storage is configured.
+   */
+  getUploadStorage(
+    config: Record<string, unknown>
+  ): Record<string, any> | null
+
+  /** Returns a multer upload handler for this storage. */
+  getUploadHandler(
+    config: Record<string, unknown>
+  ): Koa.Middleware | null
+
+  /**
+   * Generates a unique storage key from a filename,
+   * combining a UUID with the file extension.
+   */
+  getUniqueKey(name: string): string
+  /**
+   * Checks whether the given URL is allowed as an import
+   * source based on `config.allowedImports`.
+   */
+  isImportSourceAllowed(url: string): boolean
+  /** Adds a file to storage. */
+  addFile(file: AssetFile, data: Buffer): Promise<AssetFile>
+  /** Removes a file from storage. */
+  removeFile(file: AssetFile): Promise<void>
+  /** Reads a file's contents from storage. */
+  readFile(file: AssetFile): Promise<Buffer>
+  /** Lists all keys in the storage. */
+  listKeys(): Promise<string[]>
+  /** Returns the file system path for a file, if any. */
+  getFilePath(file: AssetFile): string | undefined
+  /** Returns the public URL for a file, if any. */
+  getFileUrl(file: AssetFile): string | undefined
+
+  /**
+   * Converts a multer upload object to the internal file
+   * format.
+   */
+  convertStorageFile(
+    storageFile: Record<string, any>
+  ): AssetFileObject
+
+  /**
+   * Converts an array of multer upload objects to the
+   * internal file format.
+   */
+  convertStorageFiles(
+    storageFiles: Record<string, any>[]
+  ): AssetFileObject[]
+
+  /**
+   * Converts a plain file object into an AssetFile
+   * instance in-place on this storage.
+   */
+  convertAssetFile(file: Record<string, any>): void
+
+  /** Registers a storage subclass by type name. */
+  static register(storageClass: Class<Storage>): void
+  /** Retrieves a registered storage class by type name. */
+  static get(type: string): Class<Storage> | null
+}
+
+/**
+ * Represents a file asset with metadata. Created from
+ * uploaded files or imported URLs.
+ */
+export class AssetFile {
+  constructor(options: {
+    name: string
+    data: string | Buffer
+    type?: string
+    width?: number
+    height?: number
+  })
+
+  /** Unique storage key (UUID + extension). */
+  key: string
+  /** The original filename. */
+  name: string
+  /** The file's MIME type, set from options or detected from data. */
+  type: string | undefined
+  /** File size in bytes. */
+  size: number
+  /** Image width, if dimensions were read. */
+  width?: number
+  /** Image height, if dimensions were read. */
+  height?: number
+  /** The public URL for this file, set after storage upload. */
+  url?: string
+  /** The file data buffer. */
+  get data(): Buffer | null
+  /** The storage instance this file belongs to. */
+  get storage(): Storage | null
+  /** The file system path, if stored on disk. */
+  get path(): string | undefined
+  /** Reads the file's contents from storage. */
+  read(): Promise<Buffer | null>
+
+  /**
+   * Converts a plain object into an AssetFile instance
+   * in-place on the given storage.
+   */
+  static convert(
+    object: Record<string, any>,
+    storage: Storage
+  ): void
+
+  /** Creates a new AssetFile from the given options. */
+  static create(options: {
+    name: string
+    data: string | Buffer
+    type?: string
+    width?: number
+    height?: number
+  }): AssetFile
+
+  /**
+   * Generates a unique storage key for a filename,
+   * combining a UUID with the file extension.
+   */
+  static getUniqueKey(name: string): string
+}
+/* ------------------------------ End Storage ------------------------------ */
+
+/* ------------------------------ Start Mixins ----------------------------- */
+export type AssetFileObject = {
   // The unique key within the storage (uuid/v4 + file extension)
   key: string
   // The original filename
@@ -1678,9 +2972,9 @@ type AssetFileObject = {
   // The public url of the file
   url: string
   // The width of the image if the storage defines `config.readDimensions`
-  width: number
+  width?: number
   // The height of the image if the storage defines `config.readDimensions`
-  height: number
+  height?: number
 }
 
 export const AssetMixin: <T extends Constructor<{}>>(
@@ -1691,6 +2985,12 @@ export const AssetMixin: <T extends Constructor<{}>>(
     file: AssetFileObject
     storage: string
     count: number
+    createdAt: Date
+    updatedAt: Date
+    $parseJson(
+      json: object,
+      opt?: ModelOptions
+    ): object
   }>
 
 export const AssetModel: ReturnType<typeof AssetMixin<typeof Model>>
@@ -1710,7 +3010,7 @@ export const SessionMixin: <T extends Constructor<{}>>(
 ) => T &
   Constructor<{
     id: string
-    value: { [key: string]: any }
+    value: Record<string, unknown>
   }>
 
 export const SessionModel: ReturnType<typeof SessionMixin<typeof Model>>
@@ -1742,8 +3042,14 @@ export const UserMixin: <T extends Constructor<{}>>(
       sessionScope?: OrArrayOf<string>
     }
 
-    // TODO: type options
-    login(ctx: KoaContext, options: any): Promise<void>
+    /** Registers the passport strategy for this user class. */
+    setup(): void
+
+    /** Authenticates a user via Passport. */
+    login(
+      ctx: KoaContext,
+      options?: Record<string, unknown>
+    ): Promise<InstanceType<typeof UserModel>>
 
     sessionQuery(
       trx: Knex.Transaction
@@ -1752,72 +3058,11 @@ export const UserMixin: <T extends Constructor<{}>>(
 
 export const UserModel: ReturnType<typeof UserMixin<typeof Model>>
 
-/**
- * Apply the action mixin to a controller action, in order to determine which
- * HTTP method (`'get'`, `'post'`, `'put'`, `'delete'` or `'patch'`) the action
- * should listen to and optionally the path to which it is mapped, defined in
- * relation to the route path of its controller. By default, the normalized
- * method name is used as the action's path, and the `'get'` method is assigned
- * if none is provided.
- */
-export const action: (method: string, path: string) => Mixin
-
-/**
- * Apply the authorize mixin to a controller action, in order to determines
- * whether or how the request is authorized. This value can either be one of the
- * values as described below, an array of them or a function which returns one
- * or more of them.
- *
- * - Boolean: `true` if the action should be authorized, `false` otherwise.
- * - '$self': The requested member is checked against `ctx.state.user` and the
- *   action is only authorized if it matches the member.
- * - '$owner': The member is asked if it is owned by `ctx.state.user` through
- *   the optional `Model.$hasOwner()` method.
- * - Any string: `ctx.state.user` is checked for this role through the
- *   overridable `UserModel.hasRole()` method.
- */
-export const authorize: (
-  authorize: (ctx: KoaContext) => void | boolean | OrArrayOf<string>
-) => Mixin
-
-/**
- * Apply the parameters mixin to a controller action, in order to apply
- * automatic mapping of Koa.js' `ctx.query` object to method parameters along
- * with their automatic validation.
- *
- * @see {@link https://github.com/ditojs/dito/blob/master/docs/model-properties.md Model Properties}
- */
-export const parameters: (params: { [key: string]: Schema }) => Mixin
-
-/**
- * Apply the response mixin to a controller action, in order to provide a schema
- * for the value returned from the action handler and optionally map the value
- * to a key inside a returned object when it contains a `name` property.
- */
-export const response: (
-  response: Schema & { name?: string },
-  options: any
-) => Mixin
-
-/**
- * Apply the scope mixin to a controller action, in order to determine the
- * scope(s) to be applied when loading the relation's models. The scope needs to
- * be defined in the related model class' scopes definitions.
- */
-export const scope: (...scopes: string[]) => Mixin
-
-/**
- * Apply the transacted mixin to a controller action in order to determine
- * whether queries in the action should be executed within a transaction. Any
- * failure will mean the database will rollback any queries executed to the
- * pre-transaction state.
- */
-export const transacted: () => Mixin
-
 /* ------------------------------ End Mixins ----------------------------- */
 
 export type HTTPMethod =
   | 'get'
+  | 'head'
   | 'post'
   | 'put'
   | 'delete'
@@ -1827,7 +3072,7 @@ export type HTTPMethod =
   | 'connect'
 
 export interface KnexHelper {
-  getDialect(): string
+  getDialect(): string | null
 
   isPostgreSQL(): boolean
 
@@ -1838,11 +3083,70 @@ export interface KnexHelper {
   isMsSQL(): boolean
 }
 
+export function convertSchema(
+  schema: Schema,
+  options?: Record<string, any>,
+  parentEntry?: Record<string, any> | null
+): Record<string, any>
+
+export function convertRelations(
+  ownerModelClass: Class<Model>,
+  relations: ModelRelations,
+  models: Models
+): Record<string, any>
+
+export function convertRelation(
+  schema: ModelRelation,
+  models: Models
+): Record<string, any>
+
+export function getRelationClass(
+  relation: string | typeof objection.Relation
+): typeof objection.Relation | null
+
+export function isThroughRelationClass(
+  relationClass: typeof objection.Relation
+): boolean
+
+export function addRelationSchemas(
+  modelClass: Class<Model>,
+  properties: Record<string, ModelProperty>
+): void
+
 export type Keyword =
   | SetOptional<Ajv.MacroKeywordDefinition, 'keyword'>
   | SetOptional<Ajv.CodeKeywordDefinition, 'keyword'>
   | SetOptional<Ajv.FuncKeywordDefinition, 'keyword'>
 export type Format = Ajv.ValidateFunction | Ajv.FormatDefinition<string>
+
+/** Built-in AJV keyword definitions. */
+export const keywords: {
+  specificType: Keyword
+  primary: Keyword
+  foreign: Keyword
+  unique: Keyword
+  index: Keyword
+  computed: Keyword
+  hidden: Keyword
+  unsigned: Keyword
+  _instanceof: Keyword
+  validate: Keyword
+  validateAsync: Keyword
+  relate: Keyword
+  range: Keyword
+}
+
+/** Built-in AJV format definitions. */
+export const formats: {
+  empty: Format
+  required: Format
+}
+
+/** Built-in schema type definitions. */
+export const types: {
+  asset: Record<string, any>
+  color: Record<string, any>
+}
 export type Id = string | number
 export type KoaContext<$State = any> = Koa.ParameterizedContext<
   $State,
@@ -1881,31 +3185,50 @@ export type SelectModelKeys<T> = Exclude<
 
 /* ---------------------- Extended from Ajv JSON Schema --------------------- */
 
+/**
+ * Dito.js JSON Schema type, extending the AJV JSON Schema type with
+ * Dito.js-specific validation keywords (`validate`, `validateAsync`,
+ * `instanceof`).
+ *
+ * Used throughout the framework for model property definitions, action
+ * parameters, and response schemas.
+ *
+ * @template T - The TypeScript type that this schema validates against.
+ *
+ * @example
+ * ```ts
+ * const schema: Schema<string> = {
+ *   type: 'string',
+ *   minLength: 1,
+ *   validate: ({ data, app }) => typeof data === 'string'
+ * }
+ * ```
+ */
 export type Schema<T = any> = JSONSchemaType<T> & {
   // keywords/_validate.js
   validate?: (params: {
-    data: any
-    parentData: object | any[]
-    rootData: object | any[]
+    data: unknown
+    parentData: object | unknown[]
+    rootData: object | unknown[]
     dataPath: string
     parentIndex?: number
     parentKey?: string
     app: Application<Models>
     validator: Validator
-    options: any
+    options: unknown
   }) => boolean | void
 
   // keywords/_validate.js
   validateAsync?: (params: {
-    data: any
-    parentData: object | any[]
-    rootData: object | any[]
+    data: unknown
+    parentData: object | unknown[]
+    rootData: object | unknown[]
     dataPath: string
     parentIndex?: number
     parentKey?: string
     app: Application<Models>
     validator: Validator
-    options: any
+    options: unknown
   }) => Promise<boolean | void>
 
   // keywords/_instanceof.js
