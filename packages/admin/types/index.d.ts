@@ -17,97 +17,207 @@ declare global {
 
 export default DitoAdmin
 export interface DitoGlobal {
+  /** Global API configuration shared across the admin. */
   api?: ApiConfig
+  /** Base URL path for the admin application. */
   base?: string
+  /** Arbitrary settings accessible via `dito.settings`. */
   settings?: Record<string, any>
 }
-export type RequestMethod = <T>({
-  url,
-  method,
-  data,
-  query,
-  params,
-  headers
-}: {
+
+/**
+ * A function that performs an HTTP request and returns the parsed
+ * response. Used by the admin to communicate with the Dito.js
+ * server API.
+ *
+ * @template T The expected type of the response data.
+ */
+export type RequestMethod = <T>(options: {
+  /** The URL to send the request to. */
   url: string
   /**
+   * The HTTP method to use.
+   *
    * @default 'get'
    */
-  method: HTTPVerb
-  data: any
-  query: Record<string, string | string[]> | [string, string][]
-  headers: Record<string, string>
+  method?: HTTPVerb
+  /** Request body payload. */
+  data?: unknown
+  /** URL query parameters. */
+  query?:
+    | Record<string, string | number | (string | number)[]>
+    | [string, string | number][]
+    | null
+  /** Additional HTTP headers to include. */
+  headers?: Record<string, string> | null
+  /** Abort signal to cancel the request. */
+  signal?: AbortSignal | null
 }) => Promise<RequestMethodResponse<T>>
 
+/**
+ * The response returned by {@link RequestMethod}, extending the
+ * standard `Response` with a parsed `data` property.
+ *
+ * @template T The type of the parsed response data.
+ */
 export type RequestMethodResponse<T> = Response & { data: T }
 
+/**
+ * Describes a resource in the Dito.js server API. Resources can be
+ * nested via {@link ApiResource.parent} to build hierarchical API
+ * paths. The {@link ApiResource.type} determines how the path is
+ * constructed:
+ *
+ * - `'collection'` — uses `path` directly (e.g. `users`)
+ * - `'member'` — appends `id` to the path (e.g. `users/5`)
+ * - `'upload'` — builds an upload path under the parent collection
+ *   (e.g. `users/upload/avatar`)
+ *
+ * Paths are built recursively through the `parent` chain, so a
+ * member nested under a collection produces paths like
+ * `users/1/comments/3`.
+ */
 export interface ApiResource {
-  type: string
+  /**
+   * Determines how the resource path is constructed.
+   *
+   * @see {@link ApiResource} for the path-building rules per type.
+   */
+  type: LiteralUnion<'collection' | 'member' | 'upload'>
+  /**
+   * URL path segment for this resource. If it starts with `/`, it is
+   * treated as absolute and parent nesting is skipped. Otherwise it
+   * is appended to the parent's resolved path.
+   */
   path?: string
+  /** HTTP method for the resource request. */
+  method?: HTTPVerb
+  /**
+   * Identifier of a specific resource item, used when
+   * {@link ApiResource.type} is `'member'` to append the id to the
+   * resolved path.
+   */
+  id?: string | number
+  /**
+   * Parent resource for nested API paths. The parent's path is
+   * resolved first and this resource's path is appended to it,
+   * enabling hierarchical URLs.
+   */
   parent?: ApiResource
+  /** Query parameters appended to the request URL. */
+  query?: Record<string, string | number | (string | number)[]>
 }
 
+/**
+ * Configuration for the admin's API layer. Merged from three
+ * sources in order of priority: the constructor `api` parameter,
+ * `dito.api` (passed from `AdminController` on the server), and
+ * built-in defaults.
+ */
 export interface ApiConfig {
   /**
-   * The base url to use for api requests.
+   * The base path for the admin UI, as passed from
+   * `AdminController`.
+   *
+   * @defaultValue `'/'`
+   */
+  base?: string
+  /**
+   * The base URL prepended to all API requests. Relative request
+   * URLs are combined with this value.
    */
   url?: string
   /**
-   * @defaultValue 'en-US'
+   * Locale used for date, time, and number formatting throughout
+   * the admin.
+   *
+   * @defaultValue `'en-US'`
    */
   locale?: string
+  /**
+   * Default format options for numbers, dates, and times. Merged
+   * with the built-in `defaultFormats` from `@ditojs/utils`.
+   * Individual schemas can override these on a per-component basis.
+   */
   formats?: {
     number?: NumberFormat
     date?: DateFormat
     time?: TimeFormat
   }
+  /**
+   * The function used to perform HTTP requests. Defaults to a
+   * built-in `fetch` wrapper that applies {@link ApiConfig.headers},
+   * {@link ApiConfig.cors}, and {@link ApiConfig.getApiUrl}
+   * automatically for API URLs.
+   */
   request?: RequestMethod
   /**
-   * Whether to display admin notifications.
+   * Controls admin notification toasts. Set to `false` to disable
+   * all notifications, or provide an object to customize display
+   * duration.
    *
-   * @default `true`
+   * @defaultValue `true`
    */
   notifications?:
     | boolean
     | {
         /**
-         * The amount of milliseconds multiplied with the amount of characters
-         * displayed in the notification, plus 40 (40 + title + message).
+         * Milliseconds per character used to calculate notification
+         * display duration. The formula is:
+         * `(40 + text.length + title.length) * durationFactor`.
+         *
          * @defaultValue `20`
          */
         durationFactor: number
       }
+  /**
+   * CORS settings applied to API requests (where
+   * {@link ApiConfig.isApiUrl} returns `true`).
+   */
   cors?: {
     /**
-     * Whether cross-site `Access-Control` requests are made using credentials.
+     * Enables cross-site requests with credentials
+     * (`credentials: 'include'`).
      */
     credentials: boolean
   }
   /**
-   * Setting normalizePaths to `true` sets `api.normalizePath` to hyphenate
-   * camelized strings and `api.denormalizePath` to do the opposite.
+   * When `true`, sets {@link ApiConfig.normalizePath} to
+   * `hyphenate` (camelCase to kebab-case) and
+   * {@link ApiConfig.denormalizePath} to `camelize` (kebab-case to
+   * camelCase). Used for automatic path conversion between JS
+   * naming conventions and URL paths.
    *
-   * @default Defaults to Application.config.app.normalizePaths and then
-   * `false` when missing.
+   * @defaultValue Inherits from
+   * `Application.config.app.normalizePaths`, falling back
+   * to `false`.
    */
   normalizePaths?: boolean
   /**
-   * @default When `api.normalizePaths = true` (plural),
-   * `require('@ditojs/utils').hyphenate` is used for path normalization.
-   * Otherwise paths are left unchanged.
+   * Converts a camelCase path segment to its URL form. Applied
+   * when building schema routes and upload paths.
+   *
+   * @defaultValue `hyphenate` when {@link ApiConfig.normalizePaths}
+   * is `true`, otherwise an identity function.
    */
   normalizePath?: (path: string) => string
   /**
-   * @default When `api.normalizePaths = true` (plural),
-   * `require('@ditojs/utils').camelize` is used for path denormalization.
-   * Otherwise paths are left unchanged.
+   * Converts a URL path segment back to its camelCase form.
+   *
+   * @defaultValue `camelize` when {@link ApiConfig.normalizePaths}
+   * is `true`, otherwise an identity function.
    */
   denormalizePath?: (path: string) => string
   /**
-   * Auth resources
+   * Authentication resource configuration. The `path` defines the
+   * user collection endpoint, and `login`, `logout`, and `session`
+   * are nested as child resources under it (e.g. `users/login`).
+   * Used by `DitoRoot` for authentication flows.
    */
   users?: {
+    /** The collection path for the user model. */
     path: string
+    /** Login endpoint, nested under `users.path`. */
     login?: {
       /**
        * @defaultValue `'login'`
@@ -118,6 +228,7 @@ export interface ApiConfig {
        */
       method?: HTTPVerb
     }
+    /** Logout endpoint, nested under `users.path`. */
     logout?: {
       /**
        * @defaultValue `'logout'`
@@ -128,6 +239,10 @@ export interface ApiConfig {
        */
       method?: HTTPVerb
     }
+    /**
+     * Session endpoint, nested under `users.path`. Called on app
+     * startup to check for an existing authenticated session.
+     */
     session?: {
       /**
        * @defaultValue `'session'`
@@ -140,42 +255,108 @@ export interface ApiConfig {
     }
   }
   /**
-   * Optionally override resource path handlers.
+   * Custom resource path handlers, keyed by resource type. Merged
+   * with the built-in handlers (`any`, `default`, `collection`,
+   * `member`, `upload`). Each handler receives an
+   * {@link ApiResource} and returns the resolved path string.
    */
   resources?: Record<string, (resource: ApiResource | string) => string>
 
   /**
-   * Optionally override / extend headers
-   * @defaultValue `{
-   *   'Content-Type': 'application/json'
-   * }`
+   * HTTP headers included in all API requests (where
+   * {@link ApiConfig.isApiUrl} returns `true`). Merged with the
+   * default `Content-Type: application/json` header, and can be
+   * further overridden per-request.
+   *
+   * @defaultValue `{ 'Content-Type': 'application/json' }`
    */
   headers?: Record<string, string>
 
   /**
-   * Configures how urls passed to `DitoAdmin.request` are checked to see if
-   * they are an API request.
-   *
-   * By default (if `api.request` is not overridden) API requests include
-   * `api.url` as their base url, `api.headers` in their headers. If
-   * `api.cors.credentials` is set to `true`, cross-site `Access-Control`
-   * requests are made using credentials.
+   * Returns the full API URL for a given request configuration.
+   * Prepends {@link ApiConfig.url} to relative URLs and appends
+   * formatted query parameters.
    */
-  isApiRequest?: (url: string) => boolean
+  getApiUrl?: (options: {
+    url: string
+    query?:
+      | Record<string, string | number | (string | number)[]>
+      | [string, string | number][]
+      | null
+  }) => string
+
+  /**
+   * Returns `true` if the given URL is an API URL. A URL is
+   * considered an API URL if it is not absolute or if it starts
+   * with {@link ApiConfig.url}. When `true`, the request includes
+   * {@link ApiConfig.headers} and respects
+   * {@link ApiConfig.cors} settings.
+   */
+  isApiUrl?: (url: string) => boolean
+
+  /**
+   * Default schema property values per component type. During
+   * schema processing, defaults for a matching type are applied
+   * to the schema: top-level properties that are `undefined` are
+   * set directly, while existing object properties are
+   * deep-merged. When a function is provided, it receives the
+   * schema and can return defaults or modify it directly.
+   *
+   * @example
+   * ```js
+   * defaults: {
+   *   multiselect: {
+   *     selectable: true
+   *   }
+   * }
+   * ```
+   */
+  defaults?: Record<
+    string,
+    | Record<string, any>
+    | ((schema: Component) => Record<string, any> | void)
+  >
 }
 
 export interface BaseSchema<$Item>
   extends SchemaDitoMixin<$Item>,
     SchemaTypeMixin<$Item> {
+  /**
+   * Value used when the field's key is absent from the
+   * data object.
+   */
   default?: OrItemAccessor<$Item>
+  /**
+   * Computes and sets the field value reactively. If
+   * the callback returns `undefined`, the current value
+   * is preserved.
+   */
   compute?: ItemAccessor<$Item>
+  /**
+   * Additional reactive data properties merged into
+   * the component's data scope.
+   */
   data?: OrItemAccessor<$Item, {}, Record<string, any>>
+  /**
+   * Custom CSS class(es) added to the component's container
+   * element. Accepts a string or an object of class-boolean
+   * pairs.
+   */
+  class?: string | Record<string, boolean>
+  /**
+   * Whether the component type omits surrounding spacing.
+   *
+   * @internal Set as a static option on component type
+   * definitions, not configured in schemas.
+   */
   omitSpacing?: boolean
-  break?: 'before' | 'after'
+  /**
+   * Forces a layout line break before, after, or on
+   * both sides of the component.
+   */
+  break?: 'before' | 'after' | 'both'
 }
 
-// TODO: finish off DitoMixin docs
-// (methods / computed / watch / events / `on[A-Z]`-style callbacks)
 export interface SchemaDitoMixin<$Item> {
   /**
    * Only displays the component if the schema accessor returns `true`
@@ -188,6 +369,7 @@ export interface SchemaDitoMixin<$Item> {
    * the component is rendered.
    */
   rules?: {
+    /** Override whether the field is required. */
     required?: boolean
   }
 }
@@ -200,7 +382,52 @@ export type ItemEventHandler<$Item = any> = (
   itemParams: DitoContext<$Item>
 ) => void | false
 
-export interface SchemaTypeMixin<$Item> {
+export type OpenEventHandler<$Item = any> = (
+  itemParams: DitoContext<$Item> & { open: boolean }
+) => void | false
+
+export type ErrorEventHandler<$Item = any> = (
+  itemParams: DitoContext<$Item> & { error: Error }
+) => void | false
+
+/**
+ * Event handlers shared by component schemas, views,
+ * and forms.
+ */
+export interface SchemaEvents<$Item = any> {
+  /**
+   * Fires when the schema's component tree is set up.
+   * @see {@link SchemaFields.onInitialize}
+   */
+  initialize?: ItemEventHandler<$Item>
+  /**
+   * Fires when the schema component is unmounted.
+   * @see {@link SchemaFields.onDestroy}
+   */
+  destroy?: ItemEventHandler<$Item>
+  /**
+   * Fires after data has been fetched from the API.
+   * @see {@link SchemaFields.onLoad}
+   */
+  load?: ItemEventHandler<$Item>
+  /**
+   * Fires after a value change is committed.
+   * @see {@link SchemaFields.onChange}
+   */
+  change?: ItemEventHandler<$Item>
+}
+
+export interface SchemaOpen<$Item = any> {
+  /**
+   * Called when a collapsible schema section is
+   * toggled open or closed. The `open` property on
+   * the context indicates the new state.
+   */
+  onOpen?: OpenEventHandler<$Item>
+}
+
+export interface SchemaTypeMixin<$Item>
+  extends SchemaFields<$Item> {
   /**
    * The label of the component.
    *
@@ -228,9 +455,11 @@ export interface SchemaTypeMixin<$Item> {
   visible?: OrItemAccessor<$Item, {}, boolean>
 
   /**
+   * Whether to exclude the field's value from the processed data
+   * sent to the server.
+   *
    * @defaultValue `false`
    */
-  // TODO: document exclude
   exclude?: OrItemAccessor<$Item, {}, boolean>
 
   /**
@@ -259,10 +488,24 @@ export interface SchemaTypeMixin<$Item> {
   clearable?: OrItemAccessor<$Item, {}, boolean>
 
   /**
-   * Specifies a short hint intended to aid the user with data entry when the
-   * input has no value.
+   * Specifies a short hint intended to aid the user
+   * with data entry when the input has no value. Set
+   * to `false` to disable the placeholder, or `true`
+   * to use the component's auto-generated default
+   * (e.g. multiselect generates one based on
+   * `searchable` and `taggable`).
    */
-  placeholder?: OrItemAccessor<$Item, {}, any>
+  placeholder?: OrItemAccessor<$Item, {}, string | boolean>
+
+  /**
+   * Info text displayed near the component label.
+   */
+  info?: OrItemAccessor<$Item, {}, string>
+
+  /**
+   * The maximum allowed length of the input value.
+   */
+  maxLength?: OrItemAccessor<$Item, {}, number>
 
   /**
    * Whether the input field should have autocomplete enabled.
@@ -270,37 +513,165 @@ export interface SchemaTypeMixin<$Item> {
   autocomplete?: OrItemAccessor<$Item, {}, 'on' | 'off'>
 
   /**
-   * Specifies a function which changes the item value into another format,
-   * before it is passed to the component.
+   * Specifies a function which transforms the stored
+   * value into a display format before it is passed
+   * to the component for rendering.
    */
   format?: ItemAccessor<$Item, {}, any>
+  /**
+   * Whether the component is disabled.
+   *
+   * @defaultValue `false`
+   */
   disabled?: OrItemAccessor<$Item, {}, boolean>
 
   /**
-   * Specifies a function which parses the component value when it changes,
-   *
+   * Specifies a function which parses the component
+   * value when it changes, transforming the raw
+   * input before it is stored.
    */
-  parse?: ItemAccessor<$Item, any>
+  parse?: ItemAccessor<$Item, {}>
 
-  // TODO: document process
+  /**
+   * Specifies a function which processes the field value after
+   * type-specific processing but before exclusion, allowing
+   * custom value transformation before sending data to the
+   * server. Can also modify sibling data via `processedItem`
+   * in the context, even when `exclude` is `true`.
+   */
   process?: OrItemAccessor<$Item>
 
-  // TODO: document name
+  /**
+   * The property key used to identify the field in data objects.
+   * Auto-assigned from the component's key if not provided.
+   */
   name?: string
 
+  /**
+   * Called when the input element receives focus.
+   */
   onFocus?: ItemEventHandler<$Item>
+  /**
+   * Called when the input element loses focus.
+   */
   onBlur?: ItemEventHandler<$Item>
-  onChange?: ItemEventHandler<$Item>
+  /**
+   * Called on every keystroke or value modification. Unlike
+   * {@link BaseSchema.onChange}, fires synchronously.
+   */
   onInput?: ItemEventHandler<$Item>
-  events?: {
+  /**
+   * Grouped event handlers, equivalent to the `on[A-Z]`-style
+   * callbacks on the schema (e.g. {@link BaseSchema.onFocus}).
+   *
+   * @see {@link SchemaFields.onInitialize} and other `on`-
+   * prefixed properties for per-event documentation.
+   */
+  events?: SchemaEvents<$Item> & {
+    /** @see {@link BaseSchema.onFocus} */
     focus?: ItemEventHandler<$Item>
+    /** @see {@link BaseSchema.onBlur} */
     blur?: ItemEventHandler<$Item>
-    change?: ItemEventHandler<$Item>
+    /** @see {@link BaseSchema.onInput} */
     input?: ItemEventHandler<$Item>
   }
+
 }
 
 export interface SchemaSourceMixin<$Item> {
+  /**
+   * The form schema used for editing items.
+   */
+  form?: ResolvableForm
+  /**
+   * Multiple form schemas keyed by item type, for
+   * sources with polymorphic content.
+   */
+  forms?: {
+    [key: string]: ResolvableForm
+  }
+  /**
+   * The label given to items. If no itemLabel is given,
+   * the default is the 'name' property of the item,
+   * followed by the label of the form (plus item id)
+   * and other defaults.
+   */
+  itemLabel?:
+    | OrItemAccessor<
+        $Item,
+        {},
+        | string
+        | {
+            text?: string
+            prefix?: string
+            suffix?: string
+          }
+      >
+    | false
+  /**
+   * The columns displayed in the table. Can be an array
+   * of property names or an object with column schemas.
+   */
+  columns?: Record<string, ColumnSchema<$Item>> | (keyof $Item)[]
+  /**
+   * Scope names as defined on the model. When set, the
+   * admin renders scope buttons allowing the user to
+   * switch between them while editing.
+   */
+  scopes?:
+    | string[]
+    | {
+        [scopeName: string]:
+          | {
+              label?: string
+              hint?: string
+              defaultScope?: boolean
+            }
+          | string
+      }
+  /**
+   * Use a Vue component to render the items.
+   */
+  component?: Resolvable<VueComponent>
+  /**
+   * Custom render function for items.
+   */
+  render?: ItemAccessor<$Item, {}, string>
+  /**
+   * Maximum nesting depth for nested sources.
+   *
+   * @defaultValue `1`
+   */
+  maxDepth?: number
+  /**
+   * Action buttons for the source.
+   */
+  buttons?: Buttons<$Item>
+  /**
+   * Whether to wrap primitive values in objects.
+   */
+  wrapPrimitives?: boolean
+  /**
+   * URL path for the source items.
+   */
+  path?: string
+  /**
+   * The property name used as the item's unique
+   * identifier.
+   *
+   * @defaultValue `'id'`
+   */
+  idKey?: string
+  /**
+   * Whether the source contains nested data.
+   */
+  nested?: boolean
+  /**
+   * Inline form components. When defined, items are
+   * edited inline rather than navigating to a separate
+   * page.
+   */
+  components?: Components<$Item>
   /**
    * The number of items displayed per page. When not provided, all items are
    * rendered.
@@ -308,8 +679,15 @@ export interface SchemaSourceMixin<$Item> {
    * @defaultValue `false`
    */
   paginate?: OrItemAccessor<$Item, {}, number>
-  // TODO: document inlined
   /**
+   * The default page number for paginated sources.
+   */
+  page?: number
+  /**
+   * Whether to display items inline in an expandable form rather
+   * than navigating to a separate page. Also implicitly `true`
+   * when `components` is defined on the schema.
+   *
    * @defaultValue `false`
    */
   inlined?: OrItemAccessor<$Item, {}, boolean>
@@ -351,17 +729,40 @@ export interface SchemaSourceMixin<$Item> {
    * Whether an inlined form is collapsed.
    */
   collapsed?: OrItemAccessor<$Item, {}, boolean>
+  /**
+   * Default sort configuration.
+   */
+  defaultSort?:
+    | string
+    | { key: string; order: 'asc' | 'desc' }
+  /**
+   * Default scope name as defined on the model.
+   */
+  defaultScope?: string
+  /**
+   * Resource configuration for loading data from the
+   * API.
+   */
   resource?: Resource
+  /**
+   * The name of a view to reference for form schemas and
+   * editing navigation.
+   */
+  view?: string
 }
 
 export type SchemaOptionsOption<$Value> =
   | { label: string; value: $Value }
   | $Value
 export type SchemaOptions<$Item, $Option = any> =
-  | SchemaOptionsOption<$Option[]>
+  | SchemaOptionsOption<$Option>[]
   | {
       /**
        * The function which is called to load the options.
+       * Can be a double-function: the outer function
+       * receives the `DitoContext` and returns an inner
+       * function that is called to fetch the actual data,
+       * enabling reactive dependency tracking.
        */
       data?: OrItemAccessor<
         $Item,
@@ -377,23 +778,120 @@ export type SchemaOptions<$Item, $Option = any> =
        */
       label?: keyof $Option | ItemAccessor<$Item, { option: $Option }, string>
       /**
-       * Either the key of the option property which should be treated as
-       * the value or a function returning the option value.
+       * Either the key of the option property which should be
+       * treated as the value or a function returning the option
+       * value.
        *
-       * @defaultValue `'value'` when no label is supplied and the options are
-       * objects
+       * @defaultValue `'id'` when `relate` is set, otherwise
+       * `'value'` when the options are objects.
        */
-      // TODO: when relate is set, the default value is 'id'
       value?: keyof $Option | ItemAccessor<$Item, { option: $Option }>
       /**
        * The key of the option property which should used to group the options.
        */
       groupBy?: keyof $Option
+      /**
+       * Custom equality function for comparing options.
+       */
+      equals?: (
+        a: $Option,
+        b: $Option
+      ) => boolean
+      /**
+       * Relative path to resolve options from data
+       * within the same form. Uses filesystem-style
+       * path notation: `..` navigates up, `/` navigates
+       * into nested properties.
+       *
+       * @example Sibling data
+       * ```js
+       * // Form data: { tags: [...], selectedTags: [...] }
+       * selectedTags: {
+       *   type: 'checkboxes',
+       *   relate: true,
+       *   options: { dataPath: '../tags' }
+       * }
+       * ```
+       *
+       * @example Parent data
+       * ```js
+       * // Root data: { categories: [...], items: [{ category: ... }] }
+       * // Inside a form for items:
+       * category: {
+       *   type: 'select',
+       *   options: { dataPath: '../../../categories' }
+       * }
+       * ```
+       */
+      dataPath?: string
     }
 
 export interface SchemaOptionsMixin<$Item, $Option = any> {
+  /** The available options for selection. */
   options?: SchemaOptions<$Item, $Option>
+  /**
+   * When true, treats options as related objects. The
+   * full object is used during editing, but only the
+   * `id` reference is stored on save.
+   */
   relate?: boolean
+  /**
+   * The property key used as the identifier when
+   * relating options. Only relevant when `relate` is
+   * `true`.
+   *
+   * @defaultValue `'id'`
+   *
+   * Note: Only `'id'` is currently supported.
+   */
+  relateBy?: string
+  /**
+   * The key of the option property which should be used to
+   * group the options.
+   */
+  groupBy?: OrItemAccessor<$Item, {}, string>
+  /**
+   * When defined, a search input field will be added to allow
+   * searching for specific options.
+   */
+  search?:
+    | ItemAccessor<
+        $Item,
+        { query: string },
+        OrPromiseOf<$Option[]>
+      >
+    | {
+        /**
+         * Filters options based on the search `query`
+         * available in the context. Returns matching
+         * options, optionally as a promise.
+         */
+        filter?: ItemAccessor<
+          $Item,
+          { query: string },
+          OrPromiseOf<$Option[]>
+        >
+        /**
+         * Debounce config for the filter. Delays
+         * invocation until input pauses.
+         */
+        debounce?:
+          | number
+          | {
+              delay: number
+              immediate?: boolean
+            }
+      }
+  /**
+   * Whether the selected option can be edited by navigating
+   * to it.
+   */
+  editable?: OrItemAccessor<$Item, {}, boolean>
+  /**
+   * The name of a view to reference for form schemas and
+   * editing navigation.
+   */
+  view?: string
 }
 
 export interface SchemaNumberMixin<$Item> {
@@ -420,10 +918,195 @@ export interface SchemaNumberMixin<$Item> {
    * The amount of decimals to round to.
    */
   decimals?: OrItemAccessor<$Item, {}, number>
+  /**
+   * Validation overrides for numeric constraints.
+   * Inherits min/max/range/decimals/step, adds integer.
+   */
   rules?: Omit<SchemaNumberMixin<$Item>, 'rules'> & {
+    /** Restrict the value to whole numbers. */
     integer?: boolean
   }
 }
+
+export interface SchemaTextMixin<$Item> {
+  /**
+   * Whether to trim whitespace from the value.
+   */
+  trim?: OrItemAccessor<$Item, {}, boolean>
+}
+
+export type SchemaAffix =
+  | string
+  | {
+      /** The component type name for the affix. */
+      type?: string
+      /** Plain text content for the affix. */
+      text?: string
+      /** Raw HTML content for the affix. */
+      html?: string
+      /** Conditionally display the affix. */
+      if?: OrItemAccessor<any, {}, boolean>
+    }
+
+export interface SchemaAffixMixin<$Item> {
+  /**
+   * Prefix content displayed before the input.
+   */
+  prefix?: OrArrayOf<SchemaAffix>
+  /**
+   * Suffix content displayed after the input.
+   */
+  suffix?: OrArrayOf<SchemaAffix>
+}
+
+export interface SchemaDataMixin<$Item> {
+  /**
+   * Data source for the component.
+   */
+  data?: OrItemAccessor<$Item, {}, any>
+  /**
+   * Path to retrieve data from parent context.
+   */
+  dataPath?: string
+}
+
+/**
+ * Properties shared by all schemas that support custom
+ * instance members and lifecycle events — component
+ * schemas, views, and forms.
+ */
+export interface SchemaFields<$Item> {
+  /**
+   * Methods accessible via `this` from event handlers,
+   * computed properties, watchers, and templates. Unlike
+   * event handlers, methods do not receive a
+   * `DitoContext` parameter — use `this.context` to
+   * access it.
+   */
+  methods?: Record<string, (...args: any[]) => any> &
+    ThisType<DitoComponentInstance<$Item>>
+
+  /**
+   * Computed properties defined on the component. Can be a
+   * getter function or a `{ get, set }` object for
+   * read-write computed properties. Getters and setters
+   * are called with the component as `this`. Like
+   * {@link SchemaFields.methods}, use `this.context` to
+   * access the `DitoContext`.
+   */
+  computed?: Record<
+    string,
+    | ((this: DitoComponentInstance<$Item>) => any)
+    | {
+        get: (this: DitoComponentInstance<$Item>) => any
+        set: (
+          this: DitoComponentInstance<$Item>,
+          value: any
+        ) => void
+      }
+  >
+
+  /**
+   * Watchers on data properties or expression paths. Keys
+   * are either component names (resolved to
+   * `data.${name}`) or arbitrary expression paths. Can be
+   * a plain handler function or an object with `handler`,
+   * `deep`, and `immediate` options.
+   */
+  watch?:
+    | WatchHandlers<$Item>
+    | ((
+        this: DitoComponentInstance<$Item>
+      ) => WatchHandlers<$Item>)
+
+  /**
+   * Panel schemas rendered alongside this schema's
+   * content, teleported to the sidebar. Each panel is a
+   * collapsible section with its own header, components,
+   * and optional buttons. Panels share the parent's data
+   * unless their schema defines its own `data` property.
+   */
+  panels?: Record<string, PanelSchema<$Item>>
+
+  /**
+   * Called when the schema's component tree is set up.
+   */
+  onInitialize?: ItemEventHandler<$Item>
+  /**
+   * Called once when the schema component is unmounted
+   * from the DOM.
+   */
+  onDestroy?: ItemEventHandler<$Item>
+  /**
+   * Called after data has been fetched from the API.
+   * Fires after all reactive updates have propagated.
+   */
+  onLoad?: ItemEventHandler<$Item>
+  /**
+   * Called after a value change is committed. Fires
+   * after all reactive updates have propagated. Bubbles
+   * to parent schemas — return `false` to stop
+   * propagation.
+   */
+  onChange?: ItemEventHandler<$Item>
+}
+
+/** @deprecated Use {@link SchemaFields} instead. */
+export type SchemaSetupMixin<$Item = any> =
+  SchemaFields<$Item>
+
+/**
+ * Properties shared by route-level schemas
+ * ({@link ViewSchema} and {@link Form}).
+ */
+export interface SchemaRoute<$Item = any>
+  extends SchemaFields<$Item>,
+    SchemaOpen<$Item> {
+  /**
+   * Renders with reduced spacing.
+   *
+   * @defaultValue `false`
+   */
+  compact?: boolean
+  /**
+   * Resource configuration for loading data from
+   * the API.
+   */
+  resource?: Resource
+  /**
+   * Enables copy/paste for the data. Set to `true`
+   * for default behavior or provide custom
+   * copy/paste handlers.
+   */
+  clipboard?: ClipboardConfig
+  /**
+   * Additional reactive data properties merged into
+   * the component's data scope.
+   */
+  data?: OrItemAccessor<$Item, {}, Record<string, any>>
+  /**
+   * Whether to render in wide layout mode.
+   *
+   * @defaultValue `false`
+   */
+  wide?: OrItemAccessor<$Item, {}, boolean>
+  /**
+   * Custom breadcrumb text shown in page navigation.
+   *
+   * @defaultValue `${breadcrumbPrefix} ${label}`
+   */
+  breadcrumb?: string
+  /** Action buttons. */
+  buttons?: Buttons<$Item>
+  /**
+   * Conditionally display this view or form.
+   */
+  if?: OrItemAccessor<$Item, {}, boolean>
+}
+
+/** @deprecated Use {@link SchemaRoute} instead. */
+export type SchemaRouteMixin<$Item = any> =
+  SchemaRoute<$Item>
 
 export type ComponentSchema<$Item = any> = BaseSchema<$Item> & {
   type: 'component'
@@ -434,65 +1117,80 @@ export type ComponentSchema<$Item = any> = BaseSchema<$Item> & {
   component: Resolvable<VueComponent>
 }
 
-export type InputSchema<$Item = any> = BaseSchema<$Item> & {
-  /**
-   * The type of the component.
-   */
-  type:
-    | 'text'
-    | 'email'
-    | 'url'
-    | 'hostname'
-    | 'domain'
-    | 'tel'
-    | 'password'
-    | 'creditcard'
-    | 'computed'
-  rules?: {
-    text?: boolean
-    email?: boolean
-    url?: boolean
-    hostname?: boolean
-    domain?: boolean
-    // TODO: check why there is no 'tel' validation
-    // tel: boolean,
-    password?: boolean
-    creditcard?: boolean
+export type InputSchema<$Item = any> = BaseSchema<$Item> &
+  SchemaTextMixin<$Item> &
+  SchemaAffixMixin<$Item> & {
+    /**
+     * The type of the component.
+     */
+    type:
+      | 'text'
+      | 'email'
+      | 'url'
+      | 'hostname'
+      | 'domain'
+      | 'tel'
+      | 'password'
+      | 'creditcard'
+    rules?: {
+      text?: boolean
+      email?: boolean
+      url?: boolean
+      hostname?: boolean
+      domain?: boolean
+      password?: boolean
+      creditcard?: boolean
+    }
   }
-}
 
-export type DateSchema<$Item = any> = BaseSchema<$Item> & {
-  /**
-   * The type of the component.
-   */
-  type: 'date' | 'datetime' | 'time'
-  /**
-   * @defaultValue `En/US`
-   */
-  locale?: string
-  dateFormat?: OrItemAccessor<$Item, {}, DateFormat>
-}
+export type DateSchema<$Item = any> = BaseSchema<$Item> &
+  SchemaAffixMixin<$Item> & {
+    /**
+     * The type of the component.
+     */
+    type: 'date' | 'datetime' | 'time'
+    /**
+     * @defaultValue `En/US`
+     */
+    locale?: string
+    /**
+     * Format configuration for date/time display.
+     */
+    formats?: OrItemAccessor<
+      $Item,
+      {},
+      {
+        date?: DateFormat
+        time?: TimeFormat
+      }
+    >
+    /**
+     * @deprecated Use `formats` instead.
+     */
+    dateFormat?: OrItemAccessor<$Item, {}, DateFormat>
+  }
 
 export type ButtonSchema<
   $Item,
   $EventHandler = ItemEventHandler<$Item>
-> = BaseSchema<$Item> & {
-  /**
-   * The type of the component.
-   */
-  type: 'button' | 'submit'
-  closeForm?: OrItemAccessor<$Item, {}, boolean>
-  text?: OrItemAccessor<$Item, {}, string>
-  resource?: Resource
-  onClick?: $EventHandler
-  onSuccess?: $EventHandler
-  onError?: $EventHandler
-  events?: {
-    click?: $EventHandler
-    success?: $EventHandler
-    error?: $EventHandler
+> = BaseSchema<$Item> &
+  SchemaAffixMixin<$Item> & {
+    /**
+     * The type of the component.
+     */
+    type: 'button' | 'submit'
+    closeForm?: OrItemAccessor<$Item, {}, boolean>
+    text?: OrItemAccessor<$Item, {}, string>
+    resource?: Resource
+    onClick?: $EventHandler
+    onSuccess?: $EventHandler
+    onError?: ErrorEventHandler<$Item>
+    events?: {
+      click?: $EventHandler
+      success?: $EventHandler
+      error?: ErrorEventHandler<$Item>
+    }
   }
-}
 
 export type SwitchSchema<$Item = any> = BaseSchema<$Item> & {
   /**
@@ -516,7 +1214,8 @@ export type SwitchSchema<$Item = any> = BaseSchema<$Item> & {
 }
 
 export type NumberSchema<$Item = any> = SchemaNumberMixin<$Item> &
-  BaseSchema<$Item> & {
+  BaseSchema<$Item> &
+  SchemaAffixMixin<$Item> & {
     /**
      * The type of the component.
      */
@@ -529,26 +1228,31 @@ export type SliderSchema<$Item = any> = SchemaNumberMixin<$Item> &
      * The type of the component.
      */
     type: 'slider'
-    // TODO: document what the input SliderSchema option does
-    input?: OrItemAccessor<$Item>
+    /**
+     * Whether to show a number input alongside the slider.
+     *
+     * @defaultValue `true`
+     */
+    input?: OrItemAccessor<$Item, {}, boolean>
   }
 
-export type TextareaSchema<$Item = any> = BaseSchema<$Item> & {
-  /**
-   * The type of the component.
-   */
-  type: 'textarea'
-  /**
-   * Whether the input element is resizable.
-   */
-  resizable?: boolean
-  /**
-   * The amount of visible lines.
-   *
-   * @defaultValue `4`
-   */
-  lines?: number
-}
+export type TextareaSchema<$Item = any> = BaseSchema<$Item> &
+  SchemaTextMixin<$Item> & {
+    /**
+     * The type of the component.
+     */
+    type: 'textarea'
+    /**
+     * Whether the input element is resizable.
+     */
+    resizable?: OrItemAccessor<$Item, {}, boolean>
+    /**
+     * The amount of visible lines.
+     *
+     * @defaultValue `4`
+     */
+    lines?: number
+  }
 
 export type CodeSchema<$Item = any> = BaseSchema<$Item> & {
   /**
@@ -560,19 +1264,23 @@ export type CodeSchema<$Item = any> = BaseSchema<$Item> & {
    *
    * @defaultValue `js`
    */
-  language?: string
+  language?: OrItemAccessor<$Item, {}, string>
   /**
    * The indent size.
    *
    * @defaultValue `2`
    */
-  indentSize?: number
+  indentSize?: OrItemAccessor<$Item, {}, number>
   /**
    * The amount of visible lines.
    *
    * @defaultValue `3`
    */
-  lines?: number
+  lines?: OrItemAccessor<$Item, {}, number>
+  /**
+   * Whether the input element is resizable.
+   */
+  resizable?: OrItemAccessor<$Item, {}, boolean>
 }
 
 export type MarkupSchema<$Item = any> = BaseSchema<$Item> & {
@@ -599,7 +1307,13 @@ export type MarkupSchema<$Item = any> = BaseSchema<$Item> & {
    */
   lines?: number
 
-  // TODO: document enableRules
+  /**
+   * Whether TipTap input and paste rules are enabled. When
+   * `true`, both input and paste rules are active. Can also be
+   * an object to control input and paste rules independently.
+   *
+   * @defaultValue `false`
+   */
   enableRules?: OrItemAccessor<
     $Item,
     {},
@@ -609,6 +1323,11 @@ export type MarkupSchema<$Item = any> = BaseSchema<$Item> & {
         paste: boolean
       }
   >
+  /**
+   * Whether Enter creates a hard break instead of a new
+   * paragraph.
+   */
+  hardBreak?: boolean
   marks?: {
     bold?: boolean
     italic?: boolean
@@ -616,6 +1335,8 @@ export type MarkupSchema<$Item = any> = BaseSchema<$Item> & {
     strike?: boolean
     small?: boolean
     code?: boolean
+    subscript?: boolean
+    superscript?: boolean
     link?: boolean
   }
   nodes?: {
@@ -628,6 +1349,7 @@ export type MarkupSchema<$Item = any> = BaseSchema<$Item> & {
   }
   tools?: {
     history?: boolean
+    footnotes?: boolean
   }
 }
 
@@ -638,12 +1360,13 @@ export type LabelSchema<$Item = any> = BaseSchema<$Item> & {
   type: 'label'
 }
 
-export type HiddenSchema<$Item = any> = BaseSchema<$Item> & {
-  /**
-   * The type of the component.
-   */
-  type: 'hidden'
-}
+export type HiddenSchema<$Item = any> = BaseSchema<$Item> &
+  SchemaDataMixin<$Item> & {
+    /**
+     * The type of the component.
+     */
+    type: 'hidden'
+  }
 
 export type UploadSchema<$Item = any> = BaseSchema<$Item> & {
   /**
@@ -679,16 +1402,38 @@ export type UploadSchema<$Item = any> = BaseSchema<$Item> & {
    * @see {@link https://github.com/patrickkettner/filesize-parser/blob/master/test.js String Examples}
    */
   maxSize?: string | number
-  // TODO: UploadSchema draggable type
-  draggable?: boolean
+  /**
+   * Whether uploaded files can be reordered by dragging.
+   *
+   * @defaultValue `false`
+   */
+  draggable?: OrItemAccessor<$Item, {}, boolean>
   /**
    * Whether files can be deleted.
    */
-  deletable?: boolean
+  deletable?: OrItemAccessor<$Item, {}, boolean>
+  /**
+   * Custom render function for file display.
+   */
+  render?: ItemAccessor<$Item, {}, string>
+  /**
+   * Whether to display thumbnails for uploaded files, or
+   * thumbnail size.
+   */
+  thumbnails?: OrItemAccessor<$Item, {}, boolean | string>
+  /**
+   * URL or function returning URL for file thumbnails.
+   */
+  thumbnailUrl?: OrItemAccessor<$Item, {}, string>
+  /**
+   * URL or function returning URL for file downloads.
+   */
+  downloadUrl?: OrItemAccessor<$Item, {}, string>
 }
 
 export type MultiselectSchema<$Item = any, $Option = any> = BaseSchema<$Item> &
-  SchemaOptionsMixin<$Item, $Option> & {
+  SchemaOptionsMixin<$Item, $Option> &
+  SchemaAffixMixin<$Item> & {
     /**
      * The type of the component.
      */
@@ -699,38 +1444,34 @@ export type MultiselectSchema<$Item = any, $Option = any> = BaseSchema<$Item> &
      * @defaultValue `false`
      */
     multiple?: boolean
-    // TODO: document searchable
     /**
+     * Whether to enable a search input field in the dropdown
+     * for filtering options.
+     *
      * @defaultValue `false`
      */
     searchable?: boolean
-    // TODO: document stayOpen
     /**
+     * Whether the dropdown stays open after selecting an option,
+     * useful for making multiple selections without repeated
+     * opening.
+     *
      * @defaultValue `false`
      */
     stayOpen?: boolean
     /**
-     * When defined, a search input field will be added to allow searching for
-     * specific options.
-     */
-    search?: {
-      filter?: ItemAccessor<$Item, { query: string }, OrPromiseOf<$Option[]>>
-      debounce?:
-        | number
-        | {
-            delay: number
-            immediate?: boolean
-          }
-    }
-    /**
+     * Whether users can create new options by typing and
+     * pressing Enter, adding custom tags not in the options
+     * list.
+     *
      * @defaultValue `false`
      */
-    // TODO: document taggable
     taggable?: boolean
   }
 
 export type SelectSchema<$Item = any> = BaseSchema<$Item> &
-  SchemaOptionsMixin<$Item> & {
+  SchemaOptionsMixin<$Item> &
+  SchemaAffixMixin<$Item> & {
     /**
      * The type of the component.
      */
@@ -749,13 +1490,74 @@ export type RadioSchema<$Item = any> = BaseSchema<$Item> &
     layout?: 'horizontal' | 'vertical'
   }
 
-export type SectionSchema<$Item = any> = BaseSchema<$Item> & {
-  /**
-   * The type of the component.
-   */
-  type: 'section'
-  components?: Components<$Item>
-}
+export type SectionSchema<$Item = any> = BaseSchema<$Item> &
+  SchemaOpen<$Item> & {
+    /**
+     * The type of the component.
+     */
+    type: 'section'
+    /** The section's field components. */
+    components?: Components<$Item>
+    /**
+     * An explicit form schema for the section's content.
+     * Alternative to using `components` directly.
+     */
+    form?: ResolvableForm
+    /**
+     * Multiple form schemas keyed by item type, for
+     * sections with polymorphic content.
+     */
+    forms?: {
+      [key: string]: ResolvableForm
+    }
+    /**
+     * Display several schemas in different tabs within
+     * the section. Passed to the implicit form created
+     * from `components`.
+     */
+    tabs?: Record<
+      string,
+      Omit<Form<$Item>, 'tabs' | 'type'> & {
+        type: 'tab'
+        /**
+         * Whether this tab is selected by default.
+         */
+        defaultTab?: OrItemAccessor<$Item, {}, boolean>
+      }
+    >
+    /**
+     * Renders the section with reduced spacing.
+     *
+     * @defaultValue `false`
+     */
+    compact?: boolean
+    /**
+     * Enables copy/paste for the section's data.
+     */
+    clipboard?: ClipboardConfig
+    /**
+     * Whether the section contains nested data.
+     */
+    nested?: boolean
+    /**
+     * Whether the section can be collapsed.
+     */
+    collapsible?: OrItemAccessor<$Item, {}, boolean>
+    /**
+     * Whether the section is initially collapsed.
+     */
+    collapsed?: OrItemAccessor<$Item, {}, boolean>
+    /**
+     * Grouped event handlers.
+     */
+    events?: {
+      /**
+       * Called when a collapsible section is toggled
+       * open or closed.
+       */
+      open?: OpenEventHandler<$Item>
+    }
+  }
 
 export type CheckboxSchema<$Item = any> = BaseSchema<$Item> & {
   /**
@@ -787,36 +1589,36 @@ export type ColorFormat =
   | 'name'
   | 'hsl'
   | 'hsv'
-export type ColorSchema<$Item = any> = BaseSchema<$Item> & {
-  /**
-   * The type of the component.
-   */
-  type: 'color'
-  /**
-   * The color format.
-   */
-  format?: OrItemAccessor<$Item, {}, ColorFormat>
-  /**
-   * Whether the color may contain an alpha component.
-   *
-   * @defaultValue `false`
-   */
-  alpha?: OrItemAccessor<$Item, {}, boolean>
-  /**
-   * @defaultValue true
-   */
-  // TODO: document inputs
-  /**
-   * @defaultValue `true`
-   */
-  inputs?: OrItemAccessor<$Item, {}, boolean>
-  /**
-   * Color presets as an array of color values as strings in any css
-   * compatible format.
-   * @see {@link https://developer.mozilla.org/en-US/docs/Web/CSS/color_value}
-   */
-  presets?: OrItemAccessor<$Item, {}, string[]>
-}
+export type ColorSchema<$Item = any> = BaseSchema<$Item> &
+  SchemaAffixMixin<$Item> & {
+    /**
+     * The type of the component.
+     */
+    type: 'color'
+    /**
+     * The color format.
+     */
+    format?: OrItemAccessor<$Item, {}, ColorFormat>
+    /**
+     * Whether the color may contain an alpha component.
+     *
+     * @defaultValue `false`
+     */
+    alpha?: OrItemAccessor<$Item, {}, boolean>
+    /**
+     * Whether to display input fields for manual color value
+     * entry (e.g. RGB, HSL) in the color picker.
+     *
+     * @defaultValue `true`
+     */
+    inputs?: OrItemAccessor<$Item, {}, boolean>
+    /**
+     * Color presets as an array of color values as strings in any css
+     * compatible format.
+     * @see {@link https://developer.mozilla.org/en-US/docs/Web/CSS/color_value}
+     */
+    presets?: OrItemAccessor<$Item, {}, string[]>
+  }
 
 export type ColumnSchema<$Item = any> = {
   /**
@@ -855,66 +1657,35 @@ export type ColumnSchema<$Item = any> = {
    */
   defaultSort?: 'asc' | 'desc'
   /**
-   * Only displays the column if the item accessor returns `true`
+   * Only displays the column if the accessor returns
+   * `true`. Can be a plain boolean or a function.
    */
-  if?: ItemAccessor<$Item, {}, boolean>
+  if?: OrItemAccessor<$Item, {}, boolean>
 }
 
 export type ResolvableForm<$Item = any> = Resolvable<Form<$Item>>
 
 export type ListSchema<$Item = { [key: string]: any }> =
   SchemaSourceMixin<$Item> &
-    BaseSchema<$Item> & {
+    BaseSchema<$Item> &
+    SchemaOpen<$Item> & {
       /**
-       * The type of the view
+       * The type of the component.
        */
       type: 'list'
-      /**
-       * The form.
-       */
-      form?: ResolvableForm
-      /**
-       * The forms.
-       */
-      forms?: {
-        [key: string]: ResolvableForm
-      }
-      /**
-       * The label given to the items. If no itemLabel is given, the default is
-       * the 'name' property of the item, followed by label of the form of the
-       * view (plus item id) and other defaults.
-       */
-      itemLabel?: OrItemAccessor<any, {}, string>
-      /**
-       * The columns displayed in the table. While columns can be supplied as an
-       * array where each entry is the name of a property of the item, it is
-       * usually beneficial to assign an object with further options to the
-       * columns property.
-       */
-      columns?: Record<string, ColumnSchema<$Item>> | (keyof $Item)[]
-      /**
-       * Scope names as defined on the model. When set, the admin renders a set
-       * of scope buttons, allowing the user to switch between them while
-       * editing.
-       */
-      scopes?:
-        | string[]
-        | {
-            [scopeName: string]:
-              | {
-                  label?: string
-                  hint?: string
-                  defaultScope?: boolean
-                }
-              | string
-          }
-      /**
-       * Default scope name as defined on the model.
-       */
-      scope?: string
 
-      // TODO: document filters
+      /**
+       * Filter definitions that render a filter panel above the
+       * list, allowing users to filter displayed items. Each
+       * filter can be a text filter with operators, a date-range
+       * filter, or a custom filter with components.
+       */
       filters?: {
+        /**
+         * Whether the filters panel header sticks to
+         * the top of the scroll container.
+         */
+        sticky?: boolean
         [k: string]:
           | {
               label?: string
@@ -935,8 +1706,20 @@ export type ListSchema<$Item = { [key: string]: any }> =
             }
           | {
               label?: string
-              components: Components<any>
+              components: Components<$Item>
             }
+          | boolean
+          | undefined
+      }
+      /**
+       * Grouped event handlers.
+       */
+      events?: {
+        /**
+         * Called when a collapsible inlined list is
+         * toggled open or closed.
+         */
+        open?: OpenEventHandler<$Item>
       }
     }
 
@@ -954,61 +1737,137 @@ export type ItemAccessor<
 
 export type DitoContext<$Item = any> = {
   /**
-   * `nested` is `true` when the data-path points a value inside an item, and
-   * `false` when it points to the item itself.
+   * `true` when the data-path points to a value inside
+   * an item, `false` when it points to the item itself.
    */
   nested: boolean
+  /** The current value of the component. */
   value: any
+  /** Full dot-separated path to the current data. */
   dataPath: string
+  /** The property name of the current component. */
   name: string
-  index: any
-  itemDataPath: any
-  parentItemDataPath: any
-  itemIndex: any
-  parentItemIndex: any
+  /** The index within a list, if applicable. */
+  index: number | null
+  /**
+   * Data path of the closest item ancestor.
+   */
+  itemDataPath: string
+  /**
+   * Data path of the parent item ancestor.
+   */
+  parentItemDataPath: string
+  /** Index of the closest item in its list. */
+  itemIndex: number | null
+  /** Index of the parent item in its list. */
+  parentItemIndex: number | null
+  /** The current data item. */
   item: $Item
   /**
-   * NOTE: `parentItem` isn't the closest data parent to `item`, it's the
-   * closest parent that isn't an array, e.g. for relations or nested JSON
-   * data.  This is why the term `item` was chosen over `data`, e.g. VS the
-   * use of `parentData` in server-sided validation, which is the closest
-   * parent. If needed, we could expose this data here too, as we can do all
-   * sorts of data processing with `rootData` and `dataPath`.
+   * NOTE: `parentItem` isn't the closest data parent to `item`,
+   * it's the closest parent that isn't an array, e.g. for
+   * relations or nested JSON data. This is why the term `item`
+   * was chosen over `data`, e.g. VS the use of `parentData` in
+   * server-sided validation, which is the closest parent.
    */
   parentItem: any
+  /** The top-level root data item. */
   rootItem: any
+  /**
+   * The cloned data being prepared for server
+   * submission. Available during `process` callbacks,
+   * allowing modification of sibling fields.
+   */
   processedItem: any
+  /**
+   * The root-level cloned data being prepared for
+   * server submission.
+   */
+  processedRootItem: any
+  /**
+   * The form's current data processed for clipboard
+   * copy/paste operations.
+   */
   clipboardItem: any
+  /** The currently authenticated user. */
   user: {
     roles?: string[]
     hasRole(...roles: string[]): boolean
   }
+  /** The admin API configuration. */
   api: ApiConfig
-  views: any
+  /** The schema definition for the current component. */
+  schema: Component | null
+  /** All registered top-level views. */
+  views: Record<string, View>
+  /** All views flattened into a single record. */
+  flattenedViews: Record<string, ViewSchema>
+  /** Display label of the current item. */
   itemLabel: string | null
+  /** Display label of the current form. */
   formLabel: string | null
-  component: any
-  schemaComponent: VueComponent | null
-  formComponent: any
-  viewComponent: any
-  dialogComponent: any
-  panelComponent: VueComponent | null
-  resourceComponent: VueComponent | null
-  sourceComponent: VueComponent | null
+  /** The current Vue component instance. */
+  component: DitoComponentInstanceBase | null
+  /**
+   * The nearest ancestor `DitoSchema` component that
+   * manages this field's layout.
+   */
+  schemaComponent: DitoSchemaInstance | null
+  /** The nearest ancestor form component. */
+  formComponent: DitoFormInstance | null
+  /** The nearest ancestor view component. */
+  viewComponent: DitoViewInstance | null
+  /** The nearest ancestor dialog component. */
+  dialogComponent: DitoComponentInstanceBase | null
+  /** The nearest ancestor panel component. */
+  panelComponent: DitoComponentInstanceBase | null
+  /** The nearest ancestor resource component. */
+  resourceComponent:
+    | DitoFormInstance
+    | DitoSourceInstance
+    | null
+  /** The nearest ancestor source component. */
+  sourceComponent: DitoSourceInstance | null
+  /** The currently focused option in a select. */
   option: any
+  /** All available options in a select. */
   options: any
-  query: string
-  error: any | null
+  /**
+   * Whether a pulldown/select is currently open.
+   */
+  open: boolean | undefined
+  /**
+   * The current search term in select components.
+   */
+  searchTerm: string | undefined
+  /**
+   * Whether a button request is currently running.
+   */
+  isRunning: boolean
+  /** Current URL query parameters. */
+  query: Record<string, string | (string | null)[]>
+  /**
+   * The error object, populated in button `error`
+   * event handler contexts.
+   */
+  error: unknown
+  /**
+   * Whether the event handler already called
+   * `context.notify()`, used to suppress the default
+   * notification for button events.
+   */
   wasNotified: boolean
 
   // Helper Methods
 
+  /** Performs an API request with optional caching. */
   request<T>(options: {
     /**
      * Allows caching of loaded data on two levels:
      * - 'global': cache globally, for the entire admin session
-     * - 'local': cache locally within the closest route component that is
-     *   associated with a resource and loads its own data.
+     * - 'local': cache locally within the closest route
+     *   component that is associated with a resource and loads
+     *   its own data.
      */
     cache?: 'local' | 'global'
     url: string
@@ -1016,17 +1875,27 @@ export type DitoContext<$Item = any> = {
      * @default 'get'
      */
     method?: HTTPVerb
-    query?: Record<string, string | string[]> | [string, string][]
-    data?: any
+    query?:
+      | Record<string, string | number | (string | number)[]>
+      | [string, string | number][]
+    data?: unknown
     resource?: Resource
   }): Promise<T>
+  /** Formats values using locale-aware formatters. */
   format: typeof utilsFormat
+  /** Navigates to a route programmatically. */
   navigate: VueRouter['push']
+  /**
+   * Triggers a file download from the given URL or
+   * options.
+   */
   download: {
     (url: string): void
     (options: { url: string; filename: string }): void
   }
-  getResourceUrl: any
+  /** Returns the full URL for a given resource. */
+  getResourceUrl(resource: Resource): string
+  /** Displays a notification to the user. */
   notify(options: {
     type?: LiteralUnion<'warning' | 'error' | 'info' | 'success'>
     title?: string
@@ -1034,19 +1903,945 @@ export type DitoContext<$Item = any> = {
   }): void
 }
 
+/**
+ * The `this` context available inside schema `methods`,
+ * `computed`, and `watch` handlers. Provides access to
+ * the component's value, data hierarchy, validation
+ * state, and helper methods like `request()`,
+ * `navigate()`, and `notify()`.
+ *
+ * Unlike {@link DitoContext} (passed as a parameter to
+ * schema accessors like `if` and `label`), this is the
+ * live component instance — use `this.value`,
+ * `this.item`, `this.context`, etc. directly.
+ *
+ * @template $Item The data item type.
+ * @template $Members Additional schema-defined methods
+ *   and computed properties available on `this`.
+ *   Defaults to `{}`. Pass an explicit type to get
+ *   autocomplete on custom members, e.g.
+ *   `DitoComponentInstance<MyItem, { myHelper(): string }>`.
+ */
+export type DitoComponentInstance<
+  $Item = any,
+  $Members extends Record<string, any> = {}
+> = DitoComponentInstanceBase<$Item> & $Members
+
+export interface DitoComponentInstanceBase<$Item = any>
+  extends EmitterMixin {
+  // -- Data access (ValueMixin, ContextMixin, TypeMixin) --
+
+  /** The current value of the component (getter/setter). */
+  value: any
+  /** The current data item. */
+  item: $Item
+  /**
+   * The closest parent item that isn't an array (e.g.
+   * for relations or nested JSON data).
+   */
+  parentItem: any
+  /** The top-level root data item. */
+  rootItem: any
+  /**
+   * The cloned data being prepared for server
+   * submission. Available during `process` callbacks.
+   */
+  processedItem: any
+  /** The root-level cloned data for server submission. */
+  processedRootItem: any
+  /** The component's data object. */
+  data: Record<string, any>
+  /** Parent data object, or `null` if same as data. */
+  parentData: Record<string, any> | null
+  /** The property name of the current component. */
+  name: string
+  /** Full dot-separated path to the current data. */
+  dataPath: string
+  /** The schema definition for the current component. */
+  schema: Component
+  /** The component type from the schema. */
+  type: string
+
+  // -- State (TypeMixin, ValidationMixin) --
+
+  /** Whether the component currently has focus. */
+  focused: boolean
+  /** The value after applying `schema.parse()`. */
+  parsedValue: any
+  /** Whether the field has been focused at least once. */
+  isTouched: boolean
+  /** Whether the field value has been modified. */
+  isDirty: boolean
+  /** Whether the field is currently valid. */
+  isValid: boolean
+  /** Whether validation has been run on the field. */
+  isValidated: boolean
+  /** Validation error messages, or `null`. */
+  errors: string[] | null
+  /** Whether the field has validation errors. */
+  hasErrors: boolean
+  /** Whether async data is currently being loaded. */
+  isLoading: boolean
+  /**
+   * Whether the component works with data not yet
+   * persisted to the server.
+   */
+  isTransient: boolean
+  /** Whether the component is mounted. */
+  isMounted: boolean
+  /** Whether the component tree is populated. */
+  isPopulated: boolean
+  /**
+   * Whether this component loads its own data from
+   * a resource.
+   */
+  providesData: boolean
+  /** The schema of the source component. */
+  sourceSchema: Component | null
+  /** Action verb labels (create, save, delete, etc.). */
+  verbs: Record<string, string>
+
+  // -- Resolved schema accessors (TypeMixin) --
+
+  /** Resolved `schema.visible` value. */
+  visible: boolean
+  /** Resolved `schema.exclude` value. */
+  exclude: boolean
+  /** Resolved `schema.required` value. */
+  required: boolean
+  /** Resolved `schema.readonly` value. */
+  readonly: boolean
+  /** Resolved `schema.disabled` value. */
+  disabled: boolean
+  /** Resolved `schema.clearable` value. */
+  clearable: boolean
+  /** Resolved `schema.autofocus` value. */
+  autofocus: boolean
+  /** Resolved `schema.placeholder` value. */
+  placeholder: string | undefined
+  /** Resolved `schema.info` value. */
+  info: string | null
+  /** Resolved `schema.maxLength` value. */
+  maxLength: number | undefined
+  /** Resolved `schema.autocomplete` value. */
+  autocomplete: string | undefined
+
+  // -- Component hierarchy (DitoMixin) --
+
+  /** The `DitoContext` for this component. */
+  context: DitoContext<$Item>
+  /** The nearest `DitoSchema` managing layout. */
+  schemaComponent: DitoSchemaInstance | null
+  /** The nearest ancestor form component. */
+  formComponent: DitoFormInstance | null
+  /** The nearest ancestor view component. */
+  viewComponent: DitoViewInstance | null
+  /** The nearest ancestor dialog component. */
+  dialogComponent: DitoComponentInstanceBase | null
+  /** The nearest ancestor panel component. */
+  panelComponent: DitoComponentInstanceBase | null
+  /** The nearest ancestor resource component. */
+  resourceComponent:
+    | DitoFormInstance
+    | DitoSourceInstance
+    | null
+  /** The nearest ancestor source component. */
+  sourceComponent: DitoSourceInstance | null
+  /**
+   * The nearest route component (form or view) in the
+   * ancestor chain.
+   */
+  routeComponent: DitoFormInstance | DitoViewInstance | null
+  /**
+   * The first parent route component that provides and
+   * loads its own data from the API.
+   */
+  dataComponent: DitoFormInstance | DitoViewInstance | null
+  /** The parent schema component. */
+  parentSchemaComponent: DitoComponentInstanceBase | null
+  /** The parent form component. */
+  parentFormComponent: DitoComponentInstanceBase | null
+  /** The root `DitoRoot` component instance. */
+  rootComponent: DitoComponentInstanceBase | null
+  /** The nearest ancestor tab component. */
+  tabComponent: DitoComponentInstanceBase | null
+  /** The parent route component. */
+  parentRouteComponent:
+    | DitoFormInstance
+    | DitoViewInstance
+    | null
+  /** The parent resource component. */
+  parentResourceComponent:
+    | DitoFormInstance
+    | DitoSourceInstance
+    | null
+
+  // -- Environment (DitoMixin) --
+
+  /** The currently authenticated user. */
+  user: DitoContext['user']
+  /** The admin API configuration. */
+  api: ApiConfig
+  /** Current locale from the API config. */
+  locale: string
+  /** All registered top-level views. */
+  views: Record<string, View>
+  /** All views flattened into a single record. */
+  flattenedViews: Record<string, ViewSchema>
+  /** Data from the first parent route that loads data. */
+  rootData: any
+
+  // -- Actions (DitoMixin) --
+
+  /** Performs an API request with optional caching. */
+  request: DitoContext['request']
+  /** Formats values using locale-aware formatters. */
+  format: DitoContext['format']
+  /** Navigates to a route programmatically. */
+  navigate: DitoContext['navigate']
+  /** Triggers a file download. */
+  download: DitoContext['download']
+  /** Displays a notification to the user. */
+  notify: DitoContext['notify']
+  /** Returns the full URL for a given resource. */
+  getResourceUrl: DitoContext['getResourceUrl']
+  /**
+   * Sends an HTTP request to the API.
+   */
+  sendRequest(options: {
+    method?: HTTPVerb
+    url?: string
+    resource?: Resource
+    query?:
+      | Record<string, string | number | (string | number)[]>
+      | [string, string | number][]
+    data?: unknown
+    signal?: AbortSignal
+    internal?: boolean
+  }): Promise<unknown>
+  /**
+   * Shows a modal dialog and returns a promise that
+   * resolves with the dialog result.
+   */
+  showDialog(options: {
+    components?: Components
+    buttons?: Buttons<any>
+    data?: Record<string, any>
+    settings?: Record<string, any>
+  }): Promise<unknown>
+  /**
+   * Resolves a schema value by key or data-path,
+   * with optional type coercion and default.
+   */
+  getSchemaValue(
+    keyOrDataPath: string,
+    options?: {
+      type?: Function | Function[]
+      default?: any
+      schema?: Component
+      context?: DitoContext
+      callback?: boolean
+    }
+  ): any
+  /** Returns a human-readable label for a schema. */
+  getLabel(
+    schema: Component | null,
+    name?: string
+  ): string
+  /**
+   * Returns a Vue Router location object with the
+   * given query params and the current hash
+   * preserved (for tab navigation).
+   */
+  getQueryLink(
+    query: Record<string, any>
+  ): { query: Record<string, any>; hash: string }
+  /**
+   * Returns `true` if the schema's `if` accessor
+   * evaluates to `true` (or is absent).
+   */
+  shouldRenderSchema(
+    schema?: Component | null
+  ): boolean
+  /**
+   * Returns the resolved `visible` value for a
+   * schema. Defaults to `true`.
+   */
+  shouldShowSchema(
+    schema?: Component | null
+  ): boolean
+  /**
+   * Returns the resolved `disabled` value for a
+   * schema. Defaults to `false`.
+   */
+  shouldDisableSchema(
+    schema?: Component | null
+  ): boolean
+  /**
+   * Emits a schema event by name (e.g. `'change'`,
+   * `'focus'`). Calls the matching `on[Event]`
+   * handler and the `events[event]` handler on the
+   * schema. Returns the handler result, or
+   * `undefined` if no handler was found. The event
+   * bubbles to parent schemas unless the handler
+   * returns `false`.
+   *
+   * @param event The event name to emit.
+   * @param options.context Custom context properties
+   *   merged into the `DitoContext` passed to the
+   *   event handler.
+   */
+  emitEvent(
+    event: string,
+    options?: {
+      context?: DitoContext
+    }
+  ): Promise<any>
+  /**
+   * Emits a schema event on the nearest schema
+   * component (rather than `this`). Used by form
+   * and resource components to emit lifecycle
+   * events like `'load'` and `'submit'`.
+   */
+  emitSchemaEvent(
+    event: string,
+    params?: Record<string, any>
+  ): Promise<any>
+  /** Converts a camelCase name to a human-readable label. */
+  labelize(name: string): string
+  /** Gets a value from the component store. */
+  getStore(key: string): any
+  /** Sets a value in the component store. */
+  setStore(key: string, value: any): any
+  /** Removes a value from the component store. */
+  removeStore(key: string): void
+
+  // -- Actions (TypeMixin) --
+
+  /** Focuses the component and scrolls it into view. */
+  focus(): Promise<void>
+  /** Blurs the component. */
+  blur(): void
+  /** Clears the value, blurs, and triggers onChange. */
+  clear(): void
+  /** Scrolls the component into view. */
+  scrollIntoView(): Promise<void>
+
+  // -- Actions (ValidationMixin) --
+
+  /**
+   * Validates the field. Returns `true` if valid.
+   * When `notify` is `true` (default), updates state
+   * and emits errors.
+   */
+  validate(notify?: boolean): boolean
+  /** Validates without notifying (shorthand). */
+  verify(): boolean
+  /** Marks the field as touched and clears errors. */
+  markTouched(): void
+  /** Marks the field as dirty and resets validation. */
+  markDirty(): void
+  /** Resets all validation state. */
+  resetValidation(): void
+  /** Adds an error message to the errors array. */
+  addError(error: string, addLabel?: boolean): void
+  /**
+   * Shows server-side validation errors on the
+   * component. Returns `true` if errors were shown.
+   */
+  showValidationErrors(
+    errors: { message: string }[],
+    focus: boolean
+  ): boolean
+  /** Returns a copy of the current errors, or `null`. */
+  getErrors(): string[] | null
+  /** Clears all validation errors. */
+  clearErrors(): void
+  /** Closes all notification toasts. */
+  closeNotifications(): void
+}
+
+export interface EmitterMixin {
+  /** Registers one or more event listeners. */
+  on(
+    event:
+      | string
+      | string[]
+      | Record<string, Function>,
+    callback?: Function
+  ): this
+  /** Registers a one-time event listener. */
+  once(event: string, callback: Function): this
+  /** Removes event listener(s). */
+  off(
+    event?:
+      | string
+      | string[]
+      | Record<string, Function>,
+    callback?: Function
+  ): this
+  /** Emits an event asynchronously (queued). */
+  emit(event: string, ...args: any[]): Promise<any>
+  /** Returns `true` if listeners exist for the event(s). */
+  hasListeners(event: string | string[]): boolean
+  /** Re-emits events from this component on the target. */
+  delegate(
+    event: string | string[],
+    target: EmitterMixin
+  ): this
+}
+
+export interface DitoFormInstance<$Item = any>
+  extends DitoComponentInstanceBase<$Item> {
+  /**
+   * Whether this form is creating a new item
+   * (`true`) or editing an existing one (`false`).
+   */
+  isCreating: boolean
+
+  /**
+   * Submits the form data to the API. Returns
+   * `true` on success, `false` if validation
+   * fails or the request errors.
+   */
+  submit(
+    button?: DitoComponentInstanceBase,
+    options?: {
+      validate?: boolean
+      closeForm?: boolean
+    }
+  ): Promise<boolean>
+
+  /**
+   * Cancels the form and navigates to the parent
+   * route.
+   */
+  cancel(): Promise<void>
+
+  /**
+   * Closes the form and navigates to the parent
+   * route.
+   */
+  close(): Promise<void>
+
+  /**
+   * Validates all fields in the form. Optionally
+   * filter fields with a match pattern. Returns
+   * `true` if all matched fields are valid.
+   */
+  validateAll(
+    match?:
+      | string
+      | string[]
+      | RegExp
+      | ((field: string) => boolean),
+    notify?: boolean
+  ): boolean
+
+  /**
+   * Like {@link validateAll} but without
+   * triggering error notifications.
+   */
+  verifyAll(
+    match?:
+      | string
+      | string[]
+      | RegExp
+      | ((field: string) => boolean)
+  ): boolean
+
+  // -- Resource & route (ResourceMixin, RouteMixin) --
+
+  /** Display label for this form. */
+  label: string
+  /** Breadcrumb text for navigation. */
+  breadcrumb: string
+  /** Prefix prepended to the breadcrumb label. */
+  breadcrumbPrefix: string
+  /** Whether this is the last route in the hierarchy. */
+  isLastRoute: boolean
+  /** Whether this route is nested inside another route. */
+  isNestedRoute: boolean
+  /** Zero-based depth of this route in the hierarchy. */
+  routeLevel: number
+
+  /**
+   * The resolved API resource for this component,
+   * or `null` if none is configured.
+   */
+  resource: Resource | null
+  /**
+   * Whether loaded data is available on this
+   * component.
+   */
+  hasData: boolean
+  /**
+   * Reloads data from the API without clearing
+   * the existing data first.
+   */
+  reloadData(): void
+  /**
+   * Ensures data is loaded: reloads if data
+   * exists, otherwise loads fresh.
+   */
+  ensureData(): void
+  /** Clears the loaded data. */
+  clearData(): void
+  /** Sets the component's loaded data directly. */
+  setData(data: any): void
+  /**
+   * Creates a new data object with default values
+   * from the schema. Optionally sets a `type`
+   * property for polymorphic forms.
+   */
+  createData(
+    schema: Component,
+    type?: string
+  ): Record<string, any>
+  /**
+   * The route parameter value for this route
+   * component (e.g. an item id or `'create'`).
+   */
+  param: string | number | null
+  /**
+   * Whether the form directly mutates the
+   * parent's data instead of working on a copy.
+   */
+  isMutating: boolean
+  /**
+   * Builds a child route path relative to this
+   * route component's path.
+   */
+  getChildPath(path: string): string
+}
+
+export interface DitoViewInstance<$Item = any>
+  extends DitoComponentInstanceBase<$Item> {
+  /** Always `true` for view components. */
+  isView: true
+
+  // -- Route (RouteMixin) --
+
+  /** Display label for this view. */
+  label: string
+  /** Breadcrumb text for navigation. */
+  breadcrumb: string
+  /** Prefix prepended to the breadcrumb label. */
+  breadcrumbPrefix: string
+  /** Whether this is the last route in the hierarchy. */
+  isLastRoute: boolean
+  /** Whether this route is nested inside another route. */
+  isNestedRoute: boolean
+  /** Zero-based depth of this route in the hierarchy. */
+  routeLevel: number
+  /**
+   * The route parameter value for this route
+   * component (e.g. an item id or `'create'`).
+   */
+  param: string | number | null
+  /**
+   * Whether the view directly mutates the
+   * parent's data instead of working on a copy.
+   */
+  isMutating: boolean
+  /**
+   * Builds a child route path relative to this
+   * route component's path.
+   */
+  getChildPath(path: string): string
+
+  // -- Data & schema (DitoView) --
+
+  /** The view's reactive data object. */
+  data: Record<string, any>
+  /** The resolved view schema definition. */
+  viewSchema: ViewSchema
+  /**
+   * Whether this view contains a single inlined
+   * source component (renders without a table header).
+   */
+  isSingleComponentView: boolean
+  /**
+   * Whether this view loads its own data from
+   * a resource.
+   */
+  providesData: boolean
+  /** Sets the view's data directly. */
+  setData(data: any): void
+
+  // -- Validation (ValidatorMixin) --
+
+  /**
+   * Validates all fields in the view.
+   * Optionally filter fields with a match pattern.
+   * Returns `true` if all matched fields are valid.
+   */
+  validateAll(
+    match?:
+      | string
+      | string[]
+      | RegExp
+      | ((field: string) => boolean),
+    notify?: boolean
+  ): boolean
+
+  /**
+   * Like {@link validateAll} but without
+   * triggering error notifications.
+   */
+  verifyAll(
+    match?:
+      | string
+      | string[]
+      | RegExp
+      | ((field: string) => boolean)
+  ): boolean
+}
+
+export interface DitoSchemaInstance<$Item = any>
+  extends DitoComponentInstanceBase<$Item> {
+  /**
+   * Validates all fields in the schema.
+   * Optionally filter fields with a match pattern
+   * (string, string[], RegExp, or function).
+   * Returns `true` if all matched fields are
+   * valid.
+   */
+  validateAll(
+    match?:
+      | string
+      | string[]
+      | RegExp
+      | ((field: string) => boolean),
+    notify?: boolean
+  ): boolean
+
+  /**
+   * Like {@link validateAll} but without
+   * triggering error notifications.
+   */
+  verifyAll(
+    match?:
+      | string
+      | string[]
+      | RegExp
+      | ((field: string) => boolean)
+  ): boolean
+}
+
+export interface DitoSourceInstance<$Item = any>
+  extends DitoComponentInstanceBase<$Item> {
+  // -- Data access (SourceMixin) --
+
+  /** The list data array (getter/setter). */
+  listData: any[]
+  /** The object data (getter/setter). */
+  objectData: Record<string, any> | null
+  /** Total number of items (for pagination). */
+  total: number
+  /** Current query parameters (getter/setter). */
+  query: Record<string, any>
+  /** Whether this source manages a list. */
+  isListSource: boolean
+  /** Whether this source manages an object. */
+  isObjectSource: boolean
+  /** Whether the source renders inline. */
+  isInlined: boolean
+  /**
+   * Nesting depth of sources (0 for top-level,
+   * increments for nested sources).
+   */
+  sourceDepth: number
+  /** The URL path for this source. */
+  path: string
+
+  // -- Resolved schema accessors (SourceMixin) --
+
+  /** Whether new items can be created. */
+  creatable: boolean
+  /** Whether existing items can be edited. */
+  editable: boolean
+  /** Whether items can be deleted. */
+  deletable: boolean
+  /** Whether items can be reordered by dragging. */
+  draggable: boolean
+  /** Whether inlined forms are collapsible. */
+  collapsible: boolean
+  /** Whether inlined forms are collapsed. */
+  collapsed: boolean
+  /** Resolved pagination page size. */
+  paginate: number | undefined
+  /** Maximum nesting depth for nested sources. */
+  maxDepth: number
+  /** Whether the source renders in compact mode. */
+  isCompact: boolean
+
+  // -- Schema introspection (SourceMixin) --
+
+  /** Resolved column definitions. */
+  columns: Record<string, ColumnSchema> | null
+  /** Resolved scope definitions. */
+  scopes: Record<string, any> | null
+  /** Resolved form definitions. */
+  forms: Form[]
+  /** Resolved button schemas. */
+  buttonSchemas: Record<string, ButtonSchema<any>>
+
+  // -- Item operations (SourceMixin) --
+
+  /**
+   * Creates a new data item with defaults from the
+   * schema. Optionally sets a `type` property for
+   * polymorphic forms.
+   */
+  createItem(
+    schema: Component,
+    type?: string
+  ): Record<string, any>
+  /** Removes an item from the list data locally. */
+  removeItem(item: any, index: number): void
+  /**
+   * Deletes an item via the API and removes it
+   * from the list.
+   */
+  deleteItem(item: any, index: number): void
+  /**
+   * Navigates to a component identified by its
+   * data path.
+   */
+  navigateToComponent(
+    dataPath: string,
+    onComplete?: Function
+  ): Promise<boolean>
+  /**
+   * Navigates to the route component associated
+   * with a data path.
+   */
+  navigateToRouteComponent(
+    dataPath: string,
+    onComplete?: Function
+  ): Promise<boolean>
+
+  // -- Resource (ResourceMixin) --
+
+  /**
+   * The resolved API resource for this component,
+   * or `null` if none is configured.
+   */
+  resource: Resource | null
+  /**
+   * Whether loaded data is available on this
+   * component.
+   */
+  hasData: boolean
+  /**
+   * Reloads data from the API without clearing
+   * the existing data first.
+   */
+  reloadData(): void
+  /**
+   * Ensures data is loaded: reloads if data
+   * exists, otherwise loads fresh.
+   */
+  ensureData(): void
+  /** Clears the loaded data. */
+  clearData(): void
+  /** Sets the component's loaded data directly. */
+  setData(data: any): void
+  /**
+   * Creates a new data object with default values
+   * from the schema. Optionally sets a `type`
+   * property for polymorphic forms.
+   */
+  createData(
+    schema: Component,
+    type?: string
+  ): Record<string, any>
+}
+
+export type MenuSchema<$Item = any> = {
+  type: 'menu'
+  /**
+   * The label shown in the navigation menu.
+   */
+  label?: string
+  /**
+   * The name of the menu group.
+   *
+   * @defaultValue Camelized from `label`.
+   */
+  name?: string
+  /** Sub-views shown as menu items under this group. */
+  items: Record<string, OrPromiseOf<View<$Item>>>
+}
+
+export type ClipboardConfig =
+  | boolean
+  | {
+      copy?: (context: DitoContext) => unknown
+      paste?: (context: DitoContext) => unknown
+    }
+
 export type View<$Item = any> =
-  | {
-      type: 'view'
-      resource?: Form['resource']
-      clipboard?: Form['clipboard']
-      component?: Component<$Item>
+  | ViewSchema<$Item>
+  | MenuSchema<$Item>
+
+export type ViewSchema<$Item = any> = SchemaRoute<$Item> & {
+  type: 'view'
+  /**
+   * The label shown in the navigation menu.
+   *
+   * @defaultValue The title-cased view name.
+   */
+  label?: string
+  /**
+   * The URL path for the view.
+   */
+  path?: string
+  /**
+   * The name of the view.
+   */
+  name?: string
+  /**
+   * Display several schemas in different tabs within
+   * the view.
+   */
+  tabs?: Record<
+    string,
+    Omit<ViewSchema<$Item>, 'tabs' | 'type'> & {
+      type: 'tab'
+      /**
+       * Whether this tab is selected by default.
+       */
+      defaultTab?: OrItemAccessor<$Item, {}, boolean>
     }
-  | {
-      type: 'view'
-      resource?: Form['resource']
-      clipboard?: Form['clipboard']
-      components?: Components<$Item>
+  >
+  /**
+   * Grouped event handlers, equivalent to the
+   * `on[A-Z]`-style callbacks on the view schema
+   * (e.g. {@link ViewSchema.onOpen}).
+   *
+   * @see {@link SchemaFields.onInitialize} and
+   * other `on`-prefixed properties for per-event
+   * documentation.
+   */
+  events?: SchemaEvents<$Item> & {
+    /**
+     * Called when a collapsible schema section is
+     * toggled open or closed.
+     */
+    open?: OpenEventHandler<$Item>
+  }
+} & ({ component?: Component<$Item> } | { components?: Components<$Item> })
+
+export type ComputedSchema<$Item = any> = BaseSchema<$Item> &
+  SchemaDataMixin<$Item> & {
+    /**
+     * The type of the component.
+     */
+    type: 'computed'
+  }
+
+export type DataSchema<$Item = any> = BaseSchema<$Item> &
+  SchemaDataMixin<$Item> & {
+    /**
+     * The type of the component.
+     */
+    type: 'data'
+  }
+
+export type ObjectSchema<$Item = { [key: string]: any }> =
+  SchemaSourceMixin<$Item> &
+    BaseSchema<$Item> &
+    SchemaOpen<$Item> & {
+      /**
+       * The type of the component.
+       */
+      type: 'object'
+      /**
+       * Grouped event handlers.
+       */
+      events?: {
+        /**
+         * Called when a collapsible inlined object is
+         * toggled open or closed.
+         */
+        open?: OpenEventHandler<$Item>
+      }
     }
+
+type TreeSchema<
+  $Item,
+  $Type extends 'tree-list' | 'tree-object'
+> = SchemaSourceMixin<$Item> &
+  BaseSchema<$Item> & {
+    /**
+     * The type of the component.
+     */
+    type: $Type
+    /**
+     * Nested tree schema describing the recursive
+     * children of each node. The `name` property
+     * identifies which data property holds the
+     * children array.
+     */
+    children?: Omit<TreeListSchema<$Item>, 'type'> & {
+      name: string
+    }
+    /**
+     * Properties schema for tree nodes.
+     */
+    properties?: Record<string, Component<$Item>>
+    /**
+     * Whether child nodes are expanded by default.
+     */
+    open?: boolean
+  }
+
+export type TreeListSchema<$Item = any> =
+  TreeSchema<$Item, 'tree-list'>
+export type TreeObjectSchema<$Item = any> =
+  TreeSchema<$Item, 'tree-object'>
+
+export type PanelSchema<$Item = any> = BaseSchema<$Item> & {
+  /**
+   * The type of the component.
+   */
+  type: 'panel'
+  /**
+   * The components within the panel.
+   */
+  components?: Components<$Item>
+  /** Action buttons rendered at the bottom of the panel. */
+  buttons?: Buttons<$Item>
+  /**
+   * Buttons rendered in the panel header, next to the
+   * title. Displayed at a smaller size.
+   */
+  panelButtons?: Buttons<$Item>
+  /**
+   * Whether the panel header sticks to the top of the
+   * scroll container.
+   *
+   * @defaultValue `false`
+   */
+  sticky?: OrItemAccessor<$Item, {}, boolean>
+}
+
+export type SpacerSchema<$Item = any> = BaseSchema<$Item> & {
+  /**
+   * The type of the component.
+   */
+  type: 'spacer'
+}
+
+export type ProgressSchema<$Item = any> = SchemaNumberMixin<$Item> &
+  BaseSchema<$Item> & {
+    /**
+     * The type of the component.
+     */
+    type: 'progress'
+  }
 
 export type Component<$Item = any> =
   | InputSchema<$Item>
@@ -1070,6 +2865,14 @@ export type Component<$Item = any> =
   | LabelSchema<$Item>
   | SectionSchema<$Item>
   | HiddenSchema<$Item>
+  | ObjectSchema<$Item>
+  | TreeListSchema<$Item>
+  | TreeObjectSchema<$Item>
+  | ComputedSchema<$Item>
+  | DataSchema<$Item>
+  | PanelSchema<$Item>
+  | SpacerSchema<$Item>
+  | ProgressSchema<$Item>
 
 export type Components<$Item = any> =
   | Component<$Item>[]
@@ -1082,7 +2885,7 @@ export type Buttons<$Item> = Record<
   SetOptional<ButtonSchema<$Item>, 'type'>
 >
 
-export type Form<$Item = any> = {
+export type Form<$Item = any> = SchemaRoute<$Item> & {
   type: 'form'
 
   /**
@@ -1094,30 +2897,81 @@ export type Form<$Item = any> = {
    */
   label?: OrItemAccessor<$Item, {}, string | boolean>
   /**
+   * Whether the form directly mutates the parent data instead
+   * of working on a copy.
+   *
    * @defaultValue `false`
    */
-  compact?: boolean
-  resource?: Resource
+  mutate?: boolean
+  /**
+   * The property name used as the item's unique identifier.
+   *
+   * @defaultValue `'id'`
+   */
+  idKey?: string
   /**
    * Display several forms in different tabs within the form.
    */
   tabs?: Record<
     string,
     Omit<Form<$Item>, 'tabs' | 'type'> & {
+      type: 'tab'
+      /**
+       * Whether this tab is selected by default.
+       */
       defaultTab?: OrItemAccessor<$Item, {}, boolean>
     }
   >
-  // TODO: document components
+  /** The form's field components. */
   components?: Components<$Item>
-  // TODO: document clipboard
-  clipboard?:
-    | boolean
-    | {
-        copy?: (...args: any[]) => any
-        paste?: (...args: any[]) => any
-      }
-  buttons?: Buttons<$Item>
-  if?: OrItemAccessor<$Item, {}, boolean>
+  /**
+   * Grouped event handlers, equivalent to the
+   * `on[A-Z]`-style callbacks on the form schema
+   * (e.g. {@link Form.onOpen}).
+   *
+   * @see {@link SchemaFields.onInitialize} and
+   * other `on`-prefixed properties for per-event
+   * documentation.
+   */
+  events?: SchemaEvents<$Item> & {
+    /**
+     * Called when a collapsible schema section is
+     * toggled open or closed.
+     */
+    open?: OpenEventHandler<$Item>
+    /**
+     * Called after a new item is successfully
+     * created and persisted.
+     */
+    create?: ItemEventHandler<$Item>
+    /**
+     * Called after an existing item is successfully
+     * submitted and persisted.
+     */
+    submit?: ItemEventHandler<$Item>
+    /**
+     * Called when a submit request fails. The
+     * `error` property on the context contains the
+     * request error.
+     */
+    error?: ErrorEventHandler<$Item>
+  }
+  /**
+   * Called after a new item is successfully
+   * created and persisted.
+   */
+  onCreate?: ItemEventHandler<$Item>
+  /**
+   * Called after an existing item is successfully
+   * submitted and persisted.
+   */
+  onSubmit?: ItemEventHandler<$Item>
+  /**
+   * Called when a submit request fails. The
+   * `error` property on the context contains the
+   * request error.
+   */
+  onError?: ErrorEventHandler<$Item>
 }
 
 export type Resource =
@@ -1125,70 +2979,122 @@ export type Resource =
   | RequireAtLeastOne<{
       path?: string
       method?: HTTPVerb
-      // TODO: type Resource['data']
-      data?: any
+      data?: unknown
     }>
 
 export class DitoAdmin<
-  $Views extends Record<string, any> = Record<string, OrPromiseOf<View>>
+  $Views extends Record<string, OrPromiseOf<View>> = Record<
+    string,
+    OrPromiseOf<View>
+  >
 > {
+  /** The DOM element the admin is mounted to. */
+  el: Element
+  /** The resolved API configuration. */
   api: ApiConfig
-  // TODO: finish off Vue types
-  root: VueComponent
+  /** The Vue application instance. */
+  app: import('vue').App
+  /** Additional options passed at construction. */
+  options: Record<string, any>
+
   constructor(
     element: Element | string,
     options?: {
-      // `dito` contains the base and api settings passed from `AdminController`
+      // `dito` contains the base and api settings passed from
+      // `AdminController`
       dito?: DitoGlobal
       api?: ApiConfig
       views: OrFunctionReturning<OrPromiseOf<$Views>>
-      // TODO: options rest type
-      // ...options: any
+      login?: {
+        additionalComponents?: Components
+        redirectAfterLogin?: string
+      }
+      /**
+       * Controls the loading spinner displayed in the
+       * admin header. Set to `null` to disable it.
+       */
+      spinner?: {
+        size?: string
+        color?: string
+      } | null
+      [key: string]: any
     }
   )
 
-  // TODO: options and return type
-  register(type: OrArrayOf<string>, options: any): any
-  request: RequestMethod
+  /**
+   * Registers a custom component type with the admin.
+   */
+  register(
+    type: OrArrayOf<string>,
+    options: Record<string, unknown>
+  ): VueComponent
 }
 export type HTTPVerb = 'get' | 'post' | 'put' | 'delete' | 'patch'
 
 export type SchemaByType<$Item = any> = {
-  button: ButtonSchema<$Item>
-  checkbox: CheckboxSchema<$Item>
-  checkboxes: CheckboxesSchema<$Item>
-  code: CodeSchema<$Item>
-  color: ColorSchema<$Item>
-  component: ComponentSchema<$Item>
-  date: DateSchema<$Item>
-  list: ListSchema<$Item>
-  markup: MarkupSchema<$Item>
-  multiselect: MultiselectSchema<$Item>
-  number: NumberSchema<$Item>
-  radio: RadioSchema<$Item>
-  select: SelectSchema<$Item>
-  slider: SliderSchema<$Item>
-  switch: SwitchSchema<$Item>
-  text: InputSchema<$Item>
-  textarea: TextareaSchema<$Item>
-  upload: UploadSchema<$Item>
-  label: LabelSchema<$Item>
-  section: SectionSchema<$Item>
-  hidden: HiddenSchema<$Item>
-  unknown: never
+  'button': ButtonSchema<$Item>
+  'checkbox': CheckboxSchema<$Item>
+  'checkboxes': CheckboxesSchema<$Item>
+  'code': CodeSchema<$Item>
+  'color': ColorSchema<$Item>
+  'component': ComponentSchema<$Item>
+  'computed': ComputedSchema<$Item>
+  'creditcard': InputSchema<$Item>
+  'data': DataSchema<$Item>
+  'date': DateSchema<$Item>
+  'datetime': DateSchema<$Item>
+  'domain': InputSchema<$Item>
+  'email': InputSchema<$Item>
+  'hostname': InputSchema<$Item>
+  'integer': NumberSchema<$Item>
+  'list': ListSchema<$Item>
+  'markup': MarkupSchema<$Item>
+  'multiselect': MultiselectSchema<$Item>
+  'number': NumberSchema<$Item>
+  'object': ObjectSchema<$Item>
+  'panel': PanelSchema<$Item>
+  'password': InputSchema<$Item>
+  'progress': ProgressSchema<$Item>
+  'radio': RadioSchema<$Item>
+  'select': SelectSchema<$Item>
+  'slider': SliderSchema<$Item>
+  'spacer': SpacerSchema<$Item>
+  'submit': ButtonSchema<$Item>
+  'switch': SwitchSchema<$Item>
+  'tel': InputSchema<$Item>
+  'text': InputSchema<$Item>
+  'textarea': TextareaSchema<$Item>
+  'time': DateSchema<$Item>
+  'tree-list': TreeListSchema<$Item>
+  'tree-object': TreeObjectSchema<$Item>
+  'upload': UploadSchema<$Item>
+  'url': InputSchema<$Item>
+  'label': LabelSchema<$Item>
+  'section': SectionSchema<$Item>
+  'hidden': HiddenSchema<$Item>
+  'unknown': never
 }
 
-type OrRecordOf<T> = T | Record<string, T>
-type OrPromiseOf<T> = T | Promise<T>
-type OrFunctionReturning<T> = (() => T) | T
-type OrArrayOf<T> = T | T[]
-type Resolvable<T> = OrFunctionReturning<OrPromiseOf<OrRecordOf<T>>>
+export type OrRecordOf<T> = T | Record<string, T>
+export type OrPromiseOf<T> = T | Promise<T>
+export type OrFunctionReturning<T> = (() => T) | T
+export type OrArrayOf<T> = T | T[]
+export type Resolvable<T> = OrFunctionReturning<OrPromiseOf<OrRecordOf<T>>>
 
-// https://stackoverflow.com/questions/49927523/disallow-call-with-any/49928360#49928360
-type AnyGate<
-  $CheckType,
-  $TypeWhenNotAny,
-  $TypeWhenAny = $CheckType
-> = 0 extends 1 & $CheckType ? $TypeWhenAny : $TypeWhenNotAny
+type WatchHandler<$Item> = (
+  this: DitoComponentInstance<$Item>,
+  value: any,
+  oldValue: any
+) => void
+
+type WatchEntry<$Item> =
+  | WatchHandler<$Item>
+  | {
+      handler: WatchHandler<$Item>
+      deep?: boolean
+      immediate?: boolean
+    }
+
+type WatchHandlers<$Item> = Record<string, WatchEntry<$Item>>
 
 type LiteralUnion<T extends U, U = string> = T | (U & Record<never, never>)
