@@ -212,7 +212,6 @@ export interface ApiConfig {
    * Authentication resource configuration. The `path` defines the
    * user collection endpoint, and `login`, `logout`, and `session`
    * are nested as child resources under it (e.g. `users/login`).
-   * Used by `DitoRoot` for authentication flows.
    */
   users?: {
     /** The collection path for the user model. */
@@ -2061,7 +2060,7 @@ export interface DitoComponentInstanceBase<$Item = any>
   parentSchemaComponent: DitoComponentInstanceBase | null
   /** The parent form component. */
   parentFormComponent: DitoComponentInstanceBase | null
-  /** The root `DitoRoot` component instance. */
+  /** The root component instance. */
   rootComponent: DitoComponentInstanceBase | null
   /** The nearest ancestor tab component. */
   tabComponent: DitoComponentInstanceBase | null
