@@ -2884,15 +2884,13 @@ export type SourceComponent<$Item = any> =
 
 export type Components<$Item = any> =
   | Component<$Item>[]
-  | (0 extends 1 & $Item
-      ? Record<string, Component>
-      : {
-          [K in keyof $Item | (string & {})]?: K extends keyof $Item
-            ? $Item[K] extends (infer E)[]
-              ? Component<E>
-              : Component<$Item>
-            : Component
-        })
+  | {
+      [K in keyof $Item | (string & {})]?: K extends keyof $Item
+        ? $Item[K] extends (infer E)[]
+          ? Component<E>
+          : Component<$Item>
+        : Component<$Item>
+    }
 
 export type Buttons<$Item> = Record<
   string,
