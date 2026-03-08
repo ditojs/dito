@@ -642,9 +642,7 @@ export interface SchemaSourceMixin<$Item> {
    * @defaultValue `1`
    */
   maxDepth?: number
-  /**
-   * Action buttons for the source.
-   */
+  /** Buttons for the source. */
   buttons?: Buttons<$Item>
   /**
    * Whether to wrap primitive values in objects.
@@ -662,7 +660,11 @@ export interface SchemaSourceMixin<$Item> {
    */
   idKey?: string
   /**
-   * Whether the source contains nested data.
+   * Whether the data is stored under its own key in the parent item.
+   * When `true`, an "address" source stores data at `item.address`.
+   * When `false`, its fields are stored directly on `item`.
+   *
+   * @defaultValue `true`
    */
   nested?: boolean
   /**
@@ -724,9 +726,7 @@ export interface SchemaSourceMixin<$Item> {
    * @defaultValue `null`
    */
   collapsible?: OrItemAccessor<$Item, {}, boolean | null>
-  /**
-   * Whether an inlined form is collapsed.
-   */
+  /** Whether the inlined form is collapsed. */
   collapsed?: OrItemAccessor<$Item, {}, boolean>
   /**
    * Default sort configuration.
@@ -917,10 +917,7 @@ export interface SchemaNumberMixin<$Item> {
    * The amount of decimals to round to.
    */
   decimals?: OrItemAccessor<$Item, {}, number>
-  /**
-   * Validation overrides for numeric constraints.
-   * Inherits min/max/range/decimals/step, adds integer.
-   */
+  /** Validation rules for numeric constraints. */
   rules?: Omit<SchemaNumberMixin<$Item>, 'rules'> & {
     /** Restrict the value to whole numbers. */
     integer?: boolean
@@ -978,9 +975,8 @@ export interface SchemaFields<$Item> {
   /**
    * Methods accessible via `this` from event handlers,
    * computed properties, watchers, and templates. Unlike
-   * event handlers, methods do not receive a
-   * `DitoContext` parameter — use `this.context` to
-   * access it.
+   * event handlers, methods do not receive a context
+   * parameter — use `this.context` to access it.
    */
   methods?: Record<string, (...args: any[]) => any> &
     ThisType<DitoComponentInstance<$Item>>
@@ -991,7 +987,7 @@ export interface SchemaFields<$Item> {
    * read-write computed properties. Getters and setters
    * are called with the component as `this`. Like
    * {@link SchemaFields.methods}, use `this.context` to
-   * access the `DitoContext`.
+   * access the context.
    */
   computed?: Record<
     string,
@@ -1019,11 +1015,9 @@ export interface SchemaFields<$Item> {
       ) => WatchHandlers<$Item>)
 
   /**
-   * Panel schemas rendered alongside this schema's
-   * content, teleported to the sidebar. Each panel is a
-   * collapsible section with its own header, components,
-   * and optional buttons. Panels share the parent's data
-   * unless their schema defines its own `data` property.
+   * Panel schemas rendered in the sidebar. Panels share
+   * the parent's data unless their schema defines its
+   * own `data` property.
    */
   panels?: Record<string, PanelSchema<$Item>>
 
@@ -1084,7 +1078,7 @@ export interface SchemaRoute<$Item = any>
    */
   data?: OrItemAccessor<$Item, {}, Record<string, any>>
   /**
-   * Whether to render in wide layout mode.
+   * Whether to use a wider content area.
    *
    * @defaultValue `false`
    */
@@ -1095,7 +1089,6 @@ export interface SchemaRoute<$Item = any>
    * @defaultValue `${breadcrumbPrefix} ${label}`
    */
   breadcrumb?: string
-  /** Action buttons. */
   buttons?: Buttons<$Item>
   /**
    * Conditionally display this view or form.
@@ -1359,6 +1352,10 @@ export type LabelSchema<$Item = any> = BaseSchema<$Item> & {
   type: 'label'
 }
 
+/**
+ * A non-visible component that includes a computed or
+ * derived value in the form data without rendering it.
+ */
 export type HiddenSchema<$Item = any> = BaseSchema<$Item> &
   SchemaDataMixin<$Item> & {
     /**
@@ -1498,8 +1495,9 @@ export type SectionSchema<$Item = any> = BaseSchema<$Item> &
     /** The section's field components. */
     components?: Components<$Item>
     /**
-     * An explicit form schema for the section's content.
-     * Alternative to using `components` directly.
+     * A form schema for the section's content. Use this
+     * instead of `components` to get form-level options
+     * like `label`, `tabs`, and `mutate`.
      */
     form?: ResolvableForm
     /**
@@ -1535,16 +1533,18 @@ export type SectionSchema<$Item = any> = BaseSchema<$Item> &
      */
     clipboard?: ClipboardConfig
     /**
-     * Whether the section contains nested data.
+     * Whether the data is stored under its own key in the parent item.
+     * When `true`, an "address" section stores data at `item.address`.
+     * When `false`, its fields are stored directly on `item`.
+     *
+     * @defaultValue `false`
      */
     nested?: boolean
     /**
      * Whether the section can be collapsed.
      */
     collapsible?: OrItemAccessor<$Item, {}, boolean>
-    /**
-     * Whether the section is initially collapsed.
-     */
+    /** Whether the section is collapsed. */
     collapsed?: OrItemAccessor<$Item, {}, boolean>
     /**
      * Grouped event handlers.
@@ -1655,10 +1655,7 @@ export type ColumnSchema<$Item = any> = {
    * first column to specify `defaultSort`.
    */
   defaultSort?: 'asc' | 'desc'
-  /**
-   * Only displays the column if the accessor returns
-   * `true`. Can be a plain boolean or a function.
-   */
+  /** Whether to display the column. */
   if?: OrItemAccessor<$Item, {}, boolean>
 }
 
@@ -1903,23 +1900,14 @@ export type DitoContext<$Item = any> = {
 }
 
 /**
- * The `this` context available inside schema `methods`,
- * `computed`, and `watch` handlers. Provides access to
- * the component's value, data hierarchy, validation
- * state, and helper methods like `request()`,
- * `navigate()`, and `notify()`.
- *
- * Unlike {@link DitoContext} (passed as a parameter to
- * schema accessors like `if` and `label`), this is the
- * live component instance — use `this.value`,
- * `this.item`, `this.context`, etc. directly.
+ * The `this` type inside schema `methods`, `computed`,
+ * and `watch` handlers. Unlike the context passed to
+ * schema accessors like `if` and `label`, this is the
+ * live component instance.
  *
  * @template $Item The data item type.
  * @template $Members Additional schema-defined methods
  *   and computed properties available on `this`.
- *   Defaults to `{}`. Pass an explicit type to get
- *   autocomplete on custom members, e.g.
- *   `DitoComponentInstance<MyItem, { myHelper(): string }>`.
  */
 export type DitoComponentInstance<
   $Item = any,
@@ -2733,6 +2721,10 @@ export type ViewSchema<$Item = any> = SchemaRoute<$Item> & {
   }
 } & ({ component?: Component<$Item> } | { components?: Components<$Item> })
 
+/**
+ * A non-visible component that computes a value and
+ * stores it in the form data.
+ */
 export type ComputedSchema<$Item = any> = BaseSchema<$Item> &
   SchemaDataMixin<$Item> & {
     /**
@@ -2741,6 +2733,10 @@ export type ComputedSchema<$Item = any> = BaseSchema<$Item> &
     type: 'computed'
   }
 
+/**
+ * A non-visible component that fetches external data
+ * and stores it in the form data.
+ */
 export type DataSchema<$Item = any> = BaseSchema<$Item> &
   SchemaDataMixin<$Item> & {
     /**
@@ -2811,7 +2807,7 @@ export type PanelSchema<$Item = any> = BaseSchema<$Item> & {
    * The components within the panel.
    */
   components?: Components<$Item>
-  /** Action buttons rendered at the bottom of the panel. */
+  /** Buttons rendered at the bottom of the panel. */
   buttons?: Buttons<$Item>
   /**
    * Buttons rendered in the panel header, next to the
