@@ -240,8 +240,8 @@ export interface ApiConfig {
       method?: HTTPVerb
     }
     /**
-     * Session endpoint. Called on app startup to check for an
-     * existing authenticated session.
+     * Session endpoint for checking an existing authenticated
+     * session on page load.
      */
     session?: {
       /**
