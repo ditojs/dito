@@ -1162,10 +1162,7 @@ export type DateSchema<$Item = any> = BaseSchema<$Item> &
     dateFormat?: OrItemAccessor<$Item, {}, DateFormat>
   }
 
-export type ButtonSchema<
-  $Item,
-  $EventHandler = ItemEventHandler<$Item>
-> = BaseSchema<$Item> &
+export type ButtonSchema<$Item = any> = BaseSchema<$Item> &
   SchemaAffixMixin<$Item> & {
     /**
      * The type of the component.
@@ -1174,12 +1171,12 @@ export type ButtonSchema<
     closeForm?: OrItemAccessor<$Item, {}, boolean>
     text?: OrItemAccessor<$Item, {}, string>
     resource?: Resource
-    onClick?: $EventHandler
-    onSuccess?: $EventHandler
+    onClick?: ItemEventHandler<$Item>
+    onSuccess?: ItemEventHandler<$Item>
     onError?: ErrorEventHandler<$Item>
     events?: {
-      click?: $EventHandler
-      success?: $EventHandler
+      click?: ItemEventHandler<$Item>
+      success?: ItemEventHandler<$Item>
       error?: ErrorEventHandler<$Item>
     }
   }
@@ -1639,7 +1636,7 @@ export type ColumnSchema<$Item = any> = {
    * If the column is sortable, the column is sorted by value and not by
    * rendered name.
    */
-  render?: ItemAccessor<$Item, {}, string>
+  render?: ItemAccessor<$Item, {}, string | null | undefined>
   /**
    * The provided string is applied to the class property of the column
    * cell html elements.
@@ -1810,7 +1807,7 @@ export type DitoContext<$Item = any> = {
    */
   schemaComponent: DitoSchemaInstance | null
   /** The nearest ancestor form component. */
-  formComponent: DitoFormInstance | null
+  formComponent: DitoFormInstance
   /** The nearest ancestor view component. */
   viewComponent: DitoViewInstance | null
   /** The nearest ancestor dialog component. */
@@ -1970,6 +1967,14 @@ export interface DitoComponentInstanceBase<$Item = any>
   /** Whether async data is currently being loaded. */
   isLoading: boolean
   /**
+   * Sets the loading state. Optionally propagates
+   * to the root or view component.
+   */
+  setLoading(
+    isLoading: boolean,
+    options?: { updateRoot?: boolean; updateView?: boolean }
+  ): void
+  /**
    * Whether the component works with data not yet
    * persisted to the server.
    */
@@ -2018,9 +2023,9 @@ export interface DitoComponentInstanceBase<$Item = any>
   /** The `DitoContext` for this component. */
   context: DitoContext<$Item>
   /** The nearest `DitoSchema` managing layout. */
-  schemaComponent: DitoSchemaInstance | null
+  schemaComponent: DitoSchemaInstance
   /** The nearest ancestor form component. */
-  formComponent: DitoFormInstance | null
+  formComponent: DitoFormInstance
   /** The nearest ancestor view component. */
   viewComponent: DitoViewInstance | null
   /** The nearest ancestor dialog component. */
@@ -2028,12 +2033,9 @@ export interface DitoComponentInstanceBase<$Item = any>
   /** The nearest ancestor panel component. */
   panelComponent: DitoComponentInstanceBase | null
   /** The nearest ancestor resource component. */
-  resourceComponent:
-    | DitoFormInstance
-    | DitoSourceInstance
-    | null
+  resourceComponent: DitoFormInstance | DitoSourceInstance
   /** The nearest ancestor source component. */
-  sourceComponent: DitoSourceInstance | null
+  sourceComponent: DitoSourceInstance
   /**
    * The nearest route component (form or view) in the
    * ancestor chain.
@@ -2869,11 +2871,28 @@ export type Component<$Item = any> =
   | SpacerSchema<$Item>
   | ProgressSchema<$Item>
 
+/**
+ * Source components (list, object, tree) that contain nested
+ * items with their own item type.
+ */
+export type SourceComponent<$Item = any> =
+  | ListSchema<$Item>
+  | ObjectSchema<$Item>
+  | TreeListSchema<$Item>
+  | TreeObjectSchema<$Item>
+
+
 export type Components<$Item = any> =
   | Component<$Item>[]
-  | {
-      [$name: string]: Component<$Item>
-    }
+  | (0 extends 1 & $Item
+      ? Record<string, Component>
+      : {
+          [K in keyof $Item | (string & {})]?: K extends keyof $Item
+            ? $Item[K] extends (infer E)[]
+              ? Component<E>
+              : Component<$Item>
+            : Component
+        })
 
 export type Buttons<$Item> = Record<
   string,
