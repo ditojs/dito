@@ -217,7 +217,7 @@ export interface ApiConfig {
   users?: {
     /** The collection path for the user model. */
     path: string
-    /** Login endpoint, nested under `users.path`. */
+    /** Login endpoint. */
     login?: {
       /**
        * @defaultValue `'login'`
@@ -228,7 +228,7 @@ export interface ApiConfig {
        */
       method?: HTTPVerb
     }
-    /** Logout endpoint, nested under `users.path`. */
+    /** Logout endpoint. */
     logout?: {
       /**
        * @defaultValue `'logout'`
@@ -240,8 +240,8 @@ export interface ApiConfig {
       method?: HTTPVerb
     }
     /**
-     * Session endpoint, nested under `users.path`. Called on app
-     * startup to check for an existing authenticated session.
+     * Session endpoint. Called on app startup to check for an
+     * existing authenticated session.
      */
     session?: {
       /**
