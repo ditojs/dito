@@ -4,6 +4,11 @@
 /* ---------------------------------- base ---------------------------------- */
 
 /**
+ * Re-export of `Array.isArray` as a type guard.
+ */
+export const isArray: (arg: any) => arg is any[]
+
+/**
  * Determines whether both supplied values are the same value, using the
  * SameValue algorithm.
  * @see {@link http://ecma-international.org/ecma-262/5.1/#sec-9.12 The SameValue Algorithm}
@@ -13,12 +18,17 @@ export function is(value1: any, value2: any): boolean
 /**
  * Determines whether the supplied value is a plain object.
  */
-export function isPlainObject(arg: any): boolean
+export function isPlainObject(arg: any): arg is Record<string, unknown>
+
+/**
+ * Determines whether the supplied value is a plain `Array` instance.
+ */
+export function isPlainArray(arg: any): arg is any[]
 
 /**
  * Determines whether the supplied value is an object.
  */
-export function isObject(arg: any): boolean
+export function isObject(arg: any): arg is Record<string, unknown>
 
 /**
  * Determines whether the supplied value is a function.
@@ -41,6 +51,11 @@ export function isString(arg: any): arg is string | String
 export function isBoolean(arg: any): arg is boolean
 
 /**
+ * Determines whether the supplied value is an ES module object.
+ */
+export function isModule(arg: any): boolean
+
+/**
  * Determines whether the supplied value is a Date object.
  */
 export function isDate(arg: any): arg is Date
@@ -58,24 +73,26 @@ export function isPromise(arg: any): arg is Promise<any>
 /**
  * Determines whether the supplied value is an integer.
  */
-export function isInteger(arg: any): boolean
+export function isInteger(arg: any): arg is number
 
 /**
  * Determines whether the supplied value is an async function.
  */
-export function isAsync(arg: any): boolean
+export function isAsync(
+  arg: any
+): arg is (...args: any[]) => Promise<any>
 
 /**
    * Determines whether the supplied value is array like, i.e. it has a length
    • property between `0` and `Number.MAX_SAFE_INTEGER` and is not a function.
    */
-export function isArrayLike(arg: any): arg is any[]
+export function isArrayLike(arg: any): arg is ArrayLike<any>
 
 /**
  * Determines whether the supplied value can be considered empty,
  * i.e. undefined, null, an empty string, or an object without properties.
  */
-export function isEmpty(o: any): boolean
+export function isEmpty(arg: any): boolean
 
 /**
  * Returns the supplied value as an object. The most frequent use case is to
@@ -84,7 +101,9 @@ export function isEmpty(o: any): boolean
  *
  * @see {@link https://2ality.com/2011/04/javascript-converting-any-value-to.html JavaScript: converting any value to an object}
  */
-export function asObject<O extends {}, T extends any>(arg: T): T & O
+export function asObject<T>(
+  arg: T
+): T extends null | undefined ? T : T & Object
 
 /**
  * Returns the supplied value as an array.
@@ -93,7 +112,9 @@ export function asObject<O extends {}, T extends any>(arg: T): T & O
  * the supplied value is undefined, an empty array is returned. Otherwise an
  * array is returned containing the supplied value as its only element.
  */
-export function asArray<T>(o: T): T extends any[] ? T : T[]
+export function asArray<T>(
+  arg: T
+): T extends any[] ? T : Exclude<T, undefined>[]
 
 /**
  * Returns the supplied value as a function.
@@ -102,7 +123,7 @@ export function asArray<T>(o: T): T extends any[] ? T : T[]
  * Otherwise a function is returned that returns the value when called.
  */
 export function asFunction<T>(
-  o: T
+  arg: T
 ): T extends Function ? T : () => T
 
 /* --------------------------------- object --------------------------------- */
@@ -132,7 +153,7 @@ export function clone<T>(value: T, options?: {
   /**
    * Optional callback to process the cloned value.
    */
-  processValue?: <S>(value: T) => S
+  processValue?: (value: T) => T | undefined | void
 }): T
 
 /**
@@ -155,7 +176,12 @@ export function groupBy<T, K extends string | number | symbol>(
   callback: (item: T) => K
 ): Record<K, T[]>
 
-// TODO: document mergeDeeply
+/**
+ * Recursively merges multiple source objects into the target object. For
+ * arrays, merges objects at the same indices and concatenates
+ * non-mergeable values. Does not override root-level values with
+ * nullish values.
+ */
 export function mergeDeeply<ArgA, ArgB>(a: ArgA, b: ArgB): ArgA & ArgB
 export function mergeDeeply<ArgA, ArgB, ArgC>(
   a: ArgA,
@@ -177,7 +203,12 @@ export function mergeDeeply<ArgA, ArgB, ArgC, ArgD, ArgE>(
 ): ArgA & ArgB & ArgC & ArgD & ArgE
 export function mergeDeeply(...args: any[]): any
 
-// TODO: document assignDeeply
+/**
+ * Recursively assigns values from source objects into the target object.
+ * Similar to `mergeDeeply` but without array concatenation — overwrites
+ * array values at the same indices instead. Does not override
+ * root-level values with nullish values.
+ */
 export function assignDeeply<ArgA, ArgB>(a: ArgA, b: ArgB): ArgA & ArgB
 export function assignDeeply<ArgA, ArgB, ArgC>(
   a: ArgA,
@@ -236,12 +267,17 @@ export function pickBy<T extends Dictionary<any>, K extends keyof T[keyof T]>(
 ): Partial<T>
 export function pickBy<T extends Dictionary<any>>(
   object: T,
-  callback?: (value: T[keyof T], key: keyof T, object: T) => any
+  callback: (value: T[keyof T], key: keyof T, object: T) => any
 ): Partial<T>
 
+/**
+ * Transforms object keys by applying a callback function to each
+ * key-value pair. Returns a new object with the transformed keys and
+ * original values.
+ */
 export function mapKeys<T extends Dictionary<any>, K extends keyof any>(
   object: T,
-  callback?: (key: keyof T, value: T[keyof T], object: T) => K
+  callback: (key: keyof T, value: T[keyof T], object: T) => K
 ): Record<K, T[keyof T]>
 
 /**
@@ -257,11 +293,20 @@ export function mapValues<
 ): Record<keyof T, T[keyof T][K]>
 export function mapValues<T extends Dictionary<any>, K>(
   object: T,
-  callback?: (value: T[keyof T], key: keyof T, object: T) => K
+  callback: (value: T[keyof T], key: keyof T, object: T) => K
 ): Record<keyof T, K>
 
 /* -------------------------------- promise -------------------------------- */
 
+/**
+ * Maps an async callback over an array with controlled concurrency.
+ * Executes all promises in parallel by default, or limits concurrent
+ * execution when the `concurrency` option is set.
+ *
+ * @param input An array or a promise that resolves to an array.
+ * @param callback Async function called for each element.
+ * @param options.concurrency Max concurrent promises (0 = unlimited).
+ */
 export function mapConcurrently<T, R>(
   input: Promise<T[]> | T[],
   callback: (value: T, index: number, array: T[]) => Promise<R> | R,
@@ -270,6 +315,13 @@ export function mapConcurrently<T, R>(
   }
 ): Promise<R[]>
 
+/**
+ * Maps an async callback over an array sequentially, waiting for each
+ * promise to resolve before processing the next element.
+ *
+ * @param input An array or a promise that resolves to an array.
+ * @param callback Async function called for each element.
+ */
 export function mapSequentially<T, R>(
   input: Promise<T[]> | T[],
   callback: (value: T, index: number) => Promise<R> | R
@@ -403,7 +455,7 @@ export interface TimeFormat {
     value: string,
     type: Intl.DateTimeFormatPartTypes,
     options: Omit<TimeFormat, 'format'>
-  ) => string
+  ) => string | undefined
 }
 
 export interface DateFormat {
@@ -426,7 +478,7 @@ export interface DateFormat {
     value: string,
     type: Intl.DateTimeFormatPartTypes,
     options: Omit<DateFormat, 'format'>
-  ) => string
+  ) => string | undefined
 }
 
 export interface NumberFormat extends Intl.NumberFormatOptions {
@@ -438,10 +490,19 @@ export interface NumberFormat extends Intl.NumberFormatOptions {
 }
 
 /**
+ * Default format options for number, date, and time formatting.
+ */
+export const defaultFormats: {
+  number: NumberFormat
+  date: DateFormat
+  time: TimeFormat
+}
+
+/**
  * Formats the value as a string.
  */
 export function format(
-  value: Date,
+  value: Date | string | number | null | undefined,
   options?: {
     /**
      * @default 'en-US'
@@ -450,8 +511,13 @@ export function format(
     date?: boolean | DateFormat
     time?: boolean | TimeFormat
     number?: boolean | NumberFormat
+    defaults?: {
+      number?: NumberFormat
+      date?: DateFormat
+      time?: TimeFormat
+    }
   }
-): string
+): string | null | undefined
 /**
  * Formats a date value as a string. If the value is not a Date,
  * attempts to convert it to a Date first.
@@ -472,7 +538,7 @@ export function formatDate(
      */
     time?: boolean | TimeFormat
   }
-): string
+): string | null | undefined
 /* -------------------------------- function -------------------------------- */
 
 /**
@@ -646,7 +712,7 @@ export function toCallback<T1, T2>(
 ): (arg1: T1, arg2: T2, callback: (err: any) => void) => void
 export function toCallback<T1, T2, R>(
   fn: (arg1: T1, arg2: T2) => Promise<R>
-): (arg1: T1, arg2: T2, callback: (err: any | null, result: R) => void) => void
+): (arg1: T1, arg2: T2, callback: (err: any, result: R) => void) => void
 export function toCallback<T1, T2, T3>(
   fn: (arg1: T1, arg2: T2, arg3: T3) => Promise<void>
 ): (arg1: T1, arg2: T2, arg3: T3, callback: (err: any) => void) => void
@@ -656,7 +722,7 @@ export function toCallback<T1, T2, T3, R>(
   arg1: T1,
   arg2: T2,
   arg3: T3,
-  callback: (err: any | null, result: R) => void
+  callback: (err: any, result: R) => void
 ) => void
 export function toCallback<T1, T2, T3, T4>(
   fn: (arg1: T1, arg2: T2, arg3: T3, arg4: T4) => Promise<void>
@@ -674,7 +740,7 @@ export function toCallback<T1, T2, T3, T4, R>(
   arg2: T2,
   arg3: T3,
   arg4: T4,
-  callback: (err: any | null, result: R) => void
+  callback: (err: any, result: R) => void
 ) => void
 export function toCallback<T1, T2, T3, T4, T5>(
   fn: (arg1: T1, arg2: T2, arg3: T3, arg4: T4, arg5: T5) => Promise<void>
@@ -694,7 +760,7 @@ export function toCallback<T1, T2, T3, T4, T5, R>(
   arg3: T3,
   arg4: T4,
   arg5: T5,
-  callback: (err: any | null, result: R) => void
+  callback: (err: any, result: R) => void
 ) => void
 export function toCallback<T1, T2, T3, T4, T5, T6>(
   fn: (
@@ -723,9 +789,18 @@ export function toCallback<T1, T2, T3, T4, T5, T6, R>(
   arg4: T4,
   arg5: T5,
   arg6: T6,
-  callback: (err: any | null, result: R) => void
+  callback: (err: any, result: R) => void
 ) => void
 
+/**
+ * Creates a Node.js-style error-first callback that resolves or rejects
+ * a promise. If the error argument is truthy, rejects the promise;
+ * otherwise resolves with the result.
+ *
+ * @param resolve Promise resolve function.
+ * @param reject Promise reject function.
+ * @returns Callback with signature `(err, res) => void`.
+ */
 export function toPromiseCallback<T, R>(
   resolve: (value: T) => void,
   reject: (reason: R) => void
@@ -741,6 +816,7 @@ export function toPromiseCallback<T, R>(
  * @param path The data path (supports wildcards).
  * @param handleError Optional error handler called when path is invalid.
  * @returns Object with normalized paths as keys and values at those paths.
+ * @see {@link parseDataPath} for supported path formats.
  */
 export function getEntriesAtDataPath(
   obj: any,
@@ -748,15 +824,40 @@ export function getEntriesAtDataPath(
   handleError?: (obj: any, part: string, index: number) => any
 ): Record<string, any>
 
+/**
+ * Retrieves a value from a nested object or array at a given path.
+ * Supports property access notation (`obj.arr[0].prop`), JSON pointers
+ * (`/obj/arr/0/prop`), and wildcard matching (`*` for shallow, `**`
+ * for deep recursive).
+ *
+ * @param obj The object or array to retrieve from.
+ * @param path The data path (multiple formats supported).
+ * @param handleError Optional error handler called when the path is
+ * invalid, with `(obj, part, index)`.
+ * @see {@link parseDataPath} for supported path formats.
+ */
 export function getValueAtDataPath(
   obj: any,
   path: OrArrayOf<string>,
-  handleError?: (obj: any, part: string, index: number) => void
+  handleError?: (obj: any, part: string, index: number) => any
 ): any
 
+/**
+ * Normalizes a data path to a standard format using forward slashes.
+ * Converts property access notation, JSON pointers, and relative paths
+ * to normalized relative path format. Resolves relative tokens (`..`
+ * and `.`).
+ * @see {@link parseDataPath} for supported path formats.
+ */
 export function normalizeDataPath(path: OrArrayOf<string>): string
 
-export function parseDataPath(path: OrArrayOf<string>): string
+/**
+ * Parses a data path string or array into an array of path segments.
+ * Supports property access notation (`obj.arr[0].prop`), JSON pointers
+ * (`/obj/arr/0/prop`), and relative paths. Always returns a new array
+ * to prevent mutation.
+ */
+export function parseDataPath(path: OrArrayOf<string>): string[]
 
 /**
  * Sets multiple values at data paths from an entries object.
@@ -764,12 +865,24 @@ export function parseDataPath(path: OrArrayOf<string>): string
  * @param obj The object to modify.
  * @param entries Object with data paths as keys and values to set.
  * @returns The modified object.
+ * @see {@link parseDataPath} for supported path formats.
  */
 export function setDataPathEntries<O>(
   obj: O,
   entries: Record<string, any>
 ): O
 
+/**
+ * Sets a value in a nested object or array at a given path. Parses the
+ * path, navigates to the parent location, and assigns the value.
+ * Mutates the original object.
+ *
+ * @param obj The object or array to set the value on.
+ * @param path The data path to the target location.
+ * @param value The value to set.
+ * @returns The modified object.
+ * @see {@link parseDataPath} for supported path formats.
+ */
 export function setValueAtDataPath<O>(
   obj: O,
   path: OrArrayOf<string>,
@@ -792,19 +905,19 @@ export function mixin<T extends new (...args: any[]) => any>(
 /* ---------------------------------- html ---------------------------------- */
 
 /**
-   * Escapes quotes, ampersands, and smaller/greater than signs (`&<>'"`).
+   * Escapes double quotes, ampersands, and angle brackets (`"&<>`).
 
    * @param html The html to escape.
    * @returns The newly escaped html.
    */
-export function escapeHtml(html: string): string
+export function escapeHtml(html: string | null | undefined): string
 
 /**
  * Strips HTML tags from the string.
  * @param html The string to strip.
  * @returns The newly stripped string.
  */
-export function stripHtml(html: string): string
+export function stripHtml(html: string | null | undefined): string
 
 /**
  * Strips HTML tags from the string.
@@ -812,12 +925,9 @@ export function stripHtml(html: string): string
  * @returns The newly stripped string.
  * @deprecated Use stripHtml() instead
  */
-export function stripTags(html: string): string
+export function stripTags(html: string | null | undefined): string
 
 /* -------------------------- typescript utilities -------------------------- */
-type PropertyName = string | number | symbol
-type NotVoid = {} | null | undefined
-type List<T> = ArrayLike<T>
 export interface ArrayLike<T> {
   readonly length: number
   readonly [n: number]: T
