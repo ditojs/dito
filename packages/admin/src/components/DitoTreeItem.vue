@@ -310,6 +310,8 @@ export default DitoComponent.component('DitoTreeItem', {
 .dito-tree-item {
   --chevron-indent: #{$chevron-indent};
 
+  overflow: hidden;
+
   > .dito-tree-header {
     > .dito-tree-branch,
     > .dito-tree-leaf {
@@ -333,12 +335,20 @@ export default DitoComponent.component('DitoTreeItem', {
   .dito-tree-leaf {
     display: flex;
     flex: auto;
+    overflow: hidden;
+    min-width: 0;
     position: relative;
     margin: 1px 0;
     @include user-select(none);
   }
 
-  .dito-tree-label,
+  .dito-tree-label {
+    display: flex;
+    align-items: baseline;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
   .dito-tree-info {
     white-space: nowrap;
   }
@@ -349,10 +359,12 @@ export default DitoComponent.component('DitoTreeItem', {
   }
 
   .dito-buttons {
+    flex: auto;
     display: flex;
     visibility: hidden;
     height: 100%;
-    margin: 1px 0 1px 1em;
+    margin: 1px;
+    margin-right: 0;
   }
 
   .dito-tree-header:hover {
