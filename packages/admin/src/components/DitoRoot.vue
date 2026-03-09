@@ -295,16 +295,19 @@ export default DitoComponent.component('DitoRoot', {
           },
           ...additionalComponents
         },
+        // NOTE: Login must come before cancel in DOM order so that password
+        // managers (e.g. 1Password) target the submit button instead of cancel.
+        // DitoDialog uses CSS order to visually place cancel first.
         buttons: {
+          login: {
+            type: 'submit',
+            text: 'Login'
+          },
+
           cancel: {
             type: 'button',
             text: 'Cancel'
             // NOTE: The click event is added in DitoDialog.buttonSchemas()
-          },
-
-          login: {
-            type: 'submit',
-            text: 'Login'
           }
         }
       })

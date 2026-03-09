@@ -94,13 +94,7 @@
 
   &,
   &__group {
-    > * {
-      margin-left: var(--button-margin);
-
-      &:first-child {
-        margin-left: 0;
-      }
-    }
+    gap: var(--button-margin);
   }
 
   &__group + &__group {

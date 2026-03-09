@@ -10,6 +10,7 @@
   UseFocusTrap.dito-dialog__focus-trap(:options="focusTrapOptions")
     form.dito-scroll-parent(
       @submit.prevent="submit"
+      @keydown.enter="onEnter"
     )
       // Add an invisible button that prevents the clearable buttons from being
       // pressed when the user presses the Enter key:
@@ -150,6 +151,15 @@ export default DitoComponent.component('DitoDialog', {
       this.remove()
     },
 
+    onEnter(event) {
+      // Handle Enter key on input fields to submit the form. This also handles
+      // password managers (e.g. 1Password) that simulate an untrusted Enter
+      // keypress to submit, which browsers ignore.
+      if (event.target instanceof HTMLInputElement) {
+        this.submit()
+      }
+    },
+
     submit() {
       this.resolve(this.dialogData)
     },
@@ -191,6 +201,12 @@ export default DitoComponent.component('DitoDialog', {
   &__focus-trap {
     display: flex;
     max-height: 100%;
+  }
+
+  // Place cancel button visually first even though submit comes first in DOM,
+  // so that password managers (e.g. 1Password) find the submit button first.
+  .dito-container:has(.dito-button--cancel) {
+    order: -1;
   }
 
   // TODO: `&__inner`
