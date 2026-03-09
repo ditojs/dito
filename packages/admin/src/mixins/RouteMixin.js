@@ -102,12 +102,12 @@ export default {
     }
   },
 
-  beforeRouteUpdate(to, from, next) {
-    this?.beforeRouteChange(to, from, next)
+  beforeRouteUpdate(to, from) {
+    return this?.beforeRouteChange(to, from)
   },
 
-  beforeRouteLeave(to, from, next) {
-    this?.beforeRouteChange(to, from, next)
+  beforeRouteLeave(to, from) {
+    return this?.beforeRouteChange(to, from)
   },
 
   created() {
@@ -123,7 +123,7 @@ export default {
   },
 
   methods: {
-    beforeRouteChange(to, from, next) {
+    beforeRouteChange(to, from) {
       let ok = true
       const isClosing = (
         // Only handle this route change if the form is actually mapped to the
@@ -161,7 +161,7 @@ export default {
           }
         }
       }
-      next(ok)
+      return ok
     },
 
     getRoutePath(recordPath) {
