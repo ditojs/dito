@@ -345,6 +345,7 @@ export default DitoComponent.component('DitoTreeItem', {
   .dito-tree-label {
     display: flex;
     align-items: baseline;
+    gap: 0.25em;
     overflow: hidden;
     white-space: nowrap;
   }
