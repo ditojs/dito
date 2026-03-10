@@ -40,7 +40,9 @@ describe('Form assignability', () => {
 
   it('() => import() pattern is assignable to ResolvableForm', () => {
     const importForm = () =>
-      Promise.resolve({ default: { type: 'form', components: {} } as Form<Entry> })
+      Promise.resolve({
+        default: { type: 'form', components: {} } as Form<Entry>
+      })
     assertType<ResolvableForm<Entry>>(importForm)
   })
 
