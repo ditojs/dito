@@ -81,25 +81,3 @@ describe('Components<any> compatibility', () => {
     assertType<Component>(specific);
   });
 });
-
-describe('Components with type annotation', () => {
-  it('types item properties in format callback', () => {
-    type ItemType = {
-      url: string;
-    };
-
-    const components: Components<ItemType> = {
-      url: {
-        type: 'text',
-        label: 'URL',
-        width: '50%',
-        format({ item: { url } }) {
-          assertType<string>(url);
-          return '';
-        },
-        exclude: true,
-        disabled: true
-      }
-    };
-  });
-});

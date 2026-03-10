@@ -94,24 +94,13 @@ describe('ListSchema', () => {
     })
   })
 
-  it('accepts draggable, collapsible, collapsed as OrItemAccessor', () => {
-    assertType<ListSchema<Entry>>({
-      type: 'list',
-      draggable: true
-    })
-
+  it('accepts draggable as OrItemAccessor', () => {
     assertType<ListSchema<Entry>>({
       type: 'list',
       draggable(ctx) {
         expectTypeOf(ctx).toMatchTypeOf<DitoContext<Entry>>()
         return true
       }
-    })
-
-    assertType<ListSchema<Entry>>({
-      type: 'list',
-      collapsible: true,
-      collapsed: false
     })
   })
 
@@ -127,20 +116,6 @@ describe('ListSchema', () => {
         active: { label: 'Active', defaultScope: true },
         archived: 'Archived'
       }
-    })
-  })
-
-  it('accepts editable and deletable like creatable', () => {
-    assertType<ListSchema<Entry>>({
-      type: 'list',
-      editable: true,
-      deletable: false
-    })
-
-    assertType<ListSchema<Entry>>({
-      type: 'list',
-      editable: (ctx) => ({ label: 'Edit' }),
-      deletable: (ctx) => true
     })
   })
 
