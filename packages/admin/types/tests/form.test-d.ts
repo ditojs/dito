@@ -38,6 +38,12 @@ describe('Form assignability', () => {
     assertType<ResolvableForm<Entry>>(module)
   })
 
+  it('() => import() pattern is assignable to ResolvableForm', () => {
+    const importForm = () =>
+      Promise.resolve({ default: { type: 'form', components: {} } as Form<Entry> })
+    assertType<ResolvableForm<Entry>>(importForm)
+  })
+
   it('accepts event callbacks with typed item', () => {
     assertType<Form<Entry>>({
       type: 'form',
