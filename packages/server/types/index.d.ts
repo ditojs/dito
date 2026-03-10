@@ -834,7 +834,8 @@ export type ModelProperty<T = any> = Schema<T> & {
  * @see {@link https://github.com/ditojs/dito/blob/master/docs/model-scopes.md|Model Scopes}
  */
 export type ModelScope<$Model extends Model = Model> = (
-  query: QueryBuilder<$Model>
+  query: QueryBuilder<$Model>,
+  applyParentScope: (query: QueryBuilder<$Model>) => QueryBuilder<$Model>
 ) => QueryBuilder<$Model, any> | void
 
 /**
