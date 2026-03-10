@@ -1,10 +1,5 @@
 import { expectTypeOf, assertType, describe, it } from 'vitest'
-import type {
-  MenuSchema,
-  View,
-  NumberSchema,
-  Form
-} from '../index.d.ts'
+import type { MenuSchema, View, NumberSchema, Form } from '../index.d.ts'
 import type { Entry } from './fixtures.ts'
 
 describe('MenuSchema', () => {
