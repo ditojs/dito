@@ -76,6 +76,25 @@ describe('MultiselectSchema', () => {
     })
   })
 
+  it('accepts label/value as accessor callbacks with typed option', () => {
+    type Tag = { id: number; name: string }
+
+    assertType<MultiselectSchema<Entry, Tag>>({
+      type: 'multiselect',
+      options: {
+        data: [] as Tag[],
+        label({ option }) {
+          expectTypeOf(option).not.toBeAny()
+          return option.name
+        },
+        value({ option }) {
+          expectTypeOf(option).not.toBeAny()
+          return option.id
+        }
+      }
+    })
+  })
+
   it('rejects invalid type', () => {
     assertType<MultiselectSchema<Entry>>({
       // @ts-expect-error 'radio' is not assignable to 'multiselect'

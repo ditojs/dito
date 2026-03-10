@@ -1788,11 +1788,24 @@ export type OrItemAccessor<
   $ReturnValue = any
 > = ItemAccessor<$Item, $Params, $ReturnValue> | $ReturnValue
 
+/**
+ * Merges two object types into a single flat mapped type.
+ * Unlike `A & B`, this preserves contextual typing for
+ * callback parameters in complex intersections.
+ */
+type Merge<A, B> = {
+  [K in keyof A | keyof B]: K extends keyof B
+    ? B[K]
+    : K extends keyof A
+      ? A[K]
+      : never
+}
+
 export type ItemAccessor<
   $Item = any,
   $Params extends {} = {},
   $ReturnValue = any
-> = (params: DitoContext<$Item> & $Params) => $ReturnValue
+> = (params: Merge<DitoContext<$Item>, $Params>) => $ReturnValue
 
 export type DitoContext<$Item = any> = {
   /**
