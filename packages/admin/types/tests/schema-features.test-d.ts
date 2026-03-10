@@ -270,13 +270,12 @@ describe('UploadSchema', () => {
 })
 
 describe('PanelSchema', () => {
-  it('rejects unknown component keys', () => {
+  it('accepts arbitrary component keys in panels', () => {
     assertType<PanelSchema<Entry>>({
       type: 'panel',
       components: {
         title: { type: 'text' },
-        // @ts-expect-error 'nonExistent' is not a key of Entry
-        nonExistent: { type: 'text' }
+        extra: { type: 'text' }
       }
     })
   })
@@ -310,7 +309,23 @@ describe('PanelSchema', () => {
     })
   })
 
-  it('panels property in form has typed components', () => {
+  it('component callbacks in panels receive typed item', () => {
+    assertType<PanelSchema<Parent>>({
+      type: 'panel',
+      components: {
+        title: {
+          type: 'text',
+          format({ item }) {
+            expectTypeOf(item.title).toBeString()
+            expectTypeOf(item.entries).toEqualTypeOf<Entry[]>()
+            return ''
+          }
+        }
+      }
+    })
+  })
+
+  it('panels on Form inherit item type', () => {
     assertType<Form<Parent>>({
       type: 'form',
       components: {
@@ -320,11 +335,10 @@ describe('PanelSchema', () => {
         info: {
           type: 'panel',
           components: {
-            title: {
+            status: {
               type: 'text',
               format({ item }) {
                 expectTypeOf(item.title).toBeString()
-                expectTypeOf(item.entries).toEqualTypeOf<Entry[]>()
                 return ''
               }
             }
