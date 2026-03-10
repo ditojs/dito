@@ -20,6 +20,7 @@ import { CompressOptions } from 'koa-compress'
 import koaMount from 'koa-mount'
 import koaResponseTime from 'koa-response-time'
 import koaSession from 'koa-session'
+import multer from '@koa/multer'
 import multerS3 from 'multer-s3'
 import * as objection from 'objection'
 import { KnexSnakeCaseMappersFactory } from 'objection'
@@ -738,12 +739,15 @@ export interface ModelRelation {
    */
   scope?: string
   /**
-   * Optionally, a filter can be defined to be applied when loading the
-   * relation's models. The filter needs to be defined in the related model
-   * class' filters definitions. Can be a single filter name or an object with
-   * filter names as keys and argument arrays as values.
+   * Optionally, a filter to apply when loading the relation's models.
+   * Accepts a Dito.js filter name/object (resolved via the related model's
+   * filters), or a callback/find-filter object as an alias for `modify`.
    */
-  filter?: string | { [name: string]: any[] }
+  filter?:
+    | string
+    | { [name: string]: unknown[] }
+    | ((query: QueryBuilder) => void)
+    | Record<string, unknown>
   /**
    * Controls whether the auto-inserted foreign key property should be marked as
    * nullable. This only makes sense on a 'belongsTo' relation, where the model
@@ -766,17 +770,7 @@ export interface ModelRelation {
    */
   modify?:
     | ((query: QueryBuilder) => void)
-    | Record<string, any>
-  /**
-   * An alias for `modify`. An optional filter callback or find-filter object
-   * to scope the relation query, e.g.:
-   * `filter: query => query.where('type', 'active')`
-   *
-   * Only one of `modify` or `filter` should be set.
-   */
-  filter?:
-    | ((query: QueryBuilder) => void)
-    | Record<string, any>
+    | Record<string, unknown>
 }
 
 export type ModelProperty<T = any> = Schema<T> & {
@@ -1041,7 +1035,7 @@ export class Model extends objection.Model {
    * setup that requires async operations.
    * @overridable
    */
-  static initialize(): Promise<void>
+  static initialize(): void | Promise<void>
 
   /**
    * Creates a model instance from JSON data. Dito's
@@ -1073,13 +1067,19 @@ export class Model extends objection.Model {
   /** Returns the named property definition, if found. */
   static getProperty(name: string): ModelProperty | null
   /** Returns the model's query modifiers. */
-  static getModifiers(): Record<string, Function>
+  static getModifiers(): Record<
+    string,
+    (
+      builder: objection.QueryBuilder<any, any>,
+      ...args: any[]
+    ) => void
+  >
   /**
    * Returns property names matching the given filter
    * function.
    */
   static getAttributes(
-    filter?: (property: ModelProperty) => boolean
+    filter: (property: ModelProperty) => boolean
   ): string[]
 
   /** Returns relations where this model is the related side. */
@@ -1289,7 +1289,7 @@ export class Model extends objection.Model {
    * @overridable
    */
   $initialize(): void
-  $is(model: Model): boolean
+  $is(model: Model | null | undefined): boolean
   /** Returns `true` if all named properties are defined. */
   $has(...properties: string[]): boolean
   /** Runs a callback within a transaction. */
@@ -1579,7 +1579,7 @@ export class Controller {
    * No-op in the base class; override in subclasses.
    */
   getMember(
-    ctx: KoaContext,
+    ctx?: KoaContext,
     base?: any,
     options?: {
       query?: Record<string, any>
@@ -1587,6 +1587,8 @@ export class Controller {
       forUpdate?: boolean
     }
   ): Promise<Model | null>
+
+  setProperty(key: string, value: unknown): void
 
   /**
    * Called right after the constructor, before `setup()` and `initialize()`.
@@ -2110,7 +2112,10 @@ export class CollectionController<
   executeAndFetch(
     action: string,
     ctx: KoaContext,
-    modify?: (query: QueryBuilder<$Model>) => void,
+    modify?: (
+      query: QueryBuilder<$Model>,
+      trx?: objection.Transaction
+    ) => void,
     body?: Record<string, any>
   ): Promise<$Model>
 
@@ -2121,7 +2126,10 @@ export class CollectionController<
   executeAndFetchById(
     action: string,
     ctx: KoaContext,
-    modify?: (query: QueryBuilder<$Model>) => void,
+    modify?: (
+      query: QueryBuilder<$Model>,
+      trx?: objection.Transaction
+    ) => void,
     body?: Record<string, any>
   ): Promise<$Model>
 }
@@ -2174,13 +2182,23 @@ export class RelationController<
   $Model extends Model = Model
 > extends CollectionController<$Model> {
   /** The parent controller that owns this relation. */
-  parent: ModelController
+  parent: CollectionController
+
+  /** The raw relation definition object. */
+  object: Record<string, unknown>
 
   /** The Objection.js relation instance. */
   relationInstance: objection.Relation
 
   /** The raw relation definition from the parent. */
   relationDefinition: Record<string, unknown>
+
+  /** Whether this is a one-to-one relation. */
+  isOneToOne: boolean
+  /** Whether relate operations are supported. */
+  relate: boolean
+  /** Whether unrelate operations are supported. */
+  unrelate: boolean
 }
 
 export class Validator extends objection.Validator {
@@ -2541,126 +2559,125 @@ export class QueryBuilder<
    * Returns true if the query defines normal selects: select(), column(),
    * columns()
    */
-  hasNormalSelects: () => boolean
+  hasNormalSelects(): boolean
   /**
-   * Returns true if the query defines special selects: distinct(), count(),
-   * countDistinct(), min(), max(), sum(), sumDistinct(), avg(), avgDistinct()
+   * Returns true if the query defines special selects:
+   * distinct(), count(), countDistinct(), min(), max(),
+   * sum(), sumDistinct(), avg(), avgDistinct()
    */
-  hasSpecialSelects: () => boolean
-  withScope: (...scopes: string[]) => this
+  hasSpecialSelects(): boolean
+  withScope(...scopes: string[]): this
   /**
-   * Clear all scopes defined with `withScope()` statements, preserving the
-   * default scope.
+   * Clear all scopes defined with `withScope()` statements,
+   * preserving the default scope.
    */
-  clearWithScope: () => this
-  ignoreScope: (...scopes: string[]) => this
-  applyScope: (...scopes: string[]) => this
-  allowScope: (...scopes: string[]) => void
-  clearAllowScope: () => void
-  applyFilter: {
-    (name: string, ...args: unknown[]): this
-    (filters: { [name: string]: unknown[] }): this
-  }
-  allowFilter: (...filters: string[]) => void
+  clearWithScope(): this
+  ignoreScope(...scopes: string[]): this
+  applyScope(...scopes: string[]): this
+  allowScope(...scopes: string[]): void
+  clearAllowScope(): void
+  applyFilter(name: string, ...args: unknown[]): this
+  applyFilter(filters: { [name: string]: unknown[] }): this
+  allowFilter(...filters: string[]): void
   /** Omits properties from the query result. */
-  omit: (...properties: string[]) => void
-  withGraph: (
+  omit(...properties: string[]): void
+  withGraph(
     expr: objection.RelationExpression<M>,
     options?: objection.GraphOptions & {
       algorithm?: 'fetch' | 'join'
     }
-  ) => this
+  ): this
 
-  toSQL: () => { sql: string; bindings: unknown[] }
+  toSQL(): { sql: string; bindings: unknown[] }
   raw: Knex.RawBuilder
   selectRaw: SetReturnType<Knex.RawBuilder, this>
-  pluck: (key: string) => this
-  loadDataPath: (
+  pluck(key: string): this
+  loadDataPath(
     dataPath: string[] | string,
     options?: objection.GraphOptions & {
       algorithm?: 'fetch' | 'join'
     }
-  ) => this
+  ): this
 
-  upsert: (
+  upsert(
     data: PartialModelObject<M>,
     options?: {
-      update: boolean
-      fetch: boolean
+      update?: boolean
+      fetch?: boolean
     }
-  ) => this
+  ): this
 
-  find: (
+  find(
     query: QueryParameterOptions,
     allowParam?:
       | QueryParameterOptionKey[]
       | {
           [key in QueryParameterOptionKey]?: boolean
         }
-  ) => this
+  ): this
 
-  patchById: (id: Id, data: PartialModelObject<M>) => this
-  updateById: (id: Id, data: PartialModelObject<M>) => this
-  upsertAndFetch: (data: PartialModelObject<M>) => this
-  insertDitoGraph: (
+  patchById(id: Id, data: PartialModelObject<M>): this
+  updateById(id: Id, data: PartialModelObject<M>): this
+  upsertAndFetch(data: PartialModelObject<M>): this
+  insertDitoGraph(
     data: PartialDitoModelGraph<M>,
     options?: DitoGraphOptions
-  ) => this
+  ): this
 
-  insertDitoGraphAndFetch: (
+  insertDitoGraphAndFetch(
     data: PartialDitoModelGraph<M>,
     options?: DitoGraphOptions
-  ) => this
+  ): this
 
-  upsertDitoGraph: (
+  upsertDitoGraph(
     data: PartialDitoModelGraph<M>,
     options?: DitoGraphOptions
-  ) => this
+  ): this
 
-  upsertDitoGraphAndFetch: (
+  upsertDitoGraphAndFetch(
     data: PartialDitoModelGraph<M>,
     options?: DitoGraphOptions
-  ) => this
+  ): this
 
-  upsertDitoGraphAndFetchById: (
+  upsertDitoGraphAndFetchById(
     id: Id,
     data: PartialDitoModelGraph<M>,
     options?: DitoGraphOptions
-  ) => QueryBuilder<M, M>
+  ): this
 
-  updateDitoGraph: (
+  updateDitoGraph(
     data: PartialDitoModelGraph<M>,
     options?: DitoGraphOptions
-  ) => this
+  ): this
 
-  updateDitoGraphAndFetch: (
+  updateDitoGraphAndFetch(
     data: PartialDitoModelGraph<M>,
     options?: DitoGraphOptions
-  ) => this
+  ): this
 
-  updateDitoGraphAndFetchById: (
+  updateDitoGraphAndFetchById(
     id: Id,
     data: PartialDitoModelGraph<M>,
     options?: DitoGraphOptions
-  ) => QueryBuilder<M, M>
+  ): this
 
-  patchDitoGraph: (
+  patchDitoGraph(
     data: PartialDitoModelGraph<M>,
     options?: DitoGraphOptions
-  ) => this
+  ): this
 
-  patchDitoGraphAndFetch: (
+  patchDitoGraphAndFetch(
     data: PartialDitoModelGraph<M>,
     options?: DitoGraphOptions
-  ) => this
+  ): this
 
-  patchDitoGraphAndFetchById: (
+  patchDitoGraphAndFetchById(
     id: Id,
     data: PartialDitoModelGraph<M>,
     options?: DitoGraphOptions
-  ) => QueryBuilder<M, M>
+  ): this
 
-  truncate: (options?: { restart?: boolean; cascade?: boolean }) => this
+  truncate(options?: { restart?: boolean; cascade?: boolean }): this
 
   ArrayQueryBuilderType: QueryBuilder<M, M[]>
   SingleQueryBuilderType: QueryBuilder<M, M>
@@ -2838,12 +2855,12 @@ export class Storage {
    * uploads, or null if no underlying storage is configured.
    */
   getUploadStorage(
-    config: Record<string, unknown>
-  ): Record<string, any> | null
+    config: multer.Options
+  ): multer.StorageEngine | null
 
   /** Returns a multer upload handler for this storage. */
   getUploadHandler(
-    config: Record<string, unknown>
+    config: multer.Options
   ): Koa.Middleware | null
 
   /**
@@ -2874,7 +2891,7 @@ export class Storage {
    * format.
    */
   convertStorageFile(
-    storageFile: Record<string, any>
+    storageFile: StorageFile
   ): AssetFileObject
 
   /**
@@ -2882,14 +2899,14 @@ export class Storage {
    * internal file format.
    */
   convertStorageFiles(
-    storageFiles: Record<string, any>[]
+    storageFiles: StorageFile[]
   ): AssetFileObject[]
 
   /**
    * Converts a plain file object into an AssetFile
    * instance in-place on this storage.
    */
-  convertAssetFile(file: Record<string, any>): void
+  convertAssetFile(file: AssetFileObject): void
 
   /** Registers a storage subclass by type name. */
   static register(storageClass: Class<Storage>): void
@@ -2957,9 +2974,13 @@ export class AssetFile {
    */
   static getUniqueKey(name: string): string
 }
-/* ------------------------------ End Storage ------------------------------ */
 
-/* ------------------------------ Start Mixins ----------------------------- */
+export type StorageFile = multer.File & {
+  key: string
+  width?: number
+  height?: number
+}
+
 export type AssetFileObject = {
   // The unique key within the storage (uuid/v4 + file extension)
   key: string
@@ -2976,6 +2997,9 @@ export type AssetFileObject = {
   // The height of the image if the storage defines `config.readDimensions`
   height?: number
 }
+/* ------------------------------ End Storage ------------------------------ */
+
+/* ------------------------------ Start Mixins ----------------------------- */
 
 export const AssetMixin: <T extends Constructor<{}>>(
   target: T
@@ -3158,8 +3182,6 @@ export type KoaContext<$State = any> = Koa.ParameterizedContext<
 >
 
 type LiteralUnion<T extends U, U = string> = T | (U & Record<never, never>)
-
-type ReflectArrayType<Source, Target> = Source extends any[] ? Target[] : Target
 
 type OrArrayOf<T> = T[] | T
 
