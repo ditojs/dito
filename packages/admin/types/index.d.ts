@@ -581,7 +581,7 @@ export interface SchemaSourceMixin<$Item> {
   /**
    * The form schema used for editing items.
    */
-  form?: ResolvableForm
+  form?: ResolvableForm<$Item>
   /**
    * Multiple form schemas keyed by item type, for
    * sources with polymorphic content.
@@ -1483,20 +1483,92 @@ export type RadioSchema<$Item = any> = BaseSchema<$Item> &
     layout?: 'horizontal' | 'vertical'
   }
 
-export type SectionSchema<$Item = any> = BaseSchema<$Item> &
+type SectionContent<$Data> = {
+  /** The section's field components. */
+  components?: Components<$Data>
+  /**
+   * A form schema for the section's content. Use this
+   * instead of `components` to get form-level options
+   * like `label`, `tabs`, and `mutate`.
+   */
+  form?: ResolvableForm<$Data>
+  /**
+   * Display several schemas in different tabs
+   * within the section.
+   */
+  tabs?: Record<
+    string,
+    Omit<Form<$Data>, 'tabs' | 'type'> & {
+      type: 'tab'
+      defaultTab?: OrItemAccessor<$Data, {}, boolean>
+    }
+  >
+}
+
+/**
+ * A visual grouping of components within a form.
+ *
+ * By default, the section's components read and write fields
+ * on the parent item directly. When `nested` is `true`, the
+ * section's fields are stored under their own key on the
+ * parent item instead (e.g. `item.address`).
+ *
+ * For non-nested sections, declare the key as `never` in
+ * your item type. For nested sections, declare it as the
+ * object type of the nested data (see {@link Components}).
+ *
+ * @template $Item The parent item type, used for callbacks
+ *   like `label` and `collapsible`.
+ * @template $Nested The type of the section's own data.
+ *   For nested sections this is the value type at the
+ *   section's key (e.g. `Address`). For non-nested sections
+ *   this defaults to `$Item`.
+ *
+ * @example Non-nested section (fields stored on parent item)
+ * ```ts
+ * type Item = {
+ *   title: string
+ *   details: never // UI-only key
+ * }
+ *
+ * const components: Components<Item> = {
+ *   details: {
+ *     type: 'section',
+ *     components: {
+ *       title: { type: 'text' }
+ *     }
+ *   }
+ * }
+ * ```
+ *
+ * @example Nested section (fields stored at `item.address`)
+ * ```ts
+ * type Address = { street: string; city: string }
+ *
+ * type Item = {
+ *   title: string
+ *   address: Address // data key for nested section
+ * }
+ *
+ * const components: Components<Item> = {
+ *   address: {
+ *     type: 'section',
+ *     nested: true,
+ *     components: {
+ *       street: { type: 'text' },
+ *       city: { type: 'text' }
+ *     }
+ *   }
+ * }
+ * ```
+ */
+export type SectionSchema<$Item = any, $Nested = $Item> =
+  BaseSchema<$Item> &
   SchemaOpen<$Item> & {
     /**
      * The type of the component.
      */
     type: 'section'
-    /** The section's field components. */
-    components?: Components<$Item>
-    /**
-     * A form schema for the section's content. Use this
-     * instead of `components` to get form-level options
-     * like `label`, `tabs`, and `mutate`.
-     */
-    form?: ResolvableForm
     /**
      * Multiple form schemas keyed by item type, for
      * sections with polymorphic content.
@@ -1504,21 +1576,6 @@ export type SectionSchema<$Item = any> = BaseSchema<$Item> &
     forms?: {
       [key: string]: ResolvableForm
     }
-    /**
-     * Display several schemas in different tabs within
-     * the section. Passed to the implicit form created
-     * from `components`.
-     */
-    tabs?: Record<
-      string,
-      Omit<Form<$Item>, 'tabs' | 'type'> & {
-        type: 'tab'
-        /**
-         * Whether this tab is selected by default.
-         */
-        defaultTab?: OrItemAccessor<$Item, {}, boolean>
-      }
-    >
     /**
      * Renders the section with reduced spacing.
      *
@@ -1529,14 +1586,6 @@ export type SectionSchema<$Item = any> = BaseSchema<$Item> &
      * Enables copy/paste for the section's data.
      */
     clipboard?: ClipboardConfig
-    /**
-     * Whether the data is stored under its own key in the parent item.
-     * When `true`, an "address" section stores data at `item.address`.
-     * When `false`, its fields are stored directly on `item`.
-     *
-     * @defaultValue `false`
-     */
-    nested?: boolean
     /**
      * Whether the section can be collapsed.
      */
@@ -1553,7 +1602,32 @@ export type SectionSchema<$Item = any> = BaseSchema<$Item> &
        */
       open?: OpenEventHandler<$Item>
     }
-  }
+  } & (
+    | ({
+        /**
+         * Whether the data is stored under its own key
+         * on the parent item. When `true`, an "address"
+         * section stores data at `item.address`. When
+         * `false` or omitted, the section's fields are
+         * stored directly on the parent item.
+         *
+         * @defaultValue `false`
+         */
+        nested?: false
+      } & SectionContent<$Item>)
+    | ({
+        /**
+         * Whether the data is stored under its own key
+         * on the parent item. When `true`, an "address"
+         * section stores data at `item.address`. When
+         * `false` or omitted, the section's fields are
+         * stored directly on the parent item.
+         *
+         * @defaultValue `false`
+         */
+        nested: true
+      } & SectionContent<$Nested>)
+  )
 
 export type CheckboxSchema<$Item = any> = BaseSchema<$Item> & {
   /**
@@ -1656,6 +1730,11 @@ export type ColumnSchema<$Item = any> = {
   if?: OrItemAccessor<$Item, {}, boolean>
 }
 
+/**
+ * A form that can be provided directly, as a record of named forms
+ * (e.g. a module namespace from `import()`), wrapped in a promise,
+ * or returned from a function.
+ */
 export type ResolvableForm<$Item = any> = Resolvable<Form<$Item>>
 
 export type ListSchema<$Item = { [key: string]: any }> =
@@ -1699,7 +1778,7 @@ export type ListSchema<$Item = { [key: string]: any }> =
             }
           | {
               label?: string
-              components: Components<$Item>
+              components: Components
             }
           | boolean
           | undefined
@@ -1755,7 +1834,7 @@ export type DitoContext<$Item = any> = {
   /** Index of the parent item in its list. */
   parentItemIndex: number | null
   /** The current data item. */
-  item: $Item
+  item: OmitNever<$Item>
   /**
    * NOTE: `parentItem` isn't the closest data parent to `item`,
    * it's the closest parent that isn't an array, e.g. for
@@ -1918,7 +1997,7 @@ export interface DitoComponentInstanceBase<$Item = any>
   /** The current value of the component (getter/setter). */
   value: any
   /** The current data item. */
-  item: $Item
+  item: OmitNever<$Item>
   /**
    * The closest parent item that isn't an array (e.g.
    * for relations or nested JSON data).
@@ -2840,7 +2919,7 @@ export type ProgressSchema<$Item = any> = SchemaNumberMixin<$Item> &
     type: 'progress'
   }
 
-export type Component<$Item = any> =
+type NonSectionComponent<$Item = any> =
   | InputSchema<$Item>
   | RadioSchema<$Item>
   | CheckboxSchema<$Item>
@@ -2860,7 +2939,6 @@ export type Component<$Item = any> =
   | DateSchema<$Item>
   | ComponentSchema<$Item>
   | LabelSchema<$Item>
-  | SectionSchema<$Item>
   | HiddenSchema<$Item>
   | ObjectSchema<$Item>
   | TreeListSchema<$Item>
@@ -2870,6 +2948,10 @@ export type Component<$Item = any> =
   | PanelSchema<$Item>
   | SpacerSchema<$Item>
   | ProgressSchema<$Item>
+
+export type Component<$Item = any> =
+  | NonSectionComponent<$Item>
+  | SectionSchema<$Item>
 
 /**
  * Source components (list, object, tree) that contain nested
@@ -2882,15 +2964,94 @@ export type SourceComponent<$Item = any> =
   | TreeObjectSchema<$Item>
 
 
+/**
+ * Strips properties with `never` values from a type.
+ */
+type OmitNever<T> = {
+  [K in keyof T as [T[K]] extends [never] ? never : K]: T[K]
+} & {}
+
+/**
+ * Defines the components for a form or view.
+ *
+ * When you provide an `$Item` type, each component key must match
+ * a property on that type, and callbacks receive a typed `item`
+ * whose type depends on that property:
+ *
+ * - **Regular data fields** (e.g. `title: string`): callbacks
+ *   receive the full parent item type.
+ * - **Array fields** (e.g. `entries: Entry[]`): nested list or
+ *   tree components use the array element type (`Entry`).
+ * - **UI-only keys** (e.g. `viewButton: never`): for components
+ *   like buttons, spacers, or sections that exist only in the UI
+ *   and are not actual data fields. Declare these keys as `never`.
+ *   They are omitted from `item` in callbacks.
+ *
+ * Only keys defined in `$Item` are allowed. Unknown keys are a
+ * type error.
+ *
+ * @example
+ * ```ts
+ * type Entry = { id: number; title: string }
+ *
+ * type Item = {
+ *   title: string
+ *   entries: Entry[]
+ *   viewButton: never   // UI-only key for a button
+ *   details: never      // UI-only key for a section
+ * }
+ *
+ * const components: Components<Item> = {
+ *   // regular data field — callbacks receive Item
+ *   title: { type: 'text' },
+ *
+ *   // array field — callbacks receive Entry, not Item
+ *   entries: {
+ *     type: 'list',
+ *     form: {
+ *       type: 'form',
+ *       components: {
+ *         title: {
+ *           type: 'text',
+ *           // item is typed as Entry, not Item
+ *           onChange({ item }) { console.log(item.title) }
+ *         }
+ *       }
+ *     }
+ *   },
+ *
+ *   // UI-only key — item omits viewButton and details
+ *   viewButton: {
+ *     type: 'button',
+ *     events: {
+ *       click({ item }) { ... }
+ *     }
+ *   },
+ *
+ *   // UI-only key — sections group fields from the parent item
+ *   details: {
+ *     type: 'section',
+ *     components: {
+ *       title: { type: 'text' }
+ *     }
+ *   }
+ * }
+ * ```
+ */
 export type Components<$Item = any> =
-  | Component<$Item>[]
-  | {
-      [K in keyof $Item | (string & {})]?: K extends keyof $Item
-        ? $Item[K] extends (infer E)[]
-          ? Component<E>
-          : Component<$Item>
-        : Component<$Item>
-    }
+  0 extends 1 & $Item
+    ? Record<string, Component>
+    : {
+        [K in keyof $Item]?: [$Item[K]] extends [never]
+          ? NonSectionComponent<$Item> | SectionSchema<$Item>
+          : $Item[K] extends (infer E)[]
+            ? NonSectionComponent<E>
+            : $Item[K] extends Record<string, any>
+              ? NonSectionComponent<$Item>
+                | SectionSchema<$Item, $Item[K]>
+              : NonSectionComponent<$Item>
+                | SectionSchema<$Item>
+      }
 
 export type Buttons<$Item> = Record<
   string,
