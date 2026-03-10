@@ -2875,7 +2875,6 @@ type TreeSchema<
 
 export type TreeListSchema<$Item = any> = TreeSchema<$Item, 'tree-list'>
 export type TreeObjectSchema<$Item = any> = TreeSchema<$Item, 'tree-object'>
-
 export type PanelSchema<$Item = any> = BaseSchema<$Item> & {
   /**
    * The type of the component.
@@ -2884,7 +2883,7 @@ export type PanelSchema<$Item = any> = BaseSchema<$Item> & {
   /**
    * The components within the panel.
    */
-  components?: Components<$Item>
+  components?: Record<string, Component<$Item>>
   /** Buttons rendered at the bottom of the panel. */
   buttons?: Buttons<$Item>
   /**
@@ -2942,7 +2941,6 @@ type NonSectionComponent<$Item = any> =
   | TreeObjectSchema<$Item>
   | ComputedSchema<$Item>
   | DataSchema<$Item>
-  | PanelSchema<$Item>
   | SpacerSchema<$Item>
   | ProgressSchema<$Item>
 
@@ -3040,7 +3038,9 @@ export type Components<$Item = any> = 0 extends 1 & $Item
       [K in keyof $Item]?: [$Item[K]] extends [never]
         ? NonSectionComponent<$Item> | SectionSchema<$Item>
         : $Item[K] extends (infer E)[]
-          ? NonSectionComponent<E>
+          ? E extends Record<string, any>
+            ? NonSectionComponent<E>
+            : NonSectionComponent<$Item>
           : $Item[K] extends Record<string, any>
             ?
                 | NonSectionComponent<$Item>
@@ -3222,7 +3222,6 @@ export type SchemaByType<$Item = any> = {
   'multiselect': MultiselectSchema<$Item>
   'number': NumberSchema<$Item>
   'object': ObjectSchema<$Item>
-  'panel': PanelSchema<$Item>
   'password': InputSchema<$Item>
   'progress': ProgressSchema<$Item>
   'radio': RadioSchema<$Item>
