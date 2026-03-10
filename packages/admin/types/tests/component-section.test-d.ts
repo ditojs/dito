@@ -169,5 +169,4 @@ describe('Nested sections', () => {
       }
     })
   })
-
 })

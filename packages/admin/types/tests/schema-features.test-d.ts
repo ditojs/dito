@@ -17,9 +17,7 @@ describe('SchemaFields: methods', () => {
       },
       methods: {
         greet() {
-          expectTypeOf(this).toEqualTypeOf<
-            DitoComponentInstance<Entry>
-          >()
+          expectTypeOf(this).toEqualTypeOf<DitoComponentInstance<Entry>>()
           expectTypeOf(this.item.title).toBeString()
           expectTypeOf(this.item.id).toBeNumber()
         },
@@ -286,9 +284,7 @@ describe('PanelSchema', () => {
               type: 'text',
               format({ item }) {
                 expectTypeOf(item.title).toBeString()
-                expectTypeOf(item.entries).toEqualTypeOf<
-                  Entry[]
-                >()
+                expectTypeOf(item.entries).toEqualTypeOf<Entry[]>()
                 return ''
               }
             }

@@ -38,8 +38,9 @@ describe('View with list component', () => {
   })
 
   it('accepts view with single list component and promised form', () => {
-    const promisedForm: Promise<Record<string, Form<Entry>>> =
-      Promise.resolve({ entryForm: { type: 'form', components: {} } })
+    const promisedForm: Promise<Record<string, Form<Entry>>> = Promise.resolve({
+      entryForm: { type: 'form', components: {} }
+    })
 
     const view: View<Entry> = {
       type: 'view',

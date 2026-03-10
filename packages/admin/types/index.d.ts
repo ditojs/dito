@@ -425,8 +425,7 @@ export interface SchemaOpen<$Item = any> {
   onOpen?: OpenEventHandler<$Item>
 }
 
-export interface SchemaTypeMixin<$Item>
-  extends SchemaFields<$Item> {
+export interface SchemaTypeMixin<$Item> extends SchemaFields<$Item> {
   /**
    * The label of the component.
    *
@@ -574,7 +573,6 @@ export interface SchemaTypeMixin<$Item>
     /** @see {@link BaseSchema.onInput} */
     input?: ItemEventHandler<$Item>
   }
-
 }
 
 export interface SchemaSourceMixin<$Item> {
@@ -854,22 +852,14 @@ export interface SchemaOptionsMixin<$Item, $Option = any> {
    * searching for specific options.
    */
   search?:
-    | ItemAccessor<
-        $Item,
-        { query: string },
-        OrPromiseOf<$Option[]>
-      >
+    | ItemAccessor<$Item, { query: string }, OrPromiseOf<$Option[]>>
     | {
         /**
          * Filters options based on the search `query`
          * available in the context. Returns matching
          * options, optionally as a promise.
          */
-        filter?: ItemAccessor<
-          $Item,
-          { query: string },
-          OrPromiseOf<$Option[]>
-        >
+        filter?: ItemAccessor<$Item, { query: string }, OrPromiseOf<$Option[]>>
         /**
          * Debounce config for the filter. Delays
          * invocation until input pauses.
@@ -1045,8 +1035,7 @@ export interface SchemaFields<$Item> {
 }
 
 /** @deprecated Use {@link SchemaFields} instead. */
-export type SchemaSetupMixin<$Item = any> =
-  SchemaFields<$Item>
+export type SchemaSetupMixin<$Item = any> = SchemaFields<$Item>
 
 /**
  * Properties shared by route-level schemas
@@ -1097,8 +1086,7 @@ export interface SchemaRoute<$Item = any>
 }
 
 /** @deprecated Use {@link SchemaRoute} instead. */
-export type SchemaRouteMixin<$Item = any> =
-  SchemaRoute<$Item>
+export type SchemaRouteMixin<$Item = any> = SchemaRoute<$Item>
 
 export type ComponentSchema<$Item = any> = BaseSchema<$Item> & {
   type: 'component'
@@ -1562,8 +1550,7 @@ type SectionContent<$Data> = {
  * }
  * ```
  */
-export type SectionSchema<$Item = any, $Nested = $Item> =
-  BaseSchema<$Item> &
+export type SectionSchema<$Item = any, $Nested = $Item> = BaseSchema<$Item> &
   SchemaOpen<$Item> & {
     /**
      * The type of the component.
@@ -1990,8 +1977,7 @@ export type DitoComponentInstance<
   $Members extends Record<string, any> = {}
 > = DitoComponentInstanceBase<$Item> & $Members
 
-export interface DitoComponentInstanceBase<$Item = any>
-  extends EmitterMixin {
+export interface DitoComponentInstanceBase<$Item = any> extends EmitterMixin {
   // -- Data access (ValueMixin, ContextMixin, TypeMixin) --
 
   /** The current value of the component (getter/setter). */
@@ -2874,10 +2860,8 @@ type TreeSchema<
     open?: boolean
   }
 
-export type TreeListSchema<$Item = any> =
-  TreeSchema<$Item, 'tree-list'>
-export type TreeObjectSchema<$Item = any> =
-  TreeSchema<$Item, 'tree-object'>
+export type TreeListSchema<$Item = any> = TreeSchema<$Item, 'tree-list'>
+export type TreeObjectSchema<$Item = any> = TreeSchema<$Item, 'tree-object'>
 
 export type PanelSchema<$Item = any> = BaseSchema<$Item> & {
   /**
@@ -2963,7 +2947,6 @@ export type SourceComponent<$Item = any> =
   | TreeListSchema<$Item>
   | TreeObjectSchema<$Item>
 
-
 /**
  * Strips properties with `never` values from a type.
  */
@@ -3038,20 +3021,21 @@ type OmitNever<T> = {
  * }
  * ```
  */
-export type Components<$Item = any> =
-  0 extends 1 & $Item
-    ? Record<string, Component>
-    : {
-        [K in keyof $Item]?: [$Item[K]] extends [never]
-          ? NonSectionComponent<$Item> | SectionSchema<$Item>
-          : $Item[K] extends (infer E)[]
-            ? NonSectionComponent<E>
-            : $Item[K] extends Record<string, any>
-              ? NonSectionComponent<$Item>
+export type Components<$Item = any> = 0 extends 1 & $Item
+  ? Record<string, Component>
+  : {
+      [K in keyof $Item]?: [$Item[K]] extends [never]
+        ? NonSectionComponent<$Item> | SectionSchema<$Item>
+        : $Item[K] extends (infer E)[]
+          ? NonSectionComponent<E>
+          : $Item[K] extends Record<string, any>
+            ?
+                | NonSectionComponent<$Item>
                 | SectionSchema<$Item, $Item[K]>
-              : NonSectionComponent<$Item>
+            :
+                | NonSectionComponent<$Item>
                 | SectionSchema<$Item>
-      }
+    }
 
 export type Buttons<$Item> = Record<
   string,
