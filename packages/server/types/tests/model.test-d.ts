@@ -63,11 +63,14 @@ describe('Model', () => {
       .toBeCallableWith(async (trx: any) => {})
   })
 
-  it('scopes handler receives typed query builder', () => {
+  it('scopes handler receives query and applyParentScope', () => {
     const scopes: ModelScopes<Model> = {
-      active(query) {
+      active(query, applyParentScope) {
         expectTypeOf(query).toMatchTypeOf<QueryBuilder<Model>>()
-        return query
+        expectTypeOf(applyParentScope).toEqualTypeOf<
+          (query: QueryBuilder<Model>) => QueryBuilder<Model>
+        >()
+        return applyParentScope(query)
       }
     }
     assertType<ModelScopes<Model>>(scopes)
