@@ -537,7 +537,7 @@ export interface SchemaTypeMixin<$Item> extends SchemaFields<$Item> {
    * server. Can also modify sibling data via `processedItem`
    * in the context, even when `exclude` is `true`.
    */
-  process?: OrItemAccessor<$Item>
+  process?: ItemAccessor<$Item, {}>
 
   /**
    * The property key used to identify the field in data objects.

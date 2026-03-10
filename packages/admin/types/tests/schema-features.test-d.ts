@@ -4,7 +4,8 @@ import type {
   Components,
   PanelSchema,
   UploadSchema,
-  DitoComponentInstance
+  DitoComponentInstance,
+  HiddenSchema
 } from '../index.d.ts'
 import type { Entry, Parent } from './fixtures.ts'
 
@@ -160,6 +161,45 @@ describe('SchemaFields: lifecycle callbacks', () => {
       },
       onChange({ item }) {
         expectTypeOf(item.title).toBeString()
+      }
+    })
+  })
+})
+
+describe('SchemaTypeMixin: parse and process callbacks', () => {
+  it('parse callback receives typed item', () => {
+    assertType<Components<Parent>>({
+      title: {
+        type: 'text',
+        parse({ item }) {
+          expectTypeOf(item.title).toBeString()
+          expectTypeOf(item.entries).toEqualTypeOf<Entry[]>()
+        }
+      }
+    })
+  })
+
+  it('process callback receives typed item', () => {
+    assertType<Components<Parent>>({
+      title: {
+        type: 'text',
+        process({ item }) {
+          expectTypeOf(item.title).toBeString()
+          return item.title.trim()
+        }
+      }
+    })
+  })
+})
+
+describe('SchemaDataMixin: data callback', () => {
+  it('data callback receives typed item on HiddenSchema', () => {
+    assertType<HiddenSchema<Entry>>({
+      type: 'hidden',
+      data({ item }) {
+        expectTypeOf(item.title).toBeString()
+        expectTypeOf(item.id).toBeNumber()
+        return { computed: item.title }
       }
     })
   })
