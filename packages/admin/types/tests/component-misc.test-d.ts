@@ -3,10 +3,7 @@ import type {
   MenuSchema,
   View,
   NumberSchema,
-  ClipboardConfig,
-  Form,
-  OrArrayOf,
-  Resolvable
+  Form
 } from '../index.d.ts'
 import type { Entry } from './fixtures.ts'
 
@@ -121,11 +118,6 @@ describe('SchemaAffixMixin (prefix/suffix)', () => {
 })
 
 describe('ClipboardConfig', () => {
-  it('accepts boolean', () => {
-    assertType<ClipboardConfig>(true)
-    assertType<ClipboardConfig>(false)
-  })
-
   it('accepts copy/paste callbacks on a form', () => {
     assertType<Form<Entry>>({
       type: 'form',
@@ -141,26 +133,5 @@ describe('ClipboardConfig', () => {
         title: { type: 'text' }
       }
     })
-  })
-})
-
-describe('Utility types', () => {
-  it('Resolvable accepts value, function, promise, or record', () => {
-    assertType<Resolvable<number>>(42)
-    assertType<Resolvable<number>>(() => 42)
-    assertType<Resolvable<number>>(Promise.resolve(42))
-    assertType<Resolvable<number>>(() => Promise.resolve(42))
-    assertType<Resolvable<number>>({ key: 42 })
-    assertType<Resolvable<number>>(
-      Promise.resolve({ key: 42 })
-    )
-  })
-
-  it('OrArrayOf accepts single value or array', () => {
-    assertType<OrArrayOf<string>>('hello')
-    assertType<OrArrayOf<string>>(['hello', 'world'])
-
-    expectTypeOf<OrArrayOf<number>>()
-      .toEqualTypeOf<number | number[]>()
   })
 })

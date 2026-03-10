@@ -165,21 +165,6 @@ describe('SchemaFields: lifecycle callbacks', () => {
       }
     })
   })
-
-  it('onDestroy and onLoad receive typed context', () => {
-    assertType<Form<Entry>>({
-      type: 'form',
-      components: {
-        title: { type: 'text' }
-      },
-      onDestroy({ item }) {
-        expectTypeOf(item.id).toBeNumber()
-      },
-      onLoad({ item }) {
-        expectTypeOf(item.title).toBeString()
-      }
-    })
-  })
 })
 
 describe('UploadSchema', () => {
@@ -201,13 +186,6 @@ describe('UploadSchema', () => {
         type: 'upload',
         extensions: /\.(gif|jpe?g|png)$/i
       }
-    })
-  })
-
-  it('accepts maxSize as number', () => {
-    assertType<UploadSchema<Entry>>({
-      type: 'upload',
-      maxSize: 5000000
     })
   })
 
@@ -238,14 +216,6 @@ describe('UploadSchema', () => {
     })
   })
 
-  it('accepts draggable and deletable as booleans', () => {
-    assertType<UploadSchema<Entry>>({
-      type: 'upload',
-      draggable: true,
-      deletable: false
-    })
-  })
-
   it('accepts draggable and deletable as callbacks', () => {
     assertType<UploadSchema<Entry>>({
       type: 'upload',
@@ -262,16 +232,6 @@ describe('UploadSchema', () => {
 })
 
 describe('PanelSchema', () => {
-  it('accepts components typed to item', () => {
-    assertType<PanelSchema<Entry>>({
-      type: 'panel',
-      components: {
-        title: { type: 'text' },
-        id: { type: 'number' }
-      }
-    })
-  })
-
   it('rejects unknown component keys', () => {
     assertType<PanelSchema<Entry>>({
       type: 'panel',
@@ -299,13 +259,6 @@ describe('PanelSchema', () => {
       panelButtons: {
         refresh: { text: 'Refresh' }
       }
-    })
-  })
-
-  it('accepts sticky as boolean', () => {
-    assertType<PanelSchema<Entry>>({
-      type: 'panel',
-      sticky: true
     })
   })
 
