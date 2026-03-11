@@ -1709,11 +1709,7 @@ export type ColumnSchema<$Item = any, $Value = any> = {
    * If the column is sortable, the column is sorted by value and not by
    * rendered name.
    */
-  render?: ItemAccessor<
-    $Item,
-    { value: $Value },
-    string | null | undefined
-  >
+  render?: ItemAccessor<$Item, { value: $Value }, string | null | undefined>
   /**
    * The provided string is applied to the class property of the column
    * cell html elements.
@@ -1768,12 +1764,7 @@ export interface ListSchema<$Item = { [key: string]: any }>
           /**
            * @defaultValue `['contains']`
            */
-          operators?: (
-            | 'contains'
-            | 'equals'
-            | 'starts-with'
-            | 'ends-with'
-          )[]
+          operators?: ('contains' | 'equals' | 'starts-with' | 'ends-with')[]
         }
       | {
           label?: string
@@ -2865,10 +2856,8 @@ export interface ObjectSchema<$Item = { [key: string]: any }>
   }
 }
 
-interface TreeSchema<
-  $Item,
-  $Type extends 'tree-list' | 'tree-object'
-> extends SchemaSourceMixin<$Item>,
+interface TreeSchema<$Item, $Type extends 'tree-list' | 'tree-object'>
+  extends SchemaSourceMixin<$Item>,
     BaseSchema<$Item> {
   /**
    * The type of the component.
