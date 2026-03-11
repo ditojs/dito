@@ -1088,7 +1088,7 @@ export interface SchemaRoute<$Item = any>
 /** @deprecated Use {@link SchemaRoute} instead. */
 export type SchemaRouteMixin<$Item = any> = SchemaRoute<$Item>
 
-export type ComponentSchema<$Item = any> = BaseSchema<$Item> & {
+export interface ComponentSchema<$Item = any> extends BaseSchema<$Item> {
   type: 'component'
   /**
    * Use a Vue component to render the component. The component is specified
@@ -1097,79 +1097,82 @@ export type ComponentSchema<$Item = any> = BaseSchema<$Item> & {
   component: Resolvable<VueComponent>
 }
 
-export type InputSchema<$Item = any> = BaseSchema<$Item> &
-  SchemaTextMixin<$Item> &
-  SchemaAffixMixin<$Item> & {
-    /**
-     * The type of the component.
-     */
-    type:
-      | 'text'
-      | 'email'
-      | 'url'
-      | 'hostname'
-      | 'domain'
-      | 'tel'
-      | 'password'
-      | 'creditcard'
-    rules?: {
-      text?: boolean
-      email?: boolean
-      url?: boolean
-      hostname?: boolean
-      domain?: boolean
-      password?: boolean
-      creditcard?: boolean
+export interface InputSchema<$Item = any>
+  extends BaseSchema<$Item>,
+    SchemaTextMixin<$Item>,
+    SchemaAffixMixin<$Item> {
+  /**
+   * The type of the component.
+   */
+  type:
+    | 'text'
+    | 'email'
+    | 'url'
+    | 'hostname'
+    | 'domain'
+    | 'tel'
+    | 'password'
+    | 'creditcard'
+  rules?: {
+    text?: boolean
+    email?: boolean
+    url?: boolean
+    hostname?: boolean
+    domain?: boolean
+    password?: boolean
+    creditcard?: boolean
+  }
+}
+
+export interface DateSchema<$Item = any>
+  extends BaseSchema<$Item>,
+    SchemaAffixMixin<$Item> {
+  /**
+   * The type of the component.
+   */
+  type: 'date' | 'datetime' | 'time'
+  /**
+   * @defaultValue `En/US`
+   */
+  locale?: string
+  /**
+   * Format configuration for date/time display.
+   */
+  formats?: OrItemAccessor<
+    $Item,
+    {},
+    {
+      date?: DateFormat
+      time?: TimeFormat
     }
-  }
+  >
+  /**
+   * @deprecated Use `formats` instead.
+   */
+  dateFormat?: OrItemAccessor<$Item, {}, DateFormat>
+}
 
-export type DateSchema<$Item = any> = BaseSchema<$Item> &
-  SchemaAffixMixin<$Item> & {
-    /**
-     * The type of the component.
-     */
-    type: 'date' | 'datetime' | 'time'
-    /**
-     * @defaultValue `En/US`
-     */
-    locale?: string
-    /**
-     * Format configuration for date/time display.
-     */
-    formats?: OrItemAccessor<
-      $Item,
-      {},
-      {
-        date?: DateFormat
-        time?: TimeFormat
-      }
-    >
-    /**
-     * @deprecated Use `formats` instead.
-     */
-    dateFormat?: OrItemAccessor<$Item, {}, DateFormat>
+export interface ButtonSchema<$Item = any>
+  extends BaseSchema<$Item>,
+    SchemaAffixMixin<$Item> {
+  /**
+   * The type of the component.
+   */
+  type: 'button' | 'submit'
+  closeForm?: OrItemAccessor<$Item, {}, boolean>
+  text?: OrItemAccessor<$Item, {}, string>
+  resource?: Resource
+  onClick?: ItemEventHandler<$Item>
+  onSuccess?: ItemEventHandler<$Item>
+  onError?: ErrorEventHandler<$Item>
+  events?: {
+    click?: ItemEventHandler<$Item>
+    success?: ItemEventHandler<$Item>
+    error?: ErrorEventHandler<$Item>
   }
+}
 
-export type ButtonSchema<$Item = any> = BaseSchema<$Item> &
-  SchemaAffixMixin<$Item> & {
-    /**
-     * The type of the component.
-     */
-    type: 'button' | 'submit'
-    closeForm?: OrItemAccessor<$Item, {}, boolean>
-    text?: OrItemAccessor<$Item, {}, string>
-    resource?: Resource
-    onClick?: ItemEventHandler<$Item>
-    onSuccess?: ItemEventHandler<$Item>
-    onError?: ErrorEventHandler<$Item>
-    events?: {
-      click?: ItemEventHandler<$Item>
-      success?: ItemEventHandler<$Item>
-      error?: ErrorEventHandler<$Item>
-    }
-  }
-
-export type SwitchSchema<$Item = any> = BaseSchema<$Item> & {
+export interface SwitchSchema<$Item = any> extends BaseSchema<$Item> {
   /**
    * The type of the component.
    */
@@ -1190,48 +1193,51 @@ export type SwitchSchema<$Item = any> = BaseSchema<$Item> & {
   }
 }
 
-export type NumberSchema<$Item = any> = SchemaNumberMixin<$Item> &
-  BaseSchema<$Item> &
-  SchemaAffixMixin<$Item> & {
-    /**
-     * The type of the component.
-     */
-    type: 'number' | 'integer'
-  }
+export interface NumberSchema<$Item = any>
+  extends SchemaNumberMixin<$Item>,
+    BaseSchema<$Item>,
+    SchemaAffixMixin<$Item> {
+  /**
+   * The type of the component.
+   */
+  type: 'number' | 'integer'
+}
 
-export type SliderSchema<$Item = any> = SchemaNumberMixin<$Item> &
-  BaseSchema<$Item> & {
-    /**
-     * The type of the component.
-     */
-    type: 'slider'
-    /**
-     * Whether to show a number input alongside the slider.
-     *
-     * @defaultValue `true`
-     */
-    input?: OrItemAccessor<$Item, {}, boolean>
-  }
+export interface SliderSchema<$Item = any>
+  extends SchemaNumberMixin<$Item>,
+    BaseSchema<$Item> {
+  /**
+   * The type of the component.
+   */
+  type: 'slider'
+  /**
+   * Whether to show a number input alongside the slider.
+   *
+   * @defaultValue `true`
+   */
+  input?: OrItemAccessor<$Item, {}, boolean>
+}
 
-export type TextareaSchema<$Item = any> = BaseSchema<$Item> &
-  SchemaTextMixin<$Item> & {
-    /**
-     * The type of the component.
-     */
-    type: 'textarea'
-    /**
-     * Whether the input element is resizable.
-     */
-    resizable?: OrItemAccessor<$Item, {}, boolean>
-    /**
-     * The amount of visible lines.
-     *
-     * @defaultValue `4`
-     */
-    lines?: number
-  }
+export interface TextareaSchema<$Item = any>
+  extends BaseSchema<$Item>,
+    SchemaTextMixin<$Item> {
+  /**
+   * The type of the component.
+   */
+  type: 'textarea'
+  /**
+   * Whether the input element is resizable.
+   */
+  resizable?: OrItemAccessor<$Item, {}, boolean>
+  /**
+   * The amount of visible lines.
+   *
+   * @defaultValue `4`
+   */
+  lines?: number
+}
 
-export type CodeSchema<$Item = any> = BaseSchema<$Item> & {
+export interface CodeSchema<$Item = any> extends BaseSchema<$Item> {
   /**
    * The type of the component.
    */
@@ -1260,7 +1266,7 @@ export type CodeSchema<$Item = any> = BaseSchema<$Item> & {
   resizable?: OrItemAccessor<$Item, {}, boolean>
 }
 
-export type MarkupSchema<$Item = any> = BaseSchema<$Item> & {
+export interface MarkupSchema<$Item = any> extends BaseSchema<$Item> {
   /**
    * The type of the component.
    */
@@ -1330,7 +1336,7 @@ export type MarkupSchema<$Item = any> = BaseSchema<$Item> & {
   }
 }
 
-export type LabelSchema<$Item = any> = BaseSchema<$Item> & {
+export interface LabelSchema<$Item = any> extends BaseSchema<$Item> {
   /**
    * The type of the component.
    */
@@ -1341,15 +1347,16 @@ export type LabelSchema<$Item = any> = BaseSchema<$Item> & {
  * A non-visible component that includes a computed or
  * derived value in the form data without rendering it.
  */
-export type HiddenSchema<$Item = any> = BaseSchema<$Item> &
-  SchemaDataMixin<$Item> & {
-    /**
-     * The type of the component.
-     */
-    type: 'hidden'
-  }
+export interface HiddenSchema<$Item = any>
+  extends BaseSchema<$Item>,
+    SchemaDataMixin<$Item> {
+  /**
+   * The type of the component.
+   */
+  type: 'hidden'
+}
 
-export type UploadSchema<$Item = any> = BaseSchema<$Item> & {
+export interface UploadSchema<$Item = any> extends BaseSchema<$Item> {
   /**
    * The type of the component.
    */
@@ -1412,64 +1419,67 @@ export type UploadSchema<$Item = any> = BaseSchema<$Item> & {
   downloadUrl?: OrItemAccessor<$Item, {}, string>
 }
 
-export type MultiselectSchema<$Item = any, $Option = any> = BaseSchema<$Item> &
-  SchemaOptionsMixin<$Item, $Option> &
-  SchemaAffixMixin<$Item> & {
-    /**
-     * The type of the component.
-     */
-    type: 'multiselect'
-    /**
-     * Whether more than one option can be selected.
-     *
-     * @defaultValue `false`
-     */
-    multiple?: boolean
-    /**
-     * Whether to enable a search input field in the dropdown
-     * for filtering options.
-     *
-     * @defaultValue `false`
-     */
-    searchable?: boolean
-    /**
-     * Whether the dropdown stays open after selecting an option,
-     * useful for making multiple selections without repeated
-     * opening.
-     *
-     * @defaultValue `false`
-     */
-    stayOpen?: boolean
-    /**
-     * Whether users can create new options by typing and
-     * pressing Enter, adding custom tags not in the options
-     * list.
-     *
-     * @defaultValue `false`
-     */
-    taggable?: boolean
-  }
+export interface MultiselectSchema<$Item = any, $Option = any>
+  extends BaseSchema<$Item>,
+    SchemaOptionsMixin<$Item, $Option>,
+    SchemaAffixMixin<$Item> {
+  /**
+   * The type of the component.
+   */
+  type: 'multiselect'
+  /**
+   * Whether more than one option can be selected.
+   *
+   * @defaultValue `false`
+   */
+  multiple?: boolean
+  /**
+   * Whether to enable a search input field in the dropdown
+   * for filtering options.
+   *
+   * @defaultValue `false`
+   */
+  searchable?: boolean
+  /**
+   * Whether the dropdown stays open after selecting an option,
+   * useful for making multiple selections without repeated
+   * opening.
+   *
+   * @defaultValue `false`
+   */
+  stayOpen?: boolean
+  /**
+   * Whether users can create new options by typing and
+   * pressing Enter, adding custom tags not in the options
+   * list.
+   *
+   * @defaultValue `false`
+   */
+  taggable?: boolean
+}
 
-export type SelectSchema<$Item = any> = BaseSchema<$Item> &
-  SchemaOptionsMixin<$Item> &
-  SchemaAffixMixin<$Item> & {
-    /**
-     * The type of the component.
-     */
-    type: 'select'
-  }
+export interface SelectSchema<$Item = any>
+  extends BaseSchema<$Item>,
+    SchemaOptionsMixin<$Item>,
+    SchemaAffixMixin<$Item> {
+  /**
+   * The type of the component.
+   */
+  type: 'select'
+}
 
-export type RadioSchema<$Item = any> = BaseSchema<$Item> &
-  SchemaOptionsMixin<$Item> & {
-    /**
-     * The type of the component.
-     */
-    type: 'radio'
-    /**
-     * @defaultValue `'vertical'`
-     */
-    layout?: 'horizontal' | 'vertical'
-  }
+export interface RadioSchema<$Item = any>
+  extends BaseSchema<$Item>,
+    SchemaOptionsMixin<$Item> {
+  /**
+   * The type of the component.
+   */
+  type: 'radio'
+  /**
+   * @defaultValue `'vertical'`
+   */
+  layout?: 'horizontal' | 'vertical'
+}
 
 type SectionContent<$Data> = {
   /** The section's field components. */
@@ -1616,24 +1626,25 @@ export type SectionSchema<$Item = any, $Nested = $Item> = BaseSchema<$Item> &
       } & SectionContent<$Nested>)
   )
 
-export type CheckboxSchema<$Item = any> = BaseSchema<$Item> & {
+export interface CheckboxSchema<$Item = any> extends BaseSchema<$Item> {
   /**
    * The type of the component.
    */
   type: 'checkbox'
 }
 
-export type CheckboxesSchema<$Item = any> = BaseSchema<$Item> &
-  SchemaOptionsMixin<$Item> & {
-    /**
-     * The type of the component.
-     */
-    type: 'checkboxes'
-    /**
-     * @defaultValue `'vertical'`
-     */
-    layout?: 'horizontal' | 'vertical'
-  }
+export interface CheckboxesSchema<$Item = any>
+  extends BaseSchema<$Item>,
+    SchemaOptionsMixin<$Item> {
+  /**
+   * The type of the component.
+   */
+  type: 'checkboxes'
+  /**
+   * @defaultValue `'vertical'`
+   */
+  layout?: 'horizontal' | 'vertical'
+}
 
 export type ColorFormat =
   | 'rgb'
@@ -1646,36 +1657,37 @@ export type ColorFormat =
   | 'name'
   | 'hsl'
   | 'hsv'
-export type ColorSchema<$Item = any> = BaseSchema<$Item> &
-  SchemaAffixMixin<$Item> & {
-    /**
-     * The type of the component.
-     */
-    type: 'color'
-    /**
-     * The color format.
-     */
-    format?: OrItemAccessor<$Item, {}, ColorFormat>
-    /**
-     * Whether the color may contain an alpha component.
-     *
-     * @defaultValue `false`
-     */
-    alpha?: OrItemAccessor<$Item, {}, boolean>
-    /**
-     * Whether to display input fields for manual color value
-     * entry (e.g. RGB, HSL) in the color picker.
-     *
-     * @defaultValue `true`
-     */
-    inputs?: OrItemAccessor<$Item, {}, boolean>
-    /**
-     * Color presets as an array of color values as strings in any css
-     * compatible format.
-     * @see {@link https://developer.mozilla.org/en-US/docs/Web/CSS/color_value}
-     */
-    presets?: OrItemAccessor<$Item, {}, string[]>
-  }
+export interface ColorSchema<$Item = any>
+  extends BaseSchema<$Item>,
+    SchemaAffixMixin<$Item> {
+  /**
+   * The type of the component.
+   */
+  type: 'color'
+  /**
+   * The color format.
+   */
+  format?: OrItemAccessor<$Item, {}, ColorFormat>
+  /**
+   * Whether the color may contain an alpha component.
+   *
+   * @defaultValue `false`
+   */
+  alpha?: OrItemAccessor<$Item, {}, boolean>
+  /**
+   * Whether to display input fields for manual color value
+   * entry (e.g. RGB, HSL) in the color picker.
+   *
+   * @defaultValue `true`
+   */
+  inputs?: OrItemAccessor<$Item, {}, boolean>
+  /**
+   * Color presets as an array of color values as strings in any css
+   * compatible format.
+   * @see {@link https://developer.mozilla.org/en-US/docs/Web/CSS/color_value}
+   */
+  presets?: OrItemAccessor<$Item, {}, string[]>
+}
 
 export type ColumnSchema<$Item = any, $Value = any> = {
   /**
@@ -1728,63 +1740,63 @@ export type ColumnSchema<$Item = any, $Value = any> = {
  */
 export type ResolvableForm<$Item = any> = Resolvable<Form<$Item>>
 
-export type ListSchema<$Item = { [key: string]: any }> =
-  SchemaSourceMixin<$Item> &
-    BaseSchema<$Item> &
-    SchemaOpen<$Item> & {
-      /**
-       * The type of the component.
-       */
-      type: 'list'
+export interface ListSchema<$Item = { [key: string]: any }>
+  extends SchemaSourceMixin<$Item>,
+    BaseSchema<$Item>,
+    SchemaOpen<$Item> {
+  /**
+   * The type of the component.
+   */
+  type: 'list'
 
-      /**
-       * Filter definitions that render a filter panel above the
-       * list, allowing users to filter displayed items. Each
-       * filter can be a text filter with operators, a date-range
-       * filter, or a custom filter with components.
-       */
-      filters?: {
-        /**
-         * Whether the filters panel header sticks to
-         * the top of the scroll container.
-         */
-        sticky?: boolean
-        [k: string]:
-          | {
-              label?: string
-              filter: 'text'
-              /**
-               * @defaultValue `['contains']`
-               */
-              operators?: (
-                | 'contains'
-                | 'equals'
-                | 'starts-with'
-                | 'ends-with'
-              )[]
-            }
-          | {
-              label?: string
-              filter: 'date-range'
-            }
-          | {
-              label?: string
-              components: Components
-            }
-          | boolean
-          | undefined
-      }
-      /**
-       * Grouped event handlers.
-       */
-      events?: {
-        /**
-         * Called when a collapsible inlined list is
-         * toggled open or closed.
-         */
-        open?: OpenEventHandler<$Item>
-      }
-    }
+  /**
+   * Filter definitions that render a filter panel above the
+   * list, allowing users to filter displayed items. Each
+   * filter can be a text filter with operators, a date-range
+   * filter, or a custom filter with components.
+   */
+  filters?: {
+    /**
+     * Whether the filters panel header sticks to
+     * the top of the scroll container.
+     */
+    sticky?: boolean
+    [k: string]:
+      | {
+          label?: string
+          filter: 'text'
+          /**
+           * @defaultValue `['contains']`
+           */
+          operators?: (
+            | 'contains'
+            | 'equals'
+            | 'starts-with'
+            | 'ends-with'
+          )[]
+        }
+      | {
+          label?: string
+          filter: 'date-range'
+        }
+      | {
+          label?: string
+          components: Components
+        }
+      | boolean
+      | undefined
+  }
+  /**
+   * Grouped event handlers.
+   */
+  events?: {
+    /**
+     * Called when a collapsible inlined list is
+     * toggled open or closed.
+     */
+    open?: OpenEventHandler<$Item>
+  }
+}
 
 export type OrItemAccessor<
   $Item = any,
@@ -2730,7 +2742,7 @@ export interface DitoSourceInstance<$Item = any>
   ): Record<string, any>
 }
 
-export type MenuSchema<$Item = any> = {
+export interface MenuSchema<$Item = any> {
   type: 'menu'
   /**
    * The label shown in the navigation menu.
@@ -2757,7 +2769,7 @@ export type View<$Item = any> =
   | ViewSchema<$Item>
   | MenuSchema<$Item>
 
-export type ViewSchema<$Item = any> = SchemaRoute<$Item> & {
+export interface ViewSchema<$Item = any> extends SchemaRoute<$Item> {
   type: 'view'
   /**
    * The label shown in the navigation menu.
@@ -2803,79 +2815,83 @@ export type ViewSchema<$Item = any> = SchemaRoute<$Item> & {
      */
     open?: OpenEventHandler<$Item>
   }
-} & ({ component?: Component<$Item> } | { components?: Components<$Item> })
+  component?: Component<$Item>
+  components?: Components<$Item>
+}
 
 /**
  * A non-visible component that computes a value and
  * stores it in the form data.
  */
-export type ComputedSchema<$Item = any> = BaseSchema<$Item> &
-  SchemaDataMixin<$Item> & {
-    /**
-     * The type of the component.
-     */
-    type: 'computed'
-  }
+export interface ComputedSchema<$Item = any>
+  extends BaseSchema<$Item>,
+    SchemaDataMixin<$Item> {
+  /**
+   * The type of the component.
+   */
+  type: 'computed'
+}
 
 /**
  * A non-visible component that fetches external data
  * and stores it in the form data.
  */
-export type DataSchema<$Item = any> = BaseSchema<$Item> &
-  SchemaDataMixin<$Item> & {
+export interface DataSchema<$Item = any>
+  extends BaseSchema<$Item>,
+    SchemaDataMixin<$Item> {
+  /**
+   * The type of the component.
+   */
+  type: 'data'
+}
+
+export interface ObjectSchema<$Item = { [key: string]: any }>
+  extends SchemaSourceMixin<$Item>,
+    BaseSchema<$Item>,
+    SchemaOpen<$Item> {
+  /**
+   * The type of the component.
+   */
+  type: 'object'
+  /**
+   * Grouped event handlers.
+   */
+  events?: {
     /**
-     * The type of the component.
+     * Called when a collapsible inlined object is
+     * toggled open or closed.
      */
-    type: 'data'
+    open?: OpenEventHandler<$Item>
   }
+}
 
-export type ObjectSchema<$Item = { [key: string]: any }> =
-  SchemaSourceMixin<$Item> &
-    BaseSchema<$Item> &
-    SchemaOpen<$Item> & {
-      /**
-       * The type of the component.
-       */
-      type: 'object'
-      /**
-       * Grouped event handlers.
-       */
-      events?: {
-        /**
-         * Called when a collapsible inlined object is
-         * toggled open or closed.
-         */
-        open?: OpenEventHandler<$Item>
-      }
-    }
-
-type TreeSchema<
+interface TreeSchema<
   $Item,
   $Type extends 'tree-list' | 'tree-object'
-> = SchemaSourceMixin<$Item> &
-  BaseSchema<$Item> & {
-    /**
-     * The type of the component.
-     */
-    type: $Type
-    /**
-     * Nested tree schema describing the recursive
-     * children of each node. The `name` property
-     * identifies which data property holds the
-     * children array.
-     */
-    children?: Omit<TreeListSchema<$Item>, 'type'> & {
-      name: string
-    }
-    /**
-     * Properties schema for tree nodes.
-     */
-    properties?: Record<string, Component<$Item>>
-    /**
-     * Whether child nodes are expanded by default.
-     */
-    open?: boolean
+> extends SchemaSourceMixin<$Item>,
+    BaseSchema<$Item> {
+  /**
+   * The type of the component.
+   */
+  type: $Type
+  /**
+   * Nested tree schema describing the recursive
+   * children of each node. The `name` property
+   * identifies which data property holds the
+   * children array.
+   */
+  children?: Omit<TreeListSchema<$Item>, 'type'> & {
+    name: string
   }
+  /**
+   * Properties schema for tree nodes.
+   */
+  properties?: Record<string, Component<$Item>>
+  /**
+   * Whether child nodes are expanded by default.
+   */
+  open?: boolean
+}
 
 export type TreeListSchema<$Item = any> = TreeSchema<$Item, 'tree-list'>
 export type TreeObjectSchema<$Item = any> = TreeSchema<$Item, 'tree-object'>
@@ -2904,20 +2920,21 @@ export type PanelSchema<$Item = any> = BaseSchema<$Item> & {
   sticky?: OrItemAccessor<$Item, {}, boolean>
 }
 
-export type SpacerSchema<$Item = any> = BaseSchema<$Item> & {
+export interface SpacerSchema<$Item = any> extends BaseSchema<$Item> {
   /**
    * The type of the component.
    */
   type: 'spacer'
 }
 
-export type ProgressSchema<$Item = any> = SchemaNumberMixin<$Item> &
-  BaseSchema<$Item> & {
-    /**
-     * The type of the component.
-     */
-    type: 'progress'
-  }
+export interface ProgressSchema<$Item = any>
+  extends SchemaNumberMixin<$Item>,
+    BaseSchema<$Item> {
+  /**
+   * The type of the component.
+   */
+  type: 'progress'
+}
 
 type NonSectionComponent<$Item = any> =
   | InputSchema<$Item>
@@ -3067,7 +3084,7 @@ export type Buttons<$Item> = Record<
   SetOptional<ButtonSchema<$Item>, 'type'>
 >
 
-export type Form<$Item = any> = SchemaRoute<$Item> & {
+export interface Form<$Item = any> extends SchemaRoute<$Item> {
   type: 'form'
 
   /**
