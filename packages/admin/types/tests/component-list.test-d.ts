@@ -33,6 +33,21 @@ describe('ListSchema', () => {
     })
   })
 
+  it('column render callback receives typed value', () => {
+    assertType<ListSchema<Entry>>({
+      type: 'list',
+      columns: {
+        title: {
+          render({ value }) {
+            expectTypeOf(value).not.toBeAny()
+            expectTypeOf(value).toBeString()
+            return value
+          }
+        }
+      }
+    })
+  })
+
   it('accepts columns as an array of item keys', () => {
     assertType<ListSchema<Entry>>({
       type: 'list',
