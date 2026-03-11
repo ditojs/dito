@@ -2,12 +2,14 @@ import { expectTypeOf, assertType, describe, it } from 'vitest'
 import type {
   Model,
   QueryBuilder,
+  SelectModelProperties,
   ModelScopes,
   ModelFilters,
   ModelHooks,
   ModelFilterFunction,
   ModelProperty
 } from '../index.d.ts'
+import type { View } from '../../../admin/types/index.d.ts'
 import type { Transaction } from 'objection'
 import type { Item } from './fixtures.ts'
 
@@ -123,5 +125,46 @@ describe('Model', () => {
     expectTypeOf(model.QueryBuilderType).toEqualTypeOf<
       QueryBuilder<Model, Model[]>
     >()
+  })
+})
+
+describe('SelectModelProperties', () => {
+  it('strips functions, $-prefixed, and internal keys', () => {
+    interface TestModel extends Model {
+      title: string
+      $meta: string
+    }
+    type Result = SelectModelProperties<TestModel>
+    expectTypeOf<keyof Result>()
+      .toEqualTypeOf<'id' | 'title'>()
+  })
+
+  it('View<SelectModelProperties<T>> assignable to View<any> through Record', () => {
+    interface StreamCheckModel extends Model {
+      result: string
+      functioning: boolean
+      channelId: number
+      createdAt: Date
+      src: string
+      logs?: Record<string, any>[]
+    }
+    type StreamCheck =
+      SelectModelProperties<StreamCheckModel>
+    const view: View<StreamCheck> = {
+      type: 'view',
+      components: {
+        result: { type: 'text' }
+      },
+      panels: {
+        info: {
+          type: 'panel',
+          components: {
+            src: { type: 'text' }
+          }
+        }
+      }
+    }
+    const views = { streamChecks: view }
+    assertType<Record<string, View<any>>>(views)
   })
 })
