@@ -41,7 +41,9 @@
   ],
   "dependencies": {
     "@ditojs/ui": "workspace:^",
-    "@ditojs/utils": "workspace:^",
+    "@ditojs/utils": "workspace:^"
+  },
+  "peerDependencies": {
     "@kyvg/vue3-notification": "^3.4.2",
     "@lk77/vue3-color": "^3.0.6",
     "@tiptap/core": "^3.20.1",
