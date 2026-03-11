@@ -534,8 +534,12 @@ export class Controller {
     } else if (isFunction(authorize)) {
       return async (ctx, member) => {
         const res = await authorize(ctx, member)
-        // Pass res through `processAuthorize()` to support strings & arrays.
-        return this.processAuthorize(res)(ctx, member)
+        // Deny access if the function forgot to return a value.
+        // Otherwise pass res through `processAuthorize()` to
+        // support strings & arrays.
+        return res === undefined
+          ? false
+          : this.processAuthorize(res)(ctx, member)
       }
     } else if (isString(authorize) || isArray(authorize)) {
       return async (ctx, member) => {
