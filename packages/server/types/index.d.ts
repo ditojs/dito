@@ -1075,6 +1075,7 @@ export class Model extends objection.Model {
       ...args: any[]
     ) => void
   >
+
   /**
    * Returns property names matching the given filter
    * function.
@@ -1692,18 +1693,19 @@ export type ControllerActionHandler<
   $Controller extends Controller = Controller
 > = (this: $Controller, ctx: KoaContext, ...args: any[]) => any
 
-type ModelDataKey<T, K extends keyof T> =
-  K extends 'QueryBuilderType' | 'foreignKeyId' | `$${string}`
+type ModelDataKey<T, K extends keyof T> = K extends
+  | 'QueryBuilderType'
+  | 'foreignKeyId'
+  | `$${string}`
+  ? never
+  : T[K] extends (...args: any[]) => any
     ? never
-    : T[K] extends (...args: any[]) => any
-      ? never
-      : K
+    : K
 
 type ModelDataProperties<$Model extends Model = Model> = {
-  [K in keyof $Model as ModelDataKey<$Model, K>]:
-    $Model[K] extends Model
-      ? ModelDataProperties<$Model[K]>
-      : $Model[K]
+  [K in keyof $Model as ModelDataKey<$Model, K>]: $Model[K] extends Model
+    ? ModelDataProperties<$Model[K]>
+    : $Model[K]
 }
 
 /**
@@ -3190,12 +3192,13 @@ type OrPromiseOf<T> = Promise<T> | T
 type ModelFromModelController<$ModelController extends ModelController> =
   InstanceType<Exclude<$ModelController['modelClass'], undefined>>
 
-type SerializeModelPropertyValue<T> =
-  T extends (infer U)[]
-    ? SerializeModelPropertyValue<U>[]
-    : T extends Model ? SerializedModel<T>
-      : T extends Date ? string
-        : T
+type SerializeModelPropertyValue<T> = T extends (infer U)[]
+  ? SerializeModelPropertyValue<U>[]
+  : T extends Model
+    ? SerializedModel<T>
+    : T extends Date
+      ? string
+      : T
 
 /**
  * Extracts the JSON-serialized data properties from a Dito
@@ -3203,8 +3206,9 @@ type SerializeModelPropertyValue<T> =
  * Converts `Date` to `string` to reflect JSON serialization.
  */
 export type SerializedModel<T extends Model> = {
-  -readonly [K in keyof T as ModelDataKey<T, K>]:
-    SerializeModelPropertyValue<T[K]>
+  -readonly [K in keyof T as ModelDataKey<T, K>]: SerializeModelPropertyValue<
+    T[K]
+  >
 }
 
 /** @deprecated Use `SerializedModel` instead. */
@@ -3214,8 +3218,7 @@ export type SelectModelKeys<T extends Model> = keyof SerializedModel<T>
 /** @deprecated Use `SerializedModel` instead. */
 export type ExtractModelProperties<T extends Model> = SerializedModel<T>
 /** @deprecated Use `keyof SerializedModel<T>` instead. */
-export type SelectModelPropertyKeys<T extends Model> =
-  keyof SerializedModel<T>
+export type SelectModelPropertyKeys<T extends Model> = keyof SerializedModel<T>
 
 /* ---------------------- Extended from Ajv JSON Schema --------------------- */
 
