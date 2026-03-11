@@ -84,9 +84,7 @@ describe('CollectionController', () => {
 
 describe('ModelController', () => {
   it('action handler this is typed to the controller', () => {
-    type Handler = ModelControllerActionHandler<
-      ModelController<Model>
-    >
+    type Handler = ModelControllerActionHandler<ModelController<Model>>
     const handler: Handler = function (ctx) {
       expectTypeOf(this).not.toBeAny()
       expectTypeOf(this)

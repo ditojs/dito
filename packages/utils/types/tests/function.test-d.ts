@@ -48,8 +48,8 @@ describe('debounceAsync', () => {
     const debounced = fn(original, 200)
     expectTypeOf(debounced).not.toBeAny()
     expectTypeOf(debounced).toBeCallableWith(1)
-    expectTypeOf(debounced(1)).resolves
-      .toHaveProperty('name')
+    expectTypeOf(debounced(1))
+      .resolves.toHaveProperty('name')
   })
 })
 
@@ -63,8 +63,8 @@ describe('toAsync', () => {
     const asyncReadFile = fn(readFile)
     expectTypeOf(asyncReadFile).not.toBeAny()
     expectTypeOf(asyncReadFile).toBeCallableWith('test.txt')
-    expectTypeOf(asyncReadFile('x')).resolves
-      .toEqualTypeOf<Buffer>()
+    expectTypeOf(asyncReadFile('x'))
+      .resolves.toEqualTypeOf<Buffer>()
   })
 
   it('converts void callback to promise', () => {
@@ -72,8 +72,8 @@ describe('toAsync', () => {
     const doThing = (cb: (err?: any) => void) => {}
     const asyncDoThing = fn(doThing)
     expectTypeOf(asyncDoThing).not.toBeAny()
-    expectTypeOf(asyncDoThing()).resolves
-      .toEqualTypeOf<void>()
+    expectTypeOf(asyncDoThing())
+      .resolves.toEqualTypeOf<void>()
   })
 
   it('handles multiple arguments', () => {
@@ -86,16 +86,15 @@ describe('toAsync', () => {
     const asyncWrite = fn(write)
     expectTypeOf(asyncWrite).not.toBeAny()
     expectTypeOf(asyncWrite).toBeCallableWith('f', 'data')
-    expectTypeOf(asyncWrite('f', 'd')).resolves
-      .toBeNumber()
+    expectTypeOf(asyncWrite('f', 'd'))
+      .resolves.toBeNumber()
   })
 })
 
 describe('toCallback', () => {
   it('converts async fn to callback style', () => {
     const fn = {} as typeof toCallback
-    const asyncFn = async (x: number): Promise<string> =>
-      `${x}`
+    const asyncFn = async (x: number): Promise<string> => `${x}`
     const cbFn = fn(asyncFn)
     expectTypeOf(cbFn).not.toBeAny()
     expectTypeOf(cbFn).toBeCallableWith(

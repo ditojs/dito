@@ -1,8 +1,5 @@
 import { describe, expectTypeOf, it } from 'vitest'
-import type {
-  mapConcurrently,
-  mapSequentially
-} from '../index.d.ts'
+import type { mapConcurrently, mapSequentially } from '../index.d.ts'
 
 describe('mapConcurrently', () => {
   it('infers callback param from input array type', () => {
@@ -22,10 +19,10 @@ describe('mapConcurrently', () => {
       [1, 2],
       async value => ({ doubled: value * 2 })
     )
-    expectTypeOf(result).resolves.items
-      .not.toBeAny()
-    expectTypeOf(result).resolves.items
-      .toEqualTypeOf<{ doubled: number }>()
+    expectTypeOf(result)
+      .resolves.items.not.toBeAny()
+    expectTypeOf(result)
+      .resolves.items.toEqualTypeOf<{ doubled: number }>()
   })
 
   it('accepts promise input', () => {

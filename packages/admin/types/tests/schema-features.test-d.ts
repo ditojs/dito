@@ -19,9 +19,7 @@ describe('SchemaFields: methods', () => {
       methods: {
         greet() {
           expectTypeOf(this).not.toBeAny()
-          expectTypeOf(this).toEqualTypeOf<
-            DitoComponentInstance<Entry>
-          >()
+          expectTypeOf(this).toEqualTypeOf<DitoComponentInstance<Entry>>()
           expectTypeOf(this.item).not.toBeAny()
           expectTypeOf(this.item.title).toBeString()
           expectTypeOf(this.item.id).toBeNumber()
