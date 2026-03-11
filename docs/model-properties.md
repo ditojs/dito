@@ -6,7 +6,7 @@ values are again objects describing the property.
 
 These property definitions are used for two main purposes:
 
-- When creating [Migrations](./migrations.md) for a given model, the `yarn
+- When creating [Migrations](./migrations.md) for a given model, the `pnpm run
   db:create_migration` command uses the property definitions to determine the
   name, type and nature of each database column. This is why some of the
   information in the property schema is only provided for the purpose of

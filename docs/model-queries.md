@@ -22,7 +22,7 @@ An easy way to play around with and familiarize yourself with queries is to
 start the Dito.js console:
 
 ```sh
-yarn console
+pnpm run console
 ```
 
 You can use `.debug()` on any query to directly log SQL statement to console.

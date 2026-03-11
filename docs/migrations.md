@@ -33,21 +33,21 @@ database in case of further migrations.
 All migration files are executed with this command (uses Knex *latest* method):
 
 ```sh
-yarn db:migrate
+pnpm run db:migrate
 ```
 
 In order to undo all migrations, use the rollback command. This will undo the
 last batch of migrations applied:
 
 ```sh
-yarn db:rollback
+pnpm run db:rollback
 ```
 
 Resets can be done with this command, which rolls back all migrations and
 migrates from scratch:
 
 ```sh
-yarn db:reset
+pnpm run db:reset
 ```
 
 ### Creating Migrations Automatically
@@ -55,7 +55,7 @@ yarn db:reset
 Dito.js can create migrations for you automatically. Use the following command:
 
 ```sh
-yarn db:create_migration filename modelName1 modelName2 ...
+pnpm run db:create_migration filename modelName1 modelName2 ...
 ```
 
 The migration is based on the properties and relations in the model definitions.

@@ -12,16 +12,16 @@ generated views and forms and built with Vue.js
 
 ``` bash
 # install dependencies
-yarn install
+pnpm install
 
 # serve your admin folder sym-linked into `dev` with hot reload at localhost:8080
-yarn serer
+pnpm run serve
 
 # build library for production, with and without minification
-yarn build
+pnpm run build
 
 # build for production and view the bundle analyzer report
-yarn build --report
+pnpm run build --report
 ```
 
 For detailed explanation on how things work, checkout the [guide](http://vuejs-templates.github.io/webpack/) and [docs for vue-loader](http://vuejs.github.io/vue-loader).

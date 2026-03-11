@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Architecture Overview
 
-Dito.js is a declarative web framework with two main components: **Dito.js Server** (API-driven development with Koa.js/Objection.js) and **Dito.js Admin** (Vue.js admin interface). This is a monorepo managed by Lerna and Yarn workspaces.
+Dito.js is a declarative web framework with two main components: **Dito.js Server** (API-driven development with Koa.js/Objection.js) and **Dito.js Admin** (Vue.js admin interface). This is a monorepo managed by Lerna and pnpm workspaces.
 
 ## Package Structure
 
@@ -20,21 +20,21 @@ Dito.js is a declarative web framework with two main components: **Dito.js Serve
 ### Development
 ```bash
 # Install dependencies and build all packages
-yarn install
-yarn build
+pnpm install
+pnpm run build
 
 # Watch mode for all packages (development builds)
-yarn watch
+pnpm run watch
 
 # Build specific package
-cd packages/admin && yarn build
-cd packages/ui && yarn build
+cd packages/admin && pnpm run build
+cd packages/ui && pnpm run build
 ```
 
 ### Testing
 ```bash
 # Run all tests
-yarn test
+pnpm test
 
 # Tests use Vitest with globals enabled
 ```
@@ -42,24 +42,24 @@ yarn test
 ### Linting & Code Quality
 ```bash
 # Run all linters
-yarn lint
+pnpm run lint
 
 # Fix linting issues
-yarn lint:fix
+pnpm run lint:fix
 
 # Individual linters
-yarn eslint
-yarn stylelint  
-yarn penere     # Prettier via penere
+pnpm run eslint
+pnpm run stylelint
+pnpm run penere     # Prettier via penere
 ```
 
 ### Package Management
 ```bash
 # Run command across all packages
-yarn foreach run <command>
+pnpm -r run <command>
 
 # Clean all dist directories
-yarn clean
+pnpm run clean
 ```
 
 ## Key Technologies
@@ -139,7 +139,7 @@ seeds/              # Database seeds
 
 ## Development Notes
 
-- Uses Yarn 4+ with workspaces
+- Uses pnpm with workspaces
 - Husky for pre-commit hooks with lint-staged
 - TypeScript definitions available for all packages
 - Supports linking to local Objection.js/Knex.js for development

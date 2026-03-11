@@ -49,5 +49,5 @@ export function({ Model1, Model2 }) {
 To execute all the seeds use the commandline.
 
 ```sh
-yarn db:seed
+pnpm run db:seed
 ```

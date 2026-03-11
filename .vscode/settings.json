@@ -2,8 +2,8 @@
   "files.exclude": {
     // Exclude Babel build folders:
     "packages/*/dist/**": true,
-    // Exclude yarn caches
-    ".yarn/*/**": true
+    // Exclude pnpm store
+    ".pnpm-store/**": true
   },
   "javascript.preferences.importModuleSpecifier": "shortest",
   "typescript.preferences.importModuleSpecifier": "shortest",

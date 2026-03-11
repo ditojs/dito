@@ -5,10 +5,3 @@
 /node_modules
 /coverage
 /.claude
-.yarn/*
-!.yarn/cache
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/sdks
-!.yarn/versions

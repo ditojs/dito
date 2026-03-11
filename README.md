@@ -74,16 +74,16 @@ Note that in order to work, each of these scripts require either the path to the
 application, or the path to the application's configuration, as specified above.
 Here a brief description of each script's purpose:
 
-- `yarn console`: Starts an interactive Read-Eval-Print-Loop console in which
+- `pnpm run console`: Starts an interactive Read-Eval-Print-Loop console in which
   all Dito.js models can be directly used.
-- `yarn db:seed`: Seeds the configured database with the data provided in
+- `pnpm run db:seed`: Seeds the configured database with the data provided in
   `seeds`. See [Seeds](docs/seeds.md) for more information.
-- `yarn db:create_migration`: Creates migration files for the specified models.
+- `pnpm run db:create_migration`: Creates migration files for the specified models.
    See [Migrations](docs/migrations.md) for more information.
-- `yarn db:migrate`: Migrates to the latest state of migrations.
+- `pnpm run db:migrate`: Migrates to the latest state of migrations.
    See [Migrations](docs/migrations.md) for more information.
-- `yarn db:rollback`: Rolls back the last batch of applied migrations.
+- `pnpm run db:rollback`: Rolls back the last batch of applied migrations.
    See [Migrations](docs/migrations.md) for more information.
-- `yarn db:reset`: Resets the database by rolling back all applied migrations,
+- `pnpm run db:reset`: Resets the database by rolling back all applied migrations,
    and then reapplying all available migrations.
    See [Migrations](docs/migrations.md) for more information.

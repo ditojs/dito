@@ -25,15 +25,13 @@
     "types/"
   ],
   "scripts": {
-    "vite": "node --disable-warning=DEP0040 $(yarn bin vite)",
-    "build": "yarn vite build",
-    "watch": "yarn build --mode 'development' --watch",
-    "prepare": "yarn build",
+    "build": "vite build",
+    "watch": "pnpm run build --mode 'development' --watch",
+    "prepare": "pnpm run build",
     "types": "tsc --noEmit types/index.d.ts"
   },
   "engines": {
-    "node": ">= 20.0.0",
-    "yarn": ">= 4.0.0"
+    "node": ">= 20.0.0"
   },
   "browserslist": [
     "> 1%",
