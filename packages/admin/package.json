@@ -40,8 +40,8 @@
     "not ie_mob > 0"
   ],
   "dependencies": {
-    "@ditojs/ui": "^2.85.0",
-    "@ditojs/utils": "^2.85.0",
+    "@ditojs/ui": "workspace:^",
+    "@ditojs/utils": "workspace:^",
     "@kyvg/vue3-notification": "^3.4.2",
     "@lk77/vue3-color": "^3.0.6",
     "@tiptap/core": "^3.20.1",
@@ -87,7 +87,7 @@
     "vue-upload-component": "^3.1.17"
   },
   "devDependencies": {
-    "@ditojs/build": "^2.85.0",
+    "@ditojs/build": "workspace:^",
     "typescript": "^5.9.3",
     "vite": "^7.3.1"
   }
