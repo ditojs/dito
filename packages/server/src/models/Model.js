@@ -609,11 +609,11 @@ export class Model extends objection.Model {
     }
     // Also run through normal $parseJson(), for handling of `Date` and
     // `AssetFile`.
-    return this.$parseJson(json)
+    return this.$parseJson(json, { trusted: true })
   }
 
   // @override
-  $parseJson(json) {
+  $parseJson(json, { trusted = false } = {}) {
     const { constructor } = this
     for (const key of constructor.dateAttributes) {
       const date = json[key]
@@ -634,7 +634,7 @@ export class Model extends objection.Model {
               if (isArray(data)) {
                 data.forEach(convertToAssetFiles)
               } else {
-                storage.convertAssetFile(data)
+                storage.convertAssetFile(data, { trusted })
               }
             }
           }

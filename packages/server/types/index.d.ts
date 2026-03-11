@@ -2996,6 +2996,9 @@ export type AssetFileObject = {
   width?: number
   // The height of the image if the storage defines `config.readDimensions`
   height?: number
+  // HMAC signature of the key, present in upload responses, stripped before
+  // persistence.
+  signature?: string
 }
 /* ------------------------------ End Storage ------------------------------ */
 
