@@ -40,7 +40,7 @@ export type RequestMethod = <T>(options: {
    *
    * @default 'get'
    */
-  method?: HTTPVerb
+  method?: HTTPMethod
   /** Request body payload. */
   data?: unknown
   /** URL query parameters. */
@@ -91,7 +91,7 @@ export interface ApiResource {
    */
   path?: string
   /** HTTP method for the resource request. */
-  method?: HTTPVerb
+  method?: HTTPMethod
   /**
    * Identifier of a specific resource item, used when
    * {@link ApiResource.type} is `'member'` to append the id to the
@@ -225,7 +225,7 @@ export interface ApiConfig {
       /**
        * @defaultValue `'post'`
        */
-      method?: HTTPVerb
+      method?: HTTPMethod
     }
     /** Logout endpoint. */
     logout?: {
@@ -236,7 +236,7 @@ export interface ApiConfig {
       /**
        * @defaultValue `'post'`
        */
-      method?: HTTPVerb
+      method?: HTTPMethod
     }
     /**
      * Session endpoint for checking an existing authenticated
@@ -250,7 +250,7 @@ export interface ApiConfig {
       /**
        * @defaultValue `'get'`
        */
-      method?: HTTPVerb
+      method?: HTTPMethod
     }
   }
   /**
@@ -609,7 +609,7 @@ export interface SchemaSourceMixin<$Item> {
    * The columns displayed in the table. Can be an array
    * of property names or an object with column schemas.
    */
-  columns?: Record<string, ColumnSchema<$Item>> | (keyof $Item)[]
+  columns?: Columns<$Item> | (keyof $Item)[]
   /**
    * Scope names as defined on the model. When set, the
    * admin renders scope buttons allowing the user to
@@ -1677,7 +1677,7 @@ export type ColorSchema<$Item = any> = BaseSchema<$Item> &
     presets?: OrItemAccessor<$Item, {}, string[]>
   }
 
-export type ColumnSchema<$Item = any> = {
+export type ColumnSchema<$Item = any, $Value = any> = {
   /**
    * The label of the column.
    * @defaultValue The labelized column key.
@@ -1697,7 +1697,11 @@ export type ColumnSchema<$Item = any> = {
    * If the column is sortable, the column is sorted by value and not by
    * rendered name.
    */
-  render?: ItemAccessor<$Item, {}, string | null | undefined>
+  render?: ItemAccessor<
+    $Item,
+    { value: $Value },
+    string | null | undefined
+  >
   /**
    * The provided string is applied to the class property of the column
    * cell html elements.
@@ -1946,7 +1950,7 @@ export type DitoContext<$Item = any> = {
     /**
      * @default 'get'
      */
-    method?: HTTPVerb
+    method?: HTTPMethod
     query?:
       | Record<string, string | number | (string | number)[]>
       | [string, string | number][]
@@ -2176,7 +2180,7 @@ export interface DitoComponentInstanceBase<$Item = any> extends EmitterMixin {
    * Sends an HTTP request to the API.
    */
   sendRequest(options: {
-    method?: HTTPVerb
+    method?: HTTPMethod
     url?: string
     resource?: Resource
     query?:
@@ -2883,7 +2887,7 @@ export type PanelSchema<$Item = any> = BaseSchema<$Item> & {
   /**
    * The components within the panel.
    */
-  components?: Record<string, Component<$Item>>
+  components?: Components<$Item>
   /** Buttons rendered at the bottom of the panel. */
   buttons?: Buttons<$Item>
   /**
@@ -3050,6 +3054,14 @@ export type Components<$Item = any> = 0 extends 1 & $Item
                 | SectionSchema<$Item>
     }
 
+export type Columns<$Item = any> = 0 extends 1 & $Item
+  ? { [key: string]: ColumnSchema | undefined }
+  : {
+      [K in keyof $Item]?: ColumnSchema<$Item, $Item[K]>
+    } & {
+      [key: string]: ColumnSchema<$Item> | undefined
+    }
+
 export type Buttons<$Item> = Record<
   string,
   SetOptional<ButtonSchema<$Item>, 'type'>
@@ -3148,7 +3160,7 @@ export type Resource =
   | string
   | RequireAtLeastOne<{
       path?: string
-      method?: HTTPVerb
+      method?: HTTPMethod
       data?: unknown
     }>
 
@@ -3199,7 +3211,18 @@ export class DitoAdmin<
     options: Record<string, unknown>
   ): VueComponent
 }
-export type HTTPVerb = 'get' | 'post' | 'put' | 'delete' | 'patch'
+export type HTTPMethod =
+  | 'get'
+  | 'head'
+  | 'post'
+  | 'put'
+  | 'delete'
+  | 'patch'
+  | 'options'
+  | 'trace'
+  | 'connect'
+/** @deprecated Use `HTTPMethod` instead. */
+export type HTTPVerb = HTTPMethod
 
 export type SchemaByType<$Item = any> = {
   'button': ButtonSchema<$Item>

@@ -298,11 +298,21 @@ describe('UploadSchema', () => {
 })
 
 describe('PanelSchema', () => {
-  it('accepts arbitrary component keys in panels', () => {
+  it('constrains component keys to item properties', () => {
     assertType<PanelSchema<Entry>>({
       type: 'panel',
       components: {
-        title: { type: 'text' },
+        id: { type: 'number' },
+        title: { type: 'text' }
+      }
+    })
+  })
+
+  it('rejects unknown component keys', () => {
+    assertType<PanelSchema<Entry>>({
+      type: 'panel',
+      components: {
+        // @ts-expect-error — 'extra' is not a key of Entry
         extra: { type: 'text' }
       }
     })
@@ -367,7 +377,7 @@ describe('PanelSchema', () => {
         info: {
           type: 'panel',
           components: {
-            status: {
+            title: {
               type: 'text',
               format({ item }) {
                 expectTypeOf(item).not.toBeAny()
