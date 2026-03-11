@@ -3193,18 +3193,17 @@ type OrPromiseOf<T> = Promise<T> | T
 type ModelFromModelController<$ModelController extends ModelController> =
   InstanceType<Exclude<$ModelController['modelClass'], undefined>>
 
-export type SelectModelProperties<T> = {
-  [K in SelectModelKeys<T>]: T[K] extends Model
-    ? SelectModelProperties<T[K]>
-    : T[K]
+export type SelectModelProperties<T extends Model> = {
+  -readonly [K in keyof T as
+    K extends 'QueryBuilderType' | 'foreignKeyId' | `$${string}`
+      ? never
+      : T[K] extends (...args: any[]) => any
+        ? never
+        : K
+  ]: T[K] extends Model ? SelectModelProperties<T[K]> : T[K]
 }
 
-export type SelectModelKeys<T> = Exclude<
-  objection.NonFunctionPropertyNames<T>,
-  | 'QueryBuilderType' //
-  | 'foreignKeyId'
-  | `$${string}`
->
+export type SelectModelKeys<T extends Model> = keyof SelectModelProperties<T>
 
 /* ---------------------- Extended from Ajv JSON Schema --------------------- */
 
