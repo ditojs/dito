@@ -25,10 +25,10 @@
     "node >= 18"
   ],
   "dependencies": {
-    "@ditojs/admin": "^2.85.2",
-    "@ditojs/build": "^2.85.0",
-    "@ditojs/router": "^2.85.0",
-    "@ditojs/utils": "^2.85.0",
+    "@ditojs/admin": "workspace:^",
+    "@ditojs/build": "workspace:^",
+    "@ditojs/router": "workspace:^",
+    "@ditojs/utils": "workspace:^",
     "@koa/cors": "^5.0.0",
     "@koa/etag": "^5.0.2",
     "@koa/multer": "^4.0.0",
@@ -55,7 +55,7 @@
     "leather": "^3.0.3",
     "mime-types": "^3.0.2",
     "multer": "^2.1.1",
-    "multer-s3": "https://github.com/ditojs/multer-s3#dito",
+    "multer-s3": "github:ditojs/multer-s3#dito",
     "nanoid": "^5.1.6",
     "parse-duration": "^2.1.5",
     "passport-local": "^1.0.0",
@@ -76,15 +76,15 @@
     "objection": "^3.0.1"
   },
   "devDependencies": {
-    "@aws-sdk/client-s3": "^3.832.0",
-    "@aws-sdk/lib-storage": "^3.832.0",
+    "@aws-sdk/client-s3": "^3.1006.0",
+    "@aws-sdk/lib-storage": "^3.1006.0",
     "@types/koa-bodyparser": "^4.3.13",
     "@types/koa-compress": "^4.0.7",
     "@types/koa-response-time": "^2.1.5",
     "@types/koa-session": "^6.4.5",
     "@types/koa-static": "^4.0.4",
     "@types/koa__cors": "^5.0.1",
-    "@types/node": "^25.3.5",
+    "@types/node": "^25.4.0",
     "knex": "^3.1.0",
     "objection": "^3.1.5",
     "typescript": "^5.9.3"

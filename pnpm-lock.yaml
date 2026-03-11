@@ -12,7 +12,7 @@ importers:
         specifier: ^3.4.2
         version: 3.4.2(penere@3.6.2)
       '@typescript-eslint/parser':
-        specifier: ^8.56.1
+        specifier: ^8.57.0
         version: 8.57.0(eslint@9.39.4)(typescript@5.9.3)
       '@volar/language-service':
         specifier: ^2.4.28
@@ -27,7 +27,7 @@ importers:
         specifier: ^9.2.1
         version: 9.2.1
       eslint:
-        specifier: ^9.39.3
+        specifier: ^9.39.4
         version: 9.39.4
       eslint-config-prettier:
         specifier: ^10.1.8
@@ -51,7 +51,7 @@ importers:
         specifier: ^10.8.0
         version: 10.8.0(@typescript-eslint/parser@8.57.0(eslint@9.39.4)(typescript@5.9.3))(eslint@9.39.4)(vue-eslint-parser@10.4.0(eslint@9.39.4))
       eslint-plugin-vue-pug:
-        specifier: ^1.0.0-alpha.5
+        specifier: 1.0.0-alpha.5
         version: 1.0.0-alpha.5(eslint-plugin-vue@10.8.0(@typescript-eslint/parser@8.57.0(eslint@9.39.4)(typescript@5.9.3))(eslint@9.39.4)(vue-eslint-parser@10.4.0(eslint@9.39.4)))(vue-eslint-parser@10.4.0(eslint@9.39.4))
       full-icu:
         specifier: ^1.5.0
@@ -63,7 +63,7 @@ importers:
         specifier: ^9.0.5
         version: 9.0.5(@types/node@25.4.0)
       lint-staged:
-        specifier: ^16.3.2
+        specifier: ^16.3.3
         version: 16.3.3
       prettier:
         specifier: npm:penere@^3.6.2
@@ -96,10 +96,10 @@ importers:
   packages/admin:
     dependencies:
       '@ditojs/ui':
-        specifier: ^2.85.0
+        specifier: workspace:^
         version: link:../ui
       '@ditojs/utils':
-        specifier: ^2.85.0
+        specifier: workspace:^
         version: link:../utils
       '@kyvg/vue3-notification':
         specifier: ^3.4.2
@@ -232,7 +232,7 @@ importers:
         version: 3.1.17
     devDependencies:
       '@ditojs/build':
-        specifier: ^2.85.0
+        specifier: workspace:^
         version: link:../build
       typescript:
         specifier: ^5.9.3
@@ -244,7 +244,7 @@ importers:
   packages/build:
     dependencies:
       '@ditojs/utils':
-        specifier: ^2.85.0
+        specifier: workspace:^
         version: link:../utils
       '@vitejs/plugin-vue':
         specifier: ^6.0.4
@@ -277,7 +277,7 @@ importers:
         specifier: ^3.0.3
         version: 3.0.3
       sass:
-        specifier: ^1.97.3
+        specifier: ^1.98.0
         version: 1.98.0
       vite:
         specifier: ^7.3.1
@@ -289,22 +289,22 @@ importers:
   packages/router:
     dependencies:
       '@ditojs/utils':
-        specifier: ^2.85.0
+        specifier: workspace:^
         version: link:../utils
 
   packages/server:
     dependencies:
       '@ditojs/admin':
-        specifier: ^2.85.2
+        specifier: workspace:^
         version: link:../admin
       '@ditojs/build':
-        specifier: ^2.85.0
+        specifier: workspace:^
         version: link:../build
       '@ditojs/router':
-        specifier: ^2.85.0
+        specifier: workspace:^
         version: link:../router
       '@ditojs/utils':
-        specifier: ^2.85.0
+        specifier: workspace:^
         version: link:../utils
       '@koa/cors':
         specifier: ^5.0.0
@@ -385,7 +385,7 @@ importers:
         specifier: ^2.1.1
         version: 2.1.1
       multer-s3:
-        specifier: https://github.com/ditojs/multer-s3#dito
+        specifier: github:ditojs/multer-s3#dito
         version: https://codeload.github.com/ditojs/multer-s3/tar.gz/b0f0ffb55c1642b699a032a48c3bc1b942b6a10e(@aws-sdk/client-s3@3.1006.0)
       nanoid:
         specifier: ^5.1.6
@@ -425,10 +425,10 @@ importers:
         version: 13.0.0
     devDependencies:
       '@aws-sdk/client-s3':
-        specifier: ^3.832.0
+        specifier: ^3.1006.0
         version: 3.1006.0
       '@aws-sdk/lib-storage':
-        specifier: ^3.832.0
+        specifier: ^3.1006.0
         version: 3.1006.0(@aws-sdk/client-s3@3.1006.0)
       '@types/koa-bodyparser':
         specifier: ^4.3.13
@@ -449,7 +449,7 @@ importers:
         specifier: ^5.0.1
         version: 5.0.1
       '@types/node':
-        specifier: ^25.3.5
+        specifier: ^25.4.0
         version: 25.4.0
       knex:
         specifier: ^3.1.0
@@ -464,14 +464,14 @@ importers:
   packages/ui:
     dependencies:
       '@ditojs/utils':
-        specifier: ^2.85.0
+        specifier: workspace:^
         version: link:../utils
       '@soda/get-current-script':
         specifier: ^1.0.2
         version: 1.0.2
     devDependencies:
       '@ditojs/build':
-        specifier: ^2.85.0
+        specifier: workspace:^
         version: link:../build
       vite:
         specifier: ^7.3.1

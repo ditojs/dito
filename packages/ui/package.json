@@ -38,11 +38,11 @@
     "ie_mob >= 11"
   ],
   "dependencies": {
-    "@ditojs/utils": "^2.85.0",
+    "@ditojs/utils": "workspace:^",
     "@soda/get-current-script": "^1.0.2"
   },
   "devDependencies": {
-    "@ditojs/build": "^2.85.0",
+    "@ditojs/build": "workspace:^",
     "vite": "^7.3.1"
   }
 }
