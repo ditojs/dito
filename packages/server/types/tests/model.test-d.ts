@@ -88,8 +88,7 @@ describe('Model', () => {
           .toMatchTypeOf<QueryBuilder<Model>>()
         expectTypeOf(applyParentScope)
           .not.toBeAny()
-        expectTypeOf(applyParentScope).toEqualTypeOf<
-          (
+        expectTypeOf(applyParentScope).toEqualTypeOf< (
             query: QueryBuilder<Model>
           ) => QueryBuilder<Model>
         >()
@@ -155,8 +154,7 @@ describe('SerializedModel', () => {
       updatedAt?: Date
       timestamps: Date[]
     }
-    type Result =
-      SerializedModel<TimestampedModel>
+    type Result = SerializedModel<TimestampedModel>
     expectTypeOf<Result['createdAt']>()
       .toEqualTypeOf<string>()
     expectTypeOf<Result['updatedAt']>()
@@ -174,8 +172,7 @@ describe('SerializedModel', () => {
       src: string
       logs?: Record<string, any>[]
     }
-    type StreamCheck =
-      SerializedModel<StreamCheckModel>
+    type StreamCheck = SerializedModel<StreamCheckModel>
     const view: View<StreamCheck> = {
       type: 'view',
       components: {

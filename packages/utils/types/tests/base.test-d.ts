@@ -30,9 +30,7 @@ describe('type guards', () => {
     const val: string | Record<string, unknown> = {} as any
     if (guard(val)) {
       expectTypeOf(val).not.toBeAny()
-      expectTypeOf(val).toEqualTypeOf<
-        Record<string, unknown>
-      >()
+      expectTypeOf(val).toEqualTypeOf<Record<string, unknown>>()
     }
   })
 
@@ -101,8 +99,7 @@ describe('type guards', () => {
 
   it('isAsync narrows to async function', () => {
     const guard = {} as typeof isAsync
-    const val: (() => void) | (() => Promise<string>) =
-      {} as any
+    const val: (() => void) | (() => Promise<string>) = {} as any
     if (guard(val)) {
       expectTypeOf(val).not.toBeAny()
       assertType<(...args: any[]) => Promise<any>>(val)
@@ -163,9 +160,7 @@ describe('asFunction', () => {
     const cb = (x: number) => x * 2
     const result = fn(cb)
     expectTypeOf(result).not.toBeAny()
-    expectTypeOf(result).toEqualTypeOf<
-      (x: number) => number
-    >()
+    expectTypeOf(result).toEqualTypeOf<(x: number) => number>()
   })
 
   it('wraps non-function in thunk', () => {

@@ -89,9 +89,7 @@ describe('Storage', () => {
       const result = storage.getUploadStorage({})
       expectTypeOf(result).not.toBeAny()
       expectTypeOf(result)
-        .toEqualTypeOf<
-          multer.StorageEngine | null
-        >()
+        .toEqualTypeOf<multer.StorageEngine | null>()
     })
   })
 

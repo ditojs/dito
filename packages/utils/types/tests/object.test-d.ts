@@ -21,13 +21,16 @@ describe('clone', () => {
 
   it('processValue callback receives correct type', () => {
     const fn = {} as typeof clone
-    fn({ x: 1 }, {
-      processValue(value) {
-        expectTypeOf(value).not.toBeAny()
-        expectTypeOf(value).toEqualTypeOf<{ x: number }>()
-        return value
+    fn(
+      { x: 1 },
+      {
+        processValue(value) {
+          expectTypeOf(value).not.toBeAny()
+          expectTypeOf(value).toEqualTypeOf<{ x: number }>()
+          return value
+        }
       }
-    })
+    )
   })
 })
 
@@ -116,9 +119,7 @@ describe('pick', () => {
       {} as string
     )
     expectTypeOf(result).not.toBeAny()
-    expectTypeOf(result).toEqualTypeOf<
-      number | undefined | string
-    >()
+    expectTypeOf(result).toEqualTypeOf<number | undefined | string>()
   })
 })
 
@@ -140,9 +141,7 @@ describe('pickBy', () => {
     const obj = {} as { a: number; b: number }
     const result = fn(obj, () => true)
     expectTypeOf(result).not.toBeAny()
-    expectTypeOf(result).toEqualTypeOf<
-      Partial<{ a: number; b: number }>
-    >()
+    expectTypeOf(result).toEqualTypeOf<Partial<{ a: number; b: number }>>()
   })
 })
 
@@ -178,9 +177,7 @@ describe('mapValues', () => {
     const obj: Record<string, number> = {}
     const result = fn(obj, value => String(value))
     expectTypeOf(result).not.toBeAny()
-    expectTypeOf(result).toEqualTypeOf<
-      Record<string, string>
-    >()
+    expectTypeOf(result).toEqualTypeOf<Record<string, string>>()
   })
 
   it('property shorthand extracts nested value', () => {
@@ -188,8 +185,6 @@ describe('mapValues', () => {
     const obj: Record<string, { nested: number }> = {}
     const result = fn(obj, 'nested')
     expectTypeOf(result).not.toBeAny()
-    expectTypeOf(result).toEqualTypeOf<
-      Record<string, number>
-    >()
+    expectTypeOf(result).toEqualTypeOf<Record<string, number>>()
   })
 })
