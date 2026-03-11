@@ -2,7 +2,7 @@ import { expectTypeOf, assertType, describe, it } from 'vitest'
 import type {
   Model,
   QueryBuilder,
-  SelectModelProperties,
+  SerializedModel,
   ModelScopes,
   ModelFilters,
   ModelHooks,
@@ -27,6 +27,16 @@ describe('Model', () => {
     expectTypeOf<typeof Model.getAttributes>()
       .parameter(0)
       .not.toBeUndefined()
+  })
+
+  it('$patch accepts Date for date fields', () => {
+    interface TimestampedItem extends Model {
+      title: string
+      createdAt: Date
+    }
+    const item = {} as TimestampedItem
+    item.$patch({ title: 'test' })
+    item.$patch({ createdAt: new Date() })
   })
 
   it('$is accepts Model, null, or undefined', () => {
@@ -128,18 +138,34 @@ describe('Model', () => {
   })
 })
 
-describe('SelectModelProperties', () => {
+describe('SerializedModel', () => {
   it('strips functions, $-prefixed, and internal keys', () => {
     interface TestModel extends Model {
       title: string
       $meta: string
     }
-    type Result = SelectModelProperties<TestModel>
+    type Result = SerializedModel<TestModel>
     expectTypeOf<keyof Result>()
       .toEqualTypeOf<'id' | 'title'>()
   })
 
-  it('View<SelectModelProperties<T>> assignable to View<any> through Record', () => {
+  it('converts Date properties to string (JSON serialization)', () => {
+    interface TimestampedModel extends Model {
+      createdAt: Date
+      updatedAt?: Date
+      timestamps: Date[]
+    }
+    type Result =
+      SerializedModel<TimestampedModel>
+    expectTypeOf<Result['createdAt']>()
+      .toEqualTypeOf<string>()
+    expectTypeOf<Result['updatedAt']>()
+      .toEqualTypeOf<string | undefined>()
+    expectTypeOf<Result['timestamps']>()
+      .toEqualTypeOf<string[]>()
+  })
+
+  it('View<SerializedModel<T>> assignable to View<any> through Record', () => {
     interface StreamCheckModel extends Model {
       result: string
       functioning: boolean
@@ -149,7 +175,7 @@ describe('SelectModelProperties', () => {
       logs?: Record<string, any>[]
     }
     type StreamCheck =
-      SelectModelProperties<StreamCheckModel>
+      SerializedModel<StreamCheckModel>
     const view: View<StreamCheck> = {
       type: 'view',
       components: {

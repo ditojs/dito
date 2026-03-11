@@ -1325,12 +1325,12 @@ export class Model extends objection.Model {
   ): Promise<Model | Model[]>
 
   $update(
-    attributes: Partial<ExtractModelProperties<this>>,
+    attributes: Partial<ModelDataProperties<this>>,
     trx?: objection.Transaction
   ): objection.SingleQueryBuilder<objection.QueryBuilderType<this>>
 
   $patch(
-    attributes: Partial<ExtractModelProperties<this>>,
+    attributes: Partial<ModelDataProperties<this>>,
     trx?: objection.Transaction
   ): objection.SingleQueryBuilder<objection.QueryBuilderType<this>>
 
@@ -1692,22 +1692,19 @@ export type ControllerActionHandler<
   $Controller extends Controller = Controller
 > = (this: $Controller, ctx: KoaContext, ...args: any[]) => any
 
-export type ExtractModelProperties<$Model extends Model = Model> = {
-  [K in SelectModelPropertyKeys<$Model>]: $Model[K] extends Model
-    ? ExtractModelProperties<$Model[K]>
-    : $Model[K]
-}
-
-export type SelectModelPropertyKeys<$Model extends Model> = {
-  [K in keyof $Model]-?: K extends
-    | 'QueryBuilderType'
-    | 'foreignKeyId'
-    | `$${string}`
+type ModelDataKey<T, K extends keyof T> =
+  K extends 'QueryBuilderType' | 'foreignKeyId' | `$${string}`
     ? never
-    : $Model[K] extends Function
+    : T[K] extends (...args: any[]) => any
       ? never
       : K
-}[keyof $Model]
+
+type ModelDataProperties<$Model extends Model = Model> = {
+  [K in keyof $Model as ModelDataKey<$Model, K>]:
+    $Model[K] extends Model
+      ? ModelDataProperties<$Model[K]>
+      : $Model[K]
+}
 
 /**
  * Authorization configuration for controllers and actions.
@@ -3193,17 +3190,32 @@ type OrPromiseOf<T> = Promise<T> | T
 type ModelFromModelController<$ModelController extends ModelController> =
   InstanceType<Exclude<$ModelController['modelClass'], undefined>>
 
-export type SelectModelProperties<T extends Model> = {
-  -readonly [K in keyof T as
-    K extends 'QueryBuilderType' | 'foreignKeyId' | `$${string}`
-      ? never
-      : T[K] extends (...args: any[]) => any
-        ? never
-        : K
-  ]: T[K] extends Model ? SelectModelProperties<T[K]> : T[K]
+type SerializeModelPropertyValue<T> =
+  T extends (infer U)[]
+    ? SerializeModelPropertyValue<U>[]
+    : T extends Model ? SerializedModel<T>
+      : T extends Date ? string
+        : T
+
+/**
+ * Extracts the JSON-serialized data properties from a Dito
+ * Model, stripping methods, `$`-prefixed, and internal keys.
+ * Converts `Date` to `string` to reflect JSON serialization.
+ */
+export type SerializedModel<T extends Model> = {
+  -readonly [K in keyof T as ModelDataKey<T, K>]:
+    SerializeModelPropertyValue<T[K]>
 }
 
-export type SelectModelKeys<T extends Model> = keyof SelectModelProperties<T>
+/** @deprecated Use `SerializedModel` instead. */
+export type SelectModelProperties<T extends Model> = SerializedModel<T>
+/** @deprecated Use `keyof SerializedModel<T>` instead. */
+export type SelectModelKeys<T extends Model> = keyof SerializedModel<T>
+/** @deprecated Use `SerializedModel` instead. */
+export type ExtractModelProperties<T extends Model> = SerializedModel<T>
+/** @deprecated Use `keyof SerializedModel<T>` instead. */
+export type SelectModelPropertyKeys<T extends Model> =
+  keyof SerializedModel<T>
 
 /* ---------------------- Extended from Ajv JSON Schema --------------------- */
 
