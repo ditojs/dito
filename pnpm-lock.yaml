@@ -447,6 +447,9 @@ importers:
       '@types/koa__cors':
         specifier: ^5.0.1
         version: 5.0.1
+      '@types/koa__multer':
+        specifier: ^2.0.8
+        version: 2.0.8
       '@types/node':
         specifier: ^25.4.0
         version: 25.4.0
@@ -3224,6 +3227,9 @@ packages:
       {
         integrity: sha512-xZckuh3B6ycSBAIYnBImG1VDHyBNZsltGAuGb4THuZllccdLgD5DUs4RA7TAUjB58THg00SSZ1e//duQef7WRw==
       }
+
+  '@types/koa__multer@2.0.8':
+    resolution: {integrity: sha512-XkD9YzmGKzKfOkxwHepueQkP61okAeu6ibAieL4NSqwM1lyGOkgbT2XmP+xROd2agQVsewPqsFOsfgVmlEqJmg==}
 
   '@types/linkify-it@5.0.0':
     resolution:
@@ -13115,6 +13121,10 @@ snapshots:
       '@types/node': 25.4.0
 
   '@types/koa__cors@5.0.1':
+    dependencies:
+      '@types/koa': 3.0.1
+
+  '@types/koa__multer@2.0.8':
     dependencies:
       '@types/koa': 3.0.1
 
