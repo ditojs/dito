@@ -30,7 +30,9 @@ describe('Controller', () => {
   it('action handler this is typed to controller', () => {
     type Handler = ControllerActionHandler<Controller>
     const handler: Handler = function (ctx) {
+      expectTypeOf(this).not.toBeAny()
       expectTypeOf(this).toEqualTypeOf<Controller>()
+      expectTypeOf(ctx).not.toBeAny()
       expectTypeOf(ctx).toMatchTypeOf<KoaContext>()
     }
   })
@@ -53,8 +55,12 @@ describe('CollectionController', () => {
       'patch',
       {} as KoaContext,
       (query, trx) => {
-        expectTypeOf(query).toMatchTypeOf<QueryBuilder<Model>>()
-        expectTypeOf(trx).toEqualTypeOf<Transaction | undefined>()
+        expectTypeOf(query).not.toBeAny()
+        expectTypeOf(query)
+          .toMatchTypeOf<QueryBuilder<Model>>()
+        expectTypeOf(trx).not.toBeAny()
+        expectTypeOf(trx)
+          .toEqualTypeOf<Transaction | undefined>()
       }
     )
   })
@@ -65,8 +71,12 @@ describe('CollectionController', () => {
       'patch',
       {} as KoaContext,
       (query, trx) => {
-        expectTypeOf(query).toMatchTypeOf<QueryBuilder<Model>>()
-        expectTypeOf(trx).toEqualTypeOf<Transaction | undefined>()
+        expectTypeOf(query).not.toBeAny()
+        expectTypeOf(query)
+          .toMatchTypeOf<QueryBuilder<Model>>()
+        expectTypeOf(trx).not.toBeAny()
+        expectTypeOf(trx)
+          .toEqualTypeOf<Transaction | undefined>()
       }
     )
   })
@@ -74,9 +84,15 @@ describe('CollectionController', () => {
 
 describe('ModelController', () => {
   it('action handler this is typed to the controller', () => {
-    type Handler = ModelControllerActionHandler<ModelController<Model>>
+    type Handler = ModelControllerActionHandler<
+      ModelController<Model>
+    >
     const handler: Handler = function (ctx) {
-      expectTypeOf(this).toEqualTypeOf<ModelController<Model>>()
+      expectTypeOf(this).not.toBeAny()
+      expectTypeOf(this)
+        .toEqualTypeOf<ModelController<Model>>()
+      expectTypeOf(ctx).not.toBeAny()
+      expectTypeOf(ctx).toMatchTypeOf<KoaContext>()
     }
   })
 })

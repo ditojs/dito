@@ -23,6 +23,7 @@ describe('Section components', () => {
       details: {
         type: 'section',
         label({ item }) {
+          expectTypeOf(item).not.toBeAny()
           expectTypeOf(item.title).toBeString()
           expectTypeOf(item.entries).toEqualTypeOf<Entry[]>()
           expectTypeOf(item).not.toHaveProperty('details')
@@ -135,6 +136,7 @@ describe('Nested sections', () => {
           street: {
             type: 'text',
             onChange({ item }) {
+              expectTypeOf(item).not.toBeAny()
               expectTypeOf(item).toEqualTypeOf<Address>()
             }
           }

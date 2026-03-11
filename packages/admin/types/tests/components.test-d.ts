@@ -30,6 +30,7 @@ describe('Components', () => {
         text: 'View',
         events: {
           click({ item }) {
+            expectTypeOf(item).not.toBeAny()
             expectTypeOf(item).toHaveProperty('title')
             expectTypeOf(item).toHaveProperty('entries')
             expectTypeOf(item).not.toHaveProperty('viewButton')
@@ -45,6 +46,7 @@ describe('Components', () => {
       title: {
         type: 'text',
         format({ item }) {
+          expectTypeOf(item).not.toBeAny()
           expectTypeOf(item.title).toBeString()
           expectTypeOf(item.entries).toEqualTypeOf<Entry[]>()
         }

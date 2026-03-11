@@ -105,6 +105,7 @@ describe('SchemaAffixMixin (prefix/suffix)', () => {
       suffix: {
         text: '%',
         if({ item }) {
+          expectTypeOf(item).not.toBeAny()
           return item.id > 0
         }
       }
@@ -118,9 +119,13 @@ describe('ClipboardConfig', () => {
       type: 'form',
       clipboard: {
         copy(context) {
+          expectTypeOf(context).not.toBeAny()
+          expectTypeOf(context.item).not.toBeAny()
           return context.item
         },
         paste(context) {
+          expectTypeOf(context).not.toBeAny()
+          expectTypeOf(context.item).not.toBeAny()
           return context.item
         }
       },

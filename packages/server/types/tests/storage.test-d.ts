@@ -9,9 +9,16 @@ describe('Storage', () => {
   describe('StorageFile', () => {
     it('inherits multer.File properties', () => {
       const file = {} as StorageFile
-      expectTypeOf(file.originalname).toEqualTypeOf<string>()
-      expectTypeOf(file.mimetype).toEqualTypeOf<string>()
+      expectTypeOf(file.originalname)
+        .not.toBeAny()
+      expectTypeOf(file.originalname)
+        .toEqualTypeOf<string>()
+      expectTypeOf(file.mimetype).not.toBeAny()
+      expectTypeOf(file.mimetype)
+        .toEqualTypeOf<string>()
+      expectTypeOf(file.size).not.toBeAny()
       expectTypeOf(file.size).toEqualTypeOf<number>()
+      expectTypeOf(file.key).not.toBeAny()
       expectTypeOf(file.key).toEqualTypeOf<string>()
     })
 
@@ -35,11 +42,17 @@ describe('Storage', () => {
       const file = {} as StorageFile
       expectTypeOf(
         storage.convertStorageFile(file)
+      ).not.toBeAny()
+      expectTypeOf(
+        storage.convertStorageFile(file)
       ).toEqualTypeOf<AssetFileObject>()
     })
 
     it('converts array via convertStorageFiles', () => {
       const files = [] as StorageFile[]
+      expectTypeOf(
+        storage.convertStorageFiles(files)
+      ).not.toBeAny()
       expectTypeOf(
         storage.convertStorageFiles(files)
       ).toEqualTypeOf<AssetFileObject[]>()
@@ -74,12 +87,19 @@ describe('Storage', () => {
   describe('getUploadStorage', () => {
     it('returns StorageEngine or null', () => {
       const result = storage.getUploadStorage({})
-      expectTypeOf(result).toEqualTypeOf<multer.StorageEngine | null>()
+      expectTypeOf(result).not.toBeAny()
+      expectTypeOf(result)
+        .toEqualTypeOf<
+          multer.StorageEngine | null
+        >()
     })
   })
 
   describe('getUploadHandler', () => {
     it('returns Koa middleware or null', () => {
+      expectTypeOf(
+        storage.getUploadHandler({})
+      ).not.toBeAny()
       expectTypeOf(
         storage.getUploadHandler({})
       ).toEqualTypeOf<Koa.Middleware | null>()

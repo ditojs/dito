@@ -51,13 +51,17 @@ describe('Form assignability', () => {
       type: 'form',
       events: {
         create({ item }) {
+          expectTypeOf(item).not.toBeAny()
           expectTypeOf(item.title).toBeString()
         },
         submit({ item }) {
+          expectTypeOf(item).not.toBeAny()
           expectTypeOf(item.id).toBeNumber()
         },
         error({ item, error }) {
+          expectTypeOf(item).not.toBeAny()
           expectTypeOf(item.title).toBeString()
+          expectTypeOf(error).not.toBeAny()
           expectTypeOf(error).toEqualTypeOf<Error>()
         }
       }
@@ -68,12 +72,16 @@ describe('Form assignability', () => {
     assertType<Form<Entry>>({
       type: 'form',
       onCreate({ item }) {
+        expectTypeOf(item).not.toBeAny()
         expectTypeOf(item.title).toBeString()
       },
       onSubmit({ item }) {
+        expectTypeOf(item).not.toBeAny()
         expectTypeOf(item.id).toBeNumber()
       },
       onError({ item, error }) {
+        expectTypeOf(item).not.toBeAny()
+        expectTypeOf(error).not.toBeAny()
         expectTypeOf(error).toEqualTypeOf<Error>()
       }
     })
