@@ -19,7 +19,9 @@ describe('Model', () => {
 
   it('getAttributes requires a filter function', () => {
     expectTypeOf<typeof Model.getAttributes>()
-      .toBeCallableWith((prop: ModelProperty) => true)
+      .toBeCallableWith(
+        (prop: ModelProperty) => true
+      )
     expectTypeOf<typeof Model.getAttributes>()
       .parameter(0)
       .not.toBeUndefined()
@@ -39,6 +41,7 @@ describe('Model', () => {
     const item = {} as Item
     assertType<Promise<any>>(
       item.$transaction(async trx => {
+        expectTypeOf(trx).not.toBeAny()
         expectTypeOf(trx).toMatchTypeOf<Transaction>()
       })
     )
@@ -50,7 +53,9 @@ describe('Model', () => {
       item.$transaction(
         {} as Transaction,
         async trx => {
-          expectTypeOf(trx).toMatchTypeOf<Transaction>()
+          expectTypeOf(trx).not.toBeAny()
+          expectTypeOf(trx)
+            .toMatchTypeOf<Transaction>()
         }
       )
     )
@@ -66,9 +71,15 @@ describe('Model', () => {
   it('scopes handler receives query and applyParentScope', () => {
     const scopes: ModelScopes<Model> = {
       active(query, applyParentScope) {
-        expectTypeOf(query).toMatchTypeOf<QueryBuilder<Model>>()
+        expectTypeOf(query).not.toBeAny()
+        expectTypeOf(query)
+          .toMatchTypeOf<QueryBuilder<Model>>()
+        expectTypeOf(applyParentScope)
+          .not.toBeAny()
         expectTypeOf(applyParentScope).toEqualTypeOf<
-          (query: QueryBuilder<Model>) => QueryBuilder<Model>
+          (
+            query: QueryBuilder<Model>
+          ) => QueryBuilder<Model>
         >()
         return applyParentScope(query)
       }
@@ -81,7 +92,9 @@ describe('Model', () => {
       query,
       ...args
     ) => {
-      expectTypeOf(query).toMatchTypeOf<QueryBuilder<Model>>()
+      expectTypeOf(query).not.toBeAny()
+      expectTypeOf(query)
+        .toMatchTypeOf<QueryBuilder<Model>>()
       return query
     }
     assertType<ModelFilterFunction<Model>>(filter)
@@ -89,10 +102,18 @@ describe('Model', () => {
 
   it('hooks keys match lifecycle patterns', () => {
     const hooks: ModelHooks<Model> = {
-      'before:insert'(args) {},
-      'after:find'(args) {},
-      'before:update'(args) {},
-      'after:delete'(args) {}
+      'before:insert'(args) {
+        expectTypeOf(args).not.toBeAny()
+      },
+      'after:find'(args) {
+        expectTypeOf(args).not.toBeAny()
+      },
+      'before:update'(args) {
+        expectTypeOf(args).not.toBeAny()
+      },
+      'after:delete'(args) {
+        expectTypeOf(args).not.toBeAny()
+      }
     }
     assertType<ModelHooks<Model>>(hooks)
   })

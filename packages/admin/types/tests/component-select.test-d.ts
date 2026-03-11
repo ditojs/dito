@@ -25,6 +25,7 @@ describe('SelectSchema', () => {
       type: 'select',
       options: {
         data({ item }) {
+          expectTypeOf(item).not.toBeAny()
           expectTypeOf(item).toMatchTypeOf<Entry>()
           return [
             { label: 'Option A', value: 1 },
@@ -64,7 +65,9 @@ describe('MultiselectSchema', () => {
       type: 'multiselect',
       searchable: true,
       search({ item, query }) {
+        expectTypeOf(item).not.toBeAny()
         expectTypeOf(item).toMatchTypeOf<Entry>()
+        expectTypeOf(query).not.toBeAny()
         expectTypeOf(query).toBeString()
         return [] as Tag[]
       },

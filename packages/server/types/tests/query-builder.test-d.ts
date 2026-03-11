@@ -90,8 +90,13 @@ describe('QueryBuilder', () => {
   it('toSQL returns sql and bindings', () => {
     const query = {} as QB
     const result = query.toSQL()
+    expectTypeOf(result).not.toBeAny()
+    expectTypeOf(result.sql).not.toBeAny()
     expectTypeOf(result.sql).toBeString()
-    expectTypeOf(result.bindings).toEqualTypeOf<unknown[]>()
+    expectTypeOf(result.bindings)
+      .not.toBeAny()
+    expectTypeOf(result.bindings)
+      .toEqualTypeOf<unknown[]>()
   })
 
   it('omit returns void (not chainable)', () => {

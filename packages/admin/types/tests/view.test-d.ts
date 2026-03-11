@@ -59,6 +59,7 @@ describe('View with list component', () => {
         title: {
           type: 'text',
           format({ item }) {
+            expectTypeOf(item).not.toBeAny()
             expectTypeOf(item.title).toBeString()
           }
         }
@@ -90,10 +91,12 @@ describe('View tabs and events', () => {
       type: 'view',
       events: {
         open({ item, open }) {
+          expectTypeOf(item).not.toBeAny()
           expectTypeOf(item.title).toBeString()
           expectTypeOf(open).toBeBoolean()
         },
         change({ item }) {
+          expectTypeOf(item).not.toBeAny()
           expectTypeOf(item.id).toBeNumber()
         }
       }

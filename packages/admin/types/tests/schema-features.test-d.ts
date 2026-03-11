@@ -18,7 +18,11 @@ describe('SchemaFields: methods', () => {
       },
       methods: {
         greet() {
-          expectTypeOf(this).toEqualTypeOf<DitoComponentInstance<Entry>>()
+          expectTypeOf(this).not.toBeAny()
+          expectTypeOf(this).toEqualTypeOf<
+            DitoComponentInstance<Entry>
+          >()
+          expectTypeOf(this.item).not.toBeAny()
           expectTypeOf(this.item.title).toBeString()
           expectTypeOf(this.item.id).toBeNumber()
         },
@@ -39,6 +43,8 @@ describe('SchemaFields: computed', () => {
       },
       computed: {
         upperTitle() {
+          expectTypeOf(this).not.toBeAny()
+          expectTypeOf(this.item).not.toBeAny()
           expectTypeOf(this.item.title).toBeString()
           return this.item.title.toUpperCase()
         }
@@ -55,10 +61,13 @@ describe('SchemaFields: computed', () => {
       computed: {
         upperTitle: {
           get() {
+            expectTypeOf(this).not.toBeAny()
+            expectTypeOf(this.item).not.toBeAny()
             expectTypeOf(this.item.title).toBeString()
             return this.item.title.toUpperCase()
           },
           set(_value) {
+            expectTypeOf(this).not.toBeAny()
             expectTypeOf(this.item.id).toBeNumber()
           }
         }
@@ -76,6 +85,8 @@ describe('SchemaFields: watch', () => {
       },
       watch: {
         title(value, oldValue) {
+          expectTypeOf(this).not.toBeAny()
+          expectTypeOf(this.item).not.toBeAny()
           expectTypeOf(this.item.title).toBeString()
           expectTypeOf(value).toBeAny()
           expectTypeOf(oldValue).toBeAny()
@@ -93,6 +104,8 @@ describe('SchemaFields: watch', () => {
       watch: {
         title: {
           handler(value, oldValue) {
+            expectTypeOf(this).not.toBeAny()
+            expectTypeOf(this.item).not.toBeAny()
             expectTypeOf(this.item.title).toBeString()
             expectTypeOf(value).toBeAny()
             expectTypeOf(oldValue).toBeAny()
@@ -111,9 +124,13 @@ describe('SchemaFields: watch', () => {
         title: { type: 'text' }
       },
       watch() {
+        expectTypeOf(this).not.toBeAny()
+        expectTypeOf(this.item).not.toBeAny()
         expectTypeOf(this.item.title).toBeString()
         return {
           title(value) {
+            expectTypeOf(this).not.toBeAny()
+            expectTypeOf(this.item).not.toBeAny()
             expectTypeOf(this.item.id).toBeNumber()
           }
         }
@@ -156,10 +173,12 @@ describe('SchemaFields: lifecycle callbacks', () => {
         title: { type: 'text' }
       },
       onInitialize({ item }) {
+        expectTypeOf(item).not.toBeAny()
         expectTypeOf(item.title).toBeString()
         expectTypeOf(item.id).toBeNumber()
       },
       onChange({ item }) {
+        expectTypeOf(item).not.toBeAny()
         expectTypeOf(item.title).toBeString()
       }
     })
@@ -172,6 +191,7 @@ describe('SchemaTypeMixin: parse and process callbacks', () => {
       title: {
         type: 'text',
         parse({ item }) {
+          expectTypeOf(item).not.toBeAny()
           expectTypeOf(item.title).toBeString()
           expectTypeOf(item.entries).toEqualTypeOf<Entry[]>()
         }
@@ -184,6 +204,7 @@ describe('SchemaTypeMixin: parse and process callbacks', () => {
       title: {
         type: 'text',
         process({ item }) {
+          expectTypeOf(item).not.toBeAny()
           expectTypeOf(item.title).toBeString()
           return item.title.trim()
         }
@@ -197,6 +218,7 @@ describe('SchemaDataMixin: data callback', () => {
     assertType<HiddenSchema<Entry>>({
       type: 'hidden',
       data({ item }) {
+        expectTypeOf(item).not.toBeAny()
         expectTypeOf(item.title).toBeString()
         expectTypeOf(item.id).toBeNumber()
         return { computed: item.title }
@@ -231,10 +253,12 @@ describe('UploadSchema', () => {
     assertType<UploadSchema<Entry>>({
       type: 'upload',
       thumbnails({ item }) {
+        expectTypeOf(item).not.toBeAny()
         expectTypeOf(item.title).toBeString()
         return true
       },
       downloadUrl({ item }) {
+        expectTypeOf(item).not.toBeAny()
         expectTypeOf(item.id).toBeNumber()
         return `/files/${item.id}`
       }
@@ -245,10 +269,12 @@ describe('UploadSchema', () => {
     assertType<UploadSchema<Entry>>({
       type: 'upload',
       thumbnailUrl({ item }) {
+        expectTypeOf(item).not.toBeAny()
         expectTypeOf(item.title).toBeString()
         return `/thumbs/${item.id}`
       },
       render({ item }) {
+        expectTypeOf(item).not.toBeAny()
         return item.title
       }
     })
@@ -258,10 +284,12 @@ describe('UploadSchema', () => {
     assertType<UploadSchema<Entry>>({
       type: 'upload',
       draggable({ item }) {
+        expectTypeOf(item).not.toBeAny()
         expectTypeOf(item.id).toBeNumber()
         return true
       },
       deletable({ item }) {
+        expectTypeOf(item).not.toBeAny()
         expectTypeOf(item.title).toBeString()
         return false
       }
@@ -288,6 +316,7 @@ describe('PanelSchema', () => {
           text: 'Save',
           events: {
             click({ item }) {
+              expectTypeOf(item).not.toBeAny()
               expectTypeOf(item.title).toBeString()
             }
           }
@@ -303,6 +332,7 @@ describe('PanelSchema', () => {
     assertType<PanelSchema<Entry>>({
       type: 'panel',
       sticky({ item }) {
+        expectTypeOf(item).not.toBeAny()
         expectTypeOf(item.id).toBeNumber()
         return true
       }
@@ -316,8 +346,10 @@ describe('PanelSchema', () => {
         title: {
           type: 'text',
           format({ item }) {
+            expectTypeOf(item).not.toBeAny()
             expectTypeOf(item.title).toBeString()
-            expectTypeOf(item.entries).toEqualTypeOf<Entry[]>()
+            expectTypeOf(item.entries)
+              .toEqualTypeOf<Entry[]>()
             return ''
           }
         }
@@ -338,6 +370,7 @@ describe('PanelSchema', () => {
             status: {
               type: 'text',
               format({ item }) {
+                expectTypeOf(item).not.toBeAny()
                 expectTypeOf(item.title).toBeString()
                 return ''
               }
@@ -348,6 +381,7 @@ describe('PanelSchema', () => {
               text: 'Save',
               events: {
                 click({ item }) {
+                  expectTypeOf(item).not.toBeAny()
                   expectTypeOf(item.id).toBeNumber()
                 }
               }

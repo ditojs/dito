@@ -57,6 +57,7 @@ describe('ListSchema', () => {
     assertType<ListSchema<Entry>>({
       type: 'list',
       creatable(ctx) {
+        expectTypeOf(ctx).not.toBeAny()
         expectTypeOf(ctx).toMatchTypeOf<DitoContext<Entry>>()
         expectTypeOf(ctx.item.title).toBeString()
         return true
@@ -98,6 +99,7 @@ describe('ListSchema', () => {
     assertType<ListSchema<Entry>>({
       type: 'list',
       draggable(ctx) {
+        expectTypeOf(ctx).not.toBeAny()
         expectTypeOf(ctx).toMatchTypeOf<DitoContext<Entry>>()
         return true
       }
@@ -133,6 +135,7 @@ describe('ListSchema', () => {
     assertType<ListSchema<Entry>>({
       type: 'list',
       itemLabel({ item }) {
+        expectTypeOf(item).not.toBeAny()
         expectTypeOf(item.title).toBeString()
         return item.title
       }

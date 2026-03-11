@@ -5,6 +5,8 @@ import type { app } from './fixtures.ts'
 describe('Application', () => {
   it('models property exists', () => {
     type App = typeof app
+    expectTypeOf<App['models']>()
+      .not.toBeAny()
     expectTypeOf<App['models']>().toHaveProperty('Item')
     expectTypeOf<App['models']>().toHaveProperty('User')
   })
