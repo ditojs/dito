@@ -7,29 +7,24 @@
   "author": "Jürg Lehni <juerg@scratchdisk.com> (http://scratchdisk.com)",
   "license": "MIT",
   "scripts": {
-    "foreach": "yarn workspaces foreach --all --parallel --interlaced --verbose --exclude dito",
-    "clean": "yarn run foreach run clean",
-    "build": "yarn run foreach --topological run build",
-    "watch": "yarn run foreach --jobs 2 run watch",
-    "prepare": "yarn lint",
-    "version": "yarn install && git stage yarn.lock",
-    "postinstall": "husky install",
+    "clean": "pnpm -r run clean",
+    "build": "pnpm -r run build",
+    "watch": "pnpm -r --parallel run watch",
+    "prepublishOnly": "pnpm run lint",
+    "version": "pnpm install && git stage pnpm-lock.yaml",
+    "postinstall": "husky",
     "publish": "npm login && lerna publish",
     "test": "vitest",
     "eslint": "NODE_ENV=production eslint --ext .js,.ts,.vue packages/*/src packages/*/types",
-    "eslint:fix": "yarn run eslint --fix",
+    "eslint:fix": "pnpm run eslint --fix",
     "stylelint": "stylelint packages/*/src/**/*.{vue,scss}",
-    "stylelint:fix": "yarn run stylelint --fix",
-    "penere": "penere packages/*/{src,types}/**/*.{js,ts,pug,vue} --check",
-    "penere:fix": "yarn run penere --write",
-    "lint": "concurrently yarn:eslint yarn:penere yarn:stylelint",
-    "lint:fix": "yarn run eslint:fix && yarn run penere:fix && yarn run stylelint:fix",
-    "link:objection": "yarn link ../objection --all --relative --private",
-    "link:knex": "yarn link ../knex --all --relative --private",
-    "link:all": "yarn link:objection && yarn link:knex",
-    "unlink:objection": "yarn unlink ../objection --all",
-    "unlink:knex": "yarn unlink ../knex --all",
-    "unlink:all": "yarn unlink:objection && yarn unlink:knex"
+    "stylelint:fix": "pnpm run stylelint --fix",
+    "penere": "penere packages/*/src/**/*.{js,vue} packages/*/types/**/*.ts --check",
+    "penere:fix": "penere packages/*/src/**/*.{js,vue} packages/*/types/**/*.ts --write",
+    "lint": "concurrently pnpm:eslint pnpm:penere pnpm:stylelint",
+    "lint:fix": "pnpm run eslint:fix && pnpm run penere:fix && pnpm run stylelint:fix",
+    "link:all": "node scripts/link.js knex objection",
+    "unlink:all": "node scripts/unlink.js knex objection"
   },
   "lint-staged": {
     "packages/**/src/**/*.{js,ts}": [
@@ -44,12 +39,8 @@
     ]
   },
   "engines": {
-    "node": ">= 20.0.0",
-    "yarn": ">= 4.0.0"
+    "node": ">= 20.0.0"
   },
-  "workspaces": [
-    "packages/*"
-  ],
   "devDependencies": {
     "@prettier/plugin-pug": "^3.4.2",
     "@typescript-eslint/parser": "^8.56.1",
@@ -80,5 +71,5 @@
     "vue-eslint-parser": "^10.4.0",
     "vue-eslint-parser-template-tokenizer-pug": "^1.0.0"
   },
-  "packageManager": "yarn@4.12.0"
+  "packageManager": "pnpm@10.6.2"
 }

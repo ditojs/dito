@@ -1,7 +1,6 @@
 import path from 'path'
 import fs from 'fs/promises'
 import pico from 'picocolors'
-import { getRelationClass, isThroughRelationClass } from '@ditojs/server'
 import {
   isObject,
   isArray,
@@ -9,6 +8,10 @@ import {
   deindent,
   capitalize
 } from '@ditojs/utils'
+import {
+  getRelationClass,
+  isThroughRelationClass
+} from '../../schema/relations.js'
 import { exists } from '../../utils/fs.js'
 
 const typeToKnex = {

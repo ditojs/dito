@@ -1,0 +1,9 @@
+packages:
+  - 'packages/*'
+
+onlyBuiltDependencies:
+  - '@parcel/watcher'
+  - esbuild
+  - full-icu
+  - nx
+  - unrs-resolver
