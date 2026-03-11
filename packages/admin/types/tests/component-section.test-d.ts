@@ -47,7 +47,7 @@ describe('Section components', () => {
   })
 
   it('accepts section with form prop', () => {
-    const sectionForm: Form<Parent> = {
+    const sectionForm: Form<ParentWithSection> = {
       type: 'form',
       components: {
         title: { type: 'text' }
