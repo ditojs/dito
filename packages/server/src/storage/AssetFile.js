@@ -58,6 +58,8 @@ export class AssetFile {
   }
 
   static convert(object, storage) {
+    // Signature must never be persisted.
+    delete object.signature
     Object.setPrototypeOf(object, AssetFile.prototype)
     setHiddenProperty(object, SYMBOL_STORAGE, storage)
   }
