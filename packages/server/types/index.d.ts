@@ -238,7 +238,7 @@ export type MulterS3File = {
 
 export type StorageConfigs = { [key: string]: StorageConfig }
 
-type CommonStorageConfig = {
+interface CommonStorageConfig {
   /**
    * The concurrency at which assets are added to storage.
    *
@@ -262,7 +262,7 @@ export type S3StorageConfig = CommonStorageConfig & {
     's3' | 'key' | 'contentType' | 'metadata'
   >
 
-export type DiskStorageConfig = CommonStorageConfig & {
+export interface DiskStorageConfig extends CommonStorageConfig {
   type: 'disk'
   /**
    * The path to the directory where assets are stored on.
@@ -2973,7 +2973,7 @@ export class AssetFile {
   static getUniqueKey(name: string): string
 }
 
-export type StorageFile = multer.File & {
+export interface StorageFile extends multer.File {
   key: string
   width?: number
   height?: number
