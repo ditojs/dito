@@ -3229,7 +3229,10 @@ packages:
       }
 
   '@types/koa__multer@2.0.8':
-    resolution: {integrity: sha512-XkD9YzmGKzKfOkxwHepueQkP61okAeu6ibAieL4NSqwM1lyGOkgbT2XmP+xROd2agQVsewPqsFOsfgVmlEqJmg==}
+    resolution:
+      {
+        integrity: sha512-XkD9YzmGKzKfOkxwHepueQkP61okAeu6ibAieL4NSqwM1lyGOkgbT2XmP+xROd2agQVsewPqsFOsfgVmlEqJmg==
+      }
 
   '@types/linkify-it@5.0.0':
     resolution:
