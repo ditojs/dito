@@ -1007,9 +1007,6 @@ export class Application extends Koa {
                 }
               }
               const importedFile = await storage.addFile(file, data)
-              // Sign the imported foreign file so it passes verification when
-              // createAssets() triggers $parseJson() → convertAssetFile().
-              storage.signAssetFile(importedFile)
               await this.createAssets(storage, [importedFile], 0, transaction)
               importedFiles.push(importedFile)
               // Merge back the changed file properties into the actual file

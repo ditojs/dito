@@ -1,13 +1,11 @@
 import path from 'path'
 import { URL } from 'url'
-import crypto from 'crypto'
 import multer from '@koa/multer'
 import picomatch from 'picomatch'
 import { PassThrough } from 'stream'
 import { readMediaAttributes } from 'leather'
 import { hyphenate, toPromiseCallback } from '@ditojs/utils'
 import { AssetFile } from './AssetFile.js'
-import { AssetError } from '../errors/AssetError.js'
 import { resolveFileUrl } from '../utils/asset.js'
 
 const storageClasses = {}
@@ -82,21 +80,7 @@ export class Storage {
     )
   }
 
-  convertAssetFile(file, { trusted = false } = {}) {
-    if (
-      !trusted &&
-      !(file instanceof AssetFile) &&
-      !this.isImportSourceAllowed(file.url) &&
-      !this.verifyAssetFile(file)
-    ) {
-      throw new AssetError(
-        `Invalid asset signature for file '${
-          file.name ?? file.key
-        }'`
-      )
-    }
-    // Remove signature once the data made it to here.
-    delete file.signature
+  convertAssetFile(file) {
     AssetFile.convert(file, this)
   }
 
@@ -110,8 +94,7 @@ export class Storage {
       url: this._getFileUrl(storageFile),
       // In case `config.readDimensions` is set:
       width: storageFile.width,
-      height: storageFile.height,
-      signature: this._signAssetKey(storageFile.key)
+      height: storageFile.height
     }
   }
 
@@ -125,7 +108,7 @@ export class Storage {
     file.url = this._getFileUrl(file)
     // TODO: Support `config.readDimensions`, but this can only be done once
     // there are separate storage instances per model assets config!
-    this.convertAssetFile(file, { trusted: true })
+    this.convertAssetFile(file)
     return file
   }
 
@@ -147,34 +130,6 @@ export class Storage {
 
   getFileUrl(file) {
     return this._getFileUrl(file)
-  }
-
-  signAssetFile(file) {
-    file.signature = this._signAssetKey(file.key)
-  }
-
-  verifyAssetFile(file) {
-    if (file) {
-      const expected = this._signAssetKey(file.key)
-      try {
-        return crypto.timingSafeEqual(
-          Buffer.from(expected, 'hex'),
-          Buffer.from(file.signature, 'hex')
-        )
-      } catch {}
-    }
-    return false
-  }
-
-  _signAssetKey(key) {
-    const secret = (
-      this.app.keys?.[0] ??
-      (Storage._fallbackSecret ??= crypto.randomBytes(32))
-    )
-    return crypto
-      .createHmac('sha256', secret)
-      .update(key)
-      .digest('hex')
   }
 
   _getUrl(...parts) {

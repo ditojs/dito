@@ -66,13 +66,11 @@ export const AssetMixin = mixin(
       }
 
       // @override
-      $parseJson(json, { trusted = false } = {}) {
+      $parseJson(json) {
         const { file, storage } = json
         // Convert `AssetMixin#file` to an `AssetFile` instance:
         if (file && storage) {
-          this.constructor.app
-            .getStorage(storage)
-            ?.convertAssetFile(file, { trusted })
+          this.constructor.app.getStorage(storage)?.convertAssetFile(file)
         }
         return json
       }
