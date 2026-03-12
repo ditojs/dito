@@ -83,17 +83,20 @@ export class Storage {
   }
 
   convertAssetFile(file, { trusted = false } = {}) {
-    if (!trusted) {
-      if (this.isImportSourceAllowed(file.url)) {
-        this.signAssetFile(file)
-      } else if (!this.verifyAssetFile(file)) {
-        throw new AssetError(
-          `Invalid asset signature for file '${
-            file.name ?? file.key
-          }'`
-        )
-      }
+    if (
+      !trusted &&
+      !(file instanceof AssetFile) &&
+      !this.isImportSourceAllowed(file.url) &&
+      !this.verifyAssetFile(file)
+    ) {
+      throw new AssetError(
+        `Invalid asset signature for file '${
+          file.name ?? file.key
+        }'`
+      )
     }
+    // Remove signature once the data made it to here.
+    delete file.signature
     AssetFile.convert(file, this)
   }
 
