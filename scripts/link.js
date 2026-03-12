@@ -1,4 +1,6 @@
-import { execSync } from 'child_process'
+import { execSync } from 'node:child_process'
+import { readFileSync, writeFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 
 const names = process.argv.slice(2)
 if (names.length === 0) {
@@ -6,5 +8,20 @@ if (names.length === 0) {
   process.exit(1)
 }
 
-const paths = names.map(name => `../${name}`).join(' ')
-execSync(`pnpm link ${paths}`, { stdio: 'inherit' })
+const pkg = JSON.parse(readFileSync('package.json', 'utf8'))
+pkg.dependencies ??= {}
+pkg.pnpm ??= {}
+pkg.pnpm.overrides ??= {}
+
+for (const name of names) {
+  const pkgJson = JSON.parse(
+    readFileSync(resolve('..', name, 'package.json'), 'utf8')
+  )
+  const linkPath = `link:../${name}`
+  pkg.dependencies[pkgJson.name] = linkPath
+  pkg.pnpm.overrides[pkgJson.name] = linkPath
+}
+
+writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n')
+
+execSync('pnpm install', { stdio: 'inherit' })
