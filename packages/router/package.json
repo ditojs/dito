@@ -1,6 +1,6 @@
 {
   "name": "@ditojs/router",
-  "version": "2.85.0",
+  "version": "2.86.0",
   "type": "module",
   "description": "Dito.js Router – Dito.js is a declarative and modern web framework, based on Objection.js, Koa.js and Vue.js",
   "repository": "https://github.com/ditojs/dito/tree/master/packages/router",
