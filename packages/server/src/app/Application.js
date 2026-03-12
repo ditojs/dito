@@ -40,6 +40,7 @@ import { Service } from '../services/index.js'
 import { Storage } from '../storage/index.js'
 import { convertSchema } from '../schema/index.js'
 import { getDuration, subtractDuration } from '../utils/duration.js'
+import { resolveFileUrl } from '../utils/asset.js'
 import {
   ResponseError,
   ValidationError,
@@ -997,8 +998,7 @@ export class Application extends Koa {
                   }...`
                 )
                 if (url.startsWith('file://')) {
-                  const filepath = path.resolve(url.substring(7))
-                  data = await fs.readFile(filepath)
+                  data = await fs.readFile(new URL(resolveFileUrl(url)))
                 } else {
                   const response = await fetch(url)
                   const arrayBuffer = await response.arrayBuffer()
@@ -1007,6 +1007,9 @@ export class Application extends Koa {
                 }
               }
               const importedFile = await storage.addFile(file, data)
+              // Sign the imported foreign file so it passes verification when
+              // createAssets() triggers $parseJson() → convertAssetFile().
+              storage.signAssetFile(importedFile)
               await this.createAssets(storage, [importedFile], 0, transaction)
               importedFiles.push(importedFile)
               // Merge back the changed file properties into the actual file

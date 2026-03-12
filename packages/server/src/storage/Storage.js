@@ -8,6 +8,7 @@ import { readMediaAttributes } from 'leather'
 import { hyphenate, toPromiseCallback } from '@ditojs/utils'
 import { AssetFile } from './AssetFile.js'
 import { AssetError } from '../errors/AssetError.js'
+import { resolveFileUrl } from '../utils/asset.js'
 
 const storageClasses = {}
 
@@ -75,19 +76,23 @@ export class Storage {
   }
 
   isImportSourceAllowed(url) {
-    return picomatch.isMatch(url, this.config.allowedImports || [])
+    return picomatch.isMatch(
+      resolveFileUrl(url),
+      (this.config.allowedImports || []).map(resolveFileUrl)
+    )
   }
 
   convertAssetFile(file, { trusted = false } = {}) {
-    if (
-      !trusted &&
-      !this._verifyAssetKey(file.key, file.signature)
-    ) {
-      throw new AssetError(
-        `Invalid asset signature for file '${
-          file.name ?? file.key
-        }'`
-      )
+    if (!trusted) {
+      if (this.isImportSourceAllowed(file.url)) {
+        this.signAssetFile(file)
+      } else if (!this.verifyAssetFile(file)) {
+        throw new AssetError(
+          `Invalid asset signature for file '${
+            file.name ?? file.key
+          }'`
+        )
+      }
     }
     AssetFile.convert(file, this)
   }
@@ -141,6 +146,23 @@ export class Storage {
     return this._getFileUrl(file)
   }
 
+  signAssetFile(file) {
+    file.signature = this._signAssetKey(file.key)
+  }
+
+  verifyAssetFile(file) {
+    if (file) {
+      const expected = this._signAssetKey(file.key)
+      try {
+        return crypto.timingSafeEqual(
+          Buffer.from(expected, 'hex'),
+          Buffer.from(file.signature, 'hex')
+        )
+      } catch {}
+    }
+    return false
+  }
+
   _signAssetKey(key) {
     const secret = (
       this.app.keys?.[0] ??
@@ -150,19 +172,6 @@ export class Storage {
       .createHmac('sha256', secret)
       .update(key)
       .digest('hex')
-  }
-
-  _verifyAssetKey(key, signature) {
-    if (!key || !signature) return false
-    const expected = this._signAssetKey(key)
-    try {
-      return crypto.timingSafeEqual(
-        Buffer.from(expected, 'hex'),
-        Buffer.from(signature, 'hex')
-      )
-    } catch {
-      return false
-    }
   }
 
   _getUrl(...parts) {
