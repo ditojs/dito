@@ -112,7 +112,7 @@ export type ApplicationConfig = {
      * Whether to normalize paths from camel case to kebab case.
      *
      * @defaultValue `false`
-     * @see {@link https://github.com/ditojs/dito/blob/master/docs/controllers.md#path-normalization|Path Normalization}
+     * @see {@link https://github.com/ditojs/dito/blob/main/docs/controllers.md#path-normalization|Path Normalization}
      */
     normalizePaths?: boolean
     /**
@@ -673,7 +673,7 @@ export interface ModelRelation {
   /**
    * The type of relation
    *
-   * @see {@link https://github.com/ditojs/dito/blob/master/docs/model-relations.md#relation-types|Relation Types}
+   * @see {@link https://github.com/ditojs/dito/blob/main/docs/model-relations.md#relation-types|Relation Types}
    */
   relation: LiteralUnion<
     'belongsTo' | 'hasMany' | 'hasOne' | 'manyToMany' | 'hasOneThrough'
@@ -694,7 +694,7 @@ export interface ModelRelation {
    * When set to true the join model class and table is to be built
    * automatically, or allows to specify an existing one manually.
    *
-   * @see {@link https://github.com/ditojs/dito/blob/master/docs/model-relations.md#join-models-and-tables|Join Models and Tables}
+   * @see {@link https://github.com/ditojs/dito/blob/main/docs/model-relations.md#join-models-and-tables|Join Models and Tables}
    */
   through?:
     | boolean
@@ -831,7 +831,7 @@ export type ModelProperty<T = any> = Schema<T> & {
  * to apply filtering or ordering logic. The return value
  * is ignored at runtime.
  *
- * @see {@link https://github.com/ditojs/dito/blob/master/docs/model-scopes.md|Model Scopes}
+ * @see {@link https://github.com/ditojs/dito/blob/main/docs/model-scopes.md|Model Scopes}
  */
 export type ModelScope<$Model extends Model = Model> = (
   query: QueryBuilder<$Model>,
@@ -843,7 +843,7 @@ export type ModelScope<$Model extends Model = Model> = (
  * applied via `withScope()` on queries or set as defaults
  * on controllers.
  *
- * @see {@link https://github.com/ditojs/dito/blob/master/docs/model-scopes.md|Model Scopes}
+ * @see {@link https://github.com/ditojs/dito/blob/main/docs/model-scopes.md|Model Scopes}
  */
 export type ModelScopes<$Model extends Model = Model> = Record<
   string,
@@ -869,7 +869,7 @@ export type ModelFilterFunction<$Model extends Model = Model> = (
  *   `response` schema.
  * - A bare **handler function** as shorthand.
  *
- * @see {@link https://github.com/ditojs/dito/blob/master/docs/model-filters.md|Model Filters}
+ * @see {@link https://github.com/ditojs/dito/blob/main/docs/model-filters.md|Model Filters}
  */
 export type ModelFilter<$Model extends Model = Model> =
   | {
@@ -888,7 +888,7 @@ export type ModelFilter<$Model extends Model = Model> =
 /**
  * Map of filter names to filter definitions.
  *
- * @see {@link https://github.com/ditojs/dito/blob/master/docs/model-filters.md|Model Filters}
+ * @see {@link https://github.com/ditojs/dito/blob/main/docs/model-filters.md|Model Filters}
  */
 export type ModelFilters<$Model extends Model = Model> = Record<
   string,
@@ -951,16 +951,16 @@ export type ModelHooks<$Model extends Model = Model> = {
 export class Model extends objection.Model {
   constructor(json?: Record<string, any>)
 
-  /** @see {@link https://github.com/ditojs/dito/blob/master/docs/model-properties.md|Model Properties} */
+  /** @see {@link https://github.com/ditojs/dito/blob/main/docs/model-properties.md|Model Properties} */
   static properties: ModelProperties
 
-  /** @see {@link https://github.com/ditojs/dito/blob/master/docs/model-relations.md|Model Relations} */
+  /** @see {@link https://github.com/ditojs/dito/blob/main/docs/model-relations.md|Model Relations} */
   static relations: ModelRelations
 
-  /** @see {@link https://github.com/ditojs/dito/blob/master/docs/model-scopes.md|Model Scopes} */
+  /** @see {@link https://github.com/ditojs/dito/blob/main/docs/model-scopes.md|Model Scopes} */
   static scopes: ModelScopes<Model>
 
-  /** @see {@link https://github.com/ditojs/dito/blob/master/docs/model-filters.md|Model Filters} */
+  /** @see {@link https://github.com/ditojs/dito/blob/main/docs/model-filters.md|Model Filters} */
   static filters: ModelFilters<Model>
 
   static hooks: ModelHooks<Model>
@@ -1544,7 +1544,7 @@ export class Controller {
    * controller object passed to the Dito.js application's
    * constructor and its sub-objects.
    *
-   * @see {@link https://github.com/ditojs/dito/blob/master/docs/controllers.md#namespaces Namespaces}
+   * @see {@link https://github.com/ditojs/dito/blob/main/docs/controllers.md#namespaces Namespaces}
    */
   namespace?: string
   /** The fully resolved URL for this controller. */
@@ -1760,7 +1760,7 @@ export type BaseControllerActionOptions = {
    * Validates action parameters and maps them to Koa's `ctx.query` object
    * passed to the action handler.
    *
-   * @see {@link https://github.com/ditojs/dito/blob/master/docs/model-properties.md Model Properties}
+   * @see {@link https://github.com/ditojs/dito/blob/main/docs/model-properties.md Model Properties}
    */
   parameters?: { [key: string]: Schema }
   /**
@@ -1768,13 +1768,13 @@ export type BaseControllerActionOptions = {
    * optionally maps the value to a key inside a returned object when it
    * contains a `name` property.
    *
-   * @see {@link https://github.com/ditojs/dito/blob/master/docs/model-properties.md Model Properties}
+   * @see {@link https://github.com/ditojs/dito/blob/main/docs/model-properties.md Model Properties}
    */
   response?: Schema & { name?: string }
   /**
    * The scope(s) to be applied to every query executed through the action.
    *
-   * @see {@link https://github.com/ditojs/dito/blob/master/docs/model-scopes.md Model Scopes}
+   * @see {@link https://github.com/ditojs/dito/blob/main/docs/model-scopes.md Model Scopes}
    */
   scope?: string[]
   /**

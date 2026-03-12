@@ -3,7 +3,7 @@
   "version": "2.86.0",
   "type": "module",
   "description": "Dito.js UI is a simple UI library, built with Vue.js for use in Dito.js Admin and elsewhere",
-  "repository": "https://github.com/ditojs/dito/tree/master/packages/ui",
+  "repository": "https://github.com/ditojs/dito/tree/main/packages/ui",
   "author": "Jürg Lehni <juerg@scratchdisk.com> (http://scratchdisk.com)",
   "license": "MIT",
   "module": "./dist/dito-ui.es.js",
