@@ -15,7 +15,7 @@
     "postinstall": "husky",
     "publish": "npm login && lerna publish",
     "test": "vitest",
-    "test:types": "vitest --typecheck.only",
+    "test:all": "vitest --run & pnpm -C tests test & wait",
     "eslint": "NODE_ENV=production eslint packages/*/src packages/*/types",
     "eslint:fix": "pnpm run eslint --fix",
     "stylelint": "stylelint packages/*/src/**/*.{vue,scss}",
