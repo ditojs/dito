@@ -50,15 +50,31 @@ export type CompiledParametersValidator = {
   hasModelRefs: boolean
 }
 
-export type ApplicationConfig = {
+/**
+ * Application configuration passed to the Application constructor.
+ *
+ * Extend via module augmentation for project-specific config:
+ *
+ * ```ts
+ * declare module '@ditojs/server' {
+ *   interface ApplicationConfig {
+ *     externalUrls?: {
+ *       frontend: string
+ *       backend: string
+ *     }
+ *   }
+ * }
+ * ```
+ */
+export interface ApplicationConfig {
   /** @defaultValue `production` */
-  env?: 'production' | 'development'
+  env?: LiteralUnion<'production' | 'development'>
   /** The server configuration */
   server?: {
     /** The ip address or hostname used to serve requests */
     host?: string
     /** The port to listen on for connections */
-    port?: string
+    port?: string | number
   }
   /** Logging options */
   log?: {
@@ -184,7 +200,9 @@ export type ApplicationConfig = {
     keys?: Koa['keys']
   }
   admin?: AdminConfig
-  knex?: Knex.Config<any> & {
+  knex?: Omit<Knex.Config<any>, 'connection'> & {
+    /** Knex connection config, or a custom adapter object (e.g. PGlite). */
+    connection?: Knex.Config<any>['connection'] | Record<string, unknown>
     /** @defaultValue `false` */
     normalizeDbNames?: boolean | Parameters<KnexSnakeCaseMappersFactory>
     // See https://github.com/brianc/node-pg-types/blob/master/index.d.ts#L67
@@ -384,14 +402,20 @@ export class Application<$Models extends Models = Models> {
       add(
         method: string,
         path: string,
-        handler: Function
+        handler: (
+          ctx: KoaContext,
+          next: () => Promise<void>
+        ) => OrPromiseOf<void>
       ): this
       find(
         method: string,
         path: string
       ): {
         status: number
-        handler?: Function
+        handler?: (
+          ctx: KoaContext,
+          next: () => Promise<void>
+        ) => OrPromiseOf<void>
         params?: Record<string, string>
         allowed: string[]
       }
@@ -429,9 +453,9 @@ export class Application<$Models extends Models = Models> {
   /** The schema validator instance. */
   validator: Validator
   /** Registered storage instances by name. */
-  storages: Record<string, Storage>
+  storages: ResolvedStorages
   /** Registered service instances by name. */
-  services: Record<string, Service>
+  services: ResolvedServices
   /** Registered controller instances by name. */
   controllers: Record<string, Controller>
   models: $Models
@@ -461,7 +485,11 @@ export class Application<$Models extends Models = Models> {
   addStorages(storages: StorageConfigs): void
   setupStorages(): Promise<void>
   /** Returns a storage by name, or `null` if not found. */
-  getStorage(name: string): Storage | null
+  getStorage<K extends string>(
+    name: K
+  ): K extends keyof ResolvedStorages
+    ? ResolvedStorages[K]
+    : Storage | null
 
   addService(
     service: Service | Class<Service>,
@@ -471,7 +499,11 @@ export class Application<$Models extends Models = Models> {
   addServices(services: Services): void
   setupServices(): Promise<void>
   /** Returns a service by name. */
-  getService(name: string): Service | null
+  getService<K extends string>(
+    name: K
+  ): K extends keyof ResolvedServices
+    ? ResolvedServices[K]
+    : Service | null
   /** Finds a service matching the given predicate. */
   findService(
     callback: (service: Service) => boolean
@@ -620,7 +652,11 @@ export class Application<$Models extends Models = Models> {
     method: HTTPMethod,
     path: string,
     transacted: boolean,
-    middlewares: OrArrayOf<(ctx: KoaContext, next: Function) => void>,
+    middlewares: OrArrayOf< (
+        ctx: KoaContext,
+        next: () => Promise<void>
+      ) => OrPromiseOf<void>
+    >,
     controller?: Controller | null,
     action?: any
   ): void
@@ -669,27 +705,109 @@ export type SchemaType = LiteralUnion<
   | 'timestamp'
 >
 
-export interface ModelRelation {
+type RelatedModel<T> = T extends (infer U)[]
+  ? U extends Model
+    ? U
+    : never
+  : T extends Model
+    ? T
+    : never
+
+type ModelName<T extends Model, $Models> = {
+  [K in keyof ResolveModels<$Models>]: ResolveModels<$Models>[K] extends Class<T>
+    ? K
+    : never
+}[keyof ResolveModels<$Models>]
+
+type ResolveModels<$Models> = $Models extends Promise<infer M> ? M : $Models
+
+type OnlyModels<$Models> = {
+  [K in keyof ResolveModels<$Models> as ResolveModels<$Models>[K] extends ModelClass
+    ? K
+    : never]: ResolveModels<$Models>[K]
+}
+
+type HasModels<$Models> = keyof OnlyModels<$Models> extends never ? false : true
+
+type ModelRef<T extends Model, $Models> =
+  HasModels<$Models> extends true
+    ? `${ModelName<T, $Models> & string}.${keyof SerializedModel<T> & string}`
+    : string
+
+type AnyModelRef<$Models> =
+  HasModels<$Models> extends true
+    ? `${string}.${string}`
+    : string
+
+/**
+ * The supported relation types for model associations.
+ *
+ * - `'belongsTo'` — single model, foreign key on this table
+ * - `'hasOne'` — single model, foreign key on the other table
+ * - `'hasMany'` — array of models, foreign key on the other table
+ * - `'manyToMany'` — array of models, via a join table
+ * - `'hasOneThrough'` — single model, via a join table
+ *
+ * @see {@link https://github.com/ditojs/dito/blob/main/docs/model-relations.md#relation-types|Relation Types}
+ */
+export type RelationType =
+  | 'belongsTo'
+  | 'hasMany'
+  | 'hasOne'
+  | 'manyToMany'
+  | 'hasOneThrough'
+
+type RelationTypeForProperty<T> = T extends Model[]
+  ? 'hasMany' | 'manyToMany'
+  : T extends Model
+    ? 'belongsTo' | 'hasOne' | 'hasOneThrough'
+    : RelationType
+
+/**
+ * A model relation definition describing how two models are associated.
+ *
+ * When used with type arguments, provides type-safe `from`/`to` strings
+ * and narrows `relation` based on the property type (array vs single
+ * model).
+ *
+ * @example
+ * ```ts
+ * // Untyped — accepts any relation definition:
+ * const rel: ModelRelation = {
+ *   relation: 'hasMany',
+ *   from: 'Tag.id',
+ *   to: 'Task.tagId'
+ * }
+ * ```
+ *
+ * @see {@link https://github.com/ditojs/dito/blob/main/docs/model-relations.md|Model Relations}
+ */
+export interface ModelRelation<
+  $Owner extends Model = Model,
+  $Related extends Model = Model,
+  $Models = unknown,
+  $PropertyType = unknown
+> {
   /**
    * The type of relation
    *
    * @see {@link https://github.com/ditojs/dito/blob/main/docs/model-relations.md#relation-types|Relation Types}
    */
-  relation: LiteralUnion<
-    'belongsTo' | 'hasMany' | 'hasOne' | 'manyToMany' | 'hasOneThrough'
-  >
+  relation: unknown extends $PropertyType
+    ? RelationType
+    : RelationTypeForProperty<$PropertyType>
   /**
    * The model and property name from which the relation is to be built, as a
    * string with both identifiers separated by '.', e.g.:
    * 'FromModelClass.fromPropertyName'
    */
-  from: string
+  from: ModelRef<$Owner, $Models>
   /**
    * The model and property name to which the relation is to be built, as a
    * string with both identifiers separated by '.', e.g.:
    * 'ToModelClass.toPropertyName'
    */
-  to: string
+  to: ModelRef<$Related, $Models>
   /**
    * When set to true the join model class and table is to be built
    * automatically, or allows to specify an existing one manually.
@@ -705,14 +823,14 @@ export interface ModelRelation {
          * be built, as a string with both identifiers separated by '.', e.g.:
          * 'FromModelClass.fromPropertyName'
          */
-        from: string
+        from: AnyModelRef<$Models>
         /**
          * The model and property name or table and column name of an existing
          * join model class or join table to which the through relation is to be
          * built, as a string with both identifiers separated by '.', e.g.:
          * 'toModelClass.toPropertyName'
          */
-        to: string
+        to: AnyModelRef<$Models>
         /**
          * List additional columns to be added to the related model.
          *
@@ -860,6 +978,45 @@ export type ModelFilterFunction<$Model extends Model = Model> = (
 ) => void
 
 /**
+ * Registry of known filter type names for use with
+ * `{ filter: '...', properties: [...] }` in model filter definitions.
+ *
+ * Filter types are reusable query filters registered via
+ * `QueryFilters.register()`. Dito.js ships with two built-in types:
+ * - `'text'` — text search with operators (contains, equals, etc.)
+ * - `'date-range'` — date range filtering with from/to parameters
+ *
+ * Register custom filter types at runtime with
+ * `QueryFilters.register()`, then declare them for type safety
+ * via module augmentation:
+ *
+ * ```ts
+ * // Register at runtime:
+ * QueryFilters.register({
+ *   'country': {
+ *     parameters: { code: { type: 'string' } },
+ *     handler(query, property, { code }) {
+ *       query.where(property, code)
+ *     }
+ *   }
+ * })
+ *
+ * // Declare for type safety:
+ * declare module '@ditojs/server' {
+ *   interface QueryFilterTypes {
+ *     'country': true
+ *   }
+ * }
+ * ```
+ *
+ * @see {@link https://github.com/ditojs/dito/blob/main/docs/model-filters.md|Model Filters}
+ */
+export interface QueryFilterTypes {
+  'text': true
+  'date-range': true
+}
+
+/**
  * A model filter definition. Can be one of:
  *
  * - A **built-in filter** reference (`{ filter: 'text' }` or
@@ -873,7 +1030,7 @@ export type ModelFilterFunction<$Model extends Model = Model> = (
  */
 export type ModelFilter<$Model extends Model = Model> =
   | {
-      filter: LiteralUnion<'text' | 'date-range'>
+      filter: keyof QueryFilterTypes
       properties?: string[]
     }
   | {
@@ -949,6 +1106,11 @@ export type ModelHooks<$Model extends Model = Model> = {
 }
 
 export class Model extends objection.Model {
+  static query<M extends Model>(
+    this: Constructor<M>,
+    trxOrKnex?: objection.TransactionOrKnex
+  ): QueryBuilder<M, M[]>
+
   constructor(json?: Record<string, any>)
 
   /** @see {@link https://github.com/ditojs/dito/blob/main/docs/model-properties.md|Model Properties} */
@@ -1268,20 +1430,6 @@ export class Model extends objection.Model {
     trx?: objection.Transaction
   ): Promise<Model | Model[]>
 
-  /**
-   * Dito.js automatically adds an `id` property if a model
-   * property with the `primary: true` setting is not
-   * already explicitly defined.
-   */
-  readonly id: Id
-
-  /**
-   * Dito.js automatically adds a `foreignKeyId` property
-   * if foreign keys occurring in relations definitions are
-   * not explicitly defined in the properties.
-   */
-  readonly foreignKeyId: Id
-
   QueryBuilderType: QueryBuilder<this, this[]>
 
   $app: Application<Models>
@@ -1506,9 +1654,72 @@ export interface Model extends KnexHelper {}
 
 export type ModelClass = Class<Model>
 
-export type ModelRelations = Record<string, ModelRelation>
+type ModelRelationKey<T, K extends keyof T> = K extends
+  | 'QueryBuilderType'
+  | `$${string}`
+  ? never
+  : T[K] extends (...args: any[]) => any
+    ? never
+    : T[K] extends Model | Model[] | undefined
+      ? K
+      : never
 
-export type ModelProperties = Record<string, ModelProperty>
+/**
+ * A map of relation definitions for a model class.
+ *
+ * When used with a type argument, restricts keys to declared
+ * `Model` or `Model[]` properties on the class.
+ *
+ * @example
+ * ```ts
+ * // Type-safe keys only:
+ * class Tag extends Model {
+ *   declare tasks: Task[]
+ *
+ *   static override relations: ModelRelations<Tag> = {
+ *     tasks: {
+ *       relation: 'manyToMany',
+ *       from: 'Tag.id',
+ *       to: 'Task.id'
+ *     }
+ *   }
+ * }
+ *
+ * // With typed from/to via typeof import():
+ * class Tag extends Model {
+ *   declare tasks: Task[]
+ *
+ *   static override relations:
+ *     ModelRelations<Tag, typeof import('./models')> = {
+ *       tasks: {
+ *         relation: 'manyToMany',
+ *         from: 'Tag.id',    // validated against Tag props
+ *         to: 'Task.id'      // validated against Task props
+ *       }
+ *     }
+ * }
+ * ```
+ */
+export type ModelRelations<$Model extends Model = Model, $Models = unknown> = [
+  keyof SerializedModel<$Model>
+] extends [never]
+  ? Record<string, ModelRelation>
+  : {
+      [K in keyof $Model as ModelRelationKey<$Model, K>]?: ModelRelation<
+        $Model,
+        RelatedModel<$Model[K]>,
+        $Models,
+        $Model[K]
+      >
+    }
+
+export type ModelProperties<$Model extends Model = Model> = [
+  keyof SerializedModel<$Model>
+] extends [never]
+  ? Record<string, ModelProperty>
+  : {
+      [K in keyof $Model as ModelDataKey<$Model, K>]?: ModelProperty<$Model[K]>
+    }
 
 /**
  * A controller action definition. Either an options object
@@ -1620,15 +1831,23 @@ export class Controller {
     transacted: boolean,
     authorize: Authorize,
     action: $ControllerAction,
-    handlers: ((ctx: KoaContext, next: Function) => void)[]
+    handlers: ((
+      ctx: KoaContext,
+      next: () => Promise<void>
+    ) => OrPromiseOf<void>)[]
   ): void
 
-  setupActions(type: string): any
-  setupActionRoute(type: string, action: ControllerAction): void
-  setupAssets(): any
+  setupActions(
+    type: 'actions' | 'collection' | 'member'
+  ): Record<string, unknown> | undefined
+  setupActionRoute(
+    type: 'actions' | 'collection' | 'member',
+    action: ControllerAction
+  ): void
+  setupAssets(): Record<string, unknown> | undefined
   setupAssetRoute(
     dataPath: OrArrayOf<string>,
-    config: any,
+    config: Record<string, unknown>,
     authorize: Authorize
   ): void
 
@@ -1649,11 +1868,11 @@ export class Controller {
   }
 
   emitHook(
-    type: string,
+    type: `${'before' | 'after'}:${string}`,
     handleResult: boolean,
     ctx: KoaContext,
-    ...args: any[]
-  ): Promise<any>
+    ...args: unknown[]
+  ): Promise<unknown>
 
   processAuthorize(
     authorize: Authorize
@@ -1695,7 +1914,6 @@ export type ControllerActionHandler<
 
 type ModelDataKey<T, K extends keyof T> = K extends
   | 'QueryBuilderType'
-  | 'foreignKeyId'
   | `$${string}`
   ? never
   : T[K] extends (...args: any[]) => any
@@ -2502,7 +2720,25 @@ export type QueryParameterOptions = {
 }
 export type QueryParameterOptionKey = keyof QueryParameterOptions
 
-export class Service {
+/**
+ * Base class for application services.
+ *
+ * @typeParam $Config - The shape of the service's configuration
+ *   object, accessed via `this.config` in service methods.
+ *
+ * ```ts
+ * class MailService extends Service<{
+ *   smtp: { host: string; port: number }
+ *   from: string
+ * }> {
+ *   async send(to: string, body: string) {
+ *     const { host, port } = this.config!.smtp
+ *     // ...
+ *   }
+ * }
+ * ```
+ */
+export class Service<$Config extends object = Record<string, unknown>> {
   constructor(app: Application<Models>, name?: string)
 
   /** The application instance. */
@@ -2510,11 +2746,11 @@ export class Service {
   /** The camelized service name. */
   name: string
   /** The service configuration. */
-  config: Record<string, unknown> | null
+  config: $Config | null
   /** Whether this service has been initialized. */
   initialized: boolean
 
-  setup(config: Record<string, unknown>): void
+  setup(config: $Config): void
 
   /**
    * Override in sub-classes if the service needs async
@@ -2532,6 +2768,46 @@ export class Service {
   get logger(): PinoLogger
 }
 export type Services = Record<string, Class<Service> | Service>
+
+/**
+ * Registry of application service instances by name.
+ *
+ * Extend via module augmentation for typed `app.services` access:
+ *
+ * ```ts
+ * declare module '@ditojs/server' {
+ *   interface ApplicationServices {
+ *     mail: MailService
+ *     jobs: JobService
+ *   }
+ * }
+ * ```
+ */
+export interface ApplicationServices {}
+
+type ResolvedServices = keyof ApplicationServices extends never
+  ? Record<string, Service>
+  : ApplicationServices
+
+/**
+ * Registry of application storage instances by name.
+ *
+ * Extend via module augmentation for typed `app.storages` access:
+ *
+ * ```ts
+ * declare module '@ditojs/server' {
+ *   interface ApplicationStorages {
+ *     s3: Storage
+ *     local: Storage
+ *   }
+ * }
+ * ```
+ */
+export interface ApplicationStorages {}
+
+type ResolvedStorages = keyof ApplicationStorages extends never
+  ? Record<string, Storage>
+  : ApplicationStorages
 
 export class QueryBuilder<
   M extends Model,
@@ -3175,11 +3451,32 @@ export const types: {
   color: Record<string, any>
 }
 export type Id = string | number
-export type KoaContext<$State = any> = Koa.ParameterizedContext<
+/**
+ * Koa context state available as `ctx.state`.
+ *
+ * Extend via module augmentation for typed state access:
+ *
+ * ```ts
+ * declare module '@ditojs/server' {
+ *   interface KoaContextState {
+ *     user: User
+ *   }
+ * }
+ * ```
+ */
+export interface KoaContextState {}
+
+type ResolvedState = keyof KoaContextState extends never
+  ? any
+  : KoaContextState
+
+export type KoaContext<$State = ResolvedState> = Koa.ParameterizedContext<
   $State,
   {
     transaction: objection.Transaction
-    session: koaSession.ContextSession & { state: { user: any } }
+    session: koaSession.ContextSession & {
+      state: { user: any }
+    }
     logger: PinoLogger
   }
 >
@@ -3244,10 +3541,10 @@ export type SelectModelPropertyKeys<T extends Model> = keyof SerializedModel<T>
  * }
  * ```
  */
-export type Schema<T = any> = JSONSchemaType<T> & {
+export type Schema<$Value = any> = JSONSchemaType<$Value> & {
   // keywords/_validate.js
   validate?: (params: {
-    data: unknown
+    data: $Value
     parentData: object | unknown[]
     rootData: object | unknown[]
     dataPath: string
@@ -3260,7 +3557,7 @@ export type Schema<T = any> = JSONSchemaType<T> & {
 
   // keywords/_validate.js
   validateAsync?: (params: {
-    data: unknown
+    data: $Value
     parentData: object | unknown[]
     rootData: object | unknown[]
     dataPath: string

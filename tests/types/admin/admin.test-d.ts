@@ -1,5 +1,5 @@
 import { assertType, describe, it } from 'vitest'
-import type { default as DitoAdmin, View } from '../index.d.ts'
+import type { default as DitoAdmin, View } from '@ditojs/admin'
 import type { Entry } from './fixtures.ts'
 
 describe('DitoAdmin', () => {

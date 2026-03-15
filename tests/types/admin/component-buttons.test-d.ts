@@ -1,5 +1,5 @@
 import { expectTypeOf, assertType, describe, it } from 'vitest'
-import type { Buttons } from '../index.d.ts'
+import type { Buttons } from '@ditojs/admin'
 import type { Entry } from './fixtures.ts'
 
 describe('Buttons', () => {

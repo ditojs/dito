@@ -1,4 +1,4 @@
-import type { Model, Application } from '../index.d.ts'
+import type { Model, Application } from '@ditojs/server'
 
 // Test model types that don't narrow `id` from `Id` to avoid
 // variance issues with QueryBuilder's PartialModelObject<M>.

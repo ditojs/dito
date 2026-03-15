@@ -6,7 +6,7 @@ import type {
   PanelSchema,
   ButtonSchema,
   ResolvableForm
-} from '../index.d.ts'
+} from '@ditojs/admin'
 import type { Entry, Parent } from './fixtures.ts'
 
 type DeepItem = {

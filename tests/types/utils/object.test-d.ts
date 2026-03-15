@@ -8,7 +8,7 @@ import type {
   pickBy,
   mapKeys,
   mapValues
-} from '../index.d.ts'
+} from '@ditojs/utils'
 
 describe('clone', () => {
   it('preserves the input type', () => {

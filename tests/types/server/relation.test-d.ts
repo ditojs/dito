@@ -1,5 +1,5 @@
 import { assertType, describe, it } from 'vitest'
-import type { ModelRelation, QueryBuilder } from '../index.d.ts'
+import type { ModelRelation, QueryBuilder } from '@ditojs/server'
 
 describe('ModelRelation', () => {
   it('accepts basic belongsTo relation', () => {

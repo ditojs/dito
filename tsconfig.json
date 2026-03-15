@@ -6,6 +6,7 @@
     "strict": true,
     "noEmit": true,
     "skipLibCheck": true,
+    "allowImportingTsExtensions": true,
     "types": ["vitest/globals"]
   },
   "include": [

@@ -1,5 +1,5 @@
 import { expectTypeOf, assertType, describe, it } from 'vitest'
-import type { SelectSchema, MultiselectSchema } from '../index.d.ts'
+import type { SelectSchema, MultiselectSchema } from '@ditojs/admin'
 import type { Entry } from './fixtures.ts'
 
 describe('SelectSchema', () => {

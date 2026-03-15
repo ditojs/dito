@@ -6,7 +6,7 @@ import type {
   setDataPathEntries,
   normalizeDataPath,
   parseDataPath
-} from '../index.d.ts'
+} from '@ditojs/utils'
 
 describe('getValueAtDataPath', () => {
   it('error handler receives correct params', () => {

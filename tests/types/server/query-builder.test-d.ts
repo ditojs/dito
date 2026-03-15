@@ -1,5 +1,5 @@
 import { expectTypeOf, assertType, describe, it } from 'vitest'
-import type { QueryBuilder, Model } from '../index.d.ts'
+import type { QueryBuilder, Model } from '@ditojs/server'
 
 describe('QueryBuilder', () => {
   type QB = QueryBuilder<Model, Model[]>

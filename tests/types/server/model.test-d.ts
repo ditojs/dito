@@ -8,8 +8,8 @@ import type {
   ModelHooks,
   ModelFilterFunction,
   ModelProperty
-} from '../index.d.ts'
-import type { View } from '../../../admin/types/index.d.ts'
+} from '@ditojs/server'
+import type { View } from '@ditojs/admin'
 import type { Transaction } from 'objection'
 import type { Item } from './fixtures.ts'
 
@@ -145,7 +145,7 @@ describe('SerializedModel', () => {
     }
     type Result = SerializedModel<TestModel>
     expectTypeOf<keyof Result>()
-      .toEqualTypeOf<'id' | 'title'>()
+      .toEqualTypeOf<'title'>()
   })
 
   it('converts Date properties to string (JSON serialization)', () => {
