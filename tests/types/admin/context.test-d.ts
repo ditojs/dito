@@ -1,5 +1,5 @@
 import { expectTypeOf, assertType, describe, it } from 'vitest'
-import type { DitoContext, OrItemAccessor } from '../index.d.ts'
+import type { DitoContext, OrItemAccessor } from '@ditojs/admin'
 import type { Entry, ParentWithMarkers } from './fixtures.ts'
 
 describe('DitoContext', () => {

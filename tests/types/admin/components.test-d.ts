@@ -1,5 +1,5 @@
 import { expectTypeOf, assertType, describe, it } from 'vitest'
-import type { Component, Components, Form } from '../index.d.ts'
+import type { Component, Components, Form } from '@ditojs/admin'
 import type { Entry, Parent, ParentWithMarkers } from './fixtures.ts'
 
 describe('Components', () => {

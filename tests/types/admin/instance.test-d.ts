@@ -1,5 +1,5 @@
 import { expectTypeOf, describe, it } from 'vitest'
-import type { DitoFormInstance, DitoContext } from '../index.d.ts'
+import type { DitoFormInstance, DitoContext } from '@ditojs/admin'
 import type { Entry } from './fixtures.ts'
 
 describe('DitoComponentInstanceBase and DitoFormInstance', () => {

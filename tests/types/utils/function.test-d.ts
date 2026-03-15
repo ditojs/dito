@@ -5,7 +5,7 @@ import type {
   toAsync,
   toCallback,
   toPromiseCallback
-} from '../index.d.ts'
+} from '@ditojs/utils'
 
 describe('debounce', () => {
   it('preserves original function signature', () => {

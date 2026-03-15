@@ -6,7 +6,7 @@ import type {
   UploadSchema,
   DitoComponentInstance,
   HiddenSchema
-} from '../index.d.ts'
+} from '@ditojs/admin'
 import type { Entry, Parent } from './fixtures.ts'
 
 describe('SchemaFields: methods', () => {

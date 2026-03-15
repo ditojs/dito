@@ -9,7 +9,7 @@ import type {
   AuthenticationError,
   ModelError,
   GraphError
-} from '../index.d.ts'
+} from '@ditojs/server'
 
 describe('Errors', () => {
   it('ResponseError has status and is an Error', () => {

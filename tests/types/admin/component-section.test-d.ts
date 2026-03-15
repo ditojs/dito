@@ -1,5 +1,5 @@
 import { expectTypeOf, assertType, describe, it } from 'vitest'
-import type { Components, Form } from '../index.d.ts'
+import type { Components, Form } from '@ditojs/admin'
 import type { Address, Entry, Parent, ParentWithAddress } from './fixtures.ts'
 
 type ParentWithSection = Parent & {

@@ -4,7 +4,7 @@ import type {
   TreeListSchema,
   Form,
   Components
-} from '../index.d.ts'
+} from '@ditojs/admin'
 import type { Address, Entry, ParentWithAddress } from './fixtures.ts'
 
 describe('ObjectSchema', () => {
@@ -46,9 +46,9 @@ describe('ObjectSchema', () => {
         form: {
           type: 'form',
           components: {
-            title: { type: 'text' }
+            street: { type: 'text' }
           }
-        } satisfies Form<ParentWithAddress>
+        } satisfies Form<Address>
       }
     })
   })

@@ -8,7 +8,7 @@ import {
   TimeFormat
 } from '@ditojs/utils'
 import { RequireAtLeastOne, SetOptional } from 'type-fest'
-import { Component as VueComponent } from 'vue'
+import { Component as VueComponent, ComponentPublicInstance } from 'vue'
 import { Router as VueRouter } from 'vue-router'
 
 declare global {
@@ -1997,7 +1997,9 @@ export type DitoComponentInstance<
   $Members extends Record<string, any> = {}
 > = DitoComponentInstanceBase<$Item> & $Members
 
-export interface DitoComponentInstanceBase<$Item = any> extends EmitterMixin {
+export interface DitoComponentInstanceBase<$Item = any>
+  extends ComponentPublicInstance,
+    EmitterMixin {
   // -- Data access (ValueMixin, ContextMixin, TypeMixin) --
 
   /** The current value of the component (getter/setter). */
@@ -3047,14 +3049,14 @@ export type Components<$Item = any> = 0 extends 1 & $Item
   : {
       [K in keyof $Item]?: [$Item[K]] extends [never]
         ? NonSectionComponent<$Item> | SectionSchema<$Item>
-        : $Item[K] extends (infer E)[]
+        : NonNullable<$Item[K]> extends (infer E)[]
           ? E extends Record<string, any>
             ? NonSectionComponent<E>
             : NonSectionComponent<$Item>
-          : $Item[K] extends Record<string, any>
+          : NonNullable<$Item[K]> extends Record<string, any>
             ?
-                | NonSectionComponent<$Item>
-                | SectionSchema<$Item, $Item[K]>
+                | NonSectionComponent<NonNullable<$Item[K]>>
+                | SectionSchema<$Item, NonNullable<$Item[K]>>
             :
                 | NonSectionComponent<$Item>
                 | SectionSchema<$Item>

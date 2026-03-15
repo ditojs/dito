@@ -1,5 +1,5 @@
 import { expectTypeOf, assertType, describe, it } from 'vitest'
-import type { Form, View } from '../index.d.ts'
+import type { Form, View } from '@ditojs/admin'
 import type { Entry } from './fixtures.ts'
 
 describe('View with list component', () => {

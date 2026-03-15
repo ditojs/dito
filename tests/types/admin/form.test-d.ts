@@ -1,5 +1,5 @@
 import { expectTypeOf, assertType, describe, it } from 'vitest'
-import type { Form, ResolvableForm } from '../index.d.ts'
+import type { Form, ResolvableForm } from '@ditojs/admin'
 import type { Entry, Parent } from './fixtures.ts'
 
 describe('Form assignability', () => {

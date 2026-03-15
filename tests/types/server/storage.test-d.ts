@@ -1,7 +1,7 @@
 import { expectTypeOf, describe, it } from 'vitest'
 import type multer from '@koa/multer'
 import type Koa from 'koa'
-import type { Storage, StorageFile, AssetFileObject } from '../index.d.ts'
+import type { Storage, StorageFile, AssetFileObject } from '@ditojs/server'
 
 describe('Storage', () => {
   const storage = {} as Storage

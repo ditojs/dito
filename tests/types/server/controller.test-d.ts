@@ -9,7 +9,7 @@ import type {
   KoaContext,
   ModelControllerActionHandler,
   ControllerActionHandler
-} from '../index.d.ts'
+} from '@ditojs/server'
 import type { Transaction } from 'objection'
 
 describe('Controller', () => {

@@ -14,7 +14,7 @@ import type {
   asObject,
   asArray,
   asFunction
-} from '../index.d.ts'
+} from '@ditojs/utils'
 
 describe('type guards', () => {
   it('isArray narrows unknown to any[]', () => {

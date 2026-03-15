@@ -1,5 +1,5 @@
 import { expectTypeOf, describe, it } from 'vitest'
-import type { Application, Model } from '../index.d.ts'
+import type { Application, Model } from '@ditojs/server'
 import type { app } from './fixtures.ts'
 
 describe('Application', () => {

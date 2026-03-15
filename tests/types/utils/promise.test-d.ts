@@ -1,5 +1,5 @@
 import { describe, expectTypeOf, it } from 'vitest'
-import type { mapConcurrently, mapSequentially } from '../index.d.ts'
+import type { mapConcurrently, mapSequentially } from '@ditojs/utils'
 
 describe('mapConcurrently', () => {
   it('infers callback param from input array type', () => {

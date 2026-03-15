@@ -5,7 +5,7 @@ import type {
   ListSchema,
   ColumnSchema,
   DitoContext
-} from '../index.d.ts'
+} from '@ditojs/admin'
 import type { Entry, Parent } from './fixtures.ts'
 
 describe('ListSchema', () => {
