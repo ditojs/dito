@@ -1,0 +1,20 @@
+{
+  "name": "@ditojs/tests",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "types": "tsc --noEmit",
+    "test": "pnpm run /^test:/",
+    "test:types": "vitest --run --typecheck",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "@ditojs/admin": "workspace:^",
+    "@ditojs/server": "workspace:^",
+    "@electric-sql/pglite": "^0.3.16"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.50.0",
+    "vitest": "^4.0.18"
+  }
+}
