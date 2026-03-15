@@ -833,9 +833,11 @@ export class Application extends Koa {
     this.server = await new Promise(resolve => {
       const server = this.listen(this.config.server, () => {
         const { address, port } = server.address()
-        console.info(
-          `Dito.js server started at http://${address}:${port}`
-        )
+        if (Object.keys(this.config.log).length > 0) {
+          console.info(
+            `Dito.js server started at http://${address}:${port}`
+          )
+        }
         resolve(server)
       })
     })
@@ -900,9 +902,13 @@ export class Application extends Koa {
   async createAssets(storage, files, count = 0, transaction = null) {
     const AssetModel = this.getModel('Asset')
     if (AssetModel) {
+      // Shallow-clone file objects to avoid mutating the originals, since
+      // $parseJson() → convertAssetFile() deletes the signature.
+      // The originals may still be needed (e.g. sent as upload response).
+      // Shallow clone is sufficient as file objects are flat (scalar values).
       const assets = files.map(file => ({
         key: file.key,
-        file,
+        file: { ...file },
         storage: storage.name,
         count
       }))
@@ -1007,6 +1013,9 @@ export class Application extends Koa {
                 }
               }
               const importedFile = await storage.addFile(file, data)
+              // Sign the imported foreign file so it passes verification when
+              // createAssets() triggers $parseJson() → convertAssetFile().
+              storage.signAssetFile(importedFile)
               await this.createAssets(storage, [importedFile], 0, transaction)
               importedFiles.push(importedFile)
               // Merge back the changed file properties into the actual file
