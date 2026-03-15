@@ -12,6 +12,7 @@ import {
   parseDataPath,
   normalizeDataPath,
   getValueAtDataPath,
+  setValueAtDataPath,
   mapConcurrently,
   assignDeeply,
   deprecate
@@ -609,11 +610,11 @@ export class Model extends objection.Model {
     }
     // Also run through normal $parseJson(), for handling of `Date` and
     // `AssetFile`.
-    return this.$parseJson(json)
+    return this.$parseJson(json, { trusted: true })
   }
 
   // @override
-  $parseJson(json) {
+  $parseJson(json, { trusted = false } = {}) {
     const { constructor } = this
     for (const key of constructor.dateAttributes) {
       const date = json[key]
@@ -623,25 +624,9 @@ export class Model extends objection.Model {
     }
     // Convert plain asset files objects to AssetFile instances with references
     // to the linked storage.
-    const { assets } = constructor.definition
-    if (assets) {
-      for (const dataPath in assets) {
-        const storage = constructor.app.getStorage(assets[dataPath].storage)
-        const data = getValueAtDataPath(json, dataPath, () => null)
-        if (data) {
-          const convertToAssetFiles = data => {
-            if (data) {
-              if (isArray(data)) {
-                data.forEach(convertToAssetFiles)
-              } else {
-                storage.convertAssetFile(data)
-              }
-            }
-          }
-          convertToAssetFiles(data)
-        }
-      }
-    }
+    this.constructor._forEachAssetFile(json, (file, storage) => {
+      storage.convertAssetFile(file, { trusted })
+    })
     return json
   }
 
@@ -651,6 +636,9 @@ export class Model extends objection.Model {
     for (const key of this.constructor.hiddenAttributes) {
       delete json[key]
     }
+    // Sign asset files so clients can send them back with valid signatures.
+    // Clone file objects to avoid mutating the model's internals.
+    this.constructor._signAssetFiles(json)
     return json
   }
 
@@ -1014,6 +1002,34 @@ export class Model extends objection.Model {
 
   // Assets handling
 
+  static _forEachAssetFile(json, callback) {
+    const { assets } = this.definition
+    if (assets) {
+      for (const dataPath in assets) {
+        const data = getValueAtDataPath(json, dataPath, noop)
+        if (!data) continue
+        const storage = this.app.getStorage(assets[dataPath].storage)
+        forEachAssetFile(data, storage, callback)
+      }
+    }
+  }
+
+  static _signAssetFiles(json) {
+    const { assets } = this.definition
+    if (assets) {
+      for (const dataPath in assets) {
+        const data = getValueAtDataPath(json, dataPath, noop)
+        if (!data) continue
+        const storage = this.app.getStorage(assets[dataPath].storage)
+        setValueAtDataPath(
+          json,
+          dataPath,
+          signAssetFiles(data, storage)
+        )
+      }
+    }
+  }
+
   static _configureAssetsHooks(assets) {
     const assetDataPaths = Object.keys(assets)
 
@@ -1171,8 +1187,31 @@ function loadAssetDataPaths(query, dataPaths) {
   )
 }
 
+const noop = () => {}
+
+function forEachAssetFile(data, storage, callback) {
+  if (isArray(data)) {
+    for (const item of data) {
+      forEachAssetFile(item, storage, callback)
+    }
+  } else if (data) {
+    callback(data, storage)
+  }
+}
+
+function signAssetFiles(data, storage) {
+  if (isArray(data)) {
+    return data.map(item => signAssetFiles(item, storage))
+  } else if (data) {
+    const signed = { ...data }
+    storage.signAssetFile(signed)
+    return signed
+  }
+  return data
+}
+
 function getValueAtAssetDataPath(item, path) {
-  return getValueAtDataPath(item, path, () => undefined)
+  return getValueAtDataPath(item, path, noop)
 }
 
 function getFilesPerAssetDataPath(items, dataPaths) {
