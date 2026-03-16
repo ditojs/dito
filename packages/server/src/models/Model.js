@@ -1014,7 +1014,7 @@ export class Model extends objection.Model {
     }
   }
 
-  static _signAssetFiles(json) {
+  static _mapAssetFiles(json, callback) {
     const { assets } = this.definition
     if (assets) {
       for (const dataPath in assets) {
@@ -1024,10 +1024,18 @@ export class Model extends objection.Model {
         setValueAtDataPath(
           json,
           dataPath,
-          signAssetFiles(data, storage)
+          mapAssetFiles(data, storage, callback)
         )
       }
     }
+  }
+
+  static _signAssetFiles(json) {
+    this._mapAssetFiles(json, (file, storage) => {
+      const signed = { ...file }
+      storage.signAssetFile(signed)
+      return signed
+    })
   }
 
   static _configureAssetsHooks(assets) {
@@ -1199,15 +1207,11 @@ function forEachAssetFile(data, storage, callback) {
   }
 }
 
-function signAssetFiles(data, storage) {
+function mapAssetFiles(data, storage, callback) {
   if (isArray(data)) {
-    return data.map(item => signAssetFiles(item, storage))
-  } else if (data) {
-    const signed = { ...data }
-    storage.signAssetFile(signed)
-    return signed
+    return data.map(item => mapAssetFiles(item, storage, callback))
   }
-  return data
+  return data ? callback(data, storage) : data
 }
 
 function getValueAtAssetDataPath(item, path) {
