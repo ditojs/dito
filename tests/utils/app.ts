@@ -16,6 +16,7 @@ interface TestAppOptions {
     [key: string]: any
   }
   config?: Record<string, any>
+  validator?: ConstructorParameters<typeof Application>[0]['validator']
 }
 
 export function createTestApp(
@@ -38,7 +39,8 @@ export function createTestApp(
       })
     },
     models: options.models ?? {},
-    controllers: options.controllers ?? {}
+    controllers: options.controllers ?? {},
+    ...(options.validator && { validator: options.validator })
   }) as TestApp
 
   if (options.admin) {

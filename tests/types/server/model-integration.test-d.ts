@@ -14,7 +14,11 @@ import type {
   ModelFilters,
   QueryFilterTypes,
   Storage,
-  KoaContext
+  KoaContext,
+  Keyword,
+  Format,
+  Validator,
+  Schema
 } from '@ditojs/server'
 import { Model, Service } from '@ditojs/server'
 import type * as ModelsType from '../../server/models'
@@ -1081,5 +1085,83 @@ describe('KoaContextState — typed ctx.state', () => {
   it('non-augmented keys are unknown', () => {
     const ctx = {} as KoaContext
     expectTypeOf(ctx.state.anything).toBeUnknown()
+  })
+})
+
+describe('Validator — custom keywords and formats', () => {
+  it('accepts custom keywords', () => {
+    const keyword: Keyword = {
+      type: ['number', 'integer'],
+      macro(config: [number, number]) {
+        return { minimum: config[0], maximum: config[1] }
+      }
+    }
+    assertType<Keyword>(keyword)
+  })
+
+  it('accepts custom keywords with message and silent', () => {
+    const keyword: Keyword = {
+      type: ['number', 'integer'],
+      validate(_schema: boolean, value: number) {
+        return value % 2 === 0
+      },
+      message: 'must be even',
+      silent: false
+    }
+    assertType<Keyword>(keyword)
+  })
+
+  it('accepts custom formats', () => {
+    const format: Format = {
+      validate: (value: string) => value.startsWith('hello')
+    }
+    assertType<Format>(format)
+  })
+
+  it('accepts custom formats with regex validate and message', () => {
+    const format: Format = {
+      validate: /^[a-f0-9]{40}$/,
+      message: 'needs to be in SHA-1 format'
+    }
+    assertType<Format>(format)
+  })
+
+  it('Validator constructor accepts custom keywords and formats', () => {
+    expectTypeOf<Validator>().toBeObject()
+    expectTypeOf<ConstructorParameters<typeof Validator>[0]>()
+      .toMatchTypeOf<{
+        keywords?: Record<string, Keyword>
+        formats?: Record<string, Format>
+      } | undefined>()
+  })
+
+  it('Schema allows custom keyword properties', () => {
+    const schema: Schema<number> = {
+      type: 'integer',
+      range: [0, 100]
+    }
+    assertType<Schema<number>>(schema)
+  })
+
+  it('ModelProperty allows custom keyword properties', () => {
+    const prop: ModelProperty<number> = {
+      type: 'integer',
+      range: [0, 100],
+      primary: false
+    }
+    assertType<ModelProperty<number>>(prop)
+  })
+
+  it('ModelProperties allows custom keywords on fields', () => {
+    class _Good extends Model {
+      declare score: number
+
+      static override properties: ModelProperties<_Good> = {
+        score: {
+          type: 'integer',
+          range: [0, 100]
+        }
+      }
+    }
   })
 })
