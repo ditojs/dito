@@ -2971,6 +2971,30 @@ export type SourceComponent<$Item = any> =
   | TreeObjectSchema<$Item>
 
 /**
+ * Field components that don't have an options mixin (excludes
+ * select, multiselect, and source components like list/object/tree).
+ */
+type NonOptionFieldComponent<$Item = any> = Exclude<
+  NonSectionComponent<$Item>,
+  SelectSchema<$Item> | MultiselectSchema<$Item> | SourceComponent<$Item>
+>
+
+/**
+ * Select/multiselect with a typed `$Option` for option callbacks.
+ *
+ * Note: This is intentionally an intersection type rather than
+ * `SelectSchema<$Item, $Option> | MultiselectSchema<$Item, $Option>`,
+ * because using the full interfaces in a union breaks TypeScript's
+ * contextual typing for callbacks in the `Components` mapped type.
+ */
+type OptionComponent<$Item, $Option> =
+  BaseSchema<$Item>
+  & SchemaOptionsMixin<$Item, $Option>
+  & SchemaAffixMixin<$Item>
+  & Pick<MultiselectSchema, 'multiple' | 'searchable' | 'stayOpen' | 'taggable'>
+  & { type: 'select' | 'multiselect' }
+
+/**
  * Strips properties with `never` values from a type.
  */
 type OmitNever<T> = {
@@ -3055,7 +3079,9 @@ export type Components<$Item = any> = 0 extends 1 & $Item
             : NonSectionComponent<$Item>
           : NonNullable<$Item[K]> extends Record<string, any>
             ?
-                | NonSectionComponent<NonNullable<$Item[K]>>
+                | NonOptionFieldComponent<$Item>
+                | OptionComponent<$Item, NonNullable<$Item[K]>>
+                | SourceComponent<NonNullable<$Item[K]>>
                 | SectionSchema<$Item, NonNullable<$Item[K]>>
             :
                 | NonSectionComponent<$Item>
