@@ -1722,11 +1722,31 @@ export type ModelProperties<$Model extends Model = Model> = [
     }
 
 /**
- * A controller action definition. Either an options object
- * with `handler`, `method`, `path`, `authorize`, etc., or a
- * bare handler function. The HTTP method and path are
- * derived from the action name key (e.g. `'postImport'`
- * maps to `POST /import`).
+ * A controller action definition. The HTTP method and route
+ * path are derived from the action name key (e.g.
+ * `'post import'` → `POST /import`, `'get'` → `GET /`).
+ *
+ * @example
+ * // Bare handler function:
+ * collection = {
+ *   allow: ['get'],
+ *   'post import'(ctx) {
+ *     return this.importData(ctx.request.body)
+ *   }
+ * }
+ *
+ * @example
+ * // Options object with handler, authorize, etc.:
+ * collection = {
+ *   allow: ['get'],
+ *   'post import': {
+ *     handler(ctx) {
+ *       return this.importData(ctx.request.body)
+ *     },
+ *     authorize: 'admin',
+ *     transacted: true
+ *   }
+ * }
  */
 export type ControllerAction<$Controller extends Controller = Controller> =
   | ControllerActionOptions<$Controller>
@@ -1773,9 +1793,12 @@ export class Controller {
   logRoutes: boolean
 
   /**
-   * A list of allowed actions. If provided, only the
-   * action names listed here as strings will be mapped to
-   * routes, everything else will be omitted.
+   * Which inherited actions to enable, e.g.
+   * `['get', 'post', 'get stats']`. Actions defined
+   * directly on the same object are always enabled.
+   * When set, it replaces any parent controller's
+   * `allow` list. When omitted, the parent's `allow`
+   * list is inherited.
    */
   allow?: OrReadOnly<ControllerActionName[]>
 
@@ -1938,14 +1961,14 @@ type ModelDataProperties<$Model extends Model = Model> = {
  * - Any other `string`: Checked as a role via
  *   `UserModel.$hasRole()`.
  * - `function`: Dynamically resolves to any of the above.
- * - `Record<HTTPMethod, string | string[]>`: Per-method
+ * - `Partial<Record<HTTPMethod, string | string[]>>`: Per-method
  *   role authorization.
  */
 export type Authorize =
   | boolean
   | OrArrayOf<LiteralUnion<'$self' | '$owner'>>
   | ((ctx: KoaContext) => OrPromiseOf<Authorize>)
-  | Record<HTTPMethod, string | string[]>
+  | Partial<Record<HTTPMethod, string | string[]>>
 
 export type BaseControllerActionOptions = {
   /**
@@ -2051,8 +2074,8 @@ export type ModelControllerAction<
 
 /**
  * Map of action names to action definitions for a model
- * controller's collection-level actions (e.g. `getList`,
- * `postCreate`).
+ * controller's collection-level actions (e.g. `'get'`,
+ * `'post'`, `'post login'`).
  */
 export type ModelControllerActions<
   $ModelController extends ModelController = ModelController
@@ -2089,16 +2112,19 @@ export type ModelControllerMemberActions<
 }
 
 /**
- * Action name pattern: an HTTP method followed by an
- * optional suffix, e.g. `'getStats'`, `'postImport'`,
- * `'deleteAll'`.
+ * Action name: an HTTP method, optionally followed by a
+ * space and a name (e.g. `'get'`, `'post login'`,
+ * `'get session'`). The method and name are split on the
+ * first space to determine the HTTP method and route path.
+ * Bare names without an HTTP method prefix (e.g. `'login'`)
+ * are not supported and will throw at runtime.
  */
 export type ControllerActionName = `${HTTPMethod}${string}`
 
 /**
  * Map of action names to action definitions for a
- * controller. Supports `allow` to whitelist specific
- * actions and `authorize` for group-level authorization.
+ * controller. Use `allow` to whitelist specific actions
+ * and `authorize` for group-level authorization.
  */
 export type ControllerActions<$Controller extends Controller = Controller> = {
   [name: ControllerActionName]: ControllerAction<$Controller>
@@ -3459,24 +3485,21 @@ export type Id = string | number
  * ```ts
  * declare module '@ditojs/server' {
  *   interface KoaContextState {
- *     user: User
+ *     foo: string
  *   }
  * }
  * ```
  */
-export interface KoaContextState {}
+export interface KoaContextState {
+  user: InstanceType<typeof UserModel>
+  [key: string]: unknown
+}
 
-type ResolvedState = keyof KoaContextState extends never
-  ? any
-  : KoaContextState
-
-export type KoaContext<$State = ResolvedState> = Koa.ParameterizedContext<
+export type KoaContext<$State = KoaContextState> = Koa.ParameterizedContext<
   $State,
   {
     transaction: objection.Transaction
-    session: koaSession.ContextSession & {
-      state: { user: any }
-    }
+    session: koaSession.ContextSession
     logger: PinoLogger
   }
 >
