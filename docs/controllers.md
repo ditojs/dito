@@ -109,7 +109,7 @@ Default actions can be defined by only providing the method name:
 
 ```js
 get: {
-  response: ({
+  response: {
     type: 'string'
   },
   handler() {
@@ -320,12 +320,10 @@ This is the base class for all other controller classes provided by Dito.js. It
 can also be used to implement a basic controller in an application that doesn't
 require mappings to a model.
 
-every instance method declared in the controller class is automatically mapped
-to an action. Static class methods aren't mapped. Decorators can be used to
-configure the actions.
+Actions are defined inside the `actions` object on the controller instance,
+using the `'<method> <action>'` or `'<method>'` naming convention.
 
-In addition to the action methods, the following configuration settings are
-available, to be set on the controller instance.
+The following configuration settings are available:
 
 | Instance Field             | Description
 | -------------------------- | -------------------------------------------------
@@ -370,7 +368,8 @@ these terms:
   *instance* of the model class.
 
 On both levels, Dito.js provides a series of default model actions that are
-activated by default and mapped to database methods and default model routes:
+mapped to database methods and default model routes. These actions are only
+routed when explicitly listed in the `allow` array:
 
 ### Collection Actions
 
@@ -413,12 +412,11 @@ see [Instance Fields](#modelcontroller-instance-fields) below.
 For more information on graphs, see
 [Model Queries – Graph Methods](./model-queries.md#graph-methods).
 
-### Security Concerns
+### Allowing Actions
 
-Please note: By default, all these actions are allowed, facilitating rapid
-prototyping but leading to obvious security issues when left open in production.
-Use the `allow` configuration on both the `collection` and `member` objects to
-control which actions should be exposed.
+Default actions are only routed when listed in the `allow` array on the
+`collection` or `member` object. Actions defined directly as properties on
+the same object are always routed without needing to be listed in `allow`.
 
 ### Example
 
@@ -430,7 +428,10 @@ export class MyModels extends ModelController {
   modelClass = MyModel
 
   collection = {
-    allow: ['get', 'get hello-collection'],
+    // Enables the default 'get' action (GET /my-models).
+    // 'get hello-collection' doesn't need listing here because
+    // it's defined directly on this object.
+    allow: ['get'],
 
     'get hello-collection': {
       parameters: {
@@ -440,13 +441,16 @@ export class MyModels extends ModelController {
         }
       },
       handler(ctx, { message }) {
-        return `Model class '${this.modelClass.name}' says hello: ${msg}`
+        return `Model class '${this.modelClass.name}' says hello: ${message}`
       }
     }
   }
 
   member = {
-    allow: ['get', 'get hello-member'],
+    // Enables the default 'get' action (GET /my-models/:id).
+    // Note that 'get hello-member' is automatically allowed as it's
+    // defined on this object.
+    allow: ['get'],
 
     'get hello-member': {
       parameters: {
@@ -488,8 +492,7 @@ in a clean way:
 | `allowScope`: `string` &#124; `Array`           | The scope(s) allowed to be requested when passing the `'scope'` query parameter to the default model actions. If none is provided, every supported scope is allowed. See [Model Scopes](./model-scopes.md) for more information on scopes.
 | `allowFilter`: `string` &#124; `Array`           | The filter(s) allowed to be requested when passing the `'filter'` query parameter to the default model actions. If none is provided, every supported filter is allowed. See [Model Scopes](./model-filters.md) for more information on filters.
 | `scope`: `string` &#124; `Array`                | The scope(s) to be applied to every query executed through this controller. See [Model Scopes](./model-scopes.md) for more information on scopes.
-| `authorize`: `function` &#124; `string` &#124; `Array` &#124; `Object` | Not yet implemented.
-| `cache`: `Object`                               | Not yet implemented.
+| `authorize`: `function` &#124; `string` &#124; `Array` &#124; `Object` | Controls access to actions. Can be a boolean, a role string (checked via `UserModel.$hasRole()`), `'$self'` (member must match `ctx.state.user`), `'$owner'` (member checked via `Model.$hasOwner()`), a function returning any of these, or a per-method record.
 
 ### Action Inheritance
 
@@ -590,21 +593,28 @@ class MyModels extends ModelController {
 }
 ```
 
-## `UserController` Class
+## `UsersController` Class
 
-The `UserController` extends `ModelController` and provides the following
+The `UsersController` extends `ModelController` and provides the following
 collection actions for easier handling of user authentication through
 [koa-passport](https://github.com/rkusa/koa-passport), to be used in conjunction
 with Dito.js' `UserModel` base-class or the `UserMixin`:
 
-| Verb       | Collection Action | Parameters             
-| ---------- | ----------------- | -----------------------
-| `'post'`   | `login()`         | `username` / `password`
-| `'post'`   | `logout()`        |
-| `'get'`    | `current()`       |
+| Action Name      | Description
+| ---------------- | ------------------------------------------
+| `'post login'`   | Authenticates a user with `username` / `password`
+| `'post logout'`  | Logs out the current user
+| `'get session'`  | Returns `{ authenticated, user }` for the current session
+| `'get self'`     | Returns the currently authenticated user's data
 
-TODO: Write about `UserModel`, `UserMixin`, and describe return values of
-actions.
+The model class used with `UsersController` should extend `UserModel` (or apply
+`UserMixin`), which adds authentication and role management support.
+
+Controllers can restrict access to actions using the `authorize` setting on
+`collection` or `member`. For example, `authorize: 'admin'` checks that
+`ctx.state.user.$hasRole('admin')`. Use `'$self'` to only allow users to
+access their own member, or provide a per-method record like
+`{ get: 'admin', post: 'superuser' }`.
 
 ## `AdminController` Class
 
