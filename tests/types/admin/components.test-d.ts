@@ -1,6 +1,12 @@
 import { expectTypeOf, assertType, describe, it } from 'vitest'
 import type { Component, Components, Form } from '@ditojs/admin'
-import type { Entry, Parent, ParentWithMarkers } from './fixtures.ts'
+import type {
+  Address,
+  Entry,
+  Parent,
+  ParentWithAddress,
+  ParentWithMarkers
+} from './fixtures.ts'
 
 describe('Components', () => {
   it('accepts data-only components', () => {
@@ -50,6 +56,56 @@ describe('Components', () => {
           expectTypeOf(item.title).toBeString()
           expectTypeOf(item.entries).toEqualTypeOf<Entry[]>()
         }
+      }
+    })
+  })
+})
+
+describe('Components with object-valued keys', () => {
+  it('provides parent item type in field component callbacks, not the value type', () => {
+    assertType<Components<ParentWithAddress>>({
+      address: {
+        type: 'component',
+        component: {} as any,
+        label({ item }) {
+          expectTypeOf(item).not.toBeAny()
+          expectTypeOf(item).toHaveProperty('title')
+          expectTypeOf(item).toHaveProperty('address')
+          // item should be ParentWithAddress, not Address
+          expectTypeOf(item.title).toBeString()
+          return 'Address'
+        }
+      }
+    })
+  })
+
+  it('provides typed option from value type in multiselect', () => {
+    assertType<Components<ParentWithAddress>>({
+      address: {
+        type: 'multiselect',
+        options: {
+          label({ option }) {
+            expectTypeOf(option).not.toBeAny()
+            expectTypeOf(option).toHaveProperty('street')
+            expectTypeOf(option).toHaveProperty('city')
+            return option.street
+          }
+        }
+      }
+    })
+  })
+
+  it('provides nested item type in source component forms', () => {
+    assertType<Components<ParentWithAddress>>({
+      address: {
+        type: 'object',
+        form: {
+          type: 'form',
+          components: {
+            street: { type: 'text' },
+            city: { type: 'text' }
+          }
+        } satisfies Form<Address>
       }
     })
   })
