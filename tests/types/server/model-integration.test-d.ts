@@ -46,7 +46,7 @@ declare module '@ditojs/server' {
     s3: Storage
   }
   interface KoaContextState {
-    user: { id: number; role: string }
+    tenant: string
   }
 }
 
@@ -1065,11 +1065,21 @@ describe('ApplicationStorages — typed storage registry', () => {
 })
 
 describe('KoaContextState — typed ctx.state', () => {
-  it('ctx.state.user is typed', () => {
+  it('ctx.state.user has UserModel properties', () => {
     const ctx = {} as KoaContext
     expectTypeOf(ctx.state).not.toBeAny()
     expectTypeOf(ctx.state.user).not.toBeAny()
-    expectTypeOf(ctx.state.user.id).toBeNumber()
-    expectTypeOf(ctx.state.user.role).toBeString()
+    expectTypeOf(ctx.state.user.username).toBeString()
+    expectTypeOf(ctx.state.user.$hasRole('admin')).toBeBoolean()
+  })
+
+  it('ctx.state includes augmented properties', () => {
+    const ctx = {} as KoaContext
+    expectTypeOf(ctx.state.tenant).toBeString()
+  })
+
+  it('non-augmented keys are unknown', () => {
+    const ctx = {} as KoaContext
+    expectTypeOf(ctx.state.anything).toBeUnknown()
   })
 })

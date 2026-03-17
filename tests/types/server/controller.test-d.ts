@@ -8,6 +8,8 @@ import type {
   Model,
   KoaContext,
   ModelControllerActionHandler,
+  ModelControllerActions,
+  ModelControllerMemberActions,
   ControllerActionHandler
 } from '@ditojs/server'
 import type { Transaction } from 'objection'
@@ -91,6 +93,72 @@ describe('ModelController', () => {
         .toEqualTypeOf<ModelController<Model>>()
       expectTypeOf(ctx).not.toBeAny()
       expectTypeOf(ctx).toMatchTypeOf<KoaContext>()
+    }
+  })
+
+  it('inline collection action handlers have typed ctx', () => {
+    type MC = ModelController<Model>
+    const collection: ModelControllerActions<MC> = {
+      get(ctx) {
+        expectTypeOf(this).not.toBeAny()
+        expectTypeOf(this).toEqualTypeOf<MC>()
+        expectTypeOf(ctx).not.toBeAny()
+        expectTypeOf(ctx).toMatchTypeOf<KoaContext>()
+      }
+    }
+  })
+
+  it('inline member action handlers have typed ctx', () => {
+    type MC = ModelController<Model>
+    const member: ModelControllerMemberActions<MC> = {
+      async patch(ctx, modify) {
+        expectTypeOf(this).not.toBeAny()
+        expectTypeOf(this).toEqualTypeOf<MC>()
+        expectTypeOf(ctx).not.toBeAny()
+        expectTypeOf(ctx).toMatchTypeOf<KoaContext>()
+      }
+    }
+  })
+
+  it('collection authorize accepts partial per-method record', () => {
+    type MC = ModelController<Model>
+    const collection: ModelControllerActions<MC> = {
+      authorize: { get: 'superuser', post: 'admin' }
+    }
+  })
+
+  it('rejects bare action names', () => {
+    type MC = ModelController<Model>
+    const collection: ModelControllerActions<MC> = {
+      // @ts-expect-error bare action name is not valid
+      login(ctx) { return { ok: true } }
+    }
+  })
+})
+
+describe('KoaContext', () => {
+  it('ctx.state.user has UserModel properties', () => {
+    const ctx = {} as KoaContext
+    expectTypeOf(ctx.state.user).not.toBeAny()
+    expectTypeOf(ctx.state.user.username).toBeString()
+    expectTypeOf(ctx.state.user.$hasRole('admin')).toBeBoolean()
+    expectTypeOf(ctx.state.user.$verifyPassword('pw')).toEqualTypeOf<Promise<boolean>>()
+    expectTypeOf(ctx.state.user.$isLoggedIn({} as KoaContext)).toBeBoolean()
+  })
+
+  it('ctx.state allows unknown keys without augmentation', () => {
+    const ctx = {} as KoaContext
+    expectTypeOf(ctx.state.anything).toBeUnknown()
+  })
+
+  it('ctx.state.user is typed in action handlers', () => {
+    type MC = ModelController<Model>
+    const collection: ModelControllerActions<MC> = {
+      get(ctx) {
+        expectTypeOf(ctx.state.user).not.toBeAny()
+        expectTypeOf(ctx.state.user.username).toBeString()
+        expectTypeOf(ctx.state.user.$hasRole('admin')).toBeBoolean()
+      }
     }
   })
 })
