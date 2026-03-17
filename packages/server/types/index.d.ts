@@ -694,6 +694,7 @@ export interface Application
 
 export type SchemaType = LiteralUnion<
   | 'string'
+  | 'text'
   | 'number'
   | 'integer'
   | 'boolean'
@@ -936,7 +937,7 @@ export type ModelProperty<T = any> = Schema<T> & {
    */
   computed?: boolean
   /**
-   * Marks the property has hidden, so that it does not show up in data
+   * Marks the property as hidden, so that it does not show up in data
    * converted to JSON.
    *
    * This can be used for sensitive data.
@@ -3442,11 +3443,25 @@ export function addRelationSchemas(
   properties: Record<string, ModelProperty>
 ): void
 
-export type Keyword =
+export type Keyword = (
   | SetOptional<Ajv.MacroKeywordDefinition, 'keyword'>
   | SetOptional<Ajv.CodeKeywordDefinition, 'keyword'>
   | SetOptional<Ajv.FuncKeywordDefinition, 'keyword'>
-export type Format = Ajv.ValidateFunction | Ajv.FormatDefinition<string>
+) & {
+  /** Custom error message shown when validation fails. */
+  message?: string
+  /** When true, validation errors for this keyword are suppressed. */
+  silent?: boolean
+}
+export type Format = (
+  | Ajv.ValidateFunction
+  | Ajv.FormatDefinition<string>
+) & {
+  /** Custom error message shown when validation fails. */
+  message?: string
+  /** When true, validation errors for this format are suppressed. */
+  silent?: boolean
+}
 
 /** Built-in AJV keyword definitions. */
 export const keywords: {

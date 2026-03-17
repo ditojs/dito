@@ -30,7 +30,7 @@ keywords can be registered with a custom validator, see
 | Keyword                    | Description
 | -------------------------- | -------------------------------------------------
 | `type`: `string`           | The type of the property. Possible values are:<br>`'string'`, `'text'`, `'number'`, `'integer'`, `'boolean'`, `'object'`, `'array'`, `'date'`, `'datetime'` and `'timestamp'`.
-| `format`: `string`         | The requried format of the property.<br>Any standard JSON schema formats are supported, such as `'date-time'`, `'email'`, `'hostname'`, `'ipv4'`, `'ipv6'`, `'uri'`. Additional formats can be registered with a custom validator, see [Validator](./validator.md).
+| `format`: `string`         | The required format of the property.<br>Any standard JSON schema formats are supported, such as `'date-time'`, `'email'`, `'hostname'`, `'ipv4'`, `'ipv6'`, `'uri'`. Additional formats can be registered with a custom validator, see [Validator](./validator.md).
 | `default`: `any`           | Sets the property's default value.<br>This impacts both validation as well as migrations: For validation unless when using `patch` operations, missing properties are replaced with their default values. In migrations, the `.defaultTo()` method is called for the database column.
 | `required`: `boolean`      | Defines if the property is required.<br>This impacts both validation as well as migrations: Validation errors are thrown for missing required properties. In migrations, the `.notNullable()` method is called for the database column.
 | `primary`: `boolean`       | Marks the column as the primary key in the database.
@@ -38,9 +38,9 @@ keywords can be registered with a custom validator, see
 | `index`: `boolean`         | Adds an index to the database column in the migrations, by calling the `.index()` method.
 | `nullable`: `boolean`      | Marks the column as nullable in the migrations, by calling the `.nullable()` method.
 | `unique`: `boolean` &#124; `string` | Adds a unique constraint to the table for the given column in the migrations, by calling the `.unique()` method. If a string is provided, all columns with the same string value for `unique` are grouped together in one unique constraint, by calling `.unique([column1, column2, …])`.
-| `unsigned`: `boolean`      | Marks the column for a property of type `'integer'` to be unsigned in the migrations, by calling the `.index()` method.calling the `.unsigned()` method.
+| `unsigned`: `boolean`      | Marks the column for a property of type `'integer'` to be unsigned in the migrations, by calling the `.unsigned()` method.
 | `computed`: `boolean`      | Marks the property as computed.<br>Computed properties are not present as columns in the database itself. They can be created either by an SQL statement (`SELECT … AS`), or by a getter accessor defined on the model. Computed properties are set when converting to JSON if not present already, and removed again before data is sent to the database.
-| `hidden`: `boolean`        | Marks the property has hidden, so that it does not show up in data converted to JSON.<br>This can be used for sensitive data.
+| `hidden`: `boolean`        | Marks the property as hidden, so that it does not show up in data converted to JSON.<br>This can be used for sensitive data.
 | `range`: `Array`           | Validates a property of type `'number'` or `'integer'` to be in a given range, e.g.: `[2, 5]` 
 
 In addition to all the declared properties, Dito.js automatically adds an `id`
