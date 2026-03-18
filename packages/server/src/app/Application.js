@@ -177,7 +177,7 @@ export class Application extends Koa {
         if (
           module &&
           module.name !== key &&
-          module.name?.replace(/^_|\d+$/g, '') === key
+          module.name?.replace(/^_|\$?\d+$/g, '') === key
         ) {
           Object.defineProperty(module, 'name', {
             value: key,
