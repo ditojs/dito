@@ -205,9 +205,12 @@ export class AdminController extends Controller {
                 rollupOptions: {
                   output: {
                     manualChunks: id => {
-                      if (id.startsWith(views)) {
+                      // Strip Rollup's \0 prefix used for virtual modules
+                      // (e.g. CJS interop modules like ?commonjs-module)
+                      const cleanId = id.replace(/^\0/, '')
+                      if (cleanId.startsWith(views)) {
                         return 'views'
-                      } else if (id.startsWith(this.app.basePath)) {
+                      } else if (cleanId.startsWith(this.app.basePath)) {
                         return 'common'
                       } else {
                         const module = id.match(
