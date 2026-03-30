@@ -7,7 +7,9 @@ export default {
   },
 
   methods: {
-    getDraggableOptions(forceFallback = false) {
+    getDraggableOptions(
+      forceFallback = window.dito.settings?.forceDragFallback ?? false
+    ) {
       const prefix = 'dito-draggable'
       return {
         animation: 150,
