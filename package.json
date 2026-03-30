@@ -42,7 +42,7 @@
     ]
   },
   "engines": {
-    "node": ">= 20.0.0"
+    "node": ">= 24.0.0"
   },
   "devDependencies": {
     "@prettier/plugin-pug": "^3.4.2",

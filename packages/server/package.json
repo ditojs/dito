@@ -19,7 +19,7 @@
     "dito": "./src/cli/index.js"
   },
   "engines": {
-    "node": ">= 20.0.0"
+    "node": ">= 24.0.0"
   },
   "browserslist": [
     "node >= 18"
