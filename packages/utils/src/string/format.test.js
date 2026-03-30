@@ -97,7 +97,7 @@ describe('format()', () => {
           currency: 'CHF'
         }
       })
-    ).toMatch(/^CHF\s123’456’789\.00$/)
+    ).toMatch(/^CHF\s123['\u2019]456['\u2019]789\.00$/)
     expect(
       format(float, {
         locale: 'de-DE',
@@ -115,7 +115,7 @@ describe('format()', () => {
           currency: 'CHF'
         }
       })
-    ).toMatch(/^CHF\s123’456\.79$/)
+    ).toMatch(/^CHF\s123['\u2019]456\.79$/)
   })
 
   it('should support fine-grained control of `options.date`', () => {
