@@ -28,7 +28,7 @@ describe('Controller action names', () => {
 
       override collection: ModelControllerActions<Tasks> = {
         allow: ['get'],
-        // Bare action name — not prefixed with an HTTP method
+        // @ts-expect-error bare action name is intentionally invalid
         test(ctx) {
           return { ok: true }
         }
