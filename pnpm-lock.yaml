@@ -501,6 +501,9 @@ importers:
       '@electric-sql/pglite':
         specifier: ^0.3.16
         version: 0.3.16
+      typescript:
+        specifier: ^6.0.2
+        version: 6.0.2
     devDependencies:
       '@playwright/test':
         specifier: ^1.50.0
