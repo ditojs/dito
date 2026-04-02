@@ -286,6 +286,13 @@ export interface DiskStorageConfig extends CommonStorageConfig {
    * The path to the directory where assets are stored on.
    */
   path: string
+  /**
+   * Whether to store files in a two-level nested folder structure using the
+   * first two characters of the file key.
+   *
+   * @defaultValue true
+   */
+  nestedFolders?: boolean
 }
 
 export type StorageConfig = S3StorageConfig | DiskStorageConfig
