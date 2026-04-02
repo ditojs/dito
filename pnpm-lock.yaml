@@ -498,6 +498,9 @@ importers:
       '@ditojs/server':
         specifier: workspace:^
         version: link:../packages/server
+      '@ditojs/utils':
+        specifier: workspace:^
+        version: link:../packages/utils
       '@electric-sql/pglite':
         specifier: ^0.3.16
         version: 0.3.16
