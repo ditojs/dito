@@ -852,11 +852,17 @@ export interface ModelRelation<
    */
   inverse?: boolean
   /**
-   * Optionally, a scope can be defined to be applied when loading the
-   * relation's models. The scope needs to be defined in the related model
-   * class' scopes definitions.
+   * Optionally overrides the related model class derived from
+   * the `to` property. Can be specified as the name the model
+   * was registered with or the model class itself.
    */
-  scope?: string
+  modelClass?: string | Class<$Related>
+  /**
+   * Optionally, one or more scopes can be defined to be applied when
+   * loading the relation's models. The scopes need to be defined in the
+   * related model class' scopes definitions.
+   */
+  scope?: OrArrayOf<string>
   /**
    * Optionally, a filter to apply when loading the relation's models.
    * Accepts a Dito.js filter name/object (resolved via the related model's
@@ -3210,6 +3216,19 @@ export class Storage {
    * instance in-place on this storage.
    */
   convertAssetFile(file: AssetFileObject): void
+
+  /**
+   * Signs an asset file by setting its `signature` property
+   * to an HMAC derived from its storage key.
+   */
+  signAssetFile(file: AssetFile): void
+
+  /**
+   * Verifies that an asset file's signature matches its
+   * storage key. Returns false if the signature is missing
+   * or invalid.
+   */
+  verifyAssetFile(file: AssetFile): boolean
 
   /** Registers a storage subclass by type name. */
   static register(storageClass: Class<Storage>): void

@@ -695,7 +695,16 @@ export interface SchemaSourceMixin<$Item> {
    *
    * @defaultValue `false`
    */
-  creatable?: OrItemAccessor<$Item, {}, boolean | { label: string }>
+  creatable?: OrItemAccessor<$Item, {},
+    boolean | {
+      label?: string
+      /**
+       * Returns additional query parameters to include in the
+       * URL when navigating to the create form.
+       */
+      query?: (context: DitoContext) => Record<string, any>
+    }
+  >
   /**
    * Whether to add edit buttons next to the list items.
    *
@@ -788,12 +797,13 @@ export type SchemaOptions<$Item, $Option = any> =
        */
       groupBy?: keyof $Option
       /**
-       * Custom equality function for comparing options.
+       * Custom equality function for matching a value to an
+       * option. Receives a context with `value` and `option`.
        */
-      equals?: (
-        a: $Option,
-        b: $Option
-      ) => boolean
+      equals?: (context: DitoContext & {
+        value: any
+        option: $Option
+      }) => boolean
       /**
        * Relative path to resolve options from data
        * within the same form. Uses filesystem-style
@@ -1641,6 +1651,12 @@ export interface CheckboxesSchema<$Item = any>
    */
   type: 'checkboxes'
   /**
+   * Whether multiple values can be selected.
+   *
+   * @defaultValue `true`
+   */
+  multiple?: boolean
+  /**
    * @defaultValue `'vertical'`
    */
   layout?: 'horizontal' | 'vertical'
@@ -1976,9 +1992,22 @@ export type DitoContext<$Item = any> = {
   getResourceUrl(resource: Resource): string
   /** Displays a notification to the user. */
   notify(options: {
+    /** Notification style. @defaultValue `'info'` */
     type?: LiteralUnion<'warning' | 'error' | 'info' | 'success'>
+    /** Heading text. Defaults to a label matching `type`. */
     title?: string
+    /** Body text, rendered as HTML paragraphs. */
     text: OrArrayOf<string>
+    /**
+     * The original error object. When `type` is `'error'`,
+     * this is logged to the console alongside the message.
+     */
+    error?: unknown
+    /**
+     * Display duration in milliseconds. When omitted, calculated
+     * automatically from content length. Use `0` for sticky.
+     */
+    duration?: number
   }): void
 }
 
