@@ -2,6 +2,7 @@ import fs from 'fs/promises'
 import path from 'path'
 import multer from '@koa/multer'
 import { mapConcurrently } from '@ditojs/utils'
+import { removeIfEmpty } from '../utils/fs.js'
 import { Storage } from './Storage.js'
 
 export class DiskStorage extends Storage {
@@ -11,7 +12,7 @@ export class DiskStorage extends Storage {
     if (!this.path) {
       throw new Error(`Missing configuration (path) for storage ${this.name}`)
     }
-    this.nestedFolders = this.config.nestedFolders !== false
+    this.nestedFolders = this.config.nestedFolders ?? true
     this.storage = multer.diskStorage({
       destination: (req, storageFile, cb) => {
         // Add `storageFile.key` property to internal storage file object.
@@ -51,25 +52,13 @@ export class DiskStorage extends Storage {
   async _removeFile(file) {
     const filePath = this._getFilePath(file)
     await fs.unlink(filePath)
-    if (!this.nestedFolders) return
-    const removeIfEmpty = async dir => {
-      if ((await fs.readdir(dir)).length === 0) {
-        try {
-          await fs.rmdir(dir)
-        } catch (err) {
-          // The directory may already have been deleted by another async call,
-          // fail silently here in this case.
-          if (err.code !== 'ENOENT') {
-            throw err
-          }
-        }
+    if (this.nestedFolders) {
+      // Clean up nested folders created with first two chars of `file.key`:
+      const dir = path.dirname(filePath)
+      if (await removeIfEmpty(dir)) {
+        await removeIfEmpty(path.dirname(dir))
       }
     }
-    // Clean up nested folders created with first two chars of `file.key` also:
-    const dir = path.dirname(filePath)
-    const parentDir = path.dirname(dir)
-    await removeIfEmpty(dir)
-    await removeIfEmpty(parentDir)
   }
 
   // @override
@@ -119,9 +108,10 @@ export class DiskStorage extends Storage {
   }
 
   _getNestedFolder(key, posix = false) {
-    if (!this.nestedFolders) return ''
     // Store files in nested folders created with the first two chars of the
     // key, for faster access & management with large amounts of files.
-    return (posix ? path.posix : path).join(key[0], key[1])
+    return this.nestedFolders
+      ? (posix ? path.posix : path).join(key[0], key[1])
+      : ''
   }
 }
