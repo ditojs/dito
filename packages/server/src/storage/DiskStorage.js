@@ -11,6 +11,7 @@ export class DiskStorage extends Storage {
     if (!this.path) {
       throw new Error(`Missing configuration (path) for storage ${this.name}`)
     }
+    this.nestedFolders = this.config.nestedFolders !== false
     this.storage = multer.diskStorage({
       destination: (req, storageFile, cb) => {
         // Add `storageFile.key` property to internal storage file object.
@@ -50,6 +51,7 @@ export class DiskStorage extends Storage {
   async _removeFile(file) {
     const filePath = this._getFilePath(file)
     await fs.unlink(filePath)
+    if (!this.nestedFolders) return
     const removeIfEmpty = async dir => {
       if ((await fs.readdir(dir)).length === 0) {
         try {
@@ -77,6 +79,16 @@ export class DiskStorage extends Storage {
 
   // @override
   async _listKeys() {
+    if (!this.nestedFolders) {
+      const files = []
+      for (const file of await fs.readdir(this._getPath())) {
+        if (!file.startsWith('.')) {
+          files.push(file)
+        }
+      }
+      return files
+    }
+
     const readDir = (...parts) =>
       fs.readdir(this._getPath(...parts), { withFileTypes: true })
 
@@ -107,6 +119,7 @@ export class DiskStorage extends Storage {
   }
 
   _getNestedFolder(key, posix = false) {
+    if (!this.nestedFolders) return ''
     // Store files in nested folders created with the first two chars of the
     // key, for faster access & management with large amounts of files.
     return (posix ? path.posix : path).join(key[0], key[1])
