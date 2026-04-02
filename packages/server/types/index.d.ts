@@ -1924,7 +1924,7 @@ export type ActionParameter = Schema & { name: string }
  * is bound to the controller instance.
  */
 export type ModelControllerActionHandler<
-  $ModelController extends ModelController = ModelController
+  $ModelController = ModelController
 > = (this: $ModelController, ctx: KoaContext, ...args: any[]) => any
 
 /**
@@ -2034,7 +2034,7 @@ export type ControllerActionOptions<
 }
 
 export type ModelControllerActionOptions<
-  $ModelController extends ModelController = ModelController
+  $ModelController = ModelController
 > = BaseControllerActionOptions & {
   /** The function to be called when the action route is requested. */
   handler: ModelControllerActionHandler<$ModelController>
@@ -2068,7 +2068,7 @@ export type MemberActionParameter<$Model extends Model = Model> =
  * `handler` or a bare handler function.
  */
 export type ModelControllerAction<
-  $ModelController extends ModelController = ModelController
+  $ModelController = ModelController
 > =
   | ModelControllerActionOptions<$ModelController>
   | ModelControllerActionHandler<$ModelController>
@@ -2079,7 +2079,7 @@ export type ModelControllerAction<
  * `'post'`, `'post login'`).
  */
 export type ModelControllerActions<
-  $ModelController extends ModelController = ModelController
+  $ModelController = ModelController
 > = {
   [name: ControllerActionName]: ModelControllerAction<$ModelController>
   allow?: OrReadOnly<ControllerActionName[]>
@@ -2087,7 +2087,7 @@ export type ModelControllerActions<
 }
 
 type ModelControllerMemberAction<
-  $ModelController extends ModelController = ModelController
+  $ModelController = ModelController
 > =
   | (Omit<ModelControllerActionOptions<$ModelController>, 'parameters'> & {
       parameters?: {
@@ -2105,7 +2105,7 @@ type ModelControllerMemberAction<
  * parameters to receive the resolved member model.
  */
 export type ModelControllerMemberActions<
-  $ModelController extends ModelController = ModelController
+  $ModelController = ModelController
 > = {
   [name: ControllerActionName]: ModelControllerMemberAction<$ModelController>
   allow?: OrReadOnly<ControllerActionName[]>
@@ -2177,13 +2177,13 @@ type ModelControllerHookKeys<
   | '*'
 }`
 type ModelControllerHook<
-  $ModelController extends ModelController = ModelController
+  $ModelController = ModelController
 > = (
   ctx: KoaContext,
   result: objection.Page<ModelFromModelController<$ModelController>>
 ) => any
 
-type HookKeysFromController<$ModelController extends ModelController> =
+type HookKeysFromController<$ModelController> =
   | ModelControllerHookKeys<
       Exclude<
         keyof Exclude<$ModelController['collection'], undefined>,
@@ -2200,7 +2200,7 @@ type HookKeysFromController<$ModelController extends ModelController> =
     >
 
 type HandlerFromHookKey<
-  $ModelController extends ModelController,
+  $ModelController,
   K extends HookKeysFromController<$ModelController>
 > = K extends `${
   | 'before'
@@ -2215,7 +2215,7 @@ type HandlerFromHookKey<
   : never
 
 type ModelControllerHooks<
-  $ModelController extends ModelController = ModelController
+  $ModelController = ModelController
 > = {
   [$Key in HookKeysFromController<$ModelController>]?: HandlerFromHookKey<
     $ModelController,
@@ -2271,12 +2271,12 @@ export class CollectionController<
    * The controller's collection actions with built-in CRUD
    * defaults.
    */
-  collection?: ModelControllerActions<CollectionController<$Model>>
+  collection?: ModelControllerActions<this>
   /**
    * The controller's member actions with built-in CRUD
    * defaults.
    */
-  member?: ModelControllerMemberActions<CollectionController<$Model>>
+  member?: ModelControllerMemberActions<this>
 
   /** Creates a query builder for this controller's model. */
   query(trx?: objection.Transaction): QueryBuilder<$Model>
@@ -2397,12 +2397,12 @@ export class ModelController<
    * The controller's collection actions. Wrap actions in
    * this object to assign them to the collection.
    */
-  collection?: ModelControllerActions<ModelController<$Model>>
+  collection?: ModelControllerActions<this>
   /**
    * The controller's member actions. Wrap actions in this
    * object to assign them to the member.
    */
-  member?: ModelControllerMemberActions<ModelController<$Model>>
+  member?: ModelControllerMemberActions<this>
   assets?:
     | boolean
     | {
@@ -2414,7 +2414,7 @@ export class ModelController<
    * When nothing is returned from a hook, the standard
    * action result is used.
    */
-  hooks?: ModelControllerHooks<ModelController<$Model>>
+  hooks?: ModelControllerHooks<this>
   /** Map of relation name to RelationController instance. */
   relations?: Record<string, RelationController>
 }
@@ -3527,7 +3527,9 @@ type OrReadOnly<T> = Readonly<T> | T
 
 type OrPromiseOf<T> = Promise<T> | T
 
-type ModelFromModelController<$ModelController extends ModelController> =
+type ModelFromModelController<
+  $ModelController extends { modelClass?: Class<any> }
+> =
   InstanceType<Exclude<$ModelController['modelClass'], undefined>>
 
 type SerializeModelPropertyValue<T> = T extends (infer U)[]

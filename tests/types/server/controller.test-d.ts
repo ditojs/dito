@@ -127,7 +127,22 @@ describe('ModelController', () => {
     }
   })
 
-  it('rejects bare action names', () => {
+  it('subclass collection actions have this typed to the subclass', () => {
+    type TaskController = ModelController<Model> & {
+      customMethod(): void
+    }
+
+    const collection: ModelControllerActions<TaskController> = {
+      'get stats'(ctx) {
+        expectTypeOf(this).not.toBeAny()
+        expectTypeOf(this).toEqualTypeOf<TaskController>()
+        expectTypeOf(ctx).not.toBeAny()
+        expectTypeOf(ctx).toMatchTypeOf<KoaContext>()
+      }
+    }
+  })
+
+it('rejects bare action names', () => {
     type MC = ModelController<Model>
     const collection: ModelControllerActions<MC> = {
       // @ts-expect-error bare action name is not valid
