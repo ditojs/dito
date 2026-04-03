@@ -10,7 +10,9 @@ import type {
   ModelControllerActionHandler,
   ModelControllerActions,
   ModelControllerMemberActions,
+  ControllerAction,
   ControllerActionHandler,
+  ControllerActions,
   Page
 } from '@ditojs/server'
 import type { Transaction } from 'objection'
@@ -28,6 +30,57 @@ describe('Controller', () => {
     expectTypeOf(ctrl.setProperty).toBeFunction()
     ctrl.setProperty('foo', 42)
     ctrl.setProperty('bar', 'hello')
+  })
+
+  it('typed action params flow to handler', () => {
+    type Params = {
+      'get search': { query: string }
+      'post create': { name: string; count: number }
+    }
+    const actions: ControllerActions<Controller, Params> = {
+      'get search': {
+        handler(ctx, { query }) {
+          expectTypeOf(query).not.toBeAny()
+          expectTypeOf(query).toBeString()
+        }
+      },
+      'post create': {
+        handler(ctx, { name, count }) {
+          expectTypeOf(name).not.toBeAny()
+          expectTypeOf(name).toBeString()
+          expectTypeOf(count).not.toBeAny()
+          expectTypeOf(count).toBeNumber()
+        }
+      }
+    }
+  })
+
+  it('ControllerAction with typed params', () => {
+    const action: ControllerAction<Controller, { query: string }> = {
+      parameters: { query: { type: 'string' } },
+      handler(ctx, { query }) {
+        expectTypeOf(query).not.toBeAny()
+        expectTypeOf(query).toBeString()
+      }
+    }
+  })
+
+  it('ControllerAction rejects mismatched parameter schema', () => {
+    const action: ControllerAction<Controller, { query: string }> = {
+      // @ts-expect-error query should be Schema<string>, not Schema<number>
+      parameters: { query: { type: 'number' } },
+      handler(ctx, { query }) {}
+    }
+  })
+
+  it('untyped actions accept params', () => {
+    const actions: ControllerActions<Controller> = {
+      'get list': {
+        handler(ctx, params) {
+          expectTypeOf(params).toBeAny()
+        }
+      }
+    }
   })
 
   it('action handler this is typed to controller', () => {
