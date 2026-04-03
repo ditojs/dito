@@ -4,6 +4,8 @@ import type {
   QueryBuilder,
   SerializedModel,
   ModelScopes,
+  ModelModifiers,
+  ModelModifier,
   ModelFilters,
   ModelHooks,
   ModelFilterFunction,
@@ -127,6 +129,35 @@ describe('Model', () => {
       }
     }
     assertType<ModelHooks<Model>>(hooks)
+  })
+
+  it('modifiers receive typed query builder', () => {
+    const modifiers: ModelModifiers<Model> = {
+      sharedSelects(query) {
+        expectTypeOf(query).not.toBeAny()
+        expectTypeOf(query).toMatchTypeOf<QueryBuilder<Model>>()
+        return query.select('id', 'name')
+      },
+      ordered(query) {
+        expectTypeOf(query).not.toBeAny()
+        return query.orderBy('order')
+      }
+    }
+    assertType<ModelModifiers<Model>>(modifiers)
+  })
+
+  it('modifier with extra args', () => {
+    const modifier: ModelModifier<Model> = (query, limit) => {
+      expectTypeOf(query).not.toBeAny()
+      expectTypeOf(query).toMatchTypeOf<QueryBuilder<Model>>()
+      query.limit(limit)
+    }
+    assertType<ModelModifier<Model>>(modifier)
+  })
+
+  it('static modifiers is typed', () => {
+    expectTypeOf<typeof Model.modifiers>()
+      .toMatchTypeOf<ModelModifiers<Model>>()
   })
 
   it('QueryBuilderType uses Dito QueryBuilder', () => {
