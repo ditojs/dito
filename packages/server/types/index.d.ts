@@ -1786,31 +1786,40 @@ export type ModelProperties<$Model extends Model = Model> = [
  * path are derived from the action name key (e.g.
  * `'post import'` → `POST /import`, `'get'` → `GET /`).
  *
+ * Can be either a bare handler function or an options
+ * object with `handler`, `authorize`, `parameters`, etc.
+ *
  * @example
+ * ```ts
  * // Bare handler function:
- * collection = {
- *   allow: ['get'],
+ * actions = {
  *   'post import'(ctx) {
  *     return this.importData(ctx.request.body)
  *   }
  * }
  *
- * @example
- * // Options object with handler, authorize, etc.:
- * collection = {
- *   allow: ['get'],
+ * // Options object:
+ * actions = {
  *   'post import': {
- *     handler(ctx) {
- *       return this.importData(ctx.request.body)
- *     },
+ *     handler(ctx) { ... },
  *     authorize: 'admin',
  *     transacted: true
  *   }
  * }
+ *
+ * // With typed parameters:
+ * const action: ControllerAction<this, { query: string }> = {
+ *   parameters: { query: { type: 'string' } },
+ *   handler(ctx, { query }) { ... } // query: string
+ * }
+ * ```
  */
-export type ControllerAction<$Controller extends Controller = Controller> =
-  | ControllerActionOptions<$Controller>
-  | ControllerActionHandler<$Controller>
+export type ControllerAction<
+  $Controller extends Controller = Controller,
+  $Params = Record<string, any>
+> =
+  | ControllerActionOptions<$Controller, $Params>
+  | ControllerActionHandler<$Controller, $Params>
 
 export class Controller {
   app: Application
@@ -1992,8 +2001,11 @@ export type ModelControllerActionHandler<
  * bound to the controller instance.
  */
 export type ControllerActionHandler<
-  $Controller extends Controller = Controller
-> = (this: $Controller, ctx: KoaContext, ...args: any[]) => any
+  $Controller extends Controller = Controller,
+  $Params = Record<string, any>
+> = keyof $Params extends never
+  ? (this: $Controller, ctx: KoaContext) => any
+  : (this: $Controller, ctx: KoaContext, params: $Params) => any
 
 type ModelDataKey<T, K extends keyof T> = K extends
   | 'QueryBuilderType'
@@ -2058,18 +2070,6 @@ export type BaseControllerActionOptions = {
    */
   authorize?: Authorize
   /**
-   * Defines validated parameters for the action handler.
-   * The handler receives a single parameter object with
-   * the same keys:
-   * ```ts
-   * parameters: { cart: { type: 'object' } },
-   * handler(ctx, { cart }) { ... }
-   * ```
-   *
-   * @see {@link https://github.com/ditojs/dito/blob/main/docs/model-properties.md Model Properties}
-   */
-  parameters?: { [key: string]: Schema }
-  /**
    * Provides a schema for the value returned from the action handler and
    * optionally maps the value to a key inside a returned object when it
    * contains a `name` property.
@@ -2092,14 +2092,39 @@ export type BaseControllerActionOptions = {
 }
 
 export type ControllerActionOptions<
-  $Controller extends Controller = Controller
+  $Controller extends Controller = Controller,
+  $Params = Record<string, any>
 > = BaseControllerActionOptions & {
-  handler: ControllerActionHandler<$Controller>
+  /**
+   * Defines validated parameters for the action handler.
+   * The handler receives a single parameter object with
+   * the same keys:
+   * ```ts
+   * parameters: { cart: { type: 'object' } },
+   * handler(ctx, { cart }) { ... }
+   * ```
+   *
+   * For strongly-typed parameters, pass a params map as
+   * the second type argument to {@link ControllerActions}:
+   * ```ts
+   * actions: ControllerActions<this, {
+   *   'get search': { query: string }
+   * }>
+   * ```
+   */
+  parameters?: { [K in keyof $Params]: Schema<$Params[K]> }
+  handler: ControllerActionHandler<$Controller, $Params>
 }
 
 export type ModelControllerActionOptions<
   $ModelController = ModelController
 > = BaseControllerActionOptions & {
+  /**
+   * Defines validated parameters for the action handler.
+   * The handler receives a single parameter object with
+   * the same keys.
+   */
+  parameters?: { [key: string]: Schema }
   /** The function to be called when the action route is requested. */
   handler: ModelControllerActionHandler<$ModelController>
 }
@@ -2188,11 +2213,45 @@ export type ControllerActionName = `${HTTPMethod}${string}`
 
 /**
  * Map of action names to action definitions for a
- * controller. Use `allow` to whitelist specific actions
- * and `authorize` for group-level authorization.
+ * controller. Action names follow the pattern
+ * `'{method} {path}'` (e.g. `'post import'`) or just
+ * `'{method}'` for default CRUD actions (e.g. `'get'`).
+ *
+ * Use `allow` to whitelist specific actions and
+ * `authorize` for group-level authorization.
+ *
+ * Pass a `$ParamsMap` as the second type argument to
+ * strongly type handler parameters per action:
+ *
+ * @example
+ * ```ts
+ * type Params = {
+ *   'get search': { query: string }
+ *   'post create': { name: string }
+ * }
+ *
+ * actions: ControllerActions<this, Params> = {
+ *   allow: ['get search', 'post create'],
+ *   'get search': {
+ *     parameters: { query: { type: 'string' } },
+ *     handler(ctx, { query }) { ... } // query: string
+ *   },
+ *   'post create': {
+ *     parameters: { name: { type: 'string' } },
+ *     handler(ctx, { name }) { ... } // name: string
+ *   }
+ * }
+ * ```
+ *
+ * @see {@link ControllerAction}
  */
-export type ControllerActions<$Controller extends Controller = Controller> = {
-  [name: ControllerActionName]: ControllerAction<$Controller>
+export type ControllerActions<
+  $Controller extends Controller = Controller,
+  $ParamsMap extends Record<string, any> = {}
+> = {
+  [K in keyof $ParamsMap & ControllerActionName]?: ControllerAction<$Controller, $ParamsMap[K]>
+} & {
+  [name: ControllerActionName]: ControllerAction<$Controller, any>
   allow?: OrReadOnly<ControllerActionName[]>
   authorize?: Authorize
 }
