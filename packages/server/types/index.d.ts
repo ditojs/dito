@@ -983,6 +983,24 @@ export type ModelScopes<$Model extends Model = Model> = Record<
 >
 
 /**
+ * A query modifier function that transforms a query builder.
+ * Modifiers are reusable query fragments applied via
+ * `.modify('name')` on queries.
+ */
+export type ModelModifier<$Model extends Model = Model> = (
+  query: QueryBuilder<$Model>,
+  ...args: any[]
+) => void
+
+/**
+ * Map of modifier names to modifier functions.
+ */
+export type ModelModifiers<$Model extends Model = Model> = Record<
+  string,
+  ModelModifier<$Model>
+>
+
+/**
  * A filter handler function that modifies a query builder
  * based on external parameters (e.g. from URL query strings).
  */
@@ -1139,6 +1157,27 @@ export class Model extends objection.Model {
   /** @see {@link https://github.com/ditojs/dito/blob/main/docs/model-filters.md|Model Filters} */
   static filters: ModelFilters<Model>
 
+  /**
+   * Reusable named query fragments applied via
+   * `.modify('name')` on query builders. Commonly used
+   * to define shared select sets or filter conditions.
+   *
+   * @example
+   * ```ts
+   * // Define modifiers on a model:
+   * static modifiers = {
+   *   sharedSelects: query =>
+   *     query.select('id', 'name', 'status'),
+   *   whereActive: query =>
+   *     query.where('active', true)
+   * }
+   *
+   * // Use them on queries via QueryBuilder.modify():
+   * query.modify('sharedSelects').modify('whereActive')
+   * ```
+   */
+  static modifiers: ModelModifiers<Model>
+
   static hooks: ModelHooks<Model>
 
   static assets: ModelAssets
@@ -1152,13 +1191,7 @@ export class Model extends objection.Model {
     hooks: ModelHooks
     assets: ModelAssets
     options: Record<string, any>
-    modifiers: Record<
-      string,
-      (
-        builder: objection.QueryBuilder<any, any>,
-        ...args: any[]
-      ) => void
-    >
+    modifiers: ModelModifiers
     schema: Record<string, any>
     [key: string]: any
   }
@@ -1244,13 +1277,7 @@ export class Model extends objection.Model {
   /** Returns the named property definition, if found. */
   static getProperty(name: string): ModelProperty | null
   /** Returns the model's query modifiers. */
-  static getModifiers(): Record<
-    string,
-    (
-      builder: objection.QueryBuilder<any, any>,
-      ...args: any[]
-    ) => void
-  >
+  static getModifiers(): ModelModifiers
 
   /**
    * Returns property names matching the given filter
