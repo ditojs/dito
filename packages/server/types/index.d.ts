@@ -1178,6 +1178,26 @@ export class Model extends objection.Model {
    */
   static modifiers: ModelModifiers<Model>
 
+  /**
+   * Additional JSON Schema properties that are deep-merged
+   * into the model's compiled schema (built from
+   * {@link Model.properties}). Used for example to add
+   * a custom `validate` function for cross-field validation.
+   *
+   * @example
+   * ```ts
+   * static schema: Schema = {
+   *   validate({ data, options }) {
+   *     if (!data.name) {
+   *       throw new Error('Name is required')
+   *     }
+   *     return true
+   *   }
+   * }
+   * ```
+   */
+  static schema: Schema
+
   static hooks: ModelHooks<Model>
 
   static assets: ModelAssets
@@ -1192,7 +1212,7 @@ export class Model extends objection.Model {
     assets: ModelAssets
     options: Record<string, any>
     modifiers: ModelModifiers
-    schema: Record<string, any>
+    schema: Schema
     [key: string]: any
   }
 
