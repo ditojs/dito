@@ -2012,8 +2012,13 @@ export type BaseControllerActionOptions = {
    */
   authorize?: Authorize
   /**
-   * Validates action parameters and maps them to Koa's `ctx.query` object
-   * passed to the action handler.
+   * Defines validated parameters for the action handler.
+   * The handler receives a single parameter object with
+   * the same keys:
+   * ```ts
+   * parameters: { cart: { type: 'object' } },
+   * handler(ctx, { cart }) { ... }
+   * ```
    *
    * @see {@link https://github.com/ditojs/dito/blob/main/docs/model-properties.md Model Properties}
    */
@@ -2174,66 +2179,63 @@ export class AdminController extends Controller {
   defineViteConfig(config?: UserConfig): UserConfig
 }
 type ModelControllerHookType = 'collection' | 'member'
-type ModelControllerHookKeys<
-  $Keys extends string,
-  $ModelControllerHookType extends string
-> = `${
+type ModelControllerHookKey = `${
   | 'before'
   | 'after'
   | '*'
 }:${
-  | $ModelControllerHookType
+  | ModelControllerHookType
   | '*'
 }:${
-  | Exclude<$Keys, 'allow'>
   | ControllerActionName
   | '*'
 }`
-type ModelControllerHook<
-  $ModelController = ModelController
-> = (
-  ctx: KoaContext,
-  result: objection.Page<ModelFromModelController<$ModelController>>
-) => any
 
-type HookKeysFromController<$ModelController> =
-  | ModelControllerHookKeys<
-      Exclude<
-        keyof Exclude<$ModelController['collection'], undefined>,
-        symbol | number
-      >,
-      'collection'
-    >
-  | ModelControllerHookKeys<
-      Exclude<
-        keyof Exclude<$ModelController['member'], undefined>,
-        symbol | number
-      >,
-      'member'
-    >
+type CrudActionName = 'get' | 'post' | 'put' | 'patch' | 'delete'
+type NonDeleteCrudActionName = Exclude<CrudActionName, 'delete'>
 
-type HandlerFromHookKey<
-  $ModelController,
-  K extends HookKeysFromController<$ModelController>
-> = K extends `${
-  | 'before'
-  | 'after'
-  | '*'
-}:${
-  | 'collection'
-  | 'member'
-  | '*'
-}:${string}`
-  ? (this: $ModelController, ctx: KoaContext, ...args: any[]) => any
-  : never
+type BeforeHookKey = `${'before' | '*'}:${ModelControllerHookType | '*'}:${ControllerActionName | '*'}`
+type AfterDeleteHookKey = `after:${ModelControllerHookType | '*'}:delete`
+type AfterItemHookKey =
+  | `after:member:${NonDeleteCrudActionName}`
+  | `after:collection:${'post' | 'put' | 'patch'}`
+type AfterCollectionGetHookKey = `after:collection:get`
+// Catch-all for custom actions and wildcard scopes;
+// CRUD hooks get strongly-typed results via the specific key types above.
+type AfterCustomHookKey = `after:${ModelControllerHookType | '*'}:${ControllerActionName | '*'}`
 
-type ModelControllerHooks<
+export type ModelControllerHooks<
   $ModelController = ModelController
 > = {
-  [$Key in HookKeysFromController<$ModelController>]?: HandlerFromHookKey<
-    $ModelController,
-    $Key
-  >
+  [$Key in BeforeHookKey]?: (
+    this: $ModelController,
+    ctx: KoaContext,
+    params?: Record<string, any>
+  ) => void
+} & {
+  [$Key in AfterDeleteHookKey]?: (
+    this: $ModelController,
+    ctx: KoaContext,
+    result: { count: number }
+  ) => any
+} & {
+  [$Key in AfterItemHookKey]?: (
+    this: $ModelController,
+    ctx: KoaContext,
+    item: ModelFromModelController<$ModelController>
+  ) => any
+} & {
+  [$Key in AfterCollectionGetHookKey]?: (
+    this: $ModelController,
+    ctx: KoaContext,
+    result: ModelFromModelController<$ModelController>[] | Page<ModelFromModelController<$ModelController>>
+  ) => any
+} & {
+  [$Key in AfterCustomHookKey]?: (
+    this: $ModelController,
+    ctx: KoaContext,
+    result: any
+  ) => any
 }
 
 /**
@@ -2424,8 +2426,52 @@ export class ModelController<
       }
 
   /**
-   * When nothing is returned from a hook, the standard
-   * action result is used.
+   * Lifecycle hooks that run before or after controller
+   * actions. Keys follow the pattern
+   * `'{before|after|*}:{collection|member|*}:{actionName|*}'`.
+   * Use `'*'` in any segment to match all values.
+   *
+   * @example
+   * ```ts
+   * override hooks: ModelControllerHooks<MyController> = {
+   *   // Guard: prevent patching locked records
+   *   'before:member:patch'(ctx) {
+   *     if (ctx.request.body.locked) {
+   *       throw new ResponseError('Locked records cannot be modified', {
+   *         status: 403
+   *       })
+   *     }
+   *   },
+   *   // Enrich: attach computed data to the member
+   *   async 'after:member:get'(ctx, item) {
+   *     const isProcessing = await checkJobStatus(item.id)
+   *     item.$set({ isProcessing })
+   *     return item
+   *   },
+   *   // Side effect: log after a successful deletion
+   *   'after:member:delete'(ctx, result) {
+   *     logger.info(`Deleted ${result.count} ${this.modelClass.name} record(s)`)
+   *   },
+   *   // Custom action: runs after a custom 'get export' action
+   *   'after:collection:get export'(ctx, items) {
+   *     analytics.track('export', { count: items.length })
+   *   },
+   *   // Custom action: receives the resolved parameters
+   *   'before:member:post import'(ctx, params) {
+   *     logger.info(`Importing ${params?.repoFamily?.name}`)
+   *   }
+   * }
+   * ```
+   *
+   * `before:` CRUD hooks receive only `(ctx)`. Custom
+   * action hooks also receive the resolved `params` object.
+   *
+   * `after:` hooks receive `(ctx, result)`. Returning a
+   * value from an `after:` hook replaces the action result.
+   *
+   * @see {@link ModelControllerActions}
+   * @see {@link ModelControllerMemberActions}
+   * @see {@link QueryParameterOptions} for pagination parameters
    */
   hooks?: ModelControllerHooks<this>
   /** Map of relation name to RelationController instance. */

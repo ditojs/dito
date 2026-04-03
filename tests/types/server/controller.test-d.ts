@@ -10,7 +10,8 @@ import type {
   ModelControllerActionHandler,
   ModelControllerActions,
   ModelControllerMemberActions,
-  ControllerActionHandler
+  ControllerActionHandler,
+  Page
 } from '@ditojs/server'
 import type { Transaction } from 'objection'
 
@@ -142,7 +143,188 @@ describe('ModelController', () => {
     }
   })
 
-it('rejects bare action names', () => {
+  it('hook handler this is typed to the controller', () => {
+    const ctrl = {} as ModelController<Model>
+    ctrl.hooks = {
+      'before:collection:get'(ctx) {
+        expectTypeOf(this).not.toBeAny()
+        expectTypeOf(this).toEqualTypeOf<ModelController<Model>>()
+        expectTypeOf(ctx).not.toBeAny()
+        expectTypeOf(ctx).toMatchTypeOf<KoaContext>()
+      }
+    }
+  })
+
+  it('hooks accept valid key patterns', () => {
+    const ctrl = {} as ModelController<Model>
+    ctrl.hooks = {
+      'before:collection:get'() {},
+      'after:collection:get session'() {},
+      'after:member:patch'() {},
+      'before:*:get'() {},
+      '*:collection:*'() {},
+      '*:*:*'() {}
+    }
+  })
+
+  it('subclass hook handlers have this typed to the subclass', () => {
+    type TaskController = ModelController<Model> & {
+      customMethod(): void
+    }
+    const ctrl = {} as TaskController
+    ctrl.hooks = {
+      'after:collection:get'(ctx) {
+        expectTypeOf(this).not.toBeAny()
+        expectTypeOf(this).toEqualTypeOf<TaskController>()
+        expectTypeOf(ctx).not.toBeAny()
+        expectTypeOf(ctx).toMatchTypeOf<KoaContext>()
+      }
+    }
+  })
+
+  it('before: hooks return void', () => {
+    const ctrl = {} as ModelController<Model>
+    ctrl.hooks = {
+      'before:collection:get'(ctx) {
+        expectTypeOf(this.hooks!['before:collection:get']).returns.toBeVoid()
+      }
+    }
+  })
+
+  it('after: hooks can return any', () => {
+    const ctrl = {} as ModelController<Model>
+    ctrl.hooks = {
+      'after:collection:get'(ctx, result) {
+        expectTypeOf(this.hooks!['after:collection:get']).returns.toBeAny()
+        return { modified: true }
+      }
+    }
+  })
+
+  it('after: collection hooks receive ctx and result only', () => {
+    const ctrl = {} as ModelController<Model>
+    ctrl.hooks = {
+      'after:collection:get'(ctx, result) {
+        expectTypeOf(ctx).not.toBeAny()
+        expectTypeOf(ctx).toMatchTypeOf<KoaContext>()
+        expectTypeOf(result).not.toBeAny()
+        expectTypeOf(result).toMatchTypeOf<Model[] | Page<Model>>()
+      }
+    }
+    ctrl.hooks = {
+      // @ts-expect-error after: hooks only accept two arguments
+      'after:collection:get'(ctx, result, extra) {}
+    }
+  })
+
+  it('after: CRUD item hooks are typed to the model', () => {
+    const ctrl = {} as ModelController<Model>
+    ctrl.hooks = {
+      'after:member:get'(ctx, item) {
+        expectTypeOf(item).not.toBeAny()
+        expectTypeOf(item).toMatchTypeOf<Model>()
+      },
+      'after:member:patch'(ctx, item) {
+        expectTypeOf(item).not.toBeAny()
+        expectTypeOf(item).toMatchTypeOf<Model>()
+      },
+      'after:member:put'(ctx, item) {
+        expectTypeOf(item).not.toBeAny()
+        expectTypeOf(item).toMatchTypeOf<Model>()
+      },
+      'after:member:post'(ctx, item) {
+        expectTypeOf(item).not.toBeAny()
+        expectTypeOf(item).toMatchTypeOf<Model>()
+      },
+      'after:collection:post'(ctx, item) {
+        expectTypeOf(item).not.toBeAny()
+        expectTypeOf(item).toMatchTypeOf<Model>()
+      },
+      'after:collection:put'(ctx, item) {
+        expectTypeOf(item).not.toBeAny()
+        expectTypeOf(item).toMatchTypeOf<Model>()
+      },
+      'after:collection:patch'(ctx, item) {
+        expectTypeOf(item).not.toBeAny()
+        expectTypeOf(item).toMatchTypeOf<Model>()
+      }
+    }
+  })
+
+  it('after:*:delete result is { count: number }', () => {
+    const ctrl = {} as ModelController<Model>
+    ctrl.hooks = {
+      'after:member:delete'(ctx, result) {
+        expectTypeOf(result).not.toBeAny()
+        expectTypeOf(result).toMatchTypeOf<{ count: number }>()
+      },
+      'after:collection:delete'(ctx, result) {
+        expectTypeOf(result).not.toBeAny()
+        expectTypeOf(result).toMatchTypeOf<{ count: number }>()
+      }
+    }
+  })
+
+  it('after: wildcard and custom hooks fall back to any', () => {
+    const ctrl = {} as ModelController<Model>
+    ctrl.hooks = {
+      'after:*:get'(ctx, result) {
+        expectTypeOf(result).toBeAny()
+      },
+      'after:collection:get stats'(ctx, result) {
+        expectTypeOf(result).toBeAny()
+      }
+    }
+  })
+
+  it('after: hooks reject extra arguments', () => {
+    const ctrl = {} as ModelController<Model>
+    ctrl.hooks = {
+      // @ts-expect-error after: hooks only accept two arguments
+      'after:member:get'(ctx, item, extra) {}
+    }
+    ctrl.hooks = {
+      // @ts-expect-error after: hooks only accept two arguments
+      'after:member:delete'(ctx, result, extra) {}
+    }
+    ctrl.hooks = {
+      // @ts-expect-error after: hooks only accept two arguments
+      'after:collection:delete'(ctx, result, extra) {}
+    }
+  })
+
+  it('before: hooks receive ctx and optional params', () => {
+    const ctrl = {} as ModelController<Model>
+    ctrl.hooks = {
+      'before:collection:get'(ctx, params) {
+        expectTypeOf(ctx).not.toBeAny()
+        expectTypeOf(ctx).toMatchTypeOf<KoaContext>()
+        expectTypeOf(params).toEqualTypeOf<Record<string, any> | undefined>()
+      },
+      'before:member:patch'(ctx, params) {
+        expectTypeOf(ctx).not.toBeAny()
+        expectTypeOf(ctx).toMatchTypeOf<KoaContext>()
+      },
+      'before:member:delete'(ctx, params) {
+        expectTypeOf(ctx).not.toBeAny()
+        expectTypeOf(ctx).toMatchTypeOf<KoaContext>()
+      },
+      'before:collection:delete'(ctx, params) {
+        expectTypeOf(ctx).not.toBeAny()
+        expectTypeOf(ctx).toMatchTypeOf<KoaContext>()
+      }
+    }
+  })
+
+  it('hooks reject invalid keys', () => {
+    const ctrl = {} as ModelController<Model>
+    ctrl.hooks = {
+      // @ts-expect-error bare action name is not a valid hook key
+      get() {}
+    }
+  })
+
+  it('rejects bare action names', () => {
     type MC = ModelController<Model>
     const collection: ModelControllerActions<MC> = {
       // @ts-expect-error bare action name is not valid
