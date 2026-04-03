@@ -3636,7 +3636,9 @@ export type KoaContext<$State = KoaContextState> = Koa.ParameterizedContext<
     session: koaSession.ContextSession
     logger: PinoLogger
   }
->
+> & {
+  app: Application
+}
 
 type LiteralUnion<T extends U, U = string> = T | (U & Record<never, never>)
 
