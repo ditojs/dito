@@ -10,6 +10,7 @@
     button.dito-button(
       type="button"
       :class="{ 'dito-button--selected': scope.name === query.scope }"
+      :aria-pressed="scope.name === query.scope"
       :title="scope.hint || getLabel(scope)"
       @click="navigate"
     ) {{ getLabel(scope) }}

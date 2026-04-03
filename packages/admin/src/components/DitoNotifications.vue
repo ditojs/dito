@@ -1,5 +1,5 @@
 <template lang="pug">
-.dito-notifications
+.dito-notifications(aria-live="polite")
   .dito-header
     span
   .dito-notifications__inner

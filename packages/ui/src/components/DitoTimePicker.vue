@@ -271,6 +271,11 @@ export default {
     },
 
     onKeyDown(event) {
+      if (event.key === 'Escape') {
+        this.showPopup = false
+        event.preventDefault()
+        return
+      }
       const { input } = this
       const selection = getSelection(input)
       const { ver: step, enter } = getKeyNavigation(event)

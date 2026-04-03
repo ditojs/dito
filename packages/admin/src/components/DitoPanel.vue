@@ -4,6 +4,8 @@ component.dito-panel(
   v-if="shouldRenderSchema(panelSchema)"
   v-show="visible && (!panelTabComponent || panelTabComponent.visible)"
   :is="panelTag"
+  role="region"
+  :aria-label="getLabel(schema)"
   @submit.prevent
 )
   DitoSchema.dito-panel__schema(

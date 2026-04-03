@@ -13,7 +13,12 @@
   )
     .dito-tree-branch(
       v-if="numEntries"
+      role="button"
+      tabindex="0"
+      :aria-label="ariaLabel"
+      :aria-expanded="opened"
       @click.stop="opened = !opened"
+      @keydown.enter.space.prevent="opened = !opened"
     )
       .dito-chevron(
         v-if="numEntries"
@@ -105,6 +110,7 @@ import SortableMixin from '../mixins/SortableMixin.js'
 import { appendDataPath } from '../utils/data.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
 import { getNamedSchemas, hasFormSchema } from '../utils/schema.js'
+import { stripHtml } from '@ditojs/utils'
 
 // @vue/component
 export default DitoComponent.component('DitoTreeItem', {
@@ -220,6 +226,10 @@ export default DitoComponent.component('DitoTreeItem', {
         })
       }
       return []
+    },
+
+    ariaLabel() {
+      return this.label ? stripHtml(this.label) : null
     },
 
     details() {

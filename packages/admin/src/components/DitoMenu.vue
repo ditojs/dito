@@ -12,6 +12,7 @@ ul.dito-menu(
       a.dito-menu__link(
         :href="getItemHref(item)"
         :class="{ 'dito-menu__link--active': isActiveItem(item) }"
+        :aria-current="isActiveItem(item) ? 'page' : null"
         @click.prevent.stop="onClickItem(item)"
       ) {{ getLabel(item) }}
       DitoMenu.dito-menu__sub(

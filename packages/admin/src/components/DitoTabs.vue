@@ -1,11 +1,14 @@
 <template lang="pug">
-.dito-tabs
+.dito-tabs(role="tablist")
   template(
     v-for="(tabSchema, key) in tabs"
   )
     a.dito-tabs__link(
       v-if="shouldRenderSchema(tabSchema)"
       :key="key"
+      role="tab"
+      :aria-selected="modelValue === key"
+      :tabindex="modelValue === key ? 0 : -1"
       :class="{ 'dito-tabs__link--active': modelValue === key }"
       @click="$emit('update:modelValue', key)"
     ) {{ getLabel(tabSchema, key) }}

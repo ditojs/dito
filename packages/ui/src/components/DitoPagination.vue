@@ -1,6 +1,6 @@
 <!-- eslint-disable vue/no-template-shadow -->
 <template lang="pug">
-.dito-pagination
+nav.dito-pagination(aria-label="Pagination")
   .dito-pagination-total(
     v-if="showTotal"
   )
@@ -14,6 +14,8 @@
       v-for="button in buttons"
       :class="getButtonClasses(button)"
       :disabled="button.disabled"
+      :aria-label="getButtonLabel(button)"
+      :aria-current="button.active ? 'page' : null"
       @click="onClickButton(button)"
     )
       span(
@@ -141,6 +143,13 @@ export default {
         [`${prefix}--${button.type}`]: button.type,
         [`${prefix}--active`]: button.active
       }
+    },
+
+    getButtonLabel(button) {
+      if (button.type === 'prev') return 'Previous page'
+      if (button.type === 'next') return 'Next page'
+      if (button.text) return `Page ${button.text}`
+      return null
     },
 
     onClickButton(button) {

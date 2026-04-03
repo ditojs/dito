@@ -2,6 +2,8 @@
 .dito-list(
   v-if="isReady"
   :id="dataPath"
+  role="region"
+  :aria-label="label || labelize(schema.name)"
 )
   .dito-list__header(
     v-if="scopes || hasPagination"
@@ -23,6 +25,7 @@
       :total="total || 0"
     )
   table.dito-table(
+    :aria-label="label || labelize(schema.name)"
     :class=`{
       'dito-table--separators': isInlined,
       'dito-table--larger-padding': hasEditButtons && !isInlined,

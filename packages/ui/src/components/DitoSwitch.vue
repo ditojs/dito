@@ -9,7 +9,9 @@
       ref="input"
       v-bind="attributes"
       v-model="checked"
+      role="switch"
       type="checkbox"
+      :aria-checked="checked"
       :name="name"
       :disabled="disabled"
     )

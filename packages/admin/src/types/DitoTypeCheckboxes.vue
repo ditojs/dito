@@ -1,6 +1,8 @@
 <template lang="pug">
 ul.dito-checkboxes(
   :id="dataPath"
+  role="group"
+  :aria-label="label"
   :class="`dito-layout--${schema.layout || 'vertical'}`"
 )
   li(

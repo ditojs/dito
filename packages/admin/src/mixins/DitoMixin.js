@@ -277,9 +277,11 @@ export default {
     },
 
     getButtonAttributes(verb) {
+      const label = labelize(verb)
       return {
-        class: `dito-button--${verb}`,
-        title: labelize(verb)
+        'class': `dito-button--${verb}`,
+        'title': label,
+        'aria-label': label
       }
     },
 

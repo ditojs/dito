@@ -6,6 +6,7 @@ div(
   slot
 form.dito-scroll-parent(
   v-else
+  :aria-label="label"
   @submit.prevent
 )
   slot
@@ -20,6 +21,10 @@ export default DitoComponent.component('DitoFormInner', {
     nested: {
       type: Boolean,
       default: false
+    },
+    label: {
+      type: String,
+      default: null
     }
   }
 })

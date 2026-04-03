@@ -1,6 +1,7 @@
 <template lang="pug">
 .dito-errors(
   v-if="errors"
+  role="alert"
 )
   ul
     li(

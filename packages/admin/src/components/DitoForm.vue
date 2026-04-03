@@ -15,6 +15,7 @@
   DitoFormInner(
     v-show="isActiveRoute"
     :nested="isNestedRoute"
+    :label="itemLabel"
   )
     //- Prevent implicit submission of the form, for example when typing enter
     //- in an input field.

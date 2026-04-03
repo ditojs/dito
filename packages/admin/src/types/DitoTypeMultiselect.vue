@@ -10,8 +10,10 @@
       :parentContext="context"
     )
     VueMultiselect(
+      :id="dataPath"
       ref="element"
       v-model="selectedOptions"
+      :aria-label="label"
       :class="multiselectClasses"
       :showLabels="false"
       :placeholder="placeholder"
