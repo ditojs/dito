@@ -1213,7 +1213,6 @@ export class Model extends objection.Model {
     options: Record<string, any>
     modifiers: ModelModifiers
     schema: Schema
-    [key: string]: any
   }
 
   /** Derived from class name (removes 'Model' suffix). */
