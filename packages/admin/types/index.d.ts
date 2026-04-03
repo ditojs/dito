@@ -1934,7 +1934,7 @@ export type DitoContext<$Item = any> = {
   /**
    * The current search term in select components.
    */
-  searchTerm: string | undefined
+  searchTerm: string
   /**
    * Whether a button request is currently running.
    */
