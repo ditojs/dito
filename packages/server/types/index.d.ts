@@ -2331,13 +2331,13 @@ export class CollectionController<
    * Executes a controller action within a transaction
    * context.
    */
-  execute(
+  execute<R>(
     ctx: KoaContext,
     execute: (
       query: QueryBuilder<$Model>,
       trx?: objection.Transaction
-    ) => any
-  ): Promise<any>
+    ) => R
+  ): Promise<Awaited<R>>
 
   /**
    * Extracts model IDs from the request body collection,

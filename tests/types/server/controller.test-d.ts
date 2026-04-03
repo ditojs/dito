@@ -68,6 +68,19 @@ describe('CollectionController', () => {
     )
   })
 
+  it('execute infers return type from callback', () => {
+    const ctrl = {} as CollectionController<Model>
+    const result = ctrl.execute(
+      {} as KoaContext,
+      (query, trx) => {
+        expectTypeOf(query).not.toBeAny()
+        expectTypeOf(query).toMatchTypeOf<QueryBuilder<Model>>()
+        return query.findById(1)
+      }
+    )
+    expectTypeOf(result).not.toBeAny()
+  })
+
   it('executeAndFetchById modify receives query and trx', () => {
     const ctrl = {} as CollectionController<Model>
     ctrl.executeAndFetchById(
