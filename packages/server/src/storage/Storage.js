@@ -161,7 +161,10 @@ export class Storage {
           Buffer.from(expected, 'hex'),
           Buffer.from(file.signature, 'hex')
         )
-      } catch {}
+      } catch {
+        // Catches missing or malformed signatures.
+        // Fall through to return false below.
+      }
     }
     return false
   }
