@@ -37,5 +37,3 @@ export class Tag extends Model {
     }
   }
 }
-
-export function someHelper() {}
