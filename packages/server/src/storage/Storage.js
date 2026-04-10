@@ -169,12 +169,23 @@ export class Storage {
   _signAssetKey(key) {
     const secret = (
       this.app.keys?.[0] ??
-      (Storage._fallbackSecret ??= crypto.randomBytes(32))
+      (Storage._fallbackSecret ??= this._createFallbackSecret())
     )
     return crypto
       .createHmac('sha256', secret)
       .update(key)
       .digest('hex')
+  }
+
+  _createFallbackSecret() {
+    console.warn(
+      'No app.keys configured for asset signatures. ' +
+      'Please note that signatures will not survive ' +
+      'process restarts, and users will be unable to ' +
+      'update records with asset properties until they ' +
+      'reload the page.'
+    )
+    return crypto.randomBytes(32)
   }
 
   _getUrl(...parts) {
