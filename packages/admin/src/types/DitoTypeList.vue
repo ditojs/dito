@@ -25,7 +25,6 @@
       :total="total || 0"
     )
   table.dito-table(
-    :aria-label="label || labelize(schema.name)"
     :class=`{
       'dito-table--separators': isInlined,
       'dito-table--larger-padding': hasEditButtons && !isInlined,

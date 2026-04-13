@@ -5,9 +5,11 @@
   )
     a.dito-tabs__link(
       v-if="shouldRenderSchema(tabSchema)"
+      :id="getTabId(key)"
       :key="key"
       role="tab"
       :aria-selected="modelValue === key"
+      :aria-controls="getPanelId(key)"
       :tabindex="modelValue === key ? 0 : -1"
       :class="{ 'dito-tabs__link--active': modelValue === key }"
       @click="$emit('update:modelValue', key)"
@@ -22,7 +24,18 @@ export default DitoComponent.component('DitoTabs', {
   emits: ['update:modelValue'],
   props: {
     tabs: { type: Object, default: null },
-    modelValue: { type: String, default: null }
+    modelValue: { type: String, default: null },
+    dataPath: { type: String, default: '' }
+  },
+
+  methods: {
+    getTabId(key) {
+      return `${this.dataPath}-tab-${key}`
+    },
+
+    getPanelId(key) {
+      return `${this.dataPath}-tabpanel-${key}`
+    }
   }
 })
 </script>
