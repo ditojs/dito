@@ -13,15 +13,19 @@
     button.dito-button(
       type="button"
       :disabled="disabled"
-      v-bind="getButtonAttributes(verb)"
+      v-bind="{ ...pulldownTriggerAttributes, ...getButtonAttributes(verb) }"
       @mousedown.stop="onPulldownMouseDown()"
     ) {{ text }}
-    ul.dito-pulldown(:class="{ 'dito-pulldown--open': pulldown.open }")
+    ul.dito-pulldown(
+      role="menu"
+      :class="{ 'dito-pulldown--open': pulldown.open }"
+    )
       li(
         v-for="(form, type) in creatableForms"
         v-show="shouldShowSchema(form)"
       )
         a.dito-pulldown__item(
+          role="menuitem"
           :class=`{
             'dito-pulldown__item--disabled': shouldDisableSchema(form)
           }`

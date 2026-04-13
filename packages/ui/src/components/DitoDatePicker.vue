@@ -151,6 +151,11 @@ export default {
     },
 
     onKeyDown(event) {
+      if (event.key === 'Escape') {
+        this.showPopup = false
+        event.preventDefault()
+        return
+      }
       const { ver: step, enter } = getKeyNavigation(event)
       if (step || enter) {
         event.preventDefault()

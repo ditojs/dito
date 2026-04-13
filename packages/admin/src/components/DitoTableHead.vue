@@ -6,6 +6,7 @@ thead.dito-table-head
     )
       th(
         v-if="shouldRenderSchema(column)"
+        scope="col"
         :class="getColumnClass(column)"
       )
         RouterLink(
@@ -17,6 +18,7 @@ thead.dito-table-head
           button.dito-button(
             type="button"
             :class="getSortClass(column)"
+            :aria-sort="getSortState(column)"
             @click="navigate"
           )
             .dito-button__order-arrows
@@ -62,6 +64,14 @@ export default DitoComponent.component('DitoTableHead', {
       return this.sort.name === column.name
         ? `dito-button--selected dito-button--order-${this.sort.order}`
         : null
+    },
+
+    getSortState(column) {
+      const states = { asc: 'ascending', desc: 'descending' }
+      return (
+        states[this.sort.name === column.name && this.sort.order] ||
+        'none'
+      )
     },
 
     getSortLink(column) {

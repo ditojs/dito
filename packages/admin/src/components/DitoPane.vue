@@ -2,7 +2,10 @@
 <template lang="pug">
 .dito-pane(
   v-if="isPopulated && componentSchemas.length > 0"
+  :id="tab ? `${dataPath}-tabpanel-${tab}` : null"
   v-resize="onResizePane"
+  :role="tab ? 'tabpanel' : null"
+  :aria-labelledby="tab ? `${dataPath}-tab-${tab}` : null"
   :class="classes"
 )
   template(

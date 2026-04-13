@@ -24,13 +24,13 @@
     //- Styling comes from `DitoTableHead`
     thead.dito-table-head
       tr
-        th
+        th(scope="col")
           span File
-        th
+        th(scope="col")
           span Size
-        th
+        th(scope="col")
           span Status
-        th
+        th(scope="col")
           span
     DitoDraggable(
       v-model="files"

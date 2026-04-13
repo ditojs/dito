@@ -1,6 +1,8 @@
 <template lang="pug">
 .dito-spinner(
   v-show="loading"
+  role="status"
+  aria-label="Loading"
   :style="{ '--color': color, '--size': size, '--margin': margin }"
 )
   .dito-spinner__pulse.dito-spinner__pulse1

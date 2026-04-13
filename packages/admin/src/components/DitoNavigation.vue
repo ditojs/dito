@@ -1,5 +1,5 @@
 <template lang="pug">
-nav.dito-navigation.dito-scroll-parent
+nav.dito-navigation.dito-scroll-parent(aria-label="Main navigation")
   h1
     RouterLink.dito-link(to="/") {{ appState.title }}
   DitoMenu.dito-scroll(:items="views")

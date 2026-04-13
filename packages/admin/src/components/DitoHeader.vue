@@ -1,5 +1,5 @@
 <template lang="pug">
-nav.dito-header
+nav.dito-header(:aria-busy="isLoading")
   DitoTrail
     DitoSpinner(
       v-if="isLoading"

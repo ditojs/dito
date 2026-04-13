@@ -2,7 +2,7 @@
 .dito-dialog(
   ref="dialog"
   role="dialog"
-  aria-expanded="true"
+  :aria-label="schema.label || 'Dialog'"
   aria-modal="true"
   :style="{ '--width': settings.width ? `${settings.width}px` : null }"
   @mouseup="onMouseUp"

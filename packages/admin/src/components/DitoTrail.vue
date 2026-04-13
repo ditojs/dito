@@ -1,11 +1,12 @@
 <template lang="pug">
-.dito-trail
+.dito-trail(aria-label="Breadcrumb")
   ul
     li(
       v-for="component in trail"
     )
       a.dito-trail__link(
         :class="{ 'dito-trail__link--active': component.path === $route.path }"
+        :aria-current="component.path === $route.path ? 'page' : null"
         :href="getComponentHref(component)"
         @click.prevent.stop="onClickComponent(component)"
       )

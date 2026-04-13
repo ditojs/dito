@@ -1,14 +1,20 @@
 <template lang="pug">
 .dito-account
   a(
+    role="button"
+    v-bind="pulldownTriggerAttributes"
     @mousedown.stop="onPulldownMouseDown()"
   )
     span {{ user.username }}
-  ul.dito-pulldown(:class="{ 'dito-pulldown--open': pulldown.open }")
+  ul.dito-pulldown(
+    role="menu"
+    :class="{ 'dito-pulldown--open': pulldown.open }"
+  )
     li(
       v-for="(label, value) of items"
     )
       a.dito-pulldown__item(
+        role="menuitem"
         @mousedown.stop="onPulldownMouseDown(value)"
         @mouseup="onPulldownMouseUp(value)"
       ) {{ label }}

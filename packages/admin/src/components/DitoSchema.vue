@@ -41,6 +41,7 @@ slot(name="prepend")
           v-if="opened"
           v-model="selectedTab"
           :tabs="tabs"
+          :dataPath="dataPath"
         )
       DitoClipboard(
         v-if="clipboard"

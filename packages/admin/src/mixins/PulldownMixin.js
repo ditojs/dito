@@ -27,6 +27,15 @@ export default {
     }
   },
 
+  computed: {
+    pulldownTriggerAttributes() {
+      return {
+        'aria-haspopup': 'menu',
+        'aria-expanded': this.pulldown.open
+      }
+    }
+  },
+
   methods: {
     onPulldownMouseDown(value = null) {
       if (value === null) {

@@ -69,7 +69,12 @@ export default DitoComponent.component('DitoLabel', {
     },
 
     attributes() {
-      return this.collapsible ? { onClick: this.onClick } : {}
+      return this.collapsible
+        ? {
+            'onClick': this.onClick,
+            'aria-expanded': !this.collapsed
+          }
+        : {}
     },
 
     isActive() {

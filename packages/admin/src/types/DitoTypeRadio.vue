@@ -1,6 +1,8 @@
 <template lang="pug">
 ul.dito-radio-buttons(
   :id="dataPath"
+  role="radiogroup"
+  :aria-label="label"
   :class="`dito-layout--${schema.layout || 'vertical'}`"
 )
   li(
