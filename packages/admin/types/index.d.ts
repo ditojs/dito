@@ -695,15 +695,18 @@ export interface SchemaSourceMixin<$Item> {
    *
    * @defaultValue `false`
    */
-  creatable?: OrItemAccessor<$Item, {},
-    boolean | {
-      label?: string
-      /**
-       * Returns additional query parameters to include in the
-       * URL when navigating to the create form.
-       */
-      query?: (context: DitoContext) => Record<string, any>
-    }
+  creatable?: OrItemAccessor<
+    $Item,
+    {},
+    | boolean
+    | {
+        label?: string
+        /**
+         * Returns additional query parameters to include in the
+         * URL when navigating to the create form.
+         */
+        query?: (context: DitoContext) => Record<string, any>
+      }
   >
   /**
    * Whether to add edit buttons next to the list items.
@@ -800,10 +803,12 @@ export type SchemaOptions<$Item, $Option = any> =
        * Custom equality function for matching a value to an
        * option. Receives a context with `value` and `option`.
        */
-      equals?: (context: DitoContext & {
-        value: any
-        option: $Option
-      }) => boolean
+      equals?: (
+        context: DitoContext & {
+          value: any
+          option: $Option
+        }
+      ) => boolean
       /**
        * Relative path to resolve options from data
        * within the same form. Uses filesystem-style
@@ -3016,12 +3021,13 @@ type NonOptionFieldComponent<$Item = any> = Exclude<
  * because using the full interfaces in a union breaks TypeScript's
  * contextual typing for callbacks in the `Components` mapped type.
  */
-type OptionComponent<$Item, $Option> =
-  BaseSchema<$Item>
-  & SchemaOptionsMixin<$Item, $Option>
-  & SchemaAffixMixin<$Item>
-  & Pick<MultiselectSchema, 'multiple' | 'searchable' | 'stayOpen' | 'taggable'>
-  & { type: 'select' | 'multiselect' }
+type OptionComponent<$Item, $Option> = BaseSchema<$Item> &
+  SchemaOptionsMixin<$Item, $Option> &
+  SchemaAffixMixin<$Item> &
+  Pick<
+    MultiselectSchema,
+    'multiple' | 'searchable' | 'stayOpen' | 'taggable'
+  > & { type: 'select' | 'multiselect' }
 
 /**
  * Strips properties with `never` values from a type.

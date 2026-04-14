@@ -511,6 +511,7 @@ export class Application<$Models extends Models = Models> {
   ): K extends keyof ResolvedServices
     ? ResolvedServices[K]
     : Service | null
+
   /** Finds a service matching the given predicate. */
   findService(
     callback: (service: Service) => boolean
@@ -721,18 +722,14 @@ type RelatedModel<T> = T extends (infer U)[]
     ? T
     : never
 
-type ModelName<T extends Model, $Models> = {
-  [K in keyof ResolveModels<$Models>]: ResolveModels<$Models>[K] extends Class<T>
-    ? K
-    : never
-}[keyof ResolveModels<$Models>]
+type ModelName<T extends Model, $Models, R = ResolveModels<$Models>> = {
+  [K in keyof R]: R[K] extends Class<T> ? K : never
+}[keyof R]
 
 type ResolveModels<$Models> = $Models extends Promise<infer M> ? M : $Models
 
-type OnlyModels<$Models> = {
-  [K in keyof ResolveModels<$Models> as ResolveModels<$Models>[K] extends ModelClass
-    ? K
-    : never]: ResolveModels<$Models>[K]
+type OnlyModels<$Models, R = ResolveModels<$Models>> = {
+  [K in keyof R as R[K] extends ModelClass ? K : never]: R[K]
 }
 
 type HasModels<$Models> = keyof OnlyModels<$Models> extends never ? false : true
@@ -1932,10 +1929,12 @@ export class Controller {
   setupActions(
     type: 'actions' | 'collection' | 'member'
   ): Record<string, unknown> | undefined
+
   setupActionRoute(
     type: 'actions' | 'collection' | 'member',
     action: ControllerAction
   ): void
+
   setupAssets(): Record<string, unknown> | undefined
   setupAssetRoute(
     dataPath: OrArrayOf<string>,
@@ -1991,9 +1990,11 @@ export type ActionParameter = Schema & { name: string }
  * the Koa context and any resolved action parameters. `this`
  * is bound to the controller instance.
  */
-export type ModelControllerActionHandler<
-  $ModelController = ModelController
-> = (this: $ModelController, ctx: KoaContext, ...args: any[]) => any
+export type ModelControllerActionHandler<$ModelController = ModelController> = (
+  this: $ModelController,
+  ctx: KoaContext,
+  ...args: any[]
+) => any
 
 /**
  * Handler function for a controller action. Receives the Koa
@@ -2116,18 +2117,17 @@ export type ControllerActionOptions<
   handler: ControllerActionHandler<$Controller, $Params>
 }
 
-export type ModelControllerActionOptions<
-  $ModelController = ModelController
-> = BaseControllerActionOptions & {
-  /**
-   * Defines validated parameters for the action handler.
-   * The handler receives a single parameter object with
-   * the same keys.
-   */
-  parameters?: { [key: string]: Schema }
-  /** The function to be called when the action route is requested. */
-  handler: ModelControllerActionHandler<$ModelController>
-}
+export type ModelControllerActionOptions<$ModelController = ModelController> =
+  BaseControllerActionOptions & {
+    /**
+     * Defines validated parameters for the action handler.
+     * The handler receives a single parameter object with
+     * the same keys.
+     */
+    parameters?: { [key: string]: Schema }
+    /** The function to be called when the action route is requested. */
+    handler: ModelControllerActionHandler<$ModelController>
+  }
 
 export type MemberActionParameter<$Model extends Model = Model> =
   | Schema
@@ -2156,9 +2156,7 @@ export type MemberActionParameter<$Model extends Model = Model> =
  * A model controller action: either an options object with
  * `handler` or a bare handler function.
  */
-export type ModelControllerAction<
-  $ModelController = ModelController
-> =
+export type ModelControllerAction<$ModelController = ModelController> =
   | ModelControllerActionOptions<$ModelController>
   | ModelControllerActionHandler<$ModelController>
 
@@ -2167,17 +2165,13 @@ export type ModelControllerAction<
  * controller's collection-level actions (e.g. `'get'`,
  * `'post'`, `'post login'`).
  */
-export type ModelControllerActions<
-  $ModelController = ModelController
-> = {
+export type ModelControllerActions<$ModelController = ModelController> = {
   [name: ControllerActionName]: ModelControllerAction<$ModelController>
   allow?: OrReadOnly<ControllerActionName[]>
   authorize?: Authorize
 }
 
-type ModelControllerMemberAction<
-  $ModelController = ModelController
-> =
+type ModelControllerMemberAction<$ModelController = ModelController> =
   | (Omit<ModelControllerActionOptions<$ModelController>, 'parameters'> & {
       parameters?: {
         [key: string]: MemberActionParameter<
@@ -2193,9 +2187,7 @@ type ModelControllerMemberAction<
  * `delete`). Member actions can use `{ from: 'member' }`
  * parameters to receive the resolved member model.
  */
-export type ModelControllerMemberActions<
-  $ModelController = ModelController
-> = {
+export type ModelControllerMemberActions<$ModelController = ModelController> = {
   [name: ControllerActionName]: ModelControllerMemberAction<$ModelController>
   allow?: OrReadOnly<ControllerActionName[]>
   authorize?: Authorize
@@ -2249,7 +2241,10 @@ export type ControllerActions<
   $Controller extends Controller = Controller,
   $ParamsMap extends Record<string, any> = {}
 > = {
-  [K in keyof $ParamsMap & ControllerActionName]?: ControllerAction<$Controller, $ParamsMap[K]>
+  [K in keyof $ParamsMap & ControllerActionName]?: ControllerAction<
+    $Controller,
+    $ParamsMap[K]
+  >
 } & {
   [name: ControllerActionName]: ControllerAction<$Controller, any>
   allow?: OrReadOnly<ControllerActionName[]>
@@ -2299,7 +2294,8 @@ type ModelControllerHookKey = `${
 type CrudActionName = 'get' | 'post' | 'put' | 'patch' | 'delete'
 type NonDeleteCrudActionName = Exclude<CrudActionName, 'delete'>
 
-type BeforeHookKey = `${'before' | '*'}:${ModelControllerHookType | '*'}:${ControllerActionName | '*'}`
+type BeforeHookKey =
+  `${'before' | '*'}:${ModelControllerHookType | '*'}:${ControllerActionName | '*'}`
 type AfterDeleteHookKey = `after:${ModelControllerHookType | '*'}:delete`
 type AfterItemHookKey =
   | `after:member:${NonDeleteCrudActionName}`
@@ -2307,11 +2303,10 @@ type AfterItemHookKey =
 type AfterCollectionGetHookKey = `after:collection:get`
 // Catch-all for custom actions and wildcard scopes;
 // CRUD hooks get strongly-typed results via the specific key types above.
-type AfterCustomHookKey = `after:${ModelControllerHookType | '*'}:${ControllerActionName | '*'}`
+type AfterCustomHookKey =
+  `after:${ModelControllerHookType | '*'}:${ControllerActionName | '*'}`
 
-export type ModelControllerHooks<
-  $ModelController = ModelController
-> = {
+export type ModelControllerHooks<$ModelController = ModelController> = {
   [$Key in BeforeHookKey]?: (
     this: $ModelController,
     ctx: KoaContext,
@@ -2333,7 +2328,9 @@ export type ModelControllerHooks<
   [$Key in AfterCollectionGetHookKey]?: (
     this: $ModelController,
     ctx: KoaContext,
-    result: ModelFromModelController<$ModelController>[] | Page<ModelFromModelController<$ModelController>>
+    result:
+      | ModelFromModelController<$ModelController>[]
+      | Page<ModelFromModelController<$ModelController>>
   ) => any
 } & {
   [$Key in AfterCustomHookKey]?: (
@@ -2555,7 +2552,8 @@ export class ModelController<
    *   },
    *   // Side effect: log after a successful deletion
    *   'after:member:delete'(ctx, result) {
-   *     logger.info(`Deleted ${result.count} ${this.modelClass.name} record(s)`)
+   *     const name = this.modelClass.name
+   *     logger.info(`Deleted ${result.count} ${name} record(s)`)
    *   },
    *   // Custom action: runs after a custom 'get export' action
    *   'after:collection:get export'(ctx, items) {
@@ -3630,10 +3628,7 @@ export type Keyword = (
   /** When true, validation errors for this keyword are suppressed. */
   silent?: boolean
 }
-export type Format = (
-  | Ajv.ValidateFunction
-  | Ajv.FormatDefinition<string>
-) & {
+export type Format = (Ajv.ValidateFunction | Ajv.FormatDefinition<string>) & {
   /** Custom error message shown when validation fails. */
   message?: string
   /** When true, validation errors for this format are suppressed. */
@@ -3708,8 +3703,7 @@ type OrPromiseOf<T> = Promise<T> | T
 
 type ModelFromModelController<
   $ModelController extends { modelClass?: Class<any> }
-> =
-  InstanceType<Exclude<$ModelController['modelClass'], undefined>>
+> = InstanceType<Exclude<$ModelController['modelClass'], undefined>>
 
 type SerializeModelPropertyValue<T> = T extends (infer U)[]
   ? SerializeModelPropertyValue<U>[]
