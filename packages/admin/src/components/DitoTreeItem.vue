@@ -321,8 +321,14 @@ export default DitoComponent.component('DitoTreeItem', {
   --chevron-indent: #{$chevron-indent};
 
   overflow: hidden;
+  padding: 0 $input-padding-hor;
+  margin: 0 (-$input-padding-hor);
 
   > .dito-tree-header {
+    // Extend header into item padding so active background reaches the edge:
+    margin: 0 (-$input-padding-hor);
+    padding: 0 $input-padding-hor;
+
     > .dito-tree-branch,
     > .dito-tree-leaf {
       // Use `--level` CSS variable to calculated the accumulated indent
@@ -356,8 +362,13 @@ export default DitoComponent.component('DitoTreeItem', {
     display: flex;
     align-items: baseline;
     gap: 0.25em;
-    overflow: hidden;
+    min-width: 0;
     white-space: nowrap;
+
+    > :first-child {
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
   }
 
   .dito-tree-info {
@@ -395,8 +406,6 @@ export default DitoComponent.component('DitoTreeItem', {
   &--active {
     > .dito-tree-header {
       background: $color-active;
-      padding: 0 $input-padding-hor;
-      margin: 0 (-$input-padding-hor);
 
       > .dito-tree-branch {
         > .dito-chevron::before {
