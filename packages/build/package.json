@@ -13,9 +13,7 @@
     "src/"
   ],
   "bin": {
-    "inline-assets": "./src/cli/inline-assets.js",
-    "pnpm-link": "./src/cli/pnpm-link.js",
-    "pnpm-unlink": "./src/cli/pnpm-unlink.js"
+    "inline-assets": "./src/cli/inline-assets.js"
   },
   "engines": {
     "node": ">= 24.0.0"

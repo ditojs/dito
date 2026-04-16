@@ -25,9 +25,7 @@
     "lint": "concurrently pnpm:eslint pnpm:penere pnpm:stylelint",
     "lint:fix": "pnpm run eslint:fix && pnpm run penere:fix && pnpm run stylelint:fix",
     "update": "pnpm update -r --interactive --latest",
-    "update:sync": "pnpm update -r",
-    "link:all": "node packages/build/src/cli/pnpm-link.js knex objection",
-    "unlink:all": "node packages/build/src/cli/pnpm-unlink.js knex objection"
+    "update:sync": "pnpm update -r"
   },
   "lint-staged": {
     "packages/**/src/**/*.{js,ts}": [

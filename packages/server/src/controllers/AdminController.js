@@ -258,7 +258,7 @@ export class AdminController extends Controller {
             extensions: [
               '.js', '.mjs', '.jsx', '.ts', '.mts', '.tsx', '.json', '.vue'
             ],
-            preserveSymlinks: true,
+            preserveSymlinks: false,
             alias: [
               {
                 find: '@',
