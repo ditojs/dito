@@ -2,12 +2,15 @@
 // https://github.com/czeidler/knex-pglite
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createRequire } from 'module'
+import { dirname, join } from 'path'
 import { PGlite } from '@electric-sql/pglite'
 import { Knex } from 'knex'
 
 const require = createRequire(import.meta.url)
+// Resolve the deep path via knex's main entry to avoid exports restrictions
+// when knex is linked via pnpm overrides:
 const Client_PG: any =
-  require('knex/lib/dialects/postgres/index.js')
+  require(join(dirname(require.resolve('knex')), 'lib/dialects/postgres/index.js'))
 
 type KnexPGliteConfig = Knex.Config & {
   connection?: { pglite?: PGlite } | (() => { pglite?: PGlite })
