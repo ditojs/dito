@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "prepare": "playwright install chromium",
     "types": "tsc --noEmit",
     "test": "pnpm run /^test:/",
     "test:types": "vitest --run --typecheck",
