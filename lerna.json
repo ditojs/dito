@@ -1,12 +1,16 @@
 {
   "lerna": "9.0.3",
-  "version": "2.95.0",
+  "version": "2.96.0",
   "packages": [
     "packages/*"
   ],
   "npmClient": "pnpm",
   "command": {
-    "publish": { "push": false },
-    "version": { "push": false }
+    "publish": {
+      "push": false
+    },
+    "version": {
+      "push": false
+    }
   }
 }
