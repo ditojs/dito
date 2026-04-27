@@ -21,7 +21,7 @@ DitoSchema.dito-schema-inlined(
   //- others in `TypeList` as a scope, for better handling of layout.
   template(#edit-buttons)
     DitoEditButtons(
-      v-if="deletable || draggable || editable"
+      v-if="deletable || draggable || editable || insertIndex != null"
       :schema="schema"
       :dataPath="dataPath"
       :data="data"
@@ -32,6 +32,9 @@ DitoSchema.dito-schema-inlined(
       :draggable="draggable"
       :editable="editable"
       :editPath="editPath"
+      :creatable="insertIndex != null"
+      :createPath="createPath"
+      :insertIndex="insertIndex"
       @delete="$emit('delete')"
     )
 </template>
@@ -59,6 +62,8 @@ export default DitoComponent.component('DitoSchemaInlined', {
     editable: { type: Boolean, default: false },
     deletable: { type: Boolean, default: false },
     editPath: { type: String, default: null },
+    createPath: { type: String, default: null },
+    insertIndex: { type: Number, default: null },
     labelNode: { type: HTMLElement, default: null },
     accumulatedBasis: { type: Number, default: null }
   },
@@ -87,10 +92,9 @@ export default DitoComponent.component('DitoSchemaInlined', {
   grid-template-columns: 100%;
 
   &:not(:hover, .dito-schema--open) {
-    > .dito-schema-header {
-      > .dito-clipboard {
-        display: none;
-      }
+    > .dito-schema-header
+      .dito-button:not(.dito-button--edit, .dito-button--remove) {
+      display: none;
     }
   }
 }

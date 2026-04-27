@@ -155,9 +155,12 @@
 
   &--round,
   &--small {
-    // For now, nothing for these:
-    // .dito-button--create:empty::before,
-    // .dito-button--add:empty::before
+    // For now, nothing for create:
+    // .dito-button--create:empty::before
+
+    .dito-button--add:empty::before {
+      @extend %icon-add;
+    }
 
     .dito-button--upload:empty::before {
       @extend %icon-upload;

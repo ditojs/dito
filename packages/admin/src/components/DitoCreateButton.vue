@@ -63,12 +63,20 @@ export default DitoComponent.component('DitoCreateButton', {
     path: { type: String, required: true },
     verb: { type: String, required: true },
     text: { type: String, default: null },
-    disabled: { type: Boolean, required: true }
+    disabled: { type: Boolean, required: true },
+    insertIndex: { type: Number, default: null }
   },
 
   computed: {
     forms() {
-      return getFormSchemas(this.schema, this.context)
+      // When inserting per-item, `this.schema` is the item's form, not the
+      // list schema. Fall back to `sourceSchema` (the parent list's schema via
+      // `meta.schema`) so all creatable forms are discoverable in the pulldown.
+      const schema =
+        this.insertIndex != null
+          ? this.sourceSchema || this.schema
+          : this.schema
+      return getFormSchemas(schema, this.context)
     },
 
     creatableForms() {
@@ -107,7 +115,7 @@ export default DitoComponent.component('DitoCreateButton', {
     createItem(form, type = null) {
       if (!this.shouldDisableSchema(form)) {
         if (this.isInlined) {
-          this.sourceComponent.createItem(form, type)
+          this.sourceComponent.createItem(form, type, this.insertIndex)
         } else {
           const { creatable } = this.schema
           const query = {

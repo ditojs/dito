@@ -318,7 +318,7 @@ export default {
       type: Boolean,
       default: false,
       get(draggable) {
-        return this.isListSource && this.listData.length > 1 && draggable
+        return this.isListSource && draggable
       }
     }),
 
@@ -450,15 +450,17 @@ export default {
       }
     },
 
-    createItem(schema, type) {
+    createItem(schema, type, index = null) {
       const item = this.createData(schema, type)
       if (this.isObjectSource) {
         this.objectData = item
+      } else if (index != null) {
+        this.listData.splice(index, 0, item)
       } else {
         this.listData.push(item)
       }
       if (this.collapsible) {
-        this.$nextTick(() => this.openSchemaComponent(-1))
+        this.$nextTick(() => this.openSchemaComponent(index ?? -1))
       }
       this.onChange()
       return item
@@ -531,9 +533,20 @@ export default {
     },
 
     getSchemaComponent(index) {
-      const { schemaComponents } = this
-      const { length } = schemaComponents
-      return schemaComponents[((index % length) + length) % length]
+      const { listData, schemaComponents } = this
+      const candidate = schemaComponents.at(index)
+      if (listData?.length) {
+        // Fast path: registration order usually matches `listData`. Fall back
+        // to a search by reference when it doesn't (non-tail inserts, drag
+        // reorders), since `schemaComponents` is filled by mount-order pushes.
+        const item = listData.at(index)
+        return item == null
+          ? null
+          : candidate?.data === item
+            ? candidate
+            : schemaComponents.find(c => c.data === item)
+      }
+      return candidate
     },
 
     openSchemaComponent(index) {

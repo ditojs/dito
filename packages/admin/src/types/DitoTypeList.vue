@@ -85,9 +85,11 @@
               :collapsed="collapsed"
               :collapsible="collapsible"
               :deletable="deletable"
-              :draggable="draggable"
+              :draggable="draggable && listData.length > 1"
               :editable="editable"
               :editPath="getEditPath(item, index)"
+              :createPath="createPath"
+              :insertIndex="creatable && draggable ? index : null"
               @delete="deleteItem(item, index)"
             )
             component(

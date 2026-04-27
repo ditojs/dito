@@ -31,8 +31,9 @@ DitoButtons.dito-edit-buttons.dito-buttons--round(
     :nested="nested"
     :path="createPath"
     :verb="verbs.create"
-    :text="createButtonText"
+    :text="insertIndex != null ? null : createButtonText"
     :disabled="isCreatableDisabled"
+    :insertIndex="insertIndex"
   )
   button.dito-button(
     v-if="deletable"
@@ -67,7 +68,8 @@ export default DitoComponent.component('DitoEditButtons', {
     creatable: { type: Boolean, default: false },
     deletable: { type: Boolean, default: false },
     editPath: { type: String, default: null },
-    createPath: { type: String, default: null }
+    createPath: { type: String, default: null },
+    insertIndex: { type: Number, default: null }
   },
 
   computed: {
