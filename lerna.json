@@ -4,5 +4,9 @@
   "packages": [
     "packages/*"
   ],
-  "npmClient": "pnpm"
+  "npmClient": "pnpm",
+  "command": {
+    "publish": { "push": false },
+    "version": { "push": false }
+  }
 }
