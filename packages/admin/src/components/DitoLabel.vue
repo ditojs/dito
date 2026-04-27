@@ -102,6 +102,8 @@ export default DitoComponent.component('DitoLabel', {
   position: relative;
   // Vertically center all items in the label, e.g. chevron, edit-buttons.
   align-items: center;
+  // Let nested labels with ellipsis shrink below their content width.
+  min-width: 0;
   min-height: $input-height;
   margin-right: $form-spacing-half; // When inlined.
 

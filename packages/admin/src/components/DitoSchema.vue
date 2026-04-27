@@ -825,6 +825,8 @@ export default DitoComponent.component('DitoSchema', {
 .dito-schema-header {
   display: flex;
   justify-content: space-between;
+  // Let nested labels with ellipsis shrink below their content width.
+  min-width: 0;
 
   .dito-header & {
     // When teleported into main header.
