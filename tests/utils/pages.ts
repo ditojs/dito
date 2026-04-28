@@ -223,7 +223,7 @@ export class DitoForm {
   }
 }
 
-export class AdminListPage {
+export class DitoListView {
   readonly list: DitoList
 
   constructor(
@@ -317,7 +317,16 @@ export class DitoFilterPanel {
   }
 
   async fillFilter(label: string, value: string) {
-    await this.region.getByLabel(label, { exact: true }).fill(value)
+    // Filters use a `components: { ... }` wrapping schema, so the rendered
+    // `<label for="…">` points at the outer wrapper div, not the input.
+    // Match by role + accessible name (resolves through placeholder/title)
+    // for a stable target.
+    await this.region
+      .getByRole('textbox', { name: label, exact: true })
+      .fill(value)
+    // Filter panel commits queries via the explicit Filter button — typing
+    // alone doesn't refresh the list.
+    await this.region.getByRole('button', { name: 'Filter', exact: true }).click()
   }
 }
 

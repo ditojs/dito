@@ -17,6 +17,10 @@ export interface FixtureAppOptions {
   controllers: Record<string, unknown>
   /** Optional extra config merged into `createTestApp`'s `config`. */
   config?: Record<string, unknown>
+  /** If set, the worker fixture warms the admin Vite bundle by visiting
+   * `${url}${warmupPath}` once after the app starts. Avoids first-test
+   * cold-compile timeouts in CI. */
+  warmupPath?: string
 }
 
 /**
@@ -27,7 +31,7 @@ export interface FixtureAppOptions {
 export function createFixtureAppFixture(opts: FixtureAppOptions) {
   return base.extend<{ url: string }, { workerUrl: string }>({
     workerUrl: [
-      async ({}, use) => {
+      async ({ browser }, use) => {
         const app = createTestApp({
           models: opts.models,
           controllers: opts.controllers,
@@ -43,6 +47,20 @@ export function createFixtureAppFixture(opts: FixtureAppOptions) {
         await app.start()
         const url = getAppUrl(app)
         await waitForUrl(`${url}/admin/`)
+
+        if (opts.warmupPath) {
+          // Warm the admin Vite bundle once per worker so the first
+          // per-test navigation doesn't burn a per-test timeout on cold
+          // compile.
+          const page = await browser.newPage()
+          try {
+            await page.goto(`${url}${opts.warmupPath}`, {
+              waitUntil: 'networkidle'
+            })
+          } finally {
+            await page.close()
+          }
+        }
 
         await use(url)
 

@@ -25,5 +25,6 @@ export const test = createFixtureAppFixture({
   controllers: {
     admin: AdminController,
     api: { Widgets }
-  }
+  },
+  warmupPath: '/admin/widgets'
 })
