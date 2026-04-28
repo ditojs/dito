@@ -55,7 +55,6 @@ export default class Node {
       if (ch === CHAR_WILDCARD && path[pos + 1] === CHAR_WILDCARD) {
         // Deep wildcard (**): matches any path, with a optional suffix:
         this.insert(TYPE_STATIC, path.slice(0, pos))
-        pos += 2 // Skip '**'.
         this.insert(TYPE_MATCH_ANY, path, parameters, handler)
         return
       } else if (ch === CHAR_PARAM || ch === CHAR_WILDCARD) {

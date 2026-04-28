@@ -60,7 +60,7 @@ export default {
       const showLength = showPrev + showNext + 1
 
       let start = 1
-      let end = 1
+      let end
       if (numPages <= showLength) {
         end = numPages
       } else if (currentPage <= showPrev + 1) {

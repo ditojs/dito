@@ -14,7 +14,7 @@ const assets = argv._.map(asset => {
   const url = `url("${data}")`
   return { file, name, data, url }
 })
-let out = null
+let out
 if (argv.template) {
   const { default: render } = await import(path.resolve(argv.template))
   out = render(assets)

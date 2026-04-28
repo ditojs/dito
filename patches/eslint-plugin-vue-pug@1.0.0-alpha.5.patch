@@ -1,0 +1,22 @@
+diff --git a/lib/rules/component-name-in-template-casing.js b/lib/rules/component-name-in-template-casing.js
+index 6df7f90f0051f547b680cc317394950f7d0a6427..5d28e51e4e7f862ca345b57d2b5b0b61bb92951d 100644
+--- a/lib/rules/component-name-in-template-casing.js
++++ b/lib/rules/component-name-in-template-casing.js
+@@ -86,7 +86,7 @@ module.exports = {
+     /** @type {string[]} */
+     const globals = (options.globals || []).map(casing.pascalCase)
+     const registeredComponentsOnly = options.registeredComponentsOnly !== false
+-    const sourceCode = context.getSourceCode()
++    const sourceCode = context.sourceCode || context.getSourceCode()
+     const tokens =
+       sourceCode.parserServices.getTemplateBodyTokenStore &&
+       sourceCode.parserServices.getTemplateBodyTokenStore()
+@@ -96,7 +96,7 @@ module.exports = {
+ 
+     if (utils.isScriptSetup(context)) {
+       // For <script setup>
+-      const globalScope = context.getSourceCode().scopeManager.globalScope
++      const globalScope = (context.sourceCode || context.getSourceCode()).scopeManager.globalScope
+       if (globalScope) {
+         // Only check find the import module
+         const moduleScope = globalScope.childScopes.find(

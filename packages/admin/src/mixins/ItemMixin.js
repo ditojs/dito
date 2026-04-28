@@ -122,9 +122,7 @@ export default {
         // Always use extended style when auto-generating labels from index/id:
         extended = true
         text =
-          isListSource(sourceSchema) && index !== null
-            ? (text = `${index + 1}`)
-            : ''
+          isListSource(sourceSchema) && index !== null ? `${index + 1}` : ''
       }
       if (extended) {
         const formLabel = getFormLabel()

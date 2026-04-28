@@ -24,7 +24,7 @@ const contexts = new WeakMap()
 function toObject(context) {
   const rawStart = toRaw(context)
   let raw = rawStart
-  let object = null
+  let object
   // In case `DitoContext.extend()` was used, we need to find the actual context
   // object from the object's the inheritance chain:
   do {

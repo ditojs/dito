@@ -924,7 +924,7 @@ export class Application extends Koa {
     changedFiles,
     transaction = null
   ) {
-    let importedFiles = []
+    let importedFiles
     const AssetModel = this.getModel('Asset')
     if (AssetModel) {
       importedFiles = await this.addForeignAssets(
