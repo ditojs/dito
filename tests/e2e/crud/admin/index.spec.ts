@@ -1,26 +1,12 @@
 import { test, expect } from '../fixtures.js'
 import {
-  AdminListPage,
+  DitoListView,
   DitoForm
 } from '../../../utils/pages.js'
 
 test.describe('crud', () => {
-  // Warm the admin Vite bundle once per worker. The first navigation to a
-  // new admin route triggers on-demand compilation that can exceed
-  // per-test timeouts on CI cold starts.
-  test.beforeAll(async ({ browser, url }) => {
-    const page = await browser.newPage()
-    try {
-      await page.goto(`${url}/admin/widgets`, {
-        waitUntil: 'networkidle'
-      })
-    } finally {
-      await page.close()
-    }
-  })
-
   test('create, edit, delete round-trip', async ({ page, url }) => {
-    const list = new AdminListPage(page, url, 'Widget')
+    const list = new DitoListView(page, url, 'Widget')
     const form = new DitoForm(page)
 
     // Navigate. The Create button is a stable readiness signal — it's
