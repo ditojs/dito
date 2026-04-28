@@ -10,6 +10,23 @@ const { seed, saveAndFetch } = createModelHelpers(
 )
 
 test.describe('upload', () => {
+  // Warm the admin Vite bundle once per worker. The first
+  // navigation to `/admin/assets/:id` triggers on-demand
+  // compilation that can exceed per-test timeouts on CI
+  // cold starts.
+  test.beforeAll(async ({ browser, url }) => {
+    const widgetId = await seed()
+    const page = await browser.newPage()
+    try {
+      await page.goto(
+        `${url}/admin/assets/${widgetId}`,
+        { waitUntil: 'networkidle' }
+      )
+    } finally {
+      await page.close()
+    }
+  })
+
   test(
     'single file appears in table',
     async ({ page, url }) => {
