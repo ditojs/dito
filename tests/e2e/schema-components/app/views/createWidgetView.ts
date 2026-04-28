@@ -5,7 +5,8 @@ import type {
 export function createWidgetView<T>(
   itemLabel: string,
   resource: string,
-  components: Components<T>
+  components: Components<T>,
+  listOptions: Record<string, unknown> = {}
 ): ViewSchema<T> {
   return {
     type: 'view',
@@ -14,7 +15,8 @@ export function createWidgetView<T>(
       itemLabel,
       resource: { path: resource },
       editable: true,
-      form: { type: 'form', components }
+      form: { type: 'form', components },
+      ...listOptions
     }
   }
 }
