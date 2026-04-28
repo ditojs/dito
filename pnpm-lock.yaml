@@ -6,7 +6,7 @@ settings:
 
 patchedDependencies:
   eslint-plugin-vue-pug@1.0.0-alpha.5:
-    hash: 367f7786fbe313dbc1b15e9696b5c570ef357351984f354081d5899de532c3e1
+    hash: 7a76ee910483f0bd1d249273ba51afe3aa386a14b51013d8c40b381a60f42b4b
     path: patches/eslint-plugin-vue-pug@1.0.0-alpha.5.patch
 
 importers:
@@ -56,11 +56,11 @@ importers:
         specifier: ^7.3.0
         version: 7.3.0(eslint@10.2.1)
       eslint-plugin-vue:
-        specifier: ~10.8.0
-        version: 10.8.0(@typescript-eslint/parser@8.59.1(eslint@10.2.1)(typescript@5.9.3))(eslint@10.2.1)(vue-eslint-parser@10.4.0(eslint@10.2.1))
+        specifier: ~10.9.0
+        version: 10.9.0(@typescript-eslint/parser@8.59.1(eslint@10.2.1)(typescript@5.9.3))(eslint@10.2.1)(vue-eslint-parser@10.4.0(eslint@10.2.1))
       eslint-plugin-vue-pug:
         specifier: 1.0.0-alpha.5
-        version: 1.0.0-alpha.5(patch_hash=367f7786fbe313dbc1b15e9696b5c570ef357351984f354081d5899de532c3e1)(eslint-plugin-vue@10.8.0(@typescript-eslint/parser@8.59.1(eslint@10.2.1)(typescript@5.9.3))(eslint@10.2.1)(vue-eslint-parser@10.4.0(eslint@10.2.1)))(vue-eslint-parser@10.4.0(eslint@10.2.1))
+        version: 1.0.0-alpha.5(patch_hash=7a76ee910483f0bd1d249273ba51afe3aa386a14b51013d8c40b381a60f42b4b)(eslint-plugin-vue@10.9.0(@typescript-eslint/parser@8.59.1(eslint@10.2.1)(typescript@5.9.3))(eslint@10.2.1)(vue-eslint-parser@10.4.0(eslint@10.2.1)))(vue-eslint-parser@10.4.0(eslint@10.2.1))
       full-icu:
         specifier: ^1.5.0
         version: 1.5.0
@@ -3597,8 +3597,8 @@ packages:
     peerDependencies:
       eslint-plugin-vue: '>=10.7.0'
 
-  eslint-plugin-vue@10.8.0:
-    resolution: {integrity: sha512-f1J/tcbnrpgC8suPN5AtdJ5MQjuXbSU9pGRSSYAuF3SHoiYCOdEX6O22pLaRyLHXvDcOe+O5ENgc1owQ587agA==}
+  eslint-plugin-vue@10.9.0:
+    resolution: {integrity: sha512-EFNNzu4HqtTRb5DJINpyd+u3bDdzETWDMpCzG+UBHz1tpsnMDCeOcf61u4Wy/cbXnMymK+MT9bjH7KcG1fItSw==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
     peerDependencies:
       '@stylistic/eslint-plugin': ^2.0.0 || ^3.0.0 || ^4.0.0 || ^5.0.0
@@ -10207,14 +10207,14 @@ snapshots:
       '@eslint-community/eslint-utils': 4.9.1(eslint@10.2.1)
       eslint: 10.2.1
 
-  eslint-plugin-vue-pug@1.0.0-alpha.5(patch_hash=367f7786fbe313dbc1b15e9696b5c570ef357351984f354081d5899de532c3e1)(eslint-plugin-vue@10.8.0(@typescript-eslint/parser@8.59.1(eslint@10.2.1)(typescript@5.9.3))(eslint@10.2.1)(vue-eslint-parser@10.4.0(eslint@10.2.1)))(vue-eslint-parser@10.4.0(eslint@10.2.1)):
+  eslint-plugin-vue-pug@1.0.0-alpha.5(patch_hash=7a76ee910483f0bd1d249273ba51afe3aa386a14b51013d8c40b381a60f42b4b)(eslint-plugin-vue@10.9.0(@typescript-eslint/parser@8.59.1(eslint@10.2.1)(typescript@5.9.3))(eslint@10.2.1)(vue-eslint-parser@10.4.0(eslint@10.2.1)))(vue-eslint-parser@10.4.0(eslint@10.2.1)):
     dependencies:
-      eslint-plugin-vue: 10.8.0(@typescript-eslint/parser@8.59.1(eslint@10.2.1)(typescript@5.9.3))(eslint@10.2.1)(vue-eslint-parser@10.4.0(eslint@10.2.1))
+      eslint-plugin-vue: 10.9.0(@typescript-eslint/parser@8.59.1(eslint@10.2.1)(typescript@5.9.3))(eslint@10.2.1)(vue-eslint-parser@10.4.0(eslint@10.2.1))
       vue-eslint-parser-template-tokenizer-pug: 1.0.0(vue-eslint-parser@10.4.0(eslint@10.2.1))
     transitivePeerDependencies:
       - vue-eslint-parser
 
-  eslint-plugin-vue@10.8.0(@typescript-eslint/parser@8.59.1(eslint@10.2.1)(typescript@5.9.3))(eslint@10.2.1)(vue-eslint-parser@10.4.0(eslint@10.2.1)):
+  eslint-plugin-vue@10.9.0(@typescript-eslint/parser@8.59.1(eslint@10.2.1)(typescript@5.9.3))(eslint@10.2.1)(vue-eslint-parser@10.4.0(eslint@10.2.1)):
     dependencies:
       '@eslint-community/eslint-utils': 4.9.1(eslint@10.2.1)
       eslint: 10.2.1

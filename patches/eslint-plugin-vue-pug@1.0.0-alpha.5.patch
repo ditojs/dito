@@ -1,8 +1,21 @@
 diff --git a/lib/rules/component-name-in-template-casing.js b/lib/rules/component-name-in-template-casing.js
-index 6df7f90f0051f547b680cc317394950f7d0a6427..5d28e51e4e7f862ca345b57d2b5b0b61bb92951d 100644
+index 6df7f90f0051f547b680cc317394950f7d0a6427..9915a0259236c4543a8db29b62c193a5c7fb00f1 100644
 --- a/lib/rules/component-name-in-template-casing.js
 +++ b/lib/rules/component-name-in-template-casing.js
-@@ -86,7 +86,7 @@ module.exports = {
+@@ -5,8 +5,10 @@
+ 'use strict'
+ 
+ const utils = require('eslint-plugin-vue/dist/utils').default
+-const casing = require('eslint-plugin-vue/dist/utils/casing').default
+-const { toRegExp } = require('eslint-plugin-vue/dist/utils/regexp').default
++const casingModule = require('eslint-plugin-vue/dist/utils/casing')
++const casing = casingModule.default || casingModule
++const regexpModule = require('eslint-plugin-vue/dist/utils/regexp')
++const { toRegExp } = regexpModule.default || regexpModule
+ 
+ const allowedCaseOptions = ['PascalCase', 'kebab-case']
+ const defaultCase = 'PascalCase'
+@@ -86,7 +88,7 @@ module.exports = {
      /** @type {string[]} */
      const globals = (options.globals || []).map(casing.pascalCase)
      const registeredComponentsOnly = options.registeredComponentsOnly !== false
@@ -11,7 +24,7 @@ index 6df7f90f0051f547b680cc317394950f7d0a6427..5d28e51e4e7f862ca345b57d2b5b0b61
      const tokens =
        sourceCode.parserServices.getTemplateBodyTokenStore &&
        sourceCode.parserServices.getTemplateBodyTokenStore()
-@@ -96,7 +96,7 @@ module.exports = {
+@@ -96,7 +98,7 @@ module.exports = {
  
      if (utils.isScriptSetup(context)) {
        // For <script setup>
