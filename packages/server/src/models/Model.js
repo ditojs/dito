@@ -12,6 +12,7 @@ import {
   parseDataPath,
   normalizeDataPath,
   getValueAtDataPath,
+  getEntriesAtDataPath,
   setValueAtDataPath,
   mapConcurrently,
   assignDeeply,
@@ -1018,14 +1019,20 @@ export class Model extends objection.Model {
     const { assets } = this.definition
     if (assets) {
       for (const dataPath in assets) {
-        const data = getValueAtDataPath(json, dataPath, noop)
-        if (!data) continue
         const storage = this.app.getStorage(assets[dataPath].storage)
-        setValueAtDataPath(
-          json,
-          dataPath,
-          mapAssetFiles(data, storage, callback)
-        )
+        // Wildcard data paths (e.g. `**.file`) expand to multiple concrete
+        // paths; iterate them so each match is written back to its own
+        // location instead of the flattened wildcard result.
+        const entries = getEntriesAtDataPath(json, dataPath, noop)
+        for (const [path, data] of Object.entries(entries)) {
+          if (data) {
+            setValueAtDataPath(
+              json,
+              path,
+              mapAssetFiles(data, storage, callback)
+            )
+          }
+        }
       }
     }
   }
