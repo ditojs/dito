@@ -284,6 +284,10 @@ export class DitoNestedList {
     const removeBtn = row.getByRole('button', { name: 'Remove' })
     await row.hover()
     await expect(removeBtn).toBeVisible()
+    // Dito's nested list confirms removals via window.confirm. Playwright
+    // auto-dismisses dialogs by default — register a one-shot accept
+    // handler before triggering the click.
+    this.page.once('dialog', dialog => dialog.accept())
     await removeBtn.click()
   }
 
