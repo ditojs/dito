@@ -482,6 +482,25 @@ export class Model extends objection.Model {
         }
       }
     }
+    // `discriminator`/`oneOf`/`anyOf`/`allOf` schemas don't always carry an
+    // explicit top-level `type`, so callers checking `property.type` (e.g.
+    // `loadDataPath()`, which gates traversal of nested data paths on the
+    // root being object/array) reject them. Fill in the type when it can be
+    // inferred unambiguously: a `discriminator` implies an object, and a
+    // homogeneous `oneOf`/`anyOf`/`allOf` adopts its branches' shared type.
+    if (property && !property.type) {
+      if (property.discriminator) {
+        property = { ...property, type: 'object' }
+      } else {
+        const branches = property.oneOf || property.anyOf || property.allOf
+        const types = new Set(
+          branches?.map(branch => branch?.type).filter(Boolean)
+        )
+        if (types.size === 1) {
+          property = { ...property, type: [...types][0] }
+        }
+      }
+    }
     return property ?? null
   }
 
