@@ -44,20 +44,17 @@ export function createTestApp(
   }) as TestApp
 
   if (options.admin) {
-    // Resolve @ditojs/admin and @ditojs/ui from source
-    // so no prior build step is needed. Their package
-    // exports point to dist/, but in dev we want to use
-    // source directly. @ditojs/utils already exports
-    // from src/ so no alias needed.
+    // Resolve @ditojs/admin and @ditojs/ui from source so no prior build step
+    // is needed. Their package exports point to dist/, but in dev we want to
+    // use source directly. @ditojs/utils already exports from src/ so no alias
+    // needed.
     const pkgs = path.resolve(
       import.meta.dirname, '../../packages'
     )
 
-    // After setup() registers controllers but before
-    // the vite dev server starts, build a vite config
-    // with our source aliases and make
-    // loadAdminViteConfig() return it so
-    // setupViteServer() uses it directly.
+    // After setup() registers controllers but before the vite dev server
+    // starts, build a vite config with our source aliases and make
+    // loadAdminViteConfig() return it so setupViteServer() uses it directly.
     app.once('before:start', () => {
       const viteConfig = app.defineAdminViteConfig({
         server: {
@@ -106,13 +103,21 @@ export function createTestApp(
             }
           }
         },
+        // Skip the depsOptimizer discovery scan so vite doesn't dispatch
+        // background `resolveId`/`load`/`transform` calls during startup.  The
+        // scan's in-flight promises aren't canceled by `discover.cancel()` at
+        // teardown (vite 8) and stay stuck in `pluginContainer._processesing`,
+        // making `pluginContainer.close()` hang indefinitely on workers that
+        // never visit /admin/ (e.g. programmatic-only playwright workers).
+        // Same workaround vitest applies for tests, see vitest commit e379f64.
+        optimizeDeps: { noDiscovery: true, include: [] },
         cacheDir: path.join(
           os.tmpdir(),
           'dito-e2e-vite-cache',
-          // Use the parent directory name so each scenario gets its own
-          // cache. `path.basename(appRoot)` is `"app"` for every scenario
-          // (each one has `<scenario>/app/`), which collides and forces
-          // Vite to re-optimize deps on every fixture run.
+          // Use the parent directory name so each scenario gets its own cache.
+          // `path.basename(appRoot)` is `"app"` for every scenario (each one
+          // has `<scenario>/app/`), which collides and forces Vite to
+          // re-optimize deps on every fixture run.
           path.basename(path.dirname(options.admin!.root!))
         )
       })
