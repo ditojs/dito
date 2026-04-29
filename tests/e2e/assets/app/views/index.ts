@@ -1,5 +1,8 @@
+import type { ViewSchema } from '@ditojs/admin'
 import type { AssetWidget } from
   '../../models/AssetWidget.js'
+import type { NestedAssetWidget } from
+  '../../models/NestedAssetWidget.js'
 import { createWidgetView } from
   '../../../schema-components/app/views/createWidgetView.js'
 
@@ -30,3 +33,57 @@ export const assets = createWidgetView<AssetWidget>(
     }
   }
 )
+
+export const nestedAssets: ViewSchema<NestedAssetWidget> = {
+  type: 'view',
+  component: {
+    type: 'list',
+    itemLabel: 'sections',
+    resource: { path: 'nested-asset-widgets' },
+    editable: true,
+    form: {
+      type: 'form',
+      components: {
+        sections: {
+          type: 'list',
+          label: 'Sections',
+          inlined: true,
+          creatable: true,
+          form: {
+            type: 'form',
+            components: {
+              items: {
+                type: 'list',
+                label: 'Items',
+                inlined: true,
+                creatable: true,
+                form: {
+                  type: 'form',
+                  components: {
+                    items: {
+                      type: 'list',
+                      label: 'Sub-items',
+                      inlined: true,
+                      creatable: true,
+                      form: {
+                        type: 'form',
+                        components: {
+                          image: {
+                            type: 'upload',
+                            extensions: 'png',
+                            maxSize: '10mb',
+                            multiple: false
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

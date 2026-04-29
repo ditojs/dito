@@ -30,6 +30,7 @@ import {
 } from '../../utils/database.js'
 import { waitForUrl } from '../../utils/net.js'
 import { AssetWidget } from './models/AssetWidget.js'
+import { NestedAssetWidget } from './models/NestedAssetWidget.js'
 
 export { expect }
 export {
@@ -57,6 +58,7 @@ export const test = base.extend<
     const app = createTestApp({
       models: {
         AssetWidget,
+        NestedAssetWidget,
         Asset
       },
       admin: {
@@ -83,6 +85,18 @@ export const test = base.extend<
               file: { storage: 'test' },
               filesSmall: { storage: 'test' }
             }
+          },
+          NestedAssetWidgets: class extends ModelController {
+            override modelClass = NestedAssetWidget
+            collection = {
+              allow: ['get', 'post'] as const
+            }
+            member = {
+              allow: [
+                'get', 'patch', 'delete'
+              ] as const
+            }
+            assets = true
           }
         }
       },
