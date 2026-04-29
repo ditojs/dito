@@ -6,7 +6,7 @@ import {
   isListSource
 } from '../utils/schema.js'
 import { appendDataPath } from '../utils/data.js'
-import { isObject, isString, isFunction } from '@ditojs/utils'
+import { isObject, isString, isNumber, isFunction } from '@ditojs/utils'
 
 // @vue/component
 export default {
@@ -114,7 +114,10 @@ export default {
           isListSource(sourceSchema) && columns && Object.keys(columns)[0] ||
           'name'
         )
-        text = item[key]
+        const value = item[key]
+        // Only primitives display as a label. If the property holds an array
+        // or object, fall through to the auto-generated label.
+        text = isString(value) || isNumber(value) ? value : null
       }
       const hadLabel = !!text
       // If no label was found so far, try to produce one from the index.
