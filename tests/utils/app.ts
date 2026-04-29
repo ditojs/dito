@@ -109,7 +109,11 @@ export function createTestApp(
         cacheDir: path.join(
           os.tmpdir(),
           'dito-e2e-vite-cache',
-          path.basename(options.admin!.root!)
+          // Use the parent directory name so each scenario gets its own
+          // cache. `path.basename(appRoot)` is `"app"` for every scenario
+          // (each one has `<scenario>/app/`), which collides and forces
+          // Vite to re-optimize deps on every fixture run.
+          path.basename(path.dirname(options.admin!.root!))
         )
       })
       app.loadAdminViteConfig =
