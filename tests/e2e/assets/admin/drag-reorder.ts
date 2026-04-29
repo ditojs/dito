@@ -1,8 +1,9 @@
 import path from 'path'
 import {
-  test, expect, createModelHelpers,
-  uploadFile, fixturesDir
+  test, expect, fixturesDir
 } from '../fixtures.js'
+import { createModelHelpers } from '../../../utils/fixture-app.js'
+import { DitoUploadField } from '../../../utils/pages.js'
 import { AssetWidget } from '../models/AssetWidget.js'
 
 const { seed, saveAndFetch } = createModelHelpers(
@@ -17,29 +18,23 @@ test.describe('drag reorder', () => {
       await page.goto(
         `${url}/admin/assets/${widgetId}`
       )
-      const upload = page.locator(
-        '.dito-upload:has(input#files)'
-      )
-      await expect(upload).toBeVisible(
-        { timeout: 15_000 }
-      )
+      const upload = new DitoUploadField(page, 'files')
+      await upload.waitUntilVisible({ timeout: 15_000 })
 
       // Upload one file — no drag handle
-      await uploadFile(
-        page,
+      await upload.upload(
         path.resolve(fixturesDir, 'tiny.png')
       )
       await expect(
-        upload.locator('.dito-button--drag')
+        upload.container.locator('.dito-button--drag')
       ).toHaveCount(0)
 
       // Upload second file — drag handles appear
-      await uploadFile(
-        page,
+      await upload.upload(
         path.resolve(fixturesDir, 'tiny.jpg')
       )
       await expect(
-        upload.locator('.dito-button--drag')
+        upload.container.locator('.dito-button--drag')
       ).toHaveCount(2)
     }
   )
@@ -51,28 +46,21 @@ test.describe('drag reorder', () => {
       await page.goto(
         `${url}/admin/assets/${widgetId}`
       )
-      const upload = page.locator(
-        '.dito-upload:has(input#files)'
-      )
-      await expect(upload).toBeVisible(
-        { timeout: 15_000 }
-      )
+      const upload = new DitoUploadField(page, 'files')
+      await upload.waitUntilVisible({ timeout: 15_000 })
 
-      await uploadFile(
-        page,
+      await upload.upload(
         path.resolve(fixturesDir, 'tiny.png')
       )
-      await uploadFile(
-        page,
+      await upload.upload(
         path.resolve(fixturesDir, 'tiny.jpg')
       )
 
       // Verify initial order
-      const rows = upload.locator('tbody tr')
-      await expect(rows.nth(0)).toContainText(
+      await expect(upload.getRow(0)).toContainText(
         'tiny.png'
       )
-      await expect(rows.nth(1)).toContainText(
+      await expect(upload.getRow(1)).toContainText(
         'tiny.jpg'
       )
 
@@ -113,10 +101,10 @@ test.describe('drag reorder', () => {
       })
 
       // Verify new order in DOM
-      await expect(rows.nth(0)).toContainText(
+      await expect(upload.getRow(0)).toContainText(
         'tiny.jpg'
       )
-      await expect(rows.nth(1)).toContainText(
+      await expect(upload.getRow(1)).toContainText(
         'tiny.png'
       )
 

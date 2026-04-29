@@ -1,8 +1,9 @@
 import path from 'path'
 import {
-  test, expect, createModelHelpers,
-  uploadFile, fixturesDir
+  test, expect, fixturesDir
 } from '../fixtures.js'
+import { createModelHelpers } from '../../../utils/fixture-app.js'
+import { DitoUploadField } from '../../../utils/pages.js'
 import { AssetWidget } from '../models/AssetWidget.js'
 
 const { seed, saveAndFetch } = createModelHelpers(
@@ -34,25 +35,15 @@ test.describe('upload', () => {
       await page.goto(
         `${url}/admin/assets/${widgetId}`
       )
-      // Wait for the form to load — scope to
-      // the upload component for 'files' to avoid
-      // matching other upload components on the page.
-      // The id is on the hidden file input, not the
-      // .dito-upload root, so use :has() to scope.
-      const upload = page.locator(
-        '.dito-upload:has(input#files)'
-      )
-      await expect(upload).toBeVisible(
-        { timeout: 15_000 }
-      )
+      const upload = new DitoUploadField(page, 'files')
+      await upload.waitUntilVisible({ timeout: 15_000 })
 
-      await uploadFile(
-        page,
+      await upload.upload(
         path.resolve(fixturesDir, 'tiny.png')
       )
 
       // Verify file row appears
-      const row = upload.locator('tbody tr').first()
+      const row = upload.getRow(0)
       await expect(row).toBeVisible()
       await expect(row).toContainText('tiny.png')
       await expect(row).toContainText('Uploaded')
@@ -66,38 +57,27 @@ test.describe('upload', () => {
       await page.goto(
         `${url}/admin/assets/${widgetId}`
       )
-      const upload = page.locator(
-        '.dito-upload:has(input#files)'
-      )
-      await expect(upload).toBeVisible(
-        { timeout: 15_000 }
-      )
+      const upload = new DitoUploadField(page, 'files')
+      await upload.waitUntilVisible({ timeout: 15_000 })
 
-      await uploadFile(
-        page,
+      await upload.upload(
         path.resolve(fixturesDir, 'tiny.png')
       )
-      await uploadFile(
-        page,
+      await upload.upload(
         path.resolve(fixturesDir, 'tiny.jpg')
       )
 
-      const rows = upload.locator('tbody tr')
-      await expect(rows).toHaveCount(2)
-      await expect(rows.nth(0)).toContainText(
+      await expect(upload.rows).toHaveCount(2)
+      await expect(upload.getRow(0)).toContainText(
         'tiny.png'
       )
-      await expect(rows.nth(1)).toContainText(
+      await expect(upload.getRow(1)).toContainText(
         'tiny.jpg'
       )
 
       // Footer upload button always visible in
       // multiple mode
-      await expect(
-        upload.locator(
-          'tfoot .dito-button--upload'
-        )
-      ).toBeVisible()
+      await expect(upload.addButton).toBeVisible()
     }
   )
 
@@ -108,19 +88,13 @@ test.describe('upload', () => {
       await page.goto(
         `${url}/admin/assets/${widgetId}`
       )
-      const upload = page.locator(
-        '.dito-upload:has(input#files)'
-      )
-      await expect(upload).toBeVisible(
-        { timeout: 15_000 }
-      )
+      const upload = new DitoUploadField(page, 'files')
+      await upload.waitUntilVisible({ timeout: 15_000 })
 
-      await uploadFile(
-        page,
+      await upload.upload(
         path.resolve(fixturesDir, 'tiny.png')
       )
-      await uploadFile(
-        page,
+      await upload.upload(
         path.resolve(fixturesDir, 'tiny.jpg')
       )
 
@@ -154,15 +128,10 @@ test.describe('upload', () => {
       await page.goto(
         `${url}/admin/assets/${widgetId}`
       )
-      const upload = page.locator(
-        '.dito-upload:has(input#files)'
-      )
-      await expect(upload).toBeVisible(
-        { timeout: 15_000 }
-      )
+      const upload = new DitoUploadField(page, 'files')
+      await upload.waitUntilVisible({ timeout: 15_000 })
 
-      await uploadFile(
-        page,
+      await upload.upload(
         path.resolve(fixturesDir, 'tiny.png')
       )
       await saveAndFetch(page, widgetId)
@@ -171,11 +140,9 @@ test.describe('upload', () => {
       await page.goto(
         `${url}/admin/assets/${widgetId}`
       )
-      await expect(upload).toBeVisible(
-        { timeout: 15_000 }
-      )
+      await upload.waitUntilVisible({ timeout: 15_000 })
 
-      const row = upload.locator('tbody tr').first()
+      const row = upload.getRow(0)
       await expect(row).toContainText('Stored')
       await expect(row).not.toContainText(
         'Uploaded'

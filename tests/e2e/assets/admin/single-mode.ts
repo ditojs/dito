@@ -1,11 +1,12 @@
 import path from 'path'
 import {
-  test, expect, createModelHelpers,
-  fixturesDir
+  test, expect, fixturesDir
 } from '../fixtures.js'
+import { createModelHelpers } from '../../../utils/fixture-app.js'
+import { DitoUploadField } from '../../../utils/pages.js'
 import { AssetWidget } from '../models/AssetWidget.js'
 
-const { seed, saveAndFetch } = createModelHelpers(
+const { seed } = createModelHelpers(
   AssetWidget, 'asset-widgets'
 )
 
@@ -17,64 +18,32 @@ test.describe('single mode', () => {
       await page.goto(
         `${url}/admin/assets/${widgetId}`
       )
-      await expect(
-        page.locator('.dito-upload').first()
-      ).toBeVisible({ timeout: 15_000 })
-
-      // Find the single-file upload component
-      const container = page.locator(
-        '.dito-upload:has(input#file)'
-      )
+      const upload = new DitoUploadField(page, 'file')
+      await upload.waitUntilVisible({ timeout: 15_000 })
 
       // Upload initial file
-      const responsePromise1 =
-        page.waitForResponse(
-          resp =>
-            resp.url().includes('/upload/') &&
-            resp.ok()
-        )
-      await container.locator(
-        'input[type="file"]'
-      ).setInputFiles(
+      await upload.upload(
         path.resolve(fixturesDir, 'tiny.png')
       )
-      await responsePromise1
 
       // Verify file row
-      await expect(
-        container.locator('tbody tr')
-      ).toHaveCount(1)
-      await expect(
-        container.locator('tbody tr')
-      ).toContainText('tiny.png')
+      await expect(upload.rows).toHaveCount(1)
+      await expect(upload.rows).toContainText('tiny.png')
 
       // Per-row upload button should exist
-      const rowUploadBtn = container.locator(
+      const rowUploadBtn = upload.container.locator(
         'tbody .dito-button--upload'
       )
       await expect(rowUploadBtn).toBeVisible()
 
       // Use per-row button to replace
-      const responsePromise2 =
-        page.waitForResponse(
-          resp =>
-            resp.url().includes('/upload/') &&
-            resp.ok()
-        )
-      await container.locator(
-        'input[type="file"]'
-      ).setInputFiles(
+      await upload.upload(
         path.resolve(fixturesDir, 'tiny.jpg')
       )
-      await responsePromise2
 
       // Should still have exactly 1 row
-      await expect(
-        container.locator('tbody tr')
-      ).toHaveCount(1)
-      await expect(
-        container.locator('tbody tr')
-      ).toContainText('tiny.jpg')
+      await expect(upload.rows).toHaveCount(1)
+      await expect(upload.rows).toContainText('tiny.jpg')
     }
   )
 
@@ -85,41 +54,19 @@ test.describe('single mode', () => {
       await page.goto(
         `${url}/admin/assets/${widgetId}`
       )
-      await expect(
-        page.locator('.dito-upload').first()
-      ).toBeVisible({ timeout: 15_000 })
-
-      const container = page.locator(
-        '.dito-upload:has(input#file)'
-      )
+      const upload = new DitoUploadField(page, 'file')
+      await upload.waitUntilVisible({ timeout: 15_000 })
 
       // No file: footer upload button visible
-      await expect(
-        container.locator(
-          'tfoot .dito-button--upload'
-        )
-      ).toBeVisible()
+      await expect(upload.addButton).toBeVisible()
 
       // Upload a file
-      const responsePromise =
-        page.waitForResponse(
-          resp =>
-            resp.url().includes('/upload/') &&
-            resp.ok()
-        )
-      await container.locator(
-        'input[type="file"]'
-      ).setInputFiles(
+      await upload.upload(
         path.resolve(fixturesDir, 'tiny.png')
       )
-      await responsePromise
 
       // Footer upload button should be hidden
-      await expect(
-        container.locator(
-          'tfoot .dito-button--upload'
-        )
-      ).not.toBeVisible()
+      await expect(upload.addButton).not.toBeVisible()
     }
   )
 })
