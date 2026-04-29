@@ -11,7 +11,14 @@ export async function fillDitoMultiselect(
 ) {
   const combobox = scope.getByRole('combobox', { name: label })
   await combobox.click()
-  await combobox.locator('input').fill(search)
+  // Multiselects with `searchable: true` expose a text input inside the
+  // combobox — type to narrow the list. The dito default is
+  // `searchable: false`: clicking already shows all options, no input
+  // exists, so skip the type step.
+  const input = combobox.locator('input')
+  if (await input.count()) {
+    await input.fill(search)
+  }
   // Exact so e.g. "Cyrillic" doesn't also match "Latin & Cyrillic".
   await page
     .getByRole('option', { name: option ?? search, exact: true })

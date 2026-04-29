@@ -21,6 +21,10 @@ export interface FixtureAppOptions {
    * `${url}${warmupPath}` once after the app starts. Avoids first-test
    * cold-compile timeouts in CI. */
   warmupPath?: string
+  /** If set, runs after `createTestDatabase(app)` and before `app.start()`.
+   * Use this to create extra schema (e.g. join tables for many-to-many
+   * relations that `createTestDatabase` doesn't auto-derive). */
+  setupHook?: (app: ReturnType<typeof createTestApp>) => Promise<void>
 }
 
 /**
@@ -44,6 +48,9 @@ export function createFixtureAppFixture(opts: FixtureAppOptions) {
 
         stubSession(app)
         await createTestDatabase(app)
+        if (opts.setupHook) {
+          await opts.setupHook(app)
+        }
         await app.start()
         const url = getAppUrl(app)
         await waitForUrl(`${url}/admin/`)
