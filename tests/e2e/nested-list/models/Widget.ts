@@ -23,14 +23,20 @@ export class Widget extends Model {
       // graph save inserts/updates/deletes child rows with their data
       // (label, etc.) rather than treating incoming items as relate-by-id
       // references.
-      owner: true
+      owner: true,
+      // Dito-specific: auto-applies `Item.scopes.ordered` whenever this
+      // relation is fetched, so eager loads come back in `order` ASC
+      // without callers having to remember the modifier name.
+      scope: 'ordered'
     }
   }
 
   static override scopes = {
     // Eager-load items so the admin form re-hydrates the nested list on
     // edit reload. Applied as `^withItems` on the Widgets controller in
-    // fixtures.ts so every query goes through this scope.
+    // fixtures.ts so every query goes through this scope. The relation
+    // itself defines `scope: 'ordered'`, so items come back ordered
+    // automatically — no `(ordered)` modifier suffix needed here.
     withItems: (query: QueryBuilder<Widget>) =>
       query.withGraphFetched('items')
   }

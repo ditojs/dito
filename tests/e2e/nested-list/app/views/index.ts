@@ -10,9 +10,11 @@ export const widgets = createWidgetView<Widget>(
     items: {
       type: 'list',
       label: 'Items',
+      orderKey: 'order',
       inlined: true,
       creatable: true,
       deletable: true,
+      draggable: true,
       form: {
         type: 'form',
         components: {
