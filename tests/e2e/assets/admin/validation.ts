@@ -1,8 +1,9 @@
 import path from 'path'
 import {
-  test, expect, createModelHelpers,
-  fixturesDir
+  test, expect, fixturesDir
 } from '../fixtures.js'
+import { createModelHelpers } from '../../../utils/fixture-app.js'
+import { DitoUploadField } from '../../../utils/pages.js'
 import { AssetWidget } from '../models/AssetWidget.js'
 
 const { seed } = createModelHelpers(
@@ -17,18 +18,15 @@ test.describe('validation', () => {
       await page.goto(
         `${url}/admin/assets/${widgetId}`
       )
-      await expect(
-        page.locator('.dito-upload').first()
-      ).toBeVisible({ timeout: 15_000 })
+      // Upload .txt to the files component. Bypass DitoUploadField.upload()
+      // because the file is rejected client-side, so no /upload/ response
+      // ever fires for it to await.
+      const upload = new DitoUploadField(page, 'files')
+      await upload.waitUntilVisible({ timeout: 15_000 })
 
-      // Upload .txt to the files component
-      const upload = page.locator(
-        '.dito-upload:has(input#files)'
-      )
-      const fileInput = upload.locator(
+      await upload.container.locator(
         'input[type="file"]'
-      )
-      await fileInput.setInputFiles(
+      ).setInputFiles(
         path.resolve(fixturesDir, 'invalid.txt')
       )
 
@@ -44,9 +42,7 @@ test.describe('validation', () => {
       )
 
       // No file row should appear
-      await expect(
-        upload.locator('tbody tr')
-      ).toHaveCount(0)
+      await expect(upload.rows).toHaveCount(0)
     }
   )
 
@@ -57,20 +53,17 @@ test.describe('validation', () => {
       await page.goto(
         `${url}/admin/assets/${widgetId}`
       )
-      await expect(
-        page.locator('.dito-upload').first()
-      ).toBeVisible({ timeout: 15_000 })
-
       // Upload to the filesSmall component
       // (maxSize: 100b) — tiny.jpg (285b) exceeds
-      // this
-      const upload = page.locator(
-        '.dito-upload:has(input#filesSmall)'
-      )
-      const fileInput = upload.locator(
+      // this. Bypass DitoUploadField.upload() because
+      // the file is rejected client-side, so no
+      // /upload/ response ever fires.
+      const upload = new DitoUploadField(page, 'filesSmall')
+      await upload.waitUntilVisible({ timeout: 15_000 })
+
+      await upload.container.locator(
         'input[type="file"]'
-      )
-      await fileInput.setInputFiles(
+      ).setInputFiles(
         path.resolve(fixturesDir, 'tiny.jpg')
       )
 

@@ -1,7 +1,6 @@
 import fs from 'fs/promises'
 import os from 'os'
 import path from 'path'
-import type { Page } from '@playwright/test'
 import {
   test as base,
   expect
@@ -9,7 +8,6 @@ import {
 import {
   AdminController,
   ModelController,
-  Model,
   AssetModel
 } from '@ditojs/server'
 
@@ -161,91 +159,6 @@ export const test = base.extend<
     await use(workerUrl)
   }
 })
-
-export function createModelHelpers<
-  M extends typeof Model
->(
-  ModelClass: M,
-  resource: string,
-  defaults: Record<string, unknown> = {}
-) {
-  async function seed(
-    data: Record<string, unknown> = {}
-  ) {
-    const instance = await ModelClass.query()
-      .insert({ ...defaults, ...data })
-    return instance.$id() as number
-  }
-
-  async function saveAndFetch(
-    page: Page,
-    id: number
-  ): Promise<InstanceType<M>> {
-    const saved = page.waitForResponse(resp =>
-      resp.url().includes(
-        `/api/${resource}/${id}`
-      ) &&
-      resp.request().method() === 'PATCH' &&
-      resp.ok()
-    )
-    await page.locator(
-      'button.dito-button[type="submit"]'
-    ).first().click()
-    await saved
-    const instance = await ModelClass.query()
-      .findById(id)
-    if (!instance) {
-      throw new Error(
-        `${ModelClass.name} ${id} not found`
-      )
-    }
-    return instance as InstanceType<M>
-  }
-
-  return { seed, saveAndFetch }
-}
-
-/**
- * Upload a file to the upload component and
- * wait for the upload response.
- */
-export async function uploadFile(
-  page: Page,
-  filePath: string
-) {
-  const responsePromise = page.waitForResponse(
-    resp =>
-      resp.url().includes('/upload/') &&
-      resp.ok()
-  )
-  const fileInput = page.locator(
-    '.dito-upload input[type="file"]'
-  ).first()
-  await fileInput.setInputFiles(filePath)
-  await responsePromise
-}
-
-/**
- * Upload a file to a specific upload component
- * (identified by its container selector) and
- * wait for the upload response.
- */
-export async function uploadFileTo(
-  page: Page,
-  containerSelector: string,
-  filePath: string
-) {
-  const responsePromise = page.waitForResponse(
-    resp =>
-      resp.url().includes('/upload/') &&
-      resp.ok()
-  )
-  const fileInput = page.locator(
-    containerSelector
-  ).locator('input[type="file"]')
-  await fileInput.setInputFiles(filePath)
-  await responsePromise
-}
 
 /**
  * Upload a file via the server API and return

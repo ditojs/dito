@@ -1,8 +1,9 @@
 import path from 'path'
 import {
-  test, expect, createModelHelpers,
-  uploadFile, fixturesDir
+  test, expect, fixturesDir
 } from '../fixtures.js'
+import { createModelHelpers } from '../../../utils/fixture-app.js'
+import { DitoUploadField } from '../../../utils/pages.js'
 import { AssetWidget } from '../models/AssetWidget.js'
 
 const { seed, saveAndFetch } = createModelHelpers(
@@ -17,30 +18,21 @@ test.describe('delete', () => {
       await page.goto(
         `${url}/admin/assets/${widgetId}`
       )
-      const upload = page.locator(
-        '.dito-upload:has(input#files)'
-      )
-      await expect(upload).toBeVisible(
-        { timeout: 15_000 }
-      )
+      const upload = new DitoUploadField(page, 'files')
+      await upload.waitUntilVisible({ timeout: 15_000 })
 
-      await uploadFile(
-        page,
+      await upload.upload(
         path.resolve(fixturesDir, 'tiny.png')
       )
-      await expect(
-        upload.locator('tbody tr')
-      ).toHaveCount(1)
+      await expect(upload.rows).toHaveCount(1)
 
       // Accept the confirm dialog
       page.on('dialog', dialog => dialog.accept())
-      await upload.locator(
+      await upload.container.locator(
         '.dito-button--delete'
       ).first().click()
 
-      await expect(
-        upload.locator('tbody tr')
-      ).toHaveCount(0)
+      await expect(upload.rows).toHaveCount(0)
     }
   )
 
@@ -51,15 +43,10 @@ test.describe('delete', () => {
       await page.goto(
         `${url}/admin/assets/${widgetId}`
       )
-      const upload = page.locator(
-        '.dito-upload:has(input#files)'
-      )
-      await expect(upload).toBeVisible(
-        { timeout: 15_000 }
-      )
+      const upload = new DitoUploadField(page, 'files')
+      await upload.waitUntilVisible({ timeout: 15_000 })
 
-      await uploadFile(
-        page,
+      await upload.upload(
         path.resolve(fixturesDir, 'tiny.png')
       )
 
@@ -67,14 +54,12 @@ test.describe('delete', () => {
       page.once('dialog', dialog =>
         dialog.dismiss()
       )
-      await upload.locator(
+      await upload.container.locator(
         '.dito-button--delete'
       ).first().click()
 
       // File should still be there
-      await expect(
-        upload.locator('tbody tr')
-      ).toHaveCount(1)
+      await expect(upload.rows).toHaveCount(1)
     }
   )
 
@@ -85,16 +70,11 @@ test.describe('delete', () => {
       await page.goto(
         `${url}/admin/assets/${widgetId}`
       )
-      const upload = page.locator(
-        '.dito-upload:has(input#files)'
-      )
-      await expect(upload).toBeVisible(
-        { timeout: 15_000 }
-      )
+      const upload = new DitoUploadField(page, 'files')
+      await upload.waitUntilVisible({ timeout: 15_000 })
 
       // Upload and save first
-      await uploadFile(
-        page,
+      await upload.upload(
         path.resolve(fixturesDir, 'tiny.png')
       )
       await saveAndFetch(page, widgetId)
@@ -103,18 +83,14 @@ test.describe('delete', () => {
       await page.goto(
         `${url}/admin/assets/${widgetId}`
       )
-      await expect(
-        upload.locator('tbody tr')
-      ).toHaveCount(1)
+      await expect(upload.rows).toHaveCount(1)
 
       page.on('dialog', dialog => dialog.accept())
-      await upload.locator(
+      await upload.container.locator(
         '.dito-button--delete'
       ).first().click()
 
-      await expect(
-        upload.locator('tbody tr')
-      ).toHaveCount(0)
+      await expect(upload.rows).toHaveCount(0)
 
       const widget = await saveAndFetch(
         page, widgetId
@@ -131,20 +107,15 @@ test.describe('delete', () => {
       await page.goto(
         `${url}/admin/assets/${widgetId}`
       )
-      const upload = page.locator(
-        '.dito-upload:has(input#files)'
-      )
-      await expect(upload).toBeVisible(
-        { timeout: 15_000 }
-      )
+      const upload = new DitoUploadField(page, 'files')
+      await upload.waitUntilVisible({ timeout: 15_000 })
 
-      await uploadFile(
-        page,
+      await upload.upload(
         path.resolve(fixturesDir, 'tiny.png')
       )
 
       page.on('dialog', dialog => dialog.accept())
-      await upload.locator(
+      await upload.container.locator(
         '.dito-button--delete'
       ).first().click()
 
@@ -168,16 +139,11 @@ test.describe('delete', () => {
       await page.goto(
         `${url}/admin/assets/${widgetId}`
       )
-      const upload = page.locator(
-        '.dito-upload:has(input#files)'
-      )
-      await expect(upload).toBeVisible(
-        { timeout: 15_000 }
-      )
+      const upload = new DitoUploadField(page, 'files')
+      await upload.waitUntilVisible({ timeout: 15_000 })
 
       // Upload first file and save
-      await uploadFile(
-        page,
+      await upload.upload(
         path.resolve(fixturesDir, 'tiny.png')
       )
       const widget1 = await saveAndFetch(
@@ -189,21 +155,16 @@ test.describe('delete', () => {
       await page.goto(
         `${url}/admin/assets/${widgetId}`
       )
-      await expect(
-        upload.locator('tbody tr')
-      ).toHaveCount(1)
+      await expect(upload.rows).toHaveCount(1)
 
       page.on('dialog', dialog => dialog.accept())
-      await upload.locator(
+      await upload.container.locator(
         '.dito-button--delete'
       ).first().click()
 
-      await expect(
-        upload.locator('tbody tr')
-      ).toHaveCount(0)
+      await expect(upload.rows).toHaveCount(0)
 
-      await uploadFile(
-        page,
+      await upload.upload(
         path.resolve(fixturesDir, 'small.png')
       )
 
