@@ -7,7 +7,7 @@ import { createWidgetView } from
   '../../../schema-components/app/views/createWidgetView.js'
 
 export const assets = createWidgetView<AssetWidget>(
-  'files',
+  'Asset Widget',
   'asset-widgets',
   {
     files: {
