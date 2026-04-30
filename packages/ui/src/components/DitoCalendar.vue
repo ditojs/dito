@@ -1,6 +1,9 @@
 <!-- Derived from ATUI, and further extended: https://aliqin.github.io/atui/ -->
 <template lang="pug">
-.dito-calendar
+.dito-calendar(
+  role="dialog"
+  aria-label="Choose date"
+)
   .dito-calendar-popup
     .dito-calendar-inner
       template(
@@ -8,22 +11,40 @@
       )
         .dito-calendar-header
           a.dito-calendar-step-prev.dito-calendar-step-year(
+            role="button"
+            tabindex="0"
+            aria-label="Previous year"
             @click="stepYear(-1)"
           )
           a.dito-calendar-step-prev.dito-calendar-step-month(
+            role="button"
+            tabindex="0"
+            aria-label="Previous month"
             @click="stepMonth(-1)"
           )
           span
             a.dito-calendar-select-year(
+              role="button"
+              tabindex="0"
+              aria-label="Switch to year selection"
               @click="setMode('year')"
             ) {{ dateToString(currentValue, { year: true }) }}
             a.dito-calendar-select-month(
+              role="button"
+              tabindex="0"
+              aria-label="Switch to month selection"
               @click="setMode('month')"
             ) {{ dateToString(currentValue, { month: true }) }}
           a.dito-calendar-step-next.dito-calendar-step-month(
+            role="button"
+            tabindex="0"
+            aria-label="Next month"
             @click="stepMonth(1)"
           )
           a.dito-calendar-step-next.dito-calendar-step-year(
+            role="button"
+            tabindex="0"
+            aria-label="Next year"
             @click="stepYear(1)"
           )
         .dito-calendar-body
@@ -31,15 +52,21 @@
             span(
               v-for="weekday in weekdayNames"
             ) {{ weekday.short }}
-          .dito-calendar-dates
+          .dito-calendar-dates(role="grid")
             span(
               v-for="date in dateRange"
               :class="date.state && `dito-calendar-item-${date.state}`"
+              role="gridcell"
+              :aria-label="dateToString(date.date)"
+              :aria-selected="date.state === 'active'"
+              :aria-disabled="date.state === 'disabled'"
               @click="date.state !== 'disabled' && selectDate(date.date)"
             ) {{ date.text }}
         .dito-calendar-footer
           a.dito-calendar-select-now(
             role="button"
+            tabindex="0"
+            :aria-label="`Select today (${dateToString(new Date())})`"
             :title="dateToString(new Date())"
             @click="selectDate(new Date())"
           )
@@ -48,20 +75,35 @@
       )
         .dito-calendar-header
           a.dito-calendar-step-prev(
+            role="button"
+            tabindex="0"
+            aria-label="Previous year"
             @click="stepYear(-1)"
           )
           span
             a.dito-calendar-select-year(
+              role="button"
+              tabindex="0"
+              aria-label="Switch to year selection"
               @click="setMode('year')"
             ) {{ dateToString(currentValue, { year: true }) }}
           a.dito-calendar-step-next(
+            role="button"
+            tabindex="0"
+            aria-label="Next year"
             @click="stepYear(1)"
           )
         .dito-calendar-body
-          .dito-calendar-months
+          .dito-calendar-months(
+            role="listbox"
+            aria-label="Month"
+          )
             span(
               v-for="(month, index) in monthNames"
               :class="getMonthClass(index)"
+              role="option"
+              :aria-label="month.long"
+              :aria-selected="getMonthClass(index)['dito-calendar-item-active']"
               @click="selectMonth(index)"
             ) {{ month.short }}
       template(
@@ -69,17 +111,29 @@
       )
         .dito-calendar-header
           a.dito-calendar-step-prev(
+            role="button"
+            tabindex="0"
+            aria-label="Previous decade"
             @click="stepDecade(-1)"
           )
           span {{ decadeToString(currentValue) }}
           a.dito-calendar-step-next(
+            role="button"
+            tabindex="0"
+            aria-label="Next decade"
             @click="stepDecade(1)"
           )
         .dito-calendar-body
-          .dito-calendar-years
+          .dito-calendar-years(
+            role="listbox"
+            aria-label="Year"
+          )
             span(
               v-for="year in yearRange"
               :class="getYearClass(year)"
+              role="option"
+              :aria-label="String(year)"
+              :aria-selected="getYearClass(year)['dito-calendar-item-active']"
               @click="selectYear(year)"
             ) {{ year }}
 </template>

@@ -32,34 +32,58 @@ DitoTrigger.dito-time-picker(
         )
         slot(name="suffix")
   template(#popup)
-    .dito-time-picker-popup
+    .dito-time-picker-popup(
+      role="dialog"
+      aria-label="Choose time"
+    )
       .dito-time-picker-panel
-        ul.dito-time-picker-hour(ref="hour")
+        ul.dito-time-picker-hour(
+          ref="hour"
+          role="listbox"
+          aria-label="Hour"
+        )
           template(
             v-for="index in 24"
           )
             li(
               v-if="!disabledHour(index - 1)"
+              role="option"
+              :aria-label="leftPad(index - 1)"
+              :aria-selected="hour === index - 1"
               :class="{ selected: hour === index - 1 }"
               @click="hour = index - 1"
             ) {{ leftPad(index - 1) }}
       .dito-time-picker-panel
-        ul.dito-time-picker-minute(ref="minute")
+        ul.dito-time-picker-minute(
+          ref="minute"
+          role="listbox"
+          aria-label="Minute"
+        )
           template(
             v-for="index in 60"
           )
             li(
               v-if="!disabledMinute(index - 1)"
+              role="option"
+              :aria-label="leftPad(index - 1)"
+              :aria-selected="minute === index - 1"
               :class="{ selected: minute === index - 1 }"
               @click="minute = index - 1"
             ) {{ leftPad(index - 1) }}
       .dito-time-picker-panel
-        ul.dito-time-picker-second(ref="second")
+        ul.dito-time-picker-second(
+          ref="second"
+          role="listbox"
+          aria-label="Second"
+        )
           template(
             v-for="index in 60"
           )
             li(
               v-if="!disabledSecond(index - 1)"
+              role="option"
+              :aria-label="leftPad(index - 1)"
+              :aria-selected="second === index - 1"
               :class="{ selected: second === index - 1 }"
               @click="second = index - 1"
             ) {{ leftPad(index - 1) }}
