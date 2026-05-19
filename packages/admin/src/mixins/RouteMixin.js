@@ -64,6 +64,10 @@ export default {
       return this.meta.nested
     },
 
+    isForm() {
+      return false
+    },
+
     isView() {
       return false
     },

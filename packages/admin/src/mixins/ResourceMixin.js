@@ -161,13 +161,6 @@ export default {
     },
 
     // @overridable
-    // Subclasses override this to skip applying response data when local
-    // state would be overwritten — see DitoForm, which checks `isDirty`.
-    shouldApplyLoadedData() {
-      return true
-    },
-
-    // @overridable
     setData(data) {
       this.loadedData = data
     },
@@ -224,11 +217,11 @@ export default {
             }
           }
         } else {
-          // Skip applying response data when the consumer (e.g. a dirty
-          // DitoForm) reports it would overwrite local edits made while the
-          // GET was in flight. The 'load' event still fires — the GET *did*
-          // complete; we just chose not to apply it.
-          if (this.shouldApplyLoadedData()) {
+          // Skip applying response data on a dirty form: `setData` would
+          // wholesale-replace `loadedData` and clobber any local edits the
+          // user made while the GET was in flight. The `'load'` event still
+          // fires — the GET *did* complete; we just chose not to apply it.
+          if (!(this.isForm && this.isDirty)) {
             this.setData(response.data)
           }
           this.emitSchemaEvent('load')

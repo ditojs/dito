@@ -66,12 +66,15 @@ export default DitoComponent.component('DitoForm', {
     return {
       createdData: null,
       clonedData: undefined,
-      sourceKey: null,
-      isForm: true
+      sourceKey: null
     }
   },
 
   computed: {
+    isForm() {
+      return true
+    },
+
     verbs() {
       // Add submit / submitted to the verbs returned by ResourceMixin
       // NOTE: These get passed on to children through:
@@ -357,14 +360,6 @@ export default DitoComponent.component('DitoForm', {
     // @override ResourceMixin.clearData()
     clearData() {
       this.setData(null)
-    },
-
-    // @override ResourceMixin.shouldApplyLoadedData()
-    shouldApplyLoadedData() {
-      // Drop a GET response if the user has made local edits while the
-      // request was in flight — applying it would wholesale-replace
-      // `loadedData` and silently clobber those edits.
-      return !this.isDirty
     },
 
     // @override ResourceMixin.setData()
