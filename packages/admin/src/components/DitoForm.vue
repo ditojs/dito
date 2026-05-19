@@ -359,6 +359,14 @@ export default DitoComponent.component('DitoForm', {
       this.setData(null)
     },
 
+    // @override ResourceMixin.shouldApplyLoadedData()
+    shouldApplyLoadedData() {
+      // Drop a GET response if the user has made local edits while the
+      // request was in flight — applying it would wholesale-replace
+      // `loadedData` and silently clobber those edits.
+      return !this.isDirty
+    },
+
     // @override ResourceMixin.setData()
     setData(data) {
       // setData() is called after submit when data has changed.
