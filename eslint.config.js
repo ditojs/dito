@@ -149,6 +149,7 @@ function getJsRules() {
       {
         newIsCap: true,
         capIsNew: true,
+        newIsCapExceptions: ['constructor'],
         capIsNewExceptions: ['Knex'],
         capIsNewExceptionPattern: 'Mixin$'
       }

@@ -77,7 +77,7 @@
     "filesize": "^11.0.13",
     "filesize-parser": "^1.5.1",
     "focus-trap": "^8.0.0",
-    "nanoid": "^5.1.6",
+    "nanoid": "^6.0.1",
     "sortablejs": "^1.15.7",
     "tinycolor2": "^1.6.0",
     "tippy.js": "^6.3.7",
@@ -91,6 +91,6 @@
   "devDependencies": {
     "@ditojs/build": "workspace:^",
     "typescript": "^6.0.3",
-    "vite": "^8.0.10"
+    "vite": "^8.3.2"
   }
 }

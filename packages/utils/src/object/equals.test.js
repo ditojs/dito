@@ -40,8 +40,11 @@ describe('equals()', () => {
     [false, '', false],
 
     [symbol1, symbol1, true],
-    [symbol1, Object(symbol1), true],
-    [Object(symbol1), Object(symbol1), true],
+    // TODO: Uncomment once vitest can format boxed symbols in `%o` titles,
+    // and remove 'should compare boxed symbols' below:
+    // https://github.com/vitest-dev/vitest/issues/11445
+    // [symbol1, Object(symbol1), true],
+    // [Object(symbol1), Object(symbol1), true],
     [symbol1, symbol2, false],
 
     [null, null, true],
@@ -59,6 +62,12 @@ describe('equals()', () => {
       })
     }
   )
+
+  // TODO: Remove once the boxed symbol rows above are uncommented.
+  it('should compare boxed symbols', () => {
+    expect(equals(symbol1, Object(symbol1))).toBe(true)
+    expect(equals(Object(symbol1), Object(symbol1))).toBe(true)
+  })
 
   it('should compare arrays', () => {
     let array1 = [true, null, 1, 'a', undefined]
