@@ -174,7 +174,7 @@ export class AdminController extends Controller {
           root,
           base,
           mode: this.mode,
-          envFile: false,
+          envDir: false,
           configFile: false,
           plugins: [
             createVuePlugin(),
