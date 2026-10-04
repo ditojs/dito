@@ -1401,8 +1401,6 @@ export interface UploadSchema<$Item = any> extends BaseSchema<$Item> {
   /**
    * The maximum size of the file expressed as number of bytes or as a string
    * like `'200kb'`, `'1mb'`, `'3.2gb'`, etc.
-   *
-   * @see {@link https://github.com/patrickkettner/filesize-parser/blob/master/test.js String Examples}
    */
   maxSize?: string | number
   /**

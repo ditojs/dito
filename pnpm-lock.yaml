@@ -365,9 +365,6 @@ importers:
       codeflask:
         specifier: ^1.4.1
         version: 1.4.1
-      filesize:
-        specifier: ^11.0.25
-        version: 11.0.25
       focus-trap:
         specifier: ^8.2.2
         version: 8.2.2
@@ -3261,10 +3258,6 @@ packages:
   file-type@3.9.0:
     resolution: {integrity: sha512-RLoqTXE8/vPmMuTI88DAzhMYC99I8BWv7zYP4A1puo5HIjEJ5EX48ighy4ZyKMG9EDXxBgW6e++cn7d1xuFghA==}
     engines: {node: '>=0.10.0'}
-
-  filesize@11.0.25:
-    resolution: {integrity: sha512-oPVK4S+B5nRK8eL5FORi4RSzbz/1PmUx17NQLMIWv8tlNVDUFgLY0GNApL7tEebL4WgkBqSJGB3AJsCXUs01hw==}
-    engines: {node: '>= 10.8.0'}
 
   fill-range@7.1.1:
     resolution: {integrity: sha512-YsGpe3WHLK8ZYi4tWDg2Jy3ebRz2rXowDxnld4bkQB00cc/1Zw9AWnC0i9ztDJitivtQvaI9KaLyKrc+hBW0yg==}
@@ -8721,8 +8714,6 @@ snapshots:
       - supports-color
 
   file-type@3.9.0: {}
-
-  filesize@11.0.25: {}
 
   fill-range@7.1.1:
     dependencies:

@@ -304,7 +304,6 @@ const coreDependencies = [
   'nanoid',
   'punycode',
   'rope-sequence',
-  'filesize',
   'tslib', // ?
   'orderedmap',
   'w3c-keyname'

@@ -1,16 +1,35 @@
-import { filesize } from 'filesize'
+// Unit prefixes in order of their exponent, shared by parsing and formatting.
+const prefixes = ['', 'k', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y']
 
-export function formatFileSize(size) {
-  return filesize(size, { base: 10 })
+/**
+ * Formats a number of bytes like `'1.5 MB'`, using base 10 (1 kB = 1000 bytes)
+ * unless specified. Base 2 uses IEC units (1 KiB = 1024 bytes).
+ */
+export function formatFileSize(size, { base = 10 } = {}) {
+  const multiplier = getMultiplier(base)
+  const absolute = Math.abs(size)
+  let exponent = Math.min(
+    absolute >= 1 ? Math.floor(Math.log(absolute) / Math.log(multiplier)) : 0,
+    prefixes.length - 1
+  )
+  let amount = roundFileSize(absolute, multiplier, exponent)
+  // Rounding can reach the next unit, e.g. 999999 bytes to 1000 kB = 1 MB.
+  if (amount >= multiplier && exponent < prefixes.length - 1) {
+    amount = roundFileSize(absolute, multiplier, ++exponent)
+  }
+  const prefix = prefixes[exponent]
+  const unit = !prefix
+    ? 'B'
+    : base === 10
+      ? `${prefix}B`
+      : `${prefix.toUpperCase()}iB`
+  return `${size < 0 ? '-' : ''}${amount} ${unit}`
 }
-
-// Bit units are case-sensitive (`Kb` = kilobit), the byte units aren't.
-const bitUnits = ['b', 'Kb', 'Mb', 'Gb', 'Tb', 'Pb', 'Eb']
-const byteUnits = ['', 'k', 'm', 'g', 't', 'p', 'e']
 
 /**
  * Parses file sizes like `'10 MB'`, `'1.5G'`, `'512kb'` or `'100 bytes'` into
  * a number of bytes, using base 2 (1 KB = 1024 bytes) unless specified.
+ * Bit units are case-sensitive (`Kb` = kilobit), the byte units aren't.
  */
 export function parseFileSize(input, { base = 2 } = {}) {
   const [, amountString, unit] = (
@@ -20,19 +39,33 @@ export function parseFileSize(input, { base = 2 } = {}) {
   if (!isFinite(amount)) {
     throw new Error(`Can't interpret file size: ${input}`)
   }
-  const multiplier = base === 10 ? 1000 : 1024
-  const bitIndex = bitUnits.indexOf(unit.replace(/^bits?$/, 'b'))
-  if (bitIndex >= 0) {
-    return Math.round(amount * multiplier ** bitIndex / 8)
+  const multiplier = getMultiplier(base)
+  const bitMatch = unit.replace(/^bits?$/, 'b').match(/^([KMGTPEZY]?)b$/)
+  if (bitMatch) {
+    const exponent = prefixes.indexOf(bitMatch[1].replace('K', 'k'))
+    return Math.round(amount * multiplier ** exponent / 8)
   }
-  const byteIndex = byteUnits.indexOf(
-    unit
-      .toLowerCase()
-      .replace(/^(bytes?|b)$/, '')
-      .replace(/^(\w)(i?b|i)$/, '$1')
+  const exponent = prefixes.findIndex(
+    prefix => (
+      prefix.toLowerCase() ===
+      unit
+        .toLowerCase()
+        .replace(/^(bytes?|b)$/, '')
+        .replace(/^(\w)(i?b|i)$/, '$1')
+    )
   )
-  if (byteIndex >= 0) {
-    return Math.round(amount * multiplier ** byteIndex)
+  if (exponent >= 0) {
+    return Math.round(amount * multiplier ** exponent)
   }
   throw new Error(`Invalid file size unit: ${unit}`)
+}
+
+function getMultiplier(base) {
+  return base === 10 ? 1000 : 1024
+}
+
+function roundFileSize(size, multiplier, exponent) {
+  // Round bytes to integers, larger units to two decimals.
+  const factor = exponent > 0 ? 100 : 1
+  return Math.round(size / multiplier ** exponent * factor) / factor
 }
