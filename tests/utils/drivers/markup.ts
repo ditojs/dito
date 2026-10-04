@@ -44,6 +44,9 @@ export const markup: TypeComponentDriver = {
       } else if ('link' in step) {
         const { text, href } = step.link
         await page.keyboard.type(text)
+        // The editor reads typed text asynchronously, wait for it before
+        // selecting it.
+        await expect(editor).toContainText(text)
         for (const _ of text) {
           await page.keyboard.press('Shift+ArrowLeft')
         }
