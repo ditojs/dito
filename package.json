@@ -22,10 +22,12 @@
     "stylelint:fix": "pnpm run stylelint --fix",
     "penere": "penere packages/*/src/**/*.{js,vue} packages/*/types/**/*.ts --check",
     "penere:fix": "penere packages/*/src/**/*.{js,vue} packages/*/types/**/*.ts --write",
-    "lint": "concurrently pnpm:eslint pnpm:penere pnpm:stylelint",
+    "lint": "concurrently pnpm:eslint pnpm:penere pnpm:stylelint pnpm:peers:check",
     "lint:fix": "pnpm run eslint:fix && pnpm run penere:fix && pnpm run stylelint:fix",
-    "update": "pnpm update -r --interactive --latest",
-    "update:sync": "pnpm update -r"
+    "update": "pnpm update -r --interactive --latest && pnpm run peers:sync",
+    "update:sync": "pnpm update -r && pnpm run peers:sync",
+    "peers:sync": "node scripts/sync-peers.js && pnpm install && (pnpm audit --fix update || true)",
+    "peers:check": "node scripts/sync-peers.js --check"
   },
   "lint-staged": {
     "packages/**/src/**/*.{js,ts}": [
