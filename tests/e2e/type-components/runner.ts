@@ -31,18 +31,22 @@ async function setValue(page: Page, entry: CaseEntry) {
  * which must leave the stored value untouched.
  */
 async function expectUnchangeable(page: Page, entry: CaseEntry) {
-  const stored = await getStored(entry)
-  // Blocked controls only time out, so don't wait long for them.
-  page.setDefaultTimeout(1000)
-  try {
-    await setValue(page, entry)
-  } catch {
-    // Expected for blocked controls.
+  const element = getDriver(entry.type).getElement(page, entry)
+  if (await element.isEditable().catch(() => true)) {
+    // Custom controls don't report their state, so try to change them, but
+    // don't wait long for the blocked ones.
+    const stored = await getStored(entry)
+    page.setDefaultTimeout(1000)
+    try {
+      await setValue(page, entry)
+    } catch {
+      // Expected for blocked controls.
+    }
+    page.setDefaultTimeout(test.info().project.use.actionTimeout ?? 0)
+    await getSaveButton(page).click()
+    await page.waitForLoadState('networkidle')
+    expect(await getStored(entry)).toEqual(stored)
   }
-  page.setDefaultTimeout(test.info().project.use.actionTimeout ?? 0)
-  await getSaveButton(page).click()
-  await page.waitForLoadState('networkidle')
-  expect(await getStored(entry)).toEqual(stored)
 }
 
 function getSaveButton(page: Page) {
