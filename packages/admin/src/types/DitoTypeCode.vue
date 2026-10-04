@@ -120,6 +120,13 @@ export default DitoTypeComponent.register('code', {
       flask.updateLanguage(language)
     })
 
+    this.$watch(
+      () => this.readonly || this.disabled,
+      readonly =>
+        readonly ? flask.enableReadonlyMode() : flask.disableReadonlyMode(),
+      { immediate: true }
+    )
+
     setCode(this.value || '')
   },
 
