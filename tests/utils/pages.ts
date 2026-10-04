@@ -279,6 +279,12 @@ export class DitoNestedList {
     await this.page.getByRole('menuitem', { name: typeName }).click()
   }
 
+  async edit(index: number) {
+    const row = this.rows.nth(index)
+    await row.hover()
+    await row.getByRole('link', { name: 'Edit' }).click()
+  }
+
   async delete(index: number) {
     const row = this.rows.nth(index)
     const removeBtn = row.getByRole('button', { name: 'Remove' })
