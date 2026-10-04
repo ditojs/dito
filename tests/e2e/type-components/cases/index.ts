@@ -1,8 +1,9 @@
 import { getCaseEntries } from './define.js'
 import color from './color.js'
+import date from './date.js'
 import text from './text.js'
 
-export const caseEntries = getCaseEntries([...text, ...color])
+export const caseEntries = getCaseEntries([...text, ...color, ...date])
 
 export function getCase(type: string, title: string) {
   const entry = caseEntries.find(

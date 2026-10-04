@@ -1,5 +1,6 @@
 import type { Locator, Page } from '@playwright/test'
 import { color } from './color.js'
+import { date } from './date.js'
 import { text } from './text.js'
 
 /** The component of a case, as rendered in its view. */
@@ -29,7 +30,10 @@ const drivers: Record<string, TypeComponentDriver> = {
   tel: text,
   password: text,
   creditcard: text,
-  color
+  color,
+  date,
+  datetime: date,
+  time: date
 }
 
 export function getDriver(type: string): TypeComponentDriver {
