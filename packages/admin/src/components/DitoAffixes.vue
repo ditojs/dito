@@ -175,7 +175,10 @@ export default DitoComponent.component('DitoAffixes', {
     padding: 0;
     border: 0;
 
-    @at-root .dito-component:not(:has(.dito-component)):hover & {
+    // Only show when hovering the component itself, not its open popup, e.g.
+    // the color picker.
+    @at-root .dito-component:not(:has(.dito-component, .dito-popup:hover)):hover
+        & {
       display: block;
     }
 
@@ -192,7 +195,7 @@ export default DitoComponent.component('DitoAffixes', {
 
   // Hide other affixes when clear button is shown
   // prettier-ignore
-  @at-root .dito-component:hover:not(:has(.dito-component))
+  @at-root .dito-component:hover:not(:has(.dito-component, .dito-popup:hover))
         #{$self}:has(#{$self}__clear) > *:not(#{$self}__clear) {
       display: none;
     }
