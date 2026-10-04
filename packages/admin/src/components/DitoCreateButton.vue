@@ -4,7 +4,7 @@
     v-if="creatableForm"
     :type="isInlined ? 'button' : 'submit'"
     :disabled="disabled"
-    v-bind="getButtonAttributes(verb)"
+    v-bind="getButtonAttributes(verb, formLabel)"
     @click="createItem(creatableForm)"
   ) {{ text }}
   template(
@@ -91,6 +91,14 @@ export default DitoComponent.component('DitoCreateButton', {
     creatableForm() {
       const forms = this.creatableForms
       return forms && Object.keys(forms).length === 1 && forms.default || null
+    },
+
+    formLabel() {
+      // Only use labels declared on the form, not ones derived from its name.
+      const form = this.creatableForm
+      return form
+        ? this.getSchemaValue('label', { schema: form, type: String })
+        : null
     },
 
     isInlined() {

@@ -276,8 +276,9 @@ export default {
         : labelize(name) || ''
     },
 
-    getButtonAttributes(verb) {
-      const label = labelize(verb)
+    getButtonAttributes(verb, subject = null) {
+      // Name buttons by what they act on if known, e.g. 'Add Section'.
+      const label = subject ? `${labelize(verb)} ${subject}` : labelize(verb)
       return {
         'class': `dito-button--${verb}`,
         'title': label,
