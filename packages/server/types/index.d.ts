@@ -19,7 +19,7 @@ import { Options as KoaBodyParserOptions } from 'koa-bodyparser'
 import { CompressOptions } from 'koa-compress'
 import koaMount from 'koa-mount'
 import koaResponseTime from 'koa-response-time'
-import koaSession from 'koa-session'
+import { CreateSessionOptions as KoaSessionOptions } from 'koa-session'
 import multer from '@koa/multer'
 import multerS3 from 'multer-s3'
 import * as objection from 'objection'
@@ -185,7 +185,7 @@ export interface ApplicationConfig {
      * @defaultValue `false`
      * @see https://github.com/koajs/session
      */
-    session?: boolean | (koaSession.opts & { modelClass: string })
+    session?: boolean | (KoaSessionOptions & { modelClass: string })
     /**
      * Enable passport authentication middleware
      *
@@ -413,7 +413,7 @@ export class Application<$Models extends Models = Models> {
           ctx: KoaContext,
           next: () => Promise<void>
         ) => OrPromiseOf<void>
-      ): this
+      ): unknown
       find(
         method: string,
         path: string
@@ -875,7 +875,7 @@ export interface ModelRelation<
   filter?:
     | string
     | { [name: string]: unknown[] }
-    | ((query: QueryBuilder) => void)
+    | ((query: QueryBuilder<Model>) => void)
     | Record<string, unknown>
   /**
    * Controls whether the auto-inserted foreign key property should be marked as
@@ -898,7 +898,7 @@ export interface ModelRelation<
    * As an object: `modify: { active: true }` (converted to a find-filter)
    */
   modify?:
-    | ((query: QueryBuilder) => void)
+    | ((query: QueryBuilder<Model>) => void)
     | Record<string, unknown>
 }
 
@@ -1134,7 +1134,20 @@ export type ModelHooks<$Model extends Model = Model> = {
   }`]?: ModelHookFunction<$Model>
 }
 
-export class Model extends objection.Model {
+// objection's static side, minus the members that dito types with its own
+// `Model` and `QueryBuilder`. objection's versions use its own types, which
+// these can't be compatible with, e.g. modifiers receive objection's
+// QueryBuilder, while they always receive dito's at runtime.
+interface ObjectionModelStatic
+  extends Omit<
+    typeof objection.Model,
+    'modifiers' | 'query' | 'fromJson' | 'createNotFoundError'
+  > {
+  new (): objection.Model
+}
+declare const ObjectionModel: ObjectionModelStatic
+
+export class Model extends ObjectionModel {
   static query<M extends Model>(
     this: Constructor<M>,
     trxOrKnex?: objection.TransactionOrKnex
@@ -1240,8 +1253,6 @@ export class Model extends objection.Model {
   static app: Application<Models>
   /** Whether the model has been initialized by the application. */
   static initialized: boolean
-  /** The QueryBuilder class used by this model. */
-  static QueryBuilder: typeof QueryBuilder
   /** Whether to deep-clone object attributes on read. */
   static cloneObjectAttributes: boolean
   /**
@@ -1499,6 +1510,8 @@ export class Model extends objection.Model {
   $is(model: Model | null | undefined): boolean
   /** Returns `true` if all named properties are defined. */
   $has(...properties: string[]): boolean
+  /** Returns the knex instance, as in objection. */
+  $transaction(): Knex
   /** Runs a callback within a transaction. */
   $transaction(
     handler: (trx: objection.Transaction) => Promise<any>
@@ -1885,7 +1898,7 @@ export class Controller {
     base?: any,
     options?: {
       query?: Record<string, any>
-      modify?: (query: QueryBuilder<Model>) => QueryBuilder<Model>
+      modify?: (query: QueryBuilder<any>) => QueryBuilder<any>
       forUpdate?: boolean
     }
   ): Promise<Model | null>
@@ -2171,7 +2184,9 @@ export type ModelControllerActions<$ModelController = ModelController> = {
   authorize?: Authorize
 }
 
-type ModelControllerMemberAction<$ModelController = ModelController> =
+type ModelControllerMemberAction<
+  $ModelController extends ModelControllerLike = ModelController
+> =
   | (Omit<ModelControllerActionOptions<$ModelController>, 'parameters'> & {
       parameters?: {
         [key: string]: MemberActionParameter<
@@ -2187,7 +2202,9 @@ type ModelControllerMemberAction<$ModelController = ModelController> =
  * `delete`). Member actions can use `{ from: 'member' }`
  * parameters to receive the resolved member model.
  */
-export type ModelControllerMemberActions<$ModelController = ModelController> = {
+export type ModelControllerMemberActions<
+  $ModelController extends ModelControllerLike = ModelController
+> = {
   [name: ControllerActionName]: ModelControllerMemberAction<$ModelController>
   allow?: OrReadOnly<ControllerActionName[]>
   authorize?: Authorize
@@ -2306,7 +2323,9 @@ type AfterCollectionGetHookKey = `after:collection:get`
 type AfterCustomHookKey =
   `after:${ModelControllerHookType | '*'}:${ControllerActionName | '*'}`
 
-export type ModelControllerHooks<$ModelController = ModelController> = {
+export type ModelControllerHooks<
+  $ModelController extends ModelControllerLike = ModelController
+> = {
   [$Key in BeforeHookKey]?: (
     this: $ModelController,
     ctx: KoaContext,
@@ -3003,7 +3022,7 @@ export class QueryBuilder<
   R = M[]
 > extends objection.QueryBuilder<M, R> {
   /** Clones the query with scope/filter state. */
-  clone(): QueryBuilder<M, R>
+  clone(): this
   /**
    * Inherits scopes from a parent query.
    * @override
@@ -3142,7 +3161,11 @@ export class QueryBuilder<
     options?: DitoGraphOptions
   ): this
 
-  truncate(options?: { restart?: boolean; cascade?: boolean }): this
+  // Returns the query builder, which objection declares as `Promise<void>`.
+  truncate(options?: {
+    restart?: boolean
+    cascade?: boolean
+  }): this & Promise<void>
 
   ArrayQueryBuilderType: QueryBuilder<M, M[]>
   SingleQueryBuilderType: QueryBuilder<M, M>
@@ -3212,8 +3235,8 @@ export type PartialModelObject<T extends Model> = {
 export type PartialDitoModelGraph<M extends Partial<Model>> = {
   [K in objection.NonFunctionPropertyNames<M>]?: objection.Defined<
     M[K]
-  > extends Model
-    ? PartialDitoModelGraph<M[K]>
+  > extends infer D extends Model
+    ? PartialDitoModelGraph<D>
     : objection.Defined<M[K]> extends Array<infer I>
       ? I extends Partial<Model>
         ? PartialDitoModelGraph<I>[]
@@ -3606,11 +3629,11 @@ export function convertRelation(
 ): Record<string, any>
 
 export function getRelationClass(
-  relation: string | typeof objection.Relation
-): typeof objection.Relation | null
+  relation: string | objection.RelationType
+): objection.RelationType | null
 
 export function isThroughRelationClass(
-  relationClass: typeof objection.Relation
+  relationClass: objection.RelationType
 ): boolean
 
 export function addRelationSchemas(
@@ -3682,11 +3705,25 @@ export interface KoaContextState {
   [key: string]: unknown
 }
 
+/**
+ * The session on `ctx.session`, mirroring koa-session's `Session` class, which
+ * it doesn't export.
+ */
+export type KoaSession = Record<string, any> & {
+  isNew: boolean
+  readonly length: number
+  readonly populated: boolean
+  maxAge: number
+  save(callback?: (error?: Error) => void): Promise<void> | undefined
+  regenerate(callback?: (error?: Error) => void): Promise<void> | undefined
+  manuallyCommit(): Promise<void> | undefined
+}
+
 export type KoaContext<$State = KoaContextState> = Koa.ParameterizedContext<
   $State,
   {
     transaction: objection.Transaction
-    session: koaSession.ContextSession
+    session: KoaSession | null
     logger: PinoLogger
   }
 > & {
@@ -3701,9 +3738,10 @@ type OrReadOnly<T> = Readonly<T> | T
 
 type OrPromiseOf<T> = Promise<T> | T
 
-type ModelFromModelController<
-  $ModelController extends { modelClass?: Class<any> }
-> = InstanceType<Exclude<$ModelController['modelClass'], undefined>>
+type ModelControllerLike = { modelClass?: Class<Model> }
+
+type ModelFromModelController<$ModelController extends ModelControllerLike> =
+  InstanceType<Exclude<$ModelController['modelClass'], undefined>>
 
 type SerializeModelPropertyValue<T> = T extends (infer U)[]
   ? SerializeModelPropertyValue<U>[]

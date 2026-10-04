@@ -594,12 +594,12 @@ importers:
       '@types/koa-compress':
         specifier: ^4.0.7
         version: 4.0.7
+      '@types/koa-mount':
+        specifier: ^4.0.5
+        version: 4.0.5
       '@types/koa-response-time':
         specifier: ^2.1.5
         version: 2.1.5
-      '@types/koa-session':
-        specifier: ^6.4.5
-        version: 6.4.5
       '@types/koa-static':
         specifier: ^4.0.4
         version: 4.0.4
@@ -609,6 +609,9 @@ importers:
       '@types/koa__multer':
         specifier: ^2.0.8
         version: 2.0.8
+      '@types/multer-s3':
+        specifier: ^3.0.3
+        version: 3.0.3
       '@types/node':
         specifier: ^26.6.4
         version: 26.6.4
@@ -1884,14 +1887,14 @@ packages:
   '@types/koa-compress@4.0.7':
     resolution: {integrity: sha512-NqP9qCBfXCu2+RYkGzEENBkqXWExOPeBEsvj3F0xtVxKDwwdfRRtVdpxJeTRAq2Ml3qlUnDbK8bKHWwe6V1kkg==}
 
+  '@types/koa-mount@4.0.5':
+    resolution: {integrity: sha512-pV1njJ7r94iqAFzT9D5sGSYKUHFGudCLAnmr4WFli7V5tJf5MAgRQK9leTPJ4gjvgr+hnTf86fZsKoFN358c7w==}
+
   '@types/koa-response-time@2.1.5':
     resolution: {integrity: sha512-3AgPpoLYPMpzvy3UIr7LkX+kFAM5OVYd6QdF0inO9rzVjJjN7lQ+Hi5s/eTelQK2wnlhb07tKVlqYTyYhmS5nQ==}
 
   '@types/koa-send@4.1.6':
     resolution: {integrity: sha512-vgnNGoOJkx7FrF0Jl6rbK1f8bBecqAchKpXtKuXzqIEdXTDO6dsSTjr+eZ5m7ltSjH4K/E7auNJEQCAd0McUPA==}
-
-  '@types/koa-session@6.4.5':
-    resolution: {integrity: sha512-Vc6+fslnPuMH2v9y80WYeo39UMo8mweuNNthKCwYU2ZE6l5vnRrzRU3BRvexKwsoI5sxsRl5CxDsBlLI8kY/XA==}
 
   '@types/koa-static@4.0.4':
     resolution: {integrity: sha512-j1AUzzl7eJYEk9g01hNTlhmipFh8RFbOQmaMNLvLcNNAkPw0bdTs3XTa3V045XFlrWN0QYnblbDJv2RzawTn6A==}
@@ -1904,6 +1907,12 @@ packages:
 
   '@types/koa__multer@2.0.8':
     resolution: {integrity: sha512-XkD9YzmGKzKfOkxwHepueQkP61okAeu6ibAieL4NSqwM1lyGOkgbT2XmP+xROd2agQVsewPqsFOsfgVmlEqJmg==}
+
+  '@types/multer-s3@3.0.3':
+    resolution: {integrity: sha512-VgWygI9UwyS7loLithUUi0qAMIDWdNrERS2Sb06UuPYiLzKuIFn2NgL7satyl4v8sh/LLoU7DiPanvbQaRg9Yg==}
+
+  '@types/multer@2.3.0':
+    resolution: {integrity: sha512-i7STIm9V4K2MPH4ZYMtrZAwNxs3kglk2LgleaTuB9pUXgADBcQYQuYMd7+6xgTIxfoggIkFA/DkkvycdZpIARA==}
 
   '@types/node@26.6.4':
     resolution: {integrity: sha512-ldVPDCzj7fsaGZrLB0NuHuTvJcsNasysBAqMolr/cgxrLd1xbqxIr3XJiPnHHJUCxj5sNF1vnRj9aWnrVh5Jcg==}
@@ -7269,17 +7278,16 @@ snapshots:
       '@types/koa': 3.0.3
       '@types/node': 26.6.4
 
+  '@types/koa-mount@4.0.5':
+    dependencies:
+      '@types/koa': 3.0.3
+
   '@types/koa-response-time@2.1.5':
     dependencies:
       '@types/koa': 3.0.3
 
   '@types/koa-send@4.1.6':
     dependencies:
-      '@types/koa': 3.0.3
-
-  '@types/koa-session@6.4.5':
-    dependencies:
-      '@types/cookies': 0.9.2
       '@types/koa': 3.0.3
 
   '@types/koa-static@4.0.4':
@@ -7305,6 +7313,16 @@ snapshots:
   '@types/koa__multer@2.0.8':
     dependencies:
       '@types/koa': 3.0.3
+
+  '@types/multer-s3@3.0.3':
+    dependencies:
+      '@aws-sdk/client-s3': 3.1146.0
+      '@types/multer': 2.3.0
+      '@types/node': 26.6.4
+
+  '@types/multer@2.3.0':
+    dependencies:
+      '@types/express': 5.0.6
 
   '@types/node@26.6.4':
     dependencies:
