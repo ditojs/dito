@@ -1,9 +1,12 @@
 import { defineScenario } from '../../utils/fixture-app.js'
-import { Widget } from './models/Widget.js'
+import { Case } from './models/Case.js'
 
 export { expect } from '@playwright/test'
 
 export const test = defineScenario({
   dirname: import.meta.dirname,
-  models: { Widget }
+  models: { Case },
+  beforeEach: async () => {
+    await Case.query().insert({ id: 1 })
+  }
 })
