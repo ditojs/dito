@@ -367,10 +367,15 @@ export interface SchemaDitoMixin<$Item> {
    * change before value validation occurs. Rule changes do not influence how
    * the component is rendered.
    */
-  rules?: {
-    /** Override whether the field is required. */
-    required?: boolean
-  }
+  rules?: SchemaRules
+}
+
+/**
+ * Validation rules shared by all schemas, extended by the individual types.
+ */
+export interface SchemaRules {
+  /** Override whether the field is required. */
+  required?: boolean
 }
 
 /**
@@ -565,14 +570,20 @@ export interface SchemaTypeMixin<$Item> extends SchemaFields<$Item> {
    * @see {@link SchemaFields.onInitialize} and other `on`-
    * prefixed properties for per-event documentation.
    */
-  events?: SchemaEvents<$Item> & {
-    /** @see {@link BaseSchema.onFocus} */
-    focus?: ItemEventHandler<$Item>
-    /** @see {@link BaseSchema.onBlur} */
-    blur?: ItemEventHandler<$Item>
-    /** @see {@link BaseSchema.onInput} */
-    input?: ItemEventHandler<$Item>
-  }
+  events?: BaseSchemaEvents<$Item>
+}
+
+/**
+ * Grouped event handlers shared by all schemas, extended by the individual
+ * types.
+ */
+export interface BaseSchemaEvents<$Item> extends SchemaEvents<$Item> {
+  /** @see {@link BaseSchema.onFocus} */
+  focus?: ItemEventHandler<$Item>
+  /** @see {@link BaseSchema.onBlur} */
+  blur?: ItemEventHandler<$Item>
+  /** @see {@link BaseSchema.onInput} */
+  input?: ItemEventHandler<$Item>
 }
 
 export interface SchemaSourceMixin<$Item> {
@@ -923,10 +934,11 @@ export interface SchemaNumberMixin<$Item> {
    */
   decimals?: OrItemAccessor<$Item, {}, number>
   /** Validation rules for numeric constraints. */
-  rules?: Omit<SchemaNumberMixin<$Item>, 'rules'> & {
-    /** Restrict the value to whole numbers. */
-    integer?: boolean
-  }
+  rules?: SchemaRules &
+    Omit<SchemaNumberMixin<$Item>, 'rules'> & {
+      /** Restrict the value to whole numbers. */
+      integer?: boolean
+    }
 }
 
 export interface SchemaTextMixin<$Item> {
@@ -964,7 +976,7 @@ export interface SchemaDataMixin<$Item> {
   /**
    * Data source for the component.
    */
-  data?: OrItemAccessor<$Item, {}, any>
+  data?: OrItemAccessor<$Item, {}, Record<string, any>>
   /**
    * Path to retrieve data from parent context.
    */
@@ -1128,7 +1140,7 @@ export interface InputSchema<$Item = any>
     | 'tel'
     | 'password'
     | 'creditcard'
-  rules?: {
+  rules?: SchemaRules & {
     text?: boolean
     email?: boolean
     url?: boolean
@@ -1180,7 +1192,7 @@ export interface ButtonSchema<$Item = any>
   onClick?: ItemEventHandler<$Item>
   onSuccess?: ItemEventHandler<$Item>
   onError?: ErrorEventHandler<$Item>
-  events?: {
+  events?: BaseSchemaEvents<$Item> & {
     click?: ItemEventHandler<$Item>
     success?: ItemEventHandler<$Item>
     error?: ErrorEventHandler<$Item>
@@ -1209,8 +1221,9 @@ export interface SwitchSchema<$Item = any> extends BaseSchema<$Item> {
 }
 
 export interface NumberSchema<$Item = any>
+  // `rules` comes from `SchemaNumberMixin`, which extends `SchemaRules`.
   extends SchemaNumberMixin<$Item>,
-    BaseSchema<$Item>,
+    Omit<BaseSchema<$Item>, 'rules'>,
     SchemaAffixMixin<$Item> {
   /**
    * The type of the component.
@@ -1219,8 +1232,9 @@ export interface NumberSchema<$Item = any>
 }
 
 export interface SliderSchema<$Item = any>
+  // `rules` comes from `SchemaNumberMixin`, which extends `SchemaRules`.
   extends SchemaNumberMixin<$Item>,
-    BaseSchema<$Item> {
+    Omit<BaseSchema<$Item>, 'rules'> {
   /**
    * The type of the component.
    */
@@ -1678,7 +1692,9 @@ export type ColorFormat =
   | 'hsl'
   | 'hsv'
 export interface ColorSchema<$Item = any>
-  extends BaseSchema<$Item>,
+  // `format` is the color format here, not the formatting function of
+  // `BaseSchema`.
+  extends Omit<BaseSchema<$Item>, 'format'>,
     SchemaAffixMixin<$Item> {
   /**
    * The type of the component.
@@ -1800,7 +1816,7 @@ export interface ListSchema<$Item = { [key: string]: any }>
   /**
    * Grouped event handlers.
    */
-  events?: {
+  events?: BaseSchemaEvents<$Item> & {
     /**
      * Called when a collapsible inlined list is
      * toggled open or closed.
@@ -2882,7 +2898,7 @@ export interface ObjectSchema<$Item = { [key: string]: any }>
   /**
    * Grouped event handlers.
    */
-  events?: {
+  events?: BaseSchemaEvents<$Item> & {
     /**
      * Called when a collapsible inlined object is
      * toggled open or closed.
@@ -2952,8 +2968,9 @@ export interface SpacerSchema<$Item = any> extends BaseSchema<$Item> {
 }
 
 export interface ProgressSchema<$Item = any>
+  // `rules` comes from `SchemaNumberMixin`, which extends `SchemaRules`.
   extends SchemaNumberMixin<$Item>,
-    BaseSchema<$Item> {
+    Omit<BaseSchema<$Item>, 'rules'> {
   /**
    * The type of the component.
    */
