@@ -45,7 +45,6 @@
   },
   "peerDependencies": {
     "@kyvg/vue3-notification": "^3.4.2",
-    "@lk77/vue3-color": "^3.0.6",
     "@tiptap/core": "^3.31.4",
     "@tiptap/extension-blockquote": "^3.31.4",
     "@tiptap/extension-bold": "^3.31.4",
@@ -79,11 +78,11 @@
     "focus-trap": "^8.2.2",
     "nanoid": "^6.0.1",
     "sortablejs": "^1.15.7",
-    "tinycolor2": "^1.6.0",
     "tippy.js": "^6.3.7",
     "tiptap-footnotes": "^3.0.1",
     "type-fest": "^5.10.0",
     "vue": "^3.5.43",
+    "vue-color": "^3.3.3",
     "vue-multiselect": "^3.5.0",
     "vue-router": "^5.3.1",
     "vue-upload-component": "^3.2.2"
@@ -91,7 +90,6 @@
   "devDependencies": {
     "@ditojs/build": "workspace:^",
     "@kyvg/vue3-notification": "^3.4.2",
-    "@lk77/vue3-color": "^3.0.6",
     "@tiptap/core": "^3.31.4",
     "@tiptap/extension-blockquote": "^3.31.4",
     "@tiptap/extension-bold": "^3.31.4",
@@ -125,13 +123,13 @@
     "focus-trap": "^8.2.2",
     "nanoid": "^6.0.1",
     "sortablejs": "^1.15.7",
-    "tinycolor2": "^1.6.0",
     "tippy.js": "^6.3.7",
     "tiptap-footnotes": "^3.0.1",
     "type-fest": "^5.10.0",
     "typescript": "^6.0.3",
     "vite": "^8.3.2",
     "vue": "^3.5.43",
+    "vue-color": "^3.3.3",
     "vue-multiselect": "^3.5.0",
     "vue-router": "^5.3.1",
     "vue-upload-component": "^3.2.2"

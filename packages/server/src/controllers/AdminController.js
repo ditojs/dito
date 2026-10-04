@@ -250,8 +250,7 @@ export class AdminController extends Controller {
                       'prosemirror-view'
                     ]
                   : ditoPackages
-              ),
-              ...nonEsmDependencies
+              )
             ]
           },
           resolve: {
@@ -279,12 +278,6 @@ const ditoPackages = [
   '@ditojs/utils'
 ]
 
-const nonEsmDependencies = [
-  // All non-es modules need to be explicitly included here, and some of
-  // them only work due to the use of `createCommonJsPlugin()`.
-  '@lk77/vue3-color'
-]
-
 const coreDependencies = [
   ...ditoPackages,
 
@@ -296,12 +289,11 @@ const coreDependencies = [
   'vue',
   '@vue/*',
   '@vueuse/*',
-  '@lk77/vue3-color',
+  'vue-color',
   '@kyvg/vue3-notification',
   'vue-multiselect',
   'vue-router',
   'vue-upload-component',
-  'tinycolor2',
   'focus-trap',
   'tabbable',
   'sortablejs',

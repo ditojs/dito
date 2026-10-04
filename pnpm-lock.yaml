@@ -281,9 +281,6 @@ importers:
       '@kyvg/vue3-notification':
         specifier: ^3.4.2
         version: 3.4.2(vue@3.5.43(typescript@6.0.3))
-      '@lk77/vue3-color':
-        specifier: ^3.0.6
-        version: 3.0.6
       '@tiptap/core':
         specifier: ^3.31.4
         version: 3.31.4(@tiptap/pm@3.31.4)
@@ -383,9 +380,6 @@ importers:
       sortablejs:
         specifier: ^1.15.7
         version: 1.15.7
-      tinycolor2:
-        specifier: ^1.6.0
-        version: 1.6.0
       tippy.js:
         specifier: ^6.3.7
         version: 6.3.7
@@ -404,6 +398,9 @@ importers:
       vue:
         specifier: ^3.5.43
         version: 3.5.43(typescript@6.0.3)
+      vue-color:
+        specifier: ^3.3.3
+        version: 3.3.3(vue@3.5.43(typescript@6.0.3))
       vue-multiselect:
         specifier: ^3.5.0
         version: 3.5.0
@@ -1173,9 +1170,6 @@ packages:
     resolution: {integrity: sha512-CZ2zOdXsbGCtWbdqMgbusKtZTkMT+dYpw9bmAitsdSNHT0knh4njD8X95JIyTMWvNVjhDkFedbkNiZLcPqttwQ==}
     peerDependencies:
       vue: ^3.0.0
-
-  '@lk77/vue3-color@3.0.6':
-    resolution: {integrity: sha512-1e/TJrk2jJFo7z+teHjavndVxV9c25J5FA6LVEKJFKqLQzYDesTijxBmX1rAmiHHnFrjfVcwie5QAr3PzZbR2Q==}
 
   '@napi-rs/wasm-runtime@0.2.4':
     resolution: {integrity: sha512-9zESzOO5aDByvhIAsOy9TbpZ0Ur2AJbUI7UT73kcUTS2mxAMHOBaa1st/jAymNoCtvrit99kkzT1FZuXVcgfIQ==}
@@ -4348,6 +4342,9 @@ packages:
     resolution: {integrity: sha512-Je0fLJ0F5atA7F+eIlLzk+Wkcl57JDf4kf+EW8xiP5E31xOQxkIxTbgf1Oi1Lw9tRI9UEMRdI5Vz2xTzoNU1Jw==}
     engines: {node: ^20.17.0 || >=22.9.0}
 
+  material-colors@1.2.6:
+    resolution: {integrity: sha512-6qE4B9deFBIa9YSpOc9O0Sgc43zTeVYbgDT5veRKSlB2+ZuHNoVVxA1L/ckMUayV9Ay9y7Z/SZCLcGteW9i7bg==}
+
   math-intrinsics@1.1.0:
     resolution: {integrity: sha512-/IXtbwEk5HTPyEwyKX6hGkYXxM9nbj64B+ilVJnC/R6B0pH5G4V3b0pVbL7DBj4tkhBAppbQUlf6F6Xl9LHu1g==}
     engines: {node: '>= 0.4'}
@@ -5955,6 +5952,11 @@ packages:
   vscode-uri@3.2.0:
     resolution: {integrity: sha512-m2gXo3bn0G1kT9InzMf07fTbqMbGtyckj3bH5ktLO+1Ssv+yiATZ4dhwaQv9UZWxJh6E9IFGnQyjgWVDWVBDrg==}
 
+  vue-color@3.3.3:
+    resolution: {integrity: sha512-FW/9JXFbCHfFEGv6SFUuK/SE+K61pHoL7lxJMQXcU+Zt7s36Ui1/tMDc3vzGXPrxxRBB+NSzFt+71nEaUJ29dQ==}
+    peerDependencies:
+      vue: '>=2.7.0 <4.0.0'
+
   vue-eslint-parser-template-tokenizer-pug@1.0.0:
     resolution: {integrity: sha512-kBNkXTDvxb0K4KScHOfMdVGngHAQxE1VqCeQmGyhgUOO1VgrDBWW2nb4mhHvAZhX7dIS8f2S48YI1MdjFboNEg==}
     peerDependencies:
@@ -6704,8 +6706,6 @@ snapshots:
   '@kyvg/vue3-notification@3.4.2(vue@3.5.43(typescript@6.0.3))':
     dependencies:
       vue: 3.5.43(typescript@6.0.3)
-
-  '@lk77/vue3-color@3.0.6': {}
 
   '@napi-rs/wasm-runtime@0.2.4':
     dependencies:
@@ -9993,6 +9993,8 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  material-colors@1.2.6: {}
+
   math-intrinsics@1.1.0: {}
 
   mathml-tag-names@4.0.0: {}
@@ -11829,6 +11831,12 @@ snapshots:
   vscode-languageserver-types@3.18.4: {}
 
   vscode-uri@3.2.0: {}
+
+  vue-color@3.3.3(vue@3.5.43(typescript@6.0.3)):
+    dependencies:
+      material-colors: 1.2.6
+      tinycolor2: 1.6.0
+      vue: 3.5.43(typescript@6.0.3)
 
   vue-eslint-parser-template-tokenizer-pug@1.0.0(vue-eslint-parser@10.4.1(eslint@10.12.0(supports-color@7.2.0))(supports-color@7.2.0)):
     dependencies:

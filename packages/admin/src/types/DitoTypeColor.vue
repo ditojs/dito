@@ -39,7 +39,7 @@ DitoTrigger.dito-color(
               div(:style="{ background: `#${hexValue || '00000000'}` }")
   template(#popup)
     SketchPicker.dito-color__picker(
-      v-model="colorValue"
+      v-model:tinyColor="colorValue"
       :disableAlpha="!alpha"
       :disableFields="!inputs"
       :presetColors="presets"
@@ -47,20 +47,13 @@ DitoTrigger.dito-color(
 </template>
 
 <script>
-import tinycolor from 'tinycolor2'
-import { Sketch as SketchPicker } from '@lk77/vue3-color'
-import { isObject, isString } from '@ditojs/utils'
+// Use the `tinycolor` exported by `vue-color`, as required for its
+// `v-model:tinyColor` binding.
+import { SketchPicker, tinycolor } from 'vue-color'
 import { DitoTrigger, DitoInput } from '@ditojs/ui/src'
 import DitoTypeComponent from '../DitoTypeComponent.js'
 import DitoAffixes from '../components/DitoAffixes.vue'
 import { getSchemaAccessor } from '../utils/accessor.js'
-
-// Monkey-patch the `SketchPicker's` `hex` computed property to return lowercase
-// hex values instead of uppercase ones.
-const { hex } = SketchPicker.computed
-SketchPicker.computed.hex = function () {
-  return hex.call(this).toLowerCase()
-}
 
 // @vue/component
 export default DitoTypeComponent.register('color', {
@@ -80,15 +73,21 @@ export default DitoTypeComponent.register('color', {
 
     colorValue: {
       get() {
-        return (
-          this.convertedValue ||
-          this.value ||
-          (this.colorFormat === 'hex' ? '' : {})
-        )
+        return tinycolor(this.convertedValue || this.value || '#000000')
       },
 
-      set(value) {
-        this.value = convertColor(value, this.colorFormat)
+      set(color) {
+        // Picker changes take precedence over values typed into the input.
+        this.convertedValue = null
+        // Skip unchanged colors, as converting formats like `hsl` back and
+        // forth isn't lossless and would cause endless updates.
+        const { value } = this
+        if (
+          !value ||
+          color.toHex8String() !== tinycolor(value).toHex8String()
+        ) {
+          this.value = toTinyColorFormat(color, this.colorFormat)
+        }
       }
     },
 
@@ -174,21 +173,7 @@ export default DitoTypeComponent.register('color', {
 })
 
 function convertColor(color, format) {
-  return isObject(color) // a vue3-color color object
-    ? toVue3ColorFormat(color, format)
-    : toTinyColorFormat(tinycolor(color), format)
-}
-
-function toVue3ColorFormat(color, format) {
-  const value =
-    color[
-      {
-        hex: color?.a < 1 ? 'hex8' : 'hex',
-        rgb: 'rgba'
-      }[format] ||
-      format
-    ]
-  return isString(value) && value[0] === '#' ? value.toLowerCase() : value
+  return toTinyColorFormat(tinycolor(color), format)
 }
 
 // This should really be in tinycolor, but it only has the string equivalent
@@ -224,6 +209,7 @@ function toTinyColorFormat(color, format) {
 
 <style lang="scss">
 @import '../styles/_imports';
+@import 'vue-color/style.css';
 
 $color-swatch-width: $pattern-transparency-size;
 $color-swatch-radius: $border-radius - $border-width;
