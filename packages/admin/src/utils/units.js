@@ -28,10 +28,11 @@ export function formatFileSize(size, { base = 10 } = {}) {
 
 /**
  * Parses file sizes like `'10 MB'`, `'1.5G'`, `'512kb'` or `'100 bytes'` into
- * a number of bytes, using base 2 (1 KB = 1024 bytes) unless specified.
+ * a number of bytes, using base 10 (1 kB = 1000 bytes) unless specified.
+ * IEC units like `'10 MiB'` always use base 2 (1 KiB = 1024 bytes).
  * Bit units are case-sensitive (`Kb` = kilobit), the byte units aren't.
  */
-export function parseFileSize(input, { base = 2 } = {}) {
+export function parseFileSize(input, { base = 10 } = {}) {
   const [, amountString, unit] = (
     String(input).match(/^([\d.,]*)\s*(\D*)$/) || []
   )
@@ -39,7 +40,7 @@ export function parseFileSize(input, { base = 2 } = {}) {
   if (!isFinite(amount)) {
     throw new Error(`Can't interpret file size: ${input}`)
   }
-  const multiplier = getMultiplier(base)
+  const multiplier = getMultiplier(/^[kmgtpezy]ib?$/i.test(unit) ? 2 : base)
   const bitMatch = unit.replace(/^bits?$/, 'b').match(/^([KMGTPEZY]?)b$/)
   if (bitMatch) {
     const exponent = prefixes.indexOf(bitMatch[1].replace('K', 'k'))

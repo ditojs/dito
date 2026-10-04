@@ -1400,7 +1400,8 @@ export interface UploadSchema<$Item = any> extends BaseSchema<$Item> {
   accept?: OrArrayOf<string>
   /**
    * The maximum size of the file expressed as number of bytes or as a string
-   * like `'200kb'`, `'1mb'`, `'3.2gb'`, etc.
+   * like `'200kB'`, `'1MB'`, `'3.2GB'`, etc., using base 10 (1 kB = 1000
+   * bytes). IEC units like `'1MiB'` use base 2 (1 KiB = 1024 bytes).
    */
   maxSize?: string | number
   /**
