@@ -1,5 +1,5 @@
 import {
-  test, expect, uploadViaApi
+  test, expect, uploadViaApi, Asset
 } from '../fixtures.js'
 import { AssetWidget } from '../models/AssetWidget.js'
 
@@ -12,8 +12,6 @@ test.describe('model hooks', () => {
       await AssetWidget.query()
         .insert({ files: [fileObj] })
 
-      // Use the registered Asset model (has knex)
-      const Asset = AssetWidget.app!.getModel('Asset')
       const asset = await Asset.query()
         .findOne({ key: fileObj.key })
       expect(asset!.count).toBe(1)
@@ -36,7 +34,6 @@ test.describe('model hooks', () => {
           files: [file2]
         })
 
-      const Asset = AssetWidget.app!.getModel('Asset')
       const asset1 = await Asset.query()
         .findOne({ key: file1.key })
       const asset2 = await Asset.query()
@@ -75,13 +72,9 @@ test.describe('model hooks', () => {
       const newData = Buffer.from(newContent)
       const dataUri =
         `data:text/plain;base64,${newData.toString('base64')}`
+      const modifiedFile = { ...signedFiles[0], data: dataUri }
       await AssetWidget.query()
-        .patchAndFetchById(id, {
-          files: [{
-            ...signedFiles[0],
-            data: dataUri
-          }]
-        })
+        .patchAndFetchById(id, { files: [modifiedFile] })
 
       // Read updated file from storage
       const updatedData =

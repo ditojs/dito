@@ -1,13 +1,9 @@
 import fs from 'fs/promises'
 import path from 'path'
 import {
-  test, expect, fixturesDir, suppressErrors
+  test, expect, fixturesDir, suppressErrors, Asset
 } from '../fixtures.js'
 import { AssetWidget } from '../models/AssetWidget.js'
-
-function getAssetModel() {
-  return AssetWidget.app!.getModel('Asset')
-}
 
 test.describe('upload endpoint', () => {
   test(
@@ -96,9 +92,7 @@ test.describe('upload endpoint', () => {
       )
       const body = await resp.json()
       const fileKey = body[0].key
-
-      const AssetModel = getAssetModel()
-      const asset = await AssetModel.query()
+      const asset = await Asset.query()
         .findOne({ key: fileKey })
       expect(asset).toBeDefined()
       expect(asset!.count).toBe(0)

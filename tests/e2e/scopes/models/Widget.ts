@@ -1,6 +1,5 @@
-import type { ModelProperties } from '@ditojs/server'
+import type { ModelProperties, QueryBuilder } from '@ditojs/server'
 import { Model } from '@ditojs/server'
-import type { QueryBuilder } from 'objection'
 
 export interface Widget {
   id: number

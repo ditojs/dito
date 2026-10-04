@@ -17,7 +17,7 @@ import { NestedAssetWidget } from './models/NestedAssetWidget.js'
 // AssetModel is created via a mixin and has an empty `.name`, so we extend
 // it to get a proper named class that Application.addModels() can register
 // under the key 'Asset'.
-class Asset extends AssetModel {}
+export class Asset extends AssetModel {}
 
 export { expect }
 export { getInput, getContainer } from '../../utils/admin.js'
@@ -33,6 +33,8 @@ export const test = base.extend<{ url: string }, { workerUrl: string }>({
       const tmpDir = await fs.mkdtemp(
         path.join(os.tmpdir(), 'dito-e2e-uploads-')
       )
+      // Kept as reference to add the HTTP import URL once the port is known.
+      const allowedImports = [`file://${fixturesDir}/**`]
       try {
         const app = startTestApp({
           dirname: import.meta.dirname,
@@ -68,7 +70,7 @@ export const test = base.extend<{ url: string }, { workerUrl: string }>({
                 type: 'disk',
                 path: tmpDir,
                 url: '/uploads',
-                allowedImports: [`file://${fixturesDir}/**`]
+                allowedImports
               }
             },
             assets: {
@@ -89,9 +91,8 @@ export const test = base.extend<{ url: string }, { workerUrl: string }>({
         // Update storage config with the actual port. Storage._getUrl()
         // requires an absolute base URL, and allowedImports uses the
         // actual port for HTTP import tests (B12).
-        const storage = app.getStorage('test')
-        storage.url = `${url}/uploads`
-        storage.config.allowedImports.push(`${url}/fixtures/**`)
+        app.getStorage('test').url = `${url}/uploads`
+        allowedImports.push(`${url}/fixtures/**`)
 
         try {
           await use(url)

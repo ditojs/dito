@@ -1,12 +1,10 @@
-import type {
-  Components, ViewSchema
-} from '@ditojs/admin'
+import type { Components, ListSchema, ViewSchema } from '@ditojs/admin'
 
 export function createWidgetView<T>(
   itemLabel: string,
   resource: string,
   components: Components<T>,
-  listOptions: Record<string, unknown> = {}
+  listOptions: Partial<ListSchema<T>> = {}
 ): ViewSchema<T> {
   return {
     type: 'view',

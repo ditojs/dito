@@ -1,11 +1,11 @@
-import type { ModelProperties } from '@ditojs/server'
+import type { AssetFileObject, ModelProperties } from '@ditojs/server'
 import { Model } from '@ditojs/server'
 
 export interface AssetWidget {
   id: number
-  files: object[] | null
-  file: object | null
-  filesSmall: object[] | null
+  files: AssetFileObject[]
+  file: AssetFileObject | null
+  filesSmall: AssetFileObject[]
 }
 
 export class AssetWidget extends Model {

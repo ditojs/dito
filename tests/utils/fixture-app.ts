@@ -1,6 +1,11 @@
 import path from 'path'
 import { test as base, type Browser, type Page } from '@playwright/test'
-import { AdminController, ModelController, type Model } from '@ditojs/server'
+import {
+  AdminController,
+  ModelController,
+  type ApplicationControllers,
+  type Model
+} from '@ditojs/server'
 import {
   createTestApp,
   getAppUrl,
@@ -90,7 +95,7 @@ export interface ScenarioOptions {
   models: Record<string, typeof Model>
   /** Controllers, keyed by name. Models without a controller named after
    * their plural (e.g. `Widgets` for `Widget`) get a `ScenarioController`. */
-  controllers?: Record<string, typeof ModelController>
+  controllers?: ApplicationControllers
   /** Extra tables to clear before the models, e.g. join tables. */
   tables?: string[]
   /** Extra config merged into the app config. */

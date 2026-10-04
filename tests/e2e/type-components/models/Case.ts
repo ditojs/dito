@@ -1,5 +1,9 @@
-import { Model } from '@ditojs/server'
+import { Model, type ModelProperties } from '@ditojs/server'
 import { caseEntries } from '../cases/index.js'
+
+export interface Case {
+  id: number
+}
 
 /**
  * One column per case, typed like a real app would store the component's value.
@@ -11,5 +15,5 @@ export class Case extends Model {
       name,
       { nullable: true, ...property }
     ])
-  )
+  ) as ModelProperties
 }

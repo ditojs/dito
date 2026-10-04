@@ -1,6 +1,9 @@
-import type { ModelProperties, RelationMappings } from '@ditojs/server'
+import type {
+  ModelProperties,
+  ModelRelations,
+  QueryBuilder
+} from '@ditojs/server'
 import { Model } from '@ditojs/server'
-import type { QueryBuilder } from 'objection'
 import { Tag } from './Tag.js'
 
 export interface Widget {
@@ -14,7 +17,7 @@ export class Widget extends Model {
     name: { type: 'string', required: true }
   }
 
-  static override relations: RelationMappings = {
+  static override relations: ModelRelations = {
     tags: {
       relation: 'manyToMany',
       from: 'Widget.id',

@@ -1,13 +1,9 @@
 import path from 'path'
 import {
-  test, expect, fixturesDir, suppressErrors
+  test, expect, fixturesDir, suppressErrors, Asset
 } from '../fixtures.js'
 import { AssetWidget } from '../models/AssetWidget.js'
 import { AssetFile } from '@ditojs/server'
-
-function getAssetModel() {
-  return AssetWidget.app!.getModel('Asset')
-}
 
 test.describe('foreign imports', () => {
   test.describe('programmatic', () => {
@@ -18,7 +14,6 @@ test.describe('foreign imports', () => {
           path.resolve(fixturesDir, 'tiny.png')
         }`
         const key = AssetFile.getUniqueKey('tiny.png')
-        const AssetModel = getAssetModel()
 
         await AssetWidget.query()
           .insert({
@@ -32,7 +27,7 @@ test.describe('foreign imports', () => {
           })
 
         // Asset should have been imported
-        const asset = await AssetModel.query()
+        const asset = await Asset.query()
           .findOne({ key })
         expect(asset).toBeDefined()
         expect(asset!.count).toBe(1)
@@ -45,7 +40,6 @@ test.describe('foreign imports', () => {
       async ({ url }) => {
         const httpUrl = `${url}/fixtures/tiny.png`
         const key = AssetFile.getUniqueKey('tiny.png')
-        const AssetModel = getAssetModel()
 
         await AssetWidget.query()
           .insert({
@@ -58,7 +52,7 @@ test.describe('foreign imports', () => {
             }]
           })
 
-        const asset = await AssetModel.query()
+        const asset = await Asset.query()
           .findOne({ key })
         expect(asset).toBeDefined()
         expect(asset!.count).toBe(1)
@@ -91,7 +85,6 @@ test.describe('foreign imports', () => {
           path.resolve(fixturesDir, 'tiny.png')
         }`
         const key = AssetFile.getUniqueKey('tiny.png')
-        const AssetModel = getAssetModel()
 
         // Insert first record with this key
         await AssetWidget.query().insert({
@@ -116,7 +109,7 @@ test.describe('foreign imports', () => {
         })
 
         // Should be only one asset record, count=2
-        const assets = await AssetModel.query()
+        const assets = await Asset.query()
           .where({ key })
         expect(assets).toHaveLength(1)
         expect(assets[0].count).toBe(2)
@@ -132,7 +125,6 @@ test.describe('foreign imports', () => {
           path.resolve(fixturesDir, 'tiny.png')
         }`
         const key = AssetFile.getUniqueKey('tiny.png')
-        const AssetModel = getAssetModel()
 
         const resp = await fetch(
           `${url}/api/asset-widgets`,
@@ -154,7 +146,7 @@ test.describe('foreign imports', () => {
         )
 
         expect(resp.ok).toBe(true)
-        const asset = await AssetModel.query()
+        const asset = await Asset.query()
           .findOne({ key })
         expect(asset).toBeDefined()
         expect(asset!.count).toBe(1)
@@ -166,7 +158,6 @@ test.describe('foreign imports', () => {
       async ({ url }) => {
         const httpUrl = `${url}/fixtures/tiny.png`
         const key = AssetFile.getUniqueKey('tiny.png')
-        const AssetModel = getAssetModel()
 
         // First create a widget with a normally
         // uploaded file
@@ -226,7 +217,7 @@ test.describe('foreign imports', () => {
         )
 
         expect(patchResp.ok).toBe(true)
-        const asset = await AssetModel.query()
+        const asset = await Asset.query()
           .findOne({ key })
         expect(asset).toBeDefined()
         expect(asset!.count).toBe(1)

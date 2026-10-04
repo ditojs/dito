@@ -98,7 +98,7 @@ test.describe('signature forgery', () => {
       // Flip a character in the signature
       const tampered = {
         ...signedFile,
-        signature: signedFile.signature.replace(
+        signature: signedFile.signature!.replace(
           /^./, (c: string) =>
             c === 'a' ? 'b' : 'a'
         )
