@@ -23,7 +23,9 @@ import { getItemFormSchema, processSchemaComponents } from '../utils/schema.js'
 
 // @vue/component
 export default DitoTypeComponent.register('section', {
-  defaultValue: () => undefined, // Callback to override `defaultValue: null`
+  // Nested sections hold their data in an object, other sections don't have
+  // their own value. Use a callback to override `defaultValue: null`.
+  defaultValue: ({ schema }) => (schema.nested ? {} : undefined),
   ignoreMissingValue: ({ schema }) => !schema.nested && !('default' in schema),
   defaultNested: false,
   generateLabel: false,
