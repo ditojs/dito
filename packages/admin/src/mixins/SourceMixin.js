@@ -454,10 +454,15 @@ export default {
       const item = this.createData(schema, type)
       if (this.isObjectSource) {
         this.objectData = item
-      } else if (index != null) {
-        this.listData.splice(index, 0, item)
       } else {
-        this.listData.push(item)
+        const { listData } = this
+        if (index != null) {
+          listData.splice(index, 0, item)
+        } else {
+          listData.push(item)
+        }
+        // Set the list back, as `listData` is a new array for `null` values.
+        this.listData = listData
       }
       if (this.collapsible) {
         this.$nextTick(() => this.openSchemaComponent(index ?? -1))
