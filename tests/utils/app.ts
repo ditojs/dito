@@ -50,7 +50,8 @@ export function createTestApp(
     ...(options.validator && { validator: options.validator })
   }) as TestApp
 
-  if (options.admin) {
+  const { admin } = options
+  if (admin) {
     // Resolve @ditojs/admin and @ditojs/ui from source so no prior build step
     // is needed. Their package exports point to dist/, but in dev we want to
     // use source directly. @ditojs/utils already exports from src/ so no alias
@@ -71,7 +72,7 @@ export function createTestApp(
           alias: [
             {
               find: '#views',
-              replacement: options.admin.views
+              replacement: admin.views
             },
             {
               find: '@ditojs/admin/style.css',
@@ -126,7 +127,7 @@ export function createTestApp(
           os.tmpdir(),
           'dito-e2e-vite-cache',
           // Give each scenario its own cache, as they share the admin root.
-          options.admin.name
+          admin.name
         )
       })
       app.loadAdminViteConfig =

@@ -11,5 +11,5 @@
     "types": ["vitest/globals"]
   },
   "include": ["**/*.ts"],
-  "exclude": ["e2e/**"]
+  "exclude": ["e2e/**", "utils/admin-app/**"]
 }

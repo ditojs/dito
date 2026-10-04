@@ -117,7 +117,7 @@ export function defineScenario({
   setup,
   beforeEach
 }: ScenarioOptions) {
-  const api: Record<string, typeof ModelController> = { ...controllers }
+  const api: Record<string, unknown> = { ...controllers }
   for (const modelClass of Object.values(models)) {
     const name = `${modelClass.name}s`
     if (!api[name]) {
