@@ -174,6 +174,10 @@ export default {
   },
 
   methods: {
+    isPopupFocused() {
+      return !!this.$refs.popup?.matches(':focus-within')
+    },
+
     updatePosition() {
       const { trigger, popup } = this.$refs
       if (this.show && popup.offsetWidth === 0) {
@@ -291,7 +295,7 @@ export default {
           blur: () => {
             // Use timeout to allow clicked inputs to grab focus
             this.blurTimer = setTimeout(() => {
-              if (!this.$refs.popup.matches(':focus-within')) {
+              if (!this.isPopupFocused()) {
                 this.showPopup = false
               }
             }, 0)
@@ -323,7 +327,12 @@ export default {
               // becomes editable and still focused again.
               setTimeout(() => {
                 input.removeAttribute('readonly')
-                if (!event.target.matches('input, textarea, button')) {
+                // Only bring the focus back from the popup, not if the focus
+                // moved elsewhere in the meantime, e.g. by clicking outside.
+                if (
+                  !event.target.matches('input, textarea, button') &&
+                  this.isPopupFocused()
+                ) {
                   input.focus()
                 }
                 input = null
