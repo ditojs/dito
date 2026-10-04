@@ -1,5 +1,11 @@
 import { defineCases } from './define.js'
 
+const fruits = [
+  { label: 'Apple', value: 'apple' },
+  { label: 'Grape', value: 'grape' },
+  { label: 'Pear', value: 'pear' }
+]
+
 const sizes = [
   { label: 'Small', value: 's' },
   { label: 'Medium', value: 'm' },
@@ -39,6 +45,27 @@ export default [
       schema: { options: sizes, searchable: true },
       value: 'Large',
       stored: 'l'
+    },
+    {
+      title: 'finds options with a debounced search filter',
+      schema: {
+        search: {
+          debounce: 200,
+          filter: async ({ searchTerm }: { searchTerm: string }) => {
+            const global = globalThis as { searchCalls?: number }
+            global.searchCalls = (global.searchCalls ?? 0) + 1
+            return fruits.filter(fruit =>
+              fruit.label.toLowerCase().includes(searchTerm.toLowerCase())
+            )
+          }
+        },
+        searchable: true,
+        // Provides the labels of stored values, as searching is the only way
+        // to get options otherwise.
+        options: { data: fruits, label: 'label', value: 'value' }
+      },
+      value: 'Pear',
+      stored: 'pear'
     },
     {
       title: 'uses async options from options.data',
