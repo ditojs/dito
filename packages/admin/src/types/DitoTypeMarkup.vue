@@ -237,7 +237,7 @@ export default DitoTypeComponent.register('markup', {
   },
 
   watch: {
-    readyonly: 'updateEditorOptions',
+    readonly: 'updateEditorOptions',
     autofocus: 'updateEditorOptions',
     enableRules: 'updateEditorOptions'
   },
@@ -258,10 +258,7 @@ export default DitoTypeComponent.register('markup', {
       this.onInput()
     }
 
-    const setValueDebounced = debounce(() => {
-      ignoreWatch = true
-      updateValue()
-    }, 100)
+    const setValueDebounced = debounce(() => updateValue(), 100)
 
     const updateValue = () => {
       const content = this.editor.getHTML()
@@ -270,6 +267,9 @@ export default DitoTypeComponent.register('markup', {
         : content
       if (value !== this.value) {
         changed = true
+        // The value comes from the editor, so don't set it back as content,
+        // which would re-parse it and e.g. collapse trailing whitespace.
+        ignoreWatch = true
         this.value = value
       }
       if (!this.focused && changed) {
