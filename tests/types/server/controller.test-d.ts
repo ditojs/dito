@@ -1,7 +1,8 @@
 import { expectTypeOf, assertType, describe, it } from 'vitest'
+import { ModelController } from '@ditojs/server'
 import type {
+  ApplicationControllers,
   Controller,
-  ModelController,
   CollectionController,
   RelationController,
   QueryBuilder,
@@ -13,6 +14,7 @@ import type {
   ControllerAction,
   ControllerActionHandler,
   ControllerActions,
+  ModelControllerRelation,
   Page
 } from '@ditojs/server'
 import type { Transaction } from 'objection'
@@ -399,6 +401,16 @@ describe('ModelController', () => {
   })
 })
 
+describe('ApplicationControllers', () => {
+  it('accepts controller subclasses with their own members', () => {
+    class Widgets extends ModelController<Model> {
+      override graph = true
+      override collection = { allow: ['get', 'post'] as const }
+    }
+    assertType<ApplicationControllers>({ Widgets })
+  })
+})
+
 describe('KoaContext', () => {
   it('ctx.state.user has UserModel properties', () => {
     const ctx = {} as KoaContext
@@ -440,5 +452,22 @@ describe('RelationController', () => {
     expectTypeOf(ctrl.relate).toBeBoolean()
     expectTypeOf(ctrl.unrelate).toBeBoolean()
     expectTypeOf(ctrl.object).toEqualTypeOf<Record<string, unknown>>()
+  })
+})
+
+describe('ModelControllerRelation', () => {
+  it('configures relation and member actions', () => {
+    class Widgets extends ModelController<Model> {
+      override relations = {
+        items: {
+          graph: false,
+          relation: { allow: ['get', 'post'] as const },
+          member: { allow: ['get', 'patch', 'delete'] as const }
+        }
+      }
+    }
+    expectTypeOf<Widgets['relations']>().toMatchTypeOf<
+      Record<string, ModelControllerRelation> | undefined
+    >()
   })
 })

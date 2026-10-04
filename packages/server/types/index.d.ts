@@ -962,10 +962,15 @@ export type ModelProperty<T = any> = Schema<T> & {
  *
  * @see {@link https://github.com/ditojs/dito/blob/main/docs/model-scopes.md|Model Scopes}
  */
-export type ModelScope<$Model extends Model = Model> = (
-  query: QueryBuilder<$Model>,
-  applyParentScope: (query: QueryBuilder<$Model>) => QueryBuilder<$Model>
-) => QueryBuilder<$Model, any> | void
+// Scopes, filters and modifiers are declared through methods, to make their
+// parameters bivariant, so that models can type them with their own query
+// builders, e.g. `QueryBuilder<MyModel>` instead of `QueryBuilder<Model>`.
+export type ModelScope<$Model extends Model = Model> = {
+  bivarianceHack(
+    query: QueryBuilder<$Model>,
+    applyParentScope: (query: QueryBuilder<$Model>) => QueryBuilder<$Model>
+  ): QueryBuilder<$Model, any> | void
+}['bivarianceHack']
 
 /**
  * Map of scope names to scope functions. Scopes can be
@@ -984,10 +989,9 @@ export type ModelScopes<$Model extends Model = Model> = Record<
  * Modifiers are reusable query fragments applied via
  * `.modify('name')` on queries.
  */
-export type ModelModifier<$Model extends Model = Model> = (
-  query: QueryBuilder<$Model>,
-  ...args: any[]
-) => void
+export type ModelModifier<$Model extends Model = Model> = {
+  bivarianceHack(query: QueryBuilder<$Model>, ...args: any[]): void
+}['bivarianceHack']
 
 /**
  * Map of modifier names to modifier functions.
@@ -1001,10 +1005,9 @@ export type ModelModifiers<$Model extends Model = Model> = Record<
  * A filter handler function that modifies a query builder
  * based on external parameters (e.g. from URL query strings).
  */
-export type ModelFilterFunction<$Model extends Model = Model> = (
-  queryBuilder: QueryBuilder<$Model>,
-  ...args: any[]
-) => void
+export type ModelFilterFunction<$Model extends Model = Model> = {
+  bivarianceHack(queryBuilder: QueryBuilder<$Model>, ...args: any[]): void
+}['bivarianceHack']
 
 /**
  * Registry of known filter type names for use with
@@ -1097,6 +1100,30 @@ export interface ModelAsset {
 
 /** Map of property names to their asset configurations. */
 export type ModelAssets = Record<string, ModelAsset>
+
+/**
+ * Configuration for a controller's asset upload route, merged over the model's
+ * asset definition of the same data path.
+ */
+export type ControllerAsset = ModelAsset & {
+  transacted?: boolean
+}
+
+/**
+ * Map of data paths, with support for `*` and `**` wildcards, to their asset
+ * upload route configurations.
+ */
+export type ControllerAssets = {
+  [dataPath: string]:
+    | ControllerAsset
+    | OrReadOnly<string[]>
+    | ControllerAssetsAuthorize
+    | undefined
+  allow?: OrReadOnly<string[]>
+  authorize?: ControllerAssetsAuthorize
+}
+
+type ControllerAssetsAuthorize = Authorize | Record<string, Authorize>
 
 export interface ModelOptions extends objection.ModelOptions {
   graph?: boolean
@@ -2001,16 +2028,20 @@ export interface Controller extends EventEmitter {}
 /** A named action parameter with a JSON Schema definition. */
 export type ActionParameter = Schema & { name: string }
 
+// Handlers are declared through a method, to make their parameters, including
+// `this`, bivariant, so that controller subclasses remain assignable to their
+// base classes, e.g. in `ApplicationControllers`.
+type ControllerHandler<$Controller, $Args extends any[], $Result = any> = {
+  bivarianceHack(this: $Controller, ...args: $Args): $Result
+}['bivarianceHack']
+
 /**
  * Handler function for a model controller action. Receives
  * the Koa context and any resolved action parameters. `this`
  * is bound to the controller instance.
  */
-export type ModelControllerActionHandler<$ModelController = ModelController> = (
-  this: $ModelController,
-  ctx: KoaContext,
-  ...args: any[]
-) => any
+export type ModelControllerActionHandler<$ModelController = ModelController> =
+  ControllerHandler<$ModelController, [ctx: KoaContext, ...args: any[]]>
 
 /**
  * Handler function for a controller action. Receives the Koa
@@ -2021,8 +2052,8 @@ export type ControllerActionHandler<
   $Controller extends Controller = Controller,
   $Params = Record<string, any>
 > = keyof $Params extends never
-  ? (this: $Controller, ctx: KoaContext) => any
-  : (this: $Controller, ctx: KoaContext, params: $Params) => any
+  ? ControllerHandler<$Controller, [ctx: KoaContext]>
+  : ControllerHandler<$Controller, [ctx: KoaContext, params: $Params]>
 
 type ModelDataKey<T, K extends keyof T> = K extends
   | 'QueryBuilderType'
@@ -2329,37 +2360,36 @@ type AfterCustomHookKey =
 export type ModelControllerHooks<
   $ModelController extends ModelControllerLike = ModelController
 > = {
-  [$Key in BeforeHookKey]?: (
-    this: $ModelController,
-    ctx: KoaContext,
-    params?: Record<string, any>
-  ) => void
+  [$Key in BeforeHookKey]?: ControllerHandler<
+    $ModelController,
+    [ctx: KoaContext, params?: Record<string, any>],
+    void
+  >
 } & {
-  [$Key in AfterDeleteHookKey]?: (
-    this: $ModelController,
-    ctx: KoaContext,
-    result: { count: number }
-  ) => any
+  [$Key in AfterDeleteHookKey]?: ControllerHandler<
+    $ModelController,
+    [ctx: KoaContext, result: { count: number }]
+  >
 } & {
-  [$Key in AfterItemHookKey]?: (
-    this: $ModelController,
-    ctx: KoaContext,
-    item: ModelFromModelController<$ModelController>
-  ) => any
+  [$Key in AfterItemHookKey]?: ControllerHandler<
+    $ModelController,
+    [ctx: KoaContext, item: ModelFromModelController<$ModelController>]
+  >
 } & {
-  [$Key in AfterCollectionGetHookKey]?: (
-    this: $ModelController,
-    ctx: KoaContext,
-    result:
-      | ModelFromModelController<$ModelController>[]
-      | Page<ModelFromModelController<$ModelController>>
-  ) => any
+  [$Key in AfterCollectionGetHookKey]?: ControllerHandler<
+    $ModelController,
+    [
+      ctx: KoaContext,
+      result:
+        | ModelFromModelController<$ModelController>[]
+        | Page<ModelFromModelController<$ModelController>>
+    ]
+  >
 } & {
-  [$Key in AfterCustomHookKey]?: (
-    this: $ModelController,
-    ctx: KoaContext,
-    result: any
-  ) => any
+  [$Key in AfterCustomHookKey]?: ControllerHandler<
+    $ModelController,
+    [ctx: KoaContext, result: any]
+  >
 }
 
 /**
@@ -2542,12 +2572,11 @@ export class ModelController<
    * object to assign them to the member.
    */
   member?: ModelControllerMemberActions<this>
-  assets?:
-    | boolean
-    | {
-        allow?: OrArrayOf<string>
-        authorize: Record<string, OrArrayOf<string>>
-      }
+  /**
+   * The asset upload routes, by data path, or `true` to use the model's
+   * asset definitions.
+   */
+  assets?: boolean | ControllerAssets
 
   /**
    * Lifecycle hooks that run before or after controller
@@ -2599,8 +2628,31 @@ export class ModelController<
    * @see {@link QueryParameterOptions} for pagination parameters
    */
   hooks?: ModelControllerHooks<this>
-  /** Map of relation name to RelationController instance. */
-  relations?: Record<string, RelationController>
+  /**
+   * The relations to expose as nested routes, by relation name. After setup,
+   * each configuration is replaced with its RelationController instance.
+   */
+  relations?: Record<string, ModelControllerRelation | RelationController>
+}
+
+/**
+ * Configuration of a relation route on a model controller, from which the
+ * {@link RelationController} is created. The relation's collection actions are
+ * provided as `relation`, to make sense for both one- and many-relations.
+ */
+export type ModelControllerRelation = Partial<
+  Pick<
+    RelationController,
+    | 'graph'
+    | 'transacted'
+    | 'scope'
+    | 'allowScope'
+    | 'allowFilter'
+    | 'allowParam'
+  >
+> & {
+  relation?: ModelControllerActions<RelationController>
+  member?: ModelControllerMemberActions<RelationController>
 }
 
 /**
