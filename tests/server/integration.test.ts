@@ -148,3 +148,63 @@ describe('PGlite integration', () => {
     expect(tasks).toHaveLength(0)
   })
 })
+
+describe('PGlite date properties', () => {
+  class Event extends Model {
+    declare id: number
+    declare day: Date | string | null
+    declare at: Date | string | null
+
+    static override properties: ModelProperties = {
+      day: { type: 'date', nullable: true },
+      at: { type: 'datetime', nullable: true }
+    }
+  }
+
+  const app = createTestApp({ models: { Event } })
+
+  beforeAll(async () => {
+    await createTestDatabase(app)
+    await app.setup()
+  })
+
+  afterAll(async () => {
+    await destroyTestApp(app)
+  })
+
+  async function getStored(id: number, column: string) {
+    const { rows } = await app.knex.raw(
+      `select ??::text as value from "Event" where id = ?`,
+      [column, id]
+    )
+    return rows[0].value
+  }
+
+  it.each([
+    ['a plain date', '2026-05-14', '2026-05-14'],
+    ['a local date', new Date(2026, 4, 14), '2026-05-14'],
+    ['a historical local date', new Date(1850, 6, 1), '1850-07-01']
+  ])('stores %s as its plain date', async (_, day, expected) => {
+    const { id } = await Event.query().insert({ day } as any)
+    expect(await getStored(id, 'day')).toBe(expected)
+  })
+
+  it('returns dates as plain dates', async () => {
+    const { id } = await Event.query().insert({ day: '2026-05-14' } as any)
+    const event = await Event.query().findById(id)
+    expect(event?.toJSON().day).toBe('2026-05-14')
+  })
+
+  it('stores datetimes as the exact instant', async () => {
+    const at = '2026-05-14T09:30:00.000Z'
+    const { id } = await Event.query().insert({ at } as any)
+    const event = await Event.query().findById(id)
+    expect(event?.toJSON().at).toEqual(new Date(at))
+  })
+
+  it('reads plain dates for datetimes as local midnight', async () => {
+    const { id } = await Event.query().insert({ at: '2026-05-14' } as any)
+    const event = await Event.query().findById(id)
+    expect(event?.at).toEqual(new Date(2026, 4, 14))
+  })
+})

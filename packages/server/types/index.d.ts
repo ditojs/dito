@@ -1245,7 +1245,10 @@ export class Model extends ObjectionModel {
 
   static get jsonAttributes(): string[]
   static get booleanAttributes(): string[]
+  /** The `date` attributes, stored and returned as plain dates. */
   static get dateAttributes(): string[]
+  /** The `datetime` and `timestamp` attributes. */
+  static get datetimeAttributes(): string[]
   static get computedAttributes(): string[]
   static get hiddenAttributes(): string[]
 

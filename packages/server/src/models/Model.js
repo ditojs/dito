@@ -16,7 +16,9 @@ import {
   setValueAtDataPath,
   mapConcurrently,
   assignDeeply,
-  deprecate
+  deprecate,
+  formatPlainDate,
+  parsePlainDate
 } from '@ditojs/utils'
 import { QueryBuilder } from '../query/index.js'
 import { EventEmitter, KnexHelper } from '../lib/index.js'
@@ -445,8 +447,19 @@ export class Model extends objection.Model {
       'jsonSchema:dateAttributes',
       () =>
         this.getAttributes(
+          ({ type, computed }) => !computed && type === 'date'
+        ),
+      []
+    )
+  }
+
+  static get datetimeAttributes() {
+    return this._getCached(
+      'jsonSchema:datetimeAttributes',
+      () =>
+        this.getAttributes(
           ({ type, computed }) => (
-            !computed && ['date', 'datetime', 'timestamp'].includes(type)
+            !computed && ['datetime', 'timestamp'].includes(type)
           )
         ),
       []
@@ -590,10 +603,18 @@ export class Model extends objection.Model {
   // @override
   $formatDatabaseJson(json) {
     const { constructor } = this
-    for (const key of constructor.dateAttributes) {
+    for (const key of constructor.datetimeAttributes) {
       const date = json[key]
       if (date?.toISOString) {
         json[key] = date.toISOString()
+      }
+    }
+    for (const key of constructor.dateAttributes) {
+      const date = json[key]
+      if (date?.toISOString) {
+        // Store dates as their plain date, as the database ignores the
+        // time zone when casting a timestamp to a date.
+        json[key] = formatPlainDate(date)
       }
     }
     if (constructor.isSQLite()) {
@@ -636,10 +657,17 @@ export class Model extends objection.Model {
   // @override
   $parseJson(json, { trusted = false } = {}) {
     const { constructor } = this
-    for (const key of constructor.dateAttributes) {
+    for (const key of [
+      ...constructor.dateAttributes,
+      ...constructor.datetimeAttributes
+    ]) {
       const date = json[key]
       if (date !== undefined) {
-        json[key] = isString(date) ? new Date(date) : date
+        // Parse plain dates like `2026-05-14` as local midnight, which is
+        // also how Postgres reads them for timestamps.
+        json[key] = isString(date)
+          ? parsePlainDate(date) ?? new Date(date)
+          : date
       }
     }
     // Convert plain asset files objects to AssetFile instances with references
@@ -652,13 +680,21 @@ export class Model extends objection.Model {
 
   // @override
   $formatJson(json) {
+    const { constructor } = this
     // Remove hidden attributes.
-    for (const key of this.constructor.hiddenAttributes) {
+    for (const key of constructor.hiddenAttributes) {
       delete json[key]
+    }
+    // Return dates as their plain date, see `$formatDatabaseJson()`.
+    for (const key of constructor.dateAttributes) {
+      const date = json[key]
+      if (date?.toISOString) {
+        json[key] = formatPlainDate(date)
+      }
     }
     // Sign asset files so clients can send them back with valid signatures.
     // Clone file objects to avoid mutating the model's internals.
-    this.constructor._signAssetFiles(json)
+    constructor._signAssetFiles(json)
     return json
   }
 
