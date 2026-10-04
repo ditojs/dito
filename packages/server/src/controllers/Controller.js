@@ -303,11 +303,23 @@ export class Controller {
     )
 
     const url = this.getUrl('controller', `upload/${normalizedPath}`)
+    // Only allow a safe, explicit set of mime-types to be uploaded, to guard
+    // against uploads of arbitrary / unsafe file content (CWE-434). Allow
+    // configs to override this through `settings.allowedTypes`:
+    const allowedTypes = settings.allowedTypes || [
+      'image/*', 'video/*', 'audio/*', 'application/pdf', 'text/plain'
+    ]
     const upload = storage.getUploadHandler({
       ...settings,
-      // Only let uploads pass that match the normalizePath + wildcards:
+      // Only let uploads pass that match the normalizePath + wildcards, and
+      // whose mime-type is explicitly allowed:
       fileFilter: (req, file, cb) => {
-        cb(null, matchDataPath.test(file.fieldname))
+        const isAllowedType = allowedTypes.some(type =>
+          type.endsWith('/*')
+            ? file.mimetype.startsWith(type.slice(0, -1))
+            : file.mimetype === type
+        )
+        cb(null, matchDataPath.test(file.fieldname) && isAllowedType)
       }
     })
 
