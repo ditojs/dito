@@ -4,6 +4,7 @@ import { code } from './code.js'
 import { color } from './color.js'
 import { date } from './date.js'
 import { markup } from './markup.js'
+import { multiselect } from './multiselect.js'
 import { checkboxes, radio } from './options.js'
 import { select } from './select.js'
 import { slider } from './slider.js'
@@ -44,6 +45,7 @@ const drivers: Record<string, TypeComponentDriver> = {
   color,
   markup,
   select,
+  multiselect,
   radio,
   checkboxes,
   slider,

@@ -4,6 +4,7 @@ import code from './code.js'
 import color from './color.js'
 import date from './date.js'
 import markup from './markup.js'
+import multiselect from './multiselect.js'
 import number from './number.js'
 import options from './options.js'
 import slider from './slider.js'
@@ -16,6 +17,7 @@ export const caseEntries = getCaseEntries([
   ...number,
   ...checked,
   ...options,
+  ...multiselect,
   ...slider,
   ...color,
   ...date,
