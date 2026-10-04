@@ -98,9 +98,10 @@ test.describe('nested validation', () => {
     await expect(getErrors(getForm(page), 'Subtitle')).toContainText(message)
   })
 
-  // FIXME: The section stays collapsed, so the error isn't visible, and as
-  // it's considered displayed, no notification is shown either: the save
-  // fails without any feedback.
+  // FIXME: Collapsed content isn't rendered, so the error can't be matched to
+  // its field: the section stays collapsed and the error only shows in a
+  // notification. Schema-level validation will match errors without needing
+  // rendered components.
   test.fail('shows server errors on fields in collapsed sections', async ({
     page,
     url
