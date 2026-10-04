@@ -18,12 +18,20 @@ test.describe('route-refetch-race', () => {
     const form = new DitoForm(page)
 
     await list.navigate('/widgets')
+    // Wait for the form's initial GET (fired by ResourceMixin's `created`
+    // hook → `setupData` → `ensureData` → `loadData(true)`) to settle. It can
+    // still be in flight when `edit()` returns, and would otherwise be held
+    // below instead of the reload.
+    const initialGet = page.waitForResponse(
+      response =>
+        /\/api\/widgets\/\d+(\?|$)/.test(response.url()) &&
+        response.request().method() === 'GET'
+    )
     await list.list.edit('before')
+    await initialGet
 
-    // Hold the *next* member GET on `/api/widgets/<id>`. The form's initial
-    // GET (fired by ResourceMixin's `created` hook → `setupData` →
-    // `ensureData` → `loadData(true)`) has already settled by the time the
-    // row is editable, so this handler picks up only the reload below.
+    // Hold the *next* member GET on `/api/widgets/<id>`, i.e. the reload
+    // below.
     let releaseGet!: () => void
     const editPerformed = new Promise<void>(resolve => {
       releaseGet = resolve
