@@ -1,12 +1,48 @@
 import type { Page } from '@playwright/test'
-import { expect } from './fixtures.js'
+import { test, expect } from './fixtures.js'
 import { Case } from './models/Case.js'
 import type { CaseEntry } from './cases/define.js'
 import { getDriver } from '../../utils/drivers/index.js'
+import { getContainer } from '../../utils/drivers/markup.js'
 
 async function openCase(page: Page, url: string, entry: CaseEntry) {
   await page.goto(`${url}/admin/${entry.path}`)
-  await expect(getDriver(entry.type).getElement(page, entry)).toBeVisible()
+  if (entry.state === 'hidden') {
+    await expect(getSaveButton(page)).toBeVisible()
+  } else {
+    await expect(getDriver(entry.type).getElement(page, entry)).toBeVisible()
+  }
+}
+
+async function setValue(page: Page, entry: CaseEntry) {
+  const { value } = entry
+  if ((value as { clear?: boolean }).clear) {
+    // The clear button only shows while hovering the component.
+    const container = getContainer(page, entry)
+    await container.hover()
+    await container.getByRole('button', { name: 'Clear' }).click()
+  } else {
+    await getDriver(entry.type).setValue(page, entry, value)
+  }
+}
+
+/**
+ * Tries to change the value of an unchangeable component and to save it,
+ * which must leave the stored value untouched.
+ */
+async function expectUnchangeable(page: Page, entry: CaseEntry) {
+  const stored = await getStored(entry)
+  // Blocked controls only time out, so don't wait long for them.
+  page.setDefaultTimeout(1000)
+  try {
+    await setValue(page, entry)
+  } catch {
+    // Expected for blocked controls.
+  }
+  page.setDefaultTimeout(test.info().project.use.actionTimeout ?? 0)
+  await getSaveButton(page).click()
+  await page.waitForLoadState('networkidle')
+  expect(await getStored(entry)).toEqual(stored)
 }
 
 function getSaveButton(page: Page) {
@@ -47,8 +83,20 @@ export async function runCase(page: Page, url: string, entry: CaseEntry) {
     await Case.query().patch({ [entry.name]: entry.seed }).findById(1)
   }
   await openCase(page, url, entry)
+  if (entry.state === 'hidden') {
+    await expect(getContainer(page, entry)).toBeHidden()
+    return
+  }
+  if (entry.state === 'unchangeable') {
+    return expectUnchangeable(page, entry)
+  }
+  if (entry.invalid && entry.value === undefined) {
+    await getSaveButton(page).click()
+    await expect(page.locator('.dito-notification.error')).toBeVisible()
+    return
+  }
   if (entry.value !== undefined) {
-    await driver.setValue(page, entry, entry.value)
+    await setValue(page, entry)
     if (entry.invalid) {
       await getSaveButton(page).click()
       await expect(page.locator('.dito-notification.error')).toBeVisible()

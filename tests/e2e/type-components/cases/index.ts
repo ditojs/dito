@@ -8,6 +8,7 @@ import multiselect from './multiselect.js'
 import number from './number.js'
 import options from './options.js'
 import section from './section.js'
+import shared from './shared.js'
 import slider from './slider.js'
 import structure from './structure.js'
 import text from './text.js'
@@ -26,7 +27,8 @@ export const caseEntries = getCaseEntries([
   ...markup,
   ...code,
   ...structure,
-  ...section
+  ...section,
+  ...shared
 ])
 
 export function getCase(type: string, title: string) {

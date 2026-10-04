@@ -20,6 +20,8 @@ export interface TypeCase {
   seed?: unknown
   /** Saving `value` must be blocked by validation. */
   invalid?: boolean
+  /** The component must be in this state: unchangeable, or hidden. */
+  state?: 'unchangeable' | 'hidden'
 }
 
 export interface TypeCases {
@@ -50,16 +52,19 @@ export function defineCases(
 }
 
 export function getCaseEntries(types: TypeCases[]): CaseEntry[] {
+  // Number cases per type, across all tables of the same type.
+  const counts: Record<string, number> = {}
   return types.flatMap(({ type, property, cases }) => {
     const id = type.replace(/-(\w)/g, (_, char) => char.toUpperCase())
     const title = type[0].toUpperCase() + type.slice(1).replace(/-/g, ' ')
-    return cases.map((entry, index) => {
-      const label = `${title} ${index + 1}`
+    return cases.map(entry => {
+      const index = (counts[type] = (counts[type] ?? 0) + 1)
+      const label = `${title} ${index}`
       return {
         ...entry,
         type,
-        name: `${id}${index + 1}`,
-        path: `${type}-${index + 1}`,
+        name: `${id}${index}`,
+        path: `${type}-${index}`,
         label,
         schema: { type, label, ...entry.schema },
         property: { ...property, ...entry.property }
