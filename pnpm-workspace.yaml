@@ -15,3 +15,5 @@ allowBuilds:
 
 patchedDependencies:
   eslint-plugin-vue-pug@1.0.0-alpha.5: patches/eslint-plugin-vue-pug@1.0.0-alpha.5.patch
+minimumReleaseAgeExclude:
+  - http-cache-semantics@4.3.0
