@@ -28,7 +28,6 @@ slot(name="prepend")
         v-if="hasLabel"
         :label="label"
         :info="info"
-        :dataPath="dataPath"
         :collapsible="collapsible"
         :collapsed="!opened"
         @open="onOpen"
