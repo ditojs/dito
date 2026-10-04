@@ -3,7 +3,6 @@ import Koa from 'koa'
 import serve from 'koa-static'
 import { defineConfig, createServer } from 'vite'
 import createVuePlugin from '@vitejs/plugin-vue'
-import { viteCommonjs as createCommonJsPlugin } from '@originjs/vite-plugin-commonjs'
 import { testModuleIdentifier, getPostCssConfig } from '@ditojs/build'
 import { assignDeeply } from '@ditojs/utils'
 import { Controller } from './Controller.js'
@@ -178,7 +177,6 @@ export class AdminController extends Controller {
           configFile: false,
           plugins: [
             createVuePlugin(),
-            createCommonJsPlugin(),
             {
               // Private plugin to inject script tag above main module that
               // loads the `dito` object through its own end-point, see:
@@ -307,7 +305,6 @@ const coreDependencies = [
   'punycode',
   'rope-sequence',
   'filesize',
-  'filesize-parser',
   'tslib', // ?
   'orderedmap',
   'w3c-keyname'

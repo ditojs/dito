@@ -12,4 +12,13 @@ describe('isDomain()', () => {
     expect(isDomain('line_to.com')).toBe(false)
     expect(isDomain('lünéto.com')).toBe(true)
   })
+
+  it('should return false for anything beyond a domain', () => {
+    expect(isDomain('')).toBe(false)
+    expect(isDomain('lineto.com:80')).toBe(false)
+    expect(isDomain('lineto.com/path')).toBe(false)
+    expect(isDomain('user@lineto.com')).toBe(false)
+    expect(isDomain('line%74o.com')).toBe(false)
+    expect(isDomain('line to.com')).toBe(false)
+  })
 })
