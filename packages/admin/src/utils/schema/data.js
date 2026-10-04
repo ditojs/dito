@@ -122,7 +122,7 @@ export function getMultipleValue(schema) {
 export function setDefaultValues(schema, data = {}, component) {
   const options = { component, rootData: data }
 
-  const processBefore = (schema, data, name, dataPath) => {
+  const before = ({ schema, data, name, dataPath }) => {
     const context = () =>
       new DitoContext(component, {
         schema,
@@ -138,15 +138,7 @@ export function setDefaultValues(schema, data = {}, component) {
 
   // Sets up a data object that has keys with default values for all
   // form fields, so they can be correctly watched for changes.
-  return processSchemaData(
-    schema,
-    data,
-    null,
-    null,
-    processBefore,
-    null,
-    options
-  )
+  return processSchemaData(schema, data, { before, options })
 }
 
 export function computeValue(schema, data, name, dataPath, {
@@ -215,7 +207,7 @@ export function processData(schema, sourceSchema, data, dataPath, {
   const processedData = cloneItem(sourceSchema, data, options)
   const graph = new SchemaGraph()
 
-  const processBefore = (schema, data, name, dataPath, processedData) => {
+  const before = ({ schema, data, name, dataPath, processedData }) => {
     let value = computeValue(schema, data, name, dataPath, options)
     // The schema expects the `wrapPrimitives` transformations to be present on
     // the data that it is applied on, so warp before and unwrap after.
@@ -233,7 +225,7 @@ export function processData(schema, sourceSchema, data, dataPath, {
     processedData[name] = value
   }
 
-  const processAfter = (schema, data, name, dataPath, processedData) => {
+  const after = ({ schema, data, name, dataPath, processedData }) => {
     const { wrapPrimitives, process } = schema
     let value = processedData[name]
 
@@ -252,7 +244,7 @@ export function processData(schema, sourceSchema, data, dataPath, {
       })
 
     // First unwrap the wrapped primitives again, to bring the data back into
-    // its native form. Se `processBefore()` for more details.
+    // its native form. See `before()` for more details.
     if (wrapPrimitives && isArray(value)) {
       value = value.map(object => object[wrapPrimitives])
     }
@@ -277,28 +269,30 @@ export function processData(schema, sourceSchema, data, dataPath, {
     }
   }
 
-  processSchemaData(
-    schema,
-    data,
+  processSchemaData(schema, data, {
     dataPath,
     processedData,
-    processBefore,
-    processAfter,
+    before,
+    after,
     options
-  )
+  })
 
   return graph.process(sourceSchema, processedData, options)
 }
 
-export function processSchemaData(
-  schema,
-  data,
-  dataPath,
-  processedData,
-  processBefore,
-  processAfter,
+/**
+ * Walks `data` along the components of `schema`, including nested forms of
+ * list and object items, calling `before()` and `after()` for each nested
+ * component, e.g. to process the data into `processedData`.
+ */
+export function processSchemaData(schema, data, {
+  dataPath = null,
+  processedData = null,
+  before = null,
+  after = null,
   options
-) {
+}) {
+  const walk = { before, after, options }
   const processComponents = components => {
     const getDataPath = (dataPath, token) =>
       dataPath != null
@@ -309,15 +303,11 @@ export function processSchemaData(
       for (const [name, componentSchema] of Object.entries(components)) {
         if (!isNested(componentSchema)) {
           // Recursively process data on unnested components.
-          processSchemaData(
-            componentSchema,
-            data,
+          processSchemaData(componentSchema, data, {
+            ...walk,
             dataPath,
-            processedData,
-            processBefore,
-            processAfter,
-            options
-          )
+            processedData
+          })
         } else {
           const componentDataPath = getDataPath(dataPath, name)
 
@@ -343,29 +333,26 @@ export function processSchemaData(
               const processedItem = processedData
                 ? cloneItem(componentSchema, item, options)
                 : null
-              return processSchemaData(
-                form,
-                item,
-                itemDataPath,
-                processedItem,
-                processBefore,
-                processAfter,
-                options
-              )
+              return processSchemaData(form, item, {
+                ...walk,
+                dataPath: itemDataPath,
+                processedData: processedItem
+              })
             } else {
-              // Items without forms still get fully (but shallowly) cloned.
-              // TODO: Find out of this is actually needed / used at all?
+              // Items without a matching form, e.g. of an unknown type, are
+              // passed through as shallow clones.
               return { ...item }
             }
           }
 
-          processBefore?.(
-            componentSchema,
+          const entry = {
+            schema: componentSchema,
             data,
             name,
-            componentDataPath,
+            dataPath: componentDataPath,
             processedData
-          )
+          }
+          before?.(entry)
 
           let value = processedData ? processedData[name] : data[name]
           if (value != null && hasFormSchema(componentSchema)) {
@@ -383,13 +370,7 @@ export function processSchemaData(
             }
           }
 
-          processAfter?.(
-            componentSchema,
-            data,
-            name,
-            componentDataPath,
-            processedData
-          )
+          after?.(entry)
         }
       }
     }
