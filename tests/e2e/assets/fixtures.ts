@@ -35,7 +35,7 @@ export const test = base.extend<{ url: string }, { workerUrl: string }>({
       )
       try {
         const app = startTestApp({
-          appRoot: path.resolve(import.meta.dirname, 'app'),
+          dirname: import.meta.dirname,
           models: { AssetWidget, NestedAssetWidget, Asset },
           controllers: {
             admin: AdminController,

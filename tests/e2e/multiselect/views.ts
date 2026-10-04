@@ -1,7 +1,6 @@
-import type { Tag } from '../../models/Tag.js'
-import type { Widget } from '../../models/Widget.js'
-import { createWidgetView } from
-  '../../../schema-components/app/views/createWidgetView.js'
+import type { Tag } from './models/Tag.js'
+import type { Widget } from './models/Widget.js'
+import { createWidgetView } from '../../utils/views.js'
 
 export const widgets = createWidgetView<Widget>(
   'Widget',

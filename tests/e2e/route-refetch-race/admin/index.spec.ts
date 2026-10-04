@@ -1,4 +1,5 @@
-import { test, expect, Widget } from '../fixtures.js'
+import { test, expect } from '../fixtures.js'
+import { Widget } from '../models/Widget.js'
 import { DitoListView, DitoForm } from '../../../utils/pages.js'
 
 test.describe('route-refetch-race', () => {

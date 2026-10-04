@@ -1,10 +1,7 @@
 import type { ViewSchema } from '@ditojs/admin'
-import type { AssetWidget } from
-  '../../models/AssetWidget.js'
-import type { NestedAssetWidget } from
-  '../../models/NestedAssetWidget.js'
-import { createWidgetView } from
-  '../../../schema-components/app/views/createWidgetView.js'
+import type { AssetWidget } from './models/AssetWidget.js'
+import type { NestedAssetWidget } from './models/NestedAssetWidget.js'
+import { createWidgetView } from '../../utils/views.js'
 
 export const assets = createWidgetView<AssetWidget>(
   'files',

@@ -12,12 +12,17 @@ interface TestAppOptions {
   models?: Record<string, any>
   controllers?: Record<string, any>
   admin?: {
-    root?: string
+    /** Name of the scenario, used for its Vite cache directory. */
+    name: string
+    /** Path to the scenario's views module, aliased as `#views`. */
+    views: string
     [key: string]: any
   }
   config?: Record<string, any>
   validator?: ConstructorParameters<typeof Application>[0]['validator']
 }
+
+const adminRoot = path.resolve(import.meta.dirname, 'admin-app')
 
 export function createTestApp(
   options: TestAppOptions = {}
@@ -34,7 +39,9 @@ export function createTestApp(
       ...options.config,
       ...(options.admin && {
         admin: {
-          ...options.admin
+          ...options.admin,
+          // All scenarios share one admin entry, which imports `#views`.
+          root: adminRoot
         }
       })
     },
@@ -62,6 +69,10 @@ export function createTestApp(
         },
         resolve: {
           alias: [
+            {
+              find: '#views',
+              replacement: options.admin.views
+            },
             {
               find: '@ditojs/admin/style.css',
               replacement: path.join(
@@ -114,11 +125,8 @@ export function createTestApp(
         cacheDir: path.join(
           os.tmpdir(),
           'dito-e2e-vite-cache',
-          // Use the parent directory name so each scenario gets its own cache.
-          // `path.basename(appRoot)` is `"app"` for every scenario (each one
-          // has `<scenario>/app/`), which collides and forces Vite to
-          // re-optimize deps on every fixture run.
-          path.basename(path.dirname(options.admin!.root!))
+          // Give each scenario its own cache, as they share the admin root.
+          options.admin.name
         )
       })
       app.loadAdminViteConfig =

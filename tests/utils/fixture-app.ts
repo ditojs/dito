@@ -1,5 +1,6 @@
+import path from 'path'
 import { test as base, type Browser, type Page } from '@playwright/test'
-import type { Model } from '@ditojs/server'
+import { AdminController, ModelController, type Model } from '@ditojs/server'
 import {
   createTestApp,
   getAppUrl,
@@ -11,7 +12,8 @@ import { waitForUrl } from './net.js'
 type TestApp = ReturnType<typeof createTestApp>
 
 interface StartTestAppOptions {
-  appRoot: string
+  /** The scenario's directory, containing its `views.ts`. */
+  dirname: string
   models: Record<string, typeof Model>
   controllers: Record<string, unknown>
   config?: Record<string, unknown>
@@ -23,7 +25,8 @@ export function startTestApp(opts: StartTestAppOptions): TestApp {
     models: opts.models,
     controllers: opts.controllers,
     admin: {
-      root: opts.appRoot,
+      name: path.basename(opts.dirname),
+      views: path.join(opts.dirname, 'views.ts'),
       api: { url: '/api/' }
     },
     config: opts.config
@@ -45,16 +48,12 @@ export async function startAndWaitForAdmin(app: TestApp): Promise<string> {
   return url
 }
 
-/** Visit `${url}${path}` once to warm the admin's Vite dev server so the
- * first per-test navigation doesn't pay a cold-compile cost. */
-export async function warmAdmin(
-  browser: Browser,
-  url: string,
-  path: string
-): Promise<void> {
+/** Visit the admin once to warm its Vite dev server, so the first test
+ * doesn't pay the cold-compile cost (avoids timeouts in CI). */
+export async function warmAdmin(browser: Browser, url: string): Promise<void> {
   const page = await browser.newPage()
   try {
-    await page.goto(`${url}${path}`, { waitUntil: 'networkidle' })
+    await page.goto(`${url}/admin/`, { waitUntil: 'networkidle' })
   } finally {
     await page.close()
   }
@@ -70,44 +69,86 @@ export async function teardownTestApp(app: TestApp): Promise<void> {
   await app.knex?.destroy()
 }
 
-export interface FixtureAppOptions {
-  /** Absolute path to the scenario's `app/` directory (the admin entrypoint). */
-  appRoot: string
-  /** Models to register on the embedded app. */
+/**
+ * Base class for scenario controllers, allowing the usual CRUD actions.
+ * Scenarios extend it to configure scopes, graphs, relations, etc.
+ */
+export class ScenarioController extends ModelController {
+  collection = {
+    allow: ['get', 'post'] as const
+  }
+  member = {
+    allow: ['get', 'patch', 'delete'] as const
+  }
+}
+
+export interface ScenarioOptions {
+  /** The scenario's directory, usually `import.meta.dirname`. */
+  dirname: string
+  /** Models to register. Rows are deleted before each test, in reverse
+   * order, so list related models after the ones they depend on. */
   models: Record<string, typeof Model>
-  /** Controllers to register on the embedded app. */
-  controllers: Record<string, unknown>
-  /** Optional extra config merged into `createTestApp`'s `config`. */
+  /** Controllers, keyed by name. Models without a controller named after
+   * their plural (e.g. `Widgets` for `Widget`) get a `ScenarioController`. */
+  controllers?: Record<string, typeof ModelController>
+  /** Extra tables to clear before the models, e.g. join tables. */
+  tables?: string[]
+  /** Extra config merged into the app config. */
   config?: Record<string, unknown>
-  /** If set, the worker fixture warms the admin Vite bundle by visiting
-   * `${url}${warmupPath}` once after the app starts. Avoids first-test
-   * cold-compile timeouts in CI. */
-  warmupPath?: string
-  /** If set, runs after `bootTestDb(app)` and before `app.start()`. Use this
-   * to create extra schema (e.g. join tables for many-to-many relations
-   * that `createTestDatabase` doesn't auto-derive). */
-  setupHook?: (app: TestApp) => Promise<void>
+  /** Runs once after the database is created, before the app starts, e.g.
+   * to create join tables that `createTestDatabase()` doesn't derive. */
+  setup?: (app: TestApp) => Promise<void>
+  /** Runs before each test, after the default reset. Use it to clear extra
+   * tables or to seed data. */
+  beforeEach?: () => Promise<void>
 }
 
 /**
- * Returns a Playwright test object whose worker fixture spins up an
- * embedded Dito app (PGlite-backed, Vite-served admin) and exposes its
- * `url`. Composes the primitives above; scenarios with unusual setup
- * (custom storage, mounted middleware, etc.) compose them inline instead.
+ * Returns a Playwright test object for a scenario: one embedded Dito app per
+ * worker (PGlite-backed, Vite-served admin), exposed through the `url`
+ * fixture, with the scenario's models reset before each test.
  */
-export function createFixtureAppFixture(opts: FixtureAppOptions) {
-  return base.extend<{ url: string }, { workerUrl: string }>({
+export function defineScenario({
+  dirname,
+  models,
+  controllers = {},
+  tables = [],
+  config,
+  setup,
+  beforeEach
+}: ScenarioOptions) {
+  const api: Record<string, typeof ModelController> = { ...controllers }
+  for (const modelClass of Object.values(models)) {
+    const name = `${modelClass.name}s`
+    if (!api[name]) {
+      // Name the class, as Dito derives the controller's path from it.
+      api[name] = Object.defineProperty(
+        class extends ScenarioController {
+          override modelClass = modelClass
+        },
+        'name',
+        { value: name }
+      )
+    }
+  }
+  const modelClasses = Object.values(models).reverse()
+
+  let knex: TestApp['knex']
+
+  return base.extend<{ url: string; reset: void }, { workerUrl: string }>({
     workerUrl: [
       async ({ browser }, use) => {
-        const app = startTestApp(opts)
+        const app = startTestApp({
+          dirname,
+          models,
+          controllers: { admin: AdminController, api },
+          config
+        })
         await bootTestDb(app)
-        if (opts.setupHook) {
-          await opts.setupHook(app)
-        }
+        await setup?.(app)
+        knex = app.knex
         const url = await startAndWaitForAdmin(app)
-        if (opts.warmupPath) {
-          await warmAdmin(browser, url, opts.warmupPath)
-        }
+        await warmAdmin(browser, url)
         try {
           await use(url)
         } finally {
@@ -119,7 +160,23 @@ export function createFixtureAppFixture(opts: FixtureAppOptions) {
 
     url: async ({ workerUrl }, use) => {
       await use(workerUrl)
-    }
+    },
+
+    // Tests share one database per worker, so reset it before each test.
+    // Requesting `url` boots the app, which binds the models to its knex.
+    reset: [
+      async ({ url: _url }, use) => {
+        for (const table of tables) {
+          await knex.table(table).delete()
+        }
+        for (const modelClass of modelClasses) {
+          await modelClass.query().delete()
+        }
+        await beforeEach?.()
+        await use()
+      },
+      { auto: true }
+    ]
   })
 }
 

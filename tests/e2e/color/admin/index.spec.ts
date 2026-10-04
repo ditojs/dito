@@ -1,5 +1,7 @@
 import type { Page } from '@playwright/test'
-import { test, expect, createModelHelpers, Widget } from '../fixtures.js'
+import { test, expect } from '../fixtures.js'
+import { createModelHelpers } from '../../../utils/fixture-app.js'
+import { Widget } from '../models/Widget.js'
 import { DitoListView } from '../../../utils/pages.js'
 
 const { seed, saveAndFetch } = createModelHelpers(Widget, 'widgets', {
