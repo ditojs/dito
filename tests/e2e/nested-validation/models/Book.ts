@@ -1,0 +1,60 @@
+import type { ModelProperties } from '@ditojs/server'
+import { Model } from '@ditojs/server'
+
+export interface Section {
+  title: string
+}
+
+export interface Chapter {
+  title: string
+  summary?: string | null
+  sections?: Section[]
+}
+
+export interface Book {
+  id: number
+  title: string
+  subtitle?: string | null
+  edition?: string | null
+  meta?: { note?: string } | null
+  tags?: { name: string }[]
+  chapters?: Chapter[]
+}
+
+// Titles must start with an uppercase letter. Only the server knows this rule,
+// so the admin learns about violations through the server's errors.
+const title = { type: 'string', pattern: '^[A-Z]', nullable: true } as const
+
+export class Book extends Model {
+  static override properties: ModelProperties = {
+    title: { ...title, nullable: false, required: true },
+    subtitle: title,
+    edition: { type: 'string', nullable: true },
+    meta: {
+      type: 'object',
+      nullable: true,
+      properties: { note: title }
+    },
+    tags: {
+      type: 'array',
+      default: [],
+      items: { type: 'object', properties: { name: title } }
+    },
+    chapters: {
+      type: 'array',
+      default: [],
+      items: {
+        type: 'object',
+        properties: {
+          title,
+          summary: { type: 'string', nullable: true },
+          sections: {
+            type: 'array',
+            nullable: true,
+            items: { type: 'object', properties: { title } }
+          }
+        }
+      }
+    }
+  }
+}
