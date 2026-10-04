@@ -2,9 +2,16 @@ packages:
   - 'packages/*'
   - 'tests'
 
-onlyBuiltDependencies:
-  - '@parcel/watcher'
-  - esbuild
-  - full-icu
-  - nx
-  - unrs-resolver
+nodeLinker: hoisted
+linkWorkspacePackages: true
+nodeOptions: --disable-warning=DEP0040
+
+allowBuilds:
+  '@parcel/watcher': true
+  esbuild: true
+  full-icu: true
+  nx: true
+  unrs-resolver: true
+
+patchedDependencies:
+  eslint-plugin-vue-pug@1.0.0-alpha.5: patches/eslint-plugin-vue-pug@1.0.0-alpha.5.patch
