@@ -20,6 +20,11 @@ export function parseDate(string, {
   time = true
 } = {}) {
   const timeDefault = time ? null : 0
+  // Extract the 12-hour clock period, e.g. in en-US "11:30:00 AM".
+  const period = string?.match(/\s*\b([ap])\.?m\.?$/i)
+  if (period) {
+    string = string.slice(0, period.index)
+  }
   let [
     day,
     sep1,
@@ -36,9 +41,18 @@ export function parseDate(string, {
     millisecond = timeDefault
   ] = getDateParts(string, { date, time })
   if (year && year.length >= 4) {
-    if (locale === 'en-US' && sep1 === '/' && sep2 === '/') {
+    if (
       // American format: MM/DD/YYYY
+      (locale === 'en-US' && sep1 === '/' && sep2 === '/') ||
+      // Month name first, e.g. en-US "May 14, 2026"
+      (isNaN(+day) && !isNaN(+month))
+    ) {
       ;[day, month] = [month, day]
+    }
+    if (period && hour !== null) {
+      const pm = period[1].toLowerCase() === 'p'
+      hour = (+hour % 12) + (pm ? 12 : 0)
+      hour = String(hour).padStart(2, '0')
     }
     month = getMonthIndex(month, { locale })
     const isValidTimePart = part => part === null || part.length === 2
@@ -51,7 +65,7 @@ export function parseDate(string, {
         )
       )
     ) {
-      return new Date(
+      const result = new Date(
         +year,
         +month,
         +day,
@@ -60,6 +74,11 @@ export function parseDate(string, {
         +second,
         +millisecond
       )
+      // Reject invalid dates, including out-of-range parts that `Date` would
+      // roll over, e.g. day 45.
+      return result.getMonth() === +month && result.getDate() === +day
+        ? result
+        : null
     }
   }
   return null
