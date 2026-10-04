@@ -17,7 +17,8 @@ import {
   isCompact,
   isInlined,
   isObjectSource,
-  isListSource
+  isListSource,
+  updateOrder
 } from '../utils/schema.js'
 import {
   isObject,
@@ -28,7 +29,6 @@ import {
   parseDataPath,
   normalizeDataPath
 } from '@ditojs/utils'
-import { raw } from '@ditojs/ui'
 
 // @vue/component
 export default {
@@ -46,8 +46,7 @@ export default {
 
   data() {
     return {
-      wrappedPrimitives: null,
-      unwrappingPrimitives: raw(false)
+      wrappedPrimitives: null
     }
   },
 
@@ -90,39 +89,27 @@ export default {
       return this.schema.wrapPrimitives
     },
 
+    valueListData() {
+      // The list of items held by `value`, before wrapping primitives.
+      const { value } = this
+      return this.isObjectSource
+        ? value != null
+          ? [value]
+          : []
+        : (this.isListResults(value) ? value.results : value) || []
+    },
+
+    primitiveValues() {
+      // The values of `wrapPrimitives` lists, copied so that changes of their
+      // entries are tracked too, see the `primitiveValues` watcher.
+      return this.wrapPrimitives ? [...this.valueListData] : null
+    },
+
     listData: {
       get() {
-        let data = this.value
-        if (this.isObjectSource) {
-          // Convert to list array.
-          data = data != null ? [data] : []
-        } else {
-          // If data gets inherited from parent, unwrapping is not happening
-          // at the root in `setData()`, but here instead.
-          data = this.unwrapListData(data) || data
-        }
-        data ||= []
-        const { wrapPrimitives } = this
-        if (wrapPrimitives) {
-          if (this.unwrappingPrimitives.value) {
-            // We're done unwrapping once `listData` is reevaluated, so set
-            // this to `false` again. See `wrappedPrimitives` watcher above.
-            // TODO: Fix side-effects
-            // eslint-disable-next-line max-len
-            // eslint-disable-next-line vue/no-side-effects-in-computed-properties
-            this.unwrappingPrimitives.value = false
-          } else {
-            // Convert data to a list of wrapped primitives, and return it.
-            // TODO: Fix side-effects
-            // eslint-disable-next-line max-len
-            // eslint-disable-next-line vue/no-side-effects-in-computed-properties
-            this.wrappedPrimitives = data.map(value => ({
-              [wrapPrimitives]: value
-            }))
-          }
-          return this.wrappedPrimitives
-        }
-        return data
+        return this.wrapPrimitives
+          ? this.wrappedPrimitives || []
+          : this.valueListData
       },
 
       set(data) {
@@ -133,7 +120,7 @@ export default {
             ? data?.length > 0
               ? data[0]
               : null
-            : data
+            : updateOrder(this.sourceSchema, data, this.paginationRange)
         }
       }
     },
@@ -289,6 +276,11 @@ export default {
       default: null
     }),
 
+    hasItems() {
+      // Object sources only have an item to edit or delete once they're set.
+      return this.isListSource || !!this.value
+    },
+
     creatable: getSchemaAccessor('creatable', {
       type: Boolean,
       default: false,
@@ -305,13 +297,16 @@ export default {
       type: Boolean,
       default: false,
       get(editable) {
-        return editable && !this.isInlined
+        return editable && !this.isInlined && this.hasItems
       }
     }),
 
     deletable: getSchemaAccessor('deletable', {
       type: Boolean,
-      default: false
+      default: false,
+      get(deletable) {
+        return deletable && this.hasItems
+      }
     }),
 
     draggable: getSchemaAccessor('draggable', {
@@ -382,18 +377,38 @@ export default {
       }
     },
 
+    value: {
+      immediate: true,
+      handler(value) {
+        // If data gets inherited from parent, unwrapping `{ results, total }`
+        // isn't happening at the root in `setData()`, but here instead.
+        if (this.isListResults(value)) {
+          this.unwrapListData(value)
+        }
+      }
+    },
+
+    primitiveValues: {
+      immediate: true,
+      handler(values) {
+        // Wrap the primitive values in objects for the list's forms to edit,
+        // unless they're the values that were just unwrapped from them.
+        if (values && !equals(values, this.unwrapPrimitives())) {
+          const { wrapPrimitives } = this
+          this.wrappedPrimitives = values.map(value => ({
+            [wrapPrimitives]: value
+          }))
+        }
+      }
+    },
+
     wrappedPrimitives: {
       deep: true,
-      handler(to, from) {
-        const { wrapPrimitives } = this
-        // Skip the initial setting of wrappedPrimitives array
-        if (wrapPrimitives && from !== null) {
-          // Whenever the wrappedPrimitives change, map their values back to the
-          // array of primitives, in a primitive way :)
-          // But set `unwrappingPrimitives` to true, so the `listData` computed
-          // property knows about it, which sets it to `false` again.
-          this.unwrappingPrimitives.value = true
-          this.value = to.map(object => object[wrapPrimitives])
+      handler() {
+        // Map edits of the wrapped primitives back to the primitive values.
+        const values = this.unwrapPrimitives()
+        if (values && !equals(values, this.primitiveValues)) {
+          this.value = values
         }
       }
     }
@@ -435,13 +450,25 @@ export default {
       }
     },
 
-    unwrapListData(data) {
-      if (
+    isListResults(data) {
+      // Lists can also be loaded as `{ results, total }`, see `setData()`.
+      return (
         this.isListSource &&
         isObject(data) &&
         isNumber(data.total) &&
         isArray(data.results)
-      ) {
+      )
+    },
+
+    unwrapPrimitives() {
+      const { wrapPrimitives, wrappedPrimitives } = this
+      return wrapPrimitives && wrappedPrimitives
+        ? wrappedPrimitives.map(object => object[wrapPrimitives])
+        : null
+    },
+
+    unwrapListData(data) {
+      if (this.isListResults(data)) {
         // If @ditojs/server sends data in the form of `{ results, total }`
         // replace the value with result, but remember the total in the store.
         this.total = data.total
@@ -480,6 +507,8 @@ export default {
         const { listData } = this
         if (index >= 0) {
           listData.splice(index, 1)
+          // Set the list back, to update the order of the remaining items.
+          this.listData = listData
           removed = true
         }
       }
@@ -700,8 +729,9 @@ export default {
           path: getPathWithParam(sourcePath, param)
         })
       }
-      if (sourcePath) {
-        // Just redirect back to the parent when a nested source route is hit.
+      if (sourcePath && isListSource(schema)) {
+        // Just redirect back to the parent when a nested list route is hit.
+        // Object sources use this path for their form route instead.
         routes.push({
           path: sourcePath,
           redirect: '.',

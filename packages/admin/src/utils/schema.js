@@ -1112,6 +1112,19 @@ export function getItemId(sourceSchema, item) {
   return id != null ? String(id) : undefined
 }
 
+export function updateOrder(sourceSchema, list, paginationRange) {
+  const { orderKey } = sourceSchema
+  if (orderKey) {
+    // Reorder the changed entries by their order key, taking pagination
+    // offsets into account:
+    const offset = paginationRange?.[0] || 0
+    for (let i = 0; i < list.length; i++) {
+      list[i][orderKey] = i + offset
+    }
+  }
+  return list
+}
+
 export function getItemUid(sourceSchema, item) {
   // Try to use the item id as the uid, falling back on auto-generated ids, but
   // either way, pass through `getUid()` so that the ids are associated with the

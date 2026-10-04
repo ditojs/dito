@@ -18,9 +18,7 @@
       :disabled="disabled || isLoading"
       :collapsed="collapsed"
       :collapsible="collapsible"
-      :deletable="objectData && deletable"
-      :editable="objectData && editable"
-      :editPath="path"
+      :deletable="deletable"
       :accumulatedBasis="accumulatedBasis"
       @delete="deleteItem(objectData)"
     )
@@ -39,8 +37,9 @@
       v-else
       v-html="getItemLabel(schema, objectData)"
     )
-  //- NOTE: `DitoEditButtons` here only handle the create button outside of the
-  //- schema, the edit buttons inside are handled by `DitoSchemaInlined`.
+  //- NOTE: For inlined objects, `DitoEditButtons` here only handle the create
+  //- button outside of the schema, the other edit buttons inside are handled by
+  //- `DitoSchemaInlined`.
   DitoEditButtons(
     :buttons="buttonSchemas"
     :schema="schema"
@@ -52,6 +51,10 @@
     :disabled="disabled || isLoading"
     :creatable="creatable"
     :createPath="createPath"
+    :editable="editable"
+    :editPath="path"
+    :deletable="!isInlined && deletable"
+    @delete="deleteItem(objectData)"
   )
 </template>
 

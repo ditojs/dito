@@ -65,8 +65,7 @@ export default DitoComponent.component('DitoForm', {
   data() {
     return {
       createdData: null,
-      clonedData: undefined,
-      sourceKey: null
+      clonedData: undefined
     }
   },
 
@@ -193,87 +192,75 @@ export default DitoComponent.component('DitoForm', {
       return this.getDataPathFrom(this.dataComponent)
     },
 
-    sourceData() {
+    sourceLocation() {
       // Possible parents are DitoForm for forms, or DitoView for root lists.
       // Both have a data property which abstracts away loading and inheriting
       // of data.
       // Forms that are about to be destroyed due to navigation loose their
       // route-record, but might still trigger this getter. Filter those out.
       let data = this.routeRecord ? this.parentRouteComponent.data : null
-      if (data) {
-        // Handle nested data by splitting the dataPath, iterate through the
-        // actual data and look nest child-data up.
-        const dataParts = parseDataPath(
-          this.getDataPathFrom(this.parentRouteComponent)
-        )
-        // Compare dataParts against matched routePath parts, to identify those
-        // parts that need to be treated like ids and mapped to indices in data.
-        const pathParts = this.routeRecord.path.split('/')
-        const routeParts = pathParts.slice(pathParts.length - dataParts.length)
-        // TODO: Fix side-effects
-        // eslint-disable-next-line vue/no-side-effects-in-computed-properties
-        this.sourceKey = null
-        const lastDataPart = dataParts[dataParts.length - 1]
-        if (isObjectSource(this.sourceSchema) && lastDataPart === 'create') {
-          // If we have an object source and are creating, the dataPath needs to
-          // be shortened by the 'create' entry. This isn't needed for list
-          // sources, as there the parameter is actually mapped to the item id.
-          dataParts.length--
-        }
-        for (let i = 0, l = dataParts.length; i < l && data; i++) {
-          const dataPart = dataParts[i]
-          // If this is an :id part, find the index of the item with given id.
-          const key = /^:id/.test(routeParts[i])
-            ? dataPart === 'create'
-              ? null // There's no index for entries about to be created
-              : this.findItemIdIndex(this.sourceSchema, data, dataPart)
-            : dataPart
-          // Skip the final lookup but remember `sourceKey`, as we want the
-          // parent data so we can replace the entry at `sourceKey` on it.
-          if (i === l - 1) {
-            // TODO: Fix side-effects
-            // eslint-disable-next-line max-len
-            // eslint-disable-next-line vue/no-side-effects-in-computed-properties
-            this.sourceKey = key
-          } else {
-            data = data[key]
-          }
+      if (!data) {
+        return null
+      }
+      // Handle nested data by splitting the dataPath, iterate through the
+      // actual data and look nest child-data up.
+      const dataParts = parseDataPath(
+        this.getDataPathFrom(this.parentRouteComponent)
+      )
+      // Compare dataParts against matched routePath parts, to identify those
+      // parts that need to be treated like ids and mapped to indices in data.
+      const pathParts = this.routeRecord.path.split('/')
+      const routeParts = pathParts.slice(pathParts.length - dataParts.length)
+      const lastDataPart = dataParts[dataParts.length - 1]
+      if (isObjectSource(this.sourceSchema) && lastDataPart === 'create') {
+        // If we have an object source and are creating, the dataPath needs to
+        // be shortened by the 'create' entry. This isn't needed for list
+        // sources, as there the parameter is actually mapped to the item id.
+        dataParts.length--
+      }
+      let key = null
+      for (let i = 0, l = dataParts.length; i < l && data; i++) {
+        const dataPart = dataParts[i]
+        // If this is an :id part, find the index of the item with given id.
+        key = /^:id/.test(routeParts[i])
+          ? dataPart === 'create'
+            ? null // There's no index for entries about to be created
+            : this.findItemIdIndex(this.sourceSchema, data, dataPart)
+          : dataPart
+        // Skip the final lookup, as we want the parent data so we can replace
+        // the entry at `key` on it.
+        if (i < l - 1) {
+          data = data[key]
         }
       }
-      return data
+      return data ? { data, key } : null
+    },
+
+    sourceData() {
+      // The parent data that holds the form's item, at `sourceKey`.
+      return this.sourceLocation?.data ?? null
+    },
+
+    sourceKey() {
+      return this.sourceLocation?.key ?? null
+    },
+
+    sourceItem() {
+      return this.sourceData && this.sourceKey !== null
+        ? this.sourceData[this.sourceKey]
+        : undefined
     },
 
     inheritedData() {
       // Data inherited from parent, and cloned to protect against reactive
       // changes until changes are applied through setSourceData(), unless
       // `sourceSchema.mutate` is true, in which case data is mutated directly.
-      if (
-        this.isTransient &&
-        this.clonedData === undefined &&
-        this.sourceData &&
-        this.sourceKey !== null
-      ) {
-        let data = this.sourceData[this.sourceKey]
-        if (!this.isMutating) {
-          // Use a trick to store cloned inherited data in clonedData, to make
-          // it reactive and prevent it from being cloned multiple times.
-          // TODO: Fix side-effects
-          // eslint-disable-next-line vue/no-side-effects-in-computed-properties
-          this.clonedData = data = clone(data)
-        }
-        if (
-          data === null &&
-          !this.isCreating &&
-          isObjectSource(this.sourceSchema)
-        ) {
-          // If data of an object source is null, redirect to its create route.
-          // TODO: Fix side-effects
-          // eslint-disable-next-line vue/no-side-effects-in-computed-properties
-          this.$router.push({ path: `${this.path}/create` })
-        }
-        return data
-      }
-      return this.clonedData
+      // See the `sourceItem` watcher.
+      return this.isTransient
+        ? this.isMutating
+          ? this.sourceItem
+          : this.clonedData
+        : undefined
     },
 
     // @override ResourceMixin.hasData()
@@ -306,9 +293,36 @@ export default DitoComponent.component('DitoForm', {
       }
     },
 
-    sourceData: 'clearClonedData',
-    // Needed for the 'create' redirect in `inheritedData()` to work:
-    create: 'setupData'
+    sourceItem: {
+      immediate: true,
+      handler(item) {
+        if (this.isTransient) {
+          if (!this.isMutating) {
+            // Edit a copy of the inherited item, so that changes are only
+            // applied through setSourceData(). Copy it again whenever the item
+            // itself is replaced, e.g. after applying the changes.
+            this.clonedData = clone(item)
+          }
+          if (
+            item === null &&
+            !this.isCreating &&
+            isObjectSource(this.sourceSchema)
+          ) {
+            // If data of an object source is null, redirect to its create
+            // route.
+            this.$router.push({ path: `${this.path}/create` })
+          }
+        }
+      }
+    },
+
+    isCreating(isCreating) {
+      // Set up the data to create when redirected to the create route, e.g.
+      // by the `sourceItem` watcher.
+      if (isCreating) {
+        this.setupData()
+      }
+    }
   },
 
   methods: {
@@ -371,13 +385,6 @@ export default DitoComponent.component('DitoForm', {
       } else {
         this.createdData = null
         this.loadedData = data
-      }
-    },
-
-    clearClonedData(to, from) {
-      // Only clear if the watched sourceData itself changes in the form.
-      if (to !== from) {
-        this.clonedData = undefined
       }
     },
 

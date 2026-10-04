@@ -33,19 +33,6 @@ export default {
       if (oldIndex !== newIndex) {
         this.onChange()
       }
-    },
-
-    updateOrder(sourceSchema, list, paginationRange) {
-      const { orderKey } = sourceSchema
-      if (orderKey) {
-        // Reorder the changed entries by their order key, taking pagination
-        // offsets into account:
-        const offset = paginationRange?.[0] || 0
-        for (let i = 0; i < list.length; i++) {
-          list[i][orderKey] = i + offset
-        }
-      }
-      return list
     }
   }
 }

@@ -42,7 +42,7 @@
       as="tbody"
       :options="getDraggableOptions()"
       :draggable="draggable"
-      :modelValue="updateOrder(sourceSchema, listData, paginationRange)"
+      :modelValue="listData"
       @update:modelValue="value => (listData = value)"
     )
       tr(

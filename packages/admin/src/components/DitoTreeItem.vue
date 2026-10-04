@@ -83,7 +83,7 @@
     v-show="opened"
     :options="getDraggableOptions(true)"
     :draggable="childrenDraggable"
-    :modelValue="updateOrder(childrenSchema, childrenList)"
+    :modelValue="childrenList"
     @update:modelValue="value => (childrenList = value)"
   )
     DitoTreeItem(
@@ -109,7 +109,7 @@ import ItemMixin from '../mixins/ItemMixin'
 import SortableMixin from '../mixins/SortableMixin.js'
 import { appendDataPath } from '../utils/data.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
-import { getNamedSchemas, hasFormSchema } from '../utils/schema.js'
+import { getNamedSchemas, hasFormSchema, updateOrder } from '../utils/schema.js'
 import { stripHtml } from '@ditojs/utils'
 
 // @vue/component
@@ -174,7 +174,7 @@ export default DitoComponent.component('DitoTreeItem', {
       set(value) {
         const name = this.childrenSchema?.name
         if (name) {
-          this.updateOrder(this.childrenSchema, value)
+          updateOrder(this.childrenSchema, value)
           // eslint-disable-next-line vue/no-mutating-props
           this.data[name] = value
           this.$emit('update:data', value)
