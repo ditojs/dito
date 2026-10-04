@@ -1,8 +1,12 @@
 import type { Locator, Page } from '@playwright/test'
 import { checked } from './checked.js'
+import { code } from './code.js'
 import { color } from './color.js'
 import { date } from './date.js'
 import { markup } from './markup.js'
+import { checkboxes, radio } from './options.js'
+import { select } from './select.js'
+import { slider } from './slider.js'
 import { text } from './text.js'
 
 /** The component of a case, as rendered in its view. */
@@ -39,6 +43,11 @@ const drivers: Record<string, TypeComponentDriver> = {
   checkbox: checked,
   color,
   markup,
+  select,
+  radio,
+  checkboxes,
+  slider,
+  code,
   date,
   datetime: date,
   time: date
