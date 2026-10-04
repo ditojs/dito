@@ -1,9 +1,21 @@
 import { getCaseEntries } from './define.js'
+import checked from './checked.js'
 import color from './color.js'
 import date from './date.js'
+import markup from './markup.js'
+import number from './number.js'
 import text from './text.js'
+import textarea from './textarea.js'
 
-export const caseEntries = getCaseEntries([...text, ...color, ...date])
+export const caseEntries = getCaseEntries([
+  ...text,
+  ...textarea,
+  ...number,
+  ...checked,
+  ...color,
+  ...date,
+  ...markup
+])
 
 export function getCase(type: string, title: string) {
   const entry = caseEntries.find(
