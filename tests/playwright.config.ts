@@ -13,6 +13,9 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   use: {
     headless: true,
+    // Fail fast when an element doesn't show up, instead of waiting for the
+    // test timeout.
+    actionTimeout: process.env.CI ? 15_000 : 5_000,
     timezoneId: timezone,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
