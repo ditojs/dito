@@ -1,6 +1,7 @@
 import type { Locator, Page } from '@playwright/test'
 import { DitoNestedList } from '../pages.js'
 import type { TypeComponentDriver } from './index.js'
+import { getContainer } from './markup.js'
 
 /** Field values by label, for the text fields of nested forms. */
 export type Fields = Record<string, string>
@@ -78,5 +79,52 @@ export const object: TypeComponentDriver = {
 
   async getValue(page, component) {
     return readFields(this.getElement(page, component))
+  }
+}
+
+/** An editing step on a section: fill fields, or click a button. */
+export type SectionStep = Fields | { click: string }
+
+/**
+ * Driver for nested `section` components, with values as field values, or
+ * as steps that also click buttons.
+ */
+export const section: TypeComponentDriver = {
+  getElement: getContainer,
+
+  async setValue(page, component, value) {
+    const scope = this.getElement(page, component)
+    for (const step of (
+      Array.isArray(value) ? value : [value]
+    ) as SectionStep[]) {
+      if ('click' in step && Object.keys(step).length === 1) {
+        await scope
+          .getByRole('button', { name: step.click as string, exact: true })
+          .click()
+      } else {
+        await fillFields(scope, step as Fields)
+      }
+    }
+  },
+
+  async getValue(page, component) {
+    return readFields(this.getElement(page, component))
+  }
+}
+
+/** Driver for display-only components, reading their text or value. */
+export const display: TypeComponentDriver = {
+  getElement: getContainer,
+
+  async setValue() {
+    throw new Error('Display-only components have no value to set')
+  },
+
+  async getValue(page, component) {
+    const element = this.getElement(page, component)
+    const progress = element.locator('progress')
+    return (await progress.count())
+      ? progress.getAttribute('value')
+      : (await element.textContent())?.trim()
   }
 }

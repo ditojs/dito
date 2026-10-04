@@ -8,7 +8,7 @@ import { multiselect } from './multiselect.js'
 import { checkboxes, radio } from './options.js'
 import { select } from './select.js'
 import { slider } from './slider.js'
-import { list, object } from './structure.js'
+import { display, list, object, section } from './structure.js'
 import { text } from './text.js'
 
 /** The component of a case, as rendered in its view. */
@@ -55,6 +55,9 @@ const drivers: Record<string, TypeComponentDriver> = {
   code,
   list,
   object,
+  section,
+  label: display,
+  progress: display,
   date,
   datetime: date,
   time: date
