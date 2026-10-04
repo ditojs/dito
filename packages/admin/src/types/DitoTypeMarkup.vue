@@ -7,9 +7,11 @@
       v-for="buttons in groupedButtons"
     )
       button.dito-button(
-        v-for="{ name, icon, isActive, onClick } in buttons"
-        :key="name"
+        v-for="{ id, label, icon, isActive, onClick } in buttons"
+        :key="id"
         :class="{ 'dito-button--active': isActive }"
+        :aria-label="label"
+        :aria-pressed="isActive"
         @click="onClick"
       )
         DitoIcon(:name="icon")
@@ -440,9 +442,18 @@ export default DitoTypeComponent.register('markup', {
       const list = []
       const { commands } = this.editor
 
-      const addButton = ({ name, icon, command, attributes, onClick }) => {
+      const addButton = ({
+        name,
+        id = name,
+        label = this.labelize(id),
+        icon,
+        command,
+        attributes,
+        onClick
+      }) => {
         list.push({
-          name,
+          id,
+          label,
           icon,
           isActive: this.editor.isActive(name, attributes),
           onClick: () => {
@@ -479,6 +490,7 @@ export default DitoTypeComponent.register('markup', {
                     if (setting.includes(value)) {
                       addButton({
                         name,
+                        id: `${name}-${value}`,
                         icon: `${icon}-${value}`,
                         command,
                         attributes: { [attribute]: value },
