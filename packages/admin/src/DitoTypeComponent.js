@@ -4,7 +4,10 @@
 import { asArray, camelize } from '@ditojs/utils'
 import DitoComponent from './DitoComponent.js'
 import TypeMixin from './mixins/TypeMixin.js'
-import { registerTypeComponent, getTypeComponent } from './utils/schema.js'
+import {
+  registerTypeComponent,
+  getTypeComponent
+} from './utils/schema/types.js'
 
 // @vue/component
 export default {

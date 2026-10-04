@@ -1,5 +1,5 @@
 import { isString } from '@ditojs/utils'
-import { getDefaultValue } from '../utils/schema.js'
+import { getDefaultValue } from '../utils/schema/data.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
 
 // @vue/component

@@ -15,7 +15,7 @@ component(
 // }
 
 import DitoTypeComponent from '../DitoTypeComponent.js'
-import { resolveSchemaComponent } from '../utils/schema.js'
+import { resolveSchemaComponent } from '../utils/schema/setup.js'
 
 // @vue/component
 export default DitoTypeComponent.register('component', {

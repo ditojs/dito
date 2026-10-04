@@ -55,7 +55,8 @@ import DitoComponent from '../DitoComponent.js'
 import RouteMixin from '../mixins/RouteMixin.js'
 import ResourceMixin from '../mixins/ResourceMixin.js'
 import { getResource, getMemberResource } from '../utils/resource.js'
-import { getButtonSchemas, isObjectSource } from '../utils/schema.js'
+import { isObjectSource } from '../utils/schema/structure.js'
+import { getButtonSchemas } from '../utils/schema/lookup.js'
 import { resolvePath } from '../utils/path.js'
 
 // @vue/component

@@ -50,12 +50,9 @@ import ValueMixin from '../mixins/ValueMixin.js'
 import ContextMixin from '../mixins/ContextMixin.js'
 import DitoContext from '../DitoContext.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
-import {
-  getAllPanelEntries,
-  getTypeComponent,
-  hasLabel,
-  omitSpacing
-} from '../utils/schema.js'
+import { getTypeComponent } from '../utils/schema/types.js'
+import { hasLabel, omitSpacing } from '../utils/schema/structure.js'
+import { getAllPanelEntries } from '../utils/schema/lookup.js'
 import { parseFraction } from '../utils/math.js'
 
 // @vue/component

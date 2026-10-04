@@ -53,7 +53,7 @@ import {
   processView,
   resolveViews,
   processSchemaComponents
-} from '../utils/schema.js'
+} from '../utils/schema/setup.js'
 
 // @vue/component
 export default DitoComponent.component('DitoRoot', {

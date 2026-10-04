@@ -6,20 +6,21 @@ import { getSchemaAccessor, getStoreAccessor } from '../utils/accessor.js'
 import { getMemberResource } from '../utils/resource.js'
 import { replaceRoute } from '../utils/route.js'
 import {
-  processRouteSchema,
-  processForms,
+  isCompact,
+  isInlined,
+  isObjectSource,
+  isListSource
+} from '../utils/schema/structure.js'
+import { processRouteSchema, processForms } from '../utils/schema/setup.js'
+import {
   getNamedSchemas,
   getButtonSchemas,
   hasFormSchema,
   getFormSchemas,
   getViewSchema,
-  getViewPath,
-  isCompact,
-  isInlined,
-  isObjectSource,
-  isListSource,
-  updateOrder
-} from '../utils/schema.js'
+  getViewPath
+} from '../utils/schema/lookup.js'
+import { updateOrder } from '../utils/schema/data.js'
 import {
   isObject,
   isString,

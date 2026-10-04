@@ -24,11 +24,8 @@
 <script>
 import DitoTypeComponent from '../DitoTypeComponent.js'
 import SourceMixin from '../mixins/SourceMixin.js'
-import {
-  hasFormSchema,
-  getFormSchemas,
-  resolveSchemaComponents
-} from '../utils/schema.js'
+import { resolveSchemaComponents } from '../utils/schema/setup.js'
+import { hasFormSchema, getFormSchemas } from '../utils/schema/lookup.js'
 
 export default DitoTypeComponent.register(
   ['tree-list', 'tree-object'],

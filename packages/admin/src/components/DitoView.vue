@@ -33,7 +33,7 @@ import RouteMixin from '../mixins/RouteMixin.js'
 import {
   isSingleComponentView,
   someNestedSchemaComponent
-} from '../utils/schema.js'
+} from '../utils/schema/structure.js'
 import { hasResource } from '../utils/resource.js'
 
 // @vue/component

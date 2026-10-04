@@ -19,7 +19,8 @@
 <script>
 import DitoTypeComponent from '../DitoTypeComponent.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
-import { getItemFormSchema, processSchemaComponents } from '../utils/schema.js'
+import { processSchemaComponents } from '../utils/schema/setup.js'
+import { getItemFormSchema } from '../utils/schema/lookup.js'
 
 // @vue/component
 export default DitoTypeComponent.register('section', {

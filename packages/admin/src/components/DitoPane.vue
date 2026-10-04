@@ -49,7 +49,7 @@
 import DitoComponent from '../DitoComponent.js'
 import ContextMixin from '../mixins/ContextMixin.js'
 import { appendDataPath } from '../utils/data.js'
-import { isNested } from '../utils/schema.js'
+import { isNested } from '../utils/schema/structure.js'
 
 // @vue/component
 export default DitoComponent.component('DitoPane', {

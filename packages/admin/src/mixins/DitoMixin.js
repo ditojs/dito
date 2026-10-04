@@ -10,11 +10,8 @@ import {
 import appState from '../appState.js'
 import DitoContext from '../DitoContext.js'
 import EmitterMixin from './EmitterMixin.js'
-import {
-  flattenViews,
-  getSchemaValue,
-  shouldRenderSchema
-} from '../utils/schema.js'
+import { flattenViews } from '../utils/schema/setup.js'
+import { getSchemaValue, shouldRenderSchema } from '../utils/schema/data.js'
 import { getResource, getMemberResource } from '../utils/resource.js'
 import { computed, reactive } from 'vue'
 

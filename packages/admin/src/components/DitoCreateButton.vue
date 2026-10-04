@@ -38,7 +38,8 @@
 import DitoComponent from '../DitoComponent.js'
 import ContextMixin from '../mixins/ContextMixin.js'
 import PulldownMixin from '../mixins/PulldownMixin.js'
-import { getFormSchemas, isInlined } from '../utils/schema.js'
+import { isInlined } from '../utils/schema/structure.js'
+import { getFormSchemas } from '../utils/schema/lookup.js'
 
 // @vue/component
 export default DitoComponent.component('DitoCreateButton', {

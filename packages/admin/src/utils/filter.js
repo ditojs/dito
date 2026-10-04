@@ -1,5 +1,6 @@
 import { isArray, asArray, labelize } from '@ditojs/utils'
-import { getNamedSchemas, processNestedSchemaDefaults } from './schema'
+import { getNamedSchemas } from './schema/lookup.js'
+import { processNestedSchemaDefaults } from './schema/setup.js'
 
 export const filterComponents = {
   'text'(filter) {

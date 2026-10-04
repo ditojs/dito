@@ -35,7 +35,7 @@
 import { clone } from '@ditojs/utils'
 import DitoComponent from '../DitoComponent.js'
 import DomMixin from '../mixins/DomMixin.js'
-import { getButtonSchemas } from '../utils/schema.js'
+import { getButtonSchemas } from '../utils/schema/lookup.js'
 import { UseFocusTrap } from '@vueuse/integrations/useFocusTrap/component'
 
 // @vue/component

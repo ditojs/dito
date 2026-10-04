@@ -163,10 +163,10 @@ import DitoContext from '../DitoContext.js'
 import SourceMixin from '../mixins/SourceMixin.js'
 import SortableMixin from '../mixins/SortableMixin.js'
 import {
-  getViewEditPath,
   resolveSchemaComponent,
   resolveSchemaComponents
-} from '../utils/schema.js'
+} from '../utils/schema/setup.js'
+import { getViewEditPath } from '../utils/schema/lookup.js'
 import { createFiltersPanel } from '../utils/filter.js'
 import { appendDataPath } from '../utils/data.js'
 import { pickBy, equals, hyphenate } from '@ditojs/utils'

@@ -1,10 +1,7 @@
 import DitoContext from '../DitoContext.js'
 import DataMixin from './DataMixin.js'
-import {
-  hasViewSchema,
-  getViewEditPath,
-  getMultipleValue
-} from '../utils/schema.js'
+import { hasViewSchema, getViewEditPath } from '../utils/schema/lookup.js'
+import { getMultipleValue } from '../utils/schema/data.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
 import { setTemporaryId, isReference } from '../utils/data.js'
 import {

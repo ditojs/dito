@@ -109,7 +109,8 @@ import ItemMixin from '../mixins/ItemMixin'
 import SortableMixin from '../mixins/SortableMixin.js'
 import { appendDataPath } from '../utils/data.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
-import { getNamedSchemas, hasFormSchema, updateOrder } from '../utils/schema.js'
+import { getNamedSchemas, hasFormSchema } from '../utils/schema/lookup.js'
+import { updateOrder } from '../utils/schema/data.js'
 import { stripHtml } from '@ditojs/utils'
 
 // @vue/component

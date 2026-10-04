@@ -1,5 +1,5 @@
 import DitoMixin from './mixins/DitoMixin.js'
-import { getTypeComponent } from './utils/schema.js'
+import { getTypeComponent } from './utils/schema/types.js'
 import { resolveMergedOptions } from './utils/options.js'
 import { isPlainObject } from '@ditojs/utils'
 

@@ -1,6 +1,6 @@
 import ItemMixin from './ItemMixin.js'
 import LoadingMixin from './LoadingMixin.js'
-import { setDefaultValues } from '../utils/schema.js'
+import { setDefaultValues } from '../utils/schema/data.js'
 import { assignDeeply, isObject, isString, labelize } from '@ditojs/utils'
 import { getResource } from '../utils/resource.js'
 import DitoContext from '../DitoContext.js'

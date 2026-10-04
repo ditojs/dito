@@ -41,7 +41,7 @@ DitoSchema.dito-schema-inlined(
 
 <script>
 import DitoComponent from '../DitoComponent.js'
-import { isCompact } from '../utils/schema.js'
+import { isCompact } from '../utils/schema/structure.js'
 // @vue/component
 export default DitoComponent.component('DitoSchemaInlined', {
   emits: ['delete'],

@@ -1,6 +1,6 @@
 import { isFunction } from '@ditojs/utils'
 import DitoContext from '../DitoContext.js'
-import { computeValue } from '../utils/schema.js'
+import { computeValue } from '../utils/schema/data.js'
 
 export default {
   computed: {

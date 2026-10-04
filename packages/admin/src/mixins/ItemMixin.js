@@ -1,10 +1,7 @@
 import DitoContext from '../DitoContext.js'
-import {
-  getItemFormSchema,
-  getItemId,
-  getItemUid,
-  isListSource
-} from '../utils/schema.js'
+import { isListSource } from '../utils/schema/structure.js'
+import { getItemFormSchema } from '../utils/schema/lookup.js'
+import { getItemId, getItemUid } from '../utils/schema/data.js'
 import { appendDataPath } from '../utils/data.js'
 import { isObject, isString, isNumber, isFunction } from '@ditojs/utils'
 

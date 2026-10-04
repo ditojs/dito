@@ -47,7 +47,7 @@ import { isFunction } from '@ditojs/utils'
 import DitoComponent from '../DitoComponent.js'
 import ContextMixin from '../mixins/ContextMixin.js'
 import ValidatorMixin from '../mixins/ValidatorMixin.js'
-import { getButtonSchemas } from '../utils/schema.js'
+import { getButtonSchemas } from '../utils/schema/lookup.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
 
 // @vue/component

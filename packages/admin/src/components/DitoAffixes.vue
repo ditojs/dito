@@ -32,7 +32,7 @@ import DitoComponent from '../DitoComponent.js'
 import DitoAffix from './DitoAffix.vue'
 import { asArray, isString } from '@ditojs/utils'
 import { hasSlotContent } from '@ditojs/ui/src'
-import { shouldRenderSchema } from '../utils/schema.js'
+import { shouldRenderSchema } from '../utils/schema/data.js'
 
 export default DitoComponent.component('DitoAffixes', {
   components: { DitoAffix },
