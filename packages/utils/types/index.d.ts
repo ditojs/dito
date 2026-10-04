@@ -519,6 +519,19 @@ export function format(
   }
 ): string | null | undefined
 /**
+ * Formats a date as its local plain date, e.g. `'2026-05-14'`, without the
+ * time and time zone of `toISOString()`, which can shift it to another day.
+ */
+export function formatPlainDate(date: Date): string
+/**
+ * Parses a plain date like `'2026-05-14'` as local midnight, unlike
+ * `new Date()`, which parses it as UTC midnight. Returns `null` for anything
+ * else, including invalid dates like `'2026-02-30'`.
+ */
+export function parsePlainDate(
+  string: string | null | undefined
+): Date | null
+/**
  * Formats a date value as a string. If the value is not a Date,
  * attempts to convert it to a Date first.
  */
