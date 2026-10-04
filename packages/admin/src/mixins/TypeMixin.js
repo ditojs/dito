@@ -131,7 +131,8 @@ export default {
 
       const attributes = {
         ...this.events,
-        disabled: this.disabled
+        // Only text fields support `readonly`, disable all other components.
+        disabled: this.disabled || (this.readonly && !textField)
       }
 
       if (nativeField) {
