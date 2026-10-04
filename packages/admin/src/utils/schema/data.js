@@ -283,34 +283,46 @@ export function processData(schema, sourceSchema, data, dataPath, {
 /**
  * Walks `data` along the components of `schema`, including nested forms of
  * list and object items, calling `before()` and `after()` for each nested
- * component, e.g. to process the data into `processedData`.
+ * component, e.g. to process the data into `processedData`. If provided,
+ * `shouldProcessSchema()` is called for all components, tabs and panels, and
+ * the ones for which it returns `false` are skipped along with their content.
  */
 export function processSchemaData(schema, data, {
   dataPath = null,
   processedData = null,
   before = null,
   after = null,
+  shouldProcessSchema = null,
   options
 }) {
-  const walk = { before, after, options }
-  const processComponents = components => {
-    const getDataPath = (dataPath, token) =>
-      dataPath != null
-        ? appendDataPath(dataPath, token)
-        : null
+  const walkOptions = { before, after, shouldProcessSchema, options }
+  const getDataPath = (dataPath, token) =>
+    dataPath != null
+      ? appendDataPath(dataPath, token)
+      : null
+  const shouldProcess = (schema, name, dataPath) => (
+    !shouldProcessSchema ||
+    shouldProcessSchema({ schema, data, name, dataPath, processedData })
+  )
 
+  const processComponents = components => {
     if (components) {
       for (const [name, componentSchema] of Object.entries(components)) {
-        if (!isNested(componentSchema)) {
+        const isNestedComponent = isNested(componentSchema)
+        const componentDataPath = isNestedComponent
+          ? getDataPath(dataPath, name)
+          : dataPath
+        if (!shouldProcess(componentSchema, name, componentDataPath)) {
+          continue
+        }
+        if (!isNestedComponent) {
           // Recursively process data on unnested components.
           processSchemaData(componentSchema, data, {
-            ...walk,
+            ...walkOptions,
             dataPath,
             processedData
           })
         } else {
-          const componentDataPath = getDataPath(dataPath, name)
-
           const processItem = (item, index = null) => {
             const itemDataPath =
               index !== null
@@ -334,7 +346,7 @@ export function processSchemaData(schema, data, {
                 ? cloneItem(componentSchema, item, options)
                 : null
               return processSchemaData(form, item, {
-                ...walk,
+                ...walkOptions,
                 dataPath: itemDataPath,
                 processedData: processedItem
               })
@@ -378,10 +390,14 @@ export function processSchemaData(schema, data, {
 
   processComponents(schema.components)
   for (const tab of getTabSchemas(schema)) {
-    processComponents(tab.components)
+    if (shouldProcess(tab, null, dataPath)) {
+      processComponents(tab.components)
+    }
   }
   for (const panel of getPanelSchemas(schema)) {
-    processComponents(panel.components)
+    if (shouldProcess(panel, null, dataPath)) {
+      processComponents(panel.components)
+    }
   }
 
   return processedData || data

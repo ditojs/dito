@@ -2,6 +2,7 @@ import ValueMixin from './ValueMixin.js'
 import ContextMixin from './ContextMixin.js'
 import ValidationMixin from './ValidationMixin.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
+import { getValidationRules } from '../utils/schema/validation.js'
 import { asArray, camelize } from '@ditojs/utils'
 
 // @vue/component
@@ -152,20 +153,8 @@ export default {
       return attributes
     },
 
-    validations() {
-      const validations = { ...this.getValidations() }
-      if (this.required) {
-        validations.required = true
-      }
-      // Allow schema to override default rules and add any new ones:
-      for (const [key, value] of Object.entries(this.schema.rules || {})) {
-        if (value === undefined) {
-          delete validations[key]
-        } else {
-          validations[key] = value
-        }
-      }
-      return validations
+    validationRules() {
+      return getValidationRules(this.schema, this.context)
     },
 
     showClearButton() {
@@ -196,11 +185,6 @@ export default {
     getEvents() {
       const { onFocus, onBlur, onInput, onChange } = this
       return { onFocus, onBlur, onInput, onChange }
-    },
-
-    // @overridable
-    getValidations() {
-      return null
     },
 
     // @overridable

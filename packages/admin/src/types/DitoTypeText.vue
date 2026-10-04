@@ -54,6 +54,18 @@ export default DitoTypeComponent.register(
     textField: true,
     ignoreMissingValue: ({ schema }) => schema.type === 'password',
 
+    getTypeValidationRules(schema) {
+      const rule = {
+        email: 'email',
+        url: 'url',
+        hostname: 'hostname',
+        domain: 'domain',
+        password: 'password',
+        creditcard: 'creditcard'
+      }[schema.type]
+      return rule ? { [rule]: true } : {}
+    },
+
     computed: {
       inputType() {
         return (
@@ -80,20 +92,6 @@ export default DitoTypeComponent.register(
         set(value) {
           this.value = value
         }
-      }
-    },
-
-    methods: {
-      getValidations() {
-        const rule = {
-          email: 'email',
-          url: 'url',
-          hostname: 'hostname',
-          domain: 'domain',
-          password: 'password',
-          creditcard: 'creditcard'
-        }[this.type]
-        return rule ? { [rule]: true } : {}
       }
     }
   }

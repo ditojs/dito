@@ -1,8 +1,55 @@
 import { getSchemaAccessor } from '../utils/accessor.js'
+import { getSchemaValue } from '../utils/schema/data.js'
 import { isArray } from '@ditojs/utils'
 
 // @vue/component
 export default {
+  getTypeValidationRules(schema, context) {
+    // Mirrors the `min`, `max`, `range`, `step` and `decimals` accessors below,
+    // but based on the schema alone, so they can be used without a component.
+    const isInteger = schema.type === 'integer'
+    const getNumberSchemaValue = key =>
+      getSchemaValue(key, { type: Number, schema, context })
+    const roundIfInteger = (value, roundFunction) =>
+      isInteger && value != null ? roundFunction(value) : value
+    const range = getSchemaValue('range', { type: Array, schema, context })
+    const min = roundIfInteger(
+      getNumberSchemaValue('min') ?? range?.[0],
+      Math.floor
+    )
+    const max = roundIfInteger(
+      getNumberSchemaValue('max') ?? range?.[1],
+      Math.ceil
+    )
+    const step = roundIfInteger(getNumberSchemaValue('step'), Math.ceil)
+    const decimals = getNumberSchemaValue('decimals')
+    const rules = {}
+    if (min != null && max != null) {
+      rules.range = [min, max]
+    } else {
+      if (min != null) {
+        rules.min = min
+      }
+      if (max != null) {
+        rules.max = max
+      }
+    }
+    if (decimals != null) {
+      rules.decimals = decimals
+    } else if (step) {
+      const stepDecimals = (`${step}`.split('.')[1] || '').length
+      if (stepDecimals > 0) {
+        rules.decimals = stepDecimals
+      } else {
+        rules.integer = true
+      }
+    }
+    if (isInteger) {
+      rules.integer = true
+    }
+    return rules
+  },
+
   computed: {
     inputValue: {
       get() {
@@ -83,36 +130,5 @@ export default {
         }
       }
     })
-  },
-
-  methods: {
-    getValidations() {
-      const validations = {}
-      const { range, min, max, decimals, step } = this
-      if (range) {
-        validations.range = range
-      } else {
-        if (min != null) {
-          validations.min = min
-        }
-        if (max != null) {
-          validations.max = max
-        }
-      }
-      if (decimals != null) {
-        validations.decimals = decimals
-      } else if (step) {
-        const decimals = (`${step}`.split('.')[1] || '').length
-        if (decimals > 0) {
-          validations.decimals = decimals
-        } else {
-          validations.integer = true
-        }
-      }
-      if (this.isInteger) {
-        validations.integer = true
-      }
-      return validations
-    }
   }
 }

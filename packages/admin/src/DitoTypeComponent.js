@@ -26,6 +26,7 @@ export default {
   excludeValue: false,
   ignoreMissingValue: null,
   omitSpacing: false,
+  getTypeValidationRules: null,
 
   component: DitoComponent.component,
 

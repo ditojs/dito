@@ -1,5 +1,4 @@
-import { isFunction } from '@ditojs/utils'
-import * as validators from '../validators/index.js'
+import { getValidationMessages } from '../utils/schema/validation.js'
 
 // @vue/component
 export default {
@@ -31,33 +30,13 @@ export default {
     },
 
     validate(notify = true) {
-      let isValid = true
+      const messages = getValidationMessages(this.value, this.validationRules)
+      const isValid = messages.length === 0
       if (notify) {
         this.clearErrors()
-      }
-      const { value } = this
-      for (const [rule, setting] of Object.entries(this.validations)) {
-        // eslint-disable-next-line import/namespace
-        const validator = validators[rule]
-        if (
-          validator &&
-          // Only apply 'required' validator to empty values.
-          // Apply all other validators only to non-empty values.
-          (rule === 'required' || value != null && value !== '')
-        ) {
-          const { validate, message } = validator
-          if (!validate(value, setting, this.validations)) {
-            isValid = false
-            if (notify) {
-              const error = isFunction(message)
-                ? message(value, setting, this)
-                : message
-              this.addError(error, true)
-            }
-          }
+        for (const message of messages) {
+          this.addError(message, true)
         }
-      }
-      if (notify) {
         this.isValidated = true
         this.isValid = isValid
       }

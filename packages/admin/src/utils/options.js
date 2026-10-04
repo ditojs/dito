@@ -38,6 +38,7 @@ const ditoOptionKeys = [
   'ignoreMissingValue',
   'omitSpacing',
   'processValue',
+  'getTypeValidationRules',
   'processSchema',
   'getPanelSchema',
   'getFormSchemasForProcessing',
