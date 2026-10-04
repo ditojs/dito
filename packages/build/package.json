@@ -30,7 +30,6 @@
     "minimist": "^1.2.8",
     "postcss": "^8.5.28",
     "postcss-html": "^2.0.0",
-    "postcss-inset": "^1.0.0",
     "postcss-scss": "^4.0.9",
     "pug": "^3.0.4",
     "sass": "^1.105.1",
