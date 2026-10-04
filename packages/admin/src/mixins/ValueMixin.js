@@ -1,3 +1,4 @@
+import { isFunction } from '@ditojs/utils'
 import DitoContext from '../DitoContext.js'
 import { computeValue } from '../utils/schema.js'
 
@@ -12,8 +13,10 @@ export default {
           this.dataPath,
           { component: this }
         )
+        // Only call `format()` if it's a function, as some types use `format`
+        // for other purposes, e.g. `DitoTypeColor` for the color format.
         const { format } = this.schema
-        return format
+        return isFunction(format)
           ? format(new DitoContext(this, { value }))
           : value
       },
