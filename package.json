@@ -16,6 +16,7 @@
     "publish": "npm login && lerna publish",
     "test": "pnpm -r --parallel --include-workspace-root run /^test:/",
     "test:unit": "vitest",
+    "types": "tsc -p tsconfig.types.json",
     "eslint": "NODE_ENV=production eslint packages/*/src packages/*/types",
     "eslint:fix": "pnpm run eslint --fix",
     "stylelint": "stylelint packages/*/src/**/*.{vue,scss}",

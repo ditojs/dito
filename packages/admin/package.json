@@ -27,8 +27,7 @@
   "scripts": {
     "build": "vite build",
     "watch": "pnpm run build --mode 'development' --watch",
-    "prepare": "pnpm run build",
-    "types": "tsc --noEmit --ignoreConfig --strict --target esnext --module esnext --moduleResolution bundler types/index.d.ts"
+    "prepare": "pnpm run build"
   },
   "engines": {
     "node": ">= 24.0.0"

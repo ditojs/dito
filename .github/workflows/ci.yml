@@ -38,6 +38,7 @@ jobs:
       - run: pnpm build
       - run: pnpm test:unit
       - run: pnpm --filter @ditojs/tests test:types
+      - run: pnpm types
 
   e2e:
     runs-on: ubuntu-latest
