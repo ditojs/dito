@@ -19,7 +19,7 @@
 <script>
 import DitoTypeComponent from '../DitoTypeComponent.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
-import { processSchemaComponents } from '../utils/schema/setup.js'
+import { setupSchemaComponents } from '../utils/schema/setup.js'
 import { getItemFormSchema } from '../utils/schema/lookup.js'
 
 // @vue/component
@@ -60,7 +60,7 @@ export default DitoTypeComponent.register('section', {
 
   async processSchema(api, schema, name, routes, level) {
     // Process section components so their forms get resolved too.
-    await processSchemaComponents(api, schema, routes, level)
+    await setupSchemaComponents(api, schema, routes, level)
   }
 })
 </script>

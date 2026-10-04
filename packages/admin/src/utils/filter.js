@@ -1,6 +1,6 @@
 import { isArray, asArray, labelize } from '@ditojs/utils'
 import { getNamedSchemas } from './schema/lookup.js'
-import { processNestedSchemaDefaults } from './schema/setup.js'
+import { applyNestedSchemaDefaults } from './schema/setup.js'
 
 export const filterComponents = {
   'text'(filter) {
@@ -120,7 +120,7 @@ export function createFiltersPanel(api, filters, dataPath, query) {
       }
     }
   }
-  processNestedSchemaDefaults(api, panel)
+  applyNestedSchemaDefaults(api, panel)
   return panel
 }
 

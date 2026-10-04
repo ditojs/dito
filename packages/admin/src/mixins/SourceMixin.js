@@ -11,7 +11,7 @@ import {
   isObjectSource,
   isListSource
 } from '../utils/schema/structure.js'
-import { processRouteSchema, processForms } from '../utils/schema/setup.js'
+import { setupRouteSchema, setupForms } from '../utils/schema/setup.js'
 import {
   getNamedSchemas,
   getButtonSchemas,
@@ -672,7 +672,7 @@ export default {
     flatten = false,
     process = null
   ) {
-    processRouteSchema(api, schema, name)
+    setupRouteSchema(api, schema, name)
     const inlined = isInlined(schema)
     if (inlined && schema.resource) {
       throw new Error(
@@ -701,7 +701,7 @@ export default {
       nested,
       param
     }
-    const childRoutes = await processForms(api, schema, level)
+    const childRoutes = await setupForms(api, schema, level)
     if (process) {
       await process(childRoutes, level + 1)
     }

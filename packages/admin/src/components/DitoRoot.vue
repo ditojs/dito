@@ -50,9 +50,9 @@ import DitoUser from '../DitoUser.js'
 import DitoView from '../components/DitoView.vue'
 import DitoDialog from './DitoDialog.vue'
 import {
-  processView,
+  setupView,
   resolveViews,
-  processSchemaComponents
+  setupSchemaComponents
 } from '../utils/schema/setup.js'
 
 // @vue/component
@@ -251,7 +251,7 @@ export default DitoComponent.component('DitoRoot', {
         async (resolve, reject) => {
           // Process components to resolve async schemas.
           const routes = []
-          await processSchemaComponents(
+          await setupSchemaComponents(
             this.api,
             { type: 'dialog', components },
             routes,
@@ -407,7 +407,7 @@ export default DitoComponent.component('DitoRoot', {
       // Collect all routes from the root schema components
       const routes = await mapConcurrently(
         Object.entries(this.resolvedViews),
-        ([name, schema]) => processView(DitoView, this.api, schema, name)
+        ([name, schema]) => setupView(DitoView, this.api, schema, name)
       )
       // Now that the routes are loaded, replace all existing routes with the
       // new routes, and restore the current path.

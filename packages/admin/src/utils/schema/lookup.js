@@ -16,7 +16,7 @@ import {
 // TODO: `getFormSchemas()` processes forms with `components()` callbacks on
 // every call, which also causes the only circular import between these
 // modules. Move this out of the lookup, see the form model.
-import { processForm } from './setup.js'
+import { setupForm } from './setup.js'
 
 const emptySchema = {}
 
@@ -96,14 +96,14 @@ export function getFormSchemas(schema, context, modifyForm) {
     Object.entries(forms).map(([type, form]) => {
       // Support `schema.components` callbacks to create components on the fly.
       if (context && isFunction(form.components)) {
-        // Make the form schema reactive since `processForm()` is async, so that
+        // Make the form schema reactive since `setupForm()` is async, so that
         // the setting of defaults will be picked up by downstream code.
         form = reactive({
           ...form,
           components: form.components(context)
         })
         // Process the form again, now that we have the components.
-        processForm(context.api, form).catch(console.error)
+        setupForm(context.api, form).catch(console.error)
       }
       return [type, modifyForm?.(form) ?? form]
     })
