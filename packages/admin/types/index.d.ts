@@ -930,7 +930,7 @@ export interface SchemaNumberMixin<$Item> {
    */
   step?: OrItemAccessor<$Item, {}, number>
   /**
-   * The amount of decimals to round to.
+   * The maximum amount of decimals allowed, validated on input.
    */
   decimals?: OrItemAccessor<$Item, {}, number>
   /** Validation rules for numeric constraints. */
