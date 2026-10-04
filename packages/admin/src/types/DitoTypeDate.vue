@@ -41,7 +41,12 @@ import {
   DitoTimePicker,
   DitoDateTimePicker
 } from '@ditojs/ui/src'
-import { isDate, assignDeeply } from '@ditojs/utils'
+import {
+  isDate,
+  assignDeeply,
+  formatPlainDate,
+  parsePlainDate
+} from '@ditojs/utils'
 
 export default DitoTypeComponent.register(
   ['date', 'datetime', 'time'],
@@ -58,7 +63,7 @@ export default DitoTypeComponent.register(
       dateValue: {
         get() {
           const { value } = this
-          return value ? new Date(value) : value
+          return value ? parsePlainDate(value) ?? new Date(value) : value
         },
 
         set(value) {
@@ -91,8 +96,14 @@ export default DitoTypeComponent.register(
       }
     },
 
-    processValue({ value }) {
-      return isDate(value) ? value.toISOString() : value
+    processValue({ schema, value }) {
+      // Send dates as their plain date, so they can't shift to another day
+      // through time zones, and all other date types as ISO strings.
+      return isDate(value)
+        ? schema.type === 'date'
+          ? formatPlainDate(value)
+          : value.toISOString()
+        : value
     }
   }
 )
