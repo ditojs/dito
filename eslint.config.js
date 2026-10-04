@@ -95,7 +95,10 @@ export default [
     files: ['**/*.test.*'],
 
     languageOptions: {
-      globals: globalsBrowser
+      globals: {
+        ...globalsBrowser,
+        ...globals.jest
+      }
     }
   },
   {
