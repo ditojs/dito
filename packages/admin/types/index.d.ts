@@ -330,6 +330,11 @@ export interface BaseSchema<$Item>
    * when the field isn't rendered, unless its `if`
    * evaluates to `false`. If the callback returns
    * `undefined`, the current value is preserved.
+   *
+   * As it doesn't depend on the field's component, the
+   * context's component properties, e.g. `component`
+   * and `schemaComponent`, refer to the form, view or
+   * dialog that holds the data, not to the field.
    */
   compute?: ItemAccessor<$Item>
   /**
@@ -797,6 +802,12 @@ export type SchemaOptions<$Item, $Option = any> =
        * receives the `DitoContext` and returns an inner
        * function that is called to fetch the actual data,
        * enabling reactive dependency tracking.
+       *
+       * The options are loaded independently of the
+       * field's component, also for computes, so the
+       * context's component properties, e.g. `component`
+       * and `schemaComponent`, refer to the form, view or
+       * dialog that holds the data, not to the field.
        */
       data?: OrItemAccessor<
         $Item,
