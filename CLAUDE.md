@@ -37,6 +37,12 @@ cd packages/ui && pnpm run build
 pnpm test
 
 # Tests use Vitest with globals enabled
+
+# Screenshot tests of the admin's styling, rendered in the browser of the
+# Playwright Docker image (Docker needs to run). Run them before and after
+# changing styles, and update the baselines when changes are intended.
+pnpm -C tests screenshots
+pnpm -C tests screenshots --update-snapshots
 ```
 
 ### Linting & Code Quality
