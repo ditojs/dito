@@ -3043,9 +3043,10 @@ interface TreeSchema<$Item, $Type extends 'tree-list' | 'tree-object'>
     name: string
   }
   /**
-   * Properties schema for tree nodes.
+   * The properties shown for tree nodes, displayed like the columns of
+   * lists.
    */
-  properties?: Record<string, Component<$Item>>
+  properties?: Columns<$Item>
   /**
    * Whether child nodes are expanded by default.
    */
