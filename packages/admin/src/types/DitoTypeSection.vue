@@ -17,13 +17,19 @@
 </template>
 
 <script>
+import { normalizeDataPath, parseDataPath } from '@ditojs/utils'
 import DitoTypeComponent from '../DitoTypeComponent.js'
+import SchemaParentMixin from '../mixins/SchemaParentMixin.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
 import { setupSchemaComponents } from '../utils/schema/setup.js'
 import { getItemFormSchema } from '../utils/schema/lookup.js'
+import { hasComponentNamed } from '../utils/schema/structure.js'
 
 // @vue/component
 export default DitoTypeComponent.register('section', {
+  // Register the section's schema with the section rather than the form, so
+  // that the section can reveal its components, see `navigateToComponent()`.
+  mixins: [SchemaParentMixin],
   // Nested sections hold their data in an object, other sections don't have
   // their own value. Use a callback to override `defaultValue: null`.
   defaultValue: ({ schema }) => (schema.nested ? {} : undefined),
@@ -55,7 +61,23 @@ export default DitoTypeComponent.register('section', {
   },
 
   methods: {
-    getItemFormSchema
+    getItemFormSchema,
+
+    async navigateToComponent(dataPath, onComplete) {
+      // Unnested sections share the data path of their parent schema, so
+      // decide by schema whether the section displays the value at `dataPath`:
+      const { mainSchemaComponent } = this
+      const dataPathPrefix = this.dataPath ? `${this.dataPath}/` : ''
+      const normalizedDataPath = normalizeDataPath(dataPath)
+      const componentName = normalizedDataPath.startsWith(dataPathPrefix)
+        ? parseDataPath(normalizedDataPath.slice(dataPathPrefix.length))[0]
+        : null
+      return (
+        !!mainSchemaComponent &&
+        hasComponentNamed(mainSchemaComponent.schema, componentName) &&
+        mainSchemaComponent.navigateToComponent(dataPath, onComplete)
+      )
+    }
   },
 
   async processSchema(api, schema, name, routes, level) {

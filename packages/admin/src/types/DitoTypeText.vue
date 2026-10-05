@@ -54,8 +54,8 @@ export default DitoTypeComponent.register(
     textField: true,
     ignoreMissingValue: ({ schema }) => schema.type === 'password',
 
-    getTypeValidationRules(schema) {
-      const rule = {
+    getTypeValidations(schema) {
+      const validationName = {
         email: 'email',
         url: 'url',
         hostname: 'hostname',
@@ -63,7 +63,7 @@ export default DitoTypeComponent.register(
         password: 'password',
         creditcard: 'creditcard'
       }[schema.type]
-      return rule ? { [rule]: true } : {}
+      return validationName ? { [validationName]: true } : {}
     },
 
     computed: {

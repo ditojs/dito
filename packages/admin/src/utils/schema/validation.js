@@ -1,7 +1,7 @@
 import DitoContext from '../../DitoContext.js'
 import * as validators from '../../validators/index.js'
-import { isFunction } from '@ditojs/utils'
-import { getTypeOptions } from './types.js'
+import { isFunction, isRegExp, asArray, normalizeDataPath } from '@ditojs/utils'
+import { getTypeOptions, getSourceType } from './types.js'
 import {
   getSchemaValue,
   shouldRenderSchema,
@@ -9,64 +9,66 @@ import {
 } from './data.js'
 
 /**
- * Returns the validation rules of a component schema, without requiring a
- * component: the rules of the type's static `getTypeValidationRules()` option,
- * `required`, and finally the `schema.rules` overrides, where `undefined`
- * removes a rule. Schema values are evaluated with `context`.
+ * Returns the validations of a component schema, without requiring a
+ * component: the validations of the type's static `getTypeValidations()`
+ * option, `required`, and finally the `schema.rules` overrides, where
+ * `undefined` removes a validation. Schema values are evaluated with `context`.
  */
-export function getValidationRules(schema, context) {
-  const rules = {
-    ...getTypeOptions(schema)?.getTypeValidationRules?.(schema, context)
+export function getValidations(schema, context) {
+  const validations = {
+    ...getTypeOptions(schema)?.getTypeValidations?.(schema, context)
   }
   if (getSchemaValue('required', { type: Boolean, schema, context })) {
-    rules.required = true
+    validations.required = true
   }
   // Allow schema to override default rules and add any new ones:
-  for (const [key, value] of Object.entries(schema.rules || {})) {
-    if (value === undefined) {
-      delete rules[key]
+  for (const [name, setting] of Object.entries(schema.rules || {})) {
+    if (setting === undefined) {
+      delete validations[name]
     } else {
-      rules[key] = value
+      validations[name] = setting
     }
   }
-  return rules
+  return validations
 }
 
 /**
- * Returns the error messages of validating `value` against `rules`, without
- * the label prefix, or an empty array if the value is valid.
+ * Returns the errors of validating `value` against `validations`, in the
+ * format of server errors, `[{ message }]`, with messages without the label
+ * prefix, or an empty array if the value is valid.
  */
-export function getValidationMessages(value, rules) {
-  const messages = []
-  for (const [rule, setting] of Object.entries(rules)) {
+export function getValueValidationErrors(value, validations) {
+  const errors = []
+  for (const [name, setting] of Object.entries(validations)) {
     // eslint-disable-next-line import/namespace
-    const validator = validators[rule]
+    const validator = validators[name]
     if (
       validator &&
       // Only apply 'required' validator to empty values.
       // Apply all other validators only to non-empty values.
-      (rule === 'required' || value != null && value !== '')
+      (name === 'required' || value != null && value !== '')
     ) {
       const { validate, message } = validator
-      if (!validate(value, setting, rules)) {
-        messages.push(
-          isFunction(message)
-            ? message(value, setting, rules)
+      if (!validate(value, setting, validations)) {
+        errors.push({
+          message: isFunction(message)
+            ? message(value, setting, validations)
             : message
-        )
+        })
       }
     }
   }
-  return messages
+  return errors
 }
 
 /**
  * Validates `data` along the components of `schema`, including tabs, panels
  * and the nested forms of list and object items, skipping components whose
- * `if` evaluates to `false`. Returns the errors in the format of server
- * errors, `{ [dataPath]: [{ message }] }`, or `null` if the data is valid.
+ * `if` evaluates to `false` and sources with their own resource. Returns the
+ * errors in the format of server errors, `{ [dataPath]: [{ message }] }`, or
+ * `null` if the data is valid.
  */
-export function validateData(schema, data, {
+export function getDataValidationErrors(schema, data, {
   dataPath = '',
   component = null,
   rootData = data
@@ -83,8 +85,12 @@ export function validateData(schema, data, {
       rootData
     })
 
-  const shouldProcessSchema = entry =>
+  const shouldProcess = entry => (
+    // Sources with their own resource load, validate and submit their data
+    // through their own forms, separately from `data`:
+    !(getSourceType(entry.schema) && entry.schema.resource) &&
     shouldRenderSchema(entry.schema, createContext(entry))
+  )
 
   const before = entry => {
     const { schema, data, name, dataPath } = entry
@@ -96,19 +102,42 @@ export function validateData(schema, data, {
     if (isFunction(format)) {
       value = format(context)
     }
-    const rules = getValidationRules(schema, context)
-    const messages = getValidationMessages(value, rules)
-    if (messages.length > 0) {
+    const validations = getValidations(schema, context)
+    const valueErrors = getValueValidationErrors(value, validations)
+    if (valueErrors.length > 0) {
       errors ||= {}
-      errors[dataPath] = messages.map(message => ({ message }))
+      errors[dataPath] = valueErrors
     }
   }
 
   processSchemaData(schema, data, {
     dataPath,
-    shouldProcessSchema,
+    shouldProcess,
     before,
     options: { component, rootData }
   })
   return errors
+}
+
+/**
+ * Returns the entries of `errors` whose data paths match `match`, or `null` if
+ * none match. `match` can be a function receiving the data path, a regular
+ * expression, a data path, or an array of data paths.
+ */
+export function getMatchingValidationErrors(errors, match) {
+  let isMatchingDataPath
+  if (isFunction(match)) {
+    isMatchingDataPath = match
+  } else if (isRegExp(match)) {
+    isMatchingDataPath = dataPath => match.test(dataPath)
+  } else {
+    const dataPaths = asArray(match).map(normalizeDataPath)
+    isMatchingDataPath = dataPath => dataPaths.includes(dataPath)
+  }
+  const matchingEntries = Object.entries(errors || {}).filter(
+    ([dataPath]) => isMatchingDataPath(dataPath)
+  )
+  return matchingEntries.length > 0
+    ? Object.fromEntries(matchingEntries)
+    : null
 }

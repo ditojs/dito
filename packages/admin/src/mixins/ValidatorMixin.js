@@ -43,14 +43,12 @@ export default {
       this.schemaComponents.forEach(it => it.clearErrors())
     },
 
-    showValidationErrors(errors, focus, first = true) {
-      this.schemaComponents.forEach(
-        schemaComponent => {
-          if (schemaComponent.showValidationErrors(errors, focus, first)) {
-            first = false
-          }
+    async showValidationErrors(errors, focus, first = true) {
+      for (const schemaComponent of this.schemaComponents) {
+        if (await schemaComponent.showValidationErrors(errors, focus, first)) {
+          first = false
         }
-      )
+      }
       return !first
     }
   }

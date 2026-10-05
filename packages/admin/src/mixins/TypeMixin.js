@@ -2,7 +2,7 @@ import ValueMixin from './ValueMixin.js'
 import ContextMixin from './ContextMixin.js'
 import ValidationMixin from './ValidationMixin.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
-import { getValidationRules } from '../utils/schema/validation.js'
+import { getValidations } from '../utils/schema/validation.js'
 import { asArray, camelize } from '@ditojs/utils'
 
 // @vue/component
@@ -153,8 +153,8 @@ export default {
       return attributes
     },
 
-    validationRules() {
-      return getValidationRules(this.schema, this.context)
+    validations() {
+      return getValidations(this.schema, this.context)
     },
 
     showClearButton() {
@@ -175,9 +175,12 @@ export default {
     _register(add) {
       // Provide component to container for schema accessor evaluation.
       this.$emit('update:component', add ? this : null)
-      // Prevent unnested type components from overriding parent data paths
+      // Register unnested type components separately, to prevent them from
+      // overriding parent data paths.
       if (this.nested) {
         this.schemaComponent._registerComponent(this, add)
+      } else {
+        this.schemaComponent?._registerUnnestedComponent(this, add)
       }
     },
 

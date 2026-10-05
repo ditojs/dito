@@ -1,4 +1,4 @@
-import { getValidationMessages } from '../utils/schema/validation.js'
+import { getValueValidationErrors } from '../utils/schema/validation.js'
 
 // @vue/component
 export default {
@@ -30,11 +30,11 @@ export default {
     },
 
     validate(notify = true) {
-      const messages = getValidationMessages(this.value, this.validationRules)
-      const isValid = messages.length === 0
+      const errors = getValueValidationErrors(this.value, this.validations)
+      const isValid = errors.length === 0
       if (notify) {
         this.clearErrors()
-        for (const message of messages) {
+        for (const { message } of errors) {
           this.addError(message, true)
         }
         this.isValidated = true

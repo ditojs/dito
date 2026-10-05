@@ -283,27 +283,23 @@ export function processData(schema, sourceSchema, data, dataPath, {
 /**
  * Walks `data` along the components of `schema`, including nested forms of
  * list and object items, calling `before()` and `after()` for each nested
- * component, e.g. to process the data into `processedData`. If provided,
- * `shouldProcessSchema()` is called for all components, tabs and panels, and
- * the ones for which it returns `false` are skipped along with their content.
+ * component, e.g. to process the data into `processedData`. `shouldProcess()`
+ * is called for all components, tabs and panels, and the ones for which it
+ * returns `false` are skipped along with their content.
  */
 export function processSchemaData(schema, data, {
   dataPath = null,
   processedData = null,
   before = null,
   after = null,
-  shouldProcessSchema = null,
+  shouldProcess = () => true,
   options
 }) {
-  const walkOptions = { before, after, shouldProcessSchema, options }
+  const walkOptions = { before, after, shouldProcess, options }
   const getDataPath = (dataPath, token) =>
     dataPath != null
       ? appendDataPath(dataPath, token)
       : null
-  const shouldProcess = (schema, name, dataPath) => (
-    !shouldProcessSchema ||
-    shouldProcessSchema({ schema, data, name, dataPath, processedData })
-  )
 
   const processComponents = components => {
     if (components) {
@@ -312,7 +308,14 @@ export function processSchemaData(schema, data, {
         const componentDataPath = isNestedComponent
           ? getDataPath(dataPath, name)
           : dataPath
-        if (!shouldProcess(componentSchema, name, componentDataPath)) {
+        const entry = {
+          schema: componentSchema,
+          data,
+          name,
+          dataPath: componentDataPath,
+          processedData
+        }
+        if (!shouldProcess(entry)) {
           continue
         }
         if (!isNestedComponent) {
@@ -357,13 +360,6 @@ export function processSchemaData(schema, data, {
             }
           }
 
-          const entry = {
-            schema: componentSchema,
-            data,
-            name,
-            dataPath: componentDataPath,
-            processedData
-          }
           before?.(entry)
 
           let value = processedData ? processedData[name] : data[name]
@@ -390,12 +386,14 @@ export function processSchemaData(schema, data, {
 
   processComponents(schema.components)
   for (const tab of getTabSchemas(schema)) {
-    if (shouldProcess(tab, null, dataPath)) {
+    const entry = { schema: tab, data, name: null, dataPath, processedData }
+    if (shouldProcess(entry)) {
       processComponents(tab.components)
     }
   }
   for (const panel of getPanelSchemas(schema)) {
-    if (shouldProcess(panel, null, dataPath)) {
+    const entry = { schema: panel, data, name: null, dataPath, processedData }
+    if (shouldProcess(entry)) {
       processComponents(panel.components)
     }
   }

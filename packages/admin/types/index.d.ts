@@ -2450,7 +2450,9 @@ export interface DitoFormInstance<$Item = any>
   close(): Promise<void>
 
   /**
-   * Validates all fields in the form. Optionally
+   * Validates all fields in the form's data, including
+   * fields that aren't rendered, e.g. in collapsed
+   * sections or closed nested forms. Optionally
    * filter fields with a match pattern. Returns
    * `true` if all matched fields are valid.
    */
@@ -2597,7 +2599,8 @@ export interface DitoViewInstance<$Item = any>
   // -- Validation (ValidatorMixin) --
 
   /**
-   * Validates all fields in the view.
+   * Validates all fields in the view's data,
+   * including fields that aren't rendered.
    * Optionally filter fields with a match pattern.
    * Returns `true` if all matched fields are valid.
    */
@@ -2626,9 +2629,12 @@ export interface DitoViewInstance<$Item = any>
 export interface DitoSchemaInstance<$Item = any>
   extends DitoComponentInstanceBase<$Item> {
   /**
-   * Validates all fields in the schema.
+   * Validates all fields in the schema's data,
+   * including fields that aren't rendered, e.g. in
+   * collapsed sections or closed nested forms.
    * Optionally filter fields with a match pattern
-   * (string, string[], RegExp, or function).
+   * (string, string[], RegExp, or function) over
+   * their data paths.
    * Returns `true` if all matched fields are
    * valid.
    */

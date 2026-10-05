@@ -592,27 +592,17 @@ export default {
     },
 
     async navigateToComponent(dataPath, onComplete) {
-      if (this.collapsible) {
-        const index = dataPath.startsWith(this.dataPath)
-          ? this.isListSource
-            ? parseDataPath(dataPath.slice(this.dataPath.length + 1))[0] ?? null
-            : 0
-          : null
-        if (index !== null && isNumber(+index)) {
-          const schemaComponent = this.getSchemaComponent(+index)
-          if (schemaComponent) {
-            const { opened } = schemaComponent
-            if (!opened) {
-              schemaComponent.opened = true
-              await this.$nextTick()
-            }
-            const components = schemaComponent.getComponentsByDataPath(dataPath)
-            if (components.length > 0 && (onComplete?.(components) ?? true)) {
-              return true
-            } else {
-              schemaComponent.opened = opened
-            }
-          }
+      const index = dataPath.startsWith(this.dataPath)
+        ? this.isListSource
+          ? parseDataPath(dataPath.slice(this.dataPath.length + 1))[0] ?? null
+          : 0
+        : null
+      if (index !== null && isNumber(+index)) {
+        // Inlined items reveal the component themselves, opening collapsed
+        // items and sections, see `DitoSchema.navigateToComponent()`.
+        const schemaComponent = this.getSchemaComponent(+index)
+        if (await schemaComponent?.navigateToComponent(dataPath, onComplete)) {
+          return true
         }
       }
       return this.navigateToRouteComponent(dataPath, onComplete)

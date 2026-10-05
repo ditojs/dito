@@ -56,6 +56,28 @@ export function hasNestedSchemaComponents(schema) {
   return someNestedSchemaComponent(schema, () => true) ?? false
 }
 
+/**
+ * Returns whether `schema` has a component named `name` in its components or
+ * tabs, or in those of its unnested components, e.g. sections without
+ * `nested: true`, which share the data of `schema` without adding their own
+ * name to the data path.
+ */
+export function hasComponentNamed(schema, name) {
+  const found = iterateNestedSchemaComponents(
+    schema,
+    (component, componentName) => {
+      if (
+        isNested(component)
+          ? componentName === name
+          : hasComponentNamed(component, name)
+      ) {
+        return true
+      }
+    }
+  )
+  return !!found
+}
+
 export function isSchema(schema) {
   return isObject(schema) && isString(schema.type)
 }

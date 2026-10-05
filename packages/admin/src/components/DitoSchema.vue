@@ -61,8 +61,9 @@ slot(name="prepend")
           v-for="(tabSchema, tab) in tabs"
           :key="tab"
         )
-          //- TODO: Switch to v-if instead of v-show, once validation is
-          //- decoupled from components.
+          //- TODO: Switch to v-if instead of v-show, once dirty tracking is
+          //- decoupled from components too. `navigateToComponent()` then needs
+          //- to select the tab that displays the component.
           DitoPane.dito-pane__tab(
             v-show="selectedTab === tab"
             ref="tabs"
@@ -110,7 +111,6 @@ import {
   isObject,
   isArray,
   isFunction,
-  isRegExp,
   equals,
   parseDataPath,
   normalizeDataPath,
@@ -128,6 +128,10 @@ import {
   isEmptySchema
 } from '../utils/schema/lookup.js'
 import { setDefaultValues, processData } from '../utils/schema/data.js'
+import {
+  getDataValidationErrors,
+  getMatchingValidationErrors
+} from '../utils/schema/validation.js'
 import { getSchemaAccessor, getStoreAccessor } from '../utils/accessor.js'
 
 // @vue/component
@@ -183,6 +187,7 @@ export default DitoComponent.component('DitoSchema', {
       ),
       selectedTab: null,
       componentsRegistry: {},
+      unnestedComponentsRegistry: {},
       panesRegistry: {},
       panelsRegistry: {},
       scrollPositions: {}
@@ -331,6 +336,10 @@ export default DitoComponent.component('DitoSchema', {
 
     components() {
       return Object.values(this.componentsRegistry)
+    },
+
+    unnestedComponents() {
+      return Object.values(this.unnestedComponentsRegistry)
     },
 
     panes() {
@@ -485,16 +494,7 @@ export default DitoComponent.component('DitoSchema', {
 
     onOpen(open) {
       this.emitEvent('open', { context: { open } })
-      // Prevent closing the schema with invalid data, since the in-component
-      // validation will not be executed once it's closed.
-
-      // TODO: Move validation out of components, to schema, just like
-      // processing, and use `showValidationErrors()` for the resulting errors,
-      // then remove this requirement, since we can validate closed forms and
-      // schemas then.
-      if (!this.opened || open || this.validateAll()) {
-        this.opened = open
-      }
+      this.opened = open
     },
 
     onChange() {
@@ -530,43 +530,30 @@ export default DitoComponent.component('DitoSchema', {
     },
 
     validateAll(match, notify = true) {
-      const { componentsByDataPath } = this
-      let dataPaths
-      if (match) {
-        const check = isFunction(match)
-          ? match
-          : isRegExp(match)
-            ? field => match.test(field)
-            : null
-        dataPaths = check
-          ? Object.keys(componentsByDataPath).filter(check)
-          : isArray(match)
-            ? match
-            : [match]
-      }
+      // Validate the data, not the mounted components, so that fields in
+      // collapsed schemas and closed nested forms are validated too.
+      const dataValidationErrors = this.hasData
+        ? getDataValidationErrors(this.schema, this.data, {
+            dataPath: this.dataPath,
+            component: this,
+            rootData: this.rootData
+          })
+        : null
+      const matchingValidationErrors = match
+        ? getMatchingValidationErrors(dataValidationErrors, match)
+        : dataValidationErrors
       if (notify) {
-        this.clearErrors()
-      }
-      let isValid = true
-      let first = true
-      dataPaths ||= Object.keys(componentsByDataPath)
-      for (const dataPath of dataPaths) {
-        const components = this.getComponentsByDataPath(dataPath)
-        for (const component of components) {
-          if (!component.validate(notify)) {
-            // Focus first error field
-            if (notify && first) {
-              component.scrollIntoView()
-            }
-            first = false
-            isValid = false
-          }
+        if (matchingValidationErrors) {
+          this._showValidationErrorsByFullDataPath(
+            matchingValidationErrors,
+            true,
+            true
+          ).catch(console.error)
+        } else {
+          this.clearErrors()
         }
       }
-      if (notify && !isValid) {
-        this.notifyErrors()
-      }
-      return isValid
+      return !matchingValidationErrors
     },
 
     verifyAll(match) {
@@ -574,75 +561,118 @@ export default DitoComponent.component('DitoSchema', {
     },
 
     async showValidationErrors(errors, focus, first = true) {
+      // Convert the data paths from JavaScript property access notation to
+      // our own form of relative JSON pointers. If the schema is a data-root,
+      // prefix its own dataPath to all errors, since the data that it sends
+      // and validates will be unprefixed.
+      const errorsByFullDataPath = Object.fromEntries(
+        Object.entries(errors).map(([dataPath, errs]) => [
+          normalizeDataPath(
+            this.hasOwnData
+              ? appendDataPath(this.dataPath, dataPath)
+              : dataPath
+          ),
+          errs
+        ])
+      )
+      return this._showValidationErrorsByFullDataPath(
+        errorsByFullDataPath,
+        focus,
+        first
+      )
+    },
+
+    // Finds the components that display the value at `dataPath` and passes
+    // them to `onComplete()`, revealing them first if needed: Collapsed
+    // schemas open, and the nearest components that display a part of the
+    // data path are asked to navigate to the rest, e.g. sections open and
+    // sources open their inlined items or navigate to nested forms, see
+    // `SourceMixin.navigateToComponent()`. Returns `true` if the components
+    // were found and `onComplete()` accepted them.
+    async navigateToComponent(dataPath, onComplete) {
+      const { opened } = this
+      if (!opened) {
+        this.opened = true
+        await this.$nextTick()
+      }
+      const components = this.getComponentsByDataPath(dataPath)
+      if (components.length > 0) {
+        if (onComplete?.(components) ?? true) {
+          return true
+        }
+      } else {
+        // Walk up the data path to the nearest nested component that can
+        // navigate to the rest of it:
+        const dataPathParts = parseDataPath(dataPath)
+        const schemaDataPathLength = parseDataPath(this.dataPath).length
+        while (dataPathParts.length > schemaDataPathLength + 1) {
+          dataPathParts.pop()
+          for (const component of this.getComponentsByDataPath(dataPathParts)) {
+            if (await component.navigateToComponent?.(dataPath, onComplete)) {
+              return true
+            }
+          }
+        }
+        // Unnested components share the data path of the schema, so they
+        // decide by schema whether they can navigate to the data path:
+        for (const component of this.unnestedComponents) {
+          if (await component.navigateToComponent?.(dataPath, onComplete)) {
+            return true
+          }
+        }
+      }
+      this.opened = opened
+      return false
+    },
+
+    // Shows `errorsByFullDataPath`, keyed by normalized data paths including
+    // the schema's own data path, see `showValidationErrors()`.
+    async _showValidationErrorsByFullDataPath(
+      errorsByFullDataPath,
+      focus,
+      first
+    ) {
       this.clearErrors()
       const unmatched = []
       const wasFirst = first
-      for (const [dataPath, errs] of Object.entries(errors)) {
-        // If the schema is a data-root, prefix its own dataPath to all errors,
-        // since the data that it sends and validates will be unprefixed.
-        const fullDataPath = this.hasOwnData
-          ? appendDataPath(this.dataPath, dataPath)
-          : dataPath
-        // console.log(this, this.dataPath, this.hasOwnData, fullDataPath)
-        // Convert from JavaScript property access notation, to our own form
-        // of relative JSON pointers as data-paths:
-        const dataPathParts = parseDataPath(fullDataPath)
-        let found = false
-        const components = this.getComponentsByDataPath(dataPathParts)
-        for (const component of components) {
-          if (component.showValidationErrors(errs, first && focus)) {
-            found = true
-            first = false
-            break
-          }
-        }
-        if (!found) {
-          // Couldn't find a component in an active form for the given dataPath.
-          // See if we can find a component serving a part of the dataPath,
-          // and take it from there:
-          const property = dataPathParts.pop()
-          while (dataPathParts.length > 0) {
-            const components = this.getComponentsByDataPath(dataPathParts)
+      for (const [dataPath, errs] of Object.entries(errorsByFullDataPath)) {
+        let nestedForm = null
+        const found = await this.navigateToComponent(
+          dataPath,
+          components => {
             for (const component of components) {
-              const navigated = await component.navigateToComponent?.(
-                fullDataPath,
-                subComponents => {
-                  let found = false
-                  for (const component of subComponents) {
-                    const matched = Object.fromEntries(
-                      Object.entries(errors).filter(
-                        ([dataPath]) =>
-                          normalizeDataPath(dataPath).startsWith(
-                            component.dataPath
-                          )
-                      )
-                    )
-                    if (
-                      Object.keys(matched).length > 0 &&
-                      component.showValidationErrors(matched, first && focus)
-                    ) {
-                      found = true
-                      first = false
-                      break
-                    }
-                  }
-                  return found
-                }
-              )
-              if (navigated) {
-                // Found a nested form to display at least parts fo the errors.
-                // We can't show all errors at once, so we're done. Don't call
-                // `notifyErrors()` yet, as we can only display it once
-                // `showValidationErrors()` was called from `DitoForm.mounted()`
-                return
+              if (component.isForm) {
+                // A nested form was navigated to, display the errors that are
+                // part of its data there.
+                nestedForm = component
+                return true
+              } else if (component.showValidationErrors(errs, first && focus)) {
+                return true
               }
             }
-            // Still here, so keep removing the last part until we find a match.
-            dataPathParts.pop()
+            return false
           }
+        )
+        if (nestedForm) {
+          const nestedFormErrors = Object.fromEntries(
+            Object.entries(errorsByFullDataPath).filter(
+              ([errorDataPath]) => (
+                errorDataPath === nestedForm.dataPath ||
+                errorDataPath.startsWith(`${nestedForm.dataPath}/`)
+              )
+            )
+          )
+          // The nested form notifies the errors itself, as it can't display
+          // the remaining errors of this schema, so we're done here.
+          return nestedForm.showValidationErrors(
+            nestedFormErrors,
+            first && focus
+          )
+        }
+        if (!found) {
           // When the error can't be matched, add it to a list of unmatched
           // errors with decent message, to report at the end.
-          const field = labelize(property)
+          const field = labelize(parseDataPath(dataPath).pop())
           for (const err of errs) {
             const prefix = field
               ? `The field ${field}`
@@ -735,6 +765,12 @@ export default DitoComponent.component('DitoSchema', {
       this._registerEntry(this.componentsRegistry, component, add)
       // Only register with the parent if schema shares data with it.
       this.parentSchemaComponent?._registerComponent(component, add)
+    },
+
+    _registerUnnestedComponent(component, add) {
+      // Unnested components are only registered with their own schema, as
+      // they share its data path, see `navigateToComponent()`.
+      this._registerEntry(this.unnestedComponentsRegistry, component, add)
     },
 
     _registerPane(pane, add) {
