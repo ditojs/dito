@@ -204,9 +204,6 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
-patchedDependencies:
-  eslint-plugin-vue-pug@1.0.0-alpha.5: 7a76ee910483f0bd1d249273ba51afe3aa386a14b51013d8c40b381a60f42b4b
-
 importers:
 
   .:
@@ -257,8 +254,8 @@ importers:
         specifier: ~10.11.1
         version: 10.11.1(@typescript-eslint/parser@8.71.0(eslint@10.12.0(supports-color@7.2.0))(supports-color@7.2.0)(typescript@6.0.3))(eslint@10.12.0(supports-color@7.2.0))(vue-eslint-parser@10.4.1(eslint@10.12.0(supports-color@7.2.0))(supports-color@7.2.0))
       eslint-plugin-vue-pug:
-        specifier: 1.0.0-alpha.5
-        version: 1.0.0-alpha.5(patch_hash=7a76ee910483f0bd1d249273ba51afe3aa386a14b51013d8c40b381a60f42b4b)(eslint-plugin-vue@10.11.1(@typescript-eslint/parser@8.71.0(eslint@10.12.0(supports-color@7.2.0))(supports-color@7.2.0)(typescript@6.0.3))(eslint@10.12.0(supports-color@7.2.0))(vue-eslint-parser@10.4.1(eslint@10.12.0(supports-color@7.2.0))(supports-color@7.2.0)))(vue-eslint-parser@10.4.1(eslint@10.12.0(supports-color@7.2.0))(supports-color@7.2.0))
+        specifier: 1.0.0-alpha.6
+        version: 1.0.0-alpha.6(eslint-plugin-vue@10.11.1(@typescript-eslint/parser@8.71.0(eslint@10.12.0(supports-color@7.2.0))(supports-color@7.2.0)(typescript@6.0.3))(eslint@10.12.0(supports-color@7.2.0))(vue-eslint-parser@10.4.1(eslint@10.12.0(supports-color@7.2.0))(supports-color@7.2.0)))(vue-eslint-parser@10.4.1(eslint@10.12.0(supports-color@7.2.0))(supports-color@7.2.0))
       full-icu:
         specifier: ^1.6.0
         version: 1.6.0
@@ -3143,10 +3140,11 @@ packages:
     peerDependencies:
       eslint: ^7.0.0 || ^8.0.0 || ^9.0.0 || ^10.0.0
 
-  eslint-plugin-vue-pug@1.0.0-alpha.5:
-    resolution: {integrity: sha512-afj+jrA5WA42BIwtrtPdo0KIBx4wQntkuL7fh4siA461Q9Hg9NhVuYWnFneCLA0ICuC9WmEzuSB+/MqVOh2oXw==}
+  eslint-plugin-vue-pug@1.0.0-alpha.6:
+    resolution: {integrity: sha512-0sYK1a9GTii+rgud38aqWz4oioootxxqg0/HKf2OT1VQ2upZ4Z0EW5ewOhtj0tiq/qlukzSDOyGNYOjYME6AmQ==}
+    engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
     peerDependencies:
-      eslint-plugin-vue: '>=10.7.0'
+      eslint-plugin-vue: '>=10.9.0'
 
   eslint-plugin-vue@10.11.1:
     resolution: {integrity: sha512-pasVXhl7wUmIvhujoqs/m0mJ9r59QW1IR9XXYKGR0FETzSM+Hhlf4qKIYgWiDDP+9YKv4YfbwskD7LqIdVcgQw==}
@@ -8597,7 +8595,7 @@ snapshots:
       '@eslint-community/eslint-utils': 4.10.1(eslint@10.12.0(supports-color@7.2.0))
       eslint: 10.12.0(supports-color@7.2.0)
 
-  eslint-plugin-vue-pug@1.0.0-alpha.5(patch_hash=7a76ee910483f0bd1d249273ba51afe3aa386a14b51013d8c40b381a60f42b4b)(eslint-plugin-vue@10.11.1(@typescript-eslint/parser@8.71.0(eslint@10.12.0(supports-color@7.2.0))(supports-color@7.2.0)(typescript@6.0.3))(eslint@10.12.0(supports-color@7.2.0))(vue-eslint-parser@10.4.1(eslint@10.12.0(supports-color@7.2.0))(supports-color@7.2.0)))(vue-eslint-parser@10.4.1(eslint@10.12.0(supports-color@7.2.0))(supports-color@7.2.0)):
+  eslint-plugin-vue-pug@1.0.0-alpha.6(eslint-plugin-vue@10.11.1(@typescript-eslint/parser@8.71.0(eslint@10.12.0(supports-color@7.2.0))(supports-color@7.2.0)(typescript@6.0.3))(eslint@10.12.0(supports-color@7.2.0))(vue-eslint-parser@10.4.1(eslint@10.12.0(supports-color@7.2.0))(supports-color@7.2.0)))(vue-eslint-parser@10.4.1(eslint@10.12.0(supports-color@7.2.0))(supports-color@7.2.0)):
     dependencies:
       eslint-plugin-vue: 10.11.1(@typescript-eslint/parser@8.71.0(eslint@10.12.0(supports-color@7.2.0))(supports-color@7.2.0)(typescript@6.0.3))(eslint@10.12.0(supports-color@7.2.0))(vue-eslint-parser@10.4.1(eslint@10.12.0(supports-color@7.2.0))(supports-color@7.2.0))
       vue-eslint-parser-template-tokenizer-pug: 1.0.0(vue-eslint-parser@10.4.1(eslint@10.12.0(supports-color@7.2.0))(supports-color@7.2.0))

@@ -13,8 +13,6 @@ allowBuilds:
   nx: true
   unrs-resolver: true
 
-patchedDependencies:
-  eslint-plugin-vue-pug@1.0.0-alpha.5: patches/eslint-plugin-vue-pug@1.0.0-alpha.5.patch
 minimumReleaseAgeExclude:
   - '@prettier/plugin-pug@3.6.0'
   - http-cache-semantics@4.3.0
