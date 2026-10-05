@@ -122,6 +122,43 @@ describe('processSchemaData() with panel components', () => {
   })
 })
 
+describe('processSchemaData() with panels of nested components', () => {
+  it('walks their components with the data around the components', () => {
+    const componentPaths = {}
+    processSchemaData(
+      {
+        type: 'form',
+        components: {
+          chapters: {
+            type: 'list',
+            panels: {
+              meta: {
+                type: 'panel',
+                components: { code: { type: 'text' } }
+              }
+            }
+          }
+        }
+      },
+      { chapters: [], code: 'A' },
+      {
+        dataPath: '',
+        componentPath: 'book',
+        shouldProcess: ({ componentPath, dataPath }) => {
+          componentPaths[componentPath] = dataPath
+          return true
+        },
+        options: { component: null }
+      }
+    )
+    expect(componentPaths).toEqual({
+      'book/chapters': 'chapters',
+      'book/chapters/meta': '',
+      'book/chapters/meta/code': 'code'
+    })
+  })
+})
+
 describe('processSchemaData() with panels that have their own data', () => {
   it("doesn't walk their components with the data of the schema", () => {
     const componentPaths = []

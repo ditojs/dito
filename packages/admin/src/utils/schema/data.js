@@ -528,12 +528,16 @@ export function processSchemaData(schema, data, {
           }
 
           after?.(entry)
+          // The panels of nested components display the data that contains
+          // the components, like the ones of unnested components, see
+          // `DitoContainer.panelEntries`.
+          processTabOrPanelSchemas(componentSchema.panels, entry.componentPath)
         }
       }
     }
   }
 
-  const processTabOrPanelSchemas = schemas => {
+  const processTabOrPanelSchemas = (schemas, parentComponentPath) => {
     // Tabs and panels add their names to component paths, not to data paths.
     for (const [name, tabOrPanelSchema] of Object.entries(schemas || {})) {
       const entry = {
@@ -541,7 +545,7 @@ export function processSchemaData(schema, data, {
         data,
         name: null,
         dataPath,
-        componentPath: appendDataPath(componentPath, name),
+        componentPath: appendDataPath(parentComponentPath, name),
         processedData
       }
       // The components of panels with their own data don't edit `data`.
@@ -552,8 +556,8 @@ export function processSchemaData(schema, data, {
   }
 
   processComponents(schema.components, componentPath)
-  processTabOrPanelSchemas(schema.tabs)
-  processTabOrPanelSchemas(schema.panels)
+  processTabOrPanelSchemas(schema.tabs, componentPath)
+  processTabOrPanelSchemas(schema.panels, componentPath)
 
   return processedData || data
 }

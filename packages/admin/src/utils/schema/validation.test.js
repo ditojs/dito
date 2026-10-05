@@ -177,6 +177,28 @@ describe('getDataValidationErrors()', () => {
     ).toEqual({ 'emails/1': [required] })
   })
 
+  it('validates the panels of nested components with the data around them', () => {
+    // The panels of components share the data of the schema that contains
+    // the components, see `DitoContainer.panelEntries`.
+    const schema = {
+      components: {
+        chapters: {
+          type: 'list',
+          form: { components: { title: { type: 'text' } } },
+          panels: {
+            meta: {
+              type: 'panel',
+              components: { code: { type: 'text', required: true } }
+            }
+          }
+        }
+      }
+    }
+    expect(getDataValidationErrors(schema, { chapters: [], code: '' })).toEqual(
+      { code: [required] }
+    )
+  })
+
   it('validates the components of panel components', () => {
     // Panels share the data of their schema, like unnested sections.
     const schema = {
