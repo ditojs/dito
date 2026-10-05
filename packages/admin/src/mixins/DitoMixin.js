@@ -494,6 +494,17 @@ export default {
         : parentComponentPath
     },
 
+    // Waits for the pending loads of the form model, e.g. before submitting,
+    // showing the spinner in the header in the meantime, like requests do.
+    async waitForPendingLoadsOf(formModel) {
+      this.rootComponent.registerLoading(true)
+      try {
+        await formModel.waitForPendingLoads()
+      } finally {
+        this.rootComponent.registerLoading(false)
+      }
+    },
+
     notify(options) {
       this.rootComponent.notify(options)
     },

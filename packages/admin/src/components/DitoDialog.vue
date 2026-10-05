@@ -179,7 +179,7 @@ export default DitoComponent.component('DitoDialog', {
 
     async submit() {
       // Wait for computed values that depend on pending loads, e.g. options.
-      await this.formModel.waitForPendingLoads()
+      await this.waitForPendingLoadsOf(this.formModel)
       this.resolve(this.dialogData)
     },
 
