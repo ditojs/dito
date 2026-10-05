@@ -154,9 +154,10 @@ export default class DitoContext {
       'value',
       () =>
         // If the value is not defined on the underlying object, it's not a type
-        // component. If it is nested, we can still get the value from the root.
+        // component, or its value is missing. If it is nested, we can still get
+        // the value from the root, or `undefined` if it's missing there too.
         this.nested
-          ? getValueAtDataPath(this.rootItem, this.dataPath)
+          ? getValueAtDataPath(this.rootItem, this.dataPath, () => undefined)
           : undefined
     )
   }
