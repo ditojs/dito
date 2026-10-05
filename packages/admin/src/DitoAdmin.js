@@ -150,9 +150,10 @@ export default class DitoAdmin {
       components: {
         DitoRoot,
         VueNotifications,
-        // This may only be needed to avoid tree-shacking of these components,
-        // since they actually handle registry internally already.
-        // TODO: Remove this once we have a better solution.
+        // Registered globally too, so that the custom components of apps can
+        // use them in their templates: Unlike the admin's own components, they
+        // don't extend `DitoComponent`, which shares its registry. This also
+        // keeps the modules from being tree-shaken.
         ...components,
         ...types
       },
