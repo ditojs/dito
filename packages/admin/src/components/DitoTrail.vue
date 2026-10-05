@@ -31,7 +31,7 @@ export default DitoComponent.component('DitoTrail', {
   },
 
   methods: {
-    getComponentPath(component) {
+    getComponentRoutePath(component) {
       // Do the same as in `DitoMenu`: Link menu items to the first children.
       const { schema } = component
       return schema.type === 'menu'
@@ -40,12 +40,12 @@ export default DitoComponent.component('DitoTrail', {
     },
 
     getComponentHref(component) {
-      return this.$router.resolve(this.getComponentPath(component)).href
+      return this.$router.resolve(this.getComponentRoutePath(component)).href
     },
 
     onClickComponent(component) {
       this.$router.push({
-        path: this.getComponentPath(component),
+        path: this.getComponentRoutePath(component),
         force: true
       })
     }

@@ -2077,6 +2077,14 @@ export interface DitoComponentInstanceBase<$Item = any>
   name: string
   /** Full dot-separated path to the current data. */
   dataPath: string
+  /**
+   * The path of component names through views, tabs,
+   * panels and forms, with item indices from the data
+   * path, e.g. `main/chapters/0/title`. Unlike
+   * `dataPath`, it tells apart components that display
+   * the same data. Used as the component's DOM id.
+   */
+  componentPath: string
   /** The schema definition for the current component. */
   schema: Component
   /** The component type from the schema. */
@@ -2738,11 +2746,14 @@ export interface DitoSourceInstance<$Item = any>
   deleteItem(item: any, index: number): void
   /**
    * Navigates to a component identified by its
-   * data path.
+   * data path. With `shouldRevealInlinedOnly`, only
+   * components in inlined schemas are revealed,
+   * without navigating to nested forms.
    */
   navigateToComponent(
     dataPath: string,
-    onComplete?: Function
+    onComplete?: Function,
+    options?: { shouldRevealInlinedOnly?: boolean }
   ): Promise<boolean>
   /**
    * Navigates to the route component associated

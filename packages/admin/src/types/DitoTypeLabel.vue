@@ -1,8 +1,5 @@
 <template lang="pug">
-DitoLabel.dito-label-component(
-  :label="value"
-  :dataPath="dataPath"
-)
+DitoLabel.dito-label-component(:label="value")
 </template>
 
 <script>

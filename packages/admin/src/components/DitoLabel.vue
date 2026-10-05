@@ -20,7 +20,7 @@ component.dito-label(
     )
     label(
       v-if="text"
-      :for="dataPath"
+      :for="htmlFor"
       v-html="text"
     )
     DitoAffixes(
@@ -48,7 +48,8 @@ export default DitoComponent.component('DitoLabel', {
 
   props: {
     label: { type: [String, Object], default: null },
-    dataPath: { type: String, default: null },
+    // The DOM id of the labelled element, see `DitoContainer.labelHtmlFor`.
+    htmlFor: { type: String, default: null },
     collapsed: { type: Boolean, default: false },
     collapsible: { type: Boolean, default: false },
     info: { type: String, default: null }

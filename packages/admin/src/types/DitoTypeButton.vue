@@ -1,6 +1,6 @@
 <template lang="pug">
 DitoButton.dito-button(
-  :id="dataPath"
+  :id="componentPath"
   ref="element"
   :type="type"
   :text="text"

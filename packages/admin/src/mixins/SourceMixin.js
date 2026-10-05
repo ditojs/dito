@@ -591,7 +591,13 @@ export default {
       }
     },
 
-    async navigateToComponent(dataPath, onComplete) {
+    // See `DitoSchema.navigateToComponent()`, and `shouldRevealInlinedOnly`
+    // there.
+    async navigateToComponent(
+      dataPath,
+      onComplete,
+      { shouldRevealInlinedOnly = false } = {}
+    ) {
       const index = dataPath.startsWith(this.dataPath)
         ? this.isListSource
           ? parseDataPath(dataPath.slice(this.dataPath.length + 1))[0] ?? null
@@ -601,11 +607,18 @@ export default {
         // Inlined items reveal the component themselves, opening collapsed
         // items and sections, see `DitoSchema.navigateToComponent()`.
         const schemaComponent = this.getSchemaComponent(+index)
-        if (await schemaComponent?.navigateToComponent(dataPath, onComplete)) {
+        if (
+          await schemaComponent?.navigateToComponent(dataPath, onComplete, {
+            shouldRevealInlinedOnly
+          })
+        ) {
           return true
         }
       }
-      return this.navigateToRouteComponent(dataPath, onComplete)
+      return (
+        !shouldRevealInlinedOnly &&
+        this.navigateToRouteComponent(dataPath, onComplete)
+      )
     },
 
     navigateToRouteComponent(dataPath, onComplete) {

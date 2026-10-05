@@ -63,7 +63,7 @@ export default DitoTypeComponent.register('section', {
   methods: {
     getItemFormSchema,
 
-    async navigateToComponent(dataPath, onComplete) {
+    async navigateToComponent(dataPath, onComplete, options) {
       // Unnested sections share the data path of their parent schema, so
       // decide by schema whether the section displays the value at `dataPath`:
       const { mainSchemaComponent } = this
@@ -75,7 +75,7 @@ export default DitoTypeComponent.register('section', {
       return (
         !!mainSchemaComponent &&
         hasComponentNamed(mainSchemaComponent.schema, componentName) &&
-        mainSchemaComponent.navigateToComponent(dataPath, onComplete)
+        mainSchemaComponent.navigateToComponent(dataPath, onComplete, options)
       )
     }
   },

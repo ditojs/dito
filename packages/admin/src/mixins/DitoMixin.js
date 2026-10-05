@@ -13,6 +13,7 @@ import EmitterMixin from './EmitterMixin.js'
 import { flattenViews } from '../utils/schema/setup.js'
 import { getSchemaValue, shouldRenderSchema } from '../utils/schema/data.js'
 import { getResource, getMemberResource } from '../utils/resource.js'
+import { appendDataPath, getRelativeDataPath } from '../utils/data.js'
 import { computed, reactive } from 'vue'
 
 // @vue/component
@@ -98,6 +99,26 @@ export default {
 
     rootComponent() {
       return this.$root.$refs.root
+    },
+
+    // The path of component names through views, tabs, panels and forms, with
+    // item indices from the data path, e.g. `main/chapters/0/title`. Unlike
+    // `dataPath`, it tells apart components that display the same data, and
+    // is used for registries and DOM ids. Components continue the path of
+    // their parent with the item indices that their data path adds to the
+    // parent's, e.g. inlined list items. `DitoContainer`, `DitoPane` and
+    // `DitoPanel` add the names of components, tabs and panels, `DitoForm`
+    // and `DitoTreeItem` continue the path of the source of their item.
+    componentPath() {
+      const { parentComponent } = this
+      const parentComponentPath = parentComponent?.componentPath ?? ''
+      const relativeDataPath = getRelativeDataPath(
+        this.dataPath,
+        parentComponent?.dataPath
+      )
+      return relativeDataPath
+        ? appendDataPath(parentComponentPath, relativeDataPath)
+        : parentComponentPath
     },
 
     // Use computed properties as links to injects, so DitoSchema can

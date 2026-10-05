@@ -26,6 +26,7 @@ import DitoTypeComponent from '../DitoTypeComponent.js'
 import SourceMixin from '../mixins/SourceMixin.js'
 import { resolveSchemaComponents } from '../utils/schema/setup.js'
 import { hasFormSchema, getFormSchemas } from '../utils/schema/lookup.js'
+import { getParentDataPath } from '../utils/data.js'
 
 export default DitoTypeComponent.register(
   ['tree-list', 'tree-object'],
@@ -63,7 +64,7 @@ export default DitoTypeComponent.register(
         // Remove `name` from `dataPath`, as it is added
         // to `treeData` and `treeSchema`
         return this.isListSource
-          ? this.dataPath.slice(0, this.dataPath.length - this.name.length)
+          ? getParentDataPath(this.dataPath)
           : this.dataPath
       },
 

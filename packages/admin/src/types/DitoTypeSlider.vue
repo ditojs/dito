@@ -1,7 +1,7 @@
 <template lang="pug">
 .dito-slider
   input.dito-range(
-    :id="dataPath"
+    :id="componentPath"
     ref="element"
     v-model="inputValue"
     type="range"

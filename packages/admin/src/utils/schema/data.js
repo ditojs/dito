@@ -1,7 +1,7 @@
 import DitoContext from '../../DitoContext.js'
 import { getUid } from '../uid.js'
 import { SchemaGraph } from '../SchemaGraph.js'
-import { appendDataPath } from '../data.js'
+import { appendDataPath, getRelativeDataPath } from '../data.js'
 import { isMatchingType, convertType } from '../type.js'
 import {
   isArray,
@@ -14,9 +14,7 @@ import { getTypeOptions } from './types.js'
 import {
   someNestedSchemaComponent,
   hasNestedSchemaComponents,
-  isNested,
-  getTabSchemas,
-  getPanelSchemas
+  isNested
 } from './structure.js'
 import {
   hasFormSchema,
@@ -285,10 +283,13 @@ export function processData(schema, sourceSchema, data, dataPath, {
  * list and object items, calling `before()` and `after()` for each nested
  * component, e.g. to process the data into `processedData`. `shouldProcess()`
  * is called for all components, tabs and panels, and the ones for which it
- * returns `false` are skipped along with their content.
+ * returns `false` are skipped along with their content. The entries passed to
+ * them contain the `componentPath` of the component, tab or panel, continuing
+ * `componentPath` like `DitoMixin.componentPath` does.
  */
 export function processSchemaData(schema, data, {
   dataPath = null,
+  componentPath = '',
   processedData = null,
   before = null,
   after = null,
@@ -301,7 +302,7 @@ export function processSchemaData(schema, data, {
       ? appendDataPath(dataPath, token)
       : null
 
-  const processComponents = components => {
+  const processComponents = (components, parentComponentPath) => {
     if (components) {
       for (const [name, componentSchema] of Object.entries(components)) {
         const isNestedComponent = isNested(componentSchema)
@@ -313,6 +314,7 @@ export function processSchemaData(schema, data, {
           data,
           name,
           dataPath: componentDataPath,
+          componentPath: appendDataPath(parentComponentPath, name),
           processedData
         }
         if (!shouldProcess(entry)) {
@@ -323,6 +325,7 @@ export function processSchemaData(schema, data, {
           processSchemaData(componentSchema, data, {
             ...walkOptions,
             dataPath,
+            componentPath: entry.componentPath,
             processedData
           })
         } else {
@@ -331,6 +334,10 @@ export function processSchemaData(schema, data, {
               index !== null
                 ? getDataPath(componentDataPath, index)
                 : componentDataPath
+            const itemComponentPath =
+              index !== null
+                ? appendDataPath(entry.componentPath, index)
+                : entry.componentPath
             const context = new DitoContext(options.component, {
               schema: componentSchema,
               data,
@@ -351,6 +358,7 @@ export function processSchemaData(schema, data, {
               return processSchemaData(form, item, {
                 ...walkOptions,
                 dataPath: itemDataPath,
+                componentPath: itemComponentPath,
                 processedData: processedItem
               })
             } else {
@@ -384,21 +392,64 @@ export function processSchemaData(schema, data, {
     }
   }
 
-  processComponents(schema.components)
-  for (const tab of getTabSchemas(schema)) {
-    const entry = { schema: tab, data, name: null, dataPath, processedData }
-    if (shouldProcess(entry)) {
-      processComponents(tab.components)
-    }
-  }
-  for (const panel of getPanelSchemas(schema)) {
-    const entry = { schema: panel, data, name: null, dataPath, processedData }
-    if (shouldProcess(entry)) {
-      processComponents(panel.components)
+  const processTabOrPanelSchemas = schemas => {
+    // Tabs and panels add their names to component paths, not to data paths.
+    for (const [name, tabOrPanelSchema] of Object.entries(schemas || {})) {
+      const entry = {
+        schema: tabOrPanelSchema,
+        data,
+        name: null,
+        dataPath,
+        componentPath: appendDataPath(componentPath, name),
+        processedData
+      }
+      if (shouldProcess(entry)) {
+        processComponents(tabOrPanelSchema.components, entry.componentPath)
+      }
     }
   }
 
+  processComponents(schema.components, componentPath)
+  processTabOrPanelSchemas(schema.tabs)
+  processTabOrPanelSchemas(schema.panels)
+
   return processedData || data
+}
+
+/**
+ * Returns the component path of the value at `dataPath` in `data`, by walking
+ * `data` along the components of `schema` to the deepest component that
+ * contains the value, e.g. `main/chapters/1` for `chapters/1`, with the list
+ * `chapters` in the tab `main`. The part of `dataPath` inside that component,
+ * e.g. item indices, is appended to its component path. Of several components
+ * that display the same data, the first in schema order is used.
+ */
+export function getComponentPathByDataPath(schema, data, dataPath, {
+  componentPath = '',
+  component = null,
+  rootData = data
+} = {}) {
+  let deepestEntry = { dataPath: '', componentPath }
+  if (data) {
+    processSchemaData(schema, data, {
+      dataPath: '',
+      componentPath,
+      // Only walk the components that contain the value at `dataPath`:
+      shouldProcess: entry => (
+        getRelativeDataPath(dataPath, entry.dataPath) !== null
+      ),
+      before: entry => {
+        if (entry.dataPath.length > deepestEntry.dataPath.length) {
+          deepestEntry = entry
+        }
+      },
+      options: { component, rootData }
+    })
+  }
+  const relativeDataPath = getRelativeDataPath(dataPath, deepestEntry.dataPath)
+  return relativeDataPath
+    ? appendDataPath(deepestEntry.componentPath, relativeDataPath)
+    : deepestEntry.componentPath
 }
 
 export function getItemId(sourceSchema, item) {

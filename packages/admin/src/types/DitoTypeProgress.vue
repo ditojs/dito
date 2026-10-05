@@ -1,6 +1,6 @@
 <template lang="pug">
 progress.dito-progress(
-  :id="dataPath"
+  :id="componentPath"
   ref="element"
   :value="progressValue"
   :max="progressMax"

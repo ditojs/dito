@@ -5,7 +5,7 @@ DitoTrigger.dito-color(
 )
   template(#trigger)
     DitoInput(
-      :id="dataPath"
+      :id="componentPath"
       ref="element"
       v-model="hexValue"
       type="input"

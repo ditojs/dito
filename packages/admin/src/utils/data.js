@@ -11,6 +11,26 @@ export function appendDataPath(dataPath, token) {
     : token
 }
 
+/**
+ * Returns the part of `dataPath` inside `parentDataPath`, e.g. `0/title` for
+ * `chapters/0/title` in `chapters`, an empty string if both are the same, or
+ * `null` if `dataPath` isn't inside `parentDataPath`.
+ */
+export function getRelativeDataPath(dataPath, parentDataPath) {
+  if (dataPath == null || parentDataPath == null) {
+    return null
+  }
+  const path = normalizeDataPath(dataPath)
+  const parentPath = normalizeDataPath(parentDataPath)
+  return path === parentPath
+    ? ''
+    : !parentPath
+      ? path
+      : path.startsWith(`${parentPath}/`)
+        ? path.slice(parentPath.length + 1)
+        : null
+}
+
 export function parseParentDataPath(dataPath) {
   const path = parseDataPath(dataPath)
   path?.pop()

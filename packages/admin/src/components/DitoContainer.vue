@@ -18,7 +18,7 @@
   DitoLabel(
     v-if="hasLabel"
     :class="labelClasses"
-    :dataPath="labelDataPath"
+    :htmlFor="labelHtmlFor"
     :label="label"
     :info="info"
   )
@@ -54,6 +54,7 @@ import { getTypeComponent } from '../utils/schema/types.js'
 import { hasLabel, omitSpacing } from '../utils/schema/structure.js'
 import { getAllPanelEntries } from '../utils/schema/lookup.js'
 import { parseFraction } from '../utils/math.js'
+import { appendDataPath } from '../utils/data.js'
 
 // @vue/component
 export default DitoComponent.component('DitoContainer', {
@@ -102,6 +103,12 @@ export default DitoComponent.component('DitoContainer', {
       return this.schema.name
     },
 
+    componentPath() {
+      // Add the component's name, also for unnested components that don't
+      // add it to their data path, see `DitoMixin.componentPath`.
+      return appendDataPath(this.parentComponent.componentPath, this.name)
+    },
+
     type() {
       return this.schema.type
     },
@@ -122,9 +129,10 @@ export default DitoComponent.component('DitoContainer', {
       return this.hasLabel ? this.getLabel(this.schema) : null
     },
 
-    labelDataPath() {
-      // Unnested types don't have a dataPath for themselves, don't use it:
-      return this.nested ? this.dataPath : null
+    labelHtmlFor() {
+      // Type components use their component path as DOM id. Unnested types
+      // don't display a value of their own to label:
+      return this.nested ? this.componentPath : null
     },
 
     info: getSchemaAccessor('info', {

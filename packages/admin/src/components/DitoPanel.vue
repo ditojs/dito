@@ -49,6 +49,7 @@ import ContextMixin from '../mixins/ContextMixin.js'
 import ValidatorMixin from '../mixins/ValidatorMixin.js'
 import { getButtonSchemas } from '../utils/schema/lookup.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
+import { appendDataPath, getLastDataPathToken } from '../utils/data.js'
 
 // @vue/component
 export default DitoComponent.component('DitoPanel', {
@@ -85,6 +86,15 @@ export default DitoComponent.component('DitoPanel', {
 
     panelComponent() {
       return this
+    },
+
+    componentPath() {
+      // Add the panel's name, the last token of its data path, see
+      // `getPanelEntry()`, also for panels that share the data of their schema.
+      return appendDataPath(
+        this.parentComponent.componentPath,
+        getLastDataPathToken(this.dataPath)
+      )
     },
 
     tabComponent() {
@@ -145,6 +155,14 @@ export default DitoComponent.component('DitoPanel', {
     })
   },
 
+  watch: {
+    componentPath(componentPath, oldComponentPath) {
+      // Component paths change when list items move, see `_registerEntry()`.
+      this._register(false, oldComponentPath)
+      this._register(true, componentPath)
+    }
+  },
+
   created() {
     this._register(true)
     // NOTE: This is not the same as `schema.data` handling in DitoSchema,
@@ -162,10 +180,10 @@ export default DitoComponent.component('DitoPanel', {
   },
 
   methods: {
-    _register(add) {
+    _register(add, componentPath = this.componentPath) {
       // Register the panels so that other components can find them by their
       // data-path, e.g. in TypeList.onFilterErrors()
-      this.schemaComponent._registerPanel(this, add)
+      this.schemaComponent._registerPanel(this, add, componentPath)
     }
   }
 })

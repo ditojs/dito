@@ -57,6 +57,7 @@ import ResourceMixin from '../mixins/ResourceMixin.js'
 import { getResource, getMemberResource } from '../utils/resource.js'
 import { isObjectSource } from '../utils/schema/structure.js'
 import { getButtonSchemas } from '../utils/schema/lookup.js'
+import { getComponentPathByDataPath } from '../utils/schema/data.js'
 import { resolvePath } from '../utils/path.js'
 
 // @vue/component
@@ -191,6 +192,27 @@ export default DitoComponent.component('DitoForm', {
 
     dataPath() {
       return this.getDataPathFrom(this.dataComponent)
+    },
+
+    componentPath() {
+      // Nested forms continue the component path of the source that displays
+      // their item in the parent route component, e.g. `main/chapters/1`.
+      // Forms that load their own data start a new one, like their data path.
+      const { parentRouteComponent } = this
+      return this.isTransient && parentRouteComponent
+        ? getComponentPathByDataPath(
+            parentRouteComponent.isView
+              ? parentRouteComponent.viewSchema
+              : parentRouteComponent.schema,
+            parentRouteComponent.data,
+            this.getDataPathFrom(parentRouteComponent),
+            {
+              componentPath: parentRouteComponent.componentPath,
+              component: this,
+              rootData: this.rootData
+            }
+          )
+        : ''
     },
 
     sourceLocation() {

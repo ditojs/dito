@@ -11,7 +11,7 @@
       :parentContext="context"
     )
     select(
-      :id="dataPath"
+      :id="componentPath"
       ref="element"
       v-model="selectedValue"
       v-bind="attributes"

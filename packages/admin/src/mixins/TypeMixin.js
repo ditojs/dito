@@ -162,6 +162,14 @@ export default {
     }
   },
 
+  watch: {
+    componentPath(componentPath, oldComponentPath) {
+      // Component paths change when list items move, see `_registerEntry()`.
+      this._registerWithSchemaComponent(false, oldComponentPath)
+      this._registerWithSchemaComponent(true, componentPath)
+    }
+  },
+
   created() {
     this._register(true)
     this.setupSchemaFields()
@@ -175,12 +183,20 @@ export default {
     _register(add) {
       // Provide component to container for schema accessor evaluation.
       this.$emit('update:component', add ? this : null)
+      this._registerWithSchemaComponent(add, this.componentPath)
+    },
+
+    _registerWithSchemaComponent(add, componentPath) {
       // Register unnested type components separately, to prevent them from
       // overriding parent data paths.
       if (this.nested) {
-        this.schemaComponent._registerComponent(this, add)
+        this.schemaComponent._registerComponent(this, add, componentPath)
       } else {
-        this.schemaComponent?._registerUnnestedComponent(this, add)
+        this.schemaComponent?._registerUnnestedComponent(
+          this,
+          add,
+          componentPath
+        )
       }
     },
 

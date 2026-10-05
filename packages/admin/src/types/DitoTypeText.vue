@@ -1,6 +1,6 @@
 <template lang="pug">
 DitoInput.dito-text(
-  :id="dataPath"
+  :id="componentPath"
   ref="element"
   v-model="inputValue"
   :type="inputType"

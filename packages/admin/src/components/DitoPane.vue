@@ -2,10 +2,10 @@
 <template lang="pug">
 .dito-pane(
   v-if="isPopulated && componentSchemas.length > 0"
-  :id="tab ? `${dataPath}-tabpanel-${tab}` : null"
+  :id="tabPanelId"
   v-resize="onResizePane"
   :role="tab ? 'tabpanel' : null"
-  :aria-labelledby="tab ? `${dataPath}-tab-${tab}` : null"
+  :aria-labelledby="tabId"
   :class="classes"
 )
   template(
@@ -98,6 +98,23 @@ export default DitoComponent.component('DitoPane', {
 
     tabComponent() {
       return this.tab ? this : this.$tabComponent()
+    },
+
+    componentPath() {
+      // Tabs add their name, as they don't appear in data paths.
+      const { componentPath } = this.parentComponent
+      return this.tab ? appendDataPath(componentPath, this.tab) : componentPath
+    },
+
+    // See `DitoTabs.getTabId()` and `getTabPanelId()`:
+    tabId() {
+      const { componentPath } = this.schemaComponent
+      return this.tab ? `${componentPath}-tab-${this.tab}` : null
+    },
+
+    tabPanelId() {
+      const { componentPath } = this.schemaComponent
+      return this.tab ? `${componentPath}-tabpanel-${this.tab}` : null
     },
 
     componentSchemas() {
@@ -197,6 +214,12 @@ export default DitoComponent.component('DitoPane', {
   watch: {
     'componentSchemas.length'(length) {
       this.positions.length = length
+    },
+
+    'componentPath'(componentPath, oldComponentPath) {
+      // Component paths change when list items move, see `_registerEntry()`.
+      this._register(false, oldComponentPath)
+      this._register(true, componentPath)
     }
   },
 
@@ -209,8 +232,8 @@ export default DitoComponent.component('DitoPane', {
   },
 
   methods: {
-    _register(add) {
-      this.schemaComponent._registerPane(this, add)
+    _register(add, componentPath = this.componentPath) {
+      this.schemaComponent._registerPane(this, add, componentPath)
     },
 
     focus() {

@@ -1,6 +1,6 @@
 <template lang="pug">
 DitoSwitch.dito-switch(
-  :id="dataPath"
+  :id="componentPath"
   ref="element"
   v-model="value"
   :labels="labels"

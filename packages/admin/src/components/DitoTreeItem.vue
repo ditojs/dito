@@ -1,6 +1,6 @@
 <template lang="pug">
 .dito-tree-item(
-  :id="dataPath"
+  :id="componentPath"
   :class=`{
     'dito-tree-item--dragging': isDragging,
     'dito-tree-item--active': active
@@ -66,7 +66,6 @@
       td
         DitoLabel(
           v-if="property.label !== false"
-          :dataPath="getPropertyDataPath(property)"
           :label="getLabel(property)"
         )
       DitoTableCell(
@@ -107,7 +106,7 @@
 import DitoComponent from '../DitoComponent.js'
 import ItemMixin from '../mixins/ItemMixin'
 import SortableMixin from '../mixins/SortableMixin.js'
-import { appendDataPath } from '../utils/data.js'
+import { appendDataPath, getRelativeDataPath } from '../utils/data.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
 import { getNamedSchemas, hasFormSchema } from '../utils/schema/lookup.js'
 import { updateOrder } from '../utils/schema/data.js'
@@ -138,6 +137,17 @@ export default DitoComponent.component('DitoTreeItem', {
   },
 
   computed: {
+    componentPath() {
+      // Continue the path of the tree list with the item indices and children
+      // names of the data path. The root item's data path doesn't contain the
+      // list's name, see `DitoTypeTreeList.treeDataPath`.
+      const { componentPath, dataPath } = this.container
+      const relativeDataPath = getRelativeDataPath(this.dataPath, dataPath)
+      return relativeDataPath
+        ? appendDataPath(componentPath, relativeDataPath)
+        : componentPath
+    },
+
     meta() {
       return this.container.meta
     },

@@ -1,7 +1,7 @@
 <template lang="pug">
 .dito-object(
   v-if="isReady"
-  :id="dataPath"
+  :id="componentPath"
 )
   .dito-object-content(
     v-if="objectData"

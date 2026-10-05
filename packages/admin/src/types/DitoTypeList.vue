@@ -1,7 +1,7 @@
 <template lang="pug">
 .dito-list(
   v-if="isReady"
-  :id="dataPath"
+  :id="componentPath"
   role="region"
   :aria-label="label || labelize(schema.name)"
 )
@@ -47,7 +47,7 @@
     )
       tr(
         v-for="(item, index) in listData"
-        :id="getDataPath(index)"
+        :id="getComponentPath(index)"
         :key="getItemUid(schema, item)"
       )
         template(
@@ -248,6 +248,10 @@ export default DitoTypeComponent.register('list', {
   methods: {
     getDataPath(index) {
       return appendDataPath(this.dataPath, index)
+    },
+
+    getComponentPath(index) {
+      return appendDataPath(this.componentPath, index)
     },
 
     getEditPath(item, index) {

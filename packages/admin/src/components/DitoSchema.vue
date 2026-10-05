@@ -40,7 +40,6 @@ slot(name="prepend")
           v-if="opened"
           v-model="selectedTab"
           :tabs="tabs"
-          :dataPath="dataPath"
         )
       DitoClipboard(
         v-if="clipboard"
@@ -582,51 +581,85 @@ export default DitoComponent.component('DitoSchema', {
       )
     },
 
-    // Finds the components that display the value at `dataPath` and passes
+    // Finds all components that display the value at `dataPath` and passes
     // them to `onComplete()`, revealing them first if needed: Collapsed
     // schemas open, and the nearest components that display a part of the
     // data path are asked to navigate to the rest, e.g. sections open and
     // sources open their inlined items or navigate to nested forms, see
-    // `SourceMixin.navigateToComponent()`. Returns `true` if the components
-    // were found and `onComplete()` accepted them.
-    async navigateToComponent(dataPath, onComplete) {
+    // `SourceMixin.navigateToComponent()`. Once components are found, the
+    // other ones are only revealed in inlined schemas
+    // (`shouldRevealInlinedOnly`), so that there's only one navigation to a
+    // nested form. Returns `true` if components were found and `onComplete()`
+    // accepted them.
+    async navigateToComponent(
+      dataPath,
+      onComplete,
+      { shouldRevealInlinedOnly = false } = {}
+    ) {
       const { opened } = this
       if (!opened) {
         this.opened = true
         await this.$nextTick()
       }
-      const components = this.getComponentsByDataPath(dataPath)
-      if (components.length > 0) {
-        if (onComplete?.(components) ?? true) {
-          return true
+      const acceptedComponents = []
+      const completeWithComponents = components => {
+        const isAccepted = onComplete?.(components) ?? true
+        if (isAccepted) {
+          acceptedComponents.push(...components)
         }
-      } else {
-        // Walk up the data path to the nearest nested component that can
-        // navigate to the rest of it:
-        const dataPathParts = parseDataPath(dataPath)
-        const schemaDataPathLength = parseDataPath(this.dataPath).length
-        while (dataPathParts.length > schemaDataPathLength + 1) {
-          dataPathParts.pop()
-          for (const component of this.getComponentsByDataPath(dataPathParts)) {
-            if (await component.navigateToComponent?.(dataPath, onComplete)) {
-              return true
-            }
-          }
-        }
-        // Unnested components share the data path of the schema, so they
-        // decide by schema whether they can navigate to the data path:
-        for (const component of this.unnestedComponents) {
-          if (await component.navigateToComponent?.(dataPath, onComplete)) {
-            return true
+        return isAccepted
+      }
+
+      const navigateViaNestedComponents = async nestedComponents => {
+        for (const nestedComponent of nestedComponents) {
+          // Skip components that contain accepted components already.
+          const componentPathPrefix = `${nestedComponent.componentPath}/`
+          const hasAcceptedComponents = acceptedComponents.some(
+            acceptedComponent =>
+              acceptedComponent.componentPath.startsWith(componentPathPrefix)
+          )
+          if (!hasAcceptedComponents) {
+            await nestedComponent.navigateToComponent?.(
+              dataPath,
+              completeWithComponents,
+              {
+                shouldRevealInlinedOnly: (
+                  shouldRevealInlinedOnly || acceptedComponents.length > 0
+                )
+              }
+            )
           }
         }
       }
-      this.opened = opened
-      return false
+
+      const displayingComponents = this.getComponentsByDataPath(dataPath)
+      if (displayingComponents.length > 0) {
+        completeWithComponents(displayingComponents)
+      }
+      // Walk up the data path and ask the nested components that display a
+      // part of it to navigate to the rest of it:
+      const dataPathParts = parseDataPath(dataPath)
+      const schemaDataPathLength = parseDataPath(this.dataPath).length
+      while (dataPathParts.length > schemaDataPathLength + 1) {
+        dataPathParts.pop()
+        await navigateViaNestedComponents(
+          this.getComponentsByDataPath(dataPathParts)
+        )
+      }
+      // Unnested components share the data path of the schema, so they
+      // decide by schema whether they can navigate to the data path:
+      await navigateViaNestedComponents(this.unnestedComponents)
+      const hasFoundComponents = acceptedComponents.length > 0
+      if (!hasFoundComponents) {
+        this.opened = opened
+      }
+      return hasFoundComponents
     },
 
     // Shows `errorsByFullDataPath`, keyed by normalized data paths including
-    // the schema's own data path, see `showValidationErrors()`.
+    // the schema's own data path, see `showValidationErrors()`. Errors are
+    // shown on all components that display their data path, and the first one
+    // in document order is focused.
     async _showValidationErrorsByFullDataPath(
       errorsByFullDataPath,
       focus,
@@ -637,20 +670,30 @@ export default DitoComponent.component('DitoSchema', {
       const wasFirst = first
       for (const [dataPath, errs] of Object.entries(errorsByFullDataPath)) {
         let nestedForm = null
-        const found = await this.navigateToComponent(
+        const displayingComponents = []
+        const hasFoundComponents = await this.navigateToComponent(
           dataPath,
-          components => {
-            for (const component of components) {
+          foundComponents => {
+            for (const component of foundComponents) {
               if (component.isForm) {
                 // A nested form was navigated to, display the errors that are
                 // part of its data there.
                 nestedForm = component
-                return true
-              } else if (component.showValidationErrors(errs, first && focus)) {
-                return true
+              } else {
+                displayingComponents.push(component)
               }
             }
-            return false
+            return true
+          }
+        )
+        // Focus the first component in document order, unless a nested form
+        // displays the errors:
+        sortInDocumentOrder(displayingComponents).forEach(
+          (component, index) => {
+            component.showValidationErrors(
+              errs,
+              first && focus && !nestedForm && index === 0
+            )
           }
         )
         if (nestedForm) {
@@ -669,7 +712,7 @@ export default DitoComponent.component('DitoSchema', {
             first && focus
           )
         }
-        if (!found) {
+        if (!hasFoundComponents) {
           // When the error can't be matched, add it to a list of unmatched
           // errors with decent message, to report at the end.
           const field = labelize(parseDataPath(dataPath).pop())
@@ -761,32 +804,50 @@ export default DitoComponent.component('DitoSchema', {
       this.$schemaParentComponent()?._registerSchemaComponent(this, add)
     },
 
-    _registerComponent(component, add) {
-      this._registerEntry(this.componentsRegistry, component, add)
+    _registerComponent(component, add, componentPath) {
+      this._registerEntry(
+        this.componentsRegistry,
+        component,
+        add,
+        componentPath
+      )
       // Only register with the parent if schema shares data with it.
-      this.parentSchemaComponent?._registerComponent(component, add)
+      this.parentSchemaComponent?._registerComponent(
+        component,
+        add,
+        componentPath
+      )
     },
 
-    _registerUnnestedComponent(component, add) {
+    _registerUnnestedComponent(component, add, componentPath) {
       // Unnested components are only registered with their own schema, as
       // they share its data path, see `navigateToComponent()`.
-      this._registerEntry(this.unnestedComponentsRegistry, component, add)
+      this._registerEntry(
+        this.unnestedComponentsRegistry,
+        component,
+        add,
+        componentPath
+      )
     },
 
-    _registerPane(pane, add) {
-      this._registerEntry(this.panesRegistry, pane, add)
+    _registerPane(pane, add, componentPath) {
+      this._registerEntry(this.panesRegistry, pane, add, componentPath)
     },
 
-    _registerPanel(panel, add) {
-      this._registerEntry(this.panelsRegistry, panel, add)
+    _registerPanel(panel, add, componentPath) {
+      this._registerEntry(this.panelsRegistry, panel, add, componentPath)
     },
 
-    _registerEntry(registry, entry, add) {
-      const uid = entry.$uid
+    // Registries are keyed by component path. Component paths change when list
+    // items move, and the entries then register again under their new path,
+    // see `TypeMixin`, `DitoPane` and `DitoPanel`.
+    _registerEntry(registry, entry, add, componentPath = entry.componentPath) {
       if (add) {
-        registry[uid] = entry
-      } else {
-        delete registry[uid]
+        registry[componentPath] = entry
+      } else if (registry[componentPath] === entry) {
+        // Unless another entry registered under the path already, e.g. when
+        // list items swap places.
+        delete registry[componentPath]
       }
     },
 
@@ -808,14 +869,36 @@ export default DitoComponent.component('DitoSchema', {
     },
 
     _getEntriesByDataPath(entriesByDataPath, dataPath) {
-      return entriesByDataPath[normalizeDataPath(dataPath)] || []
+      return sortInDocumentOrder(
+        entriesByDataPath[normalizeDataPath(dataPath)] || []
+      )
     },
 
     _getEntriesByName(entriesByDataPath, name) {
-      return entriesByDataPath[appendDataPath(this.dataPath, name)] || []
+      return sortInDocumentOrder(
+        entriesByDataPath[appendDataPath(this.dataPath, name)] || []
+      )
     }
   }
 })
+
+// Sorts components that display the same data, e.g. in different tabs, in the
+// document order of their elements, which is the order of their schemas.
+function sortInDocumentOrder(components) {
+  return components.length > 1
+    ? [...components].sort(compareByDocumentPosition)
+    : components
+}
+
+function compareByDocumentPosition(component1, component2) {
+  const node1 = component1.$el
+  const node2 = component2.$el
+  if (!node1 || !node2 || node1 === node2) {
+    return 0
+  }
+  const position = node1.compareDocumentPosition(node2)
+  return position & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1
+}
 </script>
 
 <style lang="scss">

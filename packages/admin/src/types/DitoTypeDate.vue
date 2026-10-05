@@ -2,7 +2,7 @@
 .dito-date
   component(
     :is="getComponent(type)"
-    :id="dataPath"
+    :id="componentPath"
     ref="element"
     v-model="dateValue"
     :locale="locale"
