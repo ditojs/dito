@@ -584,7 +584,11 @@ function takeOverChangedValues(target, before, after) {
     return target
   }
   const isSameShape = (
-    isPlainObject(before) && isPlainObject(after) && isPlainObject(target) || (
+    (
+      isPlainObject(before) &&
+      isPlainObject(after) &&
+      isPlainObject(target)
+    ) || (
       isArray(before) &&
       isArray(after) &&
       isArray(target) &&
