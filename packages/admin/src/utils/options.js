@@ -44,8 +44,8 @@ const ditoOptionKeys = [
   'processSchema',
   'getPanelSchema',
   'getFormSchemasForProcessing',
-  // Vue 3 / Vue-router 4 forgets these.
-  // TODO: Create bug-report?
+  // vue-router reads route guards from the raw component options, without
+  // their mixins, see `extractComponentsGuards()` in its `navigationGuards.ts`.
   'beforeRouteUpdate',
   'beforeRouteLeave'
 ]
