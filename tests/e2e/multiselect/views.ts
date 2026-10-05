@@ -2,8 +2,8 @@ import type { Tag } from './models/Tag.js'
 import type { Widget } from './models/Widget.js'
 import { createWidgetView } from '../../utils/views.js'
 
-async function delay<T>(value: T): Promise<T> {
-  await new Promise(resolve => setTimeout(resolve, 200))
+async function delay<T>(value: T, milliseconds = 200): Promise<T> {
+  await new Promise(resolve => setTimeout(resolve, milliseconds))
   return value
 }
 
@@ -53,6 +53,25 @@ export const widgets = createWidgetView<Widget>(
         searchTerm: string
         options: string[]
       }) => delay(filterByBeginning(options, searchTerm))
+    },
+    // Searches for single letters take longer than the ones for longer terms,
+    // so the results of older searches arrive after the ones of newer ones.
+    paint: {
+      type: 'multiselect',
+      label: 'Paint',
+      searchable: true,
+      options: ['Blue', 'Black', 'Brown'],
+      search: ({
+        searchTerm,
+        options
+      }: {
+        searchTerm: string
+        options: string[]
+      }) =>
+        delay(
+          filterByBeginning(options, searchTerm),
+          searchTerm.length === 1 ? 600 : 50
+        )
     },
     tags: {
       type: 'multiselect',

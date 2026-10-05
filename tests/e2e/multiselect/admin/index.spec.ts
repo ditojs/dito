@@ -113,4 +113,20 @@ test.describe('multiselect', () => {
       .poll(async () => (await Widget.query().findOne({ name: 'Widget A' }))?.color)
       .toBe('Blue')
   })
+
+  test('shows the options of the latest search', async ({ page, url }) => {
+    await Widget.query().insert({ name: 'Widget A', size: 'Small' })
+    const list = new DitoListView(page, url, 'Widget')
+    await list.navigate('/widgets')
+    await list.list.edit('Widget A')
+    const paint = page.getByRole('combobox', { name: 'Paint' })
+    await paint.click()
+    await paint.locator('input').fill('b')
+    await paint.locator('input').fill('bla')
+    const options = paint.getByRole('option')
+    await expect(options).toHaveText(['Black'])
+    // The search for "b" finishes later, and must not replace the options:
+    await page.waitForTimeout(800)
+    await expect(options).toHaveText(['Black'])
+  })
 })
