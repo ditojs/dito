@@ -17,6 +17,20 @@ export const projects = createWidgetView<Project>(
       status: { label: 'Status' },
       budget: { label: 'Budget' }
     },
+    scopes: {
+      $default: { label: 'All' },
+      planned: { label: 'Planned' },
+      active: { label: 'Active' },
+      done: { label: 'Done' }
+    },
+    filters: {
+      search: {
+        components: {
+          search: { label: 'Search', type: 'text' }
+        }
+      }
+    },
+    paginate: 2,
     form: {
       type: 'form',
       tabs: {
@@ -107,6 +121,16 @@ export const projects = createWidgetView<Project>(
                   options: ['Private', 'Public']
                 },
                 reviewer: { type: 'text', label: 'Reviewer', width: '1/2' }
+              }
+            },
+            advanced: {
+              type: 'section',
+              label: 'Advanced',
+              nested: true,
+              collapsible: true,
+              collapsed: true,
+              components: {
+                slug: { type: 'text', label: 'Slug' }
               }
             }
           }

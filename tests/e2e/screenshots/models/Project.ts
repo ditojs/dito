@@ -1,4 +1,4 @@
-import type { ModelProperties } from '@ditojs/server'
+import type { ModelProperties, QueryBuilder } from '@ditojs/server'
 import { Model } from '@ditojs/server'
 
 export interface Contact {
@@ -36,6 +36,7 @@ export interface Project {
   milestones?: Milestone[] | null
   phases?: Phase[] | null
   settings?: { visibility?: string | null; reviewer?: string | null } | null
+  advanced?: { slug?: string | null } | null
   // Buttons and labels don't hold data of their own, so their keys are
   // `never`.
   openDialog?: never
@@ -61,6 +62,19 @@ export class Project extends Model {
     contacts: { type: 'array', nullable: true, items: { type: 'object' } },
     milestones: { type: 'array', nullable: true, items: { type: 'object' } },
     phases: { type: 'array', nullable: true, items: { type: 'object' } },
-    settings: { type: 'object', nullable: true }
+    settings: { type: 'object', nullable: true },
+    advanced: { type: 'object', nullable: true }
+  }
+
+  static override scopes = {
+    planned: (query: QueryBuilder<Project>) => query.where('status', 'Planned'),
+    active: (query: QueryBuilder<Project>) => query.where('status', 'Active'),
+    done: (query: QueryBuilder<Project>) => query.where('status', 'Done')
+  }
+
+  static override filters = {
+    search(query: QueryBuilder<Project>, search: string) {
+      query.whereILike('name', `%${search}%`)
+    }
   }
 }

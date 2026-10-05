@@ -28,13 +28,6 @@ export default defineConfig({
     screenshot: 'only-on-failure',
     video: 'retain-on-failure'
   },
-  expect: {
-    toHaveScreenshot: {
-      // Allow for minimal differences in anti-aliasing between the machines
-      // that run the Docker image, natively or emulated.
-      maxDiffPixelRatio: 0.001
-    }
-  },
   projects: [
     {
       name: 'e2e',

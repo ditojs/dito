@@ -68,6 +68,7 @@ test.describe('screenshots', () => {
 
   test('list', async ({ page, url }) => {
     await page.goto(`${url}/admin/projects`)
+    // Two projects per page, with the scopes and the filter above them.
     await expect(page.getByText('Website Relaunch')).toBeVisible()
     await expectScreenshot(page, 'list.png')
   })
@@ -89,6 +90,19 @@ test.describe('screenshots', () => {
     await selectTab(page, 'Planning')
     await expect(page.getByText('Interviews')).toBeVisible()
     await expectScreenshot(page, 'form-planning.png')
+  })
+
+  test('tree items with their buttons', async ({ page, url }) => {
+    await openProject(page, url)
+    await selectTab(page, 'Planning')
+    await page
+      .locator('.dito-tree-header')
+      .filter({ hasText: 'Research' })
+      .hover()
+    await expect(
+      page.getByRole('button', { name: 'Remove' }).first()
+    ).toBeVisible()
+    await expectScreenshot(page, 'tree-hover.png')
   })
 
   test('nested form', async ({ page, url }) => {
