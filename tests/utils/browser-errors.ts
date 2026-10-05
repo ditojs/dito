@@ -1,17 +1,6 @@
-import { test as base, expect, type ConsoleMessage } from '@playwright/test'
+import { test as base, expect } from '@playwright/test'
 
-// Errors are logged as `Error` objects, e.g. by Vue's error handler for errors
-// in watchers and render functions, while messages that tests expect are
-// logged as strings, e.g. notifications, or by the browser itself, e.g. failed
-// requests when the server rejects invalid data.
-async function isErrorObjectLogged(message: ConsoleMessage) {
-  const [firstArgument] = message.args()
-  return firstArgument
-    ? await firstArgument
-        .evaluate(value => value instanceof Error)
-        .catch(() => false)
-    : false
-}
+type BrowserErrorReporter = (error: string) => void
 
 /**
  * Playwright test object that fails tests with errors in the browser: uncaught
@@ -21,23 +10,35 @@ export const test = base.extend<{ shouldFailOnBrowserErrors: void }>({
   shouldFailOnBrowserErrors: [
     async ({ page }, use) => {
       const browserErrors: string[] = []
-      const pendingChecks: Promise<void>[] = []
       page.on('pageerror', error => {
         browserErrors.push(error.stack ?? error.message)
       })
-      page.on('console', message => {
-        if (message.type() === 'error') {
-          pendingChecks.push(
-            isErrorObjectLogged(message).then(isError => {
-              if (isError) {
-                browserErrors.push(message.text())
-              }
-            })
-          )
+      await page.exposeFunction(
+        'reportBrowserError',
+        (error: string) => {
+          browserErrors.push(error)
+        }
+      )
+      // Errors are logged as `Error` objects, e.g. by Vue's error handler for
+      // errors in watchers and render functions, while messages that tests
+      // expect are logged as strings, e.g. notifications, or by the browser
+      // itself, e.g. failed requests when the server rejects invalid data.
+      // They are told apart in the page when they're logged, as the logged
+      // objects can't be inspected anymore once the page navigated away.
+      await page.addInitScript(() => {
+        const { reportBrowserError } = window as unknown as {
+          reportBrowserError: BrowserErrorReporter
+        }
+        const logError = console.error
+        console.error = (...args: unknown[]) => {
+          const [firstArgument] = args
+          if (firstArgument instanceof Error) {
+            reportBrowserError(firstArgument.stack ?? `${firstArgument}`)
+          }
+          logError.apply(console, args)
         }
       })
       await use()
-      await Promise.all(pendingChecks)
       expect(browserErrors, 'Errors in the browser').toEqual([])
     },
     { auto: true }
