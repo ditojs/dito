@@ -35,6 +35,15 @@ export default {
 
   register(types, definition = {}) {
     types = asArray(types)
+    if (hasValidationsMethod(definition)) {
+      // Validation doesn't depend on components anymore, so that it also
+      // covers fields that aren't rendered, see `utils/schema/validation.js`.
+      console.warn(
+        `Type '${types[0]}': The \`getValidations()\` method isn't supported ` +
+        `anymore, use the static \`getTypeValidations(schema, context)\` ` +
+        `option instead.`
+      )
+    }
     const component = this.component(
       `DitoType${camelize(types[0], true)}`,
       definition
@@ -44,4 +53,12 @@ export default {
     }
     return component
   }
+}
+
+// Returns whether the component definition or one of its mixins defines the
+// `getValidations()` method that types used to override.
+function hasValidationsMethod(definition) {
+  return [definition, ...(definition.mixins ?? [])].some(
+    ({ methods }) => !!methods?.getValidations
+  )
 }
