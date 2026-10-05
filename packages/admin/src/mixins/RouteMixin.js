@@ -126,7 +126,7 @@ export default {
       flush: 'sync',
       handler(routeRecord) {
         // Components belong to the record that they're rendered for, see
-        // `getRouteComponentKey()`. Records of other paths, or none, mean that
+        // `DitoRouterView`. Records of other paths, or none, mean that
         // the component is being left, and it keeps its record until it's
         // unmounted, as its schema and meta are still read in the meantime,
         // e.g. by the watchers of its form model. Records of the same path

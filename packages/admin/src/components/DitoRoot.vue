@@ -28,14 +28,7 @@
       :spinner="options.spinner"
       :isLoading="isLoading"
     )
-    RouterView(
-      v-slot="{ Component, route }"
-    )
-      component(
-        v-if="Component"
-        :is="Component"
-        :key="getRouteComponentKey(route, 0)"
-      )
+    DitoRouterView(:routeLevel="0")
   DitoSidebar
     DitoAccount(
       v-if="user"

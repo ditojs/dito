@@ -18,14 +18,7 @@
       v-if="editPath && hasEditableForms"
     )
       //- Include a router-view for the optional DitoFormInlined
-      RouterView(
-        v-slot="{ Component, route }"
-      )
-        component(
-          v-if="Component"
-          :is="Component"
-          :key="getRouteComponentKey(route, routeComponent.routeLevel + 1)"
-        )
+      DitoRouterView(:routeLevel="routeComponent.routeLevel + 1")
 </template>
 
 <script>

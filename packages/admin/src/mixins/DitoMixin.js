@@ -471,14 +471,6 @@ export default {
       body.removeChild(a)
     },
 
-    // Returns the key of the route component that `RouterView` renders at
-    // `routeLevel`, so that each route record gets its own component instance,
-    // as their schema and data belong to it, while the component is reused
-    // when only the parameters change, e.g. to edit another item.
-    getRouteComponentKey(route, routeLevel) {
-      return route.matched[routeLevel]?.path
-    },
-
     // Returns the component path of the parent, continued with the item
     // indices that the data path of this component adds to the parent's, see
     // `componentPath`.

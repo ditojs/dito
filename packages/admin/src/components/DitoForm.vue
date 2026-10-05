@@ -5,16 +5,11 @@
 )
   //- Only render a router-view here if this isn't the last data route and not a
   //- nested form route, which will appear elsewhere in its own view.
-  RouterView(
+  DitoRouterView(
     v-if="!isLastUnnestedRoute && !isNestedRoute"
     v-show="!isActiveRoute"
-    v-slot="{ Component, route }"
+    :routeLevel="routeLevel + 1"
   )
-    component(
-      v-if="Component"
-      :is="Component"
-      :key="getRouteComponentKey(route, routeLevel + 1)"
-    )
   //- NOTE: Nested form components are kept alive by using `v-show` instead of
   //- `v-if` here, so event handling and other things still work with nested
   //- editing.

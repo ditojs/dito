@@ -6,15 +6,10 @@ template(
   //- instead, to nest further route components.
   //- NOTE: This is different from the handling in DitoForm, where `v-show` is
   //- used to always render forms even when other nested forms are present.
-  RouterView(
+  DitoRouterView(
     v-if="!isLastRoute"
-    v-slot="{ Component, route }"
+    :routeLevel="routeLevel + 1"
   )
-    component(
-      v-if="Component"
-      :is="Component"
-      :key="getRouteComponentKey(route, routeLevel + 1)"
-    )
   .dito-view.dito-scroll-parent(
     v-else
     :data-resource="sourceSchema.path"
