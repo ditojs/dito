@@ -1946,7 +1946,12 @@ export type DitoContext<$Item = any> = {
   sourceComponent: DitoSourceInstance | null
   /** The currently focused option in a select. */
   option: any
-  /** All available options in a select. */
+  /**
+   * All available options in a select. In `compute()`, they are
+   * loaded when first read, also when the field isn't rendered,
+   * and are `undefined` while loading; the callback runs again
+   * once they are loaded.
+   */
   options: any
   /**
    * Whether a pulldown/select is currently open.

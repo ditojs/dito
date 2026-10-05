@@ -1,5 +1,4 @@
 import DitoContext from '../DitoContext.js'
-import DataMixin from './DataMixin.js'
 import { hasViewSchema, getViewEditPath } from '../utils/schema/lookup.js'
 import { getMultipleValue } from '../utils/schema/data.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
@@ -16,8 +15,6 @@ import {
 
 // @vue/component
 export default {
-  mixins: [DataMixin],
-
   computed: {
     // @overridable
     multiple() {
@@ -77,12 +74,31 @@ export default {
       return this.getOptionForValue(this.selectedValue)
     },
 
+    // The resolver of the options in the form model of the data, which loads
+    // them and shares them with the computes of the form. It is looked up with
+    // the entry of this component, in the shape of the entries of
+    // `processSchemaData()`, see `FormModel`.
+    optionsResolver() {
+      const formModel = (this.dialogComponent ?? this.routeComponent).formModel
+      return formModel.getOptionsResolver({
+        schema: this.schema,
+        data: this.data,
+        name: this.name,
+        dataPath: this.dataPath,
+        componentPath: this.componentPath
+      })
+    },
+
+    isLoadingOptions() {
+      return this.optionsResolver.isLoading
+    },
+
     options() {
-      const data = this.handleDataSchema(this.schema.options, 'options') ?? []
-      if (!isArray(data)) {
-        throw new Error(`Invalid options data, should be array: ${data}`)
+      const options = this.optionsResolver.value ?? []
+      if (!isArray(options)) {
+        throw new Error(`Invalid options data, should be array: ${options}`)
       }
-      return this.processOptions(data)
+      return this.processOptions(options)
     },
 
     activeOptions() {
@@ -185,6 +201,14 @@ export default {
     }
   },
 
+  watch: {
+    'optionsResolver.lastLoadError'(error) {
+      if (error) {
+        this.addError(error.message || error)
+      }
+    }
+  },
+
   methods: {
     getOptionKey(key) {
       const [option] = this.activeOptions
@@ -278,7 +302,7 @@ export default {
     if (schema.relate) {
       // For internally relating data (`schema.options.dataPath`), we need to
       // process both the options (for '#ref') and the value ('#id').
-      // See `DataMixin.handleDataSchema()`:
+      // See `DataSchemaResolver`:
       const path = schema.options?.dataPath
       const relatedDataPath = path
         ? normalizeDataPath(`${dataPath}/${path}`)

@@ -128,8 +128,8 @@ export default DitoComponent.component('DitoDialog', {
   },
 
   created() {
-    // Writes defaults and computed values into the dialog's data, see
-    // `FormModel`:
+    // Writes defaults and computed values into the dialog's data and resolves
+    // options, see `FormModel`:
     this.formModel = new FormModel({
       component: this,
       getSchema: () => this.schema,
@@ -175,7 +175,9 @@ export default DitoComponent.component('DitoDialog', {
       }
     },
 
-    submit() {
+    async submit() {
+      // Wait for computed values that depend on pending loads, e.g. options.
+      await this.formModel.waitForPendingLoads()
       this.resolve(this.dialogData)
     },
 

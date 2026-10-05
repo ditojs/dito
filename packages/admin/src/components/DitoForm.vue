@@ -350,8 +350,8 @@ export default DitoComponent.component('DitoForm', {
   },
 
   created() {
-    // Writes defaults and computed values into the form's data, see
-    // `FormModel`:
+    // Writes defaults and computed values into the form's data and resolves
+    // options, see `FormModel`:
     this.formModel = new FormModel({
       component: this,
       getSchema: () => this.schema,
@@ -445,6 +445,8 @@ export default DitoComponent.component('DitoForm', {
     },
 
     async submit(button, { validate = true, closeForm = false } = {}) {
+      // Wait for computed values that depend on pending loads, e.g. options.
+      await this.formModel.waitForPendingLoads()
       if (validate && !this.validateAll()) {
         return false
       }

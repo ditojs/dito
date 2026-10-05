@@ -118,8 +118,8 @@ export default DitoComponent.component('DitoView', {
   },
 
   created() {
-    // Writes defaults and computed values into the view's data, see
-    // `FormModel`:
+    // Writes defaults and computed values into the view's data and resolves
+    // options, see `FormModel`:
     this.formModel = new FormModel({
       component: this,
       getSchema: () => this.viewSchema,

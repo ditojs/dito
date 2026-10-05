@@ -1,12 +1,7 @@
-import { effectScope, watch } from 'vue'
-import {
-  isFunction,
-  isPromise,
-  equals,
-  normalizeDataPath,
-  getValueAtDataPath
-} from '@ditojs/utils'
+import { effectScope, watch, nextTick } from 'vue'
+import { equals } from '@ditojs/utils'
 import DitoContext from '../DitoContext.js'
+import { DataSchemaResolver } from './DataSchemaResolver.js'
 import { isSourceWithResource } from './schema/structure.js'
 import { isEmptySchema } from './schema/lookup.js'
 import {
@@ -25,9 +20,20 @@ import {
 //   of the `computed` types (`schema.data`, `schema.dataPath`), are written
 //   into the data by watchers that the model owns, one scope per component,
 //   for all components whose `if` doesn't evaluate to `false`.
+// - Options, `schema.options`, are resolved per component when they are first
+//   read, by `compute()` through `context.options` or by the component that
+//   displays them, see `getOptions()`. Both get the same option objects, and
+//   computes that read options run again when they are loaded.
+// - Submitting waits for the loads of data schemas and options that are still
+//   pending, see `waitForPendingLoads()`.
 //
 // Sources with their own resource are skipped, as their items are edited
 // through their own forms.
+//
+// The model handles components through their entries, the objects that
+// `processSchemaData()` passes to `before()` and `after()`, with the schema,
+// data, name, data path and component path of each component. Components that
+// read their options pass entries of the same shape, see `getOptions()`.
 //
 // `component` is the component that owns the data, e.g. `DitoForm`. Its
 // `dataPath`, `componentPath`, `rootData` and `mainSchemaComponent` are used
@@ -37,6 +43,12 @@ export class FormModel {
   // The entries of the components with computed values and the scopes of the
   // watchers that write these values into the data, by component path:
   computedValueRecords = new Map()
+  // The entries of the components whose options were read and the resolvers
+  // of their options, by component path, see `getOptionsResolver()`:
+  optionsRecords = new Map()
+  // The promises of the loads of data schemas and options that are pending,
+  // see `waitForPendingLoads()`:
+  pendingLoads = new Set()
 
   constructor({ component, getSchema, getData }) {
     this.component = component
@@ -72,6 +84,26 @@ export class FormModel {
   stop() {
     this.rootScope.stop()
     this.computedValueRecords.clear()
+    this.optionsRecords.clear()
+    this.pendingLoads.clear()
+  }
+
+  // Waits for the pending loads of data schemas and options, including the
+  // ones that they cause, e.g. options that depend on computed values that
+  // depend on loaded options, and for the watchers to write the resulting
+  // computed values into the data.
+  async waitForPendingLoads() {
+    while (this.pendingLoads.size > 0) {
+      await Promise.all(this.pendingLoads)
+      await nextTick()
+    }
+  }
+
+  // Tracks the promise of a pending load until it settles, so that
+  // `waitForPendingLoads()` waits for it.
+  trackPendingLoad(promise) {
+    this.pendingLoads.add(promise)
+    promise.finally(() => this.pendingLoads.delete(promise))
   }
 
   // Sets missing values to their defaults when the data is set up.
@@ -152,28 +184,18 @@ export class FormModel {
         )
       }
       if (hasValueFromDataSchema(entry.schema)) {
+        const dataSchemaResolver = this.createDataSchemaResolver(
+          entry.schema,
+          entry
+        )
         watch(
-          () => this.getDataSchemaValueOrLoader(entry),
-          (valueOrLoader, _, onCleanup) => {
-            let isOutdated = false
-            onCleanup(() => {
-              isOutdated = true
-            })
-            // A function returned by `schema.data()` loads the value, while
-            // `schema.data()` itself only tracks the dependencies, e.g.
-            // `data: ({ item }) => async () => load(item.id)`:
-            const valueOrPromise = isFunction(valueOrLoader)
-              ? valueOrLoader(this.createEntryContext(entry))
-              : valueOrLoader
-            const writeResolvedValue = value => {
-              if (!isOutdated) {
-                this.writeComputedValue(entry, value)
-              }
-            }
-            if (isPromise(valueOrPromise)) {
-              valueOrPromise.then(writeResolvedValue).catch(console.error)
-            } else {
-              writeResolvedValue(valueOrPromise)
+          () =>
+            dataSchemaResolver.isLoading
+              ? null
+              : { value: dataSchemaResolver.value },
+          resolved => {
+            if (resolved) {
+              this.writeComputedValue(entry, resolved.value)
             }
           },
           { immediate: true }
@@ -183,27 +205,50 @@ export class FormModel {
     return scope
   }
 
+  // Calls `schema.compute()` with the main schema component of the data, like
+  // `processData()`, and with the options resolved by the model, so that the
+  // result doesn't depend on whether the component is rendered.
   getComputedValue(entry) {
     const { schema, data, name, dataPath } = entry
     return computeValue(schema, data, name, dataPath, {
-      component: this.getComputeContextComponent(entry),
-      rootData: this.rootData
+      component: this.component.mainSchemaComponent ?? this.component,
+      rootData: this.rootData,
+      getOptions: schema.options ? () => this.getOptions(entry) : null
     })
   }
 
-  // Returns the value of the data schema of the component, a promise of it,
-  // or a function that loads it, see `createComputedValueScope()`.
-  getDataSchemaValueOrLoader(entry) {
-    const { schema, dataPath } = entry
-    const { data } = schema
-    return data
-      ? isFunction(data)
-        ? data(this.createEntryContext(entry))
-        : data
-      : getValueAtDataPath(
-          this.rootData,
-          normalizeDataPath(`${dataPath}/${schema.dataPath}`)
-        )
+  // Returns the options of the component of the entry, resolved from
+  // `schema.options` when they're first read, `undefined` while loading.
+  getOptions(entry) {
+    return this.getOptionsResolver(entry).value
+  }
+
+  // Returns the resolver of the options of the component of the entry, shared
+  // by all callers with the same component path, schema and data, so that
+  // computes and the component that displays the options get the same option
+  // objects, and the options only load once.
+  getOptionsResolver(entry) {
+    const { schema, data, componentPath } = entry
+    let optionsRecord = this.optionsRecords.get(componentPath)
+    if (
+      !optionsRecord ||
+      optionsRecord.entry.schema.options !== schema.options ||
+      optionsRecord.entry.data !== data
+    ) {
+      optionsRecord = {
+        entry,
+        resolver: this.createDataSchemaResolver(schema.options, entry)
+      }
+      this.optionsRecords.set(componentPath, optionsRecord)
+    }
+    return optionsRecord.resolver
+  }
+
+  createDataSchemaResolver(dataSchema, entry) {
+    return new DataSchemaResolver(dataSchema, {
+      createContext: () => this.createEntryContext(entry),
+      onLoadStart: promise => this.trackPendingLoad(promise)
+    })
   }
 
   writeComputedValue(entry, value) {
@@ -215,22 +260,9 @@ export class FormModel {
     }
   }
 
-  // Returns the component that `schema.compute()` is called with: the mounted
-  // component at the component path of the entry if there is one, so that
-  // `context.options` is available, else the main schema component of the
-  // data, like in `processData()`.
-  getComputeContextComponent(entry) {
-    const { mainSchemaComponent } = this.component
-    return (
-      mainSchemaComponent?.getComponentByComponentPath(entry.componentPath) ??
-      mainSchemaComponent ??
-      this.component
-    )
-  }
-
-  // Returns the context for `if` and data schemas, with the component that
-  // owns the data, which stays the same when components are mounted, so that
-  // data schemas don't load again.
+  // Returns the context for `if`, data schemas and options, with the component
+  // that owns the data, which stays the same when components are mounted, so
+  // that data schemas and options don't load again.
   createEntryContext({ schema, data, name, dataPath }) {
     const { rootData } = this
     // Pass a function, so that the `value` getter isn't evaluated when the

@@ -30,7 +30,7 @@
       :preserveSearch="!!searchFilter"
       :clearOnSelect="!searchFilter"
       :closeOnSelect="!stayOpen"
-      :loading="isLoading"
+      :loading="isLoadingOptions || isLoadingSearchedOptions"
       v-bind="attributes"
       @open="onOpen"
       @close="onClose"
@@ -80,6 +80,7 @@ export default DitoTypeComponent.register('multiselect', {
   data() {
     return {
       searchedOptions: null,
+      isLoadingSearchedOptions: false,
       populate: false
     }
   },
@@ -141,7 +142,9 @@ export default DitoTypeComponent.register('multiselect', {
       const prefix = 'multiselect'
       return {
         [`${prefix}--multiple`]: this.multiple,
-        [`${prefix}--loading`]: this.isLoading,
+        [`${prefix}--loading`]: (
+          this.isLoadingOptions || this.isLoadingSearchedOptions
+        ),
         [`${prefix}--highlight`]: this.showHighlight
       }
     },
@@ -225,15 +228,32 @@ export default DitoTypeComponent.register('multiselect', {
       }
     },
 
+    // Returns the options that `searchFilter()` returns for the search term,
+    // showing the loading state while it's pending, and `null` if it fails.
+    async loadSearchedOptions(searchTerm) {
+      // Use a timeout to allow already resolved promises to return options
+      // without showing a loading indicator.
+      const timer = setTimeout(() => {
+        this.isLoadingSearchedOptions = true
+      }, 0)
+      let options = null
+      try {
+        options = await this.searchFilter(new DitoContext(this, { searchTerm }))
+      } catch (error) {
+        this.addError(error.message || error)
+      }
+      clearTimeout(timer)
+      this.isLoadingSearchedOptions = false
+      return options
+    },
+
     async onSearchChange(searchTerm) {
       if (this.searchFilter) {
         if (searchTerm) {
           // Set `searchedOptions` to an empty array, before it will be
           // populated asynchronously with the actual results.
           this.searchedOptions = []
-          this.searchedOptions = await this.resolveData(
-            () => this.searchFilter(new DitoContext(this, { searchTerm }))
-          )
+          this.searchedOptions = await this.loadSearchedOptions(searchTerm)
         } else {
           // Clear `searchedOptions` when the query is cleared.
           this.searchedOptions = null

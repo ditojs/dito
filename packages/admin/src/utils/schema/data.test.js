@@ -1,3 +1,4 @@
+import { vi } from 'vitest'
 import { registerTypeComponent } from './types.js'
 import {
   processSchemaData,
@@ -138,6 +139,23 @@ describe('computeValue()', () => {
     const schema = { type: 'text', default: 'Untitled' }
     expect(computeValue(schema, data, 'title', 'title')).toBe('Untitled')
     expect(data).toEqual({})
+  })
+
+  it('provides `context.options` through `getOptions()` when read', () => {
+    const options = ['Small', 'Large']
+    const getOptions = vi.fn(() => options)
+    const schema = {
+      type: 'text',
+      compute: context => context.value ?? context.options[0]
+    }
+    expect(
+      computeValue(schema, { size: 'Large' }, 'size', 'size', { getOptions })
+    ).toBe('Large')
+    expect(getOptions).not.toHaveBeenCalled()
+    expect(computeValue(schema, {}, 'size', 'size', { getOptions })).toBe(
+      'Small'
+    )
+    expect(getOptions).toHaveBeenCalledTimes(1)
   })
 })
 

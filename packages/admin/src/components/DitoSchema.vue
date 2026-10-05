@@ -457,10 +457,6 @@ export default DitoComponent.component('DitoSchema', {
       return this.getComponentsByName(name)[0] || null
     },
 
-    getComponentByComponentPath(componentPath) {
-      return this.componentsRegistry[componentPath] || null
-    },
-
     getComponents(dataPathOrName) {
       return this._getEntries(this.componentsByDataPath, dataPathOrName)
     },

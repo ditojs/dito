@@ -1,11 +1,12 @@
 import { vi } from 'vitest'
-import { reactive, ref, nextTick } from 'vue'
+import { reactive, ref, toRaw, nextTick } from 'vue'
 import { registerTypeComponent } from './schema/types.js'
 import { FormModel } from './FormModel.js'
 
 // Register minimal type options, as the actual type components can't be
 // imported without a Vue SFC compiler:
 registerTypeComponent('text', { defaultNested: true })
+registerTypeComponent('select', { defaultNested: true })
 registerTypeComponent('computed', {
   defaultNested: true,
   defaultValue: () => undefined,
@@ -240,13 +241,13 @@ describe('FormModel', () => {
     const { formModel, data } = createFormModel(schema, { title: 'Hello' })
     expect(data.upper).toBe('HELLO')
     expect(data.copy).toBe('Hello')
-    await nextTick()
+    await formModel.waitForPendingLoads()
     expect(data.length).toBe(5)
     data.title = 'Bye'
     await nextTick()
     expect(data.upper).toBe('BYE')
     expect(data.copy).toBe('Bye')
-    await nextTick()
+    await formModel.waitForPendingLoads()
     expect(data.length).toBe(3)
     formModel.stop()
   })
@@ -271,10 +272,103 @@ describe('FormModel', () => {
     await nextTick()
     expect(resolvers).toHaveLength(2)
     resolvers[1]()
-    await nextTick()
     resolvers[0]()
-    await nextTick()
+    await formModel.waitForPendingLoads()
     expect(data.loaded).toBe('Second')
     formModel.stop()
+  })
+
+  describe('options', () => {
+    // Like lineto's `getValidOrDefaultOption()`: Keeps valid values, and
+    // selects the first option otherwise, once the options are loaded.
+    const getValidOrFirstOption = ({ value, options }) =>
+      options
+        ? options.some(option => option.value === value)
+          ? value
+          : options[0]?.value ?? null
+        : value
+
+    const topicsByCategory = {
+      news: [{ value: 'politics' }, { value: 'economy' }],
+      sports: [{ value: 'football' }]
+    }
+
+    const createTopicSchema = loadTopics => ({
+      type: 'form',
+      components: {
+        category: {
+          type: 'select',
+          options: {
+            data: async () => [{ value: 'news' }, { value: 'sports' }]
+          },
+          compute: getValidOrFirstOption
+        },
+        topic: {
+          type: 'select',
+          options: {
+            // The curried pattern: The outer function tracks the
+            // dependencies, the returned one loads.
+            data: ({ item }) => {
+              const { category } = item
+              return async () => loadTopics(category)
+            }
+          },
+          compute: getValidOrFirstOption
+        }
+      }
+    })
+
+    it('reselects dependent options when options of other fields load', async () => {
+      const loadTopics = vi.fn(category => topicsByCategory[category] ?? [])
+      const schema = createTopicSchema(loadTopics)
+      const { formModel, data } = createFormModel(schema, {})
+      await formModel.waitForPendingLoads()
+      expect(data).toEqual({ category: 'news', topic: 'politics' })
+      data.category = 'sports'
+      await nextTick()
+      await formModel.waitForPendingLoads()
+      expect(data.topic).toBe('football')
+      expect(loadTopics.mock.calls).toEqual([[undefined], ['news'], ['sports']])
+      formModel.stop()
+    })
+
+    it('shares the option objects with the components', async () => {
+      const schema = {
+        type: 'form',
+        components: {
+          size: {
+            type: 'select',
+            options: { data: async () => [{ id: 1 }, { id: 2 }] },
+            compute: ({ value, options }) => value ?? options?.[0]
+          }
+        }
+      }
+      const { formModel, data } = createFormModel(schema, {})
+      await formModel.waitForPendingLoads()
+      const options = formModel.getOptions({
+        schema: schema.components.size,
+        data,
+        name: 'size',
+        dataPath: 'size',
+        componentPath: 'size'
+      })
+      expect(options).toEqual([{ id: 1 }, { id: 2 }])
+      expect(toRaw(data.size)).toBe(options[0])
+      formModel.stop()
+    })
+
+    it("doesn't load options that aren't read", async () => {
+      const data = vi.fn(async () => [{ value: 'news' }])
+      const schema = {
+        type: 'form',
+        components: {
+          category: { type: 'select', options: { data } }
+        }
+      }
+      const { formModel } = createFormModel(schema, {})
+      await formModel.waitForPendingLoads()
+      expect(data).not.toHaveBeenCalled()
+      formModel.stop()
+    })
   })
 })

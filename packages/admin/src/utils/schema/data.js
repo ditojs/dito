@@ -166,22 +166,35 @@ export function setDefaultValues(schema, data = {}, component, {
  * `data`: the result of `schema.compute()` if it returns a value, else the
  * value in `data`, or its default if it's missing. Never writes into `data`:
  * Computed values are written by `FormModel`, and defaults when the data is
- * set up, see `setDefaultValues()`.
+ * set up, see `setDefaultValues()`. If provided, `getOptions()` returns the
+ * options for `context.options`, called only when they're read.
  */
 export function computeValue(schema, data, name, dataPath, {
   component = null,
-  rootData = component?.rootData
+  rootData = component?.rootData,
+  getOptions = null
 } = {}) {
   const context = () =>
-    new DitoContext(component, {
-      schema,
-      // Override value to prevent endless recursion through calling the
-      // getter for `this.value` in `DitoContext`:
-      value: data[name],
-      name,
-      data,
-      dataPath,
-      rootData
+    // Pass a function, so that the `options` getter isn't evaluated when the
+    // context is created.
+    new DitoContext(component, () => {
+      const properties = {
+        schema,
+        // Override value to prevent endless recursion through calling the
+        // getter for `this.value` in `DitoContext`:
+        value: data[name],
+        name,
+        data,
+        dataPath,
+        rootData
+      }
+      if (getOptions) {
+        Object.defineProperty(properties, 'options', {
+          get: getOptions,
+          enumerable: true
+        })
+      }
+      return properties
     })
   const { compute } = schema
   if (compute) {
