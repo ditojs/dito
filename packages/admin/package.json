@@ -22,7 +22,9 @@
   "files": [
     "src/",
     "dist/",
-    "types/"
+    "types/",
+    "!src/**/*.test.js",
+    "!src/**/__snapshots__/"
   ],
   "scripts": {
     "build": "vite build",

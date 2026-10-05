@@ -10,7 +10,9 @@ export function defineViteConfig({
   vue = false,
   build = true,
   minify = !process.argv.includes('--watch'),
-  sourcemap = 'inline',
+  // Inline source maps for watch builds, e.g. when linked into an app during
+  // development, but none in published builds, to keep the packages small.
+  sourcemap = minify ? false : 'inline',
   externals: {
     include = [],
     exclude = []

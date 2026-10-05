@@ -10,7 +10,9 @@
   "types": "./types/index.d.ts",
   "files": [
     "src/",
-    "types/"
+    "types/",
+    "!src/**/*.test.js",
+    "!src/**/__snapshots__/"
   ],
   "bin": {
     "dito": "./src/cli/index.js"

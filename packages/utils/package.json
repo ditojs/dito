@@ -17,7 +17,9 @@
   },
   "files": [
     "src/",
-    "types/"
+    "types/",
+    "!src/**/*.test.js",
+    "!src/**/__snapshots__/"
   ],
   "engines": {
     "node": ">= 24.0.0"

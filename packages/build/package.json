@@ -10,7 +10,9 @@
     ".": "./src/index.js"
   },
   "files": [
-    "src/"
+    "src/",
+    "!src/**/*.test.js",
+    "!src/**/__snapshots__/"
   ],
   "bin": {
     "inline-assets": "./src/cli/inline-assets.js"
