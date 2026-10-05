@@ -2161,7 +2161,7 @@ export type ControllerActionOptions<
    * }>
    * ```
    */
-  parameters?: { [K in keyof $Params]: Schema<$Params[K]> }
+  parameters?: { [K in keyof $Params]: ParameterSchema<$Params[K]> }
   handler: ControllerActionHandler<$Controller, $Params>
 }
 
@@ -2172,7 +2172,7 @@ export type ModelControllerActionOptions<$ModelController = ModelController> =
      * The handler receives a single parameter object with
      * the same keys.
      */
-    parameters?: { [key: string]: Schema }
+    parameters?: { [key: string]: ParameterSchema }
     /** The function to be called when the action route is requested. */
     handler: ModelControllerActionHandler<$ModelController>
   }
@@ -3160,22 +3160,22 @@ export class QueryBuilder<
   updateById(id: Id, data: PartialModelObject<M>): this
   upsertAndFetch(data: PartialModelObject<M>): this
   insertDitoGraph(
-    data: PartialDitoModelGraph<M>,
+    data: OrArrayOf<PartialDitoModelGraph<M>>,
     options?: DitoGraphOptions
   ): this
 
   insertDitoGraphAndFetch(
-    data: PartialDitoModelGraph<M>,
+    data: OrArrayOf<PartialDitoModelGraph<M>>,
     options?: DitoGraphOptions
   ): this
 
   upsertDitoGraph(
-    data: PartialDitoModelGraph<M>,
+    data: OrArrayOf<PartialDitoModelGraph<M>>,
     options?: DitoGraphOptions
   ): this
 
   upsertDitoGraphAndFetch(
-    data: PartialDitoModelGraph<M>,
+    data: OrArrayOf<PartialDitoModelGraph<M>>,
     options?: DitoGraphOptions
   ): this
 
@@ -3186,12 +3186,12 @@ export class QueryBuilder<
   ): this
 
   updateDitoGraph(
-    data: PartialDitoModelGraph<M>,
+    data: OrArrayOf<PartialDitoModelGraph<M>>,
     options?: DitoGraphOptions
   ): this
 
   updateDitoGraphAndFetch(
-    data: PartialDitoModelGraph<M>,
+    data: OrArrayOf<PartialDitoModelGraph<M>>,
     options?: DitoGraphOptions
   ): this
 
@@ -3202,12 +3202,12 @@ export class QueryBuilder<
   ): this
 
   patchDitoGraph(
-    data: PartialDitoModelGraph<M>,
+    data: OrArrayOf<PartialDitoModelGraph<M>>,
     options?: DitoGraphOptions
   ): this
 
   patchDitoGraphAndFetch(
-    data: PartialDitoModelGraph<M>,
+    data: OrArrayOf<PartialDitoModelGraph<M>>,
     options?: DitoGraphOptions
   ): this
 
@@ -3848,6 +3848,21 @@ export type SelectModelPropertyKeys<T extends Model> = keyof SerializedModel<T>
  * }
  * ```
  */
+/**
+ * The schema of an action parameter, with the source of its value.
+ */
+export type ParameterSchema<$Value = any> = Schema<$Value> & {
+  /**
+   * Where the value of the parameter comes from, instead of the parameters
+   * of the request:
+   * - `'root'`: The whole parameters, e.g. an array in the body.
+   * - `'member'`: The member that a member action is called on.
+   * - `'path'`, `'query'`, `'body'`: The path parameters, the query or the
+   *   body of the request.
+   */
+  from?: 'root' | 'member' | 'path' | 'query' | 'body'
+}
+
 export type Schema<$Value = any> = JSONSchemaType<$Value> & {
   // keywords/_validate.js
   validate?: (params: {
