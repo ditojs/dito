@@ -70,10 +70,11 @@ export class DitoList {
     this.page.once('dialog', dialog => dialog.accept())
     const deleted = this.page
       .waitForResponse(
-        resp =>
+        resp => (
           resp.request().method() === 'DELETE' &&
           /\/api\//.test(resp.url()) &&
-          resp.ok(),
+          resp.ok()
+        ),
         { timeout: 5_000 }
       )
       .catch(() => null)
@@ -214,11 +215,15 @@ export class DitoForm {
     return this.getNotification().count()
   }
 
-  getNotification(options: { error?: boolean; hasText?: string | RegExp } = {}) {
+  getNotification(
+    options: { error?: boolean; hasText?: string | RegExp } = {}
+  ) {
     const locator = this.page.locator(
       options.error ? '.dito-notification.error' : '.dito-notification'
     )
-    return options.hasText ? locator.filter({ hasText: options.hasText }) : locator
+    return options.hasText
+      ? locator.filter({ hasText: options.hasText })
+      : locator
   }
 
   async selectTab(name: string) {
@@ -297,33 +302,36 @@ export class DitoNestedList {
     await removeBtn.click()
   }
 
-  // Dito uses SortableJS with forceFallback under webdriver, so we drive
-  // the fallback by mousedown on the drag handle, wait for the
-  // .dito-draggable__fallback/__chosen class to appear, then move past
-  // the target center to trigger the swap.
   async dragRow(fromIndex: number, toIndex: number) {
-    const handle = (i: number) =>
-      this.rows.nth(i).locator('.dito-button[title="Drag"]')
-    const center = async (i: number) => {
-      const box = await handle(i).boundingBox()
-      if (!box)
-        throw new Error(`Missing drag handle bounding box at index ${i}`)
-      return { x: box.x + box.width / 2, y: box.y + box.height / 2 }
-    }
-    const from = await center(fromIndex)
-    await this.page.mouse.move(from.x, from.y)
-    await this.page.mouse.down()
-    await this.page
-      .locator('.dito-draggable__fallback, .dito-draggable__chosen')
-      .first()
-      .waitFor()
-    // Re-fetch the target center after the drag started — SortableJS may
-    // have shifted elements. Move past the center for a reliable swap.
-    const to = await center(toIndex)
-    const dy = to.y > from.y ? 10 : -10
-    await this.page.mouse.move(to.x, to.y + dy, { steps: 20 })
-    await this.page.mouse.up()
+    const handle = (index: number) =>
+      this.rows.nth(index).locator('.dito-button[title="Drag"]')
+    await dragHandle(this.page, handle(fromIndex), handle(toIndex))
   }
+}
+
+// Dito uses SortableJS with forceFallback under webdriver, so we drive the
+// fallback by mousedown on the drag handle, wait for the
+// .dito-draggable__fallback/__chosen class to appear, then move past the target
+// center to trigger the swap.
+export async function dragHandle(page: Page, from: Locator, to: Locator) {
+  const center = async (handle: Locator) => {
+    const box = await handle.boundingBox()
+    if (!box) throw new Error('Missing drag handle bounding box')
+    return { x: box.x + box.width / 2, y: box.y + box.height / 2 }
+  }
+  const fromCenter = await center(from)
+  await page.mouse.move(fromCenter.x, fromCenter.y)
+  await page.mouse.down()
+  await page
+    .locator('.dito-draggable__fallback, .dito-draggable__chosen')
+    .first()
+    .waitFor()
+  // Re-fetch the target center after the drag started — SortableJS may have
+  // shifted elements. Move past the center for a reliable swap.
+  const toCenter = await center(to)
+  const dy = toCenter.y > fromCenter.y ? 10 : -10
+  await page.mouse.move(toCenter.x, toCenter.y + dy, { steps: 20 })
+  await page.mouse.up()
 }
 
 export class DitoFilterPanel {
@@ -343,7 +351,9 @@ export class DitoFilterPanel {
       .fill(value)
     // Filter panel commits queries via the explicit Filter button — typing
     // alone doesn't refresh the list.
-    await this.region.getByRole('button', { name: 'Filter', exact: true }).click()
+    await this.region
+      .getByRole('button', { name: 'Filter', exact: true })
+      .click()
   }
 }
 

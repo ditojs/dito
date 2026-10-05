@@ -1,6 +1,7 @@
 import { getCaseEntries } from './define.js'
 import checked from './checked.js'
 import code from './code.js'
+import component from './component.js'
 import color from './color.js'
 import date from './date.js'
 import markup from './markup.js'
@@ -27,6 +28,7 @@ export const caseEntries = getCaseEntries([
   ...markup,
   ...code,
   ...structure,
+  ...component,
   ...section,
   ...shared
 ])

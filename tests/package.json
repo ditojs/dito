@@ -14,7 +14,8 @@
     "@ditojs/server": "workspace:^",
     "@ditojs/utils": "workspace:^",
     "@electric-sql/pglite": "^0.5.8",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "vue": "^3.5.43"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",

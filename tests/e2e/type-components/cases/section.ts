@@ -32,6 +32,22 @@ export default [
       stored: { first: 'ada', upper: 'ADA' }
     },
     {
+      title: 'stores values of data components',
+      schema: {
+        nested: true,
+        components: {
+          first: text('First'),
+          upper: {
+            type: 'data',
+            data: ({ item }: { item: { first?: string } }) =>
+              item.first?.toUpperCase()
+          }
+        }
+      },
+      value: { First: 'ada' },
+      stored: { first: 'ada', upper: 'ADA' }
+    },
+    {
       title: 'keeps values of hidden components',
       schema: {
         nested: true,

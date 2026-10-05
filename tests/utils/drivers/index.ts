@@ -26,7 +26,11 @@ export interface TypeComponentDriver {
   /** The element that represents the component's value. */
   getElement(page: Page, component: DriverComponent): Locator
   /** Enters a value, in the type-specific format used by the cases. */
-  setValue(page: Page, component: DriverComponent, value: unknown): Promise<void>
+  setValue(
+    page: Page,
+    component: DriverComponent,
+    value: unknown
+  ): Promise<void>
   /** Returns the displayed value, comparable to the cases' `shown`. */
   getValue(page: Page, component: DriverComponent): Promise<unknown>
 }
@@ -53,6 +57,8 @@ const drivers: Record<string, TypeComponentDriver> = {
   checkboxes,
   slider,
   code,
+  // Custom components, as rendered by the cases' own inputs.
+  component: text,
   list,
   object,
   section,
