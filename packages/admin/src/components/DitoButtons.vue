@@ -5,7 +5,7 @@
   template(
     v-for="(buttonSchema, buttonDataPath) in buttonSchemas"
   )
-    DitoContainer(
+    DitoContainer.dito-buttons__container(
       v-if="shouldRenderSchema(buttonSchema)"
       :key="buttonDataPath"
       :schema="buttonSchema"
@@ -21,7 +21,7 @@
   )
     //- Render each node in the default slot through `dito-vnode`,
     //- so it can be wrapped in a `.dito-container` class.
-    .dito-container(
+    .dito-container.dito-buttons__container(
       v-if="hasVNodeContent(vnode)"
     )
       DitoVnode(:vnode="vnode")

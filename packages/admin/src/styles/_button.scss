@@ -109,10 +109,53 @@
       cursor: grabbing;
     }
   }
+
+  .dito-buttons--large & {
+    border-radius: 2em;
+    padding: $button-round-padding;
+  }
+
+  // Buttons in round and small button groups show icons instead of text.
+  // For now, nothing for create: &--create:empty::before
+  .dito-buttons--round &,
+  .dito-buttons--small & {
+    &--add:empty::before {
+      @extend %icon-add;
+    }
+
+    &--upload:empty::before {
+      @extend %icon-upload;
+    }
+
+    &--delete:empty::before,
+    &--remove:empty::before {
+      @extend %icon-remove;
+    }
+
+    &--edit:empty::before {
+      @extend %icon-edit;
+    }
+
+    &--clear:empty::before {
+      @extend %icon-clear;
+    }
+
+    &--drag:empty::before {
+      @extend %icon-drag;
+    }
+
+    &--copy:empty::before {
+      @extend %icon-copy;
+    }
+
+    &--paste:empty::before {
+      @extend %icon-paste;
+    }
+  }
 }
 
 .dito-buttons {
-  // TODO: BEM
+  $self: &;
 
   &--large {
     --button-margin: 3px;
@@ -122,14 +165,9 @@
     justify-content: center;
     padding-bottom: $content-padding;
 
-    .dito-container {
+    #{$self}__container {
       // Do not specify this on .dito-buttons directly as it would break borders
       margin-top: $content-padding;
-    }
-
-    .dito-button {
-      border-radius: 2em;
-      padding: $button-round-padding;
     }
   }
 
@@ -150,45 +188,6 @@
 
     &:empty {
       display: none;
-    }
-  }
-
-  &--round,
-  &--small {
-    // For now, nothing for create:
-    // .dito-button--create:empty::before
-
-    .dito-button--add:empty::before {
-      @extend %icon-add;
-    }
-
-    .dito-button--upload:empty::before {
-      @extend %icon-upload;
-    }
-
-    .dito-button--delete:empty::before,
-    .dito-button--remove:empty::before {
-      @extend %icon-remove;
-    }
-
-    .dito-button--edit:empty::before {
-      @extend %icon-edit;
-    }
-
-    .dito-button--clear:empty::before {
-      @extend %icon-clear;
-    }
-
-    .dito-button--drag:empty::before {
-      @extend %icon-drag;
-    }
-
-    .dito-button--copy:empty::before {
-      @extend %icon-copy;
-    }
-
-    .dito-button--paste:empty::before {
-      @extend %icon-paste;
     }
   }
 }
