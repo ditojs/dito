@@ -97,6 +97,7 @@
       :draggable="childrenDraggable"
       :label="getItemLabel(childrenSchema, item.data, { index })"
       :level="level + 1"
+      @delete="deleteChild(index)"
     )
     //- TODO: Convert dito-tree-item to use dito-label internally, and then
     //- pass `asObject: true` in the `getItemLabel()` call above.
@@ -115,7 +116,7 @@ import { stripHtml } from '@ditojs/utils'
 // @vue/component
 export default DitoComponent.component('DitoTreeItem', {
   mixins: [ItemMixin, SortableMixin],
-  emits: ['update:data'],
+  emits: ['update:data', 'delete'],
   inject: ['container'],
 
   props: {
@@ -302,8 +303,56 @@ export default DitoComponent.component('DitoTreeItem', {
       this.editPath(this.path)
     },
 
+    // Items are removed from the children of their parent, see
+    // `deleteChild()`.
     onDelete() {
-      // TODO: Implement!
+      this.$emit('delete')
+    },
+
+    // Removes the child after confirming it, like inlined lists do. Open forms
+    // of the child or of its later siblings are closed, as the removal shifts
+    // the indices in their paths. The removal is transient, as the tree is
+    // part of its form's data.
+    deleteChild(index) {
+      const { childrenSchema, container } = this
+      const item = this.childrenList[index]
+      const label = this.getItemLabel(childrenSchema, item, {
+        index,
+        extended: true
+      })
+      if (
+        window.confirm(`Do you really want to ${this.verbs.delete} ${label}?`)
+      ) {
+        if (this.isEditingChildFrom(index)) {
+          this.$router.push({
+            path: container.path,
+            query: this.$route.query
+          })
+        }
+        this.childrenList = this.childrenList.toSpliced(index, 1)
+        this.onChange()
+        this.notify({
+          type: 'info',
+          title: 'Successfully Removed',
+          text: [`${label} was ${this.verbs.deleted}.`, container.transientNote]
+        })
+      }
+    },
+
+    // Returns whether the form of a child at the index or after it is open,
+    // or the form of one of their own children.
+    isEditingChildFrom(index) {
+      const childrenPath = this.childrenSchema.path
+      if (!childrenPath) {
+        return false
+      }
+      const prefix = `${this.path}/${childrenPath}/`
+      const { editPath } = this.container
+      if (!editPath.startsWith(prefix)) {
+        return false
+      }
+      const [childIndex] = editPath.slice(prefix.length).split('/')
+      return Number(childIndex) >= index
     },
 
     onChange() {

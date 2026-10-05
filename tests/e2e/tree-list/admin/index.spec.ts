@@ -107,6 +107,57 @@ test.describe('tree list', () => {
     ])
   })
 
+  test('stores the removal of children', async ({ page, url }) => {
+    const library = await openLibrary(page, url, [
+      {
+        name: 'Fiction',
+        order: 0,
+        books: [
+          { name: 'Dune', order: 0 },
+          { name: 'Emma', order: 1 }
+        ]
+      }
+    ])
+    await page.getByRole('button', { name: 'Fiction' }).click()
+    const header = getTreeHeader(page, 'Dune')
+    await header.hover()
+    page.once('dialog', dialog => dialog.accept())
+    await header.getByRole('button', { name: 'Remove' }).click()
+    await expect(getTreeLabels(page)).toHaveText(['Fiction', 'Emma'])
+    await new DitoForm(page).save()
+    expect(await getStoredShelves(library)).toEqual([
+      { name: 'Fiction', order: 0, books: [{ name: 'Emma', order: 0 }] }
+    ])
+  })
+
+  test('closes the forms of children whose indices shift', async ({
+    page,
+    url
+  }) => {
+    await openLibrary(page, url, [
+      {
+        name: 'Fiction',
+        order: 0,
+        books: [
+          { name: 'Dune', order: 0 },
+          { name: 'Emma', order: 1 },
+          { name: 'Ulysses', order: 2 }
+        ]
+      }
+    ])
+    await page.getByRole('button', { name: 'Fiction' }).click()
+    await editTreeItem(page, 'Emma')
+    const title = page.getByLabel('Book Title', { exact: true })
+    await expect(title).toHaveValue('Emma')
+    // Removing Dune moves Ulysses to the index of Emma's open form.
+    const header = getTreeHeader(page, 'Dune')
+    await header.hover()
+    page.once('dialog', dialog => dialog.accept())
+    await header.getByRole('button', { name: 'Remove' }).click()
+    await expect(getTreeLabels(page)).toHaveText(['Fiction', 'Emma', 'Ulysses'])
+    await expect(title).toHaveCount(0)
+  })
+
   test('shows the properties and children of objects', async ({
     page,
     url
