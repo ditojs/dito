@@ -126,10 +126,12 @@ export function shouldIgnoreMissingValue(schema, context) {
 // is missing in `data`: if there's no value, or if the value is `null` and
 // the type treats that as missing, e.g. nested sections.
 export function isMissingValue(schema, data, name, context) {
+  // Only read the value if needed, so that callers that are tracked, e.g. the
+  // walk of the form model's data, don't depend on all values.
   return (
     !(name in data) ||
-    data[name] === null &&
-    !!getTypeOptions(schema)?.treatNullAsMissing?.(getContext(context))
+    !!getTypeOptions(schema)?.treatNullAsMissing?.(getContext(context)) &&
+    data[name] === null
   )
 }
 
@@ -531,19 +533,24 @@ export function processSchemaData(schema, data, {
 
           before?.(entry)
 
-          let value = processedData ? processedData[name] : data[name]
-          if (value != null && hasFormSchema(componentSchema)) {
-            // Recursively process data on nested form items.
-            if (isArray(value)) {
-              // Optimization: No need to collect values if we're not cloning!
-              value = processedData
-                ? value.map(processItem)
-                : value.forEach(processItem)
-            } else {
-              value = processItem(value)
-            }
-            if (processedData) {
-              processedData[name] = value
+          // Only read the values of sources with forms, so that callers that
+          // are tracked, e.g. the walk of the form model's data, don't depend
+          // on all values.
+          if (hasFormSchema(componentSchema)) {
+            let value = processedData ? processedData[name] : data[name]
+            if (value != null) {
+              // Recursively process data on nested form items.
+              if (isArray(value)) {
+                // Optimization: No need to collect values if not cloning!
+                value = processedData
+                  ? value.map(processItem)
+                  : value.forEach(processItem)
+              } else {
+                value = processItem(value)
+              }
+              if (processedData) {
+                processedData[name] = value
+              }
             }
           }
 

@@ -12,7 +12,7 @@ import { DataSchemaResolver } from './DataSchemaResolver.js'
 import { isNested, isSourceWithResource } from './schema/structure.js'
 import { isEmptySchema } from './schema/lookup.js'
 import {
-  shouldRenderSchema,
+  getSchemaValue,
   shouldSetDefaultValue,
   getDefaultValue,
   initializeData,
@@ -319,8 +319,7 @@ export class FormModel {
         dataPath: this.dataPath,
         componentPath: this.componentPath,
         shouldProcess: entry => (
-          !isSourceWithResource(entry.schema) &&
-          shouldRenderSchema(entry.schema, this.createEntryContext(entry))
+          !isSourceWithResource(entry.schema) && this.isEntryShown(entry)
         ),
         before: entry => {
           if (hasComputedValueSource(entry.schema)) {
@@ -334,6 +333,22 @@ export class FormModel {
       })
     }
     return { computedValueEntries, entriesWithMissingValues }
+  }
+
+  // Returns whether the `if` of the entry's component doesn't evaluate to
+  // `false`. Unlike `shouldRenderSchema()`, it doesn't evaluate the components
+  // of sections and tabs, as the walk of the data visits them anyway, see
+  // `getDataEntries()`, which leads to the same entries.
+  isEntryShown(entry) {
+    return (
+      entry.schema.if === undefined ||
+      getSchemaValue('if', {
+        type: Boolean,
+        schema: entry.schema,
+        context: this.createEntryContext(entry),
+        default: true
+      })
+    )
   }
 
   // Returns whether the value of the entry is missing and needs its default.
@@ -509,7 +524,7 @@ export class FormModel {
     const tokens = isNested(schema)
       ? parseDataPath(dataPath)
       : [...parseDataPath(dataPath), name]
-    return tokens.slice(parseDataPath(this.dataPath).length)
+    return tokens.slice(parseDataPath(this.dataPath).length).join('/')
   }
 
   // Returns the context for `if`, data schemas and options, with the component
@@ -540,8 +555,9 @@ function takeOverValuesAtDataPaths(
   }
   const result = clone(processedData)
   for (const dataPath of dataPaths) {
-    const parentDataPath = dataPath.slice(0, -1)
-    const key = dataPath.at(-1)
+    const tokens = parseDataPath(dataPath)
+    const parentDataPath = tokens.slice(0, -1)
+    const key = tokens.at(-1)
     const parent = getValueAtDataPath(result, parentDataPath, () => null)
     if (parent && typeof parent === 'object') {
       const value = getValueAtDataPath(

@@ -463,6 +463,39 @@ describe('FormModel', () => {
       formModel.stop()
     })
 
+    it('records the values derived while the model settles once', async () => {
+      let resolveLength
+      const schema = {
+        type: 'form',
+        components: {
+          title: { type: 'text' },
+          slug,
+          length: {
+            type: 'computed',
+            data: () =>
+              new Promise(resolve => {
+                resolveLength = resolve
+              })
+          }
+        }
+      }
+      const { formModel, data } = createFormModel(
+        schema,
+        { title: 'Hello' },
+        { getSourceSchema }
+      )
+      await nextTick()
+      // `slug` is written for each title while `length` still loads:
+      data.title = 'One'
+      await nextTick()
+      data.title = 'Two'
+      await nextTick()
+      expect([...formModel.derivedValueDataPaths]).toEqual(['slug'])
+      resolveLength(3)
+      await waitForProcessedDataSnapshot(formModel)
+      formModel.stop()
+    })
+
     it('counts changes made while the model settles', async () => {
       // `size` selects its first option once the options are loaded, which is
       // derived and doesn't count, while the edit of `title` does.
