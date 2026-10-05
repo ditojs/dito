@@ -336,4 +336,29 @@ test.describe('form model', () => {
       })
       .toEqual({ title: 'New', references: [{ id: 1, title: 'Reference' }] })
   })
+
+  test("doesn't mark forms dirty by values whose options disappeared", async ({
+    page,
+    url
+  }) => {
+    // `status` replaces the value without option with `null`, which its
+    // compute then replaces with the first option.
+    const article = await Article.query().insert({
+      title: 'Old',
+      status: 'archived'
+    })
+    await openArticle(page, url, article)
+    await expect(page.getByLabel('Status', { exact: true })).toHaveValue(
+      'draft'
+    )
+    await waitForDelayedOptions(page)
+    const dialogMessages: string[] = []
+    page.on('dialog', dialog => {
+      dialogMessages.push(dialog.message())
+      return dialog.dismiss()
+    })
+    await page.getByRole('button', { name: 'Cancel', exact: true }).click()
+    await expect(page).toHaveURL(/\/articles$/)
+    expect(dialogMessages).toEqual([])
+  })
 })

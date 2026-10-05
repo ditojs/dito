@@ -82,13 +82,17 @@ export default {
       return this.getOptionForValue(this.selectedValue)
     },
 
+    // The form model of the data, owned by the dialog or route component.
+    formModel() {
+      return (this.dialogComponent ?? this.routeComponent).formModel
+    },
+
     // The resolver of the options in the form model of the data, which loads
     // them and shares them with the computes of the form. It is looked up with
     // the entry of this component, in the shape of the entries of
     // `processSchemaData()`, see `FormModel`.
     optionsResolver() {
-      const formModel = (this.dialogComponent ?? this.routeComponent).formModel
-      return formModel.getOptionsResolver({
+      return this.formModel.getOptionsResolver({
         schema: this.schema,
         data: this.data,
         name: this.name,
@@ -243,10 +247,16 @@ export default {
 
     // Writes the selected value back into the data, through the setter of
     // `selectedValue`, which converts it to the value, e.g. a reference id to
-    // its option with `relate`.
+    // its option with `relate`, or a value whose option disappeared to `null`.
+    // This is derived from the options, not a change by the user, so it is
+    // made as a clean change, which doesn't make the form dirty.
     replaceValueWithSelectedValue() {
       const { selectedValue } = this
-      this.selectedValue = selectedValue
+      this.formModel
+        .applyCleanChanges(() => {
+          this.selectedValue = selectedValue
+        })
+        .catch(console.error)
     },
 
     // Groups the options by the `groupBy` key, see `groupByLabel` and
