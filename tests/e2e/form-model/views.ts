@@ -17,6 +17,9 @@ type ArticleItem = Article & {
   preview: never
   previewText?: string | null
   resetPreview: never
+  // `notes` and the count of their changes are only edited, not stored.
+  notes?: string | null
+  notesChanges?: number | null
   // `doubleAmount` is only displayed, not stored.
   lines?: { amount?: number | null; doubleAmount?: number | null }[] | null
 }
@@ -98,8 +101,9 @@ export const articles = createWidgetView<ArticleItem>(
                   { label: 'Published', value: 'published' }
                 ]
               },
-              compute: ({ value, options }) =>
+              compute: ({ value, options }) => (
                 value ?? options?.[0]?.value ?? undefined
+              )
             },
             category: {
               type: 'select',
@@ -172,8 +176,10 @@ export const articles = createWidgetView<ArticleItem>(
                 { label: 'Custom Factor', value: 'factor' }
               ],
               compute: ({ value, item }) => {
-                const pricing =
-                  value ?? (item.customFactor != null ? 'factor' : undefined)
+                const pricing = (
+                  value ??
+                  (item.customFactor != null ? 'factor' : undefined)
+                )
                 if (pricing !== 'factor') {
                   item.customFactor = null
                 }
@@ -244,6 +250,24 @@ export const articles = createWidgetView<ArticleItem>(
                 }
               }
             },
+            // Counts the changes of the markup, which are emitted once the
+            // editing is done, like for lineto's article previews.
+            notes: {
+              type: 'markup',
+              label: 'Notes',
+              exclude: true,
+              events: {
+                change: ({ item }) => {
+                  item.notesChanges = (item.notesChanges ?? 0) + 1
+                }
+              }
+            },
+            notesChanges: {
+              type: 'number',
+              label: 'Notes Changes',
+              exclude: true,
+              readonly: true
+            },
             // A list without a form and without a resource, which only
             // displays its items, and saves them as they are.
             references: {
@@ -302,8 +326,9 @@ export const articles = createWidgetView<ArticleItem>(
               components: {
                 slug: {
                   type: 'computed',
-                  compute: ({ item }) =>
+                  compute: ({ item }) => (
                     item.title?.toLowerCase().replaceAll(' ', '-') ?? null
+                  )
                 },
                 // Resolved asynchronously from a data schema.
                 titleLength: {

@@ -251,9 +251,11 @@ export default DitoTypeComponent.register('markup', {
     const onFocus = () => this.onFocus()
 
     const onBlur = () => {
-      // Write the value first, so that validating on blur validates it.
+      // Write the value first, so that validating on blur validates it, and
+      // emit the change once the editor isn't focused anymore.
       updateValue()
       this.onBlur()
+      emitChange()
     }
 
     const onUpdate = () => {
@@ -275,9 +277,16 @@ export default DitoTypeComponent.register('markup', {
         ignoreWatch = true
         this.value = value
       }
-      if (!this.focused && changed) {
-        this.onChange()
+      if (!this.focused) {
+        emitChange()
+      }
+    }
+
+    // Emits the change of the value, once the editing is done.
+    const emitChange = () => {
+      if (changed) {
         changed = false
+        this.onChange()
       }
     }
 

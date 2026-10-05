@@ -255,6 +255,24 @@ test.describe('form model', () => {
     await expect(page).toHaveURL(/\/articles$/)
     expect(dialogMessages).toEqual([])
   })
+  test('emits changes of markup once the editing is done', async ({
+    page,
+    url
+  }) => {
+    const article = await Article.query().insert({ title: 'Article' })
+    await openArticle(page, url, article)
+    const notes = page.locator('.dito-markup [contenteditable]')
+    await notes.click()
+    await notes.pressSequentially('Some notes')
+    // Pause like users do, so that the editor writes the value while it's
+    // still focused, which its update does after 100ms, before leaving it.
+    await page.waitForTimeout(300)
+    await page.getByLabel('Title', { exact: true }).click()
+    await expect(page.getByLabel('Notes Changes', { exact: true })).toHaveValue(
+      '1'
+    )
+  })
+
   test('returns the reactive data from `setData()`', async ({ page, url }) => {
     const article = await Article.query().insert({ title: 'Old' })
     await openArticle(page, url, article)
@@ -273,7 +291,9 @@ test.describe('form model', () => {
     await page.getByLabel('Keyword', { exact: true }).fill('News')
     await page.getByRole('button', { name: 'Create', exact: true }).click()
     await expect
-      .poll(async () => (await Article.query().findOne({ title: 'New' }))?.keywords)
+      .poll(
+        async () => (await Article.query().findOne({ title: 'New' }))?.keywords
+      )
       .toEqual(['News'])
   })
   test("doesn't evaluate components that `if` hides", async ({ page, url }) => {
