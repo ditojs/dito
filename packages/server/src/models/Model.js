@@ -182,6 +182,13 @@ export class Model extends objection.Model {
   }
 
   // @override
+  static getConcurrency(knex) {
+    // A transaction holds a single connection, so concurrent queries just
+    // queue up in pg's client, which is deprecated and removed in pg@9.
+    return knex?.isTransaction ? 1 : super.getConcurrency(knex)
+  }
+
+  // @override
   $validate(json, options = {}) {
     if (options.skipValidation) {
       return json
