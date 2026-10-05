@@ -20,6 +20,8 @@ type ArticleItem = Article & {
   // `notes` and the count of their changes are only edited, not stored.
   notes?: string | null
   notesChanges?: number | null
+  // The topic that the change handler of `category` sees, only displayed.
+  topicOnCategoryChange?: string | null
   // `doubleAmount` is only displayed, not stored.
   lines?: { amount?: number | null; doubleAmount?: number | null }[] | null
 }
@@ -108,7 +110,14 @@ export const articles = createWidgetView<ArticleItem>(
               type: 'select',
               label: 'Category',
               options: { data: () => loadDelayed(categoryOptions) },
-              compute: getValidOrFirstOption
+              compute: getValidOrFirstOption,
+              events: {
+                // Sees the topic that the form model derives from the
+                // category, once the options of the topic are loaded.
+                change: ({ item }) => {
+                  item.topicOnCategoryChange = item.topic
+                }
+              }
             },
             // Like lineto's font chooser: The options come from data next to
             // the select, which a button resets.
@@ -353,6 +362,12 @@ export const articles = createWidgetView<ArticleItem>(
                     }
                   },
                   compute: getValidOrFirstOption
+                },
+                topicOnCategoryChange: {
+                  type: 'text',
+                  label: 'Topic On Category Change',
+                  exclude: true,
+                  readonly: true
                 }
               }
             }

@@ -273,6 +273,20 @@ test.describe('form model', () => {
     )
   })
 
+  test('calls change handlers once the form model settled', async ({
+    page,
+    url
+  }) => {
+    const article = await Article.query().insert({ title: 'Article' })
+    await openArticle(page, url, article)
+    await waitForDelayedOptions(page)
+    await page.getByLabel('Category', { exact: true }).selectOption('sports')
+    await page.getByRole('tab', { name: 'Meta', exact: true }).click()
+    await expect(
+      page.getByLabel('Topic On Category Change', { exact: true })
+    ).toHaveValue('football')
+  })
+
   test('returns the reactive data from `setData()`', async ({ page, url }) => {
     const article = await Article.query().insert({ title: 'Old' })
     await openArticle(page, url, article)

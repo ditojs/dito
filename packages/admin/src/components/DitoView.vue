@@ -45,7 +45,8 @@ export default DitoComponent.component('DitoView', {
     // Redirect $sourceComponent and $resourceComponent to the main component:
     return {
       $sourceComponent: () => this.mainComponent?.sourceComponent || null,
-      $resourceComponent: () => this.mainComponent?.resourceComponent || null
+      $resourceComponent: () => this.mainComponent?.resourceComponent || null,
+      $formModel: () => this.ownFormModel
     }
   },
 
@@ -60,6 +61,11 @@ export default DitoComponent.component('DitoView', {
   },
 
   computed: {
+    // @override DitoMixin.formModel
+    formModel() {
+      return this.ownFormModel
+    },
+
     schema() {
       return this.meta.schema ?? {}
     },
@@ -120,7 +126,7 @@ export default DitoComponent.component('DitoView', {
   created() {
     // Writes defaults and computed values into the view's data and resolves
     // options, see `FormModel`:
-    this.formModel = new FormModel({
+    this.ownFormModel = new FormModel({
       component: this,
       getSchema: () => this.viewSchema,
       getData: () => this.data
@@ -137,7 +143,7 @@ export default DitoComponent.component('DitoView', {
   beforeUnmount() {
     // Stop the model before the component's own watchers are stopped, as the
     // model's watchers aren't part of the component, see `FormModel`.
-    this.formModel.stop()
+    this.ownFormModel.stop()
   },
 
   methods: {

@@ -47,7 +47,8 @@ export default DitoComponent.component('DitoDialog', {
 
   provide() {
     return {
-      $dialogComponent: () => this
+      $dialogComponent: () => this,
+      $formModel: () => this.ownFormModel
     }
   },
 
@@ -79,6 +80,11 @@ export default DitoComponent.component('DitoDialog', {
   },
 
   computed: {
+    // @override DitoMixin.formModel
+    formModel() {
+      return this.ownFormModel
+    },
+
     dialogComponent() {
       return this
     },
@@ -130,7 +136,7 @@ export default DitoComponent.component('DitoDialog', {
   created() {
     // Writes defaults and computed values into the dialog's data and resolves
     // options, see `FormModel`:
-    this.formModel = new FormModel({
+    this.ownFormModel = new FormModel({
       component: this,
       getSchema: () => this.schema,
       getData: () => this.dialogData
@@ -150,7 +156,7 @@ export default DitoComponent.component('DitoDialog', {
   beforeUnmount() {
     // Stop the model before the component's own watchers are stopped, as the
     // model's watchers aren't part of the component, see `FormModel`.
-    this.formModel.stop()
+    this.ownFormModel.stop()
   },
 
   methods: {

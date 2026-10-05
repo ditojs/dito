@@ -1092,14 +1092,17 @@ export interface SchemaFields<$Item> {
   onDestroy?: ItemEventHandler<$Item>
   /**
    * Called after data has been fetched from the API.
-   * Fires after all reactive updates have propagated.
+   * Fires after all reactive updates have propagated,
+   * once the values derived from the data are written,
+   * including the ones that depend on options to load.
    */
   onLoad?: ItemEventHandler<$Item>
   /**
    * Called after a value change is committed. Fires
-   * after all reactive updates have propagated. Bubbles
-   * to parent schemas — return `false` to stop
-   * propagation.
+   * after all reactive updates have propagated, once the
+   * values derived from the change are written, including
+   * the ones that depend on options to load. Bubbles to
+   * parent schemas — return `false` to stop propagation.
    */
   onChange?: ItemEventHandler<$Item>
 }

@@ -66,6 +66,12 @@ import { FormModel } from '../utils/FormModel.js'
 export default DitoComponent.component('DitoForm', {
   mixins: [RouteMixin, ResourceMixin],
 
+  provide() {
+    return {
+      $formModel: () => this.ownFormModel
+    }
+  },
+
   data() {
     return {
       createdData: null,
@@ -74,6 +80,11 @@ export default DitoComponent.component('DitoForm', {
   },
 
   computed: {
+    // @override DitoMixin.formModel
+    formModel() {
+      return this.ownFormModel
+    },
+
     isForm() {
       return true
     },
@@ -355,7 +366,7 @@ export default DitoComponent.component('DitoForm', {
   created() {
     // Writes defaults and computed values into the form's data, resolves
     // options and tracks whether the data is dirty, see `FormModel`:
-    this.formModel = new FormModel({
+    this.ownFormModel = new FormModel({
       component: this,
       getSchema: () => this.schema,
       getData: () => this.data,
@@ -366,7 +377,7 @@ export default DitoComponent.component('DitoForm', {
   beforeUnmount() {
     // Stop the model before the component's own watchers are stopped, as the
     // model's watchers aren't part of the component, see `FormModel`.
-    this.formModel.stop()
+    this.ownFormModel.stop()
   },
 
   methods: {

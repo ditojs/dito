@@ -32,6 +32,7 @@ export default {
     '$sourceComponent',
     '$resourceComponent',
     '$dialogComponent',
+    '$formModel',
     '$panelComponent',
     '$tabComponent'
   ],
@@ -57,6 +58,12 @@ export default {
   },
 
   computed: {
+    // The form model of the data, provided by the form, view or dialog that
+    // owns it, which override it with their own.
+    formModel() {
+      return this.$formModel()
+    },
+
     providesData() {
       // NOTE: This is overridden in ResourceMixin, used by lists.
       return false
@@ -615,15 +622,21 @@ export default {
             : handleParentListeners(undefined)
 
         return ['load', 'change'].includes(event)
-          ? // The effects of some events need time to propagate through Vue.
-            // Use $nextTick() to make sure our handlers see these changes.
-            // For example, `processedItem` is only correct after components
-            // that are newly rendered due to data changes have registered.
-            // NOTE: The result of `handleListeners()` makes it through the
-            // `$nextTick()` call and will be returned as expected.
-            this.$nextTick(handleListeners)
+          ? // The effects of these events need time to propagate, so that the
+            // handlers see them: Components that are newly rendered due to
+            // data changes register, e.g. for `processedItem`, and the form
+            // model writes the values that it derives from the data.
+            // NOTE: The result of `handleListeners()` is returned as expected.
+            this.waitForFormModel().then(handleListeners)
           : handleListeners()
       }
+    },
+
+    // Waits until the form model of the data settled: its loads finished, and
+    // it wrote the values that it derives from the data.
+    async waitForFormModel() {
+      await this.$nextTick()
+      await this.formModel?.waitForPendingLoads()
     },
 
     emitSchemaEvent(event, params) {
