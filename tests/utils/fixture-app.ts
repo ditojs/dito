@@ -5,7 +5,9 @@ import {
   AdminController,
   ModelController,
   type ApplicationControllers,
-  type Model
+  type Model,
+  type ModelControllerActions,
+  type ModelControllerMemberActions
 } from '@ditojs/server'
 import {
   createTestApp,
@@ -80,11 +82,12 @@ export async function teardownTestApp(app: TestApp): Promise<void> {
  * Scenarios extend it to configure scopes, graphs, relations, etc.
  */
 export class ScenarioController extends ModelController {
-  collection = {
-    allow: ['get', 'post'] as const
+  // Typed as actions, so that scenarios can add actions of their own.
+  override collection: ModelControllerActions<this> = {
+    allow: ['get', 'post']
   }
-  member = {
-    allow: ['get', 'patch', 'delete'] as const
+  override member: ModelControllerMemberActions<this> = {
+    allow: ['get', 'patch', 'delete']
   }
 }
 

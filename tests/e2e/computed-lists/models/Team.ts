@@ -5,6 +5,8 @@ export interface Assignment {
   member: string
   days: number[]
   hours?: number
+  // Buttons don't hold data of their own, so their keys are `never`.
+  notify?: never
 }
 
 export interface Team {

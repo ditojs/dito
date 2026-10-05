@@ -1,3 +1,4 @@
+import type { ModelControllerActions } from '@ditojs/server'
 import { defineScenario, ScenarioController } from '../../utils/fixture-app.js'
 import { Page } from './models/Page.js'
 
@@ -9,29 +10,19 @@ class Pages extends ScenarioController {
   override modelClass = Page
   override graph = true
   // Stores the order of the pages that the order button sends.
-  override collection = {
-    'allow': ['get', 'post', 'order'] as const,
+  override collection: ModelControllerActions<this> = {
+    'allow': ['get', 'post'],
     'post order': {
       parameters: {
         data: {
           type: 'array',
+          items: { type: 'object' },
           from: 'root',
-          required: true,
-          items: {
-            type: 'object',
-            properties: {
-              id: { type: 'integer', required: true },
-              order: { type: 'integer', required: true }
-            }
-          }
+          required: true
         }
       },
-      handler(
-        this: Pages,
-        _ctx: unknown,
-        { data }: { data: { id: number; order: number }[] }
-      ) {
-        return this.modelClass.patchDitoGraph(data)
+      handler(_ctx: unknown, { data }: { data: Pick<Page, 'id' | 'order'>[] }) {
+        return Page.query().patchDitoGraph(data)
       }
     }
   }

@@ -117,7 +117,13 @@ export const dashboards = createWidgetView<Dashboard>('name', 'dashboards', {
                   }
                 ])
               ),
-              compute: ({ value, item: sizes }) =>
+              compute: ({
+                value,
+                item: sizes
+              }: {
+                value: SizeEntry[] | null
+                item: Record<string, unknown>
+              }) =>
                 Array.isArray(value)
                   ? value
                   : Object.entries(sizes)
