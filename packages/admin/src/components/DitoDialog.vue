@@ -182,7 +182,7 @@ export default DitoComponent.component('DitoDialog', {
 
     async submit() {
       // Wait for computed values that depend on pending loads, e.g. options.
-      await this.waitForPendingLoadsOf(this.dataModel)
+      await this.waitUntilDataModelSettled()
       this.resolve(this.dialogData)
     },
 

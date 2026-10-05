@@ -41,7 +41,7 @@ import {
 //   displays them, see `getOptions()`. Both get the same option objects, and
 //   computes that read options only run once they are loaded.
 // - Submitting waits for the loads of data schemas and options that are still
-//   pending, see `waitForPendingLoads()`.
+//   pending, see `waitUntilSettled()`.
 // - The data is dirty when its processed data differs from a snapshot taken
 //   when the data was set up, saved or applied, see `isDirty`. The values that
 //   the model derives until it settled, e.g. from loaded options, don't count,
@@ -68,7 +68,7 @@ export class DataModel {
   // of their options, by component path, see `getOptionsResolver()`:
   optionsRecords = new Map()
   // The promises of the loads of data schemas and options that are pending,
-  // see `waitForPendingLoads()`:
+  // see `waitUntilSettled()`:
   pendingLoads = new Set()
   // The data that the snapshot was taken of, and its processed data to compare
   // with in `isDirty`, see `takeProcessedDataSnapshot()`:
@@ -166,12 +166,18 @@ export class DataModel {
     this.pendingLoads.clear()
   }
 
+  // Whether loads of data schemas or options are pending, see
+  // `waitUntilSettled()`.
+  get hasPendingLoads() {
+    return this.pendingLoads.size > 0
+  }
+
   // Waits for the pending loads of data schemas and options, including the
   // ones that they cause, e.g. options that depend on computed values that
   // depend on loaded options, and for the watchers to write the resulting
   // computed values into the data.
-  async waitForPendingLoads() {
-    while (this.pendingLoads.size > 0) {
+  async waitUntilSettled() {
+    while (this.hasPendingLoads) {
       await Promise.all(this.pendingLoads)
       await nextTick()
     }
@@ -180,7 +186,7 @@ export class DataModel {
   // Takes the snapshot of the processed data that `isDirty` compares with,
   // when the data is set up, saved or applied. Until the model settled, i.e.
   // the pending loads finished and the computed values that depend on them are
-  // written into the data, see `waitForPendingLoads()`, the values that the
+  // written into the data, see `waitUntilSettled()`, the values that the
   // model writes are recorded in `derivedValueDataPaths` and don't count, as
   // they're derived from the data, e.g. from loaded options. Once settled, they
   // are taken over into the snapshot, so that changes made in the meantime,
@@ -200,7 +206,7 @@ export class DataModel {
     }
     // Let the watchers and the rendering start their loads first:
     await nextTick()
-    await this.waitForPendingLoads()
+    await this.waitUntilSettled()
     // Snapshots that were taken since settle by themselves.
     const isSnapshotReplaced = (
       this.derivedValueDataPaths !==
@@ -265,7 +271,7 @@ export class DataModel {
     if (hasSnapshotOfData) {
       // Let the watchers write the values derived from the changes first:
       await nextTick()
-      await this.waitForPendingLoads()
+      await this.waitUntilSettled()
       // Take the changes over into the current snapshot of the data, which may
       // have been replaced in the meantime, e.g. once the model settled.
       const processedDataSnapshot = this.processedDataSnapshot.value
@@ -283,7 +289,7 @@ export class DataModel {
   }
 
   // Tracks the promise of a pending load until it settles, so that
-  // `waitForPendingLoads()` waits for it.
+  // `waitUntilSettled()` waits for it.
   trackPendingLoad(promise) {
     this.pendingLoads.add(promise)
     promise.finally(() => this.pendingLoads.delete(promise))

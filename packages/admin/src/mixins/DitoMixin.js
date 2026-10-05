@@ -497,17 +497,6 @@ export default {
         : parentComponentPath
     },
 
-    // Waits for the pending loads of the data model, e.g. before submitting,
-    // showing the spinner in the header in the meantime, like requests do.
-    async waitForPendingLoadsOf(dataModel) {
-      this.rootComponent.registerLoading(true)
-      try {
-        await dataModel.waitForPendingLoads()
-      } finally {
-        this.rootComponent.registerLoading(false)
-      }
-    },
-
     notify(options) {
       this.rootComponent.notify(options)
     },
@@ -626,16 +615,25 @@ export default {
             // data changes register, e.g. for `processedItem`, and the form
             // model writes the values that it derives from the data.
             // NOTE: The result of `handleListeners()` is returned as expected.
-            this.waitForDataModel().then(handleListeners)
+            this.waitUntilDataModelSettled().then(handleListeners)
           : handleListeners()
       }
     },
 
     // Waits until the data model settled: its loads finished, and it wrote the
-    // values that it derives from the data.
-    async waitForDataModel() {
+    // values that it derives from the data, e.g. before submitting. Shows the
+    // spinner in the header while loads are pending, like requests do.
+    async waitUntilDataModelSettled() {
       await this.$nextTick()
-      await this.dataModel?.waitForPendingLoads()
+      const { dataModel } = this
+      if (dataModel?.hasPendingLoads) {
+        this.rootComponent.registerLoading(true)
+        try {
+          await dataModel.waitUntilSettled()
+        } finally {
+          this.rootComponent.registerLoading(false)
+        }
+      }
     },
 
     emitSchemaEvent(event, params) {

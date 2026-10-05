@@ -426,13 +426,13 @@ describe('DataModel', () => {
     const { dataModel, data } = createDataModel(schema, { title: 'Hello' })
     expect(data.upper).toBe('HELLO')
     expect(data.copy).toBe('Hello')
-    await dataModel.waitForPendingLoads()
+    await dataModel.waitUntilSettled()
     expect(data.length).toBe(5)
     data.title = 'Bye'
     await nextTick()
     expect(data.upper).toBe('BYE')
     expect(data.copy).toBe('Bye')
-    await dataModel.waitForPendingLoads()
+    await dataModel.waitUntilSettled()
     expect(data.length).toBe(3)
     dataModel.stop()
   })
@@ -458,7 +458,7 @@ describe('DataModel', () => {
     expect(resolvers).toHaveLength(2)
     resolvers[1]()
     resolvers[0]()
-    await dataModel.waitForPendingLoads()
+    await dataModel.waitUntilSettled()
     expect(data.loaded).toBe('Second')
     dataModel.stop()
   })
@@ -510,7 +510,7 @@ describe('DataModel', () => {
       })
       await nextTick()
       expect(data).toEqual({ category: 'archive', topic: 'football' })
-      await dataModel.waitForPendingLoads()
+      await dataModel.waitUntilSettled()
       expect(data).toEqual({ category: 'news', topic: 'politics' })
       dataModel.stop()
     })
@@ -519,11 +519,11 @@ describe('DataModel', () => {
       const loadTopics = vi.fn(category => topicsByCategory[category] ?? [])
       const schema = createTopicSchema(loadTopics)
       const { dataModel, data } = createDataModel(schema, {})
-      await dataModel.waitForPendingLoads()
+      await dataModel.waitUntilSettled()
       expect(data).toEqual({ category: 'news', topic: 'politics' })
       data.category = 'sports'
       await nextTick()
-      await dataModel.waitForPendingLoads()
+      await dataModel.waitUntilSettled()
       expect(data.topic).toBe('football')
       expect(loadTopics.mock.calls).toEqual([[undefined], ['news'], ['sports']])
       dataModel.stop()
@@ -541,7 +541,7 @@ describe('DataModel', () => {
         }
       }
       const { dataModel, data } = createDataModel(schema, {})
-      await dataModel.waitForPendingLoads()
+      await dataModel.waitUntilSettled()
       const options = dataModel.getOptions({
         schema: schema.components.size,
         data,
@@ -563,7 +563,7 @@ describe('DataModel', () => {
         }
       }
       const { dataModel } = createDataModel(schema, {})
-      await dataModel.waitForPendingLoads()
+      await dataModel.waitUntilSettled()
       expect(data).not.toHaveBeenCalled()
       dataModel.stop()
     })
@@ -576,7 +576,7 @@ describe('DataModel', () => {
     // `DataModel.takeProcessedDataSnapshot()`:
     async function waitForProcessedDataSnapshot(dataModel) {
       await nextTick()
-      await dataModel.waitForPendingLoads()
+      await dataModel.waitUntilSettled()
       await nextTick()
     }
 

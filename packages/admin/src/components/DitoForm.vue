@@ -465,7 +465,7 @@ export default DitoComponent.component('DitoForm', {
 
     async submit(button, { validate = true, closeForm = false } = {}) {
       // Wait for computed values that depend on pending loads, e.g. options.
-      await this.waitForPendingLoadsOf(this.dataModel)
+      await this.waitUntilDataModelSettled()
       if (validate && !this.validateAll()) {
         return false
       }
