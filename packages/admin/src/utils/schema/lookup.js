@@ -176,27 +176,10 @@ export function getButtonSchemas(buttons) {
   )
 }
 
-export function getPanelEntry(
-  schema,
-  dataPath = null,
-  componentPath = '',
-  tabComponent = null
-) {
-  return schema
-    ? {
-        schema,
-        // If the panel provides its own name, append it to the paths. This is
-        // used e.g. for $filters panels.
-        dataPath:
-          dataPath != null && schema.name
-            ? appendDataPath(dataPath, schema.name)
-            : dataPath,
-        componentPath: schema.name
-          ? appendDataPath(componentPath, schema.name)
-          : componentPath,
-        tabComponent
-      }
-    : null
+// Returns the entry of the panel described by `schema`, which `DitoPanels`
+// displays at `dataPath` and `componentPath`.
+function getPanelEntry(schema, dataPath, componentPath, tabComponent) {
+  return schema ? { schema, dataPath, componentPath, tabComponent } : null
 }
 
 export function getPanelEntries(
@@ -224,8 +207,9 @@ export function getPanelEntries(
 
 // Returns the entries of the panel that the type of the component described by
 // `schema` provides, and of the panels in `schema.panels`. The type's panel is
-// addressed relative to `dataPath` and its component path,
-// `dataPathComponentPath`, while the panels in `schema.panels` continue
+// addressed by its name, e.g. `$filters`, relative to `dataPath` and its
+// component path, `dataPathComponentPath`, while the panels in `schema.panels`
+// are addressed by their keys, see `getPanelEntries()`, continuing
 // `schemaComponentPath`, the component path of `schema` itself, which also
 // contains the names of unnested components.
 export function getAllPanelEntries(
@@ -247,8 +231,8 @@ export function getAllPanelEntries(
     ? [
         getPanelEntry(
           panelSchema,
-          dataPath,
-          dataPathComponentPath,
+          appendDataPath(dataPath, panelSchema.name),
+          appendDataPath(dataPathComponentPath, panelSchema.name),
           tabComponent
         )
       ]

@@ -58,4 +58,18 @@ describe('getAllPanelEntries()', () => {
       )
     ).toEqual([{ dataPath: 'book/info', componentPath: 'main/section/info' }])
   })
+
+  it('addresses the panels of `schema.panels` by their keys only', () => {
+    // Panels can carry their names too, e.g. when resolved from modules.
+    const section = {
+      type: 'section',
+      name: 'section',
+      panels: { info: { type: 'panel', name: 'info' } }
+    }
+    expect(
+      getPaths(
+        getAllPanelEntries(null, section, 'book', 'main', 'main/section')
+      )
+    ).toEqual([{ dataPath: 'book/info', componentPath: 'main/section/info' }])
+  })
 })

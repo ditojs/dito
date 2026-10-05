@@ -71,7 +71,7 @@ export default DitoComponent.component('DitoPanel', {
     store: { type: Object, required: true },
     disabled: { type: Boolean, required: true },
     panelTabComponent: { type: Object, default: null },
-    // The component path of the panel's entry, see `getPanelEntry()`:
+    // The component path of the panel's entry, see `getAllPanelEntries()`:
     panelComponentPath: { type: String, required: true }
   },
 
@@ -84,7 +84,7 @@ export default DitoComponent.component('DitoPanel', {
   computed: {
     nested() {
       // For `ContextMixin`: The panel's address, `dataPath`, points into the
-      // item that it displays, see `getPanelEntry()`.
+      // item that it displays, see `getAllPanelEntries()`.
       return true
     },
 

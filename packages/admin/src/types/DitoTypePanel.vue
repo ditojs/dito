@@ -13,7 +13,8 @@ export default DitoTypeComponent.register('panel', {
   getPanelSchema(api, schema) {
     // For a TypePanel, the component schema is also the panel schema. Its name
     // is added to the panel's data path and component path, see
-    // `getPanelEntry()`, as unnested components don't add it to data paths.
+    // `getAllPanelEntries()`, as unnested components don't add it to data
+    // paths.
     return schema
   },
 
