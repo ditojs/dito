@@ -25,6 +25,7 @@ component.dito-panel(
         span {{ getLabel(schema) }}
         DitoButtons.dito-buttons--small(
           :buttons="panelButtonSchemas"
+          buttonsName="panelButtons"
           :dataPath="panelDataPath"
           :data="panelData"
           :meta="meta"

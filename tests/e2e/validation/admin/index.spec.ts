@@ -37,4 +37,22 @@ test.describe('validation', () => {
 
     await expect(list.list.getRow('Valid Name')).toBeVisible()
   })
+
+  test('shows errors at fields that share their name with buttons', async ({
+    page,
+    url
+  }) => {
+    const list = new DitoListView(page, url, 'Widget')
+    const form = new DitoForm(page)
+    await list.navigate('/widgets')
+    await list.list.create()
+    await form.create()
+    const name = page.getByLabel('Name', { exact: true })
+    await expect(
+      page.locator('.dito-container').filter({ has: name }).locator('.dito-errors')
+    ).not.toBeEmpty()
+    await expect(
+      page.getByRole('button', { name: 'Suggest Name' })
+    ).toHaveAttribute('id', '$buttons/name')
+  })
 })

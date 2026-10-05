@@ -107,18 +107,11 @@ export default {
     // is used for registries and DOM ids. Components continue the path of
     // their parent with the item indices that their data path adds to the
     // parent's, e.g. inlined list items. `DitoContainer`, `DitoPane` and
-    // `DitoPanel` add the names of components, tabs and panels, `DitoForm`
-    // and `DitoTreeItem` continue the path of the source of their item.
+    // `DitoPanel` add the names of components, tabs and panels, `DitoButtons`
+    // the names of button groups, `DitoForm` and `DitoTreeItem` continue the
+    // path of the source of their item.
     componentPath() {
-      const { parentComponent } = this
-      const parentComponentPath = parentComponent?.componentPath ?? ''
-      const relativeDataPath = getRelativeDataPath(
-        this.dataPath,
-        parentComponent?.dataPathForComponentPath
-      )
-      return relativeDataPath
-        ? appendDataPath(parentComponentPath, relativeDataPath)
-        : parentComponentPath
+      return this.continueParentComponentPath()
     },
 
     // The data path that `componentPath` corresponds to, which children
@@ -484,6 +477,21 @@ export default {
     // when only the parameters change, e.g. to edit another item.
     getRouteComponentKey(route, routeLevel) {
       return route.matched[routeLevel]?.path
+    },
+
+    // Returns the component path of the parent, continued with the item
+    // indices that the data path of this component adds to the parent's, see
+    // `componentPath`.
+    continueParentComponentPath() {
+      const { parentComponent } = this
+      const parentComponentPath = parentComponent?.componentPath ?? ''
+      const relativeDataPath = getRelativeDataPath(
+        this.dataPath,
+        parentComponent?.dataPathForComponentPath
+      )
+      return relativeDataPath
+        ? appendDataPath(parentComponentPath, relativeDataPath)
+        : parentComponentPath
     },
 
     notify(options) {
