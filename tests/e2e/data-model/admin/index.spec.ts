@@ -2,7 +2,7 @@ import type { Page } from '@playwright/test'
 import { test, expect } from '../fixtures.js'
 import { Article } from '../models/Article.js'
 
-// Computed values are written into the data by the form model, independently
+// Computed values are written into the data by the data model, independently
 // of what is rendered: The computed fields of this scenario are in a collapsed
 // section of a tab that isn't selected, see `views.ts`.
 
@@ -22,7 +22,7 @@ async function waitForDelayedOptions(page: Page) {
   await page.getByRole('tab', { name: 'Main', exact: true }).click()
 }
 
-test.describe('form model', () => {
+test.describe('data model', () => {
   test('keeps computed values current without rendering them', async ({
     page,
     url
@@ -188,7 +188,7 @@ test.describe('form model', () => {
     page,
     url
   }) => {
-    // The form model writes `slug`, `titleLength`, `status`, `category` and
+    // The data model writes `slug`, `titleLength`, `status`, `category` and
     // `topic` into the data after it is loaded, which doesn't make it dirty.
     const article = await Article.query().insert({ title: 'Old' })
     await openArticle(page, url, article)
@@ -273,7 +273,7 @@ test.describe('form model', () => {
     )
   })
 
-  test('calls change handlers once the form model settled', async ({
+  test('calls change handlers once the data model settled', async ({
     page,
     url
   }) => {
@@ -334,7 +334,7 @@ test.describe('form model', () => {
   })
 
   test('counts edits made while options load', async ({ page, url }) => {
-    // The form model derives `category` and `topic` from delayed options,
+    // The data model derives `category` and `topic` from delayed options,
     // which don't count, while the edit of `title` right away does.
     const article = await Article.query().insert({ title: 'Old' })
     await openArticle(page, url, article)

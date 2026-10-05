@@ -1,7 +1,7 @@
 import { vi } from 'vitest'
 import { reactive, ref, toRaw, nextTick } from 'vue'
 import { registerTypeComponent } from './schema/types.js'
-import { FormModel } from './FormModel.js'
+import { DataModel } from './DataModel.js'
 import { updateOrder } from './schema/data.js'
 
 // `setupForm()` needs the admin's API, see `getFormSchemas()`:
@@ -33,15 +33,15 @@ registerTypeComponent('upload', {
   processValue: ({ value }) => (value?.isUploaded ? value.name : null)
 })
 
-function createFormModel(schema, data, { getSourceSchema } = {}) {
+function createDataModel(schema, data, { getSourceSchema } = {}) {
   const dataRef = ref(reactive(data))
-  const formModel = new FormModel({
+  const dataModel = new DataModel({
     component: { dataPath: '', componentPath: '' },
     getSchema: () => schema,
     getData: () => dataRef.value,
     getSourceSchema
   })
-  return { formModel, dataRef, data: dataRef.value }
+  return { dataModel, dataRef, data: dataRef.value }
 }
 
 const slug = {
@@ -49,7 +49,7 @@ const slug = {
   compute: ({ item }) => item.title?.toLowerCase().replaceAll(' ', '-')
 }
 
-describe('FormModel', () => {
+describe('DataModel', () => {
   it('sets the defaults of missing values when the data is set up', () => {
     const schema = {
       type: 'form',
@@ -58,11 +58,11 @@ describe('FormModel', () => {
         tags: { type: 'list', form: { type: 'form', components: {} } }
       }
     }
-    const { formModel, dataRef, data } = createFormModel(schema, {
+    const { dataModel, dataRef, data } = createDataModel(schema, {
       tags: null
     })
     expect(data).toEqual({ title: 'Untitled', tags: null })
-    formModel.stop()
+    dataModel.stop()
     dataRef.value = reactive({})
     expect(dataRef.value).toEqual({})
   })
@@ -84,14 +84,14 @@ describe('FormModel', () => {
         }
       }
     }
-    const { formModel, data } = createFormModel(schema, { chapters: [] })
+    const { dataModel, data } = createDataModel(schema, { chapters: [] })
     data.chapters.push({ title: 'One' })
     await nextTick()
     expect(data.chapters).toEqual([{ title: 'One', status: 'draft' }])
     delete data.chapters[0].status
     await nextTick()
     expect(data.chapters[0].status).toBe('draft')
-    formModel.stop()
+    dataModel.stop()
   })
 
   it('sets the defaults of replaced data', async () => {
@@ -99,11 +99,11 @@ describe('FormModel', () => {
       type: 'form',
       components: { title: { type: 'text', default: 'Untitled' } }
     }
-    const { formModel, dataRef } = createFormModel(schema, {})
+    const { dataModel, dataRef } = createDataModel(schema, {})
     dataRef.value = reactive({})
     await nextTick()
     expect(dataRef.value).toEqual({ title: 'Untitled' })
-    formModel.stop()
+    dataModel.stop()
   })
 
   it('writes computed values and keeps them current', async () => {
@@ -111,14 +111,14 @@ describe('FormModel', () => {
       type: 'form',
       components: { title: { type: 'text' }, slug }
     }
-    const { formModel, data } = createFormModel(schema, {
+    const { dataModel, data } = createDataModel(schema, {
       title: 'Hello World'
     })
     expect(data.slug).toBe('hello-world')
     data.title = 'Good Bye'
     await nextTick()
     expect(data.slug).toBe('good-bye')
-    formModel.stop()
+    dataModel.stop()
     data.title = 'Stopped'
     await nextTick()
     expect(data.slug).toBe('good-bye')
@@ -137,9 +137,9 @@ describe('FormModel', () => {
         }
       }
     }
-    const { formModel, data } = createFormModel(schema, { title: 'Hello' })
+    const { dataModel, data } = createDataModel(schema, { title: 'Hello' })
     expect(data.slug).toBe('hello')
-    formModel.stop()
+    dataModel.stop()
   })
 
   it('writes the computed value back when the value changes', async () => {
@@ -149,12 +149,12 @@ describe('FormModel', () => {
         tags: { type: 'text', compute: ({ value }) => value ?? [] }
       }
     }
-    const { formModel, data } = createFormModel(schema, { tags: null })
+    const { dataModel, data } = createDataModel(schema, { tags: null })
     expect(data.tags).toEqual([])
     data.tags = null
     await nextTick()
     expect(data.tags).toEqual([])
-    formModel.stop()
+    dataModel.stop()
   })
 
   it('keeps values that `compute()` returns `undefined` for', async () => {
@@ -162,11 +162,11 @@ describe('FormModel', () => {
       type: 'form',
       components: { title: { type: 'text', compute: () => undefined } }
     }
-    const { formModel, data } = createFormModel(schema, { title: 'Hello' })
+    const { dataModel, data } = createDataModel(schema, { title: 'Hello' })
     data.title = 'Changed'
     await nextTick()
     expect(data.title).toBe('Changed')
-    formModel.stop()
+    dataModel.stop()
   })
 
   it('writes computed values that are new objects only once', async () => {
@@ -177,7 +177,7 @@ describe('FormModel', () => {
       type: 'form',
       components: { entries: { type: 'text', compute } }
     }
-    const { formModel, data } = createFormModel(schema, {
+    const { dataModel, data } = createDataModel(schema, {
       entries: [{ name: 'One' }]
     })
     await nextTick()
@@ -185,7 +185,7 @@ describe('FormModel', () => {
     // equal and therefore not written again.
     expect(compute).toHaveBeenCalledTimes(2)
     expect(data.entries).toEqual([{ name: 'One', upper: 'ONE' }])
-    formModel.stop()
+    dataModel.stop()
   })
 
   it("doesn't recompute values whose `compute()` doesn't read them", async () => {
@@ -201,14 +201,14 @@ describe('FormModel', () => {
         }
       }
     }
-    const { formModel, data } = createFormModel(schema, { title: 'Hello' })
+    const { dataModel, data } = createDataModel(schema, { title: 'Hello' })
     expect(data.token).toBe('Hello-1')
     data.title = 'Changed'
     await nextTick()
     expect(data.token).toBe('Changed-2')
     await nextTick()
     expect(callCount).toBe(2)
-    formModel.stop()
+    dataModel.stop()
   })
 
   it('skips components whose `if` evaluates to `false`', async () => {
@@ -220,7 +220,7 @@ describe('FormModel', () => {
         slug: { ...slug, if: ({ item }) => item.hasSlug }
       }
     }
-    const { formModel, data } = createFormModel(schema, {
+    const { dataModel, data } = createDataModel(schema, {
       title: 'Hello',
       hasSlug: false
     })
@@ -232,7 +232,7 @@ describe('FormModel', () => {
     data.title = 'Changed'
     await nextTick()
     expect(data.slug).toBe('hello')
-    formModel.stop()
+    dataModel.stop()
   })
 
   it('writes computed values of list items, including added ones', async () => {
@@ -248,7 +248,7 @@ describe('FormModel', () => {
         }
       }
     }
-    const { formModel, data } = createFormModel(schema, {
+    const { dataModel, data } = createDataModel(schema, {
       chapters: [{ title: 'One' }]
     })
     expect(data.chapters[0].slug).toBe('one')
@@ -263,7 +263,7 @@ describe('FormModel', () => {
       'two-again',
       'one'
     ])
-    formModel.stop()
+    dataModel.stop()
   })
 
   it('skips sources with their own resource', () => {
@@ -277,11 +277,11 @@ describe('FormModel', () => {
         }
       }
     }
-    const { formModel, data } = createFormModel(schema, {
+    const { dataModel, data } = createDataModel(schema, {
       chapters: [{ title: 'One' }]
     })
     expect(data.chapters[0].slug).toBe(undefined)
-    formModel.stop()
+    dataModel.stop()
   })
 
   it('computes the values of the panels of sources with resource', () => {
@@ -300,13 +300,13 @@ describe('FormModel', () => {
         }
       }
     }
-    const { formModel, data } = createFormModel(schema, {
+    const { dataModel, data } = createDataModel(schema, {
       title: 'Book One',
       chapters: [{ title: 'One' }]
     })
     expect(data.slug).toBe('book-one')
     expect(data.chapters[0].slug).toBe(undefined)
-    formModel.stop()
+    dataModel.stop()
   })
 
   describe('components created by `components()` callbacks', () => {
@@ -331,7 +331,7 @@ describe('FormModel', () => {
       )
 
     it('sets their defaults, also once they are created later', async () => {
-      const { formModel, data } = createFormModel(
+      const { dataModel, data } = createDataModel(
         getSchema(createFieldComponents),
         { fields: ['name'], values: {} }
       )
@@ -343,7 +343,7 @@ describe('FormModel', () => {
         name: 'Default name',
         city: 'Default city'
       })
-      formModel.stop()
+      dataModel.stop()
     })
 
     it('writes their computed values', async () => {
@@ -351,7 +351,7 @@ describe('FormModel', () => {
         upper: { type: 'computed', compute: () => item.title.toUpperCase() }
       }))
       schema.components.title = { type: 'text' }
-      const { formModel, data } = createFormModel(schema, {
+      const { dataModel, data } = createDataModel(schema, {
         title: 'Book',
         fields: [],
         values: {}
@@ -361,14 +361,14 @@ describe('FormModel', () => {
       data.title = 'Story'
       await nextTick()
       expect(data.values.upper).toBe('STORY')
-      formModel.stop()
+      dataModel.stop()
     })
 
     it('creates them only when the data that they read changes', async () => {
       const createComponents = vi.fn(createFieldComponents)
       const schema = getSchema(createComponents)
       schema.components.title = { type: 'text' }
-      const { formModel, data } = createFormModel(schema, {
+      const { dataModel, data } = createDataModel(schema, {
         title: 'Book',
         fields: ['name'],
         values: {}
@@ -381,7 +381,7 @@ describe('FormModel', () => {
       data.fields.push('city')
       await nextTick()
       expect(createComponents).toHaveBeenCalledTimes(2)
-      formModel.stop()
+      dataModel.stop()
     })
   })
 
@@ -398,10 +398,10 @@ describe('FormModel', () => {
         }
       }
     }
-    const { formModel } = createFormModel(schema, { title: 'Book' })
-    expect(formModel.hasComputedValueEntry('slug')).toBe(true)
-    expect(formModel.hasComputedValueEntry('search/query')).toBe(false)
-    formModel.stop()
+    const { dataModel } = createDataModel(schema, { title: 'Book' })
+    expect(dataModel.hasComputedValueEntry('slug')).toBe(true)
+    expect(dataModel.hasComputedValueEntry('search/query')).toBe(false)
+    dataModel.stop()
   })
 
   it('resolves values from data schemas', async () => {
@@ -423,18 +423,18 @@ describe('FormModel', () => {
         }
       }
     }
-    const { formModel, data } = createFormModel(schema, { title: 'Hello' })
+    const { dataModel, data } = createDataModel(schema, { title: 'Hello' })
     expect(data.upper).toBe('HELLO')
     expect(data.copy).toBe('Hello')
-    await formModel.waitForPendingLoads()
+    await dataModel.waitForPendingLoads()
     expect(data.length).toBe(5)
     data.title = 'Bye'
     await nextTick()
     expect(data.upper).toBe('BYE')
     expect(data.copy).toBe('Bye')
-    await formModel.waitForPendingLoads()
+    await dataModel.waitForPendingLoads()
     expect(data.length).toBe(3)
-    formModel.stop()
+    dataModel.stop()
   })
 
   it('ignores outdated values loaded by data schemas', async () => {
@@ -452,15 +452,15 @@ describe('FormModel', () => {
         }
       }
     }
-    const { formModel, data } = createFormModel(schema, { title: 'First' })
+    const { dataModel, data } = createDataModel(schema, { title: 'First' })
     data.title = 'Second'
     await nextTick()
     expect(resolvers).toHaveLength(2)
     resolvers[1]()
     resolvers[0]()
-    await formModel.waitForPendingLoads()
+    await dataModel.waitForPendingLoads()
     expect(data.loaded).toBe('Second')
-    formModel.stop()
+    dataModel.stop()
   })
 
   describe('options', () => {
@@ -504,29 +504,29 @@ describe('FormModel', () => {
 
     it('keeps values until the options that `compute()` reads load', async () => {
       const schema = createTopicSchema(category => topicsByCategory[category])
-      const { formModel, data } = createFormModel(schema, {
+      const { dataModel, data } = createDataModel(schema, {
         category: 'archive',
         topic: 'football'
       })
       await nextTick()
       expect(data).toEqual({ category: 'archive', topic: 'football' })
-      await formModel.waitForPendingLoads()
+      await dataModel.waitForPendingLoads()
       expect(data).toEqual({ category: 'news', topic: 'politics' })
-      formModel.stop()
+      dataModel.stop()
     })
 
     it('reselects dependent options when options of other fields load', async () => {
       const loadTopics = vi.fn(category => topicsByCategory[category] ?? [])
       const schema = createTopicSchema(loadTopics)
-      const { formModel, data } = createFormModel(schema, {})
-      await formModel.waitForPendingLoads()
+      const { dataModel, data } = createDataModel(schema, {})
+      await dataModel.waitForPendingLoads()
       expect(data).toEqual({ category: 'news', topic: 'politics' })
       data.category = 'sports'
       await nextTick()
-      await formModel.waitForPendingLoads()
+      await dataModel.waitForPendingLoads()
       expect(data.topic).toBe('football')
       expect(loadTopics.mock.calls).toEqual([[undefined], ['news'], ['sports']])
-      formModel.stop()
+      dataModel.stop()
     })
 
     it('shares the option objects with the components', async () => {
@@ -540,9 +540,9 @@ describe('FormModel', () => {
           }
         }
       }
-      const { formModel, data } = createFormModel(schema, {})
-      await formModel.waitForPendingLoads()
-      const options = formModel.getOptions({
+      const { dataModel, data } = createDataModel(schema, {})
+      await dataModel.waitForPendingLoads()
+      const options = dataModel.getOptions({
         schema: schema.components.size,
         data,
         name: 'size',
@@ -551,7 +551,7 @@ describe('FormModel', () => {
       })
       expect(options).toEqual([{ id: 1 }, { id: 2 }])
       expect(toRaw(data.size)).toBe(options[0])
-      formModel.stop()
+      dataModel.stop()
     })
 
     it("doesn't load options that aren't read", async () => {
@@ -562,10 +562,10 @@ describe('FormModel', () => {
           category: { type: 'select', options: { data } }
         }
       }
-      const { formModel } = createFormModel(schema, {})
-      await formModel.waitForPendingLoads()
+      const { dataModel } = createDataModel(schema, {})
+      await dataModel.waitForPendingLoads()
       expect(data).not.toHaveBeenCalled()
-      formModel.stop()
+      dataModel.stop()
     })
   })
 
@@ -573,10 +573,10 @@ describe('FormModel', () => {
     const getSourceSchema = () => ({ type: 'list' })
 
     // Resolves once the model settled after the snapshot was taken, see
-    // `FormModel.takeProcessedDataSnapshot()`:
-    async function waitForProcessedDataSnapshot(formModel) {
+    // `DataModel.takeProcessedDataSnapshot()`:
+    async function waitForProcessedDataSnapshot(dataModel) {
       await nextTick()
-      await formModel.waitForPendingLoads()
+      await dataModel.waitForPendingLoads()
       await nextTick()
     }
 
@@ -585,18 +585,18 @@ describe('FormModel', () => {
         type: 'form',
         components: { title: { type: 'text' }, slug }
       }
-      const { formModel, data } = createFormModel(
+      const { dataModel, data } = createDataModel(
         schema,
         { title: 'Hello' },
         { getSourceSchema }
       )
-      await waitForProcessedDataSnapshot(formModel)
-      expect(formModel.isDirty).toBe(false)
+      await waitForProcessedDataSnapshot(dataModel)
+      expect(dataModel.isDirty).toBe(false)
       data.title = 'Changed'
-      expect(formModel.isDirty).toBe(true)
+      expect(dataModel.isDirty).toBe(true)
       data.title = 'Hello'
-      expect(formModel.isDirty).toBe(false)
-      formModel.stop()
+      expect(dataModel.isDirty).toBe(false)
+      dataModel.stop()
     })
 
     it('records the values derived while the model settles once', async () => {
@@ -615,7 +615,7 @@ describe('FormModel', () => {
           }
         }
       }
-      const { formModel, data } = createFormModel(
+      const { dataModel, data } = createDataModel(
         schema,
         { title: 'Hello' },
         { getSourceSchema }
@@ -626,10 +626,10 @@ describe('FormModel', () => {
       await nextTick()
       data.title = 'Two'
       await nextTick()
-      expect([...formModel.derivedValueDataPaths]).toEqual(['slug'])
+      expect([...dataModel.derivedValueDataPaths]).toEqual(['slug'])
       resolveLength(3)
-      await waitForProcessedDataSnapshot(formModel)
-      formModel.stop()
+      await waitForProcessedDataSnapshot(dataModel)
+      dataModel.stop()
     })
 
     it('counts changes made while the model settles', async () => {
@@ -652,21 +652,21 @@ describe('FormModel', () => {
           }
         }
       }
-      const { formModel, data } = createFormModel(
+      const { dataModel, data } = createDataModel(
         schema,
         { title: 'Hello' },
         { getSourceSchema }
       )
       await nextTick()
       data.title = 'Changed'
-      expect(formModel.isDirty).toBe(true)
+      expect(dataModel.isDirty).toBe(true)
       resolveOptions([{ id: 1 }, { id: 2 }])
-      await waitForProcessedDataSnapshot(formModel)
+      await waitForProcessedDataSnapshot(dataModel)
       expect(data.size).toBe(1)
-      expect(formModel.isDirty).toBe(true)
+      expect(dataModel.isDirty).toBe(true)
       data.title = 'Hello'
-      expect(formModel.isDirty).toBe(false)
-      formModel.stop()
+      expect(dataModel.isDirty).toBe(false)
+      dataModel.stop()
     })
 
     it("doesn't count values derived after loads as changes", async () => {
@@ -688,17 +688,17 @@ describe('FormModel', () => {
           }
         }
       }
-      const { formModel, data } = createFormModel(
+      const { dataModel, data } = createDataModel(
         schema,
         { title: 'Hello' },
         { getSourceSchema }
       )
-      await waitForProcessedDataSnapshot(formModel)
+      await waitForProcessedDataSnapshot(dataModel)
       expect(data).toEqual({ title: 'Hello', length: 5, size: 1 })
-      expect(formModel.isDirty).toBe(false)
+      expect(dataModel.isDirty).toBe(false)
       data.size = 2
-      expect(formModel.isDirty).toBe(true)
-      formModel.stop()
+      expect(dataModel.isDirty).toBe(true)
+      dataModel.stop()
     })
 
     it('takes a new snapshot when the data is replaced', async () => {
@@ -706,18 +706,18 @@ describe('FormModel', () => {
         type: 'form',
         components: { title: { type: 'text' } }
       }
-      const { formModel, dataRef, data } = createFormModel(
+      const { dataModel, dataRef, data } = createDataModel(
         schema,
         { title: 'Hello' },
         { getSourceSchema }
       )
-      await waitForProcessedDataSnapshot(formModel)
+      await waitForProcessedDataSnapshot(dataModel)
       data.title = 'Changed'
-      expect(formModel.isDirty).toBe(true)
+      expect(dataModel.isDirty).toBe(true)
       dataRef.value = reactive({ title: 'Saved' })
-      await waitForProcessedDataSnapshot(formModel)
-      expect(formModel.isDirty).toBe(false)
-      formModel.stop()
+      await waitForProcessedDataSnapshot(dataModel)
+      expect(dataModel.isDirty).toBe(false)
+      dataModel.stop()
     })
 
     it("doesn't compare replaced data with the snapshot of its predecessor", async () => {
@@ -725,16 +725,16 @@ describe('FormModel', () => {
         type: 'form',
         components: { title: { type: 'text' } }
       }
-      const { formModel, dataRef } = createFormModel(
+      const { dataModel, dataRef } = createDataModel(
         schema,
         { title: 'Hello' },
         { getSourceSchema }
       )
-      await waitForProcessedDataSnapshot(formModel)
+      await waitForProcessedDataSnapshot(dataModel)
       // Until its own snapshot is taken, the replaced data isn't dirty:
       dataRef.value = reactive({ title: 'Saved' })
-      expect(formModel.isDirty).toBe(false)
-      formModel.stop()
+      expect(dataModel.isDirty).toBe(false)
+      dataModel.stop()
     })
 
     it('detects in-place changes of nested values against the snapshot', async () => {
@@ -751,21 +751,21 @@ describe('FormModel', () => {
           }
         }
       }
-      const { formModel, data } = createFormModel(
+      const { dataModel, data } = createDataModel(
         schema,
         { chapters: [{ title: 'One' }], settings: { color: 'red' } },
         { getSourceSchema }
       )
-      await waitForProcessedDataSnapshot(formModel)
+      await waitForProcessedDataSnapshot(dataModel)
       data.chapters[0].title = 'Changed'
-      expect(formModel.isDirty).toBe(true)
+      expect(dataModel.isDirty).toBe(true)
       data.chapters[0].title = 'One'
-      expect(formModel.isDirty).toBe(false)
+      expect(dataModel.isDirty).toBe(false)
       data.settings.color = 'blue'
-      expect(formModel.isDirty).toBe(true)
+      expect(dataModel.isDirty).toBe(true)
       data.settings.color = 'red'
-      expect(formModel.isDirty).toBe(false)
-      formModel.stop()
+      expect(dataModel.isDirty).toBe(false)
+      dataModel.stop()
     })
 
     it("doesn't count changes of excluded values", async () => {
@@ -773,15 +773,15 @@ describe('FormModel', () => {
         type: 'form',
         components: { search: { type: 'text', exclude: true } }
       }
-      const { formModel, data } = createFormModel(
+      const { dataModel, data } = createDataModel(
         schema,
         { search: '' },
         { getSourceSchema }
       )
-      await waitForProcessedDataSnapshot(formModel)
+      await waitForProcessedDataSnapshot(dataModel)
       data.search = 'Changed'
-      expect(formModel.isDirty).toBe(false)
-      formModel.stop()
+      expect(dataModel.isDirty).toBe(false)
+      dataModel.stop()
     })
 
     it("doesn't call `compute()` and `process()`", async () => {
@@ -794,18 +794,18 @@ describe('FormModel', () => {
           subtitle: { type: 'text', compute }
         }
       }
-      const { formModel, data } = createFormModel(
+      const { dataModel, data } = createDataModel(
         schema,
         { title: 'Hello' },
         { getSourceSchema }
       )
-      await waitForProcessedDataSnapshot(formModel)
+      await waitForProcessedDataSnapshot(dataModel)
       const computeCallCount = compute.mock.calls.length
       data.title = 'Changed'
-      expect(formModel.isDirty).toBe(true)
+      expect(dataModel.isDirty).toBe(true)
       expect(compute).toHaveBeenCalledTimes(computeCallCount)
       expect(process).not.toHaveBeenCalled()
-      formModel.stop()
+      dataModel.stop()
     })
 
     it('reads the dirty state of data that `process()` rejects', async () => {
@@ -819,17 +819,17 @@ describe('FormModel', () => {
           }
         }
       }
-      const { formModel, data } = createFormModel(
+      const { dataModel, data } = createDataModel(
         schema,
         { version: '1.0' },
         { getSourceSchema }
       )
-      await waitForProcessedDataSnapshot(formModel)
+      await waitForProcessedDataSnapshot(dataModel)
       data.version = null
-      expect(formModel.isDirty).toBe(true)
+      expect(dataModel.isDirty).toBe(true)
       data.version = '1.0'
-      expect(formModel.isDirty).toBe(false)
-      formModel.stop()
+      expect(dataModel.isDirty).toBe(false)
+      dataModel.stop()
     })
 
     it('counts changes of excluded values that `process()` stores', async () => {
@@ -845,17 +845,17 @@ describe('FormModel', () => {
           }
         }
       }
-      const { formModel, data } = createFormModel(
+      const { dataModel, data } = createDataModel(
         schema,
         { tagsText: 'a' },
         { getSourceSchema }
       )
-      await waitForProcessedDataSnapshot(formModel)
+      await waitForProcessedDataSnapshot(dataModel)
       data.tagsText = 'a,b'
-      expect(formModel.isDirty).toBe(true)
+      expect(dataModel.isDirty).toBe(true)
       data.tagsText = 'a'
-      expect(formModel.isDirty).toBe(false)
-      formModel.stop()
+      expect(dataModel.isDirty).toBe(false)
+      dataModel.stop()
     })
 
     it('compares values as processed by their types', async () => {
@@ -863,17 +863,17 @@ describe('FormModel', () => {
         type: 'form',
         components: { file: { type: 'upload' } }
       }
-      const { formModel, data } = createFormModel(
+      const { dataModel, data } = createDataModel(
         schema,
         { file: null },
         { getSourceSchema }
       )
-      await waitForProcessedDataSnapshot(formModel)
+      await waitForProcessedDataSnapshot(dataModel)
       data.file = { name: 'font.zip', isUploaded: false }
-      expect(formModel.isDirty).toBe(false)
+      expect(dataModel.isDirty).toBe(false)
       data.file.isUploaded = true
-      expect(formModel.isDirty).toBe(true)
-      formModel.stop()
+      expect(dataModel.isDirty).toBe(true)
+      dataModel.stop()
     })
 
     it("doesn't count order keys numbered on setup as changes", async () => {
@@ -887,7 +887,7 @@ describe('FormModel', () => {
           }
         }
       }
-      const { formModel, dataRef, data } = createFormModel(
+      const { dataModel, dataRef, data } = createDataModel(
         schema,
         {
           items: [
@@ -897,18 +897,18 @@ describe('FormModel', () => {
         },
         { getSourceSchema }
       )
-      await waitForProcessedDataSnapshot(formModel)
+      await waitForProcessedDataSnapshot(dataModel)
       expect(data.items.map(item => item.order)).toEqual([0, 1])
-      expect(formModel.isDirty).toBe(false)
+      expect(dataModel.isDirty).toBe(false)
       data.items.reverse()
       updateOrder(schema.components.items, data.items)
-      expect(formModel.isDirty).toBe(true)
+      expect(dataModel.isDirty).toBe(true)
       // Replaced data is numbered too.
       dataRef.value = reactive({ items: [{ id: 3, name: 'C', order: 8 }] })
-      await waitForProcessedDataSnapshot(formModel)
+      await waitForProcessedDataSnapshot(dataModel)
       expect(dataRef.value.items[0].order).toBe(0)
-      expect(formModel.isDirty).toBe(false)
-      formModel.stop()
+      expect(dataModel.isDirty).toBe(false)
+      dataModel.stop()
     })
 
     describe('applyCleanChanges()', () => {
@@ -924,68 +924,68 @@ describe('FormModel', () => {
       }
 
       it("doesn't count clean changes, but other changes", async () => {
-        const { formModel, data } = createFormModel(
+        const { dataModel, data } = createDataModel(
           schema,
           { title: 'Hello', chapters: [{ title: 'One' }] },
           { getSourceSchema }
         )
-        await waitForProcessedDataSnapshot(formModel)
+        await waitForProcessedDataSnapshot(dataModel)
         data.title = 'Changed'
-        await formModel.applyCleanChanges(() => {
+        await dataModel.applyCleanChanges(() => {
           data.chapters[0].title = 'Saved'
           data.chapters.push({ title: 'Two' })
         })
-        expect(formModel.isDirty).toBe(true)
+        expect(dataModel.isDirty).toBe(true)
         data.title = 'Hello'
-        expect(formModel.isDirty).toBe(false)
+        expect(dataModel.isDirty).toBe(false)
         data.chapters[1].title = 'Changed'
-        expect(formModel.isDirty).toBe(true)
-        formModel.stop()
+        expect(dataModel.isDirty).toBe(true)
+        dataModel.stop()
       })
 
       it('keeps values derived from clean changes clean', async () => {
-        const { formModel, data } = createFormModel(
+        const { dataModel, data } = createDataModel(
           { type: 'form', components: { title: { type: 'text' }, slug } },
           { title: 'Hello' },
           { getSourceSchema }
         )
-        await waitForProcessedDataSnapshot(formModel)
-        await formModel.applyCleanChanges(() => {
+        await waitForProcessedDataSnapshot(dataModel)
+        await dataModel.applyCleanChanges(() => {
           data.title = 'Saved Title'
         })
         expect(data.slug).toBe('saved-title')
-        expect(formModel.isDirty).toBe(false)
-        formModel.stop()
+        expect(dataModel.isDirty).toBe(false)
+        dataModel.stop()
       })
 
       it('takes over clean changes of nested values in place', async () => {
         // Values without forms are processed as they are, sharing their
         // nested values with the data.
-        const { formModel, data } = createFormModel(
+        const { dataModel, data } = createDataModel(
           { type: 'form', components: { settings: { type: 'text' } } },
           { settings: { color: 'red' } },
           { getSourceSchema }
         )
-        await waitForProcessedDataSnapshot(formModel)
-        await formModel.applyCleanChanges(() => {
+        await waitForProcessedDataSnapshot(dataModel)
+        await dataModel.applyCleanChanges(() => {
           data.settings.color = 'blue'
         })
-        expect(formModel.isDirty).toBe(false)
-        formModel.stop()
+        expect(dataModel.isDirty).toBe(false)
+        dataModel.stop()
       })
 
       it('includes clean changes in snapshots that are pending', async () => {
-        const { formModel, data } = createFormModel(
+        const { dataModel, data } = createDataModel(
           schema,
           { title: 'Hello', chapters: [] },
           { getSourceSchema }
         )
-        await formModel.applyCleanChanges(() => {
+        await dataModel.applyCleanChanges(() => {
           data.title = 'Saved'
         })
-        await waitForProcessedDataSnapshot(formModel)
-        expect(formModel.isDirty).toBe(false)
-        formModel.stop()
+        await waitForProcessedDataSnapshot(dataModel)
+        expect(dataModel.isDirty).toBe(false)
+        dataModel.stop()
       })
     })
 
@@ -994,11 +994,11 @@ describe('FormModel', () => {
         type: 'form',
         components: { title: { type: 'text' } }
       }
-      const { formModel, data } = createFormModel(schema, { title: 'Hello' })
-      await waitForProcessedDataSnapshot(formModel)
+      const { dataModel, data } = createDataModel(schema, { title: 'Hello' })
+      await waitForProcessedDataSnapshot(dataModel)
       data.title = 'Changed'
-      expect(formModel.isDirty).toBe(false)
-      formModel.stop()
+      expect(dataModel.isDirty).toBe(false)
+      dataModel.stop()
     })
   })
 })

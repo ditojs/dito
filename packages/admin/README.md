@@ -28,7 +28,7 @@ For detailed explanation on how things work, checkout the [guide](http://vuejs-t
 
 ## Introduction
 
-An admin of a model consists of two parts, the view and the form. The view represents the model class and has access to the collection routes. The view typically shows a list of model instances with different functionalities like sorting and scopes. The form represents model instances and has access to members of the model. On the form model instances can be edited. The view and the form have in common that they both consist of components.
+An admin of a model consists of two parts, the view and the form. The view represents the model class and has access to the collection routes. The view typically shows a list of model instances with different functionalities like sorting and scopes. The form represents model instances and has access to members of the model. On the data model instances can be edited. The view and the form have in common that they both consist of components.
 
 ## Creating A View
 

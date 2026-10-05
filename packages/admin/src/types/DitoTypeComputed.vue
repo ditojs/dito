@@ -20,7 +20,7 @@ export default DitoTypeComponent.register(
     defaultValue: () => undefined, // Callback to override `defaultValue: null`
     defaultVisible: false,
     // The value is resolved from `schema.data` or `schema.dataPath` by
-    // `FormModel`, see `hasValueFromDataSchema()`:
+    // `DataModel`, see `hasValueFromDataSchema()`:
     valueFromDataSchema: true
   }
 )

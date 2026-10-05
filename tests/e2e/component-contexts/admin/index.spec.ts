@@ -3,7 +3,7 @@ import { test, expect } from '../fixtures.js'
 import { Book } from '../models/Book.js'
 
 // The contexts that schema callbacks receive must be the same wherever they
-// are evaluated: in panes, containers, type components and the form model.
+// are evaluated: in panes, containers, type components and the data model.
 // The fields' `if` callbacks record the contexts they see, see `views.ts`.
 
 async function seedBook() {

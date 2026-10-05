@@ -60,7 +60,7 @@ import { isObjectSource } from '../utils/schema/structure.js'
 import { getButtonSchemas } from '../utils/schema/lookup.js'
 import { getComponentPathByDataPath } from '../utils/schema/data.js'
 import { resolvePath } from '../utils/path.js'
-import { FormModel } from '../utils/FormModel.js'
+import { DataModel } from '../utils/DataModel.js'
 
 // @vue/component
 export default DitoComponent.component('DitoForm', {
@@ -68,7 +68,7 @@ export default DitoComponent.component('DitoForm', {
 
   provide() {
     return {
-      $formModel: () => this.ownFormModel
+      $dataModel: () => this.ownDataModel
     }
   },
 
@@ -80,9 +80,9 @@ export default DitoComponent.component('DitoForm', {
   },
 
   computed: {
-    // @override DitoMixin.formModel
-    formModel() {
-      return this.ownFormModel
+    // @override DitoMixin.dataModel
+    dataModel() {
+      return this.ownDataModel
     },
 
     isForm() {
@@ -160,7 +160,7 @@ export default DitoComponent.component('DitoForm', {
     isDirty() {
       // Forms that mutate the inherited data directly aren't dirty themselves,
       // their changes make the form that owns the data dirty instead.
-      return !this.isMutating && this.formModel.isDirty
+      return !this.isMutating && this.dataModel.isDirty
     },
 
     isMutating() {
@@ -365,8 +365,8 @@ export default DitoComponent.component('DitoForm', {
 
   created() {
     // Writes defaults and computed values into the form's data, resolves
-    // options and tracks whether the data is dirty, see `FormModel`:
-    this.ownFormModel = new FormModel({
+    // options and tracks whether the data is dirty, see `DataModel`:
+    this.ownDataModel = new DataModel({
       component: this,
       getSchema: () => this.schema,
       getData: () => this.data,
@@ -376,8 +376,8 @@ export default DitoComponent.component('DitoForm', {
 
   beforeUnmount() {
     // Stop the model before the component's own watchers are stopped, as the
-    // model's watchers aren't part of the component, see `FormModel`.
-    this.ownFormModel.stop()
+    // model's watchers aren't part of the component, see `DataModel`.
+    this.ownDataModel.stop()
   },
 
   methods: {
@@ -448,9 +448,9 @@ export default DitoComponent.component('DitoForm', {
 
     // Makes clean changes to the data, which don't make the form dirty, e.g. to
     // apply what an action on the server already saved, see
-    // `FormModel.applyCleanChanges()`.
+    // `DataModel.applyCleanChanges()`.
     applyCleanChanges(makeChanges) {
-      return this.formModel.applyCleanChanges(makeChanges)
+      return this.dataModel.applyCleanChanges(makeChanges)
     },
 
     async cancel() {
@@ -473,7 +473,7 @@ export default DitoComponent.component('DitoForm', {
 
     async submit(button, { validate = true, closeForm = false } = {}) {
       // Wait for computed values that depend on pending loads, e.g. options.
-      await this.waitForPendingLoadsOf(this.formModel)
+      await this.waitForPendingLoadsOf(this.dataModel)
       if (validate && !this.validateAll()) {
         return false
       }
@@ -556,7 +556,7 @@ export default DitoComponent.component('DitoForm', {
         this.resetValidation()
         // The saved or applied data isn't dirty, also when it isn't replaced,
         // e.g. by a response without data, and before the closing below:
-        this.formModel
+        this.dataModel
           .takeProcessedDataSnapshot()
           .catch(console.error)
         if (closeForm || button.closeForm) {

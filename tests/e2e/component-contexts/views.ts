@@ -4,7 +4,7 @@ import { createWidgetView } from '../../utils/views.js'
 
 // Every field's `if` records a description of the context it is evaluated
 // with, per field, so the tests can check that all places that evaluate it
-// (panes, containers, type components, the form model) see the same context.
+// (panes, containers, type components, the data model) see the same context.
 
 declare global {
   interface Window {

@@ -112,7 +112,7 @@ export function getFormSchemas(schema, context, modifyForm) {
 // Returns the form with the components that its `components()` callback
 // creates for the data of `context`. The forms are cached per data, and the
 // callback only creates new components when the data that it reads changes,
-// so that rendering and the walks of the form model, see `FormModel`, share
+// so that rendering and the walks of the data model, see `DataModel`, share
 // the same component schemas. `components()` callbacks therefore derive the
 // components from the data of their context, not from its components.
 function getFormWithCreatedComponents(form, context) {

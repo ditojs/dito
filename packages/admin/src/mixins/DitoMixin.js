@@ -32,7 +32,7 @@ export default {
     '$sourceComponent',
     '$resourceComponent',
     '$dialogComponent',
-    '$formModel',
+    '$dataModel',
     '$panelComponent',
     '$tabComponent'
   ],
@@ -58,10 +58,10 @@ export default {
   },
 
   computed: {
-    // The form model of the data, provided by the form, view or dialog that
-    // owns it, which override it with their own.
-    formModel() {
-      return this.$formModel()
+    // The data model, provided by the form, view or dialog that owns it, which
+    // override it with their own.
+    dataModel() {
+      return this.$dataModel()
     },
 
     providesData() {
@@ -498,12 +498,12 @@ export default {
         : parentComponentPath
     },
 
-    // Waits for the pending loads of the form model, e.g. before submitting,
+    // Waits for the pending loads of the data model, e.g. before submitting,
     // showing the spinner in the header in the meantime, like requests do.
-    async waitForPendingLoadsOf(formModel) {
+    async waitForPendingLoadsOf(dataModel) {
       this.rootComponent.registerLoading(true)
       try {
-        await formModel.waitForPendingLoads()
+        await dataModel.waitForPendingLoads()
       } finally {
         this.rootComponent.registerLoading(false)
       }
@@ -627,16 +627,16 @@ export default {
             // data changes register, e.g. for `processedItem`, and the form
             // model writes the values that it derives from the data.
             // NOTE: The result of `handleListeners()` is returned as expected.
-            this.waitForFormModel().then(handleListeners)
+            this.waitForDataModel().then(handleListeners)
           : handleListeners()
       }
     },
 
-    // Waits until the form model of the data settled: its loads finished, and
-    // it wrote the values that it derives from the data.
-    async waitForFormModel() {
+    // Waits until the data model settled: its loads finished, and it wrote the
+    // values that it derives from the data.
+    async waitForDataModel() {
       await this.$nextTick()
-      await this.formModel?.waitForPendingLoads()
+      await this.dataModel?.waitForPendingLoads()
     },
 
     emitSchemaEvent(event, params) {

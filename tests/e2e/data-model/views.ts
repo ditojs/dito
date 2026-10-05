@@ -112,7 +112,7 @@ export const articles = createWidgetView<ArticleItem>(
               options: { data: () => loadDelayed(categoryOptions) },
               compute: getValidOrFirstOption,
               events: {
-                // Sees the topic that the form model derives from the
+                // Sees the topic that the data model derives from the
                 // category, once the options of the topic are loaded.
                 change: ({ item }) => {
                   item.topicOnCategoryChange = item.topic

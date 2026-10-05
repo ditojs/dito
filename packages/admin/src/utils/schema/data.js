@@ -129,7 +129,7 @@ export function shouldIgnoreMissingValue(schema, context) {
 // the type treats that as missing, e.g. nested sections.
 export function isMissingValue(schema, data, name, context) {
   // Only read the value if needed, so that callers that are tracked, e.g. the
-  // walk of the form model's data, don't depend on all values.
+  // walk of the data model's data, don't depend on all values.
   return (
     !(name in data) || (
       !!getTypeOptions(schema)?.treatNullAsMissing?.(getContext(context)) &&
@@ -142,7 +142,7 @@ export function isMissingValue(schema, data, name, context) {
  * Returns whether the value of the component described by `schema` is
  * resolved from its data schema, `schema.data` or `schema.dataPath`, as for
  * the types with the `valueFromDataSchema` option, e.g. `computed`. See
- * `FormModel`.
+ * `DataModel`.
  */
 export function hasValueFromDataSchema(schema) {
   return (
@@ -227,7 +227,7 @@ export function initializeData(schema, data = {}, component, {
  * Returns the value of the component described by `schema` and `name` in
  * `data`: the result of `schema.compute()` if it returns a value, else the
  * value in `data`, or its default if it's missing. Never writes into `data`:
- * `FormModel` is the only caller and writes the computed values, including the
+ * `DataModel` is the only caller and writes the computed values, including the
  * defaults of components with `compute()`. Other defaults are written when the
  * data is set up, see `initializeData()`, or when they go missing later. If
  * provided, `getOptions()` returns the options for `context.options`, called
@@ -265,7 +265,7 @@ export function computeValue(schema, data, name, dataPath, {
       return properties
     })
   const { compute } = schema
-  // Like the form model, only compute values of components that are shown
+  // Like the data model, only compute values of components that are shown
   // through their `if`, as `compute()` may rely on the same conditions, e.g.
   // `if: ({ item }) => item.preview` with `compute: ({ item }) =>
   // item.preview.name`.
@@ -288,7 +288,7 @@ export function computeValue(schema, data, name, dataPath, {
 
 // Returns the value in `data`, or its default if it's missing. `context` can be
 // a function that creates the context, called only when it's needed. Computed
-// values are in `data` already, as `FormModel` writes them, see
+// values are in `data` already, as `DataModel` writes them, see
 // `computeValue()`.
 export function getValueOrDefault(schema, data, name, context) {
   const shouldUseDefault = (
@@ -325,11 +325,11 @@ export function processData(schema, sourceSchema, data, dataPath, {
   schemaOnly, // whether to only include data covered by the schema, or all data
   target,
   // Whether to call the schema callbacks `process()`. Data that is compared
-  // while it's edited, e.g. by `FormModel.isDirty`, isn't validated yet, which
+  // while it's edited, e.g. by `DataModel.isDirty`, isn't validated yet, which
   // the callbacks may rely on. Without them, the types still process the values
   // through `processValue()`, and the excluded values of components with
   // `process()` are kept, as `process()` may store them elsewhere through
-  // `processedItem`. Computed values are in the data already, as `FormModel`
+  // `processedItem`. Computed values are in the data already, as `DataModel`
   // writes them, see `computeValue()`.
   shouldCallProcess = true
 } = {}) {
@@ -558,7 +558,7 @@ export function processSchemaData(schema, data, {
           before?.(entry)
 
           // Only read the values of sources with forms, so that callers that
-          // are tracked, e.g. the walk of the form model's data, don't depend
+          // are tracked, e.g. the walk of the data model's data, don't depend
           // on all values.
           if (hasFormSchema(componentSchema)) {
             let value = processedData ? processedData[name] : data[name]

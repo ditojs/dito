@@ -36,7 +36,7 @@ import { clone } from '@ditojs/utils'
 import DitoComponent from '../DitoComponent.js'
 import DomMixin from '../mixins/DomMixin.js'
 import { getButtonSchemas } from '../utils/schema/lookup.js'
-import { FormModel } from '../utils/FormModel.js'
+import { DataModel } from '../utils/DataModel.js'
 import { UseFocusTrap } from '@vueuse/integrations/useFocusTrap/component'
 
 // @vue/component
@@ -48,7 +48,7 @@ export default DitoComponent.component('DitoDialog', {
   provide() {
     return {
       $dialogComponent: () => this,
-      $formModel: () => this.ownFormModel
+      $dataModel: () => this.ownDataModel
     }
   },
 
@@ -80,9 +80,9 @@ export default DitoComponent.component('DitoDialog', {
   },
 
   computed: {
-    // @override DitoMixin.formModel
-    formModel() {
-      return this.ownFormModel
+    // @override DitoMixin.dataModel
+    dataModel() {
+      return this.ownDataModel
     },
 
     dialogComponent() {
@@ -135,8 +135,8 @@ export default DitoComponent.component('DitoDialog', {
 
   created() {
     // Writes defaults and computed values into the dialog's data and resolves
-    // options, see `FormModel`:
-    this.ownFormModel = new FormModel({
+    // options, see `DataModel`:
+    this.ownDataModel = new DataModel({
       component: this,
       getSchema: () => this.schema,
       getData: () => this.dialogData
@@ -155,8 +155,8 @@ export default DitoComponent.component('DitoDialog', {
 
   beforeUnmount() {
     // Stop the model before the component's own watchers are stopped, as the
-    // model's watchers aren't part of the component, see `FormModel`.
-    this.ownFormModel.stop()
+    // model's watchers aren't part of the component, see `DataModel`.
+    this.ownDataModel.stop()
   },
 
   methods: {
@@ -185,7 +185,7 @@ export default DitoComponent.component('DitoDialog', {
 
     async submit() {
       // Wait for computed values that depend on pending loads, e.g. options.
-      await this.waitForPendingLoadsOf(this.formModel)
+      await this.waitForPendingLoadsOf(this.dataModel)
       this.resolve(this.dialogData)
     },
 

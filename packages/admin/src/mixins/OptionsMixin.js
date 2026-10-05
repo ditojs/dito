@@ -82,12 +82,12 @@ export default {
       return this.getOptionForValue(this.selectedValue)
     },
 
-    // The resolver of the options in the form model of the data, which loads
-    // them and shares them with the computes of the form. It is looked up with
-    // the entry of this component, in the shape of the entries of
-    // `processSchemaData()`, see `FormModel`.
+    // The resolver of the options in the data model, which loads them and
+    // shares them with the computes of the form. It is looked up with the entry
+    // of this component, in the shape of the entries of `processSchemaData()`,
+    // see `DataModel`.
     optionsResolver() {
-      return this.formModel.getOptionsResolver({
+      return this.dataModel.getOptionsResolver({
         schema: this.schema,
         data: this.data,
         name: this.name,
@@ -247,7 +247,7 @@ export default {
     // made as a clean change, which doesn't make the form dirty.
     replaceValueWithSelectedValue() {
       const { selectedValue } = this
-      this.formModel
+      this.dataModel
         .applyCleanChanges(() => {
           this.selectedValue = selectedValue
         })

@@ -22,7 +22,7 @@ import {
   processData
 } from './schema/data.js'
 
-// FormModel holds the state of the data edited by a form, view or dialog that
+// DataModel holds the state of the data edited by a form, view or dialog that
 // is derived from schema and data, independently of what is rendered:
 //
 // - Missing values are set to their defaults when the data is set up, and when
@@ -39,7 +39,7 @@ import {
 // - Options, `schema.options`, are resolved per component when they are first
 //   read, by `compute()` through `context.options` or by the component that
 //   displays them, see `getOptions()`. Both get the same option objects, and
-//   computes that read options run again when they are loaded.
+//   computes that read options only run once they are loaded.
 // - Submitting waits for the loads of data schemas and options that are still
 //   pending, see `waitForPendingLoads()`.
 // - The data is dirty when its processed data differs from a snapshot taken
@@ -60,7 +60,7 @@ import {
 // `dataPath`, `componentPath`, `rootData` and `mainSchemaComponent` are used
 // when present. The model needs to be stopped before the component unmounts.
 
-export class FormModel {
+export class DataModel {
   // The entries of the components with computed values and the scopes of the
   // watchers that write these values into the data, by component path:
   computedValueRecords = new Map()
@@ -651,7 +651,7 @@ const notFound = Symbol('notFound')
 const modelWatchOptions = { immediate: true, flush: 'post' }
 
 // Aborts `compute()` when it reads options that aren't loaded, see
-// `FormModel.getComputedValueResult()`.
+// `DataModel.getComputedValueResult()`.
 const optionsNotLoaded = Symbol('optionsNotLoaded')
 
 // Returns whether the schema is a source of computed values, through

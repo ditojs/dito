@@ -481,7 +481,7 @@ export default {
     // their order key with the offset of the loaded page, so that their order
     // can be stored even if it never changes, e.g. by a button that saves the
     // current order. Lists in the data of forms, views and dialogs are
-    // numbered by `FormModel`, see `initializeData()`.
+    // numbered by `DataModel`, see `initializeData()`.
     setLoadedListItems(items) {
       this.setLoadedValue(
         updateOrder(this.sourceSchema, items, this.paginationRange)
@@ -491,9 +491,9 @@ export default {
     // Writes the value loaded through the source's resource. Loading isn't an
     // edit of the data, so the value is written as a clean change, which
     // doesn't make the form dirty, e.g. for sources whose value is stored,
-    // like the order of their items, see `FormModel.applyCleanChanges()`.
+    // like the order of their items, see `DataModel.applyCleanChanges()`.
     setLoadedValue(value) {
-      this.formModel
+      this.dataModel
         .applyCleanChanges(() => {
           this.value = value
         })

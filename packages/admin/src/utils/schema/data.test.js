@@ -286,7 +286,7 @@ describe('computeValue()', () => {
 
 describe('processData()', () => {
   it('processes the values in the data without calling `compute()`', () => {
-    // `FormModel` writes the computed values into the data.
+    // `DataModel` writes the computed values into the data.
     const compute = vi.fn(({ item }) => item.title.toUpperCase())
     const schema = {
       type: 'form',

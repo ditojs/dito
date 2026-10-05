@@ -6,7 +6,7 @@ export default {
   computed: {
     value: {
       get() {
-        // `FormModel` writes computed values into the data, see
+        // `DataModel` writes computed values into the data, see
         // `computeValue()`.
         const value = getValueOrDefault(
           this.schema,

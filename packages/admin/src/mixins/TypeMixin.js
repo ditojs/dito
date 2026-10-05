@@ -192,17 +192,17 @@ export default {
   },
 
   methods: {
-    // Only the form model calls `compute()`, see `computeValue()`. Components
+    // Only the data model calls `compute()`, see `computeValue()`. Components
     // that it doesn't visit, e.g. in panels with their own data, never get
     // their values computed.
     warnAboutUncomputedValue() {
       if (
         this.schema.compute &&
-        !this.formModel.hasComputedValueEntry(this.componentPath)
+        !this.dataModel.hasComputedValueEntry(this.componentPath)
       ) {
         console.warn(
           `The value of the component at '${this.componentPath}' isn't ` +
-          `computed, as its data isn't part of a form model.`
+          `computed, as its data isn't part of a data model.`
         )
       }
     },

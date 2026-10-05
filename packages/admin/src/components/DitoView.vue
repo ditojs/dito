@@ -35,7 +35,7 @@ import {
   someNestedSchemaComponent
 } from '../utils/schema/structure.js'
 import { hasResource } from '../utils/resource.js'
-import { FormModel } from '../utils/FormModel.js'
+import { DataModel } from '../utils/DataModel.js'
 
 // @vue/component
 export default DitoComponent.component('DitoView', {
@@ -46,7 +46,7 @@ export default DitoComponent.component('DitoView', {
     return {
       $sourceComponent: () => this.mainComponent?.sourceComponent || null,
       $resourceComponent: () => this.mainComponent?.resourceComponent || null,
-      $formModel: () => this.ownFormModel
+      $dataModel: () => this.ownDataModel
     }
   },
 
@@ -61,9 +61,9 @@ export default DitoComponent.component('DitoView', {
   },
 
   computed: {
-    // @override DitoMixin.formModel
-    formModel() {
-      return this.ownFormModel
+    // @override DitoMixin.dataModel
+    dataModel() {
+      return this.ownDataModel
     },
 
     schema() {
@@ -125,8 +125,8 @@ export default DitoComponent.component('DitoView', {
 
   created() {
     // Writes defaults and computed values into the view's data and resolves
-    // options, see `FormModel`:
-    this.ownFormModel = new FormModel({
+    // options, see `DataModel`:
+    this.ownDataModel = new DataModel({
       component: this,
       getSchema: () => this.viewSchema,
       getData: () => this.data
@@ -142,8 +142,8 @@ export default DitoComponent.component('DitoView', {
 
   beforeUnmount() {
     // Stop the model before the component's own watchers are stopped, as the
-    // model's watchers aren't part of the component, see `FormModel`.
-    this.ownFormModel.stop()
+    // model's watchers aren't part of the component, see `DataModel`.
+    this.ownDataModel.stop()
   },
 
   methods: {
