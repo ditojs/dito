@@ -50,19 +50,18 @@ async function loadDelayed<T>(value: T): Promise<T> {
 }
 
 // Like lineto's `getValidOrDefaultOption()`: Keeps valid values, and selects
-// the first option otherwise, once the options are loaded.
+// the first option otherwise. `compute()` only runs once the options that it
+// reads are loaded.
 function getValidOrFirstOption({
   value,
   options
 }: {
   value: string | null | undefined
-  options?: Option[]
+  options: Option[]
 }) {
-  return options
-    ? value && options.some(option => option.value === value)
-      ? value
-      : (options[0]?.value ?? null)
-    : value
+  return value && options.some(option => option.value === value)
+    ? value
+    : (options[0]?.value ?? null)
 }
 
 export const articles = createWidgetView<ArticleItem>(
@@ -102,7 +101,7 @@ export const articles = createWidgetView<ArticleItem>(
                 ]
               },
               compute: ({ value, options }) => (
-                value ?? options?.[0]?.value ?? undefined
+                value ?? options[0]?.value ?? undefined
               )
             },
             category: {

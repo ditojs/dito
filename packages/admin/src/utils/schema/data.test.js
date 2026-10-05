@@ -285,23 +285,23 @@ describe('computeValue()', () => {
 })
 
 describe('processData()', () => {
-  it('processes computed values without writing into the data', () => {
+  it('processes the values in the data without calling `compute()`', () => {
+    // `FormModel` writes the computed values into the data.
+    const compute = vi.fn(({ item }) => item.title.toUpperCase())
     const schema = {
       type: 'form',
       components: {
         title: { type: 'text' },
-        upper: {
-          type: 'text',
-          compute: ({ item }) => item.title.toUpperCase()
-        },
+        upper: { type: 'text', compute },
         subtitle: { type: 'text', default: 'None' }
       }
     }
-    const data = { title: 'Book' }
+    const data = { title: 'Book', upper: 'BOOK' }
     expect(
       processData(schema, { type: 'list' }, data, '', { target: 'server' })
     ).toEqual({ title: 'Book', upper: 'BOOK', subtitle: 'None' })
-    expect(data).toEqual({ title: 'Book' })
+    expect(data).toEqual({ title: 'Book', upper: 'BOOK' })
+    expect(compute).not.toHaveBeenCalled()
   })
 
   it('processes the primitive values of lists with `wrapPrimitives`', () => {
@@ -335,29 +335,27 @@ describe('processData()', () => {
     expect(dataPaths).toEqual(['prices/0', 'prices/1'])
   })
 
-  describe('with `shouldCallComputeAndProcess: false`', () => {
+  describe('with `shouldCallProcess: false`', () => {
     // `DitoContext` needs a component to inherit from:
     const component = {}
     const options = {
       component,
       target: 'clipboard',
-      shouldCallComputeAndProcess: false
+      shouldCallProcess: false
     }
 
-    it('falls back to defaults without calling `compute()`', () => {
-      const compute = vi.fn(() => 'Computed')
+    it('falls back to defaults without calling `process()`', () => {
       const process = vi.fn(({ value }) => value)
       const schema = {
         type: 'form',
         components: {
           title: { type: 'text', process },
-          upper: { type: 'text', compute, default: 'None' }
+          upper: { type: 'text', default: 'None' }
         }
       }
       expect(
         processData(schema, { type: 'list' }, { title: 'Book' }, '', options)
       ).toEqual({ title: 'Book', upper: 'None' })
-      expect(compute).not.toHaveBeenCalled()
       expect(process).not.toHaveBeenCalled()
     })
 

@@ -189,6 +189,7 @@ export default {
   created() {
     this._register(true)
     this.setupSchemaFields()
+    this.warnAboutUncomputedValue()
   },
 
   unmounted() {
@@ -196,6 +197,21 @@ export default {
   },
 
   methods: {
+    // Only the form model calls `compute()`, see `computeValue()`. Components
+    // that it doesn't visit, e.g. in panels with their own data, never get
+    // their values computed.
+    warnAboutUncomputedValue() {
+      if (
+        this.schema.compute &&
+        !this.formModel.hasComputedValueEntry(this.componentPath)
+      ) {
+        console.warn(
+          `The value of the component at '${this.componentPath}' isn't ` +
+          `computed, as its data isn't part of a form model.`
+        )
+      }
+    },
+
     _register(add) {
       // Provide component to container for schema accessor evaluation.
       this.$emit('update:component', add ? this : null)

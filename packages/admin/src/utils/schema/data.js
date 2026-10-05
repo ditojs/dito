@@ -227,9 +227,9 @@ export function initializeData(schema, data = {}, component, {
  * Returns the value of the component described by `schema` and `name` in
  * `data`: the result of `schema.compute()` if it returns a value, else the
  * value in `data`, or its default if it's missing. Never writes into `data`:
- * Computed values, including the defaults of components with `compute()`, are
- * written by `FormModel`, and other defaults when the data is set up, see
- * `initializeData()`, or when they go missing later, see `FormModel`. If
+ * `FormModel` is the only caller and writes the computed values, including the
+ * defaults of components with `compute()`. Other defaults are written when the
+ * data is set up, see `initializeData()`, or when they go missing later. If
  * provided, `getOptions()` returns the options for `context.options`, called
  * only when they're read.
  */
@@ -287,8 +287,10 @@ export function computeValue(schema, data, name, dataPath, {
 }
 
 // Returns the value in `data`, or its default if it's missing. `context` can be
-// a function that creates the context, called only when it's needed.
-function getValueOrDefault(schema, data, name, context) {
+// a function that creates the context, called only when it's needed. Computed
+// values are in `data` already, as `FormModel` writes them, see
+// `computeValue()`.
+export function getValueOrDefault(schema, data, name, context) {
   const shouldUseDefault = (
     isMissingValue(schema, data, name, context) &&
     !shouldIgnoreMissingValue(schema, context)
@@ -322,35 +324,33 @@ export function processData(schema, sourceSchema, data, dataPath, {
   rootData,
   schemaOnly, // whether to only include data covered by the schema, or all data
   target,
-  // Whether to call the schema callbacks `compute()` and `process()`. Data that
-  // is compared while it's edited, e.g. by `FormModel.isDirty`, isn't validated
-  // yet, which the callbacks may rely on, and `FormModel` writes the computed
-  // values into the data. Without them, the values in the data are used, or
-  // their defaults if they're missing, the types still process them through
-  // `processValue()`, and the excluded values of components with `process()`
-  // are kept, as `process()` may store them elsewhere through `processedItem`.
-  shouldCallComputeAndProcess = true
+  // Whether to call the schema callbacks `process()`. Data that is compared
+  // while it's edited, e.g. by `FormModel.isDirty`, isn't validated yet, which
+  // the callbacks may rely on. Without them, the types still process the values
+  // through `processValue()`, and the excluded values of components with
+  // `process()` are kept, as `process()` may store them elsewhere through
+  // `processedItem`. Computed values are in the data already, as `FormModel`
+  // writes them, see `computeValue()`.
+  shouldCallProcess = true
 } = {}) {
   const options = { component, rootData, schemaOnly, target }
   const processedData = cloneItem(sourceSchema, data, options)
   const graph = new SchemaGraph()
 
   const before = ({ schema, data, name, dataPath, processedData }) => {
-    let value = shouldCallComputeAndProcess
-      ? computeValue(schema, data, name, dataPath, options)
-      : getValueOrDefault(
+    let value = getValueOrDefault(
+      schema,
+      data,
+      name,
+      () =>
+        new DitoContext(component, {
           schema,
-          data,
           name,
-          () =>
-            new DitoContext(component, {
-              schema,
-              name,
-              data,
-              dataPath,
-              rootData: options.rootData
-            })
-        )
+          data,
+          dataPath,
+          rootData: options.rootData
+        })
+    )
     // The schema expects the `wrapPrimitives` transformations to be present on
     // the data that it is applied on, so warp before and unwrap after.
     if (isArray(value)) {
@@ -400,13 +400,13 @@ export function processData(schema, sourceSchema, data, dataPath, {
 
     // Handle the user's `process()` callback next, if one is provided, so that
     // it can modify data in `processedData` even if it provides `exclude: true`
-    if (process && shouldCallComputeAndProcess) {
+    if (process && shouldCallProcess) {
       value = process(getContext(context))
     }
 
     // Without calling `process()`, keep the excluded values that it may store
-    // elsewhere, see `shouldCallComputeAndProcess`:
-    const shouldKeepExcludedValue = !!process && !shouldCallComputeAndProcess
+    // elsewhere, see `shouldCallProcess`:
+    const shouldKeepExcludedValue = !!process && !shouldCallProcess
     if (!shouldKeepExcludedValue && shouldExcludeValue(schema, context)) {
       delete processedData[name]
     } else {

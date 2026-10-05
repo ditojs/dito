@@ -343,7 +343,11 @@ export interface BaseSchema<$Item>
    * Computes and sets the field value reactively, also
    * when the field isn't rendered, unless its `if`
    * evaluates to `false`. If the callback returns
-   * `undefined`, the current value is preserved.
+   * `undefined`, the current value is preserved. The
+   * value is computed into the data, which is what is
+   * displayed and saved. As the callback runs whenever
+   * the data it reads changes, it should only return a
+   * value and not change data.
    *
    * As it doesn't depend on the field's component, the
    * context's component properties, e.g. `component`
@@ -1995,9 +1999,10 @@ export type DitoContext<$Item = any> = {
   option: any
   /**
    * All available options in a select. In `compute()`, they are
-   * loaded when first read, also when the field isn't rendered,
-   * and are `undefined` while loading; the callback runs again
-   * once they are loaded.
+   * loaded when first read, also when the field isn't rendered.
+   * Reading them while they load ends the callback, which keeps
+   * the current value and runs again once they are loaded, so
+   * they are always available in it.
    */
   options: any
   /**

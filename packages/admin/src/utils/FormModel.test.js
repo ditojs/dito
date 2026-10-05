@@ -17,6 +17,7 @@ registerTypeComponent('computed', {
   valueFromDataSchema: true
 })
 registerTypeComponent('section', { defaultNested: false })
+registerTypeComponent('panel', { defaultNested: false })
 registerTypeComponent('list', {
   defaultNested: true,
   defaultValue: () => [],
@@ -384,6 +385,25 @@ describe('FormModel', () => {
     })
   })
 
+  it('tells which components it computes the values of', () => {
+    const schema = {
+      type: 'form',
+      components: { title: { type: 'text' }, slug },
+      panels: {
+        // Panels with their own data aren't part of the model's data.
+        search: {
+          type: 'panel',
+          data: () => ({}),
+          components: { query: { type: 'text', compute: () => 'Query' } }
+        }
+      }
+    }
+    const { formModel } = createFormModel(schema, { title: 'Book' })
+    expect(formModel.hasComputedValueEntry('slug')).toBe(true)
+    expect(formModel.hasComputedValueEntry('search/query')).toBe(false)
+    formModel.stop()
+  })
+
   it('resolves values from data schemas', async () => {
     const schema = {
       type: 'form',
@@ -445,13 +465,12 @@ describe('FormModel', () => {
 
   describe('options', () => {
     // Like lineto's `getValidOrDefaultOption()`: Keeps valid values, and
-    // selects the first option otherwise, once the options are loaded.
+    // selects the first option otherwise. `compute()` only runs once the
+    // options that it reads are loaded.
     const getValidOrFirstOption = ({ value, options }) =>
-      options
-        ? options.some(option => option.value === value)
-          ? value
-          : options[0]?.value ?? null
-        : value
+      options.some(option => option.value === value)
+        ? value
+        : options[0]?.value ?? null
 
     const topicsByCategory = {
       news: [{ value: 'politics' }, { value: 'economy' }],
@@ -481,6 +500,19 @@ describe('FormModel', () => {
           compute: getValidOrFirstOption
         }
       }
+    })
+
+    it('keeps values until the options that `compute()` reads load', async () => {
+      const schema = createTopicSchema(category => topicsByCategory[category])
+      const { formModel, data } = createFormModel(schema, {
+        category: 'archive',
+        topic: 'football'
+      })
+      await nextTick()
+      expect(data).toEqual({ category: 'archive', topic: 'football' })
+      await formModel.waitForPendingLoads()
+      expect(data).toEqual({ category: 'news', topic: 'politics' })
+      formModel.stop()
     })
 
     it('reselects dependent options when options of other fields load', async () => {

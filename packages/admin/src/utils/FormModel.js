@@ -92,7 +92,7 @@ export class FormModel {
       watch(
         [getSchema, getData],
         ([schema, data]) => this.initializeData(schema, data),
-        { immediate: true }
+        modelWatchOptions
       )
       // The entries are read through a computed property, so that the watchers
       // of the entries can check synchronously whether their entry is still
@@ -101,21 +101,23 @@ export class FormModel {
       watch(
         () => this.dataEntries.value.computedValueEntries,
         entries => this.updateComputedValueRecords(entries),
-        { immediate: true }
+        modelWatchOptions
       )
       // Values that go missing after the data was set up, e.g. in items that
       // code adds, get their defaults too:
       watch(
         () => this.dataEntries.value.entriesWithMissingValues,
         entries => this.setDefaultValues(entries),
-        { immediate: true }
+        modelWatchOptions
       )
       if (getSourceSchema) {
         // Data that is set up, e.g. loaded, saved or applied, isn't dirty:
+        // After the data is set up, as the watchers run in the order in which
+        // they're created, see `modelWatchOptions`.
         watch(
           getData,
           () => this.takeProcessedDataSnapshot().catch(console.error),
-          { immediate: true }
+          modelWatchOptions
         )
       }
     })
@@ -234,14 +236,14 @@ export class FormModel {
     const data = this.getData()
     return data && !isEmptySchema(schema)
       ? processData(schema, this.getSourceSchema(), data, this.dataPath, {
-          // Like `getComputedValue()`:
+          // Like `getComputedValueResult()`:
           component: this.component.mainSchemaComponent ?? this.component,
           rootData: this.rootData,
           schemaOnly: true,
           target: 'clipboard',
-          // Reading the dirty state doesn't call `compute()` and `process()`,
-          // see `processData()`:
-          shouldCallComputeAndProcess: false
+          // Reading the dirty state doesn't call `process()`, see
+          // `processData()`:
+          shouldCallProcess: false
         })
       : null
   }
@@ -417,15 +419,13 @@ export class FormModel {
           // Return a new object each time, so that the value is also written
           // when only the value in the data changed, e.g. through user input.
           () =>
-            isEntryCurrent.value
-              ? { value: this.getComputedValue(entry) }
-              : null,
+            isEntryCurrent.value ? this.getComputedValueResult(entry) : null,
           computedResult => {
             if (computedResult) {
               this.writeComputedValue(entry, computedResult.value)
             }
           },
-          { immediate: true }
+          modelWatchOptions
         )
       }
       if (hasValueFromDataSchema(entry.schema)) {
@@ -443,11 +443,17 @@ export class FormModel {
               this.writeComputedValue(entry, resolved.value)
             }
           },
-          { immediate: true }
+          modelWatchOptions
         )
       }
     })
     return scope
+  }
+
+  // Returns whether the model computes the value of the component at the
+  // component path, i.e. whether its walk of the data visits the component.
+  hasComputedValueEntry(componentPath) {
+    return this.dataEntries.value.computedValueEntries.has(componentPath)
   }
 
   // Returns whether the entry is still one of the current entries, with the
@@ -460,14 +466,37 @@ export class FormModel {
 
   // Calls `schema.compute()` with the main schema component of the data, like
   // `processData()`, and with the options resolved by the model, so that the
-  // result doesn't depend on whether the component is rendered.
-  getComputedValue(entry) {
+  // result doesn't depend on whether the component is rendered. Returns the
+  // value as `{ value }`, or `null` if `compute()` reads options that aren't
+  // loaded, which aborts it, so that the current value is kept until they are
+  // and `compute()` can rely on them. The watcher that calls it depends on the
+  // options through reading them, and calls it again once they're loaded.
+  getComputedValueResult(entry) {
     const { schema, data, name, dataPath } = entry
-    return computeValue(schema, data, name, dataPath, {
-      component: this.component.mainSchemaComponent ?? this.component,
-      rootData: this.rootData,
-      getOptions: schema.options ? () => this.getOptions(entry) : null
-    })
+    try {
+      const value = computeValue(schema, data, name, dataPath, {
+        component: this.component.mainSchemaComponent ?? this.component,
+        rootData: this.rootData,
+        getOptions: schema.options ? () => this.getLoadedOptions(entry) : null
+      })
+      return { value }
+    } catch (error) {
+      if (error === optionsNotLoaded) {
+        return null
+      }
+      throw error
+    }
+  }
+
+  // Returns the options of the component of the entry, or aborts the
+  // `compute()` that reads them, while they aren't loaded, see
+  // `getComputedValueResult()`.
+  getLoadedOptions(entry) {
+    const options = this.getOptions(entry)
+    if (options === undefined) {
+      throw optionsNotLoaded
+    }
+    return options
   }
 
   // Returns the options of the component of the entry, resolved from
@@ -611,6 +640,19 @@ function takeOverChangedValues(target, before, after) {
 }
 
 const notFound = Symbol('notFound')
+
+// The watchers of the model run after the post-flush hooks, so that they write
+// the values that they derive from the data after the components that display
+// them are mounted. Otherwise, the `mounted` hooks of `v-model` directives
+// would restore the values that inputs had when they were mounted, see
+// https://github.com/vuejs/core/issues/15774. Vue processes the updates that
+// the written values cause in the same flush, before the browser renders them.
+// The watchers run in the order in which they're created.
+const modelWatchOptions = { immediate: true, flush: 'post' }
+
+// Aborts `compute()` when it reads options that aren't loaded, see
+// `FormModel.getComputedValueResult()`.
+const optionsNotLoaded = Symbol('optionsNotLoaded')
 
 // Returns whether the schema is a source of computed values, through
 // `schema.compute()` or a data schema of the `computed` types.
