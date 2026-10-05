@@ -12,15 +12,22 @@ export interface Shelf {
   books?: Book[]
 }
 
+export interface Catalog {
+  title: string
+  sections?: { name: string }[]
+}
+
 export interface Library {
   id: number
   name: string
   shelves?: Shelf[] | null
+  catalog?: Catalog | null
 }
 
 export class Library extends Model {
   static override properties: ModelProperties = {
     name: { type: 'string', required: true },
-    shelves: { type: 'array', nullable: true, items: { type: 'object' } }
+    shelves: { type: 'array', nullable: true, items: { type: 'object' } },
+    catalog: { type: 'object', nullable: true }
   }
 }

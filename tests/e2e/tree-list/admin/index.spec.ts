@@ -1,10 +1,19 @@
 import type { Page } from '@playwright/test'
 import { test, expect } from '../fixtures.js'
-import { Library, type Shelf } from '../models/Library.js'
+import { Library, type Catalog, type Shelf } from '../models/Library.js'
 import { DitoForm, dragHandle } from '../../../utils/pages.js'
 
-async function openLibrary(page: Page, url: string, shelves: Shelf[]) {
-  const library = await Library.query().insert({ name: 'Library', shelves })
+async function openLibrary(
+  page: Page,
+  url: string,
+  shelves: Shelf[],
+  catalog: Catalog | null = null
+) {
+  const library = await Library.query().insert({
+    name: 'Library',
+    shelves,
+    catalog
+  })
   await page.goto(`${url}/admin/libraries/${library.id}`)
   await expect(page.getByLabel('Name', { exact: true })).toHaveValue('Library')
   return library
@@ -27,7 +36,7 @@ async function editTreeItem(page: Page, label: string) {
   await header.getByRole('button', { name: 'Edit' }).click()
 }
 
-async function getStoredShelfs(library: Library) {
+async function getStoredShelves(library: Library) {
   return (await Library.query().findById(library.id))?.shelves
 }
 
@@ -49,7 +58,7 @@ test.describe('tree list', () => {
     await page.getByLabel('Shelf Name', { exact: true }).fill('Poetry')
     await expect(getTreeHeader(page, 'Poetry')).toBeVisible()
     await new DitoForm(page).save()
-    expect(await getStoredShelfs(library)).toEqual([
+    expect(await getStoredShelves(library)).toEqual([
       { name: 'Poetry', order: 0, books: [] }
     ])
   })
@@ -69,7 +78,7 @@ test.describe('tree list', () => {
     await editTreeItem(page, 'Emma')
     await page.getByLabel('Book Title', { exact: true }).fill('Ulysses')
     await new DitoForm(page).save()
-    expect(await getStoredShelfs(library)).toEqual([
+    expect(await getStoredShelves(library)).toEqual([
       {
         name: 'Fiction',
         order: 0,
@@ -92,9 +101,24 @@ test.describe('tree list', () => {
     await dragHandle(page, getHandle('Fiction'), getHandle('Poetry'))
     await expect(getTreeLabels(page)).toHaveText(['Poetry', 'Fiction'])
     await new DitoForm(page).save()
-    expect(await getStoredShelfs(library)).toEqual([
+    expect(await getStoredShelves(library)).toEqual([
       { name: 'Poetry', order: 0, books: [] },
       { name: 'Fiction', order: 1, books: [] }
     ])
+  })
+
+  test('shows the properties and children of objects', async ({
+    page,
+    url
+  }) => {
+    await openLibrary(page, url, [], {
+      title: 'Main',
+      sections: [{ name: 'History' }]
+    })
+    const catalog = page.locator('.dito-tree-list').filter({
+      has: page.locator('.dito-tree-label', { hasText: 'History' })
+    })
+    await expect(catalog.locator('.dito-properties')).toContainText('Main')
+    await expect(getTreeHeader(page, 'History')).toBeVisible()
   })
 })

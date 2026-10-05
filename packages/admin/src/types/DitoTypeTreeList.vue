@@ -6,7 +6,9 @@
     :scopes="scopes"
   )
   .dito-tree-panel
+    //- Objects that are `null` have no tree, as tree items can't create them.
     DitoTreeItem(
+      v-if="treeData"
       :schema="treeSchema"
       :dataPath="treeDataPath"
       :data="treeData"

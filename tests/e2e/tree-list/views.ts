@@ -30,5 +30,17 @@ export const libraries = createWidgetView<Library>('name', 'libraries', {
         components: { name: { type: 'text', label: 'Book Title' } }
       }
     }
+  },
+  // The object shows its properties, and its sections as children.
+  catalog: {
+    type: 'tree-object',
+    label: 'Catalog',
+    properties: {
+      title: { label: 'Catalog Title' }
+    },
+    children: {
+      name: 'sections',
+      itemLabel: 'name'
+    }
   }
 })
