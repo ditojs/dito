@@ -25,19 +25,33 @@ export const widgets = createWidgetView<Widget>(
       options: ['Small', 'Large']
     },
     // Filters the options by their beginning, unlike the internal search,
-    // which also matches inside of them.
+    // which also matches inside of them. The options are objects, which are
+    // looked up by their values.
     shape: {
       type: 'multiselect',
       label: 'Shape',
       searchable: true,
-      options: ['Circle', 'Square', 'Triangle'],
+      options: {
+        data: ['Circle', 'Square', 'Triangle'].map(name => ({
+          label: name,
+          value: name.toLowerCase()
+        })),
+        label: 'label',
+        value: 'value'
+      },
       search: ({
         searchTerm,
         options
       }: {
         searchTerm: string
-        options: string[]
-      }) => filterByBeginning(options, searchTerm)
+        options: { label: string, value: string }[]
+      }) => {
+        const labels = filterByBeginning(
+          options.map(({ label }) => label),
+          searchTerm
+        )
+        return options.filter(({ label }) => labels.includes(label))
+      }
     },
     // Like searches that request their options: The options load
     // asynchronously, and so does the search.

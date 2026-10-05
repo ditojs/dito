@@ -68,10 +68,12 @@ export default {
     // Whether the value needs to be replaced with the selected value, once the
     // options are available: if the value is forced to `null` because its
     // option disappeared, or if the value is a reference, so that it'll hold
-    // actual data, not just a reference id. See `watch`.
+    // actual data, not just a reference id. See `watch`. Filtered options, e.g.
+    // the results of a search, don't tell whether the value's option exists.
     shouldReplaceValueWithSelectedValue() {
       return (
-        this.hasOptions && (
+        this.hasOptions &&
+        !this.areOptionsFiltered && (
           this.selectedValue === null && this.value !== null ||
           isReference(this.value)
         )
@@ -112,6 +114,12 @@ export default {
       // This is overridden in `TypeMultiselect` to return the `searchedOptions`
       // when a search filter was applied.
       return this.options
+    },
+
+    // Whether the active options are a filtered subset of the options, e.g.
+    // the results of a search, see `activeOptions`.
+    areOptionsFiltered() {
+      return this.activeOptions !== this.options
     },
 
     hasOptions() {
@@ -304,8 +312,16 @@ export default {
         }
       }
 
-      return this.optionValue
-        ? findOption(this.activeOptions, value, this.groupBy)
+      const { optionValue, groupBy } = this
+      return optionValue
+        ? (findOption(this.activeOptions, value, groupBy) ??
+          // Options filtered out of the active options, e.g. by a search, are
+          // still options of the value.
+          (
+            this.areOptionsFiltered
+              ? findOption(this.options, value, groupBy)
+              : undefined
+          ))
         : value
     },
 

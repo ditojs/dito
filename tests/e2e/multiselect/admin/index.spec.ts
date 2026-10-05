@@ -92,6 +92,27 @@ test.describe('multiselect', () => {
     await expect(page.getByRole('option')).toHaveCount(0)
   })
 
+  test('keeps values that searches filter out', async ({ page, url }) => {
+    await Widget.query().insert({
+      name: 'Widget A',
+      size: 'Small',
+      shape: 'triangle'
+    })
+    const list = new DitoListView(page, url, 'Widget')
+    await list.navigate('/widgets')
+    await list.list.edit('Widget A')
+    const shape = page.getByRole('combobox', { name: 'Shape' })
+    await expect(shape).toContainText('Triangle')
+    await shape.click()
+    await shape.locator('input').fill('c')
+    await expect(page.getByRole('option')).toHaveText(['Circle'])
+    await page.keyboard.press('Escape')
+    await expect(shape).toContainText('Triangle')
+    await new DitoForm(page).save()
+    const widget = await Widget.query().findOne({ name: 'Widget A' })
+    expect(widget?.shape).toBe('triangle')
+  })
+
   test('filters asynchronously loaded options through async `search`', async ({
     page,
     url
