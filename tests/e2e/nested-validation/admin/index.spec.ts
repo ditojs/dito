@@ -18,6 +18,7 @@ async function seedBook(data: Partial<Book>) {
       credits: { editor: 'Editor' },
       tags: [],
       chapters: [],
+      volumes: [],
       ...data
     },
     { skipValidation: true }
@@ -181,6 +182,48 @@ test.describe('nested validation', () => {
     await saveInvalid(page)
     await expect(page).toHaveURL(/\/chapters\/1$/)
     await expect(getErrors(getForm(page), 'Title')).toContainText(message)
+  })
+
+  test('shows server errors on fields of tree list items', async ({
+    page,
+    url
+  }) => {
+    const book = await seedBook({
+      volumes: [{ title: 'Valid' }, { title: 'lower' }]
+    })
+    await openBook(page, url, book)
+    await saveInvalid(page)
+    // The form of the invalid item opens to display the error, in the tab of
+    // the tree list.
+    await expect(page).toHaveURL(/\/volumes\/1(#main)?$/)
+    await expect(getErrors(getForm(page), 'Volume Title')).toContainText(
+      message
+    )
+  })
+
+  test('shows server errors on fields of tree list children', async ({
+    page,
+    url
+  }) => {
+    const book = await seedBook({
+      volumes: [
+        { title: 'Valid', parts: [{ title: 'Valid' }, { title: 'lower' }] }
+      ]
+    })
+    await openBook(page, url, book)
+    await saveInvalid(page)
+    await expect(page).toHaveURL(/\/volumes\/0\/parts\/1(#main)?$/)
+    await expect(getErrors(getForm(page), 'Part Title')).toContainText(message)
+  })
+
+  test('validates fields of tree list items', async ({ page, url }) => {
+    const book = await seedBook({ volumes: [{ title: null }] })
+    await openBook(page, url, book)
+    await page.getByRole('button', { name: 'Save', exact: true }).click()
+    await expect(page).toHaveURL(/\/volumes\/0(#main)?$/)
+    await expect(getErrors(getForm(page), 'Volume Title')).toContainText(
+      /required/
+    )
   })
 
   test('validates fields of items in nested forms', async ({

@@ -88,6 +88,32 @@ export const books = createWidgetView<BookItem>(
                   }
                 }
               }
+            },
+            // Items and their children are edited in the forms of a tree.
+            volumes: {
+              type: 'tree-list',
+              label: 'Volumes',
+              itemLabel: 'title',
+              editable: true,
+              form: {
+                type: 'form',
+                label: 'Volume',
+                components: {
+                  title: { type: 'text', label: 'Volume Title', required: true }
+                }
+              },
+              children: {
+                name: 'parts',
+                itemLabel: 'title',
+                editable: true,
+                form: {
+                  type: 'form',
+                  label: 'Part',
+                  components: {
+                    title: { type: 'text', label: 'Part Title' }
+                  }
+                }
+              }
             }
           }
         },

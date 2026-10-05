@@ -11,6 +11,11 @@ export interface Chapter {
   sections?: Section[]
 }
 
+export interface Volume {
+  title?: string | null
+  parts?: { title?: string | null }[]
+}
+
 export interface Book {
   id: number
   title: string
@@ -22,6 +27,7 @@ export interface Book {
   credits?: { editor?: string | null } | null
   tags?: { name: string }[]
   chapters?: Chapter[]
+  volumes?: Volume[]
 }
 
 // Titles must start with an uppercase letter. Only the server knows this rule,
@@ -58,6 +64,21 @@ export class Book extends Model {
           title,
           summary: { type: 'string', nullable: true },
           sections: {
+            type: 'array',
+            nullable: true,
+            items: { type: 'object', properties: { title } }
+          }
+        }
+      }
+    },
+    volumes: {
+      type: 'array',
+      default: [],
+      items: {
+        type: 'object',
+        properties: {
+          title,
+          parts: {
             type: 'array',
             nullable: true,
             items: { type: 'object', properties: { title } }
