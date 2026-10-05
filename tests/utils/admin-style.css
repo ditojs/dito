@@ -1,0 +1,6 @@
+/*
+ * Replaces `@ditojs/admin/style.css` in the test app, which uses the admin's
+ * source: Its components inject their styles themselves, including the global
+ * ones that `DitoRoot` imports. Importing them again would add them after the
+ * components' styles, overriding their rules of the same specificity.
+ */

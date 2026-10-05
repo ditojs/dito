@@ -82,10 +82,7 @@ export function createTestApp(
             },
             {
               find: '@ditojs/admin/style.css',
-              replacement: path.join(
-                pkgs,
-                'admin/src/styles/style.scss'
-              )
+              replacement: path.join(import.meta.dirname, 'admin-style.css')
             },
             {
               find: /^@ditojs\/admin$/,
