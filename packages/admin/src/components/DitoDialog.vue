@@ -8,7 +8,7 @@
   @mouseup="onMouseUp"
 )
   UseFocusTrap.dito-dialog__focus-trap(:options="focusTrapOptions")
-    form.dito-scroll-parent(
+    form.dito-dialog__form.dito-scroll-parent(
       @submit.prevent="submit"
       @keydown.enter="onEnter"
     )
@@ -209,6 +209,8 @@ export default DitoComponent.component('DitoDialog', {
 @import '../styles/_imports';
 
 .dito-dialog {
+  $self: &;
+
   position: fixed;
   display: flex;
   inset: 0;
@@ -231,8 +233,7 @@ export default DitoComponent.component('DitoDialog', {
     order: -1;
   }
 
-  // TODO: `&__inner`
-  form {
+  &__form {
     position: relative;
     display: flex;
     box-sizing: border-box;
@@ -242,23 +243,23 @@ export default DitoComponent.component('DitoDialog', {
     max-height: 100%;
     box-shadow: 0 20px 60px -2px rgb(27, 33, 58, 0.4);
   }
-}
 
-.dito-dialog-enter-active,
-.dito-dialog-leave-active {
-  transition: opacity 0.15s;
+  &-enter-active,
+  &-leave-active {
+    transition: opacity 0.15s;
 
-  form {
-    transition: transform 0.25s;
+    #{$self}__form {
+      transition: transform 0.25s;
+    }
   }
-}
 
-.dito-dialog-enter-from,
-.dito-dialog-leave-to {
-  opacity: 0;
+  &-enter-from,
+  &-leave-to {
+    opacity: 0;
 
-  form {
-    transform: translateY(-20px);
+    #{$self}__form {
+      transform: translateY(-20px);
+    }
   }
 }
 </style>
