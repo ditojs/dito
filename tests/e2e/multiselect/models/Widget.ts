@@ -37,7 +37,6 @@ export class Widget extends Model {
     // Eager-load tags so the admin form re-hydrates the multiselect after
     // reload. Applied as `^withTags` on the Widgets controller below so
     // every query goes through this scope.
-    withTags: (query: QueryBuilder<Widget>) =>
-      query.withGraphFetched('tags')
+    withTags: (query: QueryBuilder<Widget>) => query.withGraphFetched('tags')
   }
 }

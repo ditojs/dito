@@ -204,10 +204,11 @@ export function createModelHelpers<M extends typeof Model>(
     id: number
   ): Promise<InstanceType<M>> {
     const saved = page.waitForResponse(
-      resp =>
+      resp => (
         resp.url().includes(`/api/${resource}/${id}`) &&
         resp.request().method() === 'PATCH' &&
         resp.ok()
+      )
     )
     await page
       .locator('button.dito-button[type="submit"]')

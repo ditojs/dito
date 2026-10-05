@@ -44,7 +44,7 @@ export const widgets = createWidgetView<Widget>(
         options
       }: {
         searchTerm: string
-        options: { label: string, value: string }[]
+        options: { label: string; value: string }[]
       }) => {
         const labels = filterByBeginning(
           options.map(({ label }) => label),
@@ -94,8 +94,11 @@ export const widgets = createWidgetView<Widget>(
       relate: true,
       clearable: true,
       options: {
-        data: ({ request }: { request: (opts: { url: string }) => Promise<Tag[]> }) =>
-          request({ url: 'tags' }),
+        data: ({
+          request
+        }: {
+          request: (opts: { url: string }) => Promise<Tag[]>
+        }) => request({ url: 'tags' }),
         label: 'name',
         value: 'id'
       }

@@ -34,7 +34,6 @@ export class Widget extends Model {
     // Eager-load items so the admin form re-hydrates the nested list on
     // edit reload. Applied as `^withItems` on the Widgets controller in
     // fixtures.ts so every query goes through this scope.
-    withItems: (query: QueryBuilder<Widget>) =>
-      query.withGraphFetched('items')
+    withItems: (query: QueryBuilder<Widget>) => query.withGraphFetched('items')
   }
 }

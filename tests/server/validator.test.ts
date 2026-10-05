@@ -291,7 +291,9 @@ describe('Validator — custom formats', () => {
       const good = await fetch(`${url}/hashes`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ value: 'da39a3ee5e6b4b0d3255bfef95601890afd80709' })
+        body: JSON.stringify({
+          value: 'da39a3ee5e6b4b0d3255bfef95601890afd80709'
+        })
       })
       expect(good.status).toBe(201)
       expect(await good.json()).toMatchObject({

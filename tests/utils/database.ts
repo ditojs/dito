@@ -26,7 +26,8 @@ export async function createTestDatabase(
       (table: Knex.CreateTableBuilder) => {
         for (const [name, property] of Object.entries(
           properties as Record<
-            string, PropertyDefinition
+            string,
+            PropertyDefinition
           >
         )) {
           if (name === '#id' || name === '#ref') {

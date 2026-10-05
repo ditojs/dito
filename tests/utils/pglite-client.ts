@@ -9,8 +9,9 @@ import { Knex } from 'knex'
 const require = createRequire(import.meta.url)
 // Resolve the deep path via knex's main entry to avoid exports restrictions
 // when knex is linked via pnpm overrides:
-const Client_PG: any =
-  require(join(dirname(require.resolve('knex')), 'lib/dialects/postgres/index.js'))
+const Client_PG: any = require(
+  join(dirname(require.resolve('knex')), 'lib/dialects/postgres/index.js')
+)
 
 type KnexPGliteConfig = Knex.Config & {
   connection?: { pglite?: PGlite } | (() => { pglite?: PGlite })
@@ -25,19 +26,19 @@ class ClientPGLiteImpl extends Client_PG {
   }
 
   _driver() {
-    const connection =
-      this.config.connection as any
+    const connection = this.config.connection as any
     const pglite =
       typeof connection === 'function'
         ? connection().pglite
         : connection?.pglite
 
-    this.pglite =
+    this.pglite = (
       pglite ??
       new PGlite(
         connection?.filename ??
         connection?.connectionString
       )
+    )
   }
 
   async _acquireOnlyConnection() {
@@ -54,8 +55,7 @@ class ClientPGLiteImpl extends Client_PG {
     connection: PGlite,
     searchPath: string
   ): Promise<boolean> {
-    let path: string | string[] =
-      searchPath || this.searchPath
+    let path: string | string[] = searchPath || this.searchPath
 
     if (!path) {
       return true
@@ -74,9 +74,11 @@ class ClientPGLiteImpl extends Client_PG {
     if (typeof path === 'string') {
       if (path.includes(',')) {
         const parts = path.split(',')
-        const arraySyntax = `[${parts
-          .map(p => `'${p}'`)
-          .join(', ')}]`
+        const arraySyntax = `[${
+          parts
+            .map(p => `'${p}'`)
+            .join(', ')
+        }]`
         ;(this as any).logger?.warn?.(
           `Detected comma in searchPath "${path}".` +
           `If you are trying to specify multiple ` +
@@ -96,9 +98,10 @@ class ClientPGLiteImpl extends Client_PG {
   }
 
   async checkVersion(connection: PGlite) {
-    const resp = await connection.query(
-      'select version();'
-    )
+    const resp =
+      await connection.query(
+        'select version();'
+      )
     return this._parseVersion(
       (resp.rows[0] as any).version
     )
@@ -107,7 +110,9 @@ class ClientPGLiteImpl extends Client_PG {
   async _query(connection: PGlite, obj: any) {
     if (!obj.sql) throw new Error('The query is empty')
     obj.response = await connection.query(
-      obj.sql, obj.bindings, obj.options
+      obj.sql,
+      obj.bindings,
+      obj.options
     )
     return obj
   }
@@ -124,7 +129,8 @@ class ClientPGLiteImpl extends Client_PG {
       command
     }
     return super.processResponse(
-      { ...obj, response }, runner
+      { ...obj, response },
+      runner
     )
   }
 
@@ -135,17 +141,12 @@ class ClientPGLiteImpl extends Client_PG {
 
       this._query(connection, obj)
         .then((obj: any) => obj.response.rows)
-        .then((rows: any[]) =>
-          rows.forEach(row => stream.write(row))
-        )
-        .catch((err: any) =>
-          stream.emit('error', err)
-        )
+        .then((rows: any[]) => rows.forEach(row => stream.write(row)))
+        .catch((err: any) => stream.emit('error', err))
         .then(() => stream.end())
     })
   }
 }
 
-const ClientPGLite: typeof Knex.Client =
-  ClientPGLiteImpl as any
+const ClientPGLite: typeof Knex.Client = ClientPGLiteImpl as any
 export default ClientPGLite

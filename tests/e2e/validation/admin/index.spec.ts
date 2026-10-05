@@ -49,7 +49,10 @@ test.describe('validation', () => {
     await form.create()
     const name = page.getByLabel('Name', { exact: true })
     await expect(
-      page.locator('.dito-container').filter({ has: name }).locator('.dito-errors')
+      page
+        .locator('.dito-container')
+        .filter({ has: name })
+        .locator('.dito-errors')
     ).not.toBeEmpty()
     await expect(
       page.getByRole('button', { name: 'Suggest Name' })

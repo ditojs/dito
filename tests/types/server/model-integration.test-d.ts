@@ -30,12 +30,14 @@ interface MailConfig {
 }
 
 class MailService extends Service<MailConfig> {
-  send(_to: string, _body: string): boolean { return true }
+  send(_to: string, _body: string): boolean {
+    return true
+  }
 }
 
 declare module '@ditojs/server' {
   interface QueryFilterTypes {
-    'country': true
+    country: true
   }
   interface ApplicationServices {
     mail: MailService
@@ -434,16 +436,18 @@ describe('ModelRelations<T, Models> — typed from/to', () => {
       declare id: number
       declare tasks: Task[]
 
-      static override relations:
-        ModelRelations<_Good, TestModels & {
+      static override relations: ModelRelations<
+        _Good,
+        TestModels & {
           _Good: typeof _Good
-        }> = {
-          tasks: {
-            relation: 'hasMany',
-            from: '_Good.id',
-            to: 'Task.id'
-          }
         }
+      > = {
+        tasks: {
+          relation: 'hasMany',
+          from: '_Good.id',
+          to: 'Task.id'
+        }
+      }
     }
   })
 
@@ -452,17 +456,19 @@ describe('ModelRelations<T, Models> — typed from/to', () => {
       declare id: number
       declare tasks: Task[]
 
-      static override relations:
-        ModelRelations<_Bad, TestModels & {
+      static override relations: ModelRelations<
+        _Bad,
+        TestModels & {
           _Bad: typeof _Bad
-        }> = {
-          tasks: {
-            relation: 'hasMany',
-            // @ts-expect-error - 'Wrong' is not a model name
-            from: 'Wrong.id',
-            to: 'Task.id'
-          }
         }
+      > = {
+        tasks: {
+          relation: 'hasMany',
+          // @ts-expect-error - 'Wrong' is not a model name
+          from: 'Wrong.id',
+          to: 'Task.id'
+        }
+      }
     }
   })
 
@@ -471,17 +477,19 @@ describe('ModelRelations<T, Models> — typed from/to', () => {
       declare id: number
       declare tasks: Task[]
 
-      static override relations:
-        ModelRelations<_Bad, TestModels & {
+      static override relations: ModelRelations<
+        _Bad,
+        TestModels & {
           _Bad: typeof _Bad
-        }> = {
-          tasks: {
-            relation: 'hasMany',
-            from: '_Bad.id',
-            // @ts-expect-error - 'Wrong' is not a model name
-            to: 'Wrong.id'
-          }
         }
+      > = {
+        tasks: {
+          relation: 'hasMany',
+          from: '_Bad.id',
+          // @ts-expect-error - 'Wrong' is not a model name
+          to: 'Wrong.id'
+        }
+      }
     }
   })
 
@@ -490,17 +498,19 @@ describe('ModelRelations<T, Models> — typed from/to', () => {
       declare id: number
       declare tasks: Task[]
 
-      static override relations:
-        ModelRelations<_Bad, TestModels & {
+      static override relations: ModelRelations<
+        _Bad,
+        TestModels & {
           _Bad: typeof _Bad
-        }> = {
-          tasks: {
-            relation: 'hasMany',
-            // @ts-expect-error - 'nope' is not a property of _Bad
-            from: '_Bad.nope',
-            to: 'Task.id'
-          }
         }
+      > = {
+        tasks: {
+          relation: 'hasMany',
+          // @ts-expect-error - 'nope' is not a property of _Bad
+          from: '_Bad.nope',
+          to: 'Task.id'
+        }
+      }
     }
   })
 
@@ -509,17 +519,19 @@ describe('ModelRelations<T, Models> — typed from/to', () => {
       declare id: number
       declare tasks: Task[]
 
-      static override relations:
-        ModelRelations<_Bad, TestModels & {
+      static override relations: ModelRelations<
+        _Bad,
+        TestModels & {
           _Bad: typeof _Bad
-        }> = {
-          tasks: {
-            relation: 'hasMany',
-            from: '_Bad.id',
-            // @ts-expect-error - 'nope' is not a property of Task
-            to: 'Task.nope'
-          }
         }
+      > = {
+        tasks: {
+          relation: 'hasMany',
+          from: '_Bad.id',
+          // @ts-expect-error - 'nope' is not a property of Task
+          to: 'Task.nope'
+        }
+      }
     }
   })
 
@@ -528,16 +540,18 @@ describe('ModelRelations<T, Models> — typed from/to', () => {
       declare id: number
       declare tasks: Task[]
 
-      static override relations:
-        ModelRelations<_Good, TestModels & {
+      static override relations: ModelRelations<
+        _Good,
+        TestModels & {
           _Good: typeof _Good
-        }> = {
-          tasks: {
-            relation: 'hasMany',
-            from: '_Good.id',
-            to: 'Task.name'
-          }
         }
+      > = {
+        tasks: {
+          relation: 'hasMany',
+          from: '_Good.id',
+          to: 'Task.name'
+        }
+      }
     }
   })
 })
@@ -553,21 +567,23 @@ describe('ModelRelations<T, Models> — typed through', () => {
       declare id: number
       declare tasks: Task[]
 
-      static override relations:
-        ModelRelations<_Good, TestModels & {
+      static override relations: ModelRelations<
+        _Good,
+        TestModels & {
           _Good: typeof _Good
           TagTask: typeof TagTask
-        }> = {
-          tasks: {
-            relation: 'manyToMany',
-            from: '_Good.id',
-            to: 'Task.id',
-            through: {
-              from: 'TagTask.tagId',
-              to: 'TagTask.taskId'
-            }
+        }
+      > = {
+        tasks: {
+          relation: 'manyToMany',
+          from: '_Good.id',
+          to: 'Task.id',
+          through: {
+            from: 'TagTask.tagId',
+            to: 'TagTask.taskId'
           }
         }
+      }
     }
   })
 
@@ -576,20 +592,22 @@ describe('ModelRelations<T, Models> — typed through', () => {
       declare id: number
       declare tasks: Task[]
 
-      static override relations:
-        ModelRelations<_Good, TestModels & {
+      static override relations: ModelRelations<
+        _Good,
+        TestModels & {
           _Good: typeof _Good
-        }> = {
-          tasks: {
-            relation: 'manyToMany',
-            from: '_Good.id',
-            to: 'Task.id',
-            through: {
-              from: 'goodTask.goodId',
-              to: 'goodTask.taskId'
-            }
+        }
+      > = {
+        tasks: {
+          relation: 'manyToMany',
+          from: '_Good.id',
+          to: 'Task.id',
+          through: {
+            from: 'goodTask.goodId',
+            to: 'goodTask.taskId'
           }
         }
+      }
     }
   })
 
@@ -598,21 +616,23 @@ describe('ModelRelations<T, Models> — typed through', () => {
       declare id: number
       declare tasks: Task[]
 
-      static override relations:
-        ModelRelations<_Bad, TestModels & {
+      static override relations: ModelRelations<
+        _Bad,
+        TestModels & {
           _Bad: typeof _Bad
-        }> = {
-          tasks: {
-            relation: 'manyToMany',
-            from: '_Bad.id',
-            to: 'Task.id',
-            through: {
-              // @ts-expect-error - must be 'Table.column' format
-              from: 'noDot',
-              to: 'goodTask.taskId'
-            }
+        }
+      > = {
+        tasks: {
+          relation: 'manyToMany',
+          from: '_Bad.id',
+          to: 'Task.id',
+          through: {
+            // @ts-expect-error - must be 'Table.column' format
+            from: 'noDot',
+            to: 'goodTask.taskId'
           }
         }
+      }
     }
   })
 
@@ -621,17 +641,19 @@ describe('ModelRelations<T, Models> — typed through', () => {
       declare id: number
       declare tasks: Task[]
 
-      static override relations:
-        ModelRelations<_Good, TestModels & {
+      static override relations: ModelRelations<
+        _Good,
+        TestModels & {
           _Good: typeof _Good
-        }> = {
-          tasks: {
-            relation: 'manyToMany',
-            from: '_Good.id',
-            to: 'Task.id',
-            through: true
-          }
         }
+      > = {
+        tasks: {
+          relation: 'manyToMany',
+          from: '_Good.id',
+          to: 'Task.id',
+          through: true
+        }
+      }
     }
   })
 })
@@ -642,16 +664,18 @@ describe('ModelRelations<T, Models> — import() as Models', () => {
       declare id: number
       declare tasks: Task[]
 
-      static override relations:
-        ModelRelations<_Good, typeof ModelsType & {
+      static override relations: ModelRelations<
+        _Good,
+        typeof ModelsType & {
           _Good: typeof _Good
-        }> = {
-          tasks: {
-            relation: 'hasMany',
-            from: '_Good.id',
-            to: 'Task.id'
-          }
         }
+      > = {
+        tasks: {
+          relation: 'hasMany',
+          from: '_Good.id',
+          to: 'Task.id'
+        }
+      }
     }
   })
 
@@ -660,17 +684,19 @@ describe('ModelRelations<T, Models> — import() as Models', () => {
       declare id: number
       declare tasks: Task[]
 
-      static override relations:
-        ModelRelations<_Bad, typeof ModelsType & {
+      static override relations: ModelRelations<
+        _Bad,
+        typeof ModelsType & {
           _Bad: typeof _Bad
-        }> = {
-          tasks: {
-            relation: 'hasMany',
-            // @ts-expect-error - 'Wrong' is not a model name
-            from: 'Wrong.id',
-            to: 'Task.id'
-          }
         }
+      > = {
+        tasks: {
+          relation: 'hasMany',
+          // @ts-expect-error - 'Wrong' is not a model name
+          from: 'Wrong.id',
+          to: 'Task.id'
+        }
+      }
     }
   })
 
@@ -679,18 +705,18 @@ describe('ModelRelations<T, Models> — import() as Models', () => {
       declare id: number
       declare tasks: Task[]
 
-      static override relations:
-        ModelRelations<_Good,
-          typeof import('../../server/models.ts') & {
-            _Good: typeof _Good
-          }
-        > = {
-          tasks: {
-            relation: 'hasMany',
-            from: '_Good.id',
-            to: 'Task.id'
-          }
+      static override relations: ModelRelations<
+        _Good,
+        typeof import('../../server/models.ts') & {
+          _Good: typeof _Good
         }
+      > = {
+        tasks: {
+          relation: 'hasMany',
+          from: '_Good.id',
+          to: 'Task.id'
+        }
+      }
     }
   })
 
@@ -699,19 +725,19 @@ describe('ModelRelations<T, Models> — import() as Models', () => {
       declare id: number
       declare tasks: Task[]
 
-      static override relations:
-        ModelRelations<_Bad,
-          typeof import('../../server/models.ts') & {
-            _Bad: typeof _Bad
-          }
-        > = {
-          tasks: {
-            relation: 'hasMany',
-            // @ts-expect-error - 'Wrong' is not a model name
-            from: 'Wrong.id',
-            to: 'Task.id'
-          }
+      static override relations: ModelRelations<
+        _Bad,
+        typeof import('../../server/models.ts') & {
+          _Bad: typeof _Bad
         }
+      > = {
+        tasks: {
+          relation: 'hasMany',
+          // @ts-expect-error - 'Wrong' is not a model name
+          from: 'Wrong.id',
+          to: 'Task.id'
+        }
+      }
     }
   })
 })
@@ -1046,9 +1072,10 @@ describe('Service<Config> — typed config', () => {
 
   it('unparameterized Service has generic config', () => {
     const svc = {} as Service
-    expectTypeOf(svc.config).toEqualTypeOf<
-      Record<string, unknown> | null
-    >()
+    expectTypeOf(svc.config).toEqualTypeOf<Record<
+      string,
+      unknown
+    > | null>()
   })
 })
 
@@ -1129,10 +1156,13 @@ describe('Validator — custom keywords and formats', () => {
   it('Validator constructor accepts custom keywords and formats', () => {
     expectTypeOf<Validator>().toBeObject()
     expectTypeOf<ConstructorParameters<typeof Validator>[0]>()
-      .toMatchTypeOf<{
-        keywords?: Record<string, Keyword>
-        formats?: Record<string, Format>
-      } | undefined>()
+      .toMatchTypeOf<
+        | {
+            keywords?: Record<string, Keyword>
+            formats?: Record<string, Format>
+          }
+        | undefined
+      >()
   })
 
   it('Schema allows custom keyword properties', () => {

@@ -134,7 +134,7 @@ describe('Controller action names', () => {
       override modelClass = Task
 
       override collection: ModelControllerActions<BaseTasks> = {
-        allow: ['get'],
+        'allow': ['get'],
         'get stats'(ctx) {
           ctx.body = { count: 0 }
         }
@@ -176,7 +176,7 @@ describe('Controller action names', () => {
       override modelClass = Task
 
       override collection: ModelControllerActions<BaseTasks> = {
-        allow: ['get'],
+        'allow': ['get'],
         'get stats'(ctx) {
           ctx.body = { count: 0 }
         }
@@ -211,7 +211,7 @@ describe('Controller action names', () => {
       override modelClass = Task
 
       override collection: ModelControllerActions<Tasks> = {
-        allow: ['get', 'post test'],
+        'allow': ['get', 'post test'],
         'post test'(ctx) {
           ctx.body = { ok: true }
         }

@@ -24,9 +24,10 @@ test.describe('route-refetch-race', () => {
     // still be in flight when `edit()` returns, and would otherwise be held
     // below instead of the reload.
     const initialGet = page.waitForResponse(
-      response =>
+      response => (
         /\/api\/widgets\/\d+(\?|$)/.test(response.url()) &&
         response.request().method() === 'GET'
+      )
     )
     await list.list.edit('before')
     await initialGet

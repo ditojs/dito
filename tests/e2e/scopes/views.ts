@@ -11,7 +11,10 @@ export const widgets = createWidgetView<Widget>(
   {
     columns: {
       name: { label: 'Name' },
-      published: { label: 'Published', render: ({ item }) => item.published ? 'Yes' : 'No' }
+      published: {
+        label: 'Published',
+        render: ({ item }) => (item.published ? 'Yes' : 'No')
+      }
     },
     scopes: {
       $default: { label: 'All' },

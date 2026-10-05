@@ -19,7 +19,6 @@ export class Item extends Model {
   }
 
   static override scopes = {
-    ordered: (query: QueryBuilder<Item>) =>
-      query.orderBy('order').orderBy('id')
+    ordered: (query: QueryBuilder<Item>) => query.orderBy('order').orderBy('id')
   }
 }

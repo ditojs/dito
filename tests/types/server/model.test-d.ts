@@ -90,7 +90,8 @@ describe('Model', () => {
           .toMatchTypeOf<QueryBuilder<Model>>()
         expectTypeOf(applyParentScope)
           .not.toBeAny()
-        expectTypeOf(applyParentScope).toEqualTypeOf< (
+        expectTypeOf(applyParentScope).toEqualTypeOf<
+          (
             query: QueryBuilder<Model>
           ) => QueryBuilder<Model>
         >()

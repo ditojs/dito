@@ -10,7 +10,10 @@ test.describe('multiselect search', () => {
     page,
     url
   }) => {
-    const entry = getCase('multiselect', 'finds options by search with searchable')
+    const entry = getCase(
+      'multiselect',
+      'finds options by search with searchable'
+    )
     await page.goto(`${url}/admin/${entry.path}`)
     const element = multiselect.getElement(page, entry)
     await element.click()

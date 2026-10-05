@@ -36,7 +36,9 @@ test.describe('multiselect', () => {
     await expect(tagsCombobox).toContainText('tag-2')
 
     // Re-fetch from DB and confirm the join-table relation persisted.
-    const persisted = await Widget.query().findById(widget.$id() as number).withGraphFetched('tags')
+    const persisted = await Widget.query()
+      .findById(widget.$id() as number)
+      .withGraphFetched('tags')
     const persistedNames = (persisted?.tags ?? []).map(t => t.name).sort()
     expect(persistedNames).toEqual(['tag-1', 'tag-2'])
 
@@ -50,7 +52,9 @@ test.describe('multiselect', () => {
     await expect(tagsCombobox).not.toContainText('tag-1')
     await expect(tagsCombobox).not.toContainText('tag-2')
 
-    const cleared = await Widget.query().findById(widget.$id() as number).withGraphFetched('tags')
+    const cleared = await Widget.query()
+      .findById(widget.$id() as number)
+      .withGraphFetched('tags')
     expect(cleared?.tags ?? []).toHaveLength(0)
   })
 
@@ -131,7 +135,9 @@ test.describe('multiselect', () => {
     await options.first().click()
     await page.getByRole('button', { name: 'Save', exact: true }).click()
     await expect
-      .poll(async () => (await Widget.query().findOne({ name: 'Widget A' }))?.color)
+      .poll(
+        async () => (await Widget.query().findOne({ name: 'Widget A' }))?.color
+      )
       .toBe('Blue')
   })
 

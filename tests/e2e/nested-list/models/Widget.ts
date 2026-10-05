@@ -40,7 +40,6 @@ export class Widget extends Model {
     // fixtures.ts so every query goes through this scope. The relation
     // itself defines `scope: 'ordered'`, so items come back ordered
     // automatically — no `(ordered)` modifier suffix needed here.
-    withItems: (query: QueryBuilder<Widget>) =>
-      query.withGraphFetched('items')
+    withItems: (query: QueryBuilder<Widget>) => query.withGraphFetched('items')
   }
 }

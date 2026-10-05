@@ -95,9 +95,7 @@ describe('PGlite integration', () => {
       name: 'Update me',
       done: false
     })
-    await Task.query()
-      .findById(task.id)
-      .patch({ done: true })
+    await Task.query().findById(task.id).patch({ done: true })
     const updated = await Task.query().findById(
       task.id
     )

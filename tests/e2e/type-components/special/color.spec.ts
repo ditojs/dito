@@ -25,7 +25,9 @@ test.describe('color picker', () => {
 
   test('picker shows the hex value in lowercase', async ({ page, url }) => {
     const entry = getCase('color', 'shows a stored value without hash')
-    await Case.query().patch({ [entry.name]: '#00A2E8' }).findById(1)
+    await Case.query()
+      .patch({ [entry.name]: '#00A2E8' })
+      .findById(1)
     await page.goto(`${url}/admin/${entry.path}`)
     const picker = await openColorPicker(page, entry)
     await expect(picker.getByLabel('Hex', { exact: true })).toHaveValue(
@@ -53,7 +55,9 @@ test.describe('color picker', () => {
     url
   }) => {
     const entry = getCase('color', 'is clearable with clearable')
-    await Case.query().patch({ [entry.name]: entry.seed }).findById(1)
+    await Case.query()
+      .patch({ [entry.name]: entry.seed })
+      .findById(1)
     await page.goto(`${url}/admin/${entry.path}`)
     const picker = await openColorPicker(page, entry)
     const clear = page.getByRole('button', { name: 'Clear' })

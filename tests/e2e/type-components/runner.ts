@@ -55,9 +55,10 @@ function getSaveButton(page: Page) {
 
 async function save(page: Page) {
   const saved = page.waitForResponse(
-    response =>
+    response => (
       response.request().method() === 'PATCH' &&
       new URL(response.url()).pathname.endsWith('/api/cases/1')
+    )
   )
   await getSaveButton(page).click()
   expect((await saved).ok()).toBe(true)
@@ -84,7 +85,9 @@ async function getStored(entry: CaseEntry) {
 export async function runCase(page: Page, url: string, entry: CaseEntry) {
   const driver = getDriver(entry.type)
   if (entry.seed !== undefined) {
-    await Case.query().patch({ [entry.name]: entry.seed }).findById(1)
+    await Case.query()
+      .patch({ [entry.name]: entry.seed })
+      .findById(1)
   }
   await openCase(page, url, entry)
   if (entry.state === 'hidden') {
@@ -111,10 +114,11 @@ export async function runCase(page: Page, url: string, entry: CaseEntry) {
     expect(await getStored(entry)).toEqual(entry.stored)
     await openCase(page, url, entry)
   }
-  const shown =
-    entry.shown ?? (typeof entry.value === 'string' ? entry.value : undefined)
+  const shown = (
+    entry.shown ??
+    (typeof entry.value === 'string' ? entry.value : undefined)
+  )
   if (shown !== undefined) {
     expect(await driver.getValue(page, entry)).toEqual(shown)
   }
 }
-

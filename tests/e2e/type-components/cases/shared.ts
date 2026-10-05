@@ -41,7 +41,12 @@ const samples: Record<string, Sample> = {
   password: text('secret', 'changed'),
   creditcard: text('4111111111111111', '5555555555554444'),
   textarea: { ...text('A', 'B'), property: { type: 'text' }, clearable: false },
-  number: { ...text('', ''), property: { type: 'number' }, seed: 1, value: '2' },
+  number: {
+    ...text('', ''),
+    property: { type: 'number' },
+    seed: 1,
+    value: '2'
+  },
   integer: {
     ...text('', ''),
     property: { type: 'integer' },
@@ -102,26 +107,30 @@ function getSharedCases(sample: Sample): TypeCase[] {
     state: 'unchangeable' as const
   })
   return [
-    ...(sample.required
-      ? [
-          {
-            title: 'is required with required',
-            schema: { ...schema, required: true },
-            invalid: true
-          }
-        ]
-      : []),
-    ...(sample.clearable
-      ? [
-          {
-            title: 'clears the value with clearable',
-            schema: { ...schema, clearable: true },
-            seed,
-            value: { clear: true },
-            stored: null
-          }
-        ]
-      : []),
+    ...(
+      sample.required
+        ? [
+            {
+              title: 'is required with required',
+              schema: { ...schema, required: true },
+              invalid: true
+            }
+          ]
+        : []
+    ),
+    ...(
+      sample.clearable
+        ? [
+            {
+              title: 'clears the value with clearable',
+              schema: { ...schema, clearable: true },
+              seed,
+              value: { clear: true },
+              stored: null
+            }
+          ]
+        : []
+    ),
     unchangeable('cannot be changed with readonly', { readonly: true }),
     unchangeable('cannot be changed with disabled', { disabled: true }),
     unchangeable('cannot be changed with a disabled function', {

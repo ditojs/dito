@@ -396,7 +396,9 @@ describe('ModelController', () => {
     type MC = ModelController<Model>
     const collection: ModelControllerActions<MC> = {
       // @ts-expect-error bare action name is not valid
-      login(ctx) { return { ok: true } }
+      login(ctx) {
+        return { ok: true }
+      }
     }
   })
 })
@@ -417,7 +419,9 @@ describe('KoaContext', () => {
     expectTypeOf(ctx.state.user).not.toBeAny()
     expectTypeOf(ctx.state.user.username).toBeString()
     expectTypeOf(ctx.state.user.$hasRole('admin')).toBeBoolean()
-    expectTypeOf(ctx.state.user.$verifyPassword('pw')).toEqualTypeOf<Promise<boolean>>()
+    expectTypeOf(ctx.state.user.$verifyPassword('pw')).toEqualTypeOf<
+      Promise<boolean>
+    >()
     expectTypeOf(ctx.state.user.$isLoggedIn({} as KoaContext)).toBeBoolean()
   })
 

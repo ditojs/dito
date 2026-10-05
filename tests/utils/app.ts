@@ -62,7 +62,8 @@ export function createTestApp(
     // use source directly. @ditojs/utils already exports from src/ so no alias
     // needed.
     const pkgs = path.resolve(
-      import.meta.dirname, '../../packages'
+      import.meta.dirname,
+      '../../packages'
     )
 
     // After setup() registers controllers but before the vite dev server
@@ -89,7 +90,8 @@ export function createTestApp(
             {
               find: /^@ditojs\/admin$/,
               replacement: path.join(
-                pkgs, 'admin/src/index.js'
+                pkgs,
+                'admin/src/index.js'
               )
             },
             {
@@ -102,13 +104,15 @@ export function createTestApp(
             {
               find: '@ditojs/ui/src',
               replacement: path.join(
-                pkgs, 'ui/src/index.js'
+                pkgs,
+                'ui/src/index.js'
               )
             },
             {
               find: /^@ditojs\/ui$/,
               replacement: path.join(
-                pkgs, 'ui/src/index.js'
+                pkgs,
+                'ui/src/index.js'
               )
             }
           ]
@@ -135,8 +139,7 @@ export function createTestApp(
           admin.name
         )
       })
-      app.loadAdminViteConfig =
-        async () => viteConfig
+      app.loadAdminViteConfig = async () => viteConfig
     })
   }
 

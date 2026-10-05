@@ -30,7 +30,9 @@ export const markup: TypeComponentDriver = {
     await editor.click()
     await page.keyboard.press('ControlOrMeta+A')
     await page.keyboard.press('Backspace')
-    for (const step of (Array.isArray(value) ? value : [value]) as MarkupStep[]) {
+    for (const step of (
+      Array.isArray(value) ? value : [value]
+    ) as MarkupStep[]) {
       if (typeof step === 'string') {
         await page.keyboard.type(step)
       } else if ('button' in step) {
@@ -50,7 +52,9 @@ export const markup: TypeComponentDriver = {
         for (const _ of text) {
           await page.keyboard.press('Shift+ArrowLeft')
         }
-        await container.getByRole('button', { name: 'Link', exact: true }).click()
+        await container
+          .getByRole('button', { name: 'Link', exact: true })
+          .click()
         const dialog = page.getByRole('dialog')
         await dialog.getByLabel('Link', { exact: true }).fill(href)
         await dialog.getByRole('button', { name: 'Apply', exact: true }).click()
