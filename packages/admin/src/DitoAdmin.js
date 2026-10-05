@@ -3,7 +3,6 @@ import { createRouter, createWebHistory } from 'vue-router'
 import VueNotifications from '@kyvg/vue3-notification'
 import {
   isString,
-  isAbsoluteUrl,
   assignDeeply,
   hyphenate,
   camelize,
@@ -15,7 +14,7 @@ import DitoRoot from './components/DitoRoot.vue'
 import DitoTypeComponent from './DitoTypeComponent.js'
 import ResizeDirective from './directives/resize.js'
 import { getResource } from './utils/resource.js'
-import { formatQuery } from './utils/route.js'
+import { request, getApiUrl, isApiUrl } from './utils/request.js'
 import verbs from './verbs.js'
 
 export default class DitoAdmin {
@@ -227,67 +226,4 @@ export default class DitoAdmin {
   register(type, options) {
     return DitoTypeComponent.register(type, options)
   }
-}
-
-class RequestError extends Error {
-  constructor(response) {
-    super(
-      `Request failed with status code: ${response.status} (${
-        response.statusText
-      })`
-    )
-    this.response = response
-  }
-}
-
-async function request(api, {
-  url,
-  method = 'get',
-  query = null,
-  headers = null,
-  data = null,
-  signal = null
-}) {
-  const isApiUrl = api.isApiUrl(url)
-
-  const response = await fetch(api.getApiUrl({ url, query }), {
-    method: method.toUpperCase(),
-    ...(data && { body: JSON.stringify(data) }),
-    headers: {
-      ...(isApiUrl && api.headers),
-      ...headers
-    },
-    credentials:
-      isApiUrl && api.cors?.credentials
-        ? 'include'
-        : 'same-origin',
-    signal
-  })
-
-  if (response.headers.get('Content-Type')?.includes('application/json')) {
-    response.data = await response.json()
-  }
-
-  if (!response.ok) {
-    throw new RequestError(response)
-  }
-  return response
-}
-
-function isApiUrl(api, url) {
-  return !isAbsoluteUrl(url) || url.startsWith(api.url)
-}
-
-function getApiUrl(api, { url, query }) {
-  if (!url.startsWith(api.url) && !isAbsoluteUrl(url)) {
-    url = combineUrls(api.url, url)
-  }
-  // Support optional query parameters, to be are added to the URL.
-  const search = formatQuery(query)
-  return search ? `${url}${url.includes('?') ? '&' : '?'}${search}` : url
-}
-
-function combineUrls(baseUrl, relativeUrl) {
-  // Use same approach as axios `combineURLs()` to join baseUrl & relativeUrl:
-  return `${baseUrl.replace(/\/+$/, '')}/${relativeUrl.replace(/^\/+/, '')}`
 }

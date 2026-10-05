@@ -52,6 +52,12 @@ export type RequestMethod = <T>(options: {
   headers?: Record<string, string> | null
   /** Abort signal to cancel the request. */
   signal?: AbortSignal | null
+  /**
+   * Milliseconds after which the request is aborted.
+   *
+   * @defaultValue {@link ApiConfig.timeout}
+   */
+  timeout?: number | null
 }) => Promise<RequestMethodResponse<T>>
 
 /**
@@ -170,6 +176,14 @@ export interface ApiConfig {
          */
         durationFactor: number
       }
+  /**
+   * Milliseconds after which requests are aborted, so that
+   * nothing waits for them forever, e.g. submitting forms for
+   * pending loads of options. Requests can set their own.
+   *
+   * @defaultValue `null`, no timeout
+   */
+  timeout?: number | null
   /**
    * CORS settings applied to API requests (where
    * {@link ApiConfig.isApiUrl} returns `true`).
