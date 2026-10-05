@@ -781,8 +781,20 @@ export default {
 
   processValue({ schema, value, dataPath }, graph) {
     graph.addSource(dataPath, schema)
-    return value
+    // `SchemaGraph.process()` changes the ids of the items in the processed
+    // data. The items of sources with forms are processed into copies, but the
+    // ones of sources without forms are still the items of the data.
+    return hasFormSchema(schema) ? value : copyItems(value)
   }
+}
+
+// Returns shallow copies of the items of a list, or of an object.
+function copyItems(value) {
+  return isArray(value)
+    ? value.map(item => (isObject(item) ? { ...item } : item))
+    : isObject(value)
+      ? { ...value }
+      : value
 }
 
 function getPathWithParam(path, param) {

@@ -315,4 +315,25 @@ test.describe('form model', () => {
       expect.stringContaining('You have unsaved changes')
     ])
   })
+
+  test('keeps the ids of items of lists without forms', async ({
+    page,
+    url
+  }) => {
+    // The dirty check processes the data like the clipboard does, which
+    // removes ids, but only from its own copy of the data.
+    const article = await Article.query().insert({
+      title: 'Old',
+      references: [{ id: 1, title: 'Reference' }]
+    })
+    await openArticle(page, url, article)
+    await page.getByLabel('Title', { exact: true }).fill('New')
+    await page.getByRole('button', { name: 'Save', exact: true }).click()
+    await expect
+      .poll(async () => {
+        const stored = await Article.query().findById(article.id)
+        return { title: stored?.title, references: stored?.references }
+      })
+      .toEqual({ title: 'New', references: [{ id: 1, title: 'Reference' }] })
+  })
 })

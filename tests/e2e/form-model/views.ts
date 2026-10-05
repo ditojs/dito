@@ -244,6 +244,13 @@ export const articles = createWidgetView<ArticleItem>(
                 }
               }
             },
+            // A list without a form and without a resource, which only
+            // displays its items, and saves them as they are.
+            references: {
+              type: 'list',
+              label: 'References',
+              columns: { title: { label: 'Title' } }
+            },
             // Like lineto's royalty amounts: The computed value reads its line
             // from the root data through its data path.
             lines: {
