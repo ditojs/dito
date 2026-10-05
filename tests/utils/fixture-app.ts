@@ -1,5 +1,6 @@
 import path from 'path'
-import { test as base, type Browser, type Page } from '@playwright/test'
+import type { Browser, Page } from '@playwright/test'
+import { test as base } from './browser-errors.js'
 import {
   AdminController,
   ModelController,

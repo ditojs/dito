@@ -31,7 +31,12 @@ export function createTestApp(
 
   const app = new Application({
     config: {
-      app: { normalizePaths: true },
+      app: {
+        normalizePaths: true,
+        // Like in development: helmet's default content security policy blocks
+        // the admin's vite client, e.g. its websocket.
+        helmet: false
+      },
       log: { silent: true },
       env: 'development',
       server: { port: 0 },
