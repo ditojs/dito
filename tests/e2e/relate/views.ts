@@ -92,9 +92,8 @@ const tracks = createWidgetView<Track & { initial?: string | null }>(
   }
 )
 
-// The views are in separate menus, which add their own route level, like in
-// lineto's admin, so that the playlist form and the track form are rendered at
-// the same route level.
+// The views are in separate menus, which add their own route level, so that
+// the playlist form and the track form are rendered at the same route level.
 export const music = {
   type: 'menu',
   label: 'Music',

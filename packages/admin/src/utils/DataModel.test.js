@@ -189,7 +189,6 @@ describe('DataModel', () => {
   })
 
   it('writes computed items with the defaults of their forms', async () => {
-    // Like lineto's sound sets, whose tracks are computed from the sounds:
     // The defaults of the computed items don't make `compute()` disagree with
     // them, which would replace them in an endless loop.
     const compute = ({ value, item }) =>
@@ -248,7 +247,7 @@ describe('DataModel', () => {
   })
 
   it("doesn't recompute values whose `compute()` doesn't read them", async () => {
-    // Like lineto's access tokens, which are random for each call.
+    // E.g. access tokens, which are random for each call.
     let callCount = 0
     const schema = {
       type: 'form',
@@ -546,9 +545,8 @@ describe('DataModel', () => {
   })
 
   describe('options', () => {
-    // Like lineto's `getValidOrDefaultOption()`: Keeps valid values, and
-    // selects the first option otherwise. `compute()` only runs once the
-    // options that it reads are loaded.
+    // Keeps valid values, and selects the first option otherwise. `compute()`
+    // only runs once the options that it reads are loaded.
     const getValidOrFirstOption = ({ value, options }) =>
       options.some(option => option.value === value)
         ? value

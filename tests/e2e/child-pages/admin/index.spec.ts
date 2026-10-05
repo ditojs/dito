@@ -39,13 +39,13 @@ test.describe('child pages', () => {
   }) => {
     await Page.query().insert({ name: 'First', order: 0 })
     await Page.query().insert({ name: 'Second', order: 1 })
-    await page.goto(`${url}/admin/page-sequence`)
-    const list = new DitoNestedList(page, 'Page Sequence')
+    await page.goto(`${url}/admin/page-order`)
+    const list = new DitoNestedList(page, 'Page Order')
     await expect(list.rows).toHaveCount(2)
     await list.dragRow(0, 1)
     await expect(list.rows.first()).toContainText('Second')
-    await page.getByRole('button', { name: 'Store Sequence' }).click()
-    await expect(page.getByText('The sequence was stored.')).toBeVisible()
+    await page.getByRole('button', { name: 'Save Order' }).click()
+    await expect(page.getByText('The order was saved.')).toBeVisible()
     const pages = await Page.query().orderBy('order')
     expect(pages.map(({ name, order }) => ({ name, order }))).toEqual([
       { name: 'Second', order: 0 },

@@ -28,7 +28,7 @@ export default [
       stored: 'Imported'
     },
     {
-      // Like lineto's badges and messages.
+      // E.g. badges and messages.
       title: 'shows computed values instead of stored ones',
       schema: {
         component: input,

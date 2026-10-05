@@ -3,13 +3,12 @@ import { Page } from './models/Page.js'
 
 export { expect } from '@playwright/test'
 
-// Like lineto's pages: The child pages are loaded through their own resource,
-// the relation of the page.
+// The child pages are loaded through their own resource, the relation of the
+// page.
 class Pages extends ScenarioController {
   override modelClass = Page
   override graph = true
-  // Like lineto's `AdminOrderedModelController`: Stores the order of the
-  // pages that the sequence button sends.
+  // Stores the order of the pages that the order button sends.
   override collection = {
     'allow': ['get', 'post', 'order'] as const,
     'post order': {

@@ -1,13 +1,13 @@
 import type { Page } from '@playwright/test'
 import { test, expect } from '../fixtures.js'
-import { Family, type ShopSet } from '../models/Family.js'
+import { Library, type Shelf } from '../models/Library.js'
 import { DitoForm, dragHandle } from '../../../utils/pages.js'
 
-async function openFamily(page: Page, url: string, shopSets: ShopSet[]) {
-  const family = await Family.query().insert({ name: 'Family', shopSets })
-  await page.goto(`${url}/admin/families/${family.id}`)
-  await expect(page.getByLabel('Name', { exact: true })).toHaveValue('Family')
-  return family
+async function openLibrary(page: Page, url: string, shelves: Shelf[]) {
+  const library = await Library.query().insert({ name: 'Library', shelves })
+  await page.goto(`${url}/admin/libraries/${library.id}`)
+  await expect(page.getByLabel('Name', { exact: true })).toHaveValue('Library')
+  return library
 }
 
 function getTreeHeader(page: Page, label: string) {
@@ -27,74 +27,74 @@ async function editTreeItem(page: Page, label: string) {
   await header.getByRole('button', { name: 'Edit' }).click()
 }
 
-async function getStoredShopSets(family: Family) {
-  return (await Family.query().findById(family.id))?.shopSets
+async function getStoredShelfs(library: Library) {
+  return (await Library.query().findById(library.id))?.shelves
 }
 
 test.describe('tree list', () => {
   test('shows items and opens their children', async ({ page, url }) => {
-    await openFamily(page, url, [
-      { name: 'Text', order: 0, cuts: [{ name: 'Book', order: 0 }] }
+    await openLibrary(page, url, [
+      { name: 'Fiction', order: 0, books: [{ name: 'Dune', order: 0 }] }
     ])
-    await expect(getTreeLabels(page)).toHaveText(['Text'])
-    await page.getByRole('button', { name: 'Text' }).click()
-    await expect(getTreeLabels(page)).toHaveText(['Text', 'Book'])
+    await expect(getTreeLabels(page)).toHaveText(['Fiction'])
+    await page.getByRole('button', { name: 'Fiction' }).click()
+    await expect(getTreeLabels(page)).toHaveText(['Fiction', 'Dune'])
   })
 
   test('stores items edited in their forms', async ({ page, url }) => {
-    const family = await openFamily(page, url, [
-      { name: 'Text', order: 0, cuts: [] }
+    const library = await openLibrary(page, url, [
+      { name: 'Fiction', order: 0, books: [] }
     ])
-    await editTreeItem(page, 'Text')
-    await page.getByLabel('Shop Set Name', { exact: true }).fill('Display')
-    await expect(getTreeHeader(page, 'Display')).toBeVisible()
+    await editTreeItem(page, 'Fiction')
+    await page.getByLabel('Shelf Name', { exact: true }).fill('Poetry')
+    await expect(getTreeHeader(page, 'Poetry')).toBeVisible()
     await new DitoForm(page).save()
-    expect(await getStoredShopSets(family)).toEqual([
-      { name: 'Display', order: 0, cuts: [] }
+    expect(await getStoredShelfs(library)).toEqual([
+      { name: 'Poetry', order: 0, books: [] }
     ])
   })
 
   test('stores children edited in their forms', async ({ page, url }) => {
-    const family = await openFamily(page, url, [
+    const library = await openLibrary(page, url, [
       {
-        name: 'Text',
+        name: 'Fiction',
         order: 0,
-        cuts: [
-          { name: 'Book', order: 0 },
-          { name: 'Bold', order: 1 }
+        books: [
+          { name: 'Dune', order: 0 },
+          { name: 'Emma', order: 1 }
         ]
       }
     ])
-    await page.getByRole('button', { name: 'Text' }).click()
-    await editTreeItem(page, 'Bold')
-    await page.getByLabel('Cut Name', { exact: true }).fill('Black')
+    await page.getByRole('button', { name: 'Fiction' }).click()
+    await editTreeItem(page, 'Emma')
+    await page.getByLabel('Book Title', { exact: true }).fill('Ulysses')
     await new DitoForm(page).save()
-    expect(await getStoredShopSets(family)).toEqual([
+    expect(await getStoredShelfs(library)).toEqual([
       {
-        name: 'Text',
+        name: 'Fiction',
         order: 0,
-        cuts: [
-          { name: 'Book', order: 0 },
-          { name: 'Black', order: 1 }
+        books: [
+          { name: 'Dune', order: 0 },
+          { name: 'Ulysses', order: 1 }
         ]
       }
     ])
   })
 
   test('stores the order of reordered items', async ({ page, url }) => {
-    const family = await openFamily(page, url, [
-      { name: 'Text', order: 0, cuts: [] },
-      { name: 'Display', order: 1, cuts: [] }
+    const library = await openLibrary(page, url, [
+      { name: 'Fiction', order: 0, books: [] },
+      { name: 'Poetry', order: 1, books: [] }
     ])
     const getHandle = (label: string) =>
       getTreeHeader(page, label).locator('.dito-button[title="Drag"]')
-    await getTreeHeader(page, 'Text').hover()
-    await dragHandle(page, getHandle('Text'), getHandle('Display'))
-    await expect(getTreeLabels(page)).toHaveText(['Display', 'Text'])
+    await getTreeHeader(page, 'Fiction').hover()
+    await dragHandle(page, getHandle('Fiction'), getHandle('Poetry'))
+    await expect(getTreeLabels(page)).toHaveText(['Poetry', 'Fiction'])
     await new DitoForm(page).save()
-    expect(await getStoredShopSets(family)).toEqual([
-      { name: 'Display', order: 0, cuts: [] },
-      { name: 'Text', order: 1, cuts: [] }
+    expect(await getStoredShelfs(library)).toEqual([
+      { name: 'Poetry', order: 0, books: [] },
+      { name: 'Fiction', order: 1, books: [] }
     ])
   })
 })

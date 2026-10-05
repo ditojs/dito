@@ -4,8 +4,8 @@ import { createWidgetView } from '../../utils/views.js'
 
 export const pages = createWidgetView<Page>('name', 'pages', {
   name: { type: 'text', label: 'Name' },
-  // Like lineto's child pages: The list loads its items through its own
-  // resource, but is included in the data, to store the order of its items.
+  // The list loads its items through its own resource, but is included in the
+  // data, to store the order of its items.
   childPages: {
     type: 'list',
     label: 'Child Pages',
@@ -19,15 +19,15 @@ export const pages = createWidgetView<Page>('name', 'pages', {
   }
 })
 
-// Like lineto's views of ordered items: The order is stored through a button
-// that posts the order of the items to the resource of its own.
-export const pageSequence: ViewSchema<Page> = {
+// The order of the items is stored through a button that posts it to a
+// resource of its own.
+export const pageOrder: ViewSchema<Page> = {
   type: 'view',
-  label: 'Page Sequence',
-  path: 'page-sequence',
+  label: 'Page Order',
+  path: 'page-order',
   component: {
     type: 'list',
-    label: 'Page Sequence',
+    label: 'Page Order',
     itemLabel: 'name',
     resource: { path: 'pages' },
     columns: { name: { label: 'Name' } },
@@ -36,7 +36,7 @@ export const pageSequence: ViewSchema<Page> = {
     buttons: {
       order: {
         type: 'button',
-        text: 'Store Sequence',
+        text: 'Save Order',
         resource: {
           path: 'order',
           method: 'post',
@@ -45,7 +45,7 @@ export const pageSequence: ViewSchema<Page> = {
         },
         events: {
           success: ({ notify }) => {
-            notify({ type: 'success', text: 'The sequence was stored.' })
+            notify({ type: 'success', text: 'The order was saved.' })
           }
         }
       }

@@ -1,13 +1,13 @@
-import type { Family } from './models/Family.js'
+import type { Library } from './models/Library.js'
 import { createWidgetView } from '../../utils/views.js'
 
-// Like lineto's font families: The shop sets and their cuts are edited in the
-// forms of a tree list, which edit the items directly.
-export const families = createWidgetView<Family>('name', 'families', {
+// The shelves and their books are edited in the forms of a tree list, which
+// edit the items directly, and reordered by dragging.
+export const libraries = createWidgetView<Library>('name', 'libraries', {
   name: { type: 'text', label: 'Name' },
-  shopSets: {
+  shelves: {
     type: 'tree-list',
-    label: 'Shop Sets',
+    label: 'Shelves',
     itemLabel: 'name',
     orderKey: 'order',
     mutate: true,
@@ -16,10 +16,10 @@ export const families = createWidgetView<Family>('name', 'families', {
     draggable: true,
     form: {
       type: 'form',
-      components: { name: { type: 'text', label: 'Shop Set Name' } }
+      components: { name: { type: 'text', label: 'Shelf Name' } }
     },
     children: {
-      name: 'cuts',
+      name: 'books',
       itemLabel: 'name',
       orderKey: 'order',
       mutate: true,
@@ -27,7 +27,7 @@ export const families = createWidgetView<Family>('name', 'families', {
       draggable: true,
       form: {
         type: 'form',
-        components: { name: { type: 'text', label: 'Cut Name' } }
+        components: { name: { type: 'text', label: 'Book Title' } }
       }
     }
   }

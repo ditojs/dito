@@ -35,8 +35,7 @@ export class Track extends Model {
   static override scopes = {
     ordered: (query: QueryBuilder<Track>) =>
       query.orderBy('order').orderBy('id'),
-    // Only selects the id, so that related tracks are fetched as references,
-    // like lineto's `relate` scope.
+    // Only selects the id, so that related tracks are fetched as references.
     relate: (query: QueryBuilder<Track>) => query.select('id')
   }
 }

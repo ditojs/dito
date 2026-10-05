@@ -1,26 +1,26 @@
 import type { ModelProperties } from '@ditojs/server'
 import { Model } from '@ditojs/server'
 
-export interface Cut {
+export interface Book {
   name: string
   order?: number
 }
 
-export interface ShopSet {
+export interface Shelf {
   name: string
   order?: number
-  cuts?: Cut[]
+  books?: Book[]
 }
 
-export interface Family {
+export interface Library {
   id: number
   name: string
-  shopSets?: ShopSet[] | null
+  shelves?: Shelf[] | null
 }
 
-export class Family extends Model {
+export class Library extends Model {
   static override properties: ModelProperties = {
     name: { type: 'string', required: true },
-    shopSets: { type: 'array', nullable: true, items: { type: 'object' } }
+    shelves: { type: 'array', nullable: true, items: { type: 'object' } }
   }
 }

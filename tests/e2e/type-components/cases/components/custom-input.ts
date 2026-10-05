@@ -1,7 +1,7 @@
 import { h } from 'vue'
 
-// A custom input, like lineto's components that edit values, e.g. its range
-// slider. Custom components receive `DitoMixin` and `TypeMixin`, which provide
+// A custom input, like components that edit values, e.g. sliders. Custom
+// components receive `DitoMixin` and `TypeMixin`, which provide
 // `label` and `value`.
 export default {
   render(this: { label: string; value: unknown }) {

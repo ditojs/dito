@@ -57,7 +57,7 @@ test.describe('route-refetch-race', () => {
     // is in `ResourceMixin.requestData`'s success branch — it unconditionally
     // calls `setData(response.data)`, clobbering any local edits made while
     // the GET was in flight. We don't need to reproduce the exact user-level
-    // trigger (lineto's cancel-back from a `mutate: true` tree-list sub-form)
+    // trigger (a cancel-back from a `mutate: true` tree-list sub-form)
     // — exercising `reloadData()` directly tests the framework boundary that
     // the dirty-guard fix lives on.
     //

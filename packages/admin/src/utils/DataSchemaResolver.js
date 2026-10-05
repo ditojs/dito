@@ -17,7 +17,7 @@ import {
 //   e.g. `data: ({ item: { id } }) => async () => load(id)`, so that loading
 //   only starts again when these dependencies change.
 // - `dataPath` is resolved relative to the data path of the context, in its
-//   root data, e.g. `'../fontFamily/fontShopSets'`.
+//   root data, e.g. `'../author/books'`.
 // - Data schemas that aren't objects are values, e.g. `options: ['A', 'B']`.
 //
 // While a value is loading, `value` is `undefined` and `isLoading` is `true`.
