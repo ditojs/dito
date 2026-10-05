@@ -8,8 +8,13 @@ template(
   //- used to always render forms even when other nested forms are present.
   RouterView(
     v-if="!isLastRoute"
-    :key="name"
+    v-slot="{ Component, route }"
   )
+    component(
+      v-if="Component"
+      :is="Component"
+      :key="getRouteComponentKey(route, routeLevel + 1)"
+    )
   .dito-view.dito-scroll-parent(
     v-else
     :data-resource="sourceSchema.path"
@@ -134,7 +139,9 @@ export default DitoComponent.component('DitoView', {
     }
   },
 
-  unmounted() {
+  beforeUnmount() {
+    // Stop the model before the component's own watchers are stopped, as the
+    // model's watchers aren't part of the component, see `FormModel`.
     this.formModel.stop()
   },
 

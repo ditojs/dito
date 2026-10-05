@@ -8,7 +8,13 @@
   RouterView(
     v-if="!isLastUnnestedRoute && !isNestedRoute"
     v-show="!isActiveRoute"
+    v-slot="{ Component, route }"
   )
+    component(
+      v-if="Component"
+      :is="Component"
+      :key="getRouteComponentKey(route, routeLevel + 1)"
+    )
   //- NOTE: Nested form components are kept alive by using `v-show` instead of
   //- `v-if` here, so event handling and other things still work with nested
   //- editing.
@@ -222,9 +228,9 @@ export default DitoComponent.component('DitoForm', {
       // Possible parents are DitoForm for forms, or DitoView for root lists.
       // Both have a data property which abstracts away loading and inheriting
       // of data.
-      // Forms that are about to be destroyed due to navigation loose their
-      // route-record, but might still trigger this getter. Filter those out.
-      let data = this.routeRecord ? this.parentRouteComponent.data : null
+      // Forms that are being left don't match the current route anymore, and
+      // mustn't resolve their source against it until they're unmounted.
+      let data = this.isLeavingRoute ? null : this.parentRouteComponent.data
       if (!data) {
         return null
       }
@@ -362,7 +368,9 @@ export default DitoComponent.component('DitoForm', {
     })
   },
 
-  unmounted() {
+  beforeUnmount() {
+    // Stop the model before the component's own watchers are stopped, as the
+    // model's watchers aren't part of the component, see `FormModel`.
     this.formModel.stop()
   },
 

@@ -1,4 +1,5 @@
 import ValidatorMixin from '../mixins/ValidatorMixin.js'
+import { markRaw } from 'vue'
 import { getCommonPrefix } from '@ditojs/utils'
 
 // @vue/component
@@ -14,6 +15,9 @@ export default {
   data() {
     return {
       reload: false,
+      // The record of the route that this component renders, see the
+      // `matchedRouteRecord` watcher:
+      routeRecord: null,
       // Each route-component defines a store that gets passed on to its
       // child components, so they can store values in them that live beyond
       // their life-cycle. See: DitoPane, SourceMixin
@@ -37,8 +41,17 @@ export default {
       return level
     },
 
-    routeRecord() {
+    // The record that the current route matches at this component's level,
+    // which is another record or `undefined` while the component is being left,
+    // until it's unmounted, see `routeRecord`.
+    matchedRouteRecord() {
       return this.$route.matched[this.routeLevel]
+    },
+
+    // Whether the current route doesn't match the component's record anymore,
+    // so that the component is about to be unmounted.
+    isLeavingRoute() {
+      return this.matchedRouteRecord?.path !== this.routeRecord?.path
     },
 
     isLastRoute() {
@@ -103,6 +116,31 @@ export default {
     // @overridable, see DitoForm
     isMutating() {
       return false
+    }
+  },
+
+  watch: {
+    matchedRouteRecord: {
+      immediate: true,
+      // Update synchronously, so that the record changes with the route.
+      flush: 'sync',
+      handler(routeRecord) {
+        // Components belong to the record that they're rendered for, see
+        // `getRouteComponentKey()`. Records of other paths, or none, mean that
+        // the component is being left, and it keeps its record until it's
+        // unmounted, as its schema and meta are still read in the meantime,
+        // e.g. by the watchers of its form model. Records of the same path
+        // replace it, e.g. when the routes are set up again.
+        const isOwnRouteRecord = (
+          !!routeRecord &&
+          (!this.routeRecord || routeRecord.path === this.routeRecord.path)
+        )
+        if (isOwnRouteRecord) {
+          // Keep the record raw, as it's compared with the records in
+          // `$route.matched`, which aren't reactive.
+          this.routeRecord = markRaw(routeRecord)
+        }
+      }
     }
   },
 

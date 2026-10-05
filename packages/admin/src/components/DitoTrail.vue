@@ -24,8 +24,9 @@ import DitoComponent from '../DitoComponent.js'
 export default DitoComponent.component('DitoTrail', {
   computed: {
     trail() {
+      // Leave out the components that are being left, until they're unmounted.
       return this.appState.routeComponents.filter(
-        component => !!component.routeRecord
+        component => !component.isLeavingRoute
       )
     }
   },

@@ -147,7 +147,9 @@ export default DitoComponent.component('DitoDialog', {
     })
   },
 
-  unmounted() {
+  beforeUnmount() {
+    // Stop the model before the component's own watchers are stopped, as the
+    // model's watchers aren't part of the component, see `FormModel`.
     this.formModel.stop()
   },
 
