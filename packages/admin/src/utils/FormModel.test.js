@@ -409,8 +409,8 @@ describe('FormModel', () => {
   describe('dirty state', () => {
     const getSourceSchema = () => ({ type: 'list' })
 
-    // Resolves once the snapshot to compare with is taken, see
-    // `FormModel.takeProcessedDataSnapshotWhenSettled()`:
+    // Resolves once the model settled after the snapshot was taken, see
+    // `FormModel.takeProcessedDataSnapshot()`:
     async function waitForProcessedDataSnapshot(formModel) {
       await nextTick()
       await formModel.waitForPendingLoads()
@@ -436,17 +436,39 @@ describe('FormModel', () => {
       formModel.stop()
     })
 
-    it("isn't dirty until the snapshot is taken", async () => {
+    it('counts changes made while the model settles', async () => {
+      // `size` selects its first option once the options are loaded, which is
+      // derived and doesn't count, while the edit of `title` does.
+      let resolveOptions
       const schema = {
         type: 'form',
-        components: { title: { type: 'text' } }
+        components: {
+          title: { type: 'text' },
+          size: {
+            type: 'select',
+            options: {
+              data: () =>
+                new Promise(resolve => {
+                  resolveOptions = resolve
+                })
+            },
+            compute: ({ value, options }) => value ?? options?.[0].id
+          }
+        }
       }
       const { formModel, data } = createFormModel(
         schema,
         { title: 'Hello' },
         { getSourceSchema }
       )
+      await nextTick()
       data.title = 'Changed'
+      expect(formModel.isDirty).toBe(true)
+      resolveOptions([{ id: 1 }, { id: 2 }])
+      await waitForProcessedDataSnapshot(formModel)
+      expect(data.size).toBe(1)
+      expect(formModel.isDirty).toBe(true)
+      data.title = 'Hello'
       expect(formModel.isDirty).toBe(false)
       formModel.stop()
     })

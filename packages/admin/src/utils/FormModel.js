@@ -1,8 +1,15 @@
 import { effectScope, computed, watch, nextTick, shallowRef } from 'vue'
-import { isArray, isPlainObject, equals, clone } from '@ditojs/utils'
+import {
+  isArray,
+  isPlainObject,
+  equals,
+  clone,
+  parseDataPath,
+  getValueAtDataPath
+} from '@ditojs/utils'
 import DitoContext from '../DitoContext.js'
 import { DataSchemaResolver } from './DataSchemaResolver.js'
-import { isSourceWithResource } from './schema/structure.js'
+import { isNested, isSourceWithResource } from './schema/structure.js'
 import { isEmptySchema } from './schema/lookup.js'
 import {
   shouldRenderSchema,
@@ -33,8 +40,10 @@ import {
 // - Submitting waits for the loads of data schemas and options that are still
 //   pending, see `waitForPendingLoads()`.
 // - The data is dirty when its processed data differs from a snapshot taken
-//   when the data was set up, saved or applied, see `isDirty`. Only forms
-//   track this, by passing `getSourceSchema()`, see the constructor.
+//   when the data was set up, saved or applied, see `isDirty`. The values that
+//   the model derives until it settled, e.g. from loaded options, don't count,
+//   see `takeProcessedDataSnapshot()`. Only forms track this, by passing
+//   `getSourceSchema()`, see the constructor.
 //
 // Sources with their own resource are skipped, as their items are edited
 // through their own forms.
@@ -59,9 +68,12 @@ export class FormModel {
   // see `waitForPendingLoads()`:
   pendingLoads = new Set()
   // The data that the snapshot was taken of, and its processed data to compare
-  // with in `isDirty`, `null` until it is taken, see
-  // `takeProcessedDataSnapshotWhenSettled()`:
+  // with in `isDirty`, see `takeProcessedDataSnapshot()`:
   processedDataSnapshot = shallowRef(null)
+  // The data paths of the values that the model writes while it settles after
+  // the snapshot is taken, which `isDirty` takes from the current data, `null`
+  // once it settled, see `takeProcessedDataSnapshot()`:
+  derivedValueDataPaths = null
 
   // `getSchema()` and `getData()` return the schema and the data that the
   // model handles. `getSourceSchema()` returns the schema of the source that
@@ -92,8 +104,7 @@ export class FormModel {
         // Data that is set up, e.g. loaded, saved or applied, isn't dirty:
         watch(
           getData,
-          () =>
-            this.takeProcessedDataSnapshotWhenSettled().catch(console.error),
+          () => this.takeProcessedDataSnapshot().catch(console.error),
           { immediate: true }
         )
       }
@@ -113,9 +124,10 @@ export class FormModel {
   }
 
   // Returns whether the processed data differs from the snapshot taken when
-  // the data was set up, saved or applied, see
-  // `takeProcessedDataSnapshotWhenSettled()`. Excluded values don't count,
-  // unless their components have `process()`, see `processData()`.
+  // the data was set up, saved or applied, see `takeProcessedDataSnapshot()`.
+  // Excluded values don't count, unless their components have `process()`,
+  // see `processData()`, and neither do the values that the model derives
+  // until it settled.
   get isDirty() {
     const processedDataSnapshot = this.processedDataSnapshot.value
     const data = this.getData()
@@ -125,10 +137,15 @@ export class FormModel {
     if (!data || processedDataSnapshot?.data !== data) {
       return false
     }
-    return !equals(
-      this.getProcessedDataForDirtyCheck(),
-      processedDataSnapshot.processedData
-    )
+    const processedData = this.getProcessedDataForDirtyCheck()
+    const processedDataToCompare = this.derivedValueDataPaths
+      ? takeOverValuesAtDataPaths(
+          processedDataSnapshot.processedData,
+          processedData,
+          this.derivedValueDataPaths
+        )
+      : processedDataSnapshot.processedData
+    return !equals(processedData, processedDataToCompare)
   }
 
   stop() {
@@ -149,26 +166,50 @@ export class FormModel {
     }
   }
 
-  // Clears the snapshot of the processed data that `isDirty` compares with,
-  // and takes it anew once the model settled: once the pending loads finished
-  // and the computed values that depend on them are written into the data,
-  // see `waitForPendingLoads()`, so that the values derived when the data is
-  // set up don't count as changes. Until then, the data isn't dirty. No
-  // snapshot is taken if the data was replaced or the model stopped since,
-  // as replacing the data takes a new one.
-  async takeProcessedDataSnapshotWhenSettled() {
-    this.processedDataSnapshot.value = null
-    const dataToSnapshot = this.getData()
+  // Takes the snapshot of the processed data that `isDirty` compares with,
+  // when the data is set up, saved or applied. Until the model settled, i.e.
+  // the pending loads finished and the computed values that depend on them are
+  // written into the data, see `waitForPendingLoads()`, the values that the
+  // model writes are recorded in `derivedValueDataPaths` and don't count, as
+  // they're derived from the data, e.g. from loaded options. Once settled, they
+  // are taken over into the snapshot, so that changes made in the meantime,
+  // e.g. by the user, count right away. Values that the model derives from
+  // these changes while it settles are taken over too, so reverting the
+  // changes afterwards leaves the data dirty, which only asks for confirmation
+  // unnecessarily.
+  async takeProcessedDataSnapshot() {
+    const data = this.getData()
+    const derivedValueDataPaths = data ? new Set() : null
+    this.derivedValueDataPaths = derivedValueDataPaths
+    this.processedDataSnapshot.value = data
+      ? { data, processedData: clone(this.getProcessedDataForDirtyCheck()) }
+      : null
+    if (!data) {
+      return
+    }
     // Let the watchers and the rendering start their loads first:
     await nextTick()
     await this.waitForPendingLoads()
+    // Snapshots that were taken since settle by themselves.
+    const isSnapshotReplaced = (
+      this.derivedValueDataPaths !==
+      derivedValueDataPaths
+    )
     // Check whether the model stopped first, as its component may be gone.
     const isModelStopped = !this.rootScope.active
-    const isDataReplaced = !isModelStopped && this.getData() !== dataToSnapshot
-    if (dataToSnapshot && !isModelStopped && !isDataReplaced) {
+    if (isSnapshotReplaced || isModelStopped) {
+      return
+    }
+    this.derivedValueDataPaths = null
+    const processedDataSnapshot = this.processedDataSnapshot.value
+    if (processedDataSnapshot?.data === this.getData()) {
       this.processedDataSnapshot.value = {
-        data: dataToSnapshot,
-        processedData: clone(this.getProcessedDataForDirtyCheck())
+        data,
+        processedData: takeOverValuesAtDataPaths(
+          processedDataSnapshot.processedData,
+          this.getProcessedDataForDirtyCheck(),
+          derivedValueDataPaths
+        )
       }
     }
   }
@@ -201,13 +242,9 @@ export class FormModel {
   // data, including the values derived from the changes, are taken over into
   // the snapshot. Arrays whose length changes are taken over as a whole, see
   // `takeOverChangedValues()`. `makeChanges()` is called synchronously.
-  // Without a snapshot, there is nothing to update, as it's taken of the
-  // changed data once the model settled, see
-  // `takeProcessedDataSnapshotWhenSettled()`.
   async applyCleanChanges(makeChanges) {
-    const processedDataSnapshot = this.processedDataSnapshot.value
     const data = this.getData()
-    const hasSnapshotOfData = processedDataSnapshot?.data === data
+    const hasSnapshotOfData = this.processedDataSnapshot.value?.data === data
     // Clone the processed data, as it shares nested values with the data,
     // which `makeChanges()` may change in place.
     const processedDataBeforeChanges = hasSnapshotOfData
@@ -218,12 +255,10 @@ export class FormModel {
       // Let the watchers write the values derived from the changes first:
       await nextTick()
       await this.waitForPendingLoads()
-      // Snapshots that were taken since include the changes already.
-      const isSnapshotReplaced = (
-        this.processedDataSnapshot.value !==
-        processedDataSnapshot
-      )
-      if (!isSnapshotReplaced && this.rootScope.active) {
+      // Take the changes over into the current snapshot of the data, which may
+      // have been replaced in the meantime, e.g. once the model settled.
+      const processedDataSnapshot = this.processedDataSnapshot.value
+      if (processedDataSnapshot?.data === data && this.rootScope.active) {
         this.processedDataSnapshot.value = {
           data,
           processedData: takeOverChangedValues(
@@ -415,10 +450,23 @@ export class FormModel {
   writeComputedValue(entry, value) {
     const { data, name } = entry
     if (!equals(value, data[name])) {
+      // Values written while the model settles are derived, see
+      // `takeProcessedDataSnapshot()`:
+      this.derivedValueDataPaths?.add(this.getRelativeDataPath(entry))
       // Access `data[name]` directly to update the value without calling
       // `parse()`, see `ValueMixin`:
       data[name] = value
     }
+  }
+
+  // Returns the data path of the value of the entry, relative to the model's
+  // data, as in its processed data.
+  getRelativeDataPath({ schema, name, dataPath }) {
+    // The data paths of nested components include their own name.
+    const tokens = isNested(schema)
+      ? parseDataPath(dataPath)
+      : [...parseDataPath(dataPath), name]
+    return tokens.slice(parseDataPath(this.dataPath).length)
   }
 
   // Returns the context for `if`, data schemas and options, with the component
@@ -433,6 +481,39 @@ export class FormModel {
       rootData: this.rootData
     })
   }
+}
+
+// Returns a copy of `processedData` with the values at `dataPaths` taken over
+// from `currentProcessedData`, or removed if they're missing there. Values
+// whose parents are missing in `processedData` are left out, as their parents
+// differ anyway.
+function takeOverValuesAtDataPaths(
+  processedData,
+  currentProcessedData,
+  dataPaths
+) {
+  if (dataPaths.size === 0) {
+    return processedData
+  }
+  const result = clone(processedData)
+  for (const dataPath of dataPaths) {
+    const parentDataPath = dataPath.slice(0, -1)
+    const key = dataPath.at(-1)
+    const parent = getValueAtDataPath(result, parentDataPath, () => null)
+    if (parent && typeof parent === 'object') {
+      const value = getValueAtDataPath(
+        currentProcessedData,
+        dataPath,
+        () => notFound
+      )
+      if (value === notFound) {
+        delete parent[key]
+      } else {
+        parent[key] = clone(value)
+      }
+    }
+  }
+  return result
 }
 
 // Returns a copy of `target` with the values that differ between `before` and
@@ -465,6 +546,8 @@ function takeOverChangedValues(target, before, after) {
   }
   return result
 }
+
+const notFound = Symbol('notFound')
 
 // Returns whether the schema is a source of computed values, through
 // `schema.compute()` or a data schema of the `computed` types.

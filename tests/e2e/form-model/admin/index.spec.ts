@@ -12,8 +12,7 @@ async function openArticle(page: Page, url: string, article: Article) {
 }
 
 // Waits for the delayed options of `category` and `topic`, which `topic` loads
-// last, as forms are only dirty once the values derived from loads are written
-// into the data, see `FormModel.takeProcessedDataSnapshotWhenSettled()`.
+// last, so that the values derived from them are written into the data.
 async function waitForDelayedOptions(page: Page) {
   await page.getByRole('tab', { name: 'Meta', exact: true }).click()
   await page.getByRole('button', { name: 'SEO' }).click()
@@ -227,7 +226,6 @@ test.describe('form model', () => {
     const tags = page.getByLabel('Tags', { exact: true })
     const cancel = page.getByRole('button', { name: 'Cancel', exact: true })
     await expect(tags).toHaveValue('a')
-    await waitForDelayedOptions(page)
     await tags.fill('a,b')
     await cancel.click()
     expect(dialogMessages).toEqual([
@@ -299,5 +297,22 @@ test.describe('form model', () => {
     await page.getByLabel('Title', { exact: true }).fill('Published')
     await stats.click()
     await expect(page.getByLabel('Views', { exact: true })).toBeVisible()
+  })
+
+  test('counts edits made while options load', async ({ page, url }) => {
+    // The form model derives `category` and `topic` from delayed options,
+    // which don't count, while the edit of `title` right away does.
+    const article = await Article.query().insert({ title: 'Old' })
+    await openArticle(page, url, article)
+    const dialogMessages: string[] = []
+    page.on('dialog', dialog => {
+      dialogMessages.push(dialog.message())
+      return dialog.dismiss()
+    })
+    await page.getByLabel('Title', { exact: true }).fill('New')
+    await page.getByRole('button', { name: 'Cancel', exact: true }).click()
+    expect(dialogMessages).toEqual([
+      expect.stringContaining('You have unsaved changes')
+    ])
   })
 })

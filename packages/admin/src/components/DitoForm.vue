@@ -551,7 +551,7 @@ export default DitoComponent.component('DitoForm', {
         // The saved or applied data isn't dirty, also when it isn't replaced,
         // e.g. by a response without data, and before the closing below:
         this.formModel
-          .takeProcessedDataSnapshotWhenSettled()
+          .takeProcessedDataSnapshot()
           .catch(console.error)
         if (closeForm || button.closeForm) {
           this.close()
