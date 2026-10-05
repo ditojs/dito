@@ -51,6 +51,7 @@
 </template>
 
 <script>
+import { markRaw } from 'vue'
 import { clone, capitalize, parseDataPath, assignDeeply } from '@ditojs/utils'
 import DitoComponent from '../DitoComponent.js'
 import RouteMixin from '../mixins/RouteMixin.js'
@@ -66,12 +67,6 @@ import { DataModel } from '../utils/DataModel.js'
 export default DitoComponent.component('DitoForm', {
   mixins: [RouteMixin, ResourceMixin],
 
-  provide() {
-    return {
-      $dataModel: () => this.ownDataModel
-    }
-  },
-
   data() {
     return {
       createdData: null,
@@ -80,11 +75,6 @@ export default DitoComponent.component('DitoForm', {
   },
 
   computed: {
-    // @override DitoMixin.dataModel
-    dataModel() {
-      return this.ownDataModel
-    },
-
     isForm() {
       return true
     },
@@ -366,12 +356,14 @@ export default DitoComponent.component('DitoForm', {
   created() {
     // Writes defaults and computed values into the form's data, resolves
     // options and tracks whether the data is dirty, see `DataModel`:
-    this.ownDataModel = new DataModel({
-      component: this,
-      getSchema: () => this.schema,
-      getData: () => this.data,
-      getSourceSchema: () => this.sourceSchema
-    })
+    this.ownDataModel = markRaw(
+      new DataModel({
+        component: this,
+        getSchema: () => this.schema,
+        getData: () => this.data,
+        getSourceSchema: () => this.sourceSchema
+      })
+    )
   },
 
   beforeUnmount() {

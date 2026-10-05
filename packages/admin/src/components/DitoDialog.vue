@@ -32,6 +32,7 @@
 </template>
 
 <script>
+import { markRaw } from 'vue'
 import { clone } from '@ditojs/utils'
 import DitoComponent from '../DitoComponent.js'
 import DomMixin from '../mixins/DomMixin.js'
@@ -47,8 +48,7 @@ export default DitoComponent.component('DitoDialog', {
 
   provide() {
     return {
-      $dialogComponent: () => this,
-      $dataModel: () => this.ownDataModel
+      $dialogComponent: () => this
     }
   },
 
@@ -80,11 +80,6 @@ export default DitoComponent.component('DitoDialog', {
   },
 
   computed: {
-    // @override DitoMixin.dataModel
-    dataModel() {
-      return this.ownDataModel
-    },
-
     dialogComponent() {
       return this
     },
@@ -136,11 +131,13 @@ export default DitoComponent.component('DitoDialog', {
   created() {
     // Writes defaults and computed values into the dialog's data and resolves
     // options, see `DataModel`:
-    this.ownDataModel = new DataModel({
-      component: this,
-      getSchema: () => this.schema,
-      getData: () => this.dialogData
-    })
+    this.ownDataModel = markRaw(
+      new DataModel({
+        component: this,
+        getSchema: () => this.schema,
+        getData: () => this.dialogData
+      })
+    )
   },
 
   mounted() {

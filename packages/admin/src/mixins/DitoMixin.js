@@ -39,29 +39,28 @@ export default {
 
   provide() {
     const self = () => this
-    return this.providesData
-      ? {
-          $parentComponent: self,
-          $dataComponent: self
-        }
-      : {
-          $parentComponent: self
-        }
+    return {
+      $parentComponent: self,
+      ...(this.providesData && { $dataComponent: self }),
+      $dataModel: () => this.dataModel
+    }
   },
 
   data() {
     return {
       appState,
       isMounted: false,
-      overrides: null // See accessor.js
+      overrides: null, // See accessor.js
+      // The data model that the component owns, see `dataModel`.
+      ownDataModel: null
     }
   },
 
   computed: {
-    // The data model, provided by the form, view or dialog that owns it, which
-    // override it with their own.
+    // The data model of the data: the component's own, e.g. of a form, view
+    // or dialog, or else the one of its closest ancestor that owns one.
     dataModel() {
-      return this.$dataModel()
+      return this.ownDataModel ?? this.$dataModel()
     },
 
     providesData() {

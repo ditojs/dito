@@ -28,6 +28,7 @@ template(
 </template>
 
 <script>
+import { markRaw } from 'vue'
 import DitoComponent from '../DitoComponent.js'
 import RouteMixin from '../mixins/RouteMixin.js'
 import {
@@ -45,8 +46,7 @@ export default DitoComponent.component('DitoView', {
     // Redirect $sourceComponent and $resourceComponent to the main component:
     return {
       $sourceComponent: () => this.mainComponent?.sourceComponent || null,
-      $resourceComponent: () => this.mainComponent?.resourceComponent || null,
-      $dataModel: () => this.ownDataModel
+      $resourceComponent: () => this.mainComponent?.resourceComponent || null
     }
   },
 
@@ -61,11 +61,6 @@ export default DitoComponent.component('DitoView', {
   },
 
   computed: {
-    // @override DitoMixin.dataModel
-    dataModel() {
-      return this.ownDataModel
-    },
-
     schema() {
       return this.meta.schema ?? {}
     },
@@ -126,11 +121,13 @@ export default DitoComponent.component('DitoView', {
   created() {
     // Writes defaults and computed values into the view's data and resolves
     // options, see `DataModel`:
-    this.ownDataModel = new DataModel({
-      component: this,
-      getSchema: () => this.viewSchema,
-      getData: () => this.data
-    })
+    this.ownDataModel = markRaw(
+      new DataModel({
+        component: this,
+        getSchema: () => this.viewSchema,
+        getData: () => this.data
+      })
+    )
   },
 
   mounted() {
