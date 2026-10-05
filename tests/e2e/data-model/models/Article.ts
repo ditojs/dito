@@ -14,6 +14,19 @@ export interface Article {
     topic?: string | null
   } | null
   lines?: { amount?: number | null }[] | null
+  sounds?: { name: string }[] | null
+  sequences?:
+    | {
+        numSteps?: number
+        tracks?: { name: string; steps: number[] }[]
+      }[]
+    | null
+  blocks?:
+    | {
+        title?: string | null
+        layout?: Record<string, { columns?: number | null }> | null
+      }[]
+    | null
   customFactor?: number | null
   tags?: string[] | null
   version?: number[] | null
@@ -31,6 +44,9 @@ export class Article extends Model {
     topic: { type: 'string', nullable: true },
     chooser: { type: 'object', nullable: true },
     lines: { type: 'array', nullable: true, items: { type: 'object' } },
+    blocks: { type: 'array', nullable: true, items: { type: 'object' } },
+    sounds: { type: 'array', nullable: true, items: { type: 'object' } },
+    sequences: { type: 'array', nullable: true, items: { type: 'object' } },
     customFactor: { type: 'number', nullable: true },
     tags: { type: 'array', nullable: true, items: { type: 'string' } },
     version: { type: 'array', nullable: true, items: { type: 'integer' } },

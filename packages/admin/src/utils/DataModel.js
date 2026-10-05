@@ -9,12 +9,13 @@ import {
 } from '@ditojs/utils'
 import DitoContext from '../DitoContext.js'
 import { DataSchemaResolver } from './DataSchemaResolver.js'
+import { getParentDataPath } from './data.js'
 import { isNested } from './schema/structure.js'
 import { isEmptySchema } from './schema/lookup.js'
 import {
   getSchemaValue,
   shouldSetDefaultValue,
-  getDefaultValue,
+  setDefaultValue,
   initializeData,
   computeValue,
   hasValueFromDataSchema,
@@ -77,6 +78,9 @@ export class DataModel {
   // the snapshot is taken, which `isDirty` takes from the current data, `null`
   // once it settled, see `takeProcessedDataSnapshot()`:
   derivedValueDataPaths = null
+  // The number of writes of computed values per data path in the current
+  // microtask, see `isWriteLoop()`:
+  computedValueWriteCounts = null
 
   // `getSchema()` and `getData()` return the schema and the data that the
   // model handles. `getSourceSchema()` returns the schema of the source that
@@ -345,16 +349,23 @@ export class DataModel {
   // `false`. Unlike `shouldRenderSchema()`, it doesn't evaluate the components
   // of sections and tabs, as the walk of the data visits them anyway, see
   // `getDataEntries()`, which leads to the same entries.
+  // An `if` that fails only affects its own component, which is treated as
+  // shown, not the walk of all others, which would stop computing them.
   isEntryShown(entry) {
-    return (
-      entry.schema.if === undefined ||
-      getSchemaValue('if', {
+    if (entry.schema.if === undefined) {
+      return true
+    }
+    try {
+      return getSchemaValue('if', {
         type: Boolean,
         schema: entry.schema,
         context: this.createEntryContext(entry),
         default: true
       })
-    )
+    } catch (error) {
+      console.error(error)
+      return true
+    }
   }
 
   // Returns whether the value of the entry is missing and needs its default.
@@ -377,7 +388,7 @@ export class DataModel {
     for (const entry of entries) {
       if (this.shouldSetDefaultValue(entry)) {
         const { schema, data, name } = entry
-        data[name] = getDefaultValue(schema, () =>
+        setDefaultValue(schema, data, name, () =>
           this.createEntryContext(entry)
         )
       }
@@ -538,16 +549,80 @@ export class DataModel {
     })
   }
 
+  // Writes the computed value into the data, with the defaults of its nested
+  // values, unless it equals the value in the data.
   writeComputedValue(entry, value) {
     const { data, name } = entry
+    this.setNestedDefaultValues(entry, value)
     if (!equals(value, data[name])) {
+      const dataPath = this.getRelativeDataPath(entry)
+      if (this.isWriteLoop(dataPath)) {
+        return
+      }
       // Values written while the model settles are derived, see
       // `takeProcessedDataSnapshot()`:
-      this.derivedValueDataPaths?.add(this.getRelativeDataPath(entry))
+      this.derivedValueDataPaths?.add(dataPath)
       // Access `data[name]` directly to update the value without calling
       // `parse()`, see `ValueMixin`:
       data[name] = value
     }
+  }
+
+  // Sets the missing defaults of the values nested in the computed value of
+  // the entry, e.g. of the items that `compute()` returns, as
+  // `setDefaultValues()` would once the value is written. Otherwise, the two
+  // would disagree on the value and keep replacing each other's writes.
+  setNestedDefaultValues(entry, value) {
+    const { schema, data, name, dataPath } = entry
+    if (!isPlainObject(value) && !isArray(value)) {
+      return
+    }
+    // Walk the computed value in place of the current one, in a copy of the
+    // data that holds it.
+    const valueData = { ...data, [name]: value }
+    processSchemaData({ components: { [name]: schema } }, valueData, {
+      dataPath: isNested(schema) ? getParentDataPath(dataPath) : dataPath,
+      shouldProcess: nestedEntry => this.isEntryShown(nestedEntry),
+      shouldSkipSourcesWithResource: true,
+      before: nestedEntry => {
+        if (
+          nestedEntry.data !== valueData &&
+          this.shouldSetDefaultValue(nestedEntry)
+        ) {
+          setDefaultValue(
+            nestedEntry.schema,
+            nestedEntry.data,
+            nestedEntry.name,
+            () => this.createEntryContext(nestedEntry)
+          )
+        }
+      },
+      options: { component: this.component, rootData: this.rootData }
+    })
+  }
+
+  // Returns whether the computed value at the data path was written too often
+  // in the current microtask, which happens when the sources of the value keep
+  // disagreeing on it, e.g. two computes. Reports the data path once, instead
+  // of letting the writes loop endlessly.
+  isWriteLoop(dataPath) {
+    if (!this.computedValueWriteCounts) {
+      this.computedValueWriteCounts = new Map()
+      queueMicrotask(() => {
+        this.computedValueWriteCounts = null
+      })
+    }
+    const count = (this.computedValueWriteCounts.get(dataPath) ?? 0) + 1
+    this.computedValueWriteCounts.set(dataPath, count)
+    if (count === maxComputedValueWrites + 1) {
+      console.error(
+        new Error(
+          `The computed value at '${dataPath}' keeps changing, as its ` +
+          `sources disagree on it. It isn't written anymore in this update.`
+        )
+      )
+    }
+    return count > maxComputedValueWrites
   }
 
   // Returns the data path of the value of the entry, relative to the model's
@@ -665,6 +740,10 @@ const modelWatchOptions = { immediate: true, flush: 'post' }
 // Aborts `compute()` when it reads options that aren't loaded, see
 // `DataModel.getComputedValueResult()`.
 const optionsNotLoaded = Symbol('optionsNotLoaded')
+
+// The number of writes of a computed value in one microtask after which they
+// are considered a loop, see `DataModel.isWriteLoop()`.
+const maxComputedValueWrites = 10
 
 // Returns whether the schema is a source of computed values, through
 // `schema.compute()` or a data schema of the `computed` types.

@@ -484,12 +484,12 @@ describe('initializeData()', () => {
     const chooser = {
       type: 'section',
       nested: true,
-      components: { topic: { type: 'text' } }
+      components: { topic: { type: 'text', default: 'news' } }
     }
     const data = { chooser: null }
     initializeData({ type: 'form', components: { chooser } }, data, {})
     // The section's components are initialized in its object too:
-    expect(data.chooser).toHaveProperty('topic')
+    expect(data.chooser).toEqual({ topic: 'news' })
   })
 
   it('can leave the defaults of computed values to `computeValue()`', () => {

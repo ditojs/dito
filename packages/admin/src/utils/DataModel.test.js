@@ -188,6 +188,65 @@ describe('DataModel', () => {
     dataModel.stop()
   })
 
+  it('writes computed items with the defaults of their forms', async () => {
+    // Like lineto's sound sets, whose tracks are computed from the sounds:
+    // The defaults of the computed items don't make `compute()` disagree with
+    // them, which would replace them in an endless loop.
+    const compute = ({ value, item }) =>
+      item.sounds.map(name => ({
+        name,
+        steps: value?.find(track => track.name === name)?.steps ?? []
+      }))
+    const schema = {
+      type: 'form',
+      components: {
+        tracks: {
+          type: 'list',
+          compute,
+          form: {
+            type: 'form',
+            components: {
+              name: { type: 'text' },
+              volume: { type: 'text', default: 0 },
+              // Buttons have no value, and don't get a key in the items:
+              play: { type: 'computed' }
+            }
+          }
+        }
+      }
+    }
+    const { dataModel, data } = createDataModel(schema, {
+      sounds: ['Kick'],
+      tracks: []
+    })
+    await nextTick()
+    expect(data.tracks).toEqual([{ name: 'Kick', steps: [], volume: 0 }])
+    dataModel.stop()
+  })
+
+  it('stops writing computed values whose sources disagree', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const schema = {
+      type: 'form',
+      components: {
+        count: { type: 'text', compute: ({ item }) => (item.other ?? 0) + 1 },
+        other: { type: 'text', compute: ({ item }) => (item.count ?? 0) + 1 }
+      }
+    }
+    const { dataModel } = createDataModel(schema, {})
+    await nextTick()
+    await nextTick()
+    expect(error).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: expect.stringContaining(
+          "The computed value at 'count' keeps changing"
+        )
+      })
+    )
+    error.mockRestore()
+    dataModel.stop()
+  })
+
   it("doesn't recompute values whose `compute()` doesn't read them", async () => {
     // Like lineto's access tokens, which are random for each call.
     let callCount = 0
@@ -208,6 +267,29 @@ describe('DataModel', () => {
     expect(data.token).toBe('Changed-2')
     await nextTick()
     expect(callCount).toBe(2)
+    dataModel.stop()
+  })
+
+  it('keeps computing values when an `if` fails', () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const schema = {
+      type: 'form',
+      components: {
+        broken: {
+          type: 'text',
+          if: () => {
+            throw new Error('Broken')
+          }
+        },
+        slug
+      }
+    }
+    const { dataModel, data } = createDataModel(schema, { title: 'A B' })
+    expect(data.slug).toBe('a-b')
+    expect(error).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'Broken' })
+    )
+    error.mockRestore()
     dataModel.stop()
   })
 

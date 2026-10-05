@@ -110,6 +110,17 @@ export function getDefaultValue(schema, context) {
     : clone(defaultValue)
 }
 
+// Sets the value of the component described by `schema` and `name` in `data`
+// to its default. Types without values, e.g. buttons, have no default, and
+// don't get a key in the data, which would make the data differ from data
+// without it, e.g. from items that `compute()` returns.
+export function setDefaultValue(schema, data, name, context) {
+  const value = getDefaultValue(schema, context)
+  if (value !== undefined) {
+    data[name] = value
+  }
+}
+
 export function shouldExcludeValue(schema, context) {
   const excludeValue =
     schema.exclude !== undefined
@@ -207,7 +218,7 @@ export function initializeData(schema, data = {}, component, {
       { shouldSetDefaultsOfComponentsWithCompute }
     )
     if (shouldSetDefault) {
-      data[name] = getDefaultValue(schema, context)
+      setDefaultValue(schema, data, name, context)
     }
     if (hasItemsNumberedByOrderKey(schema) && isArray(data[name])) {
       updateOrder(schema, data[name])

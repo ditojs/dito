@@ -28,6 +28,16 @@ type ArticleItem = Article & {
 
 type Option = { label: string; value: string }
 
+type LayoutEntry = { type: string; columns?: number | null }
+
+const layoutTargets = ['all', 'desktop', 'mobile']
+
+function sortLayoutEntries(entries: LayoutEntry[]) {
+  return entries.toSorted(
+    (a, b) => layoutTargets.indexOf(a.type) - layoutTargets.indexOf(b.type)
+  )
+}
+
 const categoryOptions: Option[] = [
   { label: 'News', value: 'news' },
   { label: 'Sports', value: 'sports' }
@@ -317,6 +327,166 @@ export const articles = createWidgetView<ArticleItem>(
                       )
                       return line.amount != null ? line.amount * 2 : null
                     }
+                  }
+                }
+              }
+            }
+          }
+        },
+        // Like lineto's article items: The layouts of the collapsed items are
+        // stored as an object keyed by their targets, and edited as a list
+        // that `compute()` converts the object to. The forms are only offered
+        // for targets without a layout.
+        blocks: {
+          type: 'tab',
+          label: 'Blocks',
+          components: {
+            blocks: {
+              type: 'list',
+              label: 'Blocks',
+              inlined: true,
+              creatable: true,
+              collapsible: true,
+              collapsed: true,
+              form: {
+                type: 'form',
+                components: {
+                  title: { type: 'text', label: 'Block Title' },
+                  layout: {
+                    type: 'object',
+                    label: 'Layout',
+                    default: {},
+                    components: {
+                      layouts: {
+                        type: 'list',
+                        label: false,
+                        exclude: true,
+                        default: null,
+                        inlined: true,
+                        creatable: { label: 'Add Layout' },
+                        deletable: true,
+                        collapsible: false,
+                        forms: Object.fromEntries(
+                          layoutTargets.map(target => [
+                            target,
+                            {
+                              type: 'form',
+                              label: target,
+                              visible: ({ value }: { value: LayoutEntry[] }) =>
+                                value.every(entry => entry.type !== target),
+                              components: {
+                                columns: { type: 'number', label: 'Columns' }
+                              }
+                            }
+                          ])
+                        ),
+                        // Returns new sorted entries each time, like lineto's
+                        // `entries` schemas.
+                        compute: ({ value, item }) =>
+                          sortLayoutEntries(
+                            Array.isArray(value)
+                              ? value
+                              : layoutTargets
+                                  .filter(target => item[target] != null)
+                                  .map(target => ({
+                                    type: target,
+                                    ...item[target]
+                                  }))
+                          ),
+                        process: ({ value, processedItem }) => {
+                          for (const { type, ...layout } of value) {
+                            processedItem[type] = layout
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        // Like lineto's sound sets: The tracks of the sequences are computed
+        // from the sounds, and keep the steps of their computed checkboxes.
+        sequences: {
+          type: 'tab',
+          label: 'Sequences',
+          components: {
+            sounds: {
+              type: 'list',
+              label: 'Sounds',
+              inlined: true,
+              creatable: true,
+              collapsible: true,
+              collapsed: true,
+              form: {
+                type: 'form',
+                components: { name: { type: 'text', label: 'Sound Name' } }
+              }
+            },
+            sequences: {
+              type: 'list',
+              label: 'Sequences',
+              inlined: true,
+              creatable: true,
+              collapsible: true,
+              collapsed: true,
+              form: {
+                type: 'form',
+                components: {
+                  numSteps: {
+                    type: 'number',
+                    label: 'Number of Steps',
+                    default: 4
+                  },
+                  tracks: {
+                    type: 'list',
+                    label: 'Tracks',
+                    inlined: true,
+                    form: {
+                      type: 'form',
+                      components: {
+                        // Buttons have no value, unlike the computed tracks.
+                        play: { type: 'button', text: 'Play' },
+                        name: { type: 'label' },
+                        // Not returned by the compute of the tracks.
+                        volume: { type: 'number', label: 'Volume', default: 0 },
+                        steps: {
+                          type: 'checkboxes',
+                          layout: 'horizontal',
+                          options: {
+                            data: ({ parentItem: sequence }) =>
+                              Array.from(
+                                { length: sequence.numSteps },
+                                (_, index) => ({
+                                  label: `${index + 1}`,
+                                  value: index + 1
+                                })
+                              )
+                          },
+                          compute: ({ value: steps, parentItem: sequence }) =>
+                            steps.filter(
+                              (step: number) => step <= sequence.numSteps
+                            ),
+                          process: ({ value: steps }) =>
+                            [...steps].sort((a: number, b: number) => a - b)
+                        }
+                      }
+                    },
+                    compute: ({ value: tracks, parentItem }) =>
+                      parentItem.sounds.map(
+                        (sound: { name: string }, index: number) => {
+                          const track = (
+                            tracks?.find(
+                              ({ name }: { name: string }) => (
+                                name === sound.name
+                              )
+                            ) ||
+                            tracks?.[index]
+                          )
+                          return { name: sound.name, steps: track?.steps || [] }
+                        }
+                      )
                   }
                 }
               }
