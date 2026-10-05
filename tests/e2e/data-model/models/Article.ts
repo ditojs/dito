@@ -16,6 +16,7 @@ export interface Article {
   lines?: { amount?: number | null }[] | null
   customFactor?: number | null
   tags?: string[] | null
+  version?: number[] | null
   keywords?: (string | null)[]
   references?: { id: number; title: string }[] | null
 }
@@ -32,6 +33,7 @@ export class Article extends Model {
     lines: { type: 'array', nullable: true, items: { type: 'object' } },
     customFactor: { type: 'number', nullable: true },
     tags: { type: 'array', nullable: true, items: { type: 'string' } },
+    version: { type: 'array', nullable: true, items: { type: 'integer' } },
     references: { type: 'array', nullable: true, items: { type: 'object' } },
     keywords: {
       type: 'array',

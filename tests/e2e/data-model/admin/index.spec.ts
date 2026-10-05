@@ -295,6 +295,29 @@ test.describe('data model', () => {
       'Replaced and Modified'
     )
   })
+  test('renders computed values from the start', async ({ page, url }) => {
+    const article = await Article.query().insert({
+      title: 'Versioned',
+      version: [1, 2]
+    })
+    // Vue warns about the props of inputs that receive the stored array
+    // instead of the computed text.
+    const vueWarnings: string[] = []
+    page.on('console', message => {
+      if (message.text().startsWith('[Vue warn]')) {
+        vueWarnings.push(message.text())
+      }
+    })
+    await openArticle(page, url, article)
+    await expect(page.getByLabel('Version', { exact: true })).toHaveValue('1.2')
+    await page.getByLabel('Version', { exact: true }).fill('1.3')
+    await page.getByRole('button', { name: 'Save', exact: true }).click()
+    await expect
+      .poll(async () => (await Article.query().findById(article.id))?.version)
+      .toEqual([1, 3])
+    expect(vueWarnings).toEqual([])
+  })
+
   test('computes values of new items from their defaults', async ({
     page,
     url

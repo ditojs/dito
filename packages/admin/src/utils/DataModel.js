@@ -92,7 +92,7 @@ export class DataModel {
       watch(
         [getSchema, getData],
         ([schema, data]) => this.initializeData(schema, data),
-        modelWatchOptions
+        modelSetupWatchOptions
       )
       // The entries are read through a computed property, so that the watchers
       // of the entries can check synchronously whether their entry is still
@@ -101,19 +101,18 @@ export class DataModel {
       watch(
         () => this.dataEntries.value.computedValueEntries,
         entries => this.updateComputedValueRecords(entries),
-        modelWatchOptions
+        modelSetupWatchOptions
       )
       // Values that go missing after the data was set up, e.g. in items that
       // code adds, get their defaults too:
       watch(
         () => this.dataEntries.value.entriesWithMissingValues,
         entries => this.setDefaultValues(entries),
-        modelWatchOptions
+        modelSetupWatchOptions
       )
       if (getSourceSchema) {
         // Data that is set up, e.g. loaded, saved or applied, isn't dirty:
-        // After the data is set up, as the watchers run in the order in which
-        // they're created, see `modelWatchOptions`.
+        // After the data is set up, see `modelSetupWatchOptions`.
         watch(
           getData,
           () => this.takeProcessedDataSnapshot().catch(console.error),
@@ -641,13 +640,20 @@ function takeOverChangedValues(target, before, after) {
 
 const notFound = Symbol('notFound')
 
-// The watchers of the model run after the post-flush hooks, so that they write
-// the values that they derive from the data after the components that display
-// them are mounted. Otherwise, the `mounted` hooks of `v-model` directives
-// would restore the values that inputs had when they were mounted, see
-// https://github.com/vuejs/core/issues/15774. Vue processes the updates that
-// the written values cause in the same flush, before the browser renders them.
-// The watchers run in the order in which they're created.
+// The watchers of the model that set up the data and the scopes of its
+// components run before the components render, so that components of new
+// data, e.g. loaded data or added items, receive their defaults and computed
+// values from the start: The scopes compute their values right away, see
+// `createComputedValueScope()`.
+const modelSetupWatchOptions = { immediate: true, flush: 'pre' }
+
+// The other watchers of the model run after the post-flush hooks, so that they
+// write the values that they derive from the data after the components that
+// display them are mounted. Otherwise, the `mounted` hooks of `v-model`
+// directives would restore the values that inputs had when they were mounted,
+// see https://github.com/vuejs/core/issues/15774. Vue processes the updates
+// that the written values cause in the same flush, before the browser renders
+// them.
 const modelWatchOptions = { immediate: true, flush: 'post' }
 
 // Aborts `compute()` when it reads options that aren't loaded, see

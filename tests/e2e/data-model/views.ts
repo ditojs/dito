@@ -210,6 +210,16 @@ export const articles = createWidgetView<ArticleItem>(
                 processedItem.tags = value ? value.split(',') : null
               }
             },
+            // Like lineto's EULA versions: The stored array is edited as text,
+            // which the inputs of rendered fields need to receive from the
+            // start.
+            version: {
+              type: 'text',
+              label: 'Version',
+              compute: ({ value }) =>
+                Array.isArray(value) ? value.join('.') : value,
+              process: ({ value }) => value?.split('.').map(Number) ?? null
+            },
             // Like lineto's custom font cut names: The compute relies on the
             // default of new items, and always shows one keyword to fill in.
             keywords: {
