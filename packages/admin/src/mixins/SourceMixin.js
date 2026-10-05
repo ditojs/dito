@@ -424,7 +424,7 @@ export default {
     // @override ResourceMixin.clearData()
     clearData() {
       this.total = 0
-      this.value = null
+      this.setLoadedValue(null)
     },
 
     // @override ResourceMixin.setData()
@@ -437,7 +437,7 @@ export default {
       if (this.isListSource && isArray(data)) {
         this.setLoadedListItems(data)
       } else if (!data || this.isObjectSource && isObject(data)) {
-        this.value = data
+        this.setLoadedValue(data)
       } else if (this.unwrapListData(data)) {
         // The format didn't match, see if we received a `{ results, total }`
         // object, in which case `this.value` was already set by
@@ -483,7 +483,21 @@ export default {
     // current order. Lists in the data of forms, views and dialogs are
     // numbered by `FormModel`, see `initializeData()`.
     setLoadedListItems(items) {
-      this.value = updateOrder(this.sourceSchema, items, this.paginationRange)
+      this.setLoadedValue(
+        updateOrder(this.sourceSchema, items, this.paginationRange)
+      )
+    },
+
+    // Writes the value loaded through the source's resource. Loading isn't an
+    // edit of the data, so the value is written as a clean change, which
+    // doesn't make the form dirty, e.g. for sources whose value is stored,
+    // like the order of their items, see `FormModel.applyCleanChanges()`.
+    setLoadedValue(value) {
+      this.formModel
+        .applyCleanChanges(() => {
+          this.value = value
+        })
+        .catch(console.error)
     },
 
     createItem(schema, type, index = null) {

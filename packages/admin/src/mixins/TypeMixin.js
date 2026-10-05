@@ -37,6 +37,11 @@ export default {
       return this.schema.name
     },
 
+    // The form model of the data, owned by the dialog or route component.
+    formModel() {
+      return (this.dialogComponent ?? this.routeComponent).formModel
+    },
+
     type() {
       return this.schema.type
     },

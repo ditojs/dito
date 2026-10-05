@@ -82,11 +82,6 @@ export default {
       return this.getOptionForValue(this.selectedValue)
     },
 
-    // The form model of the data, owned by the dialog or route component.
-    formModel() {
-      return (this.dialogComponent ?? this.routeComponent).formModel
-    },
-
     // The resolver of the options in the form model of the data, which loads
     // them and shares them with the computes of the form. It is looked up with
     // the entry of this component, in the shape of the entries of
