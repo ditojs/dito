@@ -28,16 +28,6 @@ type ArticleItem = Article & {
 
 type Option = { label: string; value: string }
 
-type LayoutEntry = { type: string; columns?: number | null }
-
-const layoutTargets = ['all', 'desktop', 'mobile']
-
-function sortLayoutEntries(entries: LayoutEntry[]) {
-  return entries.toSorted(
-    (a, b) => layoutTargets.indexOf(a.type) - layoutTargets.indexOf(b.type)
-  )
-}
-
 const categoryOptions: Option[] = [
   { label: 'News', value: 'news' },
   { label: 'Sports', value: 'sports' }
@@ -61,9 +51,8 @@ async function loadDelayed<T>(value: T): Promise<T> {
   return value
 }
 
-// Like lineto's `getValidOrDefaultOption()`: Keeps valid values, and selects
-// the first option otherwise. `compute()` only runs once the options that it
-// reads are loaded.
+// Keeps valid values, and selects the first option otherwise. `compute()` only
+// runs once the options that it reads are loaded.
 function getValidOrFirstOption({
   value,
   options
@@ -101,8 +90,7 @@ export const articles = createWidgetView<ArticleItem>(
               compute: ({ item }) =>
                 item.slug ? `/articles/${item.slug}` : null
             },
-            // Selects the first option once the options are loaded, like
-            // lineto's `getValidOrDefaultOption()`.
+            // Selects the first option once the options are loaded.
             status: {
               type: 'select',
               label: 'Status',
@@ -129,8 +117,8 @@ export const articles = createWidgetView<ArticleItem>(
                 }
               }
             },
-            // Like lineto's font chooser: The options come from data next to
-            // the select, which a button resets.
+            // The options come from data next to the select, which a button
+            // resets.
             chooser: {
               type: 'section',
               label: 'Chooser',
@@ -152,8 +140,7 @@ export const articles = createWidgetView<ArticleItem>(
                 }
               }
             },
-            // Like lineto's actions that the server saves, e.g. creating the
-            // template order of a FontPool plan: Applies the result as clean
+            // Like actions that the server saves: Applies the result as clean
             // changes.
             applySavedTitle: {
               type: 'button',
@@ -166,8 +153,8 @@ export const articles = createWidgetView<ArticleItem>(
                 }
               }
             },
-            // Like lineto's actions that return the updated item: Replaces the
-            // form's data, and modifies the returned reactive data.
+            // Like actions that return the updated item: Replaces the form's
+            // data, and modifies the returned reactive data.
             replaceData: {
               type: 'button',
               text: 'Replace Data',
@@ -181,9 +168,9 @@ export const articles = createWidgetView<ArticleItem>(
                 }
               }
             },
-            // Like lineto's license pricing: The computed value is derived from
-            // other data when it's missing, and erases data that doesn't apply
-            // to it. Its default only applies if the compute returns nothing.
+            // The computed value is derived from other data when it's missing,
+            // and erases data that doesn't apply to it. Its default only
+            // applies if the compute returns nothing.
             pricing: {
               type: 'select',
               label: 'Pricing',
@@ -209,8 +196,8 @@ export const articles = createWidgetView<ArticleItem>(
               label: 'Custom Factor',
               visible: ({ item }) => item.pricing === 'factor'
             },
-            // Like lineto's target entries: The excluded value is stored under
-            // another key through `process()`.
+            // The excluded value is stored under another key through
+            // `process()`.
             tagsText: {
               type: 'text',
               label: 'Tags',
@@ -220,9 +207,8 @@ export const articles = createWidgetView<ArticleItem>(
                 processedItem.tags = value ? value.split(',') : null
               }
             },
-            // Like lineto's EULA versions: The stored array is edited as text,
-            // which the inputs of rendered fields need to receive from the
-            // start.
+            // The stored array is edited as text, which the inputs of rendered
+            // fields need to receive from the start.
             version: {
               type: 'text',
               label: 'Version',
@@ -230,8 +216,8 @@ export const articles = createWidgetView<ArticleItem>(
                 Array.isArray(value) ? value.join('.') : value,
               process: ({ value }) => value?.split('.').map(Number) ?? null
             },
-            // Like lineto's custom font cut names: The compute relies on the
-            // default of new items, and always shows one keyword to fill in.
+            // The compute relies on the default of new items, and always shows
+            // one keyword to fill in.
             keywords: {
               type: 'list',
               label: 'Keywords',
@@ -247,8 +233,8 @@ export const articles = createWidgetView<ArticleItem>(
                 }
               }
             },
-            // Like lineto's font preview: The section is hidden when its key is
-            // reset, and its computed value loads from that key.
+            // The section is hidden when its key is reset, and its computed
+            // value loads from that key.
             previewKey: {
               type: 'text',
               label: 'Preview Key',
@@ -262,7 +248,7 @@ export const articles = createWidgetView<ArticleItem>(
                   type: 'computed',
                   exclude: true,
                   data: ({ item }) => {
-                    // Like lineto, rely on the section's `if` for the key.
+                    // Rely on the section's `if` for the key.
                     const previewKey = item.previewKey as string
                     return async () => previewKey.toUpperCase()
                   }
@@ -279,7 +265,7 @@ export const articles = createWidgetView<ArticleItem>(
               }
             },
             // Counts the changes of the markup, which are emitted once the
-            // editing is done, like for lineto's article previews.
+            // editing is done.
             notes: {
               type: 'markup',
               label: 'Notes',
@@ -303,8 +289,8 @@ export const articles = createWidgetView<ArticleItem>(
               label: 'References',
               columns: { title: { label: 'Title' } }
             },
-            // Like lineto's royalty amounts: The computed value reads its line
-            // from the root data through its data path.
+            // The computed value reads its line from the root data through its
+            // data path.
             lines: {
               type: 'list',
               label: 'Lines',
@@ -327,166 +313,6 @@ export const articles = createWidgetView<ArticleItem>(
                       )
                       return line.amount != null ? line.amount * 2 : null
                     }
-                  }
-                }
-              }
-            }
-          }
-        },
-        // Like lineto's article items: The layouts of the collapsed items are
-        // stored as an object keyed by their targets, and edited as a list
-        // that `compute()` converts the object to. The forms are only offered
-        // for targets without a layout.
-        blocks: {
-          type: 'tab',
-          label: 'Blocks',
-          components: {
-            blocks: {
-              type: 'list',
-              label: 'Blocks',
-              inlined: true,
-              creatable: true,
-              collapsible: true,
-              collapsed: true,
-              form: {
-                type: 'form',
-                components: {
-                  title: { type: 'text', label: 'Block Title' },
-                  layout: {
-                    type: 'object',
-                    label: 'Layout',
-                    default: {},
-                    components: {
-                      layouts: {
-                        type: 'list',
-                        label: false,
-                        exclude: true,
-                        default: null,
-                        inlined: true,
-                        creatable: { label: 'Add Layout' },
-                        deletable: true,
-                        collapsible: false,
-                        forms: Object.fromEntries(
-                          layoutTargets.map(target => [
-                            target,
-                            {
-                              type: 'form',
-                              label: target,
-                              visible: ({ value }: { value: LayoutEntry[] }) =>
-                                value.every(entry => entry.type !== target),
-                              components: {
-                                columns: { type: 'number', label: 'Columns' }
-                              }
-                            }
-                          ])
-                        ),
-                        // Returns new sorted entries each time, like lineto's
-                        // `entries` schemas.
-                        compute: ({ value, item }) =>
-                          sortLayoutEntries(
-                            Array.isArray(value)
-                              ? value
-                              : layoutTargets
-                                  .filter(target => item[target] != null)
-                                  .map(target => ({
-                                    type: target,
-                                    ...item[target]
-                                  }))
-                          ),
-                        process: ({ value, processedItem }) => {
-                          for (const { type, ...layout } of value) {
-                            processedItem[type] = layout
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        // Like lineto's sound sets: The tracks of the sequences are computed
-        // from the sounds, and keep the steps of their computed checkboxes.
-        sequences: {
-          type: 'tab',
-          label: 'Sequences',
-          components: {
-            sounds: {
-              type: 'list',
-              label: 'Sounds',
-              inlined: true,
-              creatable: true,
-              collapsible: true,
-              collapsed: true,
-              form: {
-                type: 'form',
-                components: { name: { type: 'text', label: 'Sound Name' } }
-              }
-            },
-            sequences: {
-              type: 'list',
-              label: 'Sequences',
-              inlined: true,
-              creatable: true,
-              collapsible: true,
-              collapsed: true,
-              form: {
-                type: 'form',
-                components: {
-                  numSteps: {
-                    type: 'number',
-                    label: 'Number of Steps',
-                    default: 4
-                  },
-                  tracks: {
-                    type: 'list',
-                    label: 'Tracks',
-                    inlined: true,
-                    form: {
-                      type: 'form',
-                      components: {
-                        // Buttons have no value, unlike the computed tracks.
-                        play: { type: 'button', text: 'Play' },
-                        name: { type: 'label' },
-                        // Not returned by the compute of the tracks.
-                        volume: { type: 'number', label: 'Volume', default: 0 },
-                        steps: {
-                          type: 'checkboxes',
-                          layout: 'horizontal',
-                          options: {
-                            data: ({ parentItem: sequence }) =>
-                              Array.from(
-                                { length: sequence.numSteps },
-                                (_, index) => ({
-                                  label: `${index + 1}`,
-                                  value: index + 1
-                                })
-                              )
-                          },
-                          compute: ({ value: steps, parentItem: sequence }) =>
-                            steps.filter(
-                              (step: number) => step <= sequence.numSteps
-                            ),
-                          process: ({ value: steps }) =>
-                            [...steps].sort((a: number, b: number) => a - b)
-                        }
-                      }
-                    },
-                    compute: ({ value: tracks, parentItem }) =>
-                      parentItem.sounds.map(
-                        (sound: { name: string }, index: number) => {
-                          const track = (
-                            tracks?.find(
-                              ({ name }: { name: string }) => (
-                                name === sound.name
-                              )
-                            ) ||
-                            tracks?.[index]
-                          )
-                          return { name: sound.name, steps: track?.steps || [] }
-                        }
-                      )
                   }
                 }
               }

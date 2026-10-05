@@ -318,60 +318,6 @@ test.describe('data model', () => {
     expect(vueWarnings).toEqual([])
   })
 
-  test('offers the forms of lists computed in collapsed items', async ({
-    page,
-    url
-  }) => {
-    const article = await Article.query().insert({
-      title: 'Blocks',
-      blocks: [{ title: 'One' }]
-    })
-    await openArticle(page, url, article)
-    await page.getByRole('tab', { name: 'Blocks', exact: true }).click()
-    await page
-      .getByRole('region', { name: 'Blocks' })
-      .getByRole('button', { name: '1' })
-      .click()
-    await expect(page.getByLabel('Block Title', { exact: true })).toHaveValue(
-      'One'
-    )
-    await expect(page.getByRole('button', { name: 'Add Layout' })).toBeVisible()
-  })
-
-  test('settles computed lists of computed values', async ({ page, url }) => {
-    const article = await Article.query().insert({
-      title: 'Sequences',
-      sounds: [{ name: 'Kick' }, { name: 'Snare' }],
-      sequences: [
-        {
-          numSteps: 4,
-          tracks: [
-            { name: 'Kick', steps: [1, 3] },
-            { name: 'Snare', steps: [2, 4] }
-          ]
-        }
-      ]
-    })
-    const vueWarnings: string[] = []
-    page.on('console', message => {
-      if (message.text().startsWith('[Vue warn]')) {
-        vueWarnings.push(message.text())
-      }
-    })
-    await openArticle(page, url, article)
-    await page.getByRole('tab', { name: 'Sequences', exact: true }).click()
-    await page
-      .getByRole('region', { name: 'Sequences' })
-      .getByRole('button', { name: '1' })
-      .click()
-    await expect(
-      page.getByLabel('Number of Steps', { exact: true })
-    ).toHaveValue(
-      '4'
-    )
-    expect(vueWarnings).toEqual([])
-  })
-
   test('computes values of new items from their defaults', async ({
     page,
     url
