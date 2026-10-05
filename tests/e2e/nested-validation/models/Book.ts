@@ -19,6 +19,7 @@ export interface Book {
   fillEdition?: never
   publisher?: string | null
   meta?: { note?: string } | null
+  credits?: { editor?: string | null } | null
   tags?: { name: string }[]
   chapters?: Chapter[]
 }
@@ -37,6 +38,11 @@ export class Book extends Model {
       type: 'object',
       nullable: true,
       properties: { note: title }
+    },
+    credits: {
+      type: 'object',
+      nullable: true,
+      properties: { editor: { type: 'string', nullable: true } }
     },
     tags: {
       type: 'array',

@@ -31,6 +31,22 @@ export const books = createWidgetView<BookItem>(
                 note: { type: 'text', label: 'Note' }
               }
             },
+            // Its components are created from the data, e.g. like fields that
+            // depend on a selected template.
+            credits: {
+              type: 'section',
+              label: 'Credits',
+              nested: true,
+              collapsible: true,
+              collapsed: true,
+              components: ({ item }) =>
+                item.edition
+                  ? {
+                      // Only required in the admin, not on the server.
+                      editor: { type: 'text', label: 'Editor', required: true }
+                    }
+                  : {}
+            },
             tags: {
               type: 'list',
               label: 'Tags',

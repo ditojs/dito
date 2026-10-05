@@ -6,26 +6,32 @@ import {
   isFunction,
   camelize
 } from '@ditojs/utils'
-import { reactive } from 'vue'
+import { reactive, computed } from 'vue'
 import { getTypeOptions } from './types.js'
 import {
   findNestedSchemaComponent,
   isSchema,
   isSingleComponentView
 } from './structure.js'
-// TODO: `getFormSchemas()` processes forms with `components()` callbacks on
-// every call, which also causes the only circular import between these
-// modules. Move this out of the lookup, see the form model.
+// TODO: Setting up the forms of `components()` callbacks causes the only
+// circular import between these modules.
 import { setupForm } from './setup.js'
 
 const emptySchema = {}
 
+// The forms with the components that `components()` callbacks create, by
+// callback and by the data that they create them for, see
+// `getFormWithCreatedComponents()`.
+const formsByComponentsCallback = new WeakMap()
+
 export function hasFormSchema(schema) {
   // Support both single form and multiple forms notation, as well as inlined
-  // components.
+  // components, also created by `components()` callbacks.
   return (
-    isSchema(schema) &&
-    isObject(schema.form || schema.forms || schema.components)
+    isSchema(schema) && (
+      isObject(schema.form || schema.forms || schema.components) ||
+      isFunction(schema.components)
+    )
   )
 }
 
@@ -96,18 +102,49 @@ export function getFormSchemas(schema, context, modifyForm) {
     Object.entries(forms).map(([type, form]) => {
       // Support `schema.components` callbacks to create components on the fly.
       if (context && isFunction(form.components)) {
-        // Make the form schema reactive since `setupForm()` is async, so that
-        // the setting of defaults will be picked up by downstream code.
-        form = reactive({
-          ...form,
-          components: form.components(context)
-        })
-        // Process the form again, now that we have the components.
-        setupForm(context.api, form).catch(console.error)
+        form = getFormWithCreatedComponents(form, context)
       }
       return [type, modifyForm?.(form) ?? form]
     })
   )
+}
+
+// Returns the form with the components that its `components()` callback
+// creates for the data of `context`. The forms are cached per data, and the
+// callback only creates new components when the data that it reads changes,
+// so that rendering and the walks of the form model, see `FormModel`, share
+// the same component schemas. `components()` callbacks therefore derive the
+// components from the data of their context, not from its components.
+function getFormWithCreatedComponents(form, context) {
+  const { item } = context
+  if (!isObject(item)) {
+    return createFormWithComponents(form, context)
+  }
+  let formsByItem = formsByComponentsCallback.get(form.components)
+  if (!formsByItem) {
+    formsByItem = new WeakMap()
+    formsByComponentsCallback.set(form.components, formsByItem)
+  }
+  let formWithCreatedComponents = formsByItem.get(item)
+  if (!formWithCreatedComponents) {
+    formWithCreatedComponents = computed(() =>
+      createFormWithComponents(form, context)
+    )
+    formsByItem.set(item, formWithCreatedComponents)
+  }
+  return formWithCreatedComponents.value
+}
+
+function createFormWithComponents(form, context) {
+  // Make the form schema reactive since `setupForm()` is async, so that the
+  // setting of defaults will be picked up by downstream code.
+  const formWithComponents = reactive({
+    ...form,
+    components: form.components(context)
+  })
+  // Process the form again, now that it has its components.
+  setupForm(context.api, formWithComponents).catch(console.error)
+  return formWithComponents
 }
 
 export function getItemFormSchemaFromForms(forms, item) {

@@ -15,6 +15,7 @@ async function seedBook(data: Partial<Book>) {
       edition: 'First',
       publisher: 'Publisher',
       meta: {},
+      credits: { editor: 'Editor' },
       tags: [],
       chapters: [],
       ...data
@@ -125,7 +126,8 @@ test.describe('nested validation', () => {
     url
   }) => {
     const book = await seedBook({
-      chapters: [{ title: 'Valid', summary: 'Text' },
+      chapters: [
+        { title: 'Valid', summary: 'Text' },
         { title: 'lower', summary: 'Text' }
       ]
     })
@@ -226,6 +228,18 @@ test.describe('nested validation', () => {
     await expect(form.getByLabel('Publisher', { exact: true })).toHaveCount(0)
     await page.getByRole('button', { name: 'Save', exact: true }).click()
     await expect(getErrors(form, 'Publisher')).toContainText(/required/)
+  })
+
+  test('validates fields created by components callbacks', async ({
+    page,
+    url
+  }) => {
+    const book = await seedBook({ credits: {} })
+    await openBook(page, url, book)
+    const form = getForm(page)
+    await expect(form.getByLabel('Editor', { exact: true })).toHaveCount(0)
+    await page.getByRole('button', { name: 'Save', exact: true }).click()
+    await expect(getErrors(form, 'Editor')).toContainText(/required/)
   })
 
   test('marks forms dirty when applying nested forms', async ({

@@ -1,3 +1,4 @@
+import { vi } from 'vitest'
 import NumberMixin from '../../mixins/NumberMixin.js'
 import { registerTypeComponent } from './types.js'
 import {
@@ -6,6 +7,9 @@ import {
   getDataValidationErrors,
   getMatchingValidationErrors
 } from './validation.js'
+
+// `setupForm()` needs the admin's API, see `getFormSchemas()`:
+vi.mock('./setup.js', () => ({ setupForm: async form => form }))
 
 // Register minimal type options, as the actual type components can't be
 // imported without a Vue SFC compiler:
@@ -384,6 +388,29 @@ describe('getDataValidationErrors()', () => {
     }
     expect(getDataValidationErrors(schema, { items: [{}] })).toEqual({
       note: [required]
+    })
+  })
+
+  it('validates components created by `components()` callbacks', () => {
+    const createComponents = ({ item }) =>
+      Object.fromEntries(
+        item.fields.map(name => [name, { type: 'text', required: true }])
+      )
+    const schema = {
+      components: {
+        values: {
+          type: 'section',
+          nested: true,
+          components: createComponents
+        },
+        address: { type: 'section', components: createComponents }
+      }
+    }
+    expect(
+      getDataValidationErrors(schema, { fields: ['city'], values: {} })
+    ).toEqual({
+      'values/city': [required],
+      'city': [required]
     })
   })
 

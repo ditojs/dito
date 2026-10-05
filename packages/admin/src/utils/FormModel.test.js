@@ -4,6 +4,9 @@ import { registerTypeComponent } from './schema/types.js'
 import { FormModel } from './FormModel.js'
 import { updateOrder } from './schema/data.js'
 
+// `setupForm()` needs the admin's API, see `getFormSchemas()`:
+vi.mock('./schema/setup.js', () => ({ setupForm: async form => form }))
+
 // Register minimal type options, as the actual type components can't be
 // imported without a Vue SFC compiler:
 registerTypeComponent('text', { defaultNested: true })
@@ -303,6 +306,82 @@ describe('FormModel', () => {
     expect(data.slug).toBe('book-one')
     expect(data.chapters[0].slug).toBe(undefined)
     formModel.stop()
+  })
+
+  describe('components created by `components()` callbacks', () => {
+    // E.g. fields that depend on the selected template.
+    const getSchema = createComponents => ({
+      type: 'form',
+      components: {
+        fields: { type: 'list', defaultValue: () => [] },
+        values: {
+          type: 'section',
+          nested: true,
+          components: createComponents
+        }
+      }
+    })
+    const createFieldComponents = ({ item }) =>
+      Object.fromEntries(
+        item.fields.map(name => [
+          name,
+          { type: 'text', default: `Default ${name}` }
+        ])
+      )
+
+    it('sets their defaults, also once they are created later', async () => {
+      const { formModel, data } = createFormModel(
+        getSchema(createFieldComponents),
+        { fields: ['name'], values: {} }
+      )
+      await nextTick()
+      expect(data.values).toEqual({ name: 'Default name' })
+      data.fields.push('city')
+      await nextTick()
+      expect(data.values).toEqual({
+        name: 'Default name',
+        city: 'Default city'
+      })
+      formModel.stop()
+    })
+
+    it('writes their computed values', async () => {
+      const schema = getSchema(({ item }) => ({
+        upper: { type: 'computed', compute: () => item.title.toUpperCase() }
+      }))
+      schema.components.title = { type: 'text' }
+      const { formModel, data } = createFormModel(schema, {
+        title: 'Book',
+        fields: [],
+        values: {}
+      })
+      await nextTick()
+      expect(data.values.upper).toBe('BOOK')
+      data.title = 'Story'
+      await nextTick()
+      expect(data.values.upper).toBe('STORY')
+      formModel.stop()
+    })
+
+    it('creates them only when the data that they read changes', async () => {
+      const createComponents = vi.fn(createFieldComponents)
+      const schema = getSchema(createComponents)
+      schema.components.title = { type: 'text' }
+      const { formModel, data } = createFormModel(schema, {
+        title: 'Book',
+        fields: ['name'],
+        values: {}
+      })
+      await nextTick()
+      expect(createComponents).toHaveBeenCalledTimes(1)
+      data.title = 'Story'
+      await nextTick()
+      expect(createComponents).toHaveBeenCalledTimes(1)
+      data.fields.push('city')
+      await nextTick()
+      expect(createComponents).toHaveBeenCalledTimes(2)
+      formModel.stop()
+    })
   })
 
   it('resolves values from data schemas', async () => {

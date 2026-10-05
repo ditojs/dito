@@ -1548,9 +1548,18 @@ export interface RadioSchema<$Item = any>
   layout?: 'horizontal' | 'vertical'
 }
 
-type SectionContent<$Data> = {
-  /** The section's field components. */
-  components?: Components<$Data>
+type SectionContent<$Data, $Item = $Data> = {
+  /**
+   * The section's field components, or a callback that
+   * creates them from the data, e.g. fields that depend on
+   * a selected template. The callback runs again when the
+   * data that it reads changes, and receives the context of
+   * the section, so that `item` is the item that contains
+   * it, also for nested sections.
+   */
+  components?:
+    | Components<$Data>
+    | ItemAccessor<$Item, {}, Components<$Data>>
   /**
    * A form schema for the section's content. Use this
    * instead of `components` to get form-level options
@@ -1690,7 +1699,7 @@ export type SectionSchema<$Item = any, $Nested = $Item> = BaseSchema<$Item> &
          * @defaultValue `false`
          */
         nested: true
-      } & SectionContent<$Nested>)
+      } & SectionContent<$Nested, $Item>)
   )
 
 export interface CheckboxSchema<$Item = any> extends BaseSchema<$Item> {

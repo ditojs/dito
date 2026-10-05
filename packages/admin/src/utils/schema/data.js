@@ -23,6 +23,7 @@ import {
   hasFormSchema,
   hasMultipleFormSchemas,
   getFormSchemas,
+  getItemFormSchema,
   getItemFormSchemaFromForms
 } from './lookup.js'
 
@@ -605,7 +606,20 @@ export function processSchemaData(schema, data, {
     }
   }
 
-  processComponents(schema.components, componentPath)
+  const components = isFunction(schema.components)
+    ? // Unnested components with `components()` callbacks, e.g. sections:
+      getItemFormSchema(
+        schema,
+        data,
+        new DitoContext(options.component, {
+          schema,
+          data,
+          dataPath,
+          rootData: options.rootData
+        })
+      ).components
+    : schema.components
+  processComponents(components, componentPath)
   processTabOrPanelSchemas(schema.tabs, componentPath)
   processTabOrPanelSchemas(schema.panels, componentPath)
 
