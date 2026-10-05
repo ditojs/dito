@@ -51,4 +51,43 @@ test.describe('form model', () => {
       .poll(async () => (await Article.query().findById(article.id))?.status)
       .toBe('draft')
   })
+
+  test('selects options through computes without rendering fields', async ({
+    page,
+    url
+  }) => {
+    // `topic` depends on the computed `category` through its options, and
+    // isn't rendered. Saving right away waits for the delayed options.
+    const article = await Article.query().insert({ title: 'Old' })
+    await openArticle(page, url, article)
+    await page.getByRole('button', { name: 'Save', exact: true }).click()
+    await expect
+      .poll(async () => {
+        const stored = await Article.query().findById(article.id)
+        return { category: stored?.category, topic: stored?.topic }
+      })
+      .toEqual({ category: 'news', topic: 'politics' })
+  })
+
+  test('reselects unrendered options when dependencies change', async ({
+    page,
+    url
+  }) => {
+    const article = await Article.query().insert({
+      title: 'Old',
+      category: 'news',
+      topic: 'economy'
+    })
+    await openArticle(page, url, article)
+    const category = page.getByLabel('Category', { exact: true })
+    await expect(category).toHaveValue('news')
+    await category.selectOption({ label: 'Sports' })
+    await page.getByRole('button', { name: 'Save', exact: true }).click()
+    await expect
+      .poll(async () => {
+        const stored = await Article.query().findById(article.id)
+        return { category: stored?.category, topic: stored?.topic }
+      })
+      .toEqual({ category: 'sports', topic: 'football' })
+  })
 })

@@ -5,6 +5,47 @@ import { createWidgetView } from '../../utils/views.js'
 // of their own, so their keys are `never`.
 type ArticleItem = Article & { permalink?: string | null; seo: never }
 
+type Option = { label: string; value: string }
+
+const categoryOptions: Option[] = [
+  { label: 'News', value: 'news' },
+  { label: 'Sports', value: 'sports' }
+]
+
+const topicOptionsByCategory: Record<string, Option[]> = {
+  news: [
+    { label: 'Politics', value: 'politics' },
+    { label: 'Economy', value: 'economy' }
+  ],
+  sports: [
+    { label: 'Football', value: 'football' },
+    { label: 'Tennis', value: 'tennis' }
+  ]
+}
+
+// Delays loading options, so that saving right after opening an article has
+// to wait for them.
+async function loadDelayed<T>(value: T): Promise<T> {
+  await new Promise(resolve => setTimeout(resolve, 500))
+  return value
+}
+
+// Like lineto's `getValidOrDefaultOption()`: Keeps valid values, and selects
+// the first option otherwise, once the options are loaded.
+function getValidOrFirstOption({
+  value,
+  options
+}: {
+  value: string | null | undefined
+  options?: Option[]
+}) {
+  return options
+    ? value && options.some(option => option.value === value)
+      ? value
+      : (options[0]?.value ?? null)
+    : value
+}
+
 export const articles = createWidgetView<ArticleItem>(
   'Article',
   'articles',
@@ -43,6 +84,12 @@ export const articles = createWidgetView<ArticleItem>(
               },
               compute: ({ value, options }) =>
                 value ?? options?.[0]?.value ?? undefined
+            },
+            category: {
+              type: 'select',
+              label: 'Category',
+              options: { data: () => loadDelayed(categoryOptions) },
+              compute: getValidOrFirstOption
             }
           }
         },
@@ -68,6 +115,23 @@ export const articles = createWidgetView<ArticleItem>(
                     const { title } = item
                     return async () => title?.length ?? null
                   }
+                },
+                // Depends on the computed `category` through its options,
+                // loaded with the curried pattern: The outer function tracks
+                // `category`, the returned one loads the options.
+                topic: {
+                  type: 'select',
+                  label: 'Topic',
+                  options: {
+                    data: ({ item }) => {
+                      const { category } = item
+                      return () =>
+                        loadDelayed(
+                          category ? topicOptionsByCategory[category] : []
+                        )
+                    }
+                  },
+                  compute: getValidOrFirstOption
                 }
               }
             }

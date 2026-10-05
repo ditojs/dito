@@ -7,6 +7,8 @@ export interface Article {
   slug?: string | null
   titleLength?: number | null
   status?: string | null
+  category?: string | null
+  topic?: string | null
 }
 
 export class Article extends Model {
@@ -14,6 +16,8 @@ export class Article extends Model {
     title: { type: 'string', required: true },
     slug: { type: 'string', nullable: true },
     titleLength: { type: 'integer', nullable: true },
-    status: { type: 'string', nullable: true }
+    status: { type: 'string', nullable: true },
+    category: { type: 'string', nullable: true },
+    topic: { type: 'string', nullable: true }
   }
 }
