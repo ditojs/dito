@@ -343,7 +343,7 @@ export function processData(schema, sourceSchema, data, dataPath, {
       data,
       name,
       () =>
-        new DitoContext(component, {
+        DitoContext.createForSchema(component, {
           schema,
           name,
           data,

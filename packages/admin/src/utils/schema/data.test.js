@@ -304,6 +304,33 @@ describe('processData()', () => {
     expect(compute).not.toHaveBeenCalled()
   })
 
+  it('provides the values of missing components to their callbacks', () => {
+    // Reading `value` in callbacks reads it from the data, not through the
+    // data path from the root data, which doesn't hold missing values.
+    const schema = {
+      type: 'form',
+      components: {
+        items: {
+          type: 'list',
+          form: {
+            type: 'form',
+            components: {
+              status: { type: 'text', default: ({ value }) => value ?? 'New' }
+            }
+          }
+        }
+      }
+    }
+    const data = { items: [{}] }
+    expect(
+      processData(schema, { type: 'list' }, data, '', {
+        component: {},
+        rootData: data,
+        target: 'server'
+      })
+    ).toEqual({ items: [{ status: 'New' }] })
+  })
+
   it('processes the primitive values of lists with `wrapPrimitives`', () => {
     const dataPaths = []
     const prices = {
