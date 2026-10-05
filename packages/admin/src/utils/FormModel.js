@@ -13,6 +13,8 @@ import { isNested, isSourceWithResource } from './schema/structure.js'
 import { isEmptySchema } from './schema/lookup.js'
 import {
   shouldRenderSchema,
+  shouldSetDefaultValue,
+  getDefaultValue,
   initializeData,
   computeValue,
   hasValueFromDataSchema,
@@ -23,9 +25,10 @@ import {
 // FormModel holds the state of the data edited by a form, view or dialog that
 // is derived from schema and data, independently of what is rendered:
 //
-// - Missing values are set to their defaults when the data is set up, except
-//   the values of components with `compute()`, which fall back to their
-//   defaults when `compute()` doesn't return a value, unlike in new data, see
+// - Missing values are set to their defaults when the data is set up, and when
+//   they go missing later, e.g. in items that code adds, except the values of
+//   components with `compute()`, which fall back to their defaults when
+//   `compute()` doesn't return a value, unlike in new data, see
 //   `initializeData()`.
 // - The items of lists with `orderKey` are numbered when the data is set up,
 //   which doesn't make the data dirty.
@@ -94,10 +97,17 @@ export class FormModel {
       // The entries are read through a computed property, so that the watchers
       // of the entries can check synchronously whether their entry is still
       // current, see `createComputedValueScope()`.
-      this.computedValueEntries = computed(() => this.getComputedValueEntries())
+      this.dataEntries = computed(() => this.getDataEntries())
       watch(
-        () => this.computedValueEntries.value,
+        () => this.dataEntries.value.computedValueEntries,
         entries => this.updateComputedValueRecords(entries),
+        { immediate: true }
+      )
+      // Values that go missing after the data was set up, e.g. in items that
+      // code adds, get their defaults too:
+      watch(
+        () => this.dataEntries.value.entriesWithMissingValues,
+        entries => this.setDefaultValues(entries),
         { immediate: true }
       )
       if (getSourceSchema) {
@@ -293,15 +303,17 @@ export class FormModel {
     }
   }
 
-  // Returns the entries of `processSchemaData()` for all components with
-  // computed values whose `if` doesn't evaluate to `false`, by component path.
-  // Called by a computed property, so that it runs again when the data
-  // structure changes, e.g. when list items are added or removed, or when `if`
-  // conditions change.
-  getComputedValueEntries() {
+  // Walks the data and returns the entries of `processSchemaData()` of the
+  // components whose `if` doesn't evaluate to `false`: the ones with computed
+  // values, by component path, and the ones whose values are missing. Called
+  // by a computed property, so that it runs again when the data structure
+  // changes, e.g. when list items are added or removed, values go missing, or
+  // `if` conditions change.
+  getDataEntries() {
     const schema = this.getSchema()
     const data = this.getData()
-    const entries = new Map()
+    const computedValueEntries = new Map()
+    const entriesWithMissingValues = []
     if (data && !isEmptySchema(schema)) {
       processSchemaData(schema, data, {
         dataPath: this.dataPath,
@@ -312,13 +324,43 @@ export class FormModel {
         ),
         before: entry => {
           if (hasComputedValueSource(entry.schema)) {
-            entries.set(entry.componentPath, entry)
+            computedValueEntries.set(entry.componentPath, entry)
+          }
+          if (this.shouldSetDefaultValue(entry)) {
+            entriesWithMissingValues.push(entry)
           }
         },
         options: { component: this.component, rootData: this.rootData }
       })
     }
-    return entries
+    return { computedValueEntries, entriesWithMissingValues }
+  }
+
+  // Returns whether the value of the entry is missing and needs its default.
+  // The model writes the values of components with `compute()`, including
+  // their defaults, see `computeValue()`.
+  shouldSetDefaultValue(entry) {
+    const { schema, data, name } = entry
+    return shouldSetDefaultValue(
+      schema,
+      data,
+      name,
+      () => this.createEntryContext(entry),
+      { shouldSetDefaultsOfComponentsWithCompute: false }
+    )
+  }
+
+  // Sets the defaults of the values of the entries, unless they were set in
+  // the meantime.
+  setDefaultValues(entries) {
+    for (const entry of entries) {
+      if (this.shouldSetDefaultValue(entry)) {
+        const { schema, data, name } = entry
+        data[name] = getDefaultValue(schema, () =>
+          this.createEntryContext(entry)
+        )
+      }
+    }
   }
 
   // Keeps the records of the components that are still present with the same
@@ -395,9 +437,10 @@ export class FormModel {
   }
 
   // Returns whether the entry is still one of the current entries, with the
-  // same schema and data, see `getComputedValueEntries()`.
+  // same schema and data, see `getDataEntries()`.
   isEntryCurrent({ componentPath, schema, data }) {
-    const currentEntry = this.computedValueEntries.value.get(componentPath)
+    const currentEntry =
+      this.dataEntries.value.computedValueEntries.get(componentPath)
     return currentEntry?.schema === schema && currentEntry.data === data
   }
 

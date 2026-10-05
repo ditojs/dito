@@ -151,6 +151,22 @@ export function getMultipleValue(schema) {
 }
 
 /**
+ * Returns whether the value of the component described by `schema` and `name`
+ * is missing in `data` and needs its default, see `initializeData()`.
+ * `shouldSetDefaultsOfComponentsWithCompute` decides for components with
+ * `compute()`, which may derive their missing values instead.
+ */
+export function shouldSetDefaultValue(schema, data, name, context, {
+  shouldSetDefaultsOfComponentsWithCompute = true
+} = {}) {
+  return (
+    (shouldSetDefaultsOfComponentsWithCompute || !schema.compute) &&
+    isMissingValue(schema, data, name, context) &&
+    !shouldIgnoreMissingValue(schema, context)
+  )
+}
+
+/**
  * Initializes `data` for the components of `schema`: Sets missing values to
  * their defaults, so they can be correctly watched for changes, and numbers
  * the items of lists by their order key, see `updateOrder()`, so that their
@@ -177,11 +193,14 @@ export function initializeData(schema, data = {}, component, {
         dataPath,
         rootData
       })
-    if (
-      (shouldSetDefaultsOfComponentsWithCompute || !schema.compute) &&
-      isMissingValue(schema, data, name, context) &&
-      !shouldIgnoreMissingValue(schema, context)
-    ) {
+    const shouldSetDefault = shouldSetDefaultValue(
+      schema,
+      data,
+      name,
+      context,
+      { shouldSetDefaultsOfComponentsWithCompute }
+    )
+    if (shouldSetDefault) {
       data[name] = getDefaultValue(schema, context)
     }
     if (hasItemsNumberedByOrderKey(schema) && isArray(data[name])) {
@@ -203,8 +222,9 @@ export function initializeData(schema, data = {}, component, {
  * value in `data`, or its default if it's missing. Never writes into `data`:
  * Computed values, including the defaults of components with `compute()`, are
  * written by `FormModel`, and other defaults when the data is set up, see
- * `initializeData()`. If provided, `getOptions()` returns the
- * options for `context.options`, called only when they're read.
+ * `initializeData()`, or when they go missing later, see `FormModel`. If
+ * provided, `getOptions()` returns the options for `context.options`, called
+ * only when they're read.
  */
 export function computeValue(schema, data, name, dataPath, {
   component = null,

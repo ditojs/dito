@@ -63,6 +63,33 @@ describe('FormModel', () => {
     expect(dataRef.value).toEqual({})
   })
 
+  it('sets the defaults of values that go missing later', async () => {
+    // E.g. items that code adds, in which the components edit the defaults.
+    const schema = {
+      type: 'form',
+      components: {
+        chapters: {
+          type: 'list',
+          form: {
+            type: 'form',
+            components: {
+              title: { type: 'text' },
+              status: { type: 'text', default: 'draft' }
+            }
+          }
+        }
+      }
+    }
+    const { formModel, data } = createFormModel(schema, { chapters: [] })
+    data.chapters.push({ title: 'One' })
+    await nextTick()
+    expect(data.chapters).toEqual([{ title: 'One', status: 'draft' }])
+    delete data.chapters[0].status
+    await nextTick()
+    expect(data.chapters[0].status).toBe('draft')
+    formModel.stop()
+  })
+
   it('sets the defaults of replaced data', async () => {
     const schema = {
       type: 'form',
