@@ -238,8 +238,57 @@ test.describe('nested validation', () => {
     await (await dialog).dismiss()
   })
 
-  // FIXME: Requires `componentPath`, see the form model roadmap: two lists in
-  // two tabs edit the same data with different forms, and errors go to the
-  // one whose form can display the error's data path.
-  test.fixme('shows server errors in the view that can display them', () => {})
+  test.describe('two lists of the same data in two tabs', () => {
+    // See `bookOutlines` in `views.ts`: The lists edit the same chapters with
+    // different forms, and only the one in the Content tab displays `title`.
+
+    async function openBookOutline(page: Page, url: string, book: Book) {
+      await page.goto(`${url}/admin/book-outlines/${book.id}`)
+      await expect(getTab(page, 'Outline')).toBeVisible()
+    }
+
+    function getTab(page: Page, label: string) {
+      return page.getByRole('tab', { name: label, exact: true })
+    }
+
+    function getTabPanel(page: Page, label: string) {
+      return page.getByRole('tabpanel', { name: label, exact: true })
+    }
+
+    test('shows server errors in the view that can display them', async ({
+      page,
+      url
+    }) => {
+      const book = await seedBook({
+        chapters: [{ title: 'lower', summary: 'Text' }]
+      })
+      await openBookOutline(page, url, book)
+      await saveInvalid(page)
+      // The Content tab is selected to display the error.
+      await expect(page).toHaveURL(/#content$/)
+      const content = getTabPanel(page, 'Content')
+      await expect(getErrors(content, 'Title')).toContainText(message)
+      await getTab(page, 'Outline').click()
+      const outline = getTabPanel(page, 'Outline')
+      await expect(outline.getByLabel('Summary', { exact: true })).toBeVisible()
+      await expect(outline.locator('.dito-errors')).toHaveCount(0)
+    })
+
+    test('shows errors in all views that can display them', async ({
+      page,
+      url
+    }) => {
+      const book = await seedBook({ chapters: [{ title: 'Valid' }] })
+      await openBookOutline(page, url, book)
+      await getTab(page, 'Content').click()
+      await page.getByRole('button', { name: 'Save', exact: true }).click()
+      // The Outline tab comes first, so it's selected to display the error.
+      await expect(page).toHaveURL(/#outline$/)
+      await expect(getErrors(getTabPanel(page, 'Outline'), 'Summary'))
+        .toContainText(/required/)
+      await getTab(page, 'Content').click()
+      await expect(getErrors(getTabPanel(page, 'Content'), 'Summary'))
+        .toContainText(/required/)
+    })
+  })
 })

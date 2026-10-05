@@ -99,3 +99,60 @@ export const books = createWidgetView<BookItem>(
     }
   }
 )
+
+const summary = { type: 'text', label: 'Summary', required: true } as const
+
+// Two lists edit the same chapters in two tabs, with different forms: Only
+// the one in the Content tab displays `title`. Their items are collapsed, so
+// errors need to reveal them.
+const chapters = {
+  type: 'list',
+  label: 'Chapters',
+  inlined: true,
+  collapsible: true,
+  collapsed: true
+} as const
+
+export const bookOutlines = createWidgetView<BookItem>(
+  'Book',
+  'books',
+  {},
+  {
+    columns: { title: { label: 'Title' } },
+    form: {
+      type: 'form',
+      tabs: {
+        outline: {
+          type: 'tab',
+          label: 'Outline',
+          components: {
+            chapters: {
+              ...chapters,
+              form: {
+                type: 'form',
+                label: 'Chapter',
+                components: { summary }
+              }
+            }
+          }
+        },
+        // Processed after the Outline tab, so its form decides the processed
+        // data of the chapters, which includes `title`.
+        content: {
+          type: 'tab',
+          label: 'Content',
+          components: {
+            chapters: {
+              ...chapters,
+              form: {
+                type: 'form',
+                label: 'Chapter',
+                components: { title, summary }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+)
