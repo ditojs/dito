@@ -3,7 +3,7 @@ import ContextMixin from './ContextMixin.js'
 import ValidationMixin from './ValidationMixin.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
 import { getValidations } from '../utils/schema/validation.js'
-import { asArray, camelize } from '@ditojs/utils'
+import { asArray, camelize, equals } from '@ditojs/utils'
 
 // @vue/component
 export default {
@@ -163,6 +163,17 @@ export default {
   },
 
   watch: {
+    value(value) {
+      // Displayed errors refer to the value that they were added for, see
+      // `addError()`, so they're cleared when the value changes, whether
+      // through input or by code, e.g. by a button that generates a value.
+      // Errors that were added for the new value already, e.g. by `validate()`
+      // on blur right after the change, are kept.
+      if (this.hasErrors && !equals(value, this.valueWithErrors)) {
+        this.clearErrors()
+      }
+    },
+
     componentPath(componentPath, oldComponentPath) {
       // Component paths change when list items move, see `_registerEntry()`.
       this._registerWithSchemaComponent(false, oldComponentPath)

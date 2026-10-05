@@ -434,11 +434,9 @@ export default {
       // Support two formats for list data:
       // - Array: `[...]`
       // - Object: `{ results: [...], total }`, see `unwrapListData()`
-      if (
-        !data ||
-        this.isListSource && isArray(data) ||
-        this.isObjectSource && isObject(data)
-      ) {
+      if (this.isListSource && isArray(data)) {
+        this.setLoadedListItems(data)
+      } else if (!data || this.isObjectSource && isObject(data)) {
         this.value = data
       } else if (this.unwrapListData(data)) {
         // The format didn't match, see if we received a `{ results, total }`
@@ -447,8 +445,9 @@ export default {
       } else if (isObject(data) && this.isInView) {
         // The controller is sending data for a full multi-component view,
         // including the nested list data.
-        this.viewComponent.setData(data)
+        return this.viewComponent.setData(data)
       }
+      return this.value
     },
 
     isListResults(data) {
@@ -473,9 +472,18 @@ export default {
         // If @ditojs/server sends data in the form of `{ results, total }`
         // replace the value with result, but remember the total in the store.
         this.total = data.total
-        this.value = data.results
+        this.setLoadedListItems(data.results)
         return this.value
       }
+    },
+
+    // Sets the list items loaded through the source's resource, numbered by
+    // their order key with the offset of the loaded page, so that their order
+    // can be stored even if it never changes, e.g. by a button that saves the
+    // current order. Lists in the data of forms, views and dialogs are
+    // numbered by `FormModel`, see `initializeData()`.
+    setLoadedListItems(items) {
+      this.value = updateOrder(this.sourceSchema, items, this.paginationRange)
     },
 
     createItem(schema, type, index = null) {

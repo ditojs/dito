@@ -45,11 +45,11 @@ component.dito-panel(
 <script>
 import { isFunction } from '@ditojs/utils'
 import DitoComponent from '../DitoComponent.js'
+import DitoContext from '../DitoContext.js'
 import ContextMixin from '../mixins/ContextMixin.js'
 import ValidatorMixin from '../mixins/ValidatorMixin.js'
 import { getButtonSchemas } from '../utils/schema/lookup.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
-import { appendDataPath, getLastDataPathToken } from '../utils/data.js'
 
 // @vue/component
 export default DitoComponent.component('DitoPanel', {
@@ -69,7 +69,9 @@ export default DitoComponent.component('DitoPanel', {
     meta: { type: Object, required: true },
     store: { type: Object, required: true },
     disabled: { type: Boolean, required: true },
-    panelTabComponent: { type: Object, default: null }
+    panelTabComponent: { type: Object, default: null },
+    // The component path of the panel's entry, see `getPanelEntry()`:
+    panelComponentPath: { type: String, required: true }
   },
 
   data() {
@@ -80,8 +82,21 @@ export default DitoComponent.component('DitoPanel', {
 
   computed: {
     nested() {
-      // For `ContextMixin`:
+      // For `ContextMixin`: The panel's address, `dataPath`, points into the
+      // item that it displays, see `getPanelEntry()`.
       return true
+    },
+
+    // @override ContextMixin.context
+    context() {
+      // Evaluate the callbacks of the panel and of its components with the
+      // data that the panel displays: its own data, e.g. of `$filters`, or the
+      // data of its schema component, at that component's data path.
+      return new DitoContext(this, {
+        nested: false,
+        data: this.panelData,
+        dataPath: this.panelDataPath
+      })
     },
 
     panelComponent() {
@@ -89,12 +104,7 @@ export default DitoComponent.component('DitoPanel', {
     },
 
     componentPath() {
-      // Add the panel's name, the last token of its data path, see
-      // `getPanelEntry()`, also for panels that share the data of their schema.
-      return appendDataPath(
-        this.parentComponent.componentPath,
-        getLastDataPathToken(this.dataPath)
-      )
+      return this.panelComponentPath
     },
 
     tabComponent() {

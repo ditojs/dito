@@ -148,6 +148,7 @@ export default DitoComponent.component('DitoView', {
   methods: {
     setData(data) {
       this.data = data
+      return this.data
     },
 
     getChildPath(path) {

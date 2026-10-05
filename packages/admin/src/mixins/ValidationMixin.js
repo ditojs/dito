@@ -10,7 +10,9 @@ export default {
       isDirty: false,
       isValidated: false,
       isValid: false,
-      errors: null
+      errors: null,
+      // The value that the displayed errors were added for, see `addError()`.
+      valueWithErrors: undefined
     }
   },
 
@@ -63,6 +65,7 @@ export default {
 
     addError(error, addLabel = false) {
       this.errors ||= []
+      this.valueWithErrors = this.value
       if (addLabel) {
         const label = this.label || this.placeholder || this.name
         error = `The ${label} field ${error}.`

@@ -2,6 +2,7 @@ import { vi } from 'vitest'
 import { reactive, ref, toRaw, nextTick } from 'vue'
 import { registerTypeComponent } from './schema/types.js'
 import { FormModel } from './FormModel.js'
+import { updateOrder } from './schema/data.js'
 
 // Register minimal type options, as the actual type components can't be
 // imported without a Vue SFC compiler:
@@ -21,6 +22,11 @@ registerTypeComponent('list', {
 registerTypeComponent('object', {
   defaultNested: true,
   getSourceType: () => 'object'
+})
+// Like `DitoTypeUpload`, which leaves out files that aren't uploaded yet:
+registerTypeComponent('upload', {
+  defaultNested: true,
+  processValue: ({ value }) => (value?.isUploaded ? value.name : null)
 })
 
 function createFormModel(schema, data, { getSourceSchema } = {}) {
@@ -148,6 +154,29 @@ describe('FormModel', () => {
     // equal and therefore not written again.
     expect(compute).toHaveBeenCalledTimes(2)
     expect(data.entries).toEqual([{ name: 'One', upper: 'ONE' }])
+    formModel.stop()
+  })
+
+  it("doesn't recompute values whose `compute()` doesn't read them", async () => {
+    // Like lineto's access tokens, which are random for each call.
+    let callCount = 0
+    const schema = {
+      type: 'form',
+      components: {
+        title: { type: 'text' },
+        token: {
+          type: 'text',
+          compute: ({ item }) => `${item.title}-${++callCount}`
+        }
+      }
+    }
+    const { formModel, data } = createFormModel(schema, { title: 'Hello' })
+    expect(data.token).toBe('Hello-1')
+    data.title = 'Changed'
+    await nextTick()
+    expect(data.token).toBe('Changed-2')
+    await nextTick()
+    expect(callCount).toBe(2)
     formModel.stop()
   })
 
@@ -473,6 +502,23 @@ describe('FormModel', () => {
       formModel.stop()
     })
 
+    it("doesn't compare replaced data with the snapshot of its predecessor", async () => {
+      const schema = {
+        type: 'form',
+        components: { title: { type: 'text' } }
+      }
+      const { formModel, dataRef } = createFormModel(
+        schema,
+        { title: 'Hello' },
+        { getSourceSchema }
+      )
+      await waitForProcessedDataSnapshot(formModel)
+      // Until its own snapshot is taken, the replaced data isn't dirty:
+      dataRef.value = reactive({ title: 'Saved' })
+      expect(formModel.isDirty).toBe(false)
+      formModel.stop()
+    })
+
     it('detects in-place changes of nested values against the snapshot', async () => {
       const schema = {
         type: 'form',
@@ -518,6 +564,211 @@ describe('FormModel', () => {
       data.search = 'Changed'
       expect(formModel.isDirty).toBe(false)
       formModel.stop()
+    })
+
+    it("doesn't call `compute()` and `process()`", async () => {
+      const compute = vi.fn(() => 'Computed')
+      const process = vi.fn(({ value }) => value)
+      const schema = {
+        type: 'form',
+        components: {
+          title: { type: 'text', process },
+          subtitle: { type: 'text', compute }
+        }
+      }
+      const { formModel, data } = createFormModel(
+        schema,
+        { title: 'Hello' },
+        { getSourceSchema }
+      )
+      await waitForProcessedDataSnapshot(formModel)
+      const computeCallCount = compute.mock.calls.length
+      data.title = 'Changed'
+      expect(formModel.isDirty).toBe(true)
+      expect(compute).toHaveBeenCalledTimes(computeCallCount)
+      expect(process).not.toHaveBeenCalled()
+      formModel.stop()
+    })
+
+    it('reads the dirty state of data that `process()` rejects', async () => {
+      // Data that is edited isn't validated yet, see `processData()`.
+      const schema = {
+        type: 'form',
+        components: {
+          version: {
+            type: 'text',
+            process: ({ value }) => value.split('.').map(Number)
+          }
+        }
+      }
+      const { formModel, data } = createFormModel(
+        schema,
+        { version: '1.0' },
+        { getSourceSchema }
+      )
+      await waitForProcessedDataSnapshot(formModel)
+      data.version = null
+      expect(formModel.isDirty).toBe(true)
+      data.version = '1.0'
+      expect(formModel.isDirty).toBe(false)
+      formModel.stop()
+    })
+
+    it('counts changes of excluded values that `process()` stores', async () => {
+      const schema = {
+        type: 'form',
+        components: {
+          tagsText: {
+            type: 'text',
+            exclude: true,
+            process: ({ value, processedItem }) => {
+              processedItem.tags = value.split(',')
+            }
+          }
+        }
+      }
+      const { formModel, data } = createFormModel(
+        schema,
+        { tagsText: 'a' },
+        { getSourceSchema }
+      )
+      await waitForProcessedDataSnapshot(formModel)
+      data.tagsText = 'a,b'
+      expect(formModel.isDirty).toBe(true)
+      data.tagsText = 'a'
+      expect(formModel.isDirty).toBe(false)
+      formModel.stop()
+    })
+
+    it('compares values as processed by their types', async () => {
+      const schema = {
+        type: 'form',
+        components: { file: { type: 'upload' } }
+      }
+      const { formModel, data } = createFormModel(
+        schema,
+        { file: null },
+        { getSourceSchema }
+      )
+      await waitForProcessedDataSnapshot(formModel)
+      data.file = { name: 'font.zip', isUploaded: false }
+      expect(formModel.isDirty).toBe(false)
+      data.file.isUploaded = true
+      expect(formModel.isDirty).toBe(true)
+      formModel.stop()
+    })
+
+    it("doesn't count order keys numbered on setup as changes", async () => {
+      const schema = {
+        type: 'form',
+        components: {
+          items: {
+            type: 'list',
+            orderKey: 'order',
+            form: { type: 'form', components: { name: { type: 'text' } } }
+          }
+        }
+      }
+      const { formModel, dataRef, data } = createFormModel(
+        schema,
+        {
+          items: [
+            { id: 1, name: 'A', order: 4 },
+            { id: 2, name: 'B', order: 7 }
+          ]
+        },
+        { getSourceSchema }
+      )
+      await waitForProcessedDataSnapshot(formModel)
+      expect(data.items.map(item => item.order)).toEqual([0, 1])
+      expect(formModel.isDirty).toBe(false)
+      data.items.reverse()
+      updateOrder(schema.components.items, data.items)
+      expect(formModel.isDirty).toBe(true)
+      // Replaced data is numbered too.
+      dataRef.value = reactive({ items: [{ id: 3, name: 'C', order: 8 }] })
+      await waitForProcessedDataSnapshot(formModel)
+      expect(dataRef.value.items[0].order).toBe(0)
+      expect(formModel.isDirty).toBe(false)
+      formModel.stop()
+    })
+
+    describe('applyCleanChanges()', () => {
+      const schema = {
+        type: 'form',
+        components: {
+          title: { type: 'text' },
+          chapters: {
+            type: 'list',
+            form: { type: 'form', components: { title: { type: 'text' } } }
+          }
+        }
+      }
+
+      it("doesn't count clean changes, but other changes", async () => {
+        const { formModel, data } = createFormModel(
+          schema,
+          { title: 'Hello', chapters: [{ title: 'One' }] },
+          { getSourceSchema }
+        )
+        await waitForProcessedDataSnapshot(formModel)
+        data.title = 'Changed'
+        await formModel.applyCleanChanges(() => {
+          data.chapters[0].title = 'Saved'
+          data.chapters.push({ title: 'Two' })
+        })
+        expect(formModel.isDirty).toBe(true)
+        data.title = 'Hello'
+        expect(formModel.isDirty).toBe(false)
+        data.chapters[1].title = 'Changed'
+        expect(formModel.isDirty).toBe(true)
+        formModel.stop()
+      })
+
+      it('keeps values derived from clean changes clean', async () => {
+        const { formModel, data } = createFormModel(
+          { type: 'form', components: { title: { type: 'text' }, slug } },
+          { title: 'Hello' },
+          { getSourceSchema }
+        )
+        await waitForProcessedDataSnapshot(formModel)
+        await formModel.applyCleanChanges(() => {
+          data.title = 'Saved Title'
+        })
+        expect(data.slug).toBe('saved-title')
+        expect(formModel.isDirty).toBe(false)
+        formModel.stop()
+      })
+
+      it('takes over clean changes of nested values in place', async () => {
+        // Values without forms are processed as they are, sharing their
+        // nested values with the data.
+        const { formModel, data } = createFormModel(
+          { type: 'form', components: { settings: { type: 'text' } } },
+          { settings: { color: 'red' } },
+          { getSourceSchema }
+        )
+        await waitForProcessedDataSnapshot(formModel)
+        await formModel.applyCleanChanges(() => {
+          data.settings.color = 'blue'
+        })
+        expect(formModel.isDirty).toBe(false)
+        formModel.stop()
+      })
+
+      it('includes clean changes in snapshots that are pending', async () => {
+        const { formModel, data } = createFormModel(
+          schema,
+          { title: 'Hello', chapters: [] },
+          { getSourceSchema }
+        )
+        await formModel.applyCleanChanges(() => {
+          data.title = 'Saved'
+        })
+        await waitForProcessedDataSnapshot(formModel)
+        expect(formModel.isDirty).toBe(false)
+        formModel.stop()
+      })
     })
 
     it("isn't tracked without a source schema", async () => {

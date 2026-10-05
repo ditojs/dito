@@ -257,6 +257,10 @@ export default DitoComponent.component('DitoContainer', {
         this.api,
         this.schema,
         this.dataPath,
+        // The panel of the type is addressed relative to the data path, which
+        // unnested components don't add their name to:
+        this.nested ? this.componentPath : this.parentComponent.componentPath,
+        this.componentPath,
         this.$refs.component,
         this.tabComponent
       )

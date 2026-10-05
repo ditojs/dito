@@ -34,6 +34,9 @@ export default DitoTypeComponent.register('section', {
   // their own value. Use a callback to override `defaultValue: null`.
   defaultValue: ({ schema }) => (schema.nested ? {} : undefined),
   ignoreMissingValue: ({ schema }) => !schema.nested && !('default' in schema),
+  // The object of nested sections can't be `null`, unlike the value of the
+  // `object` type, where `null` means that there's no object.
+  treatNullAsMissing: ({ schema }) => !!schema.nested,
   defaultNested: false,
   generateLabel: false,
 

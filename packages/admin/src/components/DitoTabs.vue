@@ -1,19 +1,16 @@
 <template lang="pug">
 .dito-tabs(role="tablist")
-  template(
+  a.dito-tabs__link(
     v-for="(tabSchema, key) in tabs"
-  )
-    a.dito-tabs__link(
-      v-if="shouldRenderSchema(tabSchema)"
-      :id="getTabId(key)"
-      :key="key"
-      role="tab"
-      :aria-selected="modelValue === key"
-      :aria-controls="getTabPanelId(key)"
-      :tabindex="modelValue === key ? 0 : -1"
-      :class="{ 'dito-tabs__link--active': modelValue === key }"
-      @click="$emit('update:modelValue', key)"
-    ) {{ getLabel(tabSchema, key) }}
+    :id="getTabId(key)"
+    :key="key"
+    role="tab"
+    :aria-selected="modelValue === key"
+    :aria-controls="getTabPanelId(key)"
+    :tabindex="modelValue === key ? 0 : -1"
+    :class="{ 'dito-tabs__link--active': modelValue === key }"
+    @click="$emit('update:modelValue', key)"
+  ) {{ getLabel(tabSchema, key) }}
 </template>
 
 <script>
@@ -28,12 +25,14 @@ export default DitoComponent.component('DitoTabs', {
   },
 
   methods: {
+    // Tabs are identified through the component path of their schema, like in
+    // `DitoPane.tabId` and `tabPanelId`.
     getTabId(key) {
-      return `${this.componentPath}-tab-${key}`
+      return `${this.schemaComponent.componentPath}-tab-${key}`
     },
 
     getTabPanelId(key) {
-      return `${this.componentPath}-tabpanel-${key}`
+      return `${this.schemaComponent.componentPath}-tabpanel-${key}`
     }
   }
 })

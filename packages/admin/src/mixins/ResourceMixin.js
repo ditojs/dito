@@ -1,6 +1,6 @@
 import ItemMixin from './ItemMixin.js'
 import LoadingMixin from './LoadingMixin.js'
-import { setDefaultValues } from '../utils/schema/data.js'
+import { initializeData } from '../utils/schema/data.js'
 import { assignDeeply, isObject, isString, labelize } from '@ditojs/utils'
 import { getResource } from '../utils/resource.js'
 import DitoContext from '../DitoContext.js'
@@ -160,9 +160,12 @@ export default {
       this.loadedData = null
     },
 
+    // Sets the loaded data and returns it as the reactive data of the
+    // component, which can be modified to update it.
     // @overridable
     setData(data) {
       this.loadedData = data
+      return this.loadedData
     },
 
     setupData() {
@@ -196,7 +199,7 @@ export default {
     },
 
     createData(schema, type) {
-      return setDefaultValues(schema, type ? { type } : {}, this)
+      return initializeData(schema, type ? { type } : {}, this)
     },
 
     requestData() {

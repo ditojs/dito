@@ -156,4 +156,33 @@ describe('ListSchema', () => {
       }
     })
   })
+
+  it('accepts mutate', () => {
+    assertType<ListSchema<Entry>>({
+      type: 'list',
+      mutate: true
+    })
+  })
+
+  it('accepts wrapPrimitives as the key of wrapped values', () => {
+    assertType<ListSchema<Entry>>({
+      type: 'list',
+      wrapPrimitives: 'value'
+    })
+    // @ts-expect-error: wrapPrimitives is the key, not a flag
+    assertType<ListSchema<Entry>>({ type: 'list', wrapPrimitives: true })
+  })
+
+  it('types forms of primitive lists against the wrapped values', () => {
+    assertType<Components<{ prices: number[] }>>({
+      prices: {
+        type: 'list',
+        wrapPrimitives: 'price',
+        form: {
+          type: 'form',
+          components: { price: { type: 'number' } }
+        }
+      }
+    })
+  })
 })

@@ -176,16 +176,24 @@ export function getButtonSchemas(buttons) {
   )
 }
 
-export function getPanelEntry(schema, dataPath = null, tabComponent = null) {
+export function getPanelEntry(
+  schema,
+  dataPath = null,
+  componentPath = '',
+  tabComponent = null
+) {
   return schema
     ? {
         schema,
-        // If the panel provides its own name, append it to the dataPath.
-        // This is used e.g. for $filters panels.
+        // If the panel provides its own name, append it to the paths. This is
+        // used e.g. for $filters panels.
         dataPath:
           dataPath != null && schema.name
             ? appendDataPath(dataPath, schema.name)
             : dataPath,
+        componentPath: schema.name
+          ? appendDataPath(componentPath, schema.name)
+          : componentPath,
         tabComponent
       }
     : null
@@ -194,6 +202,7 @@ export function getPanelEntry(schema, dataPath = null, tabComponent = null) {
 export function getPanelEntries(
   panelSchemas,
   dataPath,
+  componentPath,
   tabComponent = null,
   panelEntries = []
 ) {
@@ -202,6 +211,7 @@ export function getPanelEntries(
       const entry = getPanelEntry(
         schema,
         appendDataPath(dataPath, key),
+        appendDataPath(componentPath, key),
         tabComponent
       )
       if (entry) {
@@ -212,10 +222,18 @@ export function getPanelEntries(
   return panelEntries
 }
 
+// Returns the entries of the panel that the type of the component described by
+// `schema` provides, and of the panels in `schema.panels`. The type's panel is
+// addressed relative to `dataPath` and its component path,
+// `dataPathComponentPath`, while the panels in `schema.panels` continue
+// `schemaComponentPath`, the component path of `schema` itself, which also
+// contains the names of unnested components.
 export function getAllPanelEntries(
   api,
   schema,
   dataPath,
+  dataPathComponentPath,
+  schemaComponentPath,
   component = null,
   tabComponent = null
 ) {
@@ -226,10 +244,23 @@ export function getAllPanelEntries(
     component
   )
   const panelEntries = panelSchema
-    ? [getPanelEntry(panelSchema, dataPath, tabComponent)]
+    ? [
+        getPanelEntry(
+          panelSchema,
+          dataPath,
+          dataPathComponentPath,
+          tabComponent
+        )
+      ]
     : []
   // Allow each component to provide its own set of panels, in
   // addition to the default one (e.g. getFiltersPanel(), $filters):
-  getPanelEntries(schema?.panels, dataPath, tabComponent, panelEntries)
+  getPanelEntries(
+    schema?.panels,
+    dataPath,
+    schemaComponentPath,
+    tabComponent,
+    panelEntries
+  )
   return panelEntries
 }

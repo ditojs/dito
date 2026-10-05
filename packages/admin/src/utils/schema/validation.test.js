@@ -17,6 +17,7 @@ registerTypeComponent('password', {
 registerTypeComponent('number', { ...NumberMixin, defaultNested: true })
 registerTypeComponent('integer', { ...NumberMixin, defaultNested: true })
 registerTypeComponent('section', { defaultNested: false })
+registerTypeComponent('panel', { defaultNested: false })
 registerTypeComponent('list', {
   defaultNested: true,
   getSourceType: () => 'list'
@@ -155,6 +156,21 @@ describe('getDataValidationErrors()', () => {
       }
     }
     expect(getDataValidationErrors(schema, { title: 'Title' })).toBe(null)
+  })
+
+  it('validates the components of panel components', () => {
+    // Panels share the data of their schema, like unnested sections.
+    const schema = {
+      components: {
+        links: {
+          type: 'panel',
+          components: { website: { type: 'text', required: true } }
+        }
+      }
+    }
+    expect(getDataValidationErrors(schema, { website: '' })).toEqual({
+      website: [required]
+    })
   })
 
   it('returns errors by data path, in the format of server errors', () => {

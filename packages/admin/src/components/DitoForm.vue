@@ -429,12 +429,22 @@ export default DitoComponent.component('DitoForm', {
     setData(data) {
       // setData() is called after submit when data has changed.
       if (this.isTransient) {
-        // For components with transient data, modify this.sourceData.
+        // For components with transient data, modify this.sourceData, and
+        // return the item stored there, as the form's own data is a copy.
         this.setSourceData(data)
+        return this.sourceItem
       } else {
         this.createdData = null
         this.loadedData = data
+        return this.data
       }
+    },
+
+    // Makes clean changes to the data, which don't make the form dirty, e.g. to
+    // apply what an action on the server already saved, see
+    // `FormModel.applyCleanChanges()`.
+    applyCleanChanges(makeChanges) {
+      return this.formModel.applyCleanChanges(makeChanges)
     },
 
     async cancel() {

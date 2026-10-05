@@ -9,12 +9,14 @@ import { Tag } from './Tag.js'
 export interface Widget {
   id: number
   name: string
+  size?: string | null
   tags?: Tag[]
 }
 
 export class Widget extends Model {
   static override properties: ModelProperties = {
-    name: { type: 'string', required: true }
+    name: { type: 'string', required: true },
+    size: { type: 'string', nullable: true }
   }
 
   static override relations: ModelRelations = {

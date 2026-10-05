@@ -79,6 +79,17 @@ export const books = createWidgetView<BookItem>(
           label: 'Details',
           components: {
             subtitle: { type: 'text', label: 'Subtitle' },
+            // Placed before `edition`, so that its error tooltip doesn't
+            // cover the button.
+            fillEdition: {
+              type: 'button',
+              text: 'Fill Edition',
+              events: {
+                click: ({ item }) => {
+                  item.edition = 'First'
+                }
+              }
+            },
             // Only required in the admin, not on the server.
             edition: { type: 'text', label: 'Edition', required: true },
             // Unnested, so `publisher` is stored on the book itself, and the

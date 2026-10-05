@@ -25,6 +25,7 @@ export default {
   generateLabel: true,
   excludeValue: false,
   ignoreMissingValue: null,
+  treatNullAsMissing: null,
   omitSpacing: false,
   getTypeValidations: null,
 

@@ -23,7 +23,7 @@
       v-if="['before', 'both'].includes(schema.break)"
     )
     DitoContainer(
-      v-if="shouldRenderSchema(schema)"
+      v-if="shouldRenderComponent(schema, nested, dataPath)"
       ref="containers"
       :key="nestedDataPath"
       :data-index="index"
@@ -47,9 +47,11 @@
 
 <script>
 import DitoComponent from '../DitoComponent.js'
+import DitoContext from '../DitoContext.js'
 import ContextMixin from '../mixins/ContextMixin.js'
 import { appendDataPath } from '../utils/data.js'
 import { isNested } from '../utils/schema/structure.js'
+import { shouldRenderSchema } from '../utils/schema/data.js'
 
 // @vue/component
 export default DitoComponent.component('DitoPane', {
@@ -134,12 +136,13 @@ export default DitoComponent.component('DitoPane', {
           // Share dataPath and store with parent if not nested:
           const nested = isNested(schema)
           const nestedDataPath = appendDataPath(this.dataPath, name)
+          const dataPath =
+            nested && !wrapPrimitives
+              ? nestedDataPath
+              : this.dataPath
           return {
             schema,
-            dataPath:
-              nested && !wrapPrimitives
-                ? nestedDataPath
-                : this.dataPath,
+            dataPath,
             nestedDataPath,
             nested,
             store: this.getChildStore(name)
@@ -232,6 +235,22 @@ export default DitoComponent.component('DitoPane', {
   },
 
   methods: {
+    shouldRenderComponent(schema, nested, dataPath) {
+      // Evaluate the component's `if` before it is rendered, with its own
+      // context, the same as once it is rendered, not with the pane's.
+      return shouldRenderSchema(
+        schema,
+        DitoContext.createForSchema(this, {
+          schema,
+          name: schema.name,
+          nested,
+          data: this.data,
+          dataPath,
+          rootData: this.rootData
+        })
+      )
+    },
+
     _register(add, componentPath = this.componentPath) {
       this.schemaComponent._registerPane(this, add, componentPath)
     },
@@ -244,7 +263,9 @@ export default DitoComponent.component('DitoPane', {
 
     onResizePane() {
       this.$nextTick(() => {
-        for (const container of this.$refs.containers) {
+        // The containers aren't rendered anymore if the pane was emptied or
+        // unmounted in the meantime.
+        for (const container of this.$refs.containers ?? []) {
           const node = container.$el
           const index = +node.dataset.index
           const bounds = node.getBoundingClientRect()

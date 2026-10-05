@@ -9,6 +9,14 @@ export interface Article {
   status?: string | null
   category?: string | null
   topic?: string | null
+  chooser?: {
+    source?: { topics?: { label: string; value: string }[] }
+    topic?: string | null
+  } | null
+  lines?: { amount?: number | null }[] | null
+  customFactor?: number | null
+  tags?: string[] | null
+  keywords?: (string | null)[]
 }
 
 export class Article extends Model {
@@ -18,6 +26,15 @@ export class Article extends Model {
     titleLength: { type: 'integer', nullable: true },
     status: { type: 'string', nullable: true },
     category: { type: 'string', nullable: true },
-    topic: { type: 'string', nullable: true }
+    topic: { type: 'string', nullable: true },
+    chooser: { type: 'object', nullable: true },
+    lines: { type: 'array', nullable: true, items: { type: 'object' } },
+    customFactor: { type: 'number', nullable: true },
+    tags: { type: 'array', nullable: true, items: { type: 'string' } },
+    keywords: {
+      type: 'array',
+      default: [],
+      items: { type: 'string', nullable: true }
+    }
   }
 }

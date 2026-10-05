@@ -114,11 +114,19 @@ export default {
       const parentComponentPath = parentComponent?.componentPath ?? ''
       const relativeDataPath = getRelativeDataPath(
         this.dataPath,
-        parentComponent?.dataPath
+        parentComponent?.dataPathForComponentPath
       )
       return relativeDataPath
         ? appendDataPath(parentComponentPath, relativeDataPath)
         : parentComponentPath
+    },
+
+    // The data path that `componentPath` corresponds to, which children
+    // compare their data path with: the component's own, or for components
+    // without data path, e.g. `DitoDraggable` between lists and their items,
+    // the one of their parent.
+    dataPathForComponentPath() {
+      return this.dataPath ?? this.parentComponent?.dataPathForComponentPath
     },
 
     // Use computed properties as links to injects, so DitoSchema can

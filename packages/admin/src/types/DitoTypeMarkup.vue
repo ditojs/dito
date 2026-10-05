@@ -251,8 +251,9 @@ export default DitoTypeComponent.register('markup', {
     const onFocus = () => this.onFocus()
 
     const onBlur = () => {
-      this.onBlur()
+      // Write the value first, so that validating on blur validates it.
       updateValue()
+      this.onBlur()
     }
 
     const onUpdate = () => {
@@ -339,7 +340,6 @@ export default DitoTypeComponent.register('markup', {
     async onClickLink(editor) {
       const attributes = await this.rootComponent.showDialog({
         components: {
-          DitoIcon,
           href: {
             type: 'url',
             label: 'Link',

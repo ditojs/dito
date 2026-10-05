@@ -1,6 +1,7 @@
 import { toRaw } from 'vue'
 import { getValueAtDataPath, isFunction } from '@ditojs/utils'
 import {
+  appendDataPath,
   getItemDataPath,
   getParentItemDataPath,
   getParentItem,
@@ -8,6 +9,7 @@ import {
   getLastDataPathName,
   getLastDataPathIndex
 } from './utils/data.js'
+import { isNested } from './utils/schema/structure.js'
 
 const { hasOwnProperty } = Object.prototype
 
@@ -79,6 +81,55 @@ export default class DitoContext {
     return context instanceof DitoContext
       ? context
       : new DitoContext(component, context)
+  }
+
+  // Creates the context of the component described by `schema` and `name` in
+  // `data`, e.g. to evaluate its `if` before it's rendered, the same way as
+  // once it's rendered. Its `value` is read from `data` only when it's used,
+  // so that watchers only depend on it if it's used, and missing values don't
+  // need to be resolved through the data path.
+  static createForSchema(component, {
+    schema,
+    name,
+    nested = isNested(schema),
+    data,
+    dataPath,
+    rootData
+  }) {
+    // Pass a function, so that the `value` getter isn't evaluated when the
+    // context is created.
+    return new DitoContext(component, () => ({
+      schema,
+      name,
+      nested,
+      data,
+      dataPath,
+      rootData,
+      get value() {
+        return name != null ? data?.[name] : undefined
+      }
+    }))
+  }
+
+  // Creates the context of a component of this context's schema, e.g. of a
+  // section, the same way as when that component is rendered: Its data is the
+  // value of this context's component if that is nested, or else the same
+  // data. The data path adds `name` if the child component is nested.
+  createChildContext(schema, name) {
+    const nested = isNested(schema)
+    // Contexts without a schema don't hold a value either, e.g. the ones of
+    // `DitoMenu` and `DitoPanels`, evaluating views and panels.
+    const holdsOwnValue = !!this.schema && isNested(this.schema)
+    return DitoContext.createForSchema(this.component, {
+      schema,
+      name,
+      nested,
+      // Read the value from the item that holds it rather than through the data
+      // path, as items that are being created aren't part of the root data.
+      data: holdsOwnValue ? this.item?.[this.name] : this.item,
+      dataPath: nested ? appendDataPath(this.dataPath, name) : this.dataPath,
+      rootData: this.rootItem
+    })
   }
 
   extend(object) {

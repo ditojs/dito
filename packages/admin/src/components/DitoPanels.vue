@@ -3,13 +3,14 @@
   v-if="panels.length > 0"
 )
   template(
-    v-for="{ schema, dataPath, tabComponent } in panels"
+    v-for="{ schema, dataPath, componentPath, tabComponent } in panels"
   )
     DitoPanel(
       v-if="shouldRenderSchema(schema)"
       :key="getPanelKey(dataPath, tabComponent)"
       :schema="schema"
       :dataPath="dataPath"
+      :panelComponentPath="componentPath"
       :data="data"
       :meta="meta"
       :store="getChildStore(schema.name)"

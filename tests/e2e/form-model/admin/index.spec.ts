@@ -11,6 +11,18 @@ async function openArticle(page: Page, url: string, article: Article) {
   await expect(page.getByLabel('Title', { exact: true })).toBeVisible()
 }
 
+// Waits for the delayed options of `category` and `topic`, which `topic` loads
+// last, as forms are only dirty once the values derived from loads are written
+// into the data, see `FormModel.takeProcessedDataSnapshotWhenSettled()`.
+async function waitForDelayedOptions(page: Page) {
+  await page.getByRole('tab', { name: 'Meta', exact: true }).click()
+  await page.getByRole('button', { name: 'SEO' }).click()
+  await expect(page.getByLabel('Topic', { exact: true })).toHaveValue(
+    'politics'
+  )
+  await page.getByRole('tab', { name: 'Main', exact: true }).click()
+}
+
 test.describe('form model', () => {
   test('keeps computed values current without rendering them', async ({
     page,
@@ -91,6 +103,88 @@ test.describe('form model', () => {
       .toEqual({ category: 'sports', topic: 'football' })
   })
 
+  test('handles options from data that was reset', async ({ page, url }) => {
+    const article = await Article.query().insert({
+      title: 'Old',
+      chooser: {
+        source: { topics: [{ label: 'Politics', value: 'politics' }] },
+        topic: 'politics'
+      }
+    })
+    await openArticle(page, url, article)
+    await page.getByRole('button', { name: 'Reset Chooser' }).click()
+    await page.getByLabel('Title', { exact: true }).fill('New')
+    await page.getByRole('button', { name: 'Save', exact: true }).click()
+    await expect
+      .poll(async () => (await Article.query().findById(article.id))?.title)
+      .toBe('New')
+  })
+
+  test('computes values before applying their defaults', async ({
+    page,
+    url
+  }) => {
+    const article = await Article.query().insert({
+      title: 'Old',
+      customFactor: 10
+    })
+    await openArticle(page, url, article)
+    await expect(page.getByLabel('Pricing', { exact: true })).toHaveValue(
+      'factor'
+    )
+    await expect(page.getByLabel('Custom Factor', { exact: true })).toHaveValue(
+      '10'
+    )
+    await page.getByLabel('Title', { exact: true }).fill('New')
+    await page.getByRole('button', { name: 'Save', exact: true }).click()
+    await expect
+      .poll(async () => {
+        const stored = await Article.query().findById(article.id)
+        return { title: stored?.title, customFactor: stored?.customFactor }
+      })
+      .toEqual({ title: 'New', customFactor: 10 })
+  })
+
+  test('gives the components of list items their own ids', async ({
+    page,
+    url
+  }) => {
+    const article = await Article.query().insert({
+      title: 'Old',
+      lines: [{ amount: 1 }, { amount: 2 }]
+    })
+    await openArticle(page, url, article)
+    const amounts = page.getByLabel('Amount', { exact: true })
+    await expect(amounts.nth(0)).toHaveAttribute('id', 'main/lines/0/amount')
+    await expect(amounts.nth(1)).toHaveAttribute('id', 'main/lines/1/amount')
+  })
+
+  test('stops computing values of removed list items', async ({
+    page,
+    url
+  }) => {
+    const article = await Article.query().insert({
+      title: 'Old',
+      lines: [{ amount: 1 }, { amount: 2 }]
+    })
+    await openArticle(page, url, article)
+    const doubleAmounts = page.getByLabel('Double Amount', { exact: true })
+    await expect(doubleAmounts).toHaveCount(2)
+    await expect(doubleAmounts.nth(1)).toHaveValue('4')
+    const lines = page.getByRole('region', { name: 'Lines', exact: true })
+    page.once('dialog', dialog => dialog.accept())
+    await lines
+      .locator(':scope > table > tbody > tr')
+      .nth(1)
+      .getByRole('button', { name: 'Remove' })
+      .click()
+    await expect(doubleAmounts).toHaveCount(1)
+    await page.getByRole('button', { name: 'Save', exact: true }).click()
+    await expect
+      .poll(async () => (await Article.query().findById(article.id))?.lines)
+      .toEqual([{ amount: 1 }])
+  })
+
   test('marks forms dirty by their data, not by derived values', async ({
     page,
     url
@@ -99,12 +193,7 @@ test.describe('form model', () => {
     // `topic` into the data after it is loaded, which doesn't make it dirty.
     const article = await Article.query().insert({ title: 'Old' })
     await openArticle(page, url, article)
-    await page.getByRole('tab', { name: 'Meta', exact: true }).click()
-    await page.getByRole('button', { name: 'SEO' }).click()
-    await expect(page.getByLabel('Topic', { exact: true })).toHaveValue(
-      'politics'
-    )
-    await page.getByRole('tab', { name: 'Main', exact: true }).click()
+    await waitForDelayedOptions(page)
     const dialogMessages: string[] = []
     page.on('dialog', dialog => {
       dialogMessages.push(dialog.message())
@@ -123,5 +212,92 @@ test.describe('form model', () => {
     await cancel.click()
     await expect(page).toHaveURL(/\/articles$/)
     expect(dialogMessages).toHaveLength(1)
+  })
+  test('marks forms dirty by excluded values that `process()` stores', async ({
+    page,
+    url
+  }) => {
+    const article = await Article.query().insert({ title: 'Old', tags: ['a'] })
+    await openArticle(page, url, article)
+    const dialogMessages: string[] = []
+    page.on('dialog', dialog => {
+      dialogMessages.push(dialog.message())
+      return dialog.dismiss()
+    })
+    const tags = page.getByLabel('Tags', { exact: true })
+    const cancel = page.getByRole('button', { name: 'Cancel', exact: true })
+    await expect(tags).toHaveValue('a')
+    await waitForDelayedOptions(page)
+    await tags.fill('a,b')
+    await cancel.click()
+    expect(dialogMessages).toEqual([
+      expect.stringContaining('You have unsaved changes')
+    ])
+    await page.getByRole('button', { name: 'Save', exact: true }).click()
+    await expect
+      .poll(async () => (await Article.query().findById(article.id))?.tags)
+      .toEqual(['a', 'b'])
+  })
+  test("doesn't mark forms dirty by clean changes", async ({
+    page,
+    url
+  }) => {
+    const article = await Article.query().insert({ title: 'Old' })
+    await openArticle(page, url, article)
+    await waitForDelayedOptions(page)
+    const dialogMessages: string[] = []
+    page.on('dialog', dialog => {
+      dialogMessages.push(dialog.message())
+      return dialog.dismiss()
+    })
+    const title = page.getByLabel('Title', { exact: true })
+    await page.getByRole('button', { name: 'Apply Saved Title' }).click()
+    await expect(title).toHaveValue('Saved')
+    await page.getByRole('button', { name: 'Cancel', exact: true }).click()
+    await expect(page).toHaveURL(/\/articles$/)
+    expect(dialogMessages).toEqual([])
+  })
+  test('returns the reactive data from `setData()`', async ({ page, url }) => {
+    const article = await Article.query().insert({ title: 'Old' })
+    await openArticle(page, url, article)
+    await page.getByRole('button', { name: 'Replace Data' }).click()
+    await expect(page.getByLabel('Title', { exact: true })).toHaveValue(
+      'Replaced and Modified'
+    )
+  })
+  test('computes values of new items from their defaults', async ({
+    page,
+    url
+  }) => {
+    await page.goto(`${url}/admin/articles/create`)
+    await expect(page.getByLabel('Keyword', { exact: true })).toHaveCount(1)
+    await page.getByLabel('Title', { exact: true }).fill('New')
+    await page.getByLabel('Keyword', { exact: true }).fill('News')
+    await page.getByRole('button', { name: 'Create', exact: true }).click()
+    await expect
+      .poll(async () => (await Article.query().findOne({ title: 'New' }))?.keywords)
+      .toEqual(['News'])
+  })
+  test("doesn't evaluate components that `if` hides", async ({ page, url }) => {
+    const article = await Article.query().insert({ title: 'Old' })
+    await openArticle(page, url, article)
+    await page.getByLabel('Preview Key', { exact: true }).fill('key')
+    await page.getByLabel('Title', { exact: true }).fill('New')
+    await page.getByRole('button', { name: 'Reset Preview' }).click()
+    await page.getByLabel('Title', { exact: true }).fill('Newer')
+    await page.getByRole('button', { name: 'Save', exact: true }).click()
+    await expect
+      .poll(async () => (await Article.query().findById(article.id))?.title)
+      .toBe('Newer')
+  })
+
+  test('shows tabs by their `if`', async ({ page, url }) => {
+    const article = await Article.query().insert({ title: 'Draft' })
+    await openArticle(page, url, article)
+    const stats = page.getByRole('tab', { name: 'Stats', exact: true })
+    await expect(stats).toHaveCount(0)
+    await page.getByLabel('Title', { exact: true }).fill('Published')
+    await stats.click()
+    await expect(page.getByLabel('Views', { exact: true })).toBeVisible()
   })
 })

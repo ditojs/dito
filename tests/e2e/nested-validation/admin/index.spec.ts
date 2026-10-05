@@ -194,6 +194,19 @@ test.describe('nested validation', () => {
     )
   })
 
+  test('clears errors of values that change through code', async ({
+    page,
+    url
+  }) => {
+    const book = await seedBook({ edition: null })
+    await openBook(page, url, book)
+    await page.getByRole('button', { name: 'Save', exact: true }).click()
+    const form = getForm(page)
+    await expect(getErrors(form, 'Edition')).toContainText(/required/)
+    await clickFormButton(page, 'Fill Edition')
+    await expect(getErrors(form, 'Edition')).toHaveCount(0)
+  })
+
   test('validates fields in other tabs', async ({ page, url }) => {
     const book = await seedBook({ edition: null })
     await openBook(page, url, book)

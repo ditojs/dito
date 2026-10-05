@@ -83,9 +83,12 @@ export class DataSchemaResolver {
       return isFunction(data) ? data(this.createContext()) : data
     } else if (dataPath) {
       const context = this.createContext()
+      // Data that isn't there, e.g. after it was reset by code, has no value,
+      // the same as a missing value at an existing data path.
       return getValueAtDataPath(
         context.rootItem,
-        normalizeDataPath(`${context.dataPath}/${dataPath}`)
+        normalizeDataPath(`${context.dataPath}/${dataPath}`),
+        () => undefined
       )
     }
   }

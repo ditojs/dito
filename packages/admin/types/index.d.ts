@@ -383,9 +383,11 @@ export interface SchemaRules {
  * Return false to mark event as handled and stop it from propagating to parent
  * schemas.
  */
+// Handlers can be async, as events are awaited, e.g. by buttons that show
+// their progress while their `click` handler runs.
 export type ItemEventHandler<$Item = any> = (
   itemParams: DitoContext<$Item>
-) => void | false
+) => void | false | Promise<void | false>
 
 export type OpenEventHandler<$Item = any> = (
   itemParams: DitoContext<$Item> & { open: boolean }
@@ -655,9 +657,18 @@ export interface SchemaSourceMixin<$Item> {
   /** Buttons for the source. */
   buttons?: Buttons<$Item>
   /**
-   * Whether to wrap primitive values in objects.
+   * The key under which primitive values are wrapped in objects, so that the
+   * source's forms can edit them, e.g. `'value'` for a list of strings.
    */
-  wrapPrimitives?: boolean
+  wrapPrimitives?: string
+  /**
+   * Whether the forms of the source's items directly mutate the source's data
+   * instead of editing a copy that is applied when submitting. Forms that
+   * mutate data are never dirty.
+   *
+   * @defaultValue `false`
+   */
+  mutate?: boolean
   /**
    * URL path for the source items.
    */
@@ -734,7 +745,9 @@ export interface SchemaSourceMixin<$Item> {
   deletable?: OrItemAccessor<$Item, {}, boolean | { label: string }>
   /**
    * The column used for the order resulting from dragging around list entries
-   * when the `draggable` property of the list schema is set to `true`.
+   * when the `draggable` property of the list schema is set to `true`. Items
+   * are numbered when the data is loaded, and when they are added, removed or
+   * reordered.
    */
   orderKey?: string
   /**
@@ -1516,7 +1529,7 @@ type SectionContent<$Data> = {
   /**
    * A form schema for the section's content. Use this
    * instead of `components` to get form-level options
-   * like `label`, `tabs`, and `mutate`.
+   * like `label` and `tabs`.
    */
   form?: ResolvableForm<$Data>
   /**
@@ -2450,6 +2463,25 @@ export interface DitoFormInstance<$Item = any>
   isDirty: boolean
 
   /**
+   * Makes clean changes to the data, which don't
+   * make the form dirty, while other changes still
+   * do, e.g. to apply what an action on the server
+   * already saved. `makeChanges()` is called
+   * synchronously, the returned promise resolves
+   * once the values derived from the changes are
+   * clean too.
+   *
+   * @example
+   * ```js
+   * const shopOrder = await request({ method: 'post', url })
+   * formComponent.applyCleanChanges(() => {
+   *   item.templateShopOrder = shopOrder
+   * })
+   * ```
+   */
+  applyCleanChanges(makeChanges: () => void): Promise<void>
+
+  /**
    * Submits the form data to the API. Returns
    * `true` on success, `false` if validation
    * fails or the request errors.
@@ -2539,8 +2571,12 @@ export interface DitoFormInstance<$Item = any>
   ensureData(): void
   /** Clears the loaded data. */
   clearData(): void
-  /** Sets the component's loaded data directly. */
-  setData(data: any): void
+  /**
+   * Sets the component's loaded data directly, and
+   * returns it as the component's reactive data,
+   * which can be modified to update it.
+   */
+  setData(data: any): any
   /**
    * Creates a new data object with default values
    * from the schema. Optionally sets a `type`
@@ -2618,8 +2654,11 @@ export interface DitoViewInstance<$Item = any>
    * a resource.
    */
   providesData: boolean
-  /** Sets the view's data directly. */
-  setData(data: any): void
+  /**
+   * Sets the view's data directly, and returns it
+   * as the view's reactive data.
+   */
+  setData(data: any): any
 
   // -- Validation (ValidatorMixin) --
 
@@ -2805,8 +2844,12 @@ export interface DitoSourceInstance<$Item = any>
   ensureData(): void
   /** Clears the loaded data. */
   clearData(): void
-  /** Sets the component's loaded data directly. */
-  setData(data: any): void
+  /**
+   * Sets the component's loaded data directly, and
+   * returns it as the component's reactive data,
+   * which can be modified to update it.
+   */
+  setData(data: any): any
   /**
    * Creates a new data object with default values
    * from the schema. Optionally sets a `type`
@@ -3043,6 +3086,7 @@ type NonSectionComponent<$Item = any> =
 export type Component<$Item = any> =
   | NonSectionComponent<$Item>
   | SectionSchema<$Item>
+  | PanelSchema<$Item>
 
 /**
  * Source components (list, object, tree) that contain nested
@@ -3157,11 +3201,14 @@ export type Components<$Item = any> = 0 extends 1 & $Item
   ? Record<string, Component>
   : {
       [K in keyof $Item]?: [$Item[K]] extends [never]
-        ? NonSectionComponent<$Item> | SectionSchema<$Item>
+        ? // Sections and panels that share the data of their schema.
+          NonSectionComponent<$Item> | SectionSchema<$Item> | PanelSchema<$Item>
         : NonNullable<$Item[K]> extends (infer E)[]
           ? E extends Record<string, any>
             ? NonSectionComponent<E>
-            : NonSectionComponent<$Item>
+            : // Lists of primitive values edit them wrapped in objects under
+              // the key given by `wrapPrimitives`, see `SchemaSourceMixin`.
+              NonSectionComponent<Record<string, E>>
           : NonNullable<$Item[K]> extends Record<string, any>
             ?
                 | NonOptionFieldComponent<$Item>
@@ -3197,13 +3244,6 @@ export interface Form<$Item = any> extends SchemaRoute<$Item> {
    * The label of the form.
    */
   label?: OrItemAccessor<$Item, {}, string | boolean>
-  /**
-   * Whether the form directly mutates the parent data instead
-   * of working on a copy.
-   *
-   * @defaultValue `false`
-   */
-  mutate?: boolean
   /**
    * The property name used as the item's unique identifier.
    *

@@ -7,6 +7,12 @@ export const widgets = createWidgetView<Widget>(
   'widgets',
   {
     name: { type: 'text', label: 'Name' },
+    size: {
+      type: 'multiselect',
+      label: 'Size',
+      required: true,
+      options: ['Small', 'Large']
+    },
     tags: {
       type: 'multiselect',
       label: 'Tags',

@@ -1,12 +1,12 @@
-import { effectScope, watch, nextTick, shallowRef } from 'vue'
-import { equals, clone } from '@ditojs/utils'
+import { effectScope, computed, watch, nextTick, shallowRef } from 'vue'
+import { isArray, isPlainObject, equals, clone } from '@ditojs/utils'
 import DitoContext from '../DitoContext.js'
 import { DataSchemaResolver } from './DataSchemaResolver.js'
 import { isSourceWithResource } from './schema/structure.js'
 import { isEmptySchema } from './schema/lookup.js'
 import {
   shouldRenderSchema,
-  setDefaultValues,
+  initializeData,
   computeValue,
   hasValueFromDataSchema,
   processSchemaData,
@@ -16,7 +16,12 @@ import {
 // FormModel holds the state of the data edited by a form, view or dialog that
 // is derived from schema and data, independently of what is rendered:
 //
-// - Missing values are set to their defaults when the data is set up.
+// - Missing values are set to their defaults when the data is set up, except
+//   the values of components with `compute()`, which fall back to their
+//   defaults when `compute()` doesn't return a value, unlike in new data, see
+//   `initializeData()`.
+// - The items of lists with `orderKey` are numbered when the data is set up,
+//   which doesn't make the data dirty.
 // - Computed values, the results of `schema.compute()` and of the data schemas
 //   of the `computed` types (`schema.data`, `schema.dataPath`), are written
 //   into the data by watchers that the model owns, one scope per component,
@@ -41,7 +46,7 @@ import {
 //
 // `component` is the component that owns the data, e.g. `DitoForm`. Its
 // `dataPath`, `componentPath`, `rootData` and `mainSchemaComponent` are used
-// when present. The model needs to be stopped when the component unmounts.
+// when present. The model needs to be stopped before the component unmounts.
 
 export class FormModel {
   // The entries of the components with computed values and the scopes of the
@@ -53,8 +58,9 @@ export class FormModel {
   // The promises of the loads of data schemas and options that are pending,
   // see `waitForPendingLoads()`:
   pendingLoads = new Set()
-  // The processed data to compare with in `isDirty`, `null` until it is taken,
-  // see `takeProcessedDataSnapshotWhenSettled()`:
+  // The data that the snapshot was taken of, and its processed data to compare
+  // with in `isDirty`, `null` until it is taken, see
+  // `takeProcessedDataSnapshotWhenSettled()`:
   processedDataSnapshot = shallowRef(null)
 
   // `getSchema()` and `getData()` return the schema and the data that the
@@ -70,11 +76,15 @@ export class FormModel {
     this.rootScope.run(() => {
       watch(
         [getSchema, getData],
-        ([schema, data]) => this.applyDefaultValues(schema, data),
+        ([schema, data]) => this.initializeData(schema, data),
         { immediate: true }
       )
+      // The entries are read through a computed property, so that the watchers
+      // of the entries can check synchronously whether their entry is still
+      // current, see `createComputedValueScope()`.
+      this.computedValueEntries = computed(() => this.getComputedValueEntries())
       watch(
-        () => this.getComputedValueEntries(),
+        () => this.computedValueEntries.value,
         entries => this.updateComputedValueRecords(entries),
         { immediate: true }
       )
@@ -104,13 +114,20 @@ export class FormModel {
 
   // Returns whether the processed data differs from the snapshot taken when
   // the data was set up, saved or applied, see
-  // `takeProcessedDataSnapshotWhenSettled()`. Values that aren't processed,
-  // e.g. of excluded components, don't count.
+  // `takeProcessedDataSnapshotWhenSettled()`. Excluded values don't count,
+  // unless their components have `process()`, see `processData()`.
   get isDirty() {
     const processedDataSnapshot = this.processedDataSnapshot.value
-    return (
-      processedDataSnapshot !== null &&
-      !equals(this.getProcessedDataForDirtyCheck(), processedDataSnapshot)
+    const data = this.getData()
+    // A snapshot only applies to the data that it was taken of. Data that was
+    // replaced since isn't dirty until its own snapshot is taken, and neither
+    // is missing data.
+    if (!data || processedDataSnapshot?.data !== data) {
+      return false
+    }
+    return !equals(
+      this.getProcessedDataForDirtyCheck(),
+      processedDataSnapshot.processedData
     )
   }
 
@@ -145,12 +162,14 @@ export class FormModel {
     // Let the watchers and the rendering start their loads first:
     await nextTick()
     await this.waitForPendingLoads()
-    const isDataReplaced = this.getData() !== dataToSnapshot
+    // Check whether the model stopped first, as its component may be gone.
     const isModelStopped = !this.rootScope.active
-    if (dataToSnapshot && !isDataReplaced && !isModelStopped) {
-      this.processedDataSnapshot.value = clone(
-        this.getProcessedDataForDirtyCheck()
-      )
+    const isDataReplaced = !isModelStopped && this.getData() !== dataToSnapshot
+    if (dataToSnapshot && !isModelStopped && !isDataReplaced) {
+      this.processedDataSnapshot.value = {
+        data: dataToSnapshot,
+        processedData: clone(this.getProcessedDataForDirtyCheck())
+      }
     }
   }
 
@@ -168,9 +187,53 @@ export class FormModel {
           component: this.component.mainSchemaComponent ?? this.component,
           rootData: this.rootData,
           schemaOnly: true,
-          target: 'clipboard'
+          target: 'clipboard',
+          // Reading the dirty state doesn't call `compute()` and `process()`,
+          // see `processData()`:
+          shouldCallComputeAndProcess: false
         })
       : null
+  }
+
+  // Makes clean changes to the data, which don't make it dirty, while other
+  // changes still do, e.g. to apply what an action on the server already
+  // saved: Once the model settled, the values that changed in the processed
+  // data, including the values derived from the changes, are taken over into
+  // the snapshot. Arrays whose length changes are taken over as a whole, see
+  // `takeOverChangedValues()`. `makeChanges()` is called synchronously.
+  // Without a snapshot, there is nothing to update, as it's taken of the
+  // changed data once the model settled, see
+  // `takeProcessedDataSnapshotWhenSettled()`.
+  async applyCleanChanges(makeChanges) {
+    const processedDataSnapshot = this.processedDataSnapshot.value
+    const data = this.getData()
+    const hasSnapshotOfData = processedDataSnapshot?.data === data
+    // Clone the processed data, as it shares nested values with the data,
+    // which `makeChanges()` may change in place.
+    const processedDataBeforeChanges = hasSnapshotOfData
+      ? clone(this.getProcessedDataForDirtyCheck())
+      : null
+    makeChanges()
+    if (hasSnapshotOfData) {
+      // Let the watchers write the values derived from the changes first:
+      await nextTick()
+      await this.waitForPendingLoads()
+      // Snapshots that were taken since include the changes already.
+      const isSnapshotReplaced = (
+        this.processedDataSnapshot.value !==
+        processedDataSnapshot
+      )
+      if (!isSnapshotReplaced && this.rootScope.active) {
+        this.processedDataSnapshot.value = {
+          data,
+          processedData: takeOverChangedValues(
+            processedDataSnapshot.processedData,
+            processedDataBeforeChanges,
+            this.getProcessedDataForDirtyCheck()
+          )
+        }
+      }
+    }
   }
 
   // Tracks the promise of a pending load until it settles, so that
@@ -180,25 +243,30 @@ export class FormModel {
     promise.finally(() => this.pendingLoads.delete(promise))
   }
 
-  // Sets missing values to their defaults when the data is set up.
-  applyDefaultValues(schema, data) {
+  // Sets missing values to their defaults and numbers the items of lists by
+  // their order key when the data is set up, see `initializeData()`.
+  initializeData(schema, data) {
     if (data && !isEmptySchema(schema)) {
-      setDefaultValues(schema, data, this.component, {
+      initializeData(schema, data, this.component, {
         dataPath: this.dataPath,
         rootData: this.rootData,
-        shouldProcess: entry => !isSourceWithResource(entry.schema)
+        shouldProcess: entry => !isSourceWithResource(entry.schema),
+        // The model writes the values of components with `compute()`,
+        // including their defaults:
+        shouldSetDefaultsOfComponentsWithCompute: false
       })
     }
   }
 
   // Returns the entries of `processSchemaData()` for all components with
-  // computed values whose `if` doesn't evaluate to `false`. Called by a
-  // watcher, so that it runs again when the data structure changes, e.g. when
-  // list items are added or removed, or when `if` conditions change.
+  // computed values whose `if` doesn't evaluate to `false`, by component path.
+  // Called by a computed property, so that it runs again when the data
+  // structure changes, e.g. when list items are added or removed, or when `if`
+  // conditions change.
   getComputedValueEntries() {
     const schema = this.getSchema()
     const data = this.getData()
-    const entries = []
+    const entries = new Map()
     if (data && !isEmptySchema(schema)) {
       processSchemaData(schema, data, {
         dataPath: this.dataPath,
@@ -209,7 +277,7 @@ export class FormModel {
         ),
         before: entry => {
           if (hasComputedValueSource(entry.schema)) {
-            entries.push(entry)
+            entries.set(entry.componentPath, entry)
           }
         },
         options: { component: this.component, rootData: this.rootData }
@@ -224,8 +292,7 @@ export class FormModel {
   updateComputedValueRecords(entries) {
     const previousRecords = this.computedValueRecords
     this.computedValueRecords = new Map()
-    for (const entry of entries) {
-      const { componentPath } = entry
+    for (const [componentPath, entry] of entries) {
       let computedValueRecord = previousRecords.get(componentPath)
       if (
         computedValueRecord?.entry.schema === entry.schema &&
@@ -245,15 +312,28 @@ export class FormModel {
     }
   }
 
+  // Creates the scope of the watchers that write the computed values of the
+  // entry into the data. Entries stop being current before their scope is
+  // stopped, as watchers that don't belong to components run in the order in
+  // which they're triggered, e.g. when list items are removed or `if`
+  // conditions change. The watchers skip these entries, see `isEntryCurrent()`.
   createComputedValueScope(entry) {
     const scope = this.rootScope.run(() => effectScope())
     scope.run(() => {
+      const isEntryCurrent = computed(() => this.isEntryCurrent(entry))
       if (entry.schema.compute) {
         watch(
           // Return a new object each time, so that the value is also written
           // when only the value in the data changed, e.g. through user input.
-          () => ({ value: this.getComputedValue(entry) }),
-          ({ value }) => this.writeComputedValue(entry, value),
+          () =>
+            isEntryCurrent.value
+              ? { value: this.getComputedValue(entry) }
+              : null,
+          computedResult => {
+            if (computedResult) {
+              this.writeComputedValue(entry, computedResult.value)
+            }
+          },
           { immediate: true }
         )
       }
@@ -264,9 +344,9 @@ export class FormModel {
         )
         watch(
           () =>
-            dataSchemaResolver.isLoading
-              ? null
-              : { value: dataSchemaResolver.value },
+            isEntryCurrent.value && !dataSchemaResolver.isLoading
+              ? { value: dataSchemaResolver.value }
+              : null,
           resolved => {
             if (resolved) {
               this.writeComputedValue(entry, resolved.value)
@@ -277,6 +357,13 @@ export class FormModel {
       }
     })
     return scope
+  }
+
+  // Returns whether the entry is still one of the current entries, with the
+  // same schema and data, see `getComputedValueEntries()`.
+  isEntryCurrent({ componentPath, schema, data }) {
+    const currentEntry = this.computedValueEntries.value.get(componentPath)
+    return currentEntry?.schema === schema && currentEntry.data === data
   }
 
   // Calls `schema.compute()` with the main schema component of the data, like
@@ -338,20 +425,45 @@ export class FormModel {
   // that owns the data, which stays the same when components are mounted, so
   // that data schemas and options don't load again.
   createEntryContext({ schema, data, name, dataPath }) {
-    const { rootData } = this
-    // Pass a function, so that the `value` getter isn't evaluated when the
-    // context is created, and watchers only depend on the value if it's used.
-    return new DitoContext(this.component, () => ({
+    return DitoContext.createForSchema(this.component, {
       schema,
       name,
       data,
       dataPath,
-      rootData,
-      get value() {
-        return name != null ? data[name] : undefined
-      }
-    }))
+      rootData: this.rootData
+    })
   }
+}
+
+// Returns a copy of `target` with the values that differ between `before` and
+// `after` taken over from `after`, comparing objects and arrays of the same
+// length entry by entry. Arrays whose length changed are taken over as a whole,
+// as their entries can't be matched, including changes of their entries that
+// were made before.
+function takeOverChangedValues(target, before, after) {
+  if (equals(before, after)) {
+    return target
+  }
+  const isSameShape = (
+    isPlainObject(before) && isPlainObject(after) && isPlainObject(target) ||
+    isArray(before) &&
+    isArray(after) &&
+    isArray(target) &&
+    before.length === after.length &&
+    after.length === target.length
+  )
+  if (!isSameShape) {
+    return clone(after)
+  }
+  const result = isArray(target) ? [...target] : { ...target }
+  for (const key of new Set([...Object.keys(before), ...Object.keys(after)])) {
+    if (!(key in after)) {
+      delete result[key]
+    } else {
+      result[key] = takeOverChangedValues(target[key], before[key], after[key])
+    }
+  }
+  return result
 }
 
 // Returns whether the schema is a source of computed values, through

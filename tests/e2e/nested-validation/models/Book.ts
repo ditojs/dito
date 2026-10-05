@@ -16,6 +16,7 @@ export interface Book {
   title: string
   subtitle?: string | null
   edition?: string | null
+  fillEdition?: never
   publisher?: string | null
   meta?: { note?: string } | null
   tags?: { name: string }[]

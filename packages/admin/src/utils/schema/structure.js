@@ -38,7 +38,7 @@ export function someNestedSchemaComponent(schema, callback) {
   return (
     iterateNestedSchemaComponents(
       schema,
-      component => (callback(component) ? true : undefined)
+      (component, name) => (callback(component, name) ? true : undefined)
     ) ?? false
   )
 }
@@ -96,6 +96,13 @@ export function isTab(schema) {
 
 export function isPanel(schema) {
   return isSchema(schema) && schema.type === 'panel'
+}
+
+// Returns whether `schema` is a panel that provides its own data through
+// `schema.data`, e.g. a filters panel, instead of sharing the data of its
+// schema, see `DitoPanel`.
+export function isPanelWithOwnData(schema) {
+  return isPanel(schema) && !!schema.data
 }
 
 export function isMenu(schema) {

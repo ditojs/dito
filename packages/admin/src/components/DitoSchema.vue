@@ -39,7 +39,7 @@ slot(name="prepend")
         DitoTabs(
           v-if="opened"
           v-model="selectedTab"
-          :tabs="tabs"
+          :tabs="renderedTabs"
         )
       DitoClipboard(
         v-if="clipboard"
@@ -121,13 +121,13 @@ import DitoComponent from '../DitoComponent.js'
 import ContextMixin from '../mixins/ContextMixin.js'
 import ItemMixin from '../mixins/ItemMixin.js'
 import { appendDataPath } from '../utils/data.js'
-import { isNested } from '../utils/schema/structure.js'
+import { isPanel } from '../utils/schema/structure.js'
 import {
   getNamedSchemas,
   getPanelEntries,
   isEmptySchema
 } from '../utils/schema/lookup.js'
-import { setDefaultValues, processData } from '../utils/schema/data.js'
+import { initializeData, processData } from '../utils/schema/data.js'
 import {
   getDataValidationErrors,
   getMatchingValidationErrors
@@ -213,17 +213,33 @@ export default DitoComponent.component('DitoSchema', {
     },
 
     panelEntries() {
-      return getPanelEntries(this.schema.panels, this.dataPath)
+      return getPanelEntries(
+        this.schema.panels,
+        this.dataPath,
+        this.componentPath
+      )
     },
 
     tabs() {
       return getNamedSchemas(this.schema.tabs)
     },
 
+    renderedTabs() {
+      // Evaluate the tabs' `if` with the schema's context, and only once there
+      // is data to evaluate it with, as their components do too.
+      return this.tabs && this.data
+        ? Object.fromEntries(
+            Object.entries(this.tabs).filter(([, tab]) =>
+              this.shouldRenderSchema(tab)
+            )
+          )
+        : this.tabs
+    },
+
     defaultTab() {
       let first = null
-      if (this.tabs) {
-        const tabs = Object.values(this.tabs).filter(this.shouldRenderSchema)
+      if (this.renderedTabs) {
+        const tabs = Object.values(this.renderedTabs)
         for (const { name, defaultTab } of tabs) {
           if (isFunction(defaultTab) ? defaultTab(this.context) : defaultTab) {
             return name
@@ -277,10 +293,6 @@ export default DitoComponent.component('DitoSchema', {
       )
     },
 
-    isNested() {
-      return isNested(this.schema)
-    },
-
     isDirty() {
       return this.someComponent(it => it.isDirty)
     },
@@ -314,7 +326,8 @@ export default DitoComponent.component('DitoSchema', {
     },
 
     isTopLevelSchema() {
-      return !this.isNested && !this.inlined
+      // Panels are displayed in the sidebar, inlined schemas in their parents.
+      return !isPanel(this.schema) && !this.inlined
     },
 
     hasTopLevelTabs() {
@@ -401,9 +414,11 @@ export default DitoComponent.component('DitoSchema', {
         })
       }
       if (this.hasTopLevelTabs) {
-        const tab = this.shouldRenderSchema(this.tabs[newTab])
-          ? newTab
-          : this.defaultTab
+        // Without a selected tab, e.g. while a nested form is open, keep the
+        // route without hash. Fall back to the default tab only for tabs that
+        // aren't rendered.
+        const tab =
+          !newTab || newTab in this.renderedTabs ? newTab : this.defaultTab
         this.$router.replace({
           query: this.$route.query,
           hash: tab ? `#${tab}` : null
@@ -741,12 +756,13 @@ export default DitoComponent.component('DitoSchema', {
     resetData() {
       // We can't set `this.data = ...` because it's a property, but we can set
       // all known properties on it to the values returned by
-      // `setDefaultValues()`, as they are all reactive already from the starts:
+      // `initializeData()`, as they are all reactive already from the starts:
       // eslint-disable-next-line vue/no-mutating-props
-      Object.assign(this.data, setDefaultValues(this.dataSchema, {}, this))
+      Object.assign(this.data, initializeData(this.dataSchema, {}, this))
       this.clearErrors()
     },
 
+    // Merges the values of `data` into the schema's data, and returns it.
     setData(data) {
       for (const name in data) {
         if (name in this.data) {
@@ -759,6 +775,7 @@ export default DitoComponent.component('DitoSchema', {
           }
         }
       }
+      return this.data
     },
 
     filterData(data) {
