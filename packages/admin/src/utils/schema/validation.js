@@ -2,7 +2,6 @@ import DitoContext from '../../DitoContext.js'
 import * as validators from '../../validators/index.js'
 import { isFunction, isRegExp, asArray, normalizeDataPath } from '@ditojs/utils'
 import { getTypeOptions } from './types.js'
-import { isSourceWithResource } from './structure.js'
 import {
   getSchemaValue,
   shouldRenderSchema,
@@ -86,10 +85,8 @@ export function getDataValidationErrors(schema, data, {
       rootData
     })
 
-  const shouldProcess = entry => (
-    !isSourceWithResource(entry.schema) &&
+  const shouldProcess = entry =>
     shouldRenderSchema(entry.schema, createContext(entry))
-  )
 
   const before = entry => {
     const { schema, data, name, dataPath } = entry
@@ -112,6 +109,7 @@ export function getDataValidationErrors(schema, data, {
   processSchemaData(schema, data, {
     dataPath,
     shouldProcess,
+    shouldSkipSourcesWithResource: true,
     before,
     options: { component, rootData }
   })

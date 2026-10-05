@@ -9,7 +9,7 @@ import {
 } from '@ditojs/utils'
 import DitoContext from '../DitoContext.js'
 import { DataSchemaResolver } from './DataSchemaResolver.js'
-import { isNested, isSourceWithResource } from './schema/structure.js'
+import { isNested } from './schema/structure.js'
 import { isEmptySchema } from './schema/lookup.js'
 import {
   getSchemaValue,
@@ -295,7 +295,7 @@ export class FormModel {
       initializeData(schema, data, this.component, {
         dataPath: this.dataPath,
         rootData: this.rootData,
-        shouldProcess: entry => !isSourceWithResource(entry.schema),
+        shouldSkipSourcesWithResource: true,
         // The model writes the values of components with `compute()`,
         // including their defaults:
         shouldSetDefaultsOfComponentsWithCompute: false
@@ -318,9 +318,8 @@ export class FormModel {
       processSchemaData(schema, data, {
         dataPath: this.dataPath,
         componentPath: this.componentPath,
-        shouldProcess: entry => (
-          !isSourceWithResource(entry.schema) && this.isEntryShown(entry)
-        ),
+        shouldProcess: entry => this.isEntryShown(entry),
+        shouldSkipSourcesWithResource: true,
         before: entry => {
           if (hasComputedValueSource(entry.schema)) {
             computedValueEntries.set(entry.componentPath, entry)

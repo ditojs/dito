@@ -362,6 +362,31 @@ describe('getDataValidationErrors()', () => {
     expect(getDataValidationErrors(schema, { items: [{}] })).toBe(null)
   })
 
+  it('validates the panels of sources with their own resource', () => {
+    // The panels display the data that contains the sources.
+    const schema = {
+      components: {
+        items: {
+          type: 'list',
+          resource: { path: 'items' },
+          form: {
+            type: 'form',
+            components: { title: { type: 'text', required: true } }
+          },
+          panels: {
+            info: {
+              type: 'panel',
+              components: { note: { type: 'text', required: true } }
+            }
+          }
+        }
+      }
+    }
+    expect(getDataValidationErrors(schema, { items: [{}] })).toEqual({
+      note: [required]
+    })
+  })
+
   it('validates formatted values', () => {
     const schema = {
       components: {

@@ -280,6 +280,31 @@ describe('FormModel', () => {
     formModel.stop()
   })
 
+  it('computes the values of the panels of sources with resource', () => {
+    // The panels display the data that contains the sources.
+    const schema = {
+      type: 'form',
+      components: {
+        title: { type: 'text' },
+        chapters: {
+          type: 'list',
+          resource: 'chapters',
+          form: { type: 'form', components: { title: { type: 'text' }, slug } },
+          panels: {
+            info: { type: 'panel', components: { slug } }
+          }
+        }
+      }
+    }
+    const { formModel, data } = createFormModel(schema, {
+      title: 'Book One',
+      chapters: [{ title: 'One' }]
+    })
+    expect(data.slug).toBe('book-one')
+    expect(data.chapters[0].slug).toBe(undefined)
+    formModel.stop()
+  })
+
   it('resolves values from data schemas', async () => {
     const schema = {
       type: 'form',

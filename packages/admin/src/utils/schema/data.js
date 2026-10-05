@@ -16,6 +16,7 @@ import {
   someNestedSchemaComponent,
   hasNestedSchemaComponents,
   isPanelWithOwnData,
+  isSourceWithResource,
   isNested
 } from './structure.js'
 import {
@@ -179,6 +180,7 @@ export function initializeData(schema, data = {}, component, {
   dataPath = null,
   rootData = data,
   shouldProcess,
+  shouldSkipSourcesWithResource = false,
   // Whether to also set the defaults of components with `compute()`. New data
   // starts with all defaults, which `compute()` can rely on. In data that was
   // loaded, `compute()` may derive missing values instead, and they fall back
@@ -215,6 +217,7 @@ export function initializeData(schema, data = {}, component, {
     dataPath,
     before,
     shouldProcess,
+    shouldSkipSourcesWithResource,
     options
   })
 }
@@ -430,6 +433,11 @@ export function processData(schema, sourceSchema, data, dataPath, {
  * them contain the `componentPath` of the component, tab or panel, continuing
  * `componentPath` like `DitoMixin.componentPath` does.
  *
+ * With `shouldSkipSourcesWithResource`, sources with their own resource are
+ * skipped along with their items, which they load and save through their
+ * resource, but not their panels, which display the data that contains them,
+ * see `DitoContainer.panelEntries`.
+ *
  * The primitive values of lists with `wrapPrimitives` are walked wrapped in
  * objects under the `wrapPrimitives` key, like the admin edits them, see
  * `SourceMixin`. `wrappedPrimitiveName` is that key while walking such an
@@ -445,9 +453,16 @@ export function processSchemaData(schema, data, {
   before = null,
   after = null,
   shouldProcess = () => true,
+  shouldSkipSourcesWithResource = false,
   options
 }) {
-  const walkOptions = { before, after, shouldProcess, options }
+  const walkOptions = {
+    before,
+    after,
+    shouldProcess,
+    shouldSkipSourcesWithResource,
+    options
+  }
   const getDataPath = (dataPath, token) =>
     dataPath != null
       ? appendDataPath(dataPath, token)
@@ -471,6 +486,13 @@ export function processSchemaData(schema, data, {
           processedData
         }
         if (!shouldProcess(entry)) {
+          continue
+        }
+        if (
+          shouldSkipSourcesWithResource &&
+          isSourceWithResource(componentSchema)
+        ) {
+          processTabOrPanelSchemas(componentSchema.panels, entry.componentPath)
           continue
         }
         if (isPanelWithOwnData(componentSchema)) {
