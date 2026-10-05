@@ -158,6 +158,25 @@ describe('getDataValidationErrors()', () => {
     expect(getDataValidationErrors(schema, { title: 'Title' })).toBe(null)
   })
 
+  it('validates the primitive values of lists with `wrapPrimitives`', () => {
+    // The values are validated at the data paths of the items, where the
+    // admin edits them, wrapped in objects under the `wrapPrimitives` key.
+    const schema = {
+      components: {
+        emails: {
+          type: 'list',
+          wrapPrimitives: 'email',
+          form: {
+            components: { email: { type: 'text', required: true } }
+          }
+        }
+      }
+    }
+    expect(
+      getDataValidationErrors(schema, { emails: ['a@b.com', ''] })
+    ).toEqual({ 'emails/1': [required] })
+  })
+
   it('validates the components of panel components', () => {
     // Panels share the data of their schema, like unnested sections.
     const schema = {

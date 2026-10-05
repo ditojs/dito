@@ -406,11 +406,19 @@ export function processData(schema, sourceSchema, data, dataPath, {
  * returns `false` are skipped along with their content. The entries passed to
  * them contain the `componentPath` of the component, tab or panel, continuing
  * `componentPath` like `DitoMixin.componentPath` does.
+ *
+ * The primitive values of lists with `wrapPrimitives` are walked wrapped in
+ * objects under the `wrapPrimitives` key, like the admin edits them, see
+ * `SourceMixin`. `wrappedPrimitiveName` is that key while walking such an
+ * object, and its component keeps the data path of the item, where the admin
+ * maps errors of the value to. Values written into the objects don't reach
+ * the data, e.g. defaults, as the primitive values themselves are the data.
  */
 export function processSchemaData(schema, data, {
   dataPath = null,
   componentPath = '',
   processedData = null,
+  wrappedPrimitiveName = null,
   before = null,
   after = null,
   shouldProcess = () => true,
@@ -426,9 +434,11 @@ export function processSchemaData(schema, data, {
     if (components) {
       for (const [name, componentSchema] of Object.entries(components)) {
         const isNestedComponent = isNested(componentSchema)
-        const componentDataPath = isNestedComponent
-          ? getDataPath(dataPath, name)
-          : dataPath
+        const isWrappedPrimitive = name === wrappedPrimitiveName
+        const componentDataPath =
+          isNestedComponent && !isWrappedPrimitive
+            ? getDataPath(dataPath, name)
+            : dataPath
         const entry = {
           schema: componentSchema,
           data,
@@ -453,12 +463,12 @@ export function processSchemaData(schema, data, {
             processedData
           })
         } else {
+          const { wrapPrimitives } = componentSchema
           const processItem = (item, index = null) => {
-            if (!isObject(item)) {
-              // Items that aren't objects can't hold component values, e.g.
-              // the unwrapped values of lists with `wrapPrimitives` when
-              // walking data that isn't processed.
-              return item
+            // Data that isn't processed holds the primitive values themselves,
+            // processed data holds them wrapped already, see `processData()`.
+            if (wrapPrimitives && !isObject(item)) {
+              item = { [wrapPrimitives]: item }
             }
             const itemDataPath =
               index !== null
@@ -489,7 +499,8 @@ export function processSchemaData(schema, data, {
                 ...walkOptions,
                 dataPath: itemDataPath,
                 componentPath: itemComponentPath,
-                processedData: processedItem
+                processedData: processedItem,
+                wrappedPrimitiveName: wrapPrimitives ?? null
               })
             } else {
               // Items without a matching form, e.g. of an unknown type, are

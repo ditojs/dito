@@ -267,6 +267,37 @@ describe('processData()', () => {
     expect(data).toEqual({ title: 'Book' })
   })
 
+  it('processes the primitive values of lists with `wrapPrimitives`', () => {
+    const dataPaths = []
+    const prices = {
+      type: 'list',
+      wrapPrimitives: 'price',
+      form: {
+        type: 'form',
+        components: {
+          price: {
+            type: 'text',
+            process: ({ value, dataPath }) => {
+              dataPaths.push(dataPath)
+              return value * 2
+            }
+          }
+        }
+      }
+    }
+    expect(
+      processData(
+        { type: 'form', components: { prices } },
+        { type: 'list' },
+        { prices: [100, 200] },
+        '',
+        { component: {}, target: 'server' }
+      )
+    ).toEqual({ prices: [200, 400] })
+    // The values are processed at the data paths of the items:
+    expect(dataPaths).toEqual(['prices/0', 'prices/1'])
+  })
+
   describe('with `shouldCallComputeAndProcess: false`', () => {
     // `DitoContext` needs a component to inherit from:
     const component = {}
@@ -372,7 +403,7 @@ describe('computeValue() with if', () => {
 })
 
 describe('initializeData()', () => {
-  it('passes through primitive values of lists with wrapPrimitives', () => {
+  it('keeps the primitive values of lists with wrapPrimitives', () => {
     const prices = {
       type: 'list',
       wrapPrimitives: 'price',
@@ -382,7 +413,8 @@ describe('initializeData()', () => {
       }
     }
     const data = { prices: [100, 200] }
-    initializeData({ type: 'form', components: { prices } }, data)
+    // `DitoContext` needs a component to inherit from:
+    initializeData({ type: 'form', components: { prices } }, data, {})
     expect(data).toEqual({ prices: [100, 200] })
   })
 
