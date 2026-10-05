@@ -50,7 +50,7 @@ pnpm run lint:fix
 # Individual linters
 pnpm run eslint
 pnpm run stylelint
-pnpm run penere     # Prettier via penere
+pnpm run prettier   # Prettier with prettier-plugin-penere
 ```
 
 ### Package Management
@@ -67,7 +67,7 @@ pnpm run clean
 - **Server**: Koa.js, Objection.js, Knex.js, AJV schema validation
 - **Admin/UI**: Vue 3, Vite, TipTap (rich text), Vue Router
 - **Database**: Objection.js ORM with Knex.js query builder
-- **Build**: Vite for frontend packages, ESLint + Stylelint + Penere (Prettier)
+- **Build**: Vite for frontend packages, ESLint + Stylelint + Prettier (with prettier-plugin-penere)
 
 ## Code Conventions
 

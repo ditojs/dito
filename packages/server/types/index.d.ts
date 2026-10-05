@@ -660,7 +660,8 @@ export class Application<$Models extends Models = Models> {
     method: HTTPMethod,
     path: string,
     transacted: boolean,
-    middlewares: OrArrayOf< (
+    middlewares: OrArrayOf<
+      (
         ctx: KoaContext,
         next: () => Promise<void>
       ) => OrPromiseOf<void>
@@ -683,21 +684,21 @@ export class Application<$Models extends Models = Models> {
 
 export interface Application
   extends Omit<
-      Koa,
-      | 'setMaxListeners'
-      | 'removeListener'
-      | 'removeAllListeners'
-      | 'prependOnceListener'
-      | 'prependListener'
-      | 'once'
-      | 'on'
-      | 'off'
-      | 'listeners'
-      | 'addListener'
-      | 'listenerCount'
-      | 'emit'
-      | 'eventNames'
-    >,
+    Koa,
+    | 'setMaxListeners'
+    | 'removeListener'
+    | 'removeAllListeners'
+    | 'prependOnceListener'
+    | 'prependListener'
+    | 'once'
+    | 'on'
+    | 'off'
+    | 'listeners'
+    | 'addListener'
+    | 'listenerCount'
+    | 'emit'
+    | 'eventNames'
+  >,
     EventEmitter {}
 
 export type SchemaType = LiteralUnion<

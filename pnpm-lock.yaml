@@ -163,6 +163,7 @@ settings:
   excludeLinksFromLockfile: false
 
 patchedDependencies:
+  '@prettier/plugin-pug@3.5.1': 230085ee19efc28f4b4d71cf0c844e67ae1cba4ffb8c94ed2c9c1c961f53204d
   eslint-plugin-vue-pug@1.0.0-alpha.5: 7a76ee910483f0bd1d249273ba51afe3aa386a14b51013d8c40b381a60f42b4b
 
 importers:
@@ -174,7 +175,7 @@ importers:
         version: 10.0.1(eslint@10.12.0(supports-color@7.2.0))
       '@prettier/plugin-pug':
         specifier: ^3.5.1
-        version: 3.5.1(penere@3.6.2)
+        version: 3.5.1(patch_hash=230085ee19efc28f4b4d71cf0c844e67ae1cba4ffb8c94ed2c9c1c961f53204d)(prettier@3.9.9)
       '@typescript-eslint/parser':
         specifier: ^8.71.0
         version: 8.71.0(eslint@10.12.0(supports-color@7.2.0))(supports-color@7.2.0)(typescript@6.0.3)
@@ -207,7 +208,7 @@ importers:
         version: 18.4.1(eslint@10.12.0(supports-color@7.2.0))(typescript@6.0.3)
       eslint-plugin-prettier:
         specifier: ^5.5.6
-        version: 5.5.6(eslint-config-prettier@10.1.8(eslint@10.12.0(supports-color@7.2.0)))(eslint@10.12.0(supports-color@7.2.0))(penere@3.6.2)
+        version: 5.5.6(eslint-config-prettier@10.1.8(eslint@10.12.0(supports-color@7.2.0)))(eslint@10.12.0(supports-color@7.2.0))(prettier@3.9.9)
       eslint-plugin-promise:
         specifier: ^7.3.0
         version: 7.3.0(eslint@10.12.0(supports-color@7.2.0))
@@ -239,8 +240,11 @@ importers:
         specifier: ^8.23.1
         version: 8.23.1
       prettier:
-        specifier: npm:penere@^3.6.2
-        version: penere@3.6.2
+        specifier: ~3.9.9
+        version: 3.9.9
+      prettier-plugin-penere:
+        specifier: ^0.2.0
+        version: 0.2.0(prettier@3.9.9)
       stylelint:
         specifier: ^17.16.0
         version: 17.16.0(supports-color@7.2.0)(typescript@6.0.3)
@@ -252,7 +256,7 @@ importers:
         version: 17.0.0(postcss@8.5.28)(stylelint@17.16.0(supports-color@7.2.0)(typescript@6.0.3))
       stylelint-prettier:
         specifier: ^5.0.3
-        version: 5.0.3(penere@3.6.2)(stylelint@17.16.0(supports-color@7.2.0)(typescript@6.0.3))
+        version: 5.0.3(prettier@3.9.9)(stylelint@17.16.0(supports-color@7.2.0)(typescript@6.0.3))
       stylelint-scss:
         specifier: ^7.3.0
         version: 7.3.0(stylelint@17.16.0(supports-color@7.2.0)(typescript@6.0.3))
@@ -4666,11 +4670,6 @@ packages:
   pend@1.2.0:
     resolution: {integrity: sha512-F3asv42UuXchdzt+xXqfW1OGlVBe+mxa2mqI0pg5yAHZPvFmY3Y6drSf/GQ1A86WgWEN9Kzh/WrgKa6iGcHXLg==}
 
-  penere@3.6.2:
-    resolution: {integrity: sha512-FyaF3ySX2pENw3GgXM5sraHxM/4Axcb1mLdeHtKIHOqpa9lB/wi4UZs/AzF/wpc8yBxhQ8IExr9kmTMLPImP1g==}
-    engines: {node: '>=14'}
-    hasBin: true
-
   perfect-debounce@2.1.0:
     resolution: {integrity: sha512-LjgdTytVFXeUgtHZr9WYViYSM/g8MkcTPYDlPa3cDqMirHjKiSZPYd6DoL7pK8AJQr+uWkQvCjHNdiMqsrJs+g==}
 
@@ -4822,6 +4821,17 @@ packages:
   prettier-linter-helpers@1.0.1:
     resolution: {integrity: sha512-SxToR7P8Y2lWmv/kTzVLC1t/GDI2WGjMwNhLLE9qtH8Q13C+aEmuRlzDst4Up4s0Wc8sF2M+J57iB3cMLqftfg==}
     engines: {node: '>=6.0.0'}
+
+  prettier-plugin-penere@0.2.0:
+    resolution: {integrity: sha512-Zj4nspm5PPL/14pfytcKhNR/9Vw3VoE722U+N/DdpKIX3ese/M/9bcb9Fp6de7hCRR6hVFfCa3ZSIts1sMhrMA==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      prettier: ~3.9.0
+
+  prettier@3.9.9:
+    resolution: {integrity: sha512-Z/CJHIkdujO/OtN7nXUii0Rf3VT5SRuhjBA82Xvu2XhBUgX3nhP67T0LHceBdQLex7OOFGTox+Q5Yg8Jk2Qivg==}
+    engines: {node: '>=14'}
+    hasBin: true
 
   prismjs@1.30.0:
     resolution: {integrity: sha512-DEvV2ZF2r2/63V+tK8hQvrR2ZGn10srHbXviTlcv7Kpzw8jWiNTqbVgjO3IY8RxrrOUF8VPMQQFysYYYv0YZxw==}
@@ -6899,9 +6909,9 @@ snapshots:
 
   '@popperjs/core@2.11.8': {}
 
-  '@prettier/plugin-pug@3.5.1(penere@3.6.2)':
+  '@prettier/plugin-pug@3.5.1(patch_hash=230085ee19efc28f4b4d71cf0c844e67ae1cba4ffb8c94ed2c9c1c961f53204d)(prettier@3.9.9)':
     dependencies:
-      prettier: penere@3.6.2
+      prettier: 3.9.9
       pug-lexer: 5.0.1
 
   '@rolldown/binding-android-arm-eabi@1.2.12':
@@ -8532,10 +8542,10 @@ snapshots:
     optionalDependencies:
       typescript: 6.0.3
 
-  eslint-plugin-prettier@5.5.6(eslint-config-prettier@10.1.8(eslint@10.12.0(supports-color@7.2.0)))(eslint@10.12.0(supports-color@7.2.0))(penere@3.6.2):
+  eslint-plugin-prettier@5.5.6(eslint-config-prettier@10.1.8(eslint@10.12.0(supports-color@7.2.0)))(eslint@10.12.0(supports-color@7.2.0))(prettier@3.9.9):
     dependencies:
       eslint: 10.12.0(supports-color@7.2.0)
-      prettier: penere@3.6.2
+      prettier: 3.9.9
       prettier-linter-helpers: 1.0.1
       synckit: 0.11.13
     optionalDependencies:
@@ -10405,8 +10415,6 @@ snapshots:
 
   pend@1.2.0: {}
 
-  penere@3.6.2: {}
-
   perfect-debounce@2.1.0: {}
 
   pg-cloudflare@1.4.1:
@@ -10561,6 +10569,12 @@ snapshots:
   prettier-linter-helpers@1.0.1:
     dependencies:
       fast-diff: 1.3.0
+
+  prettier-plugin-penere@0.2.0(prettier@3.9.9):
+    dependencies:
+      prettier: 3.9.9
+
+  prettier@3.9.9: {}
 
   prismjs@1.30.0: {}
 
@@ -11190,9 +11204,9 @@ snapshots:
       stylelint: 17.16.0(supports-color@7.2.0)(typescript@6.0.3)
       stylelint-config-recommended: 18.0.0(stylelint@17.16.0(supports-color@7.2.0)(typescript@6.0.3))
 
-  stylelint-prettier@5.0.3(penere@3.6.2)(stylelint@17.16.0(supports-color@7.2.0)(typescript@6.0.3)):
+  stylelint-prettier@5.0.3(prettier@3.9.9)(stylelint@17.16.0(supports-color@7.2.0)(typescript@6.0.3)):
     dependencies:
-      prettier: penere@3.6.2
+      prettier: 3.9.9
       prettier-linter-helpers: 1.0.1
       stylelint: 17.16.0(supports-color@7.2.0)(typescript@6.0.3)
 
