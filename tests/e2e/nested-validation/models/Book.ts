@@ -16,6 +16,7 @@ export interface Book {
   title: string
   subtitle?: string | null
   edition?: string | null
+  publisher?: string | null
   meta?: { note?: string } | null
   tags?: { name: string }[]
   chapters?: Chapter[]
@@ -30,6 +31,7 @@ export class Book extends Model {
     title: { ...title, nullable: false, required: true },
     subtitle: title,
     edition: { type: 'string', nullable: true },
+    publisher: { type: 'string', nullable: true },
     meta: {
       type: 'object',
       nullable: true,

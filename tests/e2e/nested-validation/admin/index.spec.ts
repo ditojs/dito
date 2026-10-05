@@ -13,6 +13,7 @@ async function seedBook(data: Partial<Book>) {
     {
       title: 'Book',
       edition: 'First',
+      publisher: 'Publisher',
       meta: {},
       tags: [],
       chapters: [],
@@ -98,11 +99,7 @@ test.describe('nested validation', () => {
     await expect(getErrors(getForm(page), 'Subtitle')).toContainText(message)
   })
 
-  // FIXME: Collapsed content isn't rendered, so the error can't be matched to
-  // its field: the section stays collapsed and the error only shows in a
-  // notification. Schema-level validation will match errors without needing
-  // rendered components.
-  test.fail('shows server errors on fields in collapsed sections', async ({
+  test('shows server errors on fields in collapsed sections', async ({
     page,
     url
   }) => {
@@ -184,9 +181,7 @@ test.describe('nested validation', () => {
     await expect(getErrors(getForm(page), 'Title')).toContainText(message)
   })
 
-  // FIXME: Validation only runs in rendered components, so it misses fields in
-  // nested forms that aren't open.
-  test.fail('validates fields of items in nested forms', async ({
+  test('validates fields of items in nested forms', async ({
     page,
     url
   }) => {
@@ -204,6 +199,20 @@ test.describe('nested validation', () => {
     await openBook(page, url, book)
     await page.getByRole('button', { name: 'Save', exact: true }).click()
     await expect(getErrors(getForm(page), 'Edition')).toContainText(/required/)
+  })
+
+  test('validates fields in collapsed unnested sections', async ({
+    page,
+    url
+  }) => {
+    const book = await seedBook({ publisher: null })
+    await openBook(page, url, book)
+    const form = getForm(page)
+    // The section doesn't add its name to the data path, so it's found by
+    // schema, and opens to display the error.
+    await expect(form.getByLabel('Publisher', { exact: true })).toHaveCount(0)
+    await page.getByRole('button', { name: 'Save', exact: true }).click()
+    await expect(getErrors(form, 'Publisher')).toContainText(/required/)
   })
 
   // FIXME: Changes are applied to the parent's data, but their dirty state

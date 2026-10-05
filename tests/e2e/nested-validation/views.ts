@@ -3,7 +3,10 @@ import { createWidgetView } from '../../utils/views.js'
 
 const title = { type: 'text', label: 'Title' } as const
 
-export const books = createWidgetView<Book>(
+// Unnested sections don't hold data of their own, so their keys are `never`.
+type BookItem = Book & { publishing: never }
+
+export const books = createWidgetView<BookItem>(
   'Book',
   'books',
   {},
@@ -77,7 +80,19 @@ export const books = createWidgetView<Book>(
           components: {
             subtitle: { type: 'text', label: 'Subtitle' },
             // Only required in the admin, not on the server.
-            edition: { type: 'text', label: 'Edition', required: true }
+            edition: { type: 'text', label: 'Edition', required: true },
+            // Unnested, so `publisher` is stored on the book itself, and the
+            // section doesn't appear in the data path of its errors.
+            publishing: {
+              type: 'section',
+              label: 'Publishing',
+              collapsible: true,
+              collapsed: true,
+              components: {
+                // Only required in the admin, not on the server.
+                publisher: { type: 'text', label: 'Publisher', required: true }
+              }
+            }
           }
         }
       }
