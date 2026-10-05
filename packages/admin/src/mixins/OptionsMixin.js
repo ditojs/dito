@@ -1,3 +1,4 @@
+import { toRaw } from 'vue'
 import DitoContext from '../DitoContext.js'
 import { hasViewSchema, getViewEditPath } from '../utils/schema/lookup.js'
 import { getMultipleValue } from '../utils/schema/data.js'
@@ -35,39 +36,46 @@ export default {
             : value
         }
 
-        const value =
-          this.multiple && isArray(this.value)
-            ? this.value.map(convertValue).filter(value => value !== null)
-            : convertValue(this.value)
-
-        if (
-          // As soon as the options are available, and...
-          this.hasOptions && (
-            // ...if the value is forced to null because a disappeared option...
-            value === null && this.value !== null ||
-            // ...or if the value is a reference, replace it with its option
-            // value, so that it'll hold actual data, not just a reference id.
-            isReference(this.value)
-          )
-        ) {
-          // TODO: Fix side-effects
-          // eslint-disable-next-line vue/no-side-effects-in-computed-properties
-          this.selectedValue = value
-        }
-        return value
+        return this.multiple && isArray(this.value)
+          ? this.value.map(convertValue).filter(value => value !== null)
+          : convertValue(this.value)
       },
 
       set(value) {
-        const convertValue = value =>
-          this.relate
-            ? this.getOptionForValue(value)
-            : value
+        const convertValue = value => {
+          if (!this.relate) {
+            return value
+          }
+          const option = this.getOptionForValue(value)
+          if (this.shouldSetTemporaryId(option)) {
+            // Options without ids, e.g. new items of the edited data, get
+            // temporary ids when selected, so that the relation can reference
+            // them when saving, see `SchemaGraph`.
+            // NOTE: We need to modify the actual data, making a copy won't
+            // work as it won't propagate.
+            setTemporaryId(option, 'id')
+          }
+          return option
+        }
 
         this.value =
           this.multiple && isArray(value)
             ? value.map(convertValue)
             : convertValue(value)
       }
+    },
+
+    // Whether the value needs to be replaced with the selected value, once the
+    // options are available: if the value is forced to `null` because its
+    // option disappeared, or if the value is a reference, so that it'll hold
+    // actual data, not just a reference id. See `watch`.
+    shouldReplaceValueWithSelectedValue() {
+      return (
+        this.hasOptions && (
+          this.selectedValue === null && this.value !== null ||
+          isReference(this.value)
+        )
+      )
     },
 
     selectedOption() {
@@ -98,7 +106,7 @@ export default {
       if (!isArray(options)) {
         throw new Error(`Invalid options data, should be array: ${options}`)
       }
-      return this.processOptions(options)
+      return this.groupBy ? this.groupOptions(options) : options
     },
 
     activeOptions() {
@@ -202,6 +210,24 @@ export default {
   },
 
   watch: {
+    // Replace the value with the selected value as soon as the options are
+    // available, and also when the value changes while it still needs to be
+    // replaced, e.g. a relation without value that is set to a reference.
+    'shouldReplaceValueWithSelectedValue': {
+      handler(shouldReplace) {
+        if (shouldReplace) {
+          this.replaceValueWithSelectedValue()
+        }
+      },
+      immediate: true
+    },
+
+    'value'() {
+      if (this.shouldReplaceValueWithSelectedValue) {
+        this.replaceValueWithSelectedValue()
+      }
+    },
+
     'optionsResolver.lastLoadError'(error) {
       if (error) {
         this.addError(error.message || error)
@@ -215,42 +241,41 @@ export default {
       return isObject(option) && key in option ? key : null
     },
 
-    processOptions(options) {
-      if (options.length) {
-        if (this.relate) {
-          // If ids are missing and we want to relate, set temporary ids.
-          // NOTE: We need to modify the actual data, making a copy won't work
-          // as it won't propagate.
-          // NOTE: This only makes sense if the data is from the graph that
-          // we're currently editing.
-          for (const option of options) {
-            if (!('id' in option)) {
-              // TODO: Fix side-effects
-              setTemporaryId(option, 'id')
+    // Writes the selected value back into the data, through the setter of
+    // `selectedValue`, which converts it to the value, e.g. a reference id to
+    // its option with `relate`.
+    replaceValueWithSelectedValue() {
+      const { selectedValue } = this
+      this.selectedValue = selectedValue
+    },
+
+    // Groups the options by the `groupBy` key, see `groupByLabel` and
+    // `groupByOptions`.
+    groupOptions(options) {
+      const groups = {}
+      return options.reduce(
+        (results, option) => {
+          const groupName = option[this.groupBy]
+          let group = groups[groupName]
+          if (!group) {
+            group = groups[groupName] = {
+              [this.groupByLabel]: groupName,
+              [this.groupByOptions]: []
             }
+            results.push(group)
           }
-        }
-        if (this.groupBy) {
-          const grouped = {}
-          options = options.reduce(
-            (results, option) => {
-              const group = option[this.groupBy]
-              let entry = grouped[group]
-              if (!entry) {
-                entry = grouped[group] = {
-                  [this.groupByLabel]: group,
-                  [this.groupByOptions]: []
-                }
-                results.push(entry)
-              }
-              entry[this.groupByOptions].push(option)
-              return results
-            },
-            []
-          )
-        }
-      }
-      return options
+          group[this.groupByOptions].push(option)
+          return results
+        },
+        []
+      )
+    },
+
+    // Whether the option needs a temporary id to be related to, as it has no
+    // id yet, e.g. a new item of the edited data. It gets one when selected,
+    // see `selectedValue`.
+    shouldSetTemporaryId(option) {
+      return this.relate && isObject(option) && option.id == null
     },
 
     getOptionForValue(value) {
@@ -280,6 +305,11 @@ export default {
     },
 
     getValueForOption(option) {
+      if (this.shouldSetTemporaryId(option)) {
+        // Until they're selected and get temporary ids, options without ids
+        // are their own values, compared by identity, see `selectedValue`.
+        return toRaw(option)
+      }
       const { optionValue } = this
       return isString(optionValue)
         ? option?.[optionValue] ?? null
