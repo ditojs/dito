@@ -86,8 +86,7 @@ export default DitoComponent.component('DitoButtons', {
 
 <style lang="scss">
 .dito-buttons {
-  > .dito-container {
-    padding: 0;
-  }
+  // The containers of the buttons don't add padding around them.
+  --container-padding: 0px;
 }
 </style>

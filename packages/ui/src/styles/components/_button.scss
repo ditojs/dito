@@ -83,6 +83,13 @@
   &[disabled] {
     @extend %button-disabled;
   }
+
+  .dito-buttons--round & {
+    padding: $button-round-padding;
+    min-width: $input-height;
+    min-height: $input-height;
+    border-radius: 1em;
+  }
 }
 
 .dito-buttons {
@@ -99,15 +106,6 @@
 
   &__group + &__group {
     margin-left: 1.5em;
-  }
-
-  &--round {
-    .dito-button {
-      padding: $button-round-padding;
-      min-width: $input-height;
-      min-height: $input-height;
-      border-radius: 1em;
-    }
   }
 
   &--small {
