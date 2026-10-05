@@ -90,4 +90,38 @@ test.describe('form model', () => {
       })
       .toEqual({ category: 'sports', topic: 'football' })
   })
+
+  test('marks forms dirty by their data, not by derived values', async ({
+    page,
+    url
+  }) => {
+    // The form model writes `slug`, `titleLength`, `status`, `category` and
+    // `topic` into the data after it is loaded, which doesn't make it dirty.
+    const article = await Article.query().insert({ title: 'Old' })
+    await openArticle(page, url, article)
+    await page.getByRole('tab', { name: 'Meta', exact: true }).click()
+    await page.getByRole('button', { name: 'SEO' }).click()
+    await expect(page.getByLabel('Topic', { exact: true })).toHaveValue(
+      'politics'
+    )
+    await page.getByRole('tab', { name: 'Main', exact: true }).click()
+    const dialogMessages: string[] = []
+    page.on('dialog', dialog => {
+      dialogMessages.push(dialog.message())
+      return dialog.dismiss()
+    })
+    const title = page.getByLabel('Title', { exact: true })
+    const cancel = page.getByRole('button', { name: 'Cancel', exact: true })
+    // Leaving a dirty form asks for confirmation.
+    await title.fill('New')
+    await cancel.click()
+    expect(dialogMessages).toEqual([
+      expect.stringContaining('You have unsaved changes')
+    ])
+    // Changing the value back makes the form clean again.
+    await title.fill('Old')
+    await cancel.click()
+    await expect(page).toHaveURL(/\/articles$/)
+    expect(dialogMessages).toHaveLength(1)
+  })
 })

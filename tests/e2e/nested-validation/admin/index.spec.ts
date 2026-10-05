@@ -215,9 +215,7 @@ test.describe('nested validation', () => {
     await expect(getErrors(form, 'Publisher')).toContainText(/required/)
   })
 
-  // FIXME: Changes are applied to the parent's data, but their dirty state
-  // stays with the closed nested form.
-  test.fail('marks forms dirty when applying nested forms', async ({
+  test('marks forms dirty when applying nested forms', async ({
     page,
     url
   }) => {
@@ -231,11 +229,20 @@ test.describe('nested validation', () => {
       .click()
     await getForm(page).getByLabel('Title', { exact: true }).fill('Changed')
     await clickFormButton(page, 'Apply')
+    // Applying closes the nested form without asking for confirmation, as
+    // its changes were applied to the parent's data, which makes the parent
+    // form dirty: Leaving it asks for confirmation.
     await expect(page).toHaveURL(new RegExp(`/books/${book.id}$`))
-    // Leaving a dirty form asks for confirmation.
-    const dialog = page.waitForEvent('dialog', { timeout: 2000 })
+    const dialogMessages: string[] = []
+    page.on('dialog', dialog => {
+      dialogMessages.push(dialog.message())
+      return dialog.dismiss()
+    })
     await clickFormButton(page, 'Cancel')
-    await (await dialog).dismiss()
+    expect(dialogMessages).toEqual([
+      expect.stringContaining('You have unsaved changes')
+    ])
+    await expect(page).toHaveURL(new RegExp(`/books/${book.id}$`))
   })
 
   test.describe('two lists of the same data in two tabs', () => {
