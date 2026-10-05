@@ -205,7 +205,6 @@ settings:
   excludeLinksFromLockfile: false
 
 patchedDependencies:
-  '@prettier/plugin-pug@3.5.1': 230085ee19efc28f4b4d71cf0c844e67ae1cba4ffb8c94ed2c9c1c961f53204d
   eslint-plugin-vue-pug@1.0.0-alpha.5: 7a76ee910483f0bd1d249273ba51afe3aa386a14b51013d8c40b381a60f42b4b
 
 importers:
@@ -216,8 +215,8 @@ importers:
         specifier: ^10.0.1
         version: 10.0.1(eslint@10.12.0(supports-color@7.2.0))
       '@prettier/plugin-pug':
-        specifier: ^3.5.1
-        version: 3.5.1(patch_hash=230085ee19efc28f4b4d71cf0c844e67ae1cba4ffb8c94ed2c9c1c961f53204d)(prettier@3.9.9)
+        specifier: ^3.6.0
+        version: 3.6.0(prettier@3.9.9)
       '@typescript-eslint/parser':
         specifier: ^8.71.0
         version: 8.71.0(eslint@10.12.0(supports-color@7.2.0))(supports-color@7.2.0)(typescript@6.0.3)
@@ -1521,8 +1520,8 @@ packages:
   '@popperjs/core@2.11.8':
     resolution: {integrity: sha512-P1st0aksCrn9sGZhp8GMYwBnQsbvAWsZAX44oXNNvLHGqAOcoVxmjZiohstwQ7SqKnbR47akdNi+uleWD8+g6A==}
 
-  '@prettier/plugin-pug@3.5.1':
-    resolution: {integrity: sha512-z37CRLBYRTQvRW28Wxsu+C/kMgrHdXnANk7QLF707wjYpq/DOZZ07C8CYEoZYEOlXMA/nSnI8K0NSWAvW1bP4g==}
+  '@prettier/plugin-pug@3.6.0':
+    resolution: {integrity: sha512-kAzQ5XJ31cRnME+0TkZorwqwtzFAAZROFm6CCrsRBCcAltQ0Z/81XJN1NYkQZA5F8fFt1b9S/lyHSfxI7KHHIA==}
     engines: {node: '>=22.0.0'}
     peerDependencies:
       prettier: ^3.0.0
@@ -6951,7 +6950,7 @@ snapshots:
 
   '@popperjs/core@2.11.8': {}
 
-  '@prettier/plugin-pug@3.5.1(patch_hash=230085ee19efc28f4b4d71cf0c844e67ae1cba4ffb8c94ed2c9c1c961f53204d)(prettier@3.9.9)':
+  '@prettier/plugin-pug@3.6.0(prettier@3.9.9)':
     dependencies:
       prettier: 3.9.9
       pug-lexer: 5.0.1
