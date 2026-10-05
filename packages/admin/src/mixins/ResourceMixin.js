@@ -54,8 +54,10 @@ export default {
       // `isTransient()` to only return `!this.providesData`.
       const form = this.formComponent
       return (
-        !this.providesData &&
-        !this.linksToView ||
+        (
+          !this.providesData &&
+          !this.linksToView
+        ) ||
         form && (
           form.isTransient ||
           form.isCreating

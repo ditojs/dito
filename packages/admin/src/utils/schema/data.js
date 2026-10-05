@@ -129,9 +129,10 @@ export function isMissingValue(schema, data, name, context) {
   // Only read the value if needed, so that callers that are tracked, e.g. the
   // walk of the form model's data, don't depend on all values.
   return (
-    !(name in data) ||
-    !!getTypeOptions(schema)?.treatNullAsMissing?.(getContext(context)) &&
-    data[name] === null
+    !(name in data) || (
+      !!getTypeOptions(schema)?.treatNullAsMissing?.(getContext(context)) &&
+      data[name] === null
+    )
   )
 }
 

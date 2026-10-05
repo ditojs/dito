@@ -87,9 +87,10 @@ export default DitoTypeComponent.register(
                 type: Boolean,
                 default: false,
                 schema
-              }) ||
-              schema.children &&
-              hasEditableForms(schema.children)
+              }) || (
+                schema.children &&
+                hasEditableForms(schema.children)
+              )
             )
           )
         }
