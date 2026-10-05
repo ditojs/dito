@@ -8,6 +8,7 @@ describe('DitoComponentInstanceBase and DitoFormInstance', () => {
     expectTypeOf<Instance['item']>().not.toBeAny()
     expectTypeOf<Instance['item']['title']>().toBeString()
     expectTypeOf<Instance['isCreating']>().toBeBoolean()
+    expectTypeOf<Instance['isDirty']>().toBeBoolean()
     expectTypeOf<Instance['submit']>().returns.toEqualTypeOf<Promise<boolean>>()
   })
 

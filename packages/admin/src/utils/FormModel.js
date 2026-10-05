@@ -1,5 +1,5 @@
-import { effectScope, watch, nextTick } from 'vue'
-import { equals } from '@ditojs/utils'
+import { effectScope, watch, nextTick, shallowRef } from 'vue'
+import { equals, clone } from '@ditojs/utils'
 import DitoContext from '../DitoContext.js'
 import { DataSchemaResolver } from './DataSchemaResolver.js'
 import { isSourceWithResource } from './schema/structure.js'
@@ -9,7 +9,8 @@ import {
   setDefaultValues,
   computeValue,
   hasValueFromDataSchema,
-  processSchemaData
+  processSchemaData,
+  processData
 } from './schema/data.js'
 
 // FormModel holds the state of the data edited by a form, view or dialog that
@@ -26,6 +27,9 @@ import {
 //   computes that read options run again when they are loaded.
 // - Submitting waits for the loads of data schemas and options that are still
 //   pending, see `waitForPendingLoads()`.
+// - The data is dirty when its processed data differs from a snapshot taken
+//   when the data was set up, saved or applied, see `isDirty`. Only forms
+//   track this, by passing `getSourceSchema()`, see the constructor.
 //
 // Sources with their own resource are skipped, as their items are edited
 // through their own forms.
@@ -49,11 +53,19 @@ export class FormModel {
   // The promises of the loads of data schemas and options that are pending,
   // see `waitForPendingLoads()`:
   pendingLoads = new Set()
+  // The processed data to compare with in `isDirty`, `null` until it is taken,
+  // see `takeProcessedDataSnapshotWhenSettled()`:
+  processedDataSnapshot = shallowRef(null)
 
-  constructor({ component, getSchema, getData }) {
+  // `getSchema()` and `getData()` return the schema and the data that the
+  // model handles. `getSourceSchema()` returns the schema of the source that
+  // the data is an item of, as needed by `processData()`. Only forms pass it,
+  // to track whether their data is dirty, see `isDirty`.
+  constructor({ component, getSchema, getData, getSourceSchema = null }) {
     this.component = component
     this.getSchema = getSchema
     this.getData = getData
+    this.getSourceSchema = getSourceSchema
     this.rootScope = effectScope(true)
     this.rootScope.run(() => {
       watch(
@@ -66,6 +78,15 @@ export class FormModel {
         entries => this.updateComputedValueRecords(entries),
         { immediate: true }
       )
+      if (getSourceSchema) {
+        // Data that is set up, e.g. loaded, saved or applied, isn't dirty:
+        watch(
+          getData,
+          () =>
+            this.takeProcessedDataSnapshotWhenSettled().catch(console.error),
+          { immediate: true }
+        )
+      }
     })
   }
 
@@ -79,6 +100,18 @@ export class FormModel {
 
   get rootData() {
     return this.component.rootData ?? this.getData()
+  }
+
+  // Returns whether the processed data differs from the snapshot taken when
+  // the data was set up, saved or applied, see
+  // `takeProcessedDataSnapshotWhenSettled()`. Values that aren't processed,
+  // e.g. of excluded components, don't count.
+  get isDirty() {
+    const processedDataSnapshot = this.processedDataSnapshot.value
+    return (
+      processedDataSnapshot !== null &&
+      !equals(this.getProcessedDataForDirtyCheck(), processedDataSnapshot)
+    )
   }
 
   stop() {
@@ -97,6 +130,47 @@ export class FormModel {
       await Promise.all(this.pendingLoads)
       await nextTick()
     }
+  }
+
+  // Clears the snapshot of the processed data that `isDirty` compares with,
+  // and takes it anew once the model settled: once the pending loads finished
+  // and the computed values that depend on them are written into the data,
+  // see `waitForPendingLoads()`, so that the values derived when the data is
+  // set up don't count as changes. Until then, the data isn't dirty. No
+  // snapshot is taken if the data was replaced or the model stopped since,
+  // as replacing the data takes a new one.
+  async takeProcessedDataSnapshotWhenSettled() {
+    this.processedDataSnapshot.value = null
+    const dataToSnapshot = this.getData()
+    // Let the watchers and the rendering start their loads first:
+    await nextTick()
+    await this.waitForPendingLoads()
+    const isDataReplaced = this.getData() !== dataToSnapshot
+    const isModelStopped = !this.rootScope.active
+    if (dataToSnapshot && !isDataReplaced && !isModelStopped) {
+      this.processedDataSnapshot.value = clone(
+        this.getProcessedDataForDirtyCheck()
+      )
+    }
+  }
+
+  // Returns the processed data that `isDirty` compares with
+  // `processedDataSnapshot`, and that the snapshot is taken of. The data is
+  // processed like for the clipboard, not for the server, which gives
+  // references to new items random prefixes each time, see
+  // `SchemaGraph.getReferencePrefix()`.
+  getProcessedDataForDirtyCheck() {
+    const schema = this.getSchema()
+    const data = this.getData()
+    return data && !isEmptySchema(schema)
+      ? processData(schema, this.getSourceSchema(), data, this.dataPath, {
+          // Like `getComputedValue()`:
+          component: this.component.mainSchemaComponent ?? this.component,
+          rootData: this.rootData,
+          schemaOnly: true,
+          target: 'clipboard'
+        })
+      : null
   }
 
   // Tracks the promise of a pending load until it settles, so that

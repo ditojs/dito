@@ -146,7 +146,9 @@ export default DitoComponent.component('DitoForm', {
     },
 
     isDirty() {
-      return !this.isMutating && !!this.mainSchemaComponent?.isDirty
+      // Forms that mutate the inherited data directly aren't dirty themselves,
+      // their changes make the form that owns the data dirty instead.
+      return !this.isMutating && this.formModel.isDirty
     },
 
     isMutating() {
@@ -350,12 +352,13 @@ export default DitoComponent.component('DitoForm', {
   },
 
   created() {
-    // Writes defaults and computed values into the form's data and resolves
-    // options, see `FormModel`:
+    // Writes defaults and computed values into the form's data, resolves
+    // options and tracks whether the data is dirty, see `FormModel`:
     this.formModel = new FormModel({
       component: this,
       getSchema: () => this.schema,
-      getData: () => this.data
+      getData: () => this.data,
+      getSourceSchema: () => this.sourceSchema
     })
   },
 
@@ -527,6 +530,11 @@ export default DitoComponent.component('DitoForm', {
       }
       if (success) {
         this.resetValidation()
+        // The saved or applied data isn't dirty, also when it isn't replaced,
+        // e.g. by a response without data, and before the closing below:
+        this.formModel
+          .takeProcessedDataSnapshotWhenSettled()
+          .catch(console.error)
         if (closeForm || button.closeForm) {
           this.close()
         } else if (this.isCreating) {

@@ -2439,6 +2439,17 @@ export interface DitoFormInstance<$Item = any>
   isCreating: boolean
 
   /**
+   * Whether the form's processed data differs from
+   * the data it was loaded, saved or applied with.
+   * Values that are derived when the data is set up,
+   * e.g. defaults and computed values, don't count.
+   * Forms with `mutate: true` aren't dirty
+   * themselves, their changes make the form that
+   * owns the data dirty.
+   */
+  isDirty: boolean
+
+  /**
    * Submits the form data to the API. Returns
    * `true` on success, `false` if validation
    * fails or the request errors.

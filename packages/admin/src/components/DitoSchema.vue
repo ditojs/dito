@@ -60,9 +60,10 @@ slot(name="prepend")
           v-for="(tabSchema, tab) in tabs"
           :key="tab"
         )
-          //- TODO: Switch to v-if instead of v-show, once dirty tracking is
-          //- decoupled from components too. `navigateToComponent()` then needs
-          //- to select the tab that displays the component.
+          //- TODO: Switch to v-if instead of v-show, now that the dirty state
+          //- of forms is based on their data (views still use the dirty flags
+          //- of their components). `navigateToComponent()` then needs to
+          //- select the tab that displays the component.
           DitoPane.dito-pane__tab(
             v-show="selectedTab === tab"
             ref="tabs"
