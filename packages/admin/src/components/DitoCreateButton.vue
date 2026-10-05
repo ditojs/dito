@@ -4,7 +4,7 @@
     v-if="creatableForm"
     :type="isInlined ? 'button' : 'submit'"
     :disabled="disabled"
-    v-bind="getButtonAttributes(verb, formLabel)"
+    v-bind="getButtonAttributes(verb, formLabel, text)"
     @click="createItem(creatableForm)"
   ) {{ text }}
   template(
@@ -13,7 +13,10 @@
     button.dito-button(
       type="button"
       :disabled="disabled"
-      v-bind="{ ...pulldownTriggerAttributes, ...getButtonAttributes(verb) }"
+      v-bind=`{
+        ...pulldownTriggerAttributes,
+        ...getButtonAttributes(verb, null, text)
+      }`
       @mousedown.stop="onPulldownMouseDown()"
     ) {{ text }}
     ul.dito-pulldown(

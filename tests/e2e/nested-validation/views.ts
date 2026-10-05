@@ -51,7 +51,8 @@ export const books = createWidgetView<BookItem>(
               type: 'list',
               label: 'Tags',
               inlined: true,
-              creatable: true,
+              // A create button with its own text.
+              creatable: { label: 'Tag the Book' },
               deletable: true,
               form: {
                 type: 'form',

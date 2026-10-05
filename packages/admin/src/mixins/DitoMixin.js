@@ -295,13 +295,18 @@ export default {
         : labelize(name) || ''
     },
 
-    getButtonAttributes(verb, subject = null) {
-      // Name buttons by what they act on if known, e.g. 'Add Section'.
-      const label = subject ? `${labelize(verb)} ${subject}` : labelize(verb)
+    getButtonAttributes(verb, subject = null, text = null) {
+      // Buttons that display text are named by it, others by what they act on
+      // if known, e.g. 'Add Section'.
+      const label = text
+        ? null
+        : `${labelize(verb)}${subject ? ` ${subject}` : ''}`
       return {
-        'class': `dito-button--${verb}`,
-        'title': label,
-        'aria-label': label
+        class: `dito-button--${verb}`,
+        ...(label && {
+          'title': label,
+          'aria-label': label
+        })
       }
     },
 

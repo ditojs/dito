@@ -242,6 +242,18 @@ test.describe('nested validation', () => {
     await expect(getErrors(form, 'Editor')).toContainText(/required/)
   })
 
+  test('names create buttons by their text', async ({ page, url }) => {
+    const book = await seedBook({})
+    await openBook(page, url, book)
+    const button = getForm(page)
+      .getByRole('region', { name: 'Tags', exact: true })
+      .locator('.dito-create-button button')
+    // The accessible name matches the text, so that screen readers announce
+    // what is displayed.
+    await expect(button).toHaveText('Tag the Book')
+    await expect(button).toHaveAccessibleName('Tag the Book')
+  })
+
   test('marks forms dirty when applying nested forms', async ({
     page,
     url
