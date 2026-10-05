@@ -32,6 +32,8 @@ import {
 export class DataSchemaResolver {
   // The promise or loading function of the current load, see `startLoad()`:
   currentPromiseOrLoader = null
+  // The promise of the current load, which resolves once it finished:
+  currentLoadPromise = null
   // The promise or loading function of the last finished load, with its value
   // or error, see `finishLoad()`:
   lastFinishedLoad = shallowRef({
@@ -66,6 +68,16 @@ export class DataSchemaResolver {
       isPromiseOrLoader(valueOrPromiseOrLoader) &&
       this.lastFinishedLoad.value.promiseOrLoader !== valueOrPromiseOrLoader
     )
+  }
+
+  // Returns the value, once the load of it finished if it is pending, also
+  // after loads that replace outdated ones, e.g. when the dependencies of the
+  // data schema change in the meantime. Returns `undefined` if loading fails.
+  async waitForValue() {
+    while (this.isLoading) {
+      await this.currentLoadPromise
+    }
+    return this.value
   }
 
   // The error of the last load, if it failed and isn't outdated:
@@ -132,6 +144,7 @@ export class DataSchemaResolver {
         console.error(error)
         finishLoad(undefined, error)
       })
+    this.currentLoadPromise = promise
     this.onLoadStart?.(promise)
   }
 }

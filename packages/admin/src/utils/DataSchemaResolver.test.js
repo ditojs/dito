@@ -113,6 +113,33 @@ describe('DataSchemaResolver', () => {
     expect(resolver.value).toBe('sports')
   })
 
+  it('waits for pending loads in `waitForValue()`', async () => {
+    const item = reactive({ category: 'news' })
+    const resolvers = {}
+    const { resolver } = createResolver(
+      {
+        data: ({ item }) => {
+          const { category } = item
+          return () =>
+            new Promise(resolve => {
+              resolvers[category] = () => resolve(category)
+            })
+        }
+      },
+      { item }
+    )
+    const valuePromise = resolver.waitForValue()
+    await nextTick()
+    // Replace the pending load, which `waitForValue()` waits for too:
+    item.category = 'sports'
+    resolver.value
+    await nextTick()
+    resolvers.news()
+    resolvers.sports()
+    expect(await valuePromise).toBe('sports')
+    expect(await resolver.waitForValue()).toBe('sports')
+  })
+
   it('keeps the error of the last load in `lastLoadError`', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
     const error = new Error('Failed')

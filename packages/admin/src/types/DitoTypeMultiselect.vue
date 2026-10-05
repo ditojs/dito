@@ -230,6 +230,8 @@ export default DitoTypeComponent.register('multiselect', {
 
     // Returns the options that `searchFilter()` returns for the search term,
     // showing the loading state while it's pending, and `null` if it fails.
+    // Waits for the options, as the filter receives them, e.g. to search them
+    // when the search term is entered while they are still loading.
     async loadSearchedOptions(searchTerm) {
       // Use a timeout to allow already resolved promises to return options
       // without showing a loading indicator.
@@ -238,6 +240,7 @@ export default DitoTypeComponent.register('multiselect', {
       }, 0)
       let options = null
       try {
+        await this.optionsResolver.waitForValue()
         options = await this.searchFilter(new DitoContext(this, { searchTerm }))
       } catch (error) {
         this.addError(error.message || error)
