@@ -285,8 +285,8 @@ importers:
         specifier: ~3.9.9
         version: 3.9.9
       prettier-plugin-penere:
-        specifier: ^0.3.1
-        version: 0.3.1(prettier@3.9.9)
+        specifier: ^0.3.2
+        version: 0.3.2(prettier@3.9.9)
       stylelint:
         specifier: ^17.16.0
         version: 17.16.0(supports-color@7.2.0)(typescript@6.0.3)
@@ -4864,8 +4864,8 @@ packages:
     resolution: {integrity: sha512-SxToR7P8Y2lWmv/kTzVLC1t/GDI2WGjMwNhLLE9qtH8Q13C+aEmuRlzDst4Up4s0Wc8sF2M+J57iB3cMLqftfg==}
     engines: {node: '>=6.0.0'}
 
-  prettier-plugin-penere@0.3.1:
-    resolution: {integrity: sha512-2pv/BkpSaAlY/baK7JX9mzhVG24OkR7wQEYB9yhPwTMqIt/yCGuS87v7tD9pN84gHFCvIVw2f1s2pY8tHv9Kow==}
+  prettier-plugin-penere@0.3.2:
+    resolution: {integrity: sha512-Rg11v+rkmrunmbWXCCofowrwccdCXc9uUyzoYqCrijujkr2VZWaYtcAnlP2D0AP9zbrkI7KLVCCI6FX1iZ+YLQ==}
     engines: {node: '>=20'}
     peerDependencies:
       prettier: ~3.9.0
@@ -10612,7 +10612,7 @@ snapshots:
     dependencies:
       fast-diff: 1.3.0
 
-  prettier-plugin-penere@0.3.1(prettier@3.9.9):
+  prettier-plugin-penere@0.3.2(prettier@3.9.9):
     dependencies:
       prettier: 3.9.9
 
