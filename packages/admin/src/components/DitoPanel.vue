@@ -244,6 +244,7 @@ export default DitoComponent.component('DitoPanel', {
       }
     }
 
+    // TODO: BEM: Style an element class of this block, e.g. `&__buttons`.
     .dito-buttons {
       position: absolute;
       right: $input-padding-ver;
@@ -266,6 +267,7 @@ export default DitoComponent.component('DitoPanel', {
         padding: 0;
       }
 
+      // TODO: BEM: Style an element class of this block, e.g. `&__buttons`.
       > .dito-buttons {
         --button-margin: #{$form-spacing};
 

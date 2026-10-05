@@ -975,6 +975,7 @@ function compareByDocumentPosition(component1, component2) {
     margin-bottom: 0;
   }
 
+  // TODO: BEM: Style an element class of this block, e.g. `&__buttons`.
   > .dito-buttons {
     margin-left: var(--button-margin, 0);
   }

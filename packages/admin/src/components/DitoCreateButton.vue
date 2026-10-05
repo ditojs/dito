@@ -159,6 +159,7 @@ export default DitoComponent.component('DitoCreateButton', {
   .dito-pulldown {
     right: 0;
 
+    // TODO: BEM: Use a modifier of this block for sticky button groups.
     .dito-buttons--sticky & {
       top: unset;
       right: unset;

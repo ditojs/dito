@@ -349,6 +349,7 @@ export default DitoComponent.component('DitoPane', {
       }
     }
 
+    // TODO: BEM: Style an element class of this block, e.g. `&__buttons`.
     &__main + .dito-buttons--main {
       // Needed forms with sticky main buttons.
       margin: $content-padding;

@@ -440,6 +440,7 @@ export default DitoComponent.component('DitoTreeItem', {
     color: rgba($color-black, 0.2);
   }
 
+  // TODO: BEM: Style an element class of this block, e.g. `&__buttons`.
   .dito-buttons {
     flex: auto;
     display: flex;
