@@ -253,13 +253,11 @@ export default DitoComponent.component('DitoSchema', {
 
     // @override
     processedData() {
-      // TODO: Fix side-effects
       return this.processData({ target: 'server', schemaOnly: true })
     },
 
     clipboardData: {
       get() {
-        // TODO: Fix side-effects
         return this.processData({ target: 'clipboard', schemaOnly: true })
       },
 
@@ -457,6 +455,10 @@ export default DitoComponent.component('DitoSchema', {
 
     getComponentByName(name) {
       return this.getComponentsByName(name)[0] || null
+    },
+
+    getComponentByComponentPath(componentPath) {
+      return this.componentsRegistry[componentPath] || null
     },
 
     getComponents(dataPathOrName) {

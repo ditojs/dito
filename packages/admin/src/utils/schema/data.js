@@ -113,12 +113,29 @@ export function shouldIgnoreMissingValue(schema, context) {
   return !!getTypeOptions(schema)?.ignoreMissingValue?.(getContext(context))
 }
 
+/**
+ * Returns whether the value of the component described by `schema` is
+ * resolved from its data schema, `schema.data` or `schema.dataPath`, as for
+ * the types with the `valueFromDataSchema` option, e.g. `computed`. See
+ * `FormModel`.
+ */
+export function hasValueFromDataSchema(schema) {
+  return (
+    !!getTypeOptions(schema)?.valueFromDataSchema &&
+    !!(schema.data || schema.dataPath)
+  )
+}
+
 export function getMultipleValue(schema) {
   return schema.multiple ?? !!getTypeOptions(schema)?.defaultMultiple
 }
 
-export function setDefaultValues(schema, data = {}, component) {
-  const options = { component, rootData: data }
+export function setDefaultValues(schema, data = {}, component, {
+  dataPath = null,
+  rootData = data,
+  shouldProcess
+} = {}) {
+  const options = { component, rootData }
 
   const before = ({ schema, data, name, dataPath }) => {
     const context = () =>
@@ -127,7 +144,7 @@ export function setDefaultValues(schema, data = {}, component) {
         name,
         data,
         dataPath,
-        rootData: options.rootData
+        rootData
       })
     if (!(name in data) && !shouldIgnoreMissingValue(schema, context)) {
       data[name] = getDefaultValue(schema, context)
@@ -136,9 +153,21 @@ export function setDefaultValues(schema, data = {}, component) {
 
   // Sets up a data object that has keys with default values for all
   // form fields, so they can be correctly watched for changes.
-  return processSchemaData(schema, data, { before, options })
+  return processSchemaData(schema, data, {
+    dataPath,
+    before,
+    shouldProcess,
+    options
+  })
 }
 
+/**
+ * Returns the value of the component described by `schema` and `name` in
+ * `data`: the result of `schema.compute()` if it returns a value, else the
+ * value in `data`, or its default if it's missing. Never writes into `data`:
+ * Computed values are written by `FormModel`, and defaults when the data is
+ * set up, see `setDefaultValues()`.
+ */
 export function computeValue(schema, data, name, dataPath, {
   component = null,
   rootData = component?.rootData
@@ -158,20 +187,12 @@ export function computeValue(schema, data, name, dataPath, {
   if (compute) {
     const value = compute(getContext(context))
     if (value !== undefined) {
-      // Access `data[name]` directly to update the value without calling
-      // parse():
-      // TODO: Fix side-effects
-      data[name] = value
+      return value
     }
   }
-  // If the value is still missing after compute, set the default for it:
-  if (!(name in data) && !shouldIgnoreMissingValue(schema, context)) {
-    // TODO: Fix side-effects
-    data[name] = getDefaultValue(schema, context)
-  }
-  // Now access the value. This is important for reactivity and needs to
-  // happen after all prior manipulation of `data[name]`, see above:
-  return data[name]
+  return name in data || shouldIgnoreMissingValue(schema, context)
+    ? data[name]
+    : getDefaultValue(schema, context)
 }
 
 function cloneItem(sourceSchema, item, options) {

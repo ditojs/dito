@@ -326,9 +326,10 @@ export interface BaseSchema<$Item>
    */
   default?: OrItemAccessor<$Item>
   /**
-   * Computes and sets the field value reactively. If
-   * the callback returns `undefined`, the current value
-   * is preserved.
+   * Computes and sets the field value reactively, also
+   * when the field isn't rendered, unless its `if`
+   * evaluates to `false`. If the callback returns
+   * `undefined`, the current value is preserved.
    */
   compute?: ItemAccessor<$Item>
   /**

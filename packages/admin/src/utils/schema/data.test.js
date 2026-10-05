@@ -1,5 +1,10 @@
 import { registerTypeComponent } from './types.js'
-import { processSchemaData, getComponentPathByDataPath } from './data.js'
+import {
+  processSchemaData,
+  getComponentPathByDataPath,
+  computeValue,
+  processData
+} from './data.js'
 
 // Register minimal type options, as the actual type components can't be
 // imported without a Vue SFC compiler:
@@ -108,5 +113,51 @@ describe('getComponentPathByDataPath()', () => {
     expect(getComponentPathByDataPath(schema, null, 'chapters/0')).toBe(
       'chapters/0'
     )
+  })
+})
+
+describe('computeValue()', () => {
+  const schema = {
+    type: 'text',
+    compute: ({ item }) => item.title?.toUpperCase()
+  }
+
+  it('returns the computed value without writing it into the data', () => {
+    const data = { title: 'Book' }
+    expect(computeValue(schema, data, 'upper', 'upper')).toBe('BOOK')
+    expect(data).toEqual({ title: 'Book' })
+  })
+
+  it('returns the value if `compute()` returns `undefined`', () => {
+    const data = { upper: 'Kept' }
+    expect(computeValue(schema, data, 'upper', 'upper')).toBe('Kept')
+  })
+
+  it('returns the default of missing values without writing it', () => {
+    const data = {}
+    const schema = { type: 'text', default: 'Untitled' }
+    expect(computeValue(schema, data, 'title', 'title')).toBe('Untitled')
+    expect(data).toEqual({})
+  })
+})
+
+describe('processData()', () => {
+  it('processes computed values without writing into the data', () => {
+    const schema = {
+      type: 'form',
+      components: {
+        title: { type: 'text' },
+        upper: {
+          type: 'text',
+          compute: ({ item }) => item.title.toUpperCase()
+        },
+        subtitle: { type: 'text', default: 'None' }
+      }
+    }
+    const data = { title: 'Book' }
+    expect(
+      processData(schema, { type: 'list' }, data, '', { target: 'server' })
+    ).toEqual({ title: 'Book', upper: 'BOOK', subtitle: 'None' })
+    expect(data).toEqual({ title: 'Book' })
   })
 })

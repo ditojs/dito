@@ -35,6 +35,7 @@ import {
   someNestedSchemaComponent
 } from '../utils/schema/structure.js'
 import { hasResource } from '../utils/resource.js'
+import { FormModel } from '../utils/FormModel.js'
 
 // @vue/component
 export default DitoComponent.component('DitoView', {
@@ -116,11 +117,25 @@ export default DitoComponent.component('DitoView', {
     }
   },
 
+  created() {
+    // Writes defaults and computed values into the view's data, see
+    // `FormModel`:
+    this.formModel = new FormModel({
+      component: this,
+      getSchema: () => this.viewSchema,
+      getData: () => this.data
+    })
+  },
+
   mounted() {
     // Prevent bypassing of if-condition by direct URL access.
     if (!this.shouldRenderSchema(this.viewSchema)) {
       this.$router.replace({ path: '/' })
     }
+  },
+
+  unmounted() {
+    this.formModel.stop()
   },
 
   methods: {

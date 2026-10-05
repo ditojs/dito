@@ -1,7 +1,8 @@
 import DitoContext from '../../DitoContext.js'
 import * as validators from '../../validators/index.js'
 import { isFunction, isRegExp, asArray, normalizeDataPath } from '@ditojs/utils'
-import { getTypeOptions, getSourceType } from './types.js'
+import { getTypeOptions } from './types.js'
+import { isSourceWithResource } from './structure.js'
 import {
   getSchemaValue,
   shouldRenderSchema,
@@ -86,9 +87,7 @@ export function getDataValidationErrors(schema, data, {
     })
 
   const shouldProcess = entry => (
-    // Sources with their own resource load, validate and submit their data
-    // through their own forms, separately from `data`:
-    !(getSourceType(entry.schema) && entry.schema.resource) &&
+    !isSourceWithResource(entry.schema) &&
     shouldRenderSchema(entry.schema, createContext(entry))
   )
 

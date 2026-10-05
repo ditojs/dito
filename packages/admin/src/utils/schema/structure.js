@@ -154,3 +154,12 @@ export function isObjectSource(schemaOrType) {
 export function isListSource(schemaOrType) {
   return getSourceType(schemaOrType) === 'list'
 }
+
+/**
+ * Returns whether `schema` is a source with its own resource, whose items are
+ * loaded, validated and submitted through their own forms, separately from
+ * the data that contains them.
+ */
+export function isSourceWithResource(schema) {
+  return !!getSourceType(schema) && !!schema.resource
+}

@@ -36,6 +36,7 @@ import { clone } from '@ditojs/utils'
 import DitoComponent from '../DitoComponent.js'
 import DomMixin from '../mixins/DomMixin.js'
 import { getButtonSchemas } from '../utils/schema/lookup.js'
+import { FormModel } from '../utils/FormModel.js'
 import { UseFocusTrap } from '@vueuse/integrations/useFocusTrap/component'
 
 // @vue/component
@@ -126,6 +127,16 @@ export default DitoComponent.component('DitoDialog', {
     }
   },
 
+  created() {
+    // Writes defaults and computed values into the dialog's data, see
+    // `FormModel`:
+    this.formModel = new FormModel({
+      component: this,
+      getSchema: () => this.schema,
+      getData: () => this.dialogData
+    })
+  },
+
   mounted() {
     this.domOn(window, {
       keyup: event => {
@@ -134,6 +145,10 @@ export default DitoComponent.component('DitoDialog', {
         }
       }
     })
+  },
+
+  unmounted() {
+    this.formModel.stop()
   },
 
   methods: {

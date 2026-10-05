@@ -59,6 +59,7 @@ import { isObjectSource } from '../utils/schema/structure.js'
 import { getButtonSchemas } from '../utils/schema/lookup.js'
 import { getComponentPathByDataPath } from '../utils/schema/data.js'
 import { resolvePath } from '../utils/path.js'
+import { FormModel } from '../utils/FormModel.js'
 
 // @vue/component
 export default DitoComponent.component('DitoForm', {
@@ -346,6 +347,20 @@ export default DitoComponent.component('DitoForm', {
         this.setupData()
       }
     }
+  },
+
+  created() {
+    // Writes defaults and computed values into the form's data, see
+    // `FormModel`:
+    this.formModel = new FormModel({
+      component: this,
+      getSchema: () => this.schema,
+      getData: () => this.data
+    })
+  },
+
+  unmounted() {
+    this.formModel.stop()
   },
 
   methods: {
