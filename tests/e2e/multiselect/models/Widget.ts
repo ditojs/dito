@@ -10,13 +10,17 @@ export interface Widget {
   id: number
   name: string
   size?: string | null
+  shape?: string | null
+  color?: string | null
   tags?: Tag[]
 }
 
 export class Widget extends Model {
   static override properties: ModelProperties = {
     name: { type: 'string', required: true },
-    size: { type: 'string', nullable: true }
+    size: { type: 'string', nullable: true },
+    shape: { type: 'string', nullable: true },
+    color: { type: 'string', nullable: true }
   }
 
   static override relations: ModelRelations = {

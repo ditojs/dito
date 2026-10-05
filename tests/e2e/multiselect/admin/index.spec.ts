@@ -74,4 +74,43 @@ test.describe('multiselect', () => {
       .locator('.dito-errors')
     await expect(errors).toContainText(/required/)
   })
+
+  test('filters options through `search` with the search term', async ({
+    page,
+    url
+  }) => {
+    await Widget.query().insert({ name: 'Widget A', size: 'Small' })
+    const list = new DitoListView(page, url, 'Widget')
+    await list.navigate('/widgets')
+    await list.list.edit('Widget A')
+    const shape = page.getByRole('combobox', { name: 'Shape' })
+    await shape.click()
+    await shape.locator('input').fill('tri')
+    await expect(page.getByRole('option', { name: 'Triangle' })).toBeVisible()
+    // The internal search would match the "r" in "Circle" and "Square" too:
+    await shape.locator('input').fill('r')
+    await expect(page.getByRole('option')).toHaveCount(0)
+  })
+
+  test('filters asynchronously loaded options through async `search`', async ({
+    page,
+    url
+  }) => {
+    await Widget.query().insert({ name: 'Widget A', size: 'Small' })
+    const list = new DitoListView(page, url, 'Widget')
+    await list.navigate('/widgets')
+    await list.list.edit('Widget A')
+    const color = page.getByRole('combobox', { name: 'Color' })
+    await color.click()
+    await color.locator('input').fill('gr')
+    const options = page.getByRole('option')
+    await expect(options).toHaveText(['Green'])
+    await color.locator('input').fill('b')
+    await expect(options).toHaveText(['Blue'])
+    await options.first().click()
+    await page.getByRole('button', { name: 'Save', exact: true }).click()
+    await expect
+      .poll(async () => (await Widget.query().findOne({ name: 'Widget A' }))?.color)
+      .toBe('Blue')
+  })
 })
