@@ -188,6 +188,30 @@ describe('DataModel', () => {
     dataModel.stop()
   })
 
+  it('converts stored values that are no objects to the objects of forms', () => {
+    // E.g. sizes that are stored as numbers, and edited as value and unit.
+    const schema = {
+      type: 'form',
+      components: {
+        padding: {
+          type: 'object',
+          compute: ({ value }) =>
+            typeof value === 'number' ? { value, units: 'rem' } : value,
+          form: {
+            type: 'form',
+            components: {
+              value: { type: 'text' },
+              units: { type: 'text' }
+            }
+          }
+        }
+      }
+    }
+    const { dataModel, data } = createDataModel(schema, { padding: 5 })
+    expect(data.padding).toEqual({ value: 5, units: 'rem' })
+    dataModel.stop()
+  })
+
   it('writes computed items with the defaults of their forms', async () => {
     // The defaults of the computed items don't make `compute()` disagree with
     // them, which would replace them in an endless loop.

@@ -527,6 +527,11 @@ export function processSchemaData(schema, data, {
             if (wrapPrimitives && !isObject(item)) {
               item = { [wrapPrimitives]: item }
             }
+            if (!isObject(item)) {
+              // Values that aren't objects hold no data of the form's
+              // components, e.g. ones that `compute()` converts to objects.
+              return item
+            }
             const itemDataPath =
               index !== null
                 ? getDataPath(componentDataPath, index)

@@ -304,6 +304,34 @@ describe('processData()', () => {
     expect(compute).not.toHaveBeenCalled()
   })
 
+  it('keeps values that are no objects as they are', () => {
+    // E.g. sizes that are stored as numbers, before `compute()` converts them
+    // to the objects that their forms edit.
+    const schema = {
+      type: 'form',
+      components: {
+        sizes: {
+          type: 'list',
+          form: {
+            type: 'form',
+            components: {
+              value: { type: 'text' },
+              units: { type: 'text' }
+            }
+          }
+        }
+      }
+    }
+    const data = { sizes: [5, { value: 10, units: '%' }] }
+    expect(
+      processData(schema, { type: 'list' }, data, '', {
+        component: {},
+        rootData: data,
+        target: 'server'
+      })
+    ).toEqual({ sizes: [5, { value: 10, units: '%' }] })
+  })
+
   it('provides the values of missing components to their callbacks', () => {
     // Reading `value` in callbacks reads it from the data, not through the
     // data path from the root data, which doesn't hold missing values.
