@@ -1,0 +1,30 @@
+name: Publish
+
+# Publishes the packages of pushed version tags to npm, through npm's trusted
+# publishing: npm trusts this workflow, so no tokens are needed. The versions
+# are created locally with `pnpm release`, which pushes the tags.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # `lerna publish from-git` reads the version tag of the commit.
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          registry-url: https://registry.npmjs.org
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm exec lerna publish from-git --yes

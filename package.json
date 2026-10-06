@@ -13,7 +13,7 @@
     "prepublishOnly": "pnpm run lint",
     "version": "pnpm install && git stage pnpm-lock.yaml",
     "postinstall": "husky",
-    "release": "npm login && lerna publish",
+    "release": "lerna version",
     "test": "pnpm -r --parallel --include-workspace-root run /^test:/",
     "test:unit": "vitest",
     "types": "tsc -p tsconfig.types.json",
