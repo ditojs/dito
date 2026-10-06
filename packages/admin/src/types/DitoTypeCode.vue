@@ -47,10 +47,10 @@ export default DitoTypeComponent.register('code', {
       default: false
     }),
 
+    // The height of the lines is set through `--lines` and the styles, which
+    // add the padding, unless the editor was resized to a height of its own.
     style() {
-      return {
-        height: this.height || `calc(${this.lines}em * var(--line-height))`
-      }
+      return this.height ? { height: this.height } : { '--lines': this.lines }
     }
   },
 
@@ -175,6 +175,9 @@ export default DitoTypeComponent.register('code', {
   // For proper sizing of content along with :style="style" setting above,
   // for proper line-height calculation.
   padding: $input-padding;
+  height: calc(
+    var(--lines) * 1em * var(--line-height) + 2 * #{$input-padding-ver}
+  );
   min-height: calc(1em * var(--line-height) + 2 * $input-padding-ver);
 
   .codeflask {
