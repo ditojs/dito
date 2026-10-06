@@ -9,7 +9,6 @@ interface PropertyDefinition {
   index?: boolean
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type TestApp = Application & { knex: Knex }
 
 export async function createTestDatabase(

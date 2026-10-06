@@ -91,7 +91,7 @@ test.describe('relate', () => {
       .toEqual({ Opening: 'Outro', Outro: null })
   })
 
-  test("doesn't make forms dirty by replacing references", async ({
+  test(`doesn't make forms dirty by replacing references`, async ({
     page,
     url
   }) => {
@@ -115,7 +115,7 @@ test.describe('relate', () => {
     await expectToLeaveWithoutConfirmation(page)
   })
 
-  test("doesn't make forms dirty by numbering loaded items", async ({
+  test(`doesn't make forms dirty by numbering loaded items`, async ({
     page,
     url
   }) => {

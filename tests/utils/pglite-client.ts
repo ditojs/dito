@@ -1,6 +1,5 @@
 // Inlined PGlite Knex dialect, based on:
 // https://github.com/czeidler/knex-pglite
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { createRequire } from 'module'
 import { dirname, join } from 'path'
 import { PGlite } from '@electric-sql/pglite'

@@ -86,6 +86,7 @@ export class ScenarioController extends ModelController {
   override collection: ModelControllerActions<this> = {
     allow: ['get', 'post']
   }
+
   override member: ModelControllerMemberActions<this> = {
     allow: ['get', 'patch', 'delete']
   }

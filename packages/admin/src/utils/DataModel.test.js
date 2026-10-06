@@ -238,7 +238,7 @@ describe('DataModel', () => {
     expect(error).toHaveBeenCalledWith(
       expect.objectContaining({
         message: expect.stringContaining(
-          "The computed value at 'count' keeps changing"
+          `The computed value at 'count' keeps changing`
         )
       })
     )
@@ -634,7 +634,7 @@ describe('DataModel', () => {
       dataModel.stop()
     })
 
-    it("doesn't load options that aren't read", async () => {
+    it(`doesn't load options that aren't read`, async () => {
       const data = vi.fn(async () => [{ value: 'news' }])
       const schema = {
         type: 'form',
@@ -749,7 +749,7 @@ describe('DataModel', () => {
       dataModel.stop()
     })
 
-    it("doesn't count values derived after loads as changes", async () => {
+    it(`doesn't count values derived after loads as changes`, async () => {
       const schema = {
         type: 'form',
         components: {
@@ -800,7 +800,7 @@ describe('DataModel', () => {
       dataModel.stop()
     })
 
-    it("doesn't compare replaced data with the snapshot of its predecessor", async () => {
+    it(`doesn't compare replaced data with the snapshot of its predecessor`, async () => {
       const schema = {
         type: 'form',
         components: { title: { type: 'text' } }
@@ -848,7 +848,7 @@ describe('DataModel', () => {
       dataModel.stop()
     })
 
-    it("doesn't count changes of excluded values", async () => {
+    it(`doesn't count changes of excluded values`, async () => {
       const schema = {
         type: 'form',
         components: { search: { type: 'text', exclude: true } }
@@ -956,7 +956,7 @@ describe('DataModel', () => {
       dataModel.stop()
     })
 
-    it("doesn't count order keys numbered on setup as changes", async () => {
+    it(`doesn't count order keys numbered on setup as changes`, async () => {
       const schema = {
         type: 'form',
         components: {
@@ -1003,7 +1003,7 @@ describe('DataModel', () => {
         }
       }
 
-      it("doesn't count clean changes, but other changes", async () => {
+      it(`doesn't count clean changes, but other changes`, async () => {
         const { dataModel, data } = createDataModel(
           schema,
           { title: 'Hello', chapters: [{ title: 'One' }] },
@@ -1069,7 +1069,7 @@ describe('DataModel', () => {
       })
     })
 
-    it("isn't tracked without a source schema", async () => {
+    it(`isn't tracked without a source schema`, async () => {
       const schema = {
         type: 'form',
         components: { title: { type: 'text' } }

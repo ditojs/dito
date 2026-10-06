@@ -74,7 +74,7 @@ process.on('SIGINT', () => {
   stopBrowserServer()
   process.exit(130)
 })
-let exitCode = 1
+let exitCode
 try {
   await waitForBrowserServer()
   exitCode = await runTests()

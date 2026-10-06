@@ -5,7 +5,6 @@ import { createPGliteKnex } from '../utils/pglite-knex.js'
 
 export { createTestDatabase } from '../utils/database.js'
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type TestApp = Application & { knex: Knex }
 
 interface TestAppOptions {

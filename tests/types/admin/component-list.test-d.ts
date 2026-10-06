@@ -105,7 +105,7 @@ describe('ListSchema', () => {
 
     assertType<ListSchema<Entry>>({
       type: 'list',
-      // @ts-expect-error Form<Parent> is not assignable to ResolvableForm<Entry>
+      // @ts-expect-error Form<Parent> isn't a ResolvableForm<Entry>
       form: parentForm
     })
   })

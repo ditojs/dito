@@ -17,7 +17,7 @@
     "test": "pnpm -r --parallel --include-workspace-root run /^test:/",
     "test:unit": "vitest",
     "types": "tsc -p tsconfig.types.json",
-    "eslint": "NODE_ENV=production eslint packages/*/src packages/*/types",
+    "eslint": "NODE_ENV=production eslint packages/*/src packages/*/types tests",
     "eslint:fix": "pnpm run eslint --fix",
     "stylelint": "stylelint packages/*/src/**/*.{vue,scss}",
     "stylelint:fix": "pnpm run stylelint --fix",
@@ -32,6 +32,9 @@
   },
   "lint-staged": {
     "packages/**/src/**/*.{js,ts}": [
+      "env NODE_ENV=production eslint --max-warnings 0"
+    ],
+    "tests/**/*.{js,ts}": [
       "env NODE_ENV=production eslint --max-warnings 0"
     ],
     "packages/**/src/**/*.vue": [

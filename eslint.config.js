@@ -27,6 +27,7 @@ export default [
       '**/node_modules/**/*',
       'packages/**/dist/**/*',
       'packages/**/*.test.js.snap',
+      'tests/test-results/**/*',
       '**/.DS_Store'
     ]
   },
@@ -99,6 +100,28 @@ export default [
         ...globalsBrowser,
         ...globals.jest
       }
+    }
+  },
+  {
+    files: ['tests/**/*.ts'],
+
+    languageOptions: {
+      parser: tsParser,
+      globals: {
+        ...globalsNode,
+        ...globalsBrowser
+      }
+    },
+
+    rules: {
+      // TypeScript checks these, also for types, which these rules don't know.
+      'no-undef': 'off',
+      'no-unused-vars': 'off',
+      'no-redeclare': 'off',
+      // Playwright fixtures that use no other fixtures receive `{}`.
+      'no-empty-pattern': 'off',
+      // `#views` is aliased to the views of each scenario by Vite.
+      'import/no-unresolved': ['error', { ignore: ['^#views$'] }]
     }
   },
   {
@@ -223,6 +246,14 @@ function getJsRules() {
           "MemberExpression[object.property.name='to'][object.object.object.callee.name='expect'][object.object.property.name='not']",
         message:
           'Avoid using Chai BDD-style `expect(...).not.to.<anything>`. Use Jest-style assertions like `not.toBe()`, `not.toEqual()`, `not.toThrow()`, etc.'
+      },
+      {
+        // Prettier picks double quotes for strings with single quotes in them,
+        // template literals keep their backticks. Strings with both single
+        // quotes and backticks may use double quotes.
+        selector: `Literal[raw=/^"/]:not(Literal[raw=/'/][raw=/\`/])`,
+        message:
+          'Avoid double quotes. Use backticks for strings with single quotes.'
       }
     ]
   }

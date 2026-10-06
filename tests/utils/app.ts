@@ -5,7 +5,6 @@ import { Application } from '@ditojs/server'
 import type { Knex } from 'knex'
 import { createPGliteKnex } from './pglite-knex.js'
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type TestApp = Application & { knex: Knex }
 
 interface TestAppOptions {

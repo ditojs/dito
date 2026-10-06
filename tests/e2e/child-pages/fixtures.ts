@@ -26,6 +26,7 @@ class Pages extends ScenarioController {
       }
     }
   }
+
   override relations = {
     childPages: {
       relation: { allow: ['get'] as const },

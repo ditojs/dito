@@ -3,7 +3,7 @@ import { Page } from '../models/Page.js'
 import { DitoNestedList } from '../../../utils/pages.js'
 
 test.describe('child pages', () => {
-  test("doesn't mark forms dirty by loading the items of sources", async ({
+  test(`doesn't mark forms dirty by loading the items of sources`, async ({
     page,
     url
   }) => {

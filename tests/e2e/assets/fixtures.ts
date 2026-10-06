@@ -49,6 +49,7 @@ export const test = base.extend<{ url: string }, { workerUrl: string }>({
                 member = {
                   allow: ['get', 'patch', 'delete'] as const
                 }
+
                 assets = {
                   files: { storage: 'test' },
                   file: { storage: 'test' },
@@ -61,6 +62,7 @@ export const test = base.extend<{ url: string }, { workerUrl: string }>({
                 member = {
                   allow: ['get', 'patch', 'delete'] as const
                 }
+
                 assets = true
               }
             }

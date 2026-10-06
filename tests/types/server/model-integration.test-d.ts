@@ -804,8 +804,8 @@ describe('QueryFilterTypes — extensible filter registry', () => {
 describe('Model relations — shared', () => {
   it('relation indexer returns ModelRelation', () => {
     const relations = {} as ModelRelations
-    expectTypeOf(relations['tasks']).not.toBeAny()
-    expectTypeOf(relations['tasks'])
+    expectTypeOf(relations.tasks).not.toBeAny()
+    expectTypeOf(relations.tasks)
       .toEqualTypeOf<ModelRelation>()
   })
 

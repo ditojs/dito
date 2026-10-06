@@ -236,7 +236,7 @@ test.describe('data model', () => {
       .poll(async () => (await Article.query().findById(article.id))?.tags)
       .toEqual(['a', 'b'])
   })
-  test("doesn't mark forms dirty by clean changes", async ({
+  test(`doesn't mark forms dirty by clean changes`, async ({
     page,
     url
   }) => {
@@ -333,7 +333,10 @@ test.describe('data model', () => {
       )
       .toEqual(['News'])
   })
-  test("doesn't evaluate components that `if` hides", async ({ page, url }) => {
+  test("doesn't evaluate components that `if` hides", async ({
+    page,
+    url
+  }) => {
     const article = await Article.query().insert({ title: 'Old' })
     await openArticle(page, url, article)
     await page.getByLabel('Preview Key', { exact: true }).fill('key')
@@ -394,7 +397,7 @@ test.describe('data model', () => {
       .toEqual({ title: 'New', references: [{ id: 1, title: 'Reference' }] })
   })
 
-  test("doesn't mark forms dirty by values whose options disappeared", async ({
+  test(`doesn't mark forms dirty by values whose options disappeared`, async ({
     page,
     url
   }) => {

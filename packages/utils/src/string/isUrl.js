@@ -3,7 +3,7 @@
 
 const isUrlRegExp = new RegExp(
   '^((https?|ftps?|mailto|rtsp|mms)?://)?' + // user:pass@
-  "(([0-9a-z_!~*'().&=+$%-]+:)?[0-9a-z_!~*'().&=+$%-]*@)?" +
+  `(([0-9a-z_!~*'().&=+$%-]+:)?[0-9a-z_!~*'().&=+$%-]*@)?` +
   '(' +
   '(\\d{1,3}\\.){3}\\d{1,3}' + // ip
   '|' +
@@ -14,7 +14,7 @@ const isUrlRegExp = new RegExp(
   ')' + // top level domain.
   '(:[0-9]{1,5})?' + // port
   '((/?)|' + // allow ending in a slash
-  "([/?#][0-9a-z_!~*'().;:@&=+$,%/?#-]+)+/?)$", // path
+  `([/?#][0-9a-z_!~*'().;:@&=+$,%/?#-]+)+/?)$`, // path
   'i'
 )
 

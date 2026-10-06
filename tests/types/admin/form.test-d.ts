@@ -34,7 +34,7 @@ describe('Form assignability', () => {
     const module: Record<string, Form<Parent>> = {
       parentForm: { type: 'form', components: {} }
     }
-    // @ts-expect-error Form<Parent> should not be assignable to ResolvableForm<Entry>
+    // @ts-expect-error Form<Parent> isn't a ResolvableForm<Entry>
     assertType<ResolvableForm<Entry>>(module)
   })
 

@@ -160,7 +160,7 @@ describe('processSchemaData() with panels of nested components', () => {
 })
 
 describe('processSchemaData() with panels that have their own data', () => {
-  it("doesn't walk their components with the data of the schema", () => {
+  it(`doesn't walk their components with the data of the schema`, () => {
     const componentPaths = []
     processSchemaData(
       {
@@ -426,7 +426,7 @@ describe('processData()', () => {
 })
 
 describe('shouldRenderSchema()', () => {
-  it("doesn't evaluate the components of sources for their items", () => {
+  it(`doesn't evaluate the components of sources for their items`, () => {
     // `DitoContext` needs a component to inherit from:
     const context = new DitoContext({}, { data: { links: null }, dataPath: '' })
     const condition = vi.fn(({ item }) => !!item.url)
@@ -449,7 +449,7 @@ describe('shouldRenderSchema()', () => {
 })
 
 describe('computeValue() with if', () => {
-  it("doesn't compute values of components whose if is false", () => {
+  it(`doesn't compute values of components whose if is false`, () => {
     const schema = {
       type: 'text',
       if: ({ item }) => !!item.preview,
