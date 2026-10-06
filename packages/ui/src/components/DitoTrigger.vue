@@ -204,38 +204,73 @@ export default {
       if (this.keepInView) {
         const winWidth = window.innerWidth
         const winHeight = window.innerHeight
+        const roomAbove = triggerTop
+        const roomBelow = winHeight - triggerTop - triggerHeight
+        const roomLeft = triggerLeft
+        const roomRight = winWidth - triggerLeft - triggerWidth
+        // Flips the popup to the other side if it doesn't fit, but only if
+        // there's more room there, so it doesn't move further out of view.
+        const shouldFlip = (room, otherRoom, size) => (
+          room < size && otherRoom > room
+        )
+
         if (part1 === 'top') {
-          if (triggerTop < popupHeight) {
+          if (shouldFlip(roomAbove, roomBelow, popupHeight)) {
             part1 = 'bottom'
           }
         } else if (part1 === 'bottom') {
-          if (winHeight - triggerTop - triggerHeight < popupHeight) {
+          if (shouldFlip(roomBelow, roomAbove, popupHeight)) {
             part1 = 'top'
           }
         } else if (part1 === 'left') {
-          if (triggerLeft < popupWidth) {
+          if (shouldFlip(roomLeft, roomRight, popupWidth)) {
             part1 = 'right'
           }
         } else if (part1 === 'right') {
-          if (winWidth - triggerLeft - triggerWidth < popupWidth) {
+          if (shouldFlip(roomRight, roomLeft, popupWidth)) {
             part1 = 'left'
           }
         }
 
+        // The alignments of the popup's edges with the trigger's edges.
         if (part2 === 'top') {
-          if (winHeight - triggerTop < popupHeight) {
+          if (
+            shouldFlip(
+              winHeight - triggerTop,
+              triggerTop + triggerHeight,
+              popupHeight
+            )
+          ) {
             part2 = 'bottom'
           }
         } else if (part2 === 'bottom') {
-          if (triggerTop + triggerHeight < popupHeight) {
+          if (
+            shouldFlip(
+              triggerTop + triggerHeight,
+              winHeight - triggerTop,
+              popupHeight
+            )
+          ) {
             part2 = 'top'
           }
         } else if (part2 === 'left') {
-          if (winWidth - triggerLeft < popupWidth) {
+          if (
+            shouldFlip(
+              winWidth - triggerLeft,
+              triggerLeft + triggerWidth,
+              popupWidth
+            )
+          ) {
             part2 = 'right'
           }
         } else if (part2 === 'right') {
-          if (triggerLeft + triggerWidth < popupWidth) {
+          if (
+            shouldFlip(
+              triggerLeft + triggerWidth,
+              winWidth - triggerLeft,
+              popupWidth
+            )
+          ) {
             part2 = 'left'
           }
         }
