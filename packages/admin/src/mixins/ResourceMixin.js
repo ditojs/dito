@@ -26,6 +26,12 @@ export default {
   },
 
   computed: {
+    // Whether the component is part of a form, e.g. a list that loads its own
+    // data, unlike forms and the lists of views.
+    isInsideForm() {
+      return !this.isForm && !!this.formComponent
+    },
+
     resourceComponent() {
       return this
     },
@@ -215,9 +221,15 @@ export default {
               this.onFilterErrors?.(data.errors)
             ) {
               return true
-            } else if (this.isUnauthorizedError(response)) {
-              // TODO: Can we really swallow these errors?
-              // Is calling `ensureUser()` in `onBeforeRequest()` enough?
+            } else if (
+              this.isUnauthorizedError(response) &&
+              this.isInsideForm
+            ) {
+              // The user is logged in, see `sendRequest()`, but may not access
+              // the resource of a component in a form, e.g. a list that loads
+              // its own data. Show it on the component, as several components
+              // of the form may be affected. Others notify like for errors.
+              this.addUnauthorizedError()
               return true
             }
           }
@@ -240,6 +252,13 @@ export default {
 
     isUnauthorizedError(response) {
       return response?.status === 401
+    },
+
+    addUnauthorizedError() {
+      const error = `You don't have permission to load this data.`
+      if (!this.errors?.includes(error)) {
+        this.addError(error)
+      }
     },
 
     async handleRequest(
