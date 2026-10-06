@@ -7,11 +7,6 @@ import { text } from '../../../utils/drivers/text.js'
 // Color picker behavior beyond value round-trips, using the cases' views.
 
 test.describe('color picker', () => {
-  // The picker takes the width of the field, which spans the whole form here,
-  // and grows as tall as wide. Leave room for it below the field, as it would
-  // otherwise flip above it, under the header.
-  test.use({ viewport: { width: 1280, height: 1000 } })
-
   test('picker changes update the input after typing', async ({
     page,
     url

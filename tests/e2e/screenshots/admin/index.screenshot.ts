@@ -129,6 +129,13 @@ test.describe('screenshots', () => {
     await expectScreenshot(page, 'multiselect.png')
   })
 
+  test('color picker', async ({ page, url }) => {
+    await openProject(page, url)
+    await page.getByLabel('Color', { exact: true }).click()
+    await expect(page.getByLabel('Sketch color picker')).toBeVisible()
+    await expectScreenshot(page, 'color-picker.png')
+  })
+
   test('dialog', async ({ page, url }) => {
     await openProject(page, url)
     await page.getByRole('button', { name: 'Open Dialog' }).click()
