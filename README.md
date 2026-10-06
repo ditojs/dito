@@ -87,3 +87,25 @@ Here a brief description of each script's purpose:
 - `pnpm run db:reset`: Resets the database by rolling back all applied migrations,
    and then reapplying all available migrations.
    See [Migrations](docs/migrations.md) for more information.
+
+## Releasing Dito.js
+
+Releases are versioned locally and published to npm by GitHub Actions:
+
+```sh
+pnpm release patch # or minor, major
+```
+
+This runs `lerna version`, which bumps the versions of the packages that
+changed since the last release, commits them as `vX.Y.Z`, tags the commit and
+pushes both. The pushed tag starts the
+[Publish workflow](.github/workflows/publish.yml), which builds the packages and
+publishes the bumped ones through npm's trusted publishing, without npm tokens or
+logins. Only repository admins can create `v*` tags.
+
+To release all packages, also the ones that didn't change, e.g. to keep their
+versions in sync:
+
+```sh
+pnpm release patch --force-publish
+```
