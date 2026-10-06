@@ -171,7 +171,7 @@ export default DitoTypeComponent.register('markup', {
 
     editorOptions() {
       return {
-        editable: !this.readonly,
+        editable: !this.readonly && !this.disabled,
         autoFocus: this.autofocus,
         disableInputRules: !this.enableRules.input,
         disablePasteRules: !this.enableRules.paste,
@@ -240,6 +240,7 @@ export default DitoTypeComponent.register('markup', {
 
   watch: {
     readonly: 'updateEditorOptions',
+    disabled: 'updateEditorOptions',
     autofocus: 'updateEditorOptions',
     enableRules: 'updateEditorOptions'
   },
