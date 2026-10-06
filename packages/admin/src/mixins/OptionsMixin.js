@@ -5,6 +5,7 @@ import { getMultipleValue } from '../utils/schema/data.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
 import { setTemporaryId, isReference } from '../utils/data.js'
 import {
+  asArray,
   isObject,
   isArray,
   isString,
@@ -46,7 +47,12 @@ export default {
           if (!this.relate) {
             return value
           }
-          const option = this.getOptionForValue(value)
+          // Keep related objects without options, see
+          // `DitoTypeMultiselect.getFallbackOption()`.
+          const option = (
+            this.getOptionForValue(value) ??
+            this.getRelatedObject(value)
+          )
           if (this.shouldSetTemporaryId(option)) {
             // Options without ids, e.g. new items of the edited data, get
             // temporary ids when selected, so that the relation can reference
@@ -323,6 +329,14 @@ export default {
               : undefined
           ))
         : value
+    },
+
+    // Returns the related object in the value with the given value of its
+    // option, e.g. its id.
+    getRelatedObject(value) {
+      return asArray(this.value).find(
+        object => this.getValueForOption(object) === value
+      )
     },
 
     getValueForOption(option) {

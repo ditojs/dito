@@ -58,6 +58,63 @@ test.describe('multiselect', () => {
     expect(cleared?.tags ?? []).toHaveLength(0)
   })
 
+  test('shows values without options as unavailable chips', async ({
+    page,
+    url
+  }) => {
+    const widget = await Widget.query().insert({
+      name: 'Widget A',
+      size: 'Small',
+      codes: ['a', 'gone']
+    })
+    const list = new DitoListView(page, url, 'Widget')
+    await list.navigate('/widgets')
+    await list.list.edit('Widget A')
+    const codes = page.getByRole('combobox', { name: 'Codes' })
+    await expect(codes.locator('.dito-multiselect__tag')).toHaveText([
+      'Alpha',
+      'gone'
+    ])
+    await expect(
+      codes.locator('.dito-multiselect__tag--unavailable')
+    ).toHaveText(['gone'])
+    // Removing another value keeps the one without option.
+    await codes
+      .locator('.dito-multiselect__tag', { hasText: 'Alpha' })
+      .locator('.multiselect__tag-icon')
+      .click()
+    await new DitoForm(page).save()
+    const stored = await Widget.query().findById(widget.$id() as number)
+    expect(stored?.codes).toEqual(['gone'])
+  })
+
+  test('keeps related values without options', async ({ page, url }) => {
+    const widget = await Widget.query().insertGraph(
+      {
+        name: 'Widget A',
+        size: 'Small',
+        tags: [{ name: 'tag-1' }, { name: 'hidden' }]
+      },
+      { relate: false }
+    )
+    const list = new DitoListView(page, url, 'Widget')
+    await list.navigate('/widgets')
+    await list.list.edit('Widget A')
+    const tags = page.getByRole('combobox', { name: 'Tags' })
+    await expect(
+      tags.locator('.dito-multiselect__tag--unavailable')
+    ).toHaveText(['hidden'])
+    await tags
+      .locator('.dito-multiselect__tag', { hasText: 'tag-1' })
+      .locator('.multiselect__tag-icon')
+      .click()
+    await new DitoForm(page).save()
+    const stored = await Widget.query()
+      .findById(widget.$id() as number)
+      .withGraphFetched('tags')
+    expect(stored?.tags?.map(tag => tag.name)).toEqual(['hidden'])
+  })
+
   test('keeps the errors of deselected required values', async ({
     page,
     url

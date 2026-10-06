@@ -37,6 +37,21 @@
       @tag="onAddTag"
       @search-change="onSearchChange"
     )
+      //- The default tag, which marks values without options.
+      template(#tag="{ option, remove }")
+        span.multiselect__tag.dito-multiselect__tag(
+          :class=`{
+            'dito-multiselect__tag--unavailable': isUnavailableOption(option)
+          }`
+          :title="isUnavailableOption(option) ? 'Not among the options' : null"
+          @mousedown.prevent
+        )
+          span {{ getLabelForOption(option) }}
+          i.multiselect__tag-icon(
+            tabindex="1"
+            @keydown.enter.prevent="remove(option)"
+            @mousedown.prevent="remove(option)"
+          )
     DitoAffixes(
       :items="schema.suffix"
       position="suffix"
@@ -70,7 +85,7 @@ import OptionsMixin from '../mixins/OptionsMixin.js'
 import DitoAffixes from '../components/DitoAffixes.vue'
 import VueMultiselect from 'vue-multiselect'
 import { getSchemaAccessor } from '../utils/accessor.js'
-import { isBoolean } from '@ditojs/utils'
+import { isArray, isBoolean, isObject, isString } from '@ditojs/utils'
 
 // @vue/component
 export default DitoTypeComponent.register('multiselect', {
@@ -90,18 +105,22 @@ export default DitoTypeComponent.register('multiselect', {
   computed: {
     selectedOptions: {
       get() {
+        // Values without options stay visible once the options are loaded,
+        // and are kept when the selection changes, see `getFallbackOption()`,
+        // unless the multiselect is taggable and can add them as options.
         return this.multiple
-          ? (this.selectedValue || [])
-              .map(
-                // If an option cannot be found, we may be in taggable mode and
-                // can add it.
-                value => (
-                  this.getOptionForValue(value) || this.addTagOption(value)
+          ? this.hasOptions && isArray(this.value)
+            ? this.value.map(value => {
+                const selectedValue = this.relate
+                  ? this.getValueForOption(value)
+                  : value
+                return (
+                  this.getOptionForValue(selectedValue) ||
+                  this.addTagOption(selectedValue) ||
+                  this.getFallbackOption(value)
                 )
-              )
-              // Filter out options that we couldn't match.
-              // TODO: Should we display an error instead?
-              .filter(Boolean)
+              })
+            : []
           : this.selectedOption
       },
 
@@ -196,6 +215,27 @@ export default DitoTypeComponent.register('multiselect', {
       }
     },
 
+    // Returns whether the option is a fallback option for a value without
+    // one, see `getFallbackOption()`. Plain options are their own values.
+    isUnavailableOption(option) {
+      return this.optionValue
+        ? !this.getOptionForValue(this.getValueForOption(option))
+        : !this.options.includes(option)
+    },
+
+    // Returns an option for a value without one, e.g. of options that only
+    // hold the results of searches: Related objects are their own options,
+    // other values get an option that holds them as value and label.
+    getFallbackOption(value) {
+      const { optionValue, optionLabel } = this
+      return isObject(value) || !isString(optionValue)
+        ? value
+        : {
+            [optionValue]: value,
+            ...(isString(optionLabel) && { [optionLabel]: `${value}` })
+          }
+    },
+
     focusElement() {
       this.$refs.element.activate()
     },
@@ -288,6 +328,16 @@ $tag-line-height: 1em;
 .dito-multiselect {
   display: inline-flex;
   position: relative;
+
+  &__tag {
+    color: $color-text-inverted;
+    background: $color-active;
+
+    // Values without options, see `getFallbackOption()`.
+    &--unavailable {
+      background: $color-grey;
+    }
+  }
 
   &__inner {
     flex: 1;
@@ -461,11 +511,6 @@ $tag-line-height: 1em;
         background: none;
         color: $color-disabled;
       }
-    }
-
-    &__tag {
-      color: $color-text-inverted;
-      background: $color-active;
     }
 
     &__tag-icon {

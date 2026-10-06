@@ -12,7 +12,8 @@ const project: Partial<Project> = {
   description: 'A new website, with a new design and a new backend.',
   budget: 12000,
   status: 'Active',
-  tags: ['Design', 'Frontend'],
+  // 'Legacy' isn't among the options anymore.
+  tags: ['Design', 'Frontend', 'Legacy'],
   priority: 'High',
   features: ['Search', 'Sharing'],
   active: true,

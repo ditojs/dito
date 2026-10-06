@@ -87,6 +87,21 @@ export const widgets = createWidgetView<Widget>(
           searchTerm.length === 1 ? 600 : 50
         )
     },
+    // Stored values may have no option, e.g. options that were removed.
+    codes: {
+      type: 'multiselect',
+      label: 'Codes',
+      multiple: true,
+      options: {
+        data: [
+          { label: 'Alpha', value: 'a' },
+          { label: 'Beta', value: 'b' }
+        ],
+        label: 'label',
+        value: 'value'
+      }
+    },
+    // The options leave out hidden tags, as if the user may not see them.
     tags: {
       type: 'multiselect',
       label: 'Tags',
@@ -94,11 +109,14 @@ export const widgets = createWidgetView<Widget>(
       relate: true,
       clearable: true,
       options: {
-        data: ({
+        data: async ({
           request
         }: {
           request: (opts: { url: string }) => Promise<Tag[]>
-        }) => request({ url: 'tags' }),
+        }) =>
+          (await request({ url: 'tags' })).filter(
+            tag => tag.name !== 'hidden'
+          ),
         label: 'name',
         value: 'id'
       }
