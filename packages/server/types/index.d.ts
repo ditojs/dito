@@ -2217,7 +2217,7 @@ export type MemberActionParameter<$Model extends Model = Model> =
   | {
       from: 'member'
 
-      /** Sets ctx.query. */
+      /** Filters the member query, instead of the action's own query. */
       query?: Record<string, any>
       /**
        * Adds a FOR UPDATE in PostgreSQL and MySQL during a select statement.
@@ -2512,7 +2512,7 @@ export class CollectionController<
   getModelId(model: $Model): Id | Id[]
   /**
    * Retrieves a member model from the database for the
-   * current request context.
+   * current request context, through the controller's `member.get` action.
    */
   getMember(
     ctx: KoaContext,
@@ -2526,8 +2526,7 @@ export class CollectionController<
 
   /**
    * Fetches the member with the given `id`, applying `query` as filters and
-   * `modify` to the query builder. Used by `getMember()` and the default
-   * `member.get` action.
+   * `modify` to the query builder. Used by the default `member.get` action.
    */
   fetchMember(
     ctx: KoaContext,
@@ -2604,6 +2603,18 @@ export class CollectionController<
     ) => void,
     body?: Record<string, any>
   ): Promise<$Model>
+
+  /**
+   * Inserts the model and relates the existing models in its graph;
+   * RelationController overrides it to relate through its relation.
+   */
+  relateAndFetch(
+    ctx: KoaContext,
+    modify?: (
+      query: QueryBuilder<$Model>,
+      trx?: objection.Transaction
+    ) => void
+  ): Promise<$Model | $Model[]>
 }
 
 /**

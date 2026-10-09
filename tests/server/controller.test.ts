@@ -458,3 +458,41 @@ describe('Controller handler definitions', () => {
     }
   })
 })
+
+describe('Controller collection updates', () => {
+  it('rejects non-array bodies as invalid requests', async () => {
+    class Tasks extends ModelController<Task> {
+      override modelClass = Task
+
+      override collection: ModelControllerActions<Tasks> = {
+        allow: ['put', 'patch']
+      }
+    }
+
+    const app = createTestApp({
+      models: { Task },
+      controllers: { Tasks }
+    })
+
+    await createTestDatabase(app)
+    await app.start()
+
+    try {
+      for (const method of ['PUT', 'PATCH']) {
+        const resp = await fetch(`${getAppUrl(app)}/tasks`, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: 1, name: 'Task' })
+        })
+        expect(resp.status).toBe(400)
+        expect(await resp.json()).toEqual({
+          type: 'BodyValidation',
+          message: 'Updating a collection requires an array of models'
+        })
+      }
+    } finally {
+      await app.stop()
+      await app.knex?.destroy()
+    }
+  })
+})

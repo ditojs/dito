@@ -49,10 +49,73 @@ class Notes extends ModelController<Note> {
   }
 }
 
+// Hides the archived notes from all member lookups by overriding `member.get`,
+// passing on only `ctx` and `modify` to `super.get()`.
+class ActiveNotes extends ModelController<Note> {
+  override modelClass = Note
+
+  override member: ModelControllerActions<ActiveNotes> = {
+    'get'(ctx: any, modify: any) {
+      return super.get(ctx, (query: any) => {
+        query.whereNot('name', 'Archived')
+        query.modify(modify)
+      })
+    },
+
+    'get name': {
+      parameters: {
+        note: {
+          from: 'member'
+        }
+      },
+      handler(ctx: unknown, { note }: { note: Note }) {
+        return { name: note.name }
+      }
+    },
+
+    'get done-name': {
+      parameters: {
+        note: {
+          from: 'member',
+          query: { scope: 'done' }
+        }
+      },
+      handler(ctx: unknown, { note }: { note: Note }) {
+        return { name: note.name }
+      }
+    },
+
+    'get locked-name': {
+      transacted: true,
+      parameters: {
+        note: {
+          from: 'member',
+          forUpdate: true
+        }
+      },
+      handler(ctx: unknown, { note }: { note: Note }) {
+        return { name: note.name }
+      }
+    },
+
+    'get unlocked-name': {
+      parameters: {
+        note: {
+          from: 'member',
+          forUpdate: true
+        }
+      },
+      handler(ctx: unknown, { note }: { note: Note }) {
+        return { name: note.name }
+      }
+    }
+  } as any
+}
+
 describe('Controller members', () => {
   const app = createTestApp({
     models: { Note },
-    controllers: { Notes }
+    controllers: { Notes, ActiveNotes }
   })
 
   beforeAll(async () => {
@@ -78,6 +141,36 @@ describe('Controller members', () => {
     const doneResponse = await fetch(`${url}/${done.id}/done-name`)
     expect(doneResponse.status).toBe(200)
     expect(await doneResponse.json()).toEqual({ name: 'Done' })
+  })
+
+  it("resolves `from: 'member'` parameters through `member.get`", async () => {
+    const active = await Note.query().insert({ name: 'Active' })
+    const archived = await Note.query().insert({ name: 'Archived' })
+    const url = `${getAppUrl(app)}/active-notes`
+    const archivedResponse = await fetch(`${url}/${archived.id}/name`)
+    expect(archivedResponse.status).toBe(404)
+    const activeResponse = await fetch(`${url}/${active.id}/name`)
+    expect(activeResponse.status).toBe(200)
+    expect(await activeResponse.json()).toEqual({ name: 'Active' })
+  })
+
+  it('passes member options on through `member.get` overrides', async () => {
+    const open = await Note.query().insert({ name: 'Open', done: false })
+    const done = await Note.query().insert({ name: 'Done', done: true })
+    const url = `${getAppUrl(app)}/active-notes`
+    const openResponse = await fetch(`${url}/${open.id}/done-name`)
+    expect(openResponse.status).toBe(404)
+    const doneResponse = await fetch(`${url}/${done.id}/done-name`)
+    expect(doneResponse.status).toBe(200)
+    // `forUpdate` locks the member, which requires a transaction.
+    const lockedResponse = await fetch(`${url}/${done.id}/locked-name`)
+    expect(lockedResponse.status).toBe(200)
+    expect(await lockedResponse.json()).toEqual({ name: 'Done' })
+    const unlockedResponse = await fetch(`${url}/${done.id}/unlocked-name`)
+    expect(unlockedResponse.status).toBe(400)
+    expect(await unlockedResponse.json()).toMatchObject({
+      message: expect.stringContaining('without a transaction is invalid')
+    })
   })
 
   it("doesn't apply the action's query to `$owner` lookups", async () => {

@@ -1,6 +1,7 @@
 import { isObject, isArray, asArray } from '@ditojs/utils'
 import { Controller } from './Controller.js'
-import { ControllerError } from '../errors/index.js'
+import { ControllerError, ValidationError } from '../errors/index.js'
+import { parseHandlerDefinition } from '../utils/handler.js'
 
 // Abstract base class for ModelController and RelationController
 export class CollectionController extends Controller {
@@ -12,6 +13,8 @@ export class CollectionController extends Controller {
   isOneToOne = false
   idParam = null
   idValidator = null
+  // The handler of `member.get`, resolved by `setup()`, see `getMember()`.
+  #memberGetHandler = null
 
   // @override
   configure() {
@@ -26,6 +29,11 @@ export class CollectionController extends Controller {
     // resolve `modelClass` after `super.configure()`, see `ModelController`.
     // eslint-disable-next-line new-cap
     this.idValidator = new this.modelClass()
+    // `getMember()` resolves members through `member.get`, also when `allow`
+    // doesn't route it, so resolve its handler from the inherited actions.
+    this.#memberGetHandler = parseHandlerDefinition(
+      this.inheritValues('member').get
+    ).handler
     this.logController()
     this.setProperty('collection', this.setupActions('collection'))
     this.setProperty(
@@ -116,35 +124,37 @@ export class CollectionController extends Controller {
     base = this,
     { query = {}, modify = null, forUpdate = false } = {}
   ) {
-    return this.fetchMember(ctx, {
-      id: ctx.memberId,
-      query,
-      modify: builder => {
+    // Go through `member.get` so that apps overriding it also control the
+    // members that `from: 'member'` parameters and `$owner` checks receive.
+    // Pass `query` as `ctx.filteredQuery` and `forUpdate` through `modify`,
+    // as overrides pass on `ctx` and `modify` to `super.get()`. Overrides
+    // may call `modify` without `trx`, so lock with `ctx.transaction`, the
+    // transaction that `execute()` runs the query in.
+    return this.#memberGetHandler.call(
+      this,
+      ctx.extend({ filteredQuery: query }),
+      builder => {
         this.setupQuery(builder, base)
         builder.modify(modify)
-      },
-      forUpdate
-    })
+        if (forUpdate) {
+          lockForUpdate(this, builder, ctx.transaction)
+        }
+      }
+    )
   }
 
   async fetchMember(
     ctx,
     { id, query = {}, modify = null, forUpdate = false }
   ) {
-    return this.execute(ctx, (builder, trx) => {
-      if (forUpdate && !trx) {
-        throw new ControllerError(
-          this,
-          'Using `forUpdate()` without a transaction is invalid'
-        )
-      }
-      return builder
+    return this.execute(ctx, (builder, trx) =>
+      builder
         .findById(id)
         .find(query, this.allowParam)
         .throwIfNotFound()
         .modify(getModify(modify, trx))
-        .modify(builder => forUpdate && builder.forUpdate())
-    })
+        .modify(builder => forUpdate && lockForUpdate(this, builder, trx))
+    )
   }
 
   query(trx) {
@@ -248,12 +258,12 @@ export class CollectionController extends Controller {
     },
 
     async put(ctx, modify) {
-      validateCollectionUpdateBody(this, ctx.request.body)
+      validateCollectionUpdateBody(ctx.request.body, this.graph)
       return this.executeAndFetch('update', ctx, modify)
     },
 
     async patch(ctx, modify) {
-      validateCollectionUpdateBody(this, ctx.request.body)
+      validateCollectionUpdateBody(ctx.request.body, this.graph)
       return this.executeAndFetch('patch', ctx, modify)
     }
   })
@@ -292,14 +302,24 @@ export class CollectionController extends Controller {
   })
 }
 
-function validateCollectionUpdateBody(controller, body) {
-  // Without graphs, Objection only supports updating collections through
-  // arrays, as its `patchAndFetch()` & co. are instance-only for objects.
-  if (!controller.graph && !isArray(body)) {
+function lockForUpdate(controller, builder, trx) {
+  if (!trx) {
     throw new ControllerError(
       controller,
-      'Updating a collection requires an array of models'
+      'Using `forUpdate()` without a transaction is invalid'
     )
+  }
+  builder.forUpdate()
+}
+
+function validateCollectionUpdateBody(body, isGraph) {
+  // Without graphs, Objection only supports updating collections through
+  // arrays, as its `patchAndFetch()` & co. are instance-only for objects.
+  if (!isGraph && !isArray(body)) {
+    throw new ValidationError({
+      type: 'BodyValidation',
+      message: 'Updating a collection requires an array of models'
+    })
   }
 }
 

@@ -17,7 +17,8 @@ export default class MemberAction extends ControllerAction {
     //   forUpdate: true,
     //   modify: query => query.debug()
     // }
-    // These are passed on to and handled in `CollectionController#getMember()`.
+    // These are passed on to `CollectionController#getMember()`, which resolves
+    // the member through the controller's `member.get` action.
     // For handling of `from: 'member'` and calling of
     // `MemberAction.getMember()`, see `ControllerAction#collectArguments()`.
     // Pass on the action as `base` for `setupQuery()`, to apply its `scope`
