@@ -189,4 +189,20 @@ describe('isApiUrl()', () => {
     expect(isApiUrl(api, 'https://example.com/api/books')).toBe(true)
     expect(isApiUrl(api, 'https://elsewhere.org/api/books')).toBe(false)
   })
+
+  it('treats the API URL itself, with and without query, as API URL', () => {
+    expect(isApiUrl(api, 'https://example.com/api')).toBe(true)
+    expect(isApiUrl(api, 'https://example.com/api?page=2')).toBe(true)
+    expect(
+      isApiUrl(
+        createApi({ url: 'https://example.com/api/' }),
+        'https://example.com/api/books'
+      )
+    ).toBe(true)
+  })
+
+  it(`doesn't treat URLs that only start like the API URL as API URLs`, () => {
+    expect(isApiUrl(api, 'https://example.com/api-docs')).toBe(false)
+    expect(isApiUrl(api, 'https://example.com/apis/books')).toBe(false)
+  })
 })

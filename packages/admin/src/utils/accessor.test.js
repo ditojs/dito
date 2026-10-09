@@ -152,14 +152,17 @@ describe('getStoreAccessor()', () => {
     expect(component.store).toEqual({ page: 3 })
   })
 
-  it('stores the default value for missing values', () => {
+  it('returns the default value for missing values without storing it', () => {
     const component = createStoreComponent(
       'page',
       getStoreAccessor('page', { default: 1 })
     )
     expect(component.page).toBe(1)
-    expect(component.setStore).toHaveBeenCalledWith('page', 1)
-    expect(component.store).toEqual({ page: 1 })
+    expect(component.setStore).not.toHaveBeenCalled()
+    expect(component.store).toEqual({})
+    component.page = 2
+    expect(component.page).toBe(2)
+    expect(component.store).toEqual({ page: 2 })
   })
 
   it('calls default functions on the component', () => {
@@ -173,7 +176,6 @@ describe('getStoreAccessor()', () => {
       { collapsedByDefault: true }
     )
     expect(component.expanded).toEqual([])
-    expect(component.store.expanded).toEqual([])
   })
 
   it('does not apply the default to `null` values', () => {
@@ -186,13 +188,15 @@ describe('getStoreAccessor()', () => {
     expect(component.setStore).not.toHaveBeenCalled()
   })
 
-  it('passes stored values through the getter', () => {
+  it('passes stored and default values through the getter', () => {
     const component = createStoreComponent(
       'page',
       getStoreAccessor('page', { default: '1', get: value => +value })
     )
     expect(component.page).toBe(1)
-    expect(component.store.page).toBe('1')
+    component.page = '2'
+    expect(component.page).toBe(2)
+    expect(component.store.page).toBe('2')
   })
 
   it('stores values returned by the setter', () => {

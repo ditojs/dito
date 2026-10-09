@@ -52,7 +52,21 @@ export async function request(api, {
 }
 
 export function isApiUrl(api, url) {
-  return !isAbsoluteUrl(url) || url.startsWith(api.url)
+  return !isAbsoluteUrl(url) || isUrlInside(url, api.url)
+}
+
+// Returns whether `url` is `baseUrl` or a URL under it, e.g. `/api/books` in
+// `/api`, but not `/api-docs`.
+function isUrlInside(url, baseUrl) {
+  if (!url.startsWith(baseUrl)) {
+    return false
+  }
+  const nextCharacter = url[baseUrl.length]
+  return (
+    baseUrl.endsWith('/') ||
+    nextCharacter === undefined ||
+    '/?#'.includes(nextCharacter)
+  )
 }
 
 export function getApiUrl(api, { url, query }) {

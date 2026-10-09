@@ -5,6 +5,14 @@ import {
   normalizeDataPath
 } from '@ditojs/utils'
 
+// Returns an accessor for computed properties that reads `keyOrDataPath` from
+// the schema, which can be overridden by setting the property. `get(value)`
+// can process the schema value further. Getters only receive the value if
+// they declare it as a parameter, as told by their `length`, so that getters
+// that don't need it don't evaluate the schema value. NOTE: Parameters with
+// default values and rest parameters don't count towards the `length`, so
+// getters need to declare the value as a plain parameter, e.g. `get(value)`
+// and not `get(value = null)`.
 export function getSchemaAccessor(
   keyOrDataPath,
   { type, default: def, get, set, callback = true } = {}
@@ -47,6 +55,10 @@ export function getSchemaAccessor(
   }
 }
 
+// Returns an accessor for computed properties that reads and writes `name` in
+// the component's store, see `DitoMixin.getStore()`. The default value is
+// returned for missing values without storing it, as getters shouldn't change
+// state. Only values that are set are stored.
 export function getStoreAccessor(name, { default: def, get, set } = {}) {
   return {
     get() {
@@ -54,10 +66,6 @@ export function getStoreAccessor(name, { default: def, get, set } = {}) {
       if (value === undefined && def !== undefined) {
         // Support `default()` functions:
         value = isFunction(def) ? def.call(this) : def
-        // Trigger setter by setting value and accessor to default:
-        this[name] = value
-        // Now access store again, for reactivity tracking
-        this.getStore(name)
       }
       // Allow the provided getter to further change or process the value
       // retrieved from the store:

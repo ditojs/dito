@@ -43,6 +43,19 @@ describe('resolveMergedOptions()', () => {
     const merged = resolveMergedOptions({ mixins: [{ beforeRouteLeave }] })
     expect(merged.beforeRouteLeave).toBe(beforeRouteLeave)
   })
+
+  it('merges the multiple, width and source type defaults', () => {
+    const getSourceType = type => (type === 'shelf' ? 'list' : null)
+    const merged = resolveMergedOptions({
+      extends: { defaultMultiple: true, defaultWidth: 'auto' },
+      mixins: [{ getSourceType }]
+    })
+    expect(merged).toMatchObject({
+      defaultMultiple: true,
+      defaultWidth: 'auto',
+      getSourceType
+    })
+  })
 })
 
 describe('mergeOptions()', () => {
