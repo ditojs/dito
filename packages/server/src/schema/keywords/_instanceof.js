@@ -1,13 +1,25 @@
 import { isString, isFunction, asArray } from '@ditojs/utils'
 
+// A type is either the name of a basic JS type or Dito.js model, or a
+// constructor function:
+const typeSchema = {
+  anyOf: [
+    { type: 'string' },
+    { instanceof: 'Function' }
+  ]
+}
+
 export const _instanceof = {
   metaSchema: {
     anyOf: [
-      { type: 'string' },
+      typeSchema,
       {
         type: 'array',
         items: {
-          type: ['string', 'object']
+          anyOf: [
+            typeSchema,
+            { type: 'object' }
+          ]
         }
       }
     ]

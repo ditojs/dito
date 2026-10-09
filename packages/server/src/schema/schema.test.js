@@ -843,9 +843,42 @@ describe('convertSchema()', () => {
     })
   })
 
-  // Revisiting a schema that is still being converted clones and converts it
-  // again, which reaches the same schema once more and recurses endlessly.
-  test.fails('converts directly self-referencing schemas', () => {
+  it('converts root schemas that are referenced from their definitions', () => {
+    const recipe = {
+      type: 'object',
+      properties: {
+        step: {
+          $ref: '#step',
+          definitions: {
+            '#step': {
+              type: 'object',
+              properties: {}
+            }
+          }
+        }
+      }
+    }
+    recipe.properties.step.definitions['#step'].properties.recipe = recipe
+    const converted = convertSchema(recipe)
+    const { recipe: nestedRecipe } = converted.definitions['#step'].properties
+    expect(nestedRecipe.properties.step).toEqual({
+      $ref: '#/definitions/#step'
+    })
+    expect(nestedRecipe).not.toHaveProperty('definitions')
+  })
+
+  it('rejects schemas again after their conversion failed', () => {
+    const recipe = {
+      type: 'object',
+      definitions: {
+        ingredient: { type: 'string' }
+      }
+    }
+    expect(() => convertSchema(recipe)).toThrow(/Invalid definition/)
+    expect(() => convertSchema(recipe)).toThrow(/Invalid definition/)
+  })
+
+  it('converts directly self-referencing schemas', () => {
     const step = {
       type: 'object',
       properties: {
@@ -855,6 +888,7 @@ describe('convertSchema()', () => {
     step.properties.substeps = { type: 'array', items: step }
     const converted = convertSchema(step)
     expect(converted.properties.name).toEqual({ type: 'string' })
+    expect(converted.properties.substeps.items).toBe(converted)
   })
 
   it('combines required with an existing format through allOf', () => {
@@ -935,9 +969,7 @@ describe('convertSchema()', () => {
     expect(convertSchema({ $ref })).toEqual({ $ref })
   })
 
-  // `additionalProperties` holds a single schema, but it is converted as if it
-  // was a map of property schemas, like `patternProperties`.
-  test.fails('converts additionalProperties schemas', () => {
+  it('converts additionalProperties schemas', () => {
     expect(
       convertSchema({
         type: 'object',

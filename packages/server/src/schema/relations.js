@@ -224,7 +224,8 @@ export function convertRelation(schema, models) {
     if (isObject(modify)) {
       // Convert a find-filter object to a filter function, same as in the
       // handling of definition.scopes, see Model.js
-      modify = query => query.find(modify)
+      const findFilter = modify
+      modify = query => query.find(findFilter)
     }
     if (scope) {
       // Create a new modify function that merges scope and modify:

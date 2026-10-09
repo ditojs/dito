@@ -319,9 +319,7 @@ describe('instanceof keyword', () => {
     expect(errors.unknown[0].keyword).toBe('instanceof')
   })
 
-  // The keyword's `validate()` handles constructor functions, but its
-  // `metaSchema` only accepts strings and objects, so schemas fail to compile.
-  test.fails('accepts constructor functions as types', () => {
+  it('accepts constructor functions as types', () => {
     class Shelf extends Model {
       static properties = {
         restockedAt: {
@@ -524,9 +522,7 @@ describe('built-in types', () => {
     expect(Swatch.fromJson({ color: '#ff8800' }).color).toBe('#ff8800')
   })
 
-  // The color type relies on a 'hexcolor' format that is never registered,
-  // so Ajv ignores the format and accepts any string.
-  test.fails('rejects strings that are not hex colors', () => {
+  it('rejects strings that are not hex colors', () => {
     expect(() => Swatch.fromJson({ color: 'orange' })).toThrow(
       ValidationError
     )

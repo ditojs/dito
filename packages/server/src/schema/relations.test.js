@@ -473,9 +473,7 @@ describe('convertRelation(): Dito.js-style options', () => {
     })
   })
 
-  // The arrow function closes over `modify`, which is reassigned to the arrow
-  // function itself, so `find()` receives a function and silently does nothing.
-  test.fails('converts find-filter objects in modify to find() calls', () => {
+  it('converts find-filter objects in modify to find() calls', () => {
     const { modify } = convertRelation(
       {
         relation: 'hasMany',

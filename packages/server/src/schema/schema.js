@@ -29,11 +29,9 @@ export function convertSchema(
         mergeDefinitions(parentEntry.definitions, definitions)
       }
     }
-    // When the schema is null, a circular reference is being processed.
-    // Break the chain by cloning the original schema and converting it again:
-    return schema === null
-      ? convertSchema({ ...original }, options, parentEntry)
-      : schema
+    // During circular references, this is the converted schema that is still
+    // being completed, see `entry.schema` below.
+    return schema
   }
 
   const entry = {
@@ -46,9 +44,14 @@ export function convertSchema(
   schemaCache.set(original, entry)
 
   let definitions = null
+  let jsonType = null
+  let schemaItems = null
+  let schemaWithNestedSchemas = null
   if (isArray(schema)) {
-    // Needed for allOf, anyOf, oneOf, not, items, see below:
-    schema = schema.map(item => convertSchema(item, options, entry))
+    // Needed for allOf, anyOf, oneOf, not, items, see below. The items are
+    // converted once `entry.schema` is set, see below:
+    schemaItems = schema
+    schema = []
   } else if (isObject(schema)) {
     // Create a shallow clone so we can modify and return:
     // Also collect and propagate the definitions up to the root schema through
@@ -57,7 +60,7 @@ export function convertSchema(
     definitions = defs
     schema = rest
     const { $ref, type } = schema
-    const jsonType = jsonTypes[type]
+    jsonType = jsonTypes[type] ?? null
 
     if (schema.required === true) {
       // Our 'required' is not the same as JSON Schema's: Use the 'required'
@@ -66,17 +69,6 @@ export function convertSchema(
       // array is generated separately below through `convertProperties()`.
       delete schema.required
       schema = addFormat(schema, 'required')
-    }
-
-    // Convert array items
-    schema.prefixItems &&= convertSchema(schema.prefixItems, options, entry)
-    schema.items &&= convertSchema(schema.items, options, entry)
-
-    // Handle nested allOf, anyOf, oneOf & co. fields
-    for (const key of ['allOf', 'anyOf', 'oneOf', 'not', '$extend']) {
-      if (key in schema) {
-        schema[key] = convertSchema(schema[key], options, entry)
-      }
     }
 
     if (isString($ref)) {
@@ -113,6 +105,9 @@ export function convertSchema(
     if (excludeDefaults[schema.default]) {
       delete schema.default
     }
+    // `nullable` may wrap the schema in `oneOf` below, but its nested schemas
+    // remain on the wrapped schema:
+    schemaWithNestedSchemas = schema
     if (schema.nullable) {
       if (schema.$ref) {
         // `$ref` doesn't play with `nullable`, so convert to `oneOf`
@@ -129,55 +124,30 @@ export function convertSchema(
         schema.enum.push(null)
       }
     }
-
-    // Convert properties last. This is needed for circular references
-    // to work correctly, as the properties may reference the same schema
-    // that is being converted right now.
-    let hasConvertedProperties = false
-    if (schema.properties) {
-      const { properties, required } = convertProperties(
-        schema.properties,
-        options,
-        entry
-      )
-      schema.properties = properties
-      if (required.length > 0) {
-        schema.required = required
-      }
-      hasConvertedProperties = true
-    }
-    for (const key of ['additionalProperties', 'patternProperties']) {
-      if (isObject(schema[key])) {
-        // TODO: Don't we need to handle required here too?
-        const { properties } = convertProperties(
-          schema[key],
-          options,
-          entry
-        )
-        schema[key] = properties
-        hasConvertedProperties = true
-      }
-    }
-    if (
-      jsonType &&
-      (hasConvertedProperties || schema.discriminator) &&
-      !('unevaluatedProperties' in schema)
-    ) {
-      // Invert the logic of `unevaluatedProperties` so that it needs to be
-      // explicitly set to `true`:
-      schema.unevaluatedProperties = false
-    }
   }
 
   entry.schema = schema
 
-  // Only convert definitions once `entry.schema` is set, so that it works as
-  // expected with circular references.
-  if (definitions) {
-    mergeDefinitions(
-      entry.definitions,
-      convertDefinitions(definitions, options, entry)
-    )
+  try {
+    // Only convert nested schemas and definitions once `entry.schema` is set,
+    // so that circular references resolve to the schema being converted.
+    if (schemaItems) {
+      for (const item of schemaItems) {
+        schema.push(convertSchema(item, options, entry))
+      }
+    } else if (schemaWithNestedSchemas) {
+      convertNestedSchemas(schemaWithNestedSchemas, jsonType, options, entry)
+    }
+    if (definitions) {
+      mergeDefinitions(
+        entry.definitions,
+        convertDefinitions(definitions, options, entry)
+      )
+    }
+  } catch (error) {
+    // Don't serve the partially converted schema from the cache:
+    schemaCache.delete(original)
+    throw error
   }
 
   if (Object.keys(entry.definitions).length > 0) {
@@ -185,11 +155,67 @@ export function convertSchema(
     // circular references may not be up to date yet.
     mergeDefinitionsRecursively(entry, entry.definitions)
     if (isRoot) {
-      schema.definitions = entry.definitions
+      // Don't add the definitions to the cached schema itself, as it may be
+      // referenced from within the definitions, or reused as a nested schema:
+      return { ...schema, definitions: entry.definitions }
     }
   }
 
   return schema
+}
+
+function convertNestedSchemas(schema, jsonType, options, entry) {
+  // Convert array items
+  schema.prefixItems &&= convertSchema(schema.prefixItems, options, entry)
+  schema.items &&= convertSchema(schema.items, options, entry)
+
+  // Handle nested allOf, anyOf, oneOf & co. fields
+  for (const key of ['allOf', 'anyOf', 'oneOf', 'not', '$extend']) {
+    if (key in schema) {
+      schema[key] = convertSchema(schema[key], options, entry)
+    }
+  }
+
+  let hasConvertedProperties = false
+  if (schema.properties) {
+    const { properties, required } = convertProperties(
+      schema.properties,
+      options,
+      entry
+    )
+    schema.properties = properties
+    if (required.length > 0) {
+      schema.required = required
+    }
+    hasConvertedProperties = true
+  }
+  if (isObject(schema.additionalProperties)) {
+    schema.additionalProperties = convertSchema(
+      schema.additionalProperties,
+      options,
+      entry
+    )
+    hasConvertedProperties = true
+  }
+  if (isObject(schema.patternProperties)) {
+    // TODO: Don't we need to handle required here too?
+    const { properties } = convertProperties(
+      schema.patternProperties,
+      options,
+      entry
+    )
+    schema.patternProperties = properties
+    hasConvertedProperties = true
+  }
+  if (
+    jsonType &&
+    (hasConvertedProperties || schema.discriminator) &&
+    !('unevaluatedProperties' in schema)
+  ) {
+    // Invert the logic of `unevaluatedProperties` so that it needs to be
+    // explicitly set to `true`:
+    schema.unevaluatedProperties = false
+  }
 }
 
 function convertProperties(schemaProperties, options, entry) {
