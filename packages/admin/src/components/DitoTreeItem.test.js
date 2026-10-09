@@ -44,6 +44,16 @@ describe('DitoTreeItem', () => {
     vi.restoreAllMocks()
   })
 
+  it('renders compact square edit buttons, unlike lists', async () => {
+    const { wrapper } = await mountBookForm()
+    const buttons = wrapper.findAll('.dito-tree-header .dito-edit-buttons')
+    expect(buttons.length).toBeGreaterThan(0)
+    for (const button of buttons) {
+      expect(button.classes()).toContain('dito-buttons--small')
+      expect(button.classes()).not.toContain('dito-buttons--round')
+    }
+  })
+
   describe('deleteChild()', () => {
     it('confirms with the text and notifies with the HTML label', async () => {
       const confirm = stubConfirm()

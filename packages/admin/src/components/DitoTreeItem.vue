@@ -37,6 +37,7 @@
       )
     DitoEditButtons.dito-buttons--small(
       v-if="hasEditButtons"
+      :round="false"
       :schema="schema"
       :formSchema="getItemFormSchema(schema, data, context)"
       :dataPath="dataPath"

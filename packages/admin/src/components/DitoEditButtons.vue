@@ -1,6 +1,7 @@
 <template lang="pug">
 //- Set `@click.stop` to prevent click events from bubbling to dito-label.
-DitoButtons.dito-edit-buttons.dito-buttons--round(
+DitoButtons.dito-edit-buttons(
+  :class="{ 'dito-buttons--round': round }"
   :buttons="buttons"
   :dataPath="dataPath"
   :data="data"
@@ -80,7 +81,10 @@ export default DitoComponent.component('DitoEditButtons', {
     // The query of the edit route, e.g. to keep the current one in trees.
     editQuery: { type: Object, default: null },
     createPath: { type: String, default: null },
-    insertIndex: { type: Number, default: null }
+    insertIndex: { type: Number, default: null },
+    // Whether the buttons are round, as in lists and objects, or square and
+    // compact, as in the rows of trees.
+    round: { type: Boolean, default: true }
   },
 
   computed: {
