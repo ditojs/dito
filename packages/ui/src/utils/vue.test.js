@@ -1,4 +1,5 @@
 import { h, createCommentVNode, isReactive, reactive } from 'vue'
+import { mount } from '@vue/test-utils'
 import { hasVNodeContent, hasSlotContent, raw } from './vue.js'
 
 describe('hasVNodeContent()', () => {
@@ -21,6 +22,24 @@ describe('hasSlotContent()', () => {
     expect(hasSlotContent(slot, { visible: true })).toBe(true)
     expect(hasSlotContent(slot, { visible: false })).toBe(false)
     expect(hasSlotContent(undefined)).toBeFalsy()
+  })
+
+  it(`looks up slots by name in the current component's setup`, () => {
+    const Shelf = {
+      setup() {
+        const hasHeader = !!hasSlotContent('header')
+        const hasFooter = !!hasSlotContent('footer', { count: 0 })
+        return () => h('div', `${hasHeader} ${hasFooter}`)
+      }
+    }
+    const wrapper = mount(Shelf, {
+      slots: {
+        header: () => h('h2', 'Novels'),
+        footer: ({ count }) => (count ? h('p', count) : createCommentVNode(''))
+      }
+    })
+    expect(wrapper.text()).toBe('true false')
+    expect(mount(Shelf).text()).toBe('false false')
   })
 })
 

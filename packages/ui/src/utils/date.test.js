@@ -115,4 +115,10 @@ describe('getDatePartAtPosition()', () => {
   it('returns `null` for missing strings', () => {
     expect(getDatePartAtPosition(null, 0)).toBe(null)
   })
+
+  it('ignores the time parts of dates without time', () => {
+    expect(
+      getDatePartAtPosition('May 14, 2026, 11:30', 16, { time: false })
+    ).toEqual({ name: 'year', start: 8, end: 12 })
+  })
 })
