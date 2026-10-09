@@ -1,4 +1,11 @@
-import { effectScope, computed, watch, nextTick, shallowRef } from 'vue'
+import {
+  effectScope,
+  computed,
+  watch,
+  nextTick,
+  shallowRef,
+  toRaw
+} from 'vue'
 import {
   isArray,
   isPlainObject,
@@ -9,7 +16,11 @@ import {
 } from '@ditojs/utils'
 import DitoContext from '../DitoContext.js'
 import { DataSchemaResolver } from './DataSchemaResolver.js'
-import { getParentDataPath } from './data.js'
+import {
+  appendDataPath,
+  getParentDataPath,
+  getRelativeDataPath
+} from './data.js'
 import { isNested } from './schema/structure.js'
 import { isEmptySchema } from './schema/lookup.js'
 import {
@@ -42,7 +53,7 @@ import {
 //   displays them, see `getOptions()`. Both get the same option objects, and
 //   computes that read options only run once they are loaded.
 // - Submitting waits for the loads of data schemas and options that are still
-//   pending, see `waitUntilSettled()`.
+//   pending, for a limited time, see `waitUntilSettled()`.
 // - The data is dirty when its processed data differs from a snapshot taken
 //   when the data was set up, saved or applied, see `isDirty`. The values that
 //   the model derives until it settled, e.g. from loaded options, don't count,
@@ -66,7 +77,9 @@ export class DataModel {
   // watchers that write these values into the data, by component path:
   computedValueRecords = new Map()
   // The entries of the components whose options were read and the resolvers
-  // of their options, by component path, see `getOptionsResolver()`:
+  // of their options, by component path, see `getOptionsResolver()`. Records
+  // of components that the walk of the data doesn't visit anymore, e.g. of
+  // removed items, are pruned, see `pruneOptionsRecords()`:
   optionsRecords = new Map()
   // The promises of the loads of data schemas and options that are pending,
   // see `waitUntilSettled()`:
@@ -78,6 +91,9 @@ export class DataModel {
   // the snapshot is taken, which `isDirty` takes from the current data, `null`
   // once it settled, see `takeProcessedDataSnapshot()`:
   derivedValueDataPaths = null
+  // The sets of data paths of the values that the model writes while clean
+  // changes settle, one per pending `applyCleanChanges()`:
+  cleanChangesDerivedValueDataPaths = new Set()
   // The number of writes of computed values per data path in the current
   // microtask, see `isWriteLoop()`:
   computedValueWriteCounts = null
@@ -112,6 +128,11 @@ export class DataModel {
       watch(
         () => this.dataEntries.value.entriesWithMissingValues,
         entries => this.setDefaultValues(entries),
+        modelSetupWatchOptions
+      )
+      watch(
+        () => this.dataEntries.value.componentPathsWithOptions,
+        componentPaths => this.pruneOptionsRecords(componentPaths),
         modelSetupWatchOptions
       )
       if (getSourceSchema) {
@@ -180,10 +201,41 @@ export class DataModel {
   // ones that they cause, e.g. options that depend on computed values that
   // depend on loaded options, and for the watchers to write the resulting
   // computed values into the data.
-  async waitUntilSettled() {
-    while (this.hasPendingLoads) {
-      await Promise.all(this.pendingLoads)
-      await nextTick()
+  // Loads that never finish, e.g. hung requests, would block callers like
+  // `submit()` forever. After `timeout` milliseconds, the wait gives up with a
+  // warning and resolves, as the server validates the data anyway, while the
+  // loads keep running. `timeout: null` waits as long as it takes, for the
+  // model's own bookkeeping, which nothing waits for.
+  async waitUntilSettled({ timeout = settleTimeout } = {}) {
+    let timeoutId = null
+    const timedOut =
+      timeout != null
+        ? new Promise(resolve => {
+            timeoutId = setTimeout(() => resolve(true), timeout)
+          })
+        : null
+    const settled = (async () => {
+      while (this.hasPendingLoads) {
+        await Promise.all(this.pendingLoads)
+        await nextTick()
+      }
+      return false
+    })()
+    try {
+      const hasTimedOut = await (
+        timedOut
+          ? Promise.race([settled, timedOut])
+          : settled
+      )
+      if (hasTimedOut) {
+        console.warn(
+          `The data model didn't settle within ${timeout}ms, as ` +
+          `${this.pendingLoads.size} loads of data schemas or options are ` +
+          `still pending. Continuing without them.`
+        )
+      }
+    } finally {
+      clearTimeout(timeoutId)
     }
   }
 
@@ -210,7 +262,7 @@ export class DataModel {
     }
     // Let the watchers and the rendering start their loads first:
     await nextTick()
-    await this.waitUntilSettled()
+    await this.waitUntilSettled({ timeout: null })
     // Snapshots that were taken since settle by themselves.
     const isSnapshotReplaced = (
       this.derivedValueDataPaths !==
@@ -259,10 +311,14 @@ export class DataModel {
 
   // Makes clean changes to the data, which don't make it dirty, while other
   // changes still do, e.g. to apply what an action on the server already
-  // saved: Once the model settled, the values that changed in the processed
-  // data, including the values derived from the changes, are taken over into
-  // the snapshot. Arrays whose length changes are taken over as a whole, see
-  // `takeOverChangedValues()`. `makeChanges()` is called synchronously.
+  // saved: The values that `makeChanges()` changes in the processed data are
+  // compared right after it is called synchronously, so that changes made
+  // while the model settles, e.g. by the user, aren't included. Once the model
+  // settled, they are taken over into the snapshot, along with the values that
+  // the model writes in the meantime, e.g. derived from the changes. Like in
+  // `takeProcessedDataSnapshot()`, these include the values derived from
+  // other changes. Arrays whose length changes are taken over as a whole, see
+  // `takeOverChangedValues()`.
   async applyCleanChanges(makeChanges) {
     const data = this.getData()
     const hasSnapshotOfData = this.processedDataSnapshot.value?.data === data
@@ -273,22 +329,46 @@ export class DataModel {
       : null
     makeChanges()
     if (hasSnapshotOfData) {
-      // Let the watchers write the values derived from the changes first:
-      await nextTick()
-      await this.waitUntilSettled()
+      const processedDataAfterChanges = clone(
+        this.getProcessedDataForDirtyCheck()
+      )
+      const derivedValueDataPaths = new Set()
+      this.cleanChangesDerivedValueDataPaths.add(derivedValueDataPaths)
+      try {
+        // Let the watchers write the values derived from the changes first:
+        await nextTick()
+        await this.waitUntilSettled({ timeout: null })
+      } finally {
+        this.cleanChangesDerivedValueDataPaths.delete(derivedValueDataPaths)
+      }
       // Take the changes over into the current snapshot of the data, which may
       // have been replaced in the meantime, e.g. once the model settled.
       const processedDataSnapshot = this.processedDataSnapshot.value
       if (processedDataSnapshot?.data === data && this.rootScope.active) {
         this.processedDataSnapshot.value = {
           data,
-          processedData: takeOverChangedValues(
-            processedDataSnapshot.processedData,
-            processedDataBeforeChanges,
-            this.getProcessedDataForDirtyCheck()
+          processedData: takeOverValuesAtDataPaths(
+            takeOverChangedValues(
+              processedDataSnapshot.processedData,
+              processedDataBeforeChanges,
+              processedDataAfterChanges
+            ),
+            this.getProcessedDataForDirtyCheck(),
+            derivedValueDataPaths
           )
         }
       }
+    }
+  }
+
+  // Records the data path of a computed value that the model writes, as
+  // derived while it settles, see `takeProcessedDataSnapshot()` and
+  // `applyCleanChanges()`. Defaults don't need to be recorded, as the processed
+  // data holds the defaults of missing values already, see `processData()`.
+  recordDerivedValueDataPath(dataPath) {
+    this.derivedValueDataPaths?.add(dataPath)
+    for (const dataPaths of this.cleanChangesDerivedValueDataPaths) {
+      dataPaths.add(dataPath)
     }
   }
 
@@ -316,15 +396,16 @@ export class DataModel {
 
   // Walks the data and returns the entries of `processSchemaData()` of the
   // components whose `if` doesn't evaluate to `false`: the ones with computed
-  // values, by component path, and the ones whose values are missing. Called
-  // by a computed property, so that it runs again when the data structure
-  // changes, e.g. when list items are added or removed, values go missing, or
-  // `if` conditions change.
+  // values, by component path, the ones whose values are missing, and the
+  // component paths of the ones with options. Called by a computed property,
+  // so that it runs again when the data structure changes, e.g. when list
+  // items are added or removed, values go missing, or `if` conditions change.
   getDataEntries() {
     const schema = this.getSchema()
     const data = this.getData()
     const computedValueEntries = new Map()
     const entriesWithMissingValues = []
+    const componentPathsWithOptions = new Set()
     if (data && !isEmptySchema(schema)) {
       processSchemaData(schema, data, {
         dataPath: this.dataPath,
@@ -338,11 +419,18 @@ export class DataModel {
           if (this.shouldSetDefaultValue(entry)) {
             entriesWithMissingValues.push(entry)
           }
+          if (entry.schema.options) {
+            componentPathsWithOptions.add(entry.componentPath)
+          }
         },
         options: { component: this.component, rootData: this.rootData }
       })
     }
-    return { computedValueEntries, entriesWithMissingValues }
+    return {
+      computedValueEntries,
+      entriesWithMissingValues,
+      componentPathsWithOptions
+    }
   }
 
   // Returns whether the `if` of the entry's component doesn't evaluate to
@@ -505,18 +593,22 @@ export class DataModel {
   }
 
   // Returns the options of the component of the entry, or aborts the
-  // `compute()` that reads them, while they aren't loaded, see
-  // `getComputedValueResult()`.
+  // `compute()` that reads them, while they're loading, see
+  // `getComputedValueResult()`. Options that resolve to `undefined` aren't
+  // loading, e.g. when their load failed, which logs the error, or when their
+  // data path points to a missing value: `compute()` sees them as `undefined`,
+  // and falls back on `options?.…` like components do, see `OptionsMixin`.
   getLoadedOptions(entry) {
-    const options = this.getOptions(entry)
-    if (options === undefined) {
+    const resolver = this.getOptionsResolver(entry)
+    if (resolver.isLoading) {
       throw optionsNotLoaded
     }
-    return options
+    return resolver.value
   }
 
   // Returns the options of the component of the entry, resolved from
-  // `schema.options` when they're first read, `undefined` while loading.
+  // `schema.options` when they're first read, `undefined` while loading, see
+  // `getLoadedOptions()`.
   getOptions(entry) {
     return this.getOptionsResolver(entry).value
   }
@@ -542,6 +634,20 @@ export class DataModel {
     return optionsRecord.resolver
   }
 
+  // Forgets the options of the components that the walk of the data doesn't
+  // visit anymore, e.g. of removed items or hidden components, see
+  // `getDataEntries()`. Components that keep displaying them keep their own
+  // resolvers, see `OptionsMixin`.
+  // TODO: Records are kept by index-based component paths, so the options of
+  // items that move are loaded again. Keep them by data identity instead.
+  pruneOptionsRecords(componentPathsWithOptions) {
+    for (const componentPath of this.optionsRecords.keys()) {
+      if (!componentPathsWithOptions.has(componentPath)) {
+        this.optionsRecords.delete(componentPath)
+      }
+    }
+  }
+
   createDataSchemaResolver(dataSchema, entry) {
     return new DataSchemaResolver(dataSchema, {
       createContext: () => this.createEntryContext(entry),
@@ -551,9 +657,9 @@ export class DataModel {
 
   // Writes the computed value into the data, with the defaults of its nested
   // values, unless it equals the value in the data.
-  writeComputedValue(entry, value) {
+  writeComputedValue(entry, computedValue) {
     const { data, name } = entry
-    this.setNestedDefaultValues(entry, value)
+    const value = this.getValueWithNestedDefaultValues(entry, computedValue)
     if (!equals(value, data[name])) {
       const dataPath = this.getRelativeDataPath(entry)
       if (this.isWriteLoop(dataPath)) {
@@ -561,40 +667,71 @@ export class DataModel {
       }
       // Values written while the model settles are derived, see
       // `takeProcessedDataSnapshot()`:
-      this.derivedValueDataPaths?.add(dataPath)
+      this.recordDerivedValueDataPath(dataPath)
       // Access `data[name]` directly to update the value without calling
       // `parse()`, see `ValueMixin`:
       data[name] = value
     }
   }
 
-  // Sets the missing defaults of the values nested in the computed value of
-  // the entry, e.g. of the items that `compute()` returns, as
-  // `setDefaultValues()` would once the value is written. Otherwise, the two
-  // would disagree on the value and keep replacing each other's writes.
-  setNestedDefaultValues(entry, value) {
-    const { schema, data, name, dataPath } = entry
-    if (!isPlainObject(value) && !isArray(value)) {
-      return
+  // Returns the computed value of the entry with the missing defaults of its
+  // nested values, e.g. of the items that `compute()` returns, as
+  // `setDefaultValues()` would set them once the value is written. Otherwise,
+  // the two would disagree on the value and keep replacing each other's
+  // writes. The value isn't modified, as it may be shared, e.g. a constant:
+  // The objects and arrays that hold missing values are copied, along with the
+  // ones that hold these, and the value is returned as it is when nothing is
+  // missing, keeping its identity, e.g. of options.
+  getValueWithNestedDefaultValues(entry, value) {
+    const { data, name } = entry
+    if (
+      !isPlainObject(value) && !isArray(value) ||
+      // The current value gets its defaults from `setDefaultValues()`:
+      toRaw(value) === toRaw(data[name])
+    ) {
+      return value
     }
-    // Walk the computed value in place of the current one, in a copy of the
-    // data that holds it.
+    const dataWithMissingValues = new Set()
+    this.processNestedEntries(entry, value, nestedEntry => {
+      if (this.shouldSetDefaultValue(nestedEntry)) {
+        dataWithMissingValues.add(nestedEntry.data)
+      }
+    })
+    if (dataWithMissingValues.size === 0) {
+      return value
+    }
+    const valueWithDefaults = copyContainersHolding(
+      value,
+      dataWithMissingValues
+    )
+    // Defaults may hold values with defaults of their own, which the walk
+    // visits after setting them:
+    this.processNestedEntries(entry, valueWithDefaults, nestedEntry => {
+      if (this.shouldSetDefaultValue(nestedEntry)) {
+        setDefaultValue(
+          nestedEntry.schema,
+          nestedEntry.data,
+          nestedEntry.name,
+          () => this.createEntryContext(nestedEntry)
+        )
+      }
+    })
+    return valueWithDefaults
+  }
+
+  // Walks the entries nested in `value`, as the value of the entry's
+  // component, in place of its current one in a copy of the data that holds it,
+  // and calls `handleNestedEntry()` before visiting each of them.
+  processNestedEntries(entry, value, handleNestedEntry) {
+    const { schema, data, name, dataPath } = entry
     const valueData = { ...data, [name]: value }
     processSchemaData({ components: { [name]: schema } }, valueData, {
       dataPath: isNested(schema) ? getParentDataPath(dataPath) : dataPath,
       shouldProcess: nestedEntry => this.isEntryShown(nestedEntry),
       shouldSkipSourcesWithResource: true,
       before: nestedEntry => {
-        if (
-          nestedEntry.data !== valueData &&
-          this.shouldSetDefaultValue(nestedEntry)
-        ) {
-          setDefaultValue(
-            nestedEntry.schema,
-            nestedEntry.data,
-            nestedEntry.name,
-            () => this.createEntryContext(nestedEntry)
-          )
+        if (nestedEntry.data !== valueData) {
+          handleNestedEntry(nestedEntry)
         }
       },
       options: { component: this.component, rootData: this.rootData }
@@ -629,10 +766,10 @@ export class DataModel {
   // data, as in its processed data.
   getRelativeDataPath({ schema, name, dataPath }) {
     // The data paths of nested components include their own name.
-    const tokens = isNested(schema)
-      ? parseDataPath(dataPath)
-      : [...parseDataPath(dataPath), name]
-    return tokens.slice(parseDataPath(this.dataPath).length).join('/')
+    const valueDataPath = isNested(schema)
+      ? dataPath
+      : appendDataPath(dataPath, name)
+    return getRelativeDataPath(valueDataPath, this.dataPath)
   }
 
   // Returns the context for `if`, data schemas and options, with the component
@@ -719,6 +856,32 @@ function takeOverChangedValues(target, before, after) {
   return result
 }
 
+// Returns `value` with the plain objects and arrays in it that are one of
+// `objects` or hold one of them copied, shallowly, and the others as they are.
+// Values that occur more than once are copied at each occurrence, so that
+// setting defaults in the copies never reaches the originals. Only the values
+// that hold themselves, `ancestorValues`, are left as they are.
+function copyContainersHolding(value, objects, ancestorValues = new Set()) {
+  if (
+    !isPlainObject(value) && !isArray(value) ||
+    ancestorValues.has(value)
+  ) {
+    return value
+  }
+  ancestorValues.add(value)
+  const copyValue = () => (isArray(value) ? [...value] : { ...value })
+  let copy = objects.has(value) ? copyValue() : null
+  for (const [key, entry] of Object.entries(value)) {
+    const entryCopy = copyContainersHolding(entry, objects, ancestorValues)
+    if (entryCopy !== entry) {
+      copy ??= copyValue()
+      copy[key] = entryCopy
+    }
+  }
+  ancestorValues.delete(value)
+  return copy ?? value
+}
+
 const notFound = Symbol('notFound')
 
 // The watchers of the model that set up the data and the scopes of its
@@ -744,6 +907,10 @@ const optionsNotLoaded = Symbol('optionsNotLoaded')
 // The number of writes of a computed value in one microtask after which they
 // are considered a loop, see `DataModel.isWriteLoop()`.
 const maxComputedValueWrites = 10
+
+// The milliseconds after which `DataModel.waitUntilSettled()` stops waiting
+// for pending loads, long enough for slow requests.
+const settleTimeout = 30_000
 
 // Returns whether the schema is a source of computed values, through
 // `schema.compute()` or a data schema of the `computed` types.
