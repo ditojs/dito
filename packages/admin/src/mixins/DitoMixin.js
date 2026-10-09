@@ -417,18 +417,15 @@ export default {
         }[cache]
       )
       const loadCache = cacheParent?.loadCache
-      // Build a cache key from the config:
+      // Requests to resources are told apart by the URLs that they resolve to:
+      const { resource } = options
       const cacheKey = (
         loadCache &&
-        `${
-          options.method || 'get'
-        } ${
-          options.url
-        } ${
-          JSON.stringify(options.query || '')
-        } ${
-          JSON.stringify(options.data || '')
-        }`
+        getRequestCacheKey({
+          ...options,
+          method: options.method || resource?.method,
+          url: options.url || (resource ? this.getResourceUrl(resource) : null)
+        })
       )
       if (loadCache && (cacheKey in loadCache)) {
         return loadCache[cacheKey]
@@ -438,7 +435,12 @@ export default {
       const res = this.sendRequest(options)
         .then(response => response.data)
         .catch(error => {
-          // Convert axios errors to normal errors
+          // Failed requests aren't cached, so they can be retried:
+          if (loadCache?.[cacheKey] === res) {
+            delete loadCache[cacheKey]
+          }
+          // Convert errors of responses with data, e.g. Dito.js errors, to
+          // errors with the message and properties of that data:
           const data = error.response?.data
           throw data
             ? Object.assign(new Error(data.message), data)
@@ -514,6 +516,7 @@ export default {
     setupMethods() {
       for (const [key, value] of Object.entries(this.schema.methods || {})) {
         if (isFunction(value)) {
+          warnAboutOverriddenMember(this, key, 'method')
           this[key] = value
         } else {
           console.error(`Invalid method definition: ${key}: ${value}`)
@@ -537,6 +540,7 @@ export default {
             ? getComputedAccessor(item)
             : null
         if (accessor) {
+          warnAboutOverriddenMember(this, key, 'computed property')
           Object.defineProperty(this, key, accessor)
         } else {
           console.error(
@@ -547,7 +551,7 @@ export default {
     },
 
     setupEvents() {
-      const { watch, events } = this.schema
+      const { watch } = this.schema
       if (watch) {
         const handlers = isFunction(watch) ? watch.call(this) : watch
         if (isObject(handlers)) {
@@ -565,33 +569,30 @@ export default {
         }
       }
 
-      const addEvent = (key, event, callback) => {
+      const eventEntries = getSchemaEventEntries(this.schema)
+      for (const { key, event, callback } of eventEntries) {
         if (isFunction(callback)) {
-          this.on(hyphenate(event), callback)
+          this.on(event, callback)
         } else {
           console.error(`Invalid event definition: ${key}: ${callback}`)
-        }
-      }
-
-      if (events) {
-        for (const [key, value] of Object.entries(events)) {
-          addEvent(key, key, value)
-        }
-      }
-      // Also scan schema for `on[A-Z]`-style callbacks and add them
-      // TODO: Deprecate one format or the other, in favour of only one way of
-      // doing things. Decide which one to remove.
-      for (const [key, value] of Object.entries(this.schema)) {
-        if (/^on[A-Z]/.test(key)) {
-          addEvent(key, key.slice(2), value)
         }
       }
     },
 
     emitEvent(event, {
       context = null,
-      parent = null
+      parent = null,
+      ...unsupportedOptions
     } = {}) {
+      const unsupportedKeys = Object.keys(unsupportedOptions)
+      if (unsupportedKeys.length > 0) {
+        // Values for the handlers are passed through `context`, e.g.
+        // `emitEvent('error', { context: { error } })`.
+        console.warn(
+          `Unsupported options for event '${event}': ` +
+          `${unsupportedKeys.join(', ')}. Pass them through \`context\`.`
+        )
+      }
       const hasListeners = this.hasListeners(event)
       const parentHasListeners = parent?.hasListeners(event)
       if (hasListeners || parentHasListeners) {
@@ -643,6 +644,55 @@ export default {
 }
 
 let nextUid = 0
+
+// Returns the event handlers that `schema` defines, both in `events` and as
+// `on[A-Z]` callbacks, e.g. `events: { mouseenter }` and `onMouseenter`, with
+// the hyphenated event names that they are registered and emitted under.
+// TODO: Deprecate one format or the other, in favour of only one way of
+// doing things. Decide which one to remove.
+export function getSchemaEventEntries(schema) {
+  const entries = []
+  for (const [key, callback] of Object.entries(schema.events || {})) {
+    entries.push({ key, event: hyphenate(key), callback })
+  }
+  for (const [key, callback] of Object.entries(schema)) {
+    if (/^on[A-Z]/.test(key)) {
+      entries.push({ key, event: hyphenate(key.slice(2)), callback })
+    }
+  }
+  return entries
+}
+
+// The keys of the members that the schemas define on components, through
+// `methods` and `computed`, to tell them apart from the component's own ones
+// when the schema is set up again.
+const schemaMemberKeysByComponent = new WeakMap()
+
+// Warns when the schema defines a method or computed property that overrides
+// a member of the component, e.g. a method or property of Dito.js itself.
+function warnAboutOverriddenMember(component, key, kind) {
+  let schemaMemberKeys = schemaMemberKeysByComponent.get(component)
+  if (!schemaMemberKeys) {
+    schemaMemberKeys = new Set()
+    schemaMemberKeysByComponent.set(component, schemaMemberKeys)
+  }
+  if (key in component && !schemaMemberKeys.has(key)) {
+    console.warn(
+      `The schema ${kind} '${key}' overrides a member of the component.`
+    )
+  }
+  schemaMemberKeys.add(key)
+}
+
+// Returns the key under which `request()` caches the response of a request.
+function getRequestCacheKey({ method, url, query, data }) {
+  return [
+    method || 'get',
+    url,
+    JSON.stringify(query || ''),
+    JSON.stringify(data || '')
+  ].join(' ')
+}
 
 function getParentComponent(component, key) {
   const current = component[key]

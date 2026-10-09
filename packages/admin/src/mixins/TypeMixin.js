@@ -1,6 +1,7 @@
 import ValueMixin from './ValueMixin.js'
 import ContextMixin from './ContextMixin.js'
 import ValidationMixin from './ValidationMixin.js'
+import { getSchemaEventEntries } from './DitoMixin.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
 import { getValidations } from '../utils/schema/validation.js'
 import { asArray, camelize, equals } from '@ditojs/utils'
@@ -115,11 +116,10 @@ export default {
 
     events() {
       const events = this.getEvents()
-      // Register callbacks for all provides non-recognized events,
-      // assuming they are native events.
-      // TODO: Move to vue3-style `on[A-Z]` event handlers naming that aren't
-      // namespaced in `schema.events` once the transition is complete.
-      for (const event of Object.keys(this.schema.events || {})) {
+      // Register callbacks for all events that the schema handles and that the
+      // component doesn't handle itself, assuming they are native events, in
+      // both forms, `events: { mouseenter }` and `onMouseenter`.
+      for (const { event } of getSchemaEventEntries(this.schema)) {
         events[`on${camelize(event, true)}`] ??= () => {
           this.emitEvent(event)
         }

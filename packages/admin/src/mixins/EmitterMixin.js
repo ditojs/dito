@@ -46,8 +46,9 @@ export default {
 
     off(event, callback) {
       if (!arguments.length) {
-        // Remove all events
-        delete this.listeners
+        // Remove all events. Reset rather than `delete` the data property,
+        // which Vue's component proxy doesn't support.
+        this.listeners = null
       } else if (isArray(event)) {
         for (const ev of event) {
           this.off(ev, callback)
