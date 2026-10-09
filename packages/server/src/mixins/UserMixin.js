@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs'
 import passport from 'koa-passport'
 import { Strategy as LocalStrategy } from 'passport-local'
-import { mixin, asArray } from '@ditojs/utils'
+import { mixin, asArray, isString } from '@ditojs/utils'
 import { AuthenticationError } from '../errors/index.js'
 
 export const UserMixin = mixin(
@@ -111,7 +111,7 @@ export const UserMixin = mixin(
           // http://www.passportjs.org/docs/downloads/html/#custom-callback
           passport.authenticate(
             this.name,
-            async (err, user, message, status) => {
+            async (err, user, info, status) => {
               if (err) {
                 reject(err)
               } else if (user) {
@@ -122,11 +122,15 @@ export const UserMixin = mixin(
                   reject(err)
                 }
               } else {
+                // Passport passes `info` as a string or a `{ message }`
+                // object, and an optional status, e.g. 400 for missing
+                // credentials. Without one, `AuthenticationError` uses 401.
                 reject(
-                  new AuthenticationError(
-                    message || 'Password or username is incorrect',
-                    status
-                  )
+                  new AuthenticationError({
+                    message: 'Password or username is incorrect',
+                    ...(isString(info) ? { message: info } : info),
+                    ...(status != null && { status })
+                  })
                 )
               }
             }
@@ -152,13 +156,14 @@ passport.serializeUser((req, user, done) => {
   const modelName = user?.constructor.name
   const identifier =
     modelName && userClasses[modelName]
-      ? `${modelName}-${user.id}`
+      ? `${modelName}-${user.$id()}`
       : null
   done(null, identifier)
 })
 
 passport.deserializeUser(async (req, identifier, done) => {
-  const [modelName, userId] = identifier.split('-')
+  // Only split at the first hyphen, since ids may contain hyphens (UUIDs).
+  const [, modelName, userId] = identifier.match(/^([^-]+)-(.+)$/) ?? []
   const userClass = userClasses[modelName]
   try {
     const user = userClass

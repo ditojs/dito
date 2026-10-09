@@ -66,7 +66,8 @@ export const AssetMixin = mixin(
       }
 
       // @override
-      $parseJson(json, { trusted = false } = {}) {
+      $parseJson(json, options = {}) {
+        const { trusted = false } = options
         const { file, storage } = json
         // Convert `AssetMixin#file` to an `AssetFile` instance:
         if (file && storage) {
@@ -74,7 +75,7 @@ export const AssetMixin = mixin(
             .getStorage(storage)
             ?.convertAssetFile(file, { trusted })
         }
-        return json
+        return super.$parseJson(json, options)
       }
     }
 )
