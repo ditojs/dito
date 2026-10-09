@@ -10,9 +10,9 @@ nav.dito-pagination(aria-label="Pagination")
   .dito-buttons.dito-buttons--round(
     v-if="numPages > 1"
   )
-    button.dito-button(
+    DitoButton(
       v-for="button in buttons"
-      type="button"
+      :key="button.type || button.index"
       :class="getButtonClasses(button)"
       :disabled="button.disabled"
       :aria-label="getButtonLabel(button)"
@@ -25,7 +25,10 @@ nav.dito-pagination(aria-label="Pagination")
 </template>
 
 <script>
+import DitoButton from './DitoButton.vue'
+
 export default {
+  components: { DitoButton },
   emits: ['update:page'],
 
   props: {
