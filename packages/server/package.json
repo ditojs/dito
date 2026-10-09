@@ -70,13 +70,16 @@
   },
   "peerDependencies": {
     "@aws-sdk/client-s3": "^3.0.0",
-    "@aws-sdk/lib-storage": "^3.0.0",
-    "knex": ">=3.0.1",
+    "knex": "^3.3.0",
     "objection": "^3.3.0"
+  },
+  "peerDependenciesMeta": {
+    "@aws-sdk/client-s3": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@aws-sdk/client-s3": "^3.1147.0",
-    "@aws-sdk/lib-storage": "^3.1147.0",
     "@types/koa-bodyparser": "^4.3.13",
     "@types/koa-compress": "^4.0.7",
     "@types/koa-mount": "^4.0.5",
