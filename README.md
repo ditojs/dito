@@ -103,9 +103,7 @@ pushes both. The pushed tag starts the
 publishes the bumped ones through npm's trusted publishing, without npm tokens or
 logins. Only repository admins can create `v*` tags.
 
-To release all packages, also the ones that didn't change, e.g. to keep their
-versions in sync:
-
-```sh
-pnpm release patch --force-publish
-```
+All packages are always released together, also the ones that didn't change
+(`forcePublish` in `lerna.json`), so their versions stay in sync and each
+package's trusted publisher on npm is used with every release: npm lets
+trusted publisher configurations that are never used expire.
