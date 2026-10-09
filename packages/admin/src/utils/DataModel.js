@@ -482,6 +482,7 @@ export class DataModel {
         record.computedValueScope = null
       }
       record.entry = entry
+      record.dataPath.value = entry.dataPath
       // Add the record before its scope is created, as its watchers may read
       // its options right away, see `getOptionsResolver()`.
       this.componentRecords.set(entry, record)
@@ -508,7 +509,8 @@ export class DataModel {
 
   // Creates the scope of the watchers that write the computed values of the
   // record's component into the data, with its current entry, so that the
-  // values of items that move aren't computed again. Records stop being
+  // values of items that move are only computed again if their computes read
+  // their position, see `getComputedValueResult()`. Records stop being
   // current before their scope is stopped, as watchers that don't belong to
   // components run in the order in which they're triggered, e.g. when list
   // items are removed or `if` conditions change. The watchers skip these
@@ -526,7 +528,7 @@ export class DataModel {
           // when only the value in the data changed, e.g. through user input.
           () =>
             isRecordCurrent.value
-              ? this.getComputedValueResult(record.entry)
+              ? this.getComputedValueResult(record)
               : null,
           computedResult => {
             if (computedResult) {
@@ -579,14 +581,24 @@ export class DataModel {
   // loaded, which aborts it, so that the current value is kept until they are
   // and `compute()` can rely on them. The watcher that calls it depends on the
   // options through reading them, and calls it again once they're loaded.
-  getComputedValueResult(entry) {
-    const { schema, data, name, dataPath } = entry
+  // Computes the value of the record's component. Its data path is read
+  // through the record, so that only computes that read their position are
+  // computed again when their items move, see `updateComponentRecords()`.
+  getComputedValueResult(record) {
+    const { entry } = record
+    const { schema, data, name } = entry
     try {
-      const value = computeValue(schema, data, name, dataPath, {
-        component: this.component.mainSchemaComponent ?? this.component,
-        rootData: this.rootData,
-        getOptions: schema.options ? () => this.getLoadedOptions(entry) : null
-      })
+      const value = computeValue(
+        schema,
+        data,
+        name,
+        () => record.dataPath.value,
+        {
+          component: this.component.mainSchemaComponent ?? this.component,
+          rootData: this.rootData,
+          getOptions: schema.options ? () => this.getLoadedOptions(entry) : null
+        }
+      )
       return { value }
     } catch (error) {
       if (error === optionsNotLoaded) {
@@ -906,6 +918,10 @@ const settleTimeout = 30_000
 function createComponentRecord(entry) {
   return {
     entry,
+    // The data path of the entry, read by computes, see
+    // `getComputedValueResult()`. Unlike `entry`, it's reactive, as items
+    // that move keep their records.
+    dataPath: shallowRef(entry.dataPath),
     computedValueScope: null,
     optionsResolver: null,
     optionsSchema: null

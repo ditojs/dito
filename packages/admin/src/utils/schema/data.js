@@ -260,7 +260,9 @@ export function initializeData(schema, data = {}, component, {
  * defaults of components with `compute()`. Other defaults are written when the
  * data is set up, see `initializeData()`, or when they go missing later. If
  * provided, `getOptions()` returns the options for `context.options`, called
- * only when they're read.
+ * only when they're read. `dataPath` can also be a function that returns it,
+ * called only when `compute()` reads the data path or values derived from it,
+ * e.g. `index` or `parentItem`, so that only these computes depend on it.
  */
 export function computeValue(schema, data, name, dataPath, {
   component = null,
@@ -282,7 +284,9 @@ export function computeValue(schema, data, name, dataPath, {
         },
         name,
         data,
-        dataPath,
+        get dataPath() {
+          return isFunction(dataPath) ? dataPath() : dataPath
+        },
         rootData
       }
       if (getOptions) {

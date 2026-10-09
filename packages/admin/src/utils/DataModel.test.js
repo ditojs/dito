@@ -1363,6 +1363,44 @@ describe('DataModel', () => {
       dataModel.stop()
     })
 
+    it('recomputes the values of items that moved if they read their position', async () => {
+      const compute = vi.fn(({ itemIndex }) => itemIndex + 1)
+      const { dataModel, data } = createDataModel(
+        {
+          type: 'form',
+          components: {
+            books: {
+              type: 'list',
+              form: {
+                type: 'form',
+                components: {
+                  title: { type: 'text' },
+                  position: { type: 'text', compute },
+                  path: { type: 'text', compute: ({ dataPath }) => dataPath }
+                }
+              }
+            }
+          }
+        },
+        { books: [{ title: 'One' }, { title: 'Two' }, { title: 'Three' }] }
+      )
+      await dataModel.waitUntilSettled()
+      compute.mockClear()
+      data.books.reverse()
+      await nextTick()
+      await dataModel.waitUntilSettled()
+      expect(
+        data.books.map(({ title, position, path }) => [title, position, path])
+      ).toEqual([
+        ['Three', 1, 'books/0/path'],
+        ['Two', 2, 'books/1/path'],
+        ['One', 3, 'books/2/path']
+      ])
+      // 'Two' stays in its place, so only the other two are computed again.
+      expect(compute).toHaveBeenCalledTimes(2)
+      dataModel.stop()
+    })
+
     it('forgets the options of removed items', async () => {
       const { dataModel, data } = createShelf(
         createShelfSchema({
