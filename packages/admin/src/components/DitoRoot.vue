@@ -127,6 +127,18 @@ export default DitoComponent.component('DitoRoot', {
       onShow: instance => instance.setContent(instance.reference.dataset.info)
     })
 
+    // Warn before the page is reloaded or closed with unsaved changes. Route
+    // changes within the admin are guarded by `RouteMixin` instead.
+    this.domOn(window, {
+      beforeunload: event => {
+        if (this.hasUnsavedChanges()) {
+          event.preventDefault()
+          // Required by older browsers to show the warning:
+          event.returnValue = ''
+        }
+      }
+    })
+
     // Clear the label marked as active on all mouse and keyboard events, except
     // the ones that DitoLabel itself intercepts.
     this.domOn(document, {
@@ -237,6 +249,14 @@ export default DitoComponent.component('DitoRoot', {
 
     closeNotifications() {
       this.notifications.destroyAll()
+    },
+
+    // Returns true if any of the route components has data with unsaved
+    // changes, e.g. a form with a dirty data model.
+    hasUnsavedChanges() {
+      return this.appState.routeComponents.some(
+        routeComponent => routeComponent.isForm && routeComponent.isDirty
+      )
     },
 
     registerLoading(isLoading) {
