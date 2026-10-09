@@ -11,6 +11,7 @@
     v-else-if="creatableForms"
   )
     button.dito-button(
+      ref="trigger"
       type="button"
       :disabled="disabled"
       v-bind=`{
@@ -18,17 +19,25 @@
         ...getButtonAttributes(verb, null, text)
       }`
       @mousedown.stop="onPulldownMouseDown()"
+      @keydown="onTriggerKeyDown"
     ) {{ text }}
     ul.dito-pulldown(
+      ref="menu"
       role="menu"
       :class="{ 'dito-pulldown--open': pulldown.open }"
+      @keydown="onMenuKeyDown"
+      @focusout="onMenuFocusOut"
     )
       li(
         v-for="(form, type) in creatableForms"
         v-show="shouldShowSchema(form)"
+        role="none"
       )
         a.dito-pulldown__item(
           role="menuitem"
+          tabindex="-1"
+          :data-type="type"
+          :aria-disabled="shouldDisableSchema(form) ? 'true' : null"
           :class=`{
             'dito-pulldown__item--disabled': shouldDisableSchema(form)
           }`
@@ -147,6 +156,75 @@ export default DitoComponent.component('DitoCreateButton', {
     onPulldownSelect(type) {
       this.createItem(this.forms[type], type)
       this.setPulldownOpen(false)
+    },
+
+    // Returns the menu items of the pulldown that aren't hidden.
+    getMenuItems() {
+      return [...this.$refs.menu.querySelectorAll('.dito-pulldown__item')]
+        .filter(item => item.parentElement.style.display !== 'none')
+    },
+
+    async openMenu(focusLast = false) {
+      this.setPulldownOpen(true)
+      // Wait for the menu to be displayed, so its items can be focused:
+      await this.$nextTick()
+      const items = this.getMenuItems()
+      items[focusLast ? items.length - 1 : 0]?.focus()
+    },
+
+    closeMenu(focusTrigger = true) {
+      this.setPulldownOpen(false)
+      if (focusTrigger) {
+        this.$refs.trigger?.focus()
+      }
+    },
+
+    onTriggerKeyDown(event) {
+      if (['Enter', ' ', 'ArrowDown', 'ArrowUp'].includes(event.key)) {
+        event.preventDefault()
+        this.openMenu(event.key === 'ArrowUp')
+      }
+    },
+
+    onMenuKeyDown(event) {
+      const items = this.getMenuItems()
+      const index = items.indexOf(document.activeElement)
+      const { key } = event
+      if (key === 'Escape') {
+        event.preventDefault()
+        this.closeMenu()
+      } else if (key === 'Tab') {
+        this.closeMenu(false)
+      } else if (key === 'Enter' || key === ' ') {
+        event.preventDefault()
+        const item = items[index]
+        if (item && item.getAttribute('aria-disabled') !== 'true') {
+          this.closeMenu()
+          this.onPulldownSelect(item.dataset.type)
+        }
+      } else {
+        const targetIndex = {
+          ArrowDown: (index + 1) % items.length,
+          ArrowUp: (index - 1 + items.length) % items.length,
+          Home: 0,
+          End: items.length - 1
+        }[key]
+        if (targetIndex !== undefined) {
+          event.preventDefault()
+          items[targetIndex]?.focus()
+        }
+      }
+    },
+
+    onMenuFocusOut(event) {
+      // Close the menu when the focus leaves it, e.g. by clicking elsewhere.
+      if (
+        this.pulldown.open &&
+        event.relatedTarget &&
+        !this.$el.contains(event.relatedTarget)
+      ) {
+        this.setPulldownOpen(false)
+      }
     }
   }
 })

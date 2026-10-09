@@ -4,12 +4,14 @@
     v-for="(tabSchema, key) in tabs"
     :id="getTabId(key)"
     :key="key"
+    ref="links"
     role="tab"
     :aria-selected="modelValue === key"
     :aria-controls="getTabPanelId(key)"
     :tabindex="modelValue === key ? 0 : -1"
     :class="{ 'dito-tabs__link--active': modelValue === key }"
     @click="$emit('update:modelValue', key)"
+    @keydown="onKeyDown($event, key)"
   ) {{ getLabel(tabSchema, key) }}
 </template>
 
@@ -33,6 +35,31 @@ export default DitoComponent.component('DitoTabs', {
 
     getTabPanelId(key) {
       return `${this.schemaComponent.componentPath}-tabpanel-${key}`
+    },
+
+    // Supports the keyboard interaction of tabs with manual activation: The
+    // arrow keys, Home and End move the focus to other tabs, Enter and Space
+    // select the focused tab, so that moving through the tabs doesn't switch
+    // their panels and the route hash on each key press.
+    onKeyDown(event, key) {
+      const keys = Object.keys(this.tabs)
+      const index = keys.indexOf(key)
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault()
+        this.$emit('update:modelValue', key)
+        return
+      }
+      const focusIndex = {
+        ArrowLeft: (index - 1 + keys.length) % keys.length,
+        ArrowRight: (index + 1) % keys.length,
+        Home: 0,
+        End: keys.length - 1
+      }[event.key]
+      if (focusIndex !== undefined) {
+        event.preventDefault()
+        // Refs of `v-for` elements are in the order of the rendered list:
+        this.$refs.links[focusIndex]?.focus()
+      }
     }
   }
 })
