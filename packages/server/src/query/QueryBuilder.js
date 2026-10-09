@@ -22,8 +22,6 @@ const SYMBOL_ALL = Symbol('all')
 
 export class QueryBuilder extends objection.QueryBuilder {
   #ignoreGraph = false
-  #graphAlgorithm = 'fetch'
-  #isJoinChildQuery = false
   #scopes = { default: true } // Eager-apply the default scope
   #allowScopes = null
   #ignoreScopes = {}
@@ -35,7 +33,6 @@ export class QueryBuilder extends objection.QueryBuilder {
   clone() {
     const copy = super.clone()
     copy.#ignoreGraph = this.#ignoreGraph
-    copy.#graphAlgorithm = this.#graphAlgorithm
     copy.#appliedScopes = { ...this.#appliedScopes }
     copy.#allowFilters = this.#allowFilters ? { ...this.#allowFilters } : null
     // Unlike `#copyScopesFromParent()` for child queries, a clone keeps all
@@ -76,7 +73,6 @@ export class QueryBuilder extends objection.QueryBuilder {
   // @override
   childQueryOf(query, options) {
     super.childQueryOf(query, options)
-    this.#isJoinChildQuery = query.#graphAlgorithm === 'join'
     if (this.isInternal()) {
       // Internal queries shouldn't apply or inherit any scopes, not even the
       // default scope.
@@ -84,7 +80,6 @@ export class QueryBuilder extends objection.QueryBuilder {
     } else {
       // Inherit the graph scopes from the parent query.
       this.#ignoreGraph = query.#ignoreGraph
-      this.#graphAlgorithm = query.#graphAlgorithm
       this.#copyScopesFromParent(query)
     }
     return this
@@ -291,7 +286,7 @@ export class QueryBuilder extends objection.QueryBuilder {
                 // was called, no further checks are required.
                 false
               )
-              if (query.#isJoinChildQuery) {
+              if (query.isJoinChildQuery()) {
                 // Join child queries are never executed, and need to apply
                 // their scopes manually. Note that it's OK to call this
                 // repeatedly, because `_appliedScopes` prevents multiple
@@ -336,24 +331,19 @@ export class QueryBuilder extends objection.QueryBuilder {
     return this
   }
 
-  // A algorithm-agnostic version of `withGraphFetched()` / `withGraphJoined()`,
-  // with the algorithm specifiable in the options. Additionally, it handles
-  // `_ignoreGraph` and `_graphAlgorithm`:
+  // @override
+  // Objection's algorithm-agnostic `withGraph()` keeps the algorithms of the
+  // relations that are already loaded, and uses the last used one for new
+  // ones. Additionally, this handles `#ignoreGraph`:
   withGraph(expr, options = {}) {
-    // To make merging easier, keep the current algorithm if none is specified:
-    const { algorithm = this.#graphAlgorithm } = options
-    const method = {
-      fetch: 'withGraphFetched',
-      join: 'withGraphJoined'
-    }[algorithm]
-    if (!method) {
+    const { algorithm } = options
+    if (algorithm !== undefined && !['fetch', 'join'].includes(algorithm)) {
       throw new QueryBuilderError(
         `Graph algorithm '${algorithm}' is unsupported.`
       )
     }
     if (!this.#ignoreGraph) {
-      this.#graphAlgorithm = algorithm
-      super[method](expr, options)
+      super.withGraph(expr, options)
     }
     return this
   }

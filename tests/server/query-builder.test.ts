@@ -603,6 +603,136 @@ describe('QueryBuilder', () => {
       )
     })
 
+    describe('mixing joined and fetched relations', () => {
+      async function insertRecipeWithCookAndSteps() {
+        return Recipe.query().insertGraph({
+          name: 'Apple pie',
+          // Published, as `^final` also applies to the root query.
+          published: true,
+          cook: { name: 'Ada' },
+          steps: [{ text: 'Bake' }, { text: 'Taste', draft: true }]
+        } as any)
+      }
+
+      it('loads joined and then fetched relations', async () => {
+        const recipe = await insertRecipeWithCookAndSteps()
+        const result = await Recipe.query()
+          .findById(recipe.id)
+          .withGraphJoined('cook')
+          .withGraphFetched('steps')
+        expect(result!.cook!.name).toBe('Ada')
+        expect(result!.steps).toHaveLength(2)
+      })
+
+      it('loads fetched and then joined relations', async () => {
+        const recipe = await insertRecipeWithCookAndSteps()
+        const result = await Recipe.query()
+          .findById(recipe.id)
+          .withGraphFetched('steps')
+          .withGraphJoined('cook')
+        expect(result!.cook!.name).toBe('Ada')
+        expect(result!.steps).toHaveLength(2)
+      })
+
+      it('applies graph scopes to both', async () => {
+        const recipe = await insertRecipeWithCookAndSteps()
+        for (const createQuery of [
+          () =>
+            Recipe.query()
+              .findById(recipe.id)
+              .withGraphJoined('cook')
+              .withGraphFetched('steps'),
+          () =>
+            Recipe.query()
+              .findById(recipe.id)
+              .withGraphFetched('steps')
+              .withGraphJoined('cook')
+        ]) {
+          const result = await createQuery().withScope('^final')
+          expect(result!.cook!.name).toBe('Ada')
+          expect(result!.steps.map(step => step.text)).toEqual(['Bake'])
+        }
+      })
+
+      it('applies graph scopes to joined relations', async () => {
+        await insertRecipeWithCookAndSteps()
+        // The fetched relation comes last, so the joined relation's child
+        // queries need to be detected as such for the scope to apply.
+        // NOTE: `findById()` would limit the joined rows to one.
+        const [result] = await Recipe.query()
+          .withGraphJoined('steps')
+          .withGraphFetched('cook')
+          .withScope('^final')
+        expect(result.cook!.name).toBe('Ada')
+        expect(result.steps.map(step => step.text)).toEqual(['Bake'])
+      })
+
+      it('applies graph scopes to nested relations', async () => {
+        const recipe = await insertRecipeWithCookAndSteps()
+        await Recipe.query().insertGraph({
+          name: 'Banana bread',
+          published: true,
+          cookId: recipe.cookId,
+          steps: [{ text: 'Mash' }, { text: 'Slice', draft: true }]
+        } as any)
+        const [result] = await Recipe.query()
+          .where('Recipe.id', recipe.id)
+          .withGraphJoined('steps')
+          .withGraphFetched('cook.recipes(orderById).steps')
+          .withScope('^final')
+          .modifiers({ orderById: (query: any) => query.orderBy('id') })
+        expect(result.steps.map(step => step.text)).toEqual(['Bake'])
+        expect(
+          result.cook!.recipes.map(recipe =>
+            recipe.steps.map(step => step.text)
+          )
+        ).toEqual([['Bake'], ['Mash']])
+      })
+
+      it('keeps the algorithms of relations merged without one', async () => {
+        await insertRecipeWithCookAndSteps()
+        const createQuery = () =>
+          Recipe.query()
+            .withGraphJoined('steps')
+            .withGraphFetched('cook')
+            // `withSteps` merges `steps` without specifying an algorithm.
+            .withScope('withSteps')
+            .withGraph('[steps, cook.recipes]')
+        const [result] = await createQuery()
+        expect(result.steps).toHaveLength(2)
+        expect(result.cook!.recipes).toHaveLength(1)
+        const sql = createQuery().toKnexQuery().toQuery()
+        expect(sql).toMatch(/left join "Step"/)
+        expect(sql).not.toMatch(/join "Cook"/)
+      })
+
+      it('keeps the algorithms of relations in clones', async () => {
+        const recipe = await insertRecipeWithCookAndSteps()
+        const query = Recipe.query()
+          .findById(recipe.id)
+          .withGraphJoined('cook')
+          .withGraphFetched('steps')
+        const result = await query.clone().withScope('^final')
+        expect(result!.cook!.name).toBe('Ada')
+        expect(result!.steps.map(step => step.text)).toEqual(['Bake'])
+      })
+
+      it('forgets the algorithms of cleared relations', async () => {
+        const recipe = await insertRecipeWithCookAndSteps()
+        const createQuery = () =>
+          Recipe.query()
+            .findById(recipe.id)
+            .withGraphJoined('cook')
+            .clearWithGraph()
+            .withGraphFetched('steps')
+            .withGraph('cook')
+        const result = await createQuery()
+        expect(result!.cook!.name).toBe('Ada')
+        expect(result!.steps).toHaveLength(2)
+        expect(createQuery().toKnexQuery().toQuery()).not.toMatch(/join/)
+      })
+    })
+
     it('loads root properties by data path', async () => {
       await insertRecipes()
       const recipes = await Recipe.query().loadDataPath('name').orderBy('name')
