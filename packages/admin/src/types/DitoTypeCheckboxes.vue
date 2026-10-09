@@ -41,7 +41,7 @@ export default DitoTypeComponent.register('checkboxes', {
 
     selectedOptions: {
       get() {
-        return (this.selectedValue || []).filter(value => value)
+        return (this.selectedValue || []).filter(value => value != null)
       },
 
       set(option) {
