@@ -54,8 +54,8 @@ export default DitoComponent.component('DitoView', {
     return {
       // Updated from LoadingMixin through `setLoading(isLoading)`:
       isLoading: false,
-      // NOTE: Data is shared across all views because the router recycles the
-      // DitoView component.
+      // NOTE: Each view has its own data, as `DitoRouterView` renders each
+      // route record with its own component instance.
       data: {}
     }
   },
@@ -101,20 +101,6 @@ export default DitoComponent.component('DitoView', {
 
     providesData() {
       return someNestedSchemaComponent(this.viewSchema, hasResource)
-    }
-  },
-
-  watch: {
-    $route: {
-      // https://github.com/vuejs/vue-router/issues/3393#issuecomment-1158470149
-      flush: 'post',
-      handler(to, from) {
-        // See if the route changes completely, and clear the data if it does.
-        if (this.isFullRouteChange(to, from)) {
-          this.isLoading = false
-          this.data = {}
-        }
-      }
     }
   },
 
