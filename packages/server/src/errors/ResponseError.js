@@ -13,7 +13,15 @@ export class ResponseError extends Error {
         : isString(error)
           ? { message: error }
           : error || {}
-    const { message, status, stack, cause, ...data } = {
+    const {
+      message,
+      status,
+      stack,
+      // Wrapped errors become the cause, unless one is provided explicitly,
+      // e.g. the native error in `DatabaseError`.
+      cause = error instanceof Error ? error : undefined,
+      ...data
+    } = {
       ...defaults,
       ...object,
       ...overrides
@@ -51,6 +59,5 @@ function getErrorObject(error) {
   if (error.code != null) {
     object.code = error.code
   }
-  object.cause = error
   return object
 }

@@ -436,9 +436,7 @@ describe('Application', () => {
       expect(error.headers).toEqual({ vary: 'Origin' })
     })
 
-    // Bug: The clone inherits the `stack` accessor of the original error,
-    // which neither reads nor writes on other objects, so the stack is lost.
-    test.fails('keeps the stack of formatted errors', () => {
+    it('keeps the stack of formatted errors', () => {
       const error = new Error('Burnt')
       expect(createApp().formatError(error).stack).toBe(error.stack)
     })

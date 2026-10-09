@@ -58,9 +58,7 @@ describe('DatabaseError', () => {
     expect(error.status).toBe(503)
   })
 
-  // Bug: `getErrorObject()` always sets `cause` to the wrapped error, which
-  // overrides the `cause: error.nativeError` default of `DatabaseError`.
-  test.fails('passes on the native error as the cause', () => {
+  it('passes on the native error as the cause', () => {
     const dbError = createDBError(DBError)
     const error = new DatabaseError(dbError)
     expect(error.cause).toBe(dbError.nativeError)

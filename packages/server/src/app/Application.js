@@ -789,8 +789,14 @@ export class Application extends Koa {
       delete copy.stack
       delete copy.cause
     } else {
-      // Explicitly copy the stack trace, as clone() might not copy it.
-      copy.stack = error.stack
+      // Copy the stack trace as an own data property: The clone receives the
+      // original's native `stack` accessor, which only works on the original.
+      Object.defineProperty(copy, 'stack', {
+        value: error.stack,
+        writable: true,
+        configurable: true,
+        enumerable: false
+      })
     }
     // Use `util.inspect()` instead of Pino's internal error logging for better
     // stack traces and logging of error data.
