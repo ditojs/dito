@@ -118,11 +118,24 @@ describe('validators', () => {
       )
     })
 
-    // Bug: `decimals: 0` creates the invalid regular expression `\d{1,0}` and
-    // throws a SyntaxError instead of rejecting decimals.
-    test.fails('rejects any decimals with `decimals: 0`', () => {
+    it('rejects any decimals with `decimals: 0`', () => {
       expect(validate('decimals', '1', 0)).toBe(true)
+      expect(validate('decimals', '-12', 0)).toBe(true)
       expect(validate('decimals', '1.5', 0)).toBe(false)
+      expect(getMessage('decimals', '1.5', 0)).toBe(
+        'must be numeric and may not contain decimal points'
+      )
+    })
+
+    it(`describes any number of decimals without a double space`, () => {
+      const message = 'must be numeric and may contain decimal points'
+      expect(getMessage('decimals', 'a', '*')).toBe(message)
+      expect(getMessage('decimals', 'a')).toBe(message)
+    })
+
+    it('allows any number of decimals when unset', () => {
+      expect(validate('decimals', '1.123456789')).toBe(true)
+      expect(validate('decimals', '1.')).toBe(false)
     })
   })
 
