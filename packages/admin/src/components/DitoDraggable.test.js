@@ -38,4 +38,29 @@ describe('DitoDraggable', () => {
     await settle()
     expect(Sortable.get(body).option('disabled')).toBe(true)
   })
+
+  it('clears `isDragging` on the first mouse event after the drag', async () => {
+    const { wrapper } = await mountForm({
+      schema: {
+        components: {
+          attachments: { type: 'upload', multiple: true, draggable: true }
+        }
+      },
+      data: { attachments: [scan, cover] }
+    })
+    const { vm } = wrapper.findComponent({ name: 'DitoDraggable' })
+    const moveMouse = () =>
+      document.dispatchEvent(new MouseEvent('mousemove', { bubbles: true }))
+    // Ending twice must not leave the handlers of the first end behind:
+    vm.onStart({})
+    vm.onEnd({})
+    vm.onEnd({})
+    expect(vm.isDragging).toBe(true)
+    moveMouse()
+    expect(vm.isDragging).toBe(false)
+    // No handler of the previous drags clears the next one:
+    vm.onStart({})
+    moveMouse()
+    expect(vm.isDragging).toBe(true)
+  })
 })

@@ -6,20 +6,23 @@
   .dito-code__editor(ref="editor")
   .dito-resize(
     v-if="resizable"
-    @mousedown.stop.prevent="onDragResize"
+    tabindex="0"
+    role="separator"
+    aria-orientation="horizontal"
+    aria-label="Resize"
+    @pointerdown.stop.prevent="onResizePointerDown"
+    @keydown="onResizeKeyDown"
   )
 </template>
 
 <script>
 import DitoTypeComponent from '../DitoTypeComponent.js'
-import DomMixin from '../mixins/DomMixin.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
+import { startDragResize, resizeByArrowKey } from '../utils/dragResize.js'
 import CodeFlask from 'codeflask'
 
 // @vue/component
 export default DitoTypeComponent.register('code', {
-  mixins: [DomMixin],
-
   data() {
     return {
       height: null
@@ -79,10 +82,10 @@ export default DitoTypeComponent.register('code', {
       onChange()
     }
 
-    this.domOn(this.$refs.editor.querySelector('textarea'), {
-      focus: onFocus,
-      blur: onBlur
-    })
+    // The textarea is owned by the editor, so its handlers go with it:
+    const textarea = this.$refs.editor.querySelector('textarea')
+    textarea.addEventListener('focus', onFocus)
+    textarea.addEventListener('blur', onBlur)
 
     const setCode = code => {
       if (code !== flask.code) {
@@ -140,27 +143,21 @@ export default DitoTypeComponent.register('code', {
       this.$el.querySelector('textarea')?.blur()
     },
 
-    onDragResize(event) {
-      const getPoint = ({ clientX: x, clientY: y }) => ({ x, y })
+    onResizePointerDown(event) {
+      startDragResize(event, this.getResizeOptions())
+    },
 
-      let prevY = getPoint(event).y
-      let height = parseFloat(getComputedStyle(this.$el).height)
+    onResizeKeyDown(event) {
+      resizeByArrowKey(event, this.getResizeOptions())
+    },
 
-      const mousemove = event => {
-        const { y } = getPoint(event)
-        height += y - prevY
-        prevY = y
-        this.height = `${Math.max(height, 0)}px`
-      }
-
-      const handlers = this.domOn(document, {
-        mousemove,
-
-        mouseup(event) {
-          mousemove(event)
-          handlers.remove()
+    getResizeOptions() {
+      return {
+        element: this.$el,
+        onResize: height => {
+          this.height = `${height}px`
         }
-      })
+      }
     }
   }
 })

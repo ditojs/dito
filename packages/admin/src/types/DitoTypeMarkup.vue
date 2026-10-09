@@ -6,10 +6,9 @@
     .dito-buttons__group(
       v-for="buttons in groupedButtons"
     )
-      button.dito-button(
+      DitoButton(
         v-for="{ id, label, icon, isActive, onClick } in buttons"
         :key="id"
-        type="button"
         :class="{ 'dito-button--active': isActive }"
         :aria-label="label"
         :aria-pressed="isActive"
@@ -23,14 +22,19 @@
   )
   .dito-resize(
     v-if="resizable"
-    @mousedown.stop.prevent="onDragResize"
+    tabindex="0"
+    role="separator"
+    aria-orientation="horizontal"
+    aria-label="Resize"
+    @pointerdown.stop.prevent="onResizePointerDown"
+    @keydown="onResizeKeyDown"
   )
 </template>
 
 <script>
 import DitoTypeComponent from '../DitoTypeComponent.js'
-import DomMixin from '../mixins/DomMixin.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
+import { startDragResize, resizeByArrowKey } from '../utils/dragResize.js'
 // Tiptap:
 import { Editor, EditorContent, Mark, getMarkAttributes } from '@tiptap/vue-3'
 import { Slice, Fragment } from '@tiptap/pm/model'
@@ -71,14 +75,14 @@ import { Footnotes, FootnoteReference, Footnote } from 'tiptap-footnotes'
 // Tools:
 import { History } from '@tiptap/extension-history'
 
-import { DitoIcon } from '@ditojs/ui/src'
+import { DitoButton, DitoIcon } from '@ditojs/ui/src'
 import { isArray, isObject, hyphenate, debounce, camelize } from '@ditojs/utils'
 
 // @vue/component
 export default DitoTypeComponent.register('markup', {
-  mixins: [DomMixin],
   components: {
     EditorContent,
+    DitoButton,
     DitoIcon
   },
 
@@ -332,27 +336,21 @@ export default DitoTypeComponent.register('markup', {
   },
 
   methods: {
-    onDragResize(event) {
-      const getPoint = ({ clientX: x, clientY: y }) => ({ x, y })
+    onResizePointerDown(event) {
+      startDragResize(event, this.getResizeOptions())
+    },
 
-      let prevY = getPoint(event).y
-      let height = parseFloat(getComputedStyle(this.$refs.editor.$el).height)
+    onResizeKeyDown(event) {
+      resizeByArrowKey(event, this.getResizeOptions())
+    },
 
-      const mousemove = event => {
-        const { y } = getPoint(event)
-        height += y - prevY
-        prevY = y
-        this.height = `${Math.max(height, 0)}px`
-      }
-
-      const handlers = this.domOn(document, {
-        mousemove,
-
-        mouseup(event) {
-          mousemove(event)
-          handlers.remove()
+    getResizeOptions() {
+      return {
+        element: this.$refs.editor.$el,
+        onResize: height => {
+          this.height = `${height}px`
         }
-      })
+      }
     },
 
     updateEditorOptions() {
@@ -360,7 +358,7 @@ export default DitoTypeComponent.register('markup', {
     },
 
     async onClickLink(editor) {
-      const attributes = await this.rootComponent.showDialog({
+      const attributes = await this.showDialog({
         components: {
           href: {
             type: 'url',

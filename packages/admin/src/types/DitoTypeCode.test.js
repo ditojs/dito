@@ -1,6 +1,14 @@
 import { vi } from 'vitest'
 import { mountSchema } from '../test/mount.js'
 
+// Drags the resize `handle` with the pointer from `startY` to `endY`.
+async function dragResizeHandle(handle, startY, endY) {
+  const options = { pointerId: 1, button: 0 }
+  await handle.trigger('pointerdown', { ...options, clientY: startY })
+  await handle.trigger('pointermove', { ...options, clientY: endY })
+  await handle.trigger('pointerup', { ...options, clientY: endY })
+}
+
 describe('DitoTypeCode', () => {
   it('displays the value in the editor with the number of `lines`', async () => {
     const { findField } = await mountSchema({
@@ -57,5 +65,24 @@ describe('DitoTypeCode', () => {
     data.isLocked = false
     await settle()
     expect(textarea().attributes('readonly')).toBeUndefined()
+  })
+
+  it('resizes the editor by dragging and with the arrow keys', async () => {
+    const { findField, settle } = await mountSchema({
+      schema: {
+        components: { snippet: { type: 'code', resizable: true } }
+      }
+    })
+    const field = findField('snippet')
+    // happy-dom doesn't lay out, so the editor gets a height to start from:
+    field.element.style.height = '100px'
+    field.element.style.fontSize = '10px'
+    const handle = field.find('.dito-resize')
+    await dragResizeHandle(handle, 50, 80)
+    await settle()
+    expect(field.element.style.height).toBe('130px')
+    await handle.trigger('keydown', { key: 'ArrowUp' })
+    await settle()
+    expect(field.element.style.height).toBe('120px')
   })
 })
