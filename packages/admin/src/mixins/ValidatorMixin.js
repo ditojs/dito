@@ -22,7 +22,7 @@ export default {
     },
 
     isValidated() {
-      return this.schemaComponents.every(it => it.isValid)
+      return this.schemaComponents.every(it => it.isValidated)
     }
   },
 

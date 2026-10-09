@@ -26,7 +26,10 @@ export default {
       if (add) {
         schemaComponents.push(schemaComponent)
       } else {
-        schemaComponents.splice(schemaComponents.indexOf(schemaComponent), 1)
+        const index = schemaComponents.indexOf(schemaComponent)
+        if (index >= 0) {
+          schemaComponents.splice(index, 1)
+        }
       }
     }
   }

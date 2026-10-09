@@ -1,6 +1,6 @@
 import ValidatorMixin from '../mixins/ValidatorMixin.js'
 import { markRaw } from 'vue'
-import { getCommonPrefix } from '@ditojs/utils'
+import { isPathWithin } from '../utils/route.js'
 
 // @vue/component
 export default {
@@ -18,6 +18,9 @@ export default {
       // The record of the route that this component renders, see the
       // `matchedRouteRecord` watcher:
       routeRecord: null,
+      // Whether leaving the route was prevented because the data is invalid,
+      // so that the next attempt can leave, see `beforeRouteChange()`:
+      hasPreventedLeavingInvalidData: false,
       // Each route-component defines a store that gets passed on to its
       // child components, so they can store values in them that live beyond
       // their life-cycle. See: DitoPane, SourceMixin
@@ -144,12 +147,15 @@ export default {
     }
   },
 
+  // NOTE: vue-router binds the guards to the record's instance only when it
+  // calls them, after the previous guards, which may have unmounted it in the
+  // meantime. There's nothing left to guard then.
   beforeRouteUpdate(to, from) {
-    return this?.beforeRouteChange(to, from)
+    return this ? this.beforeRouteChange(to, from) : true
   },
 
   beforeRouteLeave(to, from) {
-    return this?.beforeRouteChange(to, from)
+    return this ? this.beforeRouteChange(to, from) : true
   },
 
   created() {
@@ -161,7 +167,10 @@ export default {
 
   unmounted() {
     const { routeComponents } = this.appState
-    routeComponents.splice(routeComponents.indexOf(this), 1)
+    const index = routeComponents.indexOf(this)
+    if (index >= 0) {
+      routeComponents.splice(index, 1)
+    }
   },
 
   methods: {
@@ -169,28 +178,21 @@ export default {
       let ok = true
       const isClosing = (
         // Only handle this route change if the form is actually mapped to the
-        // `from` route, but include parent forms of closing nested forms as as
-        // well, by matching the the start of from/to path against `this.path`:
-        from.path.startsWith(this.path) &&
-        !to.path.startsWith(this.path) &&
-        // Exclude hash changes only (= tab changes):
-        from.path !== to.path && (
-          this.isFullRouteChange(to, from) ||
-          // Decide if we're moving towards a new nested form, or closing /
-          // replacing an already open one by comparing path lengths.
-          // The case of `=` matches the replacing of an already open one.
-          to.path.length <= from.path.length
-        )
+        // `from` route, but include parent forms of closing nested forms as
+        // well, by matching the from/to paths against `this.path`. Hash changes
+        // only (= tab changes) and nested forms that open stay within it, while
+        // other items, e.g. `/items/12` for `/items/1`, are outside of it.
+        isPathWithin(from.path, this.path) &&
+        !isPathWithin(to.path, this.path)
       )
       if (isClosing) {
         if (this.isMutating) {
-          // For active directly mutating (nested) forms that were not validated
-          // yet, validate them once. If the user then still wants to leave
-          // them, they can click close / navigate away again.
-          ok = (
-            this.isValidated ||
-            this.validateAll()
-          )
+          // Directly mutating (nested) forms validate their data once, which
+          // includes the fields that aren't mounted, e.g. in collapsed
+          // schemas. If the user then still wants to leave them, they can
+          // click close / navigate away again.
+          ok = this.hasPreventedLeavingInvalidData || this.validateAll()
+          this.hasPreventedLeavingInvalidData = !ok
         } else {
           // The form doesn't directly mutate data. If it is dirty, ask if user
           // wants to persist data first.
@@ -226,7 +228,10 @@ export default {
     isFullRouteChange(to, from) {
       // The route path is the path up to the first / (excluding the initial /):
       const rootPath = this.path.match(/^(\/[^/]*)/)[1]
-      return !getCommonPrefix(to.path, from.path).startsWith(rootPath)
+      return !(
+        isPathWithin(to.path, rootPath) &&
+        isPathWithin(from.path, rootPath)
+      )
     }
   }
 }
