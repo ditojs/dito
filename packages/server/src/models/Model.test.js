@@ -615,9 +615,7 @@ describe('Model#$setJson() with $initialize()', () => {
     expect(initialized).toContain('Second')
   })
 
-  // Related models are created during the patch-validated first pass of
-  // `$setJson()`, which never calls `$initialize()` on them.
-  test.fails('calls $initialize() on related models', () => {
+  it('calls $initialize() on related models', () => {
     Edition.fromJson(
       {
         title: 'Second',
@@ -644,10 +642,7 @@ describe('Model#$setJson() with $initialize()', () => {
     expect(initialized).toEqual(['Draft'])
   })
 
-  // The constructor is meant as a short-cut to `fromJson()` without
-  // validation, but it calls `$setJson()` without `skipValidation`, which
-  // validates the data anyway.
-  test.fails('creates instances without validation in the constructor', () => {
+  it('creates instances without validation in the constructor', () => {
     const edition = new Edition({ title: 'Draft' })
     expect(edition.title).toBe('Draft')
   })
@@ -940,6 +935,15 @@ describe('Model error factories', () => {
       `'Book' model not found`
     )
     expect(Book.createNotFoundError({}, 'Gone').message).toBe('Gone')
+    expect(
+      Book.createNotFoundError({ byId: 7 }, { message: 'Gone' }).message
+    ).toBe('Gone')
+    expect(
+      Book.createNotFoundError({ byId: 7 }, new Error('Gone')).message
+    ).toBe('Gone')
+    expect(Book.createNotFoundError({ byId: 7 }, {}).message).toBe(
+      `'Book' model with id 7 not found`
+    )
   })
 
   it('creates model validation errors with a default message', () => {

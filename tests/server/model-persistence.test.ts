@@ -343,9 +343,7 @@ describe('Model persistence', () => {
       expect(error.status).toBe(404)
     })
 
-    // Objection.js passes `{}` as default data to `createNotFoundError()`,
-    // which is truthy and replaces the message that reports the id.
-    test.fails('reports the requested id in NotFoundError', async () => {
+    it('reports the requested id in NotFoundError', async () => {
       const error = await Member.query()
         .findById(42)
         .throwIfNotFound()
@@ -379,17 +377,14 @@ describe('Model persistence', () => {
       expect(members.map((member: Member) => member.name)).toEqual(['Ada'])
     })
 
-    // `load()` calls `$loadRelated()` and `loadRelated()`, which Objection.js
-    // 3 removed in favour of `$fetchGraph()` and `fetchGraph()`.
-    test.fails('loads related models into instances', async () => {
+    it('loads related models into instances', async () => {
       const { id } = await createTeam('Blue', ['Ada'])
       const team = (await Team.query().findById(id))!
       await (team as any).$members.load()
       expect(team.members!.map(member => member.name)).toEqual(['Ada'])
     })
 
-    // See above: `loadRelated()` does not exist anymore.
-    test.fails('loads related models into multiple instances', async () => {
+    it('loads related models into multiple instances', async () => {
       await createTeam('Blue', ['Ada'])
       await createTeam('Red', ['Grace', 'Linus'])
       const teams = await Team.query().orderBy('name')
@@ -410,10 +405,7 @@ describe('Model persistence', () => {
       expect(member.team!.name).toBe('Blue')
     })
 
-    // The expression for properties of relations includes the property name
-    // as a further relation, e.g. `team.name(#name)` instead of
-    // `team(#name)`, which fails to load as there is no `name` relation.
-    test.fails('loads properties of relations', async () => {
+    it('loads properties of relations', async () => {
       await createTeam('Blue', ['Ada'])
       const [member] = await Member.query().loadDataPath('team/name')
       expect(member.team!.name).toBe('Blue')

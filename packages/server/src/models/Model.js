@@ -2,9 +2,11 @@ import objection from 'objection'
 import {
   isString,
   isObject,
+  isPlainObject,
   isArray,
   isFunction,
   isPromise,
+  isEmpty,
   asArray,
   clone,
   equals,
@@ -25,7 +27,7 @@ import {
   addRelationSchemas,
   convertRelations
 } from '../schema/index.js'
-import { populateGraph, filterGraph } from '../graph/index.js'
+import { populateGraph, filterGraph, ensureModel } from '../graph/index.js'
 import { formatJson } from '../utils/json.js'
 import {
   ResponseError,
@@ -47,7 +49,7 @@ export class Model extends objection.Model {
   constructor(json) {
     super()
     if (json) {
-      this.$setJson(json)
+      this.$setJson(json, { skipValidation: true })
     }
   }
 
@@ -601,7 +603,17 @@ export class Model extends objection.Model {
       // method, call $setJson() with patch validation first to not complain
       // about missing fields, then perform a full validation after calling
       // $initialize(), to give the model a chance to configure itself.
-      super.$setJson(json, { ...options, patch: true })
+      super.$setJson(json, {
+        ...options,
+        patch: true,
+        skipParseRelations: true
+      })
+      // Parse the relations with the original options, so related models are
+      // initialized and validated like this model, before $initialize() is
+      // called on it:
+      if (!options.skipParseRelations) {
+        ensureModel(this.constructor, this, options)
+      }
       this.$initialize()
       this.$validate(this, options)
     }
@@ -744,8 +756,12 @@ export class Model extends objection.Model {
       const nestedDataPath = found
         ? normalizeDataPath(parsedDataPath.slice(next))
         : null
+      // Only a relation found at the end of the data-path includes its own
+      // token. A property's token is excluded from the path to its relation.
       const expression = found
-        ? parsedDataPath.slice(0, relation ? next : index).join('.') +
+        ? parsedDataPath
+            .slice(0, relation && !property ? next : index)
+            .join('.') +
           (property ? `(#${name})` : '')
         : null
       return {
@@ -868,12 +884,15 @@ export class Model extends objection.Model {
 
   // @override
   static createNotFoundError(ctx, error) {
+    // Objection.js passes `{}` as the default error data, which only replaces
+    // the message reporting the id when it actually holds anything:
+    const hasErrorData = isPlainObject(error) ? !isEmpty(error) : !!error
     return new NotFoundError(
-      error || (
-        ctx.byId
+      hasErrorData
+        ? error
+        : ctx.byId
           ? `'${this.name}' model with id ${ctx.byId} not found`
           : `'${this.name}' model not found`
-      )
     )
   }
 

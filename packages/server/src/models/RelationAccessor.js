@@ -16,8 +16,8 @@ export default class RelationAccessor {
 
   load(arg0, ...args) {
     return this.modelClass
-      ? this.modelClass.loadRelated(arg0, this.name, ...args)
-      : this.model.$loadRelated(this.name, arg0, ...args)
+      ? this.modelClass.fetchGraph(arg0, this.name, ...args)
+      : this.model.$fetchGraph(this.name, arg0, ...args)
   }
 
   /**
