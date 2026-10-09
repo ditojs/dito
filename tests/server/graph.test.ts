@@ -123,6 +123,85 @@ class Book extends Model {
   } as any
 }
 
+// A library holds bookcases, which hold volumes, where volumes can continue
+// other volumes of the same or of other bookcases through `sequelOf`:
+
+class Library extends Model {
+  declare id: number
+  declare name: string
+  declare bookcases: Bookcase[]
+
+  static override properties: ModelProperties = {
+    name: { type: 'string', required: true }
+  }
+
+  static override relations = {
+    bookcases: {
+      relation: 'hasMany',
+      from: 'Library.id',
+      to: 'Bookcase.libraryId',
+      scope: 'ordered',
+      owner: true
+    }
+  } as any
+}
+
+class Bookcase extends Model {
+  declare id: number
+  declare name: string
+  declare position: number
+  declare libraryId: number | null
+  declare volumes: Volume[]
+
+  static override properties: ModelProperties = {
+    name: { type: 'string', required: true },
+    position: { type: 'integer' },
+    libraryId: { type: 'integer', foreign: true, nullable: true }
+  }
+
+  static override relations = {
+    volumes: {
+      relation: 'hasMany',
+      from: 'Bookcase.id',
+      to: 'Volume.bookcaseId',
+      scope: 'ordered',
+      owner: true
+    }
+  } as any
+
+  static override scopes = {
+    ordered: (query: any) => query.orderBy('position')
+  }
+}
+
+class Volume extends Model {
+  declare id: number
+  declare title: string
+  declare position: number
+  declare bookcaseId: number | null
+  declare sequelOfId: number | null
+  declare sequelOf: Volume | null
+
+  static override properties: ModelProperties = {
+    title: { type: 'string', required: true },
+    position: { type: 'integer' },
+    bookcaseId: { type: 'integer', foreign: true, nullable: true }
+  }
+
+  static override relations = {
+    sequelOf: {
+      relation: 'belongsTo',
+      from: 'Volume.sequelOfId',
+      to: 'Volume.id',
+      nullable: true
+    }
+  } as any
+
+  static override scopes = {
+    ordered: (query: any) => query.orderBy('position')
+  }
+}
+
 // Graphs of references are partial data, so skip their validation:
 function createBookGraph(json: object): Book {
   return Book.fromJson(json, { skipValidation: true })
@@ -130,7 +209,16 @@ function createBookGraph(json: object): Book {
 
 describe('Dito.js graph handling', () => {
   const app = createTestApp({
-    models: { Author, Shelf, Genre, Chapter, Book }
+    models: {
+      Author,
+      Shelf,
+      Genre,
+      Chapter,
+      Book,
+      Library,
+      Bookcase,
+      Volume
+    }
   })
 
   beforeAll(async () => {
@@ -150,6 +238,9 @@ describe('Dito.js graph handling', () => {
 
   afterEach(async () => {
     for (const table of [
+      'Volume',
+      'Bookcase',
+      'Library',
       'BookGenre',
       'Book',
       'Chapter',
@@ -588,6 +679,286 @@ describe('Dito.js graph handling', () => {
       } finally {
         await alterFeaturedChapterId(true)
       }
+    })
+  })
+
+  describe('nested cyclic references across lists', () => {
+    // Returns the stored volumes as `[bookcase, title, sequel title]` rows,
+    // sorted by bookcase and position, to compare the stored graph as a whole:
+    async function getStoredVolumes(libraryId: number) {
+      const library = await Library.query()
+        .findById(libraryId)
+        .withGraph('bookcases.volumes.sequelOf')
+      return library!.bookcases.flatMap(bookcase =>
+        bookcase.volumes.map(volume => [
+          bookcase.name,
+          volume.title,
+          volume.sequelOf?.title ?? null
+        ])
+      )
+    }
+
+    function getTitles(library: Library) {
+      return library.bookcases.map(bookcase => [
+        bookcase.name,
+        bookcase.volumes.map(volume => volume.title)
+      ])
+    }
+
+    function findVolume(library: Library, title: string) {
+      return library.bookcases
+        .flatMap(bookcase => bookcase.volumes)
+        .find(volume => volume.title === title)!
+    }
+
+    it('resolves references within and across lists on insert', async () => {
+      const library = await Library.query().insertDitoGraphAndFetch({
+        name: 'City',
+        bookcases: [
+          {
+            name: 'Fiction',
+            position: 1,
+            volumes: [
+              // Forward reference into another bookcase:
+              {
+                title: 'Heretics',
+                position: 4,
+                sequelOf: { '#ref': 'emperor' }
+              },
+              { '#id': 'dune', 'title': 'Dune', 'position': 1 },
+              // Forward reference within the same bookcase:
+              {
+                '#id': 'children',
+                'title': 'Children',
+                'position': 3,
+                'sequelOf': { '#ref': 'messiah' }
+              },
+              {
+                '#id': 'messiah',
+                'title': 'Messiah',
+                'position': 2,
+                'sequelOf': { '#ref': 'dune' }
+              }
+            ]
+          },
+          {
+            name: 'Classics',
+            position: 2,
+            volumes: [
+              // Backward reference into another bookcase:
+              {
+                '#id': 'emperor',
+                'title': 'Emperor',
+                'position': 1,
+                'sequelOf': { '#ref': 'children' }
+              }
+            ]
+          }
+        ]
+      })
+      // The returned lists follow the order scope of the relations, not the
+      // order of the input:
+      expect(getTitles(library)).toEqual([
+        ['Fiction', ['Dune', 'Messiah', 'Children', 'Heretics']],
+        ['Classics', ['Emperor']]
+      ])
+      expect(findVolume(library, 'Heretics').sequelOfId).toBe(
+        findVolume(library, 'Emperor').id
+      )
+      expect(await getStoredVolumes(library.id)).toEqual([
+        ['Fiction', 'Dune', null],
+        ['Fiction', 'Messiah', 'Dune'],
+        ['Fiction', 'Children', 'Messiah'],
+        ['Fiction', 'Heretics', 'Emperor'],
+        ['Classics', 'Emperor', 'Children']
+      ])
+      // References don't create additional rows:
+      expect(await Library.query()).toHaveLength(1)
+      expect(await Bookcase.query()).toHaveLength(2)
+      expect(await Volume.query()).toHaveLength(5)
+    })
+
+    it('upserts an existing graph with references across lists', async () => {
+      const existing = await Library.query().insertDitoGraphAndFetch({
+        name: 'City',
+        bookcases: [
+          {
+            name: 'Fiction',
+            position: 1,
+            volumes: [
+              { '#id': 'dune', 'title': 'Dune', 'position': 1 },
+              {
+                title: 'Messiah',
+                position: 2,
+                sequelOf: { '#ref': 'dune' }
+              },
+              { title: 'Obsolete', position: 3 }
+            ]
+          },
+          {
+            name: 'Classics',
+            position: 2,
+            volumes: [{ title: 'Odyssey', position: 1 }]
+          }
+        ]
+      })
+      const [fiction, classics] = existing.bookcases
+      const dune = findVolume(existing, 'Dune')
+      const messiah = findVolume(existing, 'Messiah')
+      const obsolete = findVolume(existing, 'Obsolete')
+      const odyssey = findVolume(existing, 'Odyssey')
+
+      // Both the bookcases and the volumes are deliberately not sorted by
+      // their position, to show that the input doesn't need pre-sorting:
+      const library = await Library.query().upsertDitoGraphAndFetch({
+        id: existing.id,
+        name: 'City',
+        bookcases: [
+          {
+            id: classics.id,
+            name: 'Classics',
+            position: 2,
+            volumes: [
+              // New volume referencing a new volume in the same bookcase:
+              {
+                '#id': 'return',
+                'title': 'Return',
+                'position': 3,
+                'sequelOf': { '#ref': 'nostos' }
+              },
+              // New volume referencing an existing one by id:
+              {
+                '#id': 'nostos',
+                'title': 'Nostos',
+                'position': 2,
+                'sequelOf': { id: odyssey.id }
+              },
+              { id: odyssey.id, title: 'Odyssey (revised)', position: 1 }
+            ]
+          },
+          // New bookcase referencing an existing volume in another one:
+          {
+            name: 'Annex',
+            position: 3,
+            volumes: [
+              {
+                title: 'Encyclopedia',
+                position: 1,
+                sequelOf: { '#ref': 'dune' }
+              }
+            ]
+          },
+          {
+            id: fiction.id,
+            name: 'Fiction',
+            position: 1,
+            volumes: [
+              // New volume referencing an existing one through `#ref`:
+              {
+                title: 'Children',
+                position: 3,
+                sequelOf: { '#ref': 'messiah' }
+              },
+              {
+                '#id': 'messiah',
+                'id': messiah.id,
+                'title': 'Messiah',
+                'position': 2,
+                'sequelOf': { id: dune.id }
+              },
+              // Existing volume referencing a new one in another bookcase:
+              {
+                '#id': 'dune',
+                'id': dune.id,
+                'title': 'Dune',
+                'position': 1,
+                'sequelOf': { '#ref': 'return' }
+              }
+              // `Obsolete` is left out, and owned, so it gets deleted.
+            ]
+          }
+        ]
+      })
+
+      expect(library.id).toBe(existing.id)
+      // The returned lists follow the order scope of the relations:
+      expect(getTitles(library)).toEqual([
+        ['Fiction', ['Dune', 'Messiah', 'Children']],
+        ['Classics', ['Odyssey (revised)', 'Nostos', 'Return']],
+        ['Annex', ['Encyclopedia']]
+      ])
+      expect(
+        library.bookcases.map(bookcase =>
+          bookcase.volumes.map(volume => volume.position)
+        )
+      ).toEqual([[1, 2, 3], [1, 2, 3], [1]])
+      // Existing models keep their ids:
+      expect(library.bookcases[0].id).toBe(fiction.id)
+      expect(library.bookcases[1].id).toBe(classics.id)
+      expect(findVolume(library, 'Dune').id).toBe(dune.id)
+      expect(findVolume(library, 'Messiah').id).toBe(messiah.id)
+      expect(findVolume(library, 'Odyssey (revised)').id).toBe(odyssey.id)
+      expect(findVolume(library, 'Dune').sequelOfId).toBe(
+        findVolume(library, 'Return').id
+      )
+
+      expect(await getStoredVolumes(library.id)).toEqual([
+        ['Fiction', 'Dune', 'Return'],
+        ['Fiction', 'Messiah', 'Dune'],
+        ['Fiction', 'Children', 'Messiah'],
+        ['Classics', 'Odyssey (revised)', null],
+        ['Classics', 'Nostos', 'Odyssey (revised)'],
+        ['Classics', 'Return', 'Nostos'],
+        ['Annex', 'Encyclopedia', 'Dune']
+      ])
+      expect(await Volume.query().findById(obsolete.id)).toBeUndefined()
+      expect(await Library.query()).toHaveLength(1)
+      expect(await Bookcase.query()).toHaveLength(3)
+      expect(await Volume.query()).toHaveLength(7)
+    })
+
+    it('returns upserted lists in order of their scope', async () => {
+      const existing = await Library.query().insertDitoGraphAndFetch({
+        name: 'City',
+        bookcases: [
+          {
+            name: 'Fiction',
+            position: 1,
+            volumes: [
+              { title: 'A', position: 1 },
+              { title: 'B', position: 2 }
+            ]
+          }
+        ]
+      })
+      const [fiction] = existing.bookcases
+      const [a, b] = fiction.volumes
+      // Move the existing volumes to the end and insert new ones in between,
+      // with the input in reverse order of the new positions:
+      const library = await Library.query().upsertDitoGraphAndFetch({
+        id: existing.id,
+        name: 'City',
+        bookcases: [
+          {
+            id: fiction.id,
+            name: 'Fiction',
+            position: 1,
+            volumes: [
+              { id: b.id, title: 'B', position: 4, sequelOf: { '#ref': 'c' } },
+              { title: 'D', position: 3, sequelOf: { id: a.id } },
+              { id: a.id, title: 'A', position: 2 },
+              { '#id': 'c', 'title': 'C', 'position': 1 }
+            ]
+          }
+        ]
+      })
+      expect(getTitles(library)).toEqual([['Fiction', ['C', 'A', 'D', 'B']]])
+      expect(await getStoredVolumes(library.id)).toEqual([
+        ['Fiction', 'C', null],
+        ['Fiction', 'A', null],
+        ['Fiction', 'D', 'A'],
+        ['Fiction', 'B', 'C']
+      ])
     })
   })
 
