@@ -18,6 +18,18 @@ export function ensureModelArray(modelClass, data, options) {
     : []
 }
 
+// Converts a model graph to model instances, preserving its shape: A single
+// model stays single, and arrays of model instances are returned unchanged.
+function ensureModelGraph(modelClass, modelGraph, options) {
+  if (isArray(modelGraph)) {
+    const models = ensureModelArray(modelClass, modelGraph, options)
+    return models.every((model, index) => model === modelGraph[index])
+      ? modelGraph
+      : models
+  }
+  return modelGraph ? ensureModel(modelClass, modelGraph, options) : modelGraph
+}
+
 function parseRelationsIntoModelInstances(model, json, options = {}) {
   if (!options.cache) {
     options = { ...options, cache: new Map() }
@@ -83,10 +95,10 @@ export function walkGraph(data, callback, path = []) {
 
 export function filterGraph(rootModelClass, modelGraph, expr) {
   expr = QueryBuilder.parseRelationExpression(expr)
-  const models = ensureModelArray(rootModelClass, modelGraph, {
+  modelGraph = ensureModelGraph(rootModelClass, modelGraph, {
     skipValidation: true
   })
-  for (const model of models) {
+  for (const model of asArray(modelGraph)) {
     if (model) {
       const relations = model.constructor.getRelations()
       for (const key of Object.keys(model)) {
@@ -123,6 +135,7 @@ export async function populateGraph(rootModelClass, graph, expr, trx) {
   // that are not leaves. Then use the resulting nodes to create new groups by
   // model name / modify / graph expressions.
   expr = QueryBuilder.parseRelationExpression(expr)
+  graph = ensureModelGraph(rootModelClass, graph, { skipValidation: true })
   // Convert the relation expression to an array of paths, that themselves
   // contain path entries with relation names and modify settings.
 

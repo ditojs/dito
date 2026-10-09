@@ -172,12 +172,13 @@ export class DitoGraphProcessor {
       if (data.$isObjectionModel) {
         const { constructor } = data
         let copy
-        if (this.shouldRelate(relationPath)) {
+        if (this.shouldRelate(relationPath) && isRelatable(data)) {
           // For relates, start with a reference model that only contains the
           // id / #ref fields, and any many-to-many pivot table extra values:
           copy = constructor.getReference(data, this.extras[relationPath])
         } else {
-          // This isn't a relate, so create a proper shallow clone:
+          // This isn't a relate, or a new model without id / #ref that needs
+          // to be inserted, so create a proper shallow clone:
           // NOTE: This also copies `$$queryProps`, which is crucial for more
           // advanced Objection.js features to work, e.g. LiteralBuilder:
           copy = data.$clone({ shallow: true })
@@ -206,6 +207,12 @@ export class DitoGraphProcessor {
     }
     return data
   }
+}
+
+function isRelatable(model) {
+  // Only models with an id or an Objection.js #ref can be related, new models
+  // need to keep their data to be inserted:
+  return model.$hasId() || model[model.constructor.uidRefProp] !== undefined
 }
 
 function appendPath(path, separator, token) {

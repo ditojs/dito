@@ -1,6 +1,7 @@
 import type { ModelProperties } from '@ditojs/server'
 import { Model } from '@ditojs/server'
-// The graph processor is internal and not exported by the package:
+// @ts-expect-error -- The graph processor is internal and not exported by the
+// package, so it comes without type declarations.
 import { DitoGraphProcessor } from '../../packages/server/src/graph/index.js'
 import {
   createTestApp,
@@ -365,9 +366,7 @@ describe('Dito.js graph handling', () => {
       ])
     })
 
-    // Relating reduces all models in relating relations to references, so new
-    // models without ids lose their data instead of being inserted:
-    it.fails('inserts new models in relating relations', async () => {
+    it('inserts new models in relating relations', async () => {
       const book = await Book.query().insertDitoGraphAndFetch({
         title: 'Earthsea',
         genres: [{ name: 'Fantasy' }]
@@ -521,6 +520,7 @@ describe('Dito.js graph handling', () => {
     it('validates changed models on updates', async () => {
       const book = await Book.query().insert({ title: 'Earthsea' })
       await expect(
+        // @ts-expect-error -- Invalid data is the point of this test.
         Book.query().updateDitoGraph({ id: book.id, title: 5 })
       ).rejects.toThrow(/not valid/)
       const result = await Book.query().updateDitoGraphAndFetchById(book.id, {
@@ -576,13 +576,13 @@ describe('Dito.js graph handling', () => {
       expect(books[0].chapters).toHaveLength(1)
     })
 
-    // Plain data is converted to new model instances, and the filtering is
-    // applied to these copies instead of the returned data:
-    it.fails('filters plain graph data', () => {
+    it('filters plain graph data', () => {
       const result = Book.filterGraph(
         { title: 'Earthsea', shelf: { name: 'Fantasy' } },
         'author'
       )
+      expect(result).toBeInstanceOf(Book)
+      expect(result).toMatchObject({ title: 'Earthsea' })
       expect(result).not.toHaveProperty('shelf')
     })
   })
@@ -651,15 +651,13 @@ describe('Dito.js graph handling', () => {
       expect(graph.featuredChapter!.title).toBe('One')
     })
 
-    // Plain data is converted to new model instances, which get populated
-    // instead of the returned data:
-    it.fails('populates plain graph data', async () => {
+    it('populates plain graph data', async () => {
       const author = await Author.query().insert({ name: 'Ursula' })
       const result = await Book.populateGraph(
         { title: 'Earthsea', author: { id: author.id } },
         'author'
       )
-      expect(result.author.name).toBe('Ursula')
+      expect(result.author!.name).toBe('Ursula')
     })
 
     it('loads the rest of the path for nested references', async () => {

@@ -46,7 +46,7 @@ describe('expressionPathToString()', () => {
 
   it('converts paths back to relation expressions', () => {
     expect(expressionPathToString(path)).toBe(
-      'chapters as parts(ordered, final).book.author(active)'
+      'chapters(ordered, final) as parts.book.author(active)'
     )
   })
 
@@ -62,9 +62,7 @@ describe('expressionPathToString()', () => {
     expect(parsed).toEqual(path)
   })
 
-  // Aliases are placed before the modifiers, producing `relation as alias(mod)`
-  // which Objection.js cannot parse; it expects `relation(mod) as alias`:
-  it.fails('round-trips aliases with modifiers', () => {
+  it('round-trips aliases with modifiers', () => {
     const [parsed] = collectExpressionPaths(
       parse(expressionPathToString(path))
     )
