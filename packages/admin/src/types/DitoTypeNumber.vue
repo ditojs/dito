@@ -11,13 +11,14 @@ DitoInput.dito-number(
 )
   template(#prefix)
     DitoInputAffixes(
-      :typeComponent="this"
       position="prefix"
+      v-bind="inputAffixesProps.prefix"
     )
   template(#suffix)
     DitoInputAffixes(
-      :typeComponent="this"
       position="suffix"
+      v-bind="inputAffixesProps.suffix"
+      @clear="clear"
     )
 </template>
 
@@ -25,6 +26,7 @@ DitoInput.dito-number(
 import DitoTypeComponent from '../DitoTypeComponent.js'
 import NumberMixin from '../mixins/NumberMixin.js'
 import DitoInputAffixes from '../components/DitoInputAffixes.vue'
+import { getInputAffixesProps } from '../utils/affixes.js'
 import { DitoInput } from '@ditojs/ui/src'
 
 export default DitoTypeComponent.register(
@@ -37,6 +39,10 @@ export default DitoTypeComponent.register(
     textField: true,
 
     computed: {
+      inputAffixesProps() {
+        return getInputAffixesProps(this)
+      },
+
       isInteger() {
         return this.type === 'integer'
       }

@@ -2,8 +2,8 @@
 .dito-multiselect
   .dito-multiselect__inner
     DitoInputAffixes(
-      :typeComponent="this"
       position="prefix"
+      v-bind="inputAffixesProps.prefix"
       absolute
     )
     VueMultiselect(
@@ -50,12 +50,19 @@
             @mousedown.prevent="remove(option)"
           )
     DitoInputAffixes(
-      :typeComponent="this"
       position="suffix"
+      v-bind="inputAffixesProps.suffix"
       absolute
+      @clear="clear"
     )
   DitoOptionsEditButtons(
-    :typeComponent="this"
+    v-if="editable"
+    :schema="schema"
+    :dataPath="dataPath"
+    :data="data"
+    :meta="meta"
+    :store="store"
+    :parentContext="context"
     :optionValue="selectedValue"
   )
 </template>
@@ -66,6 +73,7 @@ import DitoContext from '../DitoContext.js'
 import TypeMixin from '../mixins/TypeMixin.js'
 import OptionsMixin from '../mixins/OptionsMixin.js'
 import DitoInputAffixes from '../components/DitoInputAffixes.vue'
+import { getInputAffixesProps } from '../utils/affixes.js'
 import DitoOptionsEditButtons from '../components/DitoOptionsEditButtons.vue'
 import VueMultiselect from 'vue-multiselect'
 import { getSchemaAccessor } from '../utils/accessor.js'
@@ -89,6 +97,10 @@ export default DitoTypeComponent.register('multiselect', {
   },
 
   computed: {
+    inputAffixesProps() {
+      return getInputAffixesProps(this)
+    },
+
     selectedOptions: {
       get() {
         // Values without options stay visible once the options are loaded,

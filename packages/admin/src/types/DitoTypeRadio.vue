@@ -18,7 +18,13 @@ DitoOptionList.dito-radio-buttons(
       )
       | {{ getLabelForOption(option) }}
     DitoOptionsEditButtons(
-      :typeComponent="this"
+      v-if="editable"
+      :schema="schema"
+      :dataPath="dataPath"
+      :data="data"
+      :meta="meta"
+      :store="store"
+      :parentContext="context"
       :optionValue="getValueForOption(option)"
     )
 </template>

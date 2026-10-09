@@ -11,15 +11,16 @@
   )
     template(#prefix)
       DitoInputAffixes(
-        :typeComponent="this"
         position="prefix"
+        v-bind="inputAffixesProps.prefix"
         absolute
       )
     template(#suffix)
       DitoInputAffixes(
-        :typeComponent="this"
         position="suffix"
+        v-bind="inputAffixesProps.suffix"
         absolute
+        @clear="clear"
       )
 </template>
 
@@ -27,6 +28,7 @@
 import DitoTypeComponent from '../DitoTypeComponent.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
 import DitoInputAffixes from '../components/DitoInputAffixes.vue'
+import { getInputAffixesProps } from '../utils/affixes.js'
 import {
   DitoDatePicker,
   DitoTimePicker,
@@ -51,6 +53,10 @@ export default DitoTypeComponent.register(
     textField: true,
 
     computed: {
+      inputAffixesProps() {
+        return getInputAffixesProps(this)
+      },
+
       dateValue: {
         get() {
           const { value } = this

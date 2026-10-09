@@ -15,13 +15,14 @@ DitoTrigger.dito-color(
     )
       template(#prefix)
         DitoInputAffixes(
-          :typeComponent="this"
           position="prefix"
+          v-bind="inputAffixesProps.prefix"
         )
       template(#suffix)
         DitoInputAffixes(
-          :typeComponent="this"
           position="suffix"
+          v-bind="inputAffixesProps.suffix"
+          @clear="clear"
         )
           template(#append)
             .dito-color__preview(
@@ -45,7 +46,9 @@ import { DitoTrigger, DitoInput } from '@ditojs/ui/src'
 import DitoTypeComponent from '../DitoTypeComponent.js'
 import TypeMixin from '../mixins/TypeMixin.js'
 import DitoInputAffixes from '../components/DitoInputAffixes.vue'
+import { getInputAffixesProps } from '../utils/affixes.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
+import { createChangeOnceEdited } from '../utils/changeOnceEdited.js'
 
 // @vue/component
 export default DitoTypeComponent.register('color', {
@@ -59,6 +62,10 @@ export default DitoTypeComponent.register('color', {
   },
 
   computed: {
+    inputAffixesProps() {
+      return getInputAffixesProps(this)
+    },
+
     canUpdateValue() {
       return !this.focused || this.readonly
     },
@@ -164,22 +171,25 @@ export default DitoTypeComponent.register('color', {
 
     showPopup(showPopup) {
       if (!showPopup) {
-        this.emitChangeOnceEdited()
+        this.changeOnceEdited.emitIfDone()
       }
     }
   },
 
   created() {
-    // Whether the value was edited since the last change event, see
-    // `emitChangeOnceEdited()`. Not reactive, as nothing renders it.
-    this.hasEditedValue = false
+    // Emits the change of the value once the editing is done, i.e. once
+    // neither the input is focused nor the picker is open.
+    this.changeOnceEdited = createChangeOnceEdited({
+      isEditing: () => this.focused || this.showPopup,
+      emitChange: () => this.onChange()
+    })
   },
 
   methods: {
     // @override
     getEvents() {
       // The input's native change events don't tell when the editing is done,
-      // as the picker edits the value too, see `emitChangeOnceEdited()`. They
+      // as the picker edits the value too, see `changeOnceEdited`. They
       // are handled to keep them from emitting the schema's change events.
       const { onFocus, onBlur, onInput } = this
       return { onFocus, onBlur, onInput, onChange: () => {} }
@@ -188,33 +198,24 @@ export default DitoTypeComponent.register('color', {
     // @override
     onBlur() {
       TypeMixin.methods.onBlur.call(this)
-      this.emitChangeOnceEdited()
+      this.changeOnceEdited.emitIfDone()
     },
 
     // @override
     clear() {
       // Clearing replaces the edits that are pending, see `hexValue` and
-      // `emitChangeOnceEdited()`, and emits its own change event.
+      // `changeOnceEdited`, and emits its own change event.
       this.convertedValue = null
-      this.hasEditedValue = false
+      this.changeOnceEdited.reset()
       TypeMixin.methods.clear.call(this)
     },
 
     // Sets a value that the user edited, through the input or the picker.
+    // Values changed by code don't emit change events.
     setEditedValue(value) {
       this.value = value
-      this.hasEditedValue = true
-      this.emitChangeOnceEdited()
-    },
-
-    // Emits the change of the value once the editing is done, i.e. once
-    // neither the input is focused nor the picker is open. Values changed
-    // by code don't emit change events.
-    emitChangeOnceEdited() {
-      if (this.hasEditedValue && !this.focused && !this.showPopup) {
-        this.hasEditedValue = false
-        this.onChange()
-      }
+      this.changeOnceEdited.markEdited()
+      this.changeOnceEdited.emitIfDone()
     }
   }
 })

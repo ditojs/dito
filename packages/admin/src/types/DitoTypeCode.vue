@@ -4,25 +4,24 @@
   :style="style"
 )
   .dito-code__editor(ref="editor")
-  .dito-resize(
+  DitoResizeHandle(
     v-if="resizable"
-    tabindex="0"
-    role="separator"
-    aria-orientation="horizontal"
-    aria-label="Resize"
-    @pointerdown.stop.prevent="onResizePointerDown"
-    @keydown="onResizeKeyDown"
+    :getElement="() => $el"
+    @resize="height = `${$event}px`"
   )
 </template>
 
 <script>
 import DitoTypeComponent from '../DitoTypeComponent.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
-import { startDragResize, resizeByArrowKey } from '../utils/dragResize.js'
+import { createChangeOnceEdited } from '../utils/changeOnceEdited.js'
+import DitoResizeHandle from '../components/DitoResizeHandle.vue'
 import CodeFlask from 'codeflask'
 
 // @vue/component
 export default DitoTypeComponent.register('code', {
+  components: { DitoResizeHandle },
+
   data() {
     return {
       height: null
@@ -64,22 +63,20 @@ export default DitoTypeComponent.register('code', {
       lineNumbers: false
     })
 
-    let changed = false
     let ignoreWatch = false
     let ignoreUpdate = false
 
-    const onChange = () => {
-      if (!this.focused && changed) {
-        changed = false
-        this.onChange()
-      }
-    }
+    // Emits the change of the value once the editor isn't focused anymore.
+    const changeOnceEdited = createChangeOnceEdited({
+      isEditing: () => this.focused,
+      emitChange: () => this.onChange()
+    })
 
     const onFocus = () => this.onFocus()
 
     const onBlur = () => {
       this.onBlur()
-      onChange()
+      changeOnceEdited.emitIfDone()
     }
 
     // The textarea is owned by the editor, so its handlers go with it:
@@ -98,9 +95,9 @@ export default DitoTypeComponent.register('code', {
       if (value !== this.value) {
         ignoreWatch = true
         this.value = value
-        changed = true
+        changeOnceEdited.markEdited()
         this.onInput()
-        onChange()
+        changeOnceEdited.emitIfDone()
       }
     }
 
@@ -141,23 +138,6 @@ export default DitoTypeComponent.register('code', {
 
     blurElement() {
       this.$el.querySelector('textarea')?.blur()
-    },
-
-    onResizePointerDown(event) {
-      startDragResize(event, this.getResizeOptions())
-    },
-
-    onResizeKeyDown(event) {
-      resizeByArrowKey(event, this.getResizeOptions())
-    },
-
-    getResizeOptions() {
-      return {
-        element: this.$el,
-        onResize: height => {
-          this.height = `${height}px`
-        }
-      }
     }
   }
 })

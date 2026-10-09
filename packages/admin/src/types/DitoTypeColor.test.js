@@ -107,6 +107,21 @@ describe('DitoTypeColor', () => {
     await vi.waitFor(() => expect(onChange).toHaveBeenCalledOnce())
   })
 
+  it('clears the value with the clear button of clearable fields', async () => {
+    const onChange = vi.fn()
+    const { findField, data } = await mountSchema({
+      schema: {
+        components: {
+          background: { type: 'color', clearable: true, onChange }
+        }
+      },
+      data: { background: '#ff8000' }
+    })
+    await findField('background').find('.dito-affixes__clear').trigger('click')
+    expect(data.background).toBe(null)
+    await vi.waitFor(() => expect(onChange).toHaveBeenCalledOnce())
+  })
+
   it('emits one change when cleared after picking a color', async () => {
     const onChange = vi.fn()
     const { getComponent, data, settle } = await mountForm({

@@ -13,7 +13,7 @@
     :parentContext="parentContext"
   )
   button.dito-affixes__clear(
-    v-if="clearable"
+    v-if="shouldShowClearButton"
     type="button"
     title="Clear"
     :disabled="disabled"
@@ -43,7 +43,10 @@ export default DitoComponent.component('DitoAffixes', {
     mode: { type: String, default: null },
     position: { type: String, default: null },
     absolute: { type: Boolean, default: false },
+    // Whether the value can be cleared, and whether there's one to clear: The
+    // clear button only shows when both are true.
     clearable: { type: Boolean, default: false },
+    hasValue: { type: Boolean, default: false },
     disabled: { type: Boolean, default: false },
     inlineInfo: { type: String, default: null },
     parentContext: { type: Object, required: true }
@@ -86,10 +89,14 @@ export default DitoComponent.component('DitoAffixes', {
       }
     },
 
+    shouldShowClearButton() {
+      return this.clearable && this.hasValue
+    },
+
     hasContent() {
       return (
         this.visibleItems.length > 0 ||
-        this.clearable ||
+        this.shouldShowClearButton ||
         this.inlineInfo ||
         hasSlotContent(this.$slots.prepend) ||
         hasSlotContent(this.$slots.append)

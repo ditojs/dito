@@ -20,21 +20,18 @@
     :editor="editor"
     :style="styles"
   )
-  .dito-resize(
+  DitoResizeHandle(
     v-if="resizable"
-    tabindex="0"
-    role="separator"
-    aria-orientation="horizontal"
-    aria-label="Resize"
-    @pointerdown.stop.prevent="onResizePointerDown"
-    @keydown="onResizeKeyDown"
+    :getElement="() => $refs.editor.$el"
+    @resize="height = `${$event}px`"
   )
 </template>
 
 <script>
 import DitoTypeComponent from '../DitoTypeComponent.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
-import { startDragResize, resizeByArrowKey } from '../utils/dragResize.js'
+import { createChangeOnceEdited } from '../utils/changeOnceEdited.js'
+import DitoResizeHandle from '../components/DitoResizeHandle.vue'
 // Tiptap:
 import { Editor, EditorContent, Mark, getMarkAttributes } from '@tiptap/vue-3'
 import { Slice, Fragment } from '@tiptap/pm/model'
@@ -83,7 +80,8 @@ export default DitoTypeComponent.register('markup', {
   components: {
     EditorContent,
     DitoButton,
-    DitoIcon
+    DitoIcon,
+    DitoResizeHandle
   },
 
   data() {
@@ -251,8 +249,13 @@ export default DitoTypeComponent.register('markup', {
   },
 
   created() {
-    let changed = false
     let ignoreWatch = false
+
+    // Emits the change of the value once the editor isn't focused anymore.
+    const changeOnceEdited = createChangeOnceEdited({
+      isEditing: () => this.focused,
+      emitChange: () => this.onChange()
+    })
 
     const onFocus = () => this.onFocus()
 
@@ -261,7 +264,7 @@ export default DitoTypeComponent.register('markup', {
       // emit the change once the editor isn't focused anymore.
       updateValue()
       this.onBlur()
-      emitChange()
+      changeOnceEdited.emitIfDone()
     }
 
     const onUpdate = () => {
@@ -284,23 +287,13 @@ export default DitoTypeComponent.register('markup', {
         ? content.replace(/^<p>(.*?)<\/p>$/s, '$1')
         : content
       if (value !== this.value) {
-        changed = true
+        changeOnceEdited.markEdited()
         // The value comes from the editor, so don't set it back as content,
         // which would re-parse it and e.g. collapse trailing whitespace.
         ignoreWatch = true
         this.value = value
       }
-      if (!this.focused) {
-        emitChange()
-      }
-    }
-
-    // Emits the change of the value, once the editing is done.
-    const emitChange = () => {
-      if (changed) {
-        changed = false
-        this.onChange()
-      }
+      changeOnceEdited.emitIfDone()
     }
 
     this.$watch('value', value => {
@@ -336,23 +329,6 @@ export default DitoTypeComponent.register('markup', {
   },
 
   methods: {
-    onResizePointerDown(event) {
-      startDragResize(event, this.getResizeOptions())
-    },
-
-    onResizeKeyDown(event) {
-      resizeByArrowKey(event, this.getResizeOptions())
-    },
-
-    getResizeOptions() {
-      return {
-        element: this.$refs.editor.$el,
-        onResize: height => {
-          this.height = `${height}px`
-        }
-      }
-    },
-
     updateEditorOptions() {
       this.editor.setOptions(this.editorOptions)
     },

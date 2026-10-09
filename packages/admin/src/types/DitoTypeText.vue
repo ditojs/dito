@@ -8,13 +8,14 @@ DitoInput.dito-text(
 )
   template(#prefix)
     DitoInputAffixes(
-      :typeComponent="this"
       position="prefix"
+      v-bind="inputAffixesProps.prefix"
     )
   template(#suffix)
     DitoInputAffixes(
-      :typeComponent="this"
       position="suffix"
+      v-bind="inputAffixesProps.suffix"
+      @clear="clear"
     )
 </template>
 
@@ -22,6 +23,7 @@ DitoInput.dito-text(
 import DitoTypeComponent from '../DitoTypeComponent.js'
 import TextMixin from '../mixins/TextMixin'
 import DitoInputAffixes from '../components/DitoInputAffixes.vue'
+import { getInputAffixesProps } from '../utils/affixes.js'
 import { DitoInput } from '@ditojs/ui/src'
 
 const maskedPassword = '****************'
@@ -58,6 +60,10 @@ export default DitoTypeComponent.register(
     },
 
     computed: {
+      inputAffixesProps() {
+        return getInputAffixesProps(this)
+      },
+
       inputType() {
         return (
           {

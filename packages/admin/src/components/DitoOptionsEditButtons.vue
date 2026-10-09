@@ -1,14 +1,14 @@
 <template lang="pug">
 //- The edit button of an option of an editable options component, which
 //- navigates to the form of the option in the view of `schema.view`. It's never
-//- disabled, even if the component is disabled.
+//- disabled, even if the component is disabled. The props come from the
+//- options component, which renders it only when it's editable.
 DitoEditButtons.dito-options-edit-buttons(
-  v-if="typeComponent.editable"
-  :schema="typeComponent.schema"
-  :dataPath="typeComponent.dataPath"
-  :data="typeComponent.data"
-  :meta="typeComponent.meta"
-  :store="typeComponent.store"
+  :schema="schema"
+  :dataPath="dataPath"
+  :data="data"
+  :meta="meta"
+  :store="store"
   :disabled="false"
   editable
   :editPath="editPath"
@@ -25,16 +25,23 @@ export default DitoComponent.component('DitoOptionsEditButtons', {
   components: { DitoEditButtons },
 
   props: {
-    typeComponent: { type: Object, required: true },
+    schema: { type: Object, required: true },
+    dataPath: { type: String, required: true },
+    data: { type: [Object, Array], default: null },
+    meta: { type: Object, required: true },
+    store: { type: Object, required: true },
+    // The context of the options component, to resolve `schema.view`. Not
+    // named `context`, which is the component's own context, see DitoMixin.
+    parentContext: { type: Object, required: true },
     // The value of the option to edit, e.g. its id.
     optionValue: { type: null, default: null }
   },
 
   computed: {
     editPath() {
-      const { schema, context } = this.typeComponent
-      return this.optionValue != null
-        ? getViewEditPath(schema, this.optionValue, context)
+      const { schema, optionValue, parentContext } = this
+      return optionValue != null
+        ? getViewEditPath(schema, optionValue, parentContext)
         : null
     }
   }

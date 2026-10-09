@@ -3,8 +3,8 @@
 .dito-select
   .dito-select__inner
     DitoInputAffixes(
-      :typeComponent="this"
       position="prefix"
+      v-bind="inputAffixesProps.prefix"
       absolute
     )
     select(
@@ -38,12 +38,19 @@
       )
         option(:value="selectedValue") {{ getLabelForOption(selectedOption) }}
     DitoInputAffixes(
-      :typeComponent="this"
       position="suffix"
+      v-bind="inputAffixesProps.suffix"
       absolute
+      @clear="clear"
     )
   DitoOptionsEditButtons(
-    :typeComponent="this"
+    v-if="editable"
+    :schema="schema"
+    :dataPath="dataPath"
+    :data="data"
+    :meta="meta"
+    :store="store"
+    :parentContext="context"
     :optionValue="selectedValue"
   )
 </template>
@@ -52,6 +59,7 @@
 import DitoTypeComponent from '../DitoTypeComponent.js'
 import OptionsMixin from '../mixins/OptionsMixin.js'
 import DitoInputAffixes from '../components/DitoInputAffixes.vue'
+import { getInputAffixesProps } from '../utils/affixes.js'
 import DitoOptionsEditButtons from '../components/DitoOptionsEditButtons.vue'
 
 // @vue/component
@@ -66,6 +74,12 @@ export default DitoTypeComponent.register('select', {
       // Disable lazy-population for now.
       // TODO: Set to `false` Once lineto e2e tests address their issues.
       populate: true
+    }
+  },
+
+  computed: {
+    inputAffixesProps() {
+      return getInputAffixesProps(this)
     }
   }
 })

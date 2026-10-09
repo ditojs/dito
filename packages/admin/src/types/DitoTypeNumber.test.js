@@ -53,6 +53,22 @@ describe('DitoTypeNumber', () => {
     })
   })
 
+  it('shows the affixes and clears the value of clearable fields', async () => {
+    const { findField, data } = await mountSchema({
+      schema: {
+        components: {
+          price: { type: 'number', prefix: 'EUR', clearable: true }
+        }
+      },
+      data: { price: 12.5 }
+    })
+    const price = findField('price')
+    expect(price.find('.dito-affixes--prefix').text()).toBe('EUR')
+    await price.find('.dito-affixes__clear').trigger('click')
+    expect(data.price).toBe(null)
+    expect(price.find('input').element.value).toBe('')
+  })
+
   it('rounds `min`, `max` and `step` of integers to integers', async () => {
     const { findField } = await mountSchema({
       schema: {
