@@ -10,11 +10,15 @@
     :max="max"
     :step="stepValue"
   )
+  //- The range input holds the name and the label of the field, the number
+  //- input gets a label of its own and no name, to not submit it twice:
   DitoInput.dito-number(
     v-if="input"
     v-model="inputValue"
     type="number"
     v-bind="attributes"
+    :name="null"
+    :aria-label="numberInputLabel"
     :min="min"
     :max="max"
     :step="stepValue"
@@ -38,7 +42,11 @@ export default DitoTypeComponent.register('slider', {
     input: getSchemaAccessor('input', {
       type: Boolean,
       default: true
-    })
+    }),
+
+    numberInputLabel() {
+      return `${this.label || this.labelize(this.name)} Value`
+    }
   }
 })
 </script>

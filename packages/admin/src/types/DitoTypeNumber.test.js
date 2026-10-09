@@ -137,6 +137,18 @@ describe('DitoTypeSlider', () => {
     })
     expect(findField('volume').findAll('input')).toHaveLength(1)
   })
+
+  it('labels the number input and only names the range input', async () => {
+    const { findField } = await mountSchema({
+      schema: {
+        components: { volume: { type: 'slider', label: false } }
+      }
+    })
+    const [range, number] = findField('volume').findAll('input')
+    expect(range.attributes('name')).toBe('volume')
+    expect(number.attributes('name')).toBeUndefined()
+    expect(number.attributes('aria-label')).toBe('Volume Value')
+  })
 })
 
 describe('DitoTypeProgress', () => {
