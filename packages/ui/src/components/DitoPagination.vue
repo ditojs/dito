@@ -124,8 +124,10 @@ export default {
     },
 
     pageSize() {
-      if (this.currentPage > this.numPages) {
-        this.currentPage = this.numPages
+      // Without items there are no pages, but page 1 remains valid.
+      const lastPage = Math.max(1, this.numPages)
+      if (this.currentPage > lastPage) {
+        this.currentPage = lastPage
       }
     },
 

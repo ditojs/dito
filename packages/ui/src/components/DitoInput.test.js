@@ -167,14 +167,20 @@ describe('DitoInput', () => {
     }
   })
 
-  // Bug: the `size` computed property derives a size from `min` and `max`,
-  // but it is never bound to the input, so it has no effect.
-  it.fails('sizes number inputs according to `min` and `max`', () => {
+  it('sizes number inputs according to `min` and `max`', () => {
     wrapper = mountInput(
       { type: 'number' },
       { attrs: { min: 0, max: 1000 } }
     )
-    expect(wrapper.vm.size).toBe(1)
-    expect(wrapper.find('input').attributes('size')).toBe('1')
+    expect(wrapper.vm.size).toBe(4)
+    expect(wrapper.find('input').attributes('size')).toBe('4')
+  })
+
+  it('prefers an explicit `size` over `min` and `max`', () => {
+    wrapper = mountInput(
+      { type: 'number' },
+      { attrs: { min: 0, max: 1000, size: 6 } }
+    )
+    expect(wrapper.find('input').attributes('size')).toBe('6')
   })
 })

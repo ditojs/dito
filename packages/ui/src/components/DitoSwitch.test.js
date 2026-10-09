@@ -118,9 +118,7 @@ describe('DitoSwitch', () => {
     expect(wrapper.find('.dito-switch__label').html()).toContain('<b>Yes</b>')
   })
 
-  // Bug: `Math.max()` returns NaN when one of the labels is missing, so the
-  // width isn't adjusted to the label that is given.
-  it.fails('sizes the switch to fit a single custom label', () => {
+  it('sizes the switch to fit a single custom label', () => {
     wrapper = mountSwitch({ labels: { checked: 'available' } })
     expect(wrapper.element.style.getPropertyValue('--switch-width')).toBe(
       '13.5rem'

@@ -213,9 +213,7 @@ describe('DitoPagination navigation', () => {
     expect(wrapper.emitted('update:page')).toBeUndefined()
   })
 
-  // Bug: without items there are 0 pages, so changing the page size moves the
-  // current page to the invalid page 0.
-  it.fails('stays on page 1 when resizing without items', async () => {
+  it('stays on page 1 when resizing without items', async () => {
     const wrapper = mountPagination({ total: 0, page: 1, pageSize: 10 })
     await wrapper.setProps({ pageSize: 20 })
     expect(wrapper.emitted('update:page')).toBeUndefined()

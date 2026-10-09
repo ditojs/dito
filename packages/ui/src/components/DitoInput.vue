@@ -17,6 +17,7 @@
     :placeholder="placeholder"
     :autocomplete="autocomplete"
     :aria-label="title"
+    :size="size"
     v-bind="attributes"
     @mousedown="onMouseDown"
   )
@@ -59,7 +60,8 @@ export default {
     },
 
     attributes() {
-      const { class: _, ...attributes } = this.$attrs
+      // `size` is bound separately, see the `size` computed property.
+      const { class: _class, size: _size, ...attributes } = this.$attrs
       return attributes
     },
 
@@ -68,10 +70,10 @@ export default {
     },
 
     size() {
-      // Determine size based on min & max settings, if they're provided.
+      // Unless a size is provided, fit the longest of the min & max settings.
       const { size, min, max } = this.$attrs
       const getLength = value => (value != null ? `${value}`.length : 0)
-      return size || getLength(min) || getLength(max) || undefined
+      return size || Math.max(getLength(min), getLength(max)) || undefined
     }
   },
 

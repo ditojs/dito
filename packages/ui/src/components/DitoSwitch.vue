@@ -62,8 +62,8 @@ export default {
 
     styles() {
       const { labels: { checked, unchecked } = {} } = this
-      // Calculate `--switch-width` in `rem`, based on label length.
-      const length = Math.max(0, checked?.length, unchecked?.length)
+      // Calculate `--switch-width` in `rem`, based on the given labels' length.
+      const length = Math.max(checked?.length ?? 0, unchecked?.length ?? 0)
       return {
         '--switch-width': length ? `${length * 1.5}rem` : null
       }
