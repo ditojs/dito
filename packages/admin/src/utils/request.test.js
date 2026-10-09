@@ -5,6 +5,7 @@ import {
   getUploadOptions,
   getApiUrl,
   isApiUrl,
+  resolveDownloadUrl,
   getRequestCacheKey,
   RequestError
 } from './request.js'
@@ -183,6 +184,34 @@ describe('fetchBlob()', () => {
     expect(otherOptions.credentials).toBe('same-origin')
   })
 
+  it('fetches root-relative and absolute URLs as they are', async () => {
+    const fetch = stubFetch()
+    await fetchBlob(api, '/files/scan.pdf')
+    await fetchBlob(api, 'https://cdn.org/scan.pdf')
+    expect(fetch.mock.calls.map(([url]) => url)).toEqual([
+      '/files/scan.pdf',
+      'https://cdn.org/scan.pdf'
+    ])
+  })
+
+  it('authenticates root-relative URLs only inside the API', async () => {
+    const fetch = stubFetch()
+    const rootApi = createApi({
+      url: '/api',
+      headers: { Authorization: 'Bearer secret' }
+    })
+    await fetchBlob(rootApi, '/api/files/scan.pdf')
+    await fetchBlob(rootApi, '/files/scan.pdf')
+    // The API is on another origin than the document:
+    await fetchBlob(api, '/files/scan.pdf')
+    const [[, apiOptions], [, otherOptions], [, otherOriginOptions]] =
+      fetch.mock.calls
+    expect(apiOptions.headers).toEqual({ Authorization: 'Bearer secret' })
+    expect(otherOptions.headers).toEqual({})
+    expect(otherOriginOptions.headers).toEqual({})
+    expect(otherOriginOptions.credentials).toBe('same-origin')
+  })
+
   it('does not cut off downloads that take longer than `api.timeout`', async () => {
     // Like `fetch()`, rejects with the reason of its signal once it aborts,
     // and otherwise delivers the blob after `api.timeout`, like a download of
@@ -208,6 +237,26 @@ describe('fetchBlob()', () => {
     const error = await fetchBlob(api, 'files/scan.pdf').catch(error => error)
     expect(error).toBeInstanceOf(RequestError)
     expect(error.response.status).toBe(404)
+  })
+})
+
+describe('resolveDownloadUrl()', () => {
+  it('resolves relative URLs against the API URL', () => {
+    expect(resolveDownloadUrl(createApi(), 'files/1')).toBe(
+      'https://example.com/api/files/1'
+    )
+  })
+
+  it('keeps root-relative and absolute URLs', () => {
+    const api = createApi({ url: '/api' })
+    expect(resolveDownloadUrl(api, '/files/1')).toBe('/files/1')
+    expect(resolveDownloadUrl(api, '/api/files/1')).toBe('/api/files/1')
+    expect(resolveDownloadUrl(createApi(), '/api/files/1')).toBe(
+      '/api/files/1'
+    )
+    expect(resolveDownloadUrl(api, 'https://cdn.org/x')).toBe(
+      'https://cdn.org/x'
+    )
   })
 })
 
@@ -328,6 +377,12 @@ describe('isApiUrl()', () => {
         'https://example.com/api/books'
       )
     ).toBe(true)
+  })
+
+  it('compares absolute URLs with a root-relative API URL', () => {
+    const api = createApi({ url: '/api' })
+    expect(isApiUrl(api, `${location.origin}/api/books`)).toBe(true)
+    expect(isApiUrl(api, `${location.origin}/files/1`)).toBe(false)
   })
 
   it(`doesn't treat URLs that only start like the API URL as API URLs`, () => {

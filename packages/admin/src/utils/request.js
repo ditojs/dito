@@ -54,14 +54,28 @@ export function getRequestCacheKey({ method, url, query, data }) {
   ].join(' ')
 }
 
+// Returns the URL that downloads of `url` fetch and link to: Relative URLs
+// such as `files/1` are resolved against the API, while absolute and
+// root-relative URLs such as `/files/1` stay as they are, unlike in
+// `getApiUrl()`, which prefixes root-relative URLs with the API URL too.
+export function resolveDownloadUrl(api, url) {
+  return isAbsoluteUrl(url) || url.startsWith('/')
+    ? url
+    : api.getApiUrl({ url })
+}
+
 // Fetches the file at `url` as a blob, with the same authentication as
-// `request()`, e.g. for downloads of files that the API protects.
+// `request()`, e.g. for downloads of files that the API protects. `url` is
+// resolved through `resolveDownloadUrl()`.
 export async function fetchBlob(api, url) {
+  const downloadUrl = resolveDownloadUrl(api, url)
+  // Decide on the authentication with the absolute URL, as `isApiUrl()` treats
+  // all root-relative URLs as API URLs, the way `getApiUrl()` resolves them.
   // Without `api.timeout`, as it would also cut off downloads of large files
   // that take longer than any request.
   const response = await fetch(
-    api.getApiUrl({ url }),
-    getFetchOptions(api, url)
+    downloadUrl,
+    getFetchOptions(api, getAbsoluteUrl(downloadUrl))
   )
   if (!response.ok) {
     throw new RequestError(response)
@@ -106,8 +120,20 @@ function getRequestSignal({ signal = null, timeout = null }) {
   return AbortSignal.any(signals.filter(Boolean))
 }
 
+// Returns whether requests to `url` go to the API: Relative and root-relative
+// URLs do, as `getApiUrl()` resolves them against the API, and absolute URLs
+// do if they are under the API URL, compared in their absolute forms so that
+// a root-relative API URL such as `/api` matches too.
 export function isApiUrl(api, url) {
-  return !isAbsoluteUrl(url) || isUrlInside(url, api.url)
+  return (
+    !isAbsoluteUrl(url) ||
+    isUrlInside(getAbsoluteUrl(url), getAbsoluteUrl(api.url))
+  )
+}
+
+// Returns `url` resolved against the document's base URL.
+function getAbsoluteUrl(url) {
+  return new URL(url, document.baseURI).href
 }
 
 // Returns whether `url` is `baseUrl` or a URL under it, e.g. `/api/books` in

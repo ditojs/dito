@@ -44,6 +44,7 @@ function createSession({
 describe('Session', () => {
   afterEach(() => {
     appState.user = null
+    appState.loadCache = {}
     vi.unstubAllGlobals()
   })
 
@@ -175,6 +176,45 @@ describe('Session', () => {
       expect(userInterface.requestLoginData).toHaveBeenCalledOnce()
       expect(session.user).toEqual(user)
       expect(viewRegistry.resolve).toHaveBeenCalledTimes(2)
+    })
+  })
+
+  describe('global load cache', () => {
+    const cachedResponse = { data: 'cached' }
+
+    it('clears it when the user logs out', async () => {
+      const { session } = createSession({
+        responses: {
+          'get /session': { user: { ...user } },
+          'post /logout': { success: true }
+        }
+      })
+      await session.start()
+      appState.loadCache.books = cachedResponse
+      await session.logout()
+      expect(appState.loadCache).toEqual({})
+    })
+
+    it('clears it when another user logs in', async () => {
+      let sessionUser = { ...user }
+      const { session } = createSession({
+        responses: { 'get /session': () => ({ user: { ...sessionUser } }) }
+      })
+      await session.start()
+      appState.loadCache.books = cachedResponse
+      sessionUser = { id: 2, username: 'other' }
+      await session.ensureUser()
+      expect(appState.loadCache).toEqual({})
+    })
+
+    it('keeps it when the same user is fetched again', async () => {
+      const { session } = createSession({
+        responses: { 'get /session': () => ({ user: { ...user } }) }
+      })
+      await session.start()
+      appState.loadCache.books = cachedResponse
+      await session.ensureUser()
+      expect(appState.loadCache).toEqual({ books: cachedResponse })
     })
   })
 

@@ -110,6 +110,12 @@ export class Session {
   }
 
   #setUser(user) {
+    // Responses loaded with `cache: 'global'` belong to the user that loaded
+    // them, so they are dropped when the user logs out or another one logs in,
+    // but kept when the same user is fetched again, see `ensureUser()`:
+    if (!user || user.id !== appState.user?.id) {
+      appState.loadCache = {}
+    }
     appState.user = user && Object.setPrototypeOf(user, DitoUser.prototype)
     if (!user) {
       this.#viewRegistry.clear()

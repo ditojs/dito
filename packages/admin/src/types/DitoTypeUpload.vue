@@ -149,7 +149,11 @@ import SortableMixin from '../mixins/SortableMixin.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
 import { formatFileSize, parseFileSize } from '../utils/units.js'
 import { appendDataPath } from '../utils/data.js'
-import { fetchBlob, getUploadOptions } from '../utils/request.js'
+import {
+  fetchBlob,
+  getUploadOptions,
+  resolveDownloadUrl
+} from '../utils/request.js'
 import { confirmAndRemove } from '../utils/dialogs.js'
 import { getListWithMovedItem } from '../utils/list.js'
 import { isArray, asArray, escapeHtml } from '@ditojs/utils'
@@ -202,11 +206,11 @@ export default DitoTypeComponent.register('upload', {
     },
 
     downloadUrls() {
-      // Resolve relative URLs against the API like `fetchBlob()` does, so that
-      // the link points to the same file that clicking it downloads:
+      // Resolve the URLs like `fetchBlob()` does, so that the links point to
+      // the same files that clicking them downloads:
       return this.files.map((file, index) => {
         const url = this.getDownloadUrl(file, index)
-        return url ? this.api.getApiUrl({ url }) : null
+        return url ? resolveDownloadUrl(this.api, url) : null
       })
     },
 

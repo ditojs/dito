@@ -7,7 +7,9 @@ export default reactive({
   routeComponents: [],
   user: null,
   agent: parseUserAgent(navigator.userAgent || ''),
-  loadCache: {}, // See TypeMixin.load()
+  // The responses loaded with `cache: 'global'`, see `DitoMixin.load()`. Only
+  // `Session` replaces it, when the user changes:
+  loadCache: {},
   // The modifier class of the page, e.g. for wide schemas, see `DitoSchema`:
   pageClass: null
 })
