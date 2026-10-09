@@ -236,14 +236,14 @@ export default {
           // Select the changed part again, once the text was updated.
           const input = this.getInputElement()
           this.$nextTick(() => {
-            const changedPart = getDatePartAtPosition(
-              this.currentText,
-              part.start,
-              this.formatOptions
+            setSelection(
+              input,
+              getDatePartAtPosition(
+                this.currentText,
+                part.start,
+                this.formatOptions
+              )
             )
-            if (changedPart) {
-              setSelection(input, changedPart)
-            }
           })
         }
       } else if (isTimePartName(part?.name)) {

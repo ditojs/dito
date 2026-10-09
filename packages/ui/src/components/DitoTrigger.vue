@@ -334,7 +334,7 @@ export default {
       const popupWidth = popup.offsetWidth
       const popupHeight = popup.offsetHeight
 
-      let [part1, part2] = this.placement.split('-') || []
+      let [part1, part2] = this.placement.split('-')
       if (this.keepInView) {
         const winWidth = window.innerWidth
         const winHeight = window.innerHeight
