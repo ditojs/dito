@@ -606,25 +606,25 @@ export class Application<$Models extends Models = Models> {
     timeThreshold?: string | number | null
     transaction?: objection.Transaction | null
     concurrency?: number
-  }): Promise<Model[] | undefined>
+  }): Promise<Model[]>
 
   /**
    * Creates Asset model records for the given files.
-   * Returns inserted assets, or `null` if no AssetModel
-   * is registered.
+   * Returns the inserted assets, or an empty array if no
+   * AssetModel is registered.
    */
   createAssets(
     storage: Storage,
     files: AssetFile[],
     count?: number,
     transaction?: objection.Transaction | null
-  ): Promise<Model[] | null>
+  ): Promise<Model[]>
 
   /**
    * Handles added, removed, and changed asset files.
    * Imports foreign assets, updates counts, and schedules
-   * cleanup. Returns imported files when an AssetModel is
-   * registered.
+   * cleanup. Returns the imported files, or an empty array
+   * if no AssetModel is registered.
    */
   handleAddedAndRemovedAssets(
     storage: Storage,
@@ -632,7 +632,7 @@ export class Application<$Models extends Models = Models> {
     removedFiles: AssetFile[],
     changedFiles: AssetFile[],
     transaction?: objection.Transaction | null
-  ): Promise<AssetFile[] | undefined>
+  ): Promise<AssetFile[]>
 
   /**
    * Finds and imports missing assets from external
@@ -2318,7 +2318,14 @@ export class AdminController extends Controller {
   mode: 'production' | 'development'
   closed: boolean
   koa: Koa
+  /**
+   * Resolves the file system path configured in `config.admin[name]`, e.g.
+   * `'root'` or `'dist'`. Throws if it isn't configured.
+   */
+  resolveConfigPath(name: string): string
+  /** @deprecated Use `resolveConfigPath(name)` instead. */
   getPath(name: string): string
+  getPath(type: string, path: string): string
   getDitoObject(): {
     base: string
     api: AdminConfig['api']
@@ -2483,6 +2490,21 @@ export class CollectionController<
   ): Promise<$Model | null>
 
   /**
+   * Fetches the member with the given `id`, applying `query` as filters and
+   * `modify` to the query builder. Used by `getMember()` and the default
+   * `member.get` action.
+   */
+  fetchMember(
+    ctx: KoaContext,
+    options: {
+      id: Id | Id[]
+      query?: Record<string, any>
+      modify?: ((query: QueryBuilder<$Model>) => void) | null
+      forUpdate?: boolean
+    }
+  ): Promise<$Model | null>
+
+  /**
    * Executes a controller action within a transaction
    * context.
    */
@@ -2558,11 +2580,16 @@ export class ModelController<
 > extends CollectionController<$Model> {
   /**
    * The model class this controller represents. If not
-   * provided, the singularized controller name is used
-   * to look up the model class in models registered with
-   * the application.
+   * provided, `resolveModelClass()` looks it up.
    */
   modelClass?: Class<$Model>
+  /**
+   * Resolves the model class when no `modelClass` is provided, by looking up
+   * the singularized controller name in the models registered with the
+   * application, see `Application.getModel()`. Override it to customize the
+   * lookup.
+   */
+  resolveModelClass(): Class<$Model> | null
   /**
    * The controller's collection actions. Wrap actions in
    * this object to assign them to the collection.

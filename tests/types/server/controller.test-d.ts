@@ -1,5 +1,6 @@
 import { expectTypeOf, assertType, describe, it } from 'vitest'
 import { ModelController } from '@ditojs/server'
+import type { AdminController } from '@ditojs/server'
 import type {
   ApplicationControllers,
   Controller,
@@ -15,7 +16,8 @@ import type {
   ControllerActionHandler,
   ControllerActions,
   ModelControllerRelation,
-  Page
+  Page,
+  ModelClass
 } from '@ditojs/server'
 import type { Transaction } from 'objection'
 
@@ -473,5 +475,35 @@ describe('ModelControllerRelation', () => {
     expectTypeOf<Widgets['relations']>().toMatchTypeOf<
       Record<string, ModelControllerRelation> | undefined
     >()
+  })
+})
+
+describe('Member and model class resolution', () => {
+  it('declares fetchMember() and resolveModelClass()', () => {
+    class Widgets extends ModelController<Model> {
+      override resolveModelClass() {
+        return super.resolveModelClass()
+      }
+    }
+    expectTypeOf<
+      ReturnType<Widgets['resolveModelClass']>
+    >().toEqualTypeOf<ModelClass | null>()
+    expectTypeOf<Widgets['fetchMember']>().parameter(1).toMatchTypeOf<{
+      id: number | string | (number | string)[]
+      forUpdate?: boolean
+    }>()
+    expectTypeOf<ReturnType<Widgets['fetchMember']>>().toEqualTypeOf<
+      Promise<Model | null>
+    >()
+  })
+})
+
+describe('AdminController', () => {
+  it('resolves config paths', () => {
+    expectTypeOf<AdminController['resolveConfigPath']>()
+      .parameters.toEqualTypeOf<[name: string]>()
+    expectTypeOf<
+      ReturnType<AdminController['resolveConfigPath']>
+    >().toEqualTypeOf<string>()
   })
 })

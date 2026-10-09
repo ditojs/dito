@@ -23,4 +23,14 @@ describe('Application', () => {
     type App = typeof app
     expectTypeOf<App['addModels']>().toBeFunction()
   })
+
+  it('asset methods always return arrays', () => {
+    type App = typeof app
+    expectTypeOf<ReturnType<App['createAssets']>>().toEqualTypeOf<
+      Promise<Model[]>
+    >()
+    expectTypeOf<ReturnType<App['releaseUnusedAssets']>>().toEqualTypeOf<
+      Promise<Model[]>
+    >()
+  })
 })
