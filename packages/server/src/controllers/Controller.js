@@ -13,7 +13,8 @@ import {
   getAllKeys,
   getInheritanceChain
 } from '../utils/object.js'
-import { processHandlerParameters } from '../utils/handler.js'
+import { parseHandlerDefinition } from '../utils/handler.js'
+import { isHttpMethod } from '../utils/http.js'
 import { describeFunction } from '../utils/function.js'
 import { formatJson } from '../utils/json.js'
 import {
@@ -25,8 +26,7 @@ import {
   asArray,
   equals,
   parseDataPath,
-  normalizeDataPath,
-  deprecate
+  normalizeDataPath
 } from '@ditojs/utils'
 
 export class Controller {
@@ -129,17 +129,14 @@ export class Controller {
     }
   }
 
-  // Only use this method to get a logger instance that is bound to the context,
-  // otherwise use the cached getter.
+  // Returns a logger bound to the given context, falling back to the logger
+  // of the current request, if any.
   getLogger(ctx) {
-    const logger = ctx?.logger ?? this.app.logger
-    return logger.child({ name: this.name })
+    return (ctx?.logger ?? this.app.logger).child({ name: this.name })
   }
 
   get logger() {
-    const value = this.getLogger()
-    Object.defineProperty(this, 'logger', { value })
-    return value
+    return this.getLogger()
   }
 
   markAsCoreActions(actions) {
@@ -201,16 +198,28 @@ export class Controller {
   }
 
   setupAction(type, actions, name, action, authorize) {
-    const handler = isFunction(action)
-      ? action
-      : isObject(action)
-        ? convertActionObject(name, action, actions)
-        : null
+    // Parse the definition before changing its prototype below, so that its
+    // settings can't be inherited from the parent actions object.
+    const definition = parseHandlerDefinition(action)
+    if (!definition) {
+      throw new ControllerError(
+        this,
+        `Missing handler in '${name}' action: ${formatJson(action)}`
+      )
+    }
+    if (isObject(action)) {
+      // In order to support `super` calls in the `handler` function in object
+      // notation, deploy this crazy JS sorcery:
+      Object.setPrototypeOf(action, Object.getPrototypeOf(actions))
+    }
     // Action naming convention: `'<method> <path>'`, or just `'<method>'` for
     // the default methods.
-    let [method, path = ''] = name.split(' ')
-    if (!isMethodAction(method)) {
-      path = name
+    const [method, path = ''] = name.split(' ')
+    if (!isHttpMethod(method)) {
+      throw new ControllerError(
+        this,
+        `Unsupported HTTP method '${method}' in action '${name}'`
+      )
     }
     // Custom member actions have their own class so they can fetch the members
     // ahead of their call.
@@ -221,7 +230,7 @@ export class Controller {
       new actionClass(
         this,
         actions,
-        handler,
+        definition,
         type,
         name,
         method,
@@ -229,7 +238,7 @@ export class Controller {
         authorize
       )
     )
-    return handler
+    return definition.handler
   }
 
   setupActionRoute(type, action) {
@@ -600,62 +609,3 @@ export class Controller {
 EventEmitter.mixin(Controller.prototype)
 
 const inheritanceMap = new WeakMap()
-
-function convertActionObject(name, object, actions) {
-  const {
-    handler,
-    action,
-    authorize,
-    transacted,
-    scope,
-    parameters,
-    // TODO: `returns` was deprecated in May 2025 in favour of `response`.
-    // Remove this in 2026.
-    returns,
-    response = returns,
-    ...rest
-  } = object
-
-  if (returns) {
-    deprecate(
-      'The `returns` property is deprecated in favour of `response`. ' +
-      'Update your handler definition to use `response` instead.'
-    )
-  }
-
-  // In order to support `super` calls in the `handler` function in object
-  // notation, deploy this crazy JS sorcery:
-  Object.setPrototypeOf(object, Object.getPrototypeOf(actions))
-
-  if (!handler) {
-    throw new Error(
-      `Missing handler in '${name}' action: ${formatJson(object)}`
-    )
-  }
-
-  handler.authorize = authorize ?? null
-  handler.transacted = transacted ?? null
-  handler.scope = scope ? asArray(scope) : null
-
-  processHandlerParameters(handler, 'parameters', parameters)
-  processHandlerParameters(handler, 'response', response)
-
-  return Object.assign(handler, rest)
-}
-
-function isMethodAction(name) {
-  return (
-    {
-      get: true,
-      delete: true,
-      post: true,
-      put: true,
-      patch: true,
-      head: true,
-      options: true,
-      trace: true,
-      connect: true
-    }[name] ||
-    false
-  )
-}

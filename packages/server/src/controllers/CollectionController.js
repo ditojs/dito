@@ -17,13 +17,15 @@ export class CollectionController extends Controller {
   configure() {
     super.configure()
     this.idParam = this.level ? `id${this.level}` : 'id'
-    // Create a dummy model instance to validate the requested id against.
-    // eslint-disable-next-line new-cap
-    this.idValidator = new this.modelClass()
   }
 
   // @override
   setup() {
+    // Create a dummy model instance to validate the requested id against.
+    // This happens here and not in `configure()`, so that sub-classes can
+    // resolve `modelClass` after `super.configure()`, see `ModelController`.
+    // eslint-disable-next-line new-cap
+    this.idValidator = new this.modelClass()
     this.logController()
     this.setProperty('collection', this.setupActions('collection'))
     this.setProperty(
@@ -114,25 +116,35 @@ export class CollectionController extends Controller {
     base = this,
     { query = {}, modify = null, forUpdate = false } = {}
   ) {
-    return this.member.get.call(
-      this,
-      // Extend `ctx` with a new `query` object, while inheriting the route
-      // params in `ctx.params`, so fining the member by id still works.
-      ctx.extend({ query }),
-      (query, trx) => {
-        this.setupQuery(query, base)
-        query.modify(modify)
-        if (forUpdate) {
-          if (!trx) {
-            throw new ControllerError(
-              this,
-              'Using `forUpdate()` without a transaction is invalid'
-            )
-          }
-          query.forUpdate()
-        }
+    return this.fetchMember(ctx, {
+      id: ctx.memberId,
+      query,
+      modify: builder => {
+        this.setupQuery(builder, base)
+        builder.modify(modify)
+      },
+      forUpdate
+    })
+  }
+
+  async fetchMember(
+    ctx,
+    { id, query = {}, modify = null, forUpdate = false }
+  ) {
+    return this.execute(ctx, (builder, trx) => {
+      if (forUpdate && !trx) {
+        throw new ControllerError(
+          this,
+          'Using `forUpdate()` without a transaction is invalid'
+        )
       }
-    )
+      return builder
+        .findById(id)
+        .find(query, this.allowParam)
+        .throwIfNotFound()
+        .modify(getModify(modify, trx))
+        .modify(builder => forUpdate && builder.forUpdate())
+    })
   }
 
   query(trx) {
@@ -235,13 +247,11 @@ export class CollectionController extends Controller {
 
   member = this.markAsCoreActions({
     async get(ctx, modify) {
-      return this.execute(ctx, (query, trx) =>
-        query
-          .findById(ctx.memberId)
-          .find(ctx.filteredQuery, this.allowParam)
-          .throwIfNotFound()
-          .modify(getModify(modify, trx))
-      )
+      return this.fetchMember(ctx, {
+        id: ctx.memberId,
+        query: ctx.filteredQuery,
+        modify
+      })
     },
 
     async delete(ctx, modify) {

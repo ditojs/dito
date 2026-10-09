@@ -1,121 +1,89 @@
-import { isObject, isFunction, deprecate } from '@ditojs/utils'
-import { processHandlerParameters } from '../../utils/handler.js'
+import { isObject } from '@ditojs/utils'
+import { parseHandlerDefinition } from '../../utils/handler.js'
 import { mergeReversed } from '../../utils/object.js'
 import { QueryFilters } from '../../query/index.js'
+import { ParameterValidator } from '../../app/ParameterValidator.js'
 
 export default function filters(values) {
   const filters = {}
   for (const [name, definition] of Object.entries(mergeReversed(values))) {
-    const filter = isFunction(definition)
-      ? definition
-      : isObject(definition)
-        ? convertFilterObject(name, definition)
-        : null
-    if (!filter) {
+    const descriptor = parseFilterDefinition(name, definition)
+    if (!descriptor) {
       throw new Error(
         `Invalid filter '${name}': Unrecognized definition: ${definition}.`
       )
     }
-    filters[name] = wrapWithValidation(filter, name, this.app)
+    filters[name] = wrapWithValidation(descriptor, name, this.app)
   }
   return filters
 }
 
-function convertFilterObject(name, object) {
-  const addHandlerSettings = (handler, definition) => {
-    // Copy over parameters, returns and their validation options settings.
-    const {
-      parameters,
-      // TODO: `returns` was deprecated in May 2025 in favour of `response`.
-      // Remove this in 2026.
-      returns,
-      response = returns,
-      ...rest
-    } = definition
-    if (returns) {
-      deprecate(
-        'The `returns` property is deprecated in favour of `response`. ' +
-        'Update your handler definition to use `response` instead.'
-      )
-    }
-    processHandlerParameters(handler, 'parameters', parameters)
-    processHandlerParameters(handler, 'response', response)
-    return Object.assign(handler, rest)
+function parseFilterDefinition(name, definition) {
+  const { filter, properties } = isObject(definition) ? definition : {}
+  if (!filter) {
+    return parseHandlerDefinition(definition)
   }
-
-  const { handler, filter, properties } = object
-  if (handler) {
-    return addHandlerSettings(handler, object)
-  } else if (filter) {
-    // Convert QueryFilter to normal filter function.
-    const queryFilter = QueryFilters.get(filter)
-    if (!queryFilter) {
-      throw new Error(
-        `Invalid filter '${name}': Unknown filter type '${filter}'.`
-      )
-    }
-    // Support both object and function definitions.
-    const queryHandler = isObject(queryFilter)
-      ? queryFilter.handler
-      : queryFilter
-    const func = properties
-      ? (query, ...args) => {
-          // When the filter provides multiple properties, match them
-          // all, but combine the expressions with OR.
-          for (const property of properties) {
-            query.orWhere(query => queryHandler(query, property, ...args))
-          }
-        }
-      : (query, ...args) => {
-          queryHandler(query, name, ...args)
-        }
-    return addHandlerSettings(func, queryFilter)
+  // Convert QueryFilter to normal filter function.
+  const queryFilter = QueryFilters.get(filter)
+  if (!queryFilter) {
+    throw new Error(
+      `Invalid filter '${name}': Unknown filter type '${filter}'.`
+    )
   }
+  // Support both object and function definitions.
+  const { handler: queryHandler, ...descriptor } =
+    parseHandlerDefinition(queryFilter)
+  const handler = properties
+    ? (query, ...args) => {
+        // When the filter provides multiple properties, match them
+        // all, but combine the expressions with OR.
+        for (const property of properties) {
+          query.orWhere(query => queryHandler(query, property, ...args))
+        }
+      }
+    : (query, ...args) => {
+        queryHandler(query, name, ...args)
+      }
+  return { ...descriptor, handler }
 }
 
-function wrapWithValidation(filter, name, app) {
-  if (filter) {
-    // TODO: Implement `response` validation for filters too.
-    // TODO: Share additional coercion handling with
-    // `ControllerAction#coerceValue()`
-    const { parameters, options = {} } = filter
-    // If parameters are defined, wrap the function in a closure that
-    // performs parameter validation...
-    const dataName = 'query'
-    const validator = app.compileParametersValidator(parameters, {
-      ...options.parameters,
-      dataName
-    })
-    if (validator?.validate) {
-      return (query, ...args) => {
-        // Convert args to object for validation:
-        const object = {}
-        let index = 0
-        for (const { name } of validator.list) {
-          // Use dataName if no name is given, see:
-          // Application.compileParametersValidator()
-          object[name || dataName] = args[index++]
-        }
-        try {
-          validator.validate(object)
-        } catch (error) {
-          throw app.createValidationError({
-            type: 'FilterValidation',
-            message: `The provided data for query filter '${
-              name
-            }' is not valid`,
-            errors: app.validator.prefixInstancePaths(
-              error.errors,
-              `.${name}`
-            )
-          })
-        }
-        return validator.asObject
-          ? filter(query, object)
-          : filter(query, ...args)
-      }
-    }
+function wrapWithValidation({ handler, parameters, options }, name, app) {
+  // TODO: Implement `response` validation for filters too.
+  const validator = parameters
+    ? new ParameterValidator(app, parameters, {
+        ...options.parameters,
+        dataName: 'query'
+      })
+    : null
+  if (!validator?.validate) {
+    // Without parameters, use the defined filter function unmodified.
+    return handler
   }
-  // ...otherwise use the defined filter function unmodified.
-  return filter
+  // Otherwise wrap the function in a closure that coerces and validates the
+  // parameters.
+  const keys = validator.list.map(parameter =>
+    validator.getParameterKey(parameter)
+  )
+  return (query, ...args) => {
+    // Convert args to object for validation:
+    const object = Object.fromEntries(
+      keys.map((key, index) => [key, args[index]])
+    )
+    const errors = validator.validateParameters(object)
+    if (errors.length > 0) {
+      throw app.createValidationError({
+        type: 'FilterValidation',
+        message: `The provided data for query filter '${name}' is not valid`,
+        errors: app.validator.prefixInstancePaths(errors, `.${name}`)
+      })
+    }
+    return validator.asObject
+      ? handler(query, object)
+      : // Pass on the coerced values, followed by any additional arguments.
+        handler(
+          query,
+          ...keys.map(key => object[key]),
+          ...args.slice(keys.length)
+        )
+  }
 }

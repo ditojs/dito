@@ -481,7 +481,7 @@ in a clean way:
 
 | Instance Field                                  | Description
 | ----------------------------------------------- | ----------------------------
-| `modelClass`: `function`                        | The model class that this controller represents. If none is provided, the singularized controller name is used to look up the model class in models registered with the application. As a convention, model controller names should always be provided in pluralized form.
+| `modelClass`: `function`                        | The model class that this controller represents. If none is provided, `resolveModelClass()` looks up the singularized controller name in the models registered with the application, also trying the name with a `Model` suffix, see `app.getModel()`. Override `resolveModelClass()` to customize this lookup. As a convention, model controller names should always be provided in pluralized form.
 | `collection`: `Object`                          | The object describing all the controller's collection actions. Instead of being provided on the instance level as in the controller base class, they are to be wrapped in a designated object in order to be assigned to the collection.
 | `collection.allow`: `Array`                     | Just like on the base controller class, `allow` settings can also be provided on the level of the `collection` object.
 | `member`: `Object`                              | The object describing all the controller's member actions. Instead of being provided on the instance level as in the controller base class, they are to be wrapped in a designated object in order to be assigned to the member.

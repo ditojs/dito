@@ -20,8 +20,8 @@ export default class MemberAction extends ControllerAction {
     // These are passed on to and handled in `CollectionController#getMember()`.
     // For handling of `from: 'member'` and calling of
     // `MemberAction.getMember()`, see `ControllerAction#collectArguments()`.
-    // Pass on `this.handler` as `base` for `setupQuery()`,
-    // to handle the setting of `handler.scope` & co. on the query.
-    return this.controller.getMember(ctx, this.handler, param)
+    // Pass on the action as `base` for `setupQuery()`, to apply its `scope`
+    // to the query.
+    return this.controller.getMember(ctx, this, param)
   }
 }

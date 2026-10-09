@@ -1,11 +1,12 @@
-import { isString, isObject, asArray, clone, deprecate } from '@ditojs/utils'
+import { clone } from '@ditojs/utils'
+import { ParameterValidator } from '../app/ParameterValidator.js'
 import { convertModelsToJson } from '../utils/model.js'
 
 export default class ControllerAction {
   constructor(
     controller,
     actions,
-    handler,
+    definition,
     type,
     name,
     method,
@@ -13,25 +14,16 @@ export default class ControllerAction {
     _authorize
   ) {
     const {
-      core = false,
+      handler,
+      core,
       scope,
       authorize,
       transacted,
       parameters,
-      // TODO: `returns` was deprecated in May 2025 in favour of `response`.
-      // Remove this in 2026.
-      returns,
-      response = returns,
-      options = {},
-      ...additional
-    } = handler
-
-    if (returns) {
-      deprecate(
-        'The `returns` property is deprecated in favour of `response`. ' +
-        'Update your handler definition to use `response` instead.'
-      )
-    }
+      response,
+      options,
+      extra
+    } = definition
 
     this.app = controller.app
     this.controller = controller
@@ -63,25 +55,25 @@ export default class ControllerAction {
     this.paramsName = ['post', 'put', 'patch'].includes(this.method)
       ? 'body'
       : 'query'
-    this.parameters = this.app.compileParametersValidator(parameters, {
+    this.parameters = new ParameterValidator(this.app, parameters, {
       async: true,
       ...options.parameters,
       dataName: this.paramsName
     })
-    this.response = this.app.compileParametersValidator(asArray(response), {
+    this.responseName = response?.name ?? null
+    // Validate the response as a single parameter, named by `response.name`.
+    const responseParameters = response ? [response] : null
+    this.response = new ParameterValidator(this.app, responseParameters, {
       async: true,
       // Use patch validation for response, as we often don't return the
       // full model with all properties, but only a subset of them.
       patch: true,
-      // TODO: `returns` was deprecated in May 2025 in favour of `response`.
-      // Remove this in 2026.
-      ...options.returns,
       ...options.response,
       dataName: 'response'
     })
     // Copy over the additional properties, e.g. `cached` so application
     // middleware can implement caching mechanisms:
-    Object.assign(this, additional)
+    Object.assign(this, extra)
   }
 
   // Possible values for `from` are:
@@ -102,19 +94,10 @@ export default class ControllerAction {
 
   async callAction(ctx) {
     const { params, wrapped } = await this.validateParameters(ctx)
+    // Expose the query parameters that aren't consumed by the action's
+    // parameters, for the default actions to pass on to their queries.
+    ctx.filteredQuery = this.getFilteredQuery(ctx, params, wrapped)
     const { args, member } = await this.collectArguments(ctx, params)
-    let filteredQuery = null
-    Object.defineProperty(ctx, 'filteredQuery', {
-      get: () => {
-        filteredQuery ??=
-          params && !wrapped && this.paramsName === 'query'
-            ? this.filterParameters(params)
-            : ctx.query
-        return filteredQuery
-      },
-      enumerable: false,
-      configurable: true
-    })
     await this.controller.handleAuthorization(this.authorization, ctx, member)
     const { identifier } = this
     await this.controller.emitHook(`before:${identifier}`, false, ctx, ...args)
@@ -144,13 +127,11 @@ export default class ControllerAction {
     }
     // NOTE: The data can be either an object or an array.
     const data = this.getParams(ctx)
-    let params = {}
+    const params = {}
     const { dataName } = this.parameters
     let unwrapRoot = false
-    const errors = []
     for (const {
       name, // String: Property name to fetch from data. Overridable by `root`
-      type, // String: What type should this validated against / coerced to.
       from // String: Allow parameters to be 'borrowed' from other objects.
     } of this.parameters.list) {
       // Don't validate member parameters as they get resolved separately after.
@@ -170,69 +151,31 @@ export default class ControllerAction {
       if (from && !root) {
         // Allow parameters to be 'borrowed' from other objects.
         const source = this.getParams(ctx, from)
-        // See above for an explanation of `clone()`:
         params[paramName] = clone(wrapRoot ? source : source?.[paramName])
       } else if (wrapRoot) {
-        // If root is to be used, replace `params` with a new object on which
-        // to set the root object to validate under `parameters.paramName`
-        if (params === data) {
-          params = {}
-        }
+        // If root is to be used, set the root object to validate under
+        // `parameters.paramName`
         params[paramName] = clone(data)
       } else {
         params[paramName] = clone(data[paramName])
       }
-      try {
-        const value = params[paramName]
-        // `parameters.validate(params)` coerces data in the query to the
-        // required formats, according to the rules specified here:
-        // https://github.com/epoberezkin/ajv/blob/master/COERCION.md
-        // Coercion isn't currently offered for 'object' and 'date' types,
-        // so handle these cases prior to the call of `parameters.validate()`:
-        const coerced = this.coerceValue(type, value, {
-          // The model validation is handled separately through `$ref`.
-          skipValidation: true
-        })
-        // If coercion happened, replace value in params with coerced one:
-        if (coerced !== value) {
-          params[paramName] = coerced
-        }
-      } catch (err) {
-        // Convert error to Ajv validation error format:
-        errors.push({
-          dataPath: `.${paramName}`, // JavaScript property access notation
-          keyword: 'type',
-          message: err.message || err.toString(),
-          params: { type }
-        })
-      }
     }
-
-    const getData = () => (unwrapRoot ? params[dataName] : params)
-    try {
-      await this.parameters.validate(params)
-      const data = getData()
-      return { params: data, wrapped: data !== params }
-    } catch (error) {
-      if (error.errors) {
-        errors.push(...error.errors)
-      } else {
-        throw error
-      }
-    }
+    const errors = await this.parameters.validateParameters(params)
+    const validated = unwrapRoot ? params[dataName] : params
     if (errors.length > 0) {
       throw this.createValidationError({
         type: 'ParameterValidation',
         message: 'The provided action parameters are not valid',
         errors,
-        json: getData()
+        json: validated
       })
     }
+    return { params: validated, wrapped: validated !== params }
   }
 
   async validateResponse(response) {
     if (this.response.validate) {
-      const responseName = this.handler.response.name
+      const { responseName } = this
       const responseWrapped = !!responseName
       // Use dataName if no name is given, see:
       // Application.compileParametersValidator(response, { dataName })
@@ -294,6 +237,13 @@ export default class ControllerAction {
     return { args, member }
   }
 
+  getFilteredQuery(ctx, params, wrapped) {
+    // `params` only holds the validated parameters, so filter the full query.
+    return params && !wrapped && this.paramsName === 'query'
+      ? this.filterParameters(ctx.query)
+      : ctx.query
+  }
+
   filterParameters(params) {
     const filtered = {}
     const consumedNames = Object.fromEntries(
@@ -307,59 +257,6 @@ export default class ControllerAction {
       }
     }
     return filtered
-  }
-
-  coerceValue(type, value, modelOptions) {
-    // See if param needs additional coercion:
-    if (value && ['date', 'datetime', 'timestamp'].includes(type)) {
-      value = new Date(value)
-    } else {
-      // See if the defined type(s) require coercion to objects:
-      const objectType = asArray(type).find(
-        // Coerce to object if type is 'object' or a known model name.
-        type => type === 'object' || type in this.app.models
-      )
-      if (objectType) {
-        if (value && isString(value)) {
-          if (!/^\{.*\}$/.test(value)) {
-            // Convert simplified Dito.js object notation to JSON, supporting:
-            // - `"key1":X, "key2":Y` (curly braces are added and parsed through
-            //   `JSON.parse()`)
-            // - `key1:X,key2:Y` (a simple parser is applied, splitting into
-            //   entries and key/value pairs, values are parsed with
-            //   `JSON.parse()`, falling back to string.
-            if (/"/.test(value)) {
-              // Just add the curly braces and parse as JSON
-              value = JSON.parse(`{${value}}`)
-            } else {
-              // A simple version of named key/value pairs, values can be
-              // strings or numbers.
-              value = Object.fromEntries(
-                value.split(/\s*,\s*/g).map(entry => {
-                  let [key, val] = entry.split(/\s*:\s*/)
-                  try {
-                    // Try parsing basic types, but fall back to unquoted
-                    // string.
-                    val = JSON.parse(val)
-                  } catch {}
-                  return [key, val]
-                })
-              )
-            }
-          } else {
-            value = JSON.parse(value)
-          }
-        }
-        if (objectType !== 'object' && isObject(value)) {
-          // Convert the Pojo to the desired Dito.js model:
-          const modelClass = this.app.models[objectType]
-          if (modelClass && !(value instanceof modelClass)) {
-            value = modelClass.fromJson(value, modelOptions)
-          }
-        }
-      }
-    }
-    return value
   }
 
   async getMember(/* ctx, param */) {

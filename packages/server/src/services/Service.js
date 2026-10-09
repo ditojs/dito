@@ -29,7 +29,6 @@ export class Service {
   async stop() {}
 
   get logger() {
-    const logger = this.app.requestLocals.logger ?? this.app.logger
-    return logger.child({ name: this.#loggerName })
+    return this.app.logger.child({ name: this.#loggerName })
   }
 }

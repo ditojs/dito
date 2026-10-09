@@ -6,10 +6,25 @@ import { ControllerError } from '../errors/index.js'
 import { setupPropertyInheritance } from '../utils/object.js'
 
 export class ModelController extends CollectionController {
+  // @override
   configure() {
     super.configure()
-    this.modelClass ||=
-      this.app.models[camelize(pluralize.singular(this.name), true)]
+    // Resolve the model class after `super.configure()`, which sets `name`.
+    this.modelClass ||= this.resolveModelClass()
+    if (!this.modelClass) {
+      throw new ControllerError(
+        this,
+        'Unable to resolve the model class, provide `modelClass` or ' +
+        'override `resolveModelClass()`.'
+      )
+    }
+  }
+
+  // Resolves the model class by the singularized controller name, as a
+  // fallback when no `modelClass` is provided.
+  // @overridable
+  resolveModelClass() {
+    return this.app.getModel(camelize(pluralize.singular(this.name), true))
   }
 
   setup() {

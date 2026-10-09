@@ -4,7 +4,7 @@ import serve from 'koa-static'
 import { defineConfig, createServer } from 'vite'
 import createVuePlugin from '@vitejs/plugin-vue'
 import { testModuleIdentifier, getPostCssConfig } from '@ditojs/build'
-import { assignDeeply } from '@ditojs/utils'
+import { assignDeeply, deprecate } from '@ditojs/utils'
 import { Controller } from './Controller.js'
 import { handleConnectMiddleware } from '../middleware/index.js'
 import { ControllerError } from '../errors/index.js'
@@ -31,7 +31,21 @@ export class AdminController extends Controller {
     this.closed = false
   }
 
-  getPath(name) {
+  // @override
+  getPath(...args) {
+    // `Controller.getPath(type, path)` is the routing hook used by `getUrl()`.
+    if (args.length !== 1) {
+      return super.getPath(...args)
+    }
+    // TODO: Remove the `getPath(name)` signature in 4.0.
+    deprecate(
+      'AdminController.getPath(name) is deprecated. ' +
+      'Use AdminController.resolveConfigPath(name) instead.'
+    )
+    return this.resolveConfigPath(...args)
+  }
+
+  resolveConfigPath(name) {
     const { config } = this
     const str = config[name]
     if (!str) {
@@ -46,16 +60,13 @@ export class AdminController extends Controller {
   getDitoObject() {
     // Expose api config and definitions to browser side:
     // Pass on the `config.app.normalizePaths` setting to Dito.js Admin:
-    const {
-      api = {},
-      settings = {}
-    } = this.config
-    if (api.normalizePaths == null) {
-      api.normalizePaths = this.app.config.app.normalizePaths
-    }
+    const { api = {}, settings = {} } = this.config
     return {
       base: this.url,
-      api,
+      api: {
+        ...api,
+        normalizePaths: api.normalizePaths ?? this.app.config.app.normalizePaths
+      },
       settings
     }
   }
@@ -93,8 +104,8 @@ export class AdminController extends Controller {
     this.koa = new Koa()
     this.koa.use(this.middleware())
     if (this.mode === 'development') {
-      // Calling getPath() throws exception if config.admin.root is not defined:
-      if (this.getPath('root')) {
+      // resolveConfigPath() throws if `config.admin.root` is not defined:
+      if (this.resolveConfigPath('root')) {
         this.app.once('after:start', () => this.setupViteServer())
       }
     } else {
@@ -108,7 +119,7 @@ export class AdminController extends Controller {
         }
         await next()
       })
-      this.koa.use(serve(this.getPath('dist')))
+      this.koa.use(serve(this.resolveConfigPath('dist')))
     }
     return this.koa
   }
@@ -163,7 +174,7 @@ export class AdminController extends Controller {
   defineViteConfig(config = {}) {
     const isDevelopment = this.mode === 'development'
 
-    const root = this.getPath('root')
+    const root = this.resolveConfigPath('root')
     const base = `${this.url}/`
     const views = path.join(root, 'views')
 
@@ -196,7 +207,7 @@ export class AdminController extends Controller {
           build: isDevelopment
             ? {}
             : {
-                outDir: this.getPath('dist'),
+                outDir: this.resolveConfigPath('dist'),
                 assetsDir: '.',
                 emptyOutDir: true,
                 chunkSizeWarningLimit: 1000,
