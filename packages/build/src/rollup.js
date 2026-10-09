@@ -48,9 +48,15 @@ export function getPackageName(id) {
   return id.startsWith('@') ? parts.slice(0, 2).join('/') : parts[0]
 }
 
+// Style sheets, optionally followed by a query, e.g. `tippy.js/dist/tippy.css`
+// or `vue-color/style.css?inline`:
+const styleSheetRegexp = /\.(css|scss|sass|less|styl|stylus|pcss|postcss)(\?|$)/
+
 export function isRollupExternal(id, externals) {
   if (externals[id]) return true
   if (bundledSourcesRegexp.test(id)) return false
+  // Style sheets of external packages are bundled into the CSS output:
+  if (styleSheetRegexp.test(id)) return false
   // Subpaths of external packages are external too, e.g. `@tiptap/pm/model`:
   const packageName = getPackageName(id)
   return !!packageName && packageName !== id && !!externals[packageName]

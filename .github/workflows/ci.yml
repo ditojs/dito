@@ -36,6 +36,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
+      - run: pnpm dist:check
       - run: pnpm test:unit
       - run: pnpm --filter @ditojs/tests test:types
       - run: pnpm types

@@ -126,10 +126,24 @@ describe('defineViteConfig()', () => {
     expect(external('unlisted-package')).toBe(false)
     expect(external('./src/index.js')).toBe(false)
     expect(external('@ditojs/ui/src/index.js')).toBe(false)
-    expect(output).toMatchObject({ exports: 'named', manualChunks: undefined })
+    expect(output).toMatchObject({ manualChunks: undefined })
+    expect(output).not.toHaveProperty('exports')
     expect(output.globals('@shelf/catalog/authors')).toBe(
       '@shelf/catalog/authors'
     )
+  })
+
+  it('merges rollupOutput into the rollup output options', () => {
+    const globals = id => `Shelf.${id}`
+    const config = defineViteConfig({
+      defineConfig,
+      name: 'shelf',
+      rollupOutput: { exports: 'named', globals }
+    })
+    const { output } = config.build.rollupOptions
+    expect(output).toMatchObject({ exports: 'named', manualChunks: undefined })
+    expect(output.globals).toBe(globals)
+    expect(config).not.toHaveProperty('rollupOutput')
   })
 
   it('bundles excluded dependencies', () => {

@@ -20,6 +20,8 @@ export function defineViteConfig({
     include = [],
     exclude = []
   } = {},
+  // Options merged into `build.rollupOptions.output`, e.g. `exports`:
+  rollupOutput = {},
   ...rest
 } = {}) {
   const externals = (
@@ -51,13 +53,10 @@ export function defineViteConfig({
           rollupOptions: {
             external: id => isRollupExternal(id, externals),
             output: {
-              // Entries with both named and default exports, e.g. admin's
-              // `DitoAdmin`, expose them all on the UMD object, with the
-              // default export as `.default`:
-              exports: 'named',
               manualChunks: undefined,
               // Use the module identifiers as UMD globals, including subpaths:
-              globals: id => id
+              globals: id => id,
+              ...rollupOutput
             }
           }
         }

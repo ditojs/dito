@@ -58,6 +58,32 @@ describe('isRollupExternal()', () => {
     ).toBe(true)
   })
 
+  it('bundles the style sheets of declared dependencies', () => {
+    const styleExternals = {
+      'tippy.js': 'tippy.js',
+      'vue-multiselect': 'vue-multiselect',
+      'vue-color': 'vue-color'
+    }
+    expect(isRollupExternal('tippy.js/dist/tippy.css', styleExternals)).toBe(
+      false
+    )
+    expect(
+      isRollupExternal(
+        'vue-multiselect/dist/vue-multiselect.css',
+        styleExternals
+      )
+    ).toBe(false)
+    expect(isRollupExternal('vue-color/style.css?inline', styleExternals)).toBe(
+      false
+    )
+    expect(isRollupExternal('vue-color/styles/main.scss', styleExternals)).toBe(
+      false
+    )
+    expect(isRollupExternal('tippy.js/dist/tippy.esm.js', styleExternals)).toBe(
+      true
+    )
+  })
+
   it('bundles the sources of Dito.js packages', () => {
     expect(isRollupExternal('@ditojs/ui/src', externals)).toBe(false)
     expect(isRollupExternal('@ditojs/ui/src/index.js', externals)).toBe(false)
