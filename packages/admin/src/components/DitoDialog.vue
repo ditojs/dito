@@ -2,10 +2,11 @@
 .dito-dialog(
   ref="dialog"
   role="dialog"
-  :aria-label="schema.label || 'Dialog'"
+  :aria-label="settings.label || 'Dialog'"
   aria-modal="true"
   :style="{ '--width': settings.width ? `${settings.width}px` : null }"
-  @mouseup="onMouseUp"
+  @mouseup.self="onMouseUp"
+  @keydown="onKeyDown"
 )
   UseFocusTrap.dito-dialog__focus-trap(:options="focusTrapOptions")
     form.dito-dialog__form.dito-scroll-parent(
@@ -35,14 +36,12 @@
 import { markRaw } from 'vue'
 import { clone } from '@ditojs/utils'
 import DitoComponent from '../DitoComponent.js'
-import DomMixin from '../mixins/DomMixin.js'
 import { getButtonSchemas } from '../utils/schema/lookup.js'
 import { DataModel } from '../utils/DataModel.js'
 import { UseFocusTrap } from '@vueuse/integrations/useFocusTrap/component'
 
 // @vue/component
 export default DitoComponent.component('DitoDialog', {
-  mixins: [DomMixin],
   components: { UseFocusTrap },
   emits: ['remove'],
 
@@ -115,7 +114,10 @@ export default DitoComponent.component('DitoDialog', {
       return {
         immediate: true,
         fallbackFocus: () => this.$refs.dialog,
-        onDeactivate: this.cancel
+        // Escape is handled in `onKeyDown()`, as only dialogs with a cancel
+        // button or without buttons can be cancelled. The trap is also
+        // deactivated on unmount, e.g. after submitting, so it can't cancel.
+        escapeDeactivates: false
       }
     },
 
@@ -138,16 +140,6 @@ export default DitoComponent.component('DitoDialog', {
         getData: () => this.dialogData
       })
     )
-  },
-
-  mounted() {
-    this.domOn(window, {
-      keyup: event => {
-        if ((this.hasCancel || !this.hasButtons) && event.keyCode === 27) {
-          this.cancel()
-        }
-      }
-    })
   },
 
   beforeUnmount() {
@@ -199,6 +191,19 @@ export default DitoComponent.component('DitoDialog', {
     onMouseUp() {
       if (this.settings.clickToClose) {
         this.close()
+      }
+    },
+
+    onKeyDown(event) {
+      // Escape keys that the dialog's components handled, e.g. to close their
+      // menus, don't cancel the dialog.
+      if (
+        event.key === 'Escape' &&
+        !event.defaultPrevented &&
+        (this.hasCancel || !this.hasButtons)
+      ) {
+        event.preventDefault()
+        this.cancel()
       }
     }
   }
