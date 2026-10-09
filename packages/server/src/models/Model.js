@@ -8,13 +8,11 @@ import {
   asArray,
   clone,
   equals,
-  flatten,
   parseDataPath,
   normalizeDataPath,
   getValueAtDataPath,
   getEntriesAtDataPath,
   setValueAtDataPath,
-  mapConcurrently,
   assignDeeply,
   deprecate,
   formatPlainDate,
@@ -128,7 +126,10 @@ export class Model extends objection.Model {
   }
 
   $is(model) {
-    return model?.constructor === this.constructor && model?.id === this.id
+    return (
+      model?.constructor === this.constructor &&
+      equals(model.$id(), this.$id())
+    )
   }
 
   $has(...properties) {
@@ -1157,83 +1158,13 @@ export class Model extends objection.Model {
                 })
               )
 
-        const afterFilesPerDataPath = getFilesPerAssetDataPath(
-          afterItems,
-          dataPaths
-        )
-        const beforeFilesPerDataPath = getFilesPerAssetDataPath(
+        await this.app.assetManager.handleAssetFileChanges({
+          assets,
+          dataPaths,
           beforeItems,
-          dataPaths
-        )
-
-        const importedFiles = []
-        const modifiedFiles = []
-
-        if (transaction.rollback) {
-          // Prevent wrong memory leak error messages when installing more than
-          // 10 'rollback' handlers, which can happen with more complex queries.
-          transaction.setMaxListeners(0)
-          transaction.on('rollback', async error => {
-            if (importedFiles.length > 0) {
-              console.info(
-                `Received '${error}', removing imported files again: ${
-                  importedFiles.map(file => `'${file.name}'`)
-                }`
-              )
-              await mapConcurrently(
-                importedFiles,
-                file => file.storage.removeFile(file)
-              )
-            }
-            if (modifiedFiles.length > 0) {
-              // TODO: `modifiedFiles` should be restored as well, but that's
-              // far from trivial since no backup is kept in
-              // `handleModifiedAssets()`
-              console.warn(
-                `Unable to restore these already modified files: ${
-                  modifiedFiles.map(file => `'${file.name}'`)
-                }`
-              )
-            }
-          })
-        }
-
-        for (const dataPath of dataPaths) {
-          const storage = this.app.getStorage(assets[dataPath].storage)
-          const beforeFiles = beforeFilesPerDataPath[dataPath] || []
-          const afterFiles = afterFilesPerDataPath[dataPath] || []
-          const beforeByKey = mapFilesByKey(beforeFiles)
-          const afterByKey = mapFilesByKey(afterFiles)
-          const addedFiles = afterFiles.filter(file => !beforeByKey[file.key])
-          const removedFiles = beforeFiles.filter(file => !afterByKey[file.key])
-          const changedFiles = afterFiles.filter(file => {
-            const beforeFile = beforeByKey[file.key]
-            return beforeFile && !equals(file, beforeFile)
-          })
-          // Also handle modified files, which are files where the data property
-          // is changed before update / patch, meaning the file is changed.
-          // NOTE: This will change the content for all the references to it,
-          // and so should only really be used when there's only one reference.
-          const modifiedFiles = afterFiles.filter(
-            file => file.data && beforeByKey[file.key]
-          )
-          importedFiles.push(
-            ...(await this.app.handleAddedAndRemovedAssets(
-              storage,
-              addedFiles,
-              removedFiles,
-              changedFiles,
-              transaction
-            ))
-          )
-          modifiedFiles.push(
-            ...(await this.app.handleModifiedAssets(
-              storage,
-              modifiedFiles,
-              transaction
-            ))
-          )
-        }
+          afterItems,
+          transaction
+        })
       }
     )
   }
@@ -1281,37 +1212,4 @@ function mapAssetFiles(data, storage, callback) {
     return data.map(item => mapAssetFiles(item, storage, callback))
   }
   return data ? callback(data, storage) : data
-}
-
-function getValueAtAssetDataPath(item, path) {
-  return getValueAtDataPath(item, path, noop)
-}
-
-function getFilesPerAssetDataPath(items, dataPaths) {
-  return dataPaths.reduce(
-    (allFiles, dataPath) => {
-      allFiles[dataPath] = asArray(items).reduce(
-        (files, item) => {
-          const data = asArray(getValueAtAssetDataPath(item, dataPath))
-          // Use flatten() as dataPath may contain wildcards, resulting in
-          // nested files arrays.
-          files.push(...flatten(data).filter(file => !!file))
-          return files
-        },
-        []
-      )
-      return allFiles
-    },
-    {}
-  )
-}
-
-function mapFilesByKey(files) {
-  return files.reduce(
-    (map, file) => {
-      map[file.key] = file
-      return map
-    },
-    {}
-  )
 }
