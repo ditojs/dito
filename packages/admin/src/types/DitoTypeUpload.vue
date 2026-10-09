@@ -41,9 +41,10 @@
       template(
         v-if="multiple || !isUploadActive"
       )
+        //- Stored files have unique keys, uploading files unique ids:
         tr(
           v-for="(file, index) in files"
-          :key="file.name"
+          :key="file.key ?? file.id ?? file.name"
         )
           td(
             v-if="render"
@@ -96,6 +97,7 @@
             .dito-buttons.dito-buttons--round
               button.dito-button.dito-button--upload(
                 v-if="!multiple"
+                type="button"
                 :title="uploadTitle"
                 @click="onClickUpload"
               )
@@ -115,7 +117,7 @@
     )
       tr
         td(:colspan="4")
-          .dito-upload-footer
+          .dito-upload__footer
             progress.dito-progress(
               v-if="isUploadActive"
               :value="uploadProgress"
@@ -129,6 +131,7 @@
               ) Cancel
               button.dito-button.dito-button--upload(
                 v-if="multiple || !hasFiles"
+                type="button"
                 :title="uploadTitle"
                 @click="onClickUpload"
               )
@@ -256,11 +259,15 @@ export default DitoTypeComponent.register('upload', {
     },
 
     uploadPath() {
-      return this.getResourceUrl({
-        type: 'upload',
-        method: 'post',
-        path: this.api.normalizePath(this.dataPath)
-      })
+      // Uploads are posted to the resource of the data, see
+      // `api.resources.upload()`, which views without resource don't have.
+      return this.dataComponent?.resource
+        ? this.getResourceUrl({
+            type: 'upload',
+            method: 'post',
+            path: this.api.normalizePath(this.dataPath)
+          })
+        : null
     }
   },
 
@@ -298,7 +305,7 @@ export default DitoTypeComponent.register('upload', {
         ? file.url
         : !file.upload || file.upload.success
           ? this.getSchemaValue('downloadUrl', {
-              type: 'String',
+              type: String,
               default: null,
               context: this.getFileContext(file, index)
             })
@@ -308,7 +315,7 @@ export default DitoTypeComponent.register('upload', {
     getThumbnailUrl(file, index) {
       return !file.upload || file.upload.success
         ? this.getSchemaValue('thumbnailUrl', {
-            type: 'String',
+            type: String,
             default: null,
             context: this.getFileContext(file, index)
           }) || (
@@ -320,8 +327,7 @@ export default DitoTypeComponent.register('upload', {
     },
 
     deleteFile(file, index) {
-      const { name } = file
-
+      const name = file?.name
       if (
         file &&
         window.confirm(
@@ -434,11 +440,22 @@ export default DitoTypeComponent.register('upload', {
     async onClickDownload(file, index) {
       try {
         const response = await fetch(this.downloadUrls[index])
+        if (!response.ok) {
+          throw new Error(
+            `Failed to download ${file.name}: ${response.status} ${
+              response.statusText
+            }`
+          )
+        }
         const blob = await response.blob()
-        this.download({
-          filename: file.name,
-          url: URL.createObjectURL(blob)
-        })
+        const url = URL.createObjectURL(blob)
+        try {
+          this.download({ filename: file.name, url })
+        } finally {
+          // Release the blob once the browser started the download, which
+          // some browsers don't do synchronously when the link is clicked.
+          setTimeout(() => URL.revokeObjectURL(url), 1000)
+        }
       } catch (error) {
         console.error(error)
       }

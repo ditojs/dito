@@ -74,7 +74,7 @@ const TYPES = {
   'image/png': 'PNG',
   'image/gif': 'GIF',
   'image/svg+xml': 'SVG',
-  'movie/mp4': 'MP4',
+  'video/mp4': 'MP4',
   'audio/mpeg': 'MP3',
   'application/json': 'JSON',
   'application/xml': 'XML',
