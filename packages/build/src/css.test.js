@@ -49,14 +49,12 @@ describe('getDataUri()', () => {
     expect(uri.startsWith('data:text/plain;base64,')).toBe(true)
   })
 
-  // Bug: the file is read as a utf8 string, so `toString('base64')` is a
-  // no-op and non-svg data uris contain raw text instead of base64.
-  it.fails('base64-encodes the content of non-svg files', () => {
+  it('base64-encodes the content of non-svg files', () => {
     const uri = getDataUri(writeFile('notes.txt', 'abc'))
     expect(uri).toBe(`data:text/plain;base64,${btoa('abc')}`)
   })
 
-  it.fails('preserves the binary content of image files', () => {
+  it('preserves the binary content of image files', () => {
     const uri = getDataUri(writeFile('cover.png', pngBytes))
     expect(uri).toBe(`data:image/png;base64,${pngBytes.toString('base64')}`)
   })

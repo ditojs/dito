@@ -3,7 +3,7 @@ import mime from 'mime'
 import svgToDataUri from 'mini-svg-data-uri'
 
 export function getDataUri(filePath) {
-  const content = fs.readFileSync(filePath, 'utf8')
+  const content = fs.readFileSync(filePath)
   const type = mime.getType(filePath)
   return type === 'image/svg+xml'
     ? svgToDataUri(content.toString('utf8'))
