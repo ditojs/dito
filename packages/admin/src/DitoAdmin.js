@@ -19,8 +19,9 @@ import verbs from './verbs.js'
 
 export default class DitoAdmin {
   constructor(el, {
-    // `dito` contains the base and api settings passed from `AdminController`
-    dito = {},
+    // `dito` contains the base, api and settings passed from `AdminController`
+    // as `window.dito`, which is also the default:
+    dito: ditoObject = globalThis.dito ?? {},
     api,
     views = {},
     ...options
@@ -29,7 +30,7 @@ export default class DitoAdmin {
     // Merge in `api` settings as passed from `config.admin` and through the
     // `AdminController` with `api` values from from 'admin/index.js'
     // NOTE: `AdminController` provides `dito.api.base`
-    this.api = api = assignDeeply({ base: '/' }, dito.api, api)
+    this.api = api = assignDeeply({ base: '/' }, ditoObject.api, api)
     this.options = options
 
     // Setup default api settings:
@@ -168,7 +169,7 @@ export default class DitoAdmin {
         $verbs: () => verbs,
         // Provide defaults so DitoMixin can inject them for all components:
         //   inject: [  '$isPopulated', '$schemaComponent', '$routeComponent' ]
-        $views: () => {},
+        $views: () => ({}),
         $isPopulated: () => true,
         $parentComponent: () => null,
         $schemaComponent: () => null,
@@ -186,7 +187,7 @@ export default class DitoAdmin {
       render: () =>
         createElement(DitoRoot, {
           ref: 'root',
-          class: dito.settings.rootClass,
+          class: ditoObject.settings?.rootClass,
           unresolvedViews: views,
           options
         })
@@ -215,7 +216,7 @@ export default class DitoAdmin {
             components: {}
           }
         ],
-        history: createWebHistory(dito.base),
+        history: createWebHistory(ditoObject.base),
         linkActiveClass: '',
         linkExactActiveClass: ''
       })
