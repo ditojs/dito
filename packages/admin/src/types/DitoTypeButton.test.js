@@ -97,32 +97,123 @@ describe('DitoTypeButton', () => {
     expect(getNotificationTexts().join()).toContain('Publishing failed')
   })
 
-  // Bug: `onClick()` passes the error to `emitEvent()` as `{ error }` instead
-  // of `{ context: { error } }`, so error handlers don't receive it.
-  test.fails(
-    'passes the errors of click handlers to error handlers',
-    async () => {
-      const onError = vi.fn(() => false)
-      const { findField } = await mountSchema({
-        schema: {
-          components: {
-            publish: {
-              type: 'button',
-              onClick() {
-                throw new Error('Publishing failed')
-              },
-              onError
+  it('passes the errors of click handlers to error handlers', async () => {
+    const onError = vi.fn(() => false)
+    const { findField } = await mountSchema({
+      schema: {
+        components: {
+          publish: {
+            type: 'button',
+            onClick() {
+              throw new Error('Publishing failed')
+            },
+            onError
+          }
+        }
+      }
+    })
+    await findField('publish').trigger('click')
+    await flushPromises()
+    expect(onError.mock.calls[0][0].error?.errors[0].message).toBe(
+      'Publishing failed'
+    )
+  })
+
+  it('is disabled when readonly', async () => {
+    const { findField } = await mountSchema({
+      schema: {
+        components: {
+          publish: { type: 'button', readonly: true }
+        }
+      }
+    })
+    expect(findField('publish').attributes('disabled')).toBeDefined()
+  })
+
+  it('is busy and ignores clicks while its action runs', async () => {
+    let finishClick
+    const onClick = vi.fn(
+      () =>
+        new Promise(resolve => {
+          finishClick = resolve
+        })
+    )
+    const { findField } = await mountSchema({
+      schema: {
+        components: {
+          publish: { type: 'button', onClick }
+        }
+      }
+    })
+    const button = findField('publish')
+    await button.trigger('click')
+    await flushPromises()
+    expect(button.attributes('aria-busy')).toBe('true')
+    await button.trigger('click')
+    await flushPromises()
+    expect(onClick).toHaveBeenCalledOnce()
+    finishClick()
+    await flushPromises()
+    expect(button.attributes('aria-busy')).toBe('false')
+    await button.trigger('click')
+    await flushPromises()
+    expect(onClick).toHaveBeenCalledTimes(2)
+  })
+
+  it('keeps the disabled state of its schema while its action runs', async () => {
+    // `disabled` reflects the state of the schema, e.g. of a form that can't
+    // be submitted, and only changes with it, not with the running action.
+    let finishSubmit
+    const request = vi.fn(
+      ({ data }) =>
+        new Promise(resolve => {
+          finishSubmit = () => resolve({ data })
+        })
+    )
+    const { findField } = await mountForm({
+      schema: {
+        components: { title: { type: 'text' } },
+        buttons: { submit: { closeForm: false } }
+      },
+      data: { title: 'Dune' },
+      request
+    })
+    const button = findField('submit')
+    await button.trigger('click')
+    await vi.waitFor(() => expect(request).toHaveBeenCalledOnce())
+    expect(button.attributes('aria-busy')).toBe('true')
+    expect(button.attributes('disabled')).toBeUndefined()
+    await button.trigger('click')
+    await flushPromises()
+    expect(request).toHaveBeenCalledOnce()
+    finishSubmit()
+    await flushPromises()
+    expect(button.attributes('aria-busy')).toBe('false')
+  })
+
+  it('lets click handlers end the running state early', async () => {
+    let finishClick
+    const { findField } = await mountSchema({
+      schema: {
+        components: {
+          publish: {
+            type: 'button',
+            onClick(context) {
+              context.isRunning = false
+              return new Promise(resolve => {
+                finishClick = resolve
+              })
             }
           }
         }
-      })
-      await findField('publish').trigger('click')
-      await flushPromises()
-      expect(onError.mock.calls[0][0].error?.message).toBe(
-        'Publishing failed'
-      )
-    }
-  )
+      }
+    })
+    const button = findField('publish')
+    await button.trigger('click')
+    await flushPromises()
+    expect(button.attributes('aria-busy')).toBe('false')
+    finishClick()
+  })
 
   it('lets error handlers prevent the notification of errors', async () => {
     const onError = vi.fn(() => false)
@@ -169,5 +260,37 @@ describe('DitoTypeButton', () => {
       url: '/items/1/publish',
       data: { title: 'Emma' }
     })
+  })
+
+  it('shows default notifications after handlers notified before', async () => {
+    // Handlers that notify replace the default notification, but only for
+    // the request that they handle.
+    let notifyCount = 0
+    const { findField } = await mountForm({
+      schema: {
+        components: {
+          publish: {
+            type: 'button',
+            resource: { path: 'publish', method: 'post' },
+            onSuccess({ notify }) {
+              if (notifyCount++ === 0) {
+                notify({ type: 'info', text: 'Published the first time' })
+              }
+            }
+          }
+        }
+      },
+      data: { title: 'Emma' },
+      request: () => ({ data: {} })
+    })
+    const button = findField('publish')
+    await button.trigger('click')
+    await vi.waitFor(() => expect(notifyCount).toBe(1))
+    await flushPromises()
+    expect(getNotificationTexts().join()).not.toContain('Successfully Saved')
+    await button.trigger('click')
+    await vi.waitFor(() => expect(notifyCount).toBe(2))
+    await flushPromises()
+    expect(getNotificationTexts().join()).toContain('Successfully Saved')
   })
 })

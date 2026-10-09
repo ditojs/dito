@@ -54,7 +54,15 @@ function get(context, key, defaultValue) {
 }
 
 function set(context, key, value) {
-  toObject(context)[key] = value
+  // Define the value on the context object itself: An assignment would be
+  // passed on to the component that the object inherits from, see
+  // `DitoContext` constructor, and change its state for all its contexts.
+  Object.defineProperty(toObject(context), key, {
+    value,
+    writable: true,
+    enumerable: true,
+    configurable: true
+  })
 }
 
 export default class DitoContext {
@@ -326,12 +334,21 @@ export default class DitoContext {
     return get(this, 'wasNotified', false)
   }
 
+  // Whether the action of the component is running, e.g. the click handler of
+  // a button, which disables it. Handlers can set it to `false` to end it
+  // early, e.g. before opening a dialog. This changes the state of the
+  // component, which resets it when the action ends.
   get isRunning() {
     return get(this, 'isRunning', false)
   }
 
   set isRunning(value) {
-    set(this, 'isRunning', value)
+    const { component } = this
+    if (component && 'isRunning' in component) {
+      component.isRunning = value
+    } else {
+      set(this, 'isRunning', value)
+    }
   }
 
   get query() {

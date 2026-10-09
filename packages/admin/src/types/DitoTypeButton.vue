@@ -5,8 +5,8 @@ DitoButton.dito-button(
   :type="type"
   :text="text"
   :title="title"
-  :disabled="disabled"
   :class="buttonClass"
+  :aria-busy="isRunning"
   v-bind="attributes"
 )
   template(#prefix)
@@ -98,6 +98,11 @@ export default DitoTypeComponent.register(
       },
 
       async onClick() {
+        // Prevent running the action again while it's running, e.g. submits.
+        // The button isn't disabled meanwhile, as `disabled` reflects the
+        // state of the schema, e.g. of forms that can't be submitted when
+        // they're clean, which a running action doesn't change:
+        if (this.isRunning) return
         this.isRunning = true
         try {
           const res = await this.emitEvent('click', {
@@ -111,7 +116,7 @@ export default DitoTypeComponent.register(
             await this.submit()
           }
         } catch (error) {
-          const res = await this.emitEvent('error', { error })
+          const res = await this.emitEvent('error', { context: { error } })
           if (res === undefined) {
             if (error instanceof AggregateError) {
               for (const err of error.errors) {

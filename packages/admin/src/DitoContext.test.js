@@ -90,6 +90,8 @@ describe('DitoContext', () => {
       const context = new DitoContext(null, { rootData, dataPath: 'name' })
       expect(context.item).toBe(rootData)
       expect(context.parentItem).toBe(null)
+      expect(context.parentItemDataPath).toBe(null)
+      expect(context.parentItemIndex).toBe(null)
     })
 
     it('prefers the provided data over the data path for the item', () => {
@@ -105,9 +107,8 @@ describe('DitoContext', () => {
       expect(context.parentItem).toBe(rootData.authors[0])
     })
 
-    // Bug: `getItem()` throws for missing data paths before the fallback to
-    // `null` applies, e.g. for removed items or ones that are being created.
-    test.fails('are `null` for data paths missing in the root data', () => {
+    // E.g. for removed items or ones that are being created:
+    it('are `null` for data paths missing in the root data', () => {
       const context = new DitoContext(null, {
         rootData: { authors: [] },
         dataPath: 'authors/3/books/0/title'
@@ -299,6 +300,37 @@ describe('DitoContext', () => {
       const context = new DitoContext({}, {})
       context.isRunning = true
       expect(context.isRunning).toBe(true)
+    })
+
+    // Like Vue's component proxies, which write all values to the component,
+    // also when they're assigned to objects that inherit from them.
+    const createComponentProxy = component =>
+      new Proxy(component, {
+        set(target, key, value) {
+          target[key] = value
+          return true
+        }
+      })
+
+    it(`doesn't remember notifications on the component`, () => {
+      const component = { notify: vi.fn() }
+      const proxy = createComponentProxy(component)
+      const context = new DitoContext(proxy, {})
+      context.notify({ type: 'info', text: 'Saved' })
+      expect(context.wasNotified).toBe(true)
+      expect(component).not.toHaveProperty('wasNotified')
+      expect(new DitoContext(proxy, {}).wasNotified).toBe(false)
+    })
+
+    it('sets whether the action of the component is running on it', () => {
+      // E.g. to end the running state of a button before its click handler
+      // returns.
+      const component = { isRunning: true }
+      const context = new DitoContext(createComponentProxy(component), {})
+      expect(context.isRunning).toBe(true)
+      context.isRunning = false
+      expect(component.isRunning).toBe(false)
+      expect(context.isRunning).toBe(false)
     })
   })
 
