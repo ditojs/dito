@@ -33,20 +33,42 @@ async function pressKey(wrapper, key) {
   await flushPromises()
 }
 
+function findMenuButton(field) {
+  return field.find('.dito-create-button button[aria-haspopup="menu"]')
+}
+
 describe('DitoCreateButton', () => {
-  it('opens the pulldown and creates items with the keyboard', async () => {
+  it('creates items of the type chosen in the menu', async () => {
     const { findField, data } = await mountSchema({
       schema: blocksSchema,
       data: { blocks: [] }
     })
     const field = findField('blocks')
-    const trigger = field.find('.dito-create-button button')
-    const menu = field.find('.dito-pulldown')
-    const items = field.findAll('.dito-pulldown__item')
-    expect(trigger.attributes('aria-expanded')).toBe('false')
+    await findMenuButton(field).trigger('click')
+    const items = field.findAll('[role="menuitem"]')
+    expect(items.map(item => item.text())).toEqual([
+      'Heading',
+      'Quote',
+      'Image'
+    ])
+    await items[1].trigger('click')
+    await flushPromises()
+    expect(data.blocks).toEqual([{ type: 'quote', text: null }])
+  })
 
-    await pressKey(trigger, 'Enter')
-    expect(trigger.attributes('aria-expanded')).toBe('true')
+  it('opens the menu and creates items with the keyboard', async () => {
+    const { findField, data } = await mountSchema({
+      schema: blocksSchema,
+      data: { blocks: [] }
+    })
+    const field = findField('blocks')
+    const button = findMenuButton(field)
+    expect(button.attributes('aria-expanded')).toBe('false')
+
+    await pressKey(button, 'Enter')
+    expect(button.attributes('aria-expanded')).toBe('true')
+    const menu = field.find('[role="menu"]')
+    const items = field.findAll('[role="menuitem"]')
     expect(document.activeElement).toBe(items[0].element)
 
     await pressKey(menu, 'ArrowDown')
@@ -60,21 +82,74 @@ describe('DitoCreateButton', () => {
 
     await pressKey(menu, 'Enter')
     expect(data.blocks).toEqual([{ type: 'image', url: null }])
-    expect(trigger.attributes('aria-expanded')).toBe('false')
+    expect(button.attributes('aria-expanded')).toBe('false')
   })
 
-  it('closes the pulldown with Escape and focuses the button', async () => {
+  it('closes the menu with Escape and focuses the button', async () => {
     const { findField, data } = await mountSchema({
       schema: blocksSchema,
       data: { blocks: [] }
     })
     const field = findField('blocks')
-    const trigger = field.find('.dito-create-button button')
-    await pressKey(trigger, 'ArrowDown')
-    expect(trigger.attributes('aria-expanded')).toBe('true')
-    await pressKey(field.find('.dito-pulldown'), 'Escape')
-    expect(trigger.attributes('aria-expanded')).toBe('false')
-    expect(document.activeElement).toBe(trigger.element)
+    const button = findMenuButton(field)
+    await pressKey(button, 'ArrowDown')
+    expect(button.attributes('aria-expanded')).toBe('true')
+    await pressKey(field.find('[role="menu"]'), 'Escape')
+    expect(button.attributes('aria-expanded')).toBe('false')
+    expect(document.activeElement).toBe(button.element)
     expect(data.blocks).toEqual([])
+  })
+
+  it('leaves out forms that are hidden or not creatable', async () => {
+    const { findField } = await mountSchema({
+      schema: {
+        components: {
+          blocks: {
+            ...blocksSchema.components.blocks,
+            forms: {
+              ...blocksSchema.components.blocks.forms,
+              quote: {
+                ...blocksSchema.components.blocks.forms.quote,
+                creatable: false
+              },
+              image: {
+                ...blocksSchema.components.blocks.forms.image,
+                visible: false
+              }
+            }
+          }
+        }
+      },
+      data: { blocks: [] }
+    })
+    const field = findField('blocks')
+    await findMenuButton(field).trigger('click')
+    expect(field.findAll('[role="menuitem"]').map(item => item.text())).toEqual(
+      ['Heading']
+    )
+  })
+
+  it('renders a plain button for a single default form', async () => {
+    const { findField, data } = await mountSchema({
+      schema: {
+        components: {
+          blocks: {
+            type: 'list',
+            inlined: true,
+            creatable: true,
+            form: {
+              type: 'form',
+              components: { text: { type: 'text' } }
+            }
+          }
+        }
+      },
+      data: { blocks: [] }
+    })
+    const field = findField('blocks')
+    expect(findMenuButton(field).exists()).toBe(false)
+    await field.find('.dito-create-button button').trigger('click')
+    await flushPromises()
+    expect(data.blocks).toEqual([{ text: null }])
   })
 })

@@ -1,63 +1,40 @@
 <template lang="pug">
 .dito-create-button
-  button.dito-button(
+  DitoButton(
     v-if="creatableForm"
     :type="isInlined ? 'button' : 'submit'"
+    :verb="verb"
+    :subject="formLabel"
+    :text="text"
     :disabled="disabled"
-    v-bind="getButtonAttributes(verb, formLabel, text)"
     @click="createItem(creatableForm)"
-  ) {{ text }}
-  template(
-    v-else-if="creatableForms"
   )
-    button.dito-button(
-      ref="trigger"
-      type="button"
-      :disabled="disabled"
-      v-bind=`{
-        ...pulldownTriggerAttributes,
-        ...getButtonAttributes(verb, null, text)
-      }`
-      @mousedown.stop="onPulldownMouseDown()"
-      @keydown="onTriggerKeyDown"
-    ) {{ text }}
-    ul.dito-pulldown(
-      ref="menu"
-      role="menu"
-      :class="{ 'dito-pulldown--open': pulldown.open }"
-      @keydown="onMenuKeyDown"
-      @focusout="onMenuFocusOut"
-    )
-      li(
-        v-for="(form, type) in creatableForms"
-        v-show="shouldShowSchema(form)"
-        role="none"
-      )
-        a.dito-pulldown__item(
-          role="menuitem"
-          tabindex="-1"
-          :data-type="type"
-          :aria-disabled="shouldDisableSchema(form) ? 'true' : null"
-          :class=`{
-            'dito-pulldown__item--disabled': shouldDisableSchema(form)
-          }`
-          @mousedown.stop="onPulldownMouseDown(type)"
-          @mouseup="onPulldownMouseUp(type)"
-        ) {{ getLabel(form) }}
+  DitoMenuButton(
+    v-else-if="hasCreatableForms"
+    :items="menuItems"
+    placement="bottom-right"
+    :disabled="disabled"
+    :verb="verb"
+    :text="text"
+    @select="onSelectMenuItem"
+  )
 </template>
 
 <script>
+import { DitoButton, DitoMenuButton } from '@ditojs/ui/src'
 import DitoComponent from '../DitoComponent.js'
 import ContextMixin from '../mixins/ContextMixin.js'
-import PulldownMixin from '../mixins/PulldownMixin.js'
 import { isInlined } from '../utils/schema/structure.js'
-import { getFormSchemas } from '../utils/schema/lookup.js'
+import { getCreatableForms } from '../utils/schema/data.js'
 
 // @vue/component
 export default DitoComponent.component('DitoCreateButton', {
-  mixins: [ContextMixin, PulldownMixin],
+  mixins: [ContextMixin],
+  components: { DitoButton, DitoMenuButton },
 
   props: {
+    // The schema of the list or object source that creates the item, also
+    // when inserting at `insertIndex` from the buttons of an item.
     schema: { type: Object, required: true },
     // The next four props are there for `DitoContext` and the `context()`
     // getter in `DitoMixin`.
@@ -81,29 +58,27 @@ export default DitoComponent.component('DitoCreateButton', {
   },
 
   computed: {
-    forms() {
-      // When inserting per-item, `this.schema` is the item's form, not the
-      // list schema. Fall back to `sourceSchema` (the parent list's schema via
-      // `meta.schema`) so all creatable forms are discoverable in the pulldown.
-      const schema =
-        this.insertIndex != null
-          ? this.sourceSchema || this.schema
-          : this.schema
-      return getFormSchemas(schema, this.context)
+    creatableForms() {
+      return getCreatableForms(this.schema, this.context)
     },
 
-    creatableForms() {
-      const entries = Object.entries(this.forms).filter(
-        ([, form]) => this.isFormCreatable(form)
-      )
-      return entries.length > 0
-        ? Object.fromEntries(entries)
-        : null
+    hasCreatableForms() {
+      return Object.keys(this.creatableForms).length > 0
     },
 
     creatableForm() {
       const forms = this.creatableForms
-      return forms && Object.keys(forms).length === 1 && forms.default || null
+      return (Object.keys(forms).length === 1 && forms.default) || null
+    },
+
+    menuItems() {
+      return Object.entries(this.creatableForms)
+        .filter(([, form]) => this.shouldShowSchema(form))
+        .map(([type, form]) => ({
+          value: type,
+          label: this.getLabel(form),
+          disabled: this.shouldDisableSchema(form)
+        }))
     },
 
     formLabel() {
@@ -120,19 +95,6 @@ export default DitoComponent.component('DitoCreateButton', {
   },
 
   methods: {
-    isFormCreatable(form) {
-      // Forms can be excluded from the list by providing `if: false` or
-      // `creatable: false`.
-      return (
-        this.shouldRenderSchema(form) &&
-        this.getSchemaValue('creatable', {
-          type: Boolean,
-          default: true,
-          schema: form
-        })
-      )
-    },
-
     createItem(form, type = null) {
       if (!this.shouldDisableSchema(form)) {
         if (this.isInlined) {
@@ -153,97 +115,9 @@ export default DitoComponent.component('DitoCreateButton', {
       }
     },
 
-    onPulldownSelect(type) {
-      this.createItem(this.forms[type], type)
-      this.setPulldownOpen(false)
-    },
-
-    // Returns the menu items of the pulldown that aren't hidden.
-    getMenuItems() {
-      return [...this.$refs.menu.querySelectorAll('.dito-pulldown__item')]
-        .filter(item => item.parentElement.style.display !== 'none')
-    },
-
-    async openMenu(focusLast = false) {
-      this.setPulldownOpen(true)
-      // Wait for the menu to be displayed, so its items can be focused:
-      await this.$nextTick()
-      const items = this.getMenuItems()
-      items[focusLast ? items.length - 1 : 0]?.focus()
-    },
-
-    closeMenu(focusTrigger = true) {
-      this.setPulldownOpen(false)
-      if (focusTrigger) {
-        this.$refs.trigger?.focus()
-      }
-    },
-
-    onTriggerKeyDown(event) {
-      if (['Enter', ' ', 'ArrowDown', 'ArrowUp'].includes(event.key)) {
-        event.preventDefault()
-        this.openMenu(event.key === 'ArrowUp')
-      }
-    },
-
-    onMenuKeyDown(event) {
-      const items = this.getMenuItems()
-      const index = items.indexOf(document.activeElement)
-      const { key } = event
-      if (key === 'Escape') {
-        event.preventDefault()
-        this.closeMenu()
-      } else if (key === 'Tab') {
-        this.closeMenu(false)
-      } else if (key === 'Enter' || key === ' ') {
-        event.preventDefault()
-        const item = items[index]
-        if (item && item.getAttribute('aria-disabled') !== 'true') {
-          this.closeMenu()
-          this.onPulldownSelect(item.dataset.type)
-        }
-      } else {
-        const targetIndex = {
-          ArrowDown: (index + 1) % items.length,
-          ArrowUp: (index - 1 + items.length) % items.length,
-          Home: 0,
-          End: items.length - 1
-        }[key]
-        if (targetIndex !== undefined) {
-          event.preventDefault()
-          items[targetIndex]?.focus()
-        }
-      }
-    },
-
-    onMenuFocusOut(event) {
-      // Close the menu when the focus leaves it, e.g. by clicking elsewhere.
-      if (
-        this.pulldown.open &&
-        event.relatedTarget &&
-        !this.$el.contains(event.relatedTarget)
-      ) {
-        this.setPulldownOpen(false)
-      }
+    onSelectMenuItem({ value: type }) {
+      this.createItem(this.creatableForms[type], type)
     }
   }
 })
 </script>
-
-<style lang="scss">
-.dito-create-button {
-  position: relative;
-
-  .dito-pulldown {
-    right: 0;
-
-    // TODO: BEM: Use a modifier of this block for sticky button groups.
-    .dito-buttons--sticky & {
-      top: unset;
-      right: unset;
-      bottom: 0;
-      left: 0;
-    }
-  }
-}
-</style>

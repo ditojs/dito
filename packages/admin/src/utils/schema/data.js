@@ -91,6 +91,24 @@ export function shouldRenderSchema(schema, context) {
   )
 }
 
+// Returns the forms of `schema` for which items can be created, by type. Forms
+// are excluded by `if: false` or `creatable: false`.
+export function getCreatableForms(schema, context) {
+  return Object.fromEntries(
+    Object.entries(getFormSchemas(schema, context)).filter(
+      ([, form]) => (
+        shouldRenderSchema(form, context) &&
+        getSchemaValue('creatable', {
+          type: Boolean,
+          default: true,
+          schema: form,
+          context
+        })
+      )
+    )
+  )
+}
+
 function getContext(context) {
   return isFunction(context) ? context() : context
 }

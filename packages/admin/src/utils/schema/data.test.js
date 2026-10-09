@@ -7,7 +7,8 @@ import {
   computeValue,
   processData,
   initializeData,
-  shouldRenderSchema
+  shouldRenderSchema,
+  getCreatableForms
 } from './data.js'
 
 // Register minimal type options, as the actual type components can't be
@@ -589,5 +590,54 @@ describe('initializeData()', () => {
       items: [{ name: 'A', order: 5 }],
       prices: [100, 200]
     })
+  })
+})
+
+describe('getCreatableForms()', () => {
+  // `DitoContext` needs a component to inherit from:
+  const createContext = data => new DitoContext({}, { data, dataPath: '' })
+  const createForm = settings => ({
+    type: 'form',
+    components: { title: { type: 'text' } },
+    ...settings
+  })
+
+  it('returns the forms for which items can be created', () => {
+    const forms = {
+      article: createForm(),
+      event: createForm({ creatable: true }),
+      hidden: createForm({ if: false }),
+      archived: createForm({ creatable: false })
+    }
+    expect(getCreatableForms({ forms }, createContext({}))).toEqual({
+      article: forms.article,
+      event: forms.event
+    })
+  })
+
+  it('evaluates `if` and `creatable` callbacks with the context', () => {
+    const context = createContext({ isLocked: true })
+    const creatable = vi.fn(({ item }) => !item.isLocked)
+    const forms = {
+      default: createForm({ creatable }),
+      note: createForm()
+    }
+    expect(getCreatableForms({ forms }, context)).toEqual({
+      note: forms.note
+    })
+    expect(creatable).toHaveBeenCalledOnce()
+  })
+
+  it('excludes forms whose components are all hidden', () => {
+    const forms = {
+      default: createForm({
+        components: { title: { type: 'text', if: () => false } }
+      })
+    }
+    expect(getCreatableForms({ forms }, createContext({}))).toEqual({})
+  })
+
+  it('returns an empty object for schemas without forms', () => {
+    expect(getCreatableForms({ type: 'list' }, createContext({}))).toEqual({})
   })
 })
