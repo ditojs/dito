@@ -52,6 +52,7 @@ DitoTrigger.dito-color(
 import { SketchPicker, tinycolor } from 'vue-color'
 import { DitoTrigger, DitoInput } from '@ditojs/ui/src'
 import DitoTypeComponent from '../DitoTypeComponent.js'
+import TypeMixin from '../mixins/TypeMixin.js'
 import DitoAffixes from '../components/DitoAffixes.vue'
 import { getSchemaAccessor } from '../utils/accessor.js'
 
@@ -86,7 +87,9 @@ export default DitoTypeComponent.register('color', {
           !value ||
           color.toHex8String() !== tinycolor(value).toHex8String()
         ) {
-          this.value = toTinyColorFormat(color, this.colorFormat)
+          this.setEditedValue(toTinyColorFormat(color, this.colorFormat))
+          // The input emits its own input events, the picker doesn't:
+          this.onInput()
         }
       }
     },
@@ -107,7 +110,7 @@ export default DitoTypeComponent.register('color', {
         if (color.isValid()) {
           const convertedValue = convertColor(value, this.colorFormat)
           if (this.canUpdateValue) {
-            this.value = convertedValue
+            this.setEditedValue(convertedValue)
           } else {
             // Store to change later, once `canUpdateValue` is true again.
             // See `watch` below.
@@ -161,12 +164,65 @@ export default DitoTypeComponent.register('color', {
   },
 
   watch: {
-    value: 'onChange',
-
     canUpdateValue(canUpdateValue) {
       if (canUpdateValue && this.convertedValue !== null) {
-        this.value = this.convertedValue
+        this.setEditedValue(this.convertedValue)
         this.convertedValue = null
+      }
+    },
+
+    showPopup(showPopup) {
+      if (!showPopup) {
+        this.emitChangeOnceEdited()
+      }
+    }
+  },
+
+  created() {
+    // Whether the value was edited since the last change event, see
+    // `emitChangeOnceEdited()`. Not reactive, as nothing renders it.
+    this.hasEditedValue = false
+  },
+
+  methods: {
+    // @override
+    getEvents() {
+      // The input's native change events don't tell when the editing is done,
+      // as the picker edits the value too, see `emitChangeOnceEdited()`. They
+      // are handled to keep them from emitting the schema's change events.
+      const { onFocus, onBlur, onInput } = this
+      return { onFocus, onBlur, onInput, onChange: () => {} }
+    },
+
+    // @override
+    onBlur() {
+      TypeMixin.methods.onBlur.call(this)
+      this.emitChangeOnceEdited()
+    },
+
+    // @override
+    clear() {
+      // Clearing replaces the edits that are pending, see `hexValue` and
+      // `emitChangeOnceEdited()`, and emits its own change event.
+      this.convertedValue = null
+      this.hasEditedValue = false
+      TypeMixin.methods.clear.call(this)
+    },
+
+    // Sets a value that the user edited, through the input or the picker.
+    setEditedValue(value) {
+      this.value = value
+      this.hasEditedValue = true
+      this.emitChangeOnceEdited()
+    },
+
+    // Emits the change of the value once the editing is done, i.e. once
+    // neither the input is focused nor the picker is open. Values changed
+    // by code don't emit change events.
+    emitChangeOnceEdited() {
+      if (this.hasEditedValue && !this.focused && !this.showPopup) {
+        this.hasEditedValue = false
+        this.onChange()
       }
     }
   }

@@ -1,4 +1,5 @@
 import { vi } from 'vitest'
+import { tinycolor } from 'vue-color'
 import { mountSchema, mountForm, enterValue } from '../test/mount.js'
 
 describe('DitoTypeColor', () => {
@@ -68,7 +69,79 @@ describe('DitoTypeColor', () => {
     expect(data.name).toBe('red')
   })
 
-  it('emits change events for changed colors', async () => {
+  it('emits change once entered colors are written on blur', async () => {
+    const onChange = vi.fn()
+    const { findField, data } = await mountForm({
+      schema: {
+        components: { background: { type: 'color', onChange } }
+      },
+      data: { background: '#ff8000' }
+    })
+    const input = findField('background').find('input')
+    await input.trigger('focus')
+    await enterValue(input, '00ff00')
+    expect(onChange).not.toHaveBeenCalled()
+    await input.trigger('blur')
+    await vi.waitFor(() => expect(data.background).toBe('#00ff00'))
+    await vi.waitFor(() => expect(onChange).toHaveBeenCalledOnce())
+    expect(onChange.mock.calls[0][0].value).toBe('#00ff00')
+  })
+
+  it('emits change for colors picked once the picker closes', async () => {
+    const onChange = vi.fn()
+    const { getComponent, data, settle } = await mountForm({
+      schema: {
+        components: { background: { type: 'color', onChange } }
+      },
+      data: { background: '#ff8000' }
+    })
+    const color = getComponent('background')
+    color.showPopup = true
+    await settle()
+    color.colorValue = tinycolor('#0000ff')
+    color.colorValue = tinycolor('#00ff00')
+    await settle()
+    expect(data.background).toBe('#00ff00')
+    expect(onChange).not.toHaveBeenCalled()
+    color.showPopup = false
+    await vi.waitFor(() => expect(onChange).toHaveBeenCalledOnce())
+  })
+
+  it('emits one change when cleared after picking a color', async () => {
+    const onChange = vi.fn()
+    const { getComponent, data, settle } = await mountForm({
+      schema: {
+        components: { background: { type: 'color', onChange } }
+      },
+      data: { background: '#ff8000' }
+    })
+    const color = getComponent('background')
+    color.showPopup = true
+    await settle()
+    color.colorValue = tinycolor('#0000ff')
+    color.clear()
+    color.showPopup = false
+    await settle()
+    await new Promise(resolve => setTimeout(resolve, 10))
+    expect(data.background).toBe(null)
+    expect(onChange).toHaveBeenCalledOnce()
+  })
+
+  it(`doesn't write entered colors once cleared`, async () => {
+    const { findField, getComponent, data, settle } = await mountSchema({
+      schema: { components: { background: { type: 'color' } } },
+      data: { background: '#ff8000' }
+    })
+    const input = findField('background').find('input')
+    await input.trigger('focus')
+    await enterValue(input, '00ff00')
+    getComponent('background').clear()
+    await input.trigger('blur')
+    await settle()
+    expect(data.background).toBe(null)
+  })
+
+  it(`doesn't emit change for colors changed by code`, async () => {
     const onChange = vi.fn()
     const { data, settle } = await mountForm({
       schema: {
@@ -76,9 +149,9 @@ describe('DitoTypeColor', () => {
       },
       data: { background: '#ff8000' }
     })
-    expect(onChange).not.toHaveBeenCalled()
     data.background = '#000000'
     await settle()
-    await vi.waitFor(() => expect(onChange).toHaveBeenCalledOnce())
+    await new Promise(resolve => setTimeout(resolve, 10))
+    expect(onChange).not.toHaveBeenCalled()
   })
 })
