@@ -508,13 +508,9 @@ export default {
             }
             // Mark the trigger's input as readonly so it can't lose focus
             // while the user does other mouse-activities in the popup, except
-            // for its clear button and for the controls in the popup that take
-            // the focus themselves, e.g. the fields of a color picker.
-            if (
-              !lockedInput &&
-              !(isInPopup && takesFocus) &&
-              !target.matches('.dito-button-clear')
-            ) {
+            // for the controls in the popup that take the focus themselves,
+            // e.g. the fields of a color picker.
+            if (!lockedInput && !(isInPopup && takesFocus)) {
               const input = this.getTriggerInput()
               if (input && !input.hasAttribute('readonly')) {
                 input.setAttribute('readonly', 'true')

@@ -1,6 +1,6 @@
 import { vi } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { h } from 'vue'
+import { h, renderSlot } from 'vue'
 import DitoButton from './DitoButton.vue'
 
 function mountButton(props = {}, options = {}) {
@@ -77,6 +77,39 @@ describe('DitoButton', () => {
     expect(button.classes()).toContain('dito-button--add')
     expect(button.attributes('aria-label')).toBeUndefined()
     expect(button.find('.dito-button__text').text()).toBe('Add Chapter')
+  })
+
+  it('names buttons that display slot text by it, not by their verb', () => {
+    const button = mountButton(
+      { verb: 'add' },
+      { slots: { default: () => 'Add Chapter' } }
+    )
+    expect(button.classes()).toContain('dito-button--add')
+    expect(button.attributes('title')).toBeUndefined()
+    expect(button.attributes('aria-label')).toBeUndefined()
+    expect(button.text()).toBe('Add Chapter')
+  })
+
+  it('labels buttons by their verb when their slot shows no text', () => {
+    const icon = mountButton(
+      { verb: 'add' },
+      { slots: { default: () => h('span', { class: 'icon' }) } }
+    )
+    expect(icon.attributes('aria-label')).toBe('Add')
+
+    // Slots forwarded from empty slots render as empty fragments:
+    const Forwarding = {
+      setup:
+        (props, { slots }) =>
+        () =>
+          h(DitoButton, { verb: 'add' }, () => renderSlot(slots, 'default'))
+    }
+    expect(mount(Forwarding).attributes('aria-label')).toBe('Add')
+    expect(
+      mount(Forwarding, {
+        slots: { default: () => 'Add Chapter' }
+      }).attributes('aria-label')
+    ).toBeUndefined()
   })
 
   it('lets `title` and attributes override the verb labels', () => {
