@@ -62,4 +62,31 @@ describe('DitoTabs', () => {
     await settle()
     expect(getSelectedTab(wrapper)).toBe('History')
   })
+
+  it('moves the focus to tabs that render after mounting', async () => {
+    const { wrapper, data, settle } = await mountForm({
+      schema: {
+        tabs: {
+          ...schema.tabs,
+          notes: {
+            ...schema.tabs.notes,
+            if: ({ item }) => item.title === 'Dune'
+          }
+        }
+      },
+      data: { title: 'Emma' }
+    })
+    const getLink = label =>
+      wrapper.findAll('.dito-tabs__link').find(link => link.text() === label)
+    const expectFocused = label =>
+      expect(document.activeElement).toBe(getLink(label).element)
+    expect(getLink('Notes')).toBeUndefined()
+
+    data.title = 'Dune'
+    await settle()
+    await getLink('Details').trigger('keydown', { key: 'ArrowRight' })
+    expectFocused('Notes')
+    await getLink('Notes').trigger('keydown', { key: 'End' })
+    expectFocused('History')
+  })
 })

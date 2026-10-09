@@ -4,7 +4,6 @@
     v-for="(tabSchema, key) in tabs"
     :id="getTabId(key)"
     :key="key"
-    ref="links"
     role="tab"
     :aria-selected="modelValue === key"
     :aria-controls="getTabPanelId(key)"
@@ -57,8 +56,7 @@ export default DitoComponent.component('DitoTabs', {
       }[event.key]
       if (focusIndex !== undefined) {
         event.preventDefault()
-        // Refs of `v-for` elements are in the order of the rendered list:
-        this.$refs.links[focusIndex]?.focus()
+        document.getElementById(this.getTabId(keys[focusIndex]))?.focus()
       }
     }
   }
