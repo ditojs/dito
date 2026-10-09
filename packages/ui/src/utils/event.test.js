@@ -34,6 +34,25 @@ describe('addEvents()', () => {
     parent.dispatchEvent(new Event('click'))
     expect(click).toHaveBeenCalledTimes(2)
   })
+
+  it('removes the event handlers when the signal aborts', () => {
+    const target = document.createElement('div')
+    const click = vi.fn()
+    const controller = new AbortController()
+    addEvents(target, { click }, { signal: controller.signal })
+    target.click()
+    controller.abort()
+    target.click()
+    expect(click).toHaveBeenCalledOnce()
+  })
+
+  it(`doesn't add event handlers when the signal already aborted`, () => {
+    const target = document.createElement('div')
+    const click = vi.fn()
+    addEvents(target, { click }, { signal: AbortSignal.abort() })
+    target.click()
+    expect(click).not.toHaveBeenCalled()
+  })
 })
 
 describe('combineEvents()', () => {
