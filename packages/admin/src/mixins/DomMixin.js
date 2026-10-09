@@ -10,20 +10,32 @@ export default {
   },
 
   unmounted() {
-    for (const { remove } of this.domHandlers) {
+    // Copy the handlers, as `remove()` removes them from `domHandlers`:
+    for (const { remove } of [...this.domHandlers]) {
       remove()
     }
-    this.domHandlers = []
   },
 
   methods: {
+    // Adds the event handlers to `element`, and returns an object with a
+    // `remove()` method that removes them again. Handlers that are still added
+    // when the component is unmounted are removed then.
     domOn(element, type, handler) {
-      const result = addEvents(
+      const events = addEvents(
         element,
         isObject(type) ? type : { [type]: handler }
       )
-      this.domHandlers.push(result)
-      return result
+      const handlers = {
+        remove: () => {
+          events.remove()
+          const index = this.domHandlers.indexOf(handlers)
+          if (index !== -1) {
+            this.domHandlers.splice(index, 1)
+          }
+        }
+      }
+      this.domHandlers.push(handlers)
+      return handlers
     }
   }
 }

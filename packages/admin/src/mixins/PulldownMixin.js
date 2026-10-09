@@ -13,13 +13,10 @@ export default {
         events: {
           mousedown: () => {
             this.setPulldownOpen(false)
-            this.pulldown.handlers.remove()
           },
 
           mouseup: () => {
-            if (this.onPulldownMouseUp()) {
-              this.pulldown.handlers.remove()
-            }
+            this.onPulldownMouseUp()
           }
         },
         handlers: null
@@ -40,15 +37,15 @@ export default {
     onPulldownMouseDown(value = null) {
       if (value === null) {
         this.setPulldownOpen(true)
-        this.checkTime = true
+        this.pulldown.checkTime = true
       } else {
-        this.checkTime = false
+        this.pulldown.checkTime = false
       }
     },
 
     onPulldownMouseUp(value = null) {
-      const { startTime } = this.pulldown
-      if (!this.checkTime || startTime && (Date.now() - startTime > 250)) {
+      const { startTime, checkTime } = this.pulldown
+      if (!checkTime || startTime && (Date.now() - startTime > 250)) {
         this.setPulldownOpen(false)
         if (value !== null) {
           this.onPulldownSelect(value)
@@ -62,11 +59,12 @@ export default {
     },
 
     setPulldownOpen(open) {
-      this.pulldown.open = open
-      this.pulldown.startTime = open ? Date.now() : 0
-      if (open) {
-        this.pulldown.handlers = this.domOn(document, this.pulldown.events)
-      }
+      const { pulldown } = this
+      pulldown.open = open
+      pulldown.startTime = open ? Date.now() : 0
+      // Listen to the document only while the pulldown is open, to close it:
+      pulldown.handlers?.remove()
+      pulldown.handlers = open ? this.domOn(document, pulldown.events) : null
     }
   }
 }
