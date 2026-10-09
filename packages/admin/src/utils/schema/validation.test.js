@@ -145,8 +145,16 @@ describe('getValueValidationErrors()', () => {
     ])
   })
 
-  it('ignores unknown validations', () => {
+  it('ignores unknown validations, warning once per name', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     expect(getValueValidationErrors('a', { unknown: true })).toEqual([])
+    expect(getValueValidationErrors('b', { unknown: true })).toEqual([])
+    expect(getValueValidationErrors('a', { misspelled: true })).toEqual([])
+    expect(warn.mock.calls).toEqual([
+      [`Unknown validator 'unknown' is ignored.`],
+      [`Unknown validator 'misspelled' is ignored.`]
+    ])
+    warn.mockRestore()
   })
 })
 

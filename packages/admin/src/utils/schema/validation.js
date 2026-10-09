@@ -40,8 +40,7 @@ export function getValidations(schema, context) {
 export function getValueValidationErrors(value, validations) {
   const errors = []
   for (const [name, setting] of Object.entries(validations)) {
-    // eslint-disable-next-line import/namespace
-    const validator = validators[name]
+    const validator = getValidator(name)
     if (
       validator &&
       // Only apply 'required' validator to empty values.
@@ -59,6 +58,21 @@ export function getValueValidationErrors(value, validations) {
     }
   }
   return errors
+}
+
+// The names of unknown validators that were warned about, see `getValidator()`:
+const warnedUnknownValidatorNames = new Set()
+
+// Returns the validator of the name, or `null` with a warning, once per name,
+// e.g. for misspelled `schema.rules`.
+function getValidator(name) {
+  // eslint-disable-next-line import/namespace
+  const validator = validators[name] ?? null
+  if (!validator && !warnedUnknownValidatorNames.has(name)) {
+    warnedUnknownValidatorNames.add(name)
+    console.warn(`Unknown validator '${name}' is ignored.`)
+  }
+  return validator
 }
 
 /**
