@@ -503,9 +503,17 @@ describe('DataModel', () => {
         }
       }
     }
-    const { dataModel } = createDataModel(schema, { title: 'Book' })
-    expect(dataModel.hasComputedValueEntry('slug')).toBe(true)
-    expect(dataModel.hasComputedValueEntry('search/query')).toBe(false)
+    const { dataModel, data } = createDataModel(schema, { title: 'Book' })
+    expect(dataModel.hasComputedValueEntry({ data, name: 'slug' })).toBe(true)
+    expect(dataModel.hasComputedValueEntry({ data, name: 'title' })).toBe(
+      false
+    )
+    expect(dataModel.hasComputedValueEntry({ data, name: 'query' })).toBe(
+      false
+    )
+    expect(
+      dataModel.hasComputedValueEntry({ data: {}, name: 'query' })
+    ).toBe(false)
     dataModel.stop()
   })
 
@@ -1245,6 +1253,11 @@ describe('DataModel', () => {
     const getValidOrFirstGenre = ({ value, options }) =>
       options.includes(value) ? value : options[0]
 
+    const countOptionsResolvers = dataModel =>
+      [...dataModel.componentRecords.values()].filter(
+        record => record.optionsResolver
+      ).length
+
     const createShelf = schema =>
       createDataModel(schema, {
         books: [{ title: 'One' }, { title: 'Two' }, { title: 'Three' }]
@@ -1269,30 +1282,21 @@ describe('DataModel', () => {
       dataModel.stop()
     })
 
-    // Bug: The options are recorded by index-based component paths, so the
-    // options of all items that moved are loaded again. To be fixed by keying
-    // the records by data identity, see `DataModel.pruneOptionsRecords()`.
-    test.fails(
-      `doesn't load the options of items that moved again`,
-      async () => {
-        const loadGenres = vi.fn(title => [`${title} genre`])
-        const { dataModel, data } = createShelf(
-          createShelfSchema({ loadGenres, compute: getValidOrFirstGenre })
-        )
-        await dataModel.waitUntilSettled()
-        expect(loadGenres).toHaveBeenCalledTimes(3)
-        data.books.unshift({ title: 'Zero' })
-        await nextTick()
-        await dataModel.waitUntilSettled()
-        expect(loadGenres).toHaveBeenCalledTimes(4)
-        dataModel.stop()
-      }
-    )
+    it(`doesn't load the options of items that moved again`, async () => {
+      const loadGenres = vi.fn(title => [`${title} genre`])
+      const { dataModel, data } = createShelf(
+        createShelfSchema({ loadGenres, compute: getValidOrFirstGenre })
+      )
+      await dataModel.waitUntilSettled()
+      expect(loadGenres).toHaveBeenCalledTimes(3)
+      data.books.unshift({ title: 'Zero' })
+      await nextTick()
+      await dataModel.waitUntilSettled()
+      expect(loadGenres).toHaveBeenCalledTimes(4)
+      dataModel.stop()
+    })
 
-    // Bug: The computed value scopes are recorded by index-based component
-    // paths, so the values of all items that moved are computed again. To be
-    // fixed by keying the records by data identity, like the options.
-    test.fails(`doesn't recompute the values of items that moved`, async () => {
+    it(`doesn't recompute the values of items that moved`, async () => {
       const compute = vi.fn(getValidOrFirstGenre)
       const { dataModel, data } = createShelf(
         createShelfSchema({ loadGenres: title => [title], compute })
@@ -1315,11 +1319,11 @@ describe('DataModel', () => {
         })
       )
       await dataModel.waitUntilSettled()
-      expect(dataModel.optionsRecords.size).toBe(3)
+      expect(countOptionsResolvers(dataModel)).toBe(3)
       data.books.splice(1, 2)
       await nextTick()
       await dataModel.waitUntilSettled()
-      expect(dataModel.optionsRecords.size).toBe(1)
+      expect(countOptionsResolvers(dataModel)).toBe(1)
       dataModel.stop()
     })
   })
@@ -1474,7 +1478,9 @@ describe('DataModel', () => {
         getData: () => data
       })
       expect(data.slug).toBe('hello-world')
-      expect(dataModel.hasComputedValueEntry('slug')).toBe(true)
+      expect(dataModel.hasComputedValueEntry({ data, name: 'slug' })).toBe(
+        true
+      )
       dataModel.stop()
     })
 

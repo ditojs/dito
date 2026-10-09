@@ -74,6 +74,18 @@ export default {
       this.$emit('errors', this.errors)
     },
 
+    // Removes the last occurrence of the error that `addError()` added.
+    removeError(error) {
+      const index = this.errors?.lastIndexOf(error) ?? -1
+      if (index >= 0) {
+        this.errors.splice(index, 1)
+        if (this.errors.length === 0) {
+          this.errors = null
+        }
+        this.$emit('errors', this.errors)
+      }
+    },
+
     showValidationErrors(errors, focus) {
       // Convert from AJV errors objects to an array of error messages
       this.clearErrors()

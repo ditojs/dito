@@ -73,14 +73,12 @@ import {
 // when present. The model needs to be stopped before the component unmounts.
 
 export class DataModel {
-  // The entries of the components with computed values and the scopes of the
-  // watchers that write these values into the data, by component path:
-  computedValueRecords = new Map()
-  // The entries of the components whose options were read and the resolvers
-  // of their options, by component path, see `getOptionsResolver()`. Records
-  // of components that the walk of the data doesn't visit anymore, e.g. of
-  // removed items, are pruned, see `pruneOptionsRecords()`:
-  optionsRecords = new Map()
+  // The records of the components with computed values or options, by their
+  // data and name, so that they're kept when list items move, see
+  // `getComponentRecord()`. Records of components that the walk of the data
+  // doesn't visit anymore, e.g. of removed items or hidden components, are
+  // removed, see `updateComponentRecords()`:
+  componentRecords = new EntryMap()
   // The promises of the loads of data schemas and options that are pending,
   // see `waitUntilSettled()`:
   pendingLoads = new Set()
@@ -115,12 +113,12 @@ export class DataModel {
         modelSetupWatchOptions
       )
       // The entries are read through a computed property, so that the watchers
-      // of the entries can check synchronously whether their entry is still
+      // of the records can check synchronously whether their record is still
       // current, see `createComputedValueScope()`.
       this.dataEntries = computed(() => this.getDataEntries())
       watch(
-        () => this.dataEntries.value.computedValueEntries,
-        entries => this.updateComputedValueRecords(entries),
+        () => this.dataEntries.value.recordedEntries,
+        entries => this.updateComponentRecords(entries),
         modelSetupWatchOptions
       )
       // Values that go missing after the data was set up, e.g. in items that
@@ -128,11 +126,6 @@ export class DataModel {
       watch(
         () => this.dataEntries.value.entriesWithMissingValues,
         entries => this.setDefaultValues(entries),
-        modelSetupWatchOptions
-      )
-      watch(
-        () => this.dataEntries.value.componentPathsWithOptions,
-        componentPaths => this.pruneOptionsRecords(componentPaths),
         modelSetupWatchOptions
       )
       if (getSourceSchema) {
@@ -186,8 +179,7 @@ export class DataModel {
 
   stop() {
     this.rootScope.stop()
-    this.computedValueRecords.clear()
-    this.optionsRecords.clear()
+    this.componentRecords.clear()
     this.pendingLoads.clear()
   }
 
@@ -396,16 +388,15 @@ export class DataModel {
 
   // Walks the data and returns the entries of `processSchemaData()` of the
   // components whose `if` doesn't evaluate to `false`: the ones with computed
-  // values, by component path, the ones whose values are missing, and the
-  // component paths of the ones with options. Called by a computed property,
-  // so that it runs again when the data structure changes, e.g. when list
-  // items are added or removed, values go missing, or `if` conditions change.
+  // values or options, by data and name, see `componentRecords`, and the ones
+  // whose values are missing. Called by a computed property, so that it runs
+  // again when the data structure changes, e.g. when list items are added,
+  // moved or removed, values go missing, or `if` conditions change.
   getDataEntries() {
     const schema = this.getSchema()
     const data = this.getData()
-    const computedValueEntries = new Map()
+    const recordedEntries = new EntryMap()
     const entriesWithMissingValues = []
-    const componentPathsWithOptions = new Set()
     if (data && !isEmptySchema(schema)) {
       processSchemaData(schema, data, {
         dataPath: this.dataPath,
@@ -413,24 +404,17 @@ export class DataModel {
         shouldProcess: entry => this.isEntryShown(entry),
         shouldSkipSourcesWithResource: true,
         before: entry => {
-          if (hasComputedValueSource(entry.schema)) {
-            computedValueEntries.set(entry.componentPath, entry)
+          if (hasComputedValueSource(entry.schema) || entry.schema.options) {
+            recordedEntries.set(entry, entry)
           }
           if (this.shouldSetDefaultValue(entry)) {
             entriesWithMissingValues.push(entry)
-          }
-          if (entry.schema.options) {
-            componentPathsWithOptions.add(entry.componentPath)
           }
         },
         options: { component: this.component, rootData: this.rootData }
       })
     }
-    return {
-      computedValueEntries,
-      entriesWithMissingValues,
-      componentPathsWithOptions
-    }
+    return { recordedEntries, entriesWithMissingValues }
   }
 
   // Returns whether the `if` of the entry's component doesn't evaluate to
@@ -483,68 +467,85 @@ export class DataModel {
     }
   }
 
-  // Keeps the records of the components that are still present with the same
-  // schema and data, creates records with new scopes for new ones, and stops
-  // the scopes of the others.
-  updateComputedValueRecords(entries) {
-    const previousRecords = this.computedValueRecords
-    this.computedValueRecords = new Map()
-    for (const [componentPath, entry] of entries) {
-      let computedValueRecord = previousRecords.get(componentPath)
-      if (
-        computedValueRecord?.entry.schema === entry.schema &&
-        computedValueRecord.entry.data === entry.data
-      ) {
-        previousRecords.delete(componentPath)
-      } else {
-        computedValueRecord = {
-          entry,
-          scope: this.createComputedValueScope(entry)
-        }
+  // Keeps the records of the components that are still present, with their
+  // current entries, e.g. with the data paths of items that moved, creates
+  // records for new ones, and removes the others, stopping their scopes. The
+  // scopes of records whose schema changed are replaced.
+  updateComponentRecords(entries) {
+    const previousRecords = this.componentRecords
+    this.componentRecords = new EntryMap()
+    for (const entry of entries.values()) {
+      const record = previousRecords.get(entry) ?? createComponentRecord(entry)
+      previousRecords.delete(entry)
+      if (record.entry.schema !== entry.schema) {
+        record.computedValueScope?.stop()
+        record.computedValueScope = null
       }
-      this.computedValueRecords.set(componentPath, computedValueRecord)
+      record.entry = entry
+      // Add the record before its scope is created, as its watchers may read
+      // its options right away, see `getOptionsResolver()`.
+      this.componentRecords.set(entry, record)
+      if (hasComputedValueSource(entry.schema)) {
+        record.computedValueScope ??= this.createComputedValueScope(record)
+      }
     }
-    for (const { scope } of previousRecords.values()) {
-      scope.stop()
+    for (const { computedValueScope } of previousRecords.values()) {
+      computedValueScope?.stop()
     }
   }
 
+  // Returns the record of the component of the entry, see `componentRecords`,
+  // and creates it if the walk of the data didn't, e.g. for components that
+  // read their options before it visits them.
+  getComponentRecord(entry) {
+    let record = this.componentRecords.get(entry)
+    if (!record) {
+      record = createComponentRecord(entry)
+      this.componentRecords.set(entry, record)
+    }
+    return record
+  }
+
   // Creates the scope of the watchers that write the computed values of the
-  // entry into the data. Entries stop being current before their scope is
-  // stopped, as watchers that don't belong to components run in the order in
-  // which they're triggered, e.g. when list items are removed or `if`
-  // conditions change. The watchers skip these entries, see `isEntryCurrent()`.
-  createComputedValueScope(entry) {
+  // record's component into the data, with its current entry, so that the
+  // values of items that move aren't computed again. Records stop being
+  // current before their scope is stopped, as watchers that don't belong to
+  // components run in the order in which they're triggered, e.g. when list
+  // items are removed or `if` conditions change. The watchers skip these
+  // records, see `isRecordCurrent()`.
+  createComputedValueScope(record) {
+    const { schema } = record.entry
     const scope = this.rootScope.run(() => effectScope())
     scope.run(() => {
-      const isEntryCurrent = computed(() => this.isEntryCurrent(entry))
-      if (entry.schema.compute) {
+      const isRecordCurrent = computed(() =>
+        this.isRecordCurrent(record, schema)
+      )
+      if (schema.compute) {
         watch(
           // Return a new object each time, so that the value is also written
           // when only the value in the data changed, e.g. through user input.
           () =>
-            isEntryCurrent.value ? this.getComputedValueResult(entry) : null,
+            isRecordCurrent.value
+              ? this.getComputedValueResult(record.entry)
+              : null,
           computedResult => {
             if (computedResult) {
-              this.writeComputedValue(entry, computedResult.value)
+              this.writeComputedValue(record.entry, computedResult.value)
             }
           },
           modelWatchOptions
         )
       }
-      if (hasValueFromDataSchema(entry.schema)) {
-        const dataSchemaResolver = this.createDataSchemaResolver(
-          entry.schema,
-          entry
-        )
+      if (hasValueFromDataSchema(schema)) {
+        const dataSchemaResolver = this.createDataSchemaResolver(schema, record)
         watch(
           () =>
-            isEntryCurrent.value && !dataSchemaResolver.isLoading
+            isRecordCurrent.value && !dataSchemaResolver.isLoading
               ? { value: dataSchemaResolver.value }
               : null,
           resolved => {
             if (resolved) {
-              this.writeComputedValue(entry, resolved.value)
+              this.writeComputedValue(record.entry, resolved.value)
             }
           },
           modelWatchOptions
@@ -554,18 +555,21 @@ export class DataModel {
     return scope
   }
 
-  // Returns whether the model computes the value of the component at the
-  // component path, i.e. whether its walk of the data visits the component.
-  hasComputedValueEntry(componentPath) {
-    return this.dataEntries.value.computedValueEntries.has(componentPath)
+  // Returns whether the model computes the value of the component with the
+  // data and name of the entry, i.e. whether its walk of the data visits the
+  // component.
+  hasComputedValueEntry(entry) {
+    const currentEntry = this.dataEntries.value.recordedEntries.get(entry)
+    return !!currentEntry && hasComputedValueSource(currentEntry.schema)
   }
 
-  // Returns whether the entry is still one of the current entries, with the
-  // same schema and data, see `getDataEntries()`.
-  isEntryCurrent({ componentPath, schema, data }) {
-    const currentEntry =
-      this.dataEntries.value.computedValueEntries.get(componentPath)
-    return currentEntry?.schema === schema && currentEntry.data === data
+  // Returns whether the record's component is still one of the current
+  // entries, with the same schema, see `getDataEntries()`.
+  isRecordCurrent(record, schema) {
+    const currentEntry = this.dataEntries.value.recordedEntries.get(
+      record.entry
+    )
+    return currentEntry?.schema === schema
   }
 
   // Calls `schema.compute()` with the main schema component of the data, like
@@ -614,43 +618,26 @@ export class DataModel {
   }
 
   // Returns the resolver of the options of the component of the entry, shared
-  // by all callers with the same component path, schema and data, so that
-  // computes and the component that displays the options get the same option
-  // objects, and the options only load once.
-  getOptionsResolver(entry) {
-    const { schema, data, componentPath } = entry
-    let optionsRecord = this.optionsRecords.get(componentPath)
-    if (
-      !optionsRecord ||
-      optionsRecord.entry.schema.options !== schema.options ||
-      optionsRecord.entry.data !== data
-    ) {
-      optionsRecord = {
-        entry,
-        resolver: this.createDataSchemaResolver(schema.options, entry)
-      }
-      this.optionsRecords.set(componentPath, optionsRecord)
-    }
-    return optionsRecord.resolver
-  }
-
-  // Forgets the options of the components that the walk of the data doesn't
-  // visit anymore, e.g. of removed items or hidden components, see
-  // `getDataEntries()`. Components that keep displaying them keep their own
+  // by all callers with the same data, name and options, so that computes and
+  // the component that displays the options get the same option objects, and
+  // the options only load once, also when list items move. Components that
+  // keep displaying options of records that were removed keep their own
   // resolvers, see `OptionsMixin`.
-  // TODO: Records are kept by index-based component paths, so the options of
-  // items that move are loaded again. Keep them by data identity instead.
-  pruneOptionsRecords(componentPathsWithOptions) {
-    for (const componentPath of this.optionsRecords.keys()) {
-      if (!componentPathsWithOptions.has(componentPath)) {
-        this.optionsRecords.delete(componentPath)
-      }
+  getOptionsResolver(entry) {
+    const record = this.getComponentRecord(entry)
+    const { options } = entry.schema
+    if (!record.optionsResolver || record.optionsSchema !== options) {
+      record.optionsSchema = options
+      record.optionsResolver = this.createDataSchemaResolver(options, record)
     }
+    return record.optionsResolver
   }
 
-  createDataSchemaResolver(dataSchema, entry) {
+  // Creates the resolver of a data schema of the record's component, with the
+  // context of its current entry.
+  createDataSchemaResolver(dataSchema, record) {
     return new DataSchemaResolver(dataSchema, {
-      createContext: () => this.createEntryContext(entry),
+      createContext: () => this.createEntryContext(record.entry),
       onLoadStart: promise => this.trackPendingLoad(promise)
     })
   }
@@ -911,6 +898,58 @@ const maxComputedValueWrites = 10
 // The milliseconds after which `DataModel.waitUntilSettled()` stops waiting
 // for pending loads, long enough for slow requests.
 const settleTimeout = 30_000
+
+// Creates the record of the component of the entry, see
+// `DataModel.componentRecords`: its current entry, the scope of the watchers
+// that write its computed values, and the resolver of its options, with the
+// options schema that it resolves, once they're read.
+function createComponentRecord(entry) {
+  return {
+    entry,
+    computedValueScope: null,
+    optionsResolver: null,
+    optionsSchema: null
+  }
+}
+
+// Holds values by the data and name of the entries of components, see
+// `DataModel.componentRecords`. The data is compared by its raw object, as it
+// may be passed through reactive proxies.
+class EntryMap {
+  valuesByData = new Map()
+
+  get({ data, name }) {
+    return this.valuesByData.get(toRaw(data))?.get(name)
+  }
+
+  set({ data, name }, value) {
+    const rawData = toRaw(data)
+    let valuesByName = this.valuesByData.get(rawData)
+    if (!valuesByName) {
+      valuesByName = new Map()
+      this.valuesByData.set(rawData, valuesByName)
+    }
+    valuesByName.set(name, value)
+  }
+
+  delete({ data, name }) {
+    const rawData = toRaw(data)
+    const valuesByName = this.valuesByData.get(rawData)
+    if (valuesByName?.delete(name) && valuesByName.size === 0) {
+      this.valuesByData.delete(rawData)
+    }
+  }
+
+  clear() {
+    this.valuesByData.clear()
+  }
+
+  *values() {
+    for (const valuesByName of this.valuesByData.values()) {
+      yield* valuesByName.values()
+    }
+  }
+}
 
 // Returns whether the schema is a source of computed values, through
 // `schema.compute()` or a data schema of the `computed` types.

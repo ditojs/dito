@@ -188,7 +188,10 @@ export default {
     warnAboutUncomputedValue() {
       if (
         this.schema.compute &&
-        !this.dataModel.hasComputedValueEntry(this.componentPath)
+        !this.dataModel.hasComputedValueEntry({
+          data: this.data,
+          name: this.name
+        })
       ) {
         console.warn(
           `The value of the component at '${this.componentPath}' isn't ` +

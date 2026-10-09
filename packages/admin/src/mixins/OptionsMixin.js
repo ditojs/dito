@@ -235,9 +235,14 @@ export default {
       }
     },
 
-    'optionsResolver.lastLoadError'(error) {
+    // The error of the last load replaces the error of the previous one, e.g.
+    // when the options load again after the data is replaced.
+    'optionsResolver.lastLoadError'(error, previousError) {
+      if (previousError) {
+        this.removeError(getLoadErrorMessage(previousError))
+      }
       if (error) {
-        this.addError(error.message || error)
+        this.addError(getLoadErrorMessage(error))
       }
     }
   },
@@ -385,4 +390,8 @@ export default {
     }
     return value
   }
+}
+
+function getLoadErrorMessage(error) {
+  return error.message || error
 }

@@ -218,9 +218,7 @@ describe('DitoTypeSelect', () => {
       expect(getErrors('genre')).toEqual(['Genres are unavailable'])
     })
 
-    // Bug: The error of each load is added to the errors of the previous
-    // loads, as replacing the data loads the options again.
-    test.fails(
+    it(
       'shows the error of options that fail to load only once ' +
       'after the data is replaced',
       async () => {
