@@ -39,7 +39,9 @@ export default defineConfig({
       provider: 'v8',
       include: ['packages/*/src/**/*.{js,ts,vue}'],
       exclude: ['packages/build/**', '**/*.test.*', '**/*.d.ts'],
-      reporter: ['text-summary', 'json-summary', 'html']
+      reporter: ['text-summary', 'json-summary', 'html'],
+      // Fail when the coverage drops noticeably, see `pnpm coverage` in CI:
+      thresholds: { lines: 98, branches: 97 }
     }
   }
 })
