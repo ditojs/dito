@@ -88,6 +88,17 @@ describe('DitoCalendar', () => {
     expect(wrapper.emitted('select')).toHaveLength(1)
   })
 
+  it('selects a day without a time after the value is cleared', async () => {
+    wrapper = mountCalendar()
+    await wrapper.setProps({ modelValue: null })
+    await findCursorCell(wrapper).trigger('click')
+    const [date] = getEmittedDates(wrapper)
+    expect(isSameDay(date, new Date())).toBe(true)
+    expect(date).toEqual(
+      new Date(date.getFullYear(), date.getMonth(), date.getDate())
+    )
+  })
+
   it(`doesn't select disabled dates, also not today's`, async () => {
     const now = new Date()
     wrapper = mountCalendar({

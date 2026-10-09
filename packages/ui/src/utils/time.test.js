@@ -239,6 +239,45 @@ describe('editTimeText()', () => {
     })
   })
 
+  describe('pressing keyboard shortcuts', () => {
+    it('leaves Cmd and Ctrl shortcuts to the browser', () => {
+      for (const modifier of ['metaKey', 'ctrlKey']) {
+        for (const key of ['a', 'v', 'z', '1']) {
+          const input = document.createElement('input')
+          input.value = '10:30:00 AM'
+          input.setSelectionRange(3, 3)
+          const event = new KeyboardEvent('keydown', {
+            key,
+            [modifier]: true,
+            cancelable: true
+          })
+          editTimeText(event, input, input.value.length)
+          expect(event.defaultPrevented).toBe(false)
+          expect(input.value).toBe('10:30:00 AM')
+        }
+      }
+    })
+
+    it('handles characters typed with Option or AltGr as text', () => {
+      // e.g. Option+A on macOS and AltGr+Q on German layouts in Windows:
+      for (const modifiers of [
+        { altKey: true },
+        { altKey: true, ctrlKey: true }
+      ]) {
+        const input = document.createElement('input')
+        input.value = '10:30:00 AM'
+        input.setSelectionRange(3, 3)
+        const event = new KeyboardEvent('keydown', {
+          key: modifiers.ctrlKey ? '@' : 'å',
+          ...modifiers,
+          cancelable: true
+        })
+        editTimeText(event, input, input.value.length)
+        expect(event.defaultPrevented).toBe(true)
+      }
+    })
+  })
+
   describe('pressing Backspace', () => {
     it('replaces the first of two digits with a zero', () => {
       expect(typeKey('10:35:00 AM', 'Backspace', 4)).toMatchObject({

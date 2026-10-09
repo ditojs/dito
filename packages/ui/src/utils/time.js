@@ -53,6 +53,9 @@ function isDigit(char) {
 // removed digits are replaced with zeros, keeping the time's format intact.
 // `formattedLength` is the length of the text of the current value.
 export function editTimeText(event, input, formattedLength) {
+  // Leave keyboard shortcuts alone, e.g. Cmd+A, Ctrl+V or Cmd+Z, but not the
+  // characters typed with Option on macOS or with AltGr (Ctrl+Alt) elsewhere.
+  if (event.metaKey || (event.ctrlKey && !event.altKey)) return
   const start = input.selectionStart
   if (start !== input.selectionEnd) return
   const { value } = input

@@ -142,6 +142,17 @@ import { asArray } from '@ditojs/utils'
 import { alterDate, stepDate } from '../utils/date.js'
 import { getKeyNavigation } from '../utils/event.js'
 
+// Returns the start of the current day, as the date that the calendar shows
+// without a value, so that selecting a day selects it without a time.
+function getStartOfToday() {
+  return alterDate(new Date(), {
+    hour: 0,
+    minute: 0,
+    second: 0,
+    millisecond: 0
+  })
+}
+
 // The most steps that `navigate()` takes past disabled dates, in any date part
 // (day, month or year), before giving up, as a guard against `disabledDate`
 // disabling every date.
@@ -162,11 +173,7 @@ export default {
     return {
       weekdayNames,
       monthNames,
-      currentValue: (
-        this.modelValue ||
-        // If no value is provided, use current date but clear time fields:
-        alterDate(new Date(), { hour: 0, minute: 0, second: 0, millisecond: 0 })
-      ),
+      currentValue: this.modelValue || getStartOfToday(),
       currentMode: this.mode
     }
   },
@@ -245,7 +252,7 @@ export default {
   watch: {
     modelValue(to, from) {
       if (+to !== +from) {
-        this.currentValue = to || new Date()
+        this.currentValue = to || getStartOfToday()
       }
     },
 
