@@ -111,7 +111,7 @@ import { appendDataPath, getRelativeDataPath } from '../utils/data.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
 import { getNamedSchemas, hasFormSchema } from '../utils/schema/lookup.js'
 import { updateOrder } from '../utils/schema/data.js'
-import { stripHtml } from '@ditojs/utils'
+import { getTextFromHtml } from '../utils/html.js'
 
 // @vue/component
 export default DitoComponent.component('DitoTreeItem', {
@@ -241,7 +241,7 @@ export default DitoComponent.component('DitoTreeItem', {
     },
 
     ariaLabel() {
-      return this.label ? stripHtml(this.label) : null
+      return this.label ? getTextFromHtml(this.label) : null
     },
 
     details() {
@@ -320,9 +320,9 @@ export default DitoComponent.component('DitoTreeItem', {
         index,
         extended: true
       })
-      if (
-        window.confirm(`Do you really want to ${this.verbs.delete} ${label}?`)
-      ) {
+      // The label is HTML, see `getItemLabel()`, but the dialog shows text:
+      const message = `Do you really want to ${this.verbs.delete} ${label}?`
+      if (window.confirm(getTextFromHtml(message))) {
         if (this.isEditingChildFrom(index)) {
           this.$router.push({
             path: container.path,
@@ -334,7 +334,7 @@ export default DitoComponent.component('DitoTreeItem', {
         this.notify({
           type: 'info',
           title: 'Successfully Removed',
-          text: [`${label} was ${this.verbs.deleted}.`, container.transientNote]
+          html: [`${label} was ${this.verbs.deleted}.`, container.transientNote]
         })
       }
     },

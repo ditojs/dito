@@ -3,7 +3,13 @@ import { isListSource } from '../utils/schema/structure.js'
 import { getItemFormSchema } from '../utils/schema/lookup.js'
 import { getItemId, getItemUid } from '../utils/schema/data.js'
 import { appendDataPath } from '../utils/data.js'
-import { isObject, isString, isNumber, isFunction } from '@ditojs/utils'
+import {
+  isObject,
+  isString,
+  isNumber,
+  isFunction,
+  escapeHtml
+} from '@ditojs/utils'
 
 // @vue/component
 export default {
@@ -49,6 +55,9 @@ export default {
       return index !== -1 ? index : null
     },
 
+    // Returns the label of `item` as HTML: Values of the item are escaped,
+    // while labels that the schema provides, e.g. through `itemLabel()`, can
+    // contain HTML, so they need to escape the values that they include.
     getItemLabel(sourceSchema, item, {
       index = null,
       extended = false,
@@ -113,8 +122,13 @@ export default {
         )
         const value = item[key]
         // Only primitives display as a label. If the property holds an array
-        // or object, fall through to the auto-generated label.
-        text = isString(value) || isNumber(value) ? value : null
+        // or object, fall through to the auto-generated label. Strings are
+        // escaped, as the label is rendered as HTML.
+        text = isString(value)
+          ? escapeHtml(value)
+          : isNumber(value)
+            ? value
+            : null
       }
       const hadLabel = !!text
       // If no label was found so far, try to produce one from the index.
