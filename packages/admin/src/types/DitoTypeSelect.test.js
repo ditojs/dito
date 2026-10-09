@@ -170,33 +170,42 @@ describe('DitoTypeSelect', () => {
       expect(loadCities).toHaveBeenCalledTimes(2)
     })
 
-    // Bug: Plain value options match any value, as `getOptionForValue()`
-    // returns the value itself without `optionValue`, so values whose option
-    // disappeared aren't replaced with `null`, unlike with option objects.
-    test.fails(
-      'replaces values whose plain value option disappeared with ' +
-      '`null`',
-      async () => {
-        const { findField, data, settle } = await mountSchema({
-          schema: {
-            components: {
-              country: { type: 'select', options: ['ch', 'fr'] },
-              city: {
-                type: 'select',
-                options: {
-                  data: ({ item }) =>
-                    item.country === 'ch' ? ['Basel'] : ['Lyon']
-                }
+    it('keeps plain values whose option disappeared and shows them as unavailable', async () => {
+      const { findField, data, settle } = await mountSchema({
+        schema: {
+          components: {
+            country: { type: 'select', options: ['ch', 'fr'] },
+            city: {
+              type: 'select',
+              options: {
+                data: ({ item }) =>
+                  item.country === 'ch' ? ['Basel'] : ['Lyon']
               }
             }
-          },
-          data: { country: 'ch', city: 'Basel' }
-        })
-        await findField('country').find('select').setValue('fr')
-        await settle()
-        expect(data.city).toBe(null)
-      }
-    )
+          }
+        },
+        data: { country: 'ch', city: 'Basel' }
+      })
+      const getCityOptions = () =>
+        findField('city')
+          .findAll('option')
+          .map(option => [option.text(), option.element.disabled])
+      expect(getCityOptions()).toEqual([['Basel', false]])
+      await findField('country').find('select').setValue('fr')
+      await settle()
+      // The value is kept, not cleared without the user noticing:
+      expect(data.city).toBe('Basel')
+      expect(getCityOptions()).toEqual([
+        ['Basel (unavailable)', true],
+        ['Lyon', false]
+      ])
+      // happy-dom reports `value` wrongly for disabled options, but selects
+      // the right one:
+      const select = findField('city').find('select').element
+      expect(select.options[select.selectedIndex].text).toBe(
+        'Basel (unavailable)'
+      )
+    })
 
     it('shows the errors of options that fail to load', async () => {
       vi.spyOn(console, 'error').mockImplementation(() => {})

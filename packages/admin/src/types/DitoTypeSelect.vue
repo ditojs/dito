@@ -18,6 +18,13 @@
       template(
         v-if="populate"
       )
+        //- Plain values whose option disappeared are kept and shown as
+        //- unavailable, rather than cleared without the user noticing:
+        option(
+          v-if="shouldShowUnavailableValue"
+          :value="selectedValue"
+          disabled
+        ) {{ selectedValue }} (unavailable)
         template(
           v-for="option in options"
         )
@@ -80,6 +87,25 @@ export default DitoTypeComponent.register('select', {
   computed: {
     inputAffixesProps() {
       return getInputAffixesProps(this)
+    },
+
+    // The values of all loaded options, including the ones in groups.
+    optionValues() {
+      const options = this.groupBy
+        ? this.options.flatMap(group => group[this.groupByOptions])
+        : this.options
+      return options.map(option => this.getValueForOption(option))
+    },
+
+    // Whether the value is set but none of the loaded options has it. Values
+    // of option objects are replaced with `null` when their option disappears,
+    // see `OptionsMixin`, but plain values match any value, so they stay.
+    shouldShowUnavailableValue() {
+      return (
+        this.selectedValue != null &&
+        this.hasOptions &&
+        !this.optionValues.includes(this.selectedValue)
+      )
     }
   }
 })
