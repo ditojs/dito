@@ -3,7 +3,6 @@
   v-if="clipboard"
 )
   button.dito-button.dito-button--copy(
-    ref="copyData"
     type="button"
     title="Copy Data"
     :disabled="!copyEnabled"
@@ -18,7 +17,7 @@
 </template>
 
 <script>
-import { isObject, clone, deindent } from '@ditojs/utils'
+import { isObject, clone } from '@ditojs/utils'
 import DitoComponent from '../DitoComponent.js'
 import DomMixin from '../mixins/DomMixin.js'
 import DitoContext from '../DitoContext.js'
@@ -95,14 +94,15 @@ export default DitoComponent.component('DitoClipboard', {
         if (json) {
           clipboardData = JSON.parse(json)
         }
-      } catch (err) {
+      } catch (error) {
         if (report) {
-          console.error(err, err.name, err.message)
-          if (err.name === 'SyntaxError') {
-            alert(deindent`
-              The data in the clipboard appears to be malformed:
-              ${err.message}
-            `)
+          if (error.name === 'SyntaxError') {
+            this.notifyClipboardError(error, [
+              'The data in the clipboard appears to be malformed:',
+              error.message
+            ])
+          } else {
+            console.error(error, error.name, error.message)
           }
         }
       }
@@ -142,8 +142,7 @@ export default DitoComponent.component('DitoClipboard', {
           console.error(err, err.name, err.message)
         }
       } catch (error) {
-        console.error(error)
-        alert(error.message)
+        this.notifyClipboardError(error)
       }
     },
 
@@ -155,9 +154,13 @@ export default DitoComponent.component('DitoClipboard', {
           this.parentComponent.clipboardData = data
         }
       } catch (error) {
-        console.error(error)
-        alert(error.message)
+        this.notifyClipboardError(error)
       }
+    },
+
+    notifyClipboardError(error, text = error.message) {
+      // Notifications log their error too.
+      this.notify({ type: 'error', error, title: 'Clipboard Error', text })
     }
   }
 })
