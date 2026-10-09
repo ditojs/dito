@@ -12,6 +12,7 @@ import {
 } from './setup.js'
 
 const hookCalls: string[] = []
+const foundBeforeDelete: unknown[] = []
 
 class Member extends Model {
   declare id: number
@@ -52,6 +53,9 @@ class Member extends Model {
           }
         }
       }
+    },
+    async 'before:delete'({ asFindQuery }: any) {
+      foundBeforeDelete.push(await asFindQuery())
     },
     'after:insert'(this: typeof Member) {
       hookCalls.push(`${this.name} inserted`)
@@ -97,6 +101,7 @@ describe('Model persistence', () => {
 
   afterEach(async () => {
     hookCalls.length = 0
+    foundBeforeDelete.length = 0
     await app.knex('Member').del()
     await app.knex('Team').del()
   })
@@ -124,6 +129,28 @@ describe('Model persistence', () => {
     it('runs after hooks with the model class as this', async () => {
       await Member.query().insert({ name: 'Ada' } as any)
       expect(hookCalls).toEqual(['Member inserted'])
+    })
+
+    it('finds the affected models with asFindQuery()', async () => {
+      const member = await Member.query().insertAndFetch({
+        name: 'Ada'
+      } as any)
+      // The `runAfter()` callbacks of the delete query apply to its result,
+      // not to the models found by `asFindQuery()`, see objection#2093:
+      const result = await Member.query()
+        .deleteById(member.id)
+        .runAfter(result => `deleted ${result}`)
+      expect(result).toBe('deleted 1')
+      expect(foundBeforeDelete).toHaveLength(1)
+      const [found] = foundBeforeDelete as Member[][]
+      expect(found).toHaveLength(1)
+      expect(found[0]).toBeInstanceOf(Member)
+      expect(found[0].name).toBe('Ada')
+    })
+
+    it('finds no models with asFindQuery() for empty first() queries', async () => {
+      await Member.query().findById(999).delete()
+      expect(foundBeforeDelete).toEqual([[]])
     })
 
     it('returns results replaced by after:find hooks', async () => {

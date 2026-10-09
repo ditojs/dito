@@ -87,8 +87,11 @@ export class QueryBuilder extends objection.QueryBuilder {
 
   // @override
   toFindQuery() {
-    // Temporary workaround to fix this issue until it is resolved in Objection:
-    // https://github.com/Vincit/objection.js/issues/2093
+    // Objection's `asFindQuery()` in static hooks clears the `runAfter()`
+    // callbacks of the original query itself now (objection#2093), but its
+    // `toFindQuery()` keeps them. Dito's `toFindQuery()` has always cleared
+    // them, so keep doing so in 3.x.
+    // TODO: Remove in 4.0, leaving `toFindQuery()` to Objection.
     return super.toFindQuery().clear('runAfter')
   }
 
@@ -525,14 +528,6 @@ export class QueryBuilder extends objection.QueryBuilder {
   deleteById(id) {
     this.context({ byId: id })
     return super.deleteById(id)
-  }
-
-  patchById(id, data) {
-    return this.findById(id).patch(data)
-  }
-
-  updateById(id, data) {
-    return this.findById(id).update(data)
   }
 
   // Extend Objection's `patchAndFetch()` and `updateAndFetch()` to also support

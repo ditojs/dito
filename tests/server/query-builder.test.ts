@@ -872,6 +872,28 @@ describe('QueryBuilder', () => {
       expect(updated!.name).toBe('Apple tart')
     })
 
+    it('reports the id when patching or updating by id finds nothing', async () => {
+      // Objection's `patchById()` / `updateById()` go through dito's
+      // `findById()`, which remembers the id for the not found error:
+      await expect(
+        Recipe.query().patchById(999, { servings: 2 }).throwIfNotFound()
+      ).rejects.toThrow(`'Recipe' model with id 999 not found`)
+      await expect(
+        Recipe.query().updateById(999, { name: 'Apple tart' }).throwIfNotFound()
+      ).rejects.toThrow(`'Recipe' model with id 999 not found`)
+    })
+
+    it('rejects undefined ids when patching or updating by id', async () => {
+      await Recipe.query().insert({ name: 'Apple pie' })
+      await expect(
+        Recipe.query().patchById(undefined as any, { servings: 2 })
+      ).rejects.toThrow('undefined was passed to patchById')
+      await expect(
+        Recipe.query().updateById(undefined as any, { name: 'Apple tart' })
+      ).rejects.toThrow('undefined was passed to updateById')
+      expect((await Recipe.query().first())!.servings).toBeNull()
+    })
+
     it('patches and updates by id and fetches the result', async () => {
       const recipe = await Recipe.query().insert({ name: 'Apple pie' })
       const patched = await Recipe.query().patchAndFetchById(recipe.id, {
