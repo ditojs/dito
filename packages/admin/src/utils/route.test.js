@@ -1,4 +1,4 @@
-import { formatQuery, replaceRoute } from './route.js'
+import { formatQuery, replaceRoute, isPathWithin } from './route.js'
 
 describe('formatQuery()', () => {
   it('formats objects and entries', () => {
@@ -67,8 +67,33 @@ describe('replaceRoute()', () => {
     expect(location.href).toBe('http://localhost/authors?page=2#top')
   })
 
+  it(`doesn't leave a trailing \`?\` with an empty query`, () => {
+    replaceRoute({ query: {} })
+    expect(location.href).toBe('http://localhost/books#list')
+  })
+
   it('preserves the history state', () => {
     replaceRoute({ query: { page: 4 } })
     expect(history.state).toEqual({ position: 1 })
+  })
+})
+
+describe('isPathWithin()', () => {
+  it('matches the path itself and its sub-paths', () => {
+    expect(isPathWithin('/books', '/books')).toBe(true)
+    expect(isPathWithin('/books/1', '/books')).toBe(true)
+    expect(isPathWithin('/books/1/chapters/2', '/books/1')).toBe(true)
+  })
+
+  it('compares whole path segments', () => {
+    expect(isPathWithin('/books/12', '/books/1')).toBe(false)
+    expect(isPathWithin('/books-archive', '/books')).toBe(false)
+    expect(isPathWithin('/books', '/books/1')).toBe(false)
+  })
+
+  it('handles base paths with trailing slashes', () => {
+    expect(isPathWithin('/books', '/')).toBe(true)
+    expect(isPathWithin('/books/1', '/books/')).toBe(true)
+    expect(isPathWithin('/books', '')).toBe(true)
   })
 })

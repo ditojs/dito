@@ -24,6 +24,7 @@ ul.dito-menu(
 
 <script>
 import DitoComponent from '../DitoComponent.js'
+import { isPathWithin } from '../utils/route.js'
 
 // @vue/component
 export default DitoComponent.component('DitoMenu', {
@@ -73,8 +74,9 @@ export default DitoComponent.component('DitoMenu', {
     },
 
     isActiveItem(item) {
+      const path = this.getItemPath(item, false)
       return (
-        this.$route.path.startsWith(this.getItemPath(item, false)) ||
+        (!!path && isPathWithin(this.$route.path, path)) ||
         item.items && Object.values(item.items).some(this.isActiveItem)
       )
     },

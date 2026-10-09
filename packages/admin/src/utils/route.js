@@ -37,6 +37,7 @@ export function replaceRoute({ path, query, hash }) {
   // Preserve `history.state`, see:
   // https://router.vuejs.org/guide/migration/#usage-of-history-state
   const { location } = window
+  const search = query ? formatQuery(query) : location.search.slice(1)
   history.replaceState(
     history.state,
     null,
@@ -44,10 +45,18 @@ export function replaceRoute({ path, query, hash }) {
       location.origin
     }${
       path ?? location.pathname
-    }?${
-      query ? formatQuery(query) : location.search.slice(1)
+    }${
+      search ? `?${search}` : ''
     }${
       hash ?? location.hash
     }`
   )
+}
+
+// Returns true if `path` is `basePath` or one of its sub-paths, comparing
+// whole path segments, so that `/items/12` and `/items-archive` aren't within
+// `/items/1` and `/items`.
+export function isPathWithin(path, basePath) {
+  const prefix = basePath.endsWith('/') ? basePath : `${basePath}/`
+  return path === basePath || path.startsWith(prefix)
 }
