@@ -31,8 +31,10 @@ describe('deprecate()', () => {
   })
 
   it('should remember logged messages across calls', () => {
-    // Already logged by the previous test, so it stays silent.
-    deprecate('Second deprecation.')
+    deprecate('Remembered deprecation.')
+    expect(warn).toHaveBeenCalledOnce()
+    warn.mockClear()
+    deprecate('Remembered deprecation.')
     expect(warn).not.toHaveBeenCalled()
   })
 })
