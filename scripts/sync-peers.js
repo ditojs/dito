@@ -1,6 +1,17 @@
 // Keeps the `peerDependencies` of the listed packages in sync with their
 // mirrored `devDependencies`, so `pnpm update` also moves the peer ranges.
 // Use `--check` to only report out-of-sync ranges and exit with an error.
+//
+// Which packages are peers: the listed packages aren't run from their own
+// folders, the app's bundler builds them, from `src` in development and from
+// `dist`, whose imports stay external. Every package that their code imports
+// at runtime therefore has to resolve from the app, also with pnpm's isolated
+// linker, so it is declared as a peer, and mirrored in `devDependencies` for
+// building and testing here. Packages that are only imported by the type
+// definitions in `types/`, e.g. `type-fest`, are regular `dependencies`:
+// TypeScript resolves them from the package itself, and bundlers never see
+// them. Packages that run in Node, e.g. `@ditojs/server`, use regular
+// `dependencies` throughout.
 
 import fs from 'node:fs'
 import path from 'node:path'

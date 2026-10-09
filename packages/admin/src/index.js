@@ -1,1 +1,4 @@
-export { default } from './DitoAdmin.js'
+import DitoAdmin from './DitoAdmin.js'
+
+export { DitoAdmin }
+export default DitoAdmin

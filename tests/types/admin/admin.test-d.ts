@@ -1,5 +1,6 @@
-import { assertType, describe, it } from 'vitest'
+import { assertType, describe, expectTypeOf, it } from 'vitest'
 import type { default as DitoAdmin, View } from '@ditojs/admin'
+import { DitoAdmin as NamedDitoAdmin } from '@ditojs/admin'
 import type { Entry } from './fixtures.ts'
 
 describe('DitoAdmin', () => {
@@ -23,5 +24,9 @@ describe('DitoAdmin', () => {
         }
       }
     ])
+  })
+
+  it('is also exported by name', () => {
+    expectTypeOf(NamedDitoAdmin).toEqualTypeOf<typeof DitoAdmin>()
   })
 })

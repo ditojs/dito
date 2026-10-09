@@ -328,10 +328,16 @@ importers:
       '@ditojs/utils':
         specifier: workspace:^
         version: link:../utils
+      type-fest:
+        specifier: ^5.10.0
+        version: 5.10.0
     devDependencies:
       '@ditojs/build':
         specifier: workspace:^
         version: link:../build
+      '@floating-ui/dom':
+        specifier: ^1.8.0
+        version: 1.8.0
       '@kyvg/vue3-notification':
         specifier: ^3.4.2
         version: 3.4.2(vue@3.5.43(typescript@6.0.3))
@@ -398,9 +404,6 @@ importers:
       '@tiptap/extension-text':
         specifier: ^3.31.4
         version: 3.31.4(@tiptap/core@3.31.4(@tiptap/pm@3.31.4))
-      '@tiptap/extension-text-style':
-        specifier: ^3.31.4
-        version: 3.31.4(@tiptap/core@3.31.4(@tiptap/pm@3.31.4))
       '@tiptap/extension-underline':
         specifier: ^3.31.4
         version: 3.31.4(@tiptap/core@3.31.4(@tiptap/pm@3.31.4))
@@ -434,9 +437,6 @@ importers:
       tiptap-footnotes:
         specifier: ^3.0.1
         version: 3.0.1(@tiptap/core@3.31.4(@tiptap/pm@3.31.4))(@tiptap/extension-list-item@3.31.4(@tiptap/extension-list@3.31.4(@tiptap/core@3.31.4(@tiptap/pm@3.31.4))(@tiptap/pm@3.31.4)))(@tiptap/extension-ordered-list@3.31.4(@tiptap/extension-list@3.31.4(@tiptap/core@3.31.4(@tiptap/pm@3.31.4))(@tiptap/pm@3.31.4)))(@tiptap/pm@3.31.4)
-      type-fest:
-        specifier: ^5.10.0
-        version: 5.10.0
       typescript:
         specifier: ^6.0.3
         version: 6.0.3
@@ -691,6 +691,9 @@ importers:
       vite:
         specifier: ^8.3.2
         version: 8.3.2(@types/node@26.6.4)(sass@1.105.1)(yaml@2.9.1)
+      vue:
+        specifier: ^3.5.43
+        version: 3.5.43(typescript@6.0.3)
 
   packages/utils:
     devDependencies:
@@ -1830,11 +1833,6 @@ packages:
     peerDependencies:
       '@tiptap/core': 3.31.4
       '@tiptap/pm': 3.31.4
-
-  '@tiptap/extension-text-style@3.31.4':
-    resolution: {integrity: sha512-djeemliEWmqs3cJrUyMG+17HbjHyf6D/0NkIHl/RkVHYOCX1AYMZ7r+XLefApSNBCAx/aFh1hJzaMlnGbnTaAw==}
-    peerDependencies:
-      '@tiptap/core': 3.31.4
 
   '@tiptap/extension-text@3.31.4':
     resolution: {integrity: sha512-WL2ZRpFksgQcXJN05/UQH09YCH9LlhdLrSEcviASvEH/aAfsKiJlDrouN8PET+YAWK/F5xFc5/Q1z0xj+I23jw==}
@@ -7311,10 +7309,6 @@ snapshots:
     dependencies:
       '@tiptap/core': 3.31.4(@tiptap/pm@3.31.4)
       '@tiptap/pm': 3.31.4
-
-  '@tiptap/extension-text-style@3.31.4(@tiptap/core@3.31.4(@tiptap/pm@3.31.4))':
-    dependencies:
-      '@tiptap/core': 3.31.4(@tiptap/pm@3.31.4)
 
   '@tiptap/extension-text@3.31.4(@tiptap/core@3.31.4(@tiptap/pm@3.31.4))':
     dependencies:
