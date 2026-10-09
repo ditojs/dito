@@ -1,6 +1,10 @@
 import { vi } from 'vitest'
 import { ref } from 'vue'
-import { createFiltersPanel, filterComponents } from './filter.js'
+import {
+  createFiltersPanel,
+  filterComponents,
+  getFiltersDataErrors
+} from './filter.js'
 
 // The filters of a list of books, covering the built-in filter types as well
 // as custom filters with their own components:
@@ -394,5 +398,39 @@ describe('createFiltersPanel()', () => {
       expect(schemaComponent.clearFilters).toHaveBeenCalledOnce()
       expect(schemaComponent.applyFilters).toHaveBeenCalledOnce()
     })
+  })
+})
+
+describe('getFiltersDataErrors()', () => {
+  it('keys the errors of filters by their data names', () => {
+    const titleErrors = [{ message: 'must be longer' }]
+    const yearErrors = [{ message: 'must be a number' }]
+    expect(
+      getFiltersDataErrors({
+        'title/text': titleErrors,
+        'year.from': yearErrors
+      })
+    ).toEqual({
+      '$title/text': titleErrors,
+      '$year/from': yearErrors
+    })
+  })
+
+  it('keeps paths that already start with a data name', () => {
+    const errors = [{ message: 'must be shorter' }]
+    expect(getFiltersDataErrors({ '$title.text': errors })).toEqual({
+      '$title/text': errors
+    })
+  })
+
+  it('merges the errors of paths that map to the same data path', () => {
+    const first = { message: 'must be longer' }
+    const second = { message: 'must be shorter' }
+    expect(
+      getFiltersDataErrors({
+        'title/text': [first],
+        '$title.text': [second]
+      })
+    ).toEqual({ '$title/text': [first, second] })
   })
 })

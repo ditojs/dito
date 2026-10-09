@@ -1,4 +1,11 @@
-import { isArray, isString, asArray, labelize } from '@ditojs/utils'
+import {
+  isArray,
+  isString,
+  asArray,
+  labelize,
+  normalizeDataPath,
+  parseDataPath
+} from '@ditojs/utils'
 import { getNamedSchemas } from './schema/lookup.js'
 import { applyNestedSchemaDefaults } from './schema/setup.js'
 
@@ -155,6 +162,27 @@ function createFiltersButtons(small) {
 function getDataName(filterName) {
   // Prefix filter data keys with '$' to avoid conflicts with other data keys:
   return `$${filterName}`
+}
+
+// The server keys the validation errors of filters by filter name, e.g.
+// `title/text`, see the server's `models/definitions/filters.js`, while the
+// filters panel keys the filter data by data name, e.g. `$title`. Returns the
+// errors keyed by the data paths of the panel. Paths that already start with a
+// data name, and empty paths, are kept.
+export function getFiltersDataErrors(errors) {
+  const dataErrors = {}
+  for (const [dataPath, errs] of Object.entries(errors)) {
+    const [token, ...rest] = parseDataPath(normalizeDataPath(dataPath))
+    const filtersDataPath = [
+      !token || token.startsWith('$') ? token : getDataName(token),
+      ...rest
+    ].join('/')
+    dataErrors[filtersDataPath] = [
+      ...(dataErrors[filtersDataPath] ?? []),
+      ...errs
+    ]
+  }
+  return dataErrors
 }
 
 function getFilterName(dataName) {

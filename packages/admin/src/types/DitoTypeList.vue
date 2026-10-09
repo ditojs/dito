@@ -141,7 +141,7 @@ import {
   resolveSchemaComponents
 } from '../utils/schema/setup.js'
 import { getViewEditPath } from '../utils/schema/lookup.js'
-import { createFiltersPanel } from '../utils/filter.js'
+import { createFiltersPanel, getFiltersDataErrors } from '../utils/filter.js'
 import { appendDataPath } from '../utils/data.js'
 import { getListWithMovedItem } from '../utils/list.js'
 import { hyphenate } from '@ditojs/utils'
@@ -270,7 +270,7 @@ export default DitoTypeComponent.register('list', {
       const filtersDataPath = appendDataPath(this.dataPath, '$filters')
       const panel = this.schemaComponent.getPanelByDataPath(filtersDataPath)
       if (panel) {
-        panel.showValidationErrors(errors, true)
+        panel.showValidationErrors(getFiltersDataErrors(errors), true)
         return true
       }
     }
