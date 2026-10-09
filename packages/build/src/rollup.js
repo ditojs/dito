@@ -37,6 +37,25 @@ export function getRollupExternalsFromDependencies({
   return externals
 }
 
+// Dito.js packages expose their sources through a `/src` export, so that other
+// Dito.js packages can bundle them, e.g. `@ditojs/ui/src` in `@ditojs/admin`:
+const bundledSourcesRegexp = /^@ditojs\/[^/]+\/src(\/|$)/
+
+export function getPackageName(id) {
+  // Relative and absolute paths and virtual modules aren't packages:
+  if (/^[./\0]/.test(id) || /^[a-z]+:/i.test(id)) return null
+  const parts = id.split('/')
+  return id.startsWith('@') ? parts.slice(0, 2).join('/') : parts[0]
+}
+
+export function isRollupExternal(id, externals) {
+  if (externals[id]) return true
+  if (bundledSourcesRegexp.test(id)) return false
+  // Subpaths of external packages are external too, e.g. `@tiptap/pm/model`:
+  const packageName = getPackageName(id)
+  return !!packageName && packageName !== id && !!externals[packageName]
+}
+
 export function matchModuleIdentifier(id, pattern) {
   const regexp = new RegExp(`^${escapeRegexp(pattern).replace('\\*', '(.*)')}$`)
   const match = id.match(regexp)

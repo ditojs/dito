@@ -1,7 +1,10 @@
 import { defineConfig as viteDefineConfig } from 'vite'
 import createVuePlugin from '@vitejs/plugin-vue'
 import { getPostCssConfig } from './postcss.js'
-import { getRollupExternalsFromDependencies } from './rollup.js'
+import {
+  getRollupExternalsFromDependencies,
+  isRollupExternal
+} from './rollup.js'
 
 export function defineViteConfig({
   defineConfig = viteDefineConfig,
@@ -46,10 +49,15 @@ export function defineViteConfig({
             cssFileName: name
           },
           rollupOptions: {
-            external: id => !!externals[id],
+            external: id => isRollupExternal(id, externals),
             output: {
+              // Entries with both named and default exports, e.g. admin's
+              // `DitoAdmin`, expose them all on the UMD object, with the
+              // default export as `.default`:
+              exports: 'named',
               manualChunks: undefined,
-              globals: externals
+              // Use the module identifiers as UMD globals, including subpaths:
+              globals: id => id
             }
           }
         }
