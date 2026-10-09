@@ -12,6 +12,7 @@ nav.dito-pagination(aria-label="Pagination")
   )
     button.dito-button(
       v-for="button in buttons"
+      type="button"
       :class="getButtonClasses(button)"
       :disabled="button.disabled"
       :aria-label="getButtonLabel(button)"
