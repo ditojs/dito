@@ -139,7 +139,7 @@
 
 <script>
 import { asArray } from '@ditojs/utils'
-import { describeDate, alterDate } from '../utils/date.js'
+import { alterDate, stepDate } from '../utils/date.js'
 import { getKeyNavigation } from '../utils/event.js'
 
 // The most dates that `navigate()` skips while looking for one that isn't
@@ -310,9 +310,7 @@ export default {
     },
 
     stepDecade(step) {
-      this.setDate({
-        year: this.currentValue.getFullYear() + step * 10
-      })
+      this.currentValue = stepDate(this.currentValue, 'year', step * 10)
     },
 
     setMode(mode) {
@@ -321,25 +319,11 @@ export default {
     },
 
     stepMonth(step) {
-      const { currentValue } = this
-      const { year, month } = this.getYearMonth(
-        currentValue.getFullYear(),
-        currentValue.getMonth() + step
-      )
-      this.setDate({
-        year,
-        month,
-        day: Math.min(
-          this.getDaysInMonth(year, month),
-          this.currentValue.getDate()
-        )
-      })
+      this.currentValue = stepDate(this.currentValue, 'month', step)
     },
 
     stepYear(step) {
-      this.setDate({
-        year: this.currentValue.getFullYear() + step
-      })
+      this.currentValue = stepDate(this.currentValue, 'year', step)
     },
 
     selectDate(date) {
@@ -371,17 +355,6 @@ export default {
       this.setDate({ year }, true)
     },
 
-    getYearMonth(year, month) {
-      if (month > 11) {
-        year++
-        month = 0
-      } else if (month < 0) {
-        year--
-        month = 11
-      }
-      return { year, month }
-    },
-
     dateToString(
       date,
       { year, month, day } = { year: true, month: true, day: true }
@@ -396,10 +369,6 @@ export default {
     decadeToString(date) {
       const year = this.getFirstYearOfDecade(date.getFullYear())
       return `${year} – ${year + 9}`
-    },
-
-    getDaysInMonth(year, month) {
-      return new Date(year, month + 1, 0).getDate()
     },
 
     getFirstYearOfDecade(year) {
@@ -418,7 +387,7 @@ export default {
         let date = this.currentValue
         let skippedCount = 0
         do {
-          date = alterDate(date, { [mode]: describeDate(date)[mode] + step })
+          date = stepDate(date, mode, step)
         } while (
           update &&
           this.disabledDate(date) &&
@@ -484,12 +453,8 @@ export default {
       } else if (key === 'Home') {
         this.setDate({ day: 1 })
       } else if (key === 'End') {
-        this.setDate({
-          day: this.getDaysInMonth(
-            currentValue.getFullYear(),
-            currentValue.getMonth()
-          )
-        })
+        // Day 0 of the next month is the last day of the current one.
+        this.setDate({ month: currentValue.getMonth() + 1, day: 0 })
       } else {
         return
       }

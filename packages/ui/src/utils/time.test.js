@@ -234,9 +234,7 @@ describe('editTimeText()', () => {
       ).toMatchObject({ value: '10:30:00 AM', prevented: false })
     })
 
-    // Bug: `isDigit()` uses `Number(char)`, which treats a space as the digit
-    // 0, so a typed space overwrites the following digit.
-    it.fails('does not treat a typed space as a digit', () => {
+    it('does not treat a typed space as a digit', () => {
       expect(typeKey('10:30:00 AM', ' ', 3).value).toBe('10:30:00 AM')
     })
   })

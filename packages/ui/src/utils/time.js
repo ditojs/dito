@@ -45,7 +45,7 @@ export function isTimeDisabled(
 }
 
 function isDigit(char) {
-  return !isNaN(Number(char))
+  return /^\d$/.test(char)
 }
 
 // Edits the time in `input` as the key of the keydown `event` is typed, so

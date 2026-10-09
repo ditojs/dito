@@ -14,6 +14,24 @@ export function alterDate(date, overrides = {}) {
   return new Date(...Object.values({ ...describeDate(date), ...overrides }))
 }
 
+// Returns `date` with its part `partName`, e.g. 'month', stepped by `step`.
+// Stepping the year or the month clamps the day to the length of the new
+// month, so that e.g. January 31 plus a month is February 29, not March 2.
+export function stepDate(date, partName, step) {
+  const parts = describeDate(date)
+  parts[partName] += step
+  if (partName === 'year' || partName === 'month') {
+    parts.day = Math.min(parts.day, getDaysInMonth(parts.year, parts.month))
+  }
+  return alterDate(date, parts)
+}
+
+function getDaysInMonth(year, month) {
+  // Day 0 of the next month is the last day of `month`, and `Date` rolls
+  // `month` over into the next or previous year if it is out of range.
+  return new Date(year, month + 1, 0).getDate()
+}
+
 export function parseDate(string, {
   locale = 'en-US',
   date = true,

@@ -318,9 +318,7 @@ describe('DitoDatePicker, DitoTimePicker and DitoDateTimePicker', () => {
     wrapper.unmount()
   })
 
-  // Bug: `assignDeeply()` lets a custom `format()` replace the one that turns
-  // the "at" of long dates into a comma and delegates to the custom one.
-  it.fails('DitoDateTimePicker applies custom date format functions', () => {
+  it('DitoDateTimePicker applies custom date format functions', () => {
     const wrapper = mount(DitoDateTimePicker, {
       props: {
         modelValue: new Date(2024, 2, 5, 14, 30),
@@ -333,6 +331,17 @@ describe('DitoDatePicker, DitoTimePicker and DitoDateTimePicker', () => {
       }
     })
     expect(findInput(wrapper).element.value).toMatch(/^MARCH 5, 2024, 02:30/)
+    wrapper.unmount()
+  })
+
+  it('DitoDateTimePicker accepts `true` for the default date format', () => {
+    const wrapper = mount(DitoDateTimePicker, {
+      props: {
+        modelValue: new Date(2024, 2, 5, 14, 30),
+        format: { date: true }
+      }
+    })
+    expect(findInput(wrapper).element.value).toMatch(/^March 5, 2024/)
     wrapper.unmount()
   })
 

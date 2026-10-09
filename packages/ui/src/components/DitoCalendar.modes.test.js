@@ -71,9 +71,7 @@ describe('DitoCalendar header', () => {
     expect(getCursorLabel(wrapper)).toBe('November 15, 2024')
   })
 
-  // Bug: unlike `stepMonth()`, `stepYear()` doesn't clamp the day, so stepping
-  // from a leap day overflows into March.
-  it.fails('clamps the leap day when stepping years', async () => {
+  it('clamps the leap day when stepping years', async () => {
     wrapper = mountCalendar({ modelValue: new Date(2024, 1, 29) })
     await click(wrapper, '.dito-calendar-step-next.dito-calendar-step-year')
     expect(getCursorLabel(wrapper)).toBe('February 28, 2025')
@@ -427,9 +425,7 @@ describe('DitoCalendar navigate()', () => {
     expect(wrapper.vm.navigate({})).toBe(false)
   })
 
-  // Bug: stepping the month part uses `alterDate()` without clamping the day,
-  // so from January 31 it overflows past February into March.
-  it.fails('clamps the day when stepping the month part', () => {
+  it('clamps the day when stepping the month part', () => {
     wrapper = mountCalendar({ modelValue: new Date(2024, 0, 31) })
     wrapper.vm.navigate({ step: 1, mode: 'month', update: true })
     expect(getEmittedDates(wrapper)).toEqual([new Date(2024, 1, 29)])

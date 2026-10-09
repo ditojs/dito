@@ -37,7 +37,7 @@ DitoPickerInput.dito-date-time-picker(
 </template>
 
 <script>
-import { defaultFormats, assignDeeply } from '@ditojs/utils'
+import { defaultFormats, assignDeeply, isPlainObject } from '@ditojs/utils'
 import DitoPickerInput from './DitoPickerInput.vue'
 import DitoCalendar from './DitoCalendar.vue'
 import DitoTimePanel from './DitoTimePanel.vue'
@@ -68,23 +68,26 @@ export default {
 
   computed: {
     formatOptions() {
-      return assignDeeply(
+      const options = assignDeeply(
         {
           locale: this.locale,
           time: defaultFormats.time,
           date: defaultFormats.date
         },
-        {
-          date: {
-            month: 'short',
-            format: (value, type, options) =>
-              type === 'literal' && /\bat\b/.test(value)
-                ? ', '
-                : this.format?.date?.format?.(value, type, options) ?? value
-          }
-        },
+        { date: { month: 'short' } },
         this.format
       )
+      // Wrap the merged date `format()`, which may be a custom one, to
+      // separate the date and time with a comma rather than "at". `date` can
+      // also be `true` for the default format, or `false` to omit the date.
+      if (isPlainObject(options.date)) {
+        const { format } = options.date
+        options.date.format = (value, type, formatOptions) =>
+          type === 'literal' && /\bat\b/.test(value)
+            ? ', '
+            : format?.(value, type, formatOptions) ?? value
+      }
+      return options
     }
   },
 
