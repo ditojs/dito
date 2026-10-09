@@ -8,8 +8,8 @@ const timezone = 'Europe/Zurich'
 process.env.TZ = timezone
 
 // The screenshot tests run in the browser of the Playwright Docker image, so
-// that they render the same everywhere: `scripts/test-screenshots.js` starts
-// it and passes its endpoint, see `pnpm test:screenshots`.
+// that they render the same everywhere: `scripts/screenshots.js` starts
+// it and passes its endpoint, see `pnpm -C tests screenshots`.
 const screenshotsEndpoint = process.env.SCREENSHOTS_WS_ENDPOINT
 const screenshotFiles = /\.screenshot\.ts$/
 

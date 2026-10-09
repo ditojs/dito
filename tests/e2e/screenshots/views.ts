@@ -279,26 +279,25 @@ export const projects = createWidgetView<Project>(
   }
 )
 
-// Further views in a sub-menu, for screenshots of the menus.
-const plannedProjects = createWidgetView<Project>(
-  'Project',
-  'projects',
-  {},
-  { columns: { name: { label: 'Name' } } }
-)
-
-const doneProjects = createWidgetView<Project>(
-  'Project',
-  'projects',
-  {},
-  { columns: { name: { label: 'Name' } } }
-)
+// Further views in a sub-menu, for screenshots of the menus, each listing the
+// projects of one scope.
+function createScopeView(scope: 'planned' | 'done') {
+  return createWidgetView<Project>(
+    'Project',
+    'projects',
+    {},
+    {
+      columns: { name: { label: 'Name' } },
+      scopes: { [scope]: { defaultScope: true } }
+    }
+  )
+}
 
 export const reports = {
   type: 'menu',
   label: 'Reports',
   items: {
-    planned: { ...plannedProjects, label: 'Planned Projects' },
-    done: { ...doneProjects, label: 'Done Projects' }
+    planned: { ...createScopeView('planned'), label: 'Planned Projects' },
+    done: { ...createScopeView('done'), label: 'Done Projects' }
   }
 } as const

@@ -1,70 +1,11 @@
 import type { Locator, Page } from '@playwright/test'
 import { test, expect } from '../fixtures.js'
-import { Project } from '../models/Project.js'
+import { seedProjects, openProject, expectScreenshot } from '../scenes.js'
 
 // Screenshots of the admin's components in their various states: open menus
 // and pickers, keyboard focus, dialogs, notifications, errors and narrow
-// viewports. The selectors only use roles, labels and texts, so that the
-// scenes don't depend on the markup of a particular version.
-
-const project: Partial<Project> = {
-  id: 1,
-  name: 'Website Relaunch',
-  description: 'A new website, with a new design and a new backend.',
-  budget: 12000,
-  status: 'Active',
-  tags: ['Design', 'Frontend'],
-  priority: 'High',
-  features: ['Search', 'Sharing'],
-  active: true,
-  archived: false,
-  progress: 40,
-  color: '#3366ff',
-  startDate: '2026-05-14',
-  notes: '<p>Kick-off with <b>all teams</b> on Monday.</p>',
-  config: '{\n  "theme": "dark"\n}',
-  contacts: [
-    { name: 'Ada Lovelace', email: 'ada@example.com' },
-    { name: 'Grace Hopper', email: 'grace@example.com' }
-  ],
-  milestones: [
-    { title: 'Design', due: '2026-06-01' },
-    { title: 'Launch', due: '2026-09-01' }
-  ],
-  phases: [
-    { name: 'Research', tasks: [{ name: 'Interviews' }, { name: 'Survey' }] },
-    { name: 'Build', tasks: [{ name: 'Prototype' }] }
-  ],
-  settings: { visibility: 'Private', reviewer: 'Grace' },
-  website: 'https://example.com',
-  startTime: '2026-05-14T07:30:00.000Z',
-  meetingAt: '2026-05-20T12:15:00.000Z',
-  contactInfo: { phone: '+41 44 000 00 00', email: 'team@example.com' },
-  files: [
-    { key: 'a.png', name: 'cover.png', type: 'image/png', size: 24576 },
-    { key: 'b.pdf', name: 'brief.pdf', type: 'application/pdf', size: 1048576 }
-  ],
-  links: [
-    { type: 'link', url: 'https://example.com/docs' },
-    { type: 'note', text: 'Ask Ada about the fonts' }
-  ]
-}
-
-async function seedProjects() {
-  await Project.query().insert(project)
-  await Project.query().insert({ id: 2, name: 'Mobile App', status: 'Planned' })
-  await Project.query().insert({ id: 3, name: 'Archive', status: 'Done' })
-}
-
-async function openProject(page: Page, url: string, tab?: string) {
-  await page.goto(`${url}/admin/projects/1`)
-  await expect(page.getByLabel('Name', { exact: true })).toHaveValue(
-    'Website Relaunch'
-  )
-  if (tab) {
-    await page.getByRole('tab', { name: tab, exact: true }).click()
-  }
-}
+// viewports. The selectors use roles, labels and texts where the admin
+// provides them.
 
 function visible(locator: Locator) {
   return locator.filter({ visible: true })
@@ -77,16 +18,21 @@ async function focusByKeyboard(page: Page, locator: Locator) {
   await locator.focus()
 }
 
-async function expectScreenshot(page: Page, name: string) {
-  await page.waitForLoadState('networkidle')
-  await page.evaluate(() => document.fonts.ready)
-  // Let transitions of menus, pickers and notifications finish.
-  await page.waitForTimeout(500)
-  await expect(page).toHaveScreenshot(name)
+// Closes the notification of the validation errors, which would otherwise
+// disappear while the screenshot is taken, along with the browser's validation
+// bubble, leaving the inline errors that the scenes are about.
+async function dismissValidationErrors(page: Page) {
+  const notification = page.getByText('Validation Errors')
+  await notification.click()
+  await expect(notification).toBeHidden()
+  await page.mouse.move(0, 0)
+  await expect(
+    visible(page.getByText('The Website field is not a valid URL.'))
+  ).toBeVisible()
 }
 
 test.describe('component screenshots', () => {
-  test.beforeEach(seedProjects)
+  test.beforeEach(() => seedProjects())
 
   test('extras tab', async ({ page, url }) => {
     await openProject(page, url, 'Extras')
@@ -96,7 +42,7 @@ test.describe('component screenshots', () => {
 
   test('create menu with multiple forms', async ({ page, url }) => {
     await openProject(page, url, 'Extras')
-    await visible(page.getByRole('button', { name: /^(Create|Add)/ }))
+    await visible(page.getByRole('button', { name: 'Add', exact: true }))
       .last()
       .click()
     await expect(visible(page.getByText('Note', { exact: true }))).toHaveCount(
@@ -149,7 +95,7 @@ test.describe('component screenshots', () => {
     await expectScreenshot(page, 'drag-handle-focus.png')
   })
 
-  test('upload with drag handle focus', async ({ page, url }) => {
+  test('upload row hover', async ({ page, url }) => {
     await openProject(page, url, 'Extras')
     await expect(page.getByText('brief.pdf')).toBeVisible()
     await page.getByText('cover.png').hover()
@@ -172,12 +118,10 @@ test.describe('component screenshots', () => {
 
   test('code editor resize handle focus', async ({ page, url }) => {
     await openProject(page, url, 'Details')
-    const handle = page.getByRole('separator', { name: 'Resize' })
-    test.skip(
-      (await handle.count()) === 0,
-      'The resize handle is not focusable before the session'
+    await focusByKeyboard(
+      page,
+      page.getByRole('separator', { name: 'Resize' })
     )
-    await focusByKeyboard(page, handle.first())
     await expectScreenshot(page, 'code-resize-focus.png')
   })
 
@@ -194,7 +138,7 @@ test.describe('component screenshots', () => {
     await openProject(page, url, 'Extras')
     await page.getByLabel('Website', { exact: true }).fill('not a url')
     await page.getByRole('button', { name: 'Save', exact: true }).click()
-    await expect(visible(page.getByText(/URL/)).first()).toBeVisible()
+    await dismissValidationErrors(page)
     await expectScreenshot(page, 'extras-errors.png')
   })
 
@@ -203,37 +147,27 @@ test.describe('component screenshots', () => {
     await openProject(page, url, 'Extras')
     await page.getByLabel('Website', { exact: true }).fill('not a url')
     await page.getByRole('button', { name: 'Save', exact: true }).click()
-    await expect(visible(page.getByText(/URL/)).first()).toBeVisible()
-    await page.mouse.move(0, 0)
+    await dismissValidationErrors(page)
     await expectScreenshot(page, 'extras-errors-narrow.png')
   })
 
   test('confirmation dialog', async ({ page, url }) => {
-    let isNative = false
-    page.on('dialog', dialog => {
-      isNative = true
-      dialog.dismiss()
-    })
     await openProject(page, url, 'Planning')
-    await visible(page.getByRole('button', { name: /^(Remove|Delete)/ }))
+    await visible(page.getByRole('button', { name: 'Remove', exact: true }))
       .first()
       .click()
-    await page.waitForTimeout(500)
-    test.skip(isNative, 'Native confirm() before the session')
     await expect(page.getByRole('dialog')).toBeVisible()
     await expectScreenshot(page, 'confirm-dialog.png')
   })
 
   test('notification', async ({ page, url }) => {
-    page.on('dialog', dialog => dialog.accept())
     await openProject(page, url, 'Planning')
-    await visible(page.getByRole('button', { name: /^(Remove|Delete)/ }))
+    await visible(page.getByRole('button', { name: 'Remove', exact: true }))
       .first()
       .click()
     const dialog = page.getByRole('dialog')
-    if (await dialog.isVisible()) {
-      await dialog.locator('button[type="submit"]').click()
-    }
+    await expect(dialog).toBeVisible()
+    await dialog.getByRole('button', { name: 'Remove', exact: true }).click()
     await expect(page.getByText('Successfully Removed')).toBeVisible()
     await page.mouse.move(0, 0)
     await expectScreenshot(page, 'notification.png')
@@ -275,7 +209,8 @@ test.describe('component screenshots', () => {
 
   test('sub-menu view and trail', async ({ page, url }) => {
     await page.goto(`${url}/admin/reports/done`)
-    await expect(page.getByText('Website Relaunch')).toBeVisible()
+    await expect(page.getByText('Archive', { exact: true })).toBeVisible()
+    await expect(page.getByText('Website Relaunch')).toHaveCount(0)
     await expectScreenshot(page, 'menu-view.png')
   })
 
