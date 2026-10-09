@@ -457,9 +457,7 @@ describe('Storage: uploads', () => {
     )
   })
 
-  // Bug: `_handleMediaFile()` writes `null` data to the pass-through stream
-  // when the upload is empty, which throws ERR_STREAM_NULL_VALUES.
-  test.fails('handles empty media uploads with `readDimensions`', async () => {
+  test('handles empty media uploads with `readDimensions`', async () => {
     const storage = createMemoryStorage()
     storage.storage = createUploadEngine()
     const stream = new PassThrough()

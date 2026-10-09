@@ -158,30 +158,51 @@ describe('S3Storage', () => {
       )
     })
 
-    // Bug: when the type is detected from the first chunk, `done()` writes the
-    // still `null` data to the pass-through stream, which throws.
-    test.fails('detects the mime-type from the first chunk', async () => {
+    test('detects the mime-type from the first chunk', async () => {
       const storage = await createS3Storage()
       const stream = new PassThrough()
       const promise = callStorage(storage, 'getContentType', { stream })
       // Emit the chunk directly, so a thrown error surfaces here and not as an
       // uncaught exception.
-      expect(() => stream.emit('data', createPngHeader(16, 16))).not.toThrow()
+      const header = createPngHeader(16, 16)
+      expect(() => stream.emit('data', header)).not.toThrow()
       stream.emit('end')
-      const [type] = await promise
+      const [type, outStream] = await promise
       expect(type).toBe('image/png')
+      // The first chunk still reaches the pass-through stream:
+      expect(outStream.read()).toEqual(header)
     })
 
-    // Bug: `fileTypeFromBuffer()` of `file-type` returns a promise, so reading
-    // `.mime` from it always yields `undefined`, and only the leather fallback
-    // for media files is used.
-    test.fails('detects non-media types with file-type', async () => {
+    test('detects non-media types with file-type', async () => {
       const storage = await createS3Storage()
       const stream = Readable.from([
         Buffer.from('%PDF-1.4\n%âã\n1 0 obj\n<<>>\nendobj\n')
       ])
       const [type] = await callStorage(storage, 'getContentType', { stream })
       expect(type).toBe('application/pdf')
+    })
+
+    it('falls back for unknown data in a single chunk', async () => {
+      const storage = await createS3Storage()
+      // The stream ends while the first chunk is still examined:
+      const stream = Readable.from([Buffer.from('plain text')])
+      const [type, outStream] = await callStorage(storage, 'getContentType', {
+        stream
+      })
+      expect(type).toBe('application/octet-stream')
+      expect((await consumers.buffer(outStream)).toString()).toBe(
+        'plain text'
+      )
+    })
+
+    it('falls back for empty uploads', async () => {
+      const storage = await createS3Storage()
+      const stream = Readable.from([])
+      const [type, outStream] = await callStorage(storage, 'getContentType', {
+        stream
+      })
+      expect(type).toBe('application/octet-stream')
+      expect(await consumers.buffer(outStream)).toEqual(Buffer.alloc(0))
     })
 
     it('stores the dimensions as metadata', async () => {

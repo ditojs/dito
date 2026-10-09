@@ -251,19 +251,23 @@ export class Storage {
     const { size, stream } = await new Promise(resolve => {
       let data = null
 
-      const done = size => {
+      const done = (size, hasUploadEnded = false) => {
+        file.stream.off('data', onData).off('end', onEnd)
         const stream = new PassThrough()
-        stream.write(data)
-        file.stream
-          .off('data', onData)
-          .off('end', onEnd)
-          .pipe(stream)
+        if (hasUploadEnded) {
+          // Nothing is left to pipe. `data` is still `null` if the upload is
+          // empty, which `end()` accepts.
+          stream.end(data)
+        } else {
+          stream.write(data)
+          file.stream.pipe(stream)
+        }
         resolve({ size, stream })
       }
 
       const onEnd = () => {
         this.app.emit('error', 'Unable to determine image size')
-        done(null)
+        done(null, true)
       }
 
       const onData = chunk => {

@@ -45,35 +45,53 @@ export class S3Storage extends Storage {
           cb(null, mimetype)
         } else {
           let data = null
+          let firstChunkTypePromise = null
 
-          const done = type => {
-            stream.off('data', onData)
+          const done = (type, hasUploadEnded = false) => {
+            stream.off('data', onData).off('end', onEnd)
             const outStream = new PassThrough()
-            outStream.write(data)
-            stream.pipe(outStream)
+            if (hasUploadEnded) {
+              // Nothing is left to pipe. `data` is still `null` if the upload
+              // is empty, which `end()` accepts.
+              outStream.end(data)
+            } else {
+              outStream.write(data)
+              stream.pipe(outStream)
+            }
             cb(null, type, outStream)
           }
 
           const onData = chunk => {
-            if (!data) {
-              // 2. Try reading the mimetype from the first chunk.
-              const type = getFileTypeFromBuffer(chunk)
-              if (type) {
-                done(type)
-              } else {
-                // 3. If that fails, keep collecting all chunks and determine
-                //    the mimetype using the full data.
-                stream.once('end', () =>
-                  done(
-                    getFileTypeFromBuffer(data) || 'application/octet-stream'
-                  )
-                )
-              }
-            }
             data = data ? Buffer.concat([data, chunk]) : chunk
+            if (!firstChunkTypePromise) {
+              // 2. Try reading the mimetype from the first chunk. Pause the
+              //    stream while the type is detected asynchronously, so no
+              //    chunks pass by in the meantime.
+              stream.pause()
+              firstChunkTypePromise = getFileTypeFromBuffer(chunk).then(
+                type => {
+                  if (type) {
+                    done(type)
+                  } else {
+                    stream.resume()
+                  }
+                  return type
+                }
+              )
+            }
           }
 
-          stream.on('data', onData)
+          const onEnd = async () => {
+            // The stream may end while the first chunk is still examined.
+            const firstChunkType = await firstChunkTypePromise
+            if (!firstChunkType) {
+              // 3. If that fails, determine the mimetype using the full data.
+              const type = data && (await getFileTypeFromBuffer(data))
+              done(type || 'application/octet-stream', true)
+            }
+          }
+
+          stream.on('data', onData).on('end', onEnd)
         }
       },
 
@@ -160,10 +178,11 @@ export class S3Storage extends Storage {
   }
 }
 
-function getFileTypeFromBuffer(buffer) {
+async function getFileTypeFromBuffer(buffer) {
   try {
+    const fileType = await fileTypeFromBuffer(buffer)
     // Use leather as fall-back for better media file mime type detection.
-    return fileTypeFromBuffer(buffer)?.mime || readMediaAttributes(buffer)?.mime
+    return fileType?.mime || readMediaAttributes(buffer)?.mime || null
   } catch {}
   return null
 }
