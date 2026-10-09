@@ -41,7 +41,11 @@ export class QueryBuilder extends objection.QueryBuilder {
     copy.#graphAlgorithm = this.#graphAlgorithm
     copy.#appliedScopes = { ...this.#appliedScopes }
     copy.#allowFilters = this.#allowFilters ? { ...this.#allowFilters } : null
-    copy.#copyScopes(this)
+    // Unlike `#copyScopesFromParent()` for child queries, a clone keeps all
+    // scopes, graph and non-graph:
+    copy.#scopes = { ...this.#scopes }
+    copy.#allowScopes = this.#allowScopes ? { ...this.#allowScopes } : null
+    copy.#ignoreScopes = { ...this.#ignoreScopes }
     return copy
   }
 
@@ -86,7 +90,7 @@ export class QueryBuilder extends objection.QueryBuilder {
       // Inherit the graph scopes from the parent query.
       this.#ignoreGraph = query.#ignoreGraph
       this.#graphAlgorithm = query.#graphAlgorithm
-      this.#copyScopes(query, true)
+      this.#copyScopesFromParent(query)
     }
     return this
   }
@@ -190,37 +194,35 @@ export class QueryBuilder extends objection.QueryBuilder {
     return this
   }
 
-  #copyScopes(query, isChildQuery = false) {
+  #copyScopesFromParent(query) {
     const isSameModelClass = this.modelClass() === query.modelClass()
     // Only copy `#allowScopes` and `_ignoreScopes` if it's for the same model.
     if (isSameModelClass) {
       this.#allowScopes = query.#allowScopes ? { ...query.#allowScopes } : null
       this.#ignoreScopes = { ...query.#ignoreScopes }
     }
-    const scopes = isChildQuery
-      ? // When copying scopes for child-queries, we also need to take the
-        // already applied scopes into account and copy those too.
-        { ...query.#appliedScopes, ...query.#scopes }
-      : { ...query.#scopes }
+    // When copying scopes for child-queries, we also need to take the
+    // already applied scopes into account and copy those too.
+    const scopes = { ...query.#appliedScopes, ...query.#scopes }
     // If the target is a child query of a graph query, copy all scopes, graph
     // and non-graph. If it is a child query of a related or eager query,
     // copy only the graph scopes.
-    const copyAllScopes = (
-      isSameModelClass &&
-      isChildQuery &&
-      query.has(/GraphAndFetch$/)
-    )
-    this.#scopes = copyAllScopes
+    const shouldCopyAllScopes = isSameModelClass && query.has(/GraphAndFetch$/)
+    this.#scopes = shouldCopyAllScopes
       ? scopes
       : filterScopes(scopes, (scope, graph) => graph) // copy graph-scopes only.
   }
 
   #applyScopes() {
     if (!this.#ignoreScopes[SYMBOL_ALL]) {
+      // Objection's `isFind()` is also true for `upsertGraph()`, which rejects
+      // `where` conditions on its root query, so check for it separately:
+      const isUpsertGraph = this.has(/^upsertGraph/)
       // Only apply default scopes if this is a normal find query, meaning it
       // does not define any write operations or special selects, e.g. `count`:
       const isNormalFind = (
         this.isFind() &&
+        !isUpsertGraph &&
         !this.hasSpecialSelects()
       )
       // If this isn't a normal find query, ignore all graph operations,
@@ -247,6 +249,10 @@ export class QueryBuilder extends objection.QueryBuilder {
           // query:
           if (isNormalFind || scope !== 'default') {
             this.#applyScope(scope, graph)
+            collectedScopes[scope] ||= graph
+          } else if (isUpsertGraph) {
+            // Keep the `default` scope for the child queries of upserts, e.g.
+            // the refetch of `upsertGraphAndFetch()`:
             collectedScopes[scope] ||= graph
           }
         }

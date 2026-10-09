@@ -246,9 +246,7 @@ describe('QueryBuilder', () => {
       )
     })
 
-    // clone() only copies graph scopes, so non-graph scopes from withScope()
-    // get lost in the copy:
-    it.fails('keeps non-graph scopes when cloning queries', async () => {
+    it('keeps non-graph scopes when cloning queries', async () => {
       await insertRecipes()
       const query = Recipe.query().withScope('hearty')
       expect(getNames(await query.clone())).toEqual([
@@ -476,10 +474,7 @@ describe('QueryBuilder', () => {
       )
     })
 
-    // Invalid dates are coerced to `Invalid Date` objects before validation,
-    // which pass the `date-time` format check and fail later in the database
-    // query with a 500 error:
-    it.fails('rejects invalid date filter arguments as invalid', async () => {
+    it('rejects invalid date filter arguments as invalid', async () => {
       await expect(
         Recipe.query().find({ filter: 'created:"no date"' })
       ).rejects.toThrow(
@@ -583,6 +578,7 @@ describe('QueryBuilder', () => {
   describe('graph loading', () => {
     it('rejects unsupported graph algorithms', () => {
       expect(() =>
+        // @ts-expect-error -- Unsupported algorithms are the point here.
         Recipe.query().withGraph('steps', { algorithm: 'magic' })
       ).toThrow(`Graph algorithm 'magic' is unsupported.`)
     })
@@ -766,13 +762,11 @@ describe('QueryBuilder', () => {
 
     it('reports models that are not found', async () => {
       await expect(
-        Recipe.query().findById(1234).throwIfNotFound()
-      ).rejects.toThrow('Not-found error')
+        Recipe.query().findOne({ id: 1234 }).throwIfNotFound()
+      ).rejects.toThrow(`'Recipe' model not found`)
     })
 
-    // Objection.js passes `{}` as the error data to `createNotFoundError()`,
-    // which takes precedence over the message with the remembered id:
-    it.fails('reports the id of models that are not found', async () => {
+    it('reports the id of models that are not found', async () => {
       await expect(
         Recipe.query().findById(1234).throwIfNotFound()
       ).rejects.toThrow(`'Recipe' model with id 1234 not found`)
@@ -825,18 +819,34 @@ describe('QueryBuilder', () => {
       expect(await Recipe.query()).toHaveLength(0)
     })
 
-    // The `default` scope is applied to `upsertGraph()` queries, which
-    // Objection.js rejects when the scope adds `where` conditions:
-    it.fails('upserts graphs of models with a default scope', async () => {
+    it('upserts graphs of models with a default scope', async () => {
       const [apple] = await insertRecipes()
-      await Recipe.query().patchAndFetch([{ id: apple.id, servings: 1 }])
+      const patched = await Recipe.query().patchAndFetch([
+        { id: apple.id, servings: 1 }
+      ])
+      expect(patched.map((recipe: Recipe) => recipe.servings)).toEqual([1])
+    })
+
+    it('refetches upserted graphs with the default scope', async () => {
+      const [ada] = await insertCooks()
+      const recipes = await insertRecipes()
+      const upserted = await Cook.query().upsertGraphAndFetch(
+        { id: ada.id, recipes: recipes.map(({ id }) => ({ id })) },
+        { relate: true }
+      )
+      // The archived recipe is related, but filtered out by the default scope:
+      expect(getNames(upserted.recipes)).toEqual([
+        'Apple pie',
+        'Banana bread',
+        'Cherry tart'
+      ])
     })
   })
 
   describe('mixin()', () => {
     it('exposes query methods on the target', async () => {
       await insertRecipes()
-      const recipes = await Recipe.where('servings', '>', 5)
+      const recipes = await Recipe.withScope('hearty')
       expect(getNames(recipes)).toEqual(['Apple pie', 'Cherry tart'])
     })
 

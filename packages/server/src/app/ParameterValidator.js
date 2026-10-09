@@ -86,7 +86,9 @@ export class ParameterValidator {
   coerceValue(type, value, modelOptions) {
     // See if param needs additional coercion:
     if (value && ['date', 'datetime', 'timestamp'].includes(type)) {
-      return new Date(value)
+      const date = new Date(value)
+      // Leave invalid dates as they are, for the validation to reject them:
+      return isNaN(date.getTime()) ? value : date
     }
     const { models } = this.app
     // See if the defined type(s) require coercion to objects:
