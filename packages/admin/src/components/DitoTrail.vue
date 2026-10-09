@@ -1,5 +1,5 @@
 <template lang="pug">
-.dito-trail(aria-label="Breadcrumb")
+nav.dito-trail(aria-label="Breadcrumb")
   ul
     li(
       v-for="component in trail"

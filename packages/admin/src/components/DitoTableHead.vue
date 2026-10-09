@@ -8,6 +8,7 @@ thead.dito-table-head
         v-if="shouldRenderSchema(column)"
         scope="col"
         :class="getColumnClass(column)"
+        :aria-sort="column.sortable ? getSortState(column) : null"
       )
         RouterLink(
           v-if="column.sortable"
@@ -18,7 +19,6 @@ thead.dito-table-head
           button.dito-button(
             type="button"
             :class="getSortClass(column)"
-            :aria-sort="getSortState(column)"
             @click="navigate"
           )
             .dito-button__order-arrows
