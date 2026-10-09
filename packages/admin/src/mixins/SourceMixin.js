@@ -21,6 +21,7 @@ import {
   getViewPath
 } from '../utils/schema/lookup.js'
 import { updateOrder } from '../utils/schema/data.js'
+import { getTextFromHtml } from '../utils/html.js'
 import {
   isObject,
   isString,
@@ -554,16 +555,19 @@ export default {
         this.notify({
           type: this.isTransient ? 'info' : 'success',
           title: 'Successfully Removed',
-          text: [
+          html: [
             `${label} was ${this.verbs.deleted}.`,
             this.transientNote
           ]
         })
 
+      // The label is HTML, see `getItemLabel()`, but the dialog shows text:
       if (
         item &&
         window.confirm(
-          `Do you really want to ${this.verbs.delete} ${label}?`
+          getTextFromHtml(
+            `Do you really want to ${this.verbs.delete} ${label}?`
+          )
         )
       ) {
         if (this.isTransient) {
