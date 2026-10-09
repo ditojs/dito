@@ -193,10 +193,10 @@ describe('SchemaGraph', () => {
       expect(data.shelves[0].books[0]).not.toHaveProperty('id')
     })
 
-    it('keeps temporary ids of unrelated sources', () => {
+    it('removes temporary ids of unrelated sources too', () => {
       const data = processForClipboard()
-      expect(data.shelves[1].id).toBe('@3')
-      expect(data.shelves[0].books[1].id).toBe('@2')
+      expect(data.shelves[1]).not.toHaveProperty('id')
+      expect(data.shelves[0].books[1]).not.toHaveProperty('id')
     })
 
     it('converts the ids of related items and internal relations to `@id`', () => {

@@ -113,9 +113,10 @@ export class SchemaGraph {
           let id = value?.[idKey]
           if (id != null) {
             if (removeId) {
+              // Unrelated sources don't need their ids on the clipboard, not
+              // even temporary ones, since nothing references them.
               delete value[idKey]
-            }
-            if (referenceId || isTemporaryId(id)) {
+            } else if (referenceId || isTemporaryId(id)) {
               if (isTemporaryId(id)) {
                 id = id.slice(1)
               }
