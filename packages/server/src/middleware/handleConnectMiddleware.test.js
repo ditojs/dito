@@ -47,9 +47,7 @@ describe('handleConnectMiddleware()', () => {
     expect(seen).toEqual({ statusCode: 202, locals: {} })
   })
 
-  // Bug: `res.getHeader()` calls `ctx.get()`, which reads the request headers
-  // instead of the response headers.
-  test.fails('reads response headers through `res.getHeader()`', async () => {
+  it('reads response headers through `res.getHeader()`', async () => {
     let header = null
     const app = new Koa()
     app.use(async (ctx, next) => {
@@ -105,9 +103,7 @@ describe('handleConnectMiddleware()', () => {
     })
   })
 
-  // Bug: `res.end()` without a body never ends the stream created by
-  // `res.write()`, so the response never completes.
-  test.fails('streams the chunks passed to `res.write()`', async () => {
+  it('streams the chunks passed to `res.write()`', async () => {
     const app = createApp((req, res) => {
       res.setHeader('Content-Type', 'text/plain')
       res.write('salt, ')
@@ -120,9 +116,7 @@ describe('handleConnectMiddleware()', () => {
     })
   })
 
-  // Bug: The returned promise only resolves in `res.end()`, so requests that
-  // the connect middleware passes on through `next()` never complete.
-  test.fails('passes requests on to the next Koa middleware', async () => {
+  it('passes requests on to the next Koa middleware', async () => {
     const app = new Koa()
     app.use(handleConnectMiddleware((req, res, next) => next(), {}))
     app.use(ctx => {
@@ -131,6 +125,55 @@ describe('handleConnectMiddleware()', () => {
     await serve(app, async url => {
       const response = await fetch(url, { signal: AbortSignal.timeout(500) })
       expect(await response.text()).toBe('koa')
+    })
+  })
+
+  it('passes errors of the connect middleware on to Koa', async () => {
+    const errors = []
+    const app = new Koa()
+    app.use(async (ctx, next) => {
+      try {
+        await next()
+      } catch (error) {
+        errors.push(error.message)
+        ctx.status = 500
+      }
+    })
+    app.use(
+      handleConnectMiddleware(
+        (req, res, next) => next(new Error('Burnt')),
+        {}
+      )
+    )
+    await serve(app, async url => {
+      expect((await fetch(url)).status).toBe(500)
+    })
+    expect(errors).toEqual(['Burnt'])
+  })
+
+  it('restores the mounted url for the next Koa middleware', async () => {
+    const app = new Koa()
+    app.use(
+      mount(
+        '/kitchen',
+        new Koa()
+          .use(
+            handleConnectMiddleware(
+              (req, res, next) => {
+                req.url = '/rewritten'
+                next()
+              },
+              { expandMountPath: true }
+            )
+          )
+          .use(ctx => {
+            ctx.body = ctx.url
+          })
+      )
+    )
+    await serve(app, async url => {
+      const response = await fetch(`${url}/kitchen/pots`)
+      expect(await response.text()).toBe('/pots')
     })
   })
 
@@ -148,10 +191,7 @@ describe('handleConnectMiddleware()', () => {
     })
   })
 
-  // Bug: `expandMountPath` only expands `ctx.path` on a copy of `ctx` that is
-  // never used, while the connect middleware only receives the stripped
-  // `ctx.req`.
-  test.fails('passes the full path with `expandMountPath`', async () => {
+  it('passes the full path with `expandMountPath`', async () => {
     const app = new Koa()
     app.use(
       mount(

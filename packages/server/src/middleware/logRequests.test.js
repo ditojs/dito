@@ -119,9 +119,7 @@ describe('logRequests()', () => {
     expect(entry.message).toMatch(/^GET \/missing 404 /)
   })
 
-  // Bug: Koa returns `undefined` instead of `null` as the length of streams,
-  // so the `length === null` check never wraps the stream with a counter.
-  test.fails('counts the length of streamed responses', async () => {
+  it('counts the length of streamed responses', async () => {
     const logger = createLogger()
     const app = createApp(logger, ctx => {
       ctx.type = 'text/plain'
@@ -132,6 +130,24 @@ describe('logRequests()', () => {
     })
     const [entry] = await waitForEntries(logger, 1)
     expect(entry.message).toMatch(/ 10b$/)
+  })
+
+  it('aborts counted responses when their stream fails', async () => {
+    const logger = createLogger()
+    const app = createApp(logger, ctx => {
+      ctx.type = 'text/plain'
+      ctx.body = new Readable({
+        read() {
+          this.push('salt')
+          setTimeout(() => this.destroy(new Error('Too salty')), 10)
+        }
+      })
+    })
+    await serve(app, async url => {
+      const response = await fetch(url)
+      await expect(response.text()).rejects.toThrow()
+    })
+    await waitForEntries(logger, 1)
   })
 
   it('logs errors at the warn level and passes them on', async () => {

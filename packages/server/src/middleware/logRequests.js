@@ -1,6 +1,7 @@
 /*
  * Middleware inspired by 'koa-logger'. Adapted and extended to our needs.
  */
+import { pipeline } from 'stream'
 import bytes from 'bytes'
 import pico from 'picocolors'
 import Counter from 'passthrough-counter'
@@ -31,8 +32,11 @@ export function logRequests({ ignoreUrlPattern } = {}) {
     } = ctx
 
     let counter
-    if (length === null && body?.readable) {
-      ctx.body = body.pipe((counter = new Counter())).on('error', ctx.onerror)
+    if (length == null && body?.readable) {
+      counter = new Counter()
+      // Use `pipeline()` so that errors of the original stream destroy the
+      // counter, which Koa then handles as errors of the response body.
+      ctx.body = pipeline(body, counter, () => {})
     }
 
     // Log when the response is finished or closed, whichever happens first.

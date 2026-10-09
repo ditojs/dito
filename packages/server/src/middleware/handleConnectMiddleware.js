@@ -5,8 +5,20 @@ export function handleConnectMiddleware(middleware, {
   expandMountPath = false
 }) {
   return (ctx, next) => {
-    return new Promise(resolve => {
-      let body = null
+    return new Promise((resolve, reject) => {
+      const { req } = ctx
+      const mountedUrl = req.url
+      if (expandMountPath && ctx.mountPath) {
+        // Hand the full url including the mount path to the connect
+        // middleware, and restore the mounted url before returning to Koa.
+        req.url = ctx.mountPath + mountedUrl
+      }
+
+      function restoreUrl() {
+        req.url = mountedUrl
+      }
+
+      let bodyStream = null
 
       const res = {
         locals: ctx.state,
@@ -21,7 +33,7 @@ export function handleConnectMiddleware(middleware, {
 
         getHeader(field) {
           // console.log('getHeader', ...arguments)
-          return ctx.get(field)
+          return ctx.response.get(field)
         },
 
         setHeader(field, value) {
@@ -68,32 +80,42 @@ export function handleConnectMiddleware(middleware, {
 
         write(...args) {
           // console.log('write', ...arguments)
-          if (!body) {
-            body = new PassThrough()
-            ctx.body = body
+          if (!bodyStream) {
+            bodyStream = new PassThrough()
+            ctx.body = bodyStream
           }
-          body.write(...args)
+          bodyStream.write(...args)
         },
 
-        end(body) {
-          // console.log('end', body?.substring?.(0, 256))
-          if (body !== undefined) {
-            ctx.body = body
+        end(chunk) {
+          // console.log('end', chunk?.substring?.(0, 256))
+          if (bodyStream) {
+            // Write the optional final chunk and end the stream started by
+            // `write()`.
+            bodyStream.end(chunk)
+          } else if (chunk !== undefined) {
+            ctx.body = chunk
           }
+          restoreUrl()
           resolve()
         }
       }
 
-      if (expandMountPath && ctx.mountPath) {
-        // Create an inheriting `ctx` object with the expanded `ctx.path`,
-        // without actually modifying the original `ctx` object.
-        ctx = Object.create(ctx, {
-          path: {
-            value: ctx.mountPath + ctx.path
+      try {
+        // Requests that the connect middleware passes on through its `next()`
+        // continue with the next Koa middleware.
+        middleware(req, res, error => {
+          restoreUrl()
+          if (error) {
+            reject(error)
+          } else {
+            resolve(next())
           }
         })
+      } catch (error) {
+        restoreUrl()
+        reject(error)
       }
-      middleware(ctx.req, res, next)
     })
   }
 }
