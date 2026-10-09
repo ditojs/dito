@@ -1314,6 +1314,18 @@ export class Model extends ObjectionModel {
   static fromJson<M extends Model>(
     this: Constructor<M>,
     json: Record<string, any>,
+    options: ModelOptions & { async: true }
+  ): Promise<M>
+
+  static fromJson<M extends Model>(
+    this: Constructor<M>,
+    json: Record<string, any>,
+    options?: ModelOptions & { async?: false }
+  ): M
+
+  static fromJson<M extends Model>(
+    this: Constructor<M>,
+    json: Record<string, any>,
     options?: ModelOptions
   ): M | Promise<M>
 
@@ -1514,20 +1526,42 @@ export class Model extends ObjectionModel {
    * Filters a model graph using a relation expression,
    * removing any data not matching the expression.
    */
-  static filterGraph(
-    modelGraph: Model | Model[],
-    expr: string | objection.RelationExpression<Model>
-  ): Model | Model[]
+  static filterGraph<M extends Model>(
+    this: Constructor<M>,
+    modelGraph: M | PartialDitoModelGraph<M>,
+    expr: string | objection.RelationExpression<M>
+  ): M
+
+  static filterGraph<M extends Model>(
+    this: Constructor<M>,
+    modelGraph: (M | PartialDitoModelGraph<M>)[],
+    expr: string | objection.RelationExpression<M>
+  ): M[]
 
   /**
    * Populates a model graph by loading relations defined
    * in the given expression.
    */
-  static populateGraph(
-    modelGraph: Model | Model[],
-    expr: string | objection.RelationExpression<Model>,
+  static populateGraph<M extends Model>(
+    this: Constructor<M>,
+    modelGraph: M | PartialDitoModelGraph<M>,
+    expr: string | objection.RelationExpression<M>,
     trx?: objection.Transaction
-  ): Promise<Model | Model[]>
+  ): Promise<M>
+
+  static populateGraph<M extends Model>(
+    this: Constructor<M>,
+    modelGraph: (M | PartialDitoModelGraph<M> | null)[],
+    expr: string | objection.RelationExpression<M>,
+    trx?: objection.Transaction
+  ): Promise<(M | null)[]>
+
+  static populateGraph<M extends Model>(
+    this: Constructor<M>,
+    modelGraph: null,
+    expr: string | objection.RelationExpression<M>,
+    trx?: objection.Transaction
+  ): Promise<null>
 
   QueryBuilderType: QueryBuilder<this, this[]>
 
@@ -1745,9 +1779,10 @@ export class Model extends ObjectionModel {
 
 type StaticQueryBuilderMethod<
   K extends ConditionalKeys<QueryBuilder<Model>, (...a: any[]) => any>
-> = <$Model extends Class<Model>>(
-  ...args: Parameters<QueryBuilder<InstanceType<$Model>>[K]>
-) => ReturnType<QueryBuilder<InstanceType<$Model>>[K]>
+> = <$Model extends Model>(
+  this: Constructor<$Model>,
+  ...args: Parameters<QueryBuilder<$Model>[K]>
+) => ReturnType<QueryBuilder<$Model>[K]>
 
 // @eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface Model extends EventEmitter {}
@@ -3004,7 +3039,7 @@ export type QueryParameterOptions = {
    * at the ',' character ignoring any spaces on either side. i.e. `'1,2'` and
    * `'1 , 2'`
    */
-  range?: [number, number] | string
+  range?: [number | string, number | string] | string
   limit?: number
   offset?: number
   order?: OrArrayOf<string>
@@ -3100,10 +3135,24 @@ type ResolvedStorages = keyof ApplicationStorages extends never
   ? Record<string, Storage>
   : ApplicationStorages
 
+/**
+ * Scope names, where falsy values are skipped. A boolean as the last argument
+ * controls whether the scopes are checked against the allowed scopes.
+ */
+type QueryScopeArguments =
+  | (string | null | undefined)[]
+  | [...(string | null | undefined)[], boolean]
+
 export class QueryBuilder<
   M extends Model,
   R = M[]
 > extends objection.QueryBuilder<M, R> {
+  /**
+   * Exposes a selection of query builder methods on the target, redirecting
+   * the calls to `this.query()[method](...)`.
+   */
+  static mixin(target: object): void
+
   /** Clones the query with scope/filter state. */
   clone(): this
   /**
@@ -3133,21 +3182,21 @@ export class QueryBuilder<
    * sum(), sumDistinct(), avg(), avgDistinct()
    */
   hasSpecialSelects(): boolean
-  withScope(...scopes: string[]): this
+  withScope(...scopes: QueryScopeArguments): this
   /**
    * Clear all scopes defined with `withScope()` statements,
    * preserving the default scope.
    */
   clearWithScope(): this
   ignoreScope(...scopes: string[]): this
-  applyScope(...scopes: string[]): this
-  allowScope(...scopes: string[]): void
-  clearAllowScope(): void
+  applyScope(...scopes: QueryScopeArguments): this
+  allowScope(...scopes: (string | null | undefined)[]): this
+  clearAllowScope(): this
   applyFilter(name: string, ...args: unknown[]): this
   applyFilter(filters: { [name: string]: unknown[] }): this
-  allowFilter(...filters: string[]): void
+  allowFilter(...filters: string[]): this
   /** Omits properties from the query result. */
-  omit(...properties: string[]): void
+  omit(...properties: string[]): this
   withGraph(
     expr: objection.RelationExpression<M>,
     options?: objection.GraphOptions & {
@@ -3166,83 +3215,159 @@ export class QueryBuilder<
     }
   ): this
 
+  /** Patches or updates the matched model, or inserts it if none matched. */
   upsert(
     data: PartialModelObject<M>,
     options?: {
       update?: boolean
       fetch?: boolean
     }
-  ): this
+  ): objection.SingleQueryBuilder<this>
 
+  /**
+   * Applies query parameters through the handlers registered in
+   * {@link QueryParameters}, which may handle parameters beyond the built-in
+   * ones. Array notation keys, e.g. `'filter[]'`, are supported as well.
+   */
   find(
-    query: QueryParameterOptions,
+    query: (QueryParameterOptions & Record<string, unknown>) | null | undefined,
     allowParam?:
-      | QueryParameterOptionKey[]
+      | LiteralUnion<QueryParameterOptionKey>[]
       | {
-          [key in QueryParameterOptionKey]?: boolean
+          [key in LiteralUnion<QueryParameterOptionKey>]?: boolean
         }
   ): this
 
   patchById(id: Id, data: PartialModelObject<M>): this
   updateById(id: Id, data: PartialModelObject<M>): this
-  upsertAndFetch(data: PartialModelObject<M>): this
+
+  /** Also supports arrays of models, not only single instances. */
+  patchAndFetch(
+    data: objection.PartialModelObject<M>[]
+  ): objection.ArrayQueryBuilder<this>
+
+  patchAndFetch(
+    data: objection.PartialModelObject<M>
+  ): objection.SingleQueryBuilder<this>
+
+  /** Also supports arrays of models, not only single instances. */
+  updateAndFetch(
+    data: objection.PartialModelObject<M>[]
+  ): objection.ArrayQueryBuilder<this>
+
+  updateAndFetch(
+    data: objection.PartialModelObject<M>
+  ): objection.SingleQueryBuilder<this>
+
+  /**
+   * Upserts the models, inserting missing ones only at the root and leaving
+   * their relations untouched.
+   */
+  upsertAndFetch(
+    data: objection.PartialModelGraph<M>[]
+  ): objection.ArrayQueryBuilder<this>
+
+  upsertAndFetch(
+    data: objection.PartialModelGraph<M>
+  ): objection.SingleQueryBuilder<this>
+
   insertDitoGraph(
-    data: OrArrayOf<PartialDitoModelGraph<M>>,
+    data: PartialDitoModelGraph<M>[],
     options?: DitoGraphOptions
-  ): this
+  ): objection.ArrayQueryBuilder<this>
+
+  insertDitoGraph(
+    data: PartialDitoModelGraph<M>,
+    options?: DitoGraphOptions
+  ): objection.SingleQueryBuilder<this>
 
   insertDitoGraphAndFetch(
-    data: OrArrayOf<PartialDitoModelGraph<M>>,
+    data: PartialDitoModelGraph<M>[],
     options?: DitoGraphOptions
-  ): this
+  ): objection.ArrayQueryBuilder<this>
+
+  insertDitoGraphAndFetch(
+    data: PartialDitoModelGraph<M>,
+    options?: DitoGraphOptions
+  ): objection.SingleQueryBuilder<this>
 
   upsertDitoGraph(
-    data: OrArrayOf<PartialDitoModelGraph<M>>,
+    data: PartialDitoModelGraph<M>[],
     options?: DitoGraphOptions
-  ): this
+  ): objection.ArrayQueryBuilder<this>
+
+  upsertDitoGraph(
+    data: PartialDitoModelGraph<M>,
+    options?: DitoGraphOptions
+  ): objection.SingleQueryBuilder<this>
 
   upsertDitoGraphAndFetch(
-    data: OrArrayOf<PartialDitoModelGraph<M>>,
+    data: PartialDitoModelGraph<M>[],
     options?: DitoGraphOptions
-  ): this
+  ): objection.ArrayQueryBuilder<this>
+
+  upsertDitoGraphAndFetch(
+    data: PartialDitoModelGraph<M>,
+    options?: DitoGraphOptions
+  ): objection.SingleQueryBuilder<this>
 
   upsertDitoGraphAndFetchById(
     id: Id,
     data: PartialDitoModelGraph<M>,
     options?: DitoGraphOptions
-  ): this
+  ): objection.SingleQueryBuilder<this>
 
   updateDitoGraph(
-    data: OrArrayOf<PartialDitoModelGraph<M>>,
+    data: PartialDitoModelGraph<M>[],
     options?: DitoGraphOptions
-  ): this
+  ): objection.ArrayQueryBuilder<this>
+
+  updateDitoGraph(
+    data: PartialDitoModelGraph<M>,
+    options?: DitoGraphOptions
+  ): objection.SingleQueryBuilder<this>
 
   updateDitoGraphAndFetch(
-    data: OrArrayOf<PartialDitoModelGraph<M>>,
+    data: PartialDitoModelGraph<M>[],
     options?: DitoGraphOptions
-  ): this
+  ): objection.ArrayQueryBuilder<this>
+
+  updateDitoGraphAndFetch(
+    data: PartialDitoModelGraph<M>,
+    options?: DitoGraphOptions
+  ): objection.SingleQueryBuilder<this>
 
   updateDitoGraphAndFetchById(
     id: Id,
     data: PartialDitoModelGraph<M>,
     options?: DitoGraphOptions
-  ): this
+  ): objection.SingleQueryBuilder<this>
 
   patchDitoGraph(
-    data: OrArrayOf<PartialDitoModelGraph<M>>,
+    data: PartialDitoModelGraph<M>[],
     options?: DitoGraphOptions
-  ): this
+  ): objection.ArrayQueryBuilder<this>
+
+  patchDitoGraph(
+    data: PartialDitoModelGraph<M>,
+    options?: DitoGraphOptions
+  ): objection.SingleQueryBuilder<this>
 
   patchDitoGraphAndFetch(
-    data: OrArrayOf<PartialDitoModelGraph<M>>,
+    data: PartialDitoModelGraph<M>[],
     options?: DitoGraphOptions
-  ): this
+  ): objection.ArrayQueryBuilder<this>
+
+  patchDitoGraphAndFetch(
+    data: PartialDitoModelGraph<M>,
+    options?: DitoGraphOptions
+  ): objection.SingleQueryBuilder<this>
 
   patchDitoGraphAndFetchById(
     id: Id,
     data: PartialDitoModelGraph<M>,
     options?: DitoGraphOptions
-  ): this
+  ): objection.SingleQueryBuilder<this>
 
   // Returns the query builder, which objection declares as `Promise<void>`.
   truncate(options?: {
@@ -3316,16 +3441,20 @@ export type PartialModelObject<T extends Model> = {
 }
 
 export type PartialDitoModelGraph<M extends Partial<Model>> = {
-  [K in objection.NonFunctionPropertyNames<M>]?: objection.Defined<
+  [K in objection.NonFunctionPropertyNames<M>]?: PartialDitoModelGraphField<
     M[K]
-  > extends infer D extends Model
-    ? PartialDitoModelGraph<D>
-    : objection.Defined<M[K]> extends Array<infer I>
+  >
+} & objection.GraphParameters
+
+// Nullable relations, e.g. of `belongsTo`, accept graphs as well as `null`:
+type PartialDitoModelGraphField<F> =
+  NonNullable<F> extends infer D extends Model
+    ? PartialDitoModelGraph<D> | Extract<F, null>
+    : objection.Defined<F> extends Array<infer I>
       ? I extends Partial<Model>
         ? PartialDitoModelGraph<I>[]
-        : M[K]
-      : M[K]
-}
+        : F
+      : F
 
 /* ------------------------------ Start Errors ----------------------------- */
 export class ResponseError extends Error {

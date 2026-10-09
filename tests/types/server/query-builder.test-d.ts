@@ -3,6 +3,7 @@ import type { QueryBuilder, Model } from '@ditojs/server'
 
 describe('QueryBuilder', () => {
   type QB = QueryBuilder<Model, Model[]>
+  type SingleQB = QueryBuilder<Model, Model>
 
   it('applyFilter supports string name with args', () => {
     const query = {} as QB
@@ -25,10 +26,10 @@ describe('QueryBuilder', () => {
 
   it('upsert options are individually optional', () => {
     const query = {} as QB
-    assertType<QB>(query.upsert({} as any, { update: true }))
-    assertType<QB>(query.upsert({} as any, { fetch: true }))
-    assertType<QB>(query.upsert({} as any, {}))
-    assertType<QB>(query.upsert({} as any))
+    assertType<SingleQB>(query.upsert({} as any, { update: true }))
+    assertType<SingleQB>(query.upsert({} as any, { fetch: true }))
+    assertType<SingleQB>(query.upsert({} as any, {}))
+    assertType<SingleQB>(query.upsert({} as any))
   })
 
   it('scope methods return this for chaining', () => {
@@ -55,21 +56,31 @@ describe('QueryBuilder', () => {
     )
   })
 
-  it('DitoGraph methods return this for chaining', () => {
+  it('DitoGraph methods return query builders for their data', () => {
     const query = {} as QB
-    assertType<QB>(query.insertDitoGraph({} as any))
-    assertType<QB>(query.insertDitoGraphAndFetch({} as any))
-    assertType<QB>(query.upsertDitoGraph({} as any))
-    assertType<QB>(query.upsertDitoGraphAndFetch({} as any))
-    assertType<QB>(query.patchDitoGraph({} as any))
-    assertType<QB>(query.patchDitoGraphAndFetch({} as any))
-    assertType<QB>(
+    assertType<QB>(query.insertDitoGraph([{}]))
+    assertType<SingleQB>(query.insertDitoGraph({}))
+    assertType<QB>(query.insertDitoGraphAndFetch([{}]))
+    assertType<SingleQB>(query.insertDitoGraphAndFetch({}))
+    assertType<QB>(query.upsertDitoGraph([{}]))
+    assertType<SingleQB>(query.upsertDitoGraph({}))
+    assertType<QB>(query.upsertDitoGraphAndFetch([{}]))
+    assertType<SingleQB>(query.upsertDitoGraphAndFetch({}))
+    assertType<QB>(query.updateDitoGraph([{}]))
+    assertType<SingleQB>(query.updateDitoGraph({}))
+    assertType<QB>(query.updateDitoGraphAndFetch([{}]))
+    assertType<SingleQB>(query.updateDitoGraphAndFetch({}))
+    assertType<QB>(query.patchDitoGraph([{}]))
+    assertType<SingleQB>(query.patchDitoGraph({}))
+    assertType<QB>(query.patchDitoGraphAndFetch([{}]))
+    assertType<SingleQB>(query.patchDitoGraphAndFetch({}))
+    assertType<SingleQB>(
       query.upsertDitoGraphAndFetchById(1, {} as any)
     )
-    assertType<QB>(
+    assertType<SingleQB>(
       query.updateDitoGraphAndFetchById(1, {} as any)
     )
-    assertType<QB>(
+    assertType<SingleQB>(
       query.patchDitoGraphAndFetchById(1, {} as any)
     )
   })
@@ -99,8 +110,8 @@ describe('QueryBuilder', () => {
       .toEqualTypeOf<unknown[]>()
   })
 
-  it('omit returns void (not chainable)', () => {
+  it('omit returns this for chaining', () => {
     const query = {} as QB
-    expectTypeOf(query.omit('id')).toBeVoid()
+    assertType<QB>(query.omit('id'))
   })
 })
