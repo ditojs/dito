@@ -12,7 +12,8 @@
     "src/",
     "types/",
     "!src/**/*.test.js",
-    "!src/**/__snapshots__/"
+    "!src/**/__snapshots__/",
+    "!src/**/node_modules/"
   ],
   "bin": {
     "dito": "./src/cli/index.js"

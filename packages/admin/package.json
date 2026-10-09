@@ -26,7 +26,7 @@
     "!src/**/*.test.js",
     "!src/**/__snapshots__/",
     "!src/test/",
-    "!src/node_modules/"
+    "!src/**/node_modules/"
   ],
   "scripts": {
     "build": "vite build",

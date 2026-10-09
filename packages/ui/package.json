@@ -22,7 +22,8 @@
     "dist/",
     "!src/**/*.test.js",
     "!src/**/__snapshots__/",
-    "!src/test/"
+    "!src/test/",
+    "!src/**/node_modules/"
   ],
   "scripts": {
     "build:icons": "inline-assets src/icons/*.svg --template src/icons/template.js > src/styles/mixins/_icons.scss",
