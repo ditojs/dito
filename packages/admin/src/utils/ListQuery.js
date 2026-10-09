@@ -14,6 +14,9 @@ export class ListQuery {
     this.getRoute = getRoute
     this.getSourceStore = getSourceStore
     this.getDefaultQuery = getDefaultQuery
+    // The navigation of the last `update()` while it is pending, with the
+    // query that it navigates to, see `whenNavigated()`.
+    this.pendingNavigation = null
   }
 
   // The stored query, with the defaults of the source for missing values.
@@ -33,11 +36,37 @@ export class ListQuery {
     if (resetPage && changedQuery.page != null) {
       changedQuery.page = 0
     }
-    return this.router.push({
+    const promise = this.router.push({
       query: changedQuery,
       // Preserve the hash for tabs:
       hash: this.getRoute().hash
     })
+    const navigation = { query: changedQuery, promise }
+    this.pendingNavigation = navigation
+    const settle = () => {
+      if (this.pendingNavigation === navigation) {
+        this.pendingNavigation = null
+      }
+    }
+    promise.then(settle, settle)
+    return promise
+  }
+
+  // Returns `null` if no navigation of `update()` is pending, or the route
+  // already holds its query. Otherwise returns a promise that resolves once
+  // it settled, to whether the route then holds its query, as the navigation
+  // may fail or be superseded, e.g. by a navigation guard.
+  whenNavigated() {
+    const navigation = this.pendingNavigation
+    if (!navigation || this.isRouteQuery(navigation.query)) {
+      return null
+    }
+    const hasNavigated = () => this.isRouteQuery(navigation.query)
+    return navigation.promise.then(hasNavigated, hasNavigated)
+  }
+
+  isRouteQuery(query) {
+    return isSameQuery(query, this.getRoute().query)
   }
 
   // Merges the stored query with the route query, so that the list shows the

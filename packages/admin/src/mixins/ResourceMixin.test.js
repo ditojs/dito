@@ -315,6 +315,24 @@ describe('ResourceMixin', () => {
       })
     })
 
+    it('notifies errors that applying the loaded data throws', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+      await mountSchema({
+        schema: {
+          ...listSchema,
+          // The list emits `'load'` on its schema:
+          onLoad() {
+            throw new Error('Unable to process the books')
+          }
+        },
+        request: () => ({ data: [{ id: 1, title: 'Emma' }] })
+      })
+      expect(getNotifications()).toContainEqual({
+        title: 'Error',
+        text: 'Error: Unable to process the books'
+      })
+    })
+
     it('clears the abort controller once the data load is done', async () => {
       // Unlike browsers, happy-dom's `AbortController` has no `toStringTag`,
       // so Vue makes it reactive, and the stored controller is a proxy:

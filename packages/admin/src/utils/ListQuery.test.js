@@ -84,6 +84,47 @@ describe('ListQuery', () => {
     })
   })
 
+  describe('whenNavigated()', () => {
+    it(`returns null if no navigation is pending`, () => {
+      const { listQuery } = createListQuery()
+      expect(listQuery.whenNavigated()).toBe(null)
+    })
+
+    it('resolves to whether the route holds the query', async () => {
+      const { listQuery, route, router } = createListQuery()
+      router.push.mockImplementation(async ({ query }) => {
+        await Promise.resolve()
+        route.query = query
+      })
+      const navigated = listQuery.update({ page: 2 })
+      const hasNavigated = listQuery.whenNavigated()
+      expect(hasNavigated).toBeInstanceOf(Promise)
+      await navigated
+      expect(await hasNavigated).toBe(true)
+      expect(listQuery.whenNavigated()).toBe(null)
+    })
+
+    it('resolves to `false` if the navigation fails', async () => {
+      const { listQuery, router } = createListQuery()
+      router.push.mockImplementation(async () => {
+        throw new Error('Navigation aborted')
+      })
+      const navigated = listQuery.update({ page: 2 })
+      const hasNavigated = listQuery.whenNavigated()
+      await expect(navigated).rejects.toThrow('Navigation aborted')
+      expect(await hasNavigated).toBe(false)
+    })
+
+    it('returns null once the route holds the query', async () => {
+      const { listQuery, route, router } = createListQuery()
+      router.push.mockImplementation(() => new Promise(() => {}))
+      listQuery.update({ page: 2 })
+      expect(listQuery.whenNavigated()).not.toBe(null)
+      route.query = { scope: 'all', order: 'title asc', page: '2' }
+      expect(listQuery.whenNavigated()).toBe(null)
+    })
+  })
+
   describe('syncWithRoute()', () => {
     it('merges the stored query and the route query', () => {
       const { listQuery, router, store } = createListQuery({

@@ -4,7 +4,8 @@ import {
   mountAdmin,
   mountForm,
   mountSchema,
-  stubConfirm
+  stubConfirm,
+  unmountAdmin
 } from '../test/mount.js'
 
 async function mountBookForm() {
@@ -225,6 +226,80 @@ describe('SourceMixin', () => {
         order: 'title asc'
       })
       expect(loadQueries).toEqual([{ order: 'title asc' }])
+    })
+  })
+
+  describe('query', () => {
+    async function mountBooksView() {
+      const admin = await mountAdmin({
+        views: {
+          books: {
+            type: 'view',
+            component: {
+              type: 'list',
+              resource: { path: 'books' },
+              columns: {
+                title: { sortable: true, defaultSort: true }
+              }
+            }
+          }
+        },
+        request: () => ({ data: [{ id: 1, title: 'Emma' }] })
+      })
+      await admin.navigate('/books')
+      const [source] = admin.wrapper
+        .findAllComponents({ name: 'DitoTypeList' })
+        .map(({ vm }) => vm)
+      const getLoadQueries = () =>
+        admin.request.mock.calls
+          .map(([options]) => options)
+          .filter(({ url }) => url === '/books')
+          .map(({ query }) => query)
+      return { admin, source, getLoadQueries }
+    }
+
+    it('loads the set query once when loading while it navigates', async () => {
+      const { admin, source, getLoadQueries } = await mountBooksView()
+      const loadCount = getLoadQueries().length
+      source.query = { order: 'title desc' }
+      source.loadData()
+      await flushPromises()
+      expect(admin.router.currentRoute.value.query).toEqual({
+        order: 'title desc'
+      })
+      expect(source.query).toEqual({ order: 'title desc' })
+      expect(getLoadQueries().slice(loadCount)).toEqual([
+        { order: 'title desc' }
+      ])
+    })
+
+    it('loads the stored query when the navigation fails', async () => {
+      const { admin, source, getLoadQueries } = await mountBooksView()
+      const loadCount = getLoadQueries().length
+      admin.router.beforeEach(() => false)
+      source.query = { order: 'title desc' }
+      source.loadData()
+      await flushPromises()
+      expect(source.query).toEqual({ order: 'title asc' })
+      expect(getLoadQueries().slice(loadCount)).toEqual([
+        { order: 'title asc' }
+      ])
+    })
+
+    it(`doesn't load once unmounted when the navigation fails`, async () => {
+      const { admin, source, getLoadQueries } = await mountBooksView()
+      const loadCount = getLoadQueries().length
+      let rejectNavigation
+      admin.router.beforeEach(
+        () => new Promise(resolve => (rejectNavigation = () => resolve(false)))
+      )
+      source.query = { order: 'title desc' }
+      source.loadData()
+      await flushPromises()
+      unmountAdmin(admin)
+      rejectNavigation()
+      await flushPromises()
+      expect(getLoadQueries().slice(loadCount)).toEqual([])
     })
   })
 

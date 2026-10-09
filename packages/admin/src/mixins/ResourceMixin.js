@@ -251,7 +251,7 @@ export default {
       const query = this.queryParams
       return this.handleRequest(
         { method: 'get', query, isDataLoad: true },
-        (err, response) => {
+        async (err, response) => {
           if (err) {
             if (response) {
               const { data } = response
@@ -281,10 +281,20 @@ export default {
             if (!(this.isForm && this.isDirty)) {
               this.setData(response.data)
             }
-            this.emitSchemaEvent('load')
+            // Await the handlers, so that their errors are notified below.
+            await this.emitSchemaEvent('load')
           }
         }
-      ).catch(console.error)
+      ).catch(error => {
+        // Notify the errors thrown while applying the loaded data, e.g. by
+        // `setData()` or the `'load'` event handlers, which the emitter
+        // aggregates, like request errors. Aborted loads don't call the
+        // callback, see `handleRequest()`.
+        const errors = error instanceof AggregateError ? error.errors : [error]
+        for (const err of errors) {
+          this.notifyRequestError(err)
+        }
+      })
     },
 
     isValidationError(response) {
@@ -351,16 +361,22 @@ export default {
         const { response } = error
         // If the callback returns true, the error was already handled.
         if (!(await callback(error, response))) {
-          const data = response?.data
-          const title = isString(data?.type) ? labelize(data.type) : 'Error'
-          const text = data?.message ?? error
-          this.notify({ type: 'error', error, title, text })
+          this.notifyRequestError(error)
         }
       } else {
         // Pass both request and response to the callback, so they can be
         // exposed to further callbacks through DitoContext.
         await callback(null, response)
       }
+    },
+
+    // Notifies the error with the type and message of the response data of
+    // request errors, see `RequestError`, or else the error itself.
+    notifyRequestError(error) {
+      const data = error?.response?.data
+      const title = isString(data?.type) ? labelize(data.type) : 'Error'
+      const text = data?.message ?? error
+      this.notify({ type: 'error', error, title, text })
     },
 
     getPayloadData(button, method) {

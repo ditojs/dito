@@ -183,6 +183,10 @@ export default {
         return this.listQuery.query
       },
 
+      // Navigates to the query asynchronously, see `ListQuery.update()`. The
+      // stored query and thus the getter only change once the route did, when
+      // the `$route` watcher loads the list. Loads requested meanwhile wait
+      // for the navigation, see `requestData()`.
       set(query) {
         this.listQuery.update(query)
       }
@@ -399,6 +403,22 @@ export default {
     setupData() {
       this.listQuery.syncWithRoute()
       this.ensureData()
+    },
+
+    // @override ResourceMixin.requestData()
+    requestData() {
+      // While a navigation to a changed query is pending, the stored query is
+      // stale, and the `$route` watcher loads the list with the new query once
+      // the route changed. Wait for it instead of loading the stale query, and
+      // only load if the navigation failed or was superseded.
+      const navigated = this.listQuery.whenNavigated()
+      return navigated
+        ? navigated.then(hasNavigated => {
+            if (!hasNavigated && !this.$.isUnmounted) {
+              return this.requestData()
+            }
+          })
+        : ResourceMixin.methods.requestData.call(this)
     },
 
     // @override ResourceMixin.clearData()
