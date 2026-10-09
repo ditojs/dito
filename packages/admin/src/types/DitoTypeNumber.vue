@@ -10,30 +10,21 @@ DitoInput.dito-number(
   :step="stepValue"
 )
   template(#prefix)
-    DitoAffixes(
-      :items="schema.prefix"
+    DitoInputAffixes(
+      :typeComponent="this"
       position="prefix"
-      mode="input"
-      :disabled="disabled"
-      :parentContext="context"
     )
   template(#suffix)
-    DitoAffixes(
-      :items="schema.suffix"
+    DitoInputAffixes(
+      :typeComponent="this"
       position="suffix"
-      mode="input"
-      :clearable="showClearButton"
-      :disabled="disabled"
-      :inlineInfo="inlineInfo"
-      :parentContext="context"
-      @clear="clear"
     )
 </template>
 
 <script>
 import DitoTypeComponent from '../DitoTypeComponent.js'
 import NumberMixin from '../mixins/NumberMixin.js'
-import DitoAffixes from '../components/DitoAffixes.vue'
+import DitoInputAffixes from '../components/DitoInputAffixes.vue'
 import { DitoInput } from '@ditojs/ui/src'
 
 export default DitoTypeComponent.register(
@@ -41,7 +32,7 @@ export default DitoTypeComponent.register(
   // @vue/component
   {
     mixins: [NumberMixin],
-    components: { DitoInput, DitoAffixes },
+    components: { DitoInput, DitoInputAffixes },
     nativeField: true,
     textField: true,
 

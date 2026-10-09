@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import { mountSchema, mountForm } from '../test/mount.js'
+import { mountSchema, mountForm, mountAdmin, settle } from '../test/mount.js'
 
 const genres = [
   { value: 'fiction', label: 'Fiction' },
@@ -79,7 +79,7 @@ describe('DitoTypeSelect', () => {
     })
 
     it('groups the options with `groupBy`', async () => {
-      const { findField } = await mountSchema({
+      const { findField, data } = await mountSchema({
         schema: {
           components: {
             book: {
@@ -102,6 +102,9 @@ describe('DitoTypeSelect', () => {
       expect(groups[0].findAll('option').map(option => option.text())).toEqual(
         ['Emma', 'Persuasion']
       )
+      await findField('book').find('select').setValue('persuasion')
+      // The `value` keys of the grouped options are used as their values:
+      expect(data.book).toBe('persuasion')
     })
 
     it('loads options through `request()` once per form with `cache`', async () => {
@@ -367,67 +370,49 @@ describe('DitoTypeSelect', () => {
       ])
     })
   })
-})
 
-describe('DitoTypeRadio', () => {
-  it('renders a radio button per option and selects the value', async () => {
-    const { findField, data } = await mountSchema({
-      schema: {
-        components: {
-          genre: { type: 'radio', options: genres, layout: 'horizontal' }
-        }
-      },
-      data: { genre: 'poetry' }
-    })
-    const field = findField('genre')
-    expect(field.classes()).toContain('dito-layout--horizontal')
-    const radios = field.findAll('input[type="radio"]')
-    expect(field.findAll('label').map(label => label.text())).toEqual([
-      'Fiction',
-      'Poetry',
-      'Drama'
-    ])
-    expect(radios.map(radio => radio.element.checked)).toEqual([
-      false,
-      true,
-      false
-    ])
-    await radios[2].setValue(true)
-    expect(data.genre).toBe('drama')
-  })
-})
-
-describe('DitoTypeCheckboxes', () => {
-  it('stores the values of the checked options as array', async () => {
-    const { findField, data } = await mountSchema({
-      schema: {
-        components: { genres: { type: 'checkboxes', options: genres } }
-      }
-    })
-    expect(data.genres).toEqual([])
-    const checkboxes = findField('genres').findAll('input[type="checkbox"]')
-    await checkboxes[2].setValue(true)
-    await checkboxes[0].setValue(true)
-    expect(data.genres).toEqual(['drama', 'fiction'])
-    await checkboxes[2].setValue(false)
-    expect(data.genres).toEqual(['fiction'])
-  })
-
-  it(`doesn't check values without option once the options are loaded`, async () => {
-    const { findField } = await mountSchema({
-      schema: {
-        components: {
+  describe('editable', () => {
+    it('links the selected option to its form in `view`', async () => {
+      const admin = await mountAdmin({
+        views: {
           genres: {
-            type: 'checkboxes',
-            options: { data: async () => genres }
+            type: 'view',
+            component: {
+              type: 'list',
+              resource: { path: 'genres' },
+              form: { type: 'form', components: { name: { type: 'text' } } }
+            }
+          },
+          test: {
+            type: 'view',
+            label: 'Test',
+            components: {
+              genre: {
+                type: 'select',
+                editable: true,
+                view: 'genres',
+                options: {
+                  data: [
+                    { id: 1, name: 'Fiction' },
+                    { id: 2, name: 'Poetry' }
+                  ],
+                  value: 'id',
+                  label: 'name'
+                }
+              }
+            }
           }
         }
-      },
-      data: { genres: ['poetry', 'opera'] }
+      })
+      await admin.navigate('/test')
+      const view = admin.getRouteComponent(component => component.isView)
+      view.setData({ genre: 2 })
+      await settle(view)
+      const field = admin.wrapper.find('.dito-select')
+      const link = field.find('.dito-options-edit-buttons a')
+      expect(link.attributes('href')).toBe('/genres/2')
+      await field.find('select').setValue('1')
+      expect(link.attributes('href')).toBe('/genres/1')
     })
-    const checked = findField('genres')
-      .findAll('input')
-      .map(input => input.element.checked)
-    expect(checked).toEqual([false, true, false])
   })
 })

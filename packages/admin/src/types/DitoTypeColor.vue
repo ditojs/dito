@@ -14,23 +14,14 @@ DitoTrigger.dito-color(
       v-bind="attributes"
     )
       template(#prefix)
-        DitoAffixes(
-          :items="schema.prefix"
+        DitoInputAffixes(
+          :typeComponent="this"
           position="prefix"
-          mode="input"
-          :disabled="disabled"
-          :parentContext="context"
         )
       template(#suffix)
-        DitoAffixes(
-          :items="schema.suffix"
+        DitoInputAffixes(
+          :typeComponent="this"
           position="suffix"
-          mode="input"
-          :clearable="showClearButton"
-          :disabled="disabled"
-          :inlineInfo="inlineInfo"
-          :parentContext="context"
-          @clear="clear"
         )
           template(#append)
             .dito-color__preview(
@@ -53,12 +44,12 @@ import { SketchPicker, tinycolor } from 'vue-color'
 import { DitoTrigger, DitoInput } from '@ditojs/ui/src'
 import DitoTypeComponent from '../DitoTypeComponent.js'
 import TypeMixin from '../mixins/TypeMixin.js'
-import DitoAffixes from '../components/DitoAffixes.vue'
+import DitoInputAffixes from '../components/DitoInputAffixes.vue'
 import { getSchemaAccessor } from '../utils/accessor.js'
 
 // @vue/component
 export default DitoTypeComponent.register('color', {
-  components: { DitoTrigger, DitoInput, DitoAffixes, SketchPicker },
+  components: { DitoTrigger, DitoInput, DitoInputAffixes, SketchPicker },
 
   data() {
     return {

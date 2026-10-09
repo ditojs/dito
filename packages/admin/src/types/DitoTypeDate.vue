@@ -10,32 +10,23 @@
     v-bind="attributes"
   )
     template(#prefix)
-      DitoAffixes(
-        :items="schema.prefix"
+      DitoInputAffixes(
+        :typeComponent="this"
         position="prefix"
-        mode="input"
         absolute
-        :disabled="disabled"
-        :parentContext="context"
       )
     template(#suffix)
-      DitoAffixes(
-        :items="schema.suffix"
+      DitoInputAffixes(
+        :typeComponent="this"
         position="suffix"
-        mode="input"
         absolute
-        :clearable="showClearButton"
-        :disabled="disabled"
-        :inlineInfo="inlineInfo"
-        :parentContext="context"
-        @clear="clear"
       )
 </template>
 
 <script>
 import DitoTypeComponent from '../DitoTypeComponent.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
-import DitoAffixes from '../components/DitoAffixes.vue'
+import DitoInputAffixes from '../components/DitoInputAffixes.vue'
 import {
   DitoDatePicker,
   DitoTimePicker,
@@ -52,7 +43,7 @@ export default DitoTypeComponent.register(
   ['date', 'datetime', 'time'],
   // @vue/component
   {
-    components: { DitoAffixes },
+    components: { DitoInputAffixes },
     // TODO: This is only here so we get placeholder added. Come up with a
     // better way to support attributes per component (a list of actually
     // supported attributes)

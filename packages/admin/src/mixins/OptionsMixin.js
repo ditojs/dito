@@ -1,6 +1,6 @@
 import { toRaw } from 'vue'
 import DitoContext from '../DitoContext.js'
-import { hasViewSchema, getViewEditPath } from '../utils/schema/lookup.js'
+import { hasViewSchema } from '../utils/schema/lookup.js'
 import { getMultipleValue } from '../utils/schema/data.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
 import { setTemporaryId, isReference } from '../utils/data.js'
@@ -207,12 +207,6 @@ export default {
       }
     }),
 
-    editPath() {
-      return this.editable && this.selectedValue
-        ? getViewEditPath(this.schema, this.selectedValue, this.context)
-        : null
-    },
-
     groupByLabel() {
       return this.groupBy ? 'label' : null
     },
@@ -250,7 +244,11 @@ export default {
 
   methods: {
     getOptionKey(key) {
-      const [option] = this.activeOptions
+      const [firstEntry] = this.activeOptions
+      // Grouped options are looked up in their first group.
+      const option = this.groupBy
+        ? firstEntry?.[this.groupByOptions]?.[0]
+        : firstEntry
       return isObject(option) && key in option ? key : null
     },
 

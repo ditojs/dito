@@ -854,7 +854,9 @@ export type SchemaOptions<$Item, $Option = any> =
        */
       value?: keyof $Option | ItemAccessor<$Item, { option: $Option }>
       /**
-       * The key of the option property which should used to group the options.
+       * @deprecated Not supported, the options are grouped by the `groupBy`
+       * setting of the component's schema, see
+       * {@link SchemaOptionsMixin.groupBy}.
        */
       groupBy?: keyof $Option
       /**
@@ -917,7 +919,9 @@ export interface SchemaOptionsMixin<$Item, $Option = any> {
   relateBy?: string
   /**
    * The key of the option property which should be used to
-   * group the options.
+   * group the options. Selects and multiselects show the groups
+   * in their dropdowns, radio buttons and checkboxes list each
+   * group in a fieldset with the group's name as its legend.
    */
   groupBy?: OrItemAccessor<$Item, {}, string>
   /**
@@ -946,7 +950,8 @@ export interface SchemaOptionsMixin<$Item, $Option = any> {
       }
   /**
    * Whether the selected option can be edited by navigating
-   * to it.
+   * to its form in the view of `view`. Radio buttons and checkboxes
+   * show an edit button for each of their options.
    */
   editable?: OrItemAccessor<$Item, {}, boolean>
   /**

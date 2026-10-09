@@ -76,4 +76,21 @@ describe('DitoTypeDate', () => {
       createdAt: createdAt.toISOString()
     })
   })
+
+  it('positions `prefix` and `suffix` over the picker', async () => {
+    const { findField } = await mountSchema({
+      schema: {
+        components: {
+          published: { type: 'date', prefix: 'On', clearable: true }
+        }
+      },
+      data: { published: '2024-03-01' }
+    })
+    const field = findField('published')
+    const prefix = field.find('.dito-affixes--prefix')
+    expect(prefix.text()).toBe('On')
+    expect(prefix.classes()).toContain('dito-affixes--absolute')
+    await field.find('.dito-affixes__clear').trigger('click')
+    expect(field.find('.dito-affixes__clear').exists()).toBe(false)
+  })
 })

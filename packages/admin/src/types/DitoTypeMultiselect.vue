@@ -1,13 +1,10 @@
 <template lang="pug">
 .dito-multiselect
   .dito-multiselect__inner
-    DitoAffixes(
-      :items="schema.prefix"
+    DitoInputAffixes(
+      :typeComponent="this"
       position="prefix"
-      mode="input"
       absolute
-      :disabled="disabled"
-      :parentContext="context"
     )
     VueMultiselect(
       :id="componentPath"
@@ -52,28 +49,14 @@
             @keydown.enter.prevent="remove(option)"
             @mousedown.prevent="remove(option)"
           )
-    DitoAffixes(
-      :items="schema.suffix"
+    DitoInputAffixes(
+      :typeComponent="this"
       position="suffix"
-      mode="input"
       absolute
-      :clearable="showClearButton"
-      :disabled="disabled"
-      :inlineInfo="inlineInfo"
-      :parentContext="context"
-      @clear="clear"
     )
-  //- Edit button is never disabled, even if the field is disabled.
-  DitoEditButtons(
-    v-if="editable"
-    :schema="schema"
-    :dataPath="dataPath"
-    :data="data"
-    :meta="meta"
-    :store="store"
-    :disabled="false"
-    :editable="editable"
-    :editPath="editPath"
+  DitoOptionsEditButtons(
+    :typeComponent="this"
+    :optionValue="selectedValue"
   )
 </template>
 
@@ -82,7 +65,8 @@ import DitoTypeComponent from '../DitoTypeComponent.js'
 import DitoContext from '../DitoContext.js'
 import TypeMixin from '../mixins/TypeMixin.js'
 import OptionsMixin from '../mixins/OptionsMixin.js'
-import DitoAffixes from '../components/DitoAffixes.vue'
+import DitoInputAffixes from '../components/DitoInputAffixes.vue'
+import DitoOptionsEditButtons from '../components/DitoOptionsEditButtons.vue'
 import VueMultiselect from 'vue-multiselect'
 import { getSchemaAccessor } from '../utils/accessor.js'
 import { isArray, isBoolean, isObject, isString } from '@ditojs/utils'
@@ -90,7 +74,7 @@ import { isArray, isBoolean, isObject, isString } from '@ditojs/utils'
 // @vue/component
 export default DitoTypeComponent.register('multiselect', {
   mixins: [OptionsMixin],
-  components: { DitoAffixes, VueMultiselect },
+  components: { DitoInputAffixes, DitoOptionsEditButtons, VueMultiselect },
 
   data() {
     return {
@@ -382,10 +366,6 @@ $tag-line-height: 1em;
     position: relative;
     display: flex;
     align-items: center;
-  }
-
-  .dito-edit-buttons {
-    margin-left: $form-spacing-half;
   }
 
   .multiselect {

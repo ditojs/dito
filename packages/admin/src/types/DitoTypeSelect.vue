@@ -2,13 +2,10 @@
 //- Nesting is needed to make an arrow appear over the select item:
 .dito-select
   .dito-select__inner
-    DitoAffixes(
-      :items="schema.prefix"
+    DitoInputAffixes(
+      :typeComponent="this"
       position="prefix"
-      mode="input"
       absolute
-      :disabled="disabled"
-      :parentContext="context"
     )
     select(
       :id="componentPath"
@@ -40,40 +37,27 @@
         v-else-if="selectedOption"
       )
         option(:value="selectedValue") {{ getLabelForOption(selectedOption) }}
-    DitoAffixes(
-      :items="schema.suffix"
+    DitoInputAffixes(
+      :typeComponent="this"
       position="suffix"
-      mode="input"
       absolute
-      :clearable="showClearButton"
-      :disabled="disabled"
-      :inlineInfo="inlineInfo"
-      :parentContext="context"
-      @clear="clear"
     )
-  //- Edit button is never disabled, even if the field is disabled.
-  DitoEditButtons(
-    v-if="editable"
-    :schema="schema"
-    :dataPath="dataPath"
-    :data="data"
-    :meta="meta"
-    :store="store"
-    :disabled="false"
-    :editable="editable"
-    :editPath="editPath"
+  DitoOptionsEditButtons(
+    :typeComponent="this"
+    :optionValue="selectedValue"
   )
 </template>
 
 <script>
 import DitoTypeComponent from '../DitoTypeComponent.js'
 import OptionsMixin from '../mixins/OptionsMixin.js'
-import DitoAffixes from '../components/DitoAffixes.vue'
+import DitoInputAffixes from '../components/DitoInputAffixes.vue'
+import DitoOptionsEditButtons from '../components/DitoOptionsEditButtons.vue'
 
 // @vue/component
 export default DitoTypeComponent.register('select', {
   mixins: [OptionsMixin],
-  components: { DitoAffixes },
+  components: { DitoInputAffixes, DitoOptionsEditButtons },
 
   nativeField: true,
 
@@ -117,10 +101,6 @@ export default DitoTypeComponent.register('select', {
         border-color: $color-disabled;
       }
     }
-  }
-
-  .dito-edit-buttons {
-    margin-left: $form-spacing-half;
   }
 
   // Handle width fill separately due to required nesting of select:

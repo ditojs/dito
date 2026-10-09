@@ -7,30 +7,21 @@ DitoInput.dito-text(
   v-bind="attributes"
 )
   template(#prefix)
-    DitoAffixes(
-      :items="schema.prefix"
+    DitoInputAffixes(
+      :typeComponent="this"
       position="prefix"
-      mode="input"
-      :disabled="disabled"
-      :parentContext="context"
     )
   template(#suffix)
-    DitoAffixes(
-      :items="schema.suffix"
+    DitoInputAffixes(
+      :typeComponent="this"
       position="suffix"
-      mode="input"
-      :clearable="showClearButton"
-      :disabled="disabled"
-      :inlineInfo="inlineInfo"
-      :parentContext="context"
-      @clear="clear"
     )
 </template>
 
 <script>
 import DitoTypeComponent from '../DitoTypeComponent.js'
 import TextMixin from '../mixins/TextMixin'
-import DitoAffixes from '../components/DitoAffixes.vue'
+import DitoInputAffixes from '../components/DitoInputAffixes.vue'
 import { DitoInput } from '@ditojs/ui/src'
 
 const maskedPassword = '****************'
@@ -49,7 +40,7 @@ export default DitoTypeComponent.register(
   // @vue/component
   {
     mixins: [TextMixin],
-    components: { DitoInput, DitoAffixes },
+    components: { DitoInput, DitoInputAffixes },
     nativeField: true,
     textField: true,
     ignoreMissingValue: ({ schema }) => schema.type === 'password',
