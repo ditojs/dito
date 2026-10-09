@@ -142,10 +142,10 @@ describe('DitoTypeMarkup', () => {
     await new Promise(resolve => setTimeout(resolve, 150))
   })
 
-  // Bug: The debounced write of edits isn't cancelled on unmount, so edits
-  // made right before unmounting read the destroyed editor, which throws.
-  test.fails(`doesn't read the destroyed editor after unmounting`, async () => {
-    const { admin, getComponent } = await mountSchema({
+  // Edits made right before unmounting are written before the editor is
+  // destroyed, as reading the destroyed editor throws.
+  it('writes pending edits before destroying the editor', async () => {
+    const { admin, getComponent, data } = await mountSchema({
       schema: { components: { body: { type: 'markup' } } },
       data: { body: '<p>Emma</p>' }
     })
@@ -160,11 +160,10 @@ describe('DitoTypeMarkup', () => {
     unmountAdmin(admin)
     await new Promise(resolve => setTimeout(resolve, 150))
     expect(hasReadDestroyedEditor).toBe(false)
+    expect(data.body).toBe('<p>Emma!</p>')
   })
 
-  // Bug: `getExtensions()` swaps the extensions of `marks.subscript` and
-  // `marks.superscript`, so the subscript button has no command to run.
-  test.fails('applies subscript with `marks.subscript`', async () => {
+  it('applies subscript with `marks.subscript`', async () => {
     const { findField, getComponent, data } = await mountSchema({
       schema: {
         components: { formula: { type: 'markup', marks: { subscript: true } } }
@@ -174,5 +173,64 @@ describe('DitoTypeMarkup', () => {
     getComponent('formula').editor.commands.selectAll()
     await clickButton(findField('formula'), 'Subscript')
     await vi.waitFor(() => expect(data.formula).toBe('<p><sub>H2O</sub></p>'))
+  })
+
+  it('applies superscript with `marks.superscript`', async () => {
+    const { findField, getComponent, data } = await mountSchema({
+      schema: {
+        components: {
+          formula: { type: 'markup', marks: { superscript: true } }
+        }
+      },
+      data: { formula: '<p>E=mc2</p>' }
+    })
+    getComponent('formula').editor.commands.selectAll()
+    await clickButton(findField('formula'), 'Superscript')
+    await vi.waitFor(() => expect(data.formula).toBe('<p><sup>E=mc2</sup></p>'))
+  })
+
+  it('passes `autofocus` and `enableRules` to the editor', async () => {
+    const { getComponent } = await mountSchema({
+      schema: {
+        components: {
+          body: { type: 'markup' },
+          notes: {
+            type: 'markup',
+            autofocus: true,
+            enableRules: { input: true, paste: false }
+          }
+        }
+      }
+    })
+    const { options: bodyOptions } = getComponent('body').editor
+    expect(bodyOptions.autofocus).toBe(false)
+    expect(bodyOptions.enableInputRules).toBe(false)
+    expect(bodyOptions.enablePasteRules).toBe(false)
+    const { options: notesOptions } = getComponent('notes').editor
+    expect(notesOptions.autofocus).toBe(true)
+    expect(notesOptions.enableInputRules).toBe(true)
+    expect(notesOptions.enablePasteRules).toBe(false)
+  })
+
+  it('clears the editor when the value becomes null with `hardBreak`', async () => {
+    const { getComponent, data, settle } = await mountSchema({
+      schema: { components: { caption: { type: 'markup', hardBreak: true } } },
+      data: { caption: 'Emma' }
+    })
+    data.caption = null
+    await settle()
+    expect(getComponent('caption').editor.getText()).toBe('')
+  })
+
+  it(`doesn't submit forms with the toolbar buttons`, async () => {
+    const { findField } = await mountSchema({
+      schema: {
+        components: { body: { type: 'markup', marks: { bold: true } } }
+      }
+    })
+    const types = findField('body')
+      .findAll('.dito-buttons--toolbar button')
+      .map(button => button.attributes('type'))
+    expect(types).toEqual(['button'])
   })
 })

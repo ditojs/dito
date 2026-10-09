@@ -9,6 +9,7 @@
       button.dito-button(
         v-for="{ id, label, icon, isActive, onClick } in buttons"
         :key="id"
+        type="button"
         :class="{ 'dito-button--active': isActive }"
         :aria-label="label"
         :aria-pressed="isActive"
@@ -172,9 +173,9 @@ export default DitoTypeComponent.register('markup', {
     editorOptions() {
       return {
         editable: !this.readonly && !this.disabled,
-        autoFocus: this.autofocus,
-        disableInputRules: !this.enableRules.input,
-        disablePasteRules: !this.enableRules.paste,
+        autofocus: this.autofocus,
+        enableInputRules: this.enableRules.input,
+        enablePasteRules: this.enableRules.paste,
         parseOptions: this.parseOptions,
         editorProps: this.hardBreak
           ? {
@@ -265,6 +266,13 @@ export default DitoTypeComponent.register('markup', {
     }
 
     const setValueDebounced = debounce(() => updateValue(), 100)
+    // Writes the pending edits before unmounting, as the destroyed editor
+    // can't be read anymore, see `beforeUnmount()`:
+    this.writePendingValue = () => {
+      if (setValueDebounced.cancel()) {
+        updateValue()
+      }
+    }
 
     const updateValue = () => {
       const content = this.editor.getHTML()
@@ -296,8 +304,8 @@ export default DitoTypeComponent.register('markup', {
         ignoreWatch = false
       } else {
         const content = this.hardBreak
-          ? `<p>${value}</p>`
-          : value
+          ? `<p>${value ?? ''}</p>`
+          : value ?? ''
         this.editor.commands.setContent(content, {
           emitUpdate: false,
           parseOptions: this.parseOptions
@@ -313,6 +321,10 @@ export default DitoTypeComponent.register('markup', {
       extensions: this.getExtensions(),
       content: this.value || ''
     })
+  },
+
+  beforeUnmount() {
+    this.writePendingValue()
   },
 
   unmounted() {
@@ -412,8 +424,8 @@ export default DitoTypeComponent.register('markup', {
         marks.strike && Strike,
         marks.small && Small,
         marks.code && Code,
-        marks.subscript && Superscript,
-        marks.superscript && Subscript,
+        marks.subscript && Subscript,
+        marks.superscript && Superscript,
         marks.link && LinkWithTitle,
 
         // Nodes: `schema.nodes`
@@ -682,7 +694,7 @@ const LinkWithTitle = Link.extend({
   a {
     pointer-events: none;
     cursor: default;
-    color: blue;
+    color: $color-active;
     text-decoration: underline;
   }
 
