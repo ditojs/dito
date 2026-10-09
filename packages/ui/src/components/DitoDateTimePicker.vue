@@ -1,61 +1,52 @@
 <template lang="pug">
-.dito-date-time-picker(ref="picker")
-  .dito-date-time-picker__inner(
-    :class="{ 'dito-date-time-picker__inner--focus': focused }"
-  )
-    DitoInput.dito-date-time-picker__input(
-      ref="input"
-      v-model="currentText"
-      type="text"
-      v-bind="{ placeholder, disabled, focused, ...$attrs }"
-      @focus="onFocus(true)"
-      @blur="onFocus(false)"
-      @keydown="onKeyDown"
-      @mousedown.stop="onMouseDown(false)"
+DitoPickerInput.dito-date-time-picker(
+  ref="pickerInput"
+  v-bind="{ modelValue, transition, disabled, placeholder, formatOptions }"
+  :placement="activePanel === 'time' ? 'bottom-right' : 'bottom-left'"
+  icon="calendar"
+  toggleLabel="Choose date and time"
+  inputClass="dito-date-time-picker__input"
+  :inputAttributes="$attrs"
+  :handlePanelKey="handlePanelKey"
+  @update:modelValue="value => $emit('update:modelValue', value)"
+  @change="value => $emit('change', value)"
+  @focus="$emit('focus')"
+  @blur="$emit('blur')"
+  @caret-part-change="onCaretPartChange"
+)
+  template(#prefix)
+    slot(name="prefix")
+  template(#suffix)
+    slot(name="suffix")
+  template(#popup="{ value, setValue, close }")
+    DitoCalendar.dito-date-picker-popup(
+      v-if="activePanel === 'date'"
+      ref="calendar"
+      :modelValue="value"
+      :locale="locale"
+      @update:modelValue="setValue"
+      @select="close"
     )
-      template(#prefix)
-        slot(name="prefix")
-      template(#suffix)
-        DitoIcon(
-          name="calendar"
-          :disabled="disabled"
-          @mousedown.prevent="onMouseDown(true)"
-        )
-        slot(name="suffix")
-    DitoDatePicker(
-      ref="date"
-      v-model="currentValue"
-      v-model:show="showDate"
-      placement="bottom-left"
-      :target="$refs.picker"
-      v-bind="attributes"
+    DitoTimePanel(
+      v-else
+      ref="timePanel"
+      :modelValue="value"
+      @update:modelValue="setValue"
+      @select="close"
     )
-      template(#trigger)
-        //- Intentionally empty
-    DitoTimePicker(
-      ref="time"
-      v-model="currentValue"
-      v-model:show="showTime"
-      placement="bottom-right"
-      :target="$refs.picker"
-      v-bind="attributes"
-    )
-      template(#trigger)
-        //- Intentionally empty
 </template>
 
 <script>
-import { format, defaultFormats, assignDeeply } from '@ditojs/utils'
-import DitoInput from './DitoInput.vue'
-import DitoDatePicker from './DitoDatePicker.vue'
-import DitoTimePicker from './DitoTimePicker.vue'
-import DitoIcon from './DitoIcon.vue'
-import { parseDate } from '../utils/date.js'
-import { getSelection, setSelection } from '../utils/selection.js'
-import { getKeyNavigation } from '../utils/event.js'
+import { defaultFormats, assignDeeply } from '@ditojs/utils'
+import DitoPickerInput from './DitoPickerInput.vue'
+import DitoCalendar from './DitoCalendar.vue'
+import DitoTimePanel from './DitoTimePanel.vue'
+import { isTimePartName } from '../utils/time.js'
 
+// Shows a calendar below the date and a time panel below the time, depending
+// on where the caret is in the input.
 export default {
-  components: { DitoInput, DitoDatePicker, DitoTimePicker, DitoIcon },
+  components: { DitoPickerInput, DitoCalendar, DitoTimePanel },
   emits: ['update:modelValue', 'change', 'focus', 'blur'],
   inheritAttrs: false,
 
@@ -70,30 +61,12 @@ export default {
 
   data() {
     return {
-      currentValue: this.modelValue,
-      showDate: false,
-      showTime: false,
-      inputFocused: false,
-      dateFocused: false,
-      timeFocused: false,
-      closedMode: null
+      // The panel that the popup shows, 'date' or 'time'.
+      activePanel: 'date'
     }
   },
 
   computed: {
-    attributes() {
-      const { transition, disabled, locale, formatOptions: format } = this
-      return { transition, disabled, locale, format }
-    },
-
-    focused() {
-      return this.inputFocused || this.showDate || this.showTime
-    },
-
-    input() {
-      return this.$refs.input.input
-    },
-
     formatOptions() {
       return assignDeeply(
         {
@@ -112,131 +85,49 @@ export default {
         },
         this.format
       )
-    },
-
-    timeIndex() {
-      const text = this.currentText
-      if (text) {
-        const time = text.match(/([\S]+\s*)$/)?.[1]
-        if (time) {
-          return text.length - time.length
-        }
-      }
-      return null
-    },
-
-    currentText: {
-      get() {
-        return format(this.currentValue, this.formatOptions) || ''
-      },
-
-      set(value) {
-        const date = parseDate(value, this.formatOptions)
-        if (date) {
-          const selection = getSelection(this.input)
-          this.currentValue = date
-          this.$nextTick(() => setSelection(this.input, selection))
-        }
-      }
-    }
-  },
-
-  watch: {
-    modelValue(to, from) {
-      if (+to !== +from) {
-        this.currentValue = to
-      }
-    },
-
-    currentValue(value) {
-      if (+value !== +this.modelValue) {
-        this.$emit('update:modelValue', value)
-        this.$emit('change', value)
-      }
-    },
-
-    focused(to, from) {
-      if (to ^ from) {
-        this.$emit(to ? 'focus' : 'blur')
-      }
     }
   },
 
   methods: {
-    onFocus(focus) {
-      this.inputFocused = focus
-      if (focus) {
-        this.updatePopups()
-      } else {
-        this.showDate = false
-        this.showTime = false
+    getPanelForPart(name) {
+      return isTimePartName(name) ? 'time' : 'date'
+    },
+
+    onCaretPartChange(name) {
+      const panel = this.getPanelForPart(name)
+      if (panel !== this.activePanel) {
+        this.activePanel = panel
+        // Show the other panel, also if the popup was closed for this one.
+        this.$refs.pickerInput.open()
       }
     },
 
-    onMouseDown(toggle) {
-      if (toggle && (this.showDate || this.showTime)) {
-        this.showDate = false
-        this.showTime = false
-      } else if (!this.disabled) {
-        this.focus()
-        requestAnimationFrame(() => this.updatePopups())
+    handlePanelKey(event, part) {
+      // Only the shown panel handles keys, see `onCaretPartChange()` for how
+      // it follows the caret.
+      if (this.getPanelForPart(part?.name) !== this.activePanel) {
+        return false
       }
-    },
-
-    onKeyDown(event) {
-      const mode = this.getMode(event)
-      this.$refs[mode].onKeyDown(event)
-      if (event.defaultPrevented) {
-        this.closedMode = mode
-      } else if (mode !== this.closedMode) {
-        this.updatePopups(mode)
-      }
-    },
-
-    getMode(event = null) {
-      const { start } = getSelection(this.input)
-      const { hor: step } = getKeyNavigation(event)
-      return this.timeIndex === null || start + step < this.timeIndex
-        ? 'date'
-        : 'time'
-    },
-
-    updatePopups(mode = this.getMode()) {
-      if (mode) {
-        this.closedMode = null
-      }
-      this.showDate = mode === 'date'
-      this.showTime = mode === 'time'
+      const { calendar, timePanel } = this.$refs
+      const panel = this.activePanel === 'time' ? timePanel : calendar
+      return panel?.handleKey(event, part) ?? false
     },
 
     focus() {
-      this.input.focus()
+      this.$refs.pickerInput.focus()
     },
 
     blur() {
-      this.input.blur()
+      this.$refs.pickerInput.blur()
     }
   }
 }
 </script>
 
 <style lang="scss">
-@import '../styles/_imports';
-
 .dito-date-time-picker {
-  &__inner {
-    display: flex;
-  }
-
-  &__input {
-    flex: 1;
-    font-variant-numeric: tabular-nums;
+  .dito-input {
     min-width: 12em;
-  }
-
-  .dito-date-picker,
-  .dito-time-picker {
-    position: absolute;
   }
 }
 </style>
