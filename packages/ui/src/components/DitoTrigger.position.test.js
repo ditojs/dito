@@ -2,30 +2,49 @@ import { vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import DitoTrigger from './DitoTrigger.vue'
+import { isPopupShown } from '../test/trigger.js'
 
 // happy-dom doesn't lay out elements, so the sizes are faked:
 const popupWidth = 80
 const popupHeight = 40
 
+// Like the real `ResizeObserver`, notifies once an element is observed, which
+// is how `DitoTrigger` positions shown popups.
 class FakeResizeObserver {
-  observe() {}
-  disconnect() {}
+  constructor(callback) {
+    this.callback = callback
+    this.isObserving = false
+  }
+
+  observe() {
+    this.isObserving = true
+    queueMicrotask(() => {
+      if (this.isObserving) this.callback([])
+    })
+  }
+
+  disconnect() {
+    this.isObserving = false
+  }
 }
 
 function setBounds(element, { left, top, width, height }) {
   element.getBoundingClientRect = () => ({ left, top, width, height })
 }
 
-async function mountShownTrigger(props = {}, bounds = {}) {
-  const wrapper = mount(DitoTrigger, {
-    props: { show: true, matchTargetWidth: false, ...props },
+function mountTrigger(props = {}) {
+  return mount(DitoTrigger, {
+    props: { matchTargetWidth: false, ...props },
     slots: {
       trigger: '<button class="open">Open</button>',
       popup: '<div class="content">Chapters</div>'
     },
     attachTo: document.body
   })
-  await nextTick()
+}
+
+// Fakes the layout of the trigger and the popup.
+function layOut(wrapper, bounds = {}) {
   setBounds(wrapper.find('.dito-trigger').element, {
     left: 100,
     top: 100,
@@ -36,14 +55,20 @@ async function mountShownTrigger(props = {}, bounds = {}) {
   const popup = wrapper.find('.dito-popup').element
   Object.defineProperty(popup, 'offsetWidth', { value: popupWidth })
   Object.defineProperty(popup, 'offsetHeight', { value: popupHeight })
-  return wrapper
+  return popup
 }
 
-// Positions the popup and returns its offset to the trigger.
+async function showPopup(wrapper) {
+  await wrapper.setProps({ show: true })
+  await flushPromises()
+}
+
+// Shows the popup and returns its offset to the trigger.
 async function getPosition(props, bounds) {
-  const wrapper = await mountShownTrigger(props, bounds)
-  wrapper.vm.updatePosition()
-  const { left, top } = wrapper.find('.dito-popup').element.style
+  const wrapper = mountTrigger(props)
+  const popup = layOut(wrapper, bounds)
+  await showPopup(wrapper)
+  const { left, top } = popup.style
   wrapper.unmount()
   return { left: parseFloat(left), top: parseFloat(top) }
 }
@@ -167,22 +192,17 @@ describe('DitoTrigger positioning', () => {
     target.remove()
   })
 
-  it(`doesn't position hidden popups or popups that aren't laid out`, async () => {
-    const wrapper = mount(DitoTrigger, {
-      props: { show: true },
-      slots: { trigger: '<button>Open</button>', popup: '<div>Popup</div>' },
-      attachTo: document.body
-    })
-    await nextTick()
-    const popup = wrapper.find('.dito-popup').element
-    // Not laid out yet, `offsetWidth` is 0:
-    wrapper.vm.updatePosition()
-    expect(popup.style.top).toBe('')
+  it(`doesn't position popups that aren't laid out`, async () => {
+    const wrapper = mountTrigger()
+    await showPopup(wrapper)
+    // Not laid out, `offsetWidth` is 0:
+    expect(wrapper.find('.dito-popup').element.style.top).toBe('')
     wrapper.unmount()
   })
 
   it('applies the placement, custom class and z-index to the popup', async () => {
-    const wrapper = await mountShownTrigger({
+    const wrapper = mountTrigger({
+      show: true,
       placement: 'bottom-right',
       customClass: 'book-menu',
       zIndex: 20
@@ -208,10 +228,6 @@ describe('DitoTrigger in hover mode', () => {
     })
   }
 
-  function isShown(wrapper) {
-    return wrapper.find('.dito-trigger').attributes('aria-expanded') === 'true'
-  }
-
   afterEach(() => {
     vi.useRealTimers()
   })
@@ -219,10 +235,10 @@ describe('DitoTrigger in hover mode', () => {
   it('shows the popup while hovering the trigger', async () => {
     const wrapper = mountHoverTrigger()
     await wrapper.find('.dito-trigger').trigger('mouseenter')
-    expect(isShown(wrapper)).toBe(true)
+    expect(isPopupShown(wrapper)).toBe(true)
     expect(wrapper.find('.content').exists()).toBe(true)
     await wrapper.find('.dito-trigger').trigger('mouseleave')
-    expect(isShown(wrapper)).toBe(false)
+    expect(isPopupShown(wrapper)).toBe(false)
     expect(wrapper.find('.content').exists()).toBe(false)
     expect(wrapper.emitted('update:show')).toEqual([[true], [false]])
     wrapper.unmount()
@@ -235,10 +251,10 @@ describe('DitoTrigger in hover mode', () => {
     await wrapper.find('.dito-trigger').trigger('mouseleave')
     vi.advanceTimersByTime(199)
     await nextTick()
-    expect(isShown(wrapper)).toBe(true)
+    expect(isPopupShown(wrapper)).toBe(true)
     vi.advanceTimersByTime(1)
     await nextTick()
-    expect(isShown(wrapper)).toBe(false)
+    expect(isPopupShown(wrapper)).toBe(false)
     wrapper.unmount()
   })
 
@@ -250,18 +266,18 @@ describe('DitoTrigger in hover mode', () => {
     await wrapper.find('.dito-popup').trigger('mouseenter')
     vi.advanceTimersByTime(500)
     await nextTick()
-    expect(isShown(wrapper)).toBe(true)
+    expect(isPopupShown(wrapper)).toBe(true)
     await wrapper.find('.dito-popup').trigger('mouseleave')
     vi.advanceTimersByTime(200)
     await nextTick()
-    expect(isShown(wrapper)).toBe(false)
+    expect(isPopupShown(wrapper)).toBe(false)
     wrapper.unmount()
   })
 
   it(`doesn't show when disabled`, async () => {
     const wrapper = mountHoverTrigger({ disabled: true })
     await wrapper.find('.dito-trigger').trigger('mouseenter')
-    expect(isShown(wrapper)).toBe(false)
+    expect(isPopupShown(wrapper)).toBe(false)
     expect(wrapper.find('.dito-trigger').classes()).toContain(
       'dito-trigger-disabled'
     )
@@ -286,10 +302,6 @@ describe('DitoTrigger with `alwaysShow`', () => {
     await nextTick()
     expect(wrapper.find('.content').exists()).toBe(true)
     expect(wrapper.emitted('update:show')).toEqual([[true]])
-    // The trigger isn't a toggle:
-    expect(wrapper.find('.dito-trigger').attributes('aria-expanded')).toBe(
-      undefined
-    )
     wrapper.vm.close()
     wrapper.vm.toggle()
     await wrapper.setProps({ show: false })
@@ -324,17 +336,13 @@ describe('DitoTrigger closing', () => {
     })
   }
 
-  function isShown(wrapper) {
-    return wrapper.find('.dito-trigger').attributes('aria-expanded') === 'true'
-  }
-
   it('closes when the window loses the focus', async () => {
     const wrapper = mountClickTrigger()
     await wrapper.find('.dito-trigger').trigger('click')
     await nextTick()
     window.dispatchEvent(new Event('blur'))
     await nextTick()
-    expect(isShown(wrapper)).toBe(false)
+    expect(isPopupShown(wrapper)).toBe(false)
     wrapper.unmount()
   })
 
@@ -344,16 +352,16 @@ describe('DitoTrigger closing', () => {
     await nextTick()
     document.body.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }))
     await nextTick()
-    expect(isShown(wrapper)).toBe(true)
+    expect(isPopupShown(wrapper)).toBe(true)
     wrapper.unmount()
   })
 
   it('follows the `show` prop', async () => {
     const wrapper = mountClickTrigger()
     await wrapper.setProps({ show: true })
-    expect(isShown(wrapper)).toBe(true)
+    expect(isPopupShown(wrapper)).toBe(true)
     await wrapper.setProps({ show: false })
-    expect(isShown(wrapper)).toBe(false)
+    expect(isPopupShown(wrapper)).toBe(false)
     expect(wrapper.emitted('update:show')).toEqual([[true], [false]])
     wrapper.unmount()
   })

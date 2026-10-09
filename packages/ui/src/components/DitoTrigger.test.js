@@ -2,6 +2,7 @@ import { vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import DitoTrigger from './DitoTrigger.vue'
+import { isPopupShown } from '../test/trigger.js'
 
 function mountTrigger(props = {}) {
   return mount(DitoTrigger, {
@@ -24,14 +25,28 @@ describe('DitoTrigger', () => {
     vi.restoreAllMocks()
   })
 
-  it('opens on click and sets `aria-expanded`', async () => {
+  it('opens on click', async () => {
     const wrapper = mountTrigger()
     const trigger = wrapper.find('.dito-trigger')
-    expect(trigger.attributes('aria-expanded')).toBe('false')
+    expect(isPopupShown(wrapper)).toBe(false)
     await trigger.trigger('click')
-    expect(trigger.attributes('aria-expanded')).toBe('true')
+    expect(isPopupShown(wrapper)).toBe(true)
     expect(wrapper.find('.content').exists()).toBe(true)
+    expect(wrapper.emitted('update:show')).toEqual([[true]])
     wrapper.unmount()
+  })
+
+  it(`leaves \`aria-expanded\` to the controls in the trigger`, async () => {
+    // The trigger elements have no role that allows `aria-expanded`, the
+    // controls in the trigger slot set it themselves, e.g. `DitoMenuButton`.
+    for (const trigger of ['click', 'hover', 'focus']) {
+      const wrapper = mountTrigger({ trigger, show: true })
+      await nextTick()
+      expect(
+        wrapper.find('.dito-trigger').attributes('aria-expanded')
+      ).toBeUndefined()
+      wrapper.unmount()
+    }
   })
 
   it('closes with Escape without letting it propagate', async () => {
@@ -40,9 +55,7 @@ describe('DitoTrigger', () => {
     const wrapper = mountTrigger()
     await wrapper.find('.dito-trigger').trigger('click')
     await wrapper.find('.content input').trigger('keydown', { key: 'Escape' })
-    expect(wrapper.find('.dito-trigger').attributes('aria-expanded')).toBe(
-      'false'
-    )
+    expect(isPopupShown(wrapper)).toBe(false)
     expect(onKeyDown).not.toHaveBeenCalled()
     // Once closed, Escape propagates again:
     await wrapper.find('.open').trigger('keydown', { key: 'Escape' })
@@ -65,9 +78,7 @@ describe('DitoTrigger', () => {
     window.dispatchEvent(new MouseEvent('mouseup'))
     await nextTick()
     await nextTick()
-    expect(wrapper.find('.dito-trigger').attributes('aria-expanded')).toBe(
-      'false'
-    )
+    expect(isPopupShown(wrapper)).toBe(false)
     // The listener is removed through the signal it was added with:
     const [[, , { signal }]] = getMouseUpCalls(addEventListener)
     expect(signal.aborted).toBe(true)
@@ -77,37 +88,31 @@ describe('DitoTrigger', () => {
   it('closes popups that are shown initially when clicking outside', async () => {
     const wrapper = mountTrigger({ show: true })
     await nextTick()
-    expect(wrapper.find('.dito-trigger').attributes('aria-expanded')).toBe(
-      'true'
-    )
+    expect(isPopupShown(wrapper)).toBe(true)
     window.dispatchEvent(new MouseEvent('mouseup'))
     await nextTick()
-    expect(wrapper.find('.dito-trigger').attributes('aria-expanded')).toBe(
-      'false'
-    )
+    expect(isPopupShown(wrapper)).toBe(false)
     wrapper.unmount()
   })
 
   it('opens, closes and toggles the popup through its methods', async () => {
     const wrapper = mountTrigger()
-    const getExpanded = () =>
-      wrapper.find('.dito-trigger').attributes('aria-expanded')
     wrapper.vm.open()
     await nextTick()
-    expect(getExpanded()).toBe('true')
+    expect(isPopupShown(wrapper)).toBe(true)
     wrapper.vm.close()
     await nextTick()
-    expect(getExpanded()).toBe('false')
+    expect(isPopupShown(wrapper)).toBe(false)
     wrapper.vm.toggle()
     await nextTick()
-    expect(getExpanded()).toBe('true')
+    expect(isPopupShown(wrapper)).toBe(true)
     wrapper.vm.toggle()
     await nextTick()
-    expect(getExpanded()).toBe('false')
+    expect(isPopupShown(wrapper)).toBe(false)
     await wrapper.setProps({ disabled: true })
     wrapper.vm.open()
     await nextTick()
-    expect(getExpanded()).toBe('false')
+    expect(isPopupShown(wrapper)).toBe(false)
     wrapper.unmount()
   })
 
@@ -116,9 +121,9 @@ describe('DitoTrigger', () => {
       const wrapper = mountTrigger({ trigger: 'click' })
       const trigger = wrapper.find('.dito-trigger')
       await trigger.trigger('click')
-      expect(trigger.attributes('aria-expanded')).toBe('true')
+      expect(isPopupShown(wrapper)).toBe(true)
       await trigger.trigger('click')
-      expect(trigger.attributes('aria-expanded')).toBe('false')
+      expect(isPopupShown(wrapper)).toBe(false)
       expect(wrapper.emitted('update:show')).toEqual([[true], [false]])
       wrapper.unmount()
     })
@@ -130,18 +135,14 @@ describe('DitoTrigger', () => {
       const content = wrapper.find('.content').element
       content.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }))
       await nextTick()
-      expect(wrapper.find('.dito-trigger').attributes('aria-expanded')).toBe(
-        'true'
-      )
+      expect(isPopupShown(wrapper)).toBe(true)
       wrapper.unmount()
     })
 
     it(`doesn't open when disabled`, async () => {
       const wrapper = mountTrigger({ trigger: 'click', disabled: true })
       await wrapper.find('.dito-trigger').trigger('click')
-      expect(wrapper.find('.dito-trigger').attributes('aria-expanded')).toBe(
-        'false'
-      )
+      expect(isPopupShown(wrapper)).toBe(false)
       wrapper.unmount()
     })
   })
@@ -317,9 +318,7 @@ describe('DitoTrigger', () => {
       // Once the focus leaves trigger and popup, it closes:
       action.blur()
       await nextTick()
-      expect(wrapper.find('.dito-trigger').attributes('aria-expanded')).toBe(
-        'false'
-      )
+      expect(isPopupShown(wrapper)).toBe(false)
       wrapper.unmount()
     })
 
@@ -334,9 +333,7 @@ describe('DitoTrigger', () => {
       await nextTick()
       expect(document.activeElement).toBe(wrapper.find('.input').element)
       // Without opening the popup again:
-      expect(wrapper.find('.dito-trigger').attributes('aria-expanded')).toBe(
-        'false'
-      )
+      expect(isPopupShown(wrapper)).toBe(false)
       wrapper.unmount()
     })
 
@@ -362,9 +359,7 @@ describe('DitoTrigger', () => {
       await wrapper.setProps({ target })
       target.querySelector('input').focus()
       await nextTick()
-      expect(wrapper.find('.dito-trigger').attributes('aria-expanded')).toBe(
-        'true'
-      )
+      expect(isPopupShown(wrapper)).toBe(true)
       wrapper.unmount()
       target.remove()
     })

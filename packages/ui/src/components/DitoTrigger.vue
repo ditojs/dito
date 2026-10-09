@@ -13,7 +13,6 @@
     v-else-if="trigger === 'click'"
     ref="trigger"
     :class="triggerClass"
-    :aria-expanded="showPopup"
     @click="onClick"
   )
     slot(name="trigger")
@@ -21,7 +20,6 @@
     v-else-if="trigger === 'hover'"
     ref="trigger"
     :class="triggerClass"
-    :aria-expanded="showPopup"
     @mouseenter="onHover(true)"
     @mouseleave="onHover(false)"
   )
@@ -30,7 +28,6 @@
     v-else-if="trigger === 'focus' || trigger === 'always'"
     ref="trigger"
     :class="triggerClass"
-    :aria-expanded="showPopup"
   )
     slot(name="trigger")
   Transition(
