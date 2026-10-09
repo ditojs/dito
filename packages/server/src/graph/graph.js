@@ -83,16 +83,6 @@ function parseRelationObject(json, relation, options) {
   return json
 }
 
-export function walkGraph(data, callback, path = []) {
-  if (isObject(data) || isArray(data)) {
-    for (const [key, value] of Object.entries(data)) {
-      const dataPath = [...path, key]
-      callback(value, dataPath, data, key)
-      walkGraph(value, callback, dataPath)
-    }
-  }
-}
-
 export function filterGraph(rootModelClass, modelGraph, expr) {
   expr = QueryBuilder.parseRelationExpression(expr)
   modelGraph = ensureModelGraph(rootModelClass, modelGraph, {

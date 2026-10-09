@@ -441,17 +441,14 @@ describe('Dito.js graph handling', () => {
     })
 
     it('resolves cyclic references within the graph', async () => {
-      const result = await Book.query().upsertDitoGraphAndFetch(
-        {
-          title: 'Earthsea',
-          chapters: [
-            { '#id': 'first', 'title': 'One', 'position': 1 },
-            { title: 'Two', position: 2 }
-          ],
-          featuredChapter: { '#ref': 'first' }
-        },
-        { cyclic: true }
-      )
+      const result = await Book.query().upsertDitoGraphAndFetch({
+        title: 'Earthsea',
+        chapters: [
+          { '#id': 'first', 'title': 'One', 'position': 1 },
+          { title: 'Two', position: 2 }
+        ],
+        featuredChapter: { '#ref': 'first' }
+      })
       const book = await Book.query().findById(result.id)
       const chapter = await Chapter.query()
         .where({ bookId: book!.id, title: 'One' })
@@ -460,28 +457,116 @@ describe('Dito.js graph handling', () => {
       expect(await Chapter.query()).toHaveLength(2)
     })
 
-    it('resolves cyclic references inside arrays', async () => {
-      const fantasy = await Genre.query().insert({ name: 'Fantasy' })
-      const result = await Book.query().upsertDitoGraphAndFetch(
-        [
-          {
-            title: 'Earthsea',
-            chapters: [{ '#id': 'shared', 'title': 'One' }],
-            genres: [{ id: fantasy.id, rank: 1 }]
-          },
-          {
-            title: 'Tehanu',
-            featuredChapter: { '#ref': 'shared' }
-          }
-        ],
-        { cyclic: true }
+    it('resolves cyclic references with insertDitoGraph()', async () => {
+      const result = await Book.query().insertDitoGraphAndFetch({
+        title: 'Earthsea',
+        chapters: [{ '#id': 'first', 'title': 'One' }],
+        featuredChapter: { '#ref': 'first' }
+      })
+      const book = await Book.query().findById(result.id)
+      const [chapter] = await Chapter.query()
+      expect(chapter.bookId).toBe(book!.id)
+      expect(book!.featuredChapterId).toBe(chapter.id)
+    })
+
+    it('resolves cyclic references when upserting an existing root', async () => {
+      const book = await Book.query().insert({ title: 'Earthsea' })
+      await Book.query().upsertDitoGraph({
+        id: book.id,
+        title: 'Earthsea',
+        chapters: [{ '#id': 'first', 'title': 'One' }],
+        featuredChapter: { '#ref': 'first' }
+      })
+      const [chapter] = await Chapter.query()
+      expect(chapter.bookId).toBe(book.id)
+      expect((await Book.query().findById(book.id))!.featuredChapterId).toBe(
+        chapter.id
       )
+    })
+
+    it('resolves references into other roots inside arrays', async () => {
+      const fantasy = await Genre.query().insert({ name: 'Fantasy' })
+      const result = await Book.query().upsertDitoGraphAndFetch([
+        {
+          title: 'Earthsea',
+          chapters: [{ '#id': 'shared', 'title': 'One' }],
+          genres: [{ id: fantasy.id, rank: 1 }]
+        },
+        {
+          title: 'Tehanu',
+          featuredChapter: { '#ref': 'shared' }
+        }
+      ])
       const books = await Book.query().findByIds(
         result.map((book: Book) => book.id)
       )
       const [chapter] = await Chapter.query()
       const tehanu = books.find(book => book.title === 'Tehanu')
       expect(tehanu!.featuredChapterId).toBe(chapter.id)
+    })
+
+    it('still accepts the deprecated `cyclic` option and warns once', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      try {
+        for (const title of ['Earthsea', 'Tehanu']) {
+          await Book.query().upsertDitoGraph(
+            {
+              title,
+              chapters: [{ '#id': 'first', 'title': 'One' }],
+              featuredChapter: { '#ref': 'first' }
+            },
+            { cyclic: true }
+          )
+        }
+        const cyclicWarnings = warn.mock.calls.filter(([message]) =>
+          String(message).includes('`cyclic`')
+        )
+        expect(cyclicWarnings).toHaveLength(1)
+      } finally {
+        warn.mockRestore()
+      }
+      const books = await Book.query().withGraph('featuredChapter')
+      expect(books).toHaveLength(2)
+      for (const book of books) {
+        expect(book.featuredChapter!.bookId).toBe(book.id)
+      }
+    })
+
+    it('rejects cycles that only go through property references', async () => {
+      await expect(
+        Book.query().upsertDitoGraph({
+          // The book's title depends on the chapter, which depends on the book
+          // through the `chapters` relation:
+          title: '#ref{first.title}',
+          chapters: [{ '#id': 'first', 'title': 'One' }]
+        })
+      ).rejects.toThrow('the object graph contains cyclic references')
+      expect(await Book.query()).toHaveLength(0)
+      expect(await Chapter.query()).toHaveLength(0)
+    })
+
+    it('rejects cycles whose foreign key is not nullable', async () => {
+      const alterFeaturedChapterId = (nullable: boolean) =>
+        app.knex.schema.alterTable('Book', table => {
+          const column = table.integer('featuredChapterId')
+          ;(nullable ? column.nullable() : column.notNullable()).alter()
+        })
+      await alterFeaturedChapterId(false)
+      try {
+        await expect(
+          Book.transaction(trx =>
+            Book.query(trx).upsertDitoGraph({
+              title: 'Earthsea',
+              chapters: [{ '#id': 'first', 'title': 'One' }],
+              featuredChapter: { '#ref': 'first' }
+            })
+          )
+        ).rejects.toThrow(/featuredChapterId/)
+        expect(await Book.query()).toHaveLength(0)
+        expect(await Chapter.query()).toHaveLength(0)
+      } finally {
+        await alterFeaturedChapterId(true)
+      }
     })
   })
 

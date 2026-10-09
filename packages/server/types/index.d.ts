@@ -3040,9 +3040,11 @@ export interface DitoGraphOptions {
    */
   update?: boolean
   /**
-   * Enables special handling for cyclic graph upserts,
-   * where self-referential relations are broken into two
-   * phases.
+   * @deprecated Has no effect anymore. Objection.js resolves cycles created
+   * by `#ref` references on its own, by inserting the owner of a nullable
+   * (or deferrable) `belongsTo` foreign key first and patching the key in
+   * afterwards. Cycles that can't be resolved this way are rejected with an
+   * error.
    */
   cyclic?: boolean
 }

@@ -8,14 +8,12 @@ import {
   asArray,
   clone,
   mapKeys,
-  getValueAtDataPath,
-  setValueAtDataPath,
-  normalizeDataPath,
-  parseDataPath
+  parseDataPath,
+  deprecate
 } from '@ditojs/utils'
 import { QueryParameters } from './QueryParameters.js'
 import { KnexHelper } from '../lib/index.js'
-import { DitoGraphProcessor, walkGraph } from '../graph/index.js'
+import { DitoGraphProcessor } from '../graph/index.js'
 import { QueryBuilderError, RelationError } from '../errors/index.js'
 import { createLookup } from '../utils/object.js'
 import { getScope } from '../utils/scope.js'
@@ -31,7 +29,6 @@ export class QueryBuilder extends objection.QueryBuilder {
   #ignoreScopes = {}
   #appliedScopes = {}
   #allowFilters = null
-  #executeFirst = null // Part of a work-around for cyclic graphs
   #omits = []
 
   // @override
@@ -60,8 +57,6 @@ export class QueryBuilder extends objection.QueryBuilder {
       })
     }
     this.#applyScopes()
-    // In case of cyclic graphs, run `_executeFirst()` now:
-    await this.#executeFirst?.()
     return super.execute()
   }
 
@@ -692,111 +687,27 @@ export class QueryBuilder extends objection.QueryBuilder {
   }
 
   #handleDitoGraph(method, data, options, defaultOptions) {
-    const handleGraph = data => {
-      const graphProcessor = new DitoGraphProcessor(
-        this.modelClass(),
-        data,
-        {
-          ...defaultOptions,
-          ...options
-        },
-        {
-          processOverrides: true,
-          processRelates: true
-        }
+    const { cyclic, ...graphOptions } = options ?? {}
+    if (cyclic !== undefined) {
+      deprecate(
+        'The `cyclic` graph option is deprecated and has no effect anymore. ' +
+        'Objection.js resolves cyclic `#ref` references on its own now.'
       )
-      this[method](graphProcessor.getData(), graphProcessor.getOptions())
     }
-
-    if (options?.cyclic && method.startsWith('upsert')) {
-      // `_upsertCyclicDitoGraphAndFetch()` needs to run asynchronously,
-      // but we can't do so here and `runBefore()` executes too late,
-      // so use `#executeFirst()` to work around it.
-      this.#executeFirst = async () => {
-        this.#executeFirst = null
-        handleGraph(
-          await this.clone().#upsertCyclicDitoGraphAndFetch(data, options)
-        )
+    const graphProcessor = new DitoGraphProcessor(
+      this.modelClass(),
+      data,
+      {
+        ...defaultOptions,
+        ...graphOptions
+      },
+      {
+        processOverrides: true,
+        processRelates: true
       }
-    } else {
-      handleGraph(data)
-    }
-
+    )
+    this[method](graphProcessor.getData(), graphProcessor.getOptions())
     return this
-  }
-
-  async #upsertCyclicDitoGraphAndFetch(data, options) {
-    // TODO: This is part of a workaround for the following Objection.js issue.
-    // Replace with a normal `upsertGraphAndFetch()` once it is fixed:
-    // https://github.com/Vincit/objection.js/issues/1482
-
-    // First, collect all #id identifiers and #ref references in the graph,
-    // along with their data paths.
-    const identifiers = {}
-    const references = {}
-
-    const { uidProp, uidRefProp } = this.modelClass()
-
-    walkGraph(data, (value, path) => {
-      if (isObject(value)) {
-        const { [uidProp]: id, [uidRefProp]: ref } = value
-        if (id) {
-          // TODO: Also store the correct `idColumn` property for the given path
-          identifiers[id] = path.join('/')
-        } else if (ref) {
-          references[path.join('/')] = ref
-        }
-      }
-    })
-
-    // Now clone the data and delete all references from it, for the initial
-    // upsert.
-    const cloned = clone(data)
-    const sparseArrays = {}
-    for (const path of Object.keys(references)) {
-      const parts = parseDataPath(path)
-      const key = parts.pop()
-      const parent = getValueAtDataPath(cloned, parts)
-      delete parent[key]
-      if (isArray(parent)) {
-        // For arrays, deleting the entry at `key` will leave 'holes' in the
-        // array and make it sparse. Collect it in order to compress it later.
-        sparseArrays[normalizeDataPath(parts)] = parent
-      }
-    }
-
-    // Now condense the sparse arrays to remove the empty entries again:
-    for (const [dataPath, array] of Object.entries(sparseArrays)) {
-      setValueAtDataPath(cloned, dataPath, Object.values(array))
-    }
-
-    // TODO: The model isn't necessarily fetched with data in the same order as
-    // `cloned` defines, e.g. if there is sorting in the database. A solid
-    // implementation of this would take care of that and map entries from
-    // `model` back to `cloned`, so that the `setDataPath` calls below would
-    // still work in such cases.
-    const { cyclic, ...opts } = options
-    const model = await this.upsertDitoGraphAndFetch(cloned, opts)
-
-    // Now for each identifier, create an object containing only the final id in
-    // the fetched model data:
-    const links = {}
-    for (const [identifier, path] of Object.entries(identifiers)) {
-      // TODO: Use the correct `idColumn` property for the given path
-      const { id } = getValueAtDataPath(model, path)
-      links[identifier] = { id }
-    }
-
-    // And finally replace all references with the final ids, before upserting
-    // once again:
-    for (const [path, reference] of Object.entries(references)) {
-      const link = links[reference]
-      if (link) {
-        setValueAtDataPath(model, path, link)
-      }
-    }
-
-    return model
   }
 
   static mixin(target) {

@@ -68,6 +68,14 @@ In addition to Objection.js' many database methods, ...:
 ### `patchDitoGraphAndFetch(data, options)`
 ### `patchDitoGraphAndFetchById(id, data, options)`
 
+Graphs can use `#id` / `#ref` references, including references that create
+cycles, e.g. a `belongsTo` relation that refers to a model created in a
+`hasMany` relation of the same graph. Objection.js resolves such cycles by
+inserting the owner without the foreign key and patching it in afterwards,
+which requires the foreign key column to be nullable (or its constraint to be
+deferrable). Cycles that can't be resolved this way are rejected with an error.
+The former `cyclic` option is deprecated and has no effect anymore.
+
 ## Raw Methods
 
 ### `raw(…)`
