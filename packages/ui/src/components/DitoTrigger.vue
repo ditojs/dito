@@ -33,7 +33,10 @@
     :aria-expanded="showPopup"
   )
     slot(name="trigger")
-  Transition(:name="`dito-${transition}`")
+  Transition(
+    :name="transition ? `dito-${transition}` : undefined"
+    :css="!!transition"
+  )
     .dito-popup(
       v-if="trigger === 'hover'"
       v-show="showPopup"
@@ -65,14 +68,20 @@ import { hyphenate } from '@ditojs/utils'
 import { addEvents, combineEvents } from '../utils/event.js'
 import { getTarget } from '../utils/trigger'
 
-// The number of times `updatePosition()` waits for the popup to be laid out.
-const maxPositionRetryCount = 100
+function isFocusableControl(element) {
+  return !!element.matches?.('input, textarea, select, button')
+}
+
+function isEditableControl(element) {
+  return !!element.matches?.('input, textarea, select')
+}
 
 export default {
   emits: ['update:show'],
 
   props: {
     trigger: { type: String, default: 'click' },
+    // The name of the transition of the popup, or `null` to show it at once.
     transition: { type: String, default: 'slide' },
     placement: { type: String, default: 'bottom' },
     show: { type: Boolean, default: false },
@@ -82,6 +91,8 @@ export default {
     zIndex: { type: Number, default: 0 },
     keepInView: { type: Boolean, default: true },
     hideWhenClickOutside: { type: Boolean, default: true },
+    // Whether the popup's first child takes on the width of the target.
+    matchTargetWidth: { type: Boolean, default: true },
     alwaysShow: { type: Boolean, default: false },
     cover: { type: Boolean, default: false },
     hideDelay: { type: Number, default: 0 }
@@ -90,13 +101,11 @@ export default {
   data() {
     return {
       showPopup: this.show,
-      popupPlacement: this.placement,
       focusEvents: null,
       closeEvents: null,
       popupEvents: null,
-      blurTimer: null,
       mouseLeaveTimer: null,
-      positionTimer: null
+      targetResizeObserver: null
     }
   },
 
@@ -119,10 +128,6 @@ export default {
 
     popupStyle() {
       return this.zIndex ? `z-index: ${this.zIndex}` : ''
-    },
-
-    triggerTarget() {
-      return getTarget(this)
     }
   },
 
@@ -133,17 +138,33 @@ export default {
 
     showPopup(to, from) {
       if (to ^ from) {
+        if (!to && this.trigger === 'focus' && this.isPopupFocused()) {
+          // Don't lose the focus with the popup, e.g. after selecting a date in
+          // a calendar with the keyboard.
+          this.focusTriggerInput()
+        }
         this.$emit('update:show', to)
         this.$nextTick(() => this.onShowPopup(to))
       }
+    },
+
+    target() {
+      if (this.$refs.trigger) {
+        this.addTargetEvents()
+        if (this.targetResizeObserver) {
+          this.unobserveTargetSize()
+          this.observeTargetSize()
+        }
+      }
+    },
+
+    placement() {
+      this.$nextTick(() => this.updatePosition())
     }
   },
 
   mounted() {
-    const { trigger } = this.$refs
-    if (this.trigger === 'focus') {
-      this.focusEvents = this.addFocusEvents(this.triggerTarget ?? trigger)
-    }
+    this.addTargetEvents()
 
     if (this.showPopup) {
       // The `showPopup` watcher doesn't see popups that are shown initially.
@@ -155,20 +176,82 @@ export default {
 
   created() {
     this.showPopup = this.show
+    // Whether `focusTriggerInput()` is moving the focus, see there.
+    this.isFocusingTriggerInput = false
   },
 
   unmounted() {
     this.focusEvents?.remove()
     this.removeCloseEvents()
     this.popupEvents?.remove()
-    clearTimeout(this.positionTimer)
-    clearTimeout(this.blurTimer)
+    this.unobserveTargetSize()
     clearTimeout(this.mouseLeaveTimer)
   },
 
   methods: {
+    open() {
+      if (!this.disabled) {
+        this.showPopup = true
+      }
+    },
+
+    close() {
+      if (!this.alwaysShow) {
+        this.showPopup = false
+      }
+    },
+
+    toggle() {
+      if (this.showPopup) {
+        this.close()
+      } else {
+        this.open()
+      }
+    },
+
+    // Returns the element that the popup is positioned at, resolving a `target`
+    // given by ref name, which is only possible once mounted. This is why it
+    // can't be a computed property: `$refs` aren't reactive.
+    getTargetElement() {
+      return getTarget(this) ?? this.$refs.trigger
+    },
+
     isPopupFocused() {
-      return !!this.$refs.popup?.matches(':focus-within')
+      return !!this.$refs.popup?.contains(document.activeElement)
+    },
+
+    // Returns whether `element` is part of the trigger, its target or the
+    // popup.
+    containsElement(element) {
+      return (
+        !!element && (
+          this.$el.contains(element) ||
+          this.getTargetElement().contains(element)
+        )
+      )
+    },
+
+    getTriggerInput() {
+      return this.getTargetElement()?.querySelector('input, textarea') ?? null
+    },
+
+    focusTriggerInput() {
+      // The input's focus event would open the popup again, see
+      // `addFocusEvents()`. Focus events are dispatched synchronously.
+      this.isFocusingTriggerInput = true
+      try {
+        this.getTriggerInput()?.focus()
+      } finally {
+        this.isFocusingTriggerInput = false
+      }
+    },
+
+    addTargetEvents() {
+      this.focusEvents?.remove()
+      this.focusEvents =
+        this.trigger === 'focus'
+          ? this.addFocusEvents(this.getTargetElement())
+          : null
     },
 
     // Adds the events that close the popup while it is shown, see
@@ -185,7 +268,7 @@ export default {
               this.showPopup &&
               !popup.contains(event.target) &&
               !trigger.contains(event.target) &&
-              !this.triggerTarget?.contains(event.target)
+              !this.getTargetElement().contains(event.target)
             ) {
               this.showPopup = false
             }
@@ -207,35 +290,43 @@ export default {
       if (event.key === 'Escape' && this.showPopup && !this.alwaysShow) {
         // Don't let Escape also close what contains the trigger, e.g. dialogs.
         event.stopPropagation()
-        this.showPopup = false
+        this.close()
       }
     },
 
-    updatePosition(retryCount = 0) {
-      const { trigger, popup } = this.$refs
-      clearTimeout(this.positionTimer)
-      this.positionTimer = null
-      if (!popup || !this.showPopup) {
-        // Unmounted or hidden in the meantime.
-        return
+    // Positions the popup whenever the size of the target changes, which
+    // includes the moment it is laid out, also if the popup is shown inside a
+    // hidden part of the page that only becomes visible later. The target is
+    // observed rather than the popup, since `updatePosition()` resizes the
+    // popup, which would trigger the observer again.
+    observeTargetSize() {
+      if (!this.targetResizeObserver) {
+        this.targetResizeObserver = new ResizeObserver(
+          () => this.updatePosition()
+        )
+        this.targetResizeObserver.observe(this.getTargetElement())
       }
-      if (this.show && popup.offsetWidth === 0) {
-        // Wait for the popup to be laid out, but not forever, e.g. if the
-        // trigger is in a hidden part of the page.
-        if (retryCount < maxPositionRetryCount) {
-          this.positionTimer = setTimeout(
-            () => this.updatePosition(retryCount + 1),
-            0
-          )
-        }
+    },
+
+    unobserveTargetSize() {
+      this.targetResizeObserver?.disconnect()
+      this.targetResizeObserver = null
+    },
+
+    updatePosition() {
+      const { trigger, popup } = this.$refs
+      if (!popup || !this.showPopup || popup.offsetWidth === 0) {
+        // Unmounted, hidden, or not laid out yet, see `observeTargetSize()`.
         return
       }
 
-      const target = this.triggerTarget ?? trigger
-      // Actually resize the popup's first child, so they can set size limits.
-      const el = this.target === 'popup' ? trigger : popup.firstElementChild
-      if (el) {
-        el.style.width = getComputedStyle(target).width
+      const target = this.getTargetElement()
+      if (this.matchTargetWidth) {
+        // Actually resize the popup's first child, so it can set size limits.
+        const el = this.target === 'popup' ? trigger : popup.firstElementChild
+        if (el) {
+          el.style.width = getComputedStyle(target).width
+        }
       }
 
       const bounds = target.getBoundingClientRect()
@@ -246,7 +337,7 @@ export default {
       const popupWidth = popup.offsetWidth
       const popupHeight = popup.offsetHeight
 
-      let [part1, part2] = this.popupPlacement.split('-') || []
+      let [part1, part2] = this.placement.split('-') || []
       if (this.keepInView) {
         const winWidth = window.innerWidth
         const winHeight = window.innerHeight
@@ -364,63 +455,90 @@ export default {
 
     addFocusEvents(parent) {
       const targets = parent.querySelectorAll('input, textarea')
-      let input
+      // The trigger's input while it is marked readonly, see `mousedown`, and
+      // the events that release it again.
+      let lockedInput = null
+      let releaseEvents = null
+
+      const releaseInput = event => {
+        const input = lockedInput
+        lockedInput = null
+        releaseEvents.remove()
+        releaseEvents = null
+        // Give some time for other events to update input before it becomes
+        // editable and still focused again.
+        setTimeout(() => {
+          input.removeAttribute('readonly')
+          // Only bring the focus back from the popup, not if the focus moved
+          // elsewhere in the meantime, e.g. by clicking outside.
+          if (!isFocusableControl(event.target) && this.isPopupFocused()) {
+            input.focus()
+          }
+        }, 0)
+      }
+
+      // Only close once the focus leaves the trigger, its target and the
+      // popup, e.g. when tabbing out, but not when it moves between them, e.g.
+      // when tabbing into the popup. Blur events don't bubble, so capture them.
+      const onBlur = event => {
+        if (!this.containsElement(event.relatedTarget)) {
+          this.close()
+        }
+      }
+      parent.addEventListener('blur', onBlur, true)
 
       return combineEvents(
         addEvents(targets, {
           focus: () => {
-            this.showPopup = true
-            clearTimeout(this.blurTimer)
-          },
-
-          blur: () => {
-            // Use timeout to allow clicked inputs to grab focus
-            this.blurTimer = setTimeout(() => {
-              if (!this.isPopupFocused()) {
-                this.showPopup = false
-              }
-            }, 0)
+            if (!this.isFocusingTriggerInput) {
+              this.open()
+            }
           }
         }),
 
         addEvents(parent, {
           mousedown: event => {
-            if (!event.target.matches('input, textarea, button')) {
+            const { target } = event
+            const isInPopup = !!this.$refs.popup?.contains(target)
+            // Controls take the focus, except for the buttons in the popup, so
+            // that the focus stays in the trigger's input when using the mouse.
+            const takesFocus = isInPopup
+              ? isEditableControl(target)
+              : isFocusableControl(target)
+            if (!takesFocus) {
               event.preventDefault()
               event.stopPropagation()
             }
-            if (!event.target.matches('.dito-button-clear')) {
-              const trigger = this.triggerTarget ?? this.$refs.trigger
-              // Mark trigger input as readonly so it can't loose focus while
-              // user does other mouse-activities in popup.
-              input = trigger.querySelector('input, textarea')
+            // Mark the trigger's input as readonly so it can't lose focus
+            // while the user does other mouse-activities in the popup, except
+            // for its clear button and for the controls in the popup that take
+            // the focus themselves, e.g. the fields of a color picker.
+            if (
+              !lockedInput &&
+              !(isInPopup && takesFocus) &&
+              !target.matches('.dito-button-clear')
+            ) {
+              const input = this.getTriggerInput()
               if (input && !input.hasAttribute('readonly')) {
                 input.setAttribute('readonly', 'true')
-              } else {
-                input = null
+                lockedInput = input
+                // Release the input wherever the mouse is released, also
+                // outside of `parent`, e.g. after dragging in a color picker.
+                releaseEvents = addEvents(window, { mouseup: releaseInput })
               }
             }
-          },
-
-          mouseup: event => {
-            if (input) {
-              // Give some time for other events to update input before it
-              // becomes editable and still focused again.
-              setTimeout(() => {
-                input.removeAttribute('readonly')
-                // Only bring the focus back from the popup, not if the focus
-                // moved elsewhere in the meantime, e.g. by clicking outside.
-                if (
-                  !event.target.matches('input, textarea, button') &&
-                  this.isPopupFocused()
-                ) {
-                  input.focus()
-                }
-                input = null
-              }, 0)
-            }
           }
-        })
+        }),
+
+        {
+          remove() {
+            parent.removeEventListener('blur', onBlur, true)
+            releaseEvents?.remove()
+            releaseEvents = null
+            lockedInput?.removeAttribute('readonly')
+            lockedInput = null
+          }
+        }
       )
     },
 
@@ -433,18 +551,17 @@ export default {
           this.popupEvents = this.addFocusEvents(this.$refs.popup)
         }
         this.addCloseEvents()
-        this.updatePosition()
+        this.observeTargetSize()
       } else {
         this.popupEvents?.remove()
         this.popupEvents = null
         this.removeCloseEvents()
+        this.unobserveTargetSize()
       }
     },
 
     onClick() {
-      if (!this.disabled) {
-        this.showPopup = true
-      }
+      this.toggle()
     },
 
     onHover(enter) {
