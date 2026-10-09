@@ -125,14 +125,19 @@ function getFormWithCreatedComponents(form, context) {
     formsByItem = new WeakMap()
     formsByComponentsCallback.set(form.components, formsByItem)
   }
-  let formWithCreatedComponents = formsByItem.get(item)
-  if (!formWithCreatedComponents) {
-    formWithCreatedComponents = computed(() =>
-      createFormWithComponents(form, context)
+  let entry = formsByItem.get(item)
+  if (!entry) {
+    entry = { context }
+    entry.formWithCreatedComponents = computed(() =>
+      createFormWithComponents(form, entry.context)
     )
-    formsByItem.set(item, formWithCreatedComponents)
+    formsByItem.set(item, entry)
   }
-  return formWithCreatedComponents.value
+  // Recreate the components with the latest context rather than the one of
+  // the first caller, whose component may have been unmounted since. Changes
+  // of the context alone don't recreate them, see above.
+  entry.context = context
+  return entry.formWithCreatedComponents.value
 }
 
 function createFormWithComponents(form, context) {

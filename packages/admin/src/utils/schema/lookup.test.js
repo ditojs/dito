@@ -1,4 +1,5 @@
 import { vi } from 'vitest'
+import { reactive } from 'vue'
 import { hyphenate } from '@ditojs/utils'
 import DitoContext from '../../DitoContext.js'
 import { registerTypeComponent } from './types.js'
@@ -287,6 +288,19 @@ describe('getFormSchemas()', () => {
       expect(createComponents).toHaveBeenCalledTimes(1)
       const forms3 = getFormSchemas(schema, createContext({ fields: [] }))
       expect(forms3.default).not.toBe(forms1.default)
+    })
+
+    it('recreates the components with the latest context', () => {
+      const item = reactive({ fields: ['title'] })
+      const firstContext = createContext(item)
+      const latestContext = createContext(item)
+      getFormSchemas(schema, firstContext)
+      expect(createComponents.mock.lastCall[0]).toBe(firstContext)
+      item.fields.push('author')
+      const { default: form } = getFormSchemas(schema, latestContext)
+      expect(Object.keys(form.components)).toEqual(['title', 'author'])
+      expect(createComponents).toHaveBeenCalledTimes(2)
+      expect(createComponents.mock.lastCall[0]).toBe(latestContext)
     })
 
     it(`creates the components each time for data that isn't an object`, () => {
