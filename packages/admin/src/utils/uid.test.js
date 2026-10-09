@@ -80,4 +80,74 @@ describe('transferUids()', () => {
     transferUids([item], [otherItem])
     expect(getUid(otherItem)).toBe(otherUid)
   })
+
+  it('matches reordered items by their ids', () => {
+    const newItem = { title: 'New' }
+    const newUid = getUid(newItem, getItemId)
+    const existingItem = { id: 1, title: 'Existing' }
+    getUid(existingItem, getItemId)
+    const savedExistingItem = { id: 1, title: 'Existing' }
+    const savedNewItem = { id: 2, title: 'New' }
+    transferUids(
+      { books: [newItem, existingItem] },
+      { books: [savedExistingItem, savedNewItem] }
+    )
+    expect(getUid(savedExistingItem, getItemId)).toBe(1)
+    expect(getUid(savedNewItem, getItemId)).toBe(newUid)
+  })
+
+  it('transfers uids nested in reordered items', () => {
+    const chapter = { title: 'One' }
+    const chapterUid = getUid(chapter, getItemId)
+    const source = [{ id: 1 }, { id: 2, chapters: [chapter] }]
+    const savedChapter = { id: 3, title: 'One' }
+    const target = [{ id: 2, chapters: [savedChapter] }, { id: 1 }]
+    transferUids(source, target)
+    expect(getUid(savedChapter, getItemId)).toBe(chapterUid)
+  })
+
+  it('keeps existing items keyed by their ids on inserts and drops', () => {
+    const first = { id: 1 }
+    const second = { id: 2 }
+    const newItem = {}
+    getUid(newItem, getItemId)
+    const savedThird = { id: 3 }
+    const savedFirst = { id: 1 }
+    const savedNewItem = { id: 4 }
+    // The server dropped `second` and inserted `savedThird`, so the new items
+    // can't be told apart from the inserted ones and are left unmatched.
+    transferUids(
+      [first, newItem, second],
+      [savedThird, savedFirst, savedNewItem]
+    )
+    expect(getUid(savedThird, getItemId)).toBe(3)
+    expect(getUid(savedFirst, getItemId)).toBe(1)
+    expect(getUid(savedNewItem, getItemId)).toBe(4)
+  })
+
+  it(`doesn't pair new items if their counts differ`, () => {
+    const firstNewItem = {}
+    const secondNewItem = {}
+    getUid(firstNewItem, getItemId)
+    getUid(secondNewItem, getItemId)
+    const savedItem = { id: 4 }
+    transferUids([firstNewItem, secondNewItem], [savedItem])
+    expect(getUid(savedItem, getItemId)).toBe(4)
+  })
+
+  it('uses the passed `getItemId()` to match array items', () => {
+    const newItem = {}
+    const newUid = getUid(newItem)
+    const existingItem = { key: 'a' }
+    getUid(existingItem, item => item.key)
+    const savedExistingItem = { key: 'a' }
+    const savedNewItem = { key: 'b' }
+    transferUids(
+      [newItem, existingItem],
+      [savedExistingItem, savedNewItem],
+      item => item.key
+    )
+    expect(getUid(savedExistingItem, item => item.key)).toBe('a')
+    expect(getUid(savedNewItem, item => item.key)).toBe(newUid)
+  })
 })
