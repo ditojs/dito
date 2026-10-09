@@ -405,7 +405,6 @@ export default DitoTypeComponent.register('upload', {
     },
 
     async deleteFile(file) {
-      if (!file) return
       await confirmAndRemove(this, {
         label: escapeHtml(file.name),
         // The file is only removed from the value, which still needs the form

@@ -71,10 +71,6 @@ export default DitoComponent.component('DitoSchemaInlined', {
   computed: {
     isCompact() {
       return isCompact(this.schema)
-    },
-
-    hasLabel() {
-      return !this.isCompact && !!this.label
     }
   }
 })

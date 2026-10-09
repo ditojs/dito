@@ -69,7 +69,8 @@ export default DitoComponent.component('DitoView', {
 
   computed: {
     schema() {
-      return this.meta.schema ?? {}
+      // The routes of views always have a schema, see `setupView()`:
+      return this.meta.schema
     },
 
     name() {

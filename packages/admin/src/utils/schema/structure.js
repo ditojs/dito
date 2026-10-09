@@ -53,7 +53,7 @@ export function everyNestedSchemaComponent(schema, callback) {
 }
 
 export function hasNestedSchemaComponents(schema) {
-  return someNestedSchemaComponent(schema, () => true) ?? false
+  return someNestedSchemaComponent(schema, () => true)
 }
 
 /**

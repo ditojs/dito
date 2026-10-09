@@ -321,7 +321,7 @@ export default DitoComponent.component('DitoForm', {
         : undefined
     },
 
-    // @override ResourceMixin.hasData()
+    // Required by ResourceMixin, see its contract.
     hasData() {
       return !!this.data
     },
@@ -438,7 +438,7 @@ export default DitoComponent.component('DitoForm', {
       return getMemberResource(this.itemId, resource) || resource
     },
 
-    // @override ResourceMixin.setupData()
+    // Required by ResourceMixin, see its contract.
     setupData() {
       if (this.isCreating) {
         // Drop the data of the item that the form loaded before, e.g. when
@@ -488,12 +488,12 @@ export default DitoComponent.component('DitoForm', {
         : !!this.sourceData?.push(data)
     },
 
-    // @override ResourceMixin.clearData()
+    // Required by ResourceMixin, see its contract.
     clearData() {
       this.setData(null)
     },
 
-    // @override ResourceMixin.setData()
+    // Required by ResourceMixin, see its contract.
     setData(data) {
       // setData() is called after submit when data has changed.
       if (this.isTransient) {

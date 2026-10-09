@@ -76,7 +76,7 @@ export default {
       return isListSource(this.type)
     },
 
-    // @override ResourceMixin.hasData()
+    // Required by ResourceMixin, see its contract.
     hasData() {
       return !!this.value
     },
@@ -400,6 +400,7 @@ export default {
   },
 
   methods: {
+    // Required by ResourceMixin, see its contract.
     setupData() {
       this.listQuery.syncWithRoute()
       this.ensureData()
@@ -421,13 +422,13 @@ export default {
         : ResourceMixin.methods.requestData.call(this)
     },
 
-    // @override ResourceMixin.clearData()
+    // Required by ResourceMixin, see its contract.
     clearData() {
       this.total = 0
       this.setLoadedValue(null)
     },
 
-    // @override ResourceMixin.setData()
+    // Required by ResourceMixin, see its contract.
     setData(data) {
       // When new data is loaded, we can store it right back in the data of the
       // view or form that created this list component.

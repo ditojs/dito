@@ -466,7 +466,7 @@ export default DitoTypeComponent.register('markup', {
           if (setting) {
             if (description === true) {
               addButton({ name, icon })
-            } else if (isObject(description)) {
+            } else {
               const { command, attribute, values, onClick } = description
               if (attribute) {
                 // Support heading level attrs, with `true` enabling all:

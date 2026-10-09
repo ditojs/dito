@@ -65,21 +65,16 @@ export default {
 
     isLastRoute() {
       // Returns true when this router component is the last one in the route.
-      const { matched } = this.$route
-      return this.routeRecord === matched[matched.length - 1]
+      return this.routeRecord === this.$route.matched.at(-1)
     },
 
     isLastUnnestedRoute() {
       // Returns true if this route component is the last one in the route that
       // needs its own router-view (= is not nested).
-      const { matched } = this.$route
-      for (let i = matched.length - 1; i >= 0; i--) {
-        const record = matched[i]
-        if (!record.meta.nested) {
-          return this.routeRecord === record
-        }
-      }
-      return false
+      const record = this.$route.matched.findLast(
+        record => !record.meta.nested
+      )
+      return this.routeRecord === record
     },
 
     isNestedRoute() {

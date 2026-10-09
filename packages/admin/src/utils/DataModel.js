@@ -16,12 +16,7 @@ import {
 } from '@ditojs/utils'
 import DitoContext from '../DitoContext.js'
 import { DataSchemaResolver } from './DataSchemaResolver.js'
-import {
-  appendDataPath,
-  getParentDataPath,
-  getRelativeDataPath
-} from './data.js'
-import { isNested } from './schema/structure.js'
+import { getParentDataPath, getRelativeDataPath } from './data.js'
 import { isEmptySchema } from './schema/lookup.js'
 import {
   getSchemaValue,
@@ -267,6 +262,8 @@ export class DataModel {
     }
     this.derivedValueDataPaths = null
     const processedDataSnapshot = this.processedDataSnapshot.value
+    // Guard against data that its component replaced while the model settled
+    // without taking a new snapshot, whose values don't belong to this one:
     if (processedDataSnapshot?.data === this.getData()) {
       this.processedDataSnapshot.value = {
         data,
@@ -720,12 +717,14 @@ export class DataModel {
 
   // Walks the entries nested in `value`, as the value of the entry's
   // component, in place of its current one in a copy of the data that holds it,
-  // and calls `handleNestedEntry()` before visiting each of them.
+  // and calls `handleNestedEntry()` before visiting each of them. The entry is
+  // one of the recorded entries, which are all of nested components, see
+  // `getRelativeDataPath()`.
   processNestedEntries(entry, value, handleNestedEntry) {
     const { schema, data, name, dataPath } = entry
     const valueData = { ...data, [name]: value }
     processSchemaData({ components: { [name]: schema } }, valueData, {
-      dataPath: isNested(schema) ? getParentDataPath(dataPath) : dataPath,
+      dataPath: getParentDataPath(dataPath),
       shouldProcess: nestedEntry => this.shouldRenderEntry(nestedEntry),
       shouldSkipSourcesWithResource: true,
       before: nestedEntry => {
@@ -762,13 +761,13 @@ export class DataModel {
   }
 
   // Returns the data path of the value of the entry, relative to the model's
-  // data, as in its processed data.
-  getRelativeDataPath({ schema, name, dataPath }) {
-    // The data paths of nested components include their own name.
-    const valueDataPath = isNested(schema)
-      ? dataPath
-      : appendDataPath(dataPath, name)
-    return getRelativeDataPath(valueDataPath, this.dataPath)
+  // data, as in its processed data. The entry is one of the recorded entries,
+  // which are all of nested components, as `processSchemaData()` only calls
+  // `before()` for these, and walks the components of unnested ones instead.
+  // Their data paths include their own name, except for the ones of wrapped
+  // primitives, whose values are the items themselves.
+  getRelativeDataPath({ dataPath }) {
+    return getRelativeDataPath(dataPath, this.dataPath)
   }
 
   // Returns the context for `if`, data schemas and options, with the component

@@ -14,6 +14,14 @@ import { transferUids } from '../utils/uid.js'
 import { LoadingTracker, LoadingSwitch } from '../utils/LoadingTracker.js'
 import DitoContext from '../DitoContext.js'
 
+// The components that use this mixin, `DitoForm` and the ones of
+// `SourceMixin`, need to implement this contract:
+// - `hasData`: A computed property that is true when the data is set.
+// - `setupData()`: Sets up the data, e.g. by calling `ensureData()`.
+// - `clearData()`: Clears the data.
+// - `setData(data)`: Sets the loaded data and returns it as the reactive data
+//   of the component.
+
 // @vue/component
 export default {
   mixins: [ItemMixin],
@@ -98,12 +106,6 @@ export default {
       )
     },
 
-    // @overridable
-    hasData() {
-      // Base definition, will be overridden by DitoForm and SourceMixin
-      return !!this.loadedData
-    },
-
     verbs() {
       // The actual code is the `getVerbs()` method, for easier overriding of
       // this computed property in components that use the ResourceMixin.
@@ -114,7 +116,8 @@ export default {
       // Only apply pagination to lists.
       const { paginate: amount } = this.sourceSchema
       if (this.isListSource && amount) {
-        const { page = 0 } = this.query || {}
+        // Lists always have a query, see `SourceMixin.query`.
+        const { page = 0 } = this.query
         const start = page * amount
         return [start, start + amount - 1]
       }
@@ -123,6 +126,7 @@ export default {
 
     queryParams() {
       const range = this.paginationRange
+      // Sources have a query, see `SourceMixin.query`, but forms don't.
       const { page, ...query } = this.query || {}
       return {
         ...query, // Query may override scope.
@@ -201,26 +205,8 @@ export default {
         : verbs
     },
 
-    // @overridable
-    clearData() {
-      this.loadedData = null
-    },
-
-    // Sets the loaded data and returns it as the reactive data of the
-    // component, which can be modified to update it.
-    // @overridable
-    setData(data) {
-      this.loadedData = data
-      return this.loadedData
-    },
-
-    setupData() {
-      // Actual code is in separate function so it's easer to override
-      // `setupData()` and and call `ensureData()` from the overrides,
-      // see DitoForm and SourceMixin.
-      this.ensureData()
-    },
-
+    // Loads the data if needed. Called by the `setupData()` implementations,
+    // see the contract at the top.
     ensureData() {
       if (this.shouldLoad) {
         if (this.hasData) {
