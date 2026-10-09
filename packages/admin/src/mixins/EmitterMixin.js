@@ -9,12 +9,12 @@ export default {
   },
 
   methods: {
-    // Async on() and $off() methods that keep track of the events added /
-    // removed, and provide a hasListeners() method that checks if the component
-    // has listeners for a given event.
+    // on() and off() methods that keep track of the events added / removed,
+    // and a hasListeners() method that checks if the component has listeners
+    // for a given event.
 
-    // Also adds proper handling of async events, including a async emit() that
-    // deals with proper event queueing.
+    // Also adds proper handling of async events, through an async emit() that
+    // queues the events, see below.
     on(event, callback) {
       if (isArray(event)) {
         for (const ev of event) {
@@ -83,50 +83,58 @@ export default {
     emit(event, ...args) {
       // Only queue event if there actually are listeners for it.
       const entry = this.listeners?.[event]
-      if (entry) {
-        const { queue, callbacks } = entry
-        return new Promise(resolve => {
-          const next = async () => {
-            // Emit the next event in the queue with its params.
-            // Note that it only gets removed once `next()` is called.
-            const entry = queue.shift()
-            if (entry) {
-              let result
-              const errors = []
-              for (const callback of callbacks) {
-                try {
-                  const res = await callback.apply(this, entry.args)
-                  if (res !== undefined) {
-                    result = res
-                  }
-                } catch (error) {
-                  errors.push(error)
-                }
-              }
-              if (errors.length > 0) {
-                const error = new AggregateError(
+      if (!entry) {
+        // Make sure it's thenable even if there are no listeners.
+        return Promise.resolve()
+      }
+      const { queue, callbacks } = entry
+      // Handles the queued events one after the other, each with all its
+      // callbacks, so that the async callbacks of successive emits of the event
+      // don't overlap.
+      // NOTE: A callback that awaits the emit of the same event on the same
+      // component would wait for itself, as its event is queued after its own.
+      const handleQueue = async () => {
+        // The event at the head of the queue only gets removed once all its
+        // callbacks are done, so that `emit()` calls in the meantime only
+        // queue their events.
+        const { args, resolve } = queue[0]
+        let result
+        const errors = []
+        // Iterate over a copy, since callbacks registered with `once()` remove
+        // themselves from `callbacks` while it is being iterated.
+        for (const callback of [...callbacks]) {
+          try {
+            const res = await callback.apply(this, args)
+            if (res !== undefined) {
+              result = res
+            }
+          } catch (error) {
+            errors.push(error)
+          }
+        }
+        resolve(
+          errors.length > 0
+            ? Promise.reject(
+                new AggregateError(
                   errors,
                   `Errors during event handler for '${event}'`
                 )
-                entry.resolve(Promise.reject(error))
-              } else {
-                // Resolve the promise that was added to the queue for the event
-                // that was just completed by the wrapper that called `next()`
-                entry.resolve(result)
-              }
-              next()
-            }
-          }
-          queue.push({ args, resolve })
-          // For new queues (= only one entry) emit the first event immediately,
-          // to get the queue running.
-          if (queue.length === 1) {
-            next()
-          }
-        })
+              )
+            : result
+        )
+        queue.shift()
+        if (queue.length > 0) {
+          handleQueue()
+        }
       }
-      // Make sure it's thenable even if there are no listeners.
-      return Promise.resolve()
+      return new Promise(resolve => {
+        queue.push({ args, resolve })
+        // Only start handling the queue if it was empty, otherwise the event
+        // is handled once the events queued before it are done.
+        if (queue.length === 1) {
+          handleQueue()
+        }
+      })
     },
 
     // Checks if the component has listeners for a given event type:

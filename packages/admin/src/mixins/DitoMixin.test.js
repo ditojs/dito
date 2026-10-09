@@ -439,6 +439,26 @@ describe('DitoMixin', () => {
       expect(schemaComponent.getResourceUrl({ path: 'books', query: { a: 1 } }))
         .toBe('/books?a=1')
     })
+
+    it('resolves resources in views with resources', async () => {
+      const { routeComponent: view, getComponent } = await mountSchema({
+        schema: {
+          components: {
+            authors: {
+              type: 'list',
+              resource: { path: 'authors' },
+              columns: { name: {} }
+            },
+            title: { type: 'text' }
+          }
+        },
+        request: () => ({ data: [] })
+      })
+      // The view provides the data, but has no resource to inherit:
+      const title = getComponent('title')
+      expect(title.dataComponent).toBe(view)
+      expect(title.getResourceUrl({ path: 'books' })).toBe('/books')
+    })
   })
 
   describe('sendRequest()', () => {

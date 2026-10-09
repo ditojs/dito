@@ -720,9 +720,9 @@ export default {
     if (inlined && schema.resource) {
       throw new Error(
         `Nested ${
-          this.isListSource
+          isListSource(schema)
             ? 'lists'
-            : this.isObjectSource
+            : isObjectSource(schema)
               ? 'objects'
               : 'schema'
         } cannot load data from their own resources`

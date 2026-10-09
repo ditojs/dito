@@ -9,6 +9,7 @@ import {
   labelize
 } from '@ditojs/utils'
 import { getResource } from '../utils/resource.js'
+import { getErrorMessage } from '../utils/request.js'
 import { transferUids } from '../utils/uid.js'
 import { LoadingTracker, LoadingSwitch } from '../utils/LoadingTracker.js'
 import DitoContext from '../DitoContext.js'
@@ -417,16 +418,18 @@ export default {
           title: 'Request Successful',
           text: 'Request was successfully sent.'
         }),
-      notifyError = error =>
+      notifyError = error => {
+        // Errors without a message are notified without details:
+        const message = getErrorMessage(error)
         this.notify({
           type: 'error',
           error,
           title: 'Request Error',
-          text: [
-            `Unable to send request${error ? ':' : ''}`,
-            error?.message || error
-          ]
+          text: message
+            ? ['Unable to send request:', message]
+            : 'Unable to send request.'
         })
+      }
     } = {}) {
       // Resolves to `false` for errors.
       let isSuccessful = false

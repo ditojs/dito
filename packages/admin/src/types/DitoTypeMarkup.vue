@@ -129,7 +129,7 @@ export default DitoTypeComponent.register('markup', {
         },
         heading: {
           attribute: 'level',
-          values: [1, 2, 3, 4, 5, 6]
+          values: headingLevels
         }
       })
     },
@@ -182,33 +182,18 @@ export default DitoTypeComponent.register('markup', {
         editorProps: this.hardBreak
           ? {
               handlePaste: (view, event, slice) => {
-                const nodes = []
-
-                slice.content.forEach((node, offset, index) => {
-                  if (index > 0 && node.type.name === 'paragraph') {
-                    // Add hard break between paragraphs
-                    nodes.push(view.state.schema.nodes.hardBreak.create())
-                  }
-
-                  // Extract content from paragraphs, keep other nodes as-is
-                  if (node.type.name === 'paragraph') {
-                    node.content.forEach(child => nodes.push(child))
-                  } else {
-                    nodes.push(node)
-                  }
-                })
-
-                const paragraph = view.state.schema.nodes.paragraph.create(
+                const { schema } = view.state
+                const paragraph = schema.nodes.paragraph.create(
                   null,
-                  Fragment.from(nodes)
+                  getInlineContentAsLine(slice.content, schema)
                 )
-
+                // Insert the paragraph as an open slice, so that its inline
+                // content merges into the paragraph of the line.
                 view.dispatch(
                   view.state.tr.replaceSelection(
-                    new Slice(Fragment.from(paragraph), 0, 0)
+                    new Slice(Fragment.from(paragraph), 1, 1)
                   )
                 )
-
                 return true
               }
             }
@@ -369,8 +354,11 @@ export default DitoTypeComponent.register('markup', {
           } catch {
             href = `https://${href}`
           }
+          editor.commands.setLink({ href, title })
+        } else {
+          // Applying without a URL removes the link, like the remove button.
+          editor.commands.unsetLink()
         }
-        editor.commands.setLink({ href, title })
       } else if (attributes === null) {
         editor.commands.unsetLink()
       }
@@ -405,7 +393,8 @@ export default DitoTypeComponent.register('markup', {
         // Nodes: `schema.nodes`
         nodes.blockquote && Blockquote,
         nodes.codeBlock && CodeBlock,
-        nodes.heading && Heading.configure({ levels: nodes.heading }),
+        nodes.heading &&
+        Heading.configure({ levels: getHeadingLevels(nodes.heading) }),
         nodes.horizontalRule && HorizontalRule,
         (nodes.orderedList || nodes.bulletList) && ListItem,
         nodes.bulletList && BulletList,
@@ -480,10 +469,11 @@ export default DitoTypeComponent.register('markup', {
             } else if (isObject(description)) {
               const { command, attribute, values, onClick } = description
               if (attribute) {
-                if (isArray(values) && isArray(setting)) {
-                  // Support heading level attrs:
+                // Support heading level attrs, with `true` enabling all:
+                const enabledValues = setting === true ? values : setting
+                if (isArray(values) && isArray(enabledValues)) {
                   for (const value of values) {
-                    if (setting.includes(value)) {
+                    if (enabledValues.includes(value)) {
                       addButton({
                         name,
                         id: `${name}-${value}`,
@@ -514,6 +504,37 @@ export default DitoTypeComponent.register('markup', {
     }
   }
 })
+
+const headingLevels = [1, 2, 3, 4, 5, 6]
+
+// Returns the heading levels for the `nodes.heading` setting, with `true`
+// enabling all levels.
+function getHeadingLevels(setting) {
+  return setting === true ? headingLevels : setting
+}
+
+// Returns the inline content of all textblocks in the fragment as one line,
+// with hard breaks between the textblocks, dropping the block nodes around
+// them (e.g. lists and blockquotes), as a line can only hold inline content.
+function getInlineContentAsLine(fragment, schema) {
+  const nodes = []
+  let hasTextblock = false
+  fragment.descendants(node => {
+    if (node.isTextblock) {
+      if (hasTextblock) {
+        nodes.push(schema.nodes.hardBreak.create())
+      }
+      hasTextblock = true
+      node.content.forEach(child => nodes.push(child))
+      return false
+    } else if (node.isInline) {
+      // Inline nodes at the top level of the slice, e.g. from inline HTML.
+      nodes.push(node)
+      return false
+    }
+  })
+  return Fragment.from(nodes)
+}
 
 const Small = Mark.create({
   name: 'small',

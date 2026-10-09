@@ -1413,7 +1413,10 @@ export interface MarkupSchema<$Item = any> extends BaseSchema<$Item> {
   nodes?: {
     blockquote?: boolean
     codeBlock?: boolean
-    heading?: (1 | 2 | 3 | 4 | 5 | 6)[]
+    /**
+     * The heading levels to support, or `true` for all levels.
+     */
+    heading?: true | (1 | 2 | 3 | 4 | 5 | 6)[]
     horizontalRule?: boolean
     orderedList?: boolean
     bulletList?: boolean

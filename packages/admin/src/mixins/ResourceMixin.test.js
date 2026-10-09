@@ -458,6 +458,17 @@ describe('ResourceMixin', () => {
       })
     })
 
+    it('notifies failed requests with data without a message', async () => {
+      const { wrapper } = await mountRecipesWithPublishButton(() => {
+        throw createRequestError(500, { type: 'ServerError' })
+      })
+      await clickPublish(wrapper)
+      expect(getNotifications()).toContainEqual({
+        title: 'Request Error',
+        text: 'Unable to send request.'
+      })
+    })
+
     it(`doesn't submit buttons without resource`, async () => {
       const request = vi.fn()
       const { wrapper, getComponent } =

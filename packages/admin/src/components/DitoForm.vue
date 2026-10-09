@@ -66,7 +66,9 @@ import { getResource, getMemberResource } from '../utils/resource.js'
 import { isObjectSource } from '../utils/schema/structure.js'
 import { getButtonSchemas } from '../utils/schema/lookup.js'
 import { getComponentPathByDataPath } from '../utils/schema/data.js'
+import { appendDataPath } from '../utils/data.js'
 import { resolvePath } from '../utils/path.js'
+import { getErrorMessage } from '../utils/request.js'
 import { isPathWithin } from '../utils/route.js'
 import { transferUids } from '../utils/uid.js'
 import { DataModel } from '../utils/DataModel.js'
@@ -205,8 +207,26 @@ export default DitoComponent.component('DitoForm', {
       return this.createdData || this.loadedData || this.inheritedData || null
     },
 
+    // The view that the form is nested in: the closest parent route component
+    // that is a view, past the parent forms, and not the menus around the view,
+    // which are rendered by views as well.
+    parentViewComponent() {
+      let component = this.parentRouteComponent
+      while (component && !component.isView) {
+        component = component.parentRouteComponent
+      }
+      return component
+    },
+
+    // The route component that holds the root data of the form's data path:
+    // the closest one that provides its own data, or else the view, which
+    // holds the data of its components also when they have no resources.
+    dataRootComponent() {
+      return this.dataComponent ?? this.parentViewComponent
+    },
+
     dataPath() {
-      return this.getDataPathFrom(this.dataComponent)
+      return this.getDataPathFrom(this.dataRootComponent)
     },
 
     componentPath() {
@@ -322,11 +342,13 @@ export default DitoComponent.component('DitoForm', {
       flush: 'post',
       handler(to, from) {
         // Reload form data when navigating to a different entity in same form.
+        // The create route sets up a new item instead, see `setupData()`.
         const param = this.meta?.param
         if (
           param &&
           this.providesData &&
           from.params[param] !== 'create' && // But haven't been creating
+          to.params[param] !== 'create' && // And aren't going to create
           to.params[param] !== from.params[param] // Going to a different entity
         ) {
           this.loadData(true)
@@ -361,8 +383,9 @@ export default DitoComponent.component('DitoForm', {
     },
 
     isCreating(isCreating) {
-      // Set up the data to create when redirected to the create route, e.g.
-      // by the `sourceItem` watcher.
+      // Set up the data to create when navigating to the create route, e.g.
+      // from another item in the same form, or when redirected to it by the
+      // `sourceItem` watcher.
       if (isCreating) {
         this.setupData()
       }
@@ -393,13 +416,20 @@ export default DitoComponent.component('DitoForm', {
       return this.mainSchemaComponent?.emitEvent(event, params)
     },
 
+    // Returns the form's data path relative to the data of the given route
+    // component, from the form's route path relative to the component's path,
+    // e.g. `chapters/1` for the form of `/items/1/chapters/1` in the form of
+    // `/items/1`.
     getDataPathFrom(routeComponent) {
-      // Get the data path by denormalizePath the relative route path
-      return this.api.denormalizePath(
-        this.path
-          // DitoViews have nested routes, so don't remove their path.
-          .slice((routeComponent.isView ? 0 : routeComponent.path.length) + 1)
+      const dataPath = this.api.denormalizePath(
+        this.path.slice(routeComponent.path.length + 1)
       )
+      // The routes of single-component views don't contain the path of their
+      // component, see `DitoView.getChildPath()`, but its data is stored
+      // under its name, see `DitoView.viewSchema`:
+      return routeComponent.isView && routeComponent.isSingleComponentView
+        ? appendDataPath(routeComponent.name, dataPath)
+        : dataPath
     },
 
     // @override ResourceMixin.getResource()
@@ -411,6 +441,10 @@ export default DitoComponent.component('DitoForm', {
     // @override ResourceMixin.setupData()
     setupData() {
       if (this.isCreating) {
+        // Drop the data of the item that the form loaded before, e.g. when
+        // navigating from `/items/1` to `/items/create`, so that it doesn't
+        // determine the form schema of the new item:
+        this.loadedData = null
         this.createdData ||= this.createData(this.schema, this.creationType)
       } else {
         this.ensureData()
@@ -573,8 +607,8 @@ export default DitoComponent.component('DitoForm', {
               html: `${this.itemLabel} was ${verb}.`
             })
           },
-          notifyError: error =>
-            notifySubmitError(error, error?.message || error)
+          // Errors without a message are notified without details:
+          notifyError: error => notifySubmitError(error, getErrorMessage(error))
         })
         if (success) {
           // The item changed on the server, so the source that lists it needs

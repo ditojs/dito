@@ -93,6 +93,12 @@ describe('resolveSchema()', () => {
     expect(load).toHaveBeenCalledTimes(1)
   })
 
+  it('returns values that are no schemas as they are', async () => {
+    expect(await resolveSchema(undefined)).toBe(undefined)
+    expect(await resolveSchema(null)).toBe(null)
+    expect(await resolveSchema('books')).toBe('books')
+  })
+
   it('unwraps the default export of modules', async () => {
     const schema = createBookForm()
     const module = createModule({ default: schema })
@@ -214,6 +220,22 @@ describe('resolveViews()', () => {
       Promise.resolve(createModule({ catalog }))
     ])
     expect(views.catalog.items).toEqual({ books: { ...books, name: 'books' } })
+  })
+
+  it('rejects menus without items', async () => {
+    await expect(
+      resolveViews([{ type: 'menu', label: 'Catalog' }])
+    ).rejects.toThrow(
+      `Invalid items of menu 'catalog': Must be an object or an array.`
+    )
+  })
+
+  it('rejects views that are no object or array', async () => {
+    for (const views of [undefined, null, () => undefined]) {
+      await expect(resolveViews(views)).rejects.toThrow(
+        'Invalid views: Must be an object or an array.'
+      )
+    }
   })
 })
 

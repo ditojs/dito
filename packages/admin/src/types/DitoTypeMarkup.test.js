@@ -349,9 +349,7 @@ describe('DitoTypeMarkup', () => {
       await vi.waitFor(() => expect(data.body).toBe('<p>Emma</p>'))
     })
 
-    // Bug: Applying the dialog without a URL creates an `<a href="">` link to
-    // the current page, instead of removing the link like the remove button.
-    it.fails('removes the link when applied without a URL', async () => {
+    it('removes the link when applied without a URL', async () => {
       const { admin, findField, data } = await mountLinkSchema(
         '<p><a href="https://example.com">Emma</a></p>'
       )
@@ -450,20 +448,15 @@ describe('DitoTypeMarkup', () => {
     })
   })
 
-  // Bug: `nodes.heading: true` is passed to Tiptap as `levels: true`, which
-  // throws as it expects an array, so the editor isn't created.
-  it.fails(
-    'supports all heading levels with `nodes.heading: true`',
-    async () => {
-      const { getComponent } = await mountSchema({
-        schema: {
-          components: { body: { type: 'markup', nodes: { heading: true } } }
-        },
-        data: { body: '<h2>Emma</h2>' }
-      })
-      expect(getComponent('body').editor.getHTML()).toBe('<h2>Emma</h2>')
-    }
-  )
+  it('supports all heading levels with `nodes.heading: true`', async () => {
+    const { getComponent } = await mountSchema({
+      schema: {
+        components: { body: { type: 'markup', nodes: { heading: true } } }
+      },
+      data: { body: '<h2>Emma</h2>' }
+    })
+    expect(getComponent('body').editor.getHTML()).toBe('<h2>Emma</h2>')
+  })
 
   it('sets paragraphs with the paragraph button', async () => {
     const { findField, getComponent, data } = await mountSchema({
@@ -608,9 +601,7 @@ describe('DitoTypeMarkup', () => {
       )
     })
 
-    // Bug: The pasted paragraph is inserted as a closed node, which splits
-    // the line into two paragraphs, stored as `Emma</p><p>Persuasion`.
-    it.fails('pastes into the existing line with `hardBreak`', async () => {
+    it('pastes into the existing line with `hardBreak`', async () => {
       const { getComponent, data } = await mountSchema({
         schema: {
           components: { caption: { type: 'markup', hardBreak: true } }
@@ -619,13 +610,41 @@ describe('DitoTypeMarkup', () => {
       })
       const { editor } = getComponent('caption')
       editor.commands.focus('end')
-      editor.view.pasteHTML('<p> Persuasion</p>')
-      await vi.waitFor(() => expect(data.caption).toBe('Emma Persuasion'))
+      editor.view.pasteHTML('<p>, Persuasion</p>')
+      await vi.waitFor(() => expect(data.caption).toBe('Emma, Persuasion'))
     })
 
-    // Bug: Pasted block nodes other than paragraphs are moved into the
-    // paragraph of the line, which they aren't valid content of.
-    it.fails('keeps the document valid when pasting block nodes', async () => {
+    it('pastes inline content into the line with `hardBreak`', async () => {
+      const { getComponent, data } = await mountSchema({
+        schema: {
+          components: {
+            caption: { type: 'markup', hardBreak: true, marks: { bold: true } }
+          }
+        },
+        data: { caption: 'Emma' }
+      })
+      const { editor } = getComponent('caption')
+      editor.commands.focus('end')
+      editor.view.pasteHTML(', <strong>Persuasion</strong>')
+      await vi.waitFor(() =>
+        expect(data.caption).toBe('Emma, <strong>Persuasion</strong>')
+      )
+    })
+
+    it('keeps empty lines when pasting paragraphs with `hardBreak`', async () => {
+      const { getComponent } = await mountSchema({
+        schema: {
+          components: { caption: { type: 'markup', hardBreak: true } }
+        },
+        data: { caption: '' }
+      })
+      const { editor } = getComponent('caption')
+      editor.commands.focus()
+      editor.view.pasteHTML('<p></p><p>Emma</p>')
+      expect(editor.getHTML()).toBe('<p><br>Emma</p>')
+    })
+
+    it('pastes the text of block nodes as lines with `hardBreak`', async () => {
       const { getComponent } = await mountSchema({
         schema: {
           components: {
@@ -644,6 +663,7 @@ describe('DitoTypeMarkup', () => {
         '<p>Emma</p><blockquote><p>Persuasion</p></blockquote>'
       )
       expect(() => editor.state.doc.check()).not.toThrow()
+      expect(editor.getHTML()).toBe('<p>Emma<br>Persuasion</p>')
     })
   })
 })

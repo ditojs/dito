@@ -56,8 +56,17 @@ export async function resolveSchema(value, unwrapModule = false) {
       }
     }
   }
-  resolvedSchemas.set(value, schema)
+  // Other values, e.g. `undefined`, are returned without caching:
+  if (canBeWeakMapKey(value)) {
+    resolvedSchemas.set(value, schema)
+  }
   return schema
+}
+
+// Only objects, arrays, promises and functions can be keys of weak maps, but
+// not primitive values.
+function canBeWeakMapKey(value) {
+  return Object(value) === value
 }
 
 export async function resolveSchemas(
@@ -95,20 +104,34 @@ export async function resolveSchemas(
 }
 
 export async function resolveViews(unresolvedViews) {
-  return resolveSchemas(unresolvedViews, async (schema, unwrapModule) => {
-    schema = await resolveSchema(schema, unwrapModule)
-    if (isMenu(schema)) {
-      schema = {
-        ...schema,
+  const views = await resolveSchemas(
+    unresolvedViews,
+    async (schema, unwrapModule) => {
+      schema = await resolveSchema(schema, unwrapModule)
+      if (isMenu(schema)) {
         // Generate a name for sub-menus from their label if it's missing.
         // NOTE: This is never actually referenced from anywhere, but they need
         // a name by which they're stored in the parent object.
-        name: schema.name || camelize(schema.label),
-        items: await resolveSchemas(schema.items)
+        const name = schema.name || camelize(schema.label)
+        const items = assertSchemas(
+          await resolveSchemas(schema.items),
+          `items of menu '${name}'`
+        )
+        schema = { ...schema, name, items }
       }
+      return schema
     }
-    return schema
-  })
+  )
+  return assertSchemas(views, 'views')
+}
+
+// Asserts that the schemas returned by `resolveSchemas()` are an object, as it
+// returns for objects and arrays, and returns them.
+function assertSchemas(schemas, description) {
+  if (!isObject(schemas)) {
+    throw new Error(`Invalid ${description}: Must be an object or an array.`)
+  }
+  return schemas
 }
 
 export function flattenViews(views) {

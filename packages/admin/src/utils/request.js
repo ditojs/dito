@@ -1,4 +1,4 @@
-import { isAbsoluteUrl } from '@ditojs/utils'
+import { isAbsoluteUrl, isString } from '@ditojs/utils'
 import { formatQuery } from './route.js'
 
 export class RequestError extends Error {
@@ -10,6 +10,13 @@ export class RequestError extends Error {
     )
     this.response = response
   }
+}
+
+// Returns the message of a request error, which is the response data or else
+// the request error, or `null` for responses without a message, e.g.
+// `{ type: 'ServerError' }`.
+export function getErrorMessage(error) {
+  return isString(error?.message) ? error.message : null
 }
 
 export async function request(api, {

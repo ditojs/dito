@@ -296,13 +296,18 @@ export default {
     },
 
     getResourcePath(resource) {
+      const { dataComponent } = this
       resource = getResource(resource, {
         // Resources without a parent inherit the one from `dataComponent`
-        // automatically.
-        parent: this.dataComponent?.getResource({
-          method: resource?.method,
-          child: resource
-        }) ?? null
+        // automatically, unless it's a view, which provides the data of its
+        // components with resources, but has no resource of its own.
+        parent:
+          dataComponent && !dataComponent.isView
+            ? (dataComponent.getResource({
+                method: resource?.method,
+                child: resource
+              }) ?? null)
+            : null
       })
       return this.api.resources.any(resource)
     },

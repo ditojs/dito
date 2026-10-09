@@ -470,10 +470,18 @@ describe('DitoForm', () => {
       }
     }
 
-    // The data path of the nested form starts with the view's name, see
-    // `getDataPathFrom()`, which only matches single-component views, so the
-    // form doesn't find its item in the data of multi-component views.
-    it.fails('apply their changes to the data of the view', async () => {
+    async function submitChanges(form, name) {
+      const element = new DOMWrapper(form.$el)
+      await enterValue(element.find('input'), name)
+      await element
+        .find('.dito-buttons--main button[type="submit"]')
+        .trigger('click')
+      await settle(form)
+    }
+
+    // The data path of the nested form is relative to the data of the view,
+    // without the path of the view, see `getDataPathFrom()`.
+    it('apply their changes to the data of the view', async () => {
       const { admin, data } = await mountSchema({
         schema: {
           components: {
@@ -493,29 +501,83 @@ describe('DitoForm', () => {
       const form = admin.getRouteComponent(component => component.isForm)
       await settle(form)
       expect(form.parentRouteComponent.isView).toBe(true)
-      const element = new DOMWrapper(form.$el)
-      await enterValue(element.find('input'), 'Waffles')
-      await element
-        .find('.dito-buttons--main button[type="submit"]')
-        .trigger('click')
-      await settle(form)
+      expect(form.dataPath).toBe('recipes/0')
+      await submitChanges(form, 'Waffles')
       expect(data.recipes).toEqual([{ name: 'Waffles' }])
     })
 
     // Without a resource in the view, the nested form has no data component,
-    // and `getDataPathFrom(null)` throws a TypeError while rendering.
-    it.fails('open in views without resources', async () => {
-      vi.spyOn(console, 'error').mockImplementation(() => {})
-      const { admin } = await mountSchema({
+    // and its data path is relative to the data of the view.
+    it('open in views without resources', async () => {
+      const { admin, data } = await mountSchema({
         schema: { components: { recipes: recipesSchema } },
         data: { recipes: [{ name: 'Pancakes' }] }
       })
       await admin.navigate('/test/recipes/0')
       const form = admin.getRouteComponent(component => component.isForm)
       await settle(form)
+      expect(form.dataComponent).toBe(null)
+      expect(form.dataPath).toBe('recipes/0')
       expect(new DOMWrapper(form.$el).find('input').element.value).toBe(
         'Pancakes'
       )
+      await submitChanges(form, 'Waffles')
+      expect(data.recipes).toEqual([{ name: 'Waffles' }])
+    })
+
+    // Single-component views store the data of their component under the
+    // view's name, also when the view's path differs from it.
+    it('find their item in single-component views by name', async () => {
+      const admin = await mountAdmin({
+        views: {
+          recipes: {
+            type: 'view',
+            path: 'cookbook',
+            component: recipesSchema
+          }
+        }
+      })
+      await admin.navigate('/cookbook')
+      const view = admin.getRouteComponent(component => component.isView)
+      view.setData({ recipes: [{ name: 'Pancakes' }] })
+      await settle(view)
+      await admin.navigate('/cookbook/0')
+      const form = admin.getRouteComponent(component => component.isForm)
+      await settle(form)
+      expect(form.dataPath).toBe('recipes/0')
+      await submitChanges(form, 'Waffles')
+      expect(view.data.recipes).toEqual([{ name: 'Waffles' }])
+    })
+
+    // Views in menus are nested in the route components of the menus, but
+    // the data paths of their forms are relative to the view's data.
+    it('find their item in views in menus', async () => {
+      const admin = await mountAdmin({
+        views: {
+          kitchen: {
+            type: 'menu',
+            label: 'Kitchen',
+            items: {
+              cookbook: {
+                type: 'view',
+                components: { recipes: recipesSchema }
+              }
+            }
+          }
+        }
+      })
+      await admin.navigate('/kitchen/cookbook')
+      const view = admin.getRouteComponent(
+        component => component.isView && component.name === 'cookbook'
+      )
+      view.setData({ recipes: [{ name: 'Pancakes' }] })
+      await settle(view)
+      await admin.navigate('/kitchen/cookbook/recipes/0')
+      const form = admin.getRouteComponent(component => component.isForm)
+      await settle(form)
+      expect(form.dataPath).toBe('recipes/0')
+      await submitChanges(form, 'Waffles')
+      expect(view.data.recipes).toEqual([{ name: 'Waffles' }])
     })
   })
 
@@ -558,25 +620,23 @@ describe('DitoForm', () => {
     })
   })
 
-  // Navigating from an item to the create route in the same form reloads the
-  // data, see the `$route` watcher, which loads the collection resource and
-  // replaces the new item with the list of items.
-  it.fails(
-    'sets up a new item when navigating to its create route',
-    async () => {
-      const { admin, routeComponent } = await mountForm({
-        schema: { components: { title: { type: 'text' } } },
-        data: { title: 'Emma' }
-      })
-      await admin.navigate('/items/create')
-      const form = admin.getRouteComponent(component => component.isForm)
-      await settle(form)
-      // The same form stays open and creates the new item:
-      expect(form).toBe(routeComponent)
-      expect(form.isCreating).toBe(true)
-      expect(form.data).toEqual({ title: null })
-    }
-  )
+  // Navigating from an item to the create route in the same form doesn't load
+  // the collection resource, see the `$route` watcher, but sets up a new item.
+  it('sets up a new item when navigating to its create route', async () => {
+    const { admin, routeComponent } = await mountForm({
+      schema: { components: { title: { type: 'text' } } },
+      data: { title: 'Emma' }
+    })
+    await admin.navigate('/items/create')
+    const form = admin.getRouteComponent(component => component.isForm)
+    await settle(form)
+    // The same form stays open and creates the new item:
+    expect(form).toBe(routeComponent)
+    expect(form.isCreating).toBe(true)
+    expect(form.loadedData).toBe(null)
+    expect(form.isDirty).toBe(false)
+    expect(form.data).toEqual({ title: null })
+  })
 
   it('creates the item of the type given by the route query', async () => {
     const admin = await mountAdmin({
@@ -630,10 +690,9 @@ describe('DitoForm', () => {
     ).toHaveLength(1)
   })
 
-  // Errors of responses without a message, e.g. `{ type: 'ServerError' }`, are
-  // shown as their object's string: "Unable to save Book 'Emma': [object
-  // Object]".
-  it.fails('notifies errors without a message without the object', async () => {
+  // Errors of responses without a message, e.g. `{ type: 'ServerError' }`,
+  // aren't shown as their object's string, "[object Object]":
+  it('notifies errors without a message without the object', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
     const { submit, notify } = await mountBookForm(() => {
       throw Object.assign(new Error('Request failed'), {
@@ -641,7 +700,11 @@ describe('DitoForm', () => {
       })
     })
     await submit()
-    const [[{ html }]] = notify.mock.calls
-    expect(String(html)).not.toContain('[object Object]')
+    expect(notify).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'error',
+        html: `Unable to save Book '${escapedName}'.`
+      })
+    )
   })
 })

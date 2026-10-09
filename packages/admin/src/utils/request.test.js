@@ -7,6 +7,7 @@ import {
   isApiUrl,
   resolveDownloadUrl,
   getRequestCacheKey,
+  getErrorMessage,
   RequestError
 } from './request.js'
 
@@ -388,5 +389,18 @@ describe('isApiUrl()', () => {
   it(`doesn't treat URLs that only start like the API URL as API URLs`, () => {
     expect(isApiUrl(api, 'https://example.com/api-docs')).toBe(false)
     expect(isApiUrl(api, 'https://example.com/apis/books')).toBe(false)
+  })
+})
+
+describe('getErrorMessage()', () => {
+  it('returns the message of errors and response data', () => {
+    expect(getErrorMessage(new Error('Failed'))).toBe('Failed')
+    expect(getErrorMessage({ message: 'Failed' })).toBe('Failed')
+  })
+
+  it('returns `null` for errors without a string message', () => {
+    expect(getErrorMessage({ type: 'ServerError' })).toBe(null)
+    expect(getErrorMessage({ message: { key: 'value' } })).toBe(null)
+    expect(getErrorMessage(null)).toBe(null)
   })
 })

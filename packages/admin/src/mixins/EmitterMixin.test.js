@@ -47,9 +47,7 @@ describe('EmitterMixin', () => {
       expect(callback).toHaveBeenCalledOnce()
     })
 
-    // Bug: `off()` splices `callbacks` while `emit()` iterates over them, so
-    // the callback after a `once()` callback is skipped on the first event.
-    it.fails('calls the callbacks registered after it', async () => {
+    it('calls the callbacks registered after it', async () => {
       const emitter = createEmitter()
       const callback = vi.fn()
       emitter.once('load', () => {})
@@ -146,9 +144,7 @@ describe('EmitterMixin', () => {
       expect(await emitter.emit('load')).toBe('second')
     })
 
-    // Bug: `next()` shifts the event off the queue before handling it, so the
-    // queue is empty again and the next event is handled concurrently.
-    it.fails('queues events until the previous ones are handled', async () => {
+    it('queues events until the previous ones are handled', async () => {
       const emitter = createEmitter()
       const calls = []
       let resolveFirst

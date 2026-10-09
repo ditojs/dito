@@ -330,6 +330,25 @@ describe('SourceMixin', () => {
         { id: 2, name: 'Bram Stoker' }
       ])
     })
+
+    it('processes objects without forms as copies', () => {
+      const schema = { type: 'object' }
+      const graph = { addSource: vi.fn() }
+      const value = { id: 1, name: 'Mary Shelley' }
+      const processed = getTypeOptions(schema).processValue(
+        { schema, value, dataPath: 'author' },
+        graph
+      )
+      expect(processed).toEqual(value)
+      expect(processed).not.toBe(value)
+      expect(graph.addSource).toHaveBeenCalledWith('author', schema)
+      expect(
+        getTypeOptions(schema).processValue(
+          { schema, value: null, dataPath: 'author' },
+          graph
+        )
+      ).toBe(null)
+    })
   })
   describe('loading data', () => {
     // Unlike `mountSchema()`, doesn't set the data of the view after its
@@ -749,9 +768,7 @@ describe('SourceMixin', () => {
   describe('processSchema()', () => {
     const api = { normalizePath: path => path }
 
-    // Bug: `SourceMixin.processSchema()` is called on the mixin, which has no
-    // `isListSource`, so the message always names 'schema'.
-    it.fails('refuses resources of inlined lists', async () => {
+    it('refuses resources of inlined lists', async () => {
       const schema = {
         type: 'list',
         inlined: true,
@@ -763,7 +780,7 @@ describe('SourceMixin', () => {
       ).rejects.toThrow('Nested lists cannot load data from their own')
     })
 
-    it('refuses resources of inlined sources', async () => {
+    it('refuses resources of inlined objects', async () => {
       const schema = {
         type: 'object',
         inlined: true,
@@ -772,7 +789,7 @@ describe('SourceMixin', () => {
       }
       await expect(
         getTypeOptions(schema).processSchema(api, schema, 'publisher', [], 0)
-      ).rejects.toThrow('cannot load data from their own resources')
+      ).rejects.toThrow('Nested objects cannot load data from their own')
     })
   })
 })
