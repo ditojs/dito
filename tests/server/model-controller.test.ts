@@ -94,6 +94,14 @@ class Note extends Model {
       nullable: true
     }
   }
+
+  static override relations: any = {
+    author: {
+      relation: 'belongsTo',
+      from: 'Note.authorId',
+      to: 'Author.id'
+    }
+  }
 }
 
 // Collects the events of the hooks, so tests can assert their order.
@@ -451,6 +459,19 @@ class Authors extends ModelController<any> {
   }
 }
 
+// Relates notes to existing authors through their `belongsTo` relation.
+class Notes extends ModelController<any> {
+  override modelClass = Note
+
+  override relations: any = {
+    author: {
+      relation: {
+        allow: ['get', 'post']
+      }
+    }
+  }
+}
+
 // Creates authors and relates the existing notes found in their graphs.
 class RelatingAuthors extends ModelController<any> {
   override modelClass = Author
@@ -471,7 +492,8 @@ describe('ModelController', () => {
       LongBooks,
       Authors,
       PublishedAuthors,
-      RelatingAuthors
+      RelatingAuthors,
+      Notes
     }
   })
 
@@ -1122,6 +1144,18 @@ describe('ModelController', () => {
       expect(response.headers.get('location')).toBe(
         `/authors/${author.id}/notes/${note.id}`
       )
+      expect((await Note.query().findById(note.id))?.authorId).toBe(author.id)
+    })
+
+    test('relates models through belongsTo relations', async () => {
+      const author = await Author.query().insert({ name: 'Ada' })
+      const note = await Note.query().insert({ text: 'Draft' })
+      const response = await request(`/notes/${note.id}/author`, {
+        method: 'POST',
+        body: { id: author.id }
+      })
+      expect(response.status).toBe(201)
+      expect(response.data).toMatchObject({ id: author.id, name: 'Ada' })
       expect((await Note.query().findById(note.id))?.authorId).toBe(author.id)
     })
 

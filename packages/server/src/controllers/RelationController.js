@@ -77,14 +77,26 @@ export class RelationController extends CollectionController {
         .ignoreScope()
         .findById(id)
         .throwIfNotFound()
-        // Explicitly only select the foreign key ids for more efficiency.
-        .select(...this.relationInstance.ownerProp.props)
+        // Explicitly only select the ids and the foreign keys for more
+        // efficiency. Relating through `belongsTo` relations patches the
+        // parent by its ids.
+        .select(...this.getParentColumns())
       // This is the same as `ModelController.execute()`, except for the use
       // of `model.$relatedQuery()` instead of `modelClass.query()`:
       const query = model.$relatedQuery(this.relationInstance.name, trx)
       this.setupQuery(query)
       return execute(query, trx)
     })
+  }
+
+  getParentColumns() {
+    const { ownerModelClass, ownerProp } = this.relationInstance
+    return [
+      ...new Set([
+        ...ownerModelClass.getIdRelationProperty().props,
+        ...ownerProp.props
+      ])
+    ]
   }
 
   // @override
