@@ -133,6 +133,18 @@ describe('DitoCalendar', () => {
     expect(getEmittedDates(wrapper)).toEqual([new Date(2024, 2, 7, 14, 30)])
   })
 
+  it('only moves the cursor when navigating without `update`', async () => {
+    wrapper = mountCalendar({
+      disabledDate: date => date.getDate() === 6
+    })
+    expect(wrapper.vm.navigate({ step: 1, mode: 'day' })).toBe(true)
+    await flushPromises()
+    expect(getEmittedDates(wrapper)).toEqual([])
+    expect(findCursorCell(wrapper).attributes('aria-label')).toBe(
+      'March 6, 2024'
+    )
+  })
+
   it(`doesn't select a disabled date with Enter`, () => {
     wrapper = mountCalendar({
       disabledDate: date => date.getDate() === 5

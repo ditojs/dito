@@ -119,6 +119,23 @@ describe('getDatePartAtPosition()', () => {
     ).toEqual({ name: 'minute', start: 3, end: 5 })
   })
 
+  it.each([
+    [string, {}],
+    ['', {}],
+    ['11:30:00', { date: false }],
+    ['May 14, 2026, 11:30', { time: false }]
+  ])('finds a part at every position of %o', (text, options) => {
+    for (let position = 0; position <= text.length + 1; position++) {
+      expect(getDatePartAtPosition(text, position, options)).not.toBe(null)
+    }
+  })
+
+  it(`doesn't fail without date and time parts`, () => {
+    expect(() =>
+      getDatePartAtPosition('11:30', 0, { date: false, time: false })
+    ).not.toThrow()
+  })
+
   it('returns `null` for missing strings', () => {
     expect(getDatePartAtPosition(null, 0)).toBe(null)
   })

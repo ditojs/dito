@@ -102,6 +102,10 @@ export function parseDate(string, {
   return null
 }
 
+// Returns the date part of the formatted date `string` at the caret `position`
+// as `{ name, start, end }`: the part at or before the position, skipping
+// separators. For a string, there is a part at every position from 0 on, so
+// the result is only `null` without a string.
 export function getDatePartAtPosition(string, position, {
   locale = 'en-US',
   date = true,
