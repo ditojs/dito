@@ -263,35 +263,32 @@ export default DitoComponent.component('DitoRoot', {
       this.loadingCount += isLoading ? 1 : -1
     },
 
-    showDialog({ components, buttons, data, settings }) {
+    async showDialog({ components, buttons, data, settings }) {
       // Shows a dito-dialog component and wraps it in a promise so that the
       // buttons in the dialog can use `dialog.resolve()` and `dialog.reject()`
       // to close the modal dialog and resolve / reject the promise at once.
-      return new Promise(
-        async (resolve, reject) => {
-          // Process components to resolve async schemas.
-          const routes = []
-          await setupSchemaComponents(
-            this.api,
-            { type: 'dialog', components },
-            routes,
-            0
-          )
-          if (routes.length > 0) {
-            throw new Error(
-              'Dialogs do not support components that produce routes'
-            )
-          }
-          const key = `dialog-${++dialogId}`
-          this.dialogs[key] = {
-            components,
-            buttons,
-            data,
-            settings,
-            promise: { resolve, reject }
-          }
-        }
+      // Process components to resolve async schemas first, so that errors
+      // reject the returned promise.
+      const routes = []
+      await setupSchemaComponents(
+        this.api,
+        { type: 'dialog', components },
+        routes,
+        0
       )
+      if (routes.length > 0) {
+        throw new Error('Dialogs do not support components that produce routes')
+      }
+      return new Promise((resolve, reject) => {
+        const key = `dialog-${++dialogId}`
+        this.dialogs[key] = {
+          components,
+          buttons,
+          data,
+          settings,
+          promise: { resolve, reject }
+        }
+      })
     },
 
     removeDialog(key) {

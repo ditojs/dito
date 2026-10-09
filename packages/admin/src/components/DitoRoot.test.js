@@ -1,4 +1,9 @@
-import { mountForm, unmountAdmin, enterValue } from '../test/mount.js'
+import {
+  mountAdmin,
+  mountForm,
+  unmountAdmin,
+  enterValue
+} from '../test/mount.js'
 
 // Dispatches `beforeunload` like the browser does when the page is reloaded or
 // closed, and returns whether the page asks to stay.
@@ -50,6 +55,23 @@ describe('DitoRoot', () => {
       await settle()
       unmountAdmin(admin)
       expect(isUnloadPrevented()).toBe(false)
+    })
+  })
+
+  describe('showDialog()', () => {
+    it('rejects when the components fail to set up', async () => {
+      const admin = await mountAdmin({ views: {} })
+      await expect(
+        admin.root.showDialog({
+          components: {
+            books: {
+              type: 'list',
+              form: { type: 'form', components: {} }
+            }
+          }
+        })
+      ).rejects.toThrow('Dialogs do not support components that produce routes')
+      expect(admin.root.dialogs).toEqual({})
     })
   })
 })
