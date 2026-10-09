@@ -12,8 +12,8 @@ export default {
     // properties, so that we can access these on `this` as well:
     // NOTE: While internally, we speak of `data`, in the API surface the
     // term `item` is used for the data that relates to editing objects.
-    // NOTE: This should always return the same as:
-    // return getItem(this.rootData, this.dataPath, false)
+    // The same as `DitoContext.parentItem`, which never returns the item
+    // itself as its parent either.
     parentData() {
       const data = getParentItem(this.rootData, this.dataPath, this.nested)
       return data !== this.data ? data : null

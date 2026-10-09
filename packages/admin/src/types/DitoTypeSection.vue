@@ -30,7 +30,8 @@ export default DitoTypeComponent.register('section', {
   // that the section can reveal its components, see `navigateToComponent()`.
   mixins: [SchemaParentMixin],
   // Nested sections hold their data in an object, other sections don't have
-  // their own value. Use a callback to override `defaultValue: null`.
+  // their own value, also with `default: undefined`, which `getDefaultValue()`
+  // ignores. The callback overrides the standard `defaultValue: null`.
   defaultValue: ({ schema }) => (schema.nested ? {} : undefined),
   ignoreMissingValue: ({ schema }) => !schema.nested && !('default' in schema),
   // The object of nested sections can't be `null`, unlike the value of the

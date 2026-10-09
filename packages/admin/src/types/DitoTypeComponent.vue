@@ -20,8 +20,9 @@ import { resolveSchemaComponent } from '../utils/schema/setup.js'
 // @vue/component
 export default DitoTypeComponent.register('component', {
   // Override the standard `defaultValue: null` to not set any data for custom
-  // components, unless they provide a default value.
-  defaultValue: () => undefined, // Callback to override `defaultValue: null`
+  // components, unless their schema provides a `default` value. This also
+  // applies to `default: undefined`, which `getDefaultValue()` ignores.
+  defaultValue: () => undefined,
   ignoreMissingValue: ({ schema }) => !('default' in schema),
 
   async processSchema(api, schema) {

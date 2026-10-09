@@ -85,7 +85,8 @@ export default DitoComponent.component('DitoPane', {
 
   computed: {
     nested() {
-      // For `ContextMixin`:
+      // Read by `ContextMixin`: Panes render the item at their data path, not
+      // a value nested in it. Without this, `DitoContext` defaults to `true`.
       return false
     },
 

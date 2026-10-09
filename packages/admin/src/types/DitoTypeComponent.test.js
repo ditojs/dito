@@ -66,6 +66,21 @@ describe('DitoTypeComponent', () => {
     expect('rating' in data).toBe(false)
     expect(data.votes).toBe(0)
   })
+
+  it('sets no value with `default: undefined`', async () => {
+    const { data } = await mountSchema({
+      schema: {
+        components: {
+          rating: {
+            type: 'component',
+            component: RatingStars,
+            default: undefined
+          }
+        }
+      }
+    })
+    expect('rating' in data).toBe(false)
+  })
 })
 
 describe('DitoTypePanel', () => {

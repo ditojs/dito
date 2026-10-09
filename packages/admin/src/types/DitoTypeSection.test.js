@@ -84,6 +84,23 @@ describe('DitoTypeSection', () => {
     })
   })
 
+  it(`has no value with \`default: undefined\` without \`nested\``, async () => {
+    const { wrapper, data } = await mountSchema({
+      schema: {
+        components: {
+          details: {
+            type: 'section',
+            default: undefined,
+            components: { title: { type: 'text' } }
+          }
+        }
+      }
+    })
+    const section = wrapper.findComponent({ name: 'DitoTypeSection' })
+    expect(section.vm.value).toBe(undefined)
+    expect('details' in data).toBe(false)
+  })
+
   it('opens collapsed sections when their label is clicked', async () => {
     const { findField, findContainer } = await mountSchema({
       schema: {
