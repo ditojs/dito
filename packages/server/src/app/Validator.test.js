@@ -49,3 +49,34 @@ describe('Validator.getFormat()', () => {
     })
   })
 })
+
+describe('color type', () => {
+  const validator = new Validator()
+  const validate = validator.compile(
+    { type: 'object', properties: { color: { $ref: 'color' } } },
+    { throw: false }
+  )
+
+  it.each(['#f80', '#f80c', '#ff8800', '#ff8800cc', 'red', 'transparent'])(
+    'accepts %s, as stored by the admin color type',
+    color => {
+      expect(validate({ color })).toBe(true)
+    }
+  )
+
+  it.each(['#12', '#ff880', 'ff8800', 'light red', 'rgb(0, 0, 0)', ''])(
+    'rejects %j',
+    color => {
+      expect(validate({ color })).toBe(false)
+      expect(validator.parseErrors(validate.errors)).toEqual({
+        color: [
+          {
+            message: 'needs to be a hex color or a color keyword',
+            keyword: 'format',
+            params: { format: 'color' }
+          }
+        ]
+      })
+    }
+  )
+})
