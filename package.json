@@ -76,7 +76,7 @@
     "knex": "^3.3.0",
     "lerna": "^10.0.1",
     "lint-staged": "^17.6.0",
-    "objection": "^3.1.5",
+    "objection": "^3.2.0",
     "pg": "^8.23.1",
     "prettier": "~3.9.9",
     "prettier-plugin-penere": "^0.4.0",

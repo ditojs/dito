@@ -21,7 +21,7 @@
   "devDependencies": {
     "@playwright/test": "^1.63.0",
     "knex": "^3.3.0",
-    "objection": "^3.1.5",
+    "objection": "^3.2.0",
     "vitest": "^5.0.3"
   }
 }
