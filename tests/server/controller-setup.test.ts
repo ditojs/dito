@@ -1,6 +1,7 @@
 import fs from 'fs/promises'
 import os from 'os'
 import path from 'path'
+import { stripVTControlCharacters } from 'util'
 import type { ModelProperties } from '@ditojs/server'
 import { Controller, Model, ModelController } from '@ditojs/server'
 import { createTestApp, getAppUrl } from '../utils/app.js'
@@ -462,14 +463,17 @@ class Lobby extends Controller {
 describe('Controller setup details', () => {
   let app: ReturnType<typeof createTestApp>
   let url: string
-  // Collect the logs separately, as the spy's calls are cleared before tests.
+  // Collect the logs separately, as the spy's calls are cleared before tests,
+  // without the colors that they have in CI.
   const logged: string[] = []
   let info: ReturnType<typeof vi.spyOn>
 
   beforeAll(async () => {
     info = vi
       .spyOn(console, 'info')
-      .mockImplementation((...args) => logged.push(args.join(' ')))
+      .mockImplementation((...args) =>
+        logged.push(stripVTControlCharacters(args.join(' ')))
+      )
     app = createTestApp()
     // Set after creation, as `createTestApp()` silences all logging.
     app.config.log = { routes: true }
