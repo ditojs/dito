@@ -15,4 +15,4 @@ allowBuilds:
 
 minimumReleaseAgeExclude:
   - prettier-plugin-penere
-  - objection@3.2.0
+  - objection@3.3.0
