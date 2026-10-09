@@ -1,10 +1,6 @@
-import {
-  expect,
-  type Dialog,
-  type Locator,
-  type Page
-} from '@playwright/test'
+import { expect, type Locator, type Page } from '@playwright/test'
 import { DitoNestedList } from '../pages.js'
+import { acceptConfirmDialog, acceptConfirmDialogsDuring } from '../dialogs.js'
 import type { TypeComponentDriver } from './index.js'
 import { getContainer } from './markup.js'
 
@@ -57,11 +53,10 @@ async function fillForm(page: Page, { fill, then }: FormStep) {
   const form = forms.last()
   await fillFields(form, fill)
   // Accept the confirmation to discard changes when closing an edited form.
-  const accept = (dialog: Dialog) => dialog.accept()
-  page.on('dialog', accept)
-  await form.getByRole('button', { name: then, exact: true }).click()
-  await expect(forms).toHaveCount(1)
-  page.off('dialog', accept)
+  await acceptConfirmDialogsDuring(page, async () => {
+    await form.getByRole('button', { name: then, exact: true }).click()
+    await expect(forms).toHaveCount(1)
+  })
 }
 
 /**
@@ -147,9 +142,8 @@ export const object: TypeComponentDriver = {
     } else if ('remove' in (value as object)) {
       const button = element.getByRole('button', { name: 'Remove' })
       await element.hover()
-      // Removals are confirmed via window.confirm.
-      page.once('dialog', dialog => dialog.accept())
       await button.click()
+      await acceptConfirmDialog(page)
       await expect(button).toBeHidden()
     } else {
       await fillFields(element, value as Fields)

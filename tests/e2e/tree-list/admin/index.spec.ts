@@ -2,6 +2,7 @@ import type { Page } from '@playwright/test'
 import { test, expect } from '../fixtures.js'
 import { Library, type Catalog, type Shelf } from '../models/Library.js'
 import { DitoForm, dragHandle } from '../../../utils/pages.js'
+import { acceptConfirmDialog } from '../../../utils/dialogs.js'
 
 async function openLibrary(
   page: Page,
@@ -33,7 +34,7 @@ function getTreeLabels(page: Page) {
 async function editTreeItem(page: Page, label: string) {
   const header = getTreeHeader(page, label)
   await header.hover()
-  await header.getByRole('button', { name: 'Edit' }).click()
+  await header.getByRole('link', { name: 'Edit' }).click()
 }
 
 async function getStoredShelves(library: Library) {
@@ -121,8 +122,8 @@ test.describe('tree list', () => {
     await page.getByRole('button', { name: 'Fiction' }).click()
     const header = getTreeHeader(page, 'Dune')
     await header.hover()
-    page.once('dialog', dialog => dialog.accept())
     await header.getByRole('button', { name: 'Remove' }).click()
+    await acceptConfirmDialog(page)
     await expect(getTreeLabels(page)).toHaveText(['Fiction', 'Emma'])
     await new DitoForm(page).save()
     expect(await getStoredShelves(library)).toEqual([
@@ -130,7 +131,7 @@ test.describe('tree list', () => {
     ])
   })
 
-  test('closes the forms of children whose indices shift', async ({
+  test('keeps the forms of children whose indices shift open', async ({
     page,
     url
   }) => {
@@ -149,13 +150,15 @@ test.describe('tree list', () => {
     await editTreeItem(page, 'Emma')
     const title = page.getByLabel('Book Title', { exact: true })
     await expect(title).toHaveValue('Emma')
-    // Removing Dune moves Ulysses to the index of Emma's open form.
+    // Removing Dune moves Emma to Dune's index, and her open form with her,
+    // instead of showing Ulysses, which moves to Emma's old index.
     const header = getTreeHeader(page, 'Dune')
     await header.hover()
-    page.once('dialog', dialog => dialog.accept())
     await header.getByRole('button', { name: 'Remove' }).click()
+    await acceptConfirmDialog(page)
     await expect(getTreeLabels(page)).toHaveText(['Fiction', 'Emma', 'Ulysses'])
-    await expect(title).toHaveCount(0)
+    await expect(title).toHaveValue('Emma')
+    await expect(page).toHaveURL(/\/0$/)
   })
 
   test('shows the properties and children of objects', async ({

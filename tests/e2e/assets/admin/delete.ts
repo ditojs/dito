@@ -6,6 +6,10 @@ import {
 } from '../fixtures.js'
 import { createModelHelpers } from '../../../utils/fixture-app.js'
 import { DitoUploadField } from '../../../utils/pages.js'
+import {
+  acceptConfirmDialog,
+  dismissConfirmDialog
+} from '../../../utils/dialogs.js'
 import { AssetWidget } from '../models/AssetWidget.js'
 
 const { seed, saveAndFetch } = createModelHelpers(
@@ -27,11 +31,10 @@ test.describe('delete', () => {
     )
     await expect(upload.rows).toHaveCount(1)
 
-    // Accept the confirm dialog
-    page.on('dialog', dialog => dialog.accept())
     await upload.container.locator(
       '.dito-button--delete'
     ).first().click()
+    await acceptConfirmDialog(page)
 
     await expect(upload.rows).toHaveCount(0)
   })
@@ -48,11 +51,10 @@ test.describe('delete', () => {
       path.resolve(fixturesDir, 'tiny.png')
     )
 
-    // Dismiss the confirm dialog
-    page.once('dialog', dialog => dialog.dismiss())
     await upload.container.locator(
       '.dito-button--delete'
     ).first().click()
+    await dismissConfirmDialog(page)
 
     // File should still be there
     await expect(upload.rows).toHaveCount(1)
@@ -78,10 +80,10 @@ test.describe('delete', () => {
     )
     await expect(upload.rows).toHaveCount(1)
 
-    page.on('dialog', dialog => dialog.accept())
     await upload.container.locator(
       '.dito-button--delete'
     ).first().click()
+    await acceptConfirmDialog(page)
 
     await expect(upload.rows).toHaveCount(0)
 
@@ -105,10 +107,10 @@ test.describe('delete', () => {
       path.resolve(fixturesDir, 'tiny.png')
     )
 
-    page.on('dialog', dialog => dialog.accept())
     await upload.container.locator(
       '.dito-button--delete'
     ).first().click()
+    await acceptConfirmDialog(page)
 
     // Check notification
     const notification =
@@ -118,8 +120,12 @@ test.describe('delete', () => {
     await expect(notification).toContainText(
       'Successfully Removed'
     )
+    // Files are only deleted when the form is saved:
     await expect(notification).toContainText(
-      'tiny.png was deleted.'
+      'tiny.png was removed.'
+    )
+    await expect(notification).toContainText(
+      'the parent still needs to be saved'
     )
   })
 
@@ -147,10 +153,10 @@ test.describe('delete', () => {
     )
     await expect(upload.rows).toHaveCount(1)
 
-    page.on('dialog', dialog => dialog.accept())
     await upload.container.locator(
       '.dito-button--delete'
     ).first().click()
+    await acceptConfirmDialog(page)
 
     await expect(upload.rows).toHaveCount(0)
 

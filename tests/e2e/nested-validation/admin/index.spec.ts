@@ -1,6 +1,7 @@
 import type { Locator, Page } from '@playwright/test'
 import { test, expect } from '../fixtures.js'
 import { Book } from '../models/Book.js'
+import { dismissConfirmDialog } from '../../../utils/dialogs.js'
 
 // Server validation errors for nested data must be displayed on the field
 // that holds the invalid value, wherever it is: in another tab, a collapsed
@@ -315,15 +316,8 @@ test.describe('nested validation', () => {
     // its changes were applied to the parent's data, which makes the parent
     // form dirty: Leaving it asks for confirmation.
     await expect(page).toHaveURL(new RegExp(`/books/${book.id}$`))
-    const dialogMessages: string[] = []
-    page.on('dialog', dialog => {
-      dialogMessages.push(dialog.message())
-      return dialog.dismiss()
-    })
     await clickFormButton(page, 'Cancel')
-    expect(dialogMessages).toEqual([
-      expect.stringContaining('You have unsaved changes')
-    ])
+    await dismissConfirmDialog(page, 'You have unsaved changes')
     await expect(page).toHaveURL(new RegExp(`/books/${book.id}$`))
   })
 

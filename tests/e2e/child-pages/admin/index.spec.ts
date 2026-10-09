@@ -1,6 +1,7 @@
 import { test, expect } from '../fixtures.js'
 import { Page } from '../models/Page.js'
 import { DitoNestedList } from '../../../utils/pages.js'
+import { getConfirmDialog } from '../../../utils/dialogs.js'
 
 test.describe('child pages', () => {
   test(`doesn't mark forms dirty by loading the items of sources`, async ({
@@ -23,14 +24,9 @@ test.describe('child pages', () => {
       .locator(':scope > table > tbody > tr')
     await expect(rows).toHaveCount(2)
     // Leaving a dirty form would ask for confirmation.
-    const dialogMessages: string[] = []
-    page.on('dialog', dialog => {
-      dialogMessages.push(dialog.message())
-      return dialog.dismiss()
-    })
     await page.getByRole('button', { name: 'Cancel', exact: true }).click()
     await expect(page).toHaveURL(/\/pages$/)
-    expect(dialogMessages).toEqual([])
+    await expect(getConfirmDialog(page)).toHaveCount(0)
   })
 
   test('stores the order through buttons with resources', async ({

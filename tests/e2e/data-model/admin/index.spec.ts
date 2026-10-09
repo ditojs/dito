@@ -1,6 +1,11 @@
 import type { Page } from '@playwright/test'
 import { test, expect } from '../fixtures.js'
 import { Article } from '../models/Article.js'
+import {
+  acceptConfirmDialog,
+  dismissConfirmDialog,
+  getConfirmDialog
+} from '../../../utils/dialogs.js'
 
 // Computed values are written into the data by the data model, independently
 // of what is rendered: The computed fields of this scenario are in a collapsed
@@ -171,12 +176,12 @@ test.describe('data model', () => {
     await expect(doubleAmounts).toHaveCount(2)
     await expect(doubleAmounts.nth(1)).toHaveValue('4')
     const lines = page.getByRole('region', { name: 'Lines', exact: true })
-    page.once('dialog', dialog => dialog.accept())
     await lines
       .locator(':scope > table > tbody > tr')
       .nth(1)
       .getByRole('button', { name: 'Remove' })
       .click()
+    await acceptConfirmDialog(page)
     await expect(doubleAmounts).toHaveCount(1)
     await page.getByRole('button', { name: 'Save', exact: true }).click()
     await expect
@@ -193,24 +198,17 @@ test.describe('data model', () => {
     const article = await Article.query().insert({ title: 'Old' })
     await openArticle(page, url, article)
     await waitForDelayedOptions(page)
-    const dialogMessages: string[] = []
-    page.on('dialog', dialog => {
-      dialogMessages.push(dialog.message())
-      return dialog.dismiss()
-    })
     const title = page.getByLabel('Title', { exact: true })
     const cancel = page.getByRole('button', { name: 'Cancel', exact: true })
     // Leaving a dirty form asks for confirmation.
     await title.fill('New')
     await cancel.click()
-    expect(dialogMessages).toEqual([
-      expect.stringContaining('You have unsaved changes')
-    ])
+    await dismissConfirmDialog(page, 'You have unsaved changes')
     // Changing the value back makes the form clean again.
     await title.fill('Old')
     await cancel.click()
     await expect(page).toHaveURL(/\/articles$/)
-    expect(dialogMessages).toHaveLength(1)
+    await expect(getConfirmDialog(page)).toHaveCount(0)
   })
   test('marks forms dirty by excluded values that `process()` stores', async ({
     page,
@@ -218,19 +216,12 @@ test.describe('data model', () => {
   }) => {
     const article = await Article.query().insert({ title: 'Old', tags: ['a'] })
     await openArticle(page, url, article)
-    const dialogMessages: string[] = []
-    page.on('dialog', dialog => {
-      dialogMessages.push(dialog.message())
-      return dialog.dismiss()
-    })
     const tags = page.getByLabel('Tags', { exact: true })
     const cancel = page.getByRole('button', { name: 'Cancel', exact: true })
     await expect(tags).toHaveValue('a')
     await tags.fill('a,b')
     await cancel.click()
-    expect(dialogMessages).toEqual([
-      expect.stringContaining('You have unsaved changes')
-    ])
+    await dismissConfirmDialog(page, 'You have unsaved changes')
     await page.getByRole('button', { name: 'Save', exact: true }).click()
     await expect
       .poll(async () => (await Article.query().findById(article.id))?.tags)
@@ -243,17 +234,12 @@ test.describe('data model', () => {
     const article = await Article.query().insert({ title: 'Old' })
     await openArticle(page, url, article)
     await waitForDelayedOptions(page)
-    const dialogMessages: string[] = []
-    page.on('dialog', dialog => {
-      dialogMessages.push(dialog.message())
-      return dialog.dismiss()
-    })
     const title = page.getByLabel('Title', { exact: true })
     await page.getByRole('button', { name: 'Apply Saved Title' }).click()
     await expect(title).toHaveValue('Saved')
     await page.getByRole('button', { name: 'Cancel', exact: true }).click()
     await expect(page).toHaveURL(/\/articles$/)
-    expect(dialogMessages).toEqual([])
+    await expect(getConfirmDialog(page)).toHaveCount(0)
   })
   test('emits changes of markup once the editing is done', async ({
     page,
@@ -364,16 +350,9 @@ test.describe('data model', () => {
     // which don't count, while the edit of `title` right away does.
     const article = await Article.query().insert({ title: 'Old' })
     await openArticle(page, url, article)
-    const dialogMessages: string[] = []
-    page.on('dialog', dialog => {
-      dialogMessages.push(dialog.message())
-      return dialog.dismiss()
-    })
     await page.getByLabel('Title', { exact: true }).fill('New')
     await page.getByRole('button', { name: 'Cancel', exact: true }).click()
-    expect(dialogMessages).toEqual([
-      expect.stringContaining('You have unsaved changes')
-    ])
+    await dismissConfirmDialog(page, 'You have unsaved changes')
   })
 
   test('keeps the ids of items of lists without forms', async ({
@@ -412,13 +391,8 @@ test.describe('data model', () => {
       'draft'
     )
     await waitForDelayedOptions(page)
-    const dialogMessages: string[] = []
-    page.on('dialog', dialog => {
-      dialogMessages.push(dialog.message())
-      return dialog.dismiss()
-    })
     await page.getByRole('button', { name: 'Cancel', exact: true }).click()
     await expect(page).toHaveURL(/\/articles$/)
-    expect(dialogMessages).toEqual([])
+    await expect(getConfirmDialog(page)).toHaveCount(0)
   })
 })

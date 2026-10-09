@@ -1,4 +1,5 @@
 import { expect, type Locator, type Page } from '@playwright/test'
+import { acceptConfirmDialog } from './dialogs.js'
 
 // Dito multiselect uses role=combobox + role=option in a portal. Option click
 // targets `page` (portal root), combobox can be scoped to any container.
@@ -64,10 +65,6 @@ export class DitoList {
   async delete(text: string) {
     const row = this.getRow(text)
     await row.hover()
-    // Dito's SourceMixin.deleteItem calls window.confirm. Playwright
-    // auto-dismisses dialogs by default, so register a one-shot accept
-    // handler before triggering the delete.
-    this.page.once('dialog', dialog => dialog.accept())
     const deleted = this.page
       .waitForResponse(
         resp => (
@@ -79,6 +76,7 @@ export class DitoList {
       )
       .catch(() => null)
     await row.getByRole('button', { name: 'Delete' }).click()
+    await acceptConfirmDialog(this.page)
     await deleted
   }
 
@@ -295,11 +293,8 @@ export class DitoNestedList {
     const removeBtn = row.getByRole('button', { name: 'Remove' })
     await row.hover()
     await expect(removeBtn).toBeVisible()
-    // Dito's nested list confirms removals via window.confirm. Playwright
-    // auto-dismisses dialogs by default — register a one-shot accept
-    // handler before triggering the click.
-    this.page.once('dialog', dialog => dialog.accept())
     await removeBtn.click()
+    await acceptConfirmDialog(this.page)
   }
 
   async dragRow(fromIndex: number, toIndex: number) {
