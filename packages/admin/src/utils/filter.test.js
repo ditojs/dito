@@ -248,11 +248,25 @@ describe('createFiltersPanel()', () => {
       expect(panel.data().$author).toEqual({ text: 'Austen' })
     })
 
-    // Bug: entries that don't match `name:args`, e.g. from a hand-edited URL,
-    // throw a TypeError instead of being ignored like invalid JSON arguments.
-    test.fails('ignores filter entries without a name', () => {
-      const { panel } = createPanel({ query: { filter: 'Austen' } })
-      expect(panel.data().$author).toEqual({})
+    it('ignores filter entries without a name, with a warning', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const { panel } = createPanel({
+        query: { filter: ['Austen', 'author:"Le Guin"'] }
+      })
+      expect(panel.data().$author).toEqual({ text: 'Le Guin' })
+      expect(warn).toHaveBeenCalledWith(`Ignoring malformed filter: 'Austen'`)
+      warn.mockRestore()
+    })
+
+    it('ignores filter entries without a value, with a warning', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      // E.g. `?filter&filter=author:"Le Guin"`:
+      const { panel } = createPanel({
+        query: { filter: [null, 'author:"Le Guin"'] }
+      })
+      expect(panel.data().$author).toEqual({ text: 'Le Guin' })
+      expect(warn).toHaveBeenCalledWith(`Ignoring malformed filter: 'null'`)
+      warn.mockRestore()
     })
   })
 

@@ -1,4 +1,4 @@
-import { isArray, asArray, labelize } from '@ditojs/utils'
+import { isArray, isString, asArray, labelize } from '@ditojs/utils'
 import { getNamedSchemas } from './schema/lookup.js'
 import { applyNestedSchemaDefaults } from './schema/setup.js'
 
@@ -240,7 +240,13 @@ function parseFiltersData(schema, query) {
   // from $route.query back to param lists per filter:
   if (query) {
     for (const filter of asArray(query.filter)) {
-      const [, filterName, json] = filter.match(/^(\w+):(.*)$/)
+      // Query values without a value, e.g. `?filter`, are `null`:
+      const match = isString(filter) ? filter.match(/^(\w+):(.*)$/) : null
+      if (!match) {
+        console.warn(`Ignoring malformed filter: '${filter}'`)
+        continue
+      }
+      const [, filterName, json] = match
       try {
         filters[filterName] = asArray(JSON.parse(`[${json}]`))
       } catch {}
