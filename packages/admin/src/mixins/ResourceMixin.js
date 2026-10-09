@@ -21,7 +21,10 @@ export default {
   data() {
     return {
       loadedData: null,
-      abortController: null
+      // The abort controller of the pending data load, see `requestData()`,
+      // and the number of all pending requests, for the loading state.
+      loadAbortController: null,
+      pendingRequestCount: 0
     }
   },
 
@@ -131,6 +134,14 @@ export default {
     }
   },
 
+  unmounted() {
+    // Settle the pending data load without calling its callback, so that
+    // nothing is applied to the unmounted component. Other requests, e.g.
+    // submits, change data on the server and are completed, so that their
+    // outcome is still notified.
+    this.loadAbortController?.abort()
+  },
+
   methods: {
     getResource({ method = 'get', child } = {}) {
       // Returns the resource object representing the resource for the
@@ -212,38 +223,42 @@ export default {
 
     requestData() {
       const query = this.queryParams
-      this.handleRequest({ method: 'get', query }, (err, response) => {
-        if (err) {
-          if (response) {
-            const { data } = response
-            if (
-              data?.type === 'FilterValidation' &&
-              this.onFilterErrors?.(data.errors)
-            ) {
-              return true
-            } else if (
-              this.isUnauthorizedError(response) &&
-              this.isInsideForm
-            ) {
-              // The user is logged in, see `sendRequest()`, but may not access
-              // the resource of a component in a form, e.g. a list that loads
-              // its own data. Show it on the component, as several components
-              // of the form may be affected. Others notify like for errors.
-              this.addUnauthorizedError()
-              return true
+      return this.handleRequest(
+        { method: 'get', query, isDataLoad: true },
+        (err, response) => {
+          if (err) {
+            if (response) {
+              const { data } = response
+              if (
+                data?.type === 'FilterValidation' &&
+                this.onFilterErrors?.(data.errors)
+              ) {
+                return true
+              } else if (
+                this.isUnauthorizedError(response) &&
+                this.isInsideForm
+              ) {
+                // The user is logged in, see `sendRequest()`, but may not
+                // access the resource of a component in a form, e.g. a list
+                // that loads its own data. Show it on the component, as
+                // several components of the form may be affected. Others
+                // notify like for errors.
+                this.addUnauthorizedError()
+                return true
+              }
             }
+          } else {
+            // Skip applying response data on a dirty form: `setData` would
+            // wholesale-replace `loadedData` and clobber any local edits the
+            // user made while the GET was in flight. The `'load'` event still
+            // fires — the GET *did* complete; we just chose not to apply it.
+            if (!(this.isForm && this.isDirty)) {
+              this.setData(response.data)
+            }
+            this.emitSchemaEvent('load')
           }
-        } else {
-          // Skip applying response data on a dirty form: `setData` would
-          // wholesale-replace `loadedData` and clobber any local edits the
-          // user made while the GET was in flight. The `'load'` event still
-          // fires — the GET *did* complete; we just chose not to apply it.
-          if (!(this.isForm && this.isDirty)) {
-            this.setData(response.data)
-          }
-          this.emitSchemaEvent('load')
         }
-      })
+      ).catch(console.error)
     },
 
     isValidationError(response) {
@@ -261,50 +276,74 @@ export default {
       }
     },
 
+    // Sends the request and awaits `callback(error, response)` with its
+    // outcome. If the callback returns `true` for an error, the error was
+    // handled, otherwise it is notified. Errors that the callback throws are
+    // passed on to the caller. Aborted requests settle without calling the
+    // callback: Each data load aborts the previous one, see `requestData()`,
+    // and unmounting aborts the pending one. Other requests, e.g. submits,
+    // aren't aborted.
     async handleRequest(
       {
         method,
         resource = this.getResource({ method }),
         query,
-        data
+        data,
+        isDataLoad = false
       },
       callback
     ) {
-      const loadingOptions = {
-        updateRoot: true, // Display spinner in header when loading in resources
-        updateView: this.isInView // Notify view of loading for view components
-      }
-      this.abortController?.abort()
       const controller = new AbortController()
-      this.abortController = controller
-      const { signal } = controller
+      if (isDataLoad) {
+        this.loadAbortController?.abort()
+        this.loadAbortController = controller
+      }
+      this.pendingRequestCount++
+      this.updateRequestLoading()
       method = resource.method || method
-      const request = { method, resource, query, data, signal }
-      this.setLoading(true, loadingOptions)
+      let response = null
+      let error = null
       try {
-        const response = await this.sendRequest(request)
+        response = await this.sendRequest({
+          method,
+          resource,
+          query,
+          data,
+          signal: controller.signal
+        })
+      } catch (err) {
+        error = err
+      } finally {
+        this.pendingRequestCount--
+        if (this.loadAbortController === controller) {
+          this.loadAbortController = null
+        }
+        this.updateRequestLoading()
+      }
+      if (controller.signal.aborted || error?.name === 'AbortError') {
+        return
+      }
+      if (error) {
+        const { response } = error
+        // If the callback returns true, the error was already handled.
+        if (!(await callback(error, response))) {
+          const data = response?.data
+          const title = isString(data?.type) ? labelize(data.type) : 'Error'
+          const text = data?.message ?? error
+          this.notify({ type: 'error', error, title, text })
+        }
+      } else {
         // Pass both request and response to the callback, so they can be
         // exposed to further callbacks through DitoContext.
-        callback(null, response)
-      } catch (error) {
-        if (error.name !== 'AbortError') {
-          // If callback returns true, errors were already handled.
-          const { response } = error
-          if (!callback(error, response)) {
-            const data = response?.data
-            const title = isString(data?.type)
-              ? labelize(data.type)
-              : 'Error'
-            const text = data?.message ?? error
-            this.notify({ type: 'error', error, title, text })
-          }
-        }
+        await callback(null, response)
       }
-      if (this.abortController === controller) {
-        // Only clear the loading state if this is still the current request.
-        this.abortController = null
-        this.setLoading(false, loadingOptions)
-      }
+    },
+
+    updateRequestLoading() {
+      this.setLoading(this.pendingRequestCount > 0, {
+        updateRoot: true, // Display spinner in header when loading in resources
+        updateView: this.isInView // Notify view of loading for view components
+      })
     },
 
     getPayloadData(button, method) {
@@ -356,50 +395,51 @@ export default {
           ]
         })
     } = {}) {
-      return new Promise(resolve => {
-        this.handleRequest(
-          { method, resource, data },
-          async (err, response) => {
-            const data = response?.data
-            if (err) {
-              // See if we're dealing with a Dito.js validation error:
-              const errors = this.isValidationError(response) && data.errors
-              if (errors) {
-                await this.showValidationErrors(errors, true)
-              } else {
-                const error = isObject(data) ? data : err
-                onError?.(error)
-                await this.emitButtonEvent(button, 'error', {
-                  notify: notifyError,
-                  error
-                })
-              }
-              resolve(false)
+      // Resolves to `false` for errors.
+      let isSuccessful = false
+      await this.handleRequest(
+        { method, resource, data },
+        async (err, response) => {
+          const data = response?.data
+          if (err) {
+            // See if we're dealing with a Dito.js validation error:
+            const errors = this.isValidationError(response) && data.errors
+            if (errors) {
+              await this.showValidationErrors(errors, true)
             } else {
-              // Update the underlying data before calling `notify()` or
-              // `this.itemLabel`, so id is set after creating new items.
-              if (setData && data) {
-                // Preserve the foreign data entries when updating the data.
-                const { foreignData } = this.mainSchemaComponent.filterData(
-                  this.data
-                )
-                // Tell the parent route to reload its data, so that it can
-                // update its foreign data entries.
-                const parentMeta = this.parentRouteComponent?.routeRecord?.meta
-                if (parentMeta) {
-                  parentMeta.reload = true
-                }
-                this.setData(assignDeeply({}, foreignData, data))
-              }
-              onSuccess?.()
-              await this.emitButtonEvent(button, 'success', {
-                notify: notifySuccess
+              const error = isObject(data) ? data : err
+              onError?.(error)
+              await this.emitButtonEvent(button, 'error', {
+                notify: notifyError,
+                error
               })
-              resolve(true)
             }
+            return true // The error was handled.
+          } else {
+            // Update the underlying data before calling `notify()` or
+            // `this.itemLabel`, so id is set after creating new items.
+            if (setData && data) {
+              // Preserve the foreign data entries when updating the data.
+              const { foreignData } = this.mainSchemaComponent.filterData(
+                this.data
+              )
+              // Tell the parent route to reload its data, so that it can
+              // update its foreign data entries.
+              const parentMeta = this.parentRouteComponent?.routeRecord?.meta
+              if (parentMeta) {
+                parentMeta.reload = true
+              }
+              this.setData(assignDeeply({}, foreignData, data))
+            }
+            onSuccess?.()
+            await this.emitButtonEvent(button, 'success', {
+              notify: notifySuccess
+            })
+            isSuccessful = true
           }
-        )
-      })
+        }
+      )
+      return isSuccessful
     },
 
     async emitButtonEvent(button, event, { notify, error }) {
