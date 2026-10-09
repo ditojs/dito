@@ -179,7 +179,9 @@ $menu-button-padding: 0.5em 1em;
   display: inline-block;
 
   &__menu {
-    margin: 0;
+    // Lets the menu open below the top of the button, e.g. to line up with
+    // text inside a taller button:
+    margin: var(--dito-menu-button-offset, 0) 0 0;
     padding: 0;
     list-style: none;
     border-radius: $menu-button-radius;
