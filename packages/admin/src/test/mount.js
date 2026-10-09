@@ -27,8 +27,9 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-// Mounts `components` in a view, and sets `data` as the view's data. Views
-// don't track dirty state and don't submit, use `mountForm()` for that.
+// Mounts a view with the properties of `schema`, e.g. its `components`, and
+// sets `data` as the view's data. Views don't track dirty state and don't
+// submit, use `mountForm()` for that.
 // Returns the `wrapper` of the root, the reactive `data`, the view's
 // `dataModel`, and the `view` and its `schemaComponent`.
 export async function mountSchema({
@@ -50,10 +51,11 @@ export async function mountSchema({
   return createMountResult(admin, view)
 }
 
-// Mounts `components` in a form for an item of a list with a resource, at
-// `/items/1` when there's `data`, which the form loads as the item, or else at
-// `/items/create`. Requests that the form makes for the item, e.g. to submit,
-// are passed to `request()`, so the item isn't loaded through it.
+// Mounts a form with the properties of `schema`, e.g. its `components`, for
+// an item of a list with a resource, at `/items/1` when there's `data`, which
+// the form loads as the item, or else at `/items/create`. Requests that the
+// form makes for the item, e.g. to submit, are passed to `request()`, so the
+// item isn't loaded through it.
 export async function mountForm({
   schema,
   data = null,

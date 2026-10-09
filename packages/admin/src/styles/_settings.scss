@@ -28,6 +28,13 @@ $line-height: rounded(
 // Button
 $button-order-arrow-size: 4px;
 
+// Pulldown
+// Deprecated, remove in 4.0
+$pulldown-radius: 0.5em;
+$pulldown-padding-ver: 0.5em;
+$pulldown-padding-hor: 1em;
+$pulldown-padding: $pulldown-padding-ver $pulldown-padding-hor;
+
 // Content
 $content-width: 900px;
 $content-width-wide: 1400px;
