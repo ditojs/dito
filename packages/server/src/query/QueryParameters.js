@@ -32,7 +32,7 @@ QueryParameters.register({
 
   range(query, key, value) {
     if (value) {
-      const [from, to] = isString(value) ? value.split(/\s*,s*/) : value
+      const [from, to] = isString(value) ? value.split(/\s*,\s*/) : value
       const start = +from
       const end = +to
       if (isNaN(start) || isNaN(end) || end < start) {
@@ -61,7 +61,7 @@ QueryParameters.register({
         }
         if (nulls && !['first', 'last'].includes(nulls)) {
           throw new QueryBuilderError(
-            `Invalid nulls order: '${null}'.`
+            `Invalid nulls order: '${nulls}'.`
           )
         }
         const tableRef = query.tableRefFor(query.modelClass())

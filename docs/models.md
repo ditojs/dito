@@ -62,7 +62,7 @@ the definition of each type in these separate chapters:
 - [Model Relations](./model-relations.md)
 - [Model Scopes](./model-scopes.md)
 - [Model Filters](./model-filters.md)
-- [Model Methods](./model-methods.md)
+- [Model Methods](./model-method.md)
 
 Note: When inheriting from other Model classes that already provide such
 definitions, all the definitions from the Model classes' inheritance chain get

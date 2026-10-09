@@ -100,6 +100,7 @@ export class QueryBuilder extends objection.QueryBuilder {
 
   omit(...properties) {
     this.#omits.push(...properties)
+    return this
   }
 
   #withScope(...args) {
@@ -172,10 +173,12 @@ export class QueryBuilder extends objection.QueryBuilder {
         this.#allowScopes[scope] = true
       }
     }
+    return this
   }
 
   clearAllowScope() {
     this.#allowScopes = null
+    return this
   }
 
   #clearScopes(addDefault) {
@@ -329,6 +332,7 @@ export class QueryBuilder extends objection.QueryBuilder {
     for (const filter of filters) {
       this.#allowFilters[filter] = true
     }
+    return this
   }
 
   // A algorithm-agnostic version of `withGraphFetched()` / `withGraphJoined()`,

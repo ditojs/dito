@@ -60,8 +60,7 @@ export class Validator extends objection.Validator {
     const addSchemas = (schemas, callback) => {
       for (const [name, schema] of Object.entries(schemas)) {
         if (schema) {
-          // Remove leading '_' to simplify special keywords (e.g. instanceof)
-          callback(name.replace(/^_/, ''), schema)
+          callback(getAjvName(name), schema)
         }
       }
     }
@@ -155,11 +154,11 @@ export class Validator extends objection.Validator {
   }
 
   getKeyword(keyword) {
-    return this.keywords[keyword]
+    return getDefinitionByAjvName(this.keywords, keyword)
   }
 
   getFormat(format) {
-    return this.formats[format]
+    return getDefinitionByAjvName(this.formats, format)
   }
 
   addSchema(jsonSchema) {
@@ -374,6 +373,17 @@ function hasDefaults(obj) {
     }
   }
   return false
+}
+
+// Keywords, formats and types may be registered with a leading '_' to avoid
+// clashes with JS reserved words (e.g. `_instanceof`). Ajv receives and reports
+// them without it.
+function getAjvName(name) {
+  return name.replace(/^_/, '')
+}
+
+function getDefinitionByAjvName(definitions, ajvName) {
+  return definitions[ajvName] ?? definitions[`_${ajvName}`]
 }
 
 const defaultOptions = {
