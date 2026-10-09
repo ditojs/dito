@@ -18,6 +18,13 @@ import { resolveFileUrl } from '../utils/asset.js'
 // through the `Asset` model, importing of foreign files, and the handling of
 // rolled back transactions. Without an `Asset` model, there is nothing to keep
 // track of, and all methods resolve to empty arrays.
+//
+// `Application` exposes the steps as overridable methods: `createAssets()`,
+// `handleAddedAndRemovedAssets()`, `addForeignAssets()`,
+// `handleModifiedAssets()` and `releaseUnusedAssets()`. Only these delegate to
+// the implementations here, and the manager always calls them through
+// `this.app`, so that app overrides also apply to the asset handling of model
+// writes.
 export class AssetManager {
   constructor(app) {
     this.app = app
@@ -69,7 +76,7 @@ export class AssetManager {
         file => file.data && beforeByKey[file.key]
       )
       importedFiles.push(
-        ...(await this.handleAddedAndRemovedAssets(
+        ...(await this.app.handleAddedAndRemovedAssets(
           storage,
           addedFiles,
           removedFiles,
@@ -78,7 +85,7 @@ export class AssetManager {
         ))
       )
       modifiedFiles.push(
-        ...(await this.handleModifiedAssets(
+        ...(await this.app.handleModifiedAssets(
           storage,
           filesWithChangedData,
           transaction
@@ -143,7 +150,7 @@ export class AssetManager {
   ) {
     const AssetModel = this.assetModelClass
     if (!AssetModel) return []
-    const importedFiles = await this.addForeignAssets(
+    const importedFiles = await this.app.addForeignAssets(
       storage,
       [...addedFiles, ...changedFiles],
       transaction
@@ -170,14 +177,14 @@ export class AssetManager {
         setTimeout(
           // Don't pass `transaction` here, as we want this delayed execution
           // to create its own transaction.
-          () => this.releaseUnusedAssets(),
+          () => this.app.releaseUnusedAssets(),
           cleanupTimeThreshold
         )
       }
     }
     // Also execute releaseUnusedAssets() immediately in the same
     // transaction, to potentially clean up other pending assets.
-    await this.releaseUnusedAssets({ transaction })
+    await this.app.releaseUnusedAssets({ transaction })
     return importedFiles
   }
 
@@ -228,7 +235,12 @@ export class AssetManager {
             // Sign the imported foreign file so it passes verification when
             // createAssets() triggers $parseJson() → convertAssetFile().
             storage.signAssetFile(importedFile)
-            await this.createAssets(storage, [importedFile], 0, transaction)
+            await this.app.createAssets(
+              storage,
+              [importedFile],
+              0,
+              transaction
+            )
             importedFiles.push(importedFile)
             // Merge back the changed file properties into the actual file
             // objects, so that the data from the static model hook can be

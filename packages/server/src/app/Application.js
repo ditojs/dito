@@ -901,7 +901,8 @@ export class Application extends Koa {
     }
   }
 
-  // Assets handling, see `AssetManager` for the actual implementation.
+  // Assets handling, see `AssetManager` for the actual implementation. These
+  // methods are the overridable entry points, also for model writes.
 
   createAssets(storage, files, count = 0, transaction = null) {
     return this.assetManager.createAssets(storage, files, count, transaction)

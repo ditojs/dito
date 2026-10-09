@@ -115,6 +115,39 @@ describe('asset handling with an Asset model', () => {
     expect(asset).toMatchObject({ count: 1, storage: 'memory' })
   })
 
+  it('runs app overrides of the asset methods on model writes', async () => {
+    // Spies replace the methods on the app instance, just like overrides in
+    // an Application subclass, and call through to the originals.
+    const methodNames = [
+      'handleAddedAndRemovedAssets',
+      'handleModifiedAssets',
+      'addForeignAssets',
+      'createAssets',
+      'releaseUnusedAssets'
+    ] as const
+    const spies = methodNames.map(name => vi.spyOn(app, name))
+    try {
+      const document = await Document.query().insertAndFetch({
+        file: AssetFile.create({ name: 'overridden.txt', data: 'before' })
+      })
+      const modifiedFile = AssetFile.create({
+        name: 'overridden.txt',
+        data: 'after'
+      })
+      modifiedFile.key = document.file!.key
+      await Document.query().patchById(document.id, { file: modifiedFile })
+      for (const spy of spies) {
+        expect(spy).toHaveBeenCalled()
+      }
+      const storage = app.getStorage('memory') as MemoryStorage
+      expect(storage.dataByKey.get(modifiedFile.key)?.toString()).toBe('after')
+    } finally {
+      for (const spy of spies) {
+        spy.mockRestore()
+      }
+    }
+  })
+
   it('warns about modified files that cannot be restored on rollback', async () => {
     const document = await Document.query().insertAndFetch({
       file: AssetFile.create({ name: 'original.txt', data: 'original' })
