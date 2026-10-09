@@ -19,15 +19,42 @@ describe('DitoTypeSection', () => {
       data: { title: 'Emma', pages: 474 }
     })
     const section = findField('details')
-    // The header of the section is displayed in the label of its container:
-    expect(findContainer('details').find('.dito-schema-header').text()).toBe(
-      'Details'
-    )
+    // The section displays its label in the header of its schema, instead of
+    // the label of its container:
+    expect(section.find('.dito-schema-header').text()).toBe('Details')
+    const container = findContainer('details')
+    expect(container.find(':scope > .dito-label').exists()).toBe(false)
+    expect(container.text().match(/Details/g)).toHaveLength(1)
     const title = section.find('input[name="title"]')
     expect(title.element.value).toBe('Emma')
     await title.setValue('Persuasion')
     expect(data.title).toBe('Persuasion')
     expect('details' in data).toBe(false)
+  })
+
+  it('displays its label in its container with a compact form', async () => {
+    const { findContainer } = await mountSchema({
+      schema: {
+        components: {
+          dimensions: {
+            type: 'section',
+            label: 'Dimensions',
+            nested: true,
+            form: {
+              type: 'form',
+              compact: true,
+              components: { width: { type: 'number' } }
+            }
+          }
+        }
+      },
+      data: { dimensions: { width: 12 } }
+    })
+    // Compact schemas don't display labels in their header, see
+    // `DitoSchemaInlined`, so the container displays it:
+    const container = findContainer('dimensions')
+    expect(container.find(':scope > .dito-label').text()).toBe('Dimensions')
+    expect(container.text().match(/Dimensions/g)).toHaveLength(1)
   })
 
   it('holds its data in an object with `nested`', async () => {
@@ -122,5 +149,30 @@ describe('DitoTypeSection', () => {
     expect(await submit()).toBe(null)
     expect(findField('details').find('input').exists()).toBe(true)
     expect(getErrors('title')).toEqual(['The Title field is required.'])
+  })
+
+  it('shares the width of its container with its components', async () => {
+    const { findContainer } = await mountSchema({
+      schema: {
+        components: {
+          details: {
+            type: 'section',
+            label: 'Details',
+            width: '1/2',
+            components: {
+              title: { type: 'text', width: '1/4' },
+              subtitle: { type: 'text', width: '1/2' }
+            }
+          }
+        }
+      },
+      data: { title: 'Emma', subtitle: 'A Novel' }
+    })
+    // Components that take a quarter of the page or less double their width
+    // on narrow pages:
+    const getMobileBasis = name =>
+      findContainer(name).element.style.getPropertyValue('--basis-mobile')
+    expect(getMobileBasis('title')).toBe('50%')
+    expect(getMobileBasis('subtitle')).toBe('100%')
   })
 })

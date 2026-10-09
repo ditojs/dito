@@ -23,7 +23,7 @@
       v-if="['before', 'both'].includes(schema.break)"
     )
     DitoContainer(
-      v-if="shouldRenderComponent(schema, nested, dataPath)"
+      v-if="shouldRenderComponentByIndex[index]"
       ref="containers"
       :key="nestedDataPath"
       :data-index="index"
@@ -38,7 +38,6 @@
       :compact="compact"
       :generateLabels="generateLabels"
       :verticalLabels="isInLabeledRow(index)"
-      :accumulatedBasis="accumulatedBasis"
     )
     span.dito-pane__break(
       v-if="['after', 'both'].includes(schema.break)"
@@ -50,7 +49,8 @@ import DitoComponent from '../DitoComponent.js'
 import DitoContext from '../DitoContext.js'
 import ContextMixin from '../mixins/ContextMixin.js'
 import { appendDataPath } from '../utils/data.js'
-import { isNested } from '../utils/schema/structure.js'
+import { trackRegistration } from '../utils/registration.js'
+import { hasLabel, isNested } from '../utils/schema/structure.js'
 import { shouldRenderSchema } from '../utils/schema/data.js'
 
 // @vue/component
@@ -74,8 +74,7 @@ export default DitoComponent.component('DitoPane', {
     padding: { type: String, default: null },
     disabled: { type: Boolean, default: false },
     compact: { type: Boolean, default: false },
-    generateLabels: { type: Boolean, default: false },
-    accumulatedBasis: { type: Number, default: null }
+    generateLabels: { type: Boolean, default: false }
   },
 
   data() {
@@ -100,6 +99,19 @@ export default DitoComponent.component('DitoPane', {
 
     tabComponent() {
       return this.tab ? this : this.$tabComponent()
+    },
+
+    // Describes the tab of tab panes with data for the entries of the panels
+    // of their components, see `getAllPanelEntries()`. Panes in tabs that
+    // aren't tab panes themselves are reached through `tabComponent`.
+    panelTab() {
+      const { tab, schemaComponent } = this
+      return tab
+        ? {
+            tabName: tab,
+            isTabSelected: () => schemaComponent.isTabSelected(tab)
+          }
+        : null
     },
 
     componentPath() {
@@ -145,7 +157,10 @@ export default DitoComponent.component('DitoPane', {
             dataPath,
             nestedDataPath,
             nested,
-            store: this.getChildStore(name)
+            store: this.getChildStore(name),
+            // The same as `DitoContainer.hasLabel`, also for type components
+            // that render their own label, e.g. sections.
+            hasLabel: hasLabel(schema, this.generateLabels)
           }
         }
       )
@@ -155,8 +170,22 @@ export default DitoComponent.component('DitoPane', {
       return this.single && this.componentSchemas.length === 1
     },
 
+    shouldRenderComponentByIndex() {
+      return this.componentSchemas.map(({ schema, nested, dataPath }) =>
+        this.shouldRenderComponent(schema, nested, dataPath)
+      )
+    },
+
+    renderedPositions() {
+      // Ignore the positions of containers that aren't rendered anymore, as
+      // their removal doesn't necessarily resize the pane, see `onResizePane()`
+      return this.positions.map((position, index) =>
+        this.shouldRenderComponentByIndex[index] ? position : null
+      )
+    },
+
     verticalLabelsByIndices() {
-      const { positions } = this
+      const positions = this.renderedPositions
 
       const isLastInRow = index => (
         positions[index] && (
@@ -190,17 +219,14 @@ export default DitoComponent.component('DitoPane', {
       for (const row of rows) {
         let hasLabelsInRow = false
         for (const index of row) {
-          const position = this.positions[index]
+          // Labels in compact schemas are displayed next to their components,
+          // so only count labels of containers that are higher than one line.
+          // TODO: Handle nested schemas, e.g. 'section' or 'object' and
+          // detect labels there too.
           if (
-            position?.height > 2 && (
-              position.node.matches(':has(> .dito-label)') ||
-              position.node
-                .closest('.dito-container')
-                .matches('.dito-container--label-vertical')
-            )
+            positions[index]?.height > 2 &&
+            this.componentSchemas[index].hasLabel
           ) {
-            // TODO: Handle nested schemas, e.g. 'section' or 'object' and
-            // detect labels there too.
             hasLabelsInRow = true
             break
           }
@@ -217,21 +243,17 @@ export default DitoComponent.component('DitoPane', {
   watch: {
     'componentSchemas.length'(length) {
       this.positions.length = length
-    },
-
-    'componentPath'(componentPath, oldComponentPath) {
-      // Component paths change when list items move, see `_registerEntry()`.
-      this._register(false, oldComponentPath)
-      this._register(true, componentPath)
     }
   },
 
   created() {
-    this._register(true)
+    this._unregister = trackRegistration(this, (add, componentPath) =>
+      this.schemaComponent._registerPane(this, add, componentPath)
+    )
   },
 
   unmounted() {
-    this._register(false)
+    this._unregister()
   },
 
   methods: {
@@ -249,10 +271,6 @@ export default DitoComponent.component('DitoPane', {
           rootData: this.rootData
         })
       )
-    },
-
-    _register(add, componentPath = this.componentPath) {
-      this.schemaComponent._registerPane(this, add, componentPath)
     },
 
     focus() {
@@ -278,8 +296,7 @@ export default DitoComponent.component('DitoPane', {
               ? null
               : {
                   top: bounds.y,
-                  height: height / fontSize,
-                  node
+                  height: height / fontSize
                 }
         }
       })

@@ -37,6 +37,7 @@ const ditoOptionKeys = [
   'defaultWidth',
   'getSourceType',
   'generateLabel',
+  'rendersOwnLabel',
   'excludeValue',
   'ignoreMissingValue',
   'treatNullAsMissing',

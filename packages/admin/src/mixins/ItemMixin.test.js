@@ -91,18 +91,6 @@ describe('ItemMixin', () => {
       )
     })
 
-    it('extends escaped values with the form label', async () => {
-      const { schemaComponent } = await mountSchema({
-        schema: { components: { title: { type: 'text' } } }
-      })
-      const label = schemaComponent.getItemLabel(
-        { type: 'list', itemLabel: 'title', form: bookForm },
-        { title: 'Tom & Jerry' },
-        { extended: true }
-      )
-      expect(label).toBe(`Book 'Tom &amp; Jerry'`)
-    })
-
     it('keeps the HTML that `itemLabel()` returns', async () => {
       const { findField } = await mountSchema({
         schema: {

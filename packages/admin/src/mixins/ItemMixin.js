@@ -1,16 +1,15 @@
 import DitoContext from '../DitoContext.js'
-import { isListSource } from '../utils/schema/structure.js'
 import { getItemFormSchema } from '../utils/schema/lookup.js'
-import { getItemId, getItemUid } from '../utils/schema/data.js'
-import { appendDataPath } from '../utils/data.js'
+import { getItemUid } from '../utils/schema/data.js'
 import {
-  isObject,
-  isString,
-  isNumber,
-  isFunction,
-  escapeHtml
-} from '@ditojs/utils'
+  getItemIdOrIndex,
+  findItemIndexById,
+  getItemLabel
+} from '../utils/schema/item.js'
+import { appendDataPath } from '../utils/data.js'
 
+// Delegates to the item functions in `utils/schema/item.js`, with the data
+// path, context and `isTransient` state of the component that mixes it in.
 // @vue/component
 export default {
   methods: {
@@ -19,9 +18,10 @@ export default {
     getItemUid,
 
     getItemId(sourceSchema, item, index = null) {
-      return this.isTransient && index !== null
-        ? String(index)
-        : getItemId(sourceSchema, item)
+      return getItemIdOrIndex(sourceSchema, item, {
+        index,
+        isTransient: this.isTransient
+      })
     },
 
     getItemDataPath(sourceSchema, index) {
@@ -35,39 +35,18 @@ export default {
       return dataPath
     },
 
-    getItemStore(sourceSchema, item, index) {
-      return this.getChildStore(this.getItemUid(sourceSchema, item), index)
-    },
-
-    removeItemStore(sourceSchema, item, index) {
-      this.removeChildStore(this.getItemUid(sourceSchema, item), index)
-    },
-
     findItemIdIndex(sourceSchema, data, itemId) {
-      const index = this.isTransient
-        ? // For transient data, the index is used as the id
-          itemId
-        : data?.findIndex(
-            (item, index) => (
-              this.getItemId(sourceSchema, item, index) === itemId
-            )
-          )
-      return index !== -1 ? index : null
+      return findItemIndexById(sourceSchema, data, itemId, {
+        isTransient: this.isTransient
+      })
     },
 
-    // Returns the label of `item` as HTML: Values of the item are escaped,
-    // while labels that the schema provides, e.g. through `itemLabel()`, can
-    // contain HTML, so they need to escape the values that they include.
+    // Returns the label of `item` as HTML, see `getItemLabel()`.
     getItemLabel(sourceSchema, item, {
       index = null,
       extended = false,
       asObject = false
     } = {}) {
-      const { itemLabel } = sourceSchema
-      if (!item || !extended && itemLabel === false) {
-        return null
-      }
-
       let dataPath
       const getDataPath = () =>
         (dataPath ??= this.getItemDataPath(sourceSchema, index))
@@ -78,79 +57,30 @@ export default {
           getItemFormSchema(sourceSchema, item, this.context)
         ))
 
-      let text
-      let prefix
-      let suffix
-      if (isFunction(itemLabel)) {
-        const label = itemLabel.call(
-          this,
-          new DitoContext(this, {
-            nested: false,
-            data: item,
-            value: item,
-            index,
+      return getItemLabel(sourceSchema, item, {
+        index,
+        extended,
+        asObject,
+        getFormLabel,
+        evaluateItemLabel: () =>
+          sourceSchema.itemLabel.call(
+            this,
+            new DitoContext(this, {
+              nested: false,
+              data: item,
+              value: item,
+              index,
 
-            get dataPath() {
-              return getDataPath()
-            },
+              get dataPath() {
+                return getDataPath()
+              },
 
-            get formLabel() {
-              return getFormLabel()
-            }
-          })
-        )
-        if (isObject(label)) {
-          ;({ text, prefix, suffix } = label)
-        } else {
-          text = label
-        }
-        // It's up to `itemLabel()` entirely to produce the label:
-        extended = false
-      } else if (isString(itemLabel) && !(itemLabel in item)) {
-        // `itemLabel` can be both a key, or simply a label.
-        text = itemLabel
-      } else {
-        // Look up the name on the item, by these rules:
-        // 1. If `itemLabel` is a string, use it as the property key
-        // 2. Otherwise, if there are columns, use the value of the first
-        // 3. Otherwise, see if the item has a property named 'name'
-        const { columns } = sourceSchema
-        const key = (
-          isString(itemLabel) && itemLabel ||
-          isListSource(sourceSchema) && columns && Object.keys(columns)[0] ||
-          'name'
-        )
-        const value = item[key]
-        // Only primitives display as a label. If the property holds an array
-        // or object, fall through to the auto-generated label. Strings are
-        // escaped, as the label is rendered as HTML.
-        text = isString(value)
-          ? escapeHtml(value)
-          : isNumber(value)
-            ? value
-            : null
-      }
-      const hadLabel = !!text
-      // If no label was found so far, try to produce one from the index.
-      if (text == null) {
-        // Always use extended style when auto-generating labels from index/id:
-        extended = true
-        text =
-          isListSource(sourceSchema) && index !== null ? `${index + 1}` : ''
-      }
-      if (extended) {
-        const formLabel = getFormLabel()
-        if (formLabel) {
-          // If a label was provided, put in quotes when prefixed with the
-          // form label for the extended style:
-          text = `${formLabel} ${hadLabel ? `'${text}'` : text}`
-        }
-      }
-      return asObject
-        ? text || prefix || suffix
-          ? { text, prefix, suffix }
-          : null
-        : text
+              get formLabel() {
+                return getFormLabel()
+              }
+            })
+          )
+      })
     }
   }
 }

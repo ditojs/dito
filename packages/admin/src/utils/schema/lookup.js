@@ -10,6 +10,7 @@ import { reactive, computed } from 'vue'
 import { getTypeOptions } from './types.js'
 import {
   findNestedSchemaComponent,
+  isMenu,
   isSchema,
   isSingleComponentView
 } from './structure.js'
@@ -70,6 +71,14 @@ export function getViewPath(schema, context) {
       : `${view.fullPath}/${view.path}`
   }
   return null
+}
+
+// Returns the path that links to the view or menu `schema`, displayed at
+// `path`: Menus link to their first item.
+export function getViewLinkPath(schema, path = schema.fullPath) {
+  return isMenu(schema)
+    ? Object.values(schema.items)[0].fullPath
+    : path
 }
 
 export function getViewEditPath(schema, id, context) {
@@ -219,16 +228,27 @@ export function getButtonSchemas(buttons) {
 }
 
 // Returns the entry of the panel described by `schema`, which `DitoPanels`
-// displays at `dataPath` and `componentPath`.
-function getPanelEntry(schema, dataPath, componentPath, tabComponent) {
-  return schema ? { schema, dataPath, componentPath, tabComponent } : null
+// displays at `dataPath` and `componentPath`. Panels of components in tabs are
+// only displayed while their tab is selected: `tab` describes that tab as
+// `{ tabName, isTabSelected }`, where `isTabSelected()` tells if it currently
+// is, see `DitoPane.panelTab`.
+function getPanelEntry(schema, dataPath, componentPath, tab) {
+  return schema
+    ? {
+        schema,
+        dataPath,
+        componentPath,
+        tabName: tab?.tabName ?? null,
+        isTabSelected: tab?.isTabSelected ?? null
+      }
+    : null
 }
 
 export function getPanelEntries(
   panelSchemas,
   dataPath,
   componentPath,
-  tabComponent = null,
+  tab = null,
   panelEntries = []
 ) {
   if (panelSchemas) {
@@ -237,7 +257,7 @@ export function getPanelEntries(
         schema,
         appendDataPath(dataPath, key),
         appendDataPath(componentPath, key),
-        tabComponent
+        tab
       )
       if (entry) {
         panelEntries.push(entry)
@@ -261,7 +281,7 @@ export function getAllPanelEntries(
   dataPathComponentPath,
   schemaComponentPath,
   component = null,
-  tabComponent = null
+  tab = null
 ) {
   const panelSchema = getTypeOptions(schema)?.getPanelSchema?.(
     api,
@@ -275,7 +295,7 @@ export function getAllPanelEntries(
           panelSchema,
           appendDataPath(dataPath, panelSchema.name),
           appendDataPath(dataPathComponentPath, panelSchema.name),
-          tabComponent
+          tab
         )
       ]
     : []
@@ -285,7 +305,7 @@ export function getAllPanelEntries(
     schema?.panels,
     dataPath,
     schemaComponentPath,
-    tabComponent,
+    tab,
     panelEntries
   )
   return panelEntries

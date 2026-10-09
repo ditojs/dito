@@ -18,7 +18,8 @@ import {
   getItemFormSchema,
   isEmptySchema,
   getNamedSchemas,
-  getButtonSchemas
+  getButtonSchemas,
+  getViewLinkPath
 } from './lookup.js'
 
 // Register minimal type options, as the actual type components can't be
@@ -98,17 +99,27 @@ describe('getAllPanelEntries()', () => {
 describe('getPanelEntries()', () => {
   it('returns entries for panels, skipping missing ones', () => {
     const info = { type: 'panel' }
-    expect(
-      getPanelEntries({ info, missing: null }, 'book', 'main', 'tab')
-    ).toEqual([
+    expect(getPanelEntries({ info, missing: null }, 'book', 'main')).toEqual([
       {
         schema: info,
         dataPath: 'book/info',
         componentPath: 'main/info',
-        tabComponent: 'tab'
+        tabName: null,
+        isTabSelected: null
       }
     ])
     expect(getPanelEntries(null, 'book', 'main')).toEqual([])
+  })
+
+  it('describes the tab of panels with data only', () => {
+    const isTabSelected = () => true
+    const [entry] = getPanelEntries(
+      { info: { type: 'panel' } },
+      'book',
+      'main',
+      { tabName: 'details', isTabSelected }
+    )
+    expect(entry).toMatchObject({ tabName: 'details', isTabSelected })
   })
 })
 
@@ -382,5 +393,25 @@ describe('getNamedSchemas()', () => {
     expect(getButtonSchemas({ archive: { label: 'Archive' } })).toEqual({
       archive: { type: 'button', name: 'archive', label: 'Archive' }
     })
+  })
+})
+
+describe('getViewLinkPath()', () => {
+  it('links views to their path', () => {
+    const view = { type: 'view', fullPath: '/books' }
+    expect(getViewLinkPath(view)).toBe('/books')
+    expect(getViewLinkPath(view, '/books/1')).toBe('/books/1')
+  })
+
+  it('links menus to their first item', () => {
+    const menu = {
+      type: 'menu',
+      fullPath: '/catalog',
+      items: {
+        authors: { type: 'view', fullPath: '/catalog/authors' },
+        series: { type: 'view', fullPath: '/catalog/series' }
+      }
+    }
+    expect(getViewLinkPath(menu, '/catalog')).toBe('/catalog/authors')
   })
 })

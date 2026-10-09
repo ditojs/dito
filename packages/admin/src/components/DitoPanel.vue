@@ -2,7 +2,7 @@
 //- Only show panels in tabs when the tabs are also visible.
 component.dito-panel(
   v-if="shouldRenderSchema(panelSchema)"
-  v-show="visible && (!panelTabComponent || panelTabComponent.visible)"
+  v-show="visible && (!isTabSelected || isTabSelected())"
   :is="panelTag"
   role="region"
   :aria-label="getLabel(schema)"
@@ -51,6 +51,7 @@ import ContextMixin from '../mixins/ContextMixin.js'
 import ValidatorMixin from '../mixins/ValidatorMixin.js'
 import { getButtonSchemas } from '../utils/schema/lookup.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
+import { trackRegistration } from '../utils/registration.js'
 
 // @vue/component
 export default DitoComponent.component('DitoPanel', {
@@ -58,8 +59,7 @@ export default DitoComponent.component('DitoPanel', {
 
   provide() {
     return {
-      $panelComponent: () => this,
-      $tabComponent: () => this.panelTabComponent
+      $panelComponent: () => this
     }
   },
 
@@ -70,7 +70,9 @@ export default DitoComponent.component('DitoPanel', {
     meta: { type: Object, required: true },
     store: { type: Object, required: true },
     disabled: { type: Boolean, required: true },
-    panelTabComponent: { type: Object, default: null },
+    // Tells if the tab of the panel's component is selected, for panels of
+    // components in tabs, see `getAllPanelEntries()`:
+    isTabSelected: { type: Function, default: null },
     // The component path of the panel's entry, see `getAllPanelEntries()`:
     panelComponentPath: { type: String, required: true }
   },
@@ -106,10 +108,6 @@ export default DitoComponent.component('DitoPanel', {
 
     componentPath() {
       return this.panelComponentPath
-    },
-
-    tabComponent() {
-      return this.panelTabComponent
     },
 
     buttonSchemas() {
@@ -166,16 +164,12 @@ export default DitoComponent.component('DitoPanel', {
     })
   },
 
-  watch: {
-    componentPath(componentPath, oldComponentPath) {
-      // Component paths change when list items move, see `_registerEntry()`.
-      this._register(false, oldComponentPath)
-      this._register(true, componentPath)
-    }
-  },
-
   created() {
-    this._register(true)
+    // Register the panels so that other components can find them by their
+    // data-path, e.g. in TypeList.onFilterErrors()
+    this._unregister = trackRegistration(this, (add, componentPath) =>
+      this.schemaComponent._registerPanel(this, add, componentPath)
+    )
     // NOTE: This is not the same as `schema.data` handling in DitoSchema,
     // where the data is added to the actual component.
     const { data } = this.schema
@@ -187,15 +181,7 @@ export default DitoComponent.component('DitoPanel', {
   },
 
   unmounted() {
-    this._register(false)
-  },
-
-  methods: {
-    _register(add, componentPath = this.componentPath) {
-      // Register the panels so that other components can find them by their
-      // data-path, e.g. in TypeList.onFilterErrors()
-      this.schemaComponent._registerPanel(this, add, componentPath)
-    }
+    this._unregister()
   }
 })
 </script>

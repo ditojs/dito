@@ -23,6 +23,7 @@ export default {
   defaultVisible: true,
   defaultMultiple: false,
   generateLabel: true,
+  rendersOwnLabel: null,
   excludeValue: false,
   ignoreMissingValue: null,
   treatNullAsMissing: null,

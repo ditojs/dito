@@ -3,11 +3,17 @@
   v-if="panels.length > 0"
 )
   template(
-    v-for="{ schema, dataPath, componentPath, tabComponent } in panels"
+    v-for=`{
+      schema,
+      dataPath,
+      componentPath,
+      tabName,
+      isTabSelected
+    } in panels`
   )
     DitoPanel(
       v-if="shouldRenderSchema(schema)"
-      :key="getPanelKey(dataPath, tabComponent)"
+      :key="getPanelKey(dataPath, tabName)"
       :schema="schema"
       :dataPath="dataPath"
       :panelComponentPath="componentPath"
@@ -15,7 +21,7 @@
       :meta="meta"
       :store="getChildStore(schema.name)"
       :disabled="schema.disabled ?? disabled"
-      :panelTabComponent="tabComponent"
+      :isTabSelected="isTabSelected"
     )
 </template>
 
@@ -43,10 +49,10 @@ export default DitoComponent.component('DitoPanels', {
   },
 
   methods: {
-    getPanelKey(dataPath, tabComponent) {
+    getPanelKey(dataPath, tabName) {
       // Allow separate tabs to use panels of the same name, by
       // prefixing their key with the tab name.
-      return tabComponent ? `${tabComponent.tab}_${dataPath}` : dataPath
+      return tabName ? `${tabName}_${dataPath}` : dataPath
     }
   }
 })

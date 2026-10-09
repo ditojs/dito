@@ -12,7 +12,6 @@
     :disabled="disabled"
     :collapsed="collapsed"
     :collapsible="collapsible"
-    :labelNode="labelNode"
   )
 </template>
 
@@ -23,7 +22,7 @@ import SchemaParentMixin from '../mixins/SchemaParentMixin.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
 import { setupSchemaComponents } from '../utils/schema/setup.js'
 import { getItemFormSchema } from '../utils/schema/lookup.js'
-import { hasComponentNamed } from '../utils/schema/structure.js'
+import { hasComponentNamed, isCompact } from '../utils/schema/structure.js'
 
 // @vue/component
 export default DitoTypeComponent.register('section', {
@@ -39,6 +38,17 @@ export default DitoTypeComponent.register('section', {
   treatNullAsMissing: ({ schema }) => !!schema.nested,
   defaultNested: false,
   generateLabel: false,
+  // The header of the section's form displays the label, except in compact
+  // forms, which don't have labels in their header, see `DitoSchemaInlined`.
+  // The form can depend on the item, see `item`.
+  rendersOwnLabel: context =>
+    !isCompact(
+      getItemFormSchema(
+        context.schema,
+        context.nested ? context.value : context.item,
+        context
+      )
+    ),
 
   computed: {
     item() {
@@ -94,14 +104,18 @@ export default DitoTypeComponent.register('section', {
 @import '../styles/_imports';
 
 .dito-section {
-  &--labelled {
-    border: $border-width solid transparent;
-    border-radius: $border-radius;
-    transition: border-color 0.2s $ease-out-quart;
-    margin-top: $form-spacing-half;
+  &--labelled > &__schema {
+    // Display the header with the label above the bordered content.
+    > .dito-schema-content {
+      border: $border-style;
+      border-radius: $border-radius;
+      margin-top: $form-spacing-half;
+    }
 
-    &:has(.dito-schema--open) {
-      border-color: $border-color;
+    > .dito-schema-header + .dito-schema-content > .dito-pane {
+      // Inside the border, the content's margin replaces the spacing below the
+      // header, see `DitoSchema`.
+      margin-top: -$form-spacing-half;
     }
   }
 }

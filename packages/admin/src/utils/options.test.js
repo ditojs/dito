@@ -56,6 +56,12 @@ describe('resolveMergedOptions()', () => {
       getSourceType
     })
   })
+
+  it('takes over whether the type renders its own label', () => {
+    const rendersOwnLabel = () => true
+    const merged = resolveMergedOptions({ extends: { rendersOwnLabel } })
+    expect(merged.rendersOwnLabel).toBe(rendersOwnLabel)
+  })
 })
 
 describe('mergeOptions()', () => {
