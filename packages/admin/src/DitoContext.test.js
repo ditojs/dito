@@ -217,9 +217,17 @@ describe('DitoContext', () => {
       expect(context.views).toBe(component.views)
       expect(context.flattenedViews).toBe(component.flattenedViews)
       expect(context.itemLabel).toBe('Book')
+      expect(context.itemLabelText).toBe('Book')
       expect(context.formLabel).toBe('Books')
       expect(context.formComponent).toBe(component.formComponent)
       expect(context.query).toEqual({ page: '2' })
+    })
+
+    it('returns the text of the item label with unescaped values', () => {
+      const context = new DitoContext(createComponent(), {
+        itemLabel: `<b>Show</b> 'Tom &amp; Jerry &lt;b&gt;'`
+      })
+      expect(context.itemLabelText).toBe(`Show 'Tom & Jerry <b>'`)
     })
 
     it('overrides the values of the component with its own', () => {
@@ -237,6 +245,7 @@ describe('DitoContext', () => {
       const context = new DitoContext({}, {})
       expect(context.user).toBe(null)
       expect(context.api).toBe(null)
+      expect(context.itemLabelText).toBe(null)
       expect(context.dialogComponent).toBe(null)
       expect(context.panelComponent).toBe(null)
       expect(context.resourceComponent).toBe(null)

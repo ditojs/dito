@@ -16,7 +16,7 @@
   DitoFormInner(
     v-show="isActiveRoute"
     :nested="isNestedRoute"
-    :label="itemLabel"
+    :label="itemLabelText"
   )
     //- Prevent implicit submission of the form, for example when typing enter
     //- in an input field.
@@ -71,6 +71,7 @@ import { isPathWithin } from '../utils/route.js'
 import { transferUids } from '../utils/uid.js'
 import { DataModel } from '../utils/DataModel.js'
 import { transientNote } from '../utils/dialogs.js'
+import { getTextFromHtml } from '../utils/html.js'
 
 // @vue/component
 export default DitoComponent.component('DitoForm', {
@@ -307,6 +308,11 @@ export default DitoComponent.component('DitoForm', {
 
     itemLabel() {
       return this.getItemLabel(this.sourceSchema, this.data, { extended: true })
+    },
+
+    // `itemLabel` is HTML, while the `aria-label` of the form is text:
+    itemLabelText() {
+      return getTextFromHtml(this.itemLabel)
     }
   },
 

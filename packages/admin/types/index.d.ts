@@ -633,6 +633,9 @@ export interface SchemaSourceMixin<$Item> {
    * the default is the 'name' property of the item,
    * followed by the label of the form (plus item id)
    * and other defaults.
+   * Labels are HTML: Callbacks return HTML, and need to
+   * escape the item values that they include with
+   * `escapeHtml()` from `@ditojs/utils`.
    */
   itemLabel?:
     | OrItemAccessor<
@@ -1983,8 +1986,16 @@ export type DitoContext<$Item = any> = {
   views: Record<string, View>
   /** All views flattened into a single record. */
   flattenedViews: Record<string, ViewSchema>
-  /** Display label of the current item. */
+  /**
+   * Display label of the current item, as HTML with
+   * escaped item values.
+   */
   itemLabel: string | null
+  /**
+   * The text of `itemLabel`, with its item values
+   * unescaped.
+   */
+  itemLabelText: string | null
   /** Display label of the current form. */
   formLabel: string | null
   /** The current Vue component instance. */

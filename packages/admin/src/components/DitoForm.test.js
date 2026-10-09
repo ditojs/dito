@@ -24,6 +24,18 @@ describe('DitoForm', () => {
     vi.restoreAllMocks()
   })
 
+  it('labels the form with the text of its item label', async () => {
+    const { wrapper } = await mountForm({
+      schema: {
+        label: 'Show',
+        components: { name: { type: 'text' } }
+      },
+      data: { name: 'Tom & Jerry' }
+    })
+    expect(wrapper.find('form.dito-scroll-parent').attributes('aria-label'))
+      .toBe(`Show 'Tom & Jerry'`)
+  })
+
   describe('submit()', () => {
     it('notifies the success with the escaped item label', async () => {
       const { submit, notify } = await mountBookForm(({ data }) => ({ data }))

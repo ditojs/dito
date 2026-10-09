@@ -10,6 +10,7 @@ import {
   getLastDataPathIndex
 } from './utils/data.js'
 import { isNested } from './utils/schema/structure.js'
+import { getTextFromHtml } from './utils/html.js'
 
 const { hasOwnProperty } = Object.prototype
 
@@ -253,8 +254,16 @@ export default class DitoContext {
     return get(this, 'flattenedViews', null)
   }
 
+  // The label of the item as HTML, with escaped item values, see
+  // `getItemLabel()`.
   get itemLabel() {
     return get(this, 'itemLabel', null)
+  }
+
+  // The text of `itemLabel`, with its escaped item values unescaped, e.g. for
+  // places that don't display HTML.
+  get itemLabelText() {
+    return getTextFromHtml(this.itemLabel)
   }
 
   get formLabel() {
