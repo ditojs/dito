@@ -96,6 +96,7 @@ export default DitoTypeComponent.register('code', {
         ignoreWatch = true
         this.value = value
         changed = true
+        this.onInput()
         onChange()
       }
     }

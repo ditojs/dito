@@ -15,9 +15,10 @@ describe('DitoTypeCode', () => {
   })
 
   it('writes edits into the data, and emits change once blurred', async () => {
+    const onInput = vi.fn()
     const onChange = vi.fn()
     const { findField, data } = await mountSchema({
-      schema: { components: { snippet: { type: 'code', onChange } } },
+      schema: { components: { snippet: { type: 'code', onInput, onChange } } },
       data: { snippet: 'const a = 1' }
     })
     const textarea = findField('snippet').find('textarea')
@@ -25,6 +26,7 @@ describe('DitoTypeCode', () => {
     await textarea.setValue('const a = 2')
     // The editor reports its updates asynchronously:
     await vi.waitFor(() => expect(data.snippet).toBe('const a = 2'))
+    await vi.waitFor(() => expect(onInput).toHaveBeenCalled())
     expect(onChange).not.toHaveBeenCalled()
     await textarea.trigger('blur')
     await vi.waitFor(() => expect(onChange).toHaveBeenCalledOnce())
