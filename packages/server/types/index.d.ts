@@ -3040,6 +3040,17 @@ export interface DitoGraphOptions {
    */
   update?: boolean
   /**
+   * Objection.js' `upsertGraph()` options to disable inserts, updates,
+   * deletes, relates or unrelates, for the whole graph (`true`) or for the
+   * given relation paths. Models marked with `'#unrelate': true` or
+   * `'#delete': true` are still unrelated or deleted.
+   */
+  noInsert?: boolean | string[]
+  noUpdate?: boolean | string[]
+  noDelete?: boolean | string[]
+  noRelate?: boolean | string[]
+  noUnrelate?: boolean | string[]
+  /**
    * @deprecated Has no effect anymore. Objection.js resolves cycles created
    * by `#ref` references on its own, by inserting the owner of a nullable
    * (or deferrable) `belongsTo` foreign key first and patching the key in

@@ -174,8 +174,13 @@ export class DitoGraphProcessor {
         let copy
         if (this.shouldRelate(relationPath) && isRelatable(data)) {
           // For relates, start with a reference model that only contains the
-          // id / #ref fields, and any many-to-many pivot table extra values:
-          copy = constructor.getReference(data, this.extras[relationPath])
+          // id / #ref fields, any many-to-many pivot table extra values, and
+          // Objection's `#unrelate` / `#delete` markers for `upsertGraph()`:
+          copy = constructor.getReference(data, [
+            ...(this.extras[relationPath] ?? []),
+            constructor.graphUnrelateProp,
+            constructor.graphDeleteProp
+          ])
         } else {
           // This isn't a relate, or a new model without id / #ref that needs
           // to be inserted, so create a proper shallow clone:

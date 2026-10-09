@@ -76,6 +76,11 @@ which requires the foreign key column to be nullable (or its constraint to be
 deferrable). Cycles that can't be resolved this way are rejected with an error.
 The former `cyclic` option is deprecated and has no effect anymore.
 
+In the upsert, update and patch versions, related models can be marked with
+Objection.js' `'#unrelate': true` or `'#delete': true` to unrelate or delete
+them individually, e.g. together with the `noUnrelate` and `noDelete` options.
+The markers are kept when related models are reduced to their references.
+
 ## Raw Methods
 
 ### `raw(…)`

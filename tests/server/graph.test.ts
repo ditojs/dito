@@ -423,6 +423,27 @@ describe('Dito.js graph handling', () => {
       ])
     })
 
+    it('unrelates and deletes models marked with #unrelate and #delete', async () => {
+      const { book, fantasy, drama } = await insertBook()
+      const [one, two] = book.chapters
+      await Book.query().patchDitoGraph(
+        {
+          id: book.id,
+          // `#delete` on owned models, `#unrelate` on related references,
+          // which are otherwise reduced to their ids:
+          chapters: [{ 'id': one.id, '#delete': true }],
+          genres: [{ 'id': fantasy.id, '#unrelate': true }]
+        },
+        { noDelete: true, noUnrelate: true }
+      )
+      expect(await Chapter.query().findById(one.id)).toBeUndefined()
+      expect(await Chapter.query().findById(two.id)).toBeDefined()
+      expect(await Genre.query().findById(fantasy.id)).toBeDefined()
+      expect(await getBookGenreRows(book.id)).toEqual([
+        { genreId: drama.id, rank: 2 }
+      ])
+    })
+
     it('inserts missing root models', async () => {
       await Book.query().upsertDitoGraph({ title: 'New' })
       expect((await Book.query()).map(book => book.title)).toEqual(['New'])
