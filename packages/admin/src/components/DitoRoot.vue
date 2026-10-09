@@ -173,7 +173,8 @@ export default DitoComponent.component('DitoRoot', {
     },
 
     // Returns true if any of the route components has unsaved changes, e.g. a
-    // form or a view with a dirty data model, see `RouteMixin`.
+    // form with a dirty data model or a view with edited components, see
+    // `RouteMixin`.
     hasUnsavedChanges() {
       return this.appState.routeComponents.some(
         routeComponent => routeComponent.hasUnsavedChanges

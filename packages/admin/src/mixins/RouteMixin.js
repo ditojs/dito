@@ -127,11 +127,11 @@ export default {
       return false
     },
 
-    // Whether the component has changes that get lost when it's left: Directly
-    // mutating (nested) forms change their parent's data instead, which keeps
-    // the changes, see `beforeRouteChange()` and `DitoRoot`.
+    // Whether the component has changes that get lost when it's left, see
+    // `beforeRouteChange()` and `DitoRoot`. Directly mutating forms aren't
+    // dirty, as their parent's data keeps the changes, see `DitoForm.isDirty`.
     hasUnsavedChanges() {
-      return !this.isMutating && this.isDirty
+      return this.isDirty
     }
   },
 
