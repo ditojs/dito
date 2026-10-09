@@ -118,6 +118,7 @@ import {
 } from '@ditojs/utils'
 import { TransitionHeight } from '@ditojs/ui/src'
 import DitoComponent from '../DitoComponent.js'
+import DitoContext from '../DitoContext.js'
 import ContextMixin from '../mixins/ContextMixin.js'
 import ItemMixin from '../mixins/ItemMixin.js'
 import { appendDataPath } from '../utils/data.js'
@@ -179,10 +180,12 @@ export default DitoComponent.component('DitoSchema', {
   data() {
     const { data } = this.schema
     return {
-      // Allow schema to provide more data through `schema.data`, vue-style:
+      // Allow schema to provide more data through `schema.data`, vue-style.
+      // `data()` runs before the computed properties are set up, so create the
+      // context here rather than using the `context` computed property:
       ...(
         data && isFunction(data)
-          ? data(this.context)
+          ? data(new DitoContext(this, { nested: false }))
           : data
       ),
       selectedTab: null,
@@ -281,10 +284,6 @@ export default DitoComponent.component('DitoSchema', {
       set(data) {
         this.setData(data)
       }
-    },
-
-    clipboardItem() {
-      return this.clipboardData
     },
 
     formLabel() {
