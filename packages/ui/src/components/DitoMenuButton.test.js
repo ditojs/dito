@@ -49,6 +49,14 @@ describe('DitoMenuButton', () => {
     expect(wrapper.classes()).toContain('dito-menu-button')
   })
 
+  it('opens the menu offset below the top of the button with `offset`', () => {
+    wrapper = mountMenuButton()
+    expect(wrapper.classes()).not.toContain('dito-menu-button--offset')
+    wrapper.unmount()
+    wrapper = mountMenuButton({ offset: true })
+    expect(wrapper.classes()).toContain('dito-menu-button--offset')
+  })
+
   it('renders its button with `DitoButton`, passing on its verb', () => {
     wrapper = mount(DitoMenuButton, {
       props: { items },

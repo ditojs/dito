@@ -7,7 +7,10 @@ DitoTrigger.dito-menu-button(
   :matchTargetWidth="false"
   :cover="cover"
   :transition="null"
-  :class="{ 'dito-menu-button--open': isOpen }"
+  :class=`{
+    'dito-menu-button--open': isOpen,
+    'dito-menu-button--offset': offset
+  }`
 )
   template(#trigger)
     DitoButton(
@@ -60,6 +63,9 @@ export default {
     placement: { type: String, default: 'bottom' },
     // Whether the menu opens over the button, like native menus do.
     cover: { type: Boolean, default: true },
+    // Whether the menu opens one item padding below the top of the button,
+    // e.g. to line up with text inside a taller button.
+    offset: { type: Boolean, default: false },
     disabled: { type: Boolean, default: false }
   },
 
@@ -173,20 +179,23 @@ export default {
 @import '../styles/_imports';
 
 $menu-button-radius: 0.5em;
-$menu-button-padding: 0.5em 1em;
+$menu-button-padding-ver: 0.5em;
+$menu-button-padding: $menu-button-padding-ver 1em;
 
 .dito-menu-button {
   display: inline-block;
 
   &__menu {
-    // Lets the menu open below the top of the button, e.g. to line up with
-    // text inside a taller button:
-    margin: var(--dito-menu-button-offset, 0) 0 0;
+    margin: 0;
     padding: 0;
     list-style: none;
     border-radius: $menu-button-radius;
     box-shadow: $shadow-window;
     overflow: hidden;
+  }
+
+  &--offset &__menu {
+    margin-top: $menu-button-padding-ver;
   }
 
   &__item {

@@ -3,6 +3,7 @@
   DitoMenuButton.dito-account__button(
     :items="items"
     placement="bottom-left"
+    offset
     @select="onSelectMenuItem"
   )
     span {{ user.username }}
@@ -44,9 +45,6 @@ export default DitoComponent.component('DitoAccount', {
 @import '../styles/_imports';
 
 .dito-account {
-  // Open the menu half a line below the top of the user name:
-  --dito-menu-button-offset: 0.5em;
-
   display: inline-block;
 
   // The menu button is a `DitoButton`, but shows the user name as plain text,
