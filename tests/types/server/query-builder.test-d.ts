@@ -1,9 +1,21 @@
 import { expectTypeOf, assertType, describe, it } from 'vitest'
 import type { QueryBuilder, Model } from '@ditojs/server'
 
+interface Pet extends Model {
+  name: string
+  owner?: Person
+}
+
+interface Person extends Model {
+  name: string
+  pets?: Pet[]
+  parent?: Person | null
+}
+
 describe('QueryBuilder', () => {
   type QB = QueryBuilder<Model, Model[]>
   type SingleQB = QueryBuilder<Model, Model>
+  type PersonQB = QueryBuilder<Person, Person[]>
 
   it('applyFilter supports string name with args', () => {
     const query = {} as QB
@@ -46,6 +58,50 @@ describe('QueryBuilder', () => {
     assertType<QB>(
       query.withGraph('[items]', { algorithm: 'fetch' })
     )
+  })
+
+  it('withGraph with an algorithm narrows the fetched relations', () => {
+    const query = {} as PersonQB
+    for (const algorithm of ['fetch', 'join'] as const) {
+      const result = query.withGraph('pets.owner', { algorithm })
+      expectTypeOf(result).toExtend<QueryBuilder<Person, Person[]>>()
+      type Result = Awaited<typeof result>[number]
+      expectTypeOf<Result['pets']>().toExtend<Pet[]>()
+      expectTypeOf<Result['pets'][number]['owner']>().toExtend<Person>()
+      expectTypeOf<Result['parent']>().toEqualTypeOf<
+        Person | null | undefined
+      >()
+    }
+    // @ts-expect-error - unsupported algorithm
+    query.withGraph('pets', { algorithm: 'naive' })
+  })
+
+  it('withGraph narrowing mixes with the other graph methods', () => {
+    const query = {} as PersonQB
+    const result = query
+      .withGraphFetched('pets')
+      .withGraph('parent', { algorithm: 'join' })
+      .findById(1)
+    type Result = NonNullable<Awaited<typeof result>>
+    expectTypeOf<Result['pets']>().toExtend<Pet[]>()
+    expectTypeOf<Result['parent']>().toEqualTypeOf<Person | null>()
+    expectTypeOf(result.withScope('active')).toEqualTypeOf(result)
+  })
+
+  it('withGraph does not narrow non-literal expressions', () => {
+    const query = {} as PersonQB
+    const expression = 'pets' as string
+    assertType<PersonQB>(query.withGraph(expression))
+  })
+
+  it('patchById and updateById return the number of rows', () => {
+    const query = {} as QB
+    expectTypeOf(
+      query.patchById(1, {})
+    ).resolves.toEqualTypeOf<number>()
+    expectTypeOf(
+      query.updateById(1, {})
+    ).resolves.toEqualTypeOf<number>()
   })
 
   it('find returns this for chaining', () => {

@@ -3215,12 +3215,17 @@ export class QueryBuilder<
   allowFilter(...filters: string[]): this
   /** Omits properties from the query result. */
   omit(...properties: string[]): this
-  withGraph(
-    expr: objection.RelationExpression<M>,
-    options?: objection.GraphOptions & {
-      algorithm?: 'fetch' | 'join'
-    }
-  ): this
+  /**
+   * Objection's `withGraph()`, which keeps the algorithms of the relations
+   * that are already loaded, and uses the last used one for new ones. Scopes
+   * applied to queries that aren't normal finds, e.g. with `count()`, don't
+   * load graphs.
+   * @override
+   */
+  withGraph<const E extends objection.RelationExpression<M>>(
+    expr: E,
+    options?: objection.WithGraphOptions
+  ): objection.WithGraphQueryBuilder<this, E>
 
   toSQL(): { sql: string; bindings: unknown[] }
   raw: Knex.RawBuilder
@@ -3228,9 +3233,7 @@ export class QueryBuilder<
   pluck(key: string): this
   loadDataPath(
     dataPath: string[] | string,
-    options?: objection.GraphOptions & {
-      algorithm?: 'fetch' | 'join'
-    }
+    options?: objection.WithGraphOptions
   ): this
 
   /** Patches or updates the matched model, or inserts it if none matched. */
@@ -3255,9 +3258,6 @@ export class QueryBuilder<
           [key in LiteralUnion<QueryParameterOptionKey>]?: boolean
         }
   ): this
-
-  patchById(id: Id, data: PartialModelObject<M>): this
-  updateById(id: Id, data: PartialModelObject<M>): this
 
   /** Also supports arrays of models, not only single instances. */
   patchAndFetch(

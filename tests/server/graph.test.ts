@@ -554,7 +554,7 @@ describe('Dito.js graph handling', () => {
       await alterFeaturedChapterId(false)
       try {
         await expect(
-          Book.transaction(trx =>
+          Book.transaction(async trx =>
             Book.query(trx).upsertDitoGraph({
               title: 'Earthsea',
               chapters: [{ '#id': 'first', 'title': 'One' }],
