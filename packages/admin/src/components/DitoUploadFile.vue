@@ -24,6 +24,9 @@ import DitoComponent from '../DitoComponent.js'
 export default DitoComponent.component('DitoUploadFile', {
   props: {
     file: { type: Object, required: true },
+    // The file object of the upload component while the file is added through
+    // it, see `DitoTypeUpload.getUpload()`.
+    upload: { type: Object, default: null },
     thumbnail: { type: String, default: null },
     thumbnailUrl: { type: String, default: null }
   },
@@ -48,7 +51,7 @@ export default DitoComponent.component('DitoUploadFile', {
   },
 
   watch: {
-    'file.upload.file': {
+    'upload.file': {
       immediate: true,
       handler(file) {
         if (this.thumbnail && file?.type.startsWith('image/')) {

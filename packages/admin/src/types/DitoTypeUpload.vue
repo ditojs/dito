@@ -65,6 +65,7 @@
             )
               DitoUploadFile(
                 :file="file"
+                :upload="getUpload(file)"
                 :thumbnail="thumbnails"
                 :thumbnailUrl="thumbnailUrls[index]"
               )
@@ -73,6 +74,7 @@
           )
             DitoUploadFile(
               :file="file"
+              :upload="getUpload(file)"
               :thumbnail="thumbnails"
               :thumbnailUrl="thumbnailUrls[index]"
             )
@@ -82,17 +84,17 @@
               v-if="file.upload"
             )
               template(
-                v-if="file.upload.error"
-              )
-                | Error: {{ file.upload.error }}
-              template(
-                v-else-if="file.upload.active"
-              )
-                | Uploading...
-              template(
-                v-else-if="file.upload.success"
+                v-if="file.upload.success"
               )
                 | Uploaded
+              template(
+                v-else-if="getUpload(file)?.error"
+              )
+                | Error: {{ getUpload(file).error }}
+              template(
+                v-else-if="getUpload(file)?.active"
+              )
+                | Uploading...
             template(
               v-else
             )
@@ -173,8 +175,9 @@ export default DitoTypeComponent.register('upload', {
       return this.$fileDropTargets()
     },
 
-    // Whether files are dragged over the admin that the upload accepts, for
-    // which it stands out above the overlay of `DitoRoot`.
+    // Whether files are dragged over the admin while the upload is enabled, for
+    // which it stands out above the overlay of `DitoRoot`. The dragged files'
+    // types can't be read before the drop, so `accept` isn't checked here.
     isDropTarget() {
       return this.fileDropTargets.isDraggingFiles && !this.disabled
     },
@@ -268,6 +271,13 @@ export default DitoTypeComponent.register('upload', {
       return this.files.length > 0
     },
 
+    // The files of the upload component by their ids. It replaces a file's
+    // object on each update, so the files in the value only refer to their
+    // upload by id, see `onInputFile()` and `getUpload()`.
+    uploadsById() {
+      return new Map(this.uploads.map(upload => [upload.id, upload]))
+    },
+
     hasUploads() {
       return this.uploads.length > 0
     },
@@ -358,6 +368,12 @@ export default DitoTypeComponent.register('upload', {
       return this.render(this.getFileContext(file, index))
     },
 
+    // Returns the current file object of the upload component for a file that
+    // was added through it, or `null`.
+    getUpload(file) {
+      return file.upload ? (this.uploadsById.get(file.upload.id) ?? null) : null
+    },
+
     getDownloadUrl(file, index) {
       return file.url
         ? file.url
@@ -405,7 +421,7 @@ export default DitoTypeComponent.register('upload', {
             this.value = null
           }
           if (file.upload) {
-            this.upload.remove(file.upload)
+            this.upload.remove(file.upload.id)
           }
           this.onChange()
         }
@@ -458,10 +474,14 @@ export default DitoTypeComponent.register('upload', {
       this.replaceFile(file, null)
     },
 
+    // Files added through the upload component refer to their upload with
+    // `upload: { id, success }` in the value: `success` tells `processValue()`
+    // which files were stored, and the upload's state is read through
+    // `getUpload()`.
     onInputFile(newFile, oldFile) {
       if (newFile && !oldFile) {
         const { id, name, size } = newFile
-        this.addFile({ id, name, size, upload: newFile })
+        this.addFile({ id, name, size, upload: { id, success: false } })
       }
       if (newFile && oldFile) {
         const { success, error } = newFile
@@ -469,9 +489,9 @@ export default DitoTypeComponent.register('upload', {
           this.onChange()
           const file = newFile.response[0]
           if (file) {
-            file.upload = newFile
-            // Replace the upload file object with the file object received
-            // from the upload response.
+            file.upload = { id: newFile.id, success: true }
+            // Replace the file added for the upload with the file received
+            // in the upload response.
             this.replaceFile(newFile, file)
           } else {
             this.removeFile(newFile)

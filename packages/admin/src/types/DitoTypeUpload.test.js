@@ -189,7 +189,14 @@ describe('DitoTypeUpload', () => {
     await flushPromises()
     expect(data.attachments).toEqual([
       scan,
-      { id: 'upload-1', name: 'cover.png', size: 2_500_000, upload: uploadFile }
+      {
+        id: 'upload-1',
+        name: 'cover.png',
+        size: 2_500_000,
+        // Refers to the upload by id, as the upload component replaces its
+        // file objects on each update:
+        upload: { id: 'upload-1', success: false }
+      }
     ])
     upload.onInputFile(
       { ...uploadFile, active: true },
@@ -204,7 +211,10 @@ describe('DitoTypeUpload', () => {
     await flushPromises()
     expect(data.attachments).toHaveLength(2)
     expect(data.attachments[1]).toMatchObject({ id: 'stored-1', ...cover })
-    expect(data.attachments[1].upload.success).toBe(true)
+    expect(data.attachments[1].upload).toEqual({
+      id: 'upload-1',
+      success: true
+    })
     expect(getRows(findField('attachments'))[1]).toEqual([
       'cover.png',
       '2.5 MB',
@@ -435,9 +445,7 @@ describe('DitoTypeUpload', () => {
       expect(field.find('progress').exists()).toBe(false)
     })
 
-    // Bug: the file in the value keeps the first file object of the upload,
-    // which the upload component replaces on each update, see `onInputFile()`.
-    test.fails('shows the files that are uploading as such', async () => {
+    it('shows the files that are uploading as such', async () => {
       const requests = stubXMLHttpRequest()
       const { wrapper, findField } = await mountForm({
         schema: {
@@ -453,6 +461,27 @@ describe('DitoTypeUpload', () => {
       expect(getRows(findField('attachments'))).toEqual([
         ['cover.png', '5 B', 'Uploading...']
       ])
+    })
+
+    it('previews the images that are uploading', async () => {
+      const requests = stubXMLHttpRequest()
+      const { wrapper, findField } = await mountForm({
+        schema: {
+          components: {
+            attachments: { type: 'upload', multiple: true, thumbnails: true }
+          }
+        },
+        data: { attachments: [] }
+      })
+      await wrapper
+        .findComponent(VueUpload)
+        .vm.add([new File(['cover'], 'cover.png', { type: 'image/png' })])
+      await vi.waitFor(() => expect(requests).toHaveLength(1))
+      await vi.waitFor(() =>
+        expect(
+          findField('attachments').find('.dito-thumbnail img').attributes('src')
+        ).toMatch(/^data:image\/png;base64,/)
+      )
     })
   })
 
