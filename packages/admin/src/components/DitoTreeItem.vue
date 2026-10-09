@@ -112,6 +112,7 @@ import { getNamedSchemas, hasFormSchema } from '../utils/schema/lookup.js'
 import { getTextFromHtml } from '../utils/html.js'
 import { getListWithMovedItem } from '../utils/list.js'
 import { confirmAndRemove } from '../utils/dialogs.js'
+import { isPathWithin } from '../utils/route.js'
 
 // Renders an item of a tree list or tree object, see `DitoTypeTreeList`, which
 // is the item's `sourceComponent`. Items don't write the tree: They emit the
@@ -221,7 +222,7 @@ export default DitoComponent.component('DitoTreeItem', {
           const open = (
             childrenOpen ||
             // Only count as "in edit path" when it's not the full edit path.
-            editPath.startsWith(path) && path.length < editPath.length
+            !!path && editPath !== path && isPathWithin(editPath, path)
           )
           const active = editPath === path
           return { data, path, open, active }

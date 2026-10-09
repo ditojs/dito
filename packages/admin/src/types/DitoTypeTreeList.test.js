@@ -124,6 +124,44 @@ describe('DitoTypeTreeList', () => {
     ])
   })
 
+  it('opens only the items whose path contains the edit path', async () => {
+    const schema = createSiteSchema({ editable: true })
+    const pages = Array.from({ length: 11 }, (_, index) => ({
+      title: `Page ${index}`,
+      subpages: [{ title: `Subpage ${index}` }]
+    }))
+    const { admin, findField } = await mountForm({
+      schema,
+      data: { pages }
+    })
+    await admin.navigate('/items/1/pages/10/subpages/0')
+    const branches = findField('pages').findAll('.dito-tree-branch')
+    const isExpanded = index => (
+      branches[index].attributes('aria-expanded') === 'true'
+    )
+    // `/pages/10` starts with `/pages/1`, but isn't within it:
+    expect(isExpanded(1)).toBe(false)
+    expect(isExpanded(10)).toBe(true)
+  })
+
+  it('ignores the edit paths of trees with similar paths', async () => {
+    const pagesSchema = createSiteSchema({ editable: true }).components.pages
+    const { admin, findField } = await mountForm({
+      schema: {
+        components: {
+          pages: pagesSchema,
+          drafts: { ...pagesSchema, label: 'Drafts', path: 'pages-drafts' }
+        }
+      },
+      data: { ...site, drafts: [{ title: 'Blog', subpages: [] }] }
+    })
+    await admin.navigate('/items/1/pages-drafts/0')
+    const hasForm = name =>
+      findField(name).find('.dito-tree-form-container').exists()
+    expect(hasForm('drafts')).toBe(true)
+    expect(hasForm('pages')).toBe(false)
+  })
+
   it('passes the data path of the value to `render()` of properties', async () => {
     const schema = createSiteSchema()
     schema.components.pages.children.properties = {

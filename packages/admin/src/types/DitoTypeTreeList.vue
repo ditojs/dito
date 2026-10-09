@@ -30,6 +30,7 @@ import { resolveSchemaComponents } from '../utils/schema/setup.js'
 import { hasFormSchema, getFormSchemas } from '../utils/schema/lookup.js'
 import { updateOrder } from '../utils/schema/data.js'
 import { getParentDataPath } from '../utils/data.js'
+import { isPathWithin } from '../utils/route.js'
 
 export default DitoTypeComponent.register(
   ['tree-list', 'tree-object'],
@@ -50,7 +51,7 @@ export default DitoTypeComponent.register(
       editPath() {
         // Accessed from DitoTreeItem through `sourceComponent.editPath`:
         const path = this.$route.path.slice(this.path?.length)
-        return path.startsWith(`/${this.schema.path}`) ? path : ''
+        return isPathWithin(path, `/${this.schema.path}`) ? path : ''
       },
 
       treeData() {
