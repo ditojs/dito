@@ -145,7 +145,7 @@ export default DitoComponent.component('DitoMenu', {
     margin-top: $menu-spacing;
 
     &:focus-visible {
-      box-shadow: $shadow-focus;
+      @include focus-ring;
     }
 
     &:hover {

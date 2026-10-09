@@ -357,6 +357,11 @@ export default DitoComponent.component('DitoTreeItem', {
 
   .dito-tree-branch {
     cursor: pointer;
+    border-radius: $border-radius;
+
+    &:focus-visible {
+      @include focus-ring;
+    }
   }
 
   .dito-tree-header {
@@ -399,7 +404,8 @@ export default DitoComponent.component('DitoTreeItem', {
 
   // TODO: BEM: Style an element class of this block, e.g. `&__buttons`.
   .dito-buttons {
-    flex: auto;
+    // Leave the width to the branch, so its focus ring spans the row:
+    flex: none;
     display: flex;
     // Transparent rather than hidden, so the buttons can be focused with the
     // keyboard, which shows them, see below.

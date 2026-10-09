@@ -67,7 +67,7 @@ export default DitoComponent.component('DitoAccount', {
     }
 
     &:focus-visible {
-      box-shadow: $shadow-focus;
+      @include focus-ring;
     }
   }
 }

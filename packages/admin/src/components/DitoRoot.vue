@@ -286,7 +286,7 @@ let dialogId = 0
   background: none;
 
   &:focus-visible {
-    box-shadow: $shadow-focus;
+    @include focus-ring;
   }
 }
 
