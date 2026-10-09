@@ -300,13 +300,19 @@ export default {
       return this.relate && isObject(option) && option.id == null
     },
 
+    // Returns the option of the value, or the value itself without
+    // `optionValue`, as plain value options are their own values.
     getOptionForValue(value) {
-      const findOption = (options, value, groupBy) => {
-        // Search for the option object with the given value and return the
-        // whole object.
+      return this.optionValue ? this.findOptionForValue(value) : value
+    },
+
+    // Searches the options for the one with the given value, matched through
+    // `optionEquals` if provided, and returns it.
+    findOptionForValue(value) {
+      const findOption = (options, groupBy) => {
         for (const option of options) {
           if (groupBy) {
-            const found = findOption(option.options, value, null)
+            const found = findOption(option.options, null)
             if (found) {
               return found
             }
@@ -321,17 +327,17 @@ export default {
         }
       }
 
-      const { optionValue, groupBy } = this
-      return optionValue
-        ? (findOption(this.activeOptions, value, groupBy) ??
-          // Options filtered out of the active options, e.g. by a search, are
-          // still options of the value.
-          (
-            this.areOptionsFiltered
-              ? findOption(this.options, value, groupBy)
-              : undefined
-          ))
-        : value
+      const { groupBy } = this
+      return (
+        findOption(this.activeOptions, groupBy) ??
+        // Options filtered out of the active options, e.g. by a search, are
+        // still options of the value.
+        (
+          this.areOptionsFiltered
+            ? findOption(this.options, groupBy)
+            : undefined
+        )
+      )
     },
 
     // Returns the related object in the value with the given value of its

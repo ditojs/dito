@@ -24,7 +24,7 @@
           v-if="shouldShowUnavailableValue"
           :value="selectedValue"
           disabled
-        ) {{ selectedValue }} (unavailable)
+        ) {{ getLabelForOption(selectedValue) }} (unavailable)
         template(
           v-for="option in options"
         )
@@ -89,22 +89,18 @@ export default DitoTypeComponent.register('select', {
       return getInputAffixesProps(this)
     },
 
-    // The values of all loaded options, including the ones in groups.
-    optionValues() {
-      const options = this.groupBy
-        ? this.options.flatMap(group => group[this.groupByOptions])
-        : this.options
-      return options.map(option => this.getValueForOption(option))
-    },
-
     // Whether the value is set but none of the loaded options has it. Values
     // of option objects are replaced with `null` when their option disappears,
     // see `OptionsMixin`, but plain values match any value, so they stay.
+    // Object values without `optionValue` are left to the select, which
+    // matches them to their options by deep equality.
     shouldShowUnavailableValue() {
+      const { selectedValue } = this
       return (
-        this.selectedValue != null &&
+        selectedValue != null &&
+        typeof selectedValue !== 'object' &&
         this.hasOptions &&
-        !this.optionValues.includes(this.selectedValue)
+        !this.findOptionForValue(selectedValue)
       )
     }
   }

@@ -28,8 +28,8 @@ afterEach(() => {
 })
 
 // Mounts a view with the properties of `schema`, e.g. its `components`, and
-// sets `data` as the view's data. Views don't track dirty state and don't
-// submit, use `mountForm()` for that.
+// sets `data` as the view's data. Views don't submit, use `mountForm()` for
+// forms with a resource that load and submit an item.
 // Returns the `wrapper` of the root, the reactive `data`, the view's
 // `dataModel`, and the `view` and its `schemaComponent`.
 export async function mountSchema({
@@ -148,6 +148,31 @@ export async function mountAdmin({ views, request = null, api = {} }) {
   }
   mountedAdmins.add(admin)
   return admin
+}
+
+// Mounts an admin with a `genres` view, which lists the options that editable
+// components edit in their forms, see `DitoOptionsEditButtons`, and navigates
+// to a `test` view with `components` and `data`.
+// Returns the `admin` and the `view`.
+export async function mountAdminWithGenresView({ components, data = {} }) {
+  const admin = await mountAdmin({
+    views: {
+      genres: {
+        type: 'view',
+        component: {
+          type: 'list',
+          resource: { path: 'genres' },
+          form: { type: 'form', components: { name: { type: 'text' } } }
+        }
+      },
+      test: { type: 'view', label: 'Test', components }
+    }
+  })
+  await admin.navigate('/test')
+  const view = admin.getRouteComponent(component => component.isView)
+  view.setData(data)
+  await settle(view)
+  return { admin, view }
 }
 
 export function unmountAdmin(admin) {

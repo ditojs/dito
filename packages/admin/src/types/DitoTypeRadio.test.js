@@ -1,4 +1,4 @@
-import { mountSchema, mountAdmin, settle } from '../test/mount.js'
+import { mountSchema, mountAdminWithGenresView } from '../test/mount.js'
 
 const genres = [
   { value: 'fiction', label: 'Fiction' },
@@ -77,41 +77,24 @@ describe('DitoTypeRadio', () => {
   })
 
   it('links each option to its form in `view` when `editable`', async () => {
-    const admin = await mountAdmin({
-      views: {
-        genres: {
-          type: 'view',
-          component: {
-            type: 'list',
-            resource: { path: 'genres' },
-            form: { type: 'form', components: { name: { type: 'text' } } }
-          }
-        },
-        test: {
-          type: 'view',
-          label: 'Test',
-          components: {
-            genre: {
-              type: 'radio',
-              editable: true,
-              view: 'genres',
-              options: {
-                data: [
-                  { id: 1, name: 'Fiction' },
-                  { id: 2, name: 'Poetry' }
-                ],
-                value: 'id',
-                label: 'name'
-              }
-            }
+    const { admin } = await mountAdminWithGenresView({
+      components: {
+        genre: {
+          type: 'radio',
+          editable: true,
+          view: 'genres',
+          options: {
+            data: [
+              { id: 1, name: 'Fiction' },
+              { id: 2, name: 'Poetry' }
+            ],
+            value: 'id',
+            label: 'name'
           }
         }
-      }
+      },
+      data: { genre: null }
     })
-    await admin.navigate('/test')
-    const view = admin.getRouteComponent(component => component.isView)
-    view.setData({ genre: null })
-    await settle(view)
     const links = admin.wrapper
       .find('.dito-radio-buttons')
       .findAll('.dito-options-edit-buttons a')

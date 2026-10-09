@@ -1,5 +1,9 @@
 import { vi } from 'vitest'
-import { mountSchema, mountForm, mountAdmin, settle } from '../test/mount.js'
+import {
+  mountSchema,
+  mountForm,
+  mountAdminWithGenresView
+} from '../test/mount.js'
 
 const genres = [
   { value: 'fiction', label: 'Fiction' },
@@ -207,6 +211,58 @@ describe('DitoTypeSelect', () => {
       )
     })
 
+    it('selects object values that equal options without a value key', async () => {
+      const { findField } = await mountSchema({
+        schema: {
+          components: {
+            city: {
+              type: 'select',
+              options: {
+                data: [{ name: 'Basel' }, { name: 'Lyon' }],
+                label: 'name'
+              }
+            }
+          }
+        },
+        // A copy of the option, as stored values are loaded separately:
+        data: { city: { name: 'Lyon' } }
+      })
+      const field = findField('city')
+      expect(field.findAll('option').map(option => option.text())).toEqual([
+        'Basel',
+        'Lyon'
+      ])
+      const select = field.find('select').element
+      expect(select.options[select.selectedIndex].text).toBe('Lyon')
+    })
+
+    it('matches values through `options.equals` before showing them as unavailable', async () => {
+      const { findField } = await mountSchema({
+        schema: {
+          components: {
+            country: {
+              type: 'select',
+              options: {
+                data: [
+                  { value: 'ch', label: 'Switzerland' },
+                  { value: 'fr', label: 'France' }
+                ],
+                equals: ({ value, option }) => (
+                  value?.toLowerCase() === option.value
+                )
+              }
+            }
+          }
+        },
+        data: { country: 'FR' }
+      })
+      expect(
+        findField('country')
+          .findAll('option')
+          .map(option => option.text())
+      ).toEqual(['Switzerland', 'France'])
+    })
+
     it('shows the errors of options that fail to load', async () => {
       vi.spyOn(console, 'error').mockImplementation(() => {})
       const { getErrors } = await mountForm({
@@ -412,46 +468,42 @@ describe('DitoTypeSelect', () => {
   })
 
   describe('editable', () => {
+    const genreSchema = {
+      type: 'select',
+      editable: true,
+      view: 'genres',
+      options: {
+        data: [
+          { id: 1, name: 'Fiction' },
+          { id: 2, name: 'Poetry' }
+        ],
+        value: 'id',
+        label: 'name'
+      }
+    }
+
     it('links the selected option to its form in `view`', async () => {
-      const admin = await mountAdmin({
-        views: {
-          genres: {
-            type: 'view',
-            component: {
-              type: 'list',
-              resource: { path: 'genres' },
-              form: { type: 'form', components: { name: { type: 'text' } } }
-            }
-          },
-          test: {
-            type: 'view',
-            label: 'Test',
-            components: {
-              genre: {
-                type: 'select',
-                editable: true,
-                view: 'genres',
-                options: {
-                  data: [
-                    { id: 1, name: 'Fiction' },
-                    { id: 2, name: 'Poetry' }
-                  ],
-                  value: 'id',
-                  label: 'name'
-                }
-              }
-            }
-          }
-        }
+      const { admin } = await mountAdminWithGenresView({
+        components: { genre: genreSchema },
+        data: { genre: 2 }
       })
-      await admin.navigate('/test')
-      const view = admin.getRouteComponent(component => component.isView)
-      view.setData({ genre: 2 })
-      await settle(view)
       const field = admin.wrapper.find('.dito-select')
       const link = field.find('.dito-options-edit-buttons a')
       expect(link.attributes('href')).toBe('/genres/2')
       await field.find('select').setValue('1')
+      expect(link.attributes('href')).toBe('/genres/1')
+    })
+
+    it('disables the link without a selected option', async () => {
+      const { admin } = await mountAdminWithGenresView({
+        components: { genre: genreSchema },
+        data: { genre: null }
+      })
+      const field = admin.wrapper.find('.dito-select')
+      const link = field.find('.dito-options-edit-buttons a')
+      expect(link.attributes('aria-disabled')).toBe('true')
+      await field.find('select').setValue('1')
+      expect(link.attributes('aria-disabled')).toBeUndefined()
       expect(link.attributes('href')).toBe('/genres/1')
     })
   })

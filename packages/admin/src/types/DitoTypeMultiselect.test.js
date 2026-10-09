@@ -1,6 +1,10 @@
 import { vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
-import { mountSchema, mountForm, mountAdmin, settle } from '../test/mount.js'
+import {
+  mountSchema,
+  mountForm,
+  mountAdminWithGenresView
+} from '../test/mount.js'
 
 const genres = [
   { value: 'fiction', label: 'Fiction' },
@@ -115,34 +119,17 @@ describe('DitoTypeMultiselect', () => {
       expect(data.genre).toBe(null)
     })
     it('links the selected option to its form in `view` when `editable`', async () => {
-      const admin = await mountAdmin({
-        views: {
-          genres: {
-            type: 'view',
-            component: {
-              type: 'list',
-              resource: { path: 'genres' },
-              form: { type: 'form', components: { name: { type: 'text' } } }
-            }
-          },
-          test: {
-            type: 'view',
-            label: 'Test',
-            components: {
-              genre: {
-                type: 'multiselect',
-                editable: true,
-                view: 'genres',
-                options: genres
-              }
-            }
+      const { admin } = await mountAdminWithGenresView({
+        components: {
+          genre: {
+            type: 'multiselect',
+            editable: true,
+            view: 'genres',
+            options: genres
           }
-        }
+        },
+        data: { genre: 'poetry' }
       })
-      await admin.navigate('/test')
-      const view = admin.getRouteComponent(component => component.isView)
-      view.setData({ genre: 'poetry' })
-      await settle(view)
       const link = admin.wrapper.find('.dito-options-edit-buttons a')
       expect(link.attributes('href')).toBe('/genres/poetry')
     })
