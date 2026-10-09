@@ -97,13 +97,13 @@ export async function resolveSchemas(
 export async function resolveViews(unresolvedViews) {
   return resolveSchemas(unresolvedViews, async (schema, unwrapModule) => {
     schema = await resolveSchema(schema, unwrapModule)
-    if (!schema.name && isMenu(schema)) {
-      // Generate a name for sub-menus from their label if it's missing.
-      // NOTE: This is never actually referenced from anywhere, but they need
-      // a name by which they're stored in the parent object.
+    if (isMenu(schema)) {
       schema = {
         ...schema,
-        name: camelize(schema.label),
+        // Generate a name for sub-menus from their label if it's missing.
+        // NOTE: This is never actually referenced from anywhere, but they need
+        // a name by which they're stored in the parent object.
+        name: schema.name || camelize(schema.label),
         items: await resolveSchemas(schema.items)
       }
     }

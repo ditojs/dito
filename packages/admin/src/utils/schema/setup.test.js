@@ -198,9 +198,7 @@ describe('resolveViews()', () => {
     })
   })
 
-  // Bug: The items of menus that have a name, e.g. menus exported by name from
-  // their own modules, aren't resolved, so their views can't be set up.
-  test.fails('resolves the items of named sub-menus too', async () => {
+  it('resolves the items of named sub-menus too', async () => {
     const books = { type: 'view', label: 'Books' }
     const catalog = {
       type: 'menu',
