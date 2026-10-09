@@ -6,7 +6,8 @@ import {
   mountAdmin,
   mountForm,
   mountSchema,
-  settle
+  settle,
+  enterValue
 } from '../test/mount.js'
 
 describe('DitoSchema', () => {
@@ -335,6 +336,17 @@ describe('DitoSchema', () => {
         expect(schemaComponent.selectedTab).toBe('details')
       })
 
+      it('validates nothing before the item is loaded', async () => {
+        const { schemaComponent, loadItem } =
+          await mountLoadingForm(
+            '/items/1'
+          )
+        expect(schemaComponent.hasData).toBe(false)
+        expect(schemaComponent.verifyAll()).toBe(true)
+        await loadItem()
+        expect(schemaComponent.hasData).toBe(true)
+      })
+
       it('keeps the tab selected by the route', async () => {
         const { schemaComponent, loadItem } =
           await mountLoadingForm('/items/1#details')
@@ -492,5 +504,529 @@ describe('DitoSchema', () => {
       )
       expect(getErrors('author')).toEqual(['The Author field is required.'])
     })
+  })
+
+  describe('component lookup', () => {
+    async function mountBookSchema() {
+      const result = await mountSchema({
+        schema: {
+          components: {
+            title: { type: 'text' },
+            author: {
+              type: 'object',
+              inlined: true,
+              form: { type: 'form', components: { name: { type: 'text' } } }
+            }
+          },
+          panels: {
+            summary: {
+              type: 'panel',
+              label: 'Summary',
+              components: { notes: { type: 'textarea' } }
+            }
+          }
+        },
+        data: { title: 'Emma', author: { name: 'Jane' }, notes: 'Classic' }
+      })
+      const author = result.wrapper
+        .findAllComponents({ name: 'DitoSchema' })
+        .map(({ vm }) => vm)
+        .find(vm => vm.dataPath === 'author')
+      return { ...result, author }
+    }
+
+    it('finds components by name or by data path', async () => {
+      const { schemaComponent, author } = await mountBookSchema()
+      const title = schemaComponent.getComponent('title')
+      expect(title.name).toBe('title')
+      expect(schemaComponent.getComponentByName('title')).toBe(title)
+      expect(schemaComponent.getComponentByName('isbn')).toBe(null)
+      expect(schemaComponent.getComponent('isbn')).toBe(null)
+      // Nested schemas find their components by their own name, and by the
+      // full data path:
+      const name = author.getComponent('name')
+      expect(name.dataPath).toBe('author/name')
+      expect(author.getComponent('author/name')).toBe(name)
+      expect(schemaComponent.getComponent('author/name')).toBe(name)
+    })
+
+    it('finds panels by name or by data path', async () => {
+      const { schemaComponent } = await mountBookSchema()
+      const [panel] = schemaComponent.panels
+      expect(panel.schema.label).toBe('Summary')
+      // Panels are addressed by their name, as if they were nested:
+      expect(panel.dataPath).toBe('summary')
+      expect(schemaComponent.getPanel('summary') === panel).toBe(true)
+      expect(schemaComponent.getPanelByDataPath('summary') === panel).toBe(
+        true
+      )
+      expect(schemaComponent.getPanelByDataPath('notes')).toBe(null)
+      expect(schemaComponent.getPanel('notes')).toBe(null)
+    })
+
+    it('lists its panes by data path', async () => {
+      const { schemaComponent, author } = await mountBookSchema()
+      expect(schemaComponent.panes).toHaveLength(1)
+      expect(Object.keys(schemaComponent.panesByDataPath)).toEqual([''])
+      expect(Object.keys(author.panesByDataPath)).toEqual(['author'])
+    })
+
+    it('sorts components of the same data in document order', async () => {
+      const { schemaComponent, wrapper } = await mountSchema({
+        schema: {
+          tabs: {
+            summary: {
+              type: 'tab',
+              components: { title: { type: 'text', label: 'Short Title' } }
+            },
+            details: {
+              type: 'tab',
+              components: { title: { type: 'text', label: 'Full Title' } }
+            },
+            print: {
+              type: 'tab',
+              components: { title: { type: 'text', label: 'Print Title' } }
+            }
+          }
+        },
+        data: { title: 'Emma' }
+      })
+      const components = schemaComponent.getComponents('title')
+      expect(components.map(component => component.label)).toEqual([
+        'Short Title',
+        'Full Title',
+        'Print Title'
+      ])
+      const inputs = wrapper.findAll('input[name="title"]')
+      expect(
+        components.map(component => component.$el.contains(inputs[0].element))
+      ).toEqual([true, false, false])
+    })
+
+    it('sorts components rendered later in document order', async () => {
+      const { schemaComponent, data, settle } = await mountSchema({
+        schema: {
+          tabs: {
+            summary: {
+              type: 'tab',
+              components: {
+                title: {
+                  type: 'text',
+                  label: 'Short Title',
+                  if: ({ item }) => item.hasSummary
+                }
+              }
+            },
+            details: {
+              type: 'tab',
+              components: { title: { type: 'text', label: 'Full Title' } }
+            }
+          }
+        },
+        data: { title: 'Emma', hasSummary: false }
+      })
+      const getLabels = () =>
+        schemaComponent.getComponents('title').map(({ label }) => label)
+      expect(getLabels()).toEqual(['Full Title'])
+      data.hasSummary = true
+      await settle()
+      expect(getLabels()).toEqual(['Short Title', 'Full Title'])
+    })
+  })
+
+  describe('setData()', () => {
+    it('merges the known values and marks their components dirty', async () => {
+      const { schemaComponent, data, getComponent } = await mountSchema({
+        schema: {
+          components: {
+            title: { type: 'text' },
+            year: { type: 'number' }
+          }
+        },
+        data: { title: 'Emma', year: 1815 }
+      })
+      expect(
+        schemaComponent.setData({ title: 'Persuasion', year: 1815, isbn: 1 })
+      ).toBe(data)
+      expect(data).toEqual({ title: 'Persuasion', year: 1815 })
+      expect(getComponent('title').isDirty).toBe(true)
+      // Unchanged values don't make their components dirty:
+      expect(getComponent('year').isDirty).toBe(false)
+      expect(schemaComponent.isDirty).toBe(true)
+    })
+  })
+
+  describe('hasErrors', () => {
+    it('tells whether any of its components shows errors', async () => {
+      const { schemaComponent } = await mountSchema({
+        schema: { components: { title: { type: 'text', required: true } } },
+        data: { title: '' }
+      })
+      expect(schemaComponent.hasErrors).toBe(false)
+      expect(schemaComponent.validateAll()).toBe(false)
+      await flushPromises()
+      expect(schemaComponent.hasErrors).toBe(true)
+      schemaComponent.clearErrors()
+      expect(schemaComponent.hasErrors).toBe(false)
+    })
+  })
+
+  describe('validation errors of the server', () => {
+    // Returns a request handler that responds to submissions with the
+    // validation `errors`, like Dito.js Server does.
+    const respondWithErrors =
+      errors =>
+      ({ method = 'get' }) => {
+        if (method !== 'get') {
+          throw Object.assign(new Error('Validation failed'), {
+            response: { status: 400, data: { type: 'ValidationError', errors } }
+          })
+        }
+        return { data: [] }
+      }
+
+    async function mountBookForm(errors, components = {}) {
+      const result = await mountForm({
+        schema: {
+          label: 'Book',
+          components: { title: { type: 'text' }, ...components }
+        },
+        data: { title: 'Emma' },
+        request: respondWithErrors(errors)
+      })
+      const notify = vi.spyOn(result.admin.root, 'notify')
+      return { ...result, notify }
+    }
+
+    afterEach(() => {
+      vi.restoreAllMocks()
+    })
+
+    it('shows the errors on the fields of their data paths', async () => {
+      const { submit, getErrors, notify } = await mountBookForm({
+        title: [{ message: 'is already taken' }]
+      })
+      await submit()
+      expect(getErrors('title')).toEqual([
+        'The Title field is already taken.'
+      ])
+      expect(notify).toHaveBeenCalledWith({
+        type: 'error',
+        title: 'Validation Errors',
+        text: 'Please correct the highlighted errors.'
+      })
+    })
+
+    it('notifies the errors that no field displays', async () => {
+      const { submit, notify } = await mountBookForm({
+        'isbn': [{ message: 'is invalid' }],
+        '': [{ message: 'is incomplete' }]
+      })
+      await submit()
+      expect(notify).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'error',
+          text: 'The field Isbn is invalid\nThe Book is incomplete'
+        })
+      )
+    })
+
+    it('shows the errors of items in their nested forms', async () => {
+      const { admin, submit, getErrors } = await mountForm({
+        schema: {
+          components: {
+            title: { type: 'text' },
+            chapters: {
+              type: 'list',
+              editable: true,
+              itemLabel: 'title',
+              form: {
+                type: 'form',
+                components: {
+                  title: { type: 'text' },
+                  pages: { type: 'number' }
+                }
+              }
+            }
+          }
+        },
+        data: { title: 'Emma', chapters: [{ title: 'One', pages: 3 }] },
+        request: respondWithErrors({
+          'chapters/0/title': [{ message: 'is too short' }],
+          'chapters/0/pages': [{ message: 'is too few' }],
+          'title': [{ message: 'is taken' }]
+        })
+      })
+      await submit()
+      await flushPromises()
+      expect(admin.router.currentRoute.value.path).toBe('/items/1/chapters/0')
+      const form = admin.getRouteComponent(component => component.isForm)
+      await settle(form)
+      const container = name =>
+        form.mainSchemaComponent
+          .getComponent(name)
+          .$el.closest('.dito-container')
+      expect(container('title').textContent).toContain('is too short')
+      expect(container('pages').textContent).toContain('is too few')
+      expect(getErrors('title')).toEqual([])
+    })
+  })
+
+  describe('filterData()', () => {
+    it('keeps the data of lists with resources when saving', async () => {
+      const { submit, data, settle } = await mountForm({
+        schema: {
+          components: {
+            title: { type: 'text' },
+            tags: {
+              type: 'list',
+              inlined: true,
+              form: {
+                type: 'form',
+                components: { name: { type: 'text' } }
+              }
+            },
+            reviews: {
+              type: 'list',
+              resource: { path: 'reviews' },
+              columns: { text: {} }
+            }
+          }
+        },
+        data: {
+          title: 'Emma',
+          tags: [{ name: 'Classic' }],
+          reviews: [{ id: 1, text: 'Witty' }]
+        },
+        // The saved item doesn't contain the reviews, which have their own
+        // resource:
+        request: ({ method = 'get', url, data }) =>
+          method === 'get'
+            ? {
+                data: url.endsWith('/reviews') ? [{ id: 1, text: 'Witty' }] : []
+              }
+            : { data: { id: 1, title: data.title, tags: data.tags } }
+      })
+      await submit()
+      await settle()
+      expect(data.reviews).toEqual([{ id: 1, text: 'Witty' }])
+      expect(data.tags).toEqual([{ name: 'Classic' }])
+    })
+  })
+
+  describe('resetData()', () => {
+    it('clears the filters with their clear button', async () => {
+      const { admin, settle } = await mountSchema({
+        schema: {
+          components: {
+            books: {
+              type: 'list',
+              resource: { path: 'books' },
+              filters: { title: { filter: 'text' } },
+              columns: { title: {} }
+            }
+          }
+        },
+        request: () => ({ data: [] })
+      })
+      const panel = admin.wrapper.find('.dito-panel[aria-label="Filters"]')
+      const input = panel.find('input[name$="text"]')
+      await enterValue(input, 'Emma')
+      await settle()
+      expect(admin.router.currentRoute.value.query.filter).toEqual([
+        'title:"Emma"'
+      ])
+      await panel.find('button[aria-label="Clear"]').trigger('click')
+      await settle()
+      expect(input.element.value).toBe('')
+      expect(admin.router.currentRoute.value.query.filter).toEqual([])
+    })
+  })
+
+  describe('validation errors of filters', () => {
+    it('shows them in the filters panel', async () => {
+      const { admin, settle } = await mountSchema({
+        schema: {
+          components: {
+            books: {
+              type: 'list',
+              resource: { path: 'books' },
+              filters: { title: { filter: 'text' } },
+              columns: { title: {} }
+            }
+          }
+        },
+        request: ({ query }) => {
+          if (query?.filter?.length) {
+            throw Object.assign(new Error('Invalid filter'), {
+              response: {
+                status: 400,
+                data: {
+                  type: 'FilterValidation',
+                  errors: { 'title/text': [{ message: 'is too short' }] }
+                }
+              }
+            })
+          }
+          return { data: [] }
+        }
+      })
+      const panel = admin.wrapper.find('.dito-panel[aria-label="Filters"]')
+      await enterValue(panel.find('input[name$="text"]'), 'E')
+      await settle()
+      expect(panel.find('.dito-errors').text()).toContain('is too short')
+    })
+  })
+
+  describe('showValidationErrors()', () => {
+    it(`doesn't notify the errors unless it's the first schema`, async () => {
+      const { schemaComponent, admin, getErrors } = await mountSchema({
+        schema: { components: { title: { type: 'text' } } },
+        data: { title: 'Emma' }
+      })
+      const notify = vi.spyOn(admin.root, 'notify')
+      const errors = { title: [{ message: 'is taken' }] }
+      expect(
+        await schemaComponent.showValidationErrors(errors, false, false)
+      ).toBe(true)
+      expect(getErrors('title')).toEqual(['The title field is taken.'])
+      expect(notify).not.toHaveBeenCalled()
+      expect(await schemaComponent.showValidationErrors(errors, false)).toBe(
+        true
+      )
+      expect(notify).toHaveBeenCalledOnce()
+    })
+  })
+
+  describe('navigateToComponent() with `onComplete()`', () => {
+    async function mountCollapsedAuthor() {
+      return mountSchema({
+        schema: {
+          components: {
+            author: {
+              type: 'object',
+              inlined: true,
+              collapsible: true,
+              collapsed: true,
+              form: { type: 'form', components: { name: { type: 'text' } } }
+            }
+          }
+        },
+        data: { author: { name: 'Jane' } }
+      })
+    }
+
+    it('reveals the components of collapsed inlined schemas', async () => {
+      const { schemaComponent } = await mountCollapsedAuthor()
+      expect(schemaComponent.getComponent('author/name')).toBe(null)
+      expect(await schemaComponent.navigateToComponent('author/name')).toBe(
+        true
+      )
+      expect(schemaComponent.getComponent('author/name')).not.toBe(null)
+    })
+
+    it('reveals inlined ones with `shouldRevealInlinedOnly`', async () => {
+      const { schemaComponent } = await mountCollapsedAuthor()
+      const onComplete = vi.fn(() => true)
+      expect(
+        await schemaComponent.navigateToComponent('author/name', onComplete, {
+          shouldRevealInlinedOnly: true
+        })
+      ).toBe(true)
+      expect(onComplete).toHaveBeenCalledWith([
+        expect.objectContaining({ dataPath: 'author/name' })
+      ])
+    })
+
+    it('fails when `onComplete()` rejects the components', async () => {
+      const { schemaComponent } = await mountSchema({
+        schema: { components: { title: { type: 'text' } } },
+        data: { title: 'Emma' }
+      })
+      const onComplete = vi.fn(() => false)
+      expect(
+        await schemaComponent.navigateToComponent('title', onComplete)
+      ).toBe(false)
+      expect(onComplete).toHaveBeenCalledOnce()
+    })
+  })
+
+  describe('tabs selected by the route', () => {
+    it('falls back to the default tab for tabs that are hidden', async () => {
+      const { admin, schemaComponent } = await mountSchema({
+        schema: {
+          tabs: {
+            details: { type: 'tab', components: { title: { type: 'text' } } },
+            drafts: {
+              type: 'tab',
+              if: false,
+              components: { notes: { type: 'text' } }
+            }
+          }
+        },
+        data: { title: 'Emma' }
+      })
+      await admin.navigate('/test#drafts')
+      expect(admin.router.currentRoute.value.hash).toBe('#details')
+      expect(schemaComponent.selectedTab).toBe('details')
+    })
+
+    it('removes the hash without any rendered tabs', async () => {
+      const { admin, schemaComponent } = await mountSchema({
+        schema: {
+          tabs: {
+            drafts: {
+              type: 'tab',
+              if: false,
+              components: { notes: { type: 'text' } }
+            }
+          }
+        },
+        data: { notes: '' }
+      })
+      expect(schemaComponent.selectedTab).toBe(null)
+      await admin.navigate('/test#drafts')
+      expect(admin.router.currentRoute.value.hash).toBe('')
+    })
+  })
+
+  it('sets up forms that depend on the loaded item once loaded', async () => {
+    const initialize = vi.fn()
+    let loadItem
+    const admin = await mountAdmin({
+      views: {
+        blocks: {
+          type: 'view',
+          component: {
+            type: 'list',
+            resource: { path: 'blocks' },
+            forms: {
+              heading: {
+                type: 'form',
+                events: { initialize },
+                components: { text: { type: 'text' } }
+              },
+              image: {
+                type: 'form',
+                components: { url: { type: 'url' } }
+              }
+            }
+          }
+        }
+      },
+      request: ({ url }) =>
+        url === '/blocks/1'
+          ? new Promise(resolve => {
+              loadItem = () =>
+                resolve({ data: { id: 1, type: 'heading', text: 'Intro' } })
+            })
+          : { data: [] }
+    })
+    await admin.navigate('/blocks/1')
+    const form = admin.getRouteComponent(component => component.isForm)
+    expect(initialize).not.toHaveBeenCalled()
+    loadItem()
+    await settle(form)
+    expect(initialize).toHaveBeenCalledOnce()
   })
 })

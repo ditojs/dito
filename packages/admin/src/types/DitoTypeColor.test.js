@@ -169,4 +169,61 @@ describe('DitoTypeColor', () => {
     await new Promise(resolve => setTimeout(resolve, 10))
     expect(onChange).not.toHaveBeenCalled()
   })
+
+  it('converts colors to the remaining color formats', async () => {
+    const formats = ['prgb', 'hsl', 'hsv', 'hex3', 'hex4', 'hex6']
+    const { findField, data } = await mountSchema({
+      schema: {
+        components: Object.fromEntries(
+          formats.map(format => [format, { type: 'color', format }])
+        )
+      }
+    })
+    for (const format of formats) {
+      await enterValue(findField(format).find('input'), 'ff0000')
+    }
+    expect(data).toMatchObject({
+      prgb: { r: '100%', g: '0%', b: '0%', a: 1 },
+      hsl: { h: 0, s: 1, l: 0.5, a: 1 },
+      hsv: { h: 0, s: 1, v: 1, a: 1 },
+      hex3: '#f00',
+      hex4: '#f00f',
+      hex6: '#ff0000'
+    })
+  })
+
+  it('keeps the alpha channel of hex colors with transparency', async () => {
+    const { findField, data } = await mountSchema({
+      schema: { components: { overlay: { type: 'color', alpha: true } } }
+    })
+    await enterValue(findField('overlay').find('input'), '0000ff80')
+    expect(data.overlay).toBe('#0000ff80')
+  })
+
+  it('opens the picker with black and no preview without a value', async () => {
+    const { findField, getComponent } = await mountSchema({
+      schema: { components: { background: { type: 'color' } } }
+    })
+    expect(findField('background').find('.dito-color__preview').exists()).toBe(
+      false
+    )
+    expect(getComponent('background').colorValue.toHexString()).toBe(
+      '#000000'
+    )
+  })
+
+  it('keeps the value when picking the same color', async () => {
+    const { getComponent, data, settle } = await mountSchema({
+      schema: { components: { background: { type: 'color' } } },
+      data: { background: 'red' }
+    })
+    const color = getComponent('background')
+    color.colorValue = tinycolor('#ff0000')
+    await settle()
+    expect(data.background).toBe('red')
+    expect(color.isDirty).toBe(false)
+    color.colorValue = tinycolor('#ff000080')
+    await settle()
+    expect(data.background).toBe('#ff000080')
+  })
 })

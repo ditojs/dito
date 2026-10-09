@@ -183,6 +183,12 @@ describe('createFiltersPanel()', () => {
     expect(panel.components.$author.form.components.text.trim).toBe(true)
   })
 
+  it('creates a panel without components for empty filters', () => {
+    const { panel } = createPanel({ filters: { sticky: false } })
+    expect(panel.components).toEqual({})
+    expect(panel.data()).toEqual({})
+  })
+
   it('throws for filters with an unknown filter type', () => {
     expect(() =>
       createPanel({ filters: { title: { filter: 'fuzzy' } } })
@@ -197,6 +203,17 @@ describe('createFiltersPanel()', () => {
   describe('parsing the query into filter data', () => {
     it('creates empty data for each filter without a query', () => {
       const { panel } = createPanel({ query: {} })
+      expect(panel.data()).toEqual({
+        $title: {},
+        $author: {},
+        $published: {},
+        $genres: {},
+        $available: {}
+      })
+    })
+
+    it('creates empty data for each filter while the query is `null`', () => {
+      const { panel } = createPanel({ query: null })
       expect(panel.data()).toEqual({
         $title: {},
         $author: {},

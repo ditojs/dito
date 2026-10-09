@@ -148,6 +148,20 @@ describe('dito cli', () => {
     }
   })
 
+  it('executes when run directly as a script', async () => {
+    process.argv = [
+      'node',
+      path.join(import.meta.dirname, 'index.js'),
+      'library:list',
+      'app.js'
+    ]
+    // Evaluate the module again, now as the script that node runs.
+    vi.resetModules()
+    await import('./index.js')
+    await vi.waitFor(() => expect(exit).toHaveBeenCalledWith(1))
+    expect(errors[0]).toMatch(/^Error: Unknown command: library:list/)
+  })
+
   it('reports unknown commands', async () => {
     await run('library:list', 'app.js')
     expect(errors[0]).toMatch(/^Error: Unknown command: library:list/)

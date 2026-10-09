@@ -185,4 +185,14 @@ describe('DitoTypeProgress', () => {
     await settle()
     expect(progress.attributes('value')).toBe('')
   })
+
+  it('displays the value as is without `range` and `step`', async () => {
+    const { findField } = await mountSchema({
+      schema: { components: { progress: { type: 'progress' } } },
+      data: { progress: 0.37 }
+    })
+    const progress = findField('progress')
+    expect(progress.element.value).toBe(0.37)
+    expect(progress.attributes('max')).toBeUndefined()
+  })
 })

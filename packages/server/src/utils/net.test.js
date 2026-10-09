@@ -1,3 +1,4 @@
+import { vi } from 'vitest'
 import net from 'net'
 import { getRandomFreePort } from './net.js'
 
@@ -13,5 +14,18 @@ describe('getRandomFreePort()', () => {
     })
     expect(server.address().port).toBe(port)
     await new Promise(resolve => server.close(resolve))
+  })
+
+  it('rejects when the probing server fails to close', async () => {
+    const error = new Error('Socket stuck')
+    const close = vi
+      .spyOn(net.Server.prototype, 'close')
+      .mockImplementation(function (callback) {
+        // Close for real, but report the error.
+        close.mockRestore()
+        this.close(() => callback(error))
+        return this
+      })
+    await expect(getRandomFreePort()).rejects.toBe(error)
   })
 })

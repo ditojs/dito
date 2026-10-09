@@ -8,7 +8,14 @@ import {
   processData,
   initializeData,
   shouldRenderSchema,
-  getCreatableForms
+  getCreatableForms,
+  getSchemaValue,
+  getDefaultValue,
+  shouldExcludeValue,
+  getMultipleValue,
+  getItemId,
+  getItemUid,
+  updateOrder
 } from './data.js'
 
 // Register minimal type options, as the actual type components can't be
@@ -28,6 +35,8 @@ registerTypeComponent('list', {
   defaultNested: true,
   getSourceType: () => 'list'
 })
+registerTypeComponent('tags', { defaultNested: true, defaultMultiple: true })
+registerTypeComponent('hidden', { defaultNested: true, excludeValue: true })
 
 const chapters = {
   type: 'list',
@@ -267,6 +276,27 @@ describe('computeValue()', () => {
     )
   })
 
+  it('provides the data path to `compute()`', () => {
+    const schema = { type: 'text', compute: ({ dataPath }) => dataPath }
+    expect(computeValue(schema, {}, 'path', 'chapters/0/path')).toBe(
+      'chapters/0/path'
+    )
+  })
+
+  it('calls data path functions only when `compute()` reads them', () => {
+    const getDataPath = vi.fn(() => 'chapters/1/path')
+    const readsDataPath = { type: 'text', compute: ({ dataPath }) => dataPath }
+    const ignoresDataPath = { type: 'text', compute: () => 'Fixed' }
+    expect(computeValue(ignoresDataPath, {}, 'path', getDataPath)).toBe(
+      'Fixed'
+    )
+    expect(getDataPath).not.toHaveBeenCalled()
+    expect(computeValue(readsDataPath, {}, 'path', getDataPath)).toBe(
+      'chapters/1/path'
+    )
+    expect(getDataPath).toHaveBeenCalledOnce()
+  })
+
   it('provides `context.options` through `getOptions()` when read', () => {
     const options = ['Small', 'Large']
     const getOptions = vi.fn(() => options)
@@ -389,6 +419,32 @@ describe('processData()', () => {
     ).toEqual({ prices: [200, 400] })
     // The values are processed at the data paths of the items:
     expect(dataPaths).toEqual(['prices/0', 'prices/1'])
+  })
+
+  it('passes items without a matching form through as shallow clones', () => {
+    const essay = { type: 'essay', title: 'On Reading', notes: 'Draft' }
+    const schema = {
+      type: 'form',
+      components: {
+        works: {
+          type: 'list',
+          forms: {
+            novel: {
+              type: 'form',
+              components: { title: { type: 'text' } }
+            }
+          }
+        }
+      }
+    }
+    const data = { works: [essay] }
+    const processed = processData(schema, { type: 'list' }, data, '', {
+      component: {},
+      rootData: data,
+      target: 'server'
+    })
+    expect(processed.works[0]).toEqual(essay)
+    expect(processed.works[0]).not.toBe(essay)
   })
 
   describe('with `schemaOnly`', () => {
@@ -667,5 +723,151 @@ describe('getCreatableForms()', () => {
 
   it('returns an empty object for schemas without forms', () => {
     expect(getCreatableForms({ type: 'list' }, createContext({}))).toEqual({})
+  })
+})
+
+describe('getSchemaValue()', () => {
+  it('reads data paths in array format', () => {
+    const schema = { options: { label: 'Title' } }
+    expect(getSchemaValue(['options', 'label'], { schema })).toBe('Title')
+    expect(
+      getSchemaValue(['options', 'missing', 'label'], {
+        schema,
+        default: 'None'
+      })
+    ).toBe('None')
+  })
+
+  it('returns the default without a schema', () => {
+    expect(getSchemaValue('label', { default: 'Untitled' })).toBe('Untitled')
+    expect(getSchemaValue('label')).toBe(undefined)
+  })
+
+  it('calls `default()` with the context, unless functions are expected', () => {
+    const context = { item: { title: 'Emma' } }
+    const getTitle = ({ item }) => item.title
+    expect(getSchemaValue('label', { default: getTitle, context })).toBe(
+      'Emma'
+    )
+    expect(
+      getSchemaValue('render', { type: Function, default: getTitle, context })
+    ).toBe(getTitle)
+    expect(
+      getSchemaValue('label', { default: getTitle, callback: false })
+    ).toBe(getTitle)
+  })
+
+  it('converts values to the expected type', () => {
+    expect(
+      getSchemaValue('pageSize', { type: Number, schema: { pageSize: '20' } })
+    ).toBe(20)
+    expect(
+      getSchemaValue('creatable', {
+        type: [Boolean, Object],
+        schema: { creatable: () => 1 }
+      })
+    ).toBe(true)
+  })
+
+  it('skips expected types that have no conversion', () => {
+    expect(
+      getSchemaValue('pageSize', {
+        type: [Function, Number],
+        schema: { pageSize: '20' }
+      })
+    ).toBe(20)
+    // Without any conversion, the value is returned as it is:
+    expect(
+      getSchemaValue('render', { type: Function, schema: { render: 'none' } })
+    ).toBe('none')
+  })
+})
+
+describe('getDefaultValue()', () => {
+  it('calls `default()` with contexts that are passed directly', () => {
+    const context = { item: { title: 'Emma' } }
+    const schema = { type: 'text', default: ({ item }) => item.title }
+    expect(getDefaultValue(schema, context)).toBe('Emma')
+  })
+
+  it('clones default values, so that they are not shared', () => {
+    const tags = ['new']
+    const value = getDefaultValue({ type: 'text', default: tags }, {})
+    expect(value).toEqual(tags)
+    expect(value).not.toBe(tags)
+  })
+})
+
+describe('shouldExcludeValue()', () => {
+  it('calls `exclude()` with the context', () => {
+    const exclude = vi.fn(({ item }) => item.isDraft)
+    const schema = { type: 'text', exclude }
+    expect(shouldExcludeValue(schema, () => ({ item: { isDraft: true } })))
+      .toBe(true)
+    expect(shouldExcludeValue(schema, { item: { isDraft: false } })).toBe(
+      false
+    )
+  })
+
+  it('falls back on the `excludeValue` of the type', () => {
+    expect(shouldExcludeValue({ type: 'hidden' }, {})).toBe(true)
+    expect(shouldExcludeValue({ type: 'hidden', exclude: false }, {})).toBe(
+      false
+    )
+    expect(shouldExcludeValue({ type: 'text' }, {})).toBe(false)
+  })
+})
+
+describe('getMultipleValue()', () => {
+  it('prefers `multiple` over the `defaultMultiple` of the type', () => {
+    expect(getMultipleValue({ type: 'tags' })).toBe(true)
+    expect(getMultipleValue({ type: 'tags', multiple: false })).toBe(false)
+    expect(getMultipleValue({ type: 'text' })).toBe(false)
+    expect(getMultipleValue({ type: 'text', multiple: true })).toBe(true)
+  })
+})
+
+describe('getItemId()', () => {
+  it('returns the id under `idKey` as a string', () => {
+    expect(getItemId({ type: 'list' }, { id: 7 })).toBe('7')
+    expect(getItemId({ type: 'list', idKey: 'isbn' }, { isbn: 978 })).toBe(
+      '978'
+    )
+  })
+
+  it('returns `undefined` for items without an id', () => {
+    expect(getItemId({ type: 'list' }, { title: 'Draft' })).toBe(undefined)
+    expect(getItemId({ type: 'list' }, { id: null })).toBe(undefined)
+  })
+})
+
+describe('getItemUid()', () => {
+  it('uses the ids of items, or else generated uids', () => {
+    const schema = { type: 'list' }
+    expect(getItemUid(schema, { id: 3 })).toBe('3')
+    const draft = { title: 'Draft' }
+    const uid = getItemUid(schema, draft)
+    expect(uid).toEqual(expect.any(String))
+    expect(uid).not.toBe('undefined')
+    // The uid stays with the item, also once it has an id:
+    draft.id = 4
+    expect(getItemUid(schema, draft)).toBe(uid)
+  })
+})
+
+describe('updateOrder()', () => {
+  it('numbers the items by their order key, offset by the pagination', () => {
+    const list = [{ title: 'A' }, { title: 'B' }]
+    expect(updateOrder({ orderKey: 'position' }, list, [10, 20])).toBe(list)
+    expect(list).toEqual([
+      { title: 'A', position: 10 },
+      { title: 'B', position: 11 }
+    ])
+  })
+
+  it('leaves the items alone without an order key', () => {
+    const list = [{ title: 'A' }]
+    expect(updateOrder({ type: 'list' }, list)).toBe(list)
+    expect(list).toEqual([{ title: 'A' }])
   })
 })

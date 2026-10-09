@@ -1,3 +1,4 @@
+import { vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { mountSchema, mountForm } from '../test/mount.js'
 
@@ -149,6 +150,76 @@ describe('DitoTypeSection', () => {
     expect(await submit()).toBe(null)
     expect(findField('details').find('input').exists()).toBe(true)
     expect(getErrors('title')).toEqual(['The Title field is required.'])
+  })
+
+  it('reveals the components with errors in sections of list items', async () => {
+    const { findField, submit, getErrors } = await mountForm({
+      schema: {
+        components: {
+          chapters: {
+            type: 'list',
+            inlined: true,
+            form: {
+              type: 'form',
+              components: {
+                details: {
+                  type: 'section',
+                  label: 'Details',
+                  collapsible: true,
+                  collapsed: true,
+                  components: { title: { type: 'text', required: true } }
+                }
+              }
+            }
+          }
+        }
+      },
+      data: { chapters: [{ title: '' }] },
+      request: ({ data }) => ({ data })
+    })
+    const findInput = () => findField('chapters').find('input[name$="title"]')
+    expect(findInput().exists()).toBe(false)
+    expect(await submit()).toBe(null)
+    expect(findInput().exists()).toBe(true)
+    expect(getErrors('chapters/0/title')).toEqual([
+      'The Title field is required.'
+    ])
+  })
+
+  it(`doesn't navigate to data paths outside of its data`, async () => {
+    const { getComponent } = await mountSchema({
+      schema: {
+        components: {
+          chapters: {
+            type: 'list',
+            inlined: true,
+            form: {
+              type: 'form',
+              components: {
+                details: {
+                  type: 'section',
+                  components: { title: { type: 'text' } }
+                }
+              }
+            }
+          }
+        }
+      },
+      data: { chapters: [{ title: 'Emma' }] }
+    })
+    const section = getComponent('chapters/0/details')
+    const onComplete = vi.fn(() => true)
+    expect(section.dataPath).toBe('chapters/0')
+    expect(await section.navigateToComponent('chapters/1/title', onComplete))
+      .toBe(false)
+    expect(await section.navigateToComponent('chapters/0', onComplete)).toBe(
+      false
+    )
+    expect(onComplete).not.toHaveBeenCalled()
+    expect(
+      await section.navigateToComponent('chapters/0/title', onComplete)
+    ).toBe(true)
+    expect(onComplete).toHaveBeenCalledOnce()
   })
 
   it('shares the width of its container with its components', async () => {

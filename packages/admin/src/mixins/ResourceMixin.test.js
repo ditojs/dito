@@ -403,6 +403,116 @@ describe('ResourceMixin', () => {
     })
   })
 
+  describe('submit() errors', () => {
+    const mountRecipesWithPublishButton = request =>
+      mountSchema({
+        schema: {
+          components: {
+            recipes: {
+              type: 'list',
+              resource: { path: 'recipes' },
+              form: {
+                type: 'form',
+                components: { name: { type: 'text' } }
+              },
+              buttons: {
+                publish: {
+                  type: 'button',
+                  resource: { path: 'publish', method: 'post' }
+                },
+                share: { type: 'button' }
+              }
+            }
+          }
+        },
+        request: options =>
+          options.method === 'post'
+            ? request(options)
+            : { data: [{ id: 1, name: 'Risotto' }] }
+      })
+
+    const clickPublish = async wrapper => {
+      await wrapper.find('[id="recipes/$buttons/publish"]').trigger('click')
+      await flushPromises()
+    }
+
+    it('notifies the message of failed requests with data', async () => {
+      const { wrapper } = await mountRecipesWithPublishButton(() => {
+        throw createRequestError(500, { message: 'Publishing is closed.' })
+      })
+      await clickPublish(wrapper)
+      expect(getNotifications()).toContainEqual({
+        title: 'Request Error',
+        text: 'Unable to send request: Publishing is closed.'
+      })
+    })
+
+    it('notifies the error of failed requests without data', async () => {
+      const { wrapper } = await mountRecipesWithPublishButton(() => {
+        throw new Error('Network down')
+      })
+      await clickPublish(wrapper)
+      expect(getNotifications()).toContainEqual({
+        title: 'Request Error',
+        text: 'Unable to send request: Network down'
+      })
+    })
+
+    it(`doesn't submit buttons without resource`, async () => {
+      const request = vi.fn()
+      const { wrapper, getComponent } =
+        await mountRecipesWithPublishButton(request)
+      const list = getComponent('recipes')
+      const share = wrapper
+        .findAllComponents({ name: 'DitoTypeButton' })
+        .find(({ vm }) => vm.name === 'share').vm
+      expect(await list.submit(share)).toBe(false)
+      expect(request).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('unauthorized loads', () => {
+    const reviewsSchema = {
+      type: 'list',
+      resource: { path: '/reviews' },
+      form: { type: 'form', components: { text: { type: 'text' } } }
+    }
+    const unauthorized = ({ url }) => {
+      if (url === '/reviews') {
+        throw createRequestError(401, { message: 'Unauthorized' })
+      }
+    }
+    const message = `You don't have permission to load this data.`
+
+    it('shows the error on lists that load their data in forms', async () => {
+      const { getComponent, getErrors } = await mountForm({
+        schema: {
+          components: { title: { type: 'text' }, reviews: reviewsSchema }
+        },
+        data: { title: 'Orlando' },
+        request: unauthorized
+      })
+      expect(getErrors('reviews')).toEqual([message])
+      // Loading again doesn't add the error twice:
+      getComponent('reviews').reloadData()
+      await flushPromises()
+      expect(getErrors('reviews')).toEqual([message])
+      expect(getNotifications()).toEqual([])
+    })
+
+    it('notifies the error on lists of views', async () => {
+      const { getErrors } = await mountSchema({
+        schema: { components: { reviews: reviewsSchema } },
+        request: unauthorized
+      })
+      expect(getErrors('reviews')).toEqual([])
+      expect(getNotifications()).toContainEqual({
+        title: 'Error',
+        text: 'Unauthorized'
+      })
+    })
+  })
+
   describe('showing server validation errors', () => {
     const authorSchema = {
       label: 'Author',

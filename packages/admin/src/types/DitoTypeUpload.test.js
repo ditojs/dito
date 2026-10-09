@@ -339,6 +339,147 @@ describe('DitoTypeUpload', () => {
     expect(getRows(field)).toEqual([['scan.pdf', '24 kB', 'Stored']])
   })
 
+  it('passes `accept` and `maxSize` to the file input', async () => {
+    const { findField, wrapper } = await mountForm({
+      schema: {
+        components: {
+          file: {
+            type: 'upload',
+            accept: ['image/*', '.pdf'],
+            maxSize: '2 MB'
+          }
+        }
+      },
+      data: { file: null }
+    })
+    expect(
+      findField('file').find('input[type="file"]').attributes()
+    ).toMatchObject(
+      { accept: 'image/*,.pdf' }
+    )
+    expect(wrapper.findComponent(VueUpload).props('size')).toBe(2_000_000)
+  })
+
+  it('links files with `url` to their own URL', async () => {
+    const { findField } = await mountForm({
+      schema: {
+        components: {
+          file: { type: 'upload', downloadUrl: () => '/files/other.pdf' }
+        }
+      },
+      data: { file: { ...scan, url: 'https://example.com/scan.pdf' } }
+    })
+    expect(findField('file').find('a[download]').attributes('href')).toBe(
+      'https://example.com/scan.pdf'
+    )
+  })
+
+  it('removes deleted uploaded files from the upload component', async () => {
+    stubConfirm(true)
+    const { findField, getComponent, data } = await mountForm({
+      schema: {
+        components: {
+          attachments: { type: 'upload', multiple: true, deletable: true }
+        }
+      },
+      data: { attachments: [] }
+    })
+    const upload = getComponent('attachments')
+    const remove = vi.spyOn(upload.upload, 'remove')
+    const uploadFile = createUploadFile(cover)
+    upload.onInputFile(uploadFile, null)
+    upload.onInputFile(
+      {
+        ...uploadFile,
+        success: true,
+        response: [{ id: 'stored-1', ...cover }]
+      },
+      uploadFile
+    )
+    await flushPromises()
+    await findField('attachments').find('.dito-button--delete').trigger('click')
+    await flushPromises()
+    expect(data.attachments).toEqual([])
+    expect(remove).toHaveBeenCalledWith('upload-1')
+  })
+
+  it('adds uploading files to multiple uploads without value', async () => {
+    const { getComponent, data } = await mountForm({
+      schema: {
+        components: { attachments: { type: 'upload', multiple: true } }
+      },
+      data: { attachments: null }
+    })
+    getComponent('attachments').onInputFile(createUploadFile(cover), null)
+    expect(data.attachments).toEqual([
+      expect.objectContaining({ id: 'upload-1', name: 'cover.png' })
+    ])
+  })
+
+  it('ignores finished uploads of files that were removed meanwhile', async () => {
+    const { getComponent, data } = await mountForm({
+      schema: {
+        components: { attachments: { type: 'upload', multiple: true } }
+      },
+      data: { attachments: [scan] }
+    })
+    const upload = getComponent('attachments')
+    const uploadFile = createUploadFile(cover)
+    upload.onInputFile(uploadFile, null)
+    data.attachments.splice(1, 1)
+    const response = [{ id: 'stored-1', ...cover }]
+    upload.onInputFile({ ...uploadFile, success: true, response }, uploadFile)
+    expect(data.attachments).toEqual([scan])
+    data.attachments = null
+    upload.onInputFile({ ...uploadFile, success: true, response }, uploadFile)
+    expect(data.attachments).toBe(null)
+  })
+
+  it('removes uploaded files without a file in the response', async () => {
+    const { getComponent, data } = await mountForm({
+      schema: {
+        components: { attachments: { type: 'upload', multiple: true } }
+      },
+      data: { attachments: [scan] }
+    })
+    const upload = getComponent('attachments')
+    const uploadFile = createUploadFile(cover)
+    upload.onInputFile(uploadFile, null)
+    upload.onInputFile(
+      { ...uploadFile, success: true, response: [] },
+      uploadFile
+    )
+    expect(data.attachments).toEqual([scan])
+  })
+
+  it('notifies unknown upload errors with their code', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { getComponent } = await mountForm({
+      schema: { components: { file: { type: 'upload' } } }
+    })
+    const upload = getComponent('file')
+    const uploadFile = createUploadFile(cover)
+    upload.onInputFile(uploadFile, null)
+    upload.onInputFile({ ...uploadFile, error: 'quota' }, uploadFile)
+    await flushPromises()
+    expect(document.querySelector('.dito-notification').textContent).toContain(
+      `Unknown File Upload Error: 'quota'`
+    )
+  })
+
+  it('opens the file dialog of the hidden input with the upload button', async () => {
+    const { findField } = await mountForm({
+      schema: { components: { file: { type: 'upload' } } },
+      data: { file: null }
+    })
+    const field = findField('file')
+    const onClick = vi.fn(event => event.preventDefault())
+    field.find('input[type="file"]').element.addEventListener('click', onClick)
+    await field.find('tfoot .dito-button--upload').trigger('click')
+    expect(onClick).toHaveBeenCalledOnce()
+    expect(onClick.mock.calls[0][0]).toBeInstanceOf(MouseEvent)
+  })
+
   describe('uploading', () => {
     // Records the requests of the upload component, which uploads with
     // `XMLHttpRequest`, so the tests can report progress and responses.
@@ -606,6 +747,15 @@ describe('DitoTypeUpload', () => {
         .trigger('keydown', { key: 'ArrowDown', altKey: true })
       await flushPromises()
       expect(data.attachments).toEqual([scan, cover])
+    })
+
+    it(`doesn't move files past the ends of the list`, async () => {
+      const { findField, data } = await mountAttachments()
+      await findField('attachments')
+        .find('.dito-button--drag')
+        .trigger('keydown', { key: 'ArrowUp', altKey: true })
+      await flushPromises()
+      expect(data.attachments).toEqual([cover, scan])
     })
 
     it('stores the files in the order they are dragged into', async () => {

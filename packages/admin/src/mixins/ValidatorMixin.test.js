@@ -1,3 +1,4 @@
+import { mountForm } from '../test/mount.js'
 import ValidatorMixin from './ValidatorMixin.js'
 
 describe('ValidatorMixin', () => {
@@ -44,5 +45,35 @@ describe('ValidatorMixin', () => {
         true
       )
     ).toBe(false)
+  })
+  describe('in forms', () => {
+    const mountBookForm = () =>
+      mountForm({
+        schema: {
+          components: {
+            title: { type: 'text', required: true },
+            author: { type: 'text', required: true }
+          }
+        },
+        data: { title: null, author: 'Jane Austen' }
+      })
+
+    it('verifies all components without showing errors', async () => {
+      const { routeComponent, getErrors, data } = await mountBookForm()
+      expect(routeComponent.verifyAll()).toBe(false)
+      expect(getErrors('title')).toEqual([])
+      data.title = 'Emma'
+      expect(routeComponent.verifyAll()).toBe(true)
+    })
+
+    it('clears the errors of all components', async () => {
+      const { routeComponent, getErrors, settle } = await mountBookForm()
+      expect(routeComponent.validateAll()).toBe(false)
+      await settle()
+      expect(getErrors('title')).toEqual(['The Title field is required.'])
+      routeComponent.clearErrors()
+      await settle()
+      expect(getErrors('title')).toEqual([])
+    })
   })
 })

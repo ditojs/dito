@@ -34,6 +34,13 @@ describe('parseDate()', () => {
     )
   })
 
+  it('rejects month names shorter than three letters as ambiguous', () => {
+    expect(parseDate('Ma 14, 2026', { date, time: null })).toBe(null)
+    expect(parseDate('Mar 14, 2026', { date, time: null })).toEqual(
+      new Date(2026, 2, 14)
+    )
+  })
+
   it.each(['', 'May', 'Foo 14, 2026', '2026-05-14', '13/45/2026'])(
     'returns null for %o',
     string => {

@@ -98,4 +98,23 @@ describe('UserMixin.login()', () => {
     expect(error.message).toBe('Missing credentials')
     expect(error.status).toBe(400)
   })
+
+  it('uses string infos of strategies as error messages', async () => {
+    // Custom strategies may fail with a message string and no status.
+    passport.use('SessionUser', {
+      authenticate() {
+        this.fail('Library card expired')
+      }
+    })
+    try {
+      const ctx = { req: {}, request: { body: {} }, state: {}, set() {} }
+      const error = await SessionUser.login(ctx).catch(error => error)
+      expect(error).toBeInstanceOf(AuthenticationError)
+      expect(error.message).toBe('Library card expired')
+      expect(error.status).toBe(401)
+    } finally {
+      // Restore the local strategy of the model.
+      SessionUser.setup()
+    }
+  })
 })

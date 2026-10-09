@@ -1,5 +1,10 @@
 import type { ModelProperties } from '@ditojs/server'
-import { Model, ModelController, ResponseError } from '@ditojs/server'
+import {
+  Model,
+  ModelController,
+  RelationController,
+  ResponseError
+} from '@ditojs/server'
 import { createTestApp, getAppUrl } from '../utils/app.js'
 import { createTestDatabase } from '../utils/database.js'
 
@@ -492,7 +497,29 @@ class Notes extends ModelController<any> {
   override relations: any = {
     author: {
       relation: {
-        allow: ['get', 'post']
+        allow: ['get', 'post', 'delete']
+      }
+    }
+  }
+}
+
+// Creates and patches authors together with the books in their graphs.
+class GraphAuthors extends ModelController<any> {
+  override modelClass = Author
+  override graph = true
+
+  override collection: any = {
+    allow: ['post']
+  }
+
+  override member: any = {
+    allow: ['patch']
+  }
+
+  override relations: any = {
+    books: {
+      relation: {
+        allow: ['get']
       }
     }
   }
@@ -519,6 +546,7 @@ describe('ModelController', () => {
       Authors,
       PublishedAuthors,
       RelatingAuthors,
+      GraphAuthors,
       Notes
     }
   })
@@ -1221,6 +1249,36 @@ describe('ModelController', () => {
       ])
     })
 
+    test('relates models without the extra columns of join tables', async () => {
+      const author = await Author.query().insert({ name: 'Ada' })
+      const tag = await Tag.query().insert({ name: 'Poetry' })
+      const response = await request(`/authors/${author.id}/tags`, {
+        method: 'POST',
+        body: [{ id: tag.id }]
+      })
+      expect(response.status).toBe(201)
+      expect(
+        await app.knex('AuthorTag').select('tagId', 'sortOrder')
+      ).toEqual([{ tagId: tag.id, sortOrder: null }])
+    })
+
+    it('rejects relation controllers with foreign parent controllers', async () => {
+      const books = app.getController('/books') as any
+      const authors = app.getController('/authors') as any
+      const { relationInstance, relationDefinition } = authors.relations.books
+      expect(
+        () =>
+          new (RelationController as any)(
+            books,
+            {},
+            relationInstance,
+            relationDefinition
+          )
+      ).toThrow(
+        `Controller Books: Invalid parent controller for relation 'books'.`
+      )
+    })
+
     it('creates models that relate existing models in their graph', async () => {
       const note = await Note.query().insert({ text: 'Draft' })
       const response = await request('/relating-authors', {
@@ -1255,6 +1313,98 @@ describe('ModelController', () => {
       })
       const remaining = await request(`/authors/${author.id}/notes`)
       expect(remaining.data.map((note: any) => note.id)).toEqual([final.id])
+    })
+
+    it('unrelates all models of non-owned relations', async () => {
+      const author = await Author.query().insert({ name: 'Ada' })
+      await Note.query().insert([
+        { text: 'Draft', authorId: author.id },
+        { text: 'Final', authorId: author.id }
+      ])
+      const response = await request(`/authors/${author.id}/notes`, {
+        method: 'DELETE'
+      })
+      expect(response.data).toEqual({ count: 2 })
+      const notes = await Note.query().orderBy('text')
+      expect(notes).toMatchObject([
+        { text: 'Draft', authorId: null },
+        { text: 'Final', authorId: null }
+      ])
+    })
+
+    it('fetches single models of one-to-one relations', async () => {
+      const author = await Author.query().insert({ name: 'Ada' })
+      const note = await Note.query().insert({
+        text: 'Draft',
+        authorId: author.id
+      })
+      const response = await request(`/notes/${note.id}/author`)
+      expect(response.status).toBe(200)
+      expect(response.data).toEqual({ id: author.id, name: 'Ada' })
+    })
+
+    it('responds with null for empty one-to-one relations', async () => {
+      const note = await Note.query().insert({ text: 'Draft' })
+      const response = await request(`/notes/${note.id}/author`)
+      expect(response.status).toBe(204)
+      expect(response.data).toBe('')
+    })
+
+    it('unrelates the model of one-to-one relations', async () => {
+      const author = await Author.query().insert({ name: 'Ada' })
+      const note = await Note.query().insert({
+        text: 'Draft',
+        authorId: author.id
+      })
+      const response = await request(`/notes/${note.id}/author`, {
+        method: 'DELETE'
+      })
+      expect(response.data).toEqual({ count: 1 })
+      expect((await Note.query().findById(note.id))?.authorId).toBeNull()
+      expect(await Author.query().findById(author.id)).toBeDefined()
+    })
+
+    // Bug: Unrelating `belongsTo` patches the owner row, so `throwIfNotFound()`
+    // sees a count of 1 and responds with `{ count: 1 }` instead of 404.
+    it.fails(
+      'responds with 404 when unrelating empty one-to-one relations',
+      async () => {
+        const note = await Note.query().insert({ text: 'Draft' })
+        const response = await request(`/notes/${note.id}/author`, {
+          method: 'DELETE'
+        })
+        expect(response.status).toBe(404)
+      }
+    )
+
+    it('inserts and patches graphs with graph controllers', async () => {
+      const created = await request('/graph-authors', {
+        method: 'POST',
+        body: { name: 'Ada', books: [{ title: 'Atlas' }] }
+      })
+      expect(created.status).toBe(201)
+      expect(created.data).toMatchObject({
+        name: 'Ada',
+        books: [{ title: 'Atlas' }]
+      })
+      const {
+        id,
+        books: [atlas]
+      } = created.data
+      const patched = await request(`/graph-authors/${id}`, {
+        method: 'PATCH',
+        body: {
+          name: 'Ada L.',
+          books: [{ id: atlas.id, title: 'Atlas' }, { title: 'Bestiary' }]
+        }
+      })
+      expect(patched.status).toBe(200)
+      expect(patched.data.name).toBe('Ada L.')
+      const books = await Book.query().where('authorId', id).orderBy('title')
+      expect(books.map(book => book.title)).toEqual(['Atlas', 'Bestiary'])
+      // Relation controllers inherit the graph setting of their parent.
+      const controller: any = app.getController('/graph-authors')
+      expect(controller.relations.books.graph).toBe(true)
     })
 
     it('does not route relation actions that are not allowed', async () => {

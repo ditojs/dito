@@ -1,6 +1,7 @@
 import { vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import appState from '../appState.js'
+import DitoAdmin from '../DitoAdmin.js'
 import {
   mountAdmin,
   mountForm,
@@ -193,6 +194,84 @@ describe('DitoRoot', () => {
         String(message).includes('registerLoading() is deprecated')
       )
       expect(deprecationWarnings).toHaveLength(1)
+    })
+  })
+
+  describe('session start', () => {
+    it('logs the errors of setting up the views', async () => {
+      const logError = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const element = document.createElement('div')
+      document.body.appendChild(element)
+      const admin = new DitoAdmin(element, {
+        dito: { base: '/', settings: {} },
+        api: {
+          url: '/',
+          request: async () => ({ data: { user: { id: 1, username: 'ada' } } })
+        },
+        // Views need to be of type 'view':
+        views: { books: { type: 'form', components: {} } }
+      })
+      try {
+        await vi.waitFor(() => {
+          expect(logError).toHaveBeenCalledWith(
+            expect.objectContaining({
+              message: expect.stringMatching(/^Invalid view schema: /)
+            })
+          )
+        })
+        await flushPromises()
+        expect(element.querySelector('.dito-account').textContent).toBe('ada')
+      } finally {
+        admin.app.unmount()
+        element.remove()
+        appState.user = null
+        vi.restoreAllMocks()
+      }
+    })
+  })
+
+  describe('notifications', () => {
+    it('closes all notifications', async () => {
+      vi.spyOn(console, 'log').mockImplementation(() => {})
+      const admin = await mountAdmin({ views: {} })
+      const findNotifications = () =>
+        admin.element.querySelectorAll('.dito-notification')
+      admin.root.notify({ type: 'info', title: 'Saved', text: 'Emma' })
+      admin.root.notify({ type: 'info', title: 'Saved', text: 'Dune' })
+      await flushPromises()
+      expect(findNotifications()).toHaveLength(2)
+      admin.root.closeNotifications()
+      await vi.waitFor(() => expect(findNotifications()).toHaveLength(0))
+      vi.restoreAllMocks()
+    })
+  })
+
+  describe('info tooltips', () => {
+    it('shows the info of labels in a tooltip in their pane', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true })
+      try {
+        const admin = await mountAdmin({
+          views: {
+            books: {
+              type: 'view',
+              components: {
+                title: { type: 'text', info: 'The title on the cover' }
+              }
+            }
+          }
+        })
+        await admin.navigate('/books')
+        const info = admin.element.querySelector('.dito-info')
+        expect(info.dataset.info).toBe('The title on the cover')
+        info.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
+        info.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))
+        await vi.advanceTimersByTimeAsync(500)
+        const tooltip = document.querySelector('[data-tippy-root]')
+        expect(tooltip.textContent).toBe('The title on the cover')
+        expect(tooltip.parentElement.closest('.dito-pane')).not.toBe(null)
+      } finally {
+        vi.useRealTimers()
+      }
     })
   })
 })

@@ -273,6 +273,33 @@ describe('Model persistence', () => {
       expect(result).not.toBe(member)
       expect(result.name).toBe('Ada')
     })
+
+    it('returns the query result when the patch operation is cleared', async () => {
+      // Unlike `toFindQuery()`, clearing the operation keeps `runAfter()`.
+      const member = await Member.query().insertAndFetch({
+        name: 'Ada'
+      } as any)
+      const result = await (member.$patch({ name: 'Grace' }) as any).clear(
+        'patch'
+      )
+      expect(result).toBeInstanceOf(Member)
+      expect(result).not.toBe(member)
+      expect(result.name).toBe('Ada')
+      expect(member.name).toBe('Ada')
+    })
+
+    it('returns the query result when the update operation is cleared', async () => {
+      const member = await Member.query().insertAndFetch({
+        name: 'Ada'
+      } as any)
+      const result = await (
+        member.$update({ name: 'Grace' } as any) as any
+      ).clear('update')
+      expect(result).toBeInstanceOf(Member)
+      expect(result).not.toBe(member)
+      expect(result.name).toBe('Ada')
+      expect(member.name).toBe('Ada')
+    })
   })
 
   describe('graph helpers', () => {

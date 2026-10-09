@@ -62,6 +62,25 @@ class Ingredient extends Model {
   }
 }
 
+class Cookbook extends Model {
+  static properties = {
+    title: {
+      type: 'string'
+    },
+    ingredientId: {
+      type: 'integer'
+    }
+  }
+
+  static relations = {
+    ingredient: {
+      relation: 'belongsTo',
+      from: 'Cookbook.ingredientId',
+      to: 'Ingredient.id'
+    }
+  }
+}
+
 class Kitchen extends Controller {
   actions = {
     'get menu'(ctx) {
@@ -70,6 +89,11 @@ class Kitchen extends Controller {
         logger: ctx.app.logger === ctx.logger,
         found: ctx.state.routeFound
       }
+    },
+
+    'get login'(ctx) {
+      // `handleUser()` adds `ctx.logIn()` as an alias of `ctx.login()`.
+      return { hasLogin: !!ctx.logIn && ctx.logIn === ctx.login }
     },
 
     'get large'() {
@@ -167,6 +191,31 @@ describe('Application', () => {
         expect(logged[0]).toMatch(/Recipe:[\s\S]*schema:[\s\S]*relations:/)
         expect(logged[1]).toMatch(/Ingredient:[\s\S]*relations:/)
         expect(logged[1]).not.toMatch(/schema:/)
+      } finally {
+        info.mockRestore()
+      }
+    })
+
+    it('adds single models', () => {
+      const app = createApp()
+      app.addModel(Ingredient)
+      expect(app.getModel('Ingredient')).toBe(Ingredient)
+      expect(app.validator.schemas).toContainEqual(
+        expect.objectContaining({ $id: 'Ingredient' })
+      )
+    })
+
+    it('logs model classes in relations by their names', () => {
+      const info = vi.spyOn(console, 'info').mockImplementation(() => {})
+      try {
+        const app = createApp({
+          config: { log: { relations: ['Cookbook'] } }
+        })
+        app.addModels({ Cookbook, Ingredient })
+        expect(info).toHaveBeenCalledTimes(1)
+        const [[title, data]] = info.mock.calls
+        expect(title).toMatch(/Cookbook:/)
+        expect(data).toMatch(/\[Model: Ingredient\]/)
       } finally {
         info.mockRestore()
       }
@@ -285,6 +334,16 @@ describe('Application', () => {
       expect(app.getStorage('photos')).toBeNull()
     })
 
+    it('keeps the name of storage instances added without a name', () => {
+      const app = createApp()
+      const storage = new DiskStorage(app, {
+        name: 'covers',
+        path: storagePath
+      })
+      app.addStorage(storage)
+      expect(app.getStorage('covers')).toBe(storage)
+    })
+
     it('sets up and initializes storages only once', async () => {
       const app = createApp()
       const storage = new DiskStorage(app, { path: storagePath })
@@ -331,6 +390,36 @@ describe('Application', () => {
       expect(app.defineAdminViteConfig({})).toBeNull()
     })
 
+    it('loads the admin vite config from the base path', async () => {
+      const basePath = await fs.mkdtemp(path.join(os.tmpdir(), 'dito-vite-'))
+      try {
+        await fs.writeFile(
+          path.join(basePath, 'admin.vite.config.mjs'),
+          'export default { logLevel: "silent" }'
+        )
+        const app = createApp({ basePath })
+        expect(await app.loadAdminViteConfig()).toEqual({ logLevel: 'silent' })
+      } finally {
+        await fs.rm(basePath, { recursive: true, force: true })
+      }
+    })
+
+    it('rethrows errors of admin vite configs that fail to load', async () => {
+      const basePath = await fs.mkdtemp(path.join(os.tmpdir(), 'dito-vite-'))
+      try {
+        await fs.writeFile(
+          path.join(basePath, 'admin.vite.config.js'),
+          'throw new Error("Broken vite config")'
+        )
+        const app = createApp({ basePath })
+        await expect(app.loadAdminViteConfig()).rejects.toThrow(
+          'Broken vite config'
+        )
+      } finally {
+        await fs.rm(basePath, { recursive: true, force: true })
+      }
+    })
+
     it('loads no admin vite config without a config file', async () => {
       const app = createApp()
       app.basePath = os.tmpdir()
@@ -366,6 +455,16 @@ describe('Application', () => {
       })
       expect(asObject).toBe(true)
       expect(list).toEqual([{ name: 'title', type: 'string' }])
+    })
+
+    it('excludes member parameters from the validated schema', () => {
+      const app = createApp({ models: { Recipe } })
+      const { list, schema } = app.compileParametersValidator([
+        { name: 'recipe', type: 'Recipe', member: true },
+        { name: 'servings', type: 'integer' }
+      ])
+      expect(list.map(({ name }) => name)).toEqual(['recipe', 'servings'])
+      expect(Object.keys(schema.properties)).toEqual(['servings'])
     })
 
     it('detects references to model schemas', () => {
@@ -469,6 +568,15 @@ describe('Application', () => {
       expect(logger.info).toHaveBeenCalledTimes(1)
       expect(logger.error).toHaveBeenCalledTimes(2)
       expect(logger.info.mock.calls[0][0].message).toBe('Not here')
+    })
+
+    it('logs errors with the app logger without a context', () => {
+      const app = createApp()
+      const error = vi.spyOn(app.logger, 'error').mockImplementation(() => {})
+      app.logError(new Error('Burnt'))
+      expect(error).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'Burnt' })
+      )
     })
 
     it('does not log exposed errors', () => {
@@ -583,6 +691,23 @@ describe('Application', () => {
       expect(logError.mock.calls[0][0].message).toBe('Burnt')
     })
 
+    it('does not log errors emitted while running with `log.errors: false`', async () => {
+      const info = vi.spyOn(console, 'info').mockImplementation(() => {})
+      const app = createApp({ config: { log: { errors: false } } })
+      const logError = vi.spyOn(app, 'logError')
+      const onError = vi.fn()
+      app.on('error', onError)
+      try {
+        await app.start()
+        await app.emit('error', new Error('Burnt'))
+        await app.stop()
+      } finally {
+        info.mockRestore()
+      }
+      expect(onError).toHaveBeenCalledTimes(1)
+      expect(logError).not.toHaveBeenCalled()
+    })
+
     it('exits the process when `execute()` fails to start', async () => {
       const app = createApp()
       const error = new Error('No kitchen')
@@ -688,6 +813,14 @@ describe('Application', () => {
         ]) {
           expect(response.headers.get(header)).toBeNull()
         }
+      })
+    })
+
+    it('handles users with passport, also without sessions', async () => {
+      const app = createKitchenApp({ passport: true })
+      await withServer(app, async url => {
+        const response = await fetch(`${url}/kitchen/login`)
+        expect(await response.json()).toEqual({ hasLogin: true })
       })
     })
 
@@ -816,6 +949,62 @@ describe('Application', () => {
       }
     })
 
+    it('skips models without assets in the asset configuration', async () => {
+      const app = createKnexApp()
+      app.addModels({ Ingredient })
+      try {
+        expect(Object.keys(app.getAssetConfig())).toEqual(['Recipe'])
+      } finally {
+        await app.knex.destroy()
+      }
+    })
+
+    it('ignores asset data paths without a property', async () => {
+      class Shelf extends Model {
+        static properties = { label: { type: 'string' } }
+        static assets = { missing: { storage: 'photos' } }
+      }
+      const app = createKnexApp()
+      app.addModels({ Shelf })
+      try {
+        expect(app.getAssetConfig({ models: ['Shelf'] })).toEqual({
+          Shelf: {}
+        })
+      } finally {
+        await app.knex.destroy()
+      }
+    })
+
+    it('rejects assets on nested relations', async () => {
+      class Cover extends Model {
+        static properties = {
+          image: { type: 'object' },
+          cookbookId: { type: 'integer' }
+        }
+      }
+      class IllustratedCookbook extends Model {
+        static properties = { title: { type: 'string' } }
+        static relations = {
+          cover: {
+            relation: 'hasOne',
+            from: 'IllustratedCookbook.id',
+            to: 'Cover.cookbookId'
+          }
+        }
+
+        static assets = { 'cover.image': { storage: 'photos' } }
+      }
+      const app = createKnexApp()
+      app.addModels({ Cover, IllustratedCookbook })
+      try {
+        expect(() =>
+          app.getAssetConfig({ models: ['IllustratedCookbook'] })
+        ).toThrow('Assets on nested relations are not supported')
+      } finally {
+        await app.knex.destroy()
+      }
+    })
+
     it('logs SQL queries with `log.sql`', async () => {
       const app = createKnexApp({ log: { sql: true } })
       const logger = { info: vi.fn() }
@@ -835,6 +1024,68 @@ describe('Application', () => {
       } finally {
         await app.knex.destroy()
       }
+    })
+  })
+
+  describe('postgresql type parsers', () => {
+    const NUMERIC = 1700
+    const NUMERIC_ARRAY = 1231
+    const INT8 = 20
+    const INT8_ARRAY = 1016
+    const typeIds = [NUMERIC, NUMERIC_ARRAY, INT8, INT8_ARRAY]
+
+    // `pg` keeps its type parsers globally, so restore them after each test.
+    async function withPostgresApp(typeParsers, callback) {
+      const { types } = (await import('pg')).default
+      const originalParsers = typeIds.map(id => types.getTypeParser(id))
+      const app = createApp({
+        config: {
+          knex: { client: 'postgresql', connection: {}, typeParsers }
+        }
+      })
+      expect(app.knex.client.driver.types).toBe(types)
+      try {
+        await callback(types)
+      } finally {
+        typeIds.forEach((id, index) =>
+          types.setTypeParser(id, originalParsers[index])
+        )
+        await app.knex.destroy()
+      }
+    }
+
+    it('installs the type parsers and derives their array parsers', async () => {
+      await withPostgresApp(
+        { [NUMERIC]: Number.parseFloat, [INT8]: Number.parseInt },
+        types => {
+          expect(types.getTypeParser(NUMERIC)('1.5')).toBe(1.5)
+          expect(types.getTypeParser(NUMERIC_ARRAY)('{1.5,NULL,2}')).toEqual(
+            [1.5, null, 2]
+          )
+          expect(types.getTypeParser(INT8_ARRAY)('{7,8}')).toEqual([7, 8])
+        }
+      )
+    })
+
+    it('keeps array parsers that are defined explicitly', async () => {
+      const parseArray = () => 'custom'
+      await withPostgresApp(
+        { [NUMERIC]: Number.parseFloat, [NUMERIC_ARRAY]: parseArray },
+        types => {
+          expect(types.getTypeParser(NUMERIC_ARRAY)).toBe(parseArray)
+          // Without an int8 parser, the int8 array parser isn't replaced.
+          expect(types.getTypeParser(INT8_ARRAY)('{7,8}')).toEqual([
+            '7',
+            '8'
+          ])
+        }
+      )
+    })
+
+    it('installs no type parsers without `typeParsers`', async () => {
+      await withPostgresApp(undefined, types => {
+        expect(types.getTypeParser(NUMERIC)('1.5')).toBe('1.5')
+      })
     })
   })
 })

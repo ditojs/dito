@@ -107,4 +107,23 @@ describe('ItemMixin', () => {
       expect(findField('books').find('b').text()).toBe('Emma')
     })
   })
+  describe('getItemDataPath()', () => {
+    it('appends the index, and the name of other source schemas', async () => {
+      const { getComponent } = await mountSchema({
+        schema: {
+          components: {
+            books: { type: 'list', itemLabel: 'title', form: bookForm }
+          }
+        },
+        data: { books: [{ title: 'Emma' }] }
+      })
+      const books = getComponent('books')
+      expect(books.getItemDataPath(books.schema, 0)).toBe('books/0')
+      expect(books.getItemDataPath(books.schema)).toBe('books')
+      // Nested sources, e.g. the children of tree lists, by their name:
+      expect(books.getItemDataPath({ name: 'chapters' }, 2)).toBe(
+        'books/chapters/2'
+      )
+    })
+  })
 })

@@ -92,4 +92,62 @@ describe('DitoDialog', () => {
     await flushPromises()
     expect(result.isSettled).toBe(false)
   })
+
+  it('rejects through `dialogComponent.reject()` of its buttons', async () => {
+    const error = new Error('Renaming is not allowed')
+    const { dialog, promise, removeDialog } = await showDialog({
+      components,
+      buttons: {
+        forbid: {
+          type: 'button',
+          text: 'Forbid',
+          events: {
+            click: ({ dialogComponent }) => dialogComponent.reject(error)
+          }
+        }
+      }
+    })
+    await dialog.find('button[id="$buttons/forbid"]').trigger('click')
+    await expect(promise).rejects.toBe(error)
+    expect(removeDialog).toHaveBeenCalledOnce()
+  })
+
+  it('resolves as `undefined` with its cancel button', async () => {
+    const { dialog, promise, removeDialog } = await showDialog({
+      components,
+      buttons: { cancel: {} },
+      data: { title: 'Emma' }
+    })
+    await dialog.find('button.dito-button--cancel').trigger('click')
+    expect(await promise).toBe(undefined)
+    expect(removeDialog).toHaveBeenCalledOnce()
+  })
+
+  it('is its own dialog component', async () => {
+    const { admin } = await showDialog({ components, buttons: { cancel: {} } })
+    const { vm } = admin.wrapper.findComponent({ name: 'DitoDialog' })
+    expect(vm.dialogComponent).toBe(vm)
+  })
+
+  it('submits with Enter in its inputs only', async () => {
+    const result = await showDialog({
+      components,
+      buttons: { cancel: {}, apply: { type: 'submit' } },
+      data: { title: 'Emma' }
+    })
+    await result.dialog.find('button.dito-button--cancel').trigger('keydown', {
+      key: 'Enter'
+    })
+    await flushPromises()
+    expect(result.isSettled).toBe(false)
+    await result.dialog.find('input').trigger('keydown', { key: 'Enter' })
+    expect(await result.promise).toEqual({ title: 'Emma' })
+  })
+
+  it(`doesn't close on overlay clicks without \`clickToClose\``, async () => {
+    const result = await showDialog({ components, buttons: { cancel: {} } })
+    await result.dialog.trigger('mouseup')
+    await flushPromises()
+    expect(result.isSettled).toBe(false)
+  })
 })

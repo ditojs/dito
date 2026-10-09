@@ -184,6 +184,20 @@ describe('Router', () => {
     expect(result.handler).toBeUndefined()
   })
 
+  it('numbers the params of multiple placeholders', () => {
+    router.add('GET', '/books/*/chapters/*', handler)
+    result = router.find('GET', '/books/one/chapters/two')
+    expect(result.handler).toBe(handler)
+    expect(result.params).toEqual({ $0: 'one', $1: 'two' })
+  })
+
+  it('numbers multiple placeholders after a match-any node', () => {
+    router.add('GET', '/recipes/**/steps/*/notes/*', handler)
+    result = router.find('GET', '/recipes/soups/stews/steps/3/notes/4')
+    expect(result.handler).toBe(handler)
+    expect(result.params).toEqual({ $$: 'soups/stews', $0: '3', $1: '4' })
+  })
+
   it('handles match-any nodes with suffixes', () => {
     createRoutes(router, [
       ['GET', '/static/**/suffix', 'one'],

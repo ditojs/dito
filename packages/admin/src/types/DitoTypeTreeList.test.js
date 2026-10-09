@@ -1,3 +1,4 @@
+import { vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { mountForm, stubConfirm } from '../test/mount.js'
 
@@ -279,6 +280,24 @@ describe('DitoTypeTreeList', () => {
         .trigger('click')
       await flushPromises()
       expect(data.pages[0].subpages).toEqual([{ title: 'History' }])
+      expect(admin.router.currentRoute.value.path).toBe(
+        '/items/1/pages/0/subpages/0'
+      )
+    })
+
+    it('keeps the form of an earlier child open when removing one', async () => {
+      stubConfirm()
+      const { admin, findField, data } = await mountForm({
+        schema: createDraggableSiteSchema(),
+        data: site
+      })
+      await admin.navigate('/items/1/pages/0/subpages/0')
+      const push = vi.spyOn(admin.router, 'push')
+      await findButton(findField('pages'), 'History', '.dito-button--remove')
+        .trigger('click')
+      await flushPromises()
+      expect(data.pages[0].subpages).toEqual([{ title: 'Team' }])
+      expect(push).not.toHaveBeenCalled()
       expect(admin.router.currentRoute.value.path).toBe(
         '/items/1/pages/0/subpages/0'
       )

@@ -73,6 +73,14 @@ describe('getItemLabel()', () => {
     expect(getLabel(schema, books[0], { extended: true })).toBe('<b>7</b>')
   })
 
+  it('uses numeric values of items as labels', () => {
+    const schema = { type: 'list', itemLabel: 'year' }
+    expect(getLabel(schema, { year: 1815 })).toBe(1815)
+    expect(getLabel(schema, { year: 1815 }, { extended: true })).toBe(
+      `Book '1815'`
+    )
+  })
+
   it('uses `itemLabel` as the label if the item has no such key', () => {
     expect(getLabel({ type: 'list', itemLabel: 'Untitled' }, {})).toBe(
       'Untitled'

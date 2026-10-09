@@ -190,6 +190,17 @@ describe('startConsole()', () => {
       ).toBe('Author.query()\nBook.query()')
     })
 
+    it('saves an empty history when the REPL keeps none', async () => {
+      const app = createApp()
+      const { server, promise } = await startConsole(app)
+      delete server.history
+      server.emit('exit')
+      expect(await promise).toBe(true)
+      expect(
+        await fs.readFile(path.join(dir, '.console_history'), 'utf8')
+      ).toBe('')
+    })
+
     it('logs errors when stopping the app and saving the history', async () => {
       const app = createApp()
       app.stop.mockRejectedValue(new Error('Cannot stop'))

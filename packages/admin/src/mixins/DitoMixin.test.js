@@ -317,6 +317,16 @@ describe('DitoMixin', () => {
       ])
     })
 
+    it('ignores functions that return no handlers', async () => {
+      const watch = vi.fn(() => null)
+      const { getComponent } = await mountSchema({
+        schema: { components: { title: { type: 'text', watch } } },
+        data: { title: 'Emma' }
+      })
+      expect(watch).toHaveBeenCalledOnce()
+      expect(getComponent('title').value).toBe('Emma')
+    })
+
     it('supports a function returning the handlers', async () => {
       const onChange = vi.fn()
       const watch = vi.fn(function () {
@@ -381,6 +391,197 @@ describe('DitoMixin', () => {
       expect(tracker.isLoading).toBe(false)
       await settle()
       expect(component.data.cover).toBe('cover-new')
+    })
+  })
+  describe('stores', () => {
+    it('sets, reads and removes values of the store', async () => {
+      const { getComponent } = await mountSchema({
+        schema: { components: { title: { type: 'text' } } }
+      })
+      const component = getComponent('title')
+      expect(component.setStore('page', 3)).toBe(3)
+      expect(component.getStore('page')).toBe(3)
+      component.removeStore('page')
+      expect(component.getStore('page')).toBe(undefined)
+      expect('page' in component.store).toBe(false)
+    })
+
+    it('creates the store of a child once', async () => {
+      const { getComponent } = await mountSchema({
+        schema: { components: { title: { type: 'text' } } }
+      })
+      const component = getComponent('title')
+      const store = component.getChildStore('chapters')
+      expect(store).toEqual({})
+      expect(component.getChildStore('chapters')).toBe(store)
+    })
+  })
+
+  describe('getQueryLink()', () => {
+    it('keeps the hash of the current route', async () => {
+      const { admin, schemaComponent } = await mountSchema({
+        schema: { components: { title: { type: 'text' } } }
+      })
+      await admin.navigate('/test#details')
+      expect(schemaComponent.getQueryLink({ page: 2 })).toEqual({
+        query: { page: 2 },
+        hash: '#details'
+      })
+    })
+  })
+
+  describe('getResourceUrl()', () => {
+    it('returns null without a resource', async () => {
+      const { schemaComponent } = await mountSchema({
+        schema: { components: { title: { type: 'text' } } }
+      })
+      expect(schemaComponent.getResourceUrl(null)).toBe(null)
+      expect(schemaComponent.getResourceUrl({ path: 'books', query: { a: 1 } }))
+        .toBe('/books?a=1')
+    })
+  })
+
+  describe('sendRequest()', () => {
+    const mountWithUsers = async () => {
+      let username = 'reader'
+      const request = vi.fn(({ method = 'get', url, data }) => {
+        if (url === '/users/session') {
+          return { data: { user: { id: 1, username } } }
+        }
+        if (method === 'patch') {
+          username = data.username
+        }
+        return { data }
+      })
+      const result = await mountSchema({
+        schema: { components: { title: { type: 'text' } } },
+        api: { users: { path: 'users' } },
+        request
+      })
+      const getSessionRequestCount = () =>
+        request.mock.calls.filter(([{ url }]) => url === '/users/session')
+          .length
+      return { ...result, request, getSessionRequestCount }
+    }
+
+    it('fetches the own user again after patching it', async () => {
+      const { schemaComponent, getSessionRequestCount } = await mountWithUsers()
+      expect(schemaComponent.user.username).toBe('reader')
+      const count = getSessionRequestCount()
+      await schemaComponent.sendRequest({
+        method: 'patch',
+        resource: { type: 'member', path: 'users', id: '1' },
+        data: { username: 'editor' }
+      })
+      // Once to ensure the user before the request, and once after it:
+      expect(getSessionRequestCount()).toBe(count + 2)
+      expect(schemaComponent.user.username).toBe('editor')
+    })
+
+    it(`doesn't fetch the user again after patching others`, async () => {
+      const { schemaComponent, getSessionRequestCount } = await mountWithUsers()
+      const count = getSessionRequestCount()
+      await schemaComponent.sendRequest({
+        method: 'patch',
+        resource: { type: 'member', path: 'users', id: '2' },
+        data: { username: 'editor' }
+      })
+      expect(getSessionRequestCount()).toBe(count + 1)
+      expect(schemaComponent.user.username).toBe('reader')
+    })
+
+    it(`doesn't check the user for internal requests`, async () => {
+      const { schemaComponent, request, getSessionRequestCount } =
+        await mountWithUsers()
+      const count = getSessionRequestCount()
+      await schemaComponent.sendRequest({ url: '/books', internal: true })
+      expect(getSessionRequestCount()).toBe(count)
+      expect(request).toHaveBeenLastCalledWith(
+        expect.objectContaining({ url: '/books' })
+      )
+    })
+  })
+
+  describe('notifications', () => {
+    it('closes all notifications', async () => {
+      const { schemaComponent } = await mountSchema({
+        schema: { components: { title: { type: 'text' } } }
+      })
+      const notifications = schemaComponent.rootComponent.notifications
+      const destroyAll = vi.spyOn(notifications, 'destroyAll')
+      schemaComponent.closeNotifications()
+      expect(destroyAll).toHaveBeenCalledOnce()
+    })
+  })
+
+  describe('invalid schema members', () => {
+    it('logs errors for invalid methods, computed and events', async () => {
+      const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const { getComponent } = await mountSchema({
+        schema: {
+          components: {
+            title: {
+              type: 'text',
+              methods: { shuffle: 'not a function' },
+              computed: { shout: 'not a function', echo: { set() {} } },
+              events: { dblclick: 'not a function' }
+            }
+          }
+        }
+      })
+      const component = getComponent('title')
+      expect(component.shuffle).toBe(undefined)
+      expect(component.shout).toBe(undefined)
+      expect(component.hasListeners('dblclick')).toBe(false)
+      const messages = error.mock.calls.map(([message]) => message)
+      expect(messages).toEqual(
+        expect.arrayContaining([
+          'Invalid method definition: shuffle: not a function',
+          'Invalid computed property definition: shout: not a function',
+          'Invalid computed property definition: echo: [object Object]',
+          'Invalid event definition: dblclick: not a function'
+        ])
+      )
+    })
+  })
+
+  describe('schema `computed`', () => {
+    it('supports computed properties with getters and setters', async () => {
+      const { getComponent, data } = await mountSchema({
+        schema: {
+          components: {
+            title: {
+              type: 'text',
+              computed: {
+                upperTitle: {
+                  get() {
+                    return this.value?.toUpperCase()
+                  },
+                  set(value) {
+                    this.value = value.toLowerCase()
+                  }
+                },
+                titleLength: {
+                  get() {
+                    return this.value?.length ?? 0
+                  }
+                }
+              }
+            }
+          }
+        },
+        data: { title: 'emma' }
+      })
+      const component = getComponent('title')
+      expect(component.upperTitle).toBe('EMMA')
+      component.upperTitle = 'PERSUASION'
+      expect(data.title).toBe('persuasion')
+      expect(component.upperTitle).toBe('PERSUASION')
+      expect(component.titleLength).toBe(10)
+      // Computed properties without setters are read-only:
+      expect(() => {
+        component.titleLength = 3
+      }).toThrow()
     })
   })
 })

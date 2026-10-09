@@ -20,4 +20,20 @@ describe('DitoAccount', () => {
     expect(logout).toHaveBeenCalledOnce()
     expect(button.attributes('aria-expanded')).toBe('false')
   })
+
+  it(`doesn't log out with the settings item`, async () => {
+    const info = vi.spyOn(console, 'info').mockImplementation(() => {})
+    const admin = await mountAdmin({
+      views: { test: { type: 'view', label: 'Test', components: {} } }
+    })
+    await flushPromises()
+    const logout = vi.spyOn(admin.root.session, 'logout').mockResolvedValue()
+    const account = admin.wrapper.find('.dito-account')
+    await account.find('button[aria-haspopup="menu"]').trigger('click')
+    await account.findAll('[role="menuitem"]')[0].trigger('click')
+    expect(logout).not.toHaveBeenCalled()
+    // Settings aren't implemented yet:
+    expect(info).toHaveBeenCalledWith('TODO: Implement Settings')
+    vi.restoreAllMocks()
+  })
 })

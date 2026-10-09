@@ -115,6 +115,23 @@ describe('ListQuery', () => {
       expect(await hasNavigated).toBe(false)
     })
 
+    it('keeps the later navigation pending when an earlier one settles', async () => {
+      const { listQuery, router } = createListQuery()
+      let resolveFirst
+      router.push
+        .mockImplementationOnce(
+          () => new Promise(resolve => (resolveFirst = resolve))
+        )
+        .mockImplementationOnce(() => new Promise(() => {}))
+      const first = listQuery.update({ page: 2 })
+      listQuery.update({ page: 3 })
+      resolveFirst()
+      await first
+      // The route doesn't hold the query of the later navigation yet:
+      expect(listQuery.pendingNavigation.query.page).toBe(3)
+      expect(listQuery.whenNavigated()).toBeInstanceOf(Promise)
+    })
+
     it('returns null once the route holds the query', async () => {
       const { listQuery, route, router } = createListQuery()
       router.push.mockImplementation(() => new Promise(() => {}))

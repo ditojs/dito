@@ -97,6 +97,11 @@ describe('getParentItemDataPath()', () => {
     expect(getParentItemDataPath('')).toBe(null)
     expect(getParentItemDataPath('title', true)).toBe(null)
   })
+
+  it('returns `null` without a data path', () => {
+    expect(getParentItemDataPath(undefined)).toBe(null)
+    expect(getParentItem(library, null)).toBe(null)
+  })
 })
 
 describe('getItem()', () => {
@@ -111,6 +116,10 @@ describe('getItem()', () => {
 
   it('returns `null` for data paths missing in the root item', () => {
     expect(getItem(library, 'books/5/chapters/0')).toBe(null)
+  })
+
+  it('returns `null` without a data path', () => {
+    expect(getItem(library, undefined)).toBe(null)
   })
 })
 

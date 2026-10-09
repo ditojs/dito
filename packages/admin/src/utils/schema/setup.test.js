@@ -144,6 +144,11 @@ describe('resolveSchemas()', () => {
     expect(Object.keys(schemas)).toEqual(['books', 'authors'])
   })
 
+  it('returns resolved values that are neither arrays nor objects', async () => {
+    // E.g. lazy imports of optional schemas that resolve to nothing:
+    expect(await resolveSchemas(async () => null)).toBe(null)
+  })
+
   it('resolves the values of objects by their keys', async () => {
     const book = createBookForm()
     const author = createBookForm()
@@ -664,6 +669,13 @@ describe('resolveSchemaComponent()', () => {
     const schema = { type: 'component' }
     await resolveSchemaComponent(schema)
     expect(schema).toEqual({ type: 'component' })
+  })
+
+  it('leaves components alone that resolve to nothing', async () => {
+    const component = () => null
+    const schema = { type: 'component', component }
+    await resolveSchemaComponent(schema)
+    expect(schema.component).toBe(component)
   })
 
   it('resolves the components of all schemas, e.g. columns', async () => {

@@ -254,6 +254,34 @@ describe('DitoTrigger', () => {
       }
     })
 
+    it('observes the new target when it changes while shown', async () => {
+      const target = document.createElement('div')
+      document.body.appendChild(target)
+      const wrapper = mountTrigger({ show: true })
+      await nextTick()
+      const [observer] = observers
+      await wrapper.setProps({ target })
+      expect(observer.elements).toEqual([])
+      expect(observers).toHaveLength(2)
+      expect(observers[1].elements).toEqual([target])
+      wrapper.unmount()
+      target.remove()
+    })
+
+    it('positions popups without content', async () => {
+      const wrapper = mount(DitoTrigger, {
+        props: { show: true },
+        slots: { trigger: '<button class="open">Open</button>' },
+        attachTo: document.body
+      })
+      await nextTick()
+      const popup = layOutPopup(wrapper, 100)
+      expect(popup.firstElementChild).toBe(null)
+      observers[0].notify()
+      expect(popup.style.top).toBe('0px')
+      wrapper.unmount()
+    })
+
     it('resolves targets given by ref name once mounted', async () => {
       const wrapper = mountTrigger({ show: true, target: 'popup' })
       await nextTick()
@@ -271,12 +299,14 @@ describe('DitoTrigger', () => {
 
   describe('in focus mode', () => {
     function mountFocusTrigger({
-      popup = '<div class="content"><input class="field"></div>'
+      popup = '<div class="content"><input class="field"></div>',
+      trigger = '<input class="input">',
+      props = {}
     } = {}) {
       return mount(DitoTrigger, {
-        props: { trigger: 'focus' },
+        props: { trigger: 'focus', ...props },
         slots: {
-          trigger: '<input class="input">',
+          trigger,
           popup
         },
         attachTo: document.body
@@ -377,6 +407,96 @@ describe('DitoTrigger', () => {
         false
       )
       wrapper.unmount()
+    })
+
+    it('lets mousedowns on the trigger input take the focus', async () => {
+      const wrapper = mountFocusTrigger()
+      await openPopup(wrapper)
+      const input = wrapper.find('.input').element
+      const event = new MouseEvent('mousedown', {
+        bubbles: true,
+        cancelable: true
+      })
+      input.dispatchEvent(event)
+      expect(event.defaultPrevented).toBe(false)
+      // Still locked until the mouse is released:
+      expect(input.hasAttribute('readonly')).toBe(true)
+      pressMouse(input, 'mouseup')
+      await waitForTimers()
+      expect(input.hasAttribute('readonly')).toBe(false)
+      wrapper.unmount()
+    })
+
+    it('returns the focus from the popup to the input on mouseup', async () => {
+      const wrapper = mountFocusTrigger({
+        popup: '<div class="content"><button class="action">Go</button></div>'
+      })
+      await openPopup(wrapper)
+      const content = wrapper.find('.content').element
+      pressMouse(content, 'mousedown')
+      // E.g. a control in the popup that took the focus in the meantime:
+      wrapper.find('.action').element.focus()
+      pressMouse(content, 'mouseup')
+      await waitForTimers()
+      expect(document.activeElement).toBe(wrapper.find('.input').element)
+      expect(isPopupShown(wrapper)).toBe(true)
+      wrapper.unmount()
+    })
+
+    it(`keeps inputs readonly that are readonly by themselves`, async () => {
+      const wrapper = mountFocusTrigger({
+        trigger: '<input class="input" readonly>'
+      })
+      await openPopup(wrapper)
+      const input = wrapper.find('.input').element
+      pressMouse(wrapper.find('.content').element, 'mousedown')
+      pressMouse(document.body, 'mouseup')
+      await waitForTimers()
+      expect(input.hasAttribute('readonly')).toBe(true)
+      wrapper.unmount()
+    })
+
+    it('handles triggers without an input', async () => {
+      const wrapper = mountFocusTrigger({
+        trigger: '<span class="label">Chapters</span>',
+        popup: '<div class="content"><button class="action">Go</button></div>',
+        props: { show: true }
+      })
+      await nextTick()
+      const event = new MouseEvent('mousedown', {
+        bubbles: true,
+        cancelable: true
+      })
+      wrapper.find('.label').element.dispatchEvent(event)
+      expect(event.defaultPrevented).toBe(true)
+      // Closing from the popup has no input to return the focus to:
+      wrapper.find('.action').element.focus()
+      await wrapper.find('.action').trigger('keydown', { key: 'Escape' })
+      await nextTick()
+      expect(isPopupShown(wrapper)).toBe(false)
+      expect(wrapper.emitted('update:show')).toEqual([[false]])
+      wrapper.unmount()
+    })
+
+    it('stays open while the focus moves within an external target', async () => {
+      const target = document.createElement('div')
+      target.innerHTML = '<input class="title"><input class="author">'
+      document.body.appendChild(target)
+      const wrapper = mountFocusTrigger({ props: { target } })
+      const [title, author] = target.querySelectorAll('input')
+      title.focus()
+      await nextTick()
+      expect(isPopupShown(wrapper)).toBe(true)
+      title.dispatchEvent(new FocusEvent('blur', { relatedTarget: author }))
+      await nextTick()
+      expect(isPopupShown(wrapper)).toBe(true)
+      author.dispatchEvent(
+        new FocusEvent('blur', { relatedTarget: document.body })
+      )
+      await nextTick()
+      expect(isPopupShown(wrapper)).toBe(false)
+      wrapper.unmount()
+      target.remove()
     })
   })
 })

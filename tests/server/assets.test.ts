@@ -1,3 +1,6 @@
+import fs from 'fs/promises'
+import os from 'os'
+import path from 'path'
 import type { ModelProperties } from '@ditojs/server'
 import { Model, AssetMixin, AssetFile, Storage } from '@ditojs/server'
 import {
@@ -11,6 +14,11 @@ type UntypedStorageConfig = ConstructorParameters<typeof Storage>[1]
 
 class MemoryStorage extends Storage {
   dataByKey = new Map<string, Buffer>()
+
+  // Give the files urls, see `Storage._getFileUrl()`.
+  _getFileUrl(file: AssetFile) {
+    return (this as any)._getUrl(file.key)
+  }
 
   async _addFile(file: AssetFile, data: Buffer) {
     this.dataByKey.set(file.key, data)
@@ -196,5 +204,258 @@ describe('Application.addStorage()', () => {
     ).toThrow(
       `Unsupported storage: 'unknown'`
     )
+  })
+})
+
+describe('AssetManager', () => {
+  const Document = createDocumentClass()
+  class Asset extends AssetMixin(Model) {}
+  const app = createTestApp({ models: { Document, Asset } })
+  const allowedImports: string[] = ['https://covers.example.com/**']
+  // With `allowedImports`, files need urls, see the bug in Storage.test.js.
+  const storage = new MemoryStorage(app, {
+    url: 'https://files.example.com/',
+    allowedImports
+  } as unknown as UntypedStorageConfig)
+  app.addStorage(storage, 'memory')
+  let importDirectory: string
+
+  beforeAll(async () => {
+    await createTestDatabase(app)
+    importDirectory = await fs.mkdtemp(path.join(os.tmpdir(), 'dito-import-'))
+    allowedImports.push(`file://${importDirectory}/**`)
+  })
+
+  afterAll(async () => {
+    await destroyTestApp(app)
+    await fs.rm(importDirectory, { recursive: true, force: true })
+  })
+
+  function createForeignFile(name: string, url?: string) {
+    return {
+      key: `${name}-${Math.random().toString(36).slice(2)}`,
+      name,
+      type: 'text/plain',
+      ...(url && { url })
+    } as AssetFile
+  }
+
+  // Stores and signs a file like an upload, as expected by `createAssets()`.
+  async function createUploadedFile(name: string, data: string) {
+    const file = AssetFile.create({ name, data })
+    await storage.addFile(file, Buffer.from(data))
+    storage.signAssetFile(file)
+    return file
+  }
+
+  describe('addForeignAssets()', () => {
+    it('imports files from allowed file urls', async () => {
+      const filePath = path.join(importDirectory, 'chapter.txt')
+      await fs.writeFile(filePath, 'Chapter one')
+      const file = createForeignFile('chapter.txt', `file://${filePath}`)
+      const info = vi.spyOn(app.logger, 'info').mockImplementation(() => {})
+      try {
+        const [imported] = await app.addForeignAssets(storage, [file])
+        expect(storage.dataByKey.get(file.key)?.toString()).toBe(
+          'Chapter one'
+        )
+        expect(imported).toMatchObject({ key: file.key, size: 11 })
+        // The imported file properties are merged back into the passed file.
+        expect(file.size).toBe(11)
+        expect(storage.verifyAssetFile(file)).toBe(true)
+        expect(await Asset.query().findOne('key', file.key)).toMatchObject({
+          count: 0,
+          storage: 'memory'
+        })
+        expect(info).toHaveBeenCalledWith(
+          expect.stringContaining('is from a foreign source')
+        )
+      } finally {
+        info.mockRestore()
+      }
+    })
+
+    it('imports files from allowed remote urls', async () => {
+      const fetch = vi
+        .spyOn(globalThis, 'fetch')
+        .mockResolvedValue(new Response('Remote cover'))
+      const info = vi.spyOn(app.logger, 'info').mockImplementation(() => {})
+      const url = 'https://covers.example.com/novel.txt'
+      const file = createForeignFile('novel.txt', url)
+      try {
+        const imported = await app.addForeignAssets(storage, [file])
+        expect(fetch).toHaveBeenCalledWith(url)
+        expect(imported).toHaveLength(1)
+        expect(storage.dataByKey.get(file.key)?.toString()).toBe(
+          'Remote cover'
+        )
+      } finally {
+        fetch.mockRestore()
+        info.mockRestore()
+      }
+    })
+
+    it('rejects files from sources that are not allowed', async () => {
+      const file = createForeignFile(
+        'secret.txt',
+        'https://elsewhere.example.com/secret.txt'
+      )
+      await expect(app.addForeignAssets(storage, [file])).rejects.toThrow(
+        `Unable to import asset from foreign source: 'secret.txt' ` +
+        `('https://elsewhere.example.com/secret.txt'): ` +
+        'The source needs to be explicitly allowed.'
+      )
+      expect(storage.dataByKey.has(file.key)).toBe(false)
+    })
+
+    it('rejects unknown files without data or url', async () => {
+      const file = createForeignFile('lost.txt')
+      await expect(app.addForeignAssets(storage, [file])).rejects.toThrow(
+        `Unable to import asset from foreign source: 'lost.txt' ` +
+        `('${file.key}')`
+      )
+    })
+
+    it('reuses already imported assets for all files with the same key', async () => {
+      const [asset]: any[] = await app.createAssets(storage, [
+        await createUploadedFile('known.txt', 'known')
+      ])
+      const first = { key: asset.key, name: 'first.txt' } as AssetFile
+      const second = { key: asset.key, name: 'second.txt' } as AssetFile
+      const imported = await app.addForeignAssets(storage, [first, second])
+      expect(imported).toEqual([])
+      expect(first).toMatchObject({ name: 'known.txt', type: 'text/plain' })
+      expect(second).toMatchObject({ name: 'known.txt', type: 'text/plain' })
+    })
+  })
+
+  describe('handleModifiedAssets()', () => {
+    it('ignores files without data', async () => {
+      const file = createForeignFile('unchanged.txt')
+      expect(await app.handleModifiedAssets(storage, [file])).toEqual([])
+    })
+
+    it('rejects modified files without an asset', async () => {
+      const file = AssetFile.create({ name: 'orphan.txt', data: 'orphan' })
+      await expect(app.handleModifiedAssets(storage, [file])).rejects.toThrow(
+        `Unable to update modified asset from memory source: 'orphan.txt' ` +
+        `('${file.key}')`
+      )
+    })
+  })
+
+  describe('handleAddedAndRemovedAssets()', () => {
+    it('schedules the release of unused assets after the cleanup time', async () => {
+      const assets = app.config.assets!
+      const { cleanupTimeThreshold } = assets
+      assets.cleanupTimeThreshold = '1ms'
+      const release = vi.spyOn(app, 'releaseUnusedAssets')
+      try {
+        const [asset]: any[] = await app.createAssets(storage, [
+          await createUploadedFile('scheduled.txt', 'scheduled')
+        ])
+        await app.handleAddedAndRemovedAssets(storage, [asset.file], [], [])
+        // Once immediately in the same transaction, once after the timeout.
+        expect(release).toHaveBeenCalledTimes(1)
+        await vi.waitFor(() => expect(release).toHaveBeenCalledTimes(2))
+        expect(release).toHaveBeenLastCalledWith()
+      } finally {
+        assets.cleanupTimeThreshold = cleanupTimeThreshold
+        release.mockRestore()
+      }
+    })
+
+    it('releases unused assets only immediately without cleanup time', async () => {
+      const assets = app.config.assets!
+      const { cleanupTimeThreshold } = assets
+      assets.cleanupTimeThreshold = 0
+      const release = vi.spyOn(app, 'releaseUnusedAssets')
+      try {
+        const [asset]: any[] = await app.createAssets(storage, [
+          await createUploadedFile('instant.txt', 'instant')
+        ])
+        await app.handleAddedAndRemovedAssets(storage, [], [asset.file], [])
+        // Give a wrongly scheduled release the time to happen.
+        await new Promise(resolve => setTimeout(resolve, 20))
+        expect(release).toHaveBeenCalledTimes(1)
+      } finally {
+        assets.cleanupTimeThreshold = cleanupTimeThreshold
+        release.mockRestore()
+      }
+    })
+  })
+
+  describe('releaseUnusedAssets()', () => {
+    it('removes unreferenced assets and their files', async () => {
+      const file = await createUploadedFile('unused.txt', 'unused')
+      await app.createAssets(storage, [file], 0)
+      const released: any[] = await app.releaseUnusedAssets({
+        timeThreshold: 0
+      })
+      expect(released.map(asset => asset.key)).toContain(file.key)
+      expect(storage.dataByKey.has(file.key)).toBe(false)
+      expect(await Asset.query().findOne('key', file.key)).toBeUndefined()
+    })
+
+    it('keeps referenced assets', async () => {
+      const file = await createUploadedFile('used.txt', 'used')
+      await app.createAssets(storage, [file], 1)
+      const released: any[] = await app.releaseUnusedAssets({
+        timeThreshold: 0
+      })
+      expect(released.map(asset => asset.key)).not.toContain(file.key)
+      expect(await Asset.query().findOne('key', file.key)).toBeDefined()
+    })
+
+    it('emits errors of files that cannot be removed', async () => {
+      const file = await createUploadedFile('stuck.txt', 'stuck')
+      await app.createAssets(storage, [file], 0)
+      const error = new Error('Storage is read-only')
+      const removeFile = vi
+        .spyOn(storage, 'removeFile')
+        .mockRejectedValue(error)
+      const onError = vi.fn()
+      app.on('error', onError)
+      try {
+        const released: any[] = await app.releaseUnusedAssets({
+          timeThreshold: 0
+        })
+        const asset = released.find(asset => asset.key === file.key)
+        expect(asset?.error).toBe(error)
+        expect(onError).toHaveBeenCalledWith(error)
+        // The asset is deleted nevertheless.
+        expect(await Asset.query().findOne('key', file.key)).toBeUndefined()
+      } finally {
+        app.off('error', onError)
+        removeFile.mockRestore()
+      }
+    })
+  })
+
+  describe('rollback handling', () => {
+    it('removes imported files again when the transaction is rolled back', async () => {
+      const info = vi.spyOn(console, 'info').mockImplementation(() => {})
+      try {
+        const trx = await Document.startTransaction()
+        const document = await Document.query(trx).insertAndFetch({
+          file: AssetFile.create({ name: 'draft.txt', data: 'draft' })
+        })
+        const { key } = document.file!
+        expect(storage.dataByKey.has(key)).toBe(true)
+        await trx.rollback()
+        // Emitted by the `createTransaction()` middleware, see above.
+        const error = new Error('Rolled back')
+        await Promise.all(
+          trx.listeners('rollback').map(listener => listener(error))
+        )
+        expect(storage.dataByKey.has(key)).toBe(false)
+        expect(info).toHaveBeenCalledWith(
+          `Received 'Error: Rolled back', removing imported files again: ` +
+          `'draft.txt'`
+        )
+      } finally {
+        info.mockRestore()
+      }
+    })
   })
 })

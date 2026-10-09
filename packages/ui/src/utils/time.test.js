@@ -207,6 +207,14 @@ describe('editTimeText()', () => {
       })
     })
 
+    it('removes the period letters after the time normally', () => {
+      expect(typeKey('10:35:00 AM', 'Backspace', 10)).toMatchObject({
+        edited: '10:35:00 AM',
+        value: '10:35:00 M',
+        caret: 9
+      })
+    })
+
     it('leaves text with a selection to the browser', () => {
       expect(
         typeKey('10:30:00 AM', '7', 0, { end: 2 })

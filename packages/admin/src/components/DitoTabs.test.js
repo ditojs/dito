@@ -89,4 +89,15 @@ describe('DitoTabs', () => {
     await getLink('Notes').trigger('keydown', { key: 'End' })
     expectFocused('History')
   })
+
+  it('ignores other keys', async () => {
+    const { wrapper } = await mountForm({ schema, data: {} })
+    const [link] = wrapper.findAll('.dito-tabs__link')
+    link.element.focus()
+    const event = new KeyboardEvent('keydown', { key: 'a', cancelable: true })
+    link.element.dispatchEvent(event)
+    expect(event.defaultPrevented).toBe(false)
+    expect(document.activeElement).toBe(link.element)
+    expect(getSelectedTab(wrapper)).toBe('Details')
+  })
 })

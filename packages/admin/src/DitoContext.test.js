@@ -428,6 +428,19 @@ describe('DitoContext', () => {
       expect(context.item).toBe(book)
       expect(context.value).toBe(undefined)
     })
+
+    it(`has no value for nested components without a name`, () => {
+      // Without a name, the value must not be read from `data['undefined']`:
+      const book = { undefined: 'Stray' }
+      const context = DitoContext.createForSchema(null, {
+        schema: { type: 'text' },
+        data: book,
+        dataPath: '',
+        rootData: book
+      })
+      expect(context.nested).toBe(true)
+      expect(context.value).toBe(undefined)
+    })
   })
 
   describe('createChildContext()', () => {

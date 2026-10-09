@@ -101,6 +101,16 @@ describe('DitoPickerInput', () => {
     expect(wrapper.emitted('change')).toEqual([[new Date(2024, 3, 1)]])
   })
 
+  it(`doesn't emit typed dates that equal the model value`, async () => {
+    // The parent doesn't apply the emitted values, so it still has the
+    // original date when it is typed again:
+    wrapper = mountPickerInput()
+    await findInput(wrapper).setValue('April 1, 2024')
+    await findInput(wrapper).setValue('March 5, 2024')
+    expect(findInput(wrapper).element.value).toBe('March 5, 2024')
+    expect(getEmittedDates(wrapper)).toEqual([new Date(2024, 3, 1)])
+  })
+
   it('ignores text that is no date or the current date', async () => {
     wrapper = mountPickerInput()
     await findInput(wrapper).setValue('next tuesday')

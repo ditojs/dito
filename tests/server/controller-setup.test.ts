@@ -152,6 +152,9 @@ class Ingredients extends ModelController<any> {
     },
     'gallery.*': {
       storage: 'photos'
+    },
+    'scrapbook.**': {
+      storage: 'photos'
     }
   }
 
@@ -338,6 +341,15 @@ describe('Controller setup', () => {
       expect(await response.json()).toHaveLength(1)
     })
 
+    it('matches deep wildcards in asset data paths', async () => {
+      const response = await upload(
+        '/ingredients/upload/scrapbook/**',
+        'scrapbook/2/pages/5'
+      )
+      expect(response.status).toBe(200)
+      expect(await response.json()).toHaveLength(1)
+    })
+
     it('authorizes uploads before receiving the files', async () => {
       const response = await upload('/ingredients/upload/photo', 'photo')
       expect(response.status).toBe(401)
@@ -401,5 +413,107 @@ describe('Controller setup errors', () => {
       `Controller Jars: Invalid relation 'lids'.`
     )
     await app.knex.destroy()
+  })
+})
+
+// Actions stored in a constant are shared by all instances, also with the
+// instances of sub-classes that don't define their own actions.
+const readingRoomActions: any = {
+  'get hours'() {
+    return { opens: 9 }
+  }
+}
+
+class ReadingRoomController extends Controller {
+  override actions: any = readingRoomActions
+}
+
+class ReadingRoom extends ReadingRoomController {}
+
+class Lobby extends Controller {
+  override path = ''
+
+  override actions: any = {
+    'get welcome'() {
+      return 'welcome'
+    },
+
+    'get member': {
+      parameters: { member: { from: 'member' } },
+      handler(_ctx: any, { member }: any) {
+        // Plain controllers have no members to resolve.
+        return { member }
+      }
+    },
+
+    // Validates the whole query object, borrowed from the query.
+    'post search': Object.assign((_ctx: any, query: any) => query, {
+      parameters: [
+        {
+          from: 'query',
+          type: 'object',
+          properties: { pages: { type: 'integer' } }
+        }
+      ]
+    })
+  }
+}
+
+describe('Controller setup details', () => {
+  let app: ReturnType<typeof createTestApp>
+  let url: string
+  // Collect the logs separately, as the spy's calls are cleared before tests.
+  const logged: string[] = []
+  let info: ReturnType<typeof vi.spyOn>
+
+  beforeAll(async () => {
+    info = vi
+      .spyOn(console, 'info')
+      .mockImplementation((...args) => logged.push(args.join(' ')))
+    app = createTestApp()
+    // Set after creation, as `createTestApp()` silences all logging.
+    app.config.log = { routes: true }
+    app.addControllers({ ReadingRoom, library: { Lobby } })
+    await app.start()
+    url = getAppUrl(app)
+  })
+
+  afterAll(async () => {
+    await app.stop()
+    await app.knex.destroy()
+    info.mockRestore()
+  })
+
+  it('logs the routes of the controllers with `log.routes`', () => {
+    expect(logged).toEqual(
+      expect.arrayContaining([
+        expect.stringMatching(/^\/library\/:$/),
+        expect.stringMatching(/GET \/library\/welcome/)
+      ])
+    )
+  })
+
+  it('routes controllers with an empty path at their namespace', async () => {
+    expect(app.getController('/library')).toBeInstanceOf(Lobby)
+    expect(await (await fetch(`${url}/library/welcome`)).text()).toBe(
+      'welcome'
+    )
+  })
+
+  it('inherits shared actions without own actions', async () => {
+    const response = await fetch(`${url}/reading-room/hours`)
+    expect(await response.json()).toEqual({ opens: 9 })
+  })
+
+  it('resolves member parameters of plain controllers to null', async () => {
+    const response = await fetch(`${url}/library/member`)
+    expect(await response.json()).toEqual({ member: null })
+  })
+
+  it('validates unnamed parameters borrowed from other sources', async () => {
+    const response = await fetch(`${url}/library/search?pages=12`, {
+      method: 'POST'
+    })
+    expect(await response.json()).toEqual({ pages: 12 })
   })
 })

@@ -283,6 +283,36 @@ describe('DitoTypeButton', () => {
     })
   })
 
+  it('notifies errors of preparing the data to submit', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const request = vi.fn(({ data }) => ({ data }))
+    const { findField } = await mountForm({
+      schema: {
+        components: {
+          title: {
+            type: 'text',
+            process() {
+              throw new Error('Title cannot be processed')
+            }
+          },
+          publish: {
+            type: 'button',
+            resource: { path: 'publish', method: 'post' }
+          }
+        }
+      },
+      data: { title: 'Emma' },
+      request
+    })
+    await findField('publish').trigger('click')
+    await flushPromises()
+    expect(request).not.toHaveBeenCalled()
+    expect(getNotificationTexts().join()).toContain(
+      'Title cannot be processed'
+    )
+    expect(findField('publish').attributes('aria-busy')).toBe('false')
+  })
+
   it('shows default notifications after handlers notified before', async () => {
     // Handlers that notify replace the default notification, but only for
     // the request that they handle.

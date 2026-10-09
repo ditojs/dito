@@ -179,6 +179,19 @@ describe('DitoMenuButton', () => {
     }
   })
 
+  it('leaves the keyup of other keys alone', async () => {
+    wrapper = mountMenuButton()
+    const button = findButton(wrapper)
+    await pressKey(button, 'Enter')
+    const event = new KeyboardEvent('keyup', {
+      key: 'Enter',
+      bubbles: true,
+      cancelable: true
+    })
+    button.element.dispatchEvent(event)
+    expect(event.defaultPrevented).toBe(false)
+  })
+
   it('closes with Escape and returns the focus to the button', async () => {
     const onKeyDown = vi.fn()
     document.body.addEventListener('keydown', onKeyDown)

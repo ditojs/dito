@@ -2,6 +2,7 @@ import { vi } from 'vitest'
 import { h } from 'vue'
 import { flushPromises } from '@vue/test-utils'
 import Sortable from 'sortablejs'
+import { RequestError } from '../utils/request.js'
 import {
   mountSchema,
   mountForm,
@@ -686,6 +687,38 @@ describe('DitoTypeList', () => {
     })
   })
 
+  it('spans the list buttons across the columns and edit buttons', async () => {
+    const { findField } = await mountSchema({
+      schema: {
+        components: {
+          books: {
+            type: 'list',
+            creatable: true,
+            columns: { title: {}, pages: {} },
+            form: { type: 'form', components: { title: { type: 'text' } } }
+          },
+          authors: {
+            type: 'list',
+            creatable: true,
+            deletable: true,
+            columns: { name: {}, born: {} },
+            form: { type: 'form', components: { name: { type: 'text' } } }
+          }
+        }
+      },
+      data: {
+        books: [{ title: 'Emma', pages: 474 }],
+        authors: [{ name: 'Jane Austen', born: 1775 }]
+      }
+    })
+    const getColspan = dataPath =>
+      findField(dataPath).find('tfoot td.dito-table__buttons').attributes(
+        'colspan'
+      )
+    expect(getColspan('books')).toBe('2')
+    expect(getColspan('authors')).toBe('3')
+  })
+
   describe('keyboard reordering', () => {
     it('moves items with their drag handles within the list', async () => {
       const { findField, data, settle } = await mountSchema({
@@ -873,6 +906,115 @@ describe('DitoTypeList', () => {
         order: 'title asc',
         range: '0,1'
       })
+    })
+  })
+
+  describe('filters', () => {
+    async function mountFilteredRecipes(request) {
+      return mountSchema({
+        schema: {
+          components: {
+            recipes: {
+              type: 'list',
+              resource: { path: 'recipes' },
+              paginate: 2,
+              filters: { title: { filter: 'text' } },
+              form: { type: 'form', components: { title: { type: 'text' } } }
+            }
+          }
+        },
+        request
+      })
+    }
+
+    it('loads the list with the query of the filters panel', async () => {
+      const request = vi.fn(() => ({
+        data: { results: [{ id: 1, title: 'Soup' }], total: 1 }
+      }))
+      const { wrapper, getComponent } = await mountFilteredRecipes(request)
+      const recipes = getComponent('recipes')
+      recipes.listQuery.update({ page: 1 })
+      await flushPromises()
+      expect(recipes.query.page).toBe('1')
+      const panel = wrapper.find('.dito-panel')
+      await enterValue(panel.find('input[type="text"]'), 'Soup')
+      await panel.find('button[type="submit"]').trigger('click')
+      await flushPromises()
+      // Filtering resets the page, as the filtered list has other pages:
+      expect(recipes.query).toMatchObject({
+        filter: ['title:"Soup"'],
+        page: '0'
+      })
+      expect(JSON.stringify(request.mock.lastCall[0].query)).toContain(
+        'title:\\"Soup\\"'
+      )
+    })
+
+    it('notifies filter errors of lists without filters panel', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+      await mountSchema({
+        schema: {
+          components: {
+            recipes: {
+              type: 'list',
+              resource: { path: 'recipes' },
+              form: { type: 'form', components: { title: { type: 'text' } } }
+            }
+          }
+        },
+        request() {
+          throw new RequestError({
+            status: 400,
+            statusText: 'Error',
+            data: {
+              type: 'FilterValidation',
+              message: 'The query filter is not valid',
+              errors: { 'title/text': [{ message: 'must be shorter' }] }
+            }
+          })
+        }
+      })
+      const texts = [...document.querySelectorAll('.dito-notification')].map(
+        notification => notification.textContent
+      )
+      expect(texts.join()).toContain('The query filter is not valid')
+    })
+
+    it('shows filter errors on the filters panel', async () => {
+      const { wrapper } = await mountSchema({
+        schema: {
+          components: {
+            recipes: {
+              type: 'list',
+              resource: { path: 'recipes' },
+              filters: { title: { filter: 'text' } },
+              form: { type: 'form', components: { title: { type: 'text' } } }
+            }
+          }
+        },
+        request() {
+          throw new RequestError({
+            status: 400,
+            statusText: 'Error',
+            data: {
+              type: 'FilterValidation',
+              message: 'The query filter is not valid',
+              errors: { 'title/text': [{ message: 'must be shorter' }] }
+            }
+          })
+        }
+      })
+      const errors = wrapper
+        .find('.dito-panel')
+        .findAll('.dito-errors li')
+        .map(item => item.text())
+      expect(errors).toEqual(['The Text field must be shorter.'])
+      // The errors are highlighted instead of notifying the request error:
+      const texts = [...document.querySelectorAll('.dito-notification')].map(
+        notification => notification.textContent
+      )
+      expect(texts.join()).toContain('Please correct the highlighted errors.')
+      expect(texts.join()).not.toContain('The query filter is not valid')
     })
   })
 })

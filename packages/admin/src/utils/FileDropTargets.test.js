@@ -71,6 +71,16 @@ describe('FileDropTargets', () => {
     expect(fileDropTargets.isDraggingFiles).toBe(true)
   })
 
+  it(`doesn't end the drag of files on drops of other data`, () => {
+    fileDropTargets.add(target)
+    dispatch('dragenter', target)
+    dispatch('drop', target, ['text/plain'])
+    expect(fileDropTargets.isDraggingFiles).toBe(true)
+    // The count of entered elements is kept too:
+    dispatch('dragleave', target)
+    expect(fileDropTargets.isDraggingFiles).toBe(false)
+  })
+
   it('begins a new drag after leaving without targets', () => {
     // Leaving the elements entered without targets doesn't affect the count:
     dispatch('dragenter')

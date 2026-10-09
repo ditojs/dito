@@ -84,6 +84,26 @@ describe('clone()', () => {
     expect(copy.b).toEqual(2)
   })
 
+  it('should copy accessors and empty values with `descriptors`', () => {
+    const object = { title: null, tags: ['soup'] }
+    Object.defineProperty(object, 'summary', {
+      get() {
+        return `${this.tags.length} tag(s)`
+      },
+      enumerable: false
+    })
+    const copy = clone(object, { descriptors: true, enumerable: false })
+    const descriptor = Object.getOwnPropertyDescriptor(copy, 'summary')
+    expect(descriptor.get).toBeTypeOf('function')
+    expect(descriptor.enumerable).toBe(false)
+    expect(copy.title).toBe(null)
+    expect(copy.tags).toEqual(['soup'])
+    expect(copy.tags).not.toBe(object.tags)
+    copy.tags.push('stew')
+    expect(copy.summary).toBe('2 tag(s)')
+    expect(object.summary).toBe('1 tag(s)')
+  })
+
   it('should transform cloned values by `processValue`', () => {
     const object = {
       a: { b: 1, c: 2 },

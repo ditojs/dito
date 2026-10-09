@@ -90,6 +90,18 @@ describe('handleConnectMiddleware()', () => {
     })
   })
 
+  it('supports `writeHead()` with only a status', async () => {
+    const app = createApp((req, res) => {
+      res.writeHead(202)
+      res.end('accepted')
+    })
+    await serve(app, async url => {
+      const response = await fetch(url)
+      expect(response.status).toBe(202)
+      expect(await response.text()).toBe('accepted')
+    })
+  })
+
   it('supports `writeHead()` with raw header arrays', async () => {
     const app = createApp((req, res) => {
       res.writeHead(203, ['X-Pot', 'big', 'X-Lid', 'glass'])
@@ -149,6 +161,34 @@ describe('handleConnectMiddleware()', () => {
       expect((await fetch(url)).status).toBe(500)
     })
     expect(errors).toEqual(['Burnt'])
+  })
+
+  it('passes errors thrown by the connect middleware on to Koa', async () => {
+    const errors = []
+    const kitchen = new Koa()
+    kitchen.use(async (ctx, next) => {
+      try {
+        await next()
+      } catch (error) {
+        // The mounted url is restored before the error reaches Koa.
+        errors.push([error.message, ctx.req.url])
+        ctx.status = 500
+      }
+    })
+    kitchen.use(
+      handleConnectMiddleware(
+        () => {
+          throw new Error('Burnt')
+        },
+        { expandMountPath: true }
+      )
+    )
+    const app = new Koa()
+    app.use(mount('/kitchen', kitchen))
+    await serve(app, async url => {
+      expect((await fetch(`${url}/kitchen/pot`)).status).toBe(500)
+    })
+    expect(errors).toEqual([['Burnt', '/pot']])
   })
 
   it('restores the mounted url for the next Koa middleware', async () => {

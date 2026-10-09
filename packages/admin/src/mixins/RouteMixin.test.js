@@ -273,4 +273,15 @@ describe('RouteMixin', () => {
     expect(authorsView.name).toBe('authors')
     expect(appState.routeComponents.map(toRaw)).toEqual([toRaw(authorsView)])
   })
+  it('uses the breadcrumb of the schema', async () => {
+    const { routeComponent } = await mountForm({
+      schema: {
+        label: 'Book',
+        breadcrumb: 'Edit Book',
+        components: { title: { type: 'text' } }
+      },
+      data: { title: 'Emma' }
+    })
+    expect(routeComponent.breadcrumb).toBe('Edit Book')
+  })
 })

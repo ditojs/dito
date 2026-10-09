@@ -103,4 +103,66 @@ describe('DitoView', () => {
       expect(rootComponent.isLoading).toBe(false)
     })
   })
+
+  it('redirects to the root when its `if` hides it', async () => {
+    const admin = await mountAdmin({
+      views: {
+        drafts: {
+          type: 'view',
+          if: ({ user }) => user.username === 'editor',
+          components: { title: { type: 'text' } }
+        }
+      }
+    })
+    await admin.navigate('/drafts')
+    expect(admin.router.currentRoute.value.path).toBe('/')
+    expect(admin.wrapper.find('.dito-view').exists()).toBe(false)
+  })
+
+  describe('source components', () => {
+    it('are the main component of single-component views', async () => {
+      const admin = await mountAdmin({
+        views: {
+          books: {
+            type: 'view',
+            component: {
+              type: 'list',
+              resource: { path: 'books' },
+              columns: { title: {} }
+            }
+          }
+        },
+        request: () => ({ data: [] })
+      })
+      await admin.navigate('/books')
+      const view = admin.getRouteComponent(it => it.isView)
+      expect(view.mainComponent.name).toBe('books')
+      // Components of the view outside of the list, e.g. its schema, use the
+      // list as their source:
+      expect(view.mainSchemaComponent.sourceComponent).toBe(
+        view.mainComponent
+      )
+      expect(view.mainSchemaComponent.resourceComponent).toBe(
+        view.mainComponent
+      )
+      // Lists in single-component views use the view's path for sub-paths:
+      expect(view.getChildPath('books')).toBe('/books')
+    })
+
+    it('are missing in views with multiple components', async () => {
+      const admin = await mountAdmin({
+        views: {
+          library: {
+            type: 'view',
+            components: { title: { type: 'text' } }
+          }
+        }
+      })
+      await admin.navigate('/library')
+      const view = admin.getRouteComponent(it => it.isView)
+      expect(view.mainComponent).toBe(null)
+      expect(view.mainSchemaComponent.sourceComponent).toBe(null)
+      expect(view.getChildPath('books')).toBe('/library/books')
+    })
+  })
 })

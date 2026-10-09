@@ -35,6 +35,14 @@ describe('clipboard', () => {
       expect(hasClipboardData('author')).toBe(false)
     })
 
+    it('clears the data when copying `null`', async () => {
+      await copyClipboardData('book', { title: 'Emma' })
+      await copyClipboardData('book', null)
+      expect(getClipboardData('book')).toBe(null)
+      expect(hasClipboardData('book')).toBe(false)
+      expect(navigator.clipboard.writeText).toHaveBeenLastCalledWith('null')
+    })
+
     it('writes the data marked with its schema to the system', async () => {
       await copyClipboardData('book', { title: 'Emma' })
       expect(

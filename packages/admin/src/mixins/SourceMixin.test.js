@@ -4,9 +4,11 @@ import {
   mountAdmin,
   mountForm,
   mountSchema,
+  settle,
   stubConfirm,
   unmountAdmin
 } from '../test/mount.js'
+import { getTypeOptions } from '../utils/schema/types.js'
 
 async function mountBookForm() {
   return mountForm({
@@ -327,6 +329,450 @@ describe('SourceMixin', () => {
         { id: 1, name: 'Mary Shelley' },
         { id: 2, name: 'Bram Stoker' }
       ])
+    })
+  })
+  describe('loading data', () => {
+    // Unlike `mountSchema()`, doesn't set the data of the view after its
+    // sources loaded theirs.
+    async function mountView(components, request) {
+      const admin = await mountAdmin({
+        views: { test: { type: 'view', components } },
+        request
+      })
+      await admin.navigate('/test')
+      const view = admin.getRouteComponent(component => component.isView)
+      await settle(view)
+      return {
+        data: view.data,
+        getComponent: dataPath =>
+          view.mainSchemaComponent.getComponentByDataPath(dataPath)
+      }
+    }
+
+    it('sets the data of the view from objects that the list loads', async () => {
+      // Controllers can send the data of a whole view, including the list:
+      const { data } = await mountView(
+        {
+          books: {
+            type: 'list',
+            resource: { path: 'books' },
+            columns: { title: {} }
+          },
+          note: { type: 'text' }
+        },
+        () => ({
+          data: { books: [{ id: 1, title: 'Emma' }], note: 'Classics' }
+        })
+      )
+      expect(data.books).toEqual([{ id: 1, title: 'Emma' }])
+      expect(data.note).toBe('Classics')
+    })
+
+    it('ignores objects that lists in forms load', async () => {
+      const { data, getComponent } = await mountForm({
+        schema: {
+          components: {
+            title: { type: 'text' },
+            reviews: {
+              type: 'list',
+              resource: { path: '/reviews' },
+              columns: { text: {} }
+            }
+          }
+        },
+        data: { title: 'Orlando' },
+        request: () => ({ data: { reviews: [{ id: 1, text: 'Great' }] } })
+      })
+      expect(getComponent('reviews').listData).toEqual([])
+      expect(data).toEqual({ id: 1, title: 'Orlando' })
+    })
+
+    it('loads objects through the resource of object sources', async () => {
+      const { getComponent } = await mountView(
+        {
+          publisher: {
+            type: 'object',
+            resource: { path: 'publisher' },
+            form: { type: 'form', components: { name: { type: 'text' } } }
+          }
+        },
+        () => ({ data: { id: 1, name: 'Penguin' } })
+      )
+      const publisher = getComponent('publisher')
+      expect(publisher.value).toEqual({ id: 1, name: 'Penguin' })
+      expect(publisher.objectData).toEqual({ id: 1, name: 'Penguin' })
+    })
+
+    it('clears the value and the total when loading anew', async () => {
+      let resolveLoad = null
+      let isPending = false
+      const { getComponent } = await mountView(
+        {
+          books: {
+            type: 'list',
+            resource: { path: 'books' },
+            columns: { title: {} }
+          }
+        },
+        () =>
+          isPending
+            ? new Promise(resolve => (resolveLoad = resolve))
+            : { data: { results: [{ id: 1, title: 'Emma' }], total: 12 } }
+      )
+      const books = getComponent('books')
+      expect(books.value).toEqual([{ id: 1, title: 'Emma' }])
+      expect(books.total).toBe(12)
+      isPending = true
+      books.loadData(true)
+      await flushPromises()
+      expect(books.value).toBe(null)
+      expect(books.total).toBe(0)
+      resolveLoad({ data: { results: [], total: 0 } })
+      await flushPromises()
+      expect(books.value).toEqual([])
+    })
+
+    it('unwraps list results in the data of the parent', async () => {
+      const { getComponent, data } = await mountSchema({
+        schema: {
+          components: { books: { type: 'list', columns: { title: {} } } }
+        },
+        data: {
+          books: { results: [{ id: 1, title: 'Emma' }], total: 7 }
+        }
+      })
+      expect(data.books).toEqual([{ id: 1, title: 'Emma' }])
+      expect(getComponent('books').total).toBe(7)
+    })
+  })
+
+  describe('scopes', () => {
+    it('loads the scope marked as `defaultScope` by default', async () => {
+      const request = vi.fn(() => ({ data: [] }))
+      const { getComponent } = await mountSchema({
+        schema: {
+          components: {
+            books: {
+              type: 'list',
+              resource: { path: 'books' },
+              scopes: { all: {}, recent: { defaultScope: true } },
+              columns: { title: {} }
+            }
+          }
+        },
+        request
+      })
+      expect(getComponent('books').defaultScope.name).toBe('recent')
+      expect(request).toHaveBeenCalledWith(
+        expect.objectContaining({ url: '/books', query: { scope: 'recent' } })
+      )
+    })
+
+    it('defaults to the first scope', async () => {
+      const { getComponent } = await mountSchema({
+        schema: {
+          components: {
+            books: {
+              type: 'list',
+              scopes: { all: {}, recent: {} },
+              columns: { title: {} }
+            }
+          }
+        }
+      })
+      expect(getComponent('books').defaultScope.name).toBe('all')
+    })
+  })
+
+  describe('wrapPrimitives', () => {
+    it('edits primitive values through wrapped items', async () => {
+      const { getComponent, data, settle } = await mountSchema({
+        schema: {
+          components: {
+            tags: {
+              type: 'list',
+              inlined: true,
+              wrapPrimitives: 'tag',
+              form: { type: 'form', components: { tag: { type: 'text' } } }
+            }
+          }
+        },
+        data: { tags: ['fiction', 'classic'] }
+      })
+      const tags = getComponent('tags')
+      expect(tags.listData).toEqual([{ tag: 'fiction' }, { tag: 'classic' }])
+      const item = tags.createItem(tags.schema.form)
+      item.tag = 'romance'
+      await settle()
+      expect(tags.wrappedPrimitives).toHaveLength(3)
+      expect(data.tags).toEqual(['fiction', 'classic', 'romance'])
+    })
+  })
+
+  describe('createItem()', () => {
+    it('inserts items at the index and opens collapsible ones', async () => {
+      const { getComponent, data, settle } = await mountSchema({
+        schema: {
+          components: {
+            chapters: {
+              type: 'list',
+              inlined: true,
+              collapsible: true,
+              collapsed: true,
+              form: { type: 'form', components: { title: { type: 'text' } } }
+            }
+          }
+        },
+        data: { chapters: [{ title: 'One' }, { title: 'Three' }] }
+      })
+      const chapters = getComponent('chapters')
+      const item = chapters.createItem(chapters.schema.form, null, 1)
+      item.title = 'Two'
+      await settle()
+      expect(data.chapters.map(({ title }) => title)).toEqual([
+        'One',
+        'Two',
+        'Three'
+      ])
+      const schemaComponent = chapters.getSchemaComponent(1)
+      expect(schemaComponent.data).toBe(chapters.listData[1])
+      expect(schemaComponent.opened).toBe(true)
+      expect(chapters.getSchemaComponent(0).opened).toBe(false)
+    })
+  })
+
+  describe('createItem() at the end', () => {
+    it('opens the appended item of collapsible lists', async () => {
+      const { getComponent, settle } = await mountSchema({
+        schema: {
+          components: {
+            chapters: {
+              type: 'list',
+              inlined: true,
+              collapsible: true,
+              collapsed: true,
+              form: { type: 'form', components: { title: { type: 'text' } } }
+            }
+          }
+        },
+        data: { chapters: [{ title: 'One' }] }
+      })
+      const chapters = getComponent('chapters')
+      chapters.createItem(chapters.schema.form)
+      await settle()
+      expect(chapters.listData).toHaveLength(2)
+      expect(chapters.getSchemaComponent(1).opened).toBe(true)
+      expect(chapters.getSchemaComponent(0).opened).toBe(false)
+    })
+  })
+
+  describe('getSchemaComponent()', () => {
+    it('returns nothing for empty lists and missing items', async () => {
+      const { getComponent } = await mountSchema({
+        schema: {
+          components: {
+            chapters: {
+              type: 'list',
+              inlined: true,
+              form: { type: 'form', components: { title: { type: 'text' } } }
+            },
+            prologue: {
+              type: 'list',
+              inlined: true,
+              form: { type: 'form', components: { title: { type: 'text' } } }
+            }
+          }
+        },
+        data: { chapters: [{ title: 'One' }], prologue: [] }
+      })
+      expect(getComponent('chapters').getSchemaComponent(5)).toBe(null)
+      expect(getComponent('prologue').getSchemaComponent(0)).toBe(undefined)
+    })
+  })
+
+  describe('deleteItem() with resources', () => {
+    const mountReviews = (reviews, request = null) =>
+      mountForm({
+        schema: {
+          components: {
+            title: { type: 'text' },
+            reviews: {
+              type: 'list',
+              resource: { path: 'reviews' },
+              deletable: true,
+              form: { type: 'form', components: { text: { type: 'text' } } }
+            }
+          }
+        },
+        data: { title: 'Orlando' },
+        request: options => {
+          const { method = 'get' } = options
+          request?.(options)
+          return { data: method === 'get' ? reviews : {} }
+        }
+      })
+
+    const getDeleteRequests = request =>
+      request.mock.calls.filter(([{ method }]) => method === 'delete')
+
+    it('ignores missing items', async () => {
+      const { getComponent, request } = await mountReviews([])
+      await getComponent('reviews').deleteItem(null, 0)
+      expect(getDeleteRequests(request)).toEqual([])
+    })
+
+    it(`doesn't delete items removed while confirming`, async () => {
+      const confirm = stubConfirm()
+      const { getComponent, request } = await mountReviews([
+        { id: 7, text: 'Great' }
+      ])
+      const reviews = getComponent('reviews')
+      const [item] = reviews.listData
+      confirm.mockImplementation(() => {
+        reviews.listData = []
+        return true
+      })
+      await reviews.deleteItem(item, 0)
+      await flushPromises()
+      expect(getDeleteRequests(request)).toEqual([])
+    })
+
+    it(`doesn't delete items without ids through the resource`, async () => {
+      stubConfirm()
+      const { getComponent, request } = await mountReviews([{ text: 'New' }])
+      const reviews = getComponent('reviews')
+      await reviews.deleteItem(reviews.listData[0], 0)
+      await flushPromises()
+      expect(getDeleteRequests(request)).toEqual([])
+      expect(reviews.listData).toEqual([{ text: 'New' }])
+    })
+  })
+
+  describe('navigateToComponent() outside the source', () => {
+    it(`doesn't reveal data paths of other components`, async () => {
+      const { getComponent } = await mountSchema({
+        schema: {
+          components: {
+            chapters: {
+              type: 'list',
+              inlined: true,
+              form: { type: 'form', components: { title: { type: 'text' } } }
+            }
+          }
+        },
+        data: { chapters: [{ title: 'One' }] }
+      })
+      expect(
+        await getComponent('chapters').navigateToComponent('authors/0', null, {
+          shouldRevealInlinedOnly: true
+        })
+      ).toBe(false)
+    })
+  })
+
+  describe('navigateToRouteComponent()', () => {
+    const mountChapters = () =>
+      mountForm({
+        schema: {
+          components: {
+            chapters: {
+              type: 'list',
+              form: {
+                type: 'form',
+                components: { title: { type: 'text' } }
+              }
+            }
+          }
+        },
+        data: { chapters: [{ title: 'Arrakis' }] }
+      })
+
+    it('completes right away when already at the route', async () => {
+      const { admin, getComponent } = await mountChapters()
+      const chapters = getComponent('chapters')
+      await admin.navigate('/items/1/chapters/0')
+      const routeComponent = admin.getRouteComponent()
+      const onComplete = vi.fn(([component]) => component)
+      expect(
+        await chapters.navigateToRouteComponent('chapters/0', onComplete)
+      ).toBe(routeComponent)
+      expect(onComplete).toHaveBeenCalledOnce()
+      // Without `onComplete()`, it resolves to `true`:
+      expect(await chapters.navigateToRouteComponent('chapters/0')).toBe(true)
+    })
+
+    it('resolves to false without a route for the data path', async () => {
+      const { getComponent } = await mountChapters()
+      const onComplete = vi.fn()
+      expect(
+        await getComponent('chapters').navigateToRouteComponent(
+          'unknown/path',
+          onComplete
+        )
+      ).toBe(false)
+      expect(onComplete).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('forms', () => {
+    it('tells whether all forms are compact', async () => {
+      const { getComponent } = await mountSchema({
+        schema: {
+          components: {
+            authors: {
+              type: 'list',
+              inlined: true,
+              form: {
+                type: 'form',
+                compact: true,
+                components: { name: { type: 'text' } }
+              }
+            },
+            books: {
+              type: 'list',
+              inlined: true,
+              forms: {
+                novel: { type: 'form', compact: true, components: {} },
+                poem: { type: 'form', components: {} }
+              }
+            }
+          }
+        }
+      })
+      expect(getComponent('authors').forms).toHaveLength(1)
+      expect(getComponent('authors').isCompact).toBe(true)
+      expect(getComponent('books').forms).toHaveLength(2)
+      expect(getComponent('books').isCompact).toBe(false)
+    })
+  })
+
+  describe('processSchema()', () => {
+    const api = { normalizePath: path => path }
+
+    // Bug: `SourceMixin.processSchema()` is called on the mixin, which has no
+    // `isListSource`, so the message always names 'schema'.
+    it.fails('refuses resources of inlined lists', async () => {
+      const schema = {
+        type: 'list',
+        inlined: true,
+        resource: { path: 'books' },
+        form: { type: 'form', components: {} }
+      }
+      await expect(
+        getTypeOptions(schema).processSchema(api, schema, 'books', [], 0)
+      ).rejects.toThrow('Nested lists cannot load data from their own')
+    })
+
+    it('refuses resources of inlined sources', async () => {
+      const schema = {
+        type: 'object',
+        inlined: true,
+        resource: { path: 'publisher' },
+        form: { type: 'form', components: {} }
+      }
+      await expect(
+        getTypeOptions(schema).processSchema(api, schema, 'publisher', [], 0)
+      ).rejects.toThrow('cannot load data from their own resources')
     })
   })
 })

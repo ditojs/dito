@@ -473,6 +473,30 @@ describe('DitoTypeMultiselect', () => {
       expect(getOptionLabels(field)).toEqual(['Jane Austen'])
     })
 
+    it('displays all options again once the search is cleared', async () => {
+      const { findField } = await mountSchema({
+        schema: createAuthorSchema(async () => [authors[2]]),
+        data: { author: { id: 1, name: 'Jane Austen' } }
+      })
+      const field = findField('author')
+      await search(field, 'Stoker')
+      expect(getOptionLabels(field)).toEqual(['Bram Stoker'])
+      await field.find('.multiselect__input').setValue('')
+      await flushPromises()
+      expect(getOptionLabels(field)).toEqual(['Jane Austen'])
+    })
+
+    it('shows thrown strings of failed searches as errors', async () => {
+      const { findField, getErrors } = await mountSchema({
+        schema: createAuthorSchema(async () => {
+          // eslint-disable-next-line no-throw-literal
+          throw 'Search is offline'
+        })
+      })
+      await search(findField('author'), 'Au')
+      expect(getErrors('author')).toEqual(['Search is offline'])
+    })
+
     it('shows the errors of failed searches', async () => {
       const { findField, getErrors } = await mountSchema({
         schema: createAuthorSchema(async () => {
@@ -482,5 +506,149 @@ describe('DitoTypeMultiselect', () => {
       await search(findField('author'), 'Au')
       expect(getErrors('author')).toEqual(['Search is unavailable'])
     })
+  })
+
+  it('opens and focuses multiselects with `autofocus`', async () => {
+    const { getComponent } = await mountSchema({
+      schema: {
+        components: {
+          genre: { type: 'multiselect', autofocus: true, options: genres }
+        }
+      }
+    })
+    const genre = getComponent('genre')
+    expect(genre.$refs.element.isOpen).toBe(true)
+    expect(genre.populate).toBe(true)
+  })
+
+  it('validates only once the open multiselect is closed', async () => {
+    const { findField, getComponent, getErrors } = await mountSchema({
+      schema: {
+        components: {
+          genre: { type: 'multiselect', required: true, options: genres }
+        }
+      }
+    })
+    const genre = getComponent('genre')
+    await open(findField('genre'))
+    genre.onFocus()
+    genre.onBlur()
+    await flushPromises()
+    expect(genre.focused).toBe(true)
+    expect(getErrors('genre')).toEqual([])
+    genre.blur()
+    await flushPromises()
+    expect(genre.$refs.element.isOpen).toBe(false)
+    expect(genre.focused).toBe(false)
+    expect(getErrors('genre')).toEqual(['The genre field is required.'])
+  })
+
+  it('marks plain values without option as unavailable', async () => {
+    const { findField } = await mountSchema({
+      schema: {
+        components: {
+          languages: {
+            type: 'multiselect',
+            multiple: true,
+            options: ['English', 'German']
+          }
+        }
+      },
+      data: { languages: ['Latin', 'German'] }
+    })
+    const tags = findField('languages').findAll('.multiselect__tag')
+    expect(tags.map(tag => tag.text())).toEqual(['Latin', 'German'])
+    expect(
+      tags.map(tag => tag.classes('dito-multiselect__tag--unavailable'))
+    ).toEqual([true, false])
+    expect(tags[0].attributes('title')).toBe('Not among the options')
+  })
+
+  it('adds tags as options with label and value with `taggable`', async () => {
+    const { findField, getComponent, data } = await mountSchema({
+      schema: {
+        components: {
+          genres: {
+            type: 'multiselect',
+            multiple: true,
+            searchable: true,
+            taggable: true,
+            options: genres
+          }
+        }
+      },
+      data: { genres: ['drama'] }
+    })
+    const field = findField('genres')
+    await search(field, 'opera')
+    await field.find('.multiselect__input').trigger('keydown.enter')
+    await flushPromises()
+    expect(data.genres).toEqual(['drama', 'opera'])
+    expect(getComponent('genres').options).toContainEqual({
+      label: 'opera',
+      value: 'opera'
+    })
+    expect(getTagLabels(field)).toEqual(['Drama', 'opera'])
+  })
+
+  it(`doesn't add tags to grouped options with \`taggable\``, async () => {
+    const { findField, getComponent, data } = await mountSchema({
+      schema: {
+        components: {
+          books: {
+            type: 'multiselect',
+            multiple: true,
+            searchable: true,
+            taggable: true,
+            groupBy: 'shelf',
+            options: [
+              { value: 'emma', label: 'Emma', shelf: 'Classics' },
+              { value: 'dune', label: 'Dune', shelf: 'Sci-Fi' }
+            ]
+          }
+        }
+      }
+    })
+    const field = findField('books')
+    await search(field, 'Ubik')
+    await field.find('.multiselect__input').trigger('keydown.enter')
+    await flushPromises()
+    expect(data.books).toEqual(['Ubik'])
+    expect(
+      getComponent('books').options.map(group => group.label)
+    ).toEqual(['Classics', 'Sci-Fi'])
+  })
+
+  it('selects multiple related objects and keeps unavailable ones', async () => {
+    const authors = [
+      { id: 1, name: 'Jane Austen' },
+      { id: 2, name: 'Mary Shelley' }
+    ]
+    const { findField, data } = await mountSchema({
+      schema: {
+        components: {
+          authors: {
+            type: 'multiselect',
+            multiple: true,
+            relate: true,
+            options: { data: authors, label: 'name', value: 'id' }
+          }
+        }
+      },
+      data: { authors: [{ id: 2 }, { id: 3, name: 'Bram Stoker' }] }
+    })
+    const field = findField('authors')
+    expect(getTagLabels(field)).toEqual(['Mary Shelley', 'Bram Stoker'])
+    expect(
+      field
+        .findAll('.multiselect__tag')
+        .map(tag => tag.classes('dito-multiselect__tag--unavailable'))
+    ).toEqual([false, true])
+    await selectOption(field, 'Jane Austen')
+    expect(data.authors).toEqual([
+      { id: 2, name: 'Mary Shelley' },
+      { id: 3, name: 'Bram Stoker' },
+      { id: 1, name: 'Jane Austen' }
+    ])
   })
 })

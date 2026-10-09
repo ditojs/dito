@@ -491,6 +491,21 @@ describe('definition inheritance', () => {
     })
   })
 
+  it('keeps inherited definitions that sub-classes set to null', () => {
+    class Note extends Model {
+      static properties = {
+        text: { type: 'string' }
+      }
+    }
+
+    class Memo extends Note {
+      static properties = null
+    }
+
+    createApp({ Memo })
+    expect(Memo.definition.properties.text).toEqual({ type: 'string' })
+  })
+
   it('returns the same definition object on repeated access', () => {
     expect(Manual.definition).toBe(Manual.definition)
     expect(Manual.definition.properties).toBe(Manual.definition.properties)

@@ -44,4 +44,21 @@ describe('DitoResizeHandle', () => {
     await wrapper.trigger('keydown', { key: 'ArrowUp' })
     expect(wrapper.emitted('resize')).toEqual([[110], [40]])
   })
+
+  it('emits the height of the element dragged with the pointer', () => {
+    const { wrapper } = mountResizeHandle()
+    const handle = wrapper.element
+    // happy-dom doesn't implement pointer capture:
+    handle.setPointerCapture = () => {}
+    const dispatch = (type, clientY) =>
+      handle.dispatchEvent(
+        new PointerEvent(type, { pointerId: 1, button: 0, clientY })
+      )
+    dispatch('pointerdown', 200)
+    dispatch('pointermove', 230)
+    dispatch('pointerup', 220)
+    // Moves after releasing the pointer don't resize anymore:
+    dispatch('pointermove', 300)
+    expect(wrapper.emitted('resize')).toEqual([[130], [120]])
+  })
 })

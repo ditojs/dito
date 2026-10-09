@@ -112,6 +112,44 @@ describe('DitoButton', () => {
     ).toBeUndefined()
   })
 
+  it('finds text in the children of elements that are not mounted yet', () => {
+    // Before mounting, element vnodes hold their text children as strings:
+    const text = mountButton(
+      { verb: 'add' },
+      { slots: { default: () => h('span', ['Add ', h('b', 'Chapter')]) } }
+    )
+    expect(text.attributes('aria-label')).toBeUndefined()
+    expect(text.text()).toBe('Add Chapter')
+    const blank = mountButton(
+      { verb: 'add' },
+      { slots: { default: () => h('span', ['  ', h('i')]) } }
+    )
+    expect(blank.attributes('aria-label')).toBe('Add')
+  })
+
+  it('wraps text in affixes from the prefix and suffix slots', () => {
+    const button = mountButton(
+      { text: 'Recipes' },
+      {
+        slots: {
+          prefix: () => h('span', { class: 'count' }, '3'),
+          suffix: () => h('span', { class: 'arrow' })
+        }
+      }
+    )
+    expect(button.classes()).toContain('dito-button--affixed')
+    expect(button.find('.dito-button__prefix .count').text()).toBe('3')
+    expect(button.find('.dito-button__text').text()).toBe('Recipes')
+    expect(button.find('.dito-button__suffix .arrow').exists()).toBe(true)
+  })
+
+  it('renders no affixes without prefix and suffix content', () => {
+    const button = mountButton({ text: 'Recipes' })
+    expect(button.classes()).not.toContain('dito-button--affixed')
+    expect(button.find('.dito-button__prefix').exists()).toBe(false)
+    expect(button.find('.dito-button__suffix').exists()).toBe(false)
+  })
+
   it('lets `title` and attributes override the verb labels', () => {
     const button = mountButton(
       { verb: 'delete', title: 'Delete Recipe' },

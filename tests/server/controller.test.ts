@@ -496,3 +496,75 @@ describe('Controller collection updates', () => {
     }
   })
 })
+
+describe('ModelController composite ids', () => {
+  class Placement extends Model {
+    declare shelfId: number
+    declare position: number
+
+    static override idColumn = ['shelfId', 'position']
+
+    static override properties: ModelProperties = {
+      shelfId: { type: 'integer' },
+      position: { type: 'integer' },
+      title: { type: 'string' }
+    }
+  }
+
+  class Placements extends ModelController<Placement> {
+    override modelClass = Placement
+  }
+
+  it('reads and coerces composite ids from collection payloads', async () => {
+    const app = createTestApp({
+      models: { Placement },
+      controllers: { Placements }
+    })
+    try {
+      await app.setupControllers()
+      const controller = app.getController('/placements') as Placements
+      const ctx: any = {
+        action: { type: 'collection' },
+        request: {
+          body: [
+            { shelfId: '1', position: 2 },
+            { shelfId: 3, position: '4' }
+          ]
+        }
+      }
+      expect(controller.getIds(ctx)).toEqual([
+        [1, 2],
+        [3, 4]
+      ])
+      // Other actions don't concern any model ids.
+      const otherCtx: any = { action: { type: 'controller' } }
+      expect(controller.getIds(otherCtx)).toEqual([])
+    } finally {
+      await app.knex?.destroy()
+    }
+  })
+})
+
+describe('ModelController assets', () => {
+  it('sets up no assets for `assets: true` without model assets', async () => {
+    class Tasks extends ModelController<Task> {
+      override modelClass = Task
+      override assets: any = true
+    }
+
+    const app = createTestApp({
+      models: { Task },
+      controllers: { Tasks }
+    })
+    try {
+      await app.setupControllers()
+      // Without assets to handle, no asset settings and upload routes are set.
+      const controller: any = app.getController('/tasks')
+      expect(controller.assets).toBeUndefined()
+      const { router } = app as any
+      expect(router.find('POST', '/tasks/upload/file').handler).toBeFalsy()
+    } finally {
+      await app.knex?.destroy()
+    }
+  })
+})

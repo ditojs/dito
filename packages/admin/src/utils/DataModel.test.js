@@ -1852,4 +1852,207 @@ describe('DataModel', () => {
       })
     })
   })
+
+  describe('rare paths', () => {
+    const getSourceSchema = () => ({ type: 'list' })
+
+    it(`asks the type with the item's context whether values are missing`, async () => {
+      // Like types whose values may be left out, decided per item:
+      const ignoreMissingValue = vi.fn(({ item }) => !!item.isDraft)
+      registerTypeComponent('note', {
+        defaultNested: true,
+        ignoreMissingValue
+      })
+      const schema = {
+        type: 'form',
+        components: {
+          chapters: {
+            type: 'list',
+            form: {
+              type: 'form',
+              components: { note: { type: 'note', default: 'None' } }
+            }
+          }
+        }
+      }
+      const { dataModel, data } = createDataModel(schema, { chapters: [] })
+      data.chapters.push({ isDraft: true }, { isDraft: false })
+      await nextTick()
+      expect(data.chapters).toEqual([
+        { isDraft: true },
+        { isDraft: false, note: 'None' }
+      ])
+      expect(ignoreMissingValue).toHaveBeenCalledWith(
+        expect.objectContaining({ dataPath: 'chapters/0/note' })
+      )
+      dataModel.stop()
+    })
+
+    it('sets defaults only once for components shown in several tabs', async () => {
+      const getDefault = vi.fn(() => 'Untitled')
+      const title = { type: 'text', default: getDefault }
+      const schema = {
+        type: 'form',
+        tabs: {
+          main: { type: 'tab', components: { title } },
+          preview: { type: 'tab', components: { title } }
+        }
+      }
+      const { dataModel, data } = createDataModel(schema, { title: 'Emma' })
+      expect(getDefault).not.toHaveBeenCalled()
+      delete data.title
+      await nextTick()
+      expect(data.title).toBe('Untitled')
+      expect(getDefault).toHaveBeenCalledOnce()
+      dataModel.stop()
+    })
+
+    it('replaces the computes of components whose schema changed', async () => {
+      const lower = vi.fn(({ item }) => item.title.toLowerCase())
+      const upper = vi.fn(({ item }) => item.title.toUpperCase())
+      const createSchema = compute => ({
+        type: 'form',
+        components: {
+          title: { type: 'text' },
+          label: { type: 'text', compute }
+        }
+      })
+      const schemaRef = ref(createSchema(lower))
+      const data = reactive({ title: 'Emma' })
+      const dataModel = new DataModel({
+        component: {},
+        getSchema: () => schemaRef.value,
+        getData: () => data
+      })
+      expect(data.label).toBe('emma')
+      schemaRef.value = createSchema(upper)
+      await nextTick()
+      expect(data.label).toBe('EMMA')
+      lower.mockClear()
+      data.title = 'Persuasion'
+      await nextTick()
+      expect(data.label).toBe('PERSUASION')
+      expect(lower).not.toHaveBeenCalled()
+      dataModel.stop()
+    })
+
+    it('resolves the options of components that it does not visit', async () => {
+      // E.g. components that read their options before the walk visits them:
+      const loadGenres = vi.fn(async () => ['novel', 'poetry'])
+      const genre = {
+        type: 'select',
+        if: false,
+        options: { data: loadGenres }
+      }
+      const schema = { type: 'form', components: { genre } }
+      const { dataModel, data } = createDataModel(schema, {})
+      const entry = {
+        schema: genre,
+        data,
+        name: 'genre',
+        dataPath: 'genre',
+        componentPath: 'genre'
+      }
+      expect(dataModel.getOptions(entry)).toBe(undefined)
+      await dataModel.waitUntilSettled()
+      expect(dataModel.getOptions(entry)).toEqual(['novel', 'poetry'])
+      expect(loadGenres).toHaveBeenCalledOnce()
+      dataModel.stop()
+    })
+
+    it(`doesn't compute values of components that an earlier compute hid`, async () => {
+      // Both computes depend on `title`, so their watchers run in the same
+      // flush. The first one hides the second one, which then must not run.
+      const summary = vi.fn(({ item }) => `About ${item.title}`)
+      const schema = {
+        type: 'form',
+        components: {
+          title: { type: 'text' },
+          isShort: {
+            type: 'text',
+            compute: ({ item }) => item.title.length < 5
+          },
+          summary: {
+            type: 'text',
+            if: ({ item }) => !item.isShort,
+            compute: summary
+          }
+        }
+      }
+      const { dataModel, data } = createDataModel(schema, {
+        title: 'Persuasion'
+      })
+      expect(data.summary).toBe('About Persuasion')
+      summary.mockClear()
+      data.title = 'Emma'
+      await nextTick()
+      expect(data.isShort).toBe(true)
+      expect(data.summary).toBe('About Persuasion')
+      expect(summary).not.toHaveBeenCalled()
+      dataModel.stop()
+    })
+
+    it('throws errors of `compute()` other than unloaded options', () => {
+      // Unlike failing `if` conditions, failing computes aren't caught:
+      const schema = {
+        type: 'form',
+        components: {
+          title: {
+            type: 'text',
+            compute: () => {
+              throw new Error('Broken compute')
+            }
+          }
+        }
+      }
+      expect(() => createDataModel(schema, { title: 'Emma' })).toThrow(
+        'Broken compute'
+      )
+    })
+
+    it('leaves out derived values of items added while settling', async () => {
+      const loads = []
+      const schema = {
+        type: 'form',
+        components: {
+          books: {
+            type: 'list',
+            form: {
+              type: 'form',
+              components: {
+                title: { type: 'text' },
+                slug,
+                summary: {
+                  type: 'computed',
+                  data: () => () => new Promise(resolve => loads.push(resolve))
+                }
+              }
+            }
+          }
+        }
+      }
+      const { dataModel, data } = createDataModel(
+        schema,
+        { books: [] },
+        { getSourceSchema }
+      )
+      await nextTick()
+      // An item added while the model settles, whose computed `slug` is
+      // derived, but whose parent the snapshot doesn't hold:
+      data.books.push({ title: 'New Book' })
+      await nextTick()
+      while (loads.length > 0) {
+        loads.shift()('Summary')
+        await nextTick()
+      }
+      await dataModel.waitUntilSettled()
+      await nextTick()
+      expect(data.books[0].slug).toBe('new-book')
+      expect(dataModel.processedDataSnapshot.value.processedData.books).toEqual(
+        []
+      )
+      expect(dataModel.isDirty).toBe(true)
+      dataModel.stop()
+    })
+  })
 })

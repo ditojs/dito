@@ -19,6 +19,9 @@ class Member extends UserModel {
 
   static override hooks: any = {
     'before:login'(member: Member) {
+      if (member.username === 'locked') {
+        throw new Error('Account is locked')
+      }
       loginEvents.push(`before login ${member.username}`)
     },
     'after:login'(member: Member) {
@@ -220,6 +223,28 @@ describe('UsersController', () => {
       success: false,
       error: 'Missing credentials'
     })
+  })
+
+  it('rejects logins that fail without a status with 401', async () => {
+    const locked = await Member.query().insert({
+      username: 'locked',
+      password: 'secret'
+    } as any)
+    try {
+      const request = createClient()
+      const login = await request('/members/login', {
+        method: 'POST',
+        body: { username: 'locked', password: 'secret' }
+      })
+      expect(login.status).toBe(401)
+      expect(login.data).toMatchObject({
+        success: false,
+        user: null,
+        error: 'Account is locked'
+      })
+    } finally {
+      await Member.query().deleteById(locked.id)
+    }
   })
 
   it('logs out members and clears the session', async () => {

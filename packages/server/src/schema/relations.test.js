@@ -246,6 +246,15 @@ describe('convertRelation(): Dito.js-style options', () => {
     ).toThrow('Unknown model reference: Novel.authorId')
   })
 
+  it('throws for empty model references', () => {
+    expect(() =>
+      convertRelation(
+        { relation: 'hasMany', from: null, to: 'Book.authorId' },
+        models
+      )
+    ).toThrow('Unknown model reference: null')
+  })
+
   it('throws for composite keys across different models', () => {
     expect(() =>
       convertRelation(

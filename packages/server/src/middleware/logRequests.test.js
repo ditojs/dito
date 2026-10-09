@@ -188,6 +188,19 @@ describe('logRequests()', () => {
     expect(entry.message).toMatch(/^GET \/ 500 /)
   })
 
+  it('logs statuses outside of the known ranges', async () => {
+    const logger = createLogger()
+    const app = createApp(logger, ctx => {
+      ctx.status = 699
+      ctx.body = 'odd'
+    })
+    await serve(app, async url => {
+      expect((await fetch(url)).status).toBe(699)
+    })
+    const [entry] = await waitForEntries(logger, 1)
+    expect(entry.message).toMatch(/^GET \/ 699 \S+ 3b$/)
+  })
+
   it('formats long response times in seconds', async () => {
     const logger = createLogger()
     vi.useFakeTimers({ toFake: ['performance'] })

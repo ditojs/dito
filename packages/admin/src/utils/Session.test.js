@@ -130,6 +130,21 @@ describe('Session', () => {
       expect(userInterface.requestLoginData).not.toHaveBeenCalled()
     })
 
+    it(`keeps a newer user interface when detaching an older one`, async () => {
+      const { session, userInterface, detach } = createSession({
+        responses: { 'post /login': { user: { ...user } } }
+      })
+      const newerInterface = {
+        requestLoginData: vi.fn(async () => ({ username: 'tester' })),
+        notify: vi.fn()
+      }
+      session.attachUserInterface(newerInterface)
+      detach()
+      expect(await session.login()).toEqual(user)
+      expect(newerInterface.requestLoginData).toHaveBeenCalledOnce()
+      expect(userInterface.requestLoginData).not.toHaveBeenCalled()
+    })
+
     it('redirects after logging in if configured', async () => {
       const location = { replace: vi.fn() }
       vi.stubGlobal('location', location)
@@ -155,6 +170,37 @@ describe('Session', () => {
       await session.logout()
       expect(session.user).toBe(null)
       expect(viewRegistry.clear).toHaveBeenCalledOnce()
+    })
+
+    it(`keeps the user when the server doesn't confirm`, async () => {
+      const { session, viewRegistry } = createSession({
+        responses: {
+          'get /session': { user: { ...user } },
+          'post /logout': { success: false }
+        }
+      })
+      await session.start()
+      await session.logout()
+      expect(session.user).toEqual(user)
+      expect(viewRegistry.clear).not.toHaveBeenCalled()
+    })
+
+    it('logs a failing logout request and keeps the user', async () => {
+      const consoleError = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {})
+      const error = new Error('Network down')
+      const { session } = createSession({
+        responses: {
+          'get /session': { user: { ...user } },
+          'post /logout': error
+        }
+      })
+      await session.start()
+      await session.logout()
+      expect(consoleError).toHaveBeenCalledWith(error)
+      expect(session.user).toEqual(user)
+      consoleError.mockRestore()
     })
   })
 
@@ -227,6 +273,34 @@ describe('Session', () => {
       expect(userInterface.notify).toHaveBeenCalledWith(
         expect.objectContaining({ title: 'Authentication Error' })
       )
+    })
+
+    it('notifies the error of the response body', async () => {
+      const error = Object.assign(new Error('Request failed'), {
+        response: { data: { error: 'Session store unavailable' } }
+      })
+      const { session, userInterface } = createSession({
+        responses: { 'get /session': error }
+      })
+      await session.fetchUser()
+      expect(userInterface.notify).toHaveBeenCalledWith(
+        expect.objectContaining({ text: 'Session store unavailable' })
+      )
+    })
+
+    it('logs the error without a user interface', async () => {
+      const consoleError = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {})
+      const error = new Error('Network down')
+      const { session, userInterface, detach } = createSession({
+        responses: { 'get /session': error }
+      })
+      detach()
+      expect(await session.fetchUser()).toBe(null)
+      expect(consoleError).toHaveBeenCalledWith(error)
+      expect(userInterface.notify).not.toHaveBeenCalled()
+      consoleError.mockRestore()
     })
   })
 })

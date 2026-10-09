@@ -85,4 +85,36 @@ describe('DitoTypeCode', () => {
     await settle()
     expect(field.element.style.height).toBe('120px')
   })
+
+  it('highlights the code in the language of `language`', async () => {
+    const { findField, data, settle } = await mountSchema({
+      schema: {
+        components: {
+          lang: { type: 'text' },
+          snippet: { type: 'code', language: ({ item }) => item.lang }
+        }
+      },
+      data: { lang: 'javascript', snippet: 'a {}' }
+    })
+    const code = () => findField('snippet').find('code')
+    expect(code().classes()).toContain('language-javascript')
+    data.lang = 'css'
+    await settle()
+    expect(code().classes()).toContain('language-css')
+    expect(code().classes()).not.toContain('language-javascript')
+  })
+
+  it('focuses and blurs the textarea of the editor', async () => {
+    const { findField, getComponent } = await mountSchema({
+      schema: { components: { snippet: { type: 'code' } } }
+    })
+    const textarea = findField('snippet').find('textarea').element
+    const component = getComponent('snippet')
+    await component.focus()
+    expect(document.activeElement).toBe(textarea)
+    expect(component.focused).toBe(true)
+    component.blur()
+    expect(document.activeElement).not.toBe(textarea)
+    expect(component.focused).toBe(false)
+  })
 })

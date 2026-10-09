@@ -419,6 +419,35 @@ describe('Dito.js graph handling', () => {
       const processor = new DitoGraphProcessor(Book, null, {})
       expect(processor.getData()).toBeUndefined()
     })
+
+    it('collects override paths for relations set to null', () => {
+      // Upserts unrelate relations that are set to null, so they need to be
+      // part of the override paths even without any nested data:
+      const processor = new DitoGraphProcessor(
+        Book,
+        { title: 'Dune', author: null, shelf: null },
+        upsertOptions,
+        { processOverrides: true }
+      )
+      expect(processor.getOptions()).toEqual({
+        relate: ['author'],
+        unrelate: ['author', 'shelf'],
+        insertMissing: true
+      })
+    })
+
+    it('passes on relation values that are neither models nor arrays', () => {
+      // Invalid relation values are left for validation to report:
+      const book = createBookGraph({ title: 'Dune' })
+      Object.assign(book, { author: 'Frank' })
+      const processor = new DitoGraphProcessor(
+        Book,
+        book,
+        { relate: true },
+        { processRelates: true }
+      )
+      expect(processor.getData().author).toBe('Frank')
+    })
   })
 
   describe('insertDitoGraph()', () => {
@@ -1062,6 +1091,22 @@ describe('Dito.js graph handling', () => {
       expect(result).toMatchObject({ title: 'Earthsea' })
       expect(result).not.toHaveProperty('shelf')
     })
+
+    it('filters arrays of plain graph data, keeping empty entries', () => {
+      const result: any = Book.filterGraph(
+        [{ title: 'Earthsea', shelf: { name: 'Fantasy' } }, null] as any,
+        'author'
+      )
+      expect(result).toHaveLength(2)
+      expect(result[0]).toBeInstanceOf(Book)
+      expect(result[0]).not.toHaveProperty('shelf')
+      expect(result[1]).toBeNull()
+    })
+
+    it('returns empty graphs unchanged', () => {
+      expect(Book.filterGraph(null as any, 'author')).toBeNull()
+      expect(Book.filterGraph(undefined as any, 'author')).toBeUndefined()
+    })
   })
 
   describe('populateGraph()', () => {
@@ -1156,6 +1201,16 @@ describe('Dito.js graph handling', () => {
       const graph = createBookGraph({ title: 'Earthsea', chapters: [] })
       await Book.populateGraph(graph, 'chapters.book')
       expect(graph.chapters).toEqual([])
+    })
+
+    it('keeps leaves that already hold more than a reference', async () => {
+      const author = await Author.query().insert({ name: 'Ursula' })
+      const book = createBookGraph({
+        title: 'Earthsea',
+        author: { id: author.id, name: 'Ursula K. Le Guin' }
+      })
+      await Book.populateGraph(book, 'author')
+      expect(book.author!.name).toBe('Ursula K. Le Guin')
     })
 
     it('ignores references to models that do not exist', async () => {

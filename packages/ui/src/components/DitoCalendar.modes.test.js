@@ -181,6 +181,14 @@ describe('DitoCalendar days', () => {
     )
   })
 
+  it('keeps the shown month when the model value is set to an equal date', async () => {
+    wrapper = mountCalendar()
+    await click(wrapper, '.dito-calendar-step-next.dito-calendar-step-month')
+    expect(getCursorLabel(wrapper)).toBe('April 5, 2024')
+    await wrapper.setProps({ modelValue: new Date(2024, 2, 5, 14, 30) })
+    expect(getCursorLabel(wrapper)).toBe('April 5, 2024')
+  })
+
   it('steps years with Shift+PageUp and Shift+PageDown', async () => {
     wrapper = mountCalendar()
     const grid = wrapper.find('[role="grid"]')

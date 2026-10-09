@@ -29,6 +29,8 @@ describe('ContextMixin', () => {
       },
       data: {
         name: 'City Library',
+        // Data that the schema doesn't define, and processing removes:
+        notes: 'Closed on Sundays',
         authors: [
           {
             id: 1,
@@ -63,5 +65,30 @@ describe('ContextMixin', () => {
     expect(name.item).toBe(data)
     expect(name.parentItem).toBe(null)
     expect(name.parentData).toBe(null)
+  })
+
+  it('provides the processed item and root item of components', async () => {
+    const { getComponent } = await mountLibrary()
+    const title = getComponent('authors/0/books/1/title')
+    expect(title.processedItem).toEqual({ id: 2, title: 'Persuasion' })
+    // The processed root item is found through the parent schema components,
+    // and contains only the data that the schemas define:
+    expect(title.processedRootItem).toEqual({
+      id: 1,
+      name: 'City Library',
+      authors: [
+        {
+          id: 1,
+          name: 'Jane Austen',
+          books: [
+            { id: 1, title: 'Emma' },
+            { id: 2, title: 'Persuasion' }
+          ]
+        }
+      ]
+    })
+    expect(getComponent('name').processedRootItem).toEqual(
+      title.processedRootItem
+    )
   })
 })

@@ -108,6 +108,15 @@ describe('seed()', () => {
     }
   })
 
+  it('uses the named exports of seed modules without default export', async () => {
+    const Author = createModelClass('Author')
+    await writeSeed('Author.js', `export const name = 'Ada'`)
+    await seed(createApp({ Author }))
+    expect(Author.insertGraph).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'Ada' })
+    )
+  })
+
   it('reports seeds that do not return records', async () => {
     await writeSeed('setup.js', 'export default () => {}')
     await writeSeed('unknown.json', '{ "title": "A" }')

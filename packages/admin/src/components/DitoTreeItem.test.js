@@ -1,6 +1,7 @@
 import { vi } from 'vitest'
 import { asArray } from '@ditojs/utils'
 import { flushPromises } from '@vue/test-utils'
+import Sortable from 'sortablejs'
 import { mountForm, stubConfirm, enterValue } from '../test/mount.js'
 
 const chapterForm = {
@@ -132,6 +133,141 @@ describe('DitoTreeItem', () => {
       const route = admin.router.currentRoute.value
       expect(route.path).toBe('/items/1/chapters/0')
       expect(asArray(route.query.filter)).toEqual(filter)
+    })
+  })
+
+  describe('children', () => {
+    // Mounts a book form with a tree of draggable and editable chapters and
+    // their sections, which are closed.
+    async function mountChaptersForm(chapters) {
+      return mountForm({
+        schema: {
+          components: {
+            chapters: {
+              type: 'tree-list',
+              path: 'chapters',
+              itemLabel: 'title',
+              form: chapterForm,
+              editable: true,
+              children: {
+                name: 'sections',
+                path: 'sections',
+                itemLabel: 'title',
+                form: chapterForm,
+                editable: true,
+                draggable: true,
+                deletable: true
+              }
+            }
+          }
+        },
+        data: { chapters }
+      })
+    }
+
+    const findItem = (wrapper, label) =>
+      wrapper
+        .findAll('.dito-tree-item')
+        .find(
+          item => (
+            item.element.querySelector(
+              ':scope > .dito-tree-header .dito-tree-label'
+            )?.textContent === label
+          )
+        )
+
+    it('renders items without children as leaves', async () => {
+      const { wrapper } = await mountChaptersForm([
+        { title: 'Intro', sections: [{ title: 'Welcome' }] },
+        { title: 'Outro', sections: null }
+      ])
+      expect(
+        findItem(wrapper, 'Intro')
+          .find('.dito-tree-header > .dito-tree-branch')
+          .exists()
+      ).toBe(true)
+      const outro = findItem(wrapper, 'Outro')
+      expect(outro.find('.dito-tree-leaf').exists()).toBe(true)
+      expect(outro.find('.dito-draggable').exists()).toBe(true)
+      expect(outro.findAll('.dito-tree-item')).toHaveLength(0)
+    })
+
+    it('opens the items in the path of the edited child', async () => {
+      const { admin, wrapper, settle } = await mountChaptersForm([
+        { title: 'Intro', sections: [{ title: 'Welcome' }] }
+      ])
+      const chevron = findItem(wrapper, 'Intro').find('.dito-chevron')
+      expect(chevron.classes()).not.toContain('dito-chevron--open')
+      await admin.navigate('/items/1/chapters/0/sections/0')
+      await settle()
+      expect(chevron.classes()).toContain('dito-chevron--open')
+      // The items stay open after the child's form is closed:
+      await admin.navigate('/items/1')
+      await settle()
+      expect(chevron.classes()).toContain('dito-chevron--open')
+    })
+
+    it('moves children with their drag handles', async () => {
+      const { wrapper, data } = await mountChaptersForm([
+        {
+          title: 'Intro',
+          sections: [{ title: 'Welcome' }, { title: 'Overview' }]
+        }
+      ])
+      const getTitles = () =>
+        data.chapters[0].sections.map(section => section.title)
+      const findHandle = label =>
+        findItem(wrapper, label).find('.dito-button--drag')
+      await findHandle('Welcome').trigger('keydown', {
+        key: 'ArrowUp',
+        altKey: true
+      })
+      await flushPromises()
+      // The first child can't move up:
+      expect(getTitles()).toEqual(['Welcome', 'Overview'])
+      await findHandle('Welcome').trigger('keydown', {
+        key: 'ArrowDown',
+        altKey: true
+      })
+      await flushPromises()
+      expect(getTitles()).toEqual(['Overview', 'Welcome'])
+    })
+
+    it('marks the item while its children are dragged', async () => {
+      const { wrapper } = await mountChaptersForm([
+        {
+          title: 'Intro',
+          sections: [{ title: 'Welcome' }, { title: 'Overview' }]
+        }
+      ])
+      const intro = findItem(wrapper, 'Intro')
+      const sortable = Sortable.get(intro.find('.dito-draggable').element)
+      sortable.option('onStart')()
+      await flushPromises()
+      expect(intro.classes()).toContain('dito-tree-item--dragging')
+      sortable.option('onEnd')({ oldIndex: 0, newIndex: 0 })
+      await flushPromises()
+      expect(intro.classes()).not.toContain('dito-tree-item--dragging')
+    })
+
+    it(`doesn't notify the removal of children removed meanwhile`, async () => {
+      const confirm = stubConfirm()
+      const { wrapper, data, admin } = await mountChaptersForm([
+        { title: 'Intro', sections: [{ title: 'Welcome' }] }
+      ])
+      const notify = vi.spyOn(admin.root, 'notify')
+      // The child is removed while the dialog is open:
+      confirm.mockImplementation(() => {
+        data.chapters[0].sections = []
+        return true
+      })
+      await findItem(wrapper, 'Welcome')
+        .find('.dito-button--remove')
+        .trigger('click')
+      await flushPromises()
+      expect(confirm).toHaveBeenCalledOnce()
+      expect(data.chapters[0].sections).toEqual([])
+      expect(notify).not.toHaveBeenCalled()
     })
   })
 })

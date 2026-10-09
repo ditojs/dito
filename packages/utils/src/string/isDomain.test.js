@@ -21,4 +21,10 @@ describe('isDomain()', () => {
     expect(isDomain('line%74o.com')).toBe(false)
     expect(isDomain('line to.com')).toBe(false)
   })
+
+  it('should return false for hosts that `URL` rejects', () => {
+    expect(isDomain('book[s].example.com')).toBe(false)
+    expect(isDomain('book<s>.example.com')).toBe(false)
+    expect(isDomain('book|s.example.com')).toBe(false)
+  })
 })

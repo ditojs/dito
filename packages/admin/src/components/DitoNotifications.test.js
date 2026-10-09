@@ -6,9 +6,10 @@ function findNotifications() {
   return [...document.querySelectorAll('.dito-notification')]
 }
 
-async function mountNotifications() {
+async function mountNotifications(api) {
   const admin = await mountAdmin({
-    views: { books: { type: 'view', label: 'Books', components: {} } }
+    views: { books: { type: 'view', label: 'Books', components: {} } },
+    api
   })
   return admin.root.$refs.notifications
 }
@@ -88,5 +89,50 @@ describe('DitoNotifications', () => {
     notifications.destroyAll()
     await flushPromises()
     await vi.waitFor(() => expect(findNotifications()).toHaveLength(0))
+  })
+
+  it('titles and logs notifications of unknown types as errors', async () => {
+    const notifications = await mountNotifications()
+    notifications.notify({ type: 'reminder', text: 'Return Emma' })
+    await flushPromises()
+    const [notification] = findNotifications()
+    expect(notification.querySelector('.notification-title').textContent).toBe(
+      'Notification'
+    )
+    expect(console.error).toHaveBeenCalledWith('Return Emma')
+  })
+
+  it('logs the error of error notifications', async () => {
+    const notifications = await mountNotifications()
+    const error = new Error('Timeout')
+    notifications.notify({ type: 'error', text: 'Not saved', error })
+    expect(console.error).toHaveBeenCalledWith('Not saved', error)
+  })
+
+  it('only logs with `api.notifications: false`', async () => {
+    const notifications = await mountNotifications({ notifications: false })
+    notifications.notify({ type: 'warning', text: 'Low stock' })
+    await flushPromises()
+    expect(console.warn).toHaveBeenCalledWith('Low stock')
+    expect(findNotifications()).toHaveLength(0)
+  })
+
+  it('keeps notifications with a `duration` of 0 open', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    try {
+      const notifications = await mountNotifications()
+      notifications.notify({ text: 'Sticky', duration: 0 })
+      notifications.notify({ text: 'Brief', duration: 100 })
+      await flushPromises()
+      expect(findNotifications()).toHaveLength(2)
+      await vi.advanceTimersByTimeAsync(5000)
+      await vi.waitFor(() =>
+        expect(
+          findNotifications().map(notification => notification.textContent)
+        ).toEqual([expect.stringContaining('Sticky')])
+      )
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

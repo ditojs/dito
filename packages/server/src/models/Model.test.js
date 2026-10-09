@@ -83,11 +83,70 @@ describe('Model._mapAssetFiles: asset signing across data paths', () => {
     expect(json.content.files[1].signature).toBe('sig-of-y.png')
   })
 
+  it('keeps empty values at asset data paths', () => {
+    const model = makeFakeModel({
+      cover: { storage: 'test' },
+      gallery: { storage: 'test' }
+    })
+    const json = { cover: null, gallery: [{ key: 'a.png' }, null] }
+    Model._mapAssetFiles.call(model, json, signCallback)
+    expect(json).toEqual({
+      cover: null,
+      gallery: [{ key: 'a.png', signature: 'sig-of-a.png' }, null]
+    })
+  })
+
   it('is a no-op when the wildcard matches nothing', () => {
     const model = makeFakeModel({ '**.file': { storage: 'test' } })
     const json = { name: 'no-files-here' }
     Model._mapAssetFiles.call(model, json, signCallback)
     expect(json).toEqual({ name: 'no-files-here' })
+  })
+})
+
+describe('Model._signAssetFiles()', () => {
+  it('signs copies of the asset files, leaving the originals untouched', () => {
+    const model = makeFakeModel({ cover: { storage: 'test' } })
+    model._mapAssetFiles = Model._mapAssetFiles
+    const file = { key: 'cover.png' }
+    const json = { cover: file }
+    Model._signAssetFiles.call(model, json)
+    expect(json.cover).toEqual({
+      key: 'cover.png',
+      signature: 'sig-of-cover.png'
+    })
+    expect(json.cover).not.toBe(file)
+    expect(file).toEqual({ key: 'cover.png' })
+  })
+})
+
+describe('Model._forEachAssetFile()', () => {
+  it('calls the callback for each file, including files in arrays', () => {
+    const model = makeFakeModel({
+      cover: { storage: 'test' },
+      gallery: { storage: 'test' },
+      missing: { storage: 'test' }
+    })
+    const json = {
+      cover: { key: 'cover.png' },
+      gallery: [{ key: 'a.png' }, null, [{ key: 'b.png' }]]
+    }
+    const keys = []
+    Model._forEachAssetFile.call(model, json, (file, storage) => {
+      expect(storage).toBe(model.app.getStorage('test'))
+      keys.push(file.key)
+    })
+    expect(keys).toEqual(['cover.png', 'a.png', 'b.png'])
+  })
+
+  it('does nothing for models without assets', () => {
+    const callback = vi.fn()
+    Model._forEachAssetFile.call(
+      makeFakeModel(undefined),
+      { cover: { key: 'cover.png' } },
+      callback
+    )
+    expect(callback).not.toHaveBeenCalled()
   })
 })
 
@@ -647,6 +706,19 @@ describe('Model#$setJson() with $initialize()', () => {
     expect(edition.title).toBe('Draft')
   })
 
+  it('leaves relations unparsed with the skipParseRelations option', () => {
+    const edition = Edition.fromJson(
+      {
+        title: 'Second',
+        previous: { id: 1, seriesKey: 'abc', title: 'First' }
+      },
+      { skipParseRelations: true }
+    )
+    expect(edition.previous).not.toBeInstanceOf(Edition)
+    expect(edition.seriesKey).toBe('abc')
+    expect(initialized).toEqual(['Second'])
+  })
+
   it('does not call $initialize() for patches and references', () => {
     Edition.fromJson({ title: 'Patch' }, { patch: true })
     const reference = Edition.fromJson({ id: 1 }, { skipValidation: true })
@@ -920,6 +992,12 @@ describe('Model.modifierNotFound(): scopes and prefixes', () => {
       /Unable to determine modify function/
     )
   })
+
+  it('throws for modifiers that are neither strings nor functions', () => {
+    expect(() => Book.query().modify(42)).toThrow(
+      /Unable to determine modify function from provided value/
+    )
+  })
 })
 
 describe('Model error factories', () => {
@@ -1109,6 +1187,30 @@ describe('Model relation accessors', () => {
       `Model 'Club' already defines a property with name '$members' that ` +
       `clashes with the relation accessor.`
     )
+  })
+
+  it('wraps errors of relations to plain Objection.js models', () => {
+    class Member extends objection.Model {
+      static tableName = 'Member'
+    }
+    class Club extends Model {
+      static relations = {
+        members: {
+          relation: objection.Model.HasManyRelation,
+          modelClass: Member,
+          join: { from: 'Club.id', to: 'Member.clubId' }
+        }
+      }
+    }
+
+    let error
+    try {
+      createApp({ Club })
+    } catch (err) {
+      error = err
+    }
+    expect(error).toBeInstanceOf(RelationError)
+    expect(error.message).toMatch(/getRelatedRelations is not a function/)
   })
 
   it('wraps relation configuration errors in relation errors', () => {

@@ -985,4 +985,49 @@ describe('convertSchema()', () => {
       unevaluatedProperties: false
     })
   })
+
+  it('treats null options like the default options', () => {
+    expect(convertSchema({ type: 'text' }, null)).toEqual({ type: 'string' })
+  })
+
+  it(`keeps 'null' types instead of converting them to references`, () => {
+    expect(convertSchema({ type: 'null' })).toEqual({ type: 'null' })
+  })
+
+  it('does not add formats that allOf already contains', () => {
+    expect(
+      convertSchema({
+        type: 'datetime',
+        allOf: [{ format: 'date-time' }]
+      })
+    ).toEqual({
+      type: ['string', 'object'],
+      allOf: [{ format: 'date-time' }]
+    })
+  })
+
+  // Bug: Boolean schemas are valid JSON schemas, but are used as WeakMap keys
+  // of the schema cache, which throws "Invalid value used as weak map key".
+  test.fails('keeps boolean schemas unmodified', () => {
+    expect(convertSchema({ type: 'array', items: true })).toEqual({
+      type: 'array',
+      items: true
+    })
+  })
+
+  // Bug: Cache hits of root schemas always add `definitions`, as the cached
+  // `definitions` object is never null, even when it is empty.
+  test.fails(
+    'returns cached root schemas without definitions unchanged',
+    () => {
+      const recipe = {
+        type: 'object',
+        properties: { dish: { type: 'string' } }
+      }
+      const first = convertSchema(recipe)
+      const second = convertSchema(recipe)
+      expect(first).not.toHaveProperty('definitions')
+      expect(second).toEqual(first)
+    }
+  )
 })

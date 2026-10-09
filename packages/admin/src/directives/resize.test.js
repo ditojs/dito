@@ -129,6 +129,38 @@ describe('resize directive', () => {
     expect(ResizeObserverStub.instances).toHaveLength(2)
   })
 
+  it('keeps the observer while other nodes are still observed', async () => {
+    const { observeResize, unobserveResize } = await importResize()
+    const [node, otherNode] = [
+      document.createElement('div'),
+      document.createElement('div')
+    ]
+    const handler = vi.fn()
+    observeResize(node, handler)
+    observeResize(otherNode, handler)
+    unobserveResize(node, handler)
+    observeResize(node, handler)
+    expect(ResizeObserverStub.instances).toHaveLength(1)
+  })
+
+  it('ignores entries of nodes that were unobserved meanwhile', async () => {
+    // `ResizeObserver` may still deliver entries that were queued before the
+    // node was unobserved.
+    const { observeResize, unobserveResize } = await importResize()
+    const [node, otherNode] = [
+      document.createElement('div'),
+      document.createElement('div')
+    ]
+    const [handler, otherHandler] = [vi.fn(), vi.fn()]
+    observeResize(node, handler)
+    observeResize(otherNode, otherHandler)
+    unobserveResize(node, handler)
+    const [observer] = ResizeObserverStub.instances
+    expect(() => observer.resize(node, 10)).not.toThrow()
+    expect(handler).not.toHaveBeenCalled()
+    expect(otherHandler).not.toHaveBeenCalled()
+  })
+
   it('observes and unobserves through the directive hooks', async () => {
     const { default: resize } = await importResize()
     const node = document.createElement('div')

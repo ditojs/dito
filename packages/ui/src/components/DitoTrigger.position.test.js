@@ -132,6 +132,33 @@ describe('DitoTrigger positioning', () => {
       })
     })
 
+    it('keeps aligned popups that fit on their side and edge', async () => {
+      expect(await getPosition({ placement: 'left' })).toEqual({
+        left: -popupWidth,
+        top: 0
+      })
+      expect(await getPosition({ placement: 'right' })).toEqual({
+        left: 50,
+        top: 0
+      })
+      expect(await getPosition({ placement: 'bottom-left' })).toEqual({
+        left: 0,
+        top: 20
+      })
+      expect(await getPosition({ placement: 'bottom-right' })).toEqual({
+        left: -30,
+        top: 20
+      })
+      expect(await getPosition({ placement: 'right-top' })).toEqual({
+        left: 50,
+        top: 0
+      })
+      expect(await getPosition({ placement: 'right-bottom' })).toEqual({
+        left: 50,
+        top: -20
+      })
+    })
+
     it('flips popups between top and bottom', async () => {
       expect(
         await getPosition({ placement: 'bottom' }, { top: innerHeight - 25 })

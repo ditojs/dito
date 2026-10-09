@@ -1,6 +1,12 @@
 import { vi } from 'vitest'
-import { flushPromises } from '@vue/test-utils'
-import { mountForm, settle } from '../test/mount.js'
+import { flushPromises, DOMWrapper } from '@vue/test-utils'
+import {
+  mountAdmin,
+  mountForm,
+  mountSchema,
+  settle,
+  enterValue
+} from '../test/mount.js'
 
 const maliciousName = '<img src="x" onerror="alert(1)">'
 const escapedName = '&lt;img src=&quot;x&quot; onerror=&quot;alert(1)&quot;&gt;'
@@ -221,5 +227,421 @@ describe('DitoForm', () => {
         'get /items/1/tag'
       ])
     })
+  })
+
+  describe('nested forms of items in the form data', () => {
+    const chapterForm = {
+      type: 'form',
+      label: 'Chapter',
+      components: { title: { type: 'text' } }
+    }
+
+    // Mounts a book form whose chapters and author are edited in nested forms,
+    // which apply their changes to the data of the book form.
+    async function mountBookForm({ chapters = [], author = null } = {}) {
+      const result = await mountForm({
+        schema: {
+          label: 'Book',
+          components: {
+            title: { type: 'text' },
+            chapters: {
+              type: 'list',
+              editable: true,
+              creatable: true,
+              itemLabel: 'title',
+              form: chapterForm
+            },
+            author: {
+              type: 'object',
+              editable: true,
+              creatable: true,
+              form: {
+                type: 'form',
+                label: 'Author',
+                components: { name: { type: 'text' } }
+              }
+            }
+          }
+        },
+        data: { title: 'Emma', chapters, author }
+      })
+      const notify = vi.spyOn(result.admin.root, 'notify')
+      return { ...result, notify }
+    }
+
+    async function openNestedForm(admin, path) {
+      await admin.navigate(path)
+      const form = admin.getRouteComponent(component => component.isForm)
+      await settle(form)
+      return form
+    }
+
+    // Enters `value` into the only input of the nested `form`, and submits the
+    // form with its own submit button.
+    async function submitNestedForm(form, value) {
+      const element = new DOMWrapper(form.$el)
+      await enterValue(element.find('input'), value)
+      await settle(form)
+      await element
+        .find('.dito-buttons--main button[type="submit"]')
+        .trigger('click')
+      await settle(form)
+    }
+
+    it('applies the changes of an item to the data of the form', async () => {
+      const { admin, data, notify, routeComponent } = await mountBookForm({
+        chapters: [{ title: 'Prologue' }]
+      })
+      const form = await openNestedForm(admin, '/items/1/chapters/0')
+      expect(form.isTransient).toBe(true)
+      expect(form.data).toEqual({ title: 'Prologue' })
+      await submitNestedForm(form, 'Opening')
+      expect(data.chapters).toEqual([{ title: 'Opening' }])
+      expect(admin.router.currentRoute.value.path).toBe('/items/1')
+      // The applied changes make the book form dirty, not saved:
+      expect(routeComponent.isDirty).toBe(true)
+      expect(notify).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'info',
+          title: 'Change Applied',
+          html: [
+            `Changes to Chapter 'Opening' were applied.`,
+            expect.stringContaining('<b>Note</b>')
+          ]
+        })
+      )
+    })
+
+    it('applies the response of buttons with resources', async () => {
+      const { admin, data } = await mountForm({
+        schema: {
+          components: {
+            chapters: {
+              type: 'list',
+              editable: true,
+              itemLabel: 'title',
+              form: {
+                ...chapterForm,
+                buttons: {
+                  proofread: {
+                    type: 'submit',
+                    text: 'Proofread',
+                    resource: { path: '/proofread', method: 'post' }
+                  }
+                }
+              }
+            }
+          }
+        },
+        data: { chapters: [{ title: 'prologue' }] },
+        request: ({ method, url, data }) =>
+          method === 'post' && url === '/proofread'
+            ? { data: { title: data.title.toUpperCase() } }
+            : null
+      })
+      const form = await openNestedForm(admin, '/items/1/chapters/0')
+      await new DOMWrapper(form.$el)
+        .find('button[id$="proofread"]')
+        .trigger('click')
+      await settle(form)
+      expect(data.chapters).toEqual([{ title: 'PROLOGUE' }])
+      // Unlike the submit button, other buttons don't close the form:
+      expect(admin.router.currentRoute.value.path).toBe('/items/1/chapters/0')
+      expect(form.data).toEqual({ title: 'PROLOGUE' })
+    })
+
+    it('adds created items to the list in the data of the form', async () => {
+      const { admin, data, notify } = await mountBookForm({
+        chapters: [{ title: 'Prologue' }]
+      })
+      const form = await openNestedForm(admin, '/items/1/chapters/create')
+      expect(form.isCreating).toBe(true)
+      await submitNestedForm(form, 'Epilogue')
+      expect(data.chapters).toEqual([
+        { title: 'Prologue' },
+        { title: 'Epilogue' }
+      ])
+      expect(notify).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'info',
+          title: 'Item Added',
+          html: [`Chapter 'Epilogue' was added.`, expect.any(String)]
+        })
+      )
+    })
+
+    it(`notifies the error when the list to add to is missing`, async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+      const { admin, data, notify } = await mountBookForm({ chapters: null })
+      const form = await openNestedForm(admin, '/items/1/chapters/create')
+      await submitNestedForm(form, 'Epilogue')
+      expect(data.chapters).toBe(null)
+      // The form stays open with the entered data:
+      expect(admin.router.currentRoute.value.path).toBe(
+        '/items/1/chapters/create'
+      )
+      expect(form.data).toEqual({ title: 'Epilogue' })
+      expect(notify).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'error',
+          error: 'Could not submit transient item',
+          html: `Unable to add Chapter 'Epilogue'.`
+        })
+      )
+    })
+
+    it('redirects missing objects to their create route', async () => {
+      const { admin, data } = await mountBookForm({ author: null })
+      const form = await openNestedForm(admin, '/items/1/author')
+      expect(admin.router.currentRoute.value.path).toBe(
+        '/items/1/author/create'
+      )
+      expect(form.isCreating).toBe(true)
+      expect(form.data).toEqual({ name: null })
+      await submitNestedForm(form, 'Jane Austen')
+      expect(data.author).toEqual({ name: 'Jane Austen' })
+      expect(admin.router.currentRoute.value.path).toBe('/items/1')
+    })
+
+    it('edits existing objects at their own route', async () => {
+      const { admin, data } = await mountBookForm({
+        author: { name: 'Jane' }
+      })
+      const form = await openNestedForm(admin, '/items/1/author')
+      expect(form.isCreating).toBe(false)
+      expect(form.data).toEqual({ name: 'Jane' })
+      await submitNestedForm(form, 'Jane Austen')
+      expect(data.author).toEqual({ name: 'Jane Austen' })
+    })
+  })
+
+  describe('submit() of new items', () => {
+    it('opens the created item unless the form closes', async () => {
+      const { admin, submit, routeComponent } = await mountForm({
+        schema: {
+          components: { title: { type: 'text' } },
+          buttons: { submit: { closeForm: false } }
+        },
+        request: ({ method, data }) =>
+          method === 'post' ? { data: { id: 7, ...data } } : null
+      })
+      expect(routeComponent.isCreating).toBe(true)
+      await enterValue(admin.wrapper.find('input[name="title"]'), 'Emma')
+      expect(await submit()).toEqual({ title: 'Emma' })
+      await flushPromises()
+      expect(admin.router.currentRoute.value.path).toBe('/items/7')
+    })
+  })
+
+  describe('selectedTab', () => {
+    it('is the tab selected in the main schema', async () => {
+      const { routeComponent, schemaComponent } = await mountForm({
+        schema: {
+          tabs: {
+            details: { type: 'tab', components: { title: { type: 'text' } } },
+            reviews: { type: 'tab', components: { rating: { type: 'number' } } }
+          }
+        },
+        data: { title: 'Emma', rating: 5 }
+      })
+      expect(routeComponent.selectedTab).toBe('details')
+      schemaComponent.selectTab('reviews')
+      expect(routeComponent.selectedTab).toBe('reviews')
+    })
+
+    it('is null without tabs', async () => {
+      const { routeComponent } = await mountForm({
+        schema: { components: { title: { type: 'text' } } },
+        data: { title: 'Emma' }
+      })
+      expect(routeComponent.selectedTab).toBe(null)
+    })
+  })
+
+  describe('nested forms of items in views', () => {
+    const recipesSchema = {
+      type: 'list',
+      editable: true,
+      itemLabel: 'name',
+      form: {
+        type: 'form',
+        label: 'Recipe',
+        components: { name: { type: 'text' } }
+      }
+    }
+
+    // The data path of the nested form starts with the view's name, see
+    // `getDataPathFrom()`, which only matches single-component views, so the
+    // form doesn't find its item in the data of multi-component views.
+    it.fails('apply their changes to the data of the view', async () => {
+      const { admin, data } = await mountSchema({
+        schema: {
+          components: {
+            recipes: recipesSchema,
+            // Views with resources provide the data of their nested forms:
+            cooks: {
+              type: 'list',
+              resource: { path: 'cooks' },
+              columns: { name: {} }
+            }
+          }
+        },
+        data: { recipes: [{ name: 'Pancakes' }] },
+        request: () => ({ data: [] })
+      })
+      await admin.navigate('/test/recipes/0')
+      const form = admin.getRouteComponent(component => component.isForm)
+      await settle(form)
+      expect(form.parentRouteComponent.isView).toBe(true)
+      const element = new DOMWrapper(form.$el)
+      await enterValue(element.find('input'), 'Waffles')
+      await element
+        .find('.dito-buttons--main button[type="submit"]')
+        .trigger('click')
+      await settle(form)
+      expect(data.recipes).toEqual([{ name: 'Waffles' }])
+    })
+
+    // Without a resource in the view, the nested form has no data component,
+    // and `getDataPathFrom(null)` throws a TypeError while rendering.
+    it.fails('open in views without resources', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+      const { admin } = await mountSchema({
+        schema: { components: { recipes: recipesSchema } },
+        data: { recipes: [{ name: 'Pancakes' }] }
+      })
+      await admin.navigate('/test/recipes/0')
+      const form = admin.getRouteComponent(component => component.isForm)
+      await settle(form)
+      expect(new DOMWrapper(form.$el).find('input').element.value).toBe(
+        'Pancakes'
+      )
+    })
+  })
+
+  describe('nested forms with `mutate`', () => {
+    it('edit the item in the data of the parent form directly', async () => {
+      const { admin, data, routeComponent } = await mountForm({
+        schema: {
+          components: {
+            chapters: {
+              type: 'list',
+              editable: true,
+              itemLabel: 'title',
+              mutate: true,
+              form: {
+                type: 'form',
+                components: { title: { type: 'text' } }
+              }
+            }
+          }
+        },
+        data: { chapters: [{ title: 'Prologue' }] }
+      })
+      await admin.navigate('/items/1/chapters/0')
+      const form = admin.getRouteComponent(component => component.isForm)
+      await settle(form)
+      expect(form.isMutating).toBe(true)
+      expect(form.data).toBe(data.chapters[0])
+      await enterValue(new DOMWrapper(form.$el).find('input'), 'Opening')
+      await settle(form)
+      expect(data.chapters).toEqual([{ title: 'Opening' }])
+      // The changes make the form that owns the data dirty:
+      expect(form.isDirty).toBe(false)
+      expect(routeComponent.isDirty).toBe(true)
+      // Mutating forms don't have a submit button, only the cancel button:
+      expect(
+        new DOMWrapper(form.$el)
+          .find('.dito-buttons--main button[type="submit"]')
+          .exists()
+      ).toBe(false)
+    })
+  })
+
+  // Navigating from an item to the create route in the same form reloads the
+  // data, see the `$route` watcher, which loads the collection resource and
+  // replaces the new item with the list of items.
+  it.fails(
+    'sets up a new item when navigating to its create route',
+    async () => {
+      const { admin, routeComponent } = await mountForm({
+        schema: { components: { title: { type: 'text' } } },
+        data: { title: 'Emma' }
+      })
+      await admin.navigate('/items/create')
+      const form = admin.getRouteComponent(component => component.isForm)
+      await settle(form)
+      // The same form stays open and creates the new item:
+      expect(form).toBe(routeComponent)
+      expect(form.isCreating).toBe(true)
+      expect(form.data).toEqual({ title: null })
+    }
+  )
+
+  it('creates the item of the type given by the route query', async () => {
+    const admin = await mountAdmin({
+      views: {
+        blocks: {
+          type: 'view',
+          component: {
+            type: 'list',
+            resource: { path: 'blocks' },
+            forms: {
+              heading: {
+                type: 'form',
+                components: { text: { type: 'text' } }
+              },
+              image: {
+                type: 'form',
+                components: { url: { type: 'url' } }
+              }
+            }
+          }
+        }
+      },
+      request: () => ({ data: [] })
+    })
+    await admin.navigate('/blocks/create?type=image')
+    const form = admin.getRouteComponent(component => component.isForm)
+    await settle(form)
+    expect(form.creationType).toBe('image')
+    expect(form.data).toEqual({ type: 'image', url: null })
+  })
+
+  it('submits without validation with `validate: false`', async () => {
+    const { wrapper, routeComponent, request, settle } = await mountForm({
+      schema: {
+        components: { title: { type: 'text', required: true } },
+        buttons: { submit: { closeForm: false } }
+      },
+      data: { title: '' },
+      request: ({ data }) => ({ data })
+    })
+    const button = wrapper
+      .findAllComponents({ name: 'DitoTypeButton' })
+      .find(({ vm }) => vm.schema.type === 'submit').vm
+    expect(await routeComponent.submit(button)).toBe(false)
+    expect(await routeComponent.submit(button, { validate: false })).toBe(
+      true
+    )
+    await settle()
+    expect(
+      request.mock.calls.filter(([{ method }]) => method === 'patch')
+    ).toHaveLength(1)
+  })
+
+  // Errors of responses without a message, e.g. `{ type: 'ServerError' }`, are
+  // shown as their object's string: "Unable to save Book 'Emma': [object
+  // Object]".
+  it.fails('notifies errors without a message without the object', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { submit, notify } = await mountBookForm(() => {
+      throw Object.assign(new Error('Request failed'), {
+        response: { status: 500, data: { type: 'ServerError' } }
+      })
+    })
+    await submit()
+    const [[{ html }]] = notify.mock.calls
+    expect(String(html)).not.toContain('[object Object]')
   })
 })

@@ -79,6 +79,10 @@ describe('format()', () => {
     ).toBe('')
   })
 
+  it('should return an empty string for numbers when `options.number = false`', () => {
+    expect(format(1234.5, { number: false })).toBe('')
+  })
+
   it('should support fine-grained control of `options.number`', () => {
     expect(
       format(integer, {

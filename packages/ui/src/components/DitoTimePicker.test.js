@@ -50,6 +50,15 @@ describe('DitoTimePicker', () => {
     wrapper = null
   })
 
+  it('passes keys to the time panel only while it is shown', async () => {
+    wrapper = mountTimePicker()
+    const event = new KeyboardEvent('keydown', { keyCode: keyCodes.ArrowUp })
+    expect(wrapper.vm.handlePanelKey(event, { name: 'hour' })).toBe(false)
+    await focusInput(wrapper)
+    expect(wrapper.vm.handlePanelKey(event, { name: 'hour' })).toBe(true)
+    expect(getEmittedHours(wrapper)).toEqual([9])
+  })
+
   it('only lists the enabled values', async () => {
     wrapper = mountTimePicker({ disabledHour: hour => hour < 4 })
     await focusInput(wrapper)
