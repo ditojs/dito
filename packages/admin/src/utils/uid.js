@@ -25,9 +25,10 @@ export function getUid(item, getItemId = null) {
 // yet, e.g. when the saved data replaces the data that was edited. This way,
 // the components and stores that are keyed by the uids of new items are kept,
 // even though the items only have their ids once they are saved.
-// Objects are matched by their keys. Array items are matched by their ids, as
-// returned by `getItemId()`, see `transferArrayUids()`.
-export function transferUids(source, target, getItemId = getDefaultItemId) {
+// Objects are matched by their keys. Array items are matched by their `id`
+// properties, see `transferArrayUids()`. The items of lists with a custom
+// `idKey` have no `id`, so they count as new items and are matched in order.
+export function transferUids(source, target) {
   const rawSource = toRaw(source)
   const rawTarget = toRaw(target)
   if (
@@ -40,11 +41,11 @@ export function transferUids(source, target, getItemId = getDefaultItemId) {
       uidsByItem.set(rawTarget, uid)
     }
     if (isArray(rawSource) && isArray(rawTarget)) {
-      transferArrayUids(rawSource, rawTarget, getItemId)
+      transferArrayUids(rawSource, rawTarget)
     } else {
       for (const key of Object.keys(rawSource)) {
         if (key in rawTarget) {
-          transferUids(rawSource[key], rawTarget[key], getItemId)
+          transferUids(rawSource[key], rawTarget[key])
         }
       }
     }
@@ -58,12 +59,12 @@ export function transferUids(source, target, getItemId = getDefaultItemId) {
 // matched with the items in `target` that have none of the saved ids, in order,
 // and only if their counts are equal. Otherwise, they are left unmatched rather
 // than risking to give an item the uid, component and store of another.
-function transferArrayUids(source, target, getItemId) {
+function transferArrayUids(source, target) {
   const sourceItems = source.filter(isTransferable)
   const targetItems = target.filter(isTransferable)
   const targetItemsById = new Map()
   for (const item of targetItems) {
-    const id = getSavedItemId(item, getItemId)
+    const id = getSavedItemId(item)
     if (id !== undefined) {
       targetItemsById.set(id, item)
     }
@@ -71,35 +72,31 @@ function transferArrayUids(source, target, getItemId) {
   const savedIds = new Set()
   const newSourceItems = []
   for (const item of sourceItems) {
-    const id = getSavedItemId(item, getItemId)
+    const id = getSavedItemId(item)
     if (id !== undefined) {
       savedIds.add(id)
       const targetItem = targetItemsById.get(id)
       if (targetItem) {
-        transferUids(item, targetItem, getItemId)
+        transferUids(item, targetItem)
       }
     } else {
       newSourceItems.push(item)
     }
   }
   const newTargetItems = targetItems.filter(
-    item => !savedIds.has(getSavedItemId(item, getItemId))
+    item => !savedIds.has(getSavedItemId(item))
   )
   if (newSourceItems.length === newTargetItems.length) {
     newSourceItems.forEach((item, index) => {
-      transferUids(item, newTargetItems[index], getItemId)
+      transferUids(item, newTargetItems[index])
     })
   }
 }
 
-function getDefaultItemId(item) {
-  return item.id
-}
-
 // Returns the id of a saved item as a string, so that numeric ids match their
 // string representations, or `undefined` for new items.
-function getSavedItemId(item, getItemId) {
-  const id = getItemId(item)
+function getSavedItemId(item) {
+  const { id } = item
   return id != null && !isTemporaryId(id) ? String(id) : undefined
 }
 

@@ -134,20 +134,4 @@ describe('transferUids()', () => {
     transferUids([firstNewItem, secondNewItem], [savedItem])
     expect(getUid(savedItem, getItemId)).toBe(4)
   })
-
-  it('uses the passed `getItemId()` to match array items', () => {
-    const newItem = {}
-    const newUid = getUid(newItem)
-    const existingItem = { key: 'a' }
-    getUid(existingItem, item => item.key)
-    const savedExistingItem = { key: 'a' }
-    const savedNewItem = { key: 'b' }
-    transferUids(
-      [newItem, existingItem],
-      [savedExistingItem, savedNewItem],
-      item => item.key
-    )
-    expect(getUid(savedExistingItem, item => item.key)).toBe('a')
-    expect(getUid(savedNewItem, item => item.key)).toBe(newUid)
-  })
 })
