@@ -5,7 +5,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 
-const packages = ['packages/admin']
+const packages = ['packages/admin', 'packages/ui']
 
 const check = process.argv.includes('--check')
 let outOfSync = 0

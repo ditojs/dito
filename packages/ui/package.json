@@ -27,7 +27,7 @@
     "build:icons": "inline-assets src/icons/*.svg --template src/icons/template.js > src/styles/mixins/_icons.scss",
     "build:vite": "vite build",
     "build": "pnpm run build:icons && pnpm run build:vite",
-    "watch": "pnpm run build:vue --mode 'development' --watch",
+    "watch": "pnpm run build:vite --mode 'development' --watch",
     "prepare": "pnpm run build"
   },
   "engines": {
@@ -36,14 +36,18 @@
   "browserslist": [
     "> 1%",
     "last 2 versions",
-    "ie >= 11",
-    "ie_mob >= 11"
+    "not ie > 0",
+    "not ie_mob > 0"
   ],
   "dependencies": {
     "@ditojs/utils": "workspace:^"
   },
+  "peerDependencies": {
+    "vue": "^3.5.43"
+  },
   "devDependencies": {
     "@ditojs/build": "workspace:^",
-    "vite": "^8.3.2"
+    "vite": "^8.3.2",
+    "vue": "^3.5.43"
   }
 }
