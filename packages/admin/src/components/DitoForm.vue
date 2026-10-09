@@ -52,7 +52,13 @@
 
 <script>
 import { markRaw } from 'vue'
-import { clone, capitalize, parseDataPath, assignDeeply } from '@ditojs/utils'
+import {
+  clone,
+  capitalize,
+  parseDataPath,
+  assignDeeply,
+  escapeHtml
+} from '@ditojs/utils'
 import DitoComponent from '../DitoComponent.js'
 import RouteMixin from '../mixins/RouteMixin.js'
 import ResourceMixin from '../mixins/ResourceMixin.js'
@@ -469,6 +475,28 @@ export default DitoComponent.component('DitoForm', {
       }
 
       const getVerb = present => this.verbs[this.getSubmitVerb(present)]
+      // NOTE: The notifications pass `html`, as `itemLabel` is HTML with
+      // escaped item values, see `getItemLabel()`. Other values that they
+      // include need to be escaped too.
+      const notifySubmitError = (error, message = null) => {
+        const verb = getVerb(true)
+        const { itemLabel } = this
+        this.notify({
+          type: 'error',
+          error,
+          title: 'Request Error',
+          html: message
+            ? [`Unable to ${verb} ${itemLabel}:`, escapeHtml(message)]
+            : `Unable to ${verb} ${itemLabel}.`
+        })
+      }
+      const callbacks = {
+        onSuccess: () => this.emitSchemaEvent(this.getSubmitVerb()),
+        onError: error =>
+          this.emitSchemaEvent('error', {
+            context: { error }
+          })
+      }
 
       // Allow buttons to override both method and resource path to submit to:
       let { method } = this
@@ -482,64 +510,39 @@ export default DitoComponent.component('DitoForm', {
       let success
       if (!buttonResource && this.isTransient) {
         success = await this.submitTransient(button, resource, method, data, {
-          onSuccess: () => this.emitSchemaEvent(this.getSubmitVerb()),
-          onError: error =>
-            this.emitSchemaEvent('error', {
-              context: { error }
-            }),
+          ...callbacks,
           notifySuccess: () => {
             const verb = getVerb(false)
+            const { itemLabel } = this
             this.notify({
               type: 'info',
               title: this.isCreating
                 ? `Item ${capitalize(verb)}`
                 : `Change ${capitalize(verb)}`,
-              text: [
+              html: [
                 this.isCreating
-                  ? `${this.itemLabel} was ${verb}.`
-                  : `Changes to ${this.itemLabel} were ${verb}.`,
+                  ? `${itemLabel} was ${verb}.`
+                  : `Changes to ${itemLabel} were ${verb}.`,
                 this.transientNote
               ]
             })
           },
-          notifyError: error => {
-            const verb = getVerb(true)
-            this.notify({
-              type: 'error',
-              error,
-              title: 'Request Error',
-              text: `Unable to ${verb} ${this.itemLabel}.`
-            })
-          }
+          notifyError: error => notifySubmitError(error)
         })
       } else {
         success = await this.submitResource(button, resource, method, data, {
+          ...callbacks,
           setData: true,
-          onSuccess: () => this.emitSchemaEvent(this.getSubmitVerb()),
-          onError: error =>
-            this.emitSchemaEvent('error', {
-              context: { error }
-            }),
           notifySuccess: () => {
             const verb = getVerb(false)
             this.notify({
               type: 'success',
               title: `Successfully ${capitalize(verb)}`,
-              text: `${this.itemLabel} was ${verb}.`
+              html: `${this.itemLabel} was ${verb}.`
             })
           },
-          notifyError: error => {
-            const verb = getVerb(true)
-            this.notify({
-              type: 'error',
-              error,
-              title: 'Request Error',
-              text: [
-                `Unable to ${verb} ${this.itemLabel}${error ? ':' : ''}`,
-                error?.message || error
-              ]
-            })
-          }
+          notifyError: error =>
+            notifySubmitError(error, error?.message || error)
         })
       }
       if (success) {

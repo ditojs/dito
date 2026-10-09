@@ -4,7 +4,6 @@
     span
   .dito-notifications__inner
     VueNotifications(
-      ref="notifications"
       classes="dito-notification"
       :dangerouslySetInnerHtml="true"
       position=""
@@ -14,16 +13,24 @@
 
 <script>
 import DitoComponent from '../DitoComponent.js'
-import { asArray, stripHtml } from '@ditojs/utils'
+import { asArray, isString, escapeHtml, stripHtml } from '@ditojs/utils'
+
+// Detects opening tags like `<a href="…">` or `<b>`, which callers that still
+// pass formatted text through the escaped `text` option would include:
+function isLikelyMarkup(paragraph) {
+  return (
+    isString(paragraph) &&
+    /<[a-z][a-z0-9-]*(\s[^>]*)?\/?>/i.test(paragraph)
+  )
+}
 
 // @vue/component
 export default DitoComponent.component('DitoNotifications', {
-  notifications() {
-    return this.isMounted && this.$refs.notifications
-  },
-
   methods: {
-    notify({ type = 'info', title, text, error, duration } = {}) {
+    // Shows a notification with the paragraphs of `text`, which are escaped,
+    // or else of `html`, which is rendered as it is, so it must only contain
+    // HTML from trusted sources, and escape all values that it includes.
+    notify({ type = 'info', title, text, html, error, duration } = {}) {
       title ||= (
         {
           warning: 'Warning',
@@ -33,8 +40,23 @@ export default DitoComponent.component('DitoNotifications', {
         }[type] ||
         'Notification'
       )
-      text = `<p>${
-        asArray(text).join('</p> <p>')
+      const isHtml = html != null
+      // Skip empty paragraphs, e.g. `transientNote` when it's `false`:
+      const paragraphs = asArray(isHtml ? html : text).filter(
+        paragraph => paragraph != null && paragraph !== false
+      )
+      if (!isHtml && paragraphs.some(isLikelyMarkup)) {
+        console.warn(
+          'notify(): `text` is escaped and seems to contain HTML markup. Use ' +
+          'the `html` option for formatted text, and escape all values that ' +
+          'it includes.'
+        )
+      }
+      const htmlParagraphs = isHtml
+        ? paragraphs
+        : paragraphs.map(paragraph => escapeHtml(paragraph))
+      const content = `<p>${
+        htmlParagraphs.join('</p> <p>')
       }</p>`.replace(/\n|\r\n|\r/g, '<br>')
       const log = (
         {
@@ -48,7 +70,7 @@ export default DitoComponent.component('DitoNotifications', {
       // eslint-disable-next-line no-console
       console[log](
         ...[
-          stripHtml(text),
+          isHtml ? stripHtml(content) : paragraphs.join('\n'),
           ...(type === 'error' && error ? [error] : [])
         ]
       )
@@ -59,18 +81,20 @@ export default DitoComponent.component('DitoNotifications', {
         // amount of milliseconds multiplied with the amount of characters
         // displayed in the notification, plus 40 (40 + title + message):
         const { durationFactor = 20 } = notifications
-        duration ??= (40 + text.length + title.length) * durationFactor
+        duration ??= (40 + content.length + title.length) * durationFactor
         this.$notify({
           type,
-          title,
-          text,
+          title: escapeHtml(title),
+          text: content,
           duration: duration === 0 ? -1 : duration // < 0 -> <= 0 = sticky
         })
       }
     },
 
     destroyAll() {
-      this.notifications.destroyAll()
+      // `VueNotifications` doesn't expose methods, but closes all its
+      // notifications when notified with `clean`:
+      this.$notify({ clean: true })
     }
   }
 })
