@@ -142,8 +142,9 @@ import { asArray } from '@ditojs/utils'
 import { alterDate, stepDate } from '../utils/date.js'
 import { getKeyNavigation } from '../utils/event.js'
 
-// The most dates that `navigate()` skips while looking for one that isn't
-// disabled, a year's worth of days.
+// The most steps that `navigate()` takes past disabled dates, in any date part
+// (day, month or year), before giving up, as a guard against `disabledDate`
+// disabling every date.
 const maxSkippedDateCount = 366
 
 export default {

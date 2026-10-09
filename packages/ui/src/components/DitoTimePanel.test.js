@@ -164,6 +164,8 @@ describe('DitoTimePanel', () => {
       expect(list.scrollTo).not.toHaveBeenCalled()
     })
 
+    // A leak guard: the elements of options that are no longer rendered aren't
+    // kept around, which isn't observable through the rendered panel.
     it('forgets options that are no longer rendered', async () => {
       wrapper = mountTimePanel()
       expect(Object.keys(wrapper.vm.optionElements.hour)).toHaveLength(24)

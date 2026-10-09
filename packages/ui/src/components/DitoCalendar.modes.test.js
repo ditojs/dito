@@ -1,5 +1,6 @@
 import { mount, flushPromises } from '@vue/test-utils'
 import DitoCalendar from './DitoCalendar.vue'
+import DitoDatePicker from './DitoDatePicker.vue'
 
 function mountCalendar(props = {}) {
   return mount(DitoCalendar, {
@@ -371,7 +372,11 @@ describe('DitoCalendar year mode', () => {
   })
 })
 
-describe('DitoCalendar navigate()', () => {
+// The calendar is navigated with the keys of a picker's input, see
+// `handleKey()`, so drive it through `DitoDatePicker`.
+describe('DitoCalendar keyboard navigation', () => {
+  const keyCodes = { ArrowUp: 38, ArrowDown: 40, Enter: 13 }
+
   let wrapper
 
   afterEach(() => {
@@ -379,56 +384,80 @@ describe('DitoCalendar navigate()', () => {
     wrapper = null
   })
 
-  it('moves the cursor by the part given in `mode`', () => {
-    wrapper = mountCalendar()
-    const { vm } = wrapper
-    expect(vm.navigate({ step: 1, mode: 'month' })).toBe(true)
-    expect(vm.navigate({ step: -1, mode: 'year' })).toBe(true)
-    expect(vm.navigate({ step: 1 })).toBe(true)
-    expect(vm.currentValue).toEqual(new Date(2023, 3, 6, 14, 30))
-    expect(getEmittedDates(wrapper)).toEqual([])
-  })
+  async function mountDatePicker(props = {}) {
+    wrapper = mount(DitoDatePicker, {
+      props: { modelValue: new Date(2024, 2, 5, 14, 30), ...props },
+      attachTo: document.body
+    })
+    wrapper.find('input').element.focus()
+    await flushPromises()
+  }
 
-  it('rejects steps of parts that are not dates', () => {
-    wrapper = mountCalendar()
-    expect(wrapper.vm.navigate({ step: 1, mode: 'hour' })).toBe(false)
-    expect(wrapper.vm.currentValue).toEqual(new Date(2024, 2, 5, 14, 30))
-  })
-
-  it('selects stepped dates with `update`', () => {
-    wrapper = mountCalendar()
-    wrapper.vm.navigate({ step: -1, mode: 'month', update: true })
-    expect(getEmittedDates(wrapper)).toEqual([new Date(2024, 1, 5, 14, 30)])
-  })
-
-  it('gives up after a year of disabled dates', () => {
-    wrapper = mountCalendar({ disabledDate: () => true })
-    expect(wrapper.vm.navigate({ step: 1, mode: 'day', update: true })).toBe(
-      false
+  // Presses `key` in the input with the caret at `position`.
+  async function pressKey(key, position) {
+    const input = wrapper.find('input').element
+    input.setSelectionRange(position, position)
+    input.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key,
+        keyCode: keyCodes[key],
+        bubbles: true,
+        cancelable: true
+      })
     )
-    expect(getEmittedDates(wrapper)).toEqual([])
+    await flushPromises()
+  }
+
+  it('steps and selects the date part at the caret', async () => {
+    await mountDatePicker()
+    // "March 5, 2024": The caret in the month.
+    await pressKey('ArrowDown', 2)
+    expect(getCursorLabel(wrapper)).toBe('April 5, 2024')
+    // "April 5, 2024": The caret in the year.
+    await pressKey('ArrowUp', 11)
+    // "April 5, 2023": The caret in the day.
+    await pressKey('ArrowDown', 6)
+    expect(getCursorLabel(wrapper)).toBe('April 6, 2023')
+    expect(getEmittedDates(wrapper)).toEqual([
+      new Date(2024, 3, 5, 14, 30),
+      new Date(2023, 3, 5, 14, 30),
+      new Date(2023, 3, 6, 14, 30)
+    ])
   })
 
-  it('switches modes back with Enter', () => {
-    wrapper = mountCalendar({ mode: 'year' })
-    expect(wrapper.vm.navigate({ enter: true })).toBe(true)
-    expect(wrapper.vm.currentMode).toBe('month')
-    wrapper.vm.navigate({ enter: true })
-    expect(wrapper.vm.currentMode).toBe('day')
-    wrapper.vm.navigate({ enter: true })
-    expect(getEmittedDates(wrapper)).toEqual([new Date(2024, 2, 5, 14, 30)])
-    expect(wrapper.emitted('select')).toHaveLength(1)
-  })
-
-  it('returns false without step or enter', () => {
-    wrapper = mountCalendar()
-    expect(wrapper.vm.navigate({})).toBe(false)
-  })
-
-  it('clamps the day when stepping the month part', () => {
-    wrapper = mountCalendar({ modelValue: new Date(2024, 0, 31) })
-    wrapper.vm.navigate({ step: 1, mode: 'month', update: true })
+  it('clamps the day when stepping the month part', async () => {
+    await mountDatePicker({ modelValue: new Date(2024, 0, 31) })
+    // "January 31, 2024": The caret in the month.
+    await pressKey('ArrowDown', 2)
     expect(getEmittedDates(wrapper)).toEqual([new Date(2024, 1, 29)])
+    expect(getCursorLabel(wrapper)).toBe('February 29, 2024')
+  })
+
+  it('gives up when all dates are disabled', async () => {
+    await mountDatePicker({ disabledDate: () => true })
+    // "March 5, 2024": The caret in the day, the month and the year.
+    for (const position of [6, 2, 11]) {
+      await pressKey('ArrowDown', position)
+    }
+    expect(getEmittedDates(wrapper)).toEqual([])
+    expect(getCursorLabel(wrapper)).toBe('March 5, 2024')
+  })
+
+  it('switches modes back with Enter', async () => {
+    await mountDatePicker()
+    const calendar = wrapper.findComponent(DitoCalendar)
+    await click(wrapper, '.dito-calendar-select-year')
+    expect(wrapper.find('.dito-calendar-years').exists()).toBe(true)
+    await pressKey('Enter', 0)
+    expect(wrapper.find('.dito-calendar-months').exists()).toBe(true)
+    expect(getHeaderText(wrapper)).toBe('2024')
+    await pressKey('Enter', 0)
+    expect(getHeaderText(wrapper)).toBe('2024March')
+    expect(getCursorLabel(wrapper)).toBe('March 5, 2024')
+    expect(calendar.emitted('select')).toBeUndefined()
+    await pressKey('Enter', 0)
+    expect(calendar.emitted('select')).toHaveLength(1)
+    expect(wrapper.find('.dito-calendar').exists()).toBe(false)
   })
 })
 

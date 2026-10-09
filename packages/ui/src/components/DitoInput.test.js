@@ -172,7 +172,6 @@ describe('DitoInput', () => {
       { type: 'number' },
       { attrs: { min: 0, max: 1000 } }
     )
-    expect(wrapper.vm.size).toBe(4)
     expect(wrapper.find('input').attributes('size')).toBe('4')
   })
 

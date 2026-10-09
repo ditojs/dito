@@ -83,6 +83,10 @@ describe('DitoMenuButton keyboard edge cases', () => {
     await pressKey(findButton(wrapper).element, 'ArrowDown')
     await wrapper.setProps({ items: items.slice(1) })
     await flushPromises()
+    // The keyboard reaches the rendered items:
+    await pressKey(wrapper.find('[role="menu"]').element, 'ArrowDown')
+    expect(document.activeElement.textContent).toBe('Mains')
+    // A leak guard: removed items and their elements aren't kept around.
     expect(wrapper.vm.itemElements.size).toBe(2)
     expect(wrapper.vm.itemElements.has(items[0])).toBe(false)
   })
