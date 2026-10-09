@@ -12,6 +12,12 @@
   &.dito-input--focus {
     border-color: $color-active;
   }
+
+  // Keep showing errors while the field has focus, e.g. the first invalid
+  // field, which is focused after a failed submit:
+  .dito-container--has-errors &:is(:focus, :focus-within, .dito-input--focus) {
+    border-color: $color-error;
+  }
 }
 
 %input-borderless {
