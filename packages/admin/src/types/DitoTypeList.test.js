@@ -1,6 +1,7 @@
 import { vi } from 'vitest'
 import { h } from 'vue'
 import { flushPromises } from '@vue/test-utils'
+import Sortable from 'sortablejs'
 import {
   mountSchema,
   mountForm,
@@ -188,6 +189,32 @@ describe('DitoTypeList', () => {
         'Salt',
         'Flour'
       ])
+    })
+  })
+
+  describe('dragging', () => {
+    it('reports changes only for items dropped at new positions', async () => {
+      const onChange = vi.fn()
+      const { findField, getComponent, settle } = await mountSchema({
+        schema: createRecipeSchema({ draggable: true, onChange }),
+        data: { ingredients: [{ name: 'Flour' }, { name: 'Salt' }] }
+      })
+      const sortable = Sortable.get(
+        findField('ingredients').find('tbody').element
+      )
+      // Dropping an item where it was picked up changes nothing:
+      sortable.option('onStart')({ oldIndex: 0 })
+      sortable.option('onEnd')({ oldIndex: 0, newIndex: 0 })
+      await settle()
+      expect(onChange).not.toHaveBeenCalled()
+      // Sortable moves the item and then ends the drag:
+      sortable.option('onStart')({ oldIndex: 0 })
+      const list = getComponent('ingredients')
+      list.listData = [...list.listData].reverse()
+      sortable.option('onEnd')({ oldIndex: 0, newIndex: 1 })
+      await settle()
+      expect(onChange).toHaveBeenCalledOnce()
+      expect(getItemNames(findField('ingredients'))).toEqual(['Salt', 'Flour'])
     })
   })
 

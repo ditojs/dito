@@ -391,6 +391,34 @@ describe('processData()', () => {
     expect(dataPaths).toEqual(['prices/0', 'prices/1'])
   })
 
+  describe('with `schemaOnly`', () => {
+    const options = { component: {}, target: 'server', schemaOnly: true }
+    const schema = {
+      type: 'form',
+      components: { title: { type: 'text' } }
+    }
+    const data = { id: 1, type: 'novel', title: 'Emma', notes: 'Draft' }
+
+    it('only keeps the id and the values of the components', () => {
+      expect(
+        processData(schema, { type: 'list', form: schema }, data, '', options)
+      ).toEqual({ id: 1, title: 'Emma' })
+    })
+
+    it('keeps the type of items of sources with multiple forms', () => {
+      // The type tells which of the forms the item belongs to:
+      const sourceSchema = {
+        type: 'list',
+        forms: { novel: schema, poem: schema }
+      }
+      expect(processData(schema, sourceSchema, data, '', options)).toEqual({
+        id: 1,
+        type: 'novel',
+        title: 'Emma'
+      })
+    })
+  })
+
   describe('with `shouldCallProcess: false`', () => {
     // `DitoContext` needs a component to inherit from:
     const component = {}

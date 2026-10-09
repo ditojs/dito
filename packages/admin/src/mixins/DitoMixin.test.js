@@ -219,4 +219,187 @@ describe('DitoMixin', () => {
       expect(onFocus).not.toHaveBeenCalled()
     })
   })
+
+  describe('format()', () => {
+    it('formats with the locale and formats of the API by default', async () => {
+      const { schemaComponent } = await mountSchema({
+        schema: { components: { title: { type: 'text' } } },
+        api: {
+          locale: 'de-DE',
+          formats: { number: { minimumFractionDigits: 2 } }
+        }
+      })
+      expect(schemaComponent.format(1234.5, { date: false, time: false }))
+        .toBe('1.234,50')
+      expect(
+        schemaComponent.format(1234.5, {
+          locale: 'en-US',
+          number: { minimumFractionDigits: 1 }
+        })
+      ).toBe('1,234.5')
+    })
+  })
+
+  describe('download()', () => {
+    const mountAndCaptureClicks = async () => {
+      const { schemaComponent } = await mountSchema({
+        schema: { components: { title: { type: 'text' } } }
+      })
+      const anchors = []
+      vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(
+        function () {
+          anchors.push({
+            href: this.getAttribute('href'),
+            download: this.getAttribute('download'),
+            isConnected: this.isConnected
+          })
+        }
+      )
+      return { schemaComponent, anchors }
+    }
+
+    it('downloads a URL given as a string through the API', async () => {
+      const { schemaComponent, anchors } = await mountAndCaptureClicks()
+      schemaComponent.download('books/export.csv')
+      expect(anchors).toEqual([
+        {
+          href: '/books/export.csv',
+          download: 'null',
+          isConnected: true
+        }
+      ])
+      // The anchor is only in the document while it's being clicked:
+      expect(document.querySelector('a[href="/books/export.csv"]'))
+        .toBe(null)
+    })
+
+    it('downloads API URLs with query and filename', async () => {
+      const { schemaComponent, anchors } = await mountAndCaptureClicks()
+      schemaComponent.download({
+        url: 'authors/report',
+        query: { year: 2024 },
+        filename: 'authors-2024.pdf'
+      })
+      expect(anchors).toMatchObject([
+        {
+          href: '/authors/report?year=2024',
+          download: 'authors-2024.pdf'
+        }
+      ])
+    })
+
+    it('downloads blob URLs as they are', async () => {
+      const { schemaComponent, anchors } = await mountAndCaptureClicks()
+      const url = 'blob:http://localhost/7c2b6f1e'
+      schemaComponent.download({ url, filename: 'recipes.json' })
+      expect(anchors).toMatchObject([{ href: url, download: 'recipes.json' }])
+    })
+  })
+
+  describe('schema `watch`', () => {
+    it('watches the data of components by their names', async () => {
+      const changes = []
+      const { getComponent, settle } = await mountSchema({
+        schema: {
+          components: {
+            title: {
+              type: 'text',
+              watch: {
+                // `subtitle` is a component declared after `title`, the
+                // handlers are installed once all components exist:
+                subtitle(value, oldValue) {
+                  changes.push(['subtitle', value, oldValue, this.name])
+                },
+                // Other keys are watched as expressions of the component:
+                value(value) {
+                  changes.push(['value', value])
+                }
+              }
+            },
+            subtitle: { type: 'text' }
+          }
+        },
+        data: { title: 'Emma', subtitle: 'A Novel' }
+      })
+      // Setting the view's data after mounting already triggered them:
+      expect(changes).toEqual([
+        ['value', 'Emma'],
+        ['subtitle', 'A Novel', null, 'title']
+      ])
+      changes.length = 0
+      getComponent('subtitle').value = 'A Comedy'
+      getComponent('title').value = 'Persuasion'
+      await settle()
+      expect(changes).toEqual([
+        ['subtitle', 'A Comedy', 'A Novel', 'title'],
+        ['value', 'Persuasion']
+      ])
+    })
+
+    it('supports a function returning the handlers', async () => {
+      const onChange = vi.fn()
+      const watch = vi.fn(function () {
+        return { [`${this.name}Count`]: onChange }
+      })
+      const { getComponent, settle } = await mountSchema({
+        schema: {
+          components: {
+            ingredients: { type: 'text', watch },
+            ingredientsCount: { type: 'number' }
+          }
+        },
+        data: { ingredients: 'Flour', ingredientsCount: 1 }
+      })
+      expect(watch).toHaveBeenCalledOnce()
+      onChange.mockClear()
+      getComponent('ingredientsCount').value = 2
+      await settle()
+      expect(onChange).toHaveBeenCalledOnce()
+      expect(onChange.mock.calls[0].slice(0, 2)).toEqual([2, 1])
+    })
+  })
+
+  describe('waitUntilDataModelSettled()', () => {
+    it('tracks pending loads in the root loading tracker', async () => {
+      let resolveLoad = null
+      const { getComponent, settle } = await mountSchema({
+        schema: {
+          components: {
+            isbn: { type: 'text' },
+            cover: {
+              type: 'computed',
+              data: ({ item }) => {
+                const { isbn } = item
+                return () =>
+                  isbn === 'new'
+                    ? new Promise(resolve => {
+                        resolveLoad = () => resolve(`cover-${isbn}`)
+                      })
+                    : `cover-${isbn}`
+              }
+            }
+          }
+        },
+        data: { isbn: 'old' }
+      })
+      const component = getComponent('isbn')
+      expect(component.data.cover).toBe('cover-old')
+      component.value = 'new'
+      await flushPromises()
+      expect(component.dataModel.hasPendingLoads).toBe(true)
+      const tracker = component.$loadingTracker().root
+      let isSettled = false
+      const settled = component
+        .waitUntilDataModelSettled()
+        .then(() => (isSettled = true))
+      await flushPromises()
+      expect(tracker.isLoading).toBe(true)
+      expect(isSettled).toBe(false)
+      resolveLoad()
+      await settled
+      expect(tracker.isLoading).toBe(false)
+      await settle()
+      expect(component.data.cover).toBe('cover-new')
+    })
+  })
 })

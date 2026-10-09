@@ -548,6 +548,26 @@ describe('setupSchemaComponents()', () => {
     expect(schema.panels.summary.components.excerpt.trim).toBe(true)
   })
 
+  it('sets up the panels of components too', async () => {
+    const api = createApi({ text: { trim: true } })
+    const schema = {
+      type: 'form',
+      components: {
+        title: {
+          type: 'text',
+          panels: {
+            hints: { type: 'panel', components: { hint: { type: 'text' } } }
+          }
+        }
+      }
+    }
+    await setupSchemaComponents(api, schema)
+    expect(schema.components.title.trim).toBe(true)
+    expect(schema.components.title.panels.hints.components.hint.trim).toBe(
+      true
+    )
+  })
+
   it('ignores missing schemas', () => {
     expect(setupSchemaComponents(createApi(), null)).toBe(undefined)
   })

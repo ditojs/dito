@@ -1,6 +1,6 @@
 import { vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
-import { mountForm } from '../test/mount.js'
+import { mountForm, settle } from '../test/mount.js'
 
 const maliciousName = '<img src="x" onerror="alert(1)">'
 const escapedName = '&lt;img src=&quot;x&quot; onerror=&quot;alert(1)&quot;&gt;'
@@ -63,6 +63,102 @@ describe('DitoForm', () => {
           ]
         })
       )
+    })
+  })
+
+  describe('cancel button', () => {
+    it('closes the form and returns to the list', async () => {
+      const { admin, wrapper, request } = await mountForm({
+        schema: { label: 'Book', components: { title: { type: 'text' } } },
+        data: { title: 'Emma' }
+      })
+      expect(admin.router.currentRoute.value.path).toBe('/items/1')
+      await wrapper
+        .find('.dito-buttons--main button[aria-label="Cancel"]')
+        .trigger('click')
+      await flushPromises()
+      expect(admin.router.currentRoute.value.path).toBe('/items')
+      expect(admin.getRouteComponent(component => component.isForm)).toBe(
+        null
+      )
+      // Cancelling doesn't send anything:
+      expect(
+        request.mock.calls.filter(([{ method = 'get' }]) => method !== 'get')
+      ).toEqual([])
+    })
+  })
+
+  it('reloads the data when navigating to another item', async () => {
+    const books = {
+      1: { id: 1, title: 'Emma' },
+      2: { id: 2, title: 'Persuasion' }
+    }
+    const { admin, routeComponent, findField } = await mountForm({
+      schema: { components: { title: { type: 'text' } } },
+      data: books[1],
+      request: ({ method = 'get', url }) => {
+        const id = url.match(/^\/items\/(\d+)$/)?.[1]
+        if (method === 'get' && books[id]) return { data: books[id] }
+        throw new Error(`Unexpected request: ${method} ${url}`)
+      }
+    })
+    expect(findField('title').find('input').element.value).toBe('Emma')
+    await admin.navigate('/items/2')
+    const form = admin.getRouteComponent(component => component.isForm)
+    await settle(form)
+    // The same form stays open and loads the other item:
+    expect(form).toBe(routeComponent)
+    expect(form.data).toMatchObject({ id: 2, title: 'Persuasion' })
+    expect(findField('title').find('input').element.value).toBe('Persuasion')
+  })
+
+  describe('applyCleanChanges()', () => {
+    async function mountPublishableForm(publish) {
+      return mountForm({
+        schema: {
+          components: {
+            title: { type: 'text' },
+            status: { type: 'text' }
+          },
+          buttons: {
+            publish: {
+              type: 'button',
+              label: 'Publish',
+              events: { click: publish }
+            }
+          }
+        },
+        data: { title: 'Emma', status: 'draft' }
+      })
+    }
+
+    const clickPublish = async ({ findField, settle }) => {
+      await findField('publish').trigger('click')
+      await settle()
+    }
+
+    it('applies changes that keep the form clean', async () => {
+      const result = await mountPublishableForm(
+        ({ formComponent, item }) =>
+          formComponent.applyCleanChanges(() => {
+            item.status = 'published'
+          })
+      )
+      await clickPublish(result)
+      expect(result.data.status).toBe('published')
+      expect(result.findField('status').find('input').element.value).toBe(
+        'published'
+      )
+      expect(result.routeComponent.isDirty).toBe(false)
+    })
+
+    it('makes the form dirty with plain changes', async () => {
+      const result = await mountPublishableForm(({ item }) => {
+        item.status = 'published'
+      })
+      await clickPublish(result)
+      expect(result.data.status).toBe('published')
+      expect(result.routeComponent.isDirty).toBe(true)
     })
   })
 

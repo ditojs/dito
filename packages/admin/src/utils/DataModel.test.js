@@ -882,6 +882,58 @@ describe('DataModel', () => {
       dataModel.stop()
     })
 
+    it('ignores derived values that are excluded from the processed data', async () => {
+      // `preview` is computed while the model settles, but as it's excluded,
+      // the processed data never holds it, neither in the snapshot.
+      let resolveLength
+      const schema = {
+        type: 'form',
+        components: {
+          title: { type: 'text' },
+          preview: {
+            type: 'text',
+            exclude: true,
+            compute: ({ item }) => item.title?.toUpperCase()
+          },
+          length: {
+            type: 'computed',
+            data: () =>
+              new Promise(resolve => {
+                resolveLength = resolve
+              })
+          }
+        }
+      }
+      const { dataModel, data } = createDataModel(
+        schema,
+        { title: 'Hello' },
+        { getSourceSchema }
+      )
+      await nextTick()
+      // The title is edited while `length` still loads:
+      data.title = 'Edited'
+      await nextTick()
+      expect(data.preview).toBe('EDITED')
+      expect([...dataModel.derivedValueDataPaths]).toEqual(['preview'])
+      expect(dataModel.isDirty).toBe(true)
+      data.title = 'Hello'
+      await nextTick()
+      expect(dataModel.isDirty).toBe(false)
+      resolveLength(5)
+      await waitForProcessedDataSnapshot(dataModel)
+      expect(dataModel.derivedValueDataPaths).toBe(null)
+      expect(dataModel.processedDataSnapshot.value.processedData).toEqual({
+        title: 'Hello',
+        length: 5
+      })
+      expect(dataModel.isDirty).toBe(false)
+      data.title = 'Changed'
+      await nextTick()
+      expect(data.preview).toBe('CHANGED')
+      expect(dataModel.isDirty).toBe(true)
+      dataModel.stop()
+    })
+
     it('takes a new snapshot when the data is replaced', async () => {
       const schema = {
         type: 'form',

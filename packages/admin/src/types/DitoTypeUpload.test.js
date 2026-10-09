@@ -329,6 +329,133 @@ describe('DitoTypeUpload', () => {
     expect(getRows(field)).toEqual([['scan.pdf', '24 kB', 'Stored']])
   })
 
+  describe('uploading', () => {
+    // Records the requests of the upload component, which uploads with
+    // `XMLHttpRequest`, so the tests can report progress and responses.
+    function stubXMLHttpRequest() {
+      const requests = []
+      class XMLHttpRequest {
+        upload = {}
+        status = 0
+        responseText = ''
+        headers = {}
+        constructor() {
+          requests.push(this)
+        }
+
+        open(method, url) {
+          Object.assign(this, { method, url })
+        }
+
+        setRequestHeader(name, value) {
+          this.headers[name] = value
+        }
+
+        getResponseHeader() {
+          return 'application/json'
+        }
+
+        send(body) {
+          this.body = body
+        }
+
+        abort() {}
+
+        progress(loaded) {
+          this.upload.onprogress({ lengthComputable: true, loaded, total: 100 })
+        }
+
+        respond(file) {
+          this.status = 200
+          this.responseText = JSON.stringify([file])
+          this.onload({ type: 'load' })
+        }
+      }
+      vi.stubGlobal('XMLHttpRequest', XMLHttpRequest)
+      return requests
+    }
+
+    it('uploads added files right away and shows their average progress', async () => {
+      const requests = stubXMLHttpRequest()
+      const { wrapper, findField, data } = await mountForm({
+        schema: {
+          components: { attachments: { type: 'upload', multiple: true } }
+        },
+        data: { attachments: [] }
+      })
+      const field = findField('attachments')
+      const upload = wrapper.findComponent(VueUpload)
+      await upload.vm.add([
+        new File(['cover'], 'cover.png', { type: 'image/png' }),
+        new File(['scan'], 'scan.pdf', { type: 'application/pdf' })
+      ])
+      await flushPromises()
+      expect(data.attachments.map(({ name }) => name)).toEqual([
+        'cover.png',
+        'scan.pdf'
+      ])
+      // The upload activates itself on the next tick, without a click, and
+      // uploads one file after the other:
+      await vi.waitFor(() => expect(requests).toHaveLength(1))
+      expect(upload.vm.active).toBe(true)
+      expect(requests[0]).toMatchObject({
+        method: 'POST',
+        url: '/items/upload/attachments'
+      })
+      // The progress bar shows the average of the progress of all files:
+      requests[0].progress(50)
+      await flushPromises()
+      expect(field.find('progress').element.value).toBe(25)
+      requests[0].respond({
+        id: 'stored-1',
+        name: 'cover.png',
+        type: 'image/png',
+        size: 5
+      })
+      await vi.waitFor(() => expect(requests).toHaveLength(2))
+      await flushPromises()
+      expect(field.find('progress').element.value).toBe(50)
+      requests[1].progress(100)
+      requests[1].respond({
+        id: 'stored-2',
+        name: 'scan.pdf',
+        type: 'application/pdf',
+        size: 4
+      })
+      await vi.waitFor(() => expect(upload.vm.active).toBe(false))
+      await flushPromises()
+      expect(data.attachments).toMatchObject([
+        { id: 'stored-1', name: 'cover.png' },
+        { id: 'stored-2', name: 'scan.pdf' }
+      ])
+      expect(getRows(field)).toEqual([
+        ['cover.png', '5 B', 'Uploaded'],
+        ['scan.pdf', '4 B', 'Uploaded']
+      ])
+      expect(field.find('progress').exists()).toBe(false)
+    })
+
+    // Bug: the file in the value keeps the first file object of the upload,
+    // which the upload component replaces on each update, see `onInputFile()`.
+    test.fails('shows the files that are uploading as such', async () => {
+      const requests = stubXMLHttpRequest()
+      const { wrapper, findField } = await mountForm({
+        schema: {
+          components: { attachments: { type: 'upload', multiple: true } }
+        },
+        data: { attachments: [] }
+      })
+      await wrapper
+        .findComponent(VueUpload)
+        .vm.add([new File(['cover'], 'cover.png', { type: 'image/png' })])
+      await vi.waitFor(() => expect(requests).toHaveLength(1))
+      await flushPromises()
+      expect(getRows(findField('attachments'))).toEqual([
+        ['cover.png', '5 B', 'Uploading...']
+      ])
+    })
+  })
+
   describe('downloads', () => {
     async function mountDownload(
       response,

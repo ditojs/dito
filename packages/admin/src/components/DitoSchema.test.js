@@ -1,7 +1,8 @@
 import { vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import DitoContext from '../DitoContext.js'
-import { mountForm, mountSchema } from '../test/mount.js'
+import appState from '../appState.js'
+import { mountAdmin, mountForm, mountSchema } from '../test/mount.js'
 
 describe('DitoSchema', () => {
   it('passes the context to `schema.data()`', async () => {
@@ -126,6 +127,162 @@ describe('DitoSchema', () => {
     schemaComponent.selectedTab = 'history'
     await flushPromises()
     expect(isPanelVisible()).toBe(false)
+  })
+
+  it('is its own schema component, not the one of its parent', async () => {
+    const { wrapper, schemaComponent, getComponent } = await mountSchema({
+      schema: {
+        components: {
+          author: {
+            type: 'object',
+            inlined: true,
+            form: { type: 'form', components: { name: { type: 'text' } } }
+          }
+        }
+      },
+      data: { author: { name: 'Jane' } }
+    })
+    expect(schemaComponent.schemaComponent).toBe(schemaComponent)
+    const nested = wrapper
+      .findAllComponents({ name: 'DitoSchema' })
+      .map(({ vm }) => vm)
+      .find(vm => vm !== schemaComponent)
+    expect(nested.schemaComponent).toBe(nested)
+    expect(getComponent('author/name').schemaComponent).toBe(nested)
+    expect(getComponent('author').schemaComponent).toBe(schemaComponent)
+  })
+
+  describe('tabs', () => {
+    const createTabs = defaultTab => ({
+      details: { type: 'tab', components: { title: { type: 'text' } } },
+      reviews: {
+        type: 'tab',
+        defaultTab,
+        components: { rating: { type: 'number' } }
+      }
+    })
+
+    it('selects the first tab without a `defaultTab`', async () => {
+      const { schemaComponent } = await mountSchema({
+        schema: { tabs: createTabs(false) },
+        data: { title: 'Emma', rating: 5 }
+      })
+      expect(schemaComponent.selectedTab).toBe('details')
+    })
+
+    it('selects the tab with `defaultTab: true`', async () => {
+      const { schemaComponent } = await mountSchema({
+        schema: { tabs: createTabs(true) },
+        data: { title: 'Emma', rating: 5 }
+      })
+      expect(schemaComponent.selectedTab).toBe('reviews')
+    })
+
+    it('selects the tab whose `defaultTab()` returns true', async () => {
+      const defaultTab = vi.fn(({ user }) => user.username === 'tester')
+      const { schemaComponent } = await mountForm({
+        schema: { tabs: createTabs(defaultTab) },
+        data: { title: 'Emma', rating: 5 }
+      })
+      expect(schemaComponent.selectedTab).toBe('reviews')
+      expect(defaultTab).toHaveBeenCalledWith(expect.any(DitoContext))
+    })
+
+    // Bug: `defaultTab()` is evaluated before the form's data is loaded, with
+    // `item: null`, and the selection isn't updated once the data is there.
+    test.fails('selects the default tab of the loaded item', async () => {
+      const { schemaComponent } = await mountForm({
+        schema: { tabs: createTabs(({ item }) => item?.rating > 3) },
+        data: { title: 'Emma', rating: 5 }
+      })
+      expect(schemaComponent.selectedTab).toBe('reviews')
+    })
+  })
+
+  it('makes the page wide while a `wide` view is shown', async () => {
+    const admin = await mountAdmin({
+      views: {
+        books: {
+          type: 'view',
+          label: 'Books',
+          wide: true,
+          components: { title: { type: 'text' } }
+        },
+        authors: {
+          type: 'view',
+          label: 'Authors',
+          components: { name: { type: 'text' } }
+        }
+      }
+    })
+    const page = () => admin.element.querySelector('main.dito-page')
+    await admin.navigate('/books')
+    expect(appState.pageClass).toBe('dito-page--wide')
+    expect(page().classList.contains('dito-page--wide')).toBe(true)
+    await admin.navigate('/authors')
+    expect(appState.pageClass).toBe(null)
+    expect(page().classList.contains('dito-page--wide')).toBe(false)
+  })
+
+  it('verifies matching data silently with `verifyAll()`', async () => {
+    const { schemaComponent, getErrors } = await mountSchema({
+      schema: {
+        components: {
+          title: { type: 'text', required: true },
+          author: { type: 'text', required: true }
+        }
+      },
+      data: { title: 'Emma', author: '' }
+    })
+    expect(schemaComponent.verifyAll()).toBe(false)
+    expect(schemaComponent.verifyAll('title')).toBe(true)
+    expect(schemaComponent.verifyAll(/^author$/)).toBe(false)
+    // Unlike `validateAll()`, no errors are shown:
+    expect(getErrors('author')).toEqual([])
+    expect(schemaComponent.validateAll('author')).toBe(false)
+    await flushPromises()
+    expect(getErrors('author')).toEqual(['The author field is required.'])
+  })
+
+  describe('navigateToComponent()', () => {
+    async function mountCollapsedSection() {
+      const result = await mountSchema({
+        schema: {
+          components: {
+            title: { type: 'text' },
+            details: {
+              type: 'section',
+              collapsible: true,
+              collapsed: true,
+              components: { notes: { type: 'textarea' } }
+            }
+          }
+        },
+        data: { title: 'Emma', notes: 'Classic' }
+      })
+      const section = result.wrapper
+        .findAllComponents({ name: 'DitoSchema' })
+        .map(({ vm }) => vm)
+        .find(vm => vm !== result.schemaComponent)
+      return { ...result, section }
+    }
+
+    it('opens collapsed schemas to reveal the component', async () => {
+      const { section } = await mountCollapsedSection()
+      expect(section.opened).toBe(false)
+      const onComplete = vi.fn(() => true)
+      expect(await section.navigateToComponent('notes', onComplete)).toBe(true)
+      expect(section.opened).toBe(true)
+      expect(onComplete).toHaveBeenCalledWith([
+        expect.objectContaining({ name: 'notes' })
+      ])
+    })
+
+    it('keeps collapsed schemas closed without a component', async () => {
+      const { section } = await mountCollapsedSection()
+      expect(await section.navigateToComponent('isbn')).toBe(false)
+      expect(section.opened).toBe(false)
+    })
   })
 
   describe('validation errors', () => {

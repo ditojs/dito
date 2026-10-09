@@ -1,6 +1,11 @@
 import { vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
-import { mountForm, mountSchema, stubConfirm } from '../test/mount.js'
+import {
+  mountAdmin,
+  mountForm,
+  mountSchema,
+  stubConfirm
+} from '../test/mount.js'
 
 async function mountBookForm() {
   return mountForm({
@@ -137,6 +142,84 @@ describe('SourceMixin', () => {
       expect(chapterForm).not.toBe(routeComponent)
       expect(chapterForm.isForm).toBe(true)
       expect(chapterForm.data).toEqual({ title: 'Caladan' })
+    })
+  })
+
+  describe('defaultSort', () => {
+    async function mountBooksView(columns) {
+      const admin = await mountAdmin({
+        views: {
+          books: {
+            type: 'view',
+            component: {
+              type: 'list',
+              resource: { path: 'books' },
+              columns
+            }
+          }
+        },
+        request: () => ({ data: [{ id: 1, title: 'Emma', year: 1815 }] })
+      })
+      await admin.navigate('/books')
+      const loadQueries = admin.request.mock.calls
+        .map(([options]) => options)
+        .filter(({ url }) => url === '/books')
+        .map(({ query }) => query)
+      return { admin, loadQueries }
+    }
+
+    it('orders by the first column with `defaultSort` in its direction', async () => {
+      const { admin, loadQueries } = await mountBooksView({
+        title: { sortable: true },
+        year: { sortable: true, defaultSort: 'desc' }
+      })
+      expect(admin.router.currentRoute.value.query).toEqual({
+        order: 'year desc'
+      })
+      expect(loadQueries).toEqual([{ order: 'year desc' }])
+      expect(
+        admin.wrapper
+          .findAll('.dito-table-head th')
+          .map(th => th.attributes('aria-sort'))
+      ).toEqual(['none', 'descending'])
+    })
+
+    it('orders ascending with `defaultSort: true`', async () => {
+      const { admin, loadQueries } = await mountBooksView({
+        title: { sortable: true, defaultSort: true },
+        year: { sortable: true }
+      })
+      expect(admin.router.currentRoute.value.query).toEqual({
+        order: 'title asc'
+      })
+      expect(loadQueries).toEqual([{ order: 'title asc' }])
+    })
+  })
+
+  describe('processing', () => {
+    it('processes the items of lists without forms as copies', async () => {
+      // Copying to the clipboard removes the ids of the items, which mustn't
+      // remove them from the edited data:
+      const { schemaComponent, data } = await mountSchema({
+        schema: {
+          components: {
+            authors: { type: 'list', columns: { name: {} } }
+          }
+        },
+        data: {
+          authors: [
+            { id: 1, name: 'Mary Shelley' },
+            { id: 2, name: 'Bram Stoker' }
+          ]
+        }
+      })
+      expect(schemaComponent.getDataForClipboard()).toEqual({
+        authors: [{ name: 'Mary Shelley' }, { name: 'Bram Stoker' }]
+      })
+      expect(data.authors).toEqual([
+        { id: 1, name: 'Mary Shelley' },
+        { id: 2, name: 'Bram Stoker' }
+      ])
     })
   })
 })

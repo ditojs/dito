@@ -367,6 +367,39 @@ describe('DitoTypeSelect', () => {
         { id: 2, name: 'Grace' }
       ])
     })
+
+    it('gives options without ids temporary ids once selected', async () => {
+      // New members don't have ids yet, so they are their own option values,
+      // and the selected one gets a temporary id for the relation to refer to.
+      const { findField, data, submit } = await mountForm({
+        schema: teamSchema,
+        data: {
+          members: [{ name: 'Ada' }, { name: 'Grace' }],
+          captain: null
+        },
+        request: ({ data }) => ({ data })
+      })
+      const select = findField('captain').find('select')
+      await select.trigger('focus')
+      expect(select.findAll('option').map(option => option.text())).toEqual([
+        'Ada',
+        'Grace'
+      ])
+      select.element.selectedIndex = 1
+      await select.trigger('change')
+      expect(data.captain).toBe(data.members[1])
+      expect(data.members[1].id).toMatch(/^@\d+$/)
+      expect(data.members[0].id).toBe(undefined)
+      const payload = await submit()
+      // The temporary id becomes a reference between the member and captain:
+      const reference = payload.members[1]['#id']
+      expect(reference).toEqual(expect.any(String))
+      expect(payload.captain).toEqual({ '#ref': reference })
+      expect(payload.members).toEqual([
+        { name: 'Ada' },
+        { '#id': reference, 'name': 'Grace' }
+      ])
+    })
   })
 
   describe('editable', () => {

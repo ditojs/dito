@@ -337,6 +337,32 @@ describe('DitoTypeMultiselect', () => {
     }
   )
 
+  it('shows the default placeholder or none with boolean `placeholder`', async () => {
+    const { findField } = await mountForm({
+      schema: {
+        components: {
+          genre: {
+            type: 'multiselect',
+            searchable: true,
+            placeholder: true,
+            options: genres
+          },
+          mood: {
+            type: 'multiselect',
+            searchable: true,
+            placeholder: false,
+            options: genres
+          }
+        }
+      },
+      data: { genre: null, mood: null }
+    })
+    const getPlaceholder = dataPath =>
+      findField(dataPath).find('.multiselect__input').attributes('placeholder')
+    expect(getPlaceholder('genre')).toBe('Select or search Genre')
+    expect(getPlaceholder('mood')).toBe(undefined)
+  })
+
   describe('search', () => {
     const authors = [
       { id: 1, name: 'Jane Austen' },

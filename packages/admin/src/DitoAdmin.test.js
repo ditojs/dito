@@ -15,9 +15,12 @@ describe('DitoAdmin', () => {
     appState.user = null
   })
 
-  function createAdmin(options) {
-    const element = document.createElement('div')
-    document.body.appendChild(element)
+  function createAdmin({ el, ...options } = {}) {
+    let element = el
+    if (!element) {
+      element = document.createElement('div')
+      document.body.appendChild(element)
+    }
     const admin = new DitoAdmin(element, {
       views: {},
       api: {
@@ -29,6 +32,15 @@ describe('DitoAdmin', () => {
     createdAdmins.push(admin)
     return admin
   }
+
+  it('mounts into the element of a selector', () => {
+    const element = document.createElement('div')
+    element.id = 'library-admin'
+    document.body.appendChild(element)
+    const admin = createAdmin({ el: '#library-admin' })
+    expect(admin.app._container).toBe(element)
+    expect(element.classList.contains('dito-app')).toBe(true)
+  })
 
   it('works without the `dito` object', () => {
     delete window.dito

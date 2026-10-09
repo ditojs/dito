@@ -1,4 +1,6 @@
+import { vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
+import DitoContext from '../DitoContext.js'
 import { mountSchema } from '../test/mount.js'
 
 const blocksSchema = {
@@ -151,5 +153,46 @@ describe('DitoCreateButton', () => {
     await field.find('.dito-create-button button').trigger('click')
     await flushPromises()
     expect(data.blocks).toEqual([{ text: null }])
+  })
+
+  it('navigates to the create form with the type and query', async () => {
+    const query = vi.fn(({ user }) => ({ editor: user.username }))
+    const { admin, findField } = await mountSchema({
+      schema: {
+        components: {
+          recipes: {
+            type: 'list',
+            resource: { path: 'recipes' },
+            creatable: { query },
+            forms: {
+              soup: {
+                type: 'form',
+                label: 'Soup',
+                components: { name: { type: 'text' } }
+              },
+              cake: {
+                type: 'form',
+                label: 'Cake',
+                components: { name: { type: 'text' } }
+              }
+            }
+          }
+        }
+      },
+      request: ({ method = 'get', url }) => {
+        if (method === 'get' && url === '/recipes') return { data: [] }
+        throw new Error(`Unexpected request: ${method} ${url}`)
+      }
+    })
+    const field = findField('recipes')
+    await findMenuButton(field).trigger('click')
+    await field.findAll('[role="menuitem"]')[1].trigger('click')
+    await flushPromises()
+    const route = admin.router.currentRoute.value
+    expect(route.path).toBe('/test/recipes/create')
+    expect(route.query).toEqual({ type: 'cake', editor: 'tester' })
+    expect(query).toHaveBeenCalledWith(expect.any(DitoContext))
+    const form = admin.getRouteComponent(component => component.isForm)
+    expect(form.creationType).toBe('cake')
   })
 })

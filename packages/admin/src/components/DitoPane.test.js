@@ -58,4 +58,35 @@ describe('DitoPane', () => {
     expect(isLabelVertical('hasSubtitle')).toBe(false)
     expect(isLabelVertical('title')).toBe(false)
   })
+
+  it('keeps aligning a row once its last component is gone', async () => {
+    stubLayout()
+    const { wrapper, findContainer, data, settle } = await mountSchema({
+      schema: {
+        components: {
+          name: { type: 'text', label: 'Name', width: '1/3' },
+          captain: { type: 'checkbox', label: false, width: '1/3' },
+          coach: {
+            type: 'text',
+            label: false,
+            width: '1/3',
+            if: ({ item }) => item.hasCoach
+          }
+        }
+      },
+      data: { name: 'Rovers', captain: true, hasCoach: true }
+    })
+    const isLabelVertical = name =>
+      findContainer(name).classes('dito-container--label-vertical')
+    await measureRows(wrapper)
+    expect(isLabelVertical('captain')).toBe(true)
+    expect(isLabelVertical('coach')).toBe(true)
+
+    data.hasCoach = false
+    await settle()
+    await measureRows(wrapper)
+    expect(findContainer('coach').exists()).toBe(false)
+    expect(isLabelVertical('name')).toBe(true)
+    expect(isLabelVertical('captain')).toBe(true)
+  })
 })
