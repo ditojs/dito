@@ -1,4 +1,4 @@
-import { isObject, isArray, isString, equals } from '@ditojs/utils'
+import { isObject, isArray, isString, isEmpty, equals } from '@ditojs/utils'
 
 const schemaCaches = {}
 
@@ -15,6 +15,12 @@ export function convertSchema(
   options = {},
   parentEntry = null
 ) {
+  if (!isObject(schema) && !isArray(schema)) {
+    // Boolean schemas (`true`, `false`) and other non-object values have
+    // nothing to convert, and can't be used as keys of the schema cache.
+    return schema
+  }
+
   const original = schema
   const isRoot = parentEntry === null
 
@@ -22,7 +28,7 @@ export function convertSchema(
   if (schemaCache.has(original)) {
     const { schema, definitions, parentEntries } = schemaCache.get(original)
     parentEntries.push(parentEntry)
-    if (definitions) {
+    if (!isEmpty(definitions)) {
       if (isRoot) {
         return { ...schema, definitions }
       } else {
@@ -45,14 +51,12 @@ export function convertSchema(
 
   let definitions = null
   let jsonType = null
-  let schemaItems = null
-  let schemaWithNestedSchemas = null
+  let unwrappedSchema = null
   if (isArray(schema)) {
     // Needed for allOf, anyOf, oneOf, not, items, see below. The items are
     // converted once `entry.schema` is set, see below:
-    schemaItems = schema
     schema = []
-  } else if (isObject(schema)) {
+  } else {
     // Create a shallow clone so we can modify and return:
     // Also collect and propagate the definitions up to the root schema through
     // `options.definitions`, as passed from `Model static get jsonSchema()`:
@@ -107,7 +111,7 @@ export function convertSchema(
     }
     // `nullable` may wrap the schema in `oneOf` below, but its nested schemas
     // remain on the wrapped schema:
-    schemaWithNestedSchemas = schema
+    unwrappedSchema = schema
     if (schema.nullable) {
       if (schema.$ref) {
         // `$ref` doesn't play with `nullable`, so convert to `oneOf`
@@ -131,12 +135,12 @@ export function convertSchema(
   try {
     // Only convert nested schemas and definitions once `entry.schema` is set,
     // so that circular references resolve to the schema being converted.
-    if (schemaItems) {
-      for (const item of schemaItems) {
+    if (isArray(original)) {
+      for (const item of original) {
         schema.push(convertSchema(item, options, entry))
       }
-    } else if (schemaWithNestedSchemas) {
-      convertNestedSchemas(schemaWithNestedSchemas, jsonType, options, entry)
+    } else {
+      convertNestedSchemas(unwrappedSchema, jsonType, options, entry)
     }
     if (definitions) {
       mergeDefinitions(
@@ -150,7 +154,7 @@ export function convertSchema(
     throw error
   }
 
-  if (Object.keys(entry.definitions).length > 0) {
+  if (!isEmpty(entry.definitions)) {
     // Propagate the definitions up the parent entry chains, that due to
     // circular references may not be up to date yet.
     mergeDefinitionsRecursively(entry, entry.definitions)
@@ -288,7 +292,11 @@ function addFormat(schema, newFormat) {
     if (!allOf?.find(({ format }) => format === newFormat)) {
       schema = {
         ...rest,
-        allOf: [...(allOf ?? []), { format }, { format: newFormat }]
+        allOf: [
+          ...(allOf ?? []),
+          ...(format ? [{ format }] : []),
+          { format: newFormat }
+        ]
       }
     }
   } else {

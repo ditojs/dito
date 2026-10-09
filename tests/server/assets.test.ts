@@ -15,11 +15,6 @@ type UntypedStorageConfig = ConstructorParameters<typeof Storage>[1]
 class MemoryStorage extends Storage {
   dataByKey = new Map<string, Buffer>()
 
-  // Give the files urls, see `Storage._getFileUrl()`.
-  _getFileUrl(file: AssetFile) {
-    return (this as any)._getUrl(file.key)
-  }
-
   async _addFile(file: AssetFile, data: Buffer) {
     this.dataByKey.set(file.key, data)
   }
@@ -212,9 +207,8 @@ describe('AssetManager', () => {
   class Asset extends AssetMixin(Model) {}
   const app = createTestApp({ models: { Document, Asset } })
   const allowedImports: string[] = ['https://covers.example.com/**']
-  // With `allowedImports`, files need urls, see the bug in Storage.test.js.
+  // Without `url`, so that signed files have no url to match the imports.
   const storage = new MemoryStorage(app, {
-    url: 'https://files.example.com/',
     allowedImports
   } as unknown as UntypedStorageConfig)
   app.addStorage(storage, 'memory')

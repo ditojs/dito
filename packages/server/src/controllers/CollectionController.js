@@ -232,7 +232,7 @@ export class CollectionController extends Controller {
     },
 
     async delete(ctx, modify) {
-      const count = await this.execute(ctx, (query, trx) =>
+      const count = await this.execute(ctx, async (query, trx) => {
         query
           // Clear the controller's scopes, but keep the ones requested through
           // the `scope` query parameter, applied directly by `find()`:
@@ -240,8 +240,14 @@ export class CollectionController extends Controller {
           .find(ctx.filteredQuery, this.allowParam)
           .modify(query => this.isOneToOne && query.throwIfNotFound())
           .modify(getModify(modify, trx))
-          .modify(query => (this.unrelate ? query.unrelate() : query.delete()))
-      )
+        if (this.isOneToOne && this.unrelate) {
+          // Unrelating `belongsTo` relations patches the owner row, so the
+          // count is never 0 and `throwIfNotFound()` can't detect an empty
+          // relation. Check that the related row exists first:
+          await query.clone().first().throwIfNotFound()
+        }
+        return this.unrelate ? query.unrelate() : query.delete()
+      })
       return { count }
     },
 

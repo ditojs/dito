@@ -5,7 +5,7 @@ import multer from '@koa/multer'
 import picomatch from 'picomatch'
 import { PassThrough } from 'stream'
 import { readMediaAttributes } from 'leather'
-import { hyphenate, toPromiseCallback } from '@ditojs/utils'
+import { hyphenate, isString, toPromiseCallback } from '@ditojs/utils'
 import { AssetFile } from './AssetFile.js'
 import { AssetError } from '../errors/AssetError.js'
 import { resolveFileUrl } from '../utils/asset.js'
@@ -76,6 +76,8 @@ export class Storage {
   }
 
   isImportSourceAllowed(url) {
+    // Files of storages without `url` have no url to match.
+    if (!isString(url)) return false
     return picomatch.isMatch(
       resolveFileUrl(url),
       (this.config.allowedImports || []).map(resolveFileUrl)

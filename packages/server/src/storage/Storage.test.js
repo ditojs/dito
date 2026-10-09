@@ -324,16 +324,14 @@ describe('Storage: conversion of files', () => {
     expect(storage.isImportSourceAllowed(undefined)).toBe(false)
   })
 
-  // Bug: picomatch throws 'Expected input to be a string' for missing urls
-  // once `allowedImports` is configured, e.g. for storages without `url`.
-  it.fails('isImportSourceAllowed() rejects missing urls with config', () => {
+  it('isImportSourceAllowed() rejects missing urls with config', () => {
     const storage = createMemoryStorage({
       allowedImports: ['https://images.example.com/**']
     })
     expect(storage.isImportSourceAllowed(undefined)).toBe(false)
   })
 
-  it.fails('accepts signed files without url when imports are allowed', () => {
+  it('accepts signed files without url when imports are allowed', () => {
     const storage = createMemoryStorage({
       allowedImports: ['https://images.example.com/**']
     })

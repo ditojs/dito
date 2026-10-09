@@ -1364,18 +1364,13 @@ describe('ModelController', () => {
       expect(await Author.query().findById(author.id)).toBeDefined()
     })
 
-    // Bug: Unrelating `belongsTo` patches the owner row, so `throwIfNotFound()`
-    // sees a count of 1 and responds with `{ count: 1 }` instead of 404.
-    it.fails(
-      'responds with 404 when unrelating empty one-to-one relations',
-      async () => {
-        const note = await Note.query().insert({ text: 'Draft' })
-        const response = await request(`/notes/${note.id}/author`, {
-          method: 'DELETE'
-        })
-        expect(response.status).toBe(404)
-      }
-    )
+    it('responds with 404 when unrelating empty one-to-one relations', async () => {
+      const note = await Note.query().insert({ text: 'Draft' })
+      const response = await request(`/notes/${note.id}/author`, {
+        method: 'DELETE'
+      })
+      expect(response.status).toBe(404)
+    })
 
     it('inserts and patches graphs with graph controllers', async () => {
       const created = await request('/graph-authors', {
