@@ -217,6 +217,7 @@ export const projects = createWidgetView<Project>(
             contactInfo: {
               type: 'section',
               label: 'Contact Info',
+              nested: true,
               components: {
                 phone: { type: 'text', label: 'Phone', width: '1/2' },
                 email: { type: 'email', label: 'Contact Email', width: '1/2' }
