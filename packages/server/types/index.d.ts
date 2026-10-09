@@ -2533,7 +2533,12 @@ export class CollectionController<
     options: {
       id: Id | Id[]
       query?: Record<string, any>
-      modify?: ((query: QueryBuilder<$Model>) => void) | null
+      modify?:
+        | ((
+            query: QueryBuilder<$Model>,
+            trx?: objection.Transaction
+          ) => void)
+        | null
       forUpdate?: boolean
     }
   ): Promise<$Model | null>

@@ -1,7 +1,6 @@
 import { isObject, isArray, asArray } from '@ditojs/utils'
 import { Controller } from './Controller.js'
 import { ControllerError, ValidationError } from '../errors/index.js'
-import { parseHandlerDefinition } from '../utils/handler.js'
 
 // Abstract base class for ModelController and RelationController
 export class CollectionController extends Controller {
@@ -29,17 +28,20 @@ export class CollectionController extends Controller {
     // resolve `modelClass` after `super.configure()`, see `ModelController`.
     // eslint-disable-next-line new-cap
     this.idValidator = new this.modelClass()
-    // `getMember()` resolves members through `member.get`, also when `allow`
-    // doesn't route it, so resolve its handler from the inherited actions.
-    this.#memberGetHandler = parseHandlerDefinition(
-      this.inheritValues('member').get
-    ).handler
+    // Inherit the member actions here, as `this.member` only holds the routed
+    // handlers after `setupActions()`, see `#memberGetHandler` below.
+    const memberActions = this.inheritValues('member')
     this.logController()
     this.setProperty('collection', this.setupActions('collection'))
     this.setProperty(
       'member',
       this.isOneToOne ? {} : this.setupActions('member')
     )
+    // `getMember()` resolves members through `member.get`, also when `allow`
+    // doesn't route it, so set up its handler from the inherited actions then.
+    this.#memberGetHandler = Object.hasOwn(this.member, 'get')
+      ? this.member.get
+      : this.setupActionDefinition(memberActions, 'get').handler
     this.setProperty('assets', this.setupAssets())
   }
 

@@ -112,10 +112,61 @@ class ActiveNotes extends ModelController<Note> {
   } as any
 }
 
+// Hides the archived notes like `ActiveNotes`, but through a `member.get`
+// override in object notation that sub-classes don't route.
+class UnarchivedNotesBase extends ModelController<Note> {
+  override modelClass = Note
+
+  override member: ModelControllerActions<UnarchivedNotesBase> = {
+    get: {
+      handler(ctx: any, modify: any) {
+        return super.get(ctx, (query: any) => {
+          query.whereNot('name', 'Archived')
+          query.modify(modify)
+        })
+      }
+    }
+  } as any
+}
+
+class UnarchivedNotes extends UnarchivedNotesBase {
+  override member: ModelControllerActions<UnarchivedNotes> = {
+    'allow': ['get name'],
+
+    'get name': {
+      parameters: {
+        note: {
+          from: 'member'
+        }
+      },
+      handler(ctx: unknown, { note }: { note: Note }) {
+        return { name: note.name }
+      }
+    }
+  } as any
+}
+
+// Routes the `member.get` override that it inherits from the intermediate
+// `UnarchivedNotesBase`, which shares its definition with `UnarchivedNotes`.
+class UnarchivedNamedNotes extends UnarchivedNotesBase {
+  override member: ModelControllerActions<UnarchivedNamedNotes> = {
+    'get name': {
+      parameters: {
+        note: {
+          from: 'member'
+        }
+      },
+      handler(ctx: unknown, { note }: { note: Note }) {
+        return { name: note.name }
+      }
+    }
+  } as any
+}
+
 describe('Controller members', () => {
   const app = createTestApp({
     models: { Note },
-    controllers: { Notes, ActiveNotes }
+    controllers: { Notes, ActiveNotes, UnarchivedNotes, UnarchivedNamedNotes }
   })
 
   beforeAll(async () => {
@@ -152,6 +203,33 @@ describe('Controller members', () => {
     const activeResponse = await fetch(`${url}/${active.id}/name`)
     expect(activeResponse.status).toBe(200)
     expect(await activeResponse.json()).toEqual({ name: 'Active' })
+  })
+
+  it('resolves members through unrouted `member.get` overrides', async () => {
+    const active = await Note.query().insert({ name: 'Active' })
+    const archived = await Note.query().insert({ name: 'Archived' })
+    const url = `${getAppUrl(app)}/unarchived-notes`
+    // `allow` doesn't route `member.get`, but members still resolve through it.
+    const getResponse = await fetch(`${url}/${active.id}`)
+    expect(getResponse.status).toBe(404)
+    const archivedResponse = await fetch(`${url}/${archived.id}/name`)
+    expect(archivedResponse.status).toBe(404)
+    const activeResponse = await fetch(`${url}/${active.id}/name`)
+    expect(activeResponse.status).toBe(200)
+    expect(await activeResponse.json()).toEqual({ name: 'Active' })
+  })
+
+  it('routes inherited `member.get` overrides in object notation', async () => {
+    const active = await Note.query().insert({ name: 'Active' })
+    const archived = await Note.query().insert({ name: 'Archived' })
+    const url = `${getAppUrl(app)}/unarchived-named-notes`
+    const archivedResponse = await fetch(`${url}/${archived.id}`)
+    expect(archivedResponse.status).toBe(404)
+    const activeResponse = await fetch(`${url}/${active.id}`)
+    expect(activeResponse.status).toBe(200)
+    expect(await activeResponse.json()).toMatchObject({ name: 'Active' })
+    const archivedNameResponse = await fetch(`${url}/${archived.id}/name`)
+    expect(archivedNameResponse.status).toBe(404)
   })
 
   it('passes member options on through `member.get` overrides', async () => {
