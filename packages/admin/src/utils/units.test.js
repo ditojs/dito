@@ -67,5 +67,8 @@ describe('parseFileSize()', () => {
   it('throws on invalid input', () => {
     expect(() => parseFileSize('MB')).toThrow()
     expect(() => parseFileSize('10 XB')).toThrow()
+    expect(() => parseFileSize('10 MB 5')).toThrow(
+      `Can't interpret file size: 10 MB 5`
+    )
   })
 })

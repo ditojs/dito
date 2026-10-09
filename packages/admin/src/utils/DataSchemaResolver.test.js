@@ -156,4 +156,46 @@ describe('DataSchemaResolver', () => {
     expect(console.error).toHaveBeenCalledWith(error)
     vi.restoreAllMocks()
   })
+
+  it('forgets the error of loads that are outdated', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const item = reactive({ id: 1 })
+    const { resolver, waitForPendingLoads } = createResolver(
+      {
+        data: ({ item }) => {
+          const { id } = item
+          return async () => {
+            if (id === 1) throw new Error('Failed')
+            return id
+          }
+        }
+      },
+      { item }
+    )
+    resolver.value
+    await waitForPendingLoads()
+    expect(resolver.lastLoadError).toBeInstanceOf(Error)
+    item.id = 2
+    expect(resolver.lastLoadError).toBe(null)
+    expect(await resolver.waitForValue()).toBe(2)
+    vi.restoreAllMocks()
+  })
+
+  it('starts each load only once while it is pending', async () => {
+    const load = vi.fn(async () => 'loaded')
+    const { resolver, pendingLoads } = createResolver({ data: () => load })
+    expect(resolver.value).toBe(undefined)
+    expect(resolver.isLoading).toBe(true)
+    expect(resolver.value).toBe(undefined)
+    expect(pendingLoads).toHaveLength(1)
+    expect(await resolver.waitForValue()).toBe('loaded')
+    expect(load).toHaveBeenCalledTimes(1)
+  })
+
+  it('resolves data schemas without `data` and `dataPath` to nothing', () => {
+    const { resolver } = createResolver({ label: 'name' })
+    expect(resolver.value).toBe(undefined)
+    expect(resolver.isLoading).toBe(false)
+    expect(resolver.lastLoadError).toBe(null)
+  })
 })

@@ -1,4 +1,9 @@
-import { parseDate } from './date.js'
+import {
+  describeDate,
+  alterDate,
+  parseDate,
+  getDatePartAtPosition
+} from './date.js'
 
 describe('parseDate()', () => {
   const date = { day: 'numeric', month: 'long', year: 'numeric' }
@@ -35,4 +40,79 @@ describe('parseDate()', () => {
       expect(parseDate(string, { date, time: null })).toBe(null)
     }
   )
+})
+
+describe('describeDate()', () => {
+  it('describes the local date parts', () => {
+    expect(describeDate(new Date(2026, 4, 14, 11, 30, 15, 250))).toEqual({
+      year: 2026,
+      month: 4,
+      day: 14,
+      hour: 11,
+      minute: 30,
+      second: 15,
+      millisecond: 250
+    })
+  })
+
+  it('describes missing dates with zeros', () => {
+    expect(Object.values(describeDate(null))).toEqual([0, 0, 0, 0, 0, 0, 0])
+  })
+})
+
+describe('alterDate()', () => {
+  it('returns a new date with the overridden parts', () => {
+    const date = new Date(2026, 4, 14, 11, 30)
+    const altered = alterDate(date, { hour: 23, minute: 0 })
+    expect(altered).toEqual(new Date(2026, 4, 14, 23, 0))
+    expect(date).toEqual(new Date(2026, 4, 14, 11, 30))
+  })
+
+  it('rolls over out-of-range parts', () => {
+    expect(alterDate(new Date(2026, 0, 31), { month: 1 })).toEqual(
+      new Date(2026, 2, 3)
+    )
+  })
+})
+
+describe('getDatePartAtPosition()', () => {
+  const string = 'May 14, 2026, 11:30:00 AM'
+
+  it.each([
+    [0, { name: 'month', start: 0, end: 3 }],
+    [3, { name: 'month', start: 0, end: 3 }],
+    [4, { name: 'day', start: 4, end: 6 }],
+    // Separators belong to the part before them:
+    [6, { name: 'day', start: 4, end: 6 }],
+    [10, { name: 'year', start: 8, end: 12 }],
+    [14, { name: 'hour', start: 14, end: 16 }],
+    [18, { name: 'minute', start: 17, end: 19 }],
+    [21, { name: 'second', start: 20, end: 22 }]
+  ])('finds the part at position %o in US dates', (position, expected) => {
+    expect(getDatePartAtPosition(string, position)).toEqual(expected)
+  })
+
+  it('finds the day first in other locales', () => {
+    const options = { locale: 'de-DE' }
+    expect(getDatePartAtPosition('14.05.2026', 0, options)).toEqual({
+      name: 'day',
+      start: 0,
+      end: 2
+    })
+    expect(getDatePartAtPosition('14.05.2026', 3, options)).toEqual({
+      name: 'month',
+      start: 3,
+      end: 5
+    })
+  })
+
+  it('finds the parts of times without dates', () => {
+    expect(
+      getDatePartAtPosition('11:30:00', 4, { date: false })
+    ).toEqual({ name: 'minute', start: 3, end: 5 })
+  })
+
+  it('returns `null` for missing strings', () => {
+    expect(getDatePartAtPosition(null, 0)).toBe(null)
+  })
 })
