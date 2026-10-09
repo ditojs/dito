@@ -38,8 +38,9 @@ slot(name="prepend")
       )
         DitoTabs(
           v-if="opened"
-          v-model="selectedTab"
+          :modelValue="selectedTab"
           :tabs="renderedTabs"
+          @update:modelValue="selectTab"
         )
       DitoClipboard(
         v-if="clipboard"
@@ -192,6 +193,10 @@ export default DitoComponent.component('DitoSchema', {
           : data
       ),
       selectedTab: null,
+      // Whether the selected tab still follows `defaultTab`, until the route
+      // or the user select a tab, or until the data that `defaultTab()` and
+      // the tabs' `if` are evaluated with is there, see `selectDefaultTab()`.
+      shouldFollowDefaultTab: true,
       componentsRegistry: {},
       unnestedComponentsRegistry: {},
       panesRegistry: {},
@@ -385,12 +390,19 @@ export default DitoComponent.component('DitoSchema', {
       // https://github.com/vuejs/vue-router/issues/3393#issuecomment-1158470149
       flush: 'post',
       handler(routeTab) {
-        // Remember the current path to know if tab changes should still be
-        // handled, but remove the trailing `/create` or `/:id` from it so that
-        // tabs informs that stay open after creation still work.
-        if (this.hasTopLevelTabs) {
-          this.selectedTab = routeTab
+        // Changes of the hash to the selected tab are the route following the
+        // selection, see `selectedTab()`, not a selection by the route.
+        if (this.hasTopLevelTabs && routeTab !== this.selectedTab) {
+          this.selectTab(routeTab)
         }
+      }
+    },
+
+    hasData(hasData) {
+      // `defaultTab()` and the tabs' `if` may depend on data that is only
+      // available after mounting, e.g. the item of a form once it's loaded.
+      if (hasData && this.shouldFollowDefaultTab) {
+        this.selectDefaultTab()
       }
     },
 
@@ -424,7 +436,11 @@ export default DitoComponent.component('DitoSchema', {
   },
 
   mounted() {
-    this.selectedTab = this.routeTab || this.defaultTab
+    if (this.routeTab) {
+      this.selectTab(this.routeTab)
+    } else {
+      this.selectDefaultTab()
+    }
   },
 
   unmounted() {
@@ -489,6 +505,19 @@ export default DitoComponent.component('DitoSchema', {
 
     everyComponent(callback) {
       return this.isPopulated && this.components.every(callback)
+    },
+
+    // Selects the tab chosen by the route or the user.
+    selectTab(tab) {
+      this.selectedTab = tab
+      this.shouldFollowDefaultTab = false
+    },
+
+    // Selects `defaultTab`, and keeps following it until there is data, but
+    // not after that, so that editing the data doesn't switch the tab.
+    selectDefaultTab() {
+      this.selectedTab = this.defaultTab
+      this.shouldFollowDefaultTab = !this.hasData
     },
 
     isTabSelected(tab) {

@@ -2,7 +2,12 @@ import { vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import DitoContext from '../DitoContext.js'
 import appState from '../appState.js'
-import { mountAdmin, mountForm, mountSchema } from '../test/mount.js'
+import {
+  mountAdmin,
+  mountForm,
+  mountSchema,
+  settle
+} from '../test/mount.js'
 
 describe('DitoSchema', () => {
   it('passes the context to `schema.data()`', async () => {
@@ -188,14 +193,88 @@ describe('DitoSchema', () => {
       expect(defaultTab).toHaveBeenCalledWith(expect.any(DitoContext))
     })
 
-    // Bug: `defaultTab()` is evaluated before the form's data is loaded, with
-    // `item: null`, and the selection isn't updated once the data is there.
-    test.fails('selects the default tab of the loaded item', async () => {
-      const { schemaComponent } = await mountForm({
+    // `defaultTab()` is first evaluated before the form's data is loaded, with
+    // `item: null`, and is followed once the data is there.
+    it('selects the default tab of the loaded item', async () => {
+      const { schemaComponent, admin } = await mountForm({
         schema: { tabs: createTabs(({ item }) => item?.rating > 3) },
         data: { title: 'Emma', rating: 5 }
       })
       expect(schemaComponent.selectedTab).toBe('reviews')
+      expect(admin.router.currentRoute.value.hash).toBe('#reviews')
+    })
+
+    it('keeps the default tab when the loaded data changes', async () => {
+      const { schemaComponent, data, settle } = await mountForm({
+        schema: { tabs: createTabs(({ item }) => item?.rating > 3) },
+        data: { title: 'Emma', rating: 5 }
+      })
+      data.rating = 2
+      await settle()
+      expect(schemaComponent.selectedTab).toBe('reviews')
+    })
+
+    describe('while the item loads', () => {
+      // Mounts a form whose item loads once `loadItem()` is called, with a
+      // `defaultTab()` that selects 'reviews' for the loaded item.
+      async function mountLoadingForm(path) {
+        let loadItem
+        const admin = await mountAdmin({
+          views: {
+            items: {
+              type: 'view',
+              component: {
+                type: 'list',
+                resource: { path: 'items' },
+                form: {
+                  type: 'form',
+                  tabs: createTabs(({ item }) => item?.rating > 3)
+                }
+              }
+            }
+          },
+          request: ({ url }) =>
+            url === '/items/1'
+              ? new Promise(resolve => {
+                  loadItem = () => resolve({ data: { id: 1, rating: 5 } })
+                })
+              : { data: [] }
+        })
+        await admin.navigate(path)
+        const form = admin.getRouteComponent(component => component.isForm)
+        return {
+          admin,
+          schemaComponent: form.mainSchemaComponent,
+          async loadItem() {
+            loadItem()
+            await settle(form)
+          }
+        }
+      }
+
+      it('selects the default tab of the loaded item', async () => {
+        const { admin, schemaComponent, loadItem } =
+          await mountLoadingForm('/items/1')
+        // The hash that follows the selection isn't a selection by the route:
+        expect(admin.router.currentRoute.value.hash).toBe('#details')
+        await loadItem()
+        expect(schemaComponent.selectedTab).toBe('reviews')
+      })
+
+      it('keeps the tab selected by the user', async () => {
+        const { admin, schemaComponent, loadItem } =
+          await mountLoadingForm('/items/1')
+        admin.element.querySelector('.dito-tabs__link').click()
+        await loadItem()
+        expect(schemaComponent.selectedTab).toBe('details')
+      })
+
+      it('keeps the tab selected by the route', async () => {
+        const { schemaComponent, loadItem } =
+          await mountLoadingForm('/items/1#details')
+        await loadItem()
+        expect(schemaComponent.selectedTab).toBe('details')
+      })
     })
   })
 
