@@ -3,6 +3,7 @@ import ContextMixin from './ContextMixin.js'
 import ValidationMixin from './ValidationMixin.js'
 import { getSchemaEventEntries } from './DitoMixin.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
+import { trackRegistration } from '../utils/registration.js'
 import { getValidations } from '../utils/schema/validation.js'
 import { asArray, camelize, equals } from '@ditojs/utils'
 
@@ -23,7 +24,8 @@ export default {
     label: { type: String, default: null },
     single: { type: Boolean, default: false },
     nested: { type: Boolean, default: true },
-    accumulatedBasis: { type: Number, default: null }
+    // The id of the element that displays the errors, see `DitoContainer`.
+    errorsElementId: { type: String, default: null }
   },
 
   data() {
@@ -40,11 +42,6 @@ export default {
 
     type() {
       return this.schema.type
-    },
-
-    labelNode() {
-      const node = this.isMounted ? this.$el.previousElementSibling : null
-      return node?.matches('.dito-label') ? node : null
     },
 
     visible: getSchemaAccessor('visible', {
@@ -108,12 +105,6 @@ export default {
       default: null
     }),
 
-    inlineInfo() {
-      // When a label is present, info is shown in the label component.
-      // Otherwise, we have to show it inline.
-      return !this.label ? this.info : null
-    },
-
     events() {
       const events = this.getEvents()
       // Register callbacks for all events that the schema handles and that the
@@ -133,7 +124,10 @@ export default {
       const attributes = {
         ...this.events,
         // Only text fields support `readonly`, disable all other components.
-        disabled: this.disabled || (this.readonly && !textField)
+        'disabled': this.disabled || (this.readonly && !textField),
+        // Link the displayed errors for assistive technology:
+        'aria-invalid': this.hasErrors || null,
+        'aria-describedby': this.hasErrors ? this.errorsElementId : null
       }
 
       if (nativeField) {
@@ -155,10 +149,6 @@ export default {
 
     validations() {
       return getValidations(this.schema, this.context)
-    },
-
-    showClearButton() {
-      return this.clearable && this.value != null
     }
   },
 
@@ -172,23 +162,23 @@ export default {
       if (this.hasErrors && !equals(value, this.valueWithErrors)) {
         this.clearErrors()
       }
-    },
-
-    componentPath(componentPath, oldComponentPath) {
-      // Component paths change when list items move, see `_registerEntry()`.
-      this._registerWithSchemaComponent(false, oldComponentPath)
-      this._registerWithSchemaComponent(true, componentPath)
     }
   },
 
   created() {
-    this._register(true)
+    // Provide component to container for schema accessor evaluation.
+    this.$emit('update:component', this)
+    this._unregister = trackRegistration(
+      this,
+      this._registerWithSchemaComponent
+    )
     this.setupSchemaFields()
     this.warnAboutUncomputedValue()
   },
 
   unmounted() {
-    this._register(false)
+    this.$emit('update:component', null)
+    this._unregister()
   },
 
   methods: {
@@ -205,12 +195,6 @@ export default {
           `computed, as its data isn't part of a data model.`
         )
       }
-    },
-
-    _register(add) {
-      // Provide component to container for schema accessor evaluation.
-      this.$emit('update:component', add ? this : null)
-      this._registerWithSchemaComponent(add, this.componentPath)
     },
 
     _registerWithSchemaComponent(add, componentPath) {
@@ -244,12 +228,20 @@ export default {
 
     // @overridable
     focusElement() {
-      this.getFocusElement()?.focus?.()
+      this._getFocusTarget('focus')?.focus?.()
     },
 
     // @overridable
     blurElement() {
-      this.getFocusElement()?.blur?.()
+      this._getFocusTarget('blur')?.blur?.()
+    },
+
+    _getFocusTarget(method) {
+      // Prefer the `focus()` and `blur()` of components, e.g. `DitoInput`
+      // targets its input rather than its root element that
+      // `getFocusElement()` returns.
+      const element = asArray(this.$refs.element)[0]
+      return element?.[method] ? element : this.getFocusElement()
     },
 
     getFocusElement() {

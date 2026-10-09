@@ -16,7 +16,7 @@
       :disabled="disabled"
     )
   DitoLabel(
-    v-if="hasLabel"
+    v-if="shouldRenderLabel"
     :class="labelClasses"
     :htmlFor="labelHtmlFor"
     :label="label"
@@ -36,11 +36,14 @@
     :label="label"
     :single="single"
     :nested="nested"
-    :accumulatedBasis="combinedBasis"
+    :errorsElementId="errorsElementId"
     @errors="onErrors"
     @update:component="value => (component = value)"
   )
-  DitoErrors(:errors="errors")
+  DitoErrors(
+    :id="errorsElementId"
+    :errors="errors"
+  )
 </template>
 
 <script>
@@ -59,6 +62,20 @@ import { appendDataPath } from '../utils/data.js'
 // @vue/component
 export default DitoComponent.component('DitoContainer', {
   mixins: [ValueMixin, ContextMixin],
+
+  provide() {
+    return {
+      $accumulatedBasis: () => this.combinedBasis
+    }
+  },
+
+  inject: {
+    // The basis of the closest ancestor container as a fraction of the width
+    // of the closest non-inlined schema, which provides `1`, see `DitoSchema`.
+    // The default is a factory that returns the injected function.
+    $accumulatedBasis: { default: () => () => 1 }
+  },
+
   props: {
     schema: { type: Object, required: true },
     dataPath: { type: String, default: '' },
@@ -70,8 +87,7 @@ export default DitoComponent.component('DitoContainer', {
     disabled: { type: Boolean, required: true },
     compact: { type: Boolean, default: false },
     generateLabels: { type: Boolean, default: false },
-    verticalLabels: { type: Boolean, default: false },
-    accumulatedBasis: { type: Number, default: null }
+    verticalLabels: { type: Boolean, default: false }
   },
 
   data() {
@@ -127,6 +143,19 @@ export default DitoComponent.component('DitoContainer', {
 
     label() {
       return this.hasLabel ? this.getLabel(this.schema) : null
+    },
+
+    shouldRenderLabel() {
+      // Type components can display the label themselves, e.g. sections in the
+      // header of their schema. They still receive it through `label`.
+      return (
+        this.hasLabel &&
+        !this.typeComponent?.rendersOwnLabel?.(this.context)
+      )
+    },
+
+    errorsElementId() {
+      return `${this.componentPath}-errors`
     },
 
     labelHtmlFor() {
@@ -205,7 +234,8 @@ export default DitoComponent.component('DitoContainer', {
     },
 
     combinedBasis() {
-      const { accumulatedBasis, flexBasis } = this
+      const accumulatedBasis = this.$accumulatedBasis()
+      const { flexBasis } = this
       return isNumber(accumulatedBasis) && isNumber(flexBasis)
         ? accumulatedBasis * flexBasis
         : null
@@ -262,7 +292,7 @@ export default DitoComponent.component('DitoContainer', {
         this.nested ? this.componentPath : this.parentComponent.componentPath,
         this.componentPath,
         this.$refs.component,
-        this.tabComponent
+        this.tabComponent?.panelTab ?? null
       )
     }
   },
@@ -285,6 +315,17 @@ export default DitoComponent.component('DitoContainer', {
 
 <style lang="scss">
 @import '../styles/_imports';
+
+@mixin narrow-page-layout($content-width) {
+  @container dito-page (width <= #{0.8 * $content-width}) {
+    flex-grow: 1;
+    flex-basis: var(--basis-mobile, var(--basis));
+  }
+
+  @container dito-page (width <= #{0.6 * $content-width}) {
+    flex-basis: calc(2 * var(--basis));
+  }
+}
 
 .dito-container {
   --grow: 0;
@@ -313,26 +354,23 @@ export default DitoComponent.component('DitoContainer', {
     padding: 0;
   }
 
+  // Let the components grow and wrap in pages and sidebars that are narrower
+  // than the width that their schemas are laid out for:
   .dito-pane > & {
-    .dito-page--width-80 & {
+    .dito-page:not(.dito-page--wide) & {
+      @include narrow-page-layout($content-width);
+    }
+
+    .dito-page--wide & {
+      @include narrow-page-layout($content-width-wide);
+    }
+
+    @container dito-sidebar (width < #{$sidebar-max-width}) {
       flex-grow: 1;
-      flex-basis: var(--basis-mobile, var(--basis));
-      // DEBUG: background: yellow;
     }
 
-    .dito-page--width-60 & {
+    @container dito-sidebar (width <= #{0.6 * $sidebar-max-width}) {
       flex-basis: calc(2 * var(--basis));
-      // DEBUG: background: orange;
-    }
-
-    .dito-sidebar--width-99 & {
-      flex-grow: 1;
-      // DEBUG: background: yellow;
-    }
-
-    .dito-sidebar--width-60 & {
-      flex-basis: calc(2 * var(--basis));
-      // DEBUG: background: orange;
     }
   }
 

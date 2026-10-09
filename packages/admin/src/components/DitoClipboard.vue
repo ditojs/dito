@@ -2,40 +2,45 @@
 .dito-clipboard.dito-buttons.dito-buttons--round(
   v-if="clipboard"
 )
-  button.dito-button.dito-button--copy(
-    type="button"
+  DitoButton.dito-button--copy(
     title="Copy Data"
-    :disabled="!copyEnabled"
+    :disabled="!hasData"
     @click="onCopy"
   )
-  button.dito-button.dito-button--paste(
-    type="button"
+  DitoButton.dito-button--paste(
     title="Paste Data"
-    :disabled="!pasteEnabled"
+    :disabled="!isPasteEnabled"
     @click="onPaste"
   )
 </template>
 
 <script>
 import { isObject, clone } from '@ditojs/utils'
+import { DitoButton } from '@ditojs/ui/src'
 import DitoComponent from '../DitoComponent.js'
 import DomMixin from '../mixins/DomMixin.js'
 import DitoContext from '../DitoContext.js'
+import {
+  getClipboardData,
+  hasClipboardData,
+  copyClipboardData,
+  readClipboardData
+} from '../utils/clipboard.js'
 
 // @vue/component
 export default DitoComponent.component('DitoClipboard', {
   mixins: [DomMixin],
+  components: { DitoButton },
+
+  emits: ['paste'],
 
   props: {
     clipboard: { type: [Boolean, Object], required: true },
-    schema: { type: Object, required: true }
-  },
-
-  data() {
-    return {
-      copyEnabled: false,
-      pasteEnabled: false
-    }
+    schema: { type: Object, required: true },
+    hasData: { type: Boolean, required: true },
+    // Returns the data to copy. A function rather than the data itself, so
+    // that it's only processed when copying.
+    getData: { type: Function, required: true }
   },
 
   computed: {
@@ -57,101 +62,59 @@ export default DitoComponent.component('DitoClipboard', {
         ? clipboardData =>
             paste.call(this, new DitoContext(this, { clipboardData }))
         : clipboardData => clipboardData
-    }
-  },
-
-  watch: {
-    // Check right away also in case there's already data (e.g. create form):
-    'parentComponent.hasData': {
-      immediate: true,
-      handler: 'updateCopy'
     },
 
-    'appState.clipboardData': {
-      immediate: true,
-      handler: 'updatePaste'
+    isPasteEnabled() {
+      return hasClipboardData(this.schema.name)
     }
   },
 
   mounted() {
-    // Check clipboard content whenever something gets copied or the window gets
-    // (re)activated, as those are the moments when the clipboard can change:
-    this.domOn(document, { copy: this.updatePaste })
-    this.domOn(window, { focus: this.updatePaste })
+    // Read the clipboard right away, and whenever something gets copied or the
+    // window gets (re)activated, as those are the moments when it can change:
+    this.updateClipboardData()
+    this.domOn(document, { copy: this.updateClipboardData })
+    this.domOn(window, { focus: this.updateClipboardData })
   },
 
   methods: {
-    checkClipboardData(clipboardData) {
-      const { $schema, ...data } = clipboardData || {}
-      return $schema === this.schema.name ? data : null
-    },
-
-    async getClipboardData(report) {
-      // Use the internal clipboard as fallback.
-      let { clipboardData } = this.appState
-      try {
-        const json = await navigator.clipboard?.readText?.()
-        if (json) {
-          clipboardData = JSON.parse(json)
-        }
-      } catch (error) {
-        if (report) {
-          if (error.name === 'SyntaxError') {
-            this.notifyClipboardError(error, [
-              'The data in the clipboard appears to be malformed:',
-              error.message
-            ])
-          } else {
-            console.error(error, error.name, error.message)
-          }
-        }
-      }
-      return this.checkClipboardData(clipboardData)
-    },
-
-    updateCopy() {
-      this.copyEnabled = this.parentComponent.hasData
-    },
-
-    async updatePaste() {
-      this.pasteEnabled = !!this.checkClipboardData(this.appState.clipboardData)
-      if (!this.pasteEnabled && this.appState.agent.chrome) {
-        // See if the clipboard content is valid JSON data that is compatible
-        // with the current target schema, and only then activate the pasting:
-        const data = await this.getClipboardData(false) // Don't report
-        this.pasteEnabled = !!data
+    updateClipboardData() {
+      // Only Chrome reads the clipboard without asking for permission, so
+      // other browsers only read it when pasting.
+      if (this.appState.agent.chrome) {
+        // Errors are only reported when pasting.
+        readClipboardData().catch(() => {})
       }
     },
 
     async onCopy() {
-      let data = this.parentComponent.clipboardData
       try {
-        if (data) {
-          data = {
-            $schema: this.schema.name,
-            ...this.copyData(data)
-          }
-        }
-        // Keep an internal clipboard as fallback.
-        this.appState.clipboardData = data
-        this.pasteEnabled = true
-        try {
-          const json = JSON.stringify(data, null, 2)
-          await navigator.clipboard?.writeText?.(json)
-        } catch (err) {
-          console.error(err, err.name, err.message)
-        }
+        const data = this.getData()
+        await copyClipboardData(this.schema.name, data && this.copyData(data))
       } catch (error) {
         this.notifyClipboardError(error)
       }
     },
 
     async onPaste() {
-      let data = await this.getClipboardData(true) // Report
       try {
-        data = data && this.pasteData(data)
-        if (data) {
-          this.parentComponent.clipboardData = data
+        await readClipboardData()
+      } catch (error) {
+        if (error.name === 'SyntaxError') {
+          this.notifyClipboardError(error, [
+            'The data in the clipboard appears to be malformed:',
+            error.message
+          ])
+          return
+        }
+        // Fall back to the data copied inside the admin.
+        console.error(error, error.name, error.message)
+      }
+      try {
+        const data = getClipboardData(this.schema.name)
+        const pastedData = data && this.pasteData(data)
+        if (pastedData) {
+          this.$emit('paste', pastedData)
         }
       } catch (error) {
         this.notifyClipboardError(error)

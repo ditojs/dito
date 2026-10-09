@@ -18,8 +18,8 @@ slot(name="prepend")
     )
   Teleport(
     v-if="hasHeader"
-    :to="headerTeleport"
-    :disabled="!headerTeleport"
+    to=".dito-header__teleport"
+    :disabled="!isTopLevelSchema"
   )
     .dito-schema-header(
       v-if="active"
@@ -45,6 +45,9 @@ slot(name="prepend")
         v-if="clipboard"
         :clipboard="clipboard"
         :schema="schema"
+        :hasData="hasData"
+        :getData="getDataForClipboard"
+        @paste="setData"
       )
       slot(name="edit-buttons")
   TransitionHeight(:enabled="inlined")
@@ -65,7 +68,7 @@ slot(name="prepend")
           //- of their components). `navigateToComponent()` then needs to
           //- select the tab that displays the component.
           DitoPane.dito-pane__tab(
-            v-show="selectedTab === tab"
+            v-show="isTabSelected(tab)"
             ref="tabs"
             :tab="tab"
             :schema="tabSchema"
@@ -78,7 +81,6 @@ slot(name="prepend")
             :disabled="disabled"
             :compact="compact"
             :generateLabels="generateLabels"
-            :accumulatedBasis="accumulatedBasis"
           )
       DitoPane.dito-pane__main(
         v-if="hasMainPane"
@@ -93,7 +95,6 @@ slot(name="prepend")
         :disabled="disabled"
         :compact="compact"
         :generateLabels="generateLabels"
-        :accumulatedBasis="accumulatedBasis"
       )
       slot(
         v-if="!inlined && isPopulated"
@@ -120,12 +121,12 @@ import { TransitionHeight } from '@ditojs/ui/src'
 import DitoComponent from '../DitoComponent.js'
 import DitoContext from '../DitoContext.js'
 import ContextMixin from '../mixins/ContextMixin.js'
-import ItemMixin from '../mixins/ItemMixin.js'
 import { appendDataPath } from '../utils/data.js'
 import { isPanel } from '../utils/schema/structure.js'
 import {
   getNamedSchemas,
   getPanelEntries,
+  getItemFormSchema,
   isEmptySchema
 } from '../utils/schema/lookup.js'
 import { initializeData, processData } from '../utils/schema/data.js'
@@ -137,13 +138,17 @@ import { getSchemaAccessor, getStoreAccessor } from '../utils/accessor.js'
 
 // @vue/component
 export default DitoComponent.component('DitoSchema', {
-  mixins: [ContextMixin, ItemMixin],
+  mixins: [ContextMixin],
   components: { TransitionHeight },
   inheritAttrs: false,
 
   provide() {
     return {
-      $schemaComponent: () => this
+      $schemaComponent: () => this,
+      // Inlined schemas share the width of their container, see
+      // `DitoContainer.combinedBasis`, while all others take the full width,
+      // e.g. panels in the sidebar.
+      ...(!this.inlined && { $accumulatedBasis: () => 1 })
     }
   },
 
@@ -172,9 +177,7 @@ export default DitoComponent.component('DitoSchema', {
     collapsible: { type: Boolean, default: false },
     scrollable: { type: Boolean, default: false },
     hasOwnData: { type: Boolean, default: false },
-    generateLabels: { type: Boolean, default: false },
-    labelNode: { type: HTMLElement, default: null },
-    accumulatedBasis: { type: Number, default: 1 }
+    generateLabels: { type: Boolean, default: false }
   },
 
   data() {
@@ -216,10 +219,13 @@ export default DitoComponent.component('DitoSchema', {
     },
 
     panelEntries() {
+      // Panels of schemas inlined in tabs are only shown with their tab, as
+      // the panels of components in tabs, see `DitoContainer.panelEntries`.
       return getPanelEntries(
         this.schema.panels,
         this.dataPath,
-        this.componentPath
+        this.componentPath,
+        this.tabComponent?.panelTab ?? null
       )
     },
 
@@ -265,30 +271,14 @@ export default DitoComponent.component('DitoSchema', {
       return this.hasLabel || this.hasTabs || !!this.clipboard
     },
 
-    headerTeleport() {
-      return this.isTopLevelSchema
-        ? '.dito-header__teleport'
-        : this.labelNode
-    },
-
     // @override
     processedData() {
       return this.processData({ target: 'server', schemaOnly: true })
     },
 
-    clipboardData: {
-      get() {
-        return this.processData({ target: 'clipboard', schemaOnly: true })
-      },
-
-      set(data) {
-        this.setData(data)
-      }
-    },
-
     formLabel() {
       return this.getLabel(
-        this.getItemFormSchema(this.sourceSchema, this.data, this.context)
+        getItemFormSchema(this.sourceSchema, this.data, this.context)
       )
     },
 
@@ -423,9 +413,6 @@ export default DitoComponent.component('DitoSchema', {
           hash: tab ? `#${tab}` : null
         })
       }
-      if (this.hasErrors) {
-        this.repositionErrors()
-      }
     }
   },
 
@@ -504,6 +491,10 @@ export default DitoComponent.component('DitoSchema', {
       return this.isPopulated && this.components.every(callback)
     },
 
+    isTabSelected(tab) {
+      return this.selectedTab === tab
+    },
+
     onOpen(open) {
       this.emitEvent('open', { context: { open } })
       this.opened = open
@@ -523,17 +514,6 @@ export default DitoComponent.component('DitoSchema', {
       for (const component of this.components) {
         component.clearErrors()
       }
-    },
-
-    repositionErrors() {
-      // Fire a fake scroll event to force the repositioning of error tooltips,
-      // as otherwise they sometimes don't show up in the right place initially
-      // when changing tabs.
-      const scrollContainer = this.$refs.content.closest('.dito-scroll')
-      const dispatch = () => scrollContainer.dispatchEvent(new Event('scroll'))
-      dispatch()
-      // This is required to handle `&--label-vertical` based layout changes.
-      setTimeout(dispatch, 0)
     },
 
     focus() {
@@ -796,6 +776,12 @@ export default DitoComponent.component('DitoSchema', {
       return { localData, foreignData }
     },
 
+    // Called by `DitoClipboard` only when copying, as processing all data on
+    // each change would be wasteful.
+    getDataForClipboard() {
+      return this.processData({ target: 'clipboard', schemaOnly: true })
+    },
+
     processData({ target = 'clipboard', schemaOnly = true } = {}) {
       return processData(
         this.dataSchema,
@@ -855,8 +841,8 @@ export default DitoComponent.component('DitoSchema', {
 
     // Registries are keyed by component path. Component paths change when list
     // items move, and the entries then register again under their new path,
-    // see `TypeMixin`, `DitoPane` and `DitoPanel`.
-    _registerEntry(registry, entry, add, componentPath = entry.componentPath) {
+    // see `trackRegistration()`.
+    _registerEntry(registry, entry, add, componentPath) {
       if (add) {
         registry[componentPath] = entry
       } else if (registry[componentPath] === entry) {
@@ -963,11 +949,6 @@ function compareByDocumentPosition(component1, component2) {
   .dito-header & {
     // When teleported into main header.
     align-items: flex-end;
-  }
-
-  .dito-label & {
-    // When teleported into container label.
-    flex: 1;
   }
 
   > .dito-label {

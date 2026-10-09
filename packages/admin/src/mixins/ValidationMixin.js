@@ -50,9 +50,9 @@ export default {
     },
 
     markTouched() {
+      // Displayed errors remain while the input is focused, e.g. after
+      // `showValidationErrors()` focused it, until new input clears them.
       this.isTouched = true
-      // Clear currently displayed errors when focusing input.
-      this.clearErrors()
     },
 
     markDirty() {
@@ -84,7 +84,7 @@ export default {
         this.addError(message, true)
       }
       if (focus) {
-        this.scrollIntoView()
+        this.focus()
       }
       return true
     },

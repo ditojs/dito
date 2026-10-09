@@ -31,15 +31,4 @@
   &[data-theme~='info'] {
     --color: #{color.adjust($color-active, $lightness: 5%)};
   }
-
-  &[data-theme~='error'] {
-    --color: #{color.adjust($color-error, $lightness: 5%)};
-
-    cursor: pointer;
-
-    > .tippy-arrow {
-      transform: unset !important;
-      left: 16px !important;
-    }
-  }
 }
