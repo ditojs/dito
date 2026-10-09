@@ -1,6 +1,8 @@
 <!-- Derived from ATUI, and further extended: https://aliqin.github.io/atui/ -->
 <template lang="pug">
-.dito-trigger-container
+.dito-trigger-container(
+  @keydown="onKeyDown"
+)
   .dito-trigger(
     v-if="alwaysShow"
     ref="trigger"
@@ -11,6 +13,7 @@
     v-else-if="trigger === 'click'"
     ref="trigger"
     :class="triggerClass"
+    :aria-expanded="showPopup"
     @click="onClick"
   )
     slot(name="trigger")
@@ -18,6 +21,7 @@
     v-else-if="trigger === 'hover'"
     ref="trigger"
     :class="triggerClass"
+    :aria-expanded="showPopup"
     @mouseenter="onHover(true)"
     @mouseleave="onHover(false)"
   )
@@ -26,6 +30,7 @@
     v-else-if="trigger === 'focus' || trigger === 'always'"
     ref="trigger"
     :class="triggerClass"
+    :aria-expanded="showPopup"
   )
     slot(name="trigger")
   Transition(:name="`dito-${transition}`")
@@ -60,6 +65,9 @@ import { hyphenate } from '@ditojs/utils'
 import { addEvents, combineEvents } from '../utils/event.js'
 import { getTarget } from '../utils/trigger'
 
+// The number of times `updatePosition()` waits for the popup to be laid out.
+const maxPositionRetryCount = 100
+
 export default {
   emits: ['update:show'],
 
@@ -87,7 +95,8 @@ export default {
       closeEvents: null,
       popupEvents: null,
       blurTimer: null,
-      mouseLeaveTimer: null
+      mouseLeaveTimer: null,
+      positionTimer: null
     }
   },
 
@@ -131,34 +140,15 @@ export default {
   },
 
   mounted() {
-    const { trigger, popup } = this.$refs
+    const { trigger } = this.$refs
     if (this.trigger === 'focus') {
       this.focusEvents = this.addFocusEvents(this.triggerTarget ?? trigger)
     }
 
-    if (this.hideWhenClickOutside && !this.alwaysShow) {
-      // Use 'mouseup' instead of 'click', since click appears to happen after
-      // the DOM inside of popups could change in a way so that the check
-      // `popup.contains(event.target)` would fail:
-      this.closeEvents = addEvents(window, {
-        mouseup: event => {
-          if (
-            this.showPopup &&
-            !popup.contains(event.target) &&
-            !trigger.contains(event.target) &&
-            !this.triggerTarget?.contains(event.target)
-          ) {
-            this.showPopup = false
-          }
-        },
-
-        blur: () => {
-          this.showPopup = false
-        }
-      })
-    }
-
-    if (this.alwaysShow) {
+    if (this.showPopup) {
+      // The `showPopup` watcher doesn't see popups that are shown initially.
+      this.onShowPopup(true)
+    } else if (this.alwaysShow) {
       this.showPopup = true
     }
   },
@@ -169,8 +159,11 @@ export default {
 
   unmounted() {
     this.focusEvents?.remove()
-    this.closeEvents?.remove()
+    this.removeCloseEvents()
     this.popupEvents?.remove()
+    clearTimeout(this.positionTimer)
+    clearTimeout(this.blurTimer)
+    clearTimeout(this.mouseLeaveTimer)
   },
 
   methods: {
@@ -178,10 +171,63 @@ export default {
       return !!this.$refs.popup?.matches(':focus-within')
     },
 
-    updatePosition() {
+    // Adds the events that close the popup while it is shown, see
+    // `onShowPopup()`.
+    addCloseEvents() {
+      if (this.hideWhenClickOutside && !this.alwaysShow && !this.closeEvents) {
+        const { trigger, popup } = this.$refs
+        // Use 'mouseup' instead of 'click', since click appears to happen after
+        // the DOM inside of popups could change in a way so that the check
+        // `popup.contains(event.target)` would fail:
+        this.closeEvents = addEvents(window, {
+          mouseup: event => {
+            if (
+              this.showPopup &&
+              !popup.contains(event.target) &&
+              !trigger.contains(event.target) &&
+              !this.triggerTarget?.contains(event.target)
+            ) {
+              this.showPopup = false
+            }
+          },
+
+          blur: () => {
+            this.showPopup = false
+          }
+        })
+      }
+    },
+
+    removeCloseEvents() {
+      this.closeEvents?.remove()
+      this.closeEvents = null
+    },
+
+    onKeyDown(event) {
+      if (event.key === 'Escape' && this.showPopup && !this.alwaysShow) {
+        // Don't let Escape also close what contains the trigger, e.g. dialogs.
+        event.stopPropagation()
+        this.showPopup = false
+      }
+    },
+
+    updatePosition(retryCount = 0) {
       const { trigger, popup } = this.$refs
+      clearTimeout(this.positionTimer)
+      this.positionTimer = null
+      if (!popup || !this.showPopup) {
+        // Unmounted or hidden in the meantime.
+        return
+      }
       if (this.show && popup.offsetWidth === 0) {
-        setTimeout(() => this.updatePosition(), 0)
+        // Wait for the popup to be laid out, but not forever, e.g. if the
+        // trigger is in a hidden part of the page.
+        if (retryCount < maxPositionRetryCount) {
+          this.positionTimer = setTimeout(
+            () => this.updatePosition(retryCount + 1),
+            0
+          )
+        }
         return
       }
 
@@ -379,14 +425,19 @@ export default {
     },
 
     onShowPopup(show) {
+      // The popup may have been toggled again or unmounted in the meantime:
+      if (show !== this.showPopup || !this.$refs.popup) return
       if (show) {
         if (this.trigger === 'focus') {
+          this.popupEvents?.remove()
           this.popupEvents = this.addFocusEvents(this.$refs.popup)
         }
+        this.addCloseEvents()
         this.updatePosition()
       } else {
         this.popupEvents?.remove()
         this.popupEvents = null
+        this.removeCloseEvents()
       }
     },
 
