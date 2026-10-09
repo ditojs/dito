@@ -51,6 +51,27 @@ describe('DitoTypeButton', () => {
     expect(findField('title').find('input').element.value).toBe('EMMA')
   })
 
+  it('styles and names buttons without text by their verb', async () => {
+    const { findField } = await mountSchema({
+      schema: { components: { cancel: { type: 'button' } } }
+    })
+    const button = findField('cancel')
+    expect(button.classes()).toContain('dito-button--cancel')
+    expect(button.attributes('type')).toBe('button')
+    expect(button.attributes('title')).toBe('Cancel')
+    expect(button.attributes('aria-label')).toBe('Cancel')
+  })
+
+  it('names buttons with text by it, not by their verb', async () => {
+    const { findField } = await mountSchema({
+      schema: { components: { cancel: { type: 'button', text: 'Discard' } } }
+    })
+    const button = findField('cancel')
+    expect(button.classes()).toContain('dito-button--cancel')
+    expect(button.attributes('title')).toBe('Discard')
+    expect(button.attributes('aria-label')).toBeUndefined()
+  })
+
   it('is excluded from the data', async () => {
     const { data } = await mountSchema({
       schema: { components: { shuffle: { type: 'button' } } }

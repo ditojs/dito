@@ -14,7 +14,7 @@
       :data="treeData"
       :draggable="draggable"
       :open="true"
-      @update:data="data => (value = data)"
+      @change-children="changeChildren"
     )
     .dito-tree-form-container(
       v-if="editPath && hasEditableForms"
@@ -28,6 +28,7 @@ import DitoTypeComponent from '../DitoTypeComponent.js'
 import SourceMixin from '../mixins/SourceMixin.js'
 import { resolveSchemaComponents } from '../utils/schema/setup.js'
 import { hasFormSchema, getFormSchemas } from '../utils/schema/lookup.js'
+import { updateOrder } from '../utils/schema/data.js'
 import { getParentDataPath } from '../utils/data.js'
 
 export default DitoTypeComponent.register(
@@ -36,22 +37,18 @@ export default DitoTypeComponent.register(
   {
     mixins: [SourceMixin],
 
-    provide() {
-      return { container: this }
-    },
-
     getSourceType(type) {
       return type === 'tree-object' ? 'object' : 'list'
     },
 
     computed: {
       path() {
-        // Accessed from DitoTreeItem through `container.path`:
+        // Accessed from DitoTreeItem through `sourceComponent.path`:
         return this.formComponent?.path
       },
 
       editPath() {
-        // Accessed from DitoTreeItem through `container.editPath`:
+        // Accessed from DitoTreeItem through `sourceComponent.editPath`:
         const path = this.$route.path.slice(this.path?.length)
         return path.startsWith(`/${this.schema.path}`) ? path : ''
       },
@@ -97,6 +94,46 @@ export default DitoTypeComponent.register(
           )
         }
         return hasEditableForms(this.schema)
+      }
+    },
+
+    methods: {
+      // Replaces the children of the tree item that holds them in `data`, as
+      // the only writer of the tree, see `DitoTreeItem.changeChildren()`.
+      changeChildren({ data, childrenSchema, path, children }) {
+        const previousChildren = data[childrenSchema.name]
+        updateOrder(childrenSchema, children)
+        if (data === this.treeData && this.isListSource) {
+          // The root item of tree lists holds the list in a wrapper object,
+          // see `treeData`.
+          this.value = children
+        } else {
+          data[childrenSchema.name] = children
+        }
+        this.followEditedChild({
+          childrenPath: childrenSchema.path && `${path}/${childrenSchema.path}`,
+          previousChildren,
+          children
+        })
+        this.onChange()
+      },
+
+      // Keeps the form of an edited child or of one of its descendants open
+      // at the child's new index, or closes it if the child was removed.
+      followEditedChild({ childrenPath, previousChildren, children }) {
+        const prefix = `${childrenPath}/`
+        const { editPath } = this
+        if (childrenPath && editPath.startsWith(prefix)) {
+          const [index, ...rest] = editPath.slice(prefix.length).split('/')
+          const newIndex = children.indexOf(previousChildren?.[index])
+          if (newIndex !== +index) {
+            const path =
+              newIndex >= 0
+                ? [`${this.path}${prefix}${newIndex}`, ...rest].join('/')
+                : this.path
+            this.$router.push({ path, query: this.$route.query })
+          }
+        }
       }
     },
 

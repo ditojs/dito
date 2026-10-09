@@ -1,8 +1,10 @@
 import { vi } from 'vitest'
+import { h } from 'vue'
 import { flushPromises } from '@vue/test-utils'
 import {
   mountSchema,
   mountForm,
+  mountAdmin,
   enterValue,
   stubConfirm
 } from '../test/mount.js'
@@ -135,6 +137,30 @@ describe('DitoTypeList', () => {
       expect(getItemNames(findField('ingredients'))).toEqual(['Flour'])
     })
 
+    it('keeps the state of each item when inserting items', async () => {
+      const { findField, getComponent, settle } = await mountSchema({
+        schema: createRecipeSchema({ collapsible: true, collapsed: true }),
+        data: {
+          ingredients: [{ name: 'Flour' }, { name: 'Salt' }, { name: 'Yeast' }]
+        }
+      })
+      await findField('ingredients').findAll('.dito-label')[1].trigger('click')
+      await settle()
+      expect(getItemNames(findField('ingredients'))).toEqual(['Salt'])
+      const list = getComponent('ingredients')
+      list.createItem(ingredientForm, null, 1)
+      await settle()
+      // The inserted item is opened, see `createItem()`, and the others keep
+      // their state:
+      const getOpenedNames = () =>
+        list.schemaComponents
+          .filter(schemaComponent => schemaComponent.opened)
+          .map(schemaComponent => schemaComponent.data.name)
+          .sort()
+      expect(getOpenedNames()).toEqual(['Salt', null])
+      expect(getItemNames(findField('ingredients'))).toEqual(['', 'Salt'])
+    })
+
     it('numbers the items by `orderKey` and keeps numbering them', async () => {
       const { findField, data, getComponent, settle } = await mountSchema({
         schema: createRecipeSchema({
@@ -205,19 +231,169 @@ describe('DitoTypeList', () => {
       ])
     })
 
-    it('creates items of the type chosen in the pulldown', async () => {
+    it('creates items of the type chosen in the menu', async () => {
       const { findField, data } = await mountSchema({
         schema: blocksSchema,
         data: { blocks: [] }
       })
       const field = findField('blocks')
-      const items = field.findAll('.dito-pulldown__item')
+      await field.find('.dito-create-button button').trigger('click')
+      const items = field.findAll('[role="menuitem"]')
       expect(items.map(item => item.text())).toEqual(['Heading', 'Image'])
-      await field.find('.dito-create-button button').trigger('mousedown')
-      await items[1].trigger('mousedown')
-      await items[1].trigger('mouseup')
+      await items[1].trigger('click')
       await flushPromises()
       expect(data.blocks).toEqual([{ type: 'image', url: null }])
+    })
+
+    it('inserts items of all forms through the buttons of an item', async () => {
+      const { findField, data } = await mountSchema({
+        schema: {
+          components: {
+            blocks: { ...blocksSchema.components.blocks, draggable: true }
+          }
+        },
+        data: {
+          blocks: [
+            { type: 'heading', text: 'Intro' },
+            { type: 'heading', text: 'Outro' }
+          ]
+        }
+      })
+      const field = findField('blocks')
+      await field
+        .findAll('.dito-schema-inlined .dito-create-button button')[1]
+        .trigger('click')
+      const items = field.findAll('[role="menuitem"]')
+      expect(items.map(item => item.text())).toEqual(['Heading', 'Image'])
+      await items[1].trigger('click')
+      await flushPromises()
+      expect(data.blocks.map(({ type }) => type)).toEqual([
+        'heading',
+        'image',
+        'heading'
+      ])
+    })
+
+    it('disables the buttons of items whose form disables them', async () => {
+      const { findField } = await mountSchema({
+        schema: {
+          components: {
+            blocks: {
+              ...blocksSchema.components.blocks,
+              deletable: true,
+              forms: {
+                ...blocksSchema.components.blocks.forms,
+                image: {
+                  ...blocksSchema.components.blocks.forms.image,
+                  deletable: false
+                }
+              }
+            }
+          }
+        },
+        data: {
+          blocks: [
+            { type: 'heading', text: 'Intro' },
+            { type: 'image', url: 'https://example.com/a.png' }
+          ]
+        }
+      })
+      const buttons = findField('blocks').findAll('.dito-button--remove')
+      expect(buttons.map(button => button.element.disabled)).toEqual([
+        false,
+        true
+      ])
+    })
+  })
+
+  describe(`items that aren't inlined`, () => {
+    async function getItemTexts(ingredients) {
+      const { findField } = await mountSchema({
+        schema: {
+          components: {
+            ingredients: { type: 'list', form: ingredientForm, ...ingredients }
+          }
+        },
+        data: {
+          ingredients: [
+            { name: 'Flour', amount: 500 },
+            { name: 'Salt', amount: 5 }
+          ]
+        }
+      })
+      return findField('ingredients')
+        .findAll('tbody td')
+        .map(cell => cell.text())
+    }
+
+    it('renders the items with their `component`', async () => {
+      const texts = await getItemTexts({
+        component: {
+          render() {
+            return h('em', `${this.data.amount} g`)
+          }
+        }
+      })
+      expect(texts).toEqual(['500 g', '5 g'])
+    })
+
+    it('renders the items with `render()`', async () => {
+      const texts = await getItemTexts({
+        render: ({ item, index }) => `${index + 1}: ${item.name}`
+      })
+      expect(texts).toEqual(['1: Flour', '2: Salt'])
+    })
+
+    it('renders the items with their label', async () => {
+      const texts = await getItemTexts({})
+      expect(texts).toEqual(['Flour', 'Salt'])
+    })
+  })
+
+  describe('list buttons', () => {
+    const importButton = { type: 'button', label: 'Import' }
+
+    it('disables the custom buttons while the list is disabled', async () => {
+      const { findField } = await mountSchema({
+        schema: createRecipeSchema({
+          disabled: true,
+          buttons: { import: importButton }
+        }),
+        data: { ingredients: [] }
+      })
+      const container = findField('ingredients').find(
+        '.dito-buttons__container'
+      )
+      expect(container.classes()).toContain('dito-container--disabled')
+    })
+
+    it('passes the list data to the buttons in single views', async () => {
+      const contextItems = []
+      const button = {
+        ...importButton,
+        disabled: ({ item }) => {
+          contextItems.push(item)
+          return false
+        }
+      }
+      const items = [{ id: 1, name: 'Flour' }]
+      const admin = await mountAdmin({
+        views: {
+          ingredients: {
+            type: 'view',
+            component: {
+              type: 'list',
+              resource: { path: 'ingredients' },
+              buttons: { import: button }
+            }
+          }
+        },
+        request: () => ({ data: items })
+      })
+      await admin.navigate('/ingredients')
+      expect(contextItems.length).toBeGreaterThan(0)
+      // Buttons of single views act on the list data, e.g. to store its order:
+      expect(contextItems.at(-1)).toEqual(items)
     })
   })
 
@@ -247,6 +423,37 @@ describe('DitoTypeList', () => {
       ])
       await enterValue(inputs[1], 'romance')
       expect(data.tags).toEqual(['classic', 'romance'])
+    })
+
+    it('renders wrapped primitive values of loaded data with stores', async () => {
+      // Rendering the items without their stores throws, which Vue only logs:
+      const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const { findField } = await mountForm({
+        schema: {
+          components: {
+            tags: {
+              type: 'list',
+              inlined: true,
+              wrapPrimitives: 'tag',
+              form: {
+                type: 'form',
+                components: { tag: { type: 'text' } }
+              }
+            }
+          }
+        },
+        data: { tags: ['classic', 'novel'] }
+      })
+      const stores = findField('tags')
+        .findAllComponents({ name: 'DitoSchemaInlined' })
+        .map(schema => schema.props('store'))
+      expect(stores).toHaveLength(2)
+      expect(stores).not.toContain(null)
+      expect(error).not.toHaveBeenCalled()
+      expect(warn).not.toHaveBeenCalled()
+      error.mockRestore()
+      warn.mockRestore()
     })
   })
 
@@ -295,6 +502,107 @@ describe('DitoTypeList', () => {
     })
   })
 
+  describe('item uids', () => {
+    it('keeps the uids of items that nested forms apply', async () => {
+      const { admin, findField, data, getComponent, settle } = await mountForm({
+        schema: {
+          components: {
+            chapters: {
+              type: 'list',
+              editable: true,
+              itemLabel: 'title',
+              form: {
+                type: 'form',
+                components: { title: { type: 'text' } }
+              }
+            }
+          }
+        },
+        data: { chapters: [{ title: 'Prologue' }] }
+      })
+      const list = getComponent('chapters')
+      const uid = list.getItemUid(list.schema, data.chapters[0])
+      const store = list.getItemStore(data.chapters[0])
+      await findField('chapters').find('a.dito-button--edit').trigger('click')
+      await settle()
+      await admin.wrapper
+        .find('.dito-buttons--main button[type="submit"]')
+        .trigger('click')
+      await settle()
+      const [chapter] = data.chapters
+      expect(list.getItemUid(list.schema, chapter)).toBe(uid)
+      expect(list.getItemStore(chapter)).toBe(store)
+    })
+
+    it('keeps the uids of nested items that nested forms remove', async () => {
+      const { admin, findField, data, getComponent, settle } = await mountForm({
+        schema: {
+          components: {
+            chapters: {
+              type: 'list',
+              editable: true,
+              itemLabel: 'title',
+              form: {
+                type: 'form',
+                components: {
+                  sections: {
+                    type: 'list',
+                    deletable: true,
+                    itemLabel: 'title',
+                    form: ingredientForm
+                  }
+                }
+              }
+            }
+          }
+        },
+        data: {
+          chapters: [
+            { title: 'Prologue', sections: [{ name: 'One' }, { name: 'Two' }] }
+          ]
+        }
+      })
+      const list = getComponent('chapters')
+      const [, secondSection] = data.chapters[0].sections
+      const uid = list.getItemUid(list.schema, secondSection)
+      await findField('chapters').find('a.dito-button--edit').trigger('click')
+      await settle()
+      stubConfirm(true)
+      await admin.wrapper.find('.dito-button--remove').trigger('click')
+      await settle()
+      await admin.wrapper
+        .find('.dito-buttons--main button[type="submit"]')
+        .trigger('click')
+      await settle()
+      const [section] = data.chapters[0].sections
+      expect(section.name).toBe('Two')
+      expect(list.getItemUid(list.schema, section)).toBe(uid)
+    })
+
+    it('keeps the uids of new items when saving them', async () => {
+      let lastId = 1
+      const addIds = item => ({
+        ...item,
+        ingredients: item.ingredients.map(ingredient => ({
+          id: ++lastId,
+          ...ingredient
+        }))
+      })
+      const result = await mountForm({
+        schema: createRecipeSchema(),
+        data: { ingredients: [{ name: 'Flour' }] },
+        request: ({ data }) => ({ data: addIds(data) })
+      })
+      const list = result.getComponent('ingredients')
+      const uid = list.getItemUid(list.schema, result.data.ingredients[0])
+      await result.submit()
+      // The saved data replaces the form's data:
+      const [ingredient] = result.data.ingredients
+      expect(ingredient.id).toBe(2)
+      expect(list.getItemUid(list.schema, ingredient)).toBe(uid)
+    })
+  })
+
   describe('columns', () => {
     it('renders the cells of the columns with `render()`', async () => {
       const { findField } = await mountSchema({
@@ -333,6 +641,83 @@ describe('DitoTypeList', () => {
         ['Dune', '412 pages']
       ])
     })
+    it('passes the data path of the value to `render()`', async () => {
+      const { findField } = await mountSchema({
+        schema: {
+          components: {
+            books: {
+              type: 'list',
+              columns: { title: { render: ({ dataPath }) => dataPath } }
+            }
+          }
+        },
+        data: { books: [{ title: 'Emma' }] }
+      })
+      expect(findField('books').find('tbody td').text()).toBe(
+        'books/0/title'
+      )
+    })
+  })
+
+  describe('keyboard reordering', () => {
+    it('moves items with their drag handles within the list', async () => {
+      const { findField, data, settle } = await mountSchema({
+        schema: {
+          components: {
+            books: {
+              type: 'list',
+              draggable: true,
+              orderKey: 'position',
+              columns: { title: {} }
+            }
+          }
+        },
+        data: {
+          books: [{ title: 'Emma' }, { title: 'Dune' }, { title: 'Ulysses' }]
+        }
+      })
+      const moveBook = async (index, key) => {
+        await findField('books')
+          .findAll('.dito-button--drag')
+          [index].trigger('keydown', { key, altKey: true })
+        await settle()
+      }
+      await moveBook(0, 'ArrowDown')
+      expect(data.books).toEqual([
+        { title: 'Dune', position: 0 },
+        { title: 'Emma', position: 1 },
+        { title: 'Ulysses', position: 2 }
+      ])
+      // Items can't move beyond the ends of the list:
+      await moveBook(2, 'ArrowDown')
+      await moveBook(0, 'ArrowUp')
+      expect(data.books.map(book => book.title)).toEqual([
+        'Dune',
+        'Emma',
+        'Ulysses'
+      ])
+    })
+
+    it('moves inlined items with their drag handles', async () => {
+      const { findField, data, settle } = await mountSchema({
+        schema: {
+          components: {
+            books: {
+              type: 'list',
+              inlined: true,
+              draggable: true,
+              form: { type: 'form', components: { title: { type: 'text' } } }
+            }
+          }
+        },
+        data: { books: [{ title: 'Emma' }, { title: 'Dune' }] }
+      })
+      await findField('books')
+        .findAll('.dito-button--drag')[0]
+        .trigger('keydown', { key: 'ArrowDown', altKey: true })
+      await settle()
+      expect(data.books.map(book => book.title)).toEqual(['Dune', 'Emma'])
+    })
   })
 
   describe('processing', () => {
@@ -350,6 +735,8 @@ describe('DitoTypeList', () => {
       await findField('ingredients')
         .find('.dito-button--remove')
         .trigger('click')
+      // The confirmation dialog resolves asynchronously, see `stubConfirm()`:
+      await flushPromises()
       expect(await submit()).toMatchObject({ ingredients: null })
     })
 
@@ -389,6 +776,76 @@ describe('DitoTypeList', () => {
       expect(await submit()).toBe(null)
       expect(getItemNames(findField('ingredients'))).toEqual([''])
       expect(getErrors('ingredients/0/name')).toHaveLength(1)
+    })
+  })
+
+  describe('query', () => {
+    async function mountBooksView() {
+      const admin = await mountAdmin({
+        views: {
+          books: {
+            type: 'view',
+            component: {
+              type: 'list',
+              resource: { path: 'books' },
+              paginate: 2,
+              scopes: { all: {}, drafts: {} },
+              columns: { title: { sortable: true } }
+            }
+          }
+        },
+        request: () => ({
+          data: { results: [{ id: 1, title: 'Emma' }], total: 5 }
+        })
+      })
+      await admin.navigate('/books?page=2')
+      const getLoadQueries = () =>
+        admin.request.mock.calls
+          .map(([options]) => options)
+          .filter(({ url }) => url === '/books')
+          .map(({ query }) => query)
+      return { admin, getLoadQueries }
+    }
+
+    it('adds the defaults to the route query and loads once', async () => {
+      const { admin, getLoadQueries } = await mountBooksView()
+      expect(admin.router.currentRoute.value.query).toEqual({
+        scope: 'all',
+        page: '2'
+      })
+      expect(getLoadQueries()).toEqual([{ scope: 'all', range: '4,5' }])
+    })
+
+    it('changes the scope through the route and resets the page', async () => {
+      const { admin, getLoadQueries } = await mountBooksView()
+      const scopeButton = admin.wrapper.findAll('.dito-scopes button')[1]
+      await scopeButton.trigger('click')
+      await flushPromises()
+      expect(admin.router.currentRoute.value.query).toEqual({
+        scope: 'drafts',
+        page: '0'
+      })
+      expect(getLoadQueries().at(-1)).toEqual({
+        scope: 'drafts',
+        range: '0,1'
+      })
+      expect(scopeButton.attributes('aria-pressed')).toBe('true')
+    })
+
+    it('sorts by columns through the route and resets the page', async () => {
+      const { admin, getLoadQueries } = await mountBooksView()
+      await admin.wrapper.find('.dito-table-head button').trigger('click')
+      await flushPromises()
+      expect(admin.router.currentRoute.value.query).toEqual({
+        scope: 'all',
+        page: '0',
+        order: 'title asc'
+      })
+      expect(getLoadQueries().at(-1)).toEqual({
+        scope: 'all',
+        order: 'title asc',
+        range: '0,1'
+      })
     })
   })
 })

@@ -7,19 +7,20 @@ DitoButtons.dito-edit-buttons.dito-buttons--round(
   :meta="meta"
   :store="store"
   :nested="nested"
+  :disabled="disabled"
   @click.stop
 )
-  //- Firefox doesn't like <button> here, so use <a> instead:
-  a.dito-button(
+  DitoDragHandle(
     v-if="draggable"
-    :class="{ 'dito-button--disabled': isDraggableDisabled }"
-    v-bind="getButtonAttributes(verbs.drag)"
+    :disabled="isDraggableDisabled"
+    @move="delta => $emit('move', delta)"
   )
-  RouterLink.dito-button(
+  DitoButton(
     v-if="editable"
-    :class="{ 'dito-button--disabled': isEditableDisabled }"
-    :to="editPath ? { path: editPath } : {}"
-    v-bind="getButtonAttributes(verbs.edit)"
+    as="RouterLink"
+    :to="editRoute"
+    :verb="verbs.edit"
+    :disabled="isEditableDisabled"
   )
   DitoCreateButton(
     v-if="creatable"
@@ -35,28 +36,36 @@ DitoButtons.dito-edit-buttons.dito-buttons--round(
     :disabled="isCreatableDisabled"
     :insertIndex="insertIndex"
   )
-  button.dito-button(
+  DitoButton(
     v-if="deletable"
-    type="button"
+    :verb="verbs.delete"
     :disabled="isDeletableDisabled"
-    v-bind="getButtonAttributes(verbs.delete)"
     @click="$emit('delete')"
   )
 </template>
 
 <script>
 import DitoComponent from '../DitoComponent.js'
+import DitoDragHandle from './DitoDragHandle.vue'
 import ContextMixin from '../mixins/ContextMixin.js'
+import { DitoButton } from '@ditojs/ui/src'
 import { capitalize } from '@ditojs/utils'
 
 // @vue/component
 export default DitoComponent.component('DitoEditButtons', {
   mixins: [ContextMixin],
-  emits: ['delete'],
+  components: { DitoButton, DitoDragHandle },
+  emits: ['delete', 'move'],
 
   props: {
     buttons: { type: Object, default: null },
+    // The schema of the component that owns the buttons, e.g. the list or
+    // object source, or the select. The `draggable`, `editable`, `creatable`
+    // and `deletable` props are already resolved from it.
     schema: { type: Object, required: true },
+    // The form schema of the item that per-item buttons act on, which can
+    // disable the buttons for its items, see `hasFormOption()`.
+    formSchema: { type: Object, default: null },
     dataPath: { type: String, required: true },
     data: { type: [Object, Array], default: null },
     meta: { type: Object, required: true },
@@ -68,6 +77,8 @@ export default DitoComponent.component('DitoEditButtons', {
     creatable: { type: Boolean, default: false },
     deletable: { type: Boolean, default: false },
     editPath: { type: String, default: null },
+    // The query of the edit route, e.g. to keep the current one in trees.
+    editQuery: { type: Object, default: null },
     createPath: { type: String, default: null },
     insertIndex: { type: Number, default: null }
   },
@@ -77,19 +88,24 @@ export default DitoComponent.component('DitoEditButtons', {
       return this.getLabel(this.schema.form)
     },
 
+    editRoute() {
+      const { editPath, editQuery } = this
+      return editPath ? { path: editPath, query: editQuery ?? undefined } : {}
+    },
+
     isDraggableDisabled() {
-      return this.disabled || !this.hasSchemaOption('draggable')
+      return this.disabled || !this.hasFormOption('draggable')
     },
 
     isDeletableDisabled() {
-      return this.disabled || !this.hasSchemaOption('deletable')
+      return this.disabled || !this.hasFormOption('deletable')
     },
 
     isEditableDisabled() {
       return (
         this.disabled ||
         !this.editPath ||
-        !this.hasSchemaOption('editable')
+        !this.hasFormOption('editable')
       )
     },
 
@@ -97,7 +113,7 @@ export default DitoComponent.component('DitoEditButtons', {
       return (
         this.disabled ||
         !this.createPath ||
-        !this.hasSchemaOption('creatable')
+        !this.hasFormOption('creatable')
       )
     },
 
@@ -116,13 +132,17 @@ export default DitoComponent.component('DitoEditButtons', {
   },
 
   methods: {
-    hasSchemaOption(name) {
+    hasFormOption(name) {
       // All options can be disabled on a per-form basis by setting
-      // `schema[name]` to `false` or a callback returning `false`.
-      return this.getSchemaValue(name, {
-        type: Boolean,
-        default: true
-      })
+      // `formSchema[name]` to `false` or a callback returning `false`.
+      return (
+        !this.formSchema ||
+        this.getSchemaValue(name, {
+          schema: this.formSchema,
+          type: Boolean,
+          default: true
+        })
+      )
     }
   }
 })

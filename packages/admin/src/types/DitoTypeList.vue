@@ -73,14 +73,13 @@
           v-else
         )
           td
-            DitoSchemaInlined(
-              v-if="isInlined"
-              :label="getItemLabel(schema, item, { index, asObject: true })"
-              :schema="getItemFormSchema(schema, item, context)"
+            DitoSourceItem(
+              :schema="schema"
               :dataPath="getDataPath(index)"
               :data="item"
+              :index="index"
               :meta="nestedMeta"
-              :store="getItemStore(schema, item, index)"
+              :store="getItemStore(item)"
               :disabled="disabled || isLoading"
               :collapsed="collapsed"
               :collapsible="collapsible"
@@ -91,75 +90,50 @@
               :createPath="createPath"
               :insertIndex="creatable && draggable ? index : null"
               @delete="deleteItem(item, index)"
-            )
-            component(
-              v-else-if="schema.component"
-              :is="schema.component"
-              :dataPath="getDataPath(index)"
-              :data="item"
-              :nested="false"
-            )
-            span(
-              v-else-if="render"
-              v-html="render(getContext(item, index))"
-            )
-            span(
-              v-else
-              v-html="getItemLabel(schema, item, { index })"
+              @move="delta => moveItem(item, delta)"
             )
         td.dito-table__buttons(
           v-if="hasCellEditButtons"
         )
           DitoEditButtons(
             nested
-            :schema="getItemFormSchema(schema, item, context)"
+            :schema="schema"
+            :formSchema="getItemFormSchema(schema, item, context)"
             :dataPath="getDataPath(index)"
             :data="item"
             :meta="nestedMeta"
-            :store="getItemStore(schema, item, index)"
+            :store="getItemStore(item)"
             :disabled="disabled || isLoading"
             :deletable="deletable"
             :draggable="draggable"
             :editable="editable"
             :editPath="getEditPath(item, index)"
             @delete="deleteItem(item, index)"
+            @move="delta => moveItem(item, delta)"
           )
-    //- Render create buttons inside table when not in a single component view:
+    //- Render the list buttons inside the table when not in a single
+    //- component view, with the item that holds the list as their data:
     tfoot(
       v-if="hasListButtons && !single"
     )
       tr
         td.dito-table__buttons(:colspan="numColumns")
           DitoEditButtons(
-            :buttons="buttonSchemas"
-            :schema="schema"
-            :dataPath="dataPath"
+            v-bind="listButtonsAttributes"
             :data="data"
-            :meta="meta"
-            :store="store"
-            :nested="nested"
-            :disabled="disabled || isLoading"
-            :creatable="creatable"
-            :createPath="createPath"
           )
-  //- Render create buttons outside table when in a single component view:
+  //- ...and outside, sticky to the bottom, when in a single component view,
+  //- with the list data as their data, e.g. for buttons that store its order:
   DitoEditButtons.dito-buttons--large.dito-buttons--main.dito-buttons--sticky(
     v-if="hasListButtons && single"
-    :buttons="buttonSchemas"
-    :schema="schema"
-    :dataPath="dataPath"
+    v-bind="listButtonsAttributes"
     :data="listData"
-    :meta="meta"
-    :store="store"
-    :disabled="disabled || isLoading"
-    :creatable="creatable"
-    :createPath="createPath"
   )
 </template>
 
 <script>
 import DitoTypeComponent from '../DitoTypeComponent.js'
-import DitoContext from '../DitoContext.js'
+import DitoSourceItem from '../components/DitoSourceItem.vue'
 import SourceMixin from '../mixins/SourceMixin.js'
 import SortableMixin from '../mixins/SortableMixin.js'
 import {
@@ -169,12 +143,14 @@ import {
 import { getViewEditPath } from '../utils/schema/lookup.js'
 import { createFiltersPanel } from '../utils/filter.js'
 import { appendDataPath } from '../utils/data.js'
-import { pickBy, equals, hyphenate } from '@ditojs/utils'
+import { getListWithMovedItem } from '../utils/list.js'
+import { hyphenate } from '@ditojs/utils'
 import { computed } from 'vue'
 
 // @vue/component
 export default DitoTypeComponent.register('list', {
   mixins: [SourceMixin, SortableMixin],
+  components: { DitoSourceItem },
 
   getSourceType(type) {
     // No need for transformation here. See TypeTreeList for details.
@@ -190,19 +166,17 @@ export default DitoTypeComponent.register('list', {
         api,
         filters,
         dataPath,
-        // Pass a computed value to get / set the query, see getFiltersPanel()
+        // Pass a computed value to get / set the query, see
+        // `createFiltersPanel()`.
         computed({
           get() {
             return component.query
           },
 
-          set(query) {
-            // Filter out undefined values for comparing with equals()
-            const filter = obj => pickBy(obj, value => value !== undefined)
-            if (!equals(filter(query), filter(component.query))) {
-              component.query = query
-              component.loadData(false)
-            }
+          // The panel clears the page, but it's only reset when the filters
+          // change the query, as the filtered list then has other pages.
+          set({ page, ...query }) {
+            component.listQuery.update(query, { resetPage: true })
           }
         })
       )
@@ -216,6 +190,20 @@ export default DitoTypeComponent.register('list', {
 
     hasListButtons() {
       return !!(this.buttonSchemas || this.creatable)
+    },
+
+    listButtonsAttributes() {
+      return {
+        buttons: this.buttonSchemas,
+        schema: this.schema,
+        dataPath: this.dataPath,
+        meta: this.meta,
+        store: this.store,
+        nested: this.nested,
+        disabled: this.disabled || this.isLoading,
+        creatable: this.creatable,
+        createPath: this.createPath
+      }
     },
 
     hasEditButtons() {
@@ -265,17 +253,17 @@ export default DitoTypeComponent.register('list', {
       return null
     },
 
-    getCellClass(column) {
-      return `dito-cell--${hyphenate(column.name)}`
+    // Moves the item by `delta` positions, see `DitoDragHandle`.
+    moveItem(item, delta) {
+      const listData = getListWithMovedItem(this.listData, item, delta)
+      if (listData) {
+        this.listData = listData
+        this.onChange()
+      }
     },
 
-    getContext(item, index) {
-      return new DitoContext(this, {
-        data: item,
-        value: item,
-        index,
-        dataPath: this.getDataPath(index)
-      })
+    getCellClass(column) {
+      return `dito-cell--${hyphenate(column.name)}`
     },
 
     onFilterErrors(errors) {

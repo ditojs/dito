@@ -33,8 +33,12 @@ export default DitoComponent.component('DitoTableCell', {
   mixins: [ContextMixin],
 
   props: {
+    // The schema of the cell, e.g. a column of a list or a property of a tree
+    // item, whose `name` is the key of its value in `data`.
     cell: { type: Object, required: true },
+    // The schema of the list or tree that holds the item.
     schema: { type: Object, required: true },
+    // The data path and data of the item, see `renderCell()`.
     dataPath: { type: String, required: true },
     data: { type: Object, required: true },
     meta: { type: Object, required: true },

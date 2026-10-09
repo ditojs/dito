@@ -6,7 +6,6 @@
     'dito-tree-item--active': active
   }`
   :style="level > 0 && { '--level': level }"
-  :data-path="path"
 )
   .dito-tree-header(
     v-if="label"
@@ -36,26 +35,23 @@
       .dito-tree-label(
         v-html="label"
       )
-    .dito-buttons.dito-buttons--small(
+    DitoEditButtons.dito-buttons--small(
       v-if="hasEditButtons"
+      :schema="schema"
+      :formSchema="getItemFormSchema(schema, data, context)"
+      :dataPath="dataPath"
+      :data="data"
+      :meta="nestedMeta"
+      :store="store"
+      :disabled="disabled"
+      :draggable="draggable"
+      :editable="editable"
+      :deletable="deletable"
+      :editPath="editPath"
+      :editQuery="$route.query"
+      @delete="$emit('delete')"
+      @move="delta => $emit('move', delta)"
     )
-      //- Firefox doesn't like <button> here, so use <a> instead:
-      a.dito-button(
-        v-if="draggable"
-        v-bind="getButtonAttributes(verbs.drag)"
-      )
-      button.dito-button(
-        v-if="editable"
-        type="button"
-        v-bind="getButtonAttributes(verbs.edit)"
-        @click="onEdit"
-      )
-      button.dito-button(
-        v-if="deletable"
-        type="button"
-        v-bind="getButtonAttributes(verbs.delete)"
-        @click="onDelete"
-      )
   table.dito-properties(
     v-if="properties"
     v-show="opened"
@@ -70,8 +66,8 @@
         )
       DitoTableCell(
         :cell="property"
-        :schema="property"
-        :dataPath="getPropertyDataPath(property)"
+        :schema="schema"
+        :dataPath="dataPath"
         :data="data"
         :meta="nestedMeta"
         :store="store"
@@ -83,7 +79,7 @@
     :options="getDraggableOptions(true)"
     :draggable="childrenDraggable"
     :modelValue="childrenList"
-    @update:modelValue="value => (childrenList = value)"
+    @update:modelValue="changeChildren"
   )
     DitoTreeItem(
       v-for="(item, index) in childrenItems"
@@ -97,7 +93,9 @@
       :draggable="childrenDraggable"
       :label="getItemLabel(childrenSchema, item.data, { index })"
       :level="level + 1"
-      @delete="deleteChild(index)"
+      @delete="deleteChild(item.data)"
+      @move="delta => moveChild(item.data, delta)"
+      @change-children="change => $emit('changeChildren', change)"
     )
     //- TODO: Convert dito-tree-item to use dito-label internally, and then
     //- pass `asObject: true` in the `getItemLabel()` call above.
@@ -105,19 +103,24 @@
 
 <script>
 import DitoComponent from '../DitoComponent.js'
+import DitoEditButtons from './DitoEditButtons.vue'
 import ItemMixin from '../mixins/ItemMixin'
 import SortableMixin from '../mixins/SortableMixin.js'
 import { appendDataPath, getRelativeDataPath } from '../utils/data.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
 import { getNamedSchemas, hasFormSchema } from '../utils/schema/lookup.js'
-import { updateOrder } from '../utils/schema/data.js'
 import { getTextFromHtml } from '../utils/html.js'
+import { getListWithMovedItem } from '../utils/list.js'
+import { confirmAndRemove } from '../utils/dialogs.js'
 
+// Renders an item of a tree list or tree object, see `DitoTypeTreeList`, which
+// is the item's `sourceComponent`. Items don't write the tree: They emit the
+// changed children with `changeChildren`, which the tree list applies.
 // @vue/component
 export default DitoComponent.component('DitoTreeItem', {
   mixins: [ItemMixin, SortableMixin],
-  emits: ['update:data', 'delete'],
-  inject: ['container'],
+  components: { DitoEditButtons },
+  emits: ['delete', 'move', 'changeChildren'],
 
   props: {
     schema: { type: Object, required: true },
@@ -142,7 +145,7 @@ export default DitoComponent.component('DitoTreeItem', {
       // Continue the path of the tree list with the item indices and children
       // names of the data path. The root item's data path doesn't contain the
       // list's name, see `DitoTypeTreeList.treeDataPath`.
-      const { componentPath, dataPath } = this.container
+      const { componentPath, dataPath } = this.sourceComponent
       const relativeDataPath = getRelativeDataPath(this.dataPath, dataPath)
       return relativeDataPath
         ? appendDataPath(componentPath, relativeDataPath)
@@ -150,15 +153,15 @@ export default DitoComponent.component('DitoTreeItem', {
     },
 
     meta() {
-      return this.container.meta
+      return this.sourceComponent.meta
     },
 
     store() {
-      return this.container.store
+      return this.sourceComponent.store
     },
 
     disabled() {
-      return this.container.disabled
+      return this.sourceComponent.disabled
     },
 
     nestedMeta() {
@@ -172,26 +175,13 @@ export default DitoComponent.component('DitoTreeItem', {
       return getNamedSchemas(this.schema.properties)
     },
 
-    // TODO: Should this be named `sourceSchema` instead? Use SourceMixin?
     childrenSchema() {
       return this.schema.children
     },
 
-    childrenList: {
-      get() {
-        const name = this.childrenSchema?.name
-        return name && this.data[name]
-      },
-
-      set(value) {
-        const name = this.childrenSchema?.name
-        if (name) {
-          updateOrder(this.childrenSchema, value)
-          // eslint-disable-next-line vue/no-mutating-props
-          this.data[name] = value
-          this.$emit('update:data', value)
-        }
-      }
+    childrenList() {
+      const name = this.childrenSchema?.name
+      return name && this.data[name]
     },
 
     childrenDraggable() {
@@ -220,7 +210,7 @@ export default DitoComponent.component('DitoTreeItem', {
     childrenItems() {
       const { childrenSchema, childrenList } = this
       if (childrenSchema && childrenList) {
-        const { editPath } = this.container
+        const { editPath } = this.sourceComponent
         const childrenOpen = !this.path && childrenSchema.open
         // Build a children list with child meta information for the template.
         return childrenList.map((data, index) => {
@@ -258,17 +248,13 @@ export default DitoComponent.component('DitoTreeItem', {
       return this.draggable || this.editable || this.deletable
     },
 
-    // TODO: Support creatable!
-    // TODO: Add support for creatable, editable and deletable overrides on the
-    // associated forms, just like in `TypeList` and `TypeObject`, through
-    // `DitoEditButtons`. It would be best to use `DitoEditButtons` here too.
-    creatable: getSchemaAccessor('creatable', {
-      type: Boolean,
-      default: false,
-      get(creatable) {
-        return creatable && hasFormSchema(this.schema)
-      }
-    }),
+    editPath() {
+      // The edit routes of the items are handled by the routes of the tree
+      // list, allowing reloads as well, see `DitoTypeTreeList.processSchema()`.
+      return this.editable && this.path
+        ? `${this.sourceComponent.path}${this.path}`
+        : null
+    },
 
     editable: getSchemaAccessor('editable', {
       type: Boolean,
@@ -284,91 +270,60 @@ export default DitoComponent.component('DitoTreeItem', {
     })
   },
 
+  watch: {
+    open(open) {
+      // Open the item also when it comes into the edit path later, e.g. when
+      // navigating to the form of one of its children.
+      if (open) {
+        this.opened = true
+      }
+    }
+  },
+
   methods: {
-    getPropertyDataPath(property) {
-      return appendDataPath(this.dataPath, property.name)
-    },
-
-    editPath(path) {
-      // All we got to do is push the right edit path to the router, the rest
-      // is handled by our routes, allowing reloads as well.
-      this.$router.push({
-        path: `${this.container.path}${path}`,
-        // Preserve current query
-        query: this.$route.query
+    changeChildren(children) {
+      this.$emit('changeChildren', {
+        data: this.data,
+        childrenSchema: this.childrenSchema,
+        path: this.path,
+        children
       })
     },
 
-    onEdit() {
-      this.editPath(this.path)
+    // Moves the child by `delta` positions, see `DitoDragHandle`.
+    moveChild(child, delta) {
+      const children = getListWithMovedItem(this.childrenList, child, delta)
+      if (children) {
+        this.changeChildren(children)
+      }
     },
 
-    // Items are removed from the children of their parent, see
-    // `deleteChild()`.
-    onDelete() {
-      this.$emit('delete')
-    },
-
-    // Removes the child after confirming it, like inlined lists do. Open forms
-    // of the child or of its later siblings are closed, as the removal shifts
-    // the indices in their paths. The removal is transient, as the tree is
-    // part of its form's data.
-    deleteChild(index) {
-      const { childrenSchema, container } = this
-      const item = this.childrenList[index]
-      const label = this.getItemLabel(childrenSchema, item, {
-        index,
-        extended: true
-      })
-      // The label is HTML, see `getItemLabel()`, but the dialog shows text:
-      const message = `Do you really want to ${this.verbs.delete} ${label}?`
-      if (window.confirm(getTextFromHtml(message))) {
-        if (this.isEditingChildFrom(index)) {
-          this.$router.push({
-            path: container.path,
-            query: this.$route.query
-          })
+    // Removes the child after confirming it, like inlined lists do. The removal
+    // is transient, as the tree is part of its form's data.
+    async deleteChild(child) {
+      await confirmAndRemove(this, {
+        label: this.getItemLabel(this.childrenSchema, child, {
+          index: this.childrenList.indexOf(child),
+          extended: true
+        }),
+        isTransient: true,
+        remove: () => {
+          // Look up the child by identity once confirmed, as the children may
+          // have changed while the dialog was open.
+          const children = this.childrenList.filter(it => it !== child)
+          if (children.length === this.childrenList.length) {
+            return false
+          }
+          this.changeChildren(children)
         }
-        this.childrenList = this.childrenList.toSpliced(index, 1)
-        this.onChange()
-        this.notify({
-          type: 'info',
-          title: 'Successfully Removed',
-          html: [`${label} was ${this.verbs.deleted}.`, container.transientNote]
-        })
-      }
-    },
-
-    // Returns whether the form of a child at the index or after it is open,
-    // or the form of one of their own children.
-    isEditingChildFrom(index) {
-      const childrenPath = this.childrenSchema.path
-      if (!childrenPath) {
-        return false
-      }
-      const prefix = `${this.path}/${childrenPath}/`
-      const { editPath } = this.container
-      if (!editPath.startsWith(prefix)) {
-        return false
-      }
-      const [childIndex] = editPath.slice(prefix.length).split('/')
-      return Number(childIndex) >= index
-    },
-
-    onChange() {
-      this.container.onChange()
+      })
     },
 
     // @override
-    onEndDrag(event) {
-      SortableMixin.methods.onEndDrag.call(this, event)
-      const { item } = event
-      // Preserve active state of edited sub-items, by editing their new path.
-      if (item.classList.contains('dito-tree-item--active')) {
-        this.$nextTick(() => {
-          this.editPath(event.item.dataset.path)
-        })
-      }
+    onEndDrag() {
+      // The tree list applies the reordered children and notifies of the
+      // change, see `DitoTypeTreeList.changeChildren()`.
+      this.isDragging = false
     }
   }
 })
@@ -444,18 +399,22 @@ export default DitoComponent.component('DitoTreeItem', {
   .dito-buttons {
     flex: auto;
     display: flex;
-    visibility: hidden;
+    // Transparent rather than hidden, so the buttons can be focused with the
+    // keyboard, which shows them, see below.
+    opacity: 0;
     height: 100%;
     margin: 1px;
     margin-right: 0;
   }
 
-  .dito-tree-header:hover {
+  .dito-tree-header:hover,
+  .dito-tree-header:focus-within {
     > .dito-buttons {
-      visibility: visible;
-    } // Hide buttons during dragging
+      opacity: 1;
+    }
   }
 
+  // Hide buttons during dragging
   &--dragging {
     .dito-tree-header {
       > .dito-buttons {

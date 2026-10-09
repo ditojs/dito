@@ -1,5 +1,5 @@
 import { flushPromises } from '@vue/test-utils'
-import { mountForm } from '../test/mount.js'
+import { mountForm, stubConfirm } from '../test/mount.js'
 
 const pageForm = {
   type: 'form',
@@ -108,5 +108,198 @@ describe('DitoTypeTreeList', () => {
     expect(admin.router.currentRoute.value.path).toBe(
       '/items/1/pages/0/subpages/1'
     )
+  })
+
+  it('opens the items that come into the edit path', async () => {
+    const schema = createSiteSchema()
+    schema.components.pages.children.editable = true
+    const { admin, findField } = await mountForm({ schema, data: site })
+    expect(getLabels(findField('pages'))).toEqual(['About', 'Contact'])
+    await admin.navigate('/items/1/pages/0/subpages/1')
+    expect(getLabels(findField('pages'))).toEqual([
+      'About',
+      'Team',
+      'History',
+      'Contact'
+    ])
+  })
+
+  it('passes the data path of the value to `render()` of properties', async () => {
+    const schema = createSiteSchema()
+    schema.components.pages.children.properties = {
+      slug: { render: ({ dataPath }) => dataPath }
+    }
+    schema.components.pages.children.open = true
+    const { findField } = await mountForm({ schema, data: site })
+    expect(
+      findField('pages')
+        .findAll('.dito-properties td:last-child')
+        .map(cell => cell.text())
+    ).toEqual(['pages/0/subpages/0/slug', 'pages/0/subpages/1/slug'])
+  })
+
+  it('disables the edit buttons of disabled trees', async () => {
+    const schema = createSiteSchema({ disabled: true, draggable: true })
+    Object.assign(schema.components.pages.children, {
+      deletable: true,
+      draggable: true
+    })
+    schema.components.pages.open = true
+    const { findField } = await mountForm({ schema, data: site })
+    const field = findField('pages')
+    const removeButtons = field.findAll('.dito-button--remove')
+    const dragHandles = field.findAll('.dito-button--drag')
+    // The removable subpages, and the draggable pages and subpages:
+    expect(removeButtons).toHaveLength(2)
+    expect(dragHandles).toHaveLength(4)
+    for (const button of removeButtons) {
+      expect(button.element.disabled).toBe(true)
+    }
+    for (const handle of dragHandles) {
+      expect(handle.classes()).toContain('dito-button--disabled')
+    }
+  })
+
+  describe('reordering', () => {
+    function createDraggableSiteSchema() {
+      const schema = createSiteSchema({ draggable: true })
+      Object.assign(schema.components.pages.children, {
+        editable: true,
+        deletable: true,
+        draggable: true
+      })
+      schema.components.pages.open = true
+      return schema
+    }
+
+    function findButton(field, label, selector) {
+      return field
+        .findAll('.dito-tree-header')
+        .find(header => header.find('.dito-tree-label').text() === label)
+        .find(selector)
+    }
+
+    function findHandle(field, label) {
+      return findButton(field, label, '.dito-button--drag')
+    }
+
+    it('moves children with their drag handles by keyboard', async () => {
+      const { findField, data } = await mountForm({
+        schema: createDraggableSiteSchema(),
+        data: site
+      })
+      await findHandle(findField('pages'), 'Team').trigger('keydown', {
+        key: 'ArrowDown',
+        altKey: true
+      })
+      await flushPromises()
+      expect(data.pages[0].subpages).toEqual([
+        { title: 'History' },
+        { title: 'Team' }
+      ])
+      await findHandle(findField('pages'), 'Contact').trigger('keydown', {
+        key: 'ArrowUp',
+        altKey: true
+      })
+      await flushPromises()
+      expect(data.pages.map(page => page.title)).toEqual(['Contact', 'About'])
+    })
+
+    it('keeps the form of a moved child open at its new index', async () => {
+      const { admin, findField } = await mountForm({
+        schema: createDraggableSiteSchema(),
+        data: site
+      })
+      await admin.navigate('/items/1/pages/0/subpages/0')
+      await findHandle(findField('pages'), 'Team').trigger('keydown', {
+        key: 'ArrowDown',
+        altKey: true
+      })
+      await flushPromises()
+      expect(admin.router.currentRoute.value.path).toBe(
+        '/items/1/pages/0/subpages/1'
+      )
+      // Moving the parent moves the form of its child along:
+      await findHandle(findField('pages'), 'About').trigger('keydown', {
+        key: 'ArrowDown',
+        altKey: true
+      })
+      await flushPromises()
+      expect(admin.router.currentRoute.value.path).toBe(
+        '/items/1/pages/1/subpages/1'
+      )
+    })
+
+    it('keeps the form of a later child open when removing one', async () => {
+      stubConfirm()
+      const { admin, findField, data } = await mountForm({
+        schema: createDraggableSiteSchema(),
+        data: site
+      })
+      await admin.navigate('/items/1/pages/0/subpages/1')
+      await findButton(findField('pages'), 'Team', '.dito-button--remove')
+        .trigger('click')
+      await flushPromises()
+      expect(data.pages[0].subpages).toEqual([{ title: 'History' }])
+      expect(admin.router.currentRoute.value.path).toBe(
+        '/items/1/pages/0/subpages/0'
+      )
+    })
+
+    it('closes the form of a removed child', async () => {
+      stubConfirm()
+      const { admin, findField } = await mountForm({
+        schema: createDraggableSiteSchema(),
+        data: site
+      })
+      await admin.navigate('/items/1/pages/0/subpages/0')
+      await findButton(findField('pages'), 'Team', '.dito-button--remove')
+        .trigger('click')
+      await flushPromises()
+      expect(admin.router.currentRoute.value.path).toBe('/items/1')
+    })
+
+    it('reorders the children of tree objects in the object', async () => {
+      const { admin, findField, data } = await mountForm({
+        schema: {
+          components: {
+            site: {
+              type: 'tree-object',
+              children: {
+                name: 'pages',
+                path: 'pages',
+                itemLabel: 'title',
+                form: pageForm,
+                draggable: true
+              }
+            }
+          }
+        },
+        data: {
+          site: {
+            title: 'Home',
+            pages: [{ title: 'About' }, { title: 'Contact' }]
+          }
+        }
+      })
+      // Drag the children into reverse order:
+      admin.wrapper
+        .findComponent({ name: 'DitoDraggable' })
+        .vm.$emit('update:modelValue', [...data.site.pages].reverse())
+      await flushPromises()
+      expect(data.site).toEqual({
+        title: 'Home',
+        pages: [{ title: 'Contact' }, { title: 'About' }]
+      })
+      await findHandle(findField('site'), 'Contact').trigger('keydown', {
+        key: 'ArrowDown',
+        altKey: true
+      })
+      await flushPromises()
+      expect(data.site).toEqual({
+        title: 'Home',
+        pages: [{ title: 'About' }, { title: 'Contact' }]
+      })
+    })
   })
 })

@@ -1,11 +1,11 @@
 <template lang="pug">
-DitoButton.dito-button(
+DitoButton(
   :id="componentPath"
   ref="element"
   :type="type"
+  :verb="verb"
   :text="text"
-  :title="title"
-  :class="buttonClass"
+  :title="text"
   :aria-busy="isRunning"
   v-bind="attributes"
 )
@@ -37,7 +37,7 @@ import DitoAffixes from '../components/DitoAffixes.vue'
 import { DitoButton } from '@ditojs/ui/src'
 import { getSchemaAccessor } from '../utils/accessor.js'
 import { hasResource } from '../utils/resource.js'
-import { labelize, asArray } from '@ditojs/utils'
+import { asArray } from '@ditojs/utils'
 
 export default DitoTypeComponent.register(
   ['button', 'submit'],
@@ -60,17 +60,9 @@ export default DitoTypeComponent.register(
         return this.verbs[this.name]
       },
 
-      buttonClass() {
-        return this.verb ? `dito-button--${this.verb}` : null
-      },
-
       text: getSchemaAccessor('text', {
         type: String
       }),
-
-      title() {
-        return this.text || labelize(this.verb)
-      },
 
       prefixes() {
         return asArray(this.schema.prefix)

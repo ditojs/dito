@@ -14,15 +14,16 @@ DitoSchema.dito-schema-inlined(
   :collapsed="collapsed"
   :collapsible="collapsible"
   :generateLabels="!isCompact"
-  :labelNode="labelNode"
-  :accumulatedBasis="accumulatedBasis"
 )
   //- Render dito-edit-buttons for inlined schemas separately from all
   //- others in `TypeList` as a scope, for better handling of layout.
+  //- `sourceSchema` is the schema of the list or object that holds the item,
+  //- passed through `meta.schema`, while `schema` is the item's form.
   template(#edit-buttons)
     DitoEditButtons(
       v-if="deletable || draggable || editable || insertIndex != null"
-      :schema="schema"
+      :schema="sourceSchema"
+      :formSchema="schema"
       :dataPath="dataPath"
       :data="data"
       :meta="meta"
@@ -36,6 +37,7 @@ DitoSchema.dito-schema-inlined(
       :createPath="createPath"
       :insertIndex="insertIndex"
       @delete="$emit('delete')"
+      @move="delta => $emit('move', delta)"
     )
 </template>
 
@@ -44,7 +46,7 @@ import DitoComponent from '../DitoComponent.js'
 import { isCompact } from '../utils/schema/structure.js'
 // @vue/component
 export default DitoComponent.component('DitoSchemaInlined', {
-  emits: ['delete'],
+  emits: ['delete', 'move'],
 
   props: {
     schema: { type: Object, required: true },
@@ -63,9 +65,7 @@ export default DitoComponent.component('DitoSchemaInlined', {
     deletable: { type: Boolean, default: false },
     editPath: { type: String, default: null },
     createPath: { type: String, default: null },
-    insertIndex: { type: Number, default: null },
-    labelNode: { type: HTMLElement, default: null },
-    accumulatedBasis: { type: Number, default: null }
+    insertIndex: { type: Number, default: null }
   },
 
   computed: {
@@ -85,8 +85,7 @@ export default DitoComponent.component('DitoSchemaInlined', {
 
 .dito-schema-inlined {
   // Use grid layout for two reasons: For `TransitionHeight` to work smoothly,
-  // and to align the header above the content when the header is not teleported
-  // outside of the schema.
+  // and to align the header above the content.
   display: grid;
   grid-template-rows: min-content;
   grid-template-columns: 100%;

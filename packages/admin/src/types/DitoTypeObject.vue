@@ -6,11 +6,8 @@
   .dito-object-content(
     v-if="objectData"
   )
-    //- Support the same rendering options as TypeList:
-    DitoSchemaInlined(
-      v-if="isInlined"
-      :label="objectLabel"
-      :schema="getItemFormSchema(schema, objectData, context)"
+    DitoSourceItem(
+      :schema="schema"
       :dataPath="dataPath"
       :data="objectData"
       :meta="nestedMeta"
@@ -19,23 +16,7 @@
       :collapsed="collapsed"
       :collapsible="collapsible"
       :deletable="deletable"
-      :accumulatedBasis="accumulatedBasis"
       @delete="deleteItem(objectData)"
-    )
-    component(
-      v-else-if="schema.component"
-      :is="schema.component"
-      :dataPath="dataPath"
-      :data="objectData"
-      :nested="false"
-    )
-    span(
-      v-else-if="render"
-      v-html="render(getContext())"
-    )
-    span(
-      v-else
-      v-html="getItemLabel(schema, objectData)"
     )
   //- NOTE: For inlined objects, `DitoEditButtons` here only handle the create
   //- button outside of the schema, the other edit buttons inside are handled by
@@ -45,7 +26,6 @@
     :schema="schema"
     :dataPath="dataPath"
     :data="objectData"
-    :path="path"
     :meta="meta"
     :store="store"
     :disabled="disabled || isLoading"
@@ -60,32 +40,18 @@
 
 <script>
 import DitoTypeComponent from '../DitoTypeComponent.js'
-import DitoContext from '../DitoContext.js'
+import DitoSourceItem from '../components/DitoSourceItem.vue'
 import SourceMixin from '../mixins/SourceMixin.js'
 import { resolveSchemaComponent } from '../utils/schema/setup.js'
 
 // @vue/component
 export default DitoTypeComponent.register('object', {
   mixins: [SourceMixin],
+  components: { DitoSourceItem },
 
   getSourceType(type) {
     // No need for transformation here. See TypeTreeList for details.
     return type
-  },
-
-  computed: {
-    objectLabel() {
-      // Only show a label if the object is collapsible.
-      return this.collapsible
-        ? this.getItemLabel(this.schema, this.objectData, { asObject: true })
-        : null
-    }
-  },
-
-  methods: {
-    getContext() {
-      return new DitoContext(this, { data: this.objectData })
-    }
   },
 
   async processSchema(
