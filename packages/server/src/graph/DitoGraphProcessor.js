@@ -71,25 +71,23 @@ export class DitoGraphProcessor {
         const relationInstances = modelClass.getRelations()
         for (const [name, relation] of Object.entries(relations)) {
           const graphOptions = this.getGraphOptions(relation)
-          if (graphOptions) {
-            // Loop through `this.options` and only look for overrides of them,
-            // since `relation.graphOptions` is across insert  / upsert & co.,
-            // but not all of them use all options (insert defines less).
-            for (const key in this.options) {
-              if (
-                key in graphOptions &&
-                graphOptions[key] !== this.options[key] &&
-                !this.overrides[key]
-              ) {
-                this.numOverrides++
-                this.overrides[key] = []
-              }
+          // Loop through `this.options` and only look for overrides of them,
+          // since `relation.graphOptions` is across insert  / upsert & co.,
+          // but not all of them use all options (insert defines less).
+          for (const key in this.options) {
+            if (
+              key in graphOptions &&
+              graphOptions[key] !== this.options[key] &&
+              !this.overrides[key]
+            ) {
+              this.numOverrides++
+              this.overrides[key] = []
             }
-            // Keep scanning until we're done or found that all options have
-            // overrides.
-            if (this.numOverrides < this.numOptions) {
-              processModelClass(relationInstances[name].relatedModelClass)
-            }
+          }
+          // Keep scanning until we're done or found that all options have
+          // overrides.
+          if (this.numOverrides < this.numOptions) {
+            processModelClass(relationInstances[name].relatedModelClass)
           }
         }
       }

@@ -10,8 +10,6 @@ export function describeFunction(func) {
       ? `${match[1]}function (${match[2]}) ${body}`
       : match[3] !== undefined
         ? `${match[1]}(${match[3]}) => ${body}`
-        : match[4] !== undefined
-          ? `${match[1]}${match[4]} => ${body}`
-          : ''
+        : `${match[1]}${match[4]} => ${body}`
   }
 }

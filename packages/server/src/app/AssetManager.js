@@ -58,8 +58,8 @@ export class AssetManager {
 
     for (const dataPath of dataPaths) {
       const storage = this.app.getStorage(assets[dataPath].storage)
-      const beforeFiles = beforeFilesPerDataPath[dataPath] || []
-      const afterFiles = afterFilesPerDataPath[dataPath] || []
+      const beforeFiles = beforeFilesPerDataPath[dataPath]
+      const afterFiles = afterFilesPerDataPath[dataPath]
       const beforeByKey = mapFilesByKey(beforeFiles)
       const afterByKey = mapFilesByKey(afterFiles)
       const addedFiles = afterFiles.filter(file => !beforeByKey[file.key])

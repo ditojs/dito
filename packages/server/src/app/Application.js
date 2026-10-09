@@ -845,9 +845,6 @@ export class Application extends Koa {
         resolve(server)
       })
     })
-    if (!this.server) {
-      throw new Error('Unable to start Dito.js server')
-    }
     this.isRunning = true
     await this.emit('after:start')
   }

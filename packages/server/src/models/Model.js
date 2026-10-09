@@ -812,10 +812,8 @@ export class Model extends objection.Model {
             }
           }
         }
-        if (relation) {
-          // Still here? Found a relation at the end of the data-path.
-          return getResult({ relation })
-        }
+        // Still here? Found a relation at the end of the data-path.
+        return getResult({ relation })
       }
     }
     return getResult()
