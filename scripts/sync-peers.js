@@ -6,12 +6,13 @@
 // folders, the app's bundler builds them, from `src` in development and from
 // `dist`, whose imports stay external. Every package that their code imports
 // at runtime therefore has to resolve from the app, also with pnpm's isolated
-// linker, so it is declared as a peer, and mirrored in `devDependencies` for
-// building and testing here. Packages that are only imported by the type
-// definitions in `types/`, e.g. `type-fest`, are regular `dependencies`:
-// TypeScript resolves them from the package itself, and bundlers never see
-// them. Packages that run in Node, e.g. `@ditojs/server`, use regular
-// `dependencies` throughout.
+// linker, so it is declared as a peer, as are the required peers of those
+// packages that the app must also provide, e.g. `@floating-ui/dom` for
+// `@tiptap/vue-3`, and mirrored in `devDependencies` for building and testing
+// here. Packages that are only imported by the type definitions in `types/`,
+// e.g. `type-fest`, are regular `dependencies`: TypeScript resolves them from
+// the package itself, and bundlers never see them. Packages that run in Node,
+// e.g. `@ditojs/server`, use regular `dependencies` throughout.
 
 import fs from 'node:fs'
 import path from 'node:path'

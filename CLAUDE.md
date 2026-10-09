@@ -146,9 +146,10 @@ seeds/              # Database seeds
 ## Development Notes
 
 - Uses pnpm with workspaces
-- Admin and UI declare every package their code imports at runtime as a peer
-  (mirrored in `devDependencies`), types-only packages as `dependencies`; see
-  the rule in `scripts/sync-peers.js`
+- Admin and UI declare every package their code imports at runtime, and the
+  required peers of those, as a peer (mirrored in `devDependencies`),
+  types-only packages as `dependencies`; see the rule in
+  `scripts/sync-peers.js`
 - Husky for pre-commit hooks with lint-staged
 - TypeScript definitions available for all packages
 - Supports linking to local Objection.js/Knex.js for development
