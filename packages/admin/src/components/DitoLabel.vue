@@ -4,7 +4,6 @@ component.dito-label(
   :is="collapsible ? 'button' : 'div'"
   :type="collapsible ? 'button' : null"
   v-bind="attributes"
-  :class="{ 'dito-label--active': isActive }"
 )
   .dito-chevron(
     v-if="collapsible"
@@ -76,16 +75,11 @@ export default DitoComponent.component('DitoLabel', {
             'aria-expanded': !this.collapsed
           }
         : {}
-    },
-
-    isActive() {
-      return this.appState.activeLabel === this
     }
   },
 
   methods: {
     onClick() {
-      this.appState.activeLabel = this
       this.$emit('open', this.collapsed)
     }
   }
@@ -107,14 +101,6 @@ export default DitoComponent.component('DitoLabel', {
   min-width: 0;
   min-height: $input-height;
   margin-right: $form-spacing-half; // When inlined.
-
-  &:has(.dito-schema-header) {
-    // The container's label is used as teleport for a nested section or object
-    // label. Hide `&__inner`, as it is be duplicated inside the nested label.
-    > #{$self}__inner {
-      display: none;
-    }
-  }
 
   &:not(:has(+ .dito-tabs)) {
     // Take full width but only if there aren't also tabs to be centered.
@@ -199,7 +185,7 @@ export default DitoComponent.component('DitoLabel', {
       }
     }
 
-    &:focus:not(:active, &--active) {
+    &:focus-visible {
       .dito-chevron {
         -webkit-text-stroke: $border-width $color-active;
       }

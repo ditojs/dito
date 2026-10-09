@@ -191,10 +191,8 @@ export default {
     @extend %button-disabled;
   }
 
-  &:focus-within:not(:hover) {
-    #{$self}__button {
-      box-shadow: $shadow-focus;
-    }
+  input:focus-visible + #{$self}__button {
+    box-shadow: $shadow-focus;
   }
 }
 </style>

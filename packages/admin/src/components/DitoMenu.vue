@@ -1,30 +1,33 @@
 <template lang="pug">
-ul.dito-menu(
-  v-resize="onResize"
-  :style="{ '--width': width ? `${width}px` : null }"
-)
+ul.dito-menu
   li.dito-menu__item(
     v-for="item in items"
   )
     template(
       v-if="shouldShowItem(item)"
     )
-      a.dito-menu__link(
-        :href="getItemHref(item)"
-        :class="{ 'dito-menu__link--active': isActiveItem(item) }"
-        :aria-current="isActiveItem(item) ? 'page' : null"
-        @click.prevent.stop="onClickItem(item)"
-      ) {{ getLabel(item) }}
+      RouterLink(
+        v-slot="{ href, navigate }"
+        :to="getItemRoute(item)"
+        custom
+      )
+        a.dito-menu__link(
+          :href="href"
+          :class="{ 'dito-menu__link--active': isActiveItem(item) }"
+          :aria-current="isActiveItem(item) ? 'page' : null"
+          @click="navigate"
+        ) {{ getLabel(item) }}
       DitoMenu.dito-menu__sub(
         v-if="item.items"
         :items="item.items"
-        :path="getItemPath(item, false)"
+        :path="getItemPath(item)"
       )
 </template>
 
 <script>
 import DitoComponent from '../DitoComponent.js'
 import { isPathWithin } from '../utils/route.js'
+import { getViewLinkPath } from '../utils/schema/lookup.js'
 
 // @vue/component
 export default DitoComponent.component('DitoMenu', {
@@ -39,12 +42,6 @@ export default DitoComponent.component('DitoMenu', {
     }
   },
 
-  data() {
-    return {
-      width: 0
-    }
-  },
-
   methods: {
     shouldShowItem(item) {
       return (
@@ -55,37 +52,25 @@ export default DitoComponent.component('DitoMenu', {
       )
     },
 
-    onResize({ contentRect: { width } }) {
-      if (width) {
-        this.width = width
+    getItemPath(item) {
+      return `${this.path}/${item.path}`
+    },
+
+    getItemRoute(item) {
+      // `DitoRoot` only provides the views once their paths are set up.
+      // `force` reloads the view even if it is already the current route.
+      return {
+        path: getViewLinkPath(item, this.getItemPath(item)),
+        force: true
       }
-    },
-
-    getItemPath(item, firstChild) {
-      const path = item.path ? `${this.path}/${item.path}` : null
-      return firstChild && path && item.items
-        ? `${path}${this.getItemPath(Object.values(item.items)[0], false)}`
-        : path
-    },
-
-    getItemHref(item) {
-      const path = this.getItemPath(item, true)
-      return path ? this.$router.resolve(path).href : null
     },
 
     isActiveItem(item) {
-      const path = this.getItemPath(item, false)
+      const path = this.getItemPath(item)
       return (
-        (!!path && isPathWithin(this.$route.path, path)) ||
+        isPathWithin(this.$route.path, path) ||
         item.items && Object.values(item.items).some(this.isActiveItem)
       )
-    },
-
-    onClickItem(item) {
-      const path = this.getItemPath(item, true)
-      if (path) {
-        this.$router.push({ path, force: true })
-      }
     }
   }
 })
@@ -106,23 +91,33 @@ export default DitoComponent.component('DitoMenu', {
   padding: 0 $menu-spacing;
 
   &__item {
+    // Scope the anchor of the open sub-menu to its item, see below.
+    anchor-scope: --dito-menu-item;
+
     &:has(#{$self}__sub):not(:has(#{$self}__link--active)) {
-      // Pop-out sub-menus on hover:
-      &:hover {
+      // Pop-out sub-menus on hover and keyboard focus. They are anchored to
+      // their item instead of positioned relative to it, as the menu scrolls
+      // and would clip them.
+      &:hover,
+      &:focus-within {
+        anchor-name: --dito-menu-item;
+
         > #{$self}__link {
           background: $color-lightest;
         }
 
-        #{$self}__sub {
+        > #{$self}__sub {
           display: block;
           position: absolute;
-          width: var(--width);
+          position-anchor: --dito-menu-item;
+          top: anchor(top);
+          left: calc(anchor(right) + 2 * $menu-spacing);
+          width: anchor-size(width);
           z-index: $z-index-header;
-          transform: translateX(calc(var(--width) + 2 * $menu-spacing))
-            translateY(-$item-height);
+          box-shadow: $shadow-window;
 
-          #{$self}__item:first-child {
-            #{$self}__link {
+          > #{$self}__item:first-child {
+            > #{$self}__link {
               margin-top: 0;
             }
           }
@@ -138,10 +133,6 @@ export default DitoComponent.component('DitoMenu', {
             opacity: 0;
           }
         }
-
-        #{$self}__sub {
-          box-shadow: $shadow-window;
-        }
       }
     }
   }
@@ -153,7 +144,7 @@ export default DitoComponent.component('DitoMenu', {
     border-radius: $border-radius;
     margin-top: $menu-spacing;
 
-    &:focus:not(:active, &--active) {
+    &:focus-visible {
       box-shadow: $shadow-focus;
     }
 

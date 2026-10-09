@@ -4,27 +4,34 @@ nav.dito-trail(aria-label="Breadcrumb")
     li(
       v-for="component in trail"
     )
-      a.dito-trail__link(
-        :class="{ 'dito-trail__link--active': component.path === $route.path }"
-        :aria-current="component.path === $route.path ? 'page' : null"
-        :href="getComponentHref(component)"
-        @click.prevent.stop="onClickComponent(component)"
+      RouterLink(
+        v-slot="{ href, navigate }"
+        :to="getComponentRoute(component)"
+        custom
       )
-        span.dito-trail__text(
-          :class="{ 'dito-trail__text--dirty': component.isDirty }"
+        a.dito-trail__link(
+          :class="{ 'dito-trail__link--active': isCurrentComponent(component) }"
+          :aria-current="isCurrentComponent(component) ? 'page' : null"
+          :href="href"
+          @click="navigate"
         )
-          | {{ component.breadcrumb }}
+          span.dito-trail__text(
+            :class="{ 'dito-trail__text--dirty': component.isDirty }"
+          )
+            | {{ component.breadcrumb }}
   slot
 </template>
 
 <script>
 import DitoComponent from '../DitoComponent.js'
+import { getViewLinkPath } from '../utils/schema/lookup.js'
 
 // @vue/component
 export default DitoComponent.component('DitoTrail', {
   computed: {
     trail() {
-      // Leave out the components that are being left, until they're unmounted.
+      // The route components by route level. Leave out the components that are
+      // being left, until they're unmounted.
       return this.appState.routeComponents.filter(
         component => !component.isLeavingRoute
       )
@@ -32,23 +39,16 @@ export default DitoComponent.component('DitoTrail', {
   },
 
   methods: {
-    getComponentRoutePath(component) {
-      // Do the same as in `DitoMenu`: Link menu items to the first children.
-      const { schema } = component
-      return schema.type === 'menu'
-        ? Object.values(schema.items)[0].fullPath
-        : component.path
-    },
-
-    getComponentHref(component) {
-      return this.$router.resolve(this.getComponentRoutePath(component)).href
-    },
-
-    onClickComponent(component) {
-      this.$router.push({
-        path: this.getComponentRoutePath(component),
+    getComponentRoute(component) {
+      // `force` reloads the view even if it is already the current route.
+      return {
+        path: getViewLinkPath(component.schema, component.path),
         force: true
-      })
+      }
+    },
+
+    isCurrentComponent(component) {
+      return component.path === this.$route.path
     }
   }
 })
