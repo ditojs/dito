@@ -353,6 +353,10 @@ export interface BaseSchema<$Item>
    * context's component properties, e.g. `component`
    * and `schemaComponent`, refer to the form, view or
    * dialog that holds the data, not to the field.
+   *
+   * Reading `context.options` waits while the options
+   * load, and is `undefined` when the load fails or its
+   * data resolves to nothing, so use `options?.`.
    */
   compute?: ItemAccessor<$Item>
   /**
@@ -1220,7 +1224,8 @@ export interface DateSchema<$Item = any>
     }
   >
   /**
-   * @deprecated Use `formats` instead.
+   * @deprecated Use `formats.date` instead. `dateFormat` is no longer read and
+   * has no effect.
    */
   dateFormat?: OrItemAccessor<$Item, {}, DateFormat>
 }
@@ -1924,9 +1929,10 @@ export type DitoContext<$Item = any> = {
    */
   itemDataPath: string
   /**
-   * Data path of the parent item ancestor.
+   * Data path of the parent item ancestor, `null` for
+   * root items.
    */
-  parentItemDataPath: string
+  parentItemDataPath: string | null
   /** Index of the closest item in its list. */
   itemIndex: number | null
   /** Index of the parent item in its list. */
@@ -1959,11 +1965,11 @@ export type DitoContext<$Item = any> = {
    * copy/paste operations.
    */
   clipboardItem: any
-  /** The currently authenticated user. */
+  /** The currently authenticated user, `null` when logged out. */
   user: {
     roles?: string[]
     hasRole(...roles: string[]): boolean
-  }
+  } | null
   /** The admin API configuration. */
   api: ApiConfig
   /** The schema definition for the current component. */
@@ -3465,6 +3471,7 @@ export type SchemaByType<$Item = any> = {
   'url': InputSchema<$Item>
   'label': LabelSchema<$Item>
   'section': SectionSchema<$Item>
+  'panel': PanelSchema<$Item>
   'hidden': HiddenSchema<$Item>
   'unknown': never
 }
