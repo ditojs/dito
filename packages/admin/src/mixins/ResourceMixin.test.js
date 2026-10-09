@@ -129,6 +129,38 @@ describe('ResourceMixin', () => {
     })
   })
 
+  describe('setLoading()', () => {
+    it('begins and ends a loading operation and warns once', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const { form } = await mountBookForm({})
+      const { rootComponent } = form
+      expect(form.isLoading).toBe(false)
+      form.setLoading(true)
+      form.setLoading(true)
+      expect(form.isLoading).toBe(true)
+      expect(rootComponent.isLoading).toBe(true)
+      form.setLoading(false)
+      expect(form.isLoading).toBe(false)
+      expect(rootComponent.isLoading).toBe(false)
+      form.setLoading(false)
+      expect(rootComponent.isLoading).toBe(false)
+      const deprecationWarnings = warn.mock.calls.filter(([message]) =>
+        String(message).includes('setLoading() is deprecated')
+      )
+      expect(deprecationWarnings).toHaveLength(1)
+    })
+
+    it('ends its loading operation when the component unmounts', async () => {
+      vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const { form, admin } = await mountBookForm({})
+      const { rootComponent } = form
+      form.setLoading(true)
+      expect(rootComponent.isLoading).toBe(true)
+      await admin.navigate('/items')
+      expect(rootComponent.isLoading).toBe(false)
+    })
+  })
+
   describe('requestData()', () => {
     it('aborts the pending data load when loading again', async () => {
       const loadRequests = []
@@ -453,16 +485,12 @@ describe('ResourceMixin', () => {
       expect(errors).toEqual(['The Text field must be shorter.'])
     })
 
-    // Bug: the server keys filter errors by filter name (`title/text`), but the
-    // filter data is keyed `$title`, so the errors are not displayed.
-    it.fails(
-      'shows filter errors with the data paths of the server',
-      async () => {
-        const errors = await mountFilteredBooks({
-          'title/text': [{ message: 'must be longer' }]
-        })
-        expect(errors).toEqual(['The Text field must be longer.'])
-      }
-    )
+    it('shows filter errors with the data paths of the server', async () => {
+      // The server keys filter errors by filter name, see `filters.js`:
+      const errors = await mountFilteredBooks({
+        'title/text': [{ message: 'must be longer' }]
+      })
+      expect(errors).toEqual(['The Text field must be longer.'])
+    })
   })
 })

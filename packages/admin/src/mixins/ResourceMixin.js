@@ -1,10 +1,16 @@
 import { markRaw } from 'vue'
 import ItemMixin from './ItemMixin.js'
 import { initializeData } from '../utils/schema/data.js'
-import { assignDeeply, isObject, isString, labelize } from '@ditojs/utils'
+import {
+  assignDeeply,
+  deprecate,
+  isObject,
+  isString,
+  labelize
+} from '@ditojs/utils'
 import { getResource } from '../utils/resource.js'
 import { transferUids } from '../utils/uid.js'
-import { LoadingTracker } from '../utils/LoadingTracker.js'
+import { LoadingTracker, LoadingSwitch } from '../utils/LoadingTracker.js'
 import DitoContext from '../DitoContext.js'
 
 // @vue/component
@@ -21,13 +27,16 @@ export default {
   },
 
   data() {
+    // Tracks the pending requests of the component, see `handleRequest()`,
+    // and forwards them to the tracker of the enclosing scope, e.g. a view.
+    const loadingTracker = new LoadingTracker(this.$loadingTracker())
     return {
       loadedData: null,
       // The abort controller of the pending data load, see `requestData()`.
       loadAbortController: null,
-      // Tracks the pending requests of the component, see `handleRequest()`,
-      // and forwards them to the tracker of the enclosing scope, e.g. a view.
-      loadingTracker: markRaw(new LoadingTracker(this.$loadingTracker()))
+      loadingTracker: markRaw(loadingTracker),
+      // The loading operation of the deprecated `setLoading()`.
+      setLoadingSwitch: markRaw(new LoadingSwitch(loadingTracker))
     }
   },
 
@@ -138,9 +147,28 @@ export default {
     // submits, change data on the server and are completed, so that their
     // outcome is still notified.
     this.loadAbortController?.abort()
+    // Don't leave the enclosing scopes loading after the component is gone,
+    // see the deprecated `setLoading()`.
+    this.setLoadingSwitch.set(false)
   },
 
   methods: {
+    /**
+     * @deprecated `isLoading` is tracked by `loadingTracker` now. Use
+     * `loadingTracker.begin()` and call the function that it returns, or
+     * `loadingTracker.track(callback)` instead.
+     */
+    setLoading(isLoading) {
+      deprecate(
+        'setLoading() is deprecated, use `loadingTracker.begin()` or ' +
+        '`loadingTracker.track()` instead.'
+      )
+      // The former `options.updateRoot` and `options.updateView` are ignored,
+      // since the tracker forwards its operations to the trackers of the
+      // enclosing view and the root anyway.
+      this.setLoadingSwitch.set(isLoading)
+    },
+
     getResource({ method = 'get', child } = {}) {
       // Returns the resource object representing the resource for the
       // associated source schema.

@@ -35,6 +35,21 @@ describe('DitoRoot', () => {
       expect(isUnloadPrevented()).toBe(true)
     })
 
+    it('prevents unloading with unsaved changes in a view', async () => {
+      const admin = await mountAdmin({
+        views: {
+          books: {
+            type: 'view',
+            components: { title: { type: 'text' } }
+          }
+        }
+      })
+      await admin.navigate('/books')
+      await enterValue(admin.wrapper.find('input[name="title"]'), 'Emma')
+      await flushPromises()
+      expect(isUnloadPrevented()).toBe(true)
+    })
+
     it(`doesn't prevent unloading after saving`, async () => {
       const { wrapper, admin, settle, submit } = await mountForm({
         schema,
@@ -151,6 +166,33 @@ describe('DitoRoot', () => {
         })
       ).rejects.toThrow('Dialogs do not support components that produce routes')
       expect(admin.root.dialogs).toEqual({})
+    })
+  })
+
+  describe('registerLoading()', () => {
+    it('counts the registered loading operations and warns once', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const admin = await mountAdmin({ views: {} })
+      const { root } = admin
+      const header = admin.wrapper.find('.dito-header')
+      root.registerLoading(true)
+      root.registerLoading(true)
+      root.registerLoading(false)
+      await flushPromises()
+      expect(root.isLoading).toBe(true)
+      expect(header.attributes('aria-busy')).toBe('true')
+      root.registerLoading(false)
+      root.registerLoading(false)
+      expect(root.isLoading).toBe(false)
+      // Unbalanced calls don't end the operations of others:
+      const end = root.loadingTracker.begin()
+      root.registerLoading(false)
+      expect(root.isLoading).toBe(true)
+      end()
+      const deprecationWarnings = warn.mock.calls.filter(([message]) =>
+        String(message).includes('registerLoading() is deprecated')
+      )
+      expect(deprecationWarnings).toHaveLength(1)
     })
   })
 })

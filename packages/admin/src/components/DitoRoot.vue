@@ -42,6 +42,7 @@
 <script>
 import { markRaw } from 'vue'
 import { delegate as tippyDelegate } from 'tippy.js'
+import { deprecate } from '@ditojs/utils'
 import DitoComponent from '../DitoComponent.js'
 import DomMixin from '../mixins/DomMixin.js'
 import DitoDialog from './DitoDialog.vue'
@@ -71,6 +72,9 @@ export default DitoComponent.component('DitoRoot', {
       dialogs: {},
       // Tracks all pending requests of the admin, for the header's spinner:
       loadingTracker: markRaw(new LoadingTracker()),
+      // The functions that end the loading operations begun by the deprecated
+      // `registerLoading(true)`, ended in reverse by `registerLoading(false)`:
+      registeredLoadingEnds: markRaw([]),
       // Tracks the files dragged over the admin, for the uploads to drop them
       // on, see `DitoTypeUpload`:
       fileDropTargets: markRaw(new FileDropTargets()),
@@ -143,6 +147,23 @@ export default DitoComponent.component('DitoRoot', {
   },
 
   methods: {
+    /**
+     * @deprecated `isLoading` is tracked by `loadingTracker` now. Use
+     * `loadingTracker.begin()` and call the function that it returns, or
+     * `loadingTracker.track(callback)` instead.
+     */
+    registerLoading(isLoading) {
+      deprecate(
+        'DitoRoot.registerLoading() is deprecated, use ' +
+        '`loadingTracker.begin()` or `loadingTracker.track()` instead.'
+      )
+      if (isLoading) {
+        this.registeredLoadingEnds.push(this.loadingTracker.begin())
+      } else {
+        this.registeredLoadingEnds.pop()?.()
+      }
+    },
+
     notify(options) {
       this.notifications.notify(options)
     },
@@ -151,11 +172,11 @@ export default DitoComponent.component('DitoRoot', {
       this.notifications.destroyAll()
     },
 
-    // Returns true if any of the route components has data with unsaved
-    // changes, e.g. a form with a dirty data model.
+    // Returns true if any of the route components has unsaved changes, e.g. a
+    // form or a view with a dirty data model, see `RouteMixin`.
     hasUnsavedChanges() {
       return this.appState.routeComponents.some(
-        routeComponent => routeComponent.isForm && routeComponent.isDirty
+        routeComponent => routeComponent.hasUnsavedChanges
       )
     },
 

@@ -125,6 +125,13 @@ export default {
     // @overridable, see DitoForm
     isMutating() {
       return false
+    },
+
+    // Whether the component has changes that get lost when it's left: Directly
+    // mutating (nested) forms change their parent's data instead, which keeps
+    // the changes, see `beforeRouteChange()` and `DitoRoot`.
+    hasUnsavedChanges() {
+      return !this.isMutating && this.isDirty
     }
   },
 
@@ -203,9 +210,9 @@ export default {
           ok = this.hasPreventedLeavingInvalidData || this.validateAll()
           this.hasPreventedLeavingInvalidData = !ok
         } else {
-          // The form doesn't directly mutate data. If it is dirty, ask if user
-          // wants to persist data first.
-          if (this.isDirty) {
+          // The form or view doesn't directly mutate data. If it has unsaved
+          // changes, ask if the user wants to persist the data first.
+          if (this.hasUnsavedChanges) {
             this.discardConfirmation ??= confirm(this, {
               message: (
                 'You have unsaved changes. ' +
@@ -237,15 +244,6 @@ export default {
 
     getChildPath(path) {
       return `${this.path}/${path}`
-    },
-
-    isFullRouteChange(to, from) {
-      // The route path is the path up to the first / (excluding the initial /):
-      const rootPath = this.path.match(/^(\/[^/]*)/)[1]
-      return !(
-        isPathWithin(to.path, rootPath) &&
-        isPathWithin(from.path, rootPath)
-      )
     }
   }
 }

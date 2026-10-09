@@ -49,3 +49,28 @@ export class LoadingTracker {
     }
   }
 }
+
+// A loading operation that is switched on and off instead of begun and ended,
+// for the deprecated `setLoading(isLoading)` methods. Switching it on while it
+// is on has no effect, as does switching it off while it is off.
+export class LoadingSwitch {
+  #tracker
+  #endOperation = null
+
+  constructor(tracker) {
+    this.#tracker = tracker
+  }
+
+  get isOn() {
+    return !!this.#endOperation
+  }
+
+  set(isOn) {
+    if (isOn) {
+      this.#endOperation ??= this.#tracker.begin()
+    } else {
+      this.#endOperation?.()
+      this.#endOperation = null
+    }
+  }
+}

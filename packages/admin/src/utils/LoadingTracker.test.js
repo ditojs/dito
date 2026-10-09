@@ -1,5 +1,5 @@
 import { computed } from 'vue'
-import { LoadingTracker } from './LoadingTracker.js'
+import { LoadingTracker, LoadingSwitch } from './LoadingTracker.js'
 
 describe('LoadingTracker', () => {
   it('is loading until all operations ended', () => {
@@ -74,5 +74,31 @@ describe('LoadingTracker', () => {
     expect(isLoading.value).toBe(true)
     end()
     expect(isLoading.value).toBe(false)
+  })
+})
+
+describe('LoadingSwitch', () => {
+  it('begins one operation while switched on', () => {
+    const tracker = new LoadingTracker()
+    const loadingSwitch = new LoadingSwitch(tracker)
+    const end = tracker.begin()
+    loadingSwitch.set(true)
+    loadingSwitch.set(true)
+    expect(loadingSwitch.isOn).toBe(true)
+    end()
+    expect(tracker.isLoading).toBe(true)
+    loadingSwitch.set(false)
+    expect(loadingSwitch.isOn).toBe(false)
+    expect(tracker.isLoading).toBe(false)
+  })
+
+  it(`doesn't end other operations when switched off again`, () => {
+    const tracker = new LoadingTracker()
+    const loadingSwitch = new LoadingSwitch(tracker)
+    tracker.begin()
+    loadingSwitch.set(true)
+    loadingSwitch.set(false)
+    loadingSwitch.set(false)
+    expect(tracker.isLoading).toBe(true)
   })
 })

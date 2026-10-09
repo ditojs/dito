@@ -2082,25 +2082,55 @@ export type DitoContext<$Item = any> = {
   }
   /** Returns the full URL for a given resource. */
   getResourceUrl(resource: Resource): string
-  /** Displays a notification to the user. */
-  notify(options: {
-    /** Notification style. @defaultValue `'info'` */
-    type?: LiteralUnion<'warning' | 'error' | 'info' | 'success'>
-    /** Heading text. Defaults to a label matching `type`. */
-    title?: string
-    /** Body text, rendered as HTML paragraphs. */
-    text: OrArrayOf<string>
-    /**
-     * The original error object. When `type` is `'error'`,
-     * this is logged to the console alongside the message.
-     */
-    error?: unknown
-    /**
-     * Display duration in milliseconds. When omitted, calculated
-     * automatically from content length. Use `0` for sticky.
-     */
-    duration?: number
-  }): void
+  /**
+   * Displays a notification to the user, with the
+   * paragraphs of either `text` or `html`.
+   */
+  notify(
+    options: {
+      /** Notification style. @defaultValue `'info'` */
+      type?: LiteralUnion<'warning' | 'error' | 'info' | 'success'>
+      /**
+       * Heading text, escaped like `text`. Defaults to
+       * a label matching `type`.
+       */
+      title?: string
+      /**
+       * The original error object. When `type` is
+       * `'error'`, this is logged to the console
+       * alongside the message.
+       */
+      error?: unknown
+      /**
+       * Display duration in milliseconds. When omitted,
+       * calculated automatically from content length.
+       * Use `0` for sticky.
+       */
+      duration?: number
+    } & (
+      | {
+          /**
+           * Body text, escaped as plain text. Each entry
+           * is a paragraph, newlines become `<br>`, and
+           * `false` and `null` entries are skipped.
+           */
+          text: OrArrayOf<string | false | null>
+          html?: never
+        }
+      | {
+          /**
+           * Body HTML from trusted sources, rendered as
+           * it is. Every interpolated value must be
+           * escaped with `escapeHtml()` from
+           * `@ditojs/utils`. Each entry is a paragraph,
+           * newlines become `<br>`, and `false` and
+           * `null` entries are skipped.
+           */
+          html: OrArrayOf<string | false | null>
+          text?: never
+        }
+    )
+  ): void
 }
 
 /**
@@ -2180,16 +2210,6 @@ export interface DitoComponentInstanceBase<$Item = any>
   errors: string[] | null
   /** Whether the field has validation errors. */
   hasErrors: boolean
-  /** Whether async data is currently being loaded. */
-  isLoading: boolean
-  /**
-   * Sets the loading state. Optionally propagates
-   * to the root or view component.
-   */
-  setLoading(
-    isLoading: boolean,
-    options?: { updateRoot?: boolean; updateView?: boolean }
-  ): void
   /**
    * Whether the component works with data not yet
    * persisted to the server.
@@ -2267,7 +2287,7 @@ export interface DitoComponentInstanceBase<$Item = any>
   /** The parent form component. */
   parentFormComponent: DitoComponentInstanceBase | null
   /** The root component instance. */
-  rootComponent: DitoComponentInstanceBase | null
+  rootComponent: DitoRootInstance | null
   /** The nearest ancestor tab component. */
   tabComponent: DitoComponentInstanceBase | null
   /** The parent route component. */
@@ -2496,8 +2516,63 @@ export interface EmitterMixin {
   ): this
 }
 
+/**
+ * Counts the pending operations of a scope, e.g. the
+ * requests of a resource component, of all components
+ * in a view, or of the whole admin, and forwards them
+ * to the tracker of the enclosing scope.
+ */
+export interface LoadingTracker {
+  /** The tracker of the enclosing scope, if any. */
+  readonly parent: LoadingTracker | null
+  /** The tracker of the outermost scope. */
+  readonly root: LoadingTracker
+  /** Whether any operation within the scope is pending. */
+  readonly isLoading: boolean
+  /**
+   * Begins an operation in this scope and its enclosing
+   * ones, and returns the function that ends it.
+   */
+  begin(): () => void
+  /**
+   * Tracks the operation that `callback()` performs until
+   * its returned promise settles, and returns its result.
+   */
+  track<T>(callback: () => T | Promise<T>): Promise<T>
+}
+
+/**
+ * The members of components that load and submit their
+ * data through API resources (ResourceMixin): forms and
+ * sources.
+ */
+export interface DitoResourceInstance {
+  /**
+   * Whether any request or other operation within this
+   * component's scope is pending, as tracked by its
+   * `LoadingTracker`.
+   */
+  readonly isLoading: boolean
+  /** Tracks the pending requests of the component. */
+  readonly loadingTracker: LoadingTracker
+  /**
+   * Begins or ends a loading operation of the component.
+   * The options are ignored, since the operations are
+   * always forwarded to the enclosing view and the root.
+   *
+   * @deprecated Use `loadingTracker.begin()` and call the
+   * function that it returns, or
+   * `loadingTracker.track(callback)` instead.
+   */
+  setLoading(
+    isLoading: boolean,
+    options?: { updateRoot?: boolean; updateView?: boolean }
+  ): void
+}
+
 export interface DitoFormInstance<$Item = any>
-  extends DitoComponentInstanceBase<$Item> {
+  extends DitoComponentInstanceBase<$Item>,
+    DitoResourceInstance {
   /**
    * Whether this form is creating a new item
    * (`true`) or editing an existing one (`false`).
@@ -2656,10 +2731,38 @@ export interface DitoFormInstance<$Item = any>
   getChildPath(path: string): string
 }
 
+/** The root component of the admin (DitoRoot). */
+export interface DitoRootInstance extends DitoComponentInstanceBase {
+  /**
+   * Whether any request or other operation within the
+   * admin is pending, as tracked by its `LoadingTracker`.
+   */
+  readonly isLoading: boolean
+  /** Tracks the pending requests of the whole admin. */
+  readonly loadingTracker: LoadingTracker
+}
+
 export interface DitoViewInstance<$Item = any>
   extends DitoComponentInstanceBase<$Item> {
   /** Always `true` for view components. */
   isView: true
+  /**
+   * Whether any request or other operation within the
+   * view, e.g. of its components, is pending, as
+   * tracked by its `LoadingTracker`. The view is
+   * disabled while it is loading.
+   */
+  readonly isLoading: boolean
+  /** Tracks the pending requests of the view's components. */
+  readonly loadingTracker: LoadingTracker
+  /**
+   * Begins or ends a loading operation of the view.
+   *
+   * @deprecated Use `loadingTracker.begin()` and call the
+   * function that it returns, or
+   * `loadingTracker.track(callback)` instead.
+   */
+  setLoading(isLoading: boolean): void
 
   // -- Route (RouteMixin) --
 
@@ -2778,7 +2881,8 @@ export interface DitoSchemaInstance<$Item = any>
 }
 
 export interface DitoSourceInstance<$Item = any>
-  extends DitoComponentInstanceBase<$Item> {
+  extends DitoComponentInstanceBase<$Item>,
+    DitoResourceInstance {
   // -- Data access (SourceMixin) --
 
   /** The list data array (getter/setter). */
