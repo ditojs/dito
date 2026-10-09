@@ -1,11 +1,40 @@
 import { vi } from 'vitest'
-import { request, getApiUrl, isApiUrl, RequestError } from './request.js'
+import {
+  request,
+  fetchBlob,
+  getUploadOptions,
+  getApiUrl,
+  isApiUrl,
+  RequestError
+} from './request.js'
 
 function createApi(settings = {}) {
   const api = { url: 'https://example.com/api', ...settings }
   api.getApiUrl = options => getApiUrl(api, options)
   api.isApiUrl = url => isApiUrl(api, url)
   return api
+}
+
+afterEach(() => {
+  vi.unstubAllGlobals()
+})
+
+function stubFetch({
+  status = 200,
+  statusText = 'OK',
+  contentType = 'application/json',
+  body = {}
+} = {}) {
+  const fetch = vi.fn(
+    async () =>
+      new Response(JSON.stringify(body), {
+        status,
+        statusText,
+        headers: contentType ? { 'Content-Type': contentType } : {}
+      })
+  )
+  vi.stubGlobal('fetch', fetch)
+  return fetch
 }
 
 describe('request()', () => {
@@ -21,28 +50,6 @@ describe('request()', () => {
           })
       )
     )
-  }
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
-  })
-
-  function stubFetch({
-    status = 200,
-    statusText = 'OK',
-    contentType = 'application/json',
-    body = {}
-  } = {}) {
-    const fetch = vi.fn(
-      async () =>
-        new Response(JSON.stringify(body), {
-          status,
-          statusText,
-          headers: contentType ? { 'Content-Type': contentType } : {}
-        })
-    )
-    vi.stubGlobal('fetch', fetch)
-    return fetch
   }
 
   it('sends the method, JSON data and query to the API URL', async () => {
@@ -143,6 +150,74 @@ describe('request()', () => {
     await expect(promise).rejects.toThrow(
       expect.objectContaining({ name: 'AbortError' })
     )
+  })
+})
+
+describe('fetchBlob()', () => {
+  const api = createApi({
+    headers: { Authorization: 'Bearer secret' },
+    cors: { credentials: true },
+    timeout: 60_000
+  })
+
+  it('fetches the blob from the API URL', async () => {
+    const fetch = stubFetch({ contentType: 'text/plain', body: 'scan' })
+    const blob = await fetchBlob(api, 'files/scan.pdf')
+    expect(await blob.text()).toBe('"scan"')
+    expect(fetch.mock.calls[0][0]).toBe(
+      'https://example.com/api/files/scan.pdf'
+    )
+  })
+
+  it('sends the API headers and credentials only to the API', async () => {
+    const fetch = stubFetch()
+    await fetchBlob(api, 'files/scan.pdf')
+    await fetchBlob(api, 'https://elsewhere.org/scan.pdf')
+    const [[, apiOptions], [, otherOptions]] = fetch.mock.calls
+    expect(apiOptions).toMatchObject({
+      headers: { Authorization: 'Bearer secret' },
+      credentials: 'include'
+    })
+    expect(apiOptions.signal).toBeInstanceOf(AbortSignal)
+    expect(otherOptions.headers).toEqual({})
+    expect(otherOptions.credentials).toBe('same-origin')
+  })
+
+  it('throws a `RequestError` with the response for failed requests', async () => {
+    stubFetch({ status: 404, statusText: 'Not Found' })
+    const error = await fetchBlob(api, 'files/scan.pdf').catch(error => error)
+    expect(error).toBeInstanceOf(RequestError)
+    expect(error.response.status).toBe(404)
+  })
+})
+
+describe('getUploadOptions()', () => {
+  it('returns the API headers without `Content-Type`', () => {
+    const api = createApi({
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer secret'
+      }
+    })
+    expect(getUploadOptions(api, 'items/upload/file')).toEqual({
+      headers: { Authorization: 'Bearer secret' },
+      withCredentials: false
+    })
+  })
+
+  it('sends credentials only to the API with CORS credentials', () => {
+    const api = createApi({
+      headers: { Authorization: 'Bearer secret' },
+      cors: { credentials: true }
+    })
+    expect(getUploadOptions(api, 'items/upload/file')).toEqual({
+      headers: { Authorization: 'Bearer secret' },
+      withCredentials: true
+    })
+    expect(getUploadOptions(api, 'https://elsewhere.org/upload')).toEqual({
+      headers: {},
+      withCredentials: false
+    })
   })
 })
 
