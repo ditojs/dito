@@ -30,12 +30,12 @@
     "mime": "^4.1.0",
     "mini-svg-data-uri": "^1.4.4",
     "minimist": "^1.2.8",
-    "postcss": "^8.5.28",
+    "postcss": "^8.5.29",
     "postcss-html": "^2.0.0",
     "postcss-scss": "^4.0.9",
     "pug": "^3.0.4",
     "sass": "^1.105.1",
-    "vite": "^8.3.2",
+    "vite": "^8.3.4",
     "vue": "^3.5.43"
   }
 }

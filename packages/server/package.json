@@ -55,7 +55,7 @@
     "mime-types": "^3.0.2",
     "multer": "^2.4.0",
     "multer-s3": "github:ditojs/multer-s3#dito",
-    "nanoid": "^6.0.1",
+    "nanoid": "^6.0.2",
     "parse-duration": "^2.1.9",
     "passport-local": "^1.0.0",
     "passthrough-counter": "^1.0.0",
@@ -75,8 +75,8 @@
     "objection": "^3.2.0"
   },
   "devDependencies": {
-    "@aws-sdk/client-s3": "^3.1146.0",
-    "@aws-sdk/lib-storage": "^3.1146.0",
+    "@aws-sdk/client-s3": "^3.1147.0",
+    "@aws-sdk/lib-storage": "^3.1147.0",
     "@types/koa-bodyparser": "^4.3.13",
     "@types/koa-compress": "^4.0.7",
     "@types/koa-mount": "^4.0.5",
