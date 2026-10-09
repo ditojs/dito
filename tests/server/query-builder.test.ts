@@ -947,6 +947,14 @@ describe('QueryBuilder', () => {
       expect(updated[0].name).toBe('Ada L.')
     })
 
+    it(`doesn't insert related models in patchAndFetch()`, async () => {
+      const [ada] = await insertCooks()
+      await Cook.query().patchAndFetch([
+        { id: ada.id, recipes: [{ name: 'Apple pie' }] } as any
+      ])
+      expect(await Recipe.query()).toHaveLength(0)
+    })
+
     it('patches single models with patchAndFetch()', async () => {
       const [apple] = await insertRecipes()
       const patched = await apple.$query().patchAndFetch({ servings: 1 })

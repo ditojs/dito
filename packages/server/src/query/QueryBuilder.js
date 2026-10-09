@@ -558,7 +558,7 @@ export class QueryBuilder extends objection.QueryBuilder {
   #upsertAndFetch(data, options) {
     return this.upsertGraphAndFetch(data, {
       fetchStrategy: 'OnlyNeeded',
-      noInset: true,
+      noInsert: true,
       noDelete: true,
       noRelate: true,
       noUnrelate: true,
