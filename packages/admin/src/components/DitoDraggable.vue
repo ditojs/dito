@@ -1,16 +1,12 @@
 <template lang="pug">
+//- The sortable is always rendered, also when not `draggable`, so that the
+//- children aren't remounted when `draggable` changes, see `watch`.
 UseSortable.dito-draggable(
-  v-if="draggable"
   :class="{ 'dito-draggable--dragging': isDragging }"
   :as="as"
   :modelValue="modelValue"
-  :options="{ ...options, onStart, onEnd }"
+  :options="sortableOptions"
   @update:modelValue="$emit('update:modelValue', $event)"
-)
-  slot
-component(
-  v-else
-  :is="as"
 )
   slot
 </template>
@@ -19,6 +15,7 @@ component(
 import DitoComponent from '../DitoComponent'
 import DomMixin from '../mixins/DomMixin.js'
 import { UseSortable } from '@vueuse/integrations/useSortable/component'
+import Sortable from 'sortablejs'
 
 // @vue/component
 export default DitoComponent.component('DitoDraggable', {
@@ -52,7 +49,31 @@ export default DitoComponent.component('DitoDraggable', {
     }
   },
 
+  watch: {
+    draggable(draggable) {
+      this.getSortable()?.option('disabled', !draggable)
+    }
+  },
+
+  created() {
+    // `UseSortable` reads its options only once when it's mounted, so they're
+    // built once here. The handlers call the handlers of the current
+    // `options`, and `draggable` toggles the `disabled` option, see `watch`.
+    this.sortableOptions = {
+      ...this.options,
+      disabled: !this.draggable,
+      onStart: this.onStart,
+      onEnd: this.onEnd
+    }
+  },
+
   methods: {
+    // Returns the `Sortable` instance that `UseSortable` created on the
+    // element.
+    getSortable() {
+      return this.$el instanceof HTMLElement ? Sortable.get(this.$el) : null
+    },
+
     onStart(event) {
       this.options.onStart?.(event)
       this.isDragging = true
