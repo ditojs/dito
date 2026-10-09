@@ -401,7 +401,7 @@ export class DataModel {
       processSchemaData(schema, data, {
         dataPath: this.dataPath,
         componentPath: this.componentPath,
-        shouldProcess: entry => this.isEntryShown(entry),
+        shouldProcess: entry => this.shouldRenderEntry(entry),
         shouldSkipSourcesWithResource: true,
         before: entry => {
           if (hasComputedValueSource(entry.schema) || entry.schema.options) {
@@ -423,7 +423,7 @@ export class DataModel {
   // `getDataEntries()`, which leads to the same entries.
   // An `if` that fails only affects its own component, which is treated as
   // shown, not the walk of all others, which would stop computing them.
-  isEntryShown(entry) {
+  shouldRenderEntry(entry) {
     if (entry.schema.if === undefined) {
       return true
     }
@@ -714,7 +714,7 @@ export class DataModel {
     const valueData = { ...data, [name]: value }
     processSchemaData({ components: { [name]: schema } }, valueData, {
       dataPath: isNested(schema) ? getParentDataPath(dataPath) : dataPath,
-      shouldProcess: nestedEntry => this.isEntryShown(nestedEntry),
+      shouldProcess: nestedEntry => this.shouldRenderEntry(nestedEntry),
       shouldSkipSourcesWithResource: true,
       before: nestedEntry => {
         if (nestedEntry.data !== valueData) {
