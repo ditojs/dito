@@ -107,7 +107,12 @@ export const projects = createWidgetView<Project>(
           label: 'Details',
           components: {
             notes: { type: 'markup', label: 'Notes' },
-            config: { type: 'code', label: 'Config', language: 'json' },
+            config: {
+              type: 'code',
+              label: 'Config',
+              language: 'json',
+              resizable: true
+            },
             settings: {
               type: 'section',
               label: 'Settings',
@@ -197,6 +202,68 @@ export const projects = createWidgetView<Project>(
               }
             }
           }
+        },
+        extras: {
+          type: 'tab',
+          label: 'Extras',
+          components: {
+            website: {
+              type: 'url',
+              label: 'Website',
+              width: '1/2'
+            },
+            startTime: { type: 'time', label: 'Start Time', width: '1/4' },
+            meetingAt: { type: 'datetime', label: 'Meeting', width: '1/4' },
+            contactInfo: {
+              type: 'section',
+              label: 'Contact Info',
+              components: {
+                phone: { type: 'text', label: 'Phone', width: '1/2' },
+                email: { type: 'email', label: 'Contact Email', width: '1/2' }
+              }
+            },
+            files: {
+              type: 'upload',
+              label: 'Files',
+              multiple: true,
+              draggable: true,
+              deletable: true,
+              extensions: 'png,pdf'
+            },
+            links: {
+              type: 'list',
+              label: 'Links',
+              inlined: true,
+              creatable: true,
+              deletable: true,
+              draggable: true,
+              forms: {
+                link: {
+                  type: 'form',
+                  label: 'Link',
+                  components: {
+                    url: { type: 'url', label: 'Link URL' }
+                  }
+                },
+                note: {
+                  type: 'form',
+                  label: 'Note',
+                  components: {
+                    text: { type: 'text', label: 'Note Text' }
+                  }
+                }
+              },
+              panels: {
+                linksInfo: {
+                  type: 'panel',
+                  label: 'Links Info',
+                  components: {
+                    linksHint: { type: 'label', label: 'Links open in tabs' }
+                  }
+                }
+              }
+            }
+          }
         }
       },
       panels: {
@@ -211,3 +278,27 @@ export const projects = createWidgetView<Project>(
     }
   }
 )
+
+// Further views in a sub-menu, for screenshots of the menus.
+const plannedProjects = createWidgetView<Project>(
+  'Project',
+  'projects',
+  {},
+  { columns: { name: { label: 'Name' } } }
+)
+
+const doneProjects = createWidgetView<Project>(
+  'Project',
+  'projects',
+  {},
+  { columns: { name: { label: 'Name' } } }
+)
+
+export const reports = {
+  type: 'menu',
+  label: 'Reports',
+  items: {
+    planned: { ...plannedProjects, label: 'Planned Projects' },
+    done: { ...doneProjects, label: 'Done Projects' }
+  }
+} as const

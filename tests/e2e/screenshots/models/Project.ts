@@ -37,6 +37,12 @@ export interface Project {
   phases?: Phase[] | null
   settings?: { visibility?: string | null; reviewer?: string | null } | null
   advanced?: { slug?: string | null } | null
+  website?: string | null
+  startTime?: string | null
+  meetingAt?: string | null
+  files?: object[] | null
+  links?: object[] | null
+  contactInfo?: { phone?: string | null; email?: string | null } | null
   // Buttons and labels don't hold data of their own, so their keys are
   // `never`.
   openDialog?: never
@@ -63,7 +69,13 @@ export class Project extends Model {
     milestones: { type: 'array', nullable: true, items: { type: 'object' } },
     phases: { type: 'array', nullable: true, items: { type: 'object' } },
     settings: { type: 'object', nullable: true },
-    advanced: { type: 'object', nullable: true }
+    advanced: { type: 'object', nullable: true },
+    website: { type: 'string', nullable: true },
+    startTime: { type: 'timestamp', nullable: true },
+    meetingAt: { type: 'timestamp', nullable: true },
+    files: { type: 'array', nullable: true, items: { type: 'object' } },
+    links: { type: 'array', nullable: true, items: { type: 'object' } },
+    contactInfo: { type: 'object', nullable: true }
   }
 
   static override scopes = {
