@@ -25,6 +25,16 @@ class Author extends Model {
       relation: 'hasMany',
       from: 'Author.id',
       to: 'Note.authorId'
+    },
+    tags: {
+      relation: 'manyToMany',
+      from: 'Author.id',
+      to: 'Tag.id',
+      through: {
+        from: 'AuthorTag.authorId',
+        to: 'AuthorTag.tagId',
+        extra: ['sortOrder']
+      }
     }
   }
 
@@ -100,6 +110,17 @@ class Note extends Model {
       relation: 'belongsTo',
       from: 'Note.authorId',
       to: 'Author.id'
+    }
+  }
+}
+
+class Tag extends Model {
+  declare id: number
+  declare name: string
+
+  static override properties: ModelProperties = {
+    name: {
+      type: 'string'
     }
   }
 }
@@ -455,6 +476,11 @@ class Authors extends ModelController<any> {
       member: {
         allow: ['delete']
       }
+    },
+    tags: {
+      relation: {
+        allow: ['get', 'post']
+      }
     }
   }
 }
@@ -485,7 +511,7 @@ class RelatingAuthors extends ModelController<any> {
 
 describe('ModelController', () => {
   const app = createTestApp({
-    models: { Author, Book, Note },
+    models: { Author, Book, Note, Tag },
     controllers: {
       Books,
       PublishedBooks,
@@ -530,6 +556,12 @@ describe('ModelController', () => {
 
   beforeAll(async () => {
     await createTestDatabase(app)
+    await app.knex.schema.createTable('AuthorTag', table => {
+      table.increments('id').primary()
+      table.integer('authorId')
+      table.integer('tagId')
+      table.integer('sortOrder')
+    })
     await app.start()
     url = getAppUrl(app)
   })
@@ -543,6 +575,8 @@ describe('ModelController', () => {
     hookEvents.length = 0
     await app.knex('Book').del()
     await app.knex('Note').del()
+    await app.knex('AuthorTag').del()
+    await app.knex('Tag').del()
     await app.knex('Author').del()
   })
 
@@ -1157,6 +1191,34 @@ describe('ModelController', () => {
       expect(response.status).toBe(201)
       expect(response.data).toMatchObject({ id: author.id, name: 'Ada' })
       expect((await Note.query().findById(note.id))?.authorId).toBe(author.id)
+    })
+
+    test('relates models with the extra columns of join tables', async () => {
+      const author = await Author.query().insert({ name: 'Ada' })
+      const [poetry, prose] = await Tag.query().insert([
+        { name: 'Poetry' },
+        { name: 'Prose' }
+      ])
+      const response = await request(`/authors/${author.id}/tags`, {
+        method: 'POST',
+        body: [
+          { id: poetry.id, sortOrder: 2 },
+          { id: prose.id, sortOrder: 1 }
+        ]
+      })
+      expect(response.status).toBe(201)
+      expect(
+        response.data.map((tag: any) => tag.name).sort()
+      ).toEqual(['Poetry', 'Prose'])
+      expect(
+        await app
+          .knex('AuthorTag')
+          .select('tagId', 'sortOrder')
+          .orderBy('sortOrder')
+      ).toEqual([
+        { tagId: prose.id, sortOrder: 1 },
+        { tagId: poetry.id, sortOrder: 2 }
+      ])
     })
 
     it('creates models that relate existing models in their graph', async () => {

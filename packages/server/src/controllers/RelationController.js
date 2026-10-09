@@ -99,6 +99,29 @@ export class RelationController extends CollectionController {
     ]
   }
 
+  // Returns the references of the models to relate, with the values of the
+  // extra columns of many-to-many join tables, e.g. their sort order. Other
+  // relations only need the ids.
+  getRelateReferences(ctx, ids) {
+    const extraProps = (this.relationInstance.joinTableExtras ?? []).map(
+      extra => extra.aliasProp
+    )
+    if (extraProps.length === 0) {
+      return ids
+    }
+    const models = asArray(ctx.request.body)
+    return ids.map((id, index) => {
+      const reference = this.modelClass.getReference(id)
+      for (const prop of extraProps) {
+        const value = models[index][prop]
+        if (value !== undefined) {
+          reference[prop] = value
+        }
+      }
+      return reference
+    })
+  }
+
   // @override
   async relateAndFetch(ctx, modify) {
     return this.execute(ctx, async (query, trx) => {
@@ -107,7 +130,7 @@ export class RelationController extends CollectionController {
       // `upsertGraph()` rejects relating through `$relatedQuery()`.
       const ids = this.getCollectionIds(ctx)
       const fetchQuery = query.clone()
-      await query.relate(ids)
+      await query.relate(this.getRelateReferences(ctx, ids))
       return fetchQuery
         .modify(builder =>
           isArray(ctx.request.body)
