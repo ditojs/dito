@@ -155,8 +155,7 @@ afterEach(async () => {
   await fs.rm(basePath, { recursive: true, force: true })
 })
 
-// Returns the lines of the generated table, without the internal `#id` and
-// `#ref` columns, see the related `test.fails()` below.
+// Returns the trimmed lines of the generated table.
 function getTableLines(code, tableName) {
   const match = code.match(
     new RegExp(
@@ -166,7 +165,6 @@ function getTableLines(code, tableName) {
   return match[1]
     .split('\n')
     .map(line => line.trim())
-    .filter(line => !line.includes(`'#`))
 }
 
 describe('createMigration()', () => {
@@ -309,9 +307,7 @@ describe('createMigration()', () => {
     )
   })
 
-  // Bug: The `#id` and `#ref` properties that Dito.js adds to all models for
-  // Objection.js graph references are generated as table columns.
-  test.fails('skips the internal `#id` and `#ref` properties', async () => {
+  it('skips the internal `#id` and `#ref` properties', async () => {
     await createMigration(app, 'create_tags', 'Tag')
     const code = await fs.readFile(
       getMigrationPath('20260304050607_create_tags.js'),
@@ -321,9 +317,7 @@ describe('createMigration()', () => {
     expect(code).not.toContain(`'#ref'`)
   })
 
-  // Bug: `collectModelTables()` is async but not awaited, so errors thrown in
-  // it become unhandled rejections and the migration is written regardless.
-  test.fails('rejects invalid foreign key relations', async () => {
+  it('rejects invalid foreign key relations', async () => {
     const reviewClass = {
       name: 'Review',
       tableName: 'Review',
@@ -352,11 +346,12 @@ describe('createMigration()', () => {
       ).rejects.toThrow('Invalid relation declaration')
     })
     expect(unhandledRejections).toEqual([])
+    expect(await fs.readdir(path.join(basePath, 'migrations'))).toEqual([])
   })
 })
 
 // Temporarily replaces the `unhandledRejection` handlers of the test runner,
-// so that the floating rejection in the test above doesn't fail the run.
+// so that a floating rejection in the test above doesn't fail the run.
 async function captureUnhandledRejections(reasons, callback) {
   const listeners = process.listeners('unhandledRejection')
   process.removeAllListeners('unhandledRejection')

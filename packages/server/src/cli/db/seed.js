@@ -21,8 +21,7 @@ export async function seed(app) {
   for (const file of files) {
     const { name, ext, base } = path.parse(file)
     if (!name.startsWith('.') && ['.js', '.json'].includes(ext)) {
-      const object = await import(path.resolve(seedDir, file))
-      const seed = object.default || object
+      const seed = await loadSeed(path.resolve(seedDir, file), ext)
       // Try to determine the related model from the seed name, and use it also
       // to determine seed sequence based on its index in `app.models`.
       const modelClass = (
@@ -45,6 +44,16 @@ export async function seed(app) {
     await handleSeed(app, base, seed, modelClass)
   }
   return true
+}
+
+async function loadSeed(file, ext) {
+  // Read JSON seeds directly, as importing them in Node.js requires the
+  // `with { type: 'json' }` import attribute.
+  if (ext === '.json') {
+    return JSON.parse(await fs.readFile(file, 'utf8'))
+  }
+  const object = await import(file)
+  return object.default || object
 }
 
 async function handleSeed(app, base, seed, modelClass) {

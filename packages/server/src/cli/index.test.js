@@ -132,9 +132,7 @@ describe('dito cli', () => {
     }
   })
 
-  // Bug: restoring an unset `DITO_SILENT` assigns `undefined` to
-  // `process.env`, which turns it into the truthy string `'undefined'`.
-  test.fails('restores an unset DITO_SILENT after importing', async () => {
+  it('restores an unset DITO_SILENT after importing', async () => {
     const file = await writeModule('app.js', 'export default {}')
     const silent = process.env.DITO_SILENT
     delete process.env.DITO_SILENT

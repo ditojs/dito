@@ -144,10 +144,9 @@ describe('seed()', () => {
     })
   })
 
-  // Bug: JSON seeds are imported without the `with { type: 'json' }` import
-  // attribute, which Node.js requires. Vitest handles JSON imports itself, so
-  // this is only reproducible in a separate Node.js process.
-  test.fails('imports JSON seeds in plain Node.js', async () => {
+  // Vitest handles JSON imports itself, so loading JSON seeds is only
+  // verifiable in a separate, plain Node.js process.
+  it('imports JSON seeds in plain Node.js', async () => {
     await writeSeed('Author.json', '[{ "name": "Ada" }]')
     const seedUrl = pathToFileURL(path.resolve(import.meta.dirname, 'seed.js'))
     const script = `

@@ -35,10 +35,10 @@ export async function createMigration(app, name, ...modelNames) {
   })
   const tables = []
   for (const modelClass of models) {
-    collectModelTables(modelClass, app, tables)
+    await collectModelTables(modelClass, app, tables)
   }
   for (const modelClass of models) {
-    collectThroughTables(modelClass, app, tables)
+    await collectThroughTables(modelClass, app, tables)
   }
   const createTables = []
   const dropTables = []
@@ -89,6 +89,13 @@ async function collectModelTables(modelClass, app, tables) {
   tables.push({ tableName, statements })
   const uniqueComposites = {}
   for (const [name, property] of Object.entries(properties)) {
+    // Skip the internal properties for Objection's #id and #ref references
+    // that Dito.js adds to all models, see `definitions/properties.js`.
+    const isGraphReferenceProperty = (
+      name === modelClass.uidProp ||
+      name === modelClass.uidRefProp
+    )
+    if (isGraphReferenceProperty) continue
     const column = app.normalizeIdentifier(name)
     let {
       description,

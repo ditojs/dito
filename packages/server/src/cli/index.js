@@ -19,7 +19,12 @@ function getCommand(commands, parts) {
 
 function setSilent(silent) {
   const wasSilent = process.env.DITO_SILENT
-  process.env.DITO_SILENT = silent
+  // Assigning `undefined` to `process.env` would store the string 'undefined'.
+  if (silent === undefined) {
+    delete process.env.DITO_SILENT
+  } else {
+    process.env.DITO_SILENT = silent
+  }
   return wasSilent
 }
 
