@@ -28,6 +28,25 @@ describe('DitoMixin', () => {
       expect(request).toHaveBeenCalledOnce()
     })
 
+    it('caches responses locally within the route component', async () => {
+      const request = vi.fn(() => ({ data: { title: 'Orlando' } }))
+      const { admin, schemaComponent } = await mountSchema({
+        schema: { components: { title: { type: 'text' } } },
+        request
+      })
+      const url = getUniqueUrl('books')
+      const first = await schemaComponent.request({ url, cache: 'local' })
+      const second = await schemaComponent.request({ url, cache: 'local' })
+      expect(second).toBe(first)
+      expect(request).toHaveBeenCalledOnce()
+      // Leaving the view releases its cache with it:
+      await admin.navigate('/')
+      await admin.navigate('/test')
+      const view = admin.getRouteComponent(component => component.isView)
+      await view.mainSchemaComponent.request({ url, cache: 'local' })
+      expect(request).toHaveBeenCalledTimes(2)
+    })
+
     it(`doesn't cache failed requests`, async () => {
       const request = vi
         .fn()

@@ -22,6 +22,7 @@ export default {
 
   inject: [
     'api',
+    'session',
     '$verbs',
     '$views',
     '$isPopulated',
@@ -34,7 +35,8 @@ export default {
     '$dialogComponent',
     '$dataModel',
     '$panelComponent',
-    '$tabComponent'
+    '$tabComponent',
+    '$loadingTracker'
   ],
 
   provide() {
@@ -73,7 +75,7 @@ export default {
     },
 
     user() {
-      return appState.user
+      return this.session.user
     },
 
     // $verbs, $verbs and $isPopulated are defined as functions, to preserve
@@ -206,11 +208,6 @@ export default {
     this.isMounted = true
   },
 
-  beforeCreate() {
-    const uid = nextUid++
-    Object.defineProperty(this, '$uid', { get: () => uid })
-  },
-
   methods: {
     labelize,
 
@@ -235,44 +232,11 @@ export default {
       delete this.store[key]
     },
 
-    getStoreKeyByIndex(index) {
-      return this.store.$keysByIndex?.[index]
-    },
-
-    setStoreKeyByIndex(index, key) {
-      this.store.$keysByIndex ??= {}
-      this.store.$keysByIndex[index] = key
-    },
-
-    getChildStore(key, index) {
-      let store = this.getStore(key)
-      if (!store && index != null) {
-        // When storing, temporary ids change to permanent ones and thus the key
-        // can change. To still find the store, we reference by index as well,
-        // to be able to find the store again after the item was saved.
-        const oldKey = this.getStoreKeyByIndex(index)
-        store = this.getStore(oldKey)
-        if (store) {
-          this.setStore(key, store)
-          this.removeStore(oldKey)
-        }
-      }
-      if (!store) {
-        store = this.setStore(key, reactive({}))
-      }
-      if (index != null) {
-        // temporary uid keys will change between persistence, so we need to
-        // assign the key to the index even when the store already existed.
-        this.setStoreKeyByIndex(index, key)
-      }
-      return store
-    },
-
-    removeChildStore(key, index) {
-      // GEt the child-store first, so that indices can be transferred over
-      // temporary id changes during persistence.
-      this.getChildStore(key, index)
-      this.removeStore(key)
+    // Returns the store of the child component named `name`, e.g. of the
+    // components of a pane. The stores of list items are kept separately, see
+    // `ItemStores`.
+    getChildStore(name) {
+      return this.getStore(name) ?? this.setStore(name, reactive({}))
     },
 
     getSchemaValue(
@@ -299,21 +263,6 @@ export default {
         ? this.getSchemaValue('label', { schema, type: [String, Object] }) ||
           labelize(name || schema.name)
         : labelize(name) || ''
-    },
-
-    getButtonAttributes(verb, subject = null, text = null) {
-      // Buttons that display text are named by it, others by what they act on
-      // if known, e.g. 'Add Section'.
-      const label = text
-        ? null
-        : `${labelize(verb)}${subject ? ` ${subject}` : ''}`
-      return {
-        class: `dito-button--${verb}`,
-        ...(label && {
-          'title': label,
-          'aria-label': label
-        })
-      }
     },
 
     // TODO: Rename *Link() to *Route().
@@ -375,7 +324,7 @@ export default {
       method ||= resource?.method
       const checkUser = !internal && this.api.isApiUrl(url)
       if (checkUser) {
-        await this.rootComponent.ensureUser()
+        await this.session.ensureUser()
       }
       const response = await this.api.request({
         method,
@@ -390,7 +339,7 @@ export default {
         method === 'patch' &&
         equals(resource, getMemberResource(this.user.id, this.api.users))
       ) {
-        await this.rootComponent.fetchUser()
+        await this.session.fetchUser()
       }
       return response
     },
@@ -407,16 +356,15 @@ export default {
     request({ cache, ...options }) {
       // Allow caching of loaded data on two levels:
       // - 'global': cache globally, for the entire admin session
-      // - 'local': cache locally within the closest route component that is
-      //    associated with a resource and loads its own data.
-      const cacheParent = (
-        cache &&
-        {
-          global: this.appState,
-          local: this.dataComponent
-        }[cache]
-      )
-      const loadCache = cacheParent?.loadCache
+      // - 'local': cache locally within the closest route component, i.e. the
+      //   form or view, for as long as it is shown. Components outside of
+      //   route components, e.g. in dialogs, don't cache locally.
+      const loadCache =
+        cache === 'global'
+          ? this.appState.loadCache
+          : cache === 'local'
+            ? this.routeComponent?.loadCache
+            : null
       // Requests to resources are told apart by the URLs that they resolve to:
       const { resource } = options
       const cacheKey = (
@@ -623,17 +571,15 @@ export default {
 
     // Waits until the data model settled: its loads finished, and it wrote the
     // values that it derives from the data, e.g. before submitting. Shows the
-    // spinner in the header while loads are pending, like requests do.
+    // spinner in the header while loads are pending, like requests do, but
+    // without disabling the view, as the user may still be editing.
     async waitUntilDataModelSettled() {
       await this.$nextTick()
       const { dataModel } = this
       if (dataModel?.hasPendingLoads) {
-        this.rootComponent.registerLoading(true)
-        try {
-          await dataModel.waitUntilSettled()
-        } finally {
-          this.rootComponent.registerLoading(false)
-        }
+        await this.$loadingTracker().root.track(() =>
+          dataModel.waitUntilSettled()
+        )
       }
     },
 
@@ -642,8 +588,6 @@ export default {
     }
   }
 }
-
-let nextUid = 0
 
 // Returns the event handlers that `schema` defines, both in `events` and as
 // `on[A-Z]` callbacks, e.g. `events: { mouseenter }` and `onMouseenter`, with

@@ -1,3 +1,4 @@
+import { flushPromises } from '@vue/test-utils'
 import { mountAdmin } from '../test/mount.js'
 
 describe('DitoView', () => {
@@ -20,5 +21,48 @@ describe('DitoView', () => {
     expect(view).not.toBe(booksView)
     // The new view sets up its data with the defaults again:
     expect(view.data.title).toBe(null)
+  })
+
+  it('stays disabled until all of its lists are loaded', async () => {
+    const pendingResponses = {}
+    const admin = await mountAdmin({
+      views: {
+        library: {
+          type: 'view',
+          components: {
+            books: {
+              type: 'list',
+              resource: { path: 'books' },
+              columns: { title: {} }
+            },
+            authors: {
+              type: 'list',
+              resource: { path: 'authors' },
+              columns: { name: {} }
+            }
+          }
+        }
+      },
+      request: ({ url }) =>
+        new Promise(resolve => {
+          pendingResponses[url] = resolve
+        })
+    })
+    await admin.navigate('/library')
+    const view = admin.getRouteComponent(it => it.isView)
+    const header = admin.wrapper.find('.dito-header')
+    expect(Object.keys(pendingResponses).sort()).toEqual([
+      '/authors',
+      '/books'
+    ])
+    expect(view.isLoading).toBe(true)
+    pendingResponses['/books']({ data: [] })
+    await flushPromises()
+    expect(view.isLoading).toBe(true)
+    expect(header.attributes('aria-busy')).toBe('true')
+    pendingResponses['/authors']({ data: [] })
+    await flushPromises()
+    expect(view.isLoading).toBe(false)
+    expect(header.attributes('aria-busy')).toBe('false')
   })
 })

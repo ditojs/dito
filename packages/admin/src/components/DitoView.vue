@@ -37,23 +37,26 @@ import {
 } from '../utils/schema/structure.js'
 import { hasResource } from '../utils/resource.js'
 import { DataModel } from '../utils/DataModel.js'
+import { LoadingTracker } from '../utils/LoadingTracker.js'
 
 // @vue/component
 export default DitoComponent.component('DitoView', {
   mixins: [RouteMixin],
 
   provide() {
-    // Redirect $sourceComponent and $resourceComponent to the main component:
     return {
+      // Redirect $sourceComponent and $resourceComponent to the main component:
       $sourceComponent: () => this.mainComponent?.sourceComponent || null,
-      $resourceComponent: () => this.mainComponent?.resourceComponent || null
+      $resourceComponent: () => this.mainComponent?.resourceComponent || null,
+      $loadingTracker: () => this.loadingTracker
     }
   },
 
   data() {
     return {
-      // Updated from LoadingMixin through `setLoading(isLoading)`:
-      isLoading: false,
+      // Tracks the requests of all resource components in the view, which is
+      // disabled while any of them is pending, see `isLoading`:
+      loadingTracker: markRaw(new LoadingTracker(this.$loadingTracker())),
       // NOTE: Each view has its own data, as `DitoRouterView` renders each
       // route record with its own component instance.
       data: {}
@@ -71,6 +74,10 @@ export default DitoComponent.component('DitoView', {
 
     isView() {
       return true
+    },
+
+    isLoading() {
+      return this.loadingTracker.isLoading
     },
 
     isSingleComponentView() {
@@ -140,10 +147,6 @@ export default DitoComponent.component('DitoView', {
       return this.isSingleComponentView
         ? this.path
         : `${this.path}/${path}`
-    },
-
-    setLoading(isLoading) {
-      this.isLoading = !!isLoading
     }
   }
 })

@@ -11,10 +11,13 @@ import {
 import * as components from './components/index.js'
 import * as types from './types/index.js'
 import DitoRoot from './components/DitoRoot.vue'
+import DitoView from './components/DitoView.vue'
 import DitoTypeComponent from './DitoTypeComponent.js'
 import ResizeDirective from './directives/resize.js'
 import { getResource } from './utils/resource.js'
 import { request, getApiUrl, isApiUrl } from './utils/request.js'
+import { Session } from './utils/Session.js'
+import { ViewRegistry } from './utils/ViewRegistry.js'
 import verbs from './verbs.js'
 
 export default class DitoAdmin {
@@ -147,6 +150,35 @@ export default class DitoAdmin {
       el = document.querySelector(el)
     }
 
+    const router = createRouter({
+      // Start with a catch-all route, to be replaced by the actual routes once
+      // the schemas are loaded, to prevent vue-router from complaining, see
+      // `ViewRegistry.resolve()` for the actual route setup.
+      routes: [
+        {
+          name: 'catch-all',
+          path: '/:_(.*)',
+          components: {}
+        }
+      ],
+      history: createWebHistory(ditoObject.base),
+      linkActiveClass: '',
+      linkExactActiveClass: ''
+    })
+
+    const viewRegistry = new ViewRegistry({
+      api,
+      router,
+      unresolvedViews: views,
+      viewComponent: DitoView
+    })
+
+    const session = new Session({
+      api,
+      viewRegistry,
+      redirectAfterLogin: options.login?.redirectAfterLogin
+    })
+
     const app = (this.app = createApp({
       components: {
         DitoRoot,
@@ -164,12 +196,15 @@ export default class DitoAdmin {
       // https://github.com/vuejs/vue/issues/7017#issuecomment-480906691
       provide: {
         api,
+        session,
+        viewRegistry,
         // A default list of verbs are provided by $verbs() and can be
         // overridden at any point in the component hierarchy.
         $verbs: () => verbs,
+        // The views, once resolved for the logged in user, see `Session`:
+        $views: () => viewRegistry.views,
         // Provide defaults so DitoMixin can inject them for all components:
         //   inject: [  '$isPopulated', '$schemaComponent', '$routeComponent' ]
-        $views: () => ({}),
         $isPopulated: () => true,
         $parentComponent: () => null,
         $schemaComponent: () => null,
@@ -181,14 +216,14 @@ export default class DitoAdmin {
         $dialogComponent: () => null,
         $dataModel: () => null,
         $panelComponent: () => null,
-        $tabComponent: () => null
+        $tabComponent: () => null,
+        $loadingTracker: () => null
       },
 
       render: () =>
         createElement(DitoRoot, {
           ref: 'root',
           class: ditoObject.settings?.rootClass,
-          unresolvedViews: views,
           options
         })
     }))
@@ -204,23 +239,7 @@ export default class DitoAdmin {
 
     app.directive('resize', ResizeDirective)
 
-    app.use(
-      createRouter({
-        // Start with a catch-all route, to be replaced by the actual routes
-        // once the schemas are loaded, to prevent vue-router from complaining,
-        // see: `resolveViews()` in `DitoRoot` for the actual route setup.
-        routes: [
-          {
-            name: 'catch-all',
-            path: '/:_(.*)',
-            components: {}
-          }
-        ],
-        history: createWebHistory(ditoObject.base),
-        linkActiveClass: '',
-        linkExactActiveClass: ''
-      })
-    )
+    app.use(router)
 
     el.classList.add('dito-app')
     app.mount(el)

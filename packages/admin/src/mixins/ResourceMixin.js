@@ -1,13 +1,15 @@
+import { markRaw } from 'vue'
 import ItemMixin from './ItemMixin.js'
-import LoadingMixin from './LoadingMixin.js'
 import { initializeData } from '../utils/schema/data.js'
 import { assignDeeply, isObject, isString, labelize } from '@ditojs/utils'
 import { getResource } from '../utils/resource.js'
+import { transferUids } from '../utils/uid.js'
+import { LoadingTracker } from '../utils/LoadingTracker.js'
 import DitoContext from '../DitoContext.js'
 
 // @vue/component
 export default {
-  mixins: [ItemMixin, LoadingMixin],
+  mixins: [ItemMixin],
 
   provide() {
     return {
@@ -21,10 +23,11 @@ export default {
   data() {
     return {
       loadedData: null,
-      // The abort controller of the pending data load, see `requestData()`,
-      // and the number of all pending requests, for the loading state.
+      // The abort controller of the pending data load, see `requestData()`.
       loadAbortController: null,
-      pendingRequestCount: 0
+      // Tracks the pending requests of the component, see `handleRequest()`,
+      // and forwards them to the tracker of the enclosing scope, e.g. a view.
+      loadingTracker: markRaw(new LoadingTracker(this.$loadingTracker()))
     }
   },
 
@@ -37,6 +40,10 @@ export default {
 
     resourceComponent() {
       return this
+    },
+
+    isLoading() {
+      return this.loadingTracker.isLoading
     },
 
     resource() {
@@ -70,15 +77,6 @@ export default {
         form && (
           form.isTransient ||
           form.isCreating
-        )
-      )
-    },
-
-    transientNote() {
-      return (
-        this.isTransient && (
-          '<b>Note</b>: the parent still needs to be saved ' +
-          'in order to persist this change.'
         )
       )
     },
@@ -298,8 +296,7 @@ export default {
         this.loadAbortController?.abort()
         this.loadAbortController = controller
       }
-      this.pendingRequestCount++
-      this.updateRequestLoading()
+      const endLoading = this.loadingTracker.begin()
       method = resource.method || method
       let response = null
       let error = null
@@ -314,11 +311,10 @@ export default {
       } catch (err) {
         error = err
       } finally {
-        this.pendingRequestCount--
         if (this.loadAbortController === controller) {
           this.loadAbortController = null
         }
-        this.updateRequestLoading()
+        endLoading()
       }
       if (controller.signal.aborted || error?.name === 'AbortError') {
         return
@@ -337,13 +333,6 @@ export default {
         // exposed to further callbacks through DitoContext.
         await callback(null, response)
       }
-    },
-
-    updateRequestLoading() {
-      this.setLoading(this.pendingRequestCount > 0, {
-        updateRoot: true, // Display spinner in header when loading in resources
-        updateView: this.isInView // Notify view of loading for view components
-      })
     },
 
     getPayloadData(button, method) {
@@ -423,13 +412,11 @@ export default {
               const { foreignData } = this.mainSchemaComponent.filterData(
                 this.data
               )
-              // Tell the parent route to reload its data, so that it can
-              // update its foreign data entries.
-              const parentMeta = this.parentRouteComponent?.routeRecord?.meta
-              if (parentMeta) {
-                parentMeta.reload = true
-              }
-              this.setData(assignDeeply({}, foreignData, data))
+              const savedData = assignDeeply({}, foreignData, data)
+              // Keep the uids of new items, which key their components and
+              // stores, see `transferUids()`.
+              transferUids(this.data, savedData)
+              this.setData(savedData)
             }
             onSuccess?.()
             await this.emitButtonEvent(button, 'success', {

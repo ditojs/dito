@@ -1,47 +1,35 @@
 <template lang="pug">
 .dito-account
-  a(
-    role="button"
-    v-bind="pulldownTriggerAttributes"
-    @mousedown.stop="onPulldownMouseDown()"
+  DitoMenuButton.dito-account__button(
+    :items="items"
+    placement="bottom-left"
+    @select="onSelectMenuItem"
   )
     span {{ user.username }}
-  ul.dito-pulldown(
-    role="menu"
-    :class="{ 'dito-pulldown--open': pulldown.open }"
-  )
-    li(
-      v-for="(label, value) of items"
-    )
-      a.dito-pulldown__item(
-        role="menuitem"
-        @mousedown.stop="onPulldownMouseDown(value)"
-        @mouseup="onPulldownMouseUp(value)"
-      ) {{ label }}
 </template>
 
 <script>
+import { DitoMenuButton } from '@ditojs/ui/src'
 import DitoComponent from '../DitoComponent.js'
-import PulldownMixin from '../mixins/PulldownMixin.js'
 
 // @vue/component
 export default DitoComponent.component('DitoAccount', {
-  mixins: [PulldownMixin],
+  components: { DitoMenuButton },
 
   data() {
     return {
-      items: {
-        settings: 'Settings',
-        logout: 'Logout'
-      }
+      items: [
+        { value: 'settings', label: 'Settings' },
+        { value: 'logout', label: 'Logout' }
+      ]
     }
   },
 
   methods: {
-    onPulldownSelect(value) {
+    onSelectMenuItem({ value }) {
       switch (value) {
         case 'logout':
-          this.rootComponent.logout()
+          this.session.logout()
           break
         case 'settings':
           console.info('TODO: Implement Settings')
@@ -56,11 +44,30 @@ export default DitoComponent.component('DitoAccount', {
 @import '../styles/_imports';
 
 .dito-account {
-  position: relative;
   display: inline-block;
 
-  .dito-pulldown {
-    top: $pulldown-padding-ver;
+  // The menu button is a `DitoButton`, but shows the user name as plain text,
+  // so reset the button styles, including the ones of its states:
+  & &__button {
+    cursor: pointer;
+
+    &,
+    &:hover,
+    &:active,
+    &:focus {
+      min-width: 0;
+      min-height: 0;
+      padding: 0;
+      border: 0;
+      font: inherit;
+      color: inherit;
+      background: none;
+      box-shadow: none;
+    }
+
+    &:focus-visible {
+      box-shadow: $shadow-focus;
+    }
   }
 }
 </style>
