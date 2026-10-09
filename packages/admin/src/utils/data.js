@@ -66,23 +66,28 @@ export function parseParentItemDataPath(dataPath, nested = false) {
   return null
 }
 
+// Returns `null` for items without a parent item, e.g. the root item.
 export function getParentItemDataPath(dataPath, nested = false) {
-  return normalizeDataPath(parseParentItemDataPath(dataPath, nested))
+  const path = parseParentItemDataPath(dataPath, nested)
+  return path ? normalizeDataPath(path) : null
 }
 
+// Returns `null` if there's no item at the data path, e.g. for removed items.
 export function getItem(rootItem, dataPath, nested = false) {
   const path = parseItemDataPath(dataPath, nested)
-  return path ? getValueAtDataPath(rootItem, path) : null
+  return path ? getValueAtDataPath(rootItem, path, () => null) : null
 }
 
+// Returns `null` if there's no parent item at the data path.
 export function getParentItem(rootItem, dataPath, nested = false) {
   const path = parseParentItemDataPath(dataPath, nested)
-  return path ? getValueAtDataPath(rootItem, path) : null
+  return path ? getValueAtDataPath(rootItem, path, () => null) : null
 }
 
 export function getLastDataPathToken(dataPath) {
-  const path = parseDataPath(dataPath)
-  return path[path.length - 1]
+  // `dataPath` is `null` for items without a parent, see
+  // `getParentItemDataPath()`.
+  return parseDataPath(dataPath)?.at(-1)
 }
 
 export function getLastDataPathName(dataPath) {

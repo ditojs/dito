@@ -93,10 +93,9 @@ describe('getParentItemDataPath()', () => {
     expect(getParentItemDataPath('books/0/cover')).toBe('books/0')
   })
 
-  // Bug: `normalizeDataPath(null)` throws a TypeError, so the parent item
-  // data path of root items, e.g. `context.parentItemDataPath`, throws.
-  test.fails('returns `null` for the root item', () => {
+  it('returns `null` for the root item', () => {
     expect(getParentItemDataPath('')).toBe(null)
+    expect(getParentItemDataPath('title', true)).toBe(null)
   })
 })
 
@@ -108,6 +107,10 @@ describe('getItem()', () => {
 
   it('returns the item holding nested components', () => {
     expect(getItem(library, 'books/0/title', true)).toBe(library.books[0])
+  })
+
+  it('returns `null` for data paths missing in the root item', () => {
+    expect(getItem(library, 'books/5/chapters/0')).toBe(null)
   })
 })
 
@@ -128,6 +131,10 @@ describe('getParentItem()', () => {
   it('returns `null` for the root item', () => {
     expect(getParentItem(library, '')).toBe(null)
   })
+
+  it('returns `null` for data paths missing in the root item', () => {
+    expect(getParentItem(library, 'books/5/chapters/0')).toBe(null)
+  })
 })
 
 describe('getLastDataPathName()', () => {
@@ -144,6 +151,10 @@ describe('getLastDataPathIndex()', () => {
     expect(getLastDataPathIndex('books[3]')).toBe(3)
     expect(getLastDataPathIndex('books/0/title')).toBe(null)
     expect(getLastDataPathIndex('')).toBe(null)
+  })
+
+  it('returns `null` for missing data paths, e.g. of the root item', () => {
+    expect(getLastDataPathIndex(null)).toBe(null)
   })
 })
 
