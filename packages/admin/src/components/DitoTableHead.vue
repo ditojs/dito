@@ -10,19 +10,13 @@ thead.dito-table-head
         :class="getColumnClass(column)"
         :aria-sort="column.sortable ? getSortState(column) : null"
       )
-        RouterLink(
+        DitoButton(
           v-if="column.sortable"
-          v-slot="{ navigate }"
-          :to="getSortLink(column)"
-          custom
+          :class="getSortClass(column)"
+          @click="sortByColumn(column)"
         )
-          button.dito-button(
-            type="button"
-            :class="getSortClass(column)"
-            @click="navigate"
-          )
-            .dito-button__order-arrows
-            span {{ getLabel(column) }}
+          .dito-button__order-arrows
+          span {{ getLabel(column) }}
         span(
           v-else
         ) {{ getLabel(column) }}
@@ -35,10 +29,13 @@ thead.dito-table-head
 
 <script>
 import DitoComponent from '../DitoComponent.js'
+import { DitoButton } from '@ditojs/ui/src'
 import { hyphenate } from '@ditojs/utils'
 
 // @vue/component
 export default DitoComponent.component('DitoTableHead', {
+  components: { DitoButton },
+
   props: {
     query: { type: Object, required: true },
     columns: { type: Object, required: true },
@@ -74,16 +71,17 @@ export default DitoComponent.component('DitoTableHead', {
       )
     },
 
-    getSortLink(column) {
+    sortByColumn(column) {
       // Toggle order if the same column is clicked again.
       const order =
         this.sort.name === column.name && this.sort.order === 'asc'
           ? 'desc'
           : 'asc'
-      return this.getQueryLink({
-        ...this.query,
-        order: `${column.name} ${order}`
-      })
+      // Sorting resets the page, as the sorted list has other pages.
+      this.sourceComponent.listQuery.update(
+        { order: `${column.name} ${order}` },
+        { resetPage: true }
+      )
     }
   }
 })

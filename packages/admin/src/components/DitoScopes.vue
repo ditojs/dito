@@ -1,38 +1,34 @@
 <template lang="pug">
 .dito-scopes
-  RouterLink(
+  DitoButton(
     v-for="(scope, key) in scopes"
     :key="key"
-    v-slot="{ navigate }"
-    :to="getScopeLink(scope)"
-    custom
-  )
-    button.dito-button(
-      type="button"
-      :class="{ 'dito-button--selected': scope.name === query.scope }"
-      :aria-pressed="scope.name === query.scope"
-      :title="scope.hint || getLabel(scope)"
-      @click="navigate"
-    ) {{ getLabel(scope) }}
+    :class="{ 'dito-button--selected': scope.name === query.scope }"
+    :aria-pressed="scope.name === query.scope"
+    :title="scope.hint || getLabel(scope)"
+    @click="selectScope(scope)"
+  ) {{ getLabel(scope) }}
 </template>
 
 <script>
 import DitoComponent from '../DitoComponent.js'
+import { DitoButton } from '@ditojs/ui/src'
 
 // @vue/component
 export default DitoComponent.component('DitoScopes', {
+  components: { DitoButton },
+
   props: {
     query: { type: Object, required: true },
     scopes: { type: Object, required: true }
   },
 
   methods: {
-    getScopeLink(scope) {
-      const query = { ...this.query, scope: scope.name }
-      if (query.page) {
-        query.page = 0
-      }
-      return this.getQueryLink(query)
+    selectScope(scope) {
+      this.sourceComponent.listQuery.update(
+        { scope: scope.name },
+        { resetPage: true }
+      )
     }
   }
 })

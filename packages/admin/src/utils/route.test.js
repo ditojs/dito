@@ -1,4 +1,4 @@
-import { formatQuery, replaceRoute, isPathWithin } from './route.js'
+import { formatQuery, isPathWithin } from './route.js'
 
 describe('formatQuery()', () => {
   it('formats objects and entries', () => {
@@ -46,35 +46,6 @@ describe('formatQuery()', () => {
 
   it('encodes characters that would break the query', () => {
     expect(formatQuery({ q: 'a&b#c+d%' })).toBe('q=a%26b%23c%2Bd%25')
-  })
-})
-
-describe('replaceRoute()', () => {
-  beforeEach(() => {
-    window.happyDOM.setURL('http://localhost/books?page=2#list')
-    history.replaceState({ position: 1 }, null)
-  })
-
-  it('replaces the query and keeps the path and hash', () => {
-    replaceRoute({ query: { page: 3, order: 'title' } })
-    expect(location.href).toBe(
-      'http://localhost/books?page=3&order=title#list'
-    )
-  })
-
-  it('replaces the path and hash and keeps the query', () => {
-    replaceRoute({ path: '/authors', hash: '#top' })
-    expect(location.href).toBe('http://localhost/authors?page=2#top')
-  })
-
-  it(`doesn't leave a trailing \`?\` with an empty query`, () => {
-    replaceRoute({ query: {} })
-    expect(location.href).toBe('http://localhost/books#list')
-  })
-
-  it('preserves the history state', () => {
-    replaceRoute({ query: { page: 4 } })
-    expect(history.state).toEqual({ position: 1 })
   })
 })
 

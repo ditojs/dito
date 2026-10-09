@@ -27,14 +27,7 @@ export default DitoComponent.component('DitoPagination', {
       },
 
       set(page) {
-        if (this.page !== page) {
-          this.$router.push(
-            this.getQueryLink({
-              ...this.query,
-              page: page - 1
-            })
-          )
-        }
+        this.sourceComponent.listQuery.update({ page: page - 1 })
       }
     }
   }
