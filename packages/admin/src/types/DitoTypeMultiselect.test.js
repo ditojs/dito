@@ -191,6 +191,105 @@ describe('DitoTypeMultiselect', () => {
       expect(getTagLabels(field)).toEqual(['Classic', 'Gothic'])
     })
 
+    it('emits change for added tags and keeps the options', async () => {
+      const onChange = vi.fn()
+      const keywords = ['classic']
+      const { findField, data, getComponent } = await mountSchema({
+        schema: {
+          components: {
+            keywords: {
+              type: 'multiselect',
+              multiple: true,
+              searchable: true,
+              taggable: true,
+              options: { data: () => keywords },
+              onChange
+            }
+          }
+        }
+      })
+      const field = findField('keywords')
+      await search(field, 'gothic')
+      // `setValue()` triggers `change` on the search input, ignore it:
+      onChange.mockClear()
+      await field.find('.multiselect__input').trigger('keydown.enter')
+      await flushPromises()
+      expect(data.keywords).toEqual(['gothic'])
+      expect(onChange).toHaveBeenCalledOnce()
+      // The options of the data model aren't modified:
+      expect(keywords).toEqual(['classic'])
+      expect(getComponent('keywords').options).toEqual(['classic', 'gothic'])
+      expect(
+        field
+          .findAll('.multiselect__tag')
+          .map(tag => tag.classes('dito-multiselect__tag--unavailable'))
+      ).toEqual([false])
+    })
+
+    it('displays and keeps the tags of taggable multiselects without options', async () => {
+      const { findField, data } = await mountSchema({
+        schema: {
+          components: {
+            keywords: {
+              type: 'multiselect',
+              multiple: true,
+              searchable: true,
+              taggable: true
+            }
+          }
+        },
+        data: { keywords: ['classic', 'gothic'] }
+      })
+      const field = findField('keywords')
+      expect(getTagLabels(field)).toEqual(['Classic', 'Gothic'])
+      await search(field, 'modern')
+      await field.find('.multiselect__input').trigger('keydown.enter')
+      await flushPromises()
+      expect(data.keywords).toEqual(['classic', 'gothic', 'modern'])
+    })
+
+    it('adds tags as single values with `taggable`', async () => {
+      const onChange = vi.fn()
+      const { findField, data } = await mountSchema({
+        schema: {
+          components: {
+            language: {
+              type: 'multiselect',
+              searchable: true,
+              taggable: true,
+              options: ['English', 'German'],
+              onChange
+            }
+          }
+        },
+        data: { language: 'English' }
+      })
+      const field = findField('language')
+      await search(field, 'Romansh')
+      onChange.mockClear()
+      await field.find('.multiselect__input').trigger('keydown.enter')
+      await flushPromises()
+      expect(data.language).toBe('Romansh')
+      expect(onChange).toHaveBeenCalledOnce()
+      expect(field.find('.multiselect__single').text()).toBe('Romansh')
+    })
+
+    it('makes the tag remove icons focusable in document order', async () => {
+      const { findField } = await mountSchema({
+        schema: {
+          components: {
+            genres: { type: 'multiselect', multiple: true, options: genres }
+          }
+        },
+        data: { genres: ['drama'] }
+      })
+      expect(
+        findField('genres')
+          .find('.multiselect__tag-icon')
+          .attributes('tabindex')
+      ).toBe('0')
+    })
+
     it('sends the values processed by `process()`', async () => {
       const { findField, submit } = await mountForm({
         schema: {
@@ -214,9 +313,7 @@ describe('DitoTypeMultiselect', () => {
     })
   })
 
-  // Bug: Searchable multiselects without label, e.g. with `label: false`,
-  // generate placeholders like 'Select or search null'.
-  test.fails(
+  it(
     "doesn't put `null` into the placeholders of searchable " +
     'multiselects without label',
     async () => {

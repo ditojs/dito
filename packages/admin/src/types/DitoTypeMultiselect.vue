@@ -48,7 +48,7 @@
         )
           span {{ getLabelForOption(option) }}
           i.multiselect__tag-icon(
-            tabindex="1"
+            tabindex="0"
             @keydown.enter.prevent="remove(option)"
             @mousedown.prevent="remove(option)"
           )
@@ -98,6 +98,8 @@ export default DitoTypeComponent.register('multiselect', {
       isLoadingSearchedOptions: false,
       // The term of the current search, see `onSearchChange()`:
       currentSearchTerm: null,
+      // The options of the tags that were added, see `onAddTag()`:
+      addedTagOptions: [],
       populate: false
     }
   },
@@ -106,17 +108,21 @@ export default DitoTypeComponent.register('multiselect', {
     selectedOptions: {
       get() {
         // Values without options stay visible once the options are loaded,
-        // and are kept when the selection changes, see `getFallbackOption()`,
-        // unless the multiselect is taggable and can add them as options.
+        // and are kept when the selection changes, see `getFallbackOption()`.
+        // Taggable multiselects may have no options besides their values.
         return this.multiple
-          ? this.hasOptions && isArray(this.value)
+          ? (
+              isArray(this.value) && (
+                this.hasOptions ||
+                this.taggable && !this.isLoadingOptions
+              )
+            )
             ? this.value.map(value => {
                 const selectedValue = this.relate
                   ? this.getValueForOption(value)
                   : value
                 return (
                   this.getOptionForValue(selectedValue) ||
-                  this.addTagOption(selectedValue) ||
                   this.getFallbackOption(value)
                 )
               })
@@ -132,6 +138,22 @@ export default DitoTypeComponent.register('multiselect', {
           : this.getValueForOption(option)
         this.onChange()
       }
+    },
+
+    // @override
+    options() {
+      const options = OptionsMixin.computed.options.call(this)
+      // Add the options of the added tags that the options don't contain yet,
+      // without modifying the options of the data model. Grouped options have
+      // no group to add them to.
+      const addedTagOptions = this.groupBy
+        ? []
+        : this.addedTagOptions.filter(
+            option => !this.isOptionAmong(option, options)
+          )
+      return addedTagOptions.length > 0
+        ? [...options, ...addedTagOptions]
+        : options
     },
 
     activeOptions() {
@@ -175,11 +197,16 @@ export default DitoTypeComponent.register('multiselect', {
       if (isBoolean(placeholder)) {
         placeholder = placeholder ? undefined : null
       }
+      const { label } = this
       return placeholder === undefined
         ? searchable && taggable
-          ? `Search or add a ${this.label}`
+          ? label
+            ? `Search or add a ${label}`
+            : 'Search or add'
           : searchable
-            ? `Select or search ${this.label}`
+            ? label
+              ? `Select or search ${label}`
+              : 'Select or search'
             : undefined
         : placeholder
     },
@@ -198,29 +225,37 @@ export default DitoTypeComponent.register('multiselect', {
   },
 
   methods: {
-    addTagOption(tag) {
-      if (this.taggable) {
-        const { optionLabel, optionValue } = this
-        const option =
-          optionLabel && optionValue
-            ? {
-                [optionLabel]: tag,
-                // TODO: Define a simple schema option to convert the tag value
-                // to something else, e.g. `toTag: tag => underscore(tag)`
-                [optionValue]: tag
-              }
-            : tag
-        this.options.push(option)
-        return option
-      }
+    createTagOption(tag) {
+      const { optionLabel, optionValue } = this
+      return optionLabel && optionValue
+        ? {
+            [optionLabel]: tag,
+            // TODO: Define a simple schema option to convert the tag value
+            // to something else, e.g. `toTag: tag => underscore(tag)`
+            [optionValue]: tag
+          }
+        : tag
+    },
+
+    // Returns whether `options` contain an option with the value of `option`.
+    isOptionAmong(option, options) {
+      const value = this.getValueForOption(option)
+      return options.some(
+        otherOption => this.getValueForOption(otherOption) === value
+      )
     },
 
     // Returns whether the option is a fallback option for a value without
     // one, see `getFallbackOption()`. Plain options are their own values.
+    // Taggable multiselects can hold any value.
     isUnavailableOption(option) {
-      return this.optionValue
-        ? !this.getOptionForValue(this.getValueForOption(option))
-        : !this.options.includes(option)
+      return (
+        !this.taggable && (
+          this.optionValue
+            ? !this.getOptionForValue(this.getValueForOption(option))
+            : !this.options.includes(option)
+        )
+      )
     },
 
     // Returns an option for a value without one, e.g. of options that only
@@ -263,10 +298,13 @@ export default DitoTypeComponent.register('multiselect', {
     },
 
     onAddTag(tag) {
-      const option = this.addTagOption(tag)
-      if (option) {
-        this.value ??= []
-        this.value.push(this.getValueForOption(option))
+      if (this.taggable) {
+        const option = this.createTagOption(tag)
+        this.addedTagOptions.push(option)
+        // Select the option through `selectedOptions`, which emits the change:
+        this.selectedOptions = this.multiple
+          ? [...this.selectedOptions, option]
+          : option
       }
     },
 
