@@ -4,15 +4,16 @@ import {
   isFunction,
   equals,
   labelize,
-  hyphenate,
   format
 } from '@ditojs/utils'
 import appState from '../appState.js'
 import DitoContext from '../DitoContext.js'
 import EmitterMixin from './EmitterMixin.js'
 import { flattenViews } from '../utils/schema/setup.js'
+import { getSchemaEventEntries } from '../utils/schema/events.js'
 import { getSchemaValue, shouldRenderSchema } from '../utils/schema/data.js'
 import { getResource, getMemberResource } from '../utils/resource.js'
+import { getRequestCacheKey } from '../utils/request.js'
 import { appendDataPath, getRelativeDataPath } from '../utils/data.js'
 import { computed, reactive } from 'vue'
 
@@ -589,24 +590,6 @@ export default {
   }
 }
 
-// Returns the event handlers that `schema` defines, both in `events` and as
-// `on[A-Z]` callbacks, e.g. `events: { mouseenter }` and `onMouseenter`, with
-// the hyphenated event names that they are registered and emitted under.
-// TODO: Deprecate one format or the other, in favour of only one way of
-// doing things. Decide which one to remove.
-export function getSchemaEventEntries(schema) {
-  const entries = []
-  for (const [key, callback] of Object.entries(schema.events || {})) {
-    entries.push({ key, event: hyphenate(key), callback })
-  }
-  for (const [key, callback] of Object.entries(schema)) {
-    if (/^on[A-Z]/.test(key)) {
-      entries.push({ key, event: hyphenate(key.slice(2)), callback })
-    }
-  }
-  return entries
-}
-
 // The keys of the members that the schemas define on components, through
 // `methods` and `computed`, to tell them apart from the component's own ones
 // when the schema is set up again.
@@ -626,16 +609,6 @@ function warnAboutOverriddenMember(component, key, kind) {
     )
   }
   schemaMemberKeys.add(key)
-}
-
-// Returns the key under which `request()` caches the response of a request.
-function getRequestCacheKey({ method, url, query, data }) {
-  return [
-    method || 'get',
-    url,
-    JSON.stringify(query || ''),
-    JSON.stringify(data || '')
-  ].join(' ')
 }
 
 function getParentComponent(component, key) {

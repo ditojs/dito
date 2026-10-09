@@ -5,6 +5,7 @@ import {
   getUploadOptions,
   getApiUrl,
   isApiUrl,
+  getRequestCacheKey,
   RequestError
 } from './request.js'
 
@@ -178,9 +179,28 @@ describe('fetchBlob()', () => {
       headers: { Authorization: 'Bearer secret' },
       credentials: 'include'
     })
-    expect(apiOptions.signal).toBeInstanceOf(AbortSignal)
     expect(otherOptions.headers).toEqual({})
     expect(otherOptions.credentials).toBe('same-origin')
+  })
+
+  it('does not cut off downloads that take longer than `api.timeout`', async () => {
+    // Like `fetch()`, rejects with the reason of its signal once it aborts,
+    // and otherwise delivers the blob after `api.timeout`, like a download of
+    // a large file. Real timers, as fake ones don't drive
+    // `AbortSignal.timeout()`.
+    const api = createApi({ timeout: 10 })
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        (url, { signal }) =>
+          new Promise((resolve, reject) => {
+            signal?.addEventListener('abort', () => reject(signal.reason))
+            setTimeout(() => resolve(new Response('scan')), api.timeout * 5)
+          })
+      )
+    )
+    const blob = await fetchBlob(api, 'files/scan.pdf')
+    expect(await blob.text()).toBe('scan')
   })
 
   it('throws a `RequestError` with the response for failed requests', async () => {
@@ -188,6 +208,40 @@ describe('fetchBlob()', () => {
     const error = await fetchBlob(api, 'files/scan.pdf').catch(error => error)
     expect(error).toBeInstanceOf(RequestError)
     expect(error.response.status).toBe(404)
+  })
+})
+
+describe('getRequestCacheKey()', () => {
+  const options = {
+    method: 'post',
+    url: 'books',
+    query: { page: 2 },
+    data: { title: 'Orlando' }
+  }
+
+  it('returns the same key for equal requests', () => {
+    expect(getRequestCacheKey({ ...options })).toBe(
+      getRequestCacheKey({
+        ...options,
+        query: { page: 2 },
+        data: { title: 'Orlando' }
+      })
+    )
+    expect(getRequestCacheKey({ url: 'books' })).toBe(
+      getRequestCacheKey({ method: 'get', url: 'books' })
+    )
+  })
+
+  it('returns different keys for differing requests', () => {
+    const key = getRequestCacheKey(options)
+    expect(getRequestCacheKey({ ...options, method: 'put' })).not.toBe(key)
+    expect(getRequestCacheKey({ ...options, url: 'authors' })).not.toBe(key)
+    expect(getRequestCacheKey({ ...options, query: { page: 3 } })).not.toBe(
+      key
+    )
+    expect(
+      getRequestCacheKey({ ...options, data: { title: 'Ulysses' } })
+    ).not.toBe(key)
   })
 })
 

@@ -522,9 +522,12 @@ export default {
       if (removed) {
         this.itemStores.removeStore(this.getItemUid(this.schema, item))
         // Items of lists with a resource are deleted through it, see
-        // `deleteItem()`, leaving no changes to save behind.
+        // `deleteItem()`, leaving no changes to save behind, but still
+        // changing the list.
         if (this.isTransient) {
           this.onChange()
+        } else {
+          this.emitChangeEvent()
         }
       }
     },

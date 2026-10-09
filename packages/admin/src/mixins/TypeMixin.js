@@ -1,7 +1,7 @@
 import ValueMixin from './ValueMixin.js'
 import ContextMixin from './ContextMixin.js'
 import ValidationMixin from './ValidationMixin.js'
-import { getSchemaEventEntries } from './DitoMixin.js'
+import { getSchemaEventEntries } from '../utils/schema/events.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
 import { trackRegistration } from '../utils/registration.js'
 import { getValidations } from '../utils/schema/validation.js'
@@ -293,7 +293,14 @@ export default {
 
     onChange() {
       this.markDirty()
-      this.emitEvent('change', {
+      this.emitChangeEvent()
+    },
+
+    // Emits the `change` event without marking the component dirty, e.g. for
+    // changes that are already persisted through a resource, see
+    // `SourceMixin.removeItem()`.
+    emitChangeEvent() {
+      return this.emitEvent('change', {
         context: {
           // Prevent endless parse recursion:
           value: this.parsedValue !== undefined ? this.parsedValue : this.value

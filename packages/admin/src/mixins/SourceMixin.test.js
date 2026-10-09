@@ -108,6 +108,38 @@ describe('SourceMixin', () => {
       expect(data.address).toEqual({ street: 'Side St' })
       expect(document.querySelector('.dito-notification')).toBe(null)
     })
+    it('emits `change` without making the form dirty for resources', async () => {
+      vi.spyOn(console, 'log').mockImplementation(() => {})
+      stubConfirm()
+      const onChange = vi.fn()
+      const requests = []
+      const { findField, getComponent, routeComponent } = await mountForm({
+        schema: {
+          components: {
+            title: { type: 'text' },
+            reviews: {
+              type: 'list',
+              resource: { path: 'reviews' },
+              deletable: true,
+              onChange,
+              form: { type: 'form', components: { text: { type: 'text' } } }
+            }
+          }
+        },
+        data: { title: 'Orlando' },
+        request(options) {
+          const { method = 'get' } = options
+          requests.push(`${method} ${options.url}`)
+          return { data: method === 'get' ? [{ id: 7, text: 'Great' }] : {} }
+        }
+      })
+      await findField('reviews').find('.dito-button--delete').trigger('click')
+      await flushPromises()
+      expect(requests).toContain('delete /items/1/reviews/7')
+      expect(onChange).toHaveBeenCalledOnce()
+      expect(getComponent('reviews').isDirty).toBe(false)
+      expect(routeComponent.isDirty).toBe(false)
+    })
   })
 
   describe('navigateToComponent()', () => {

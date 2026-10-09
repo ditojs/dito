@@ -1,7 +1,6 @@
 import { vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { mountSchema } from '../test/mount.js'
-import { getSchemaEventEntries } from './DitoMixin.js'
 
 // `appState.loadCache` lives for the session, so each test requests its own
 // URLs, made unique by this counter.
@@ -153,24 +152,6 @@ describe('DitoMixin', () => {
   })
 
   describe('events', () => {
-    it('normalizes both forms of event definitions', () => {
-      const click = () => {}
-      const onMouseenter = () => {}
-      const onPointerDown = () => {}
-      expect(
-        getSchemaEventEntries({
-          events: { click },
-          onMouseenter,
-          onPointerDown,
-          type: 'text'
-        })
-      ).toEqual([
-        { key: 'click', event: 'click', callback: click },
-        { key: 'onMouseenter', event: 'mouseenter', callback: onMouseenter },
-        { key: 'onPointerDown', event: 'pointer-down', callback: onPointerDown }
-      ])
-    })
-
     it('calls `on[A-Z]` handlers of native events', async () => {
       const onMouseenter = vi.fn()
       const onDblclick = vi.fn()
