@@ -1,5 +1,8 @@
 <template lang="pug">
-.dito-upload
+.dito-upload(
+  ref="dropTarget"
+  :class="{ 'dito-upload--drop-target': isDropTarget }"
+)
   //- In order to handle upload buttons in multiple possible places, depending
   //- on whether they handle single or multiple uploads, render the upload
   //- component invisibly at the root, and delegate the click events to it from
@@ -11,11 +14,12 @@
     :name="dataPath"
     :disabled="disabled"
     :postAction="uploadPath"
+    :headers="uploadOptions?.headers"
     :extensions="extensions"
     :accept="accept"
     :multiple="multiple"
     :size="maxSize"
-    :drop="$el?.closest('.dito-container')"
+    :drop="true"
     :dropDirectory="true"
     @input-filter="onInputFilter"
     @input-file="onInputFile"
@@ -95,22 +99,21 @@
               | Stored
           td.dito-table__buttons
             .dito-buttons.dito-buttons--round
-              button.dito-button.dito-button--upload(
+              DitoButton.dito-button--upload(
                 v-if="!multiple"
-                type="button"
                 :title="uploadTitle"
                 @click="onClickUpload"
               )
-              //- Firefox doesn't like <button> here, so use <a> instead:
-              a.dito-button(
+              DitoDragHandle(
                 v-if="draggable"
-                v-bind="getButtonAttributes(verbs.drag)"
+                :disabled="disabled"
+                @move="delta => moveFile(file, delta)"
               )
-              button.dito-button(
+              DitoButton(
                 v-if="deletable"
-                type="button"
-                v-bind="getButtonAttributes(verbs.delete)"
-                @click="deleteFile(file, index)"
+                :verb="verbs.delete"
+                :disabled="disabled"
+                @click="deleteFile(file)"
               )
     tfoot(
       v-if="multiple || isUploadActive || !hasFiles"
@@ -124,14 +127,12 @@
               max="100"
             )
             .dito-buttons.dito-buttons--round
-              button.dito-button(
+              DitoButton(
                 v-if="isUploadActive"
-                type="button"
                 @click.prevent="upload.active = false"
               ) Cancel
-              button.dito-button.dito-button--upload(
+              DitoButton.dito-button--upload(
                 v-if="multiple || !hasFiles"
-                type="button"
                 :title="uploadTitle"
                 @click="onClickUpload"
               )
@@ -140,25 +141,44 @@
 <script>
 import DitoTypeComponent from '../DitoTypeComponent.js'
 import DitoContext from '../DitoContext.js'
+import DitoDragHandle from '../components/DitoDragHandle.vue'
+import { DitoButton } from '@ditojs/ui/src'
 import SortableMixin from '../mixins/SortableMixin.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
 import { formatFileSize, parseFileSize } from '../utils/units.js'
 import { appendDataPath } from '../utils/data.js'
-import { isArray, asArray } from '@ditojs/utils'
+import { fetchBlob, getUploadOptions } from '../utils/request.js'
+import { confirmAndRemove } from '../utils/dialogs.js'
+import { getListWithMovedItem } from '../utils/list.js'
+import { isArray, asArray, escapeHtml } from '@ditojs/utils'
 import VueUpload from 'vue-upload-component'
 
 // @vue/component
 export default DitoTypeComponent.register('upload', {
   mixins: [SortableMixin],
-  components: { VueUpload },
+  components: { VueUpload, DitoButton, DitoDragHandle },
+  inject: ['$fileDropTargets'],
 
   data() {
     return {
-      uploads: []
+      uploads: [],
+      // Removes the upload from the targets of dragged files, see
+      // `updateDropTarget()`.
+      removeDropTarget: null
     }
   },
 
   computed: {
+    fileDropTargets() {
+      return this.$fileDropTargets()
+    },
+
+    // Whether files are dragged over the admin that the upload accepts, for
+    // which it stands out above the overlay of `DitoRoot`.
+    isDropTarget() {
+      return this.fileDropTargets.isDraggingFiles && !this.disabled
+    },
+
     upload() {
       return this.$refs.upload
     },
@@ -167,12 +187,24 @@ export default DitoTypeComponent.register('upload', {
       return this.multiple ? 'Upload Files' : 'Upload File'
     },
 
-    files() {
-      return asFiles(this.value)
+    files: {
+      get() {
+        return asFiles(this.value)
+      },
+
+      // Writes the reordered files, see `DitoDraggable` and `moveFile()`.
+      set(files) {
+        this.value = this.multiple ? files : files[0] ?? null
+      }
     },
 
     downloadUrls() {
-      return this.files.map((file, index) => this.getDownloadUrl(file, index))
+      // Resolve relative URLs against the API like `fetchBlob()` does, so that
+      // the link points to the same file that clicking it downloads:
+      return this.files.map((file, index) => {
+        const url = this.getDownloadUrl(file, index)
+        return url ? this.api.getApiUrl({ url }) : null
+      })
     },
 
     thumbnailUrls() {
@@ -268,10 +300,18 @@ export default DitoTypeComponent.register('upload', {
             path: this.api.normalizePath(this.dataPath)
           })
         : null
+    },
+
+    uploadOptions() {
+      return this.uploadPath
+        ? getUploadOptions(this.api, this.uploadPath)
+        : null
     }
   },
 
   watch: {
+    disabled: 'updateDropTarget',
+
     isUploadReady(ready) {
       if (ready) {
         // Auto-upload.
@@ -282,8 +322,26 @@ export default DitoTypeComponent.register('upload', {
     }
   },
 
+  mounted() {
+    this.updateDropTarget()
+  },
+
+  unmounted() {
+    this.removeDropTarget?.()
+  },
+
   methods: {
     formatFileSize,
+
+    // Adds the upload to the targets of dragged files while it's enabled.
+    // `VueUpload` handles the files dropped on its parent, which is the same
+    // element, see `:drop="true"`.
+    updateDropTarget() {
+      this.removeDropTarget?.()
+      this.removeDropTarget = this.disabled
+        ? null
+        : this.fileDropTargets.add(this.$refs.dropTarget)
+    },
 
     getFileContext(file, index) {
       return this.multiple
@@ -326,28 +384,40 @@ export default DitoTypeComponent.register('upload', {
         : null
     },
 
-    deleteFile(file, index) {
-      const name = file?.name
-      if (
-        file &&
-        window.confirm(
-          `Do you really want to ${this.verbs.remove} ${name}?`
-        )
-      ) {
-        if (this.multiple) {
-          this.value.splice(index, 1)
-        } else {
-          this.value = null
+    async deleteFile(file) {
+      if (!file) return
+      await confirmAndRemove(this, {
+        label: escapeHtml(file.name),
+        // The file is only removed from the value, which still needs the form
+        // to be saved.
+        isTransient: true,
+        remove: () => {
+          // Look up the file by identity once confirmed, as the files may have
+          // changed while the dialog was open. Stored files may not have ids,
+          // see `getFileIndex()`.
+          const index = this.files.indexOf(file)
+          if (index < 0) {
+            return false
+          }
+          if (this.multiple) {
+            this.value.splice(index, 1)
+          } else {
+            this.value = null
+          }
+          if (file.upload) {
+            this.upload.remove(file.upload)
+          }
+          this.onChange()
         }
-        if (file.upload) {
-          this.upload.remove(file.upload)
-        }
+      })
+    },
+
+    // Moves the file by `delta` positions, see `DitoDragHandle`.
+    moveFile(file, delta) {
+      const files = getListWithMovedItem(this.files, file, delta)
+      if (files) {
+        this.files = files
         this.onChange()
-        this.notify({
-          type: 'info',
-          title: 'Successfully Removed',
-          text: `${name} was ${this.verbs.deleted}.`
-        })
       }
     },
 
@@ -431,23 +501,17 @@ export default DitoTypeComponent.register('upload', {
     },
 
     onInputFilter(newFile /*, oldFile, prevent */) {
+      // `VueUpload` only creates the request when uploading, and has no setting
+      // for its credentials:
       const xhr = newFile?.xhr
-      if (this.api.cors?.credentials && xhr && !xhr.withCredentials) {
+      if (this.uploadOptions?.withCredentials && xhr && !xhr.withCredentials) {
         xhr.withCredentials = true
       }
     },
 
     async onClickDownload(file, index) {
       try {
-        const response = await fetch(this.downloadUrls[index])
-        if (!response.ok) {
-          throw new Error(
-            `Failed to download ${file.name}: ${response.status} ${
-              response.statusText
-            }`
-          )
-        }
-        const blob = await response.blob()
+        const blob = await fetchBlob(this.api, this.downloadUrls[index])
         const url = URL.createObjectURL(blob)
         try {
           this.download({ filename: file.name, url })
@@ -457,7 +521,12 @@ export default DitoTypeComponent.register('upload', {
           setTimeout(() => URL.revokeObjectURL(url), 1000)
         }
       } catch (error) {
-        console.error(error)
+        this.notify({
+          type: 'error',
+          error,
+          title: 'File Download Error',
+          text: `Unable to download ${file.name}: ${error.message}`
+        })
       }
     },
 
@@ -487,6 +556,19 @@ function asFiles(value) {
 @import '../styles/_imports';
 
 .dito-upload {
+  // Positioned for `z-index`, to stay above the overlay of `DitoRoot` until it
+  // faded out:
+  position: relative;
+  transition:
+    filter $drag-overlay-duration,
+    z-index 0s $drag-overlay-duration;
+
+  &--drop-target {
+    z-index: $z-index-drag-overlay + 1;
+    filter: drop-shadow(0 4px 8px rgb(0, 0, 0, 0.25));
+    transition: filter $drag-overlay-duration;
+  }
+
   .dito-table {
     tr,
     .dito-table__buttons {

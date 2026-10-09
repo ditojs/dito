@@ -6,7 +6,7 @@
 )
   Transition(name="dito-drag")
     .dito-drag-overlay(
-      v-if="isDraggingFiles"
+      v-if="fileDropTargets.isDraggingFiles"
     )
   TransitionGroup(name="dito-dialog")
     DitoDialog(
@@ -20,10 +20,7 @@
       @remove="removeDialog(key)"
     )
   DitoNavigation
-  main.dito-page.dito-scroll-parent(
-    v-resize="onResizePage"
-    :class="pageClasses"
-  )
+  main.dito-page.dito-scroll-parent(:class="appState.pageClass")
     DitoHeader(
       :spinner="options.spinner"
       :isLoading="isLoading"
@@ -33,53 +30,55 @@
     DitoAccount(
       v-if="user"
     )
-    a.dito-login(
-      v-else-if="allowLogin"
-      @click="rootComponent.login()"
+    button.dito-login(
+      v-else-if="hasSessionStarted"
+      type="button"
+      @click="session.login()"
     )
       span Login
   DitoNotifications(ref="notifications")
 </template>
 
 <script>
+import { markRaw } from 'vue'
 import { delegate as tippyDelegate } from 'tippy.js'
-import { mapConcurrently } from '@ditojs/utils'
 import DitoComponent from '../DitoComponent.js'
 import DomMixin from '../mixins/DomMixin.js'
-import DitoUser from '../DitoUser.js'
-import DitoView from '../components/DitoView.vue'
 import DitoDialog from './DitoDialog.vue'
-import {
-  setupView,
-  resolveViews,
-  setupSchemaComponents
-} from '../utils/schema/setup.js'
+import { setupSchemaComponents } from '../utils/schema/setup.js'
+import { LoadingTracker } from '../utils/LoadingTracker.js'
+import { FileDropTargets } from '../utils/FileDropTargets.js'
 
 // @vue/component
 export default DitoComponent.component('DitoRoot', {
   mixins: [DomMixin],
   components: { DitoDialog },
+  inject: ['viewRegistry'],
 
   provide() {
     return {
-      $views: () => this.resolvedViews
+      $loadingTracker: () => this.loadingTracker,
+      $fileDropTargets: () => this.fileDropTargets
     }
   },
 
   props: {
-    unresolvedViews: { type: [Object, Function, Promise], required: true },
     options: { type: Object, default: () => ({}) }
   },
 
   data() {
     return {
-      resolvedViews: {},
-      removeRoutes: null,
       dialogs: {},
-      pageWidth: 0,
-      loadingCount: 0,
-      allowLogin: false,
-      isDraggingFiles: false
+      // Tracks all pending requests of the admin, for the header's spinner:
+      loadingTracker: markRaw(new LoadingTracker()),
+      // Tracks the files dragged over the admin, for the uploads to drop them
+      // on, see `DitoTypeUpload`:
+      fileDropTargets: markRaw(new FileDropTargets()),
+      // Whether `session.start()` finished, after which the login link is
+      // shown without a user, e.g. once the login dialog was canceled:
+      hasSessionStarted: false,
+      // Detaches the login dialog and notifications from the session:
+      detachSessionUserInterface: null
     }
   },
 
@@ -89,20 +88,7 @@ export default DitoComponent.component('DitoRoot', {
     },
 
     isLoading() {
-      return this.loadingCount > 0
-    },
-
-    pageClasses() {
-      const prefix = 'dito-page'
-      // NOTE: Keep synced with $content-width in SCSS:
-      const contentWidth = 900
-      return [
-        this.appState.pageClass,
-        {
-          [`${prefix}--width-80`]: this.pageWidth <= contentWidth * 0.8,
-          [`${prefix}--width-60`]: this.pageWidth <= contentWidth * 0.6
-        }
-      ]
+      return this.loadingTracker.isLoading
     }
   },
 
@@ -111,10 +97,19 @@ export default DitoComponent.component('DitoRoot', {
     // With hot-reloading, it looks like destroyed hooks aren't always called
     // for route components so reset the array of registered components instead.
     this.appState.routeComponents = []
+    this.detachSessionUserInterface = this.session.attachUserInterface({
+      requestLoginData: () => this.showLoginDialog(),
+      notify: options => this.notify(options)
+    })
+  },
+
+  unmounted() {
+    this.detachSessionUserInterface()
   },
 
   async mounted() {
-    this.setupDragAndDrop()
+    // Only the overlay is rendered here, the uploads handle the dropped files.
+    this.domOn(document, this.fileDropTargets.getDocumentEventHandlers())
 
     tippyDelegate(this.$el, {
       target: '.dito-info',
@@ -139,110 +134,15 @@ export default DitoComponent.component('DitoRoot', {
       }
     })
 
-    // Clear the label marked as active on all mouse and keyboard events, except
-    // the ones that DitoLabel itself intercepts.
-    this.domOn(document, {
-      click: event => {
-        if (!event.target.closest('.dito-label')) {
-          this.appState.activeLabel = null
-        }
-      },
-
-      keyup: event => {
-        if (event.code === 'Tab') {
-          this.appState.activeLabel = null
-        }
-      }
-    })
-
     try {
-      this.allowLogin = false
-      if (await this.fetchUser()) {
-        await this.resolveViews()
-      } else {
-        await this.login()
-      }
-    } catch (err) {
-      console.error(err)
+      await this.session.start()
+    } catch (error) {
+      console.error(error)
     }
-    this.allowLogin = true
+    this.hasSessionStarted = true
   },
 
   methods: {
-    setupDragAndDrop() {
-      // This code only happens the visual effects around dragging and dropping
-      // files into a `DitoTypeUpload` component. The actual uploading is
-      // handled by the `DitoTypeUpload` component itself.
-
-      let dragCount = 0
-      let uploads = []
-
-      const toggleDropTargetClass = enabled => {
-        for (const upload of uploads) {
-          upload
-            .closest('.dito-container')
-            .classList.toggle('dito-drop-target', enabled)
-        }
-        if (!enabled) {
-          uploads = []
-        }
-      }
-
-      const setDraggingFiles = enabled => {
-        this.isDraggingFiles = enabled
-        if (enabled) {
-          toggleDropTargetClass(true)
-        } else {
-          setTimeout(() => toggleDropTargetClass(false), 150)
-        }
-      }
-
-      this.domOn(document, {
-        dragenter: event => {
-          if (!dragCount && event.dataTransfer) {
-            uploads = document.querySelectorAll('.dito-upload')
-            const hasUploads = uploads.length > 0
-            event.dataTransfer.effectAllowed = hasUploads ? 'copy' : 'none'
-            if (hasUploads) {
-              setDraggingFiles(true)
-            } else {
-              event.preventDefault()
-              event.stopPropagation()
-              return
-            }
-          }
-          dragCount++
-        },
-
-        dragleave: event => {
-          dragCount--
-          if (!dragCount && event.dataTransfer) {
-            setDraggingFiles(false)
-          }
-        },
-
-        dragover: event => {
-          if (event.dataTransfer) {
-            const canDrop = event.target.closest(
-              '.dito-container:has(.dito-upload)'
-            )
-            event.dataTransfer.dropEffect = canDrop ? 'copy' : 'none'
-            if (!canDrop) {
-              event.preventDefault()
-              event.stopPropagation()
-            }
-          }
-        },
-
-        drop: event => {
-          dragCount = 0
-          if (event.dataTransfer) {
-            setDraggingFiles(false)
-          }
-        }
-      })
-    },
-
     notify(options) {
       this.notifications.notify(options)
     },
@@ -257,10 +157,6 @@ export default DitoComponent.component('DitoRoot', {
       return this.appState.routeComponents.some(
         routeComponent => routeComponent.isForm && routeComponent.isDirty
       )
-    },
-
-    registerLoading(isLoading) {
-      this.loadingCount += isLoading ? 1 : -1
     },
 
     async showDialog({ components, buttons, data, settings }) {
@@ -295,13 +191,11 @@ export default DitoComponent.component('DitoRoot', {
       delete this.dialogs[key]
     },
 
-    async login() {
-      this.allowLogin = true
-      const {
-        additionalComponents,
-        redirectAfterLogin
-      } = this.options.login || {}
-      const loginData = await this.showDialog({
+    // Shows the login dialog for `Session.login()`, and returns the entered
+    // credentials, or `null` if the user cancels.
+    showLoginDialog() {
+      const { additionalComponents } = this.options.login || {}
+      return this.showDialog({
         components: {
           username: {
             type: 'text',
@@ -328,141 +222,11 @@ export default DitoComponent.component('DitoRoot', {
           }
         }
       })
-      if (loginData) {
-        try {
-          const response = await this.sendRequest({
-            resource: this.api.users.login,
-            data: loginData,
-            internal: true
-          })
-          if (redirectAfterLogin) {
-            location.replace(redirectAfterLogin)
-          } else {
-            this.setUser(response.data.user)
-            await this.resolveViews()
-          }
-        } catch (err) {
-          const error = err.response?.data?.error || err
-          this.notify({
-            type: 'error',
-            error,
-            title: 'Authentication Error',
-            text: error
-          })
-          this.login()
-        }
-      }
-    },
-
-    navigateHome() {
-      return this.navigate('/')
-    },
-
-    async logout() {
-      try {
-        const response = await this.sendRequest({
-          resource: this.api.users.logout,
-          internal: true
-        })
-        if (response.data.success) {
-          this.setUser(null)
-          this.navigateHome()
-        }
-      } catch (err) {
-        console.error(err)
-      }
-    },
-
-    async fetchUser() {
-      let user = null
-      try {
-        const response = await this.sendRequest({
-          resource: this.api.users.session,
-          internal: true
-        })
-        user = response.data.user || null
-      } catch (err) {
-        const error = err.response?.data?.error || err
-        this.notify({
-          type: 'error',
-          error,
-          title: 'Authentication Error',
-          text: error
-        })
-      }
-      this.setUser(user)
-      return user
-    },
-
-    setUser(user) {
-      this.appState.user = (
-        user &&
-        Object.setPrototypeOf(user, DitoUser.prototype)
-      )
-      // Clear resolved views when user is logged out.
-      if (!user) {
-        this.resolvedViews = {}
-        this.navigateHome()
-      }
-    },
-
-    async ensureUser() {
-      if (!(await this.fetchUser())) {
-        await this.login()
-      }
-    },
-
-    async resolveViews() {
-      try {
-        this.resolvedViews = await resolveViews(this.unresolvedViews)
-      } catch (error) {
-        if (!error.request) {
-          console.error(error)
-        }
-        return this.login()
-      }
-      // Collect all routes from the root schema components
-      const routes = await mapConcurrently(
-        Object.entries(this.resolvedViews),
-        ([name, schema]) => setupView(DitoView, this.api, schema, name)
-      )
-      // Now that the routes are loaded, replace all existing routes with the
-      // new routes, and restore the current path.
-      const { fullPath } = this.$route
-      this.removeRoutes?.()
-      this.removeRoutes = addRoutes(this.$router, [
-        {
-          name: 'root',
-          path: '/',
-          components: {}
-        },
-        ...routes.flat()
-      ])
-      this.$router.replace(fullPath)
-    },
-
-    onResizePage({ contentRect: { width } }) {
-      this.pageWidth = width
     }
   }
 })
 
 let dialogId = 0
-
-function addRoutes(router, routes) {
-  const removers = []
-  for (const route of routes) {
-    removers.push(
-      router.addRoute(route)
-    )
-  }
-
-  return () => {
-    for (const remove of removers) {
-      remove()
-    }
-  }
-}
 </script>
 
 <style lang="scss">
@@ -476,6 +240,9 @@ function addRoutes(router, routes) {
 }
 
 .dito-page {
+  // For the layout of `DitoContainer` in narrow pages:
+  container: dito-page / inline-size;
+
   --max-content-width: #{$content-width};
   --max-page-width: calc(var(--max-content-width) + 2 * #{$content-padding});
 
@@ -490,9 +257,15 @@ function addRoutes(router, routes) {
   }
 }
 
-.dito-account,
 .dito-login {
-  cursor: pointer;
+  padding: 0;
+  border: 0;
+  color: inherit;
+  background: none;
+
+  &:focus-visible {
+    box-shadow: $shadow-focus;
+  }
 }
 
 .dito-drag-overlay {
@@ -507,35 +280,16 @@ function addRoutes(router, routes) {
   backdrop-filter: blur(8px);
 }
 
-.dito-drop-target {
-  --shadow-alpha: 0.25;
-
-  background: $content-color-background;
-  border-radius: $border-radius;
-  z-index: $z-index-drag-overlay + 1;
-  filter: drop-shadow(0 4px 8px rgb(0, 0, 0, var(--shadow-alpha)));
-}
-
 .dito-drag-enter-active,
 .dito-drag-leave-active {
-  $duration: 0.15s;
-
   transition:
-    opacity $duration,
-    backdrop-filter $duration;
-
-  ~ * .dito-drop-target {
-    transition: filter $duration;
-  }
+    opacity $drag-overlay-duration,
+    backdrop-filter $drag-overlay-duration;
 }
 
 .dito-drag-enter-from,
 .dito-drag-leave-to {
   opacity: 0;
   backdrop-filter: blur(0);
-
-  ~ * .dito-drop-target {
-    --shadow-alpha: 0;
-  }
 }
 </style>

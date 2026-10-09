@@ -12,6 +12,7 @@ import appState from '../appState.js'
 import { appendDataPath } from '../utils/data.js'
 
 const mountedAdmins = new Set()
+const confirmObservers = new Set()
 
 // Unmounts all admins that are still mounted, see `mountAdmin()`. Called after
 // each test, so tests don't need to clean up themselves.
@@ -19,6 +20,10 @@ afterEach(() => {
   for (const admin of mountedAdmins) {
     unmountAdmin(admin)
   }
+  for (const observer of confirmObservers) {
+    observer.disconnect()
+  }
+  confirmObservers.clear()
   vi.unstubAllGlobals()
 })
 
@@ -117,7 +122,7 @@ export async function mountAdmin({ views, request = null, api = {} }) {
   const root = app._instance.proxy.$refs.root
   // Wait for `DitoRoot` to fetch the user and add the routes of the views:
   await vi.waitFor(() => {
-    if (!root.removeRoutes) throw new Error('Views not resolved yet')
+    if (!root.viewRegistry.hasRoutes) throw new Error('Views not resolved yet')
   })
   const admin = {
     dito,
@@ -133,8 +138,8 @@ export async function mountAdmin({ views, request = null, api = {} }) {
       await flushPromises()
     },
 
-    // Returns the last route component that matches `filter()`, e.g. the
-    // open form.
+    // Returns the route component of the deepest route level that matches
+    // `filter()`, e.g. the open form.
     getRouteComponent(filter = () => true) {
       return appState.routeComponents.findLast(filter) ?? null
     }
@@ -162,12 +167,27 @@ export async function settle(component) {
   await nextTick()
 }
 
-// Answers the `window.confirm()` dialogs, e.g. to delete items, with `answer`,
-// which happy-dom doesn't provide. Returns the mock to change the answer and to
-// check the questions. It's removed after each test.
+// Answers the confirmation dialogs, e.g. to delete items, see `confirm()` in
+// `utils/dialogs.js`: Once a dialog shows, the returned mock is called with the
+// text of its message, and its return value decides whether to click the
+// confirm or the cancel button. Change the answer and check the questions
+// through the mock. The answering stops after each test.
 export function stubConfirm(answer = true) {
   const confirm = vi.fn(() => answer)
-  vi.stubGlobal('confirm', confirm)
+  const observer = new MutationObserver(() => {
+    for (const message of document.querySelectorAll(
+      '.dito-dialog .dito-confirm-message:not([data-answered])'
+    )) {
+      message.dataset.answered = ''
+      const dialog = message.closest('.dito-dialog')
+      const button = confirm(message.textContent)
+        ? dialog.querySelector('button[type="submit"]')
+        : dialog.querySelector('.dito-button--cancel')
+      button.click()
+    }
+  })
+  observer.observe(document.body, { childList: true, subtree: true })
+  confirmObservers.add(observer)
   return confirm
 }
 

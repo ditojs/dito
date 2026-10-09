@@ -1,4 +1,5 @@
-import { mountSchema, mountForm } from './mount.js'
+import { mountSchema, mountForm, mountAdmin, stubConfirm } from './mount.js'
+import { confirm } from '../utils/dialogs.js'
 
 describe('mountSchema()', () => {
   it('renders the components of the schema with the data', async () => {
@@ -21,5 +22,18 @@ describe('mountForm()', () => {
     })
     expect(data.title).toBe('Dune')
     expect(wrapper.find('input').element.value).toBe('Dune')
+  })
+})
+
+describe('stubConfirm()', () => {
+  it('answers the confirmation dialogs with the mock', async () => {
+    const answer = stubConfirm(false)
+    const { root } = await mountAdmin({ views: {} })
+    const ask = () =>
+      confirm(root, { message: 'Delete <b>Dune</b>?', verb: 'delete' })
+    expect(await ask()).toBe(false)
+    answer.mockReturnValue(true)
+    expect(await ask()).toBe(true)
+    expect(answer).toHaveBeenCalledWith('Delete Dune?')
   })
 })
