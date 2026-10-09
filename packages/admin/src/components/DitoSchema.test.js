@@ -92,6 +92,72 @@ describe('DitoSchema', () => {
     expect(isPanelVisible()).toBe(true)
   })
 
+  it('selects the tab of panel components on validation errors', async () => {
+    const { admin, submit, schemaComponent, getErrors } = await mountForm({
+      schema: {
+        tabs: {
+          details: {
+            type: 'tab',
+            components: { title: { type: 'text' } }
+          },
+          history: {
+            type: 'tab',
+            components: {
+              summary: {
+                type: 'panel',
+                label: 'Summary',
+                components: { notes: { type: 'text', required: true } }
+              }
+            }
+          }
+        }
+      },
+      data: { title: 'Emma', notes: '' }
+    })
+    expect(schemaComponent.selectedTab).toBe('details')
+    expect(await submit()).toBe(null)
+    expect(getErrors('notes')).toEqual(['The Notes field is required.'])
+    expect(admin.router.currentRoute.value.hash).toBe('#history')
+    expect(schemaComponent.selectedTab).toBe('history')
+  })
+
+  it('selects the tab of inlined schema panels on errors', async () => {
+    const { admin, submit, schemaComponent } = await mountForm({
+      schema: {
+        tabs: {
+          details: {
+            type: 'tab',
+            components: { title: { type: 'text' } }
+          },
+          history: {
+            type: 'tab',
+            components: {
+              author: {
+                type: 'object',
+                inlined: true,
+                form: {
+                  type: 'form',
+                  components: { name: { type: 'text' } },
+                  panels: {
+                    summary: {
+                      type: 'panel',
+                      label: 'Summary',
+                      components: { notes: { type: 'text', required: true } }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      data: { title: 'Emma', author: { name: 'Jane', notes: '' } }
+    })
+    expect(await submit()).toBe(null)
+    expect(admin.router.currentRoute.value.hash).toBe('#history')
+    expect(schemaComponent.selectedTab).toBe('history')
+  })
+
   it('shows the panels of inlined schemas in tabs with their tabs', async () => {
     const { wrapper, schemaComponent } = await mountSchema({
       schema: {
