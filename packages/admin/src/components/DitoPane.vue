@@ -335,8 +335,10 @@ export default DitoComponent.component('DitoPane', {
       margin-top: -$form-spacing-half;
     }
 
-    // Display a ruler between tabbed components and towards the .dito-buttons
-    &__tab + &__main {
+    // Display a ruler between the tabbed components and the main components.
+    // `dito-pane__tab` and `dito-pane__main` are set on the panes themselves,
+    // see `DitoSchema`:
+    &#{$self}__tab + #{$self}__main {
       &::before {
         // Use a pseudo element to display a ruler with proper margins
         display: block;
@@ -347,13 +349,6 @@ export default DitoComponent.component('DitoPane', {
         margin: (-$root-padding) $form-spacing-half $root-padding;
         padding: $form-spacing-half;
       }
-    }
-
-    // TODO: BEM: Style an element class of this block, e.g. `&__buttons`.
-    &__main + .dito-buttons--main {
-      // Needed forms with sticky main buttons.
-      margin: $content-padding;
-      margin-bottom: 0;
     }
   }
 

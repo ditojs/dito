@@ -56,7 +56,7 @@ export default DitoTypeComponent.register(
 
 <style lang="scss">
 // Only show spin buttons if the number component defines a step size.
-input[type='number']:not([step]) {
+.dito-number input[type='number']:not([step]) {
   &::-webkit-inner-spin-button,
   &::-webkit-outer-spin-button {
     -webkit-appearance: none;

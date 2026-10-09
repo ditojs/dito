@@ -33,7 +33,7 @@ export default DitoTypeComponent.register('switch', {
 @import '../styles/_imports';
 
 .dito-switch {
-  .dito-switch-label {
+  &__label {
     font-size: $font-size-small;
   }
 }
