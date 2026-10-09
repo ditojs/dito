@@ -277,8 +277,7 @@ export default {
     }
 
     &:focus-visible {
-      outline: none;
-      box-shadow: $shadow-focus;
+      @include focus-ring;
     }
   }
 }

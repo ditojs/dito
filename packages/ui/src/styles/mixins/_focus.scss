@@ -1,0 +1,7 @@
+// The focus ring of elements focused with the keyboard, drawn as a 1px border
+// that doesn't affect the layout. A mixin rather than a placeholder, so that it
+// keeps its place in the cascade, after the resets of the other states.
+@mixin focus-ring {
+  outline: none;
+  box-shadow: $shadow-focus;
+}

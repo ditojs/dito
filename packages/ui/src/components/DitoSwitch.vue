@@ -192,7 +192,7 @@ export default {
   }
 
   input:focus-visible + #{$self}__button {
-    box-shadow: $shadow-focus;
+    @include focus-ring;
   }
 }
 </style>

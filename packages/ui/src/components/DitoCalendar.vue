@@ -521,8 +521,7 @@ function getLocaleNames(locale) {
     @include user-select(none);
 
     &:focus-visible {
-      outline: none;
-      box-shadow: $shadow-focus;
+      @include focus-ring;
     }
   }
 }
