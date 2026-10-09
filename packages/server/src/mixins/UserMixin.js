@@ -169,7 +169,9 @@ passport.deserializeUser(async (req, identifier, done) => {
     const user = userClass
       ? await userClass.sessionQuery(req.ctx.transaction).findById(userId)
       : null
-    done(null, user)
+    // Passing `false` ends the session of users that no longer exist or are
+    // excluded by the session scope, while `undefined` means "not handled".
+    done(null, user ?? false)
   } catch (err) {
     done(err)
   }

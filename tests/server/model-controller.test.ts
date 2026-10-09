@@ -451,10 +451,28 @@ class Authors extends ModelController<any> {
   }
 }
 
+// Creates authors and relates the existing notes found in their graphs.
+class RelatingAuthors extends ModelController<any> {
+  override modelClass = Author
+  override graph = true
+  override relate = true
+
+  override collection: any = {
+    allow: ['post']
+  }
+}
+
 describe('ModelController', () => {
   const app = createTestApp({
     models: { Author, Book, Note },
-    controllers: { Books, PublishedBooks, LongBooks, Authors, PublishedAuthors }
+    controllers: {
+      Books,
+      PublishedBooks,
+      LongBooks,
+      Authors,
+      PublishedAuthors,
+      RelatingAuthors
+    }
   })
 
   let url: string
@@ -606,15 +624,16 @@ describe('ModelController', () => {
       })
     })
 
-    // Bug: A single object instead of an array reaches Objection's
-    // instance-only `patchAndFetch()` and fails with a 500 server error.
-    test.fails('rejects single objects for collection patches', async () => {
+    // Single objects would otherwise reach Objection's instance-only
+    // `patchAndFetch()` and fail with a 500 server error.
+    test('rejects single objects for collection patches', async () => {
       const [atlas] = await insertBooks()
       const response = await request('/books', {
         method: 'PATCH',
         body: { id: atlas.id, pages: 121 }
       })
-      expect(response.status).toBeLessThan(500)
+      expect(response.status).toBe(400)
+      expect((await Book.query().findById(atlas.id))?.pages).toBe(120)
     })
 
     it('deletes all models and returns the count', async () => {
@@ -625,14 +644,15 @@ describe('ModelController', () => {
       expect(await Book.query().resultSize()).toBe(0)
     })
 
-    // Bug: `delete` calls `ignoreScope()` before `find()`, which also ignores
-    // the scope requested in the query, so all models get deleted instead.
-    test.fails('only deletes the models of the requested scope', async () => {
+    // The scope requested in the query has to survive the clearing of the
+    // controller's scopes, or all models get deleted instead.
+    test('only deletes the models of the requested scope', async () => {
       await insertBooks()
       const response = await request('/books?scope=published', {
         method: 'DELETE'
       })
       expect(response.data).toEqual({ count: 2 })
+      expect(await Book.query().resultSize()).toBe(1)
     })
   })
 
@@ -647,7 +667,9 @@ describe('ModelController', () => {
     it('responds with 404 for models that do not exist', async () => {
       const response = await request('/books/999999')
       expect(response.status).toBe(404)
-      expect(response.data.message).toBe('Not-found error')
+      expect(response.data.message).toBe(
+        `'Book' model with id 999999 not found`
+      )
     })
 
     it('responds with 400 for ids that fail validation', async () => {
@@ -1040,9 +1062,9 @@ describe('ModelController', () => {
       })
     })
 
-    // Bug: The relation controller's url still contains the `:id` route
-    // parameter, which `getUrl()` copies into the `Location` header.
-    test.fails('sets the `Location` header of related models', async () => {
+    // The relation controller's url contains the parent's `:id` route
+    // parameter, which needs to be filled in for the `Location` header.
+    test('sets the `Location` header of related models', async () => {
       const author = await Author.query().insert({ name: 'Ada' })
       const response = await request(`/authors/${author.id}/books`, {
         method: 'POST',
@@ -1082,9 +1104,9 @@ describe('ModelController', () => {
       expect(await Book.query().findById(book.id)).toBeUndefined()
     })
 
-    // Bug: `post` relates through `patchDitoGraphAndFetch()` on the
-    // `$relatedQuery()`, which Objection's `upsertGraph()` rejects.
-    test.fails('relates models through non-owned relations', async () => {
+    // Relating can't go through `upsertGraph()`, which Objection rejects on
+    // `$relatedQuery()`.
+    test('relates models through non-owned relations', async () => {
       const author = await Author.query().insert({ name: 'Ada' })
       const note = await Note.query().insert({ text: 'Draft' })
       const response = await request(`/authors/${author.id}/notes`, {
@@ -1092,7 +1114,31 @@ describe('ModelController', () => {
         body: { id: note.id }
       })
       expect(response.status).toBe(201)
+      expect(response.data).toMatchObject({
+        id: note.id,
+        text: 'Draft',
+        authorId: author.id
+      })
+      expect(response.headers.get('location')).toBe(
+        `/authors/${author.id}/notes/${note.id}`
+      )
       expect((await Note.query().findById(note.id))?.authorId).toBe(author.id)
+    })
+
+    it('creates models that relate existing models in their graph', async () => {
+      const note = await Note.query().insert({ text: 'Draft' })
+      const response = await request('/relating-authors', {
+        method: 'POST',
+        body: { name: 'Ada', notes: [{ id: note.id }] }
+      })
+      expect(response.status).toBe(201)
+      expect(response.data).toMatchObject({
+        name: 'Ada',
+        notes: [{ id: note.id }]
+      })
+      expect((await Note.query().findById(note.id))?.authorId).toBe(
+        response.data.id
+      )
     })
 
     it('unrelates instead of deleting models of non-owned relations', async () => {

@@ -194,6 +194,17 @@ export class CollectionController extends Controller {
     )
   }
 
+  async relateAndFetch(ctx, modify) {
+    // Use patchDitoGraphAndFetch() to insert the model and relate the existing
+    // models in its graph. RelationController overrides this to relate models
+    // through its relation instead.
+    return this.execute(ctx, (query, trx) =>
+      query
+        .patchDitoGraphAndFetch(ctx.request.body, { relate: true })
+        .modify(getModify(modify, trx))
+    )
+  }
+
   collection = this.markAsCoreActions({
     async get(ctx, modify) {
       const result = await this.execute(ctx, (query, trx) => {
@@ -211,7 +222,9 @@ export class CollectionController extends Controller {
     async delete(ctx, modify) {
       const count = await this.execute(ctx, (query, trx) =>
         query
-          .ignoreScope()
+          // Clear the controller's scopes, but keep the ones requested through
+          // the `scope` query parameter, applied directly by `find()`:
+          .clearWithScope()
           .find(ctx.filteredQuery, this.allowParam)
           .modify(query => this.isOneToOne && query.throwIfNotFound())
           .modify(getModify(modify, trx))
@@ -222,25 +235,25 @@ export class CollectionController extends Controller {
 
     async post(ctx, modify) {
       const result = this.relate
-        ? // Use patchDitoGraphAndFetch() to handle relates for us.
-          await this.execute(ctx, (query, trx) =>
-            query
-              .patchDitoGraphAndFetch(ctx.request.body, { relate: true })
-              .modify(getModify(modify, trx))
-          )
+        ? await this.relateAndFetch(ctx, modify)
         : await this.executeAndFetch('insert', ctx, modify)
       ctx.status = 201 // Created
       if (isObject(result)) {
-        ctx.set('Location', this.getUrl('collection', this.getModelId(result)))
+        // Fill in the route parameters of the controller's url, e.g. the `:id`
+        // of the parent model in the url of relation controllers:
+        const url = formatRouteUrl(this.url, ctx.params)
+        ctx.set('Location', `${url}/${this.getModelId(result)}`)
       }
       return result
     },
 
     async put(ctx, modify) {
+      validateCollectionUpdateBody(this, ctx.request.body)
       return this.executeAndFetch('update', ctx, modify)
     },
 
     async patch(ctx, modify) {
+      validateCollectionUpdateBody(this, ctx.request.body)
       return this.executeAndFetch('patch', ctx, modify)
     }
   })
@@ -257,7 +270,9 @@ export class CollectionController extends Controller {
     async delete(ctx, modify) {
       const count = await this.execute(ctx, (query, trx) =>
         query
-          .ignoreScope()
+          // Clear the controller's scopes, but keep the ones requested through
+          // the `scope` query parameter, applied directly by `find()`:
+          .clearWithScope()
           .findById(ctx.memberId)
           .find(ctx.filteredQuery, this.allowParam)
           .throwIfNotFound()
@@ -277,7 +292,25 @@ export class CollectionController extends Controller {
   })
 }
 
-function getModify(modify, trx) {
+function validateCollectionUpdateBody(controller, body) {
+  // Without graphs, Objection only supports updating collections through
+  // arrays, as its `patchAndFetch()` & co. are instance-only for objects.
+  if (!controller.graph && !isArray(body)) {
+    throw new ControllerError(
+      controller,
+      'Updating a collection requires an array of models'
+    )
+  }
+}
+
+function formatRouteUrl(url, params) {
+  // Substitute the route parameters (e.g. `:id`) with the request's values.
+  return url.replace(/:(\w+)/g, (match, name) =>
+    name in params ? encodeURIComponent(params[name]) : match
+  )
+}
+
+export function getModify(modify, trx) {
   return modify
     ? query => modify(query, trx)
     : null

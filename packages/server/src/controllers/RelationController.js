@@ -1,5 +1,5 @@
-import { asArray } from '@ditojs/utils'
-import { CollectionController } from './CollectionController.js'
+import { isArray, asArray } from '@ditojs/utils'
+import { CollectionController, getModify } from './CollectionController.js'
 import { ControllerError } from '../errors/index.js'
 import { setupPropertyInheritance } from '../utils/object.js'
 import { getScope } from '../utils/scope.js'
@@ -84,6 +84,25 @@ export class RelationController extends CollectionController {
       const query = model.$relatedQuery(this.relationInstance.name, trx)
       this.setupQuery(query)
       return execute(query, trx)
+    })
+  }
+
+  // @override
+  async relateAndFetch(ctx, modify) {
+    return this.execute(ctx, async (query, trx) => {
+      // Relate the existing models by their ids, then fetch them through a
+      // clone of the related query made before relating, as Objection's
+      // `upsertGraph()` rejects relating through `$relatedQuery()`.
+      const ids = this.getCollectionIds(ctx)
+      const fetchQuery = query.clone()
+      await query.relate(ids)
+      return fetchQuery
+        .modify(builder =>
+          isArray(ctx.request.body)
+            ? builder.findByIds(ids)
+            : builder.findById(ids[0])
+        )
+        .modify(getModify(modify, trx))
     })
   }
 

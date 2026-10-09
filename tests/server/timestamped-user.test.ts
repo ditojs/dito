@@ -290,15 +290,15 @@ describe('UserMixin', () => {
       expect(user.id).toBe(alice.id)
     })
 
-    // Bug: `findById()` resolves to `undefined` for users that are excluded by
-    // the session scope or were deleted, and passport treats `undefined` as
-    // "not handled", failing with an error instead of ending the session.
-    test.fails('logs out users excluded by the session scope', async () => {
-      expect(await deserializeUser(`Librarian-${bob.id}`)).toBeFalsy()
+    // `findById()` resolves to `undefined` for users that are excluded by the
+    // session scope or were deleted, which passport treats as "not handled",
+    // failing with an error instead of ending the session.
+    test('logs out users excluded by the session scope', async () => {
+      expect(await deserializeUser(`Librarian-${bob.id}`)).toBe(false)
     })
 
-    test.fails('logs out users that no longer exist', async () => {
-      expect(await deserializeUser('Librarian-999999')).toBeFalsy()
+    test('logs out users that no longer exist', async () => {
+      expect(await deserializeUser('Librarian-999999')).toBe(false)
     })
 
     it('ignores identifiers of unknown user classes', async () => {
