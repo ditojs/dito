@@ -67,7 +67,10 @@ import { isObjectSource } from '../utils/schema/structure.js'
 import { getButtonSchemas } from '../utils/schema/lookup.js'
 import { getComponentPathByDataPath } from '../utils/schema/data.js'
 import { resolvePath } from '../utils/path.js'
+import { isPathWithin } from '../utils/route.js'
+import { transferUids } from '../utils/uid.js'
 import { DataModel } from '../utils/DataModel.js'
+import { transientNote } from '../utils/dialogs.js'
 
 // @vue/component
 export default DitoComponent.component('DitoForm', {
@@ -332,8 +335,11 @@ export default DitoComponent.component('DitoForm', {
           if (!this.isMutating) {
             // Edit a copy of the inherited item, so that changes are only
             // applied through setSourceData(). Copy it again whenever the item
-            // itself is replaced, e.g. after applying the changes.
-            this.clonedData = clone(item)
+            // itself is replaced, e.g. after applying the changes. The copy
+            // keeps the uids of the new items, see `transferUids()`.
+            const clonedData = clone(item)
+            transferUids(item, clonedData)
+            this.clonedData = clonedData
           }
           if (
             item === null &&
@@ -405,11 +411,31 @@ export default DitoComponent.component('DitoForm', {
       }
     },
 
+    // Returns the source component that loads the form's item through its
+    // resource in the parent route component, e.g. a list in a parent form, or
+    // `null` if it isn't rendered, e.g. the list of a view, which renders the
+    // form instead. The form's path is within the path of the source.
+    getParentSourceComponent() {
+      return (
+        this.parentRouteComponent?.mainSchemaComponent?.components.find(
+          component => (
+            component.sourceComponent === component &&
+            component.providesData &&
+            isPathWithin(this.path, component.path)
+          )
+        ) ?? null
+      )
+    },
+
     setSourceData(data) {
       if (this.sourceData && this.sourceKey !== null) {
         const { mainSchemaComponent } = this
-        this.sourceData[this.sourceKey] =
-          mainSchemaComponent.filterData(data).localData
+        const { localData } = mainSchemaComponent.filterData(data)
+        // Keep the uids of new items, which key their components and stores,
+        // see `transferUids()`. The applied data is processed from the form's
+        // data, which holds them since cloning the item.
+        transferUids(this.data, localData)
+        this.sourceData[this.sourceKey] = localData
         mainSchemaComponent.onChange()
         return true
       }
@@ -523,7 +549,7 @@ export default DitoComponent.component('DitoForm', {
                 this.isCreating
                   ? `${itemLabel} was ${verb}.`
                   : `Changes to ${itemLabel} were ${verb}.`,
-                this.transientNote
+                transientNote
               ]
             })
           },
@@ -544,6 +570,11 @@ export default DitoComponent.component('DitoForm', {
           notifyError: error =>
             notifySubmitError(error, error?.message || error)
         })
+        if (success) {
+          // The item changed on the server, so the source that lists it needs
+          // to load it again.
+          this.getParentSourceComponent()?.reloadData()
+        }
       }
       if (success) {
         this.resetValidation()

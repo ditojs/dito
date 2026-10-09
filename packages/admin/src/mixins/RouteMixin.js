@@ -1,6 +1,7 @@
 import ValidatorMixin from '../mixins/ValidatorMixin.js'
 import { markRaw } from 'vue'
 import { isPathWithin } from '../utils/route.js'
+import { confirm } from '../utils/dialogs.js'
 
 // @vue/component
 export default {
@@ -14,18 +15,23 @@ export default {
 
   data() {
     return {
-      reload: false,
       // The record of the route that this component renders, see the
       // `matchedRouteRecord` watcher:
       routeRecord: null,
       // Whether leaving the route was prevented because the data is invalid,
       // so that the next attempt can leave, see `beforeRouteChange()`:
       hasPreventedLeavingInvalidData: false,
+      // The pending confirmation to discard the unsaved changes, shared by the
+      // navigations that happen while its dialog is open, e.g. through the
+      // browser's back button, see `beforeRouteChange()`:
+      discardConfirmation: null,
       // Each route-component defines a store that gets passed on to its
       // child components, so they can store values in them that live beyond
       // their life-cycle. See: DitoPane, SourceMixin
       store: {},
-      loadCache: {} // See TypeMixin.load()
+      // The responses of `request({ cache: 'local' })` of the components that
+      // the route component renders, released with it, see `DitoMixin`.
+      loadCache: {}
     }
   },
 
@@ -159,22 +165,25 @@ export default {
   },
 
   created() {
-    // Keep a shared stack of root components for DitoTrail to use to render
-    // labels. Can't rely on $route.matched[i].instances.default unfortunately,
-    // as instances aren't immediately ready, and instances is not reactive.
-    this.appState.routeComponents.push(this)
+    // Register in the shared route components by route level, for DitoTrail to
+    // render the labels. Can't rely on `$route.matched[i].instances.default`
+    // unfortunately, as instances aren't immediately ready, and `instances` is
+    // not reactive. Components of new routes replace the ones of the previous
+    // routes at their level, which are unmounted after, see `unmounted()`.
+    this.appState.routeComponents[this.routeLevel] = this
   },
 
   unmounted() {
     const { routeComponents } = this.appState
-    const index = routeComponents.indexOf(this)
-    if (index >= 0) {
-      routeComponents.splice(index, 1)
+    if (routeComponents[this.routeLevel] === this) {
+      // Also drop the deeper levels, which aren't replaced by those of a new
+      // route either, as their components are unmounted before their parents.
+      routeComponents.length = this.routeLevel
     }
   },
 
   methods: {
-    beforeRouteChange(to, from) {
+    async beforeRouteChange(to, from) {
       let ok = true
       const isClosing = (
         // Only handle this route change if the form is actually mapped to the
@@ -197,11 +206,16 @@ export default {
           // The form doesn't directly mutate data. If it is dirty, ask if user
           // wants to persist data first.
           if (this.isDirty) {
-            ok = window.confirm(
-              `You have unsaved changes. Do you really want to ${
-                this.verbs.cancel
-              }?`
-            )
+            this.discardConfirmation ??= confirm(this, {
+              message: (
+                'You have unsaved changes. ' +
+                `Do you really want to ${this.verbs.cancel}?`
+              ),
+              verb: 'discard'
+            }).finally(() => {
+              this.discardConfirmation = null
+            })
+            ok = await this.discardConfirmation
           }
         }
       }

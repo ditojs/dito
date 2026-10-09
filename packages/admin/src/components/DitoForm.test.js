@@ -65,4 +65,53 @@ describe('DitoForm', () => {
       )
     })
   })
+
+  describe('submit() of items of lists in forms', () => {
+    const createNestedListSchema = label => ({
+      type: 'list',
+      resource: { path: label.toLowerCase() },
+      editable: true,
+      itemLabel: 'name',
+      columns: { name: {} },
+      form: {
+        type: 'form',
+        label,
+        components: { name: { type: 'text' } }
+      }
+    })
+
+    it('reloads the list of the saved item', async () => {
+      const { admin, findField, settle } = await mountForm({
+        schema: {
+          components: {
+            notes: createNestedListSchema('Note'),
+            tags: createNestedListSchema('Tag')
+          }
+        },
+        data: { title: 'Emma' },
+        request: ({ method = 'get', url, data }) => {
+          if (method === 'get' && url.endsWith('/1')) {
+            return { data: { id: 1, name: 'Draft' } }
+          }
+          return { data: method === 'get' ? [{ id: 1, name: 'Draft' }] : data }
+        }
+      })
+      await findField('tags').find('.dito-button--edit').trigger('click')
+      await settle()
+      expect(admin.router.currentRoute.value.path).toBe('/items/1/tags/1')
+      const getListLoads = () =>
+        admin.request.mock.calls
+          .map(([{ method = 'get', url }]) => `${method} ${url}`)
+          .filter(call => /^get .*\/(note|tag)$/.test(call))
+      const loads = getListLoads()
+      await admin.wrapper
+        .find('.dito-buttons--main button[type="submit"]')
+        .trigger('click')
+      await settle()
+      expect(admin.router.currentRoute.value.path).toBe('/items/1')
+      expect(getListLoads().slice(loads.length)).toEqual([
+        'get /items/1/tag'
+      ])
+    })
+  })
 })

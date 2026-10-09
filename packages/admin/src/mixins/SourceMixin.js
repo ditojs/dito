@@ -4,7 +4,8 @@ import ResourceMixin from './ResourceMixin.js'
 import SchemaParentMixin from '../mixins/SchemaParentMixin.js'
 import { getSchemaAccessor, getStoreAccessor } from '../utils/accessor.js'
 import { getMemberResource } from '../utils/resource.js'
-import { replaceRoute } from '../utils/route.js'
+import { ListQuery } from '../utils/ListQuery.js'
+import { ItemStores } from '../utils/ItemStores.js'
 import {
   isCompact,
   isInlined,
@@ -21,7 +22,7 @@ import {
   getViewPath
 } from '../utils/schema/lookup.js'
 import { updateOrder } from '../utils/schema/data.js'
-import { getTextFromHtml } from '../utils/html.js'
+import { confirmAndRemove } from '../utils/dialogs.js'
 import {
   isObject,
   isString,
@@ -31,6 +32,7 @@ import {
   parseDataPath,
   normalizeDataPath
 } from '@ditojs/utils'
+import { markRaw } from 'vue'
 
 // @vue/component
 export default {
@@ -48,7 +50,16 @@ export default {
 
   data() {
     return {
-      wrappedPrimitives: null
+      wrappedPrimitives: null,
+      listQuery: markRaw(
+        new ListQuery({
+          router: this.$router,
+          getRoute: () => this.$route,
+          getSourceStore: () => this.store,
+          getDefaultQuery: () => this.defaultQuery
+        })
+      ),
+      itemStores: ItemStores.getFromStore(this.store)
     }
   },
 
@@ -158,45 +169,24 @@ export default {
       return this.routeComponent.getChildPath(this.schema.path)
     },
 
+    // The defaults of the query, see `ListQuery`.
     defaultQuery() {
-      const { defaultOrder: order } = this
-      return order ? { order } : {}
+      return {
+        scope: this.defaultScope?.name,
+        page: this.schema.page,
+        order: this.defaultOrder
+      }
     },
 
-    query: getStoreAccessor('query', {
-      get(query) {
-        return {
-          ...this.defaultQuery,
-          ...query
-        }
+    query: {
+      get() {
+        return this.listQuery.query
       },
 
       set(query) {
-        // Always keep the displayed query parameters in sync with the stored
-        // ones. Use scope and page from the list schema as defaults, but allow
-        // the route query parameters to override them.
-        const {
-          scope = this.defaultScope?.name,
-          page = this.schema.page,
-          type
-        } = this.query
-        // Preserve / merge currently stored values, including any custom query
-        // parameters added by creatable.query
-        query = {
-          ...this.query,
-          ...(scope != null && { scope }),
-          ...(page != null && { page }),
-          ...(type != null && { type }),
-          ...query
-        }
-        if (!equals(query, this.$route.query)) {
-          // Change the route query parameters, but don't trigger a route
-          // change, as that would cause the list to reload.
-          replaceRoute({ query })
-        }
-        return query // Let getStoreAccessor() do the actual setting
+        this.listQuery.update(query)
       }
-    }),
+    },
 
     total: getStoreAccessor('total'),
 
@@ -356,25 +346,14 @@ export default {
       // https://github.com/vuejs/vue-router/issues/3393#issuecomment-1158470149
       flush: 'post',
       handler(to, from) {
-        if (this.providesData) {
-          if (
-            from.path === to.path &&
-            from.hash === to.hash
-          ) {
-            // Paths and hashes remain the same, so only queries have changed.
-            // Update filter and reload data without clearing.
-            this.query = to.query
-            this.loadData(false)
-          } else if (
-            this.meta.reload &&
-            from.path !== to.path &&
-            from.path.startsWith(to.path)
-          ) {
-            // Reload the source when navigating back to a parent-route after
-            // changing data in a child-route.
-            this.meta.reload = false
-            this.loadData(false)
-          }
+        if (
+          this.providesData &&
+          // Only the query changed, see `ListQuery`:
+          from.path === to.path &&
+          from.hash === to.hash &&
+          this.listQuery.setFromRoute(to.query)
+        ) {
+          this.loadData(false)
         }
       }
     },
@@ -418,7 +397,7 @@ export default {
 
   methods: {
     setupData() {
-      this.query = this.$route.query
+      this.listQuery.syncWithRoute()
       this.ensureData()
     },
 
@@ -449,6 +428,10 @@ export default {
         return this.viewComponent.setData(data)
       }
       return this.value
+    },
+
+    getItemStore(item) {
+      return this.itemStores.getStore(this.getItemUid(this.schema, item))
     },
 
     isListResults(data) {
@@ -537,60 +520,68 @@ export default {
         }
       }
       if (removed) {
-        this.removeItemStore(this.schema, item, index)
-        this.onChange()
+        this.itemStores.removeStore(this.getItemUid(this.schema, item))
+        // Items of lists with a resource are deleted through it, see
+        // `deleteItem()`, leaving no changes to save behind.
+        if (this.isTransient) {
+          this.onChange()
+        }
       }
     },
 
-    deleteItem(item, index) {
-      const label = (
-        item &&
-        this.getItemLabel(this.schema, item, {
-          index,
-          extended: true
-        })
-      )
-
-      const notify = () =>
-        this.notify({
-          type: this.isTransient ? 'info' : 'success',
-          title: 'Successfully Removed',
-          html: [
-            `${label} was ${this.verbs.deleted}.`,
-            this.transientNote
-          ]
-        })
-
-      // The label is HTML, see `getItemLabel()`, but the dialog shows text:
-      if (
-        item &&
-        window.confirm(
-          getTextFromHtml(
-            `Do you really want to ${this.verbs.delete} ${label}?`
-          )
-        )
-      ) {
-        if (this.isTransient) {
-          this.removeItem(item, index)
-          notify()
-        } else {
-          const itemId = this.getItemId(this.schema, item, index)
+    async deleteItem(item, index) {
+      if (!item) return
+      const label = this.getItemLabel(this.schema, item, {
+        index,
+        extended: true
+      })
+      // Look up the item by identity whenever it's removed, as the data may
+      // have changed while the dialog was open or the request was pending.
+      // Object sources have no index, see `removeItem()`.
+      const getCurrentIndex = () => {
+        if (this.isObjectSource) {
+          return this.objectData === item ? null : -1
+        }
+        return this.listData.indexOf(item)
+      }
+      const removeIfPresent = () => {
+        const currentIndex = getCurrentIndex()
+        const isPresent = currentIndex !== -1
+        if (isPresent) {
+          this.removeItem(item, currentIndex)
+        }
+        return isPresent
+      }
+      await confirmAndRemove(this, {
+        label,
+        isTransient: this.isTransient,
+        remove: async () => {
+          if (this.isTransient) {
+            return removeIfPresent()
+          }
+          const currentIndex = getCurrentIndex()
+          if (currentIndex === -1) {
+            return false
+          }
           const method = 'delete'
           const resource = getMemberResource(
-            itemId,
+            this.getItemId(this.schema, item, currentIndex),
             this.getResource({ method })
           )
-          if (resource) {
-            this.handleRequest({ method, resource }, err => {
-              if (!err) {
-                this.removeItem(item, index)
-                notify()
-              }
-              this.reloadData()
-            })
+          if (!resource) {
+            return false
           }
+          let isDeleted = false
+          await this.handleRequest({ method, resource }, err => {
+            if (!err) {
+              removeIfPresent()
+              isDeleted = true
+            }
+            this.reloadData()
+          })
+          return isDeleted
         }
-      }
+      })
     },
 
     getSchemaComponent(index) {
@@ -650,10 +641,10 @@ export default {
     navigateToRouteComponent(dataPath, onComplete) {
       return new Promise((resolve, reject) => {
         const callOnComplete = () => {
-          // Retrieve the last route component, which will be the component that
-          // we just navigated to, and pass it on to `onComplete()`
-          const { routeComponents } = this.appState
-          const routeComponent = routeComponents[routeComponents.length - 1]
+          // Retrieve the route component of the last route level, which is the
+          // component that we just navigated to, and pass it to `onComplete()`
+          const level = this.$route.matched.length - 1
+          const routeComponent = this.appState.routeComponents[level]
           resolve(onComplete?.([routeComponent]) ?? true)
         }
 
