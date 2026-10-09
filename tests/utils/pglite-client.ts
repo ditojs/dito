@@ -117,10 +117,14 @@ class ClientPGLiteImpl extends Client_PG {
   }
 
   processResponse(obj: any, runner: any) {
+    // Map knex query methods to the commands that the `pg` driver reports,
+    // e.g. `del` to `DELETE`, so that knex returns the affected row count.
     const command =
       obj.method === 'first' || obj.method === 'pluck'
         ? 'SELECT'
-        : (obj.method as string)?.toUpperCase() ?? ''
+        : obj.method === 'del'
+          ? 'DELETE'
+          : ((obj.method as string)?.toUpperCase() ?? '')
 
     const response = {
       ...obj.response,

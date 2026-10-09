@@ -18,6 +18,10 @@ export default defineConfig({
         extends: true,
         test: {
           name: 'node',
+          // Server tests start in-memory databases with pglite, which can take
+          // several seconds when many test files do so at once:
+          testTimeout: 30_000,
+          hookTimeout: 30_000,
           exclude: [...excludedDirectories, `${componentPackages}/*.test.*`]
         }
       },

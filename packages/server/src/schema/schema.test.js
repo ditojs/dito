@@ -717,4 +717,240 @@ describe('convertSchema()', () => {
       }
     })
   })
+
+  it('rejects nested definitions without a leading #', () => {
+    expect(() =>
+      convertSchema({
+        type: 'object',
+        properties: {
+          ingredient: { $ref: '#ingredient' }
+        },
+        definitions: {
+          ingredient: { type: 'string' }
+        }
+      })
+    ).toThrow(
+      `Invalid definition 'ingredient', the name of nested Dito.js ` +
+      `definitions must start with '#'`
+    )
+  })
+
+  it('rejects duplicate nested definitions with different schemas', () => {
+    expect(() =>
+      convertSchema({
+        type: 'object',
+        properties: {
+          starter: {
+            type: 'object',
+            properties: { dish: { $ref: '#dish' } },
+            definitions: { '#dish': { type: 'string' } }
+          },
+          dessert: {
+            type: 'object',
+            properties: { dish: { $ref: '#dish' } },
+            definitions: { '#dish': { type: 'integer' } }
+          }
+        }
+      })
+    ).toThrow(/Duplicate nested definition for '#dish' with different schema/)
+  })
+
+  it('merges identical nested definitions declared in multiple places', () => {
+    const converted = convertSchema({
+      type: 'object',
+      properties: {
+        starter: {
+          type: 'object',
+          properties: { dish: { $ref: '#dish' } },
+          definitions: { '#dish': { type: 'string' } }
+        },
+        dessert: {
+          type: 'object',
+          properties: { dish: { $ref: '#dish' } },
+          definitions: { '#dish': { type: 'string' } }
+        }
+      }
+    })
+    expect(converted.definitions).toEqual({ '#dish': { type: 'string' } })
+  })
+
+  it('propagates definitions of shared sub-schemas to every root', () => {
+    // The same schema object is converted from different roots, so the second
+    // conversion is served from the cache and still needs its definitions.
+    const course = {
+      type: 'object',
+      properties: { dish: { $ref: '#dish' } },
+      definitions: { '#dish': { type: 'string' } }
+    }
+    const menu = convertSchema({
+      type: 'object',
+      properties: { course }
+    })
+    const tastingMenu = convertSchema({
+      type: 'object',
+      properties: { first: course, second: course }
+    })
+    expect(menu.definitions).toEqual({ '#dish': { type: 'string' } })
+    expect(tastingMenu.definitions).toEqual({ '#dish': { type: 'string' } })
+    expect(tastingMenu.properties.first).toBe(tastingMenu.properties.second)
+  })
+
+  it('returns cached root schemas together with their definitions', () => {
+    const recipe = {
+      type: 'object',
+      properties: { dish: { $ref: '#dish' } },
+      definitions: { '#dish': { type: 'string' } }
+    }
+    const first = convertSchema(recipe)
+    const second = convertSchema(recipe)
+    expect(second).toEqual(first)
+    expect(second.definitions).toEqual({ '#dish': { type: 'string' } })
+  })
+
+  it('converts schemas that reference themselves through definitions', () => {
+    // A shared schema that is contained in its own nested definition, the way
+    // recursive content structures are declared across schema modules.
+    const step = {
+      $ref: '#step',
+      definitions: {
+        '#step': {
+          type: 'object',
+          properties: {
+            name: { type: 'text' }
+          }
+        }
+      }
+    }
+    step.definitions['#step'].properties.substeps = {
+      type: 'array',
+      items: step
+    }
+    const converted = convertSchema({
+      type: 'object',
+      properties: { step }
+    })
+    expect(converted.properties.step).toEqual({ $ref: '#/definitions/#step' })
+    expect(converted.definitions['#step']).toEqual({
+      type: 'object',
+      properties: {
+        name: { type: 'string' },
+        substeps: {
+          type: 'array',
+          items: { $ref: '#/definitions/#step' }
+        }
+      },
+      unevaluatedProperties: false
+    })
+  })
+
+  // Revisiting a schema that is still being converted clones and converts it
+  // again, which reaches the same schema once more and recurses endlessly.
+  test.fails('converts directly self-referencing schemas', () => {
+    const step = {
+      type: 'object',
+      properties: {
+        name: { type: 'text' }
+      }
+    }
+    step.properties.substeps = { type: 'array', items: step }
+    const converted = convertSchema(step)
+    expect(converted.properties.name).toEqual({ type: 'string' })
+  })
+
+  it('combines required with an existing format through allOf', () => {
+    expect(
+      convertSchema({
+        type: 'object',
+        properties: {
+          email: {
+            type: 'string',
+            format: 'email',
+            required: true
+          }
+        }
+      })
+    ).toEqual({
+      type: 'object',
+      properties: {
+        email: {
+          type: 'string',
+          allOf: [{ format: 'email' }, { format: 'required' }]
+        }
+      },
+      required: ['email'],
+      unevaluatedProperties: false
+    })
+  })
+
+  it('combines datetime and required formats through allOf', () => {
+    expect(
+      convertSchema({
+        type: 'object',
+        properties: {
+          servedAt: {
+            type: 'datetime',
+            required: true
+          }
+        }
+      }).properties.servedAt
+    ).toEqual({
+      type: ['string', 'object'],
+      allOf: [{ format: 'required' }, { format: 'date-time' }]
+    })
+  })
+
+  it(`removes 'now()' default values meant for the database`, () => {
+    expect(
+      convertSchema({
+        type: 'object',
+        properties: {
+          createdAt: {
+            type: 'timestamp',
+            default: 'now()'
+          }
+        }
+      }).properties.createdAt
+    ).toEqual({
+      type: ['string', 'object'],
+      format: 'date-time'
+    })
+  })
+
+  it('converts the items of prefixItems and items schemas', () => {
+    expect(
+      convertSchema({
+        type: 'array',
+        prefixItems: [{ type: 'text' }],
+        items: { type: 'Ingredient' }
+      })
+    ).toEqual({
+      type: 'array',
+      prefixItems: [{ type: 'string' }],
+      items: { $ref: 'Ingredient' }
+    })
+  })
+
+  it('keeps full URL references unmodified', () => {
+    const $ref = 'https://example.com/schemas/ingredient.json'
+    expect(convertSchema({ $ref })).toEqual({ $ref })
+  })
+
+  // `additionalProperties` holds a single schema, but it is converted as if it
+  // was a map of property schemas, like `patternProperties`.
+  test.fails('converts additionalProperties schemas', () => {
+    expect(
+      convertSchema({
+        type: 'object',
+        additionalProperties: {
+          type: 'text'
+        }
+      })
+    ).toEqual({
+      type: 'object',
+      additionalProperties: {
+        type: 'string'
+      },
+      unevaluatedProperties: false
+    })
+  })
 })

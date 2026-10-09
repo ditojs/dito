@@ -18,6 +18,8 @@ interface TestAppOptions {
     [key: string]: any
   }
   config?: Record<string, any>
+  /** Application-level middleware, run after the route is found. */
+  middleware?: ConstructorParameters<typeof Application>[0]['middleware']
   validator?: ConstructorParameters<typeof Application>[0]['validator']
 }
 
@@ -51,6 +53,7 @@ export function createTestApp(
     },
     models: options.models ?? {},
     controllers: options.controllers ?? {},
+    ...(options.middleware && { middleware: options.middleware }),
     ...(options.validator && { validator: options.validator })
   }) as TestApp
 
