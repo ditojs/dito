@@ -809,10 +809,11 @@ export default {
           })
         }
       }
-    } else if (!inlined) {
-      // Sources without forms, e.g. tree objects, can still have children with
-      // forms, see `DitoTypeTreeList.processSchema()`. Without a form route to
-      // nest their routes in, add them under the path of the source.
+    } else if (!inlined && isObjectSource(schema)) {
+      // Object sources without forms, e.g. tree objects, can still have
+      // children with forms, see `DitoTypeTreeList.processSchema()`. Without
+      // a form route to nest their routes in, add them under the source path.
+      // List sources need their form route for the id param of their items.
       for (const childRoute of childRoutes) {
         routes.push({
           ...childRoute,

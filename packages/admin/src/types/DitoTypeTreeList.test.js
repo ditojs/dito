@@ -442,6 +442,24 @@ describe('DitoTypeTreeList', () => {
       }
     )
 
+    it('opens the grandchildren of tree objects with `open`', async () => {
+      const schema = structuredClone(siteSchema)
+      schema.components.site.children.open = true
+      const { findField } = await mountForm({ schema, data: siteData })
+      expect(getLabels(findField('site'))).toEqual(['About', 'Team', 'Contact'])
+    })
+
+    it('adds no child routes to tree lists without forms', async () => {
+      const schema = createSiteSchema()
+      delete schema.components.pages.form
+      schema.components.pages.children.editable = true
+      const { admin, getComponent } = await mountForm({ schema, data: site })
+      const paths = admin.router.getRoutes().map(route => route.path)
+      expect(paths.filter(path => path.includes('/pages'))).toEqual([])
+      // Without routes, the forms of the children aren't editable in the tree:
+      expect(getComponent('pages').hasEditableForms).toBe(false)
+    })
+
     function getActiveLabels(field) {
       return field
         .findAll('.dito-tree-item--active > .dito-tree-header .dito-tree-label')

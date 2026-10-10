@@ -29,6 +29,7 @@ import DitoTypeComponent from '../DitoTypeComponent.js'
 import SourceMixin from '../mixins/SourceMixin.js'
 import { resolveSchemaComponents } from '../utils/schema/setup.js'
 import { hasFormSchema, getFormSchemas } from '../utils/schema/lookup.js'
+import { isObjectSource } from '../utils/schema/structure.js'
 import { updateOrder } from '../utils/schema/data.js'
 import { getParentDataPath } from '../utils/data.js'
 import { isPathWithin } from '../utils/route.js'
@@ -53,7 +54,8 @@ export default DitoTypeComponent.register(
 
       relativeSourcePath() {
         // The path of the tree within `path`, as in its routes, which is empty
-        // in single-component views, see `DitoView.getChildPath()`:
+        // in single-component views, see `DitoView.getChildPath()`. All
+        // `getChildPath()` implementations return paths starting with `path`:
         return this.routeComponent
           .getChildPath(this.schema.path)
           .slice(this.path.length)
@@ -98,18 +100,22 @@ export default DitoTypeComponent.register(
       },
 
       hasEditableForms() {
-        // Sources without forms of their own, e.g. tree objects, can still
-        // have children with editable forms.
         const hasEditableForms = schema => {
+          const hasForm = hasFormSchema(schema)
           return (
             (
-              hasFormSchema(schema) &&
+              hasForm &&
               this.getSchemaValue('editable', {
                 type: Boolean,
                 default: false,
                 schema
               })
-            ) || (
+            ) ||
+            // Object sources without forms of their own, e.g. tree objects,
+            // can still have children with editable forms, see
+            // `SourceMixin.processSchema()`.
+            (
+              (hasForm || isObjectSource(schema)) &&
               !!schema.children &&
               hasEditableForms(schema.children)
             )
