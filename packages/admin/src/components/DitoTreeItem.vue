@@ -213,12 +213,7 @@ export default DitoComponent.component('DitoTreeItem', {
       const { childrenSchema, childrenList } = this
       if (childrenSchema && childrenList) {
         const { editPath } = this.sourceComponent
-        // In trees with edit routes, the edit path opens the items, so there
-        // `open` only opens the children of the root item.
-        const childrenOpen = (
-          (this.level === 0 || !this.path) &&
-          childrenSchema.open
-        )
+        const childrenOpen = !this.path && childrenSchema.open
         // Build a children list with child meta information for the template.
         return childrenList.map((data, index) => {
           const path = (

@@ -449,6 +449,24 @@ describe('DitoTypeTreeList', () => {
       expect(getLabels(findField('site'))).toEqual(['About', 'Team', 'Contact'])
     })
 
+    it('reopens the children of tree objects in the edit path', async () => {
+      const schema = structuredClone(siteSchema)
+      schema.components.site.children.open = true
+      const { admin, findField, settle } = await mountForm({
+        schema,
+        data: siteData
+      })
+      const about = findField('site').findAll('.dito-tree-branch')[0]
+      await about.trigger('click')
+      await flushPromises()
+      expect(about.attributes('aria-expanded')).toBe('false')
+      expect(getLabels(findField('site'))).toEqual(['About', 'Contact'])
+      await admin.navigate('/items/1/site/pages/0/subpages/0')
+      await settle()
+      expect(about.attributes('aria-expanded')).toBe('true')
+      expect(getLabels(findField('site'))).toEqual(['About', 'Team', 'Contact'])
+    })
+
     it('adds no child routes to tree lists without forms', async () => {
       const schema = createSiteSchema()
       delete schema.components.pages.form
