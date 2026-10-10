@@ -389,12 +389,16 @@ export default DitoComponent.component('DitoSchema', {
       immediate: true,
       // https://github.com/vuejs/vue-router/issues/3393#issuecomment-1158470149
       flush: 'post',
-      handler(routeTab) {
-        // Changes of the hash to the selected tab are the route following the
-        // selection, see `selectedTab()`, not a selection by the route.
-        if (this.hasTopLevelTabs && routeTab !== this.selectedTab) {
-          this.selectTab(routeTab)
-        }
+      handler() {
+        this.followRouteTab()
+      }
+    },
+
+    active(active) {
+      // Returning from a nested form, e.g. through the browser's history, the
+      // route may carry a different tab.
+      if (active) {
+        this.followRouteTab()
       }
     },
 
@@ -414,16 +418,9 @@ export default DitoComponent.component('DitoSchema', {
           content.scrollTop = this.scrollPositions[newTab] ?? 0
         })
       }
-      if (this.hasTopLevelTabs) {
-        // Without a selected tab, e.g. while a nested form is open, keep the
-        // route without hash. Fall back to the default tab only for tabs that
-        // aren't rendered.
-        const tab =
-          !newTab || newTab in this.renderedTabs ? newTab : this.defaultTab
-        this.$router.replace({
-          query: this.$route.query,
-          hash: tab ? `#${tab}` : null
-        })
+      // The route of a nested form doesn't belong to this schema.
+      if (this.hasTopLevelTabs && this.active) {
+        this.replaceRouteTab(newTab)
       }
     }
   },
@@ -505,6 +502,37 @@ export default DitoComponent.component('DitoSchema', {
 
     everyComponent(callback) {
       return this.isPopulated && this.components.every(callback)
+    },
+
+    // Selects the tab of the route's hash. The forms of nested routes, e.g. of
+    // the items of lists in tabs, have their own hash for their own tabs, so
+    // the tab is only followed while this schema's route is active, and a route
+    // without a hash, e.g. after closing such a form, keeps the selected tab.
+    followRouteTab() {
+      const { routeTab, selectedTab } = this
+      if (
+        this.hasTopLevelTabs &&
+        this.active &&
+        routeTab &&
+        routeTab !== selectedTab
+      ) {
+        // Changes of the hash to the selected tab are the route following the
+        // selection, see `selectedTab()`, not a selection by the route.
+        this.selectTab(routeTab)
+      }
+    },
+
+    // Puts the tab into the route's hash. Without a tab, the route is kept
+    // without hash. Falls back to the default tab only for tabs that aren't
+    // rendered.
+    replaceRouteTab(tab) {
+      const routeTab = !tab || tab in this.renderedTabs ? tab : this.defaultTab
+      if (routeTab !== this.routeTab) {
+        this.$router.replace({
+          query: this.$route.query,
+          hash: routeTab ? `#${routeTab}` : null
+        })
+      }
     },
 
     // Selects the tab chosen by the route or the user.

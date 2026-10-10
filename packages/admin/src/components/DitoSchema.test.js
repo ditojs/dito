@@ -356,6 +356,45 @@ describe('DitoSchema', () => {
     })
   })
 
+  // ditojs/dito#192: The forms of the items of trees and lists in tabs are
+  // nested routes, whose path doesn't carry the hash of the parent's tab.
+  describe('tabs with forms of nested routes', () => {
+    const pageForm = { type: 'form', components: { title: { type: 'text' } } }
+
+    it.each([
+      ['tree-list', { type: 'tree-list', editable: true }],
+      ['list', { type: 'list', editable: true }]
+    ])('keeps the tab of a %s after closing its form', async (_, source) => {
+      const { admin, schemaComponent, wrapper } = await mountForm({
+        schema: {
+          tabs: {
+            details: { type: 'tab', components: { title: { type: 'text' } } },
+            planning: {
+              type: 'tab',
+              components: {
+                pages: { ...source, path: 'pages', form: pageForm }
+              }
+            }
+          }
+        },
+        data: { title: 'Site', pages: [{ title: 'About' }] }
+      })
+      await admin.navigate('/items/1#planning')
+      await wrapper.find('.dito-button--edit').trigger('click')
+      await flushPromises()
+      expect(admin.router.currentRoute.value.path).toBe('/items/1/pages/0')
+      expect(schemaComponent.selectedTab).toBe('planning')
+      const pageFormComponent = admin.getRouteComponent(
+        component => component.isForm
+      )
+      await pageFormComponent.close()
+      await flushPromises()
+      // The route is kept without hash, as before, but the tab stays selected:
+      expect(admin.router.currentRoute.value.fullPath).toBe('/items/1')
+      expect(schemaComponent.selectedTab).toBe('planning')
+    })
+  })
+
   it('makes the page wide while a `wide` view is shown', async () => {
     const admin = await mountAdmin({
       views: {
