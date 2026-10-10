@@ -518,14 +518,10 @@ describe('built-in types', () => {
 
   createApp({ Swatch })
 
-  it('accepts hex colors and color keywords for the color type', () => {
+  it('accepts any color string for the color type', () => {
     expect(Swatch.fromJson({ color: '#ff8800' }).color).toBe('#ff8800')
-    expect(Swatch.fromJson({ color: 'orange' }).color).toBe('orange')
-  })
-
-  it('rejects strings that are neither hex colors nor keywords', () => {
-    expect(() => Swatch.fromJson({ color: 'rgb(255, 136, 0)' })).toThrow(
-      ValidationError
+    expect(Swatch.fromJson({ color: 'rgb(255, 136, 0)' }).color).toBe(
+      'rgb(255, 136, 0)'
     )
   })
 

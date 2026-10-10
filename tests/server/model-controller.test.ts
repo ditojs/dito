@@ -708,6 +708,20 @@ describe('ModelController', () => {
       })
     })
 
+    it('inserts models without ids in collection patches', async () => {
+      const [atlas] = await insertBooks()
+      const response = await request('/books', {
+        method: 'PATCH',
+        body: [{ id: atlas.id, pages: 121 }, { title: 'Codex' }]
+      })
+      expect(response.status).toBe(200)
+      expect(response.data).toMatchObject([
+        { id: atlas.id, pages: 121 },
+        { id: expect.any(Number), title: 'Codex' }
+      ])
+      expect(await Book.query().resultSize()).toBe(4)
+    })
+
     // Single objects would otherwise reach Objection's instance-only
     // `patchAndFetch()` and fail with a 500 server error.
     test('rejects single objects for collection patches', async () => {

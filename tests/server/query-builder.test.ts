@@ -947,12 +947,49 @@ describe('QueryBuilder', () => {
       expect(updated[0].name).toBe('Ada L.')
     })
 
-    it(`doesn't insert related models in patchAndFetch()`, async () => {
+    it('inserts new root models in array patchAndFetch()', async () => {
       const [ada] = await insertCooks()
-      await Cook.query().patchAndFetch([
-        { id: ada.id, recipes: [{ name: 'Apple pie' }] } as any
+      const patched = await Cook.query().patchAndFetch([
+        { id: ada.id, active: false },
+        { name: 'Edsger' }
       ])
-      expect(await Recipe.query()).toHaveLength(0)
+      expect(patched.map((cook: Cook) => [cook.name, cook.active])).toEqual([
+        ['Ada', false],
+        ['Edsger', true]
+      ])
+      expect(patched[1].id).toEqual(expect.any(Number))
+      expect(await Cook.query()).toHaveLength(3)
+    })
+
+    it('inserts new root models in array updateAndFetch()', async () => {
+      const [ada] = await insertCooks()
+      const updated = await Cook.query().updateAndFetch([
+        { id: ada.id, name: 'Ada L.' },
+        { name: 'Edsger' }
+      ])
+      expect(updated.map((cook: Cook) => cook.name)).toEqual([
+        'Ada L.',
+        'Edsger'
+      ])
+      expect(await Cook.query()).toHaveLength(3)
+    })
+
+    it('inserts new related models in array patchAndFetch()', async () => {
+      const [ada] = await insertCooks()
+      const apple = await Recipe.query().insert({
+        name: 'Apple pie',
+        cookId: ada.id
+      })
+      await Cook.query().patchAndFetch([
+        {
+          id: ada.id,
+          recipes: [{ id: apple.id, steps: [{ text: 'Peel apples' }] }]
+        } as any,
+        { name: 'Edsger', recipes: [{ name: 'Banana bread' }] } as any
+      ])
+      expect(await Cook.query()).toHaveLength(3)
+      expect(await Recipe.query()).toHaveLength(2)
+      expect(await Step.query()).toHaveLength(1)
     })
 
     it('patches single models with patchAndFetch()', async () => {

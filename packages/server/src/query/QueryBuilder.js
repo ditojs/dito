@@ -558,7 +558,11 @@ export class QueryBuilder extends objection.QueryBuilder {
   #upsertAndFetch(data, options) {
     return this.upsertGraphAndFetch(data, {
       fetchStrategy: 'OnlyNeeded',
-      noInsert: true,
+      // Unlike the other operations, inserts aren't disabled: new models are
+      // inserted at all levels, as before 3.3.1, where a misspelled option
+      // meant to disable them had no effect.
+      // TODO: Decide in 4.0 which models patches and updates may insert, see
+      // https://github.com/ditojs/dito/issues/191
       noDelete: true,
       noRelate: true,
       noUnrelate: true,

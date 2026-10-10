@@ -59,28 +59,16 @@ describe('color type', () => {
     { throw: false }
   )
 
-  it.each(['#f80', '#f80c', '#ff8800', '#ff8800cc', 'red', 'transparent'])(
-    'accepts %s, as stored by the admin color type',
+  it.each(['#ff8800', 'red', 'rgba(0, 0, 255, 0.5)', 'hsl(30, 100%, 50%)', ''])(
+    'accepts any string, as before 3.3.0: %j',
     color => {
       expect(validate({ color })).toBe(true)
     }
   )
 
-  it.each(['#12', '#ff880', 'ff8800', 'light red', 'rgb(0, 0, 0)', ''])(
-    'rejects %j',
-    color => {
-      expect(validate({ color })).toBe(false)
-      expect(validator.parseErrors(validate.errors)).toEqual({
-        color: [
-          {
-            message: 'needs to be a hex color or a color keyword',
-            keyword: 'format',
-            params: { format: 'color' }
-          }
-        ]
-      })
-    }
-  )
+  it('rejects values that are not strings', () => {
+    expect(validate({ color: { r: 255, g: 136, b: 0 } })).toBe(false)
+  })
 })
 
 describe('Validator.compile()', () => {
