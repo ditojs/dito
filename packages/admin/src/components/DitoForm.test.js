@@ -579,6 +579,74 @@ describe('DitoForm', () => {
       await submitChanges(form, 'Waffles')
       expect(view.data.recipes).toEqual([{ name: 'Waffles' }])
     })
+
+    // The data paths of the form's components are relative to the data of
+    // the view, which is their root item also when the view has no resource.
+    describe('without resources', () => {
+      const recipesWithKitchenSchema = {
+        ...recipesSchema,
+        form: {
+          ...recipesSchema.form,
+          components: {
+            ...recipesSchema.form.components,
+            kitchen: {
+              type: 'text',
+              compute: ({ rootItem }) => rootItem?.venue ?? null
+            }
+          }
+        }
+      }
+
+      function expectItemsOfComponents(form, view) {
+        const recipe = view.data.recipes[0]
+        const name =
+          form.mainSchemaComponent.getComponentByDataPath(
+            'recipes/0/name'
+          )
+        expect(form.rootData).toBe(view.data)
+        expect(name.rootItem).toBe(view.data)
+        expect(name.context.rootItem).toBe(view.data)
+        expect(name.context.parentItem).toBe(view.data)
+        expect(name.context.item).toBe(form.data)
+        expect(form.data).toEqual({ ...recipe, kitchen: 'Bakery' })
+      }
+
+      it('provide the root item in multi-component views', async () => {
+        const { admin, routeComponent: view } = await mountSchema({
+          schema: {
+            components: {
+              venue: { type: 'text' },
+              recipes: recipesWithKitchenSchema
+            }
+          },
+          data: { venue: 'Bakery', recipes: [{ name: 'Pancakes' }] }
+        })
+        await admin.navigate('/test/recipes/0')
+        const form = admin.getRouteComponent(component => component.isForm)
+        await settle(form)
+        expectItemsOfComponents(form, view)
+      })
+
+      it('provide the root item in single-component views', async () => {
+        const admin = await mountAdmin({
+          views: {
+            recipes: {
+              type: 'view',
+              path: 'cookbook',
+              component: recipesWithKitchenSchema
+            }
+          }
+        })
+        await admin.navigate('/cookbook')
+        const view = admin.getRouteComponent(component => component.isView)
+        view.setData({ venue: 'Bakery', recipes: [{ name: 'Pancakes' }] })
+        await settle(view)
+        await admin.navigate('/cookbook/0')
+        const form = admin.getRouteComponent(component => component.isForm)
+        await settle(form)
+        expectItemsOfComponents(form, view)
+      })
+    })
   })
 
   describe('nested forms with `mutate`', () => {
@@ -636,6 +704,45 @@ describe('DitoForm', () => {
     expect(form.loadedData).toBe(null)
     expect(form.isDirty).toBe(false)
     expect(form.data).toEqual({ title: null })
+  })
+
+  // The load of the item that the form left is still pending, and mustn't
+  // replace the new item when it completes, which would then be submitted:
+  it('drops the pending load of an item when creating one', async () => {
+    const pendingLoad = Promise.withResolvers()
+    const { admin, routeComponent } = await mountForm({
+      schema: { components: { title: { type: 'text' } } },
+      data: { title: 'Emma' },
+      request: ({ method = 'get', url }) => {
+        if (method === 'get' && url === '/items/2') return pendingLoad.promise
+        throw new Error(`Unexpected request: ${method} ${url}`)
+      }
+    })
+    await admin.navigate('/items/2')
+    await admin.navigate('/items/create')
+    pendingLoad.resolve({ data: { id: 2, title: 'Persuasion' } })
+    await settle(routeComponent)
+    expect(routeComponent.isCreating).toBe(true)
+    expect(routeComponent.loadedData).toBe(null)
+    expect(routeComponent.data).toEqual({ title: null })
+  })
+
+  it('loads the item when navigating to it from the create route', async () => {
+    const { admin, routeComponent } = await mountForm({
+      schema: { components: { title: { type: 'text' } } },
+      request: ({ method = 'get', url }) => {
+        if (method === 'get' && url === '/items/1') {
+          return { data: { id: 1, title: 'Emma' } }
+        }
+        throw new Error(`Unexpected request: ${method} ${url}`)
+      }
+    })
+    expect(routeComponent.isCreating).toBe(true)
+    await admin.navigate('/items/1')
+    const form = admin.getRouteComponent(component => component.isForm)
+    await settle(form)
+    expect(form.isCreating).toBe(false)
+    expect(form.data).toEqual({ id: 1, title: 'Emma' })
   })
 
   it('creates the item of the type given by the route query', async () => {

@@ -229,6 +229,13 @@ export default DitoComponent.component('DitoForm', {
       return this.getDataPathFrom(this.dataRootComponent)
     },
 
+    // @override DitoMixin.rootData()
+    // The data that `dataPath` is relative to, also in views without resources,
+    // which aren't data components.
+    rootData() {
+      return this.dataRootComponent?.data
+    },
+
     componentPath() {
       // Nested forms continue the component path of the source that displays
       // their item in the parent route component, e.g. `main/chapters/1`.
@@ -344,12 +351,19 @@ export default DitoComponent.component('DitoForm', {
         // Reload form data when navigating to a different entity in same form.
         // The create route sets up a new item instead, see `setupData()`.
         const param = this.meta?.param
+        const toParam = to.params[param]
+        const fromParam = from.params[param]
+        // After submitting a new item, `setData()` replaced it with the created
+        // one, which the form then opens without loading it, see `submit()`.
+        // A new item that wasn't submitted is still in `createdData`, and is
+        // replaced by the loaded item.
+        const isOpeningCreatedItem = fromParam === 'create' && !this.createdData
         if (
           param &&
           this.providesData &&
-          from.params[param] !== 'create' && // But haven't been creating
-          to.params[param] !== 'create' && // And aren't going to create
-          to.params[param] !== from.params[param] // Going to a different entity
+          toParam !== 'create' &&
+          toParam !== fromParam &&
+          !isOpeningCreatedItem
         ) {
           this.loadData(true)
         }
@@ -443,7 +457,9 @@ export default DitoComponent.component('DitoForm', {
       if (this.isCreating) {
         // Drop the data of the item that the form loaded before, e.g. when
         // navigating from `/items/1` to `/items/create`, so that it doesn't
-        // determine the form schema of the new item:
+        // determine the form schema of the new item. Its load may still be
+        // pending, and would replace the new item once it completes:
+        this.loadAbortController?.abort()
         this.loadedData = null
         this.createdData ||= this.createData(this.schema, this.creationType)
       } else {
