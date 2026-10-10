@@ -1,6 +1,10 @@
 import { shallowRef } from 'vue'
 import { mapConcurrently } from '@ditojs/utils'
-import { resolveViews, setupView } from './schema/setup.js'
+import {
+  resolveViews,
+  setupView,
+  resetProcessedSchemaDepths
+} from './schema/setup.js'
 
 // ViewRegistry resolves the schemas of the admin's views, sets up their routes,
 // and adds them to the router, replacing the routes of the previous resolve.
@@ -45,6 +49,9 @@ export class ViewRegistry {
       console.error(error)
       return false
     }
+    // The schemas may be the same objects as in the previous resolve, which
+    // need to be processed again for their routes.
+    resetProcessedSchemaDepths()
     const routes = await mapConcurrently(
       Object.entries(views),
       ([name, schema]) =>

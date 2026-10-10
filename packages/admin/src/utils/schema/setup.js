@@ -172,7 +172,16 @@ export async function resolveSchemaComponents(schemas) {
   await mapConcurrently(Object.values(schemas || {}), resolveSchemaComponent)
 }
 
-const processedSchemaDepths = new WeakMap()
+// How many times each schema's components were set up, to stop recursive
+// forms at their `maxDepth`. The views are set up anew from the same schema
+// objects for each login, see `resetProcessedSchemaDepths()`.
+let processedSchemaDepths = new WeakMap()
+
+// Forgets the processed schemas, so that the next setup of the views processes
+// them again and sets up the routes of their forms, see `ViewRegistry`.
+export function resetProcessedSchemaDepths() {
+  processedSchemaDepths = new WeakMap()
+}
 
 export function setupSchemaComponents(
   api,

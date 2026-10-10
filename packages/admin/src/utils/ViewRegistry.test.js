@@ -70,3 +70,49 @@ describe('ViewRegistry', () => {
     expect(admin.router.currentRoute.value.path).toBe('/')
   })
 })
+
+describe('ViewRegistry across sessions', () => {
+  // ditojs/dito#187: The views are set up anew for each login from the same
+  // schema objects, and their forms need their routes again.
+  it('sets up the routes of forms again after logging in again', async () => {
+    const admin = await mountAdmin({
+      views: {
+        books: {
+          type: 'view',
+          label: 'Books',
+          component: {
+            type: 'list',
+            resource: { path: 'books' },
+            form: { type: 'form', components: { title: { type: 'text' } } }
+          }
+        }
+      },
+      request({ method = 'get', url }) {
+        if (method === 'post' && url === '/logout') {
+          return { data: { success: true } }
+        }
+        if (method === 'post' && url === '/login') {
+          return { data: { user: { id: 1, username: 'tester' } } }
+        }
+        if (method === 'get' && url === '/books') {
+          return { data: [{ id: 1, title: 'Dune' }] }
+        }
+        if (method === 'get' && url === '/books/1') {
+          return { data: { id: 1, title: 'Dune' } }
+        }
+        throw new Error(`Unexpected request: ${method} ${url}`)
+      }
+    })
+    const { session } = admin.root
+    session.attachUserInterface({
+      requestLoginData: async () => ({ username: 'tester', password: 'x' }),
+      notify: vi.fn()
+    })
+    await session.logout()
+    expect(session.user).toBe(null)
+    expect(await session.login()).toEqual({ id: 1, username: 'tester' })
+    await admin.navigate('/books/1')
+    const form = admin.getRouteComponent(component => component.isForm)
+    expect(form?.data).toEqual({ id: 1, title: 'Dune' })
+  })
+})
