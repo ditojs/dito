@@ -249,5 +249,67 @@ describe('DitoView', () => {
       expect(venue.context.rootItem).toBe(form.data)
       expect(getComponent('address/city').context.parentItem).toBe(form.data)
     })
+
+    it('resolve data paths of options in views without resources', async () => {
+      const { getComponent } = await mountSchema({
+        schema: {
+          components: {
+            address: {
+              type: 'section',
+              nested: true,
+              components: {
+                venue: {
+                  type: 'select',
+                  options: { dataPath: '../../venues' }
+                }
+              }
+            }
+          }
+        },
+        data: { venues: ['Bakery', 'Library'], address: { venue: null } }
+      })
+      expect(getComponent('address/venue').options).toEqual([
+        'Bakery',
+        'Library'
+      ])
+    })
+
+    it('are passed to callbacks in views without resources', async () => {
+      const { data, schemaComponent, getComponent } = await mountSchema({
+        schema: {
+          components: {
+            strict: { type: 'checkbox' },
+            address: {
+              type: 'section',
+              nested: true,
+              components: {
+                city: {
+                  type: 'text',
+                  required: ({ rootItem }) => rootItem.strict
+                },
+                label: {
+                  type: 'text',
+                  compute: ({ rootItem }) => `Strict: ${rootItem.strict}`
+                },
+                note: {
+                  type: 'text',
+                  exclude: ({ rootItem }) => rootItem.strict,
+                  process: ({ value, rootItem }) =>
+                    `${value} ${rootItem.strict}`
+                }
+              }
+            }
+          }
+        },
+        data: { strict: true, address: { city: null, note: 'Note' } }
+      })
+      expect(data.address.label).toBe('Strict: true')
+      const city = getComponent('address/city')
+      expect(city.verify()).toBe(false)
+      expect(schemaComponent.processData().address).not.toHaveProperty('note')
+      data.strict = false
+      expect(city.verify()).toBe(true)
+      expect(schemaComponent.processData().address.note).toBe('Note false')
+    })
   })
 })
