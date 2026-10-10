@@ -48,17 +48,20 @@ export default DitoTypeComponent.register(
       path() {
         // The path of the route component of the tree, in a form or a view,
         // which the edit routes of the items continue. Accessed from
-        // DitoTreeItem through `sourceComponent.path`:
-        return this.routeComponent.path
+        // DitoTreeItem through `sourceComponent.path`. Trees in dialogs have no
+        // route component, and no edit routes:
+        return this.routeComponent?.path ?? ''
       },
 
       relativeSourcePath() {
         // The path of the tree within `path`, as in its routes, which is empty
         // in single-component views, see `DitoView.getChildPath()`. All
         // `getChildPath()` implementations return paths starting with `path`:
-        return this.routeComponent
-          .getChildPath(this.schema.path)
-          .slice(this.path.length)
+        return (
+          this.routeComponent
+            ?.getChildPath(this.schema.path)
+            .slice(this.path.length) ?? ''
+        )
       },
 
       editPath() {

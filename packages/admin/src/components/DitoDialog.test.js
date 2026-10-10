@@ -27,6 +27,23 @@ async function showDialog(options) {
 const components = { title: { type: 'text' } }
 
 describe('DitoDialog', () => {
+  it('renders tree lists with children', async () => {
+    const { dialog } = await showDialog({
+      components: {
+        pages: {
+          type: 'tree-list',
+          children: { name: 'subpages' }
+        }
+      },
+      data: {
+        pages: [{ name: 'About', subpages: [{ name: 'Team' }] }]
+      },
+      buttons: { cancel: {} }
+    })
+    expect(dialog.find('.dito-tree-item').exists()).toBe(true)
+    expect(dialog.text()).toContain('About')
+  })
+
   it('labels the dialog with `settings.label`', async () => {
     const { dialog } = await showDialog({
       components,
