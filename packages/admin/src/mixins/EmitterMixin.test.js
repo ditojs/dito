@@ -56,6 +56,15 @@ describe('EmitterMixin', () => {
       expect(callback).toHaveBeenCalledOnce()
     })
 
+    it('calls the callback only once for concurrent emits', async () => {
+      const emitter = createEmitter()
+      const callback = vi.fn()
+      emitter.on('load', () => new Promise(resolve => setTimeout(resolve)))
+      emitter.once('load', callback)
+      await Promise.all([emitter.emit('load'), emitter.emit('load')])
+      expect(callback).toHaveBeenCalledOnce()
+    })
+
     it('can be removed through the original callback', async () => {
       const emitter = createEmitter()
       const callback = vi.fn()

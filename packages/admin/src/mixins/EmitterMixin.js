@@ -33,7 +33,12 @@ export default {
     },
 
     once(event, callback) {
+      // Concurrent emits each call their own copy of the callbacks, see
+      // `emit()`, so removing `on` doesn't keep a pending emit from calling it.
+      let hasBeenCalled = false
       const on = (...args) => {
+        if (hasBeenCalled) return
+        hasBeenCalled = true
         this.off(event, on)
         return callback.apply(this, args)
       }
