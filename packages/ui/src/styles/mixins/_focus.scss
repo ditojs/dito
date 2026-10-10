@@ -1,7 +1,13 @@
 // The focus ring of elements focused with the keyboard, drawn as a 1px border
 // that doesn't affect the layout. A mixin rather than a placeholder, so that it
 // keeps its place in the cascade, after the resets of the other states.
-@mixin focus-ring {
+// Pass `$color` for elements on backgrounds of `$color-active`, e.g. selected
+// items, where the default ring wouldn't show.
+@mixin focus-ring($color: null) {
   outline: none;
-  box-shadow: $shadow-focus;
+  @if $color {
+    box-shadow: 0 0 0 $border-width $color;
+  } @else {
+    box-shadow: $shadow-focus;
+  }
 }
