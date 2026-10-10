@@ -1,4 +1,4 @@
-import type { ModelProperties } from '@ditojs/server'
+import type { ModelProperties, ModelScopes } from '@ditojs/server'
 import {
   Controller,
   Model,
@@ -25,6 +25,7 @@ class Cookbook extends Model {
   declare id: number
   declare title: string
   declare ownerId: number
+  declare published: boolean
 
   static override properties: ModelProperties = {
     title: {
@@ -32,6 +33,40 @@ class Cookbook extends Model {
       required: true
     },
     ownerId: {
+      type: 'integer'
+    },
+    published: {
+      type: 'boolean',
+      default: false
+    }
+  }
+
+  static override scopes: ModelScopes<Cookbook> = {
+    published: query => query.where('published', true)
+  }
+
+  $hasOwner(user: Member) {
+    return this.ownerId === user.id
+  }
+}
+
+// The related model of the `review` relation holds its foreign key, different
+// from `Cookbook`, which the `cookbook` relation references.
+class Review extends Model {
+  declare id: number
+  declare text: string
+  declare ownerId: number
+  declare recipeId: number
+
+  static override properties: ModelProperties = {
+    text: {
+      type: 'string',
+      required: true
+    },
+    ownerId: {
+      type: 'integer'
+    },
+    recipeId: {
       type: 'integer'
     }
   }
@@ -66,6 +101,11 @@ class Recipe extends Model {
       relation: 'belongsTo',
       from: 'Recipe.cookbookId',
       to: 'Cookbook.id'
+    },
+    review: {
+      relation: 'hasOne',
+      from: 'Recipe.id',
+      to: 'Review.recipeId'
     }
   }
 
@@ -170,6 +210,53 @@ class Recipes extends ModelController<any> {
           handler(ctx: any, { cookbook }: any) {
             return { title: cookbook.title }
           }
+        },
+
+        'get published-title': {
+          scope: 'published',
+          parameters: {
+            cookbook: {
+              from: 'member'
+            }
+          },
+          handler(ctx: any, { cookbook }: any) {
+            return { title: cookbook.title }
+          }
+        },
+
+        // Fetches the related model by an explicit id, as overrides may.
+        'get by-id': {
+          parameters: {
+            id: {
+              type: 'integer',
+              required: true
+            }
+          },
+          async handler(this: any, ctx: any, { id }: any) {
+            const cookbook = await this.controller.fetchMember(ctx, { id })
+            return { title: cookbook.title }
+          }
+        }
+      }
+    },
+
+    review: {
+      relation: {
+        'allow': ['get'],
+        'authorize': {
+          get: '$owner'
+        },
+
+        'get text': {
+          authorize: '$owner',
+          parameters: {
+            review: {
+              from: 'member'
+            }
+          },
+          handler(ctx: any, { review }: any) {
+            return { text: review.text }
+          }
         }
       }
     }
@@ -178,7 +265,7 @@ class Recipes extends ModelController<any> {
 
 describe('Controller authorization', () => {
   const app = createTestApp({
-    models: { Member, Cookbook, Recipe },
+    models: { Member, Cookbook, Recipe, Review },
     controllers: { Members, Recipes },
     // Resolve the requesting user from a header, in place of a session.
     async middleware(ctx: any, next: any) {
@@ -239,6 +326,7 @@ describe('Controller authorization', () => {
   })
 
   afterEach(async () => {
+    await app.knex('Review').del()
     await app.knex('Recipe').del()
     await app.knex('Cookbook').del()
   })
@@ -382,6 +470,57 @@ describe('Controller authorization', () => {
       const path = `/recipes/${recipe.id}/cookbook`
       expect((await request(path, cook)).status).toBe(404)
       expect((await request(`${path}/title`, cook)).status).toBe(404)
+    })
+
+    it('resolves the related model of hasOne relations', async () => {
+      const recipe = await Recipe.query().insert({ title: 'Soup' })
+      await Review.query().insert({
+        text: 'Tasty',
+        ownerId: cook.id,
+        recipeId: recipe.id
+      })
+      const path = `/recipes/${recipe.id}/review`
+      expect((await request(path, guest)).status).toBe(401)
+      expect((await request(`${path}/text`, guest)).status).toBe(401)
+      const response = await request(path, cook)
+      expect(response.status).toBe(200)
+      expect(response.data).toMatchObject({ text: 'Tasty' })
+      const textResponse = await request(`${path}/text`, cook)
+      expect(textResponse.status).toBe(200)
+      expect(textResponse.data).toEqual({ text: 'Tasty' })
+    })
+
+    it('applies action scopes to one-to-one members', async () => {
+      const cookbook = await Cookbook.query().insert({
+        title: 'Soups',
+        ownerId: cook.id
+      })
+      const recipe = await Recipe.query().insert({
+        title: 'Soup',
+        cookbookId: cookbook.id
+      })
+      const path = `/recipes/${recipe.id}/cookbook/published-title`
+      expect((await request(path, cook)).status).toBe(404)
+      await cookbook.$query().patch({ published: true })
+      const response = await request(path, cook)
+      expect(response.status).toBe(200)
+      expect(response.data).toEqual({ title: 'Soups' })
+    })
+
+    it('respects explicit ids when fetching one-to-one members', async () => {
+      const [cookbook, other] = await Cookbook.query().insert([
+        { title: 'Soups', ownerId: cook.id },
+        { title: 'Salads', ownerId: cook.id }
+      ] as any[])
+      const recipe = await Recipe.query().insert({
+        title: 'Soup',
+        cookbookId: cookbook.id
+      })
+      const path = `/recipes/${recipe.id}/cookbook/by-id`
+      const response = await request(`${path}?id=${cookbook.id}`, cook)
+      expect(response.status).toBe(200)
+      expect(response.data).toEqual({ title: 'Soups' })
+      expect((await request(`${path}?id=${other.id}`, cook)).status).toBe(404)
     })
   })
 

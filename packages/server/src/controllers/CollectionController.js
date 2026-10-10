@@ -156,9 +156,12 @@ export class CollectionController extends Controller {
     return this.execute(ctx, (builder, trx) =>
       builder
         // One-to-one relations have no member ids, as their member is the
-        // single related model that their query returns.
+        // single related model that their query returns. Still respect ids
+        // that overrides pass explicitly.
         .modify(builder =>
-          this.isOneToOne ? builder.first() : builder.findById(id)
+          this.isOneToOne && id == null
+            ? builder.first()
+            : builder.findById(id)
         )
         .find(query, this.allowParam)
         .throwIfNotFound()

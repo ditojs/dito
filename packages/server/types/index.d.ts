@@ -2527,11 +2527,13 @@ export class CollectionController<
   /**
    * Fetches the member with the given `id`, applying `query` as filters and
    * `modify` to the query builder. Used by the default `member.get` action.
+   * Controllers of one-to-one relations fetch their single related model
+   * when no `id` is given.
    */
   fetchMember(
     ctx: KoaContext,
     options: {
-      id: Id | Id[]
+      id?: Id | Id[]
       query?: Record<string, any>
       modify?:
         | ((
