@@ -113,6 +113,13 @@ export default DitoComponent.component('DitoView', {
 
     providesData() {
       return someNestedSchemaComponent(this.viewSchema, hasResource)
+    },
+
+    // @override DitoMixin.rootData()
+    // The data paths of the view's components are relative to its data, also
+    // when the view has no resource and thus isn't a data component.
+    rootData() {
+      return this.data
     }
   },
 
