@@ -491,6 +491,18 @@ export default DitoComponent.component('DitoForm', {
         // see `transferUids()`. The applied data is processed from the form's
         // data, which holds them since cloning the item.
         transferUids(this.data, localData)
+        // The forms of tree items don't contain their children, which are
+        // edited in the tree, so keep the children of the applied item:
+        const childrenName = this.sourceSchema.children?.name
+        const { sourceItem } = this
+        if (
+          childrenName &&
+          !(childrenName in localData) &&
+          sourceItem &&
+          childrenName in sourceItem
+        ) {
+          localData[childrenName] = sourceItem[childrenName]
+        }
         this.sourceData[this.sourceKey] = localData
         mainSchemaComponent.onChange()
         return true
