@@ -58,17 +58,6 @@ import { OrderedList } from '@tiptap/extension-ordered-list'
 import { BulletList } from '@tiptap/extension-bullet-list'
 import { ListItem } from '@tiptap/extension-list-item'
 import { Footnotes, FootnoteReference, Footnote } from 'tiptap-footnotes'
-// TODO:
-// import { Image } from '@tiptap/extension-image'
-// import { Mention } from '@tiptap/extension-mention'
-// import { CodeBlockHighlight } from '@tiptap/extension-code-block-highlight'
-// import { Table } from '@tiptap/extension-table'
-// import { TableCell } from '@tiptap/extension-table-cell'
-// import { TableHeader } from '@tiptap/extension-table-header'
-// import { TableNodes } from '@tiptap/extension-table-nodes'
-// import { TableRow } from '@tiptap/extension-table-row'
-// import { TaskList } from '@tiptap/extension-task-list'
-// import { TaskItem } from '@tiptap/extension-task-item'
 // Tools:
 import { History } from '@tiptap/extension-history'
 
@@ -402,10 +391,6 @@ export default DitoTypeComponent.register('markup', {
 
         // Footnotes:
         ...(tools.footnotes ? [Footnotes, Footnote, FootnoteReference] : []),
-
-        // TODO:
-        // nodes.todoList && TodoItem,
-        // nodes.todoList && TodoList,
 
         // Tools: `schema.tools`
         tools.history && History,

@@ -78,8 +78,10 @@ export default DitoTypeComponent.register('select', {
 
   data() {
     return {
-      // Disable lazy-population for now.
-      // TODO: Set to `false` Once lineto e2e tests address their issues.
+      // Lazy population of the options, on focus or mousedown, is disabled
+      // since 2019, as lineto's e2e tests chose options without focusing the
+      // select first, and found none.
+      // TODO: Re-enable it with `false` once e2e tests can handle it.
       populate: true
     }
   },
