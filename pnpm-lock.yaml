@@ -285,7 +285,7 @@ importers:
         version: 17.6.0
       objection:
         specifier: ^3.3.0
-        version: 3.3.0(knex@3.3.0(pg@8.23.1)(supports-color@7.2.0))
+        version: 3.5.0(knex@3.3.0(pg@8.23.1)(supports-color@7.2.0))
       pg:
         specifier: ^8.23.1
         version: 8.23.1
@@ -671,7 +671,7 @@ importers:
         version: 3.3.0(pg@8.23.1)(supports-color@7.2.0)
       objection:
         specifier: ^3.3.0
-        version: 3.3.0(knex@3.3.0(pg@8.23.1)(supports-color@7.2.0))
+        version: 3.5.0(knex@3.3.0(pg@8.23.1)(supports-color@7.2.0))
       typescript:
         specifier: ^6.0.3
         version: 6.0.3
@@ -727,7 +727,7 @@ importers:
         version: 3.3.0(pg@8.23.1)(supports-color@10.2.2)
       objection:
         specifier: ^3.3.0
-        version: 3.3.0(knex@3.3.0(pg@8.23.1)(supports-color@10.2.2))
+        version: 3.5.0(knex@3.3.0(pg@8.23.1)(supports-color@10.2.2))
       vitest:
         specifier: ^5.0.3
         version: 5.0.3(@types/node@26.6.4)(@vitest/coverage-v8@5.0.3)(happy-dom@20.14.5)(vite@8.3.4(@types/node@26.6.4)(sass@1.105.1)(yaml@2.9.1))
@@ -4599,11 +4599,11 @@ packages:
     resolution: {integrity: sha512-gXah6aZrcUxjWg2zR2MwouP2eHlCBzdV4pygudehaKXSGW4v2AsRQUK+lwwXhii6KFZcunEnmSUoYp5CXibxtA==}
     engines: {node: '>= 0.4'}
 
-  objection@3.3.0:
-    resolution: {integrity: sha512-cgYAcFTl5y3t50zFkvuTFg8y6iwxjdAi3M+RVliT3IBLhC4ItRZwd3GW3gJCAJ+mPXrFzdnsMMgnQZTbW+o3Bw==}
+  objection@3.5.0:
+    resolution: {integrity: sha512-uHKovRPeQX/h6u3yyBB+rWary9Q/Phr6epgiotioqTuive4PjWOyRvjrRT9GALetQCNMvcrymXy5s44AbsQLpQ==}
     engines: {node: '>=14.0.0'}
     peerDependencies:
-      knex: '>=1.0.1'
+      knex: '>=2.3.0'
 
   obug@2.2.1:
     resolution: {integrity: sha512-XrsrhT5sybtKI6wakr2SPOlGZWWYbUXZ7a0jT8/QOeAPau+1X/bSegNe5YR75oJmEZQbKningirmGOEJCIk61Q==}
@@ -10311,14 +10311,14 @@ snapshots:
       define-properties: 1.2.1
       es-object-atoms: 1.1.2
 
-  objection@3.3.0(knex@3.3.0(pg@8.23.1)(supports-color@10.2.2)):
+  objection@3.5.0(knex@3.3.0(pg@8.23.1)(supports-color@10.2.2)):
     dependencies:
       ajv: 8.20.0
       ajv-formats: 3.0.1
       db-errors: 0.2.3
       knex: 3.3.0(pg@8.23.1)(supports-color@10.2.2)
 
-  objection@3.3.0(knex@3.3.0(pg@8.23.1)(supports-color@7.2.0)):
+  objection@3.5.0(knex@3.3.0(pg@8.23.1)(supports-color@7.2.0)):
     dependencies:
       ajv: 8.20.0
       ajv-formats: 3.0.1
