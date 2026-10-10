@@ -12,6 +12,7 @@
       :schema="treeSchema"
       :dataPath="treeDataPath"
       :data="treeData"
+      :path="treePath"
       :draggable="draggable"
       :open="true"
       @change-children="changeChildren"
@@ -28,6 +29,7 @@ import DitoTypeComponent from '../DitoTypeComponent.js'
 import SourceMixin from '../mixins/SourceMixin.js'
 import { resolveSchemaComponents } from '../utils/schema/setup.js'
 import { hasFormSchema, getFormSchemas } from '../utils/schema/lookup.js'
+import { isObjectSource } from '../utils/schema/structure.js'
 import { updateOrder } from '../utils/schema/data.js'
 import { getParentDataPath } from '../utils/data.js'
 import { isPathWithin } from '../utils/route.js'
@@ -44,14 +46,25 @@ export default DitoTypeComponent.register(
 
     computed: {
       path() {
-        // Accessed from DitoTreeItem through `sourceComponent.path`:
-        return this.formComponent?.path
+        // The path of the route component of the tree, in a form or a view,
+        // which the edit routes of the items continue. Accessed from
+        // DitoTreeItem through `sourceComponent.path`:
+        return this.routeComponent.path
+      },
+
+      relativeSourcePath() {
+        // The path of the tree within `path`, as in its routes, which is empty
+        // in single-component views, see `DitoView.getChildPath()`. All
+        // `getChildPath()` implementations return paths starting with `path`:
+        return this.routeComponent
+          .getChildPath(this.schema.path)
+          .slice(this.path.length)
       },
 
       editPath() {
         // Accessed from DitoTreeItem through `sourceComponent.editPath`:
-        const path = this.$route.path.slice(this.path?.length)
-        return isPathWithin(path, `/${this.schema.path}`) ? path : ''
+        const path = this.$route.path.slice(this.path.length)
+        return isPathWithin(path, this.relativeSourcePath) ? path : ''
       },
 
       treeData() {
@@ -68,6 +81,13 @@ export default DitoTypeComponent.register(
           : this.dataPath
       },
 
+      treePath() {
+        // The routes of the children of tree objects continue the path of the
+        // object, see `SourceMixin.processSchema()`. The root item of tree
+        // lists wraps the list, which brings its own path, see `treeSchema`.
+        return this.isListSource ? '' : this.relativeSourcePath
+      },
+
       treeSchema() {
         return this.isListSource
           ? {
@@ -81,16 +101,23 @@ export default DitoTypeComponent.register(
 
       hasEditableForms() {
         const hasEditableForms = schema => {
+          const hasForm = hasFormSchema(schema)
           return (
-            hasFormSchema(schema) && (
+            (
+              hasForm &&
               this.getSchemaValue('editable', {
                 type: Boolean,
                 default: false,
                 schema
-              }) || (
-                schema.children &&
-                hasEditableForms(schema.children)
-              )
+              })
+            ) ||
+            // Object sources without forms of their own, e.g. tree objects,
+            // can still have children with editable forms, see
+            // `SourceMixin.processSchema()`.
+            (
+              (hasForm || isObjectSource(schema)) &&
+              !!schema.children &&
+              hasEditableForms(schema.children)
             )
           )
         }

@@ -749,11 +749,11 @@ export default {
     if (process) {
       await process(childRoutes, level + 1)
     }
+    // Lists in single-component-views (level === 0) use their view's path,
+    // while all others need their path prefixed with the parent's path:
+    const sourcePath = level === 0 ? '' : schema.path
     // Inlined forms don't need to actually add routes.
     if (hasFormSchema(schema) && !inlined) {
-      // Lists in single-component-views (level === 0) use their view's path,
-      // while all others need their path prefixed with the parent's path:
-      const sourcePath = level === 0 ? '' : schema.path
       const formRoute = {
         path: getPathWithParam(
           sourcePath,
@@ -808,6 +808,23 @@ export default {
             }
           })
         }
+      }
+    } else if (!inlined && isObjectSource(schema)) {
+      // Object sources without forms, e.g. tree objects, can still have
+      // children with forms, see `DitoTypeTreeList.processSchema()`. Without
+      // a form route to nest their routes in, add them under the source path.
+      // List sources need their form route for the id param of their items.
+      for (const childRoute of childRoutes) {
+        routes.push({
+          ...childRoute,
+          path: sourcePath
+            ? `${sourcePath}/${childRoute.path}`
+            : childRoute.path,
+          meta: {
+            ...childRoute.meta,
+            flatten
+          }
+        })
       }
     }
   },
