@@ -245,6 +245,22 @@ test.describe('component screenshots', () => {
     await expectScreenshot(page, 'tree-focus.png')
   })
 
+  test('active tree item focus', async ({ page, url }) => {
+    await openProject(page, url, 'Planning')
+    await page
+      .locator('.dito-tree-header')
+      .filter({ hasText: 'Research' })
+      .getByRole('link', { name: 'Edit' })
+      .click()
+    await page.getByRole('tab', { name: 'Planning', exact: true }).click()
+    await expect(page.getByLabel('Phase Name')).toHaveValue('Research')
+    await focusByKeyboard(
+      page,
+      page.getByRole('button', { name: 'Research', exact: true })
+    )
+    await expectScreenshot(page, 'tree-active-focus.png')
+  })
+
   for (const width of [900, 640]) {
     test(`narrow form ${width}`, async ({ page, url }) => {
       await page.setViewportSize({ width, height: 1000 })

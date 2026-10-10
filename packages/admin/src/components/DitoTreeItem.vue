@@ -439,6 +439,10 @@ export default DitoComponent.component('DitoTreeItem', {
         > .dito-chevron::before {
           color: $color-white;
         }
+
+        &:focus-visible {
+          @include focus-ring($color-white);
+        }
       }
 
       > * > .dito-tree-label {
