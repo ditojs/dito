@@ -132,8 +132,12 @@ export class CollectionController extends Controller {
     // as overrides pass on `ctx` and `modify` to `super.get()`. Overrides
     // may call `modify` without `trx`, so lock with `ctx.transaction`, the
     // transaction that `execute()` runs the query in.
+    // Call the handler with the member actions object as `this`, as routed
+    // calls do, see `ControllerAction#callHandler()`, so overrides can rely on
+    // `this.controller` and sibling actions. One-to-one relations have no
+    // member actions, so fall back to the controller there.
     return this.#memberGetHandler.call(
-      this,
+      this.isOneToOne ? this : this.member,
       ctx.extend({ filteredQuery: query }),
       builder => {
         this.setupQuery(builder, base)

@@ -163,11 +163,59 @@ class UnarchivedNamedNotes extends UnarchivedNotesBase {
   } as any
 }
 
+// Hides the notes named by a controller field from all member lookups, read
+// in the `member.get` override through `this.controller`, as routed handlers
+// receive the member actions object as `this`, not the controller.
+class ConfiguredNotes extends ModelController<Note> {
+  override modelClass = Note
+  hiddenName = 'Archived'
+
+  override member: ModelControllerActions<ConfiguredNotes> = {
+    'get'(ctx: any, modify: any) {
+      const { hiddenName } = this.controller
+      return super.get(ctx, (query: any) => {
+        query.whereNot('name', hiddenName)
+        query.modify(modify)
+      })
+    },
+
+    'get name': {
+      parameters: {
+        note: {
+          from: 'member'
+        }
+      },
+      handler(ctx: unknown, { note }: { note: Note }) {
+        return { name: note.name }
+      }
+    }
+  } as any
+}
+
 describe('Controller members', () => {
   const app = createTestApp({
     models: { Note },
-    controllers: { Notes, ActiveNotes, UnarchivedNotes, UnarchivedNamedNotes }
+    controllers: {
+      Notes,
+      ActiveNotes,
+      UnarchivedNotes,
+      UnarchivedNamedNotes,
+      ConfiguredNotes
+    }
   })
+
+  function createOwnerContext(memberId: number) {
+    return {
+      state: { user: {} },
+      memberId,
+      query: {},
+      filteredQuery: {},
+      transaction: null,
+      extend(object: object) {
+        return Object.setPrototypeOf(object, this)
+      }
+    }
+  }
 
   beforeAll(async () => {
     await createTestDatabase(app)
@@ -268,5 +316,30 @@ describe('Controller members', () => {
       }
     }
     await expect(authorization(ctx)).resolves.toBe(true)
+  })
+
+  it('calls `member.get` with the same `this` in all lookups', async () => {
+    const active = await Note.query().insert({ name: 'Active' })
+    const archived = await Note.query().insert({ name: 'Archived' })
+    const url = `${getAppUrl(app)}/configured-notes`
+    // Routed through `member.get` itself:
+    const getResponse = await fetch(`${url}/${active.id}`)
+    expect(getResponse.status).toBe(200)
+    expect(await getResponse.json()).toMatchObject({ name: 'Active' })
+    expect((await fetch(`${url}/${archived.id}`)).status).toBe(404)
+    // Resolved by `getMember()` for a `from: 'member'` parameter:
+    const nameResponse = await fetch(`${url}/${active.id}/name`)
+    expect(nameResponse.status).toBe(200)
+    expect(await nameResponse.json()).toEqual({ name: 'Active' })
+    expect((await fetch(`${url}/${archived.id}/name`)).status).toBe(404)
+    // Resolved by `getMember()` for an `$owner` check:
+    const controller = app.getController('/configured-notes') as any
+    const authorization = controller.processAuthorize('$owner')
+    await expect(authorization(createOwnerContext(active.id))).resolves.toBe(
+      true
+    )
+    await expect(
+      authorization(createOwnerContext(archived.id))
+    ).rejects.toMatchObject({ status: 404 })
   })
 })
