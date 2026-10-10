@@ -990,6 +990,13 @@ describe('QueryBuilder', () => {
       expect(await Cook.query()).toHaveLength(3)
       expect(await Recipe.query()).toHaveLength(2)
       expect(await Step.query()).toHaveLength(1)
+      // The new step belongs to the existing recipe, and the new recipe to the
+      // new cook, not to the other parent in the array.
+      const edsger = await Cook.query().findOne({ name: 'Edsger' })
+      const bread = await Recipe.query().findOne({ name: 'Banana bread' })
+      expect(bread?.cookId).toBe(edsger?.id)
+      const [step] = await Step.query()
+      expect(step.recipeId).toBe(apple.id)
     })
 
     it('patches single models with patchAndFetch()', async () => {

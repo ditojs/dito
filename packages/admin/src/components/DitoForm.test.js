@@ -431,6 +431,32 @@ describe('DitoForm', () => {
       await flushPromises()
       expect(admin.router.currentRoute.value.path).toBe('/items/7')
     })
+
+    // `setData()` already put the created item in place, see the `$route`
+    // watcher, so opening it doesn't load it again:
+    it('opens the created item without loading it', async () => {
+      const { admin, submit, routeComponent, request } = await mountForm({
+        schema: {
+          components: { title: { type: 'text' } },
+          buttons: { submit: { closeForm: false } }
+        },
+        request: ({ method, data }) =>
+          method === 'post' ? { data: { id: 7, ...data } } : null
+      })
+      await enterValue(admin.wrapper.find('input[name="title"]'), 'Emma')
+      await submit()
+      await settle(routeComponent)
+      expect(admin.router.currentRoute.value.path).toBe('/items/7')
+      expect(admin.getRouteComponent(component => component.isForm)).toBe(
+        routeComponent
+      )
+      expect(routeComponent.isCreating).toBe(false)
+      expect(routeComponent.data).toEqual({ id: 7, title: 'Emma' })
+      const itemRequests = request.mock.calls
+        .map(([{ method = 'get', url }]) => [method, url])
+        .filter(([, url]) => url.startsWith('/items'))
+      expect(itemRequests).toEqual([['post', '/items']])
+    })
   })
 
   describe('selectedTab', () => {

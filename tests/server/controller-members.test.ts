@@ -7,10 +7,29 @@ import { Model, ModelController } from '@ditojs/server'
 import { createTestApp, getAppUrl } from '../utils/app.js'
 import { createTestDatabase } from '../utils/database.js'
 
+// Only owned by the user when not private, to tell the members apart that
+// `$owner` checks receive.
+class Folder extends Model {
+  declare id: number
+  declare name: string
+
+  static override properties: ModelProperties = {
+    name: {
+      type: 'string',
+      required: true
+    }
+  }
+
+  $hasOwner() {
+    return this.name !== 'Private'
+  }
+}
+
 class Note extends Model {
   declare id: number
   declare name: string
   declare done: boolean
+  declare folderId: number | null
 
   static override properties: ModelProperties = {
     name: {
@@ -19,6 +38,18 @@ class Note extends Model {
     },
     done: {
       type: 'boolean'
+    },
+    folderId: {
+      type: 'integer',
+      nullable: true
+    }
+  }
+
+  static override relations: any = {
+    folder: {
+      relation: 'belongsTo',
+      from: 'Note.folderId',
+      to: 'Folder.id'
     }
   }
 
@@ -192,10 +223,33 @@ class ConfiguredNotes extends ModelController<Note> {
   } as any
 }
 
+// Resolves the folder of the notes' one-to-one `folder` relation through a
+// `member.get` override, as one-to-one relations have no member ids. As they
+// have no member actions either, it is called with the controller as `this`.
+class FiledNotes extends ModelController<Note> {
+  override modelClass = Note
+
+  override relations: any = {
+    folder: {
+      relation: {
+        allow: ['get']
+      },
+      member: {
+        get(this: any, ctx: any, modify: any) {
+          return this.execute(ctx, (query: any) =>
+            query.first().throwIfNotFound().modify(modify)
+          )
+        }
+      }
+    }
+  }
+}
+
 describe('Controller members', () => {
   const app = createTestApp({
-    models: { Note },
+    models: { Folder, Note },
     controllers: {
+      FiledNotes,
       Notes,
       ActiveNotes,
       UnarchivedNotes,
@@ -229,6 +283,7 @@ describe('Controller members', () => {
 
   afterEach(async () => {
     await app.knex('Note').del()
+    await app.knex('Folder').del()
   })
 
   it('applies the `query` option of member parameters', async () => {
@@ -341,5 +396,34 @@ describe('Controller members', () => {
     await expect(
       authorization(createOwnerContext(archived.id))
     ).rejects.toMatchObject({ status: 404 })
+  })
+
+  it('resolves `$owner` members of one-to-one relations', async () => {
+    const [shared, hidden] = await Folder.query().insert([
+      { name: 'Shared' },
+      { name: 'Private' }
+    ])
+    const sharedNote = await Note.query().insert({
+      name: 'Shared',
+      folderId: shared.id
+    })
+    const hiddenNote = await Note.query().insert({
+      name: 'Private',
+      folderId: hidden.id
+    })
+    const parent = app.getController('/filed-notes') as any
+    const controller = parent.relations.folder
+    expect(controller.isOneToOne).toBe(true)
+    const authorization = controller.processAuthorize('$owner')
+    const createContext = (noteId: number) => ({
+      ...createOwnerContext(undefined as any),
+      params: { id: noteId }
+    })
+    await expect(authorization(createContext(sharedNote.id))).resolves.toBe(
+      true
+    )
+    await expect(authorization(createContext(hiddenNote.id))).resolves.toBe(
+      false
+    )
   })
 })
