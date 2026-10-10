@@ -213,17 +213,19 @@ export default DitoComponent.component('DitoTreeItem', {
       const { childrenSchema, childrenList } = this
       if (childrenSchema && childrenList) {
         const { editPath } = this.sourceComponent
-        const childrenOpen = !this.path && childrenSchema.open
         // Build a children list with child meta information for the template.
+        // `open` only reflects the edit path, so that items closed by the user
+        // reopen when they come into it. `schema.open` is applied in `data()`.
         return childrenList.map((data, index) => {
           const path = (
             childrenSchema.path &&
             `${this.path}/${childrenSchema.path}/${index}`
           )
+          // Only count as "in edit path" when it's not the full edit path.
           const open = (
-            childrenOpen ||
-            // Only count as "in edit path" when it's not the full edit path.
-            !!path && editPath !== path && isPathWithin(editPath, path)
+            !!path &&
+            editPath !== path &&
+            isPathWithin(editPath, path)
           )
           const active = editPath === path
           return { data, path, open, active }

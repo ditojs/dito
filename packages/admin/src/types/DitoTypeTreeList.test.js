@@ -125,6 +125,41 @@ describe('DitoTypeTreeList', () => {
     ])
   })
 
+  it('reopens closed items of `open` trees that come into the edit path', async () => {
+    const schema = createSiteSchema({ open: true })
+    schema.components.pages.children.editable = true
+    const { admin, findField } = await mountForm({ schema, data: site })
+    const about = findField('pages').findAll('.dito-tree-branch')[0]
+    expect(about.attributes('aria-expanded')).toBe('true')
+    await about.trigger('click')
+    await flushPromises()
+    expect(about.attributes('aria-expanded')).toBe('false')
+    await admin.navigate('/items/1/pages/0/subpages/1')
+    expect(about.attributes('aria-expanded')).toBe('true')
+  })
+
+  it('opens the items of `open` trees without edit routes', async () => {
+    const { findField } = await mountForm({
+      schema: {
+        components: {
+          pages: {
+            type: 'tree-list',
+            itemLabel: 'title',
+            open: true,
+            children: { name: 'subpages', itemLabel: 'title', open: true }
+          }
+        }
+      },
+      data: site
+    })
+    expect(getLabels(findField('pages'))).toEqual([
+      'About',
+      'Team',
+      'History',
+      'Contact'
+    ])
+  })
+
   it('opens only the items whose path contains the edit path', async () => {
     const schema = createSiteSchema({ editable: true })
     const pages = Array.from({ length: 11 }, (_, index) => ({
