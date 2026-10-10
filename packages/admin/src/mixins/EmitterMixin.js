@@ -94,8 +94,10 @@ export default {
       const errors = []
       // Iterate over the live `callbacks`, so that callbacks added or removed
       // during the emit are respected.
-      for (let index = 0; index < callbacks.length; index++) {
+      let index = 0
+      while (index < callbacks.length) {
         const callback = callbacks[index]
+        const nextCallback = callbacks[index + 1]
         try {
           const callbackResult = await callback.apply(this, args)
           if (callbackResult !== undefined) {
@@ -104,11 +106,16 @@ export default {
         } catch (error) {
           errors.push(error)
         }
-        // A callback removed during the call, e.g. this one through `once()`,
-        // moved the following ones down by one, so look at its index again:
-        if (callbacks[index] !== callback) {
-          index--
-        }
+        // Callbacks removed during the call, e.g. this one through `once()` or
+        // others through `off()` in concurrent emits, moved the following ones
+        // down, so continue with the next callback wherever it ended up. New
+        // callbacks are only appended, so it can't have moved up. If it was
+        // removed itself, continue with the one now following this callback.
+        const isInPlace = callbacks[index] === callback
+        const nextIndex = nextCallback
+          ? callbacks.lastIndexOf(nextCallback, index + 1)
+          : -1
+        index = nextIndex !== -1 ? nextIndex : isInPlace ? index + 1 : index
       }
       if (errors.length > 0) {
         throw new AggregateError(

@@ -258,6 +258,58 @@ describe('EmitterMixin', () => {
       expect(removedWhileAwaiting).not.toHaveBeenCalled()
     })
 
+    it('calls the next callback after removing an earlier one and itself', async () => {
+      const emitter = createEmitter()
+      const earlier = vi.fn()
+      const next = vi.fn()
+      const removing = () => {
+        emitter.off('load', earlier)
+        emitter.off('load', removing)
+      }
+      emitter.on('load', earlier)
+      emitter.on('load', removing)
+      emitter.on('load', next)
+      await emitter.emit('load')
+      expect(earlier).toHaveBeenCalledOnce()
+      expect(next).toHaveBeenCalledOnce()
+    })
+
+    it('skips the next callback after removing it and itself', async () => {
+      const emitter = createEmitter()
+      const removed = vi.fn()
+      const last = vi.fn()
+      const removing = () => {
+        emitter.off('load', removed)
+        emitter.off('load', removing)
+      }
+      emitter.on('load', removing)
+      emitter.on('load', removed)
+      emitter.on('load', last)
+      await emitter.emit('load')
+      expect(removed).not.toHaveBeenCalled()
+      expect(last).toHaveBeenCalledOnce()
+    })
+
+    it('calls the next callback after earlier ones are removed while awaiting', async () => {
+      const emitter = createEmitter()
+      const first = vi.fn()
+      const second = vi.fn()
+      const next = vi.fn()
+      let resolveAwaiting
+      const awaiting = () => new Promise(resolve => (resolveAwaiting = resolve))
+      emitter.on('load', first)
+      emitter.on('load', second)
+      emitter.on('load', awaiting)
+      emitter.on('load', next)
+      const promise = emitter.emit('load')
+      await vi.waitFor(() => expect(resolveAwaiting).toBeDefined())
+      emitter.off('load', first)
+      emitter.off('load', second)
+      resolveAwaiting()
+      await promise
+      expect(next).toHaveBeenCalledOnce()
+    })
+
     it('calls a callback registered twice twice', async () => {
       const emitter = createEmitter()
       const callback = vi.fn()
