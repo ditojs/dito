@@ -187,7 +187,32 @@ parameters: {
 
 #### Receiving the resolved `member` as a parameter
 
-TODO: Docs
+In member actions of model controllers, a parameter with `from: 'member'`
+receives the model instance of the requested member, fetched through the
+controller's `member.get` action, see
+[Overriding `member.get`](#overriding-memberget). It responds with a 404 error
+if no member is found. These options control the lookup:
+
+| Option      | Description
+| ----------- | ----------------------------------------------------------------
+| `query`     | The query parameters to fetch the member with, e.g. `{ scope: 'published' }`. The query parameters of the request itself are not applied.
+| `forUpdate` | Locks the member with `forUpdate()` until the end of the transaction. This requires a transaction, e.g. through `transacted: true` on the action.
+| `modify`    | A function that receives the query builder to modify the query.
+
+```js
+'post publish': {
+  transacted: true,
+  parameters: {
+    instance: {
+      from: 'member',
+      forUpdate: true
+    }
+  },
+  handler(ctx, { instance }) {
+    return instance.$query(ctx.transaction).patchAndFetch({ published: true })
+  }
+}
+```
 
 #### `action.parameters` Validation Options
 
@@ -524,6 +549,55 @@ export class MyModels extends ModelController {
         results,
         additional: `Whatever you'd like to send back, really`
       }
+    }
+  }
+}
+```
+
+### Overriding `member.get`
+
+The `member.get` action does not only respond to `GET` requests of members, it
+also fetches the members that `from: 'member'` parameters receive, see
+[Receiving the resolved `member` as a parameter](#receiving-the-resolved-member-as-a-parameter),
+and the members that `'$owner'` authorizations check. Overriding it therefore
+controls which members can be accessed through any of the member actions, even
+when `member.get` itself is not listed in `allow`.
+
+Overrides of `member.get` are called with `(ctx, modify)`, and with the
+`member` actions object as `this`, which inherits from the controller and
+provides it as `this.controller`:
+
+- `ctx`: The request context, with the query parameters to fetch the member
+  with in `ctx.filteredQuery`, and its id in `ctx.memberId`. For lookups of
+  `from: 'member'` parameters, `ctx.filteredQuery` holds their `query` option,
+  and it is empty for `'$owner'` authorizations.
+- `modify`: A function that receives the query builder to apply the `scope` of
+  the action that requests the member, the `modify` option of `from: 'member'`
+  parameters, and their `forUpdate` lock. It is `undefined` for `GET` requests
+  of the member.
+
+Overrides should pass on `ctx` and `modify` to `super.get()`, or to
+`this.fetchMember()` along with `ctx.memberId` and `ctx.filteredQuery`, so that
+the query parameters, scopes and locks still apply:
+
+```js
+import { ModelController } from '@ditojs/server'
+import { MyModel } from './models/index.js'
+
+export class MyModels extends ModelController {
+  modelClass = MyModel
+  hiddenName = 'Archived'
+
+  member = {
+    allow: ['get'],
+
+    // Hides the archived members from all member actions:
+    get(ctx, modify) {
+      const { hiddenName } = this.controller
+      return super.get(ctx, query => {
+        query.whereNot('name', hiddenName)
+        query.modify(modify)
+      })
     }
   }
 }
