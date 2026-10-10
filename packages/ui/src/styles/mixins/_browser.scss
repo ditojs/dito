@@ -11,10 +11,10 @@
   @if meta.type-of($browsers) != 'list' {
     // Convert `$browsers` to a list, so that we don't accidentally iterate over
     // the properties of maps further down in `@each`.
-    // TODO: Switch to `$browsers: [$browsers]` once we switched to stylelint
     $browsers: list.append((), $browsers);
   }
-  // TODO: Investigate why using `[]` instead if `()` yields different results.
+  // Use `()` rather than `[]`: a bracketed list would keep its brackets when
+  // interpolated into the selectors below.
   $selectors: ();
   @each $entry in $browsers {
     $browser: null;
