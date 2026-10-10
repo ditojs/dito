@@ -1,6 +1,6 @@
 import { vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
-import { mountAdmin } from '../test/mount.js'
+import { mountAdmin, mountSchema, mountForm } from '../test/mount.js'
 
 describe('DitoView', () => {
   it('gives each view its own data', async () => {
@@ -163,6 +163,91 @@ describe('DitoView', () => {
       expect(view.mainComponent).toBe(null)
       expect(view.mainSchemaComponent.sourceComponent).toBe(null)
       expect(view.getChildPath('books')).toBe('/library/books')
+    })
+  })
+
+  // The components of views hold their data paths relative to the view's data,
+  // which is their root item also when the view has no resource.
+  describe('root items of components', () => {
+    const components = {
+      venue: { type: 'text' },
+      headline: {
+        type: 'text',
+        if: ({ rootItem }) => !!rootItem?.venue
+      },
+      address: {
+        type: 'section',
+        nested: true,
+        components: { city: { type: 'text' } }
+      }
+    }
+    const data = {
+      venue: 'Bakery',
+      headline: 'Fresh',
+      address: { city: 'Basel' }
+    }
+
+    function expectRootItems(view, getComponent) {
+      const venue = getComponent('venue')
+      expect(venue.rootData).toBe(view.data)
+      expect(venue.rootItem).toBe(view.data)
+      expect(venue.context.rootItem).toBe(view.data)
+      expect(venue.context.item).toBe(view.data)
+      // The `if` of components sees the root item before they are rendered:
+      expect(getComponent('headline')).not.toBe(null)
+      const city = getComponent('address/city')
+      expect(city.context.rootItem).toBe(view.data)
+      expect(city.context.item).toBe(view.data.address)
+      expect(city.context.parentItem).toBe(view.data)
+      expect(city.parentData).toBe(view.data)
+    }
+
+    it('are the data of multi-component views without resources', async () => {
+      const { routeComponent: view, getComponent } = await mountSchema({
+        schema: { components },
+        data
+      })
+      expectRootItems(view, getComponent)
+    })
+
+    it('are the data of single-component views without resources', async () => {
+      const { routeComponent: view, getComponent } = await mountSchema({
+        schema: {
+          component: { type: 'section', components }
+        },
+        data
+      })
+      expectRootItems(view, getComponent)
+    })
+
+    it('are the data of views with resources', async () => {
+      const { routeComponent: view, getComponent } = await mountSchema({
+        schema: {
+          components: {
+            ...components,
+            books: {
+              type: 'list',
+              resource: { path: 'books' },
+              columns: { title: {} }
+            }
+          }
+        },
+        data,
+        request: () => ({ data: [] })
+      })
+      expect(view.providesData).toBe(true)
+      expectRootItems(view, getComponent)
+    })
+
+    it('are the data of forms with resources', async () => {
+      const { routeComponent: form, getComponent } = await mountForm({
+        schema: { components },
+        data
+      })
+      const venue = getComponent('venue')
+      expect(venue.rootItem).toBe(form.data)
+      expect(venue.context.rootItem).toBe(form.data)
+      expect(getComponent('address/city').context.parentItem).toBe(form.data)
     })
   })
 })
