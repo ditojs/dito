@@ -14,7 +14,7 @@ export default {
     // for a given event.
 
     // Also adds proper handling of async events, through an async emit() that
-    // queues the events, see below.
+    // awaits the callbacks, see below.
     on(event, callback) {
       if (isArray(event)) {
         for (const ev of event) {
@@ -26,10 +26,7 @@ export default {
         }
       } else {
         const listeners = (this.listeners ||= Object.create(null))
-        const { callbacks } = (listeners[event] ||= {
-          callbacks: [],
-          queue: []
-        })
+        const { callbacks } = (listeners[event] ||= { callbacks: [] })
         callbacks.push(callback)
       }
       return this
@@ -80,61 +77,37 @@ export default {
       return this
     },
 
-    emit(event, ...args) {
-      // Only queue event if there actually are listeners for it.
-      const entry = this.listeners?.[event]
-      if (!entry) {
-        // Make sure it's thenable even if there are no listeners.
-        return Promise.resolve()
+    // Calls the callbacks of the event one after the other, awaiting each, and
+    // resolves with the last result that isn't undefined, or rejects with an
+    // `AggregateError` of all errors thrown. Separate emits don't wait for
+    // each other, so that a callback can await an emit of its own event
+    // without waiting for itself.
+    async emit(event, ...args) {
+      const callbacks = this.listeners?.[event]?.callbacks
+      if (!callbacks) {
+        return
       }
-      const { queue, callbacks } = entry
-      // Handles the queued events one after the other, each with all its
-      // callbacks, so that the async callbacks of successive emits of the event
-      // don't overlap.
-      // NOTE: A callback that awaits the emit of the same event on the same
-      // component would wait for itself, as its event is queued after its own.
-      const handleQueue = async () => {
-        // The event at the head of the queue only gets removed once all its
-        // callbacks are done, so that `emit()` calls in the meantime only
-        // queue their events.
-        const { args, resolve } = queue[0]
-        let result
-        const errors = []
-        // Iterate over a copy, since callbacks registered with `once()` remove
-        // themselves from `callbacks` while it is being iterated.
-        for (const callback of [...callbacks]) {
-          try {
-            const res = await callback.apply(this, args)
-            if (res !== undefined) {
-              result = res
-            }
-          } catch (error) {
-            errors.push(error)
+      let result
+      const errors = []
+      // Iterate over a copy, since callbacks registered with `once()` remove
+      // themselves from `callbacks` while it is being iterated.
+      for (const callback of [...callbacks]) {
+        try {
+          const callbackResult = await callback.apply(this, args)
+          if (callbackResult !== undefined) {
+            result = callbackResult
           }
-        }
-        resolve(
-          errors.length > 0
-            ? Promise.reject(
-                new AggregateError(
-                  errors,
-                  `Errors during event handler for '${event}'`
-                )
-              )
-            : result
-        )
-        queue.shift()
-        if (queue.length > 0) {
-          handleQueue()
+        } catch (error) {
+          errors.push(error)
         }
       }
-      return new Promise(resolve => {
-        queue.push({ args, resolve })
-        // Only start handling the queue if it was empty, otherwise the event
-        // is handled once the events queued before it are done.
-        if (queue.length === 1) {
-          handleQueue()
-        }
-      })
+      if (errors.length > 0) {
+        throw new AggregateError(
+          errors,
+          `Errors during event handler for '${event}'`
+        )
+      }
+      return result
     },
 
     // Checks if the component has listeners for a given event type:

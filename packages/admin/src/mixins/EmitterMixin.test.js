@@ -144,25 +144,50 @@ describe('EmitterMixin', () => {
       expect(await emitter.emit('load')).toBe('second')
     })
 
-    it('queues events until the previous ones are handled', async () => {
+    it('runs the callbacks of one emit one after the other', async () => {
       const emitter = createEmitter()
       const calls = []
-      let resolveFirst
+      emitter.on('load', async () => {
+        calls.push('start first')
+        await Promise.resolve()
+        calls.push('end first')
+      })
+      emitter.on('load', () => calls.push('second'))
+      await emitter.emit('load')
+      expect(calls).toEqual(['start first', 'end first', 'second'])
+    })
+
+    it('runs separate emits of the same event concurrently', async () => {
+      const emitter = createEmitter()
+      const calls = []
+      const resolvers = {}
       emitter.on('load', async value => {
         calls.push(`start ${value}`)
-        if (value === 1) {
-          await new Promise(resolve => (resolveFirst = resolve))
-        }
+        await new Promise(resolve => (resolvers[value] = resolve))
         calls.push(`end ${value}`)
         return value
       })
       const first = emitter.emit('load', 1)
       const second = emitter.emit('load', 2)
-      await vi.waitFor(() => expect(resolveFirst).toBeTypeOf('function'))
-      expect(calls).toEqual(['start 1'])
-      resolveFirst()
-      expect(await Promise.all([first, second])).toEqual([1, 2])
-      expect(calls).toEqual(['start 1', 'end 1', 'start 2', 'end 2'])
+      // The second emit doesn't wait for the first one to be handled.
+      await vi.waitFor(() => expect(calls).toEqual(['start 1', 'start 2']))
+      resolvers[2]()
+      expect(await second).toBe(2)
+      resolvers[1]()
+      expect(await first).toBe(1)
+      expect(calls).toEqual(['start 1', 'start 2', 'end 2', 'end 1'])
+    })
+
+    it('handles an emit awaited by a callback of the same event', async () => {
+      const emitter = createEmitter()
+      emitter.on('load', async value =>
+        value > 0 ? (await emitter.emit('load', value - 1)) + 1 : 0
+      )
+      // Race against a timer, so that a deadlock fails instead of hanging.
+      const timeout = new Promise(resolve =>
+        setTimeout(() => resolve('timeout'), 100)
+      )
+      expect(await Promise.race([emitter.emit('load', 2), timeout])).toBe(2)
     })
 
     it('calls all callbacks and rejects with their errors', async () => {
@@ -188,7 +213,7 @@ describe('EmitterMixin', () => {
       expect(after).toHaveBeenCalledOnce()
     })
 
-    it('handles queued events after a failed one', async () => {
+    it('handles separate emits independently of a failed one', async () => {
       const emitter = createEmitter()
       emitter.on('load', value => {
         if (value === 1) throw new Error('Failed')
