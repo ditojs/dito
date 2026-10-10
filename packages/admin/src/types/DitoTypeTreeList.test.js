@@ -310,6 +310,29 @@ describe('DitoTypeTreeList', () => {
       )
     })
 
+    it('keeps the children moved while their parent form is open', async () => {
+      const { admin, findField, data, settle } = await mountForm({
+        schema: createDraggableSiteSchema(),
+        data: site
+      })
+      await admin.navigate('/items/1/pages/0')
+      await settle()
+      await findHandle(findField('pages'), 'Team').trigger('keydown', {
+        key: 'ArrowDown',
+        altKey: true
+      })
+      await flushPromises()
+      await admin.wrapper
+        .find('.dito-buttons--main button[type="submit"]')
+        .trigger('click')
+      await settle()
+      expect(admin.router.currentRoute.value.path).toBe('/items/1')
+      expect(data.pages[0].subpages).toEqual([
+        { title: 'History' },
+        { title: 'Team' }
+      ])
+    })
+
     it('keeps the form of a later child open when removing one', async () => {
       stubConfirm()
       const { admin, findField, data } = await mountForm({
@@ -474,6 +497,61 @@ describe('DitoTypeTreeList', () => {
           'Imprint'
         )
         expect(getLabels(findField(name))).toEqual(['About', 'Imprint'])
+      }
+    )
+
+    it.each([
+      {
+        type: 'tree list',
+        schema: createSiteSchema({ editable: true }),
+        data: site,
+        name: 'pages',
+        pagesPath: 'pages'
+      },
+      {
+        type: 'tree object',
+        schema: siteSchema,
+        data: siteData,
+        name: 'site',
+        pagesPath: 'site/pages'
+      }
+    ])(
+      'keeps the children of a $type item when applying its form',
+      async ({ schema, data, name, pagesPath }) => {
+        const result = await mountForm({
+          schema,
+          data,
+          request: ({ data }) => ({ data: { id: 1, ...data } })
+        })
+        const { admin, findField, settle, submit } = result
+        const subpages = getValueAtDataPath(data, `${pagesPath}/0/subpages`)
+        await admin.navigate(`/items/1/${pagesPath}/0`)
+        await settle()
+        await enterValue(
+          admin.wrapper.find(`input[name="${pagesPath}/0/title"]`),
+          'Company'
+        )
+        await admin.wrapper
+          .find('.dito-buttons--main button[type="submit"]')
+          .trigger('click')
+        await settle()
+        expect(admin.router.currentRoute.value.path).toBe('/items/1')
+        expect(getValueAtDataPath(result.data, `${pagesPath}/0`)).toEqual({
+          title: 'Company',
+          subpages
+        })
+        await findField(name).findAll('.dito-tree-branch')[0].trigger('click')
+        await flushPromises()
+        expect(getLabels(findField(name))).toEqual([
+          'Company',
+          ...subpages.map(page => page.title),
+          'Contact'
+        ])
+        const submittedData = await submit()
+        expect(getValueAtDataPath(submittedData, `${pagesPath}/0`)).toEqual({
+          title: 'Company',
+          subpages
+        })
       }
     )
 
