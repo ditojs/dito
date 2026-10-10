@@ -21,7 +21,7 @@ class Member extends UserModel {
   }
 }
 
-class Recipe extends Model {
+class Cookbook extends Model {
   declare id: number
   declare title: string
   declare ownerId: number
@@ -33,6 +33,39 @@ class Recipe extends Model {
     },
     ownerId: {
       type: 'integer'
+    }
+  }
+
+  $hasOwner(user: Member) {
+    return this.ownerId === user.id
+  }
+}
+
+class Recipe extends Model {
+  declare id: number
+  declare title: string
+  declare ownerId: number
+  declare cookbookId: number | null
+
+  static override properties: ModelProperties = {
+    title: {
+      type: 'string',
+      required: true
+    },
+    ownerId: {
+      type: 'integer'
+    },
+    cookbookId: {
+      type: 'integer',
+      nullable: true
+    }
+  }
+
+  static override relations: any = {
+    cookbook: {
+      relation: 'belongsTo',
+      from: 'Recipe.cookbookId',
+      to: 'Cookbook.id'
     }
   }
 
@@ -116,11 +149,36 @@ class Recipes extends ModelController<any> {
       }
     }
   }
+
+  // One-to-one relations have no member actions, so their member is the
+  // related model, resolved without a `member.get` override.
+  override relations: any = {
+    cookbook: {
+      relation: {
+        'allow': ['get'],
+        'authorize': {
+          get: '$owner'
+        },
+
+        'get title': {
+          authorize: '$owner',
+          parameters: {
+            cookbook: {
+              from: 'member'
+            }
+          },
+          handler(ctx: any, { cookbook }: any) {
+            return { title: cookbook.title }
+          }
+        }
+      }
+    }
+  }
 }
 
 describe('Controller authorization', () => {
   const app = createTestApp({
-    models: { Member, Recipe },
+    models: { Member, Cookbook, Recipe },
     controllers: { Members, Recipes },
     // Resolve the requesting user from a header, in place of a session.
     async middleware(ctx: any, next: any) {
@@ -182,6 +240,7 @@ describe('Controller authorization', () => {
 
   afterEach(async () => {
     await app.knex('Recipe').del()
+    await app.knex('Cookbook').del()
   })
 
   describe('role-based authorization', () => {
@@ -284,6 +343,45 @@ describe('Controller authorization', () => {
         body: { title: 'Stew' }
       })
       expect(response.status).toBe(404)
+    })
+
+    it('resolves the related model of one-to-one relations', async () => {
+      const cookbook = await Cookbook.query().insert({
+        title: 'Soups',
+        ownerId: cook.id
+      })
+      const recipe = await Recipe.query().insert({
+        title: 'Soup',
+        cookbookId: cookbook.id
+      })
+      const path = `/recipes/${recipe.id}/cookbook`
+      expect((await request(path, guest)).status).toBe(401)
+      const response = await request(path, cook)
+      expect(response.status).toBe(200)
+      expect(response.data).toMatchObject({ title: 'Soups' })
+    })
+
+    it("resolves `from: 'member'` in one-to-one relations", async () => {
+      const cookbook = await Cookbook.query().insert({
+        title: 'Soups',
+        ownerId: cook.id
+      })
+      const recipe = await Recipe.query().insert({
+        title: 'Soup',
+        cookbookId: cookbook.id
+      })
+      const path = `/recipes/${recipe.id}/cookbook/title`
+      expect((await request(path, guest)).status).toBe(401)
+      const response = await request(path, cook)
+      expect(response.status).toBe(200)
+      expect(response.data).toEqual({ title: 'Soups' })
+    })
+
+    it('responds with 404 for empty one-to-one relations', async () => {
+      const recipe = await Recipe.query().insert({ title: 'Soup' })
+      const path = `/recipes/${recipe.id}/cookbook`
+      expect((await request(path, cook)).status).toBe(404)
+      expect((await request(`${path}/title`, cook)).status).toBe(404)
     })
   })
 
