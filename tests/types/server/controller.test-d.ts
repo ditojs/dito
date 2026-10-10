@@ -489,7 +489,7 @@ describe('Member and model class resolution', () => {
       ReturnType<Widgets['resolveModelClass']>
     >().toEqualTypeOf<ModelClass | null>()
     expectTypeOf<Widgets['fetchMember']>().parameter(1).toMatchTypeOf<{
-      id: number | string | (number | string)[]
+      id?: number | string | (number | string)[]
       forUpdate?: boolean
     }>()
     expectTypeOf<ReturnType<Widgets['fetchMember']>>().toEqualTypeOf<

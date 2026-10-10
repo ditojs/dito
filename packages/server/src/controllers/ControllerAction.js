@@ -259,9 +259,12 @@ export default class ControllerAction {
     return filtered
   }
 
-  async getMember(/* ctx, param */) {
-    // This is only defined in `MemberAction`, where it resolves to the member
-    // represented by the given route.
-    return null
+  async getMember(ctx, param) {
+    // Members are resolved by `MemberAction`, from the id in the route. The
+    // collection actions of one-to-one relations address their single related
+    // model though, so resolve it as their member.
+    return this.controller.isOneToOne
+      ? this.controller.getMember(ctx, this, param)
+      : null
   }
 }

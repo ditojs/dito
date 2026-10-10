@@ -190,8 +190,10 @@ parameters: {
 In member actions of model controllers, a parameter with `from: 'member'`
 receives the model instance of the requested member, fetched through the
 controller's `member.get` action, see
-[Overriding `member.get`](#overriding-memberget). It responds with a 404 error
-if no member is found. These options control the lookup:
+[Overriding `member.get`](#overriding-memberget). In the `relation` actions of
+one-to-one relations, which have no member ids, it receives the single related
+model instead. It responds with a 404 error if no member is found, including
+for empty one-to-one relations. These options control the lookup:
 
 | Option      | Description
 | ----------- | ----------------------------------------------------------------
@@ -627,6 +629,11 @@ not the owners of their members.
 
 See [Model Relations](./model-relations.md) for
 more information on the relation's `owner` setting.
+
+One-to-one relations have no member ids, so the single related model serves as
+the member of their `relation` actions: `'$owner'` authorizations check it, and
+`from: 'member'` parameters receive it. Actions that resolve it this way
+respond with a 404 error when the relation is empty.
 
 ### Example
 

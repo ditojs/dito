@@ -224,8 +224,8 @@ class ConfiguredNotes extends ModelController<Note> {
 }
 
 // Resolves the folder of the notes' one-to-one `folder` relation through a
-// `member.get` override, as one-to-one relations have no member ids. As they
-// have no member actions either, it is called with the controller as `this`.
+// `member.get` override. As one-to-one relations have no member actions, it is
+// called with the controller as `this`.
 class FiledNotes extends ModelController<Note> {
   override modelClass = Note
 
