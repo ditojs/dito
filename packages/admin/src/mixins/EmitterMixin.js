@@ -33,12 +33,7 @@ export default {
     },
 
     once(event, callback) {
-      // Concurrent emits each call their own copy of the callbacks, see
-      // `emit()`, so removing `on` doesn't keep a pending emit from calling it.
-      let hasBeenCalled = false
       const on = (...args) => {
-        if (hasBeenCalled) return
-        hasBeenCalled = true
         this.off(event, on)
         return callback.apply(this, args)
       }
@@ -86,7 +81,10 @@ export default {
     // resolves with the last result that isn't undefined, or rejects with an
     // `AggregateError` of all errors thrown. Separate emits don't wait for
     // each other, so that a callback can await an emit of its own event
-    // without waiting for itself.
+    // without waiting for itself. Callbacks added to or removed from the
+    // event's callbacks during the emit are respected, e.g. a callback
+    // registered by an earlier one is called, and one removed by `off()` or
+    // `once()` in a concurrent emit isn't.
     async emit(event, ...args) {
       const callbacks = this.listeners?.[event]?.callbacks
       if (!callbacks) {
@@ -94,9 +92,10 @@ export default {
       }
       let result
       const errors = []
-      // Iterate over a copy, since callbacks registered with `once()` remove
-      // themselves from `callbacks` while it is being iterated.
-      for (const callback of [...callbacks]) {
+      // Iterate over the live `callbacks`, so that callbacks added or removed
+      // during the emit are respected.
+      for (let index = 0; index < callbacks.length; index++) {
+        const callback = callbacks[index]
         try {
           const callbackResult = await callback.apply(this, args)
           if (callbackResult !== undefined) {
@@ -104,6 +103,11 @@ export default {
           }
         } catch (error) {
           errors.push(error)
+        }
+        // A callback removed during the call, e.g. this one through `once()`,
+        // moved the following ones down by one, so look at its index again:
+        if (callbacks[index] !== callback) {
+          index--
         }
       }
       if (errors.length > 0) {

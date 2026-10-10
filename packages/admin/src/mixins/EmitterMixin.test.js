@@ -222,6 +222,51 @@ describe('EmitterMixin', () => {
       expect(after).toHaveBeenCalledOnce()
     })
 
+    it('calls the callbacks registered during the emit', async () => {
+      const emitter = createEmitter()
+      const registeredByCallback = vi.fn()
+      const registeredWhileAwaiting = vi.fn()
+      let resolveFirst
+      emitter.on('load', async () => {
+        emitter.on('load', registeredByCallback)
+        await new Promise(resolve => (resolveFirst = resolve))
+      })
+      const promise = emitter.emit('load')
+      emitter.on('load', registeredWhileAwaiting)
+      resolveFirst()
+      await promise
+      expect(registeredByCallback).toHaveBeenCalledOnce()
+      expect(registeredWhileAwaiting).toHaveBeenCalledOnce()
+    })
+
+    it('skips the callbacks removed during the emit', async () => {
+      const emitter = createEmitter()
+      const removedByCallback = vi.fn()
+      const removedWhileAwaiting = vi.fn()
+      let resolveFirst
+      emitter.on('load', async () => {
+        emitter.off('load', removedByCallback)
+        await new Promise(resolve => (resolveFirst = resolve))
+      })
+      emitter.on('load', removedByCallback)
+      emitter.on('load', removedWhileAwaiting)
+      const promise = emitter.emit('load')
+      emitter.off('load', removedWhileAwaiting)
+      resolveFirst()
+      await promise
+      expect(removedByCallback).not.toHaveBeenCalled()
+      expect(removedWhileAwaiting).not.toHaveBeenCalled()
+    })
+
+    it('calls a callback registered twice twice', async () => {
+      const emitter = createEmitter()
+      const callback = vi.fn()
+      emitter.on('load', callback)
+      emitter.on('load', callback)
+      await emitter.emit('load')
+      expect(callback).toHaveBeenCalledTimes(2)
+    })
+
     it('handles separate emits independently of a failed one', async () => {
       const emitter = createEmitter()
       emitter.on('load', value => {
