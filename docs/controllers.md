@@ -567,7 +567,8 @@ when `member.get` itself is not listed in `allow`.
 
 Overrides of `member.get` are called with `(ctx, modify)`, and with the
 `member` actions object as `this`, which inherits from the controller and
-provides it as `this.controller`:
+provides it as `this.controller`. One-to-one relations have no member actions,
+so there, overrides are called with the controller itself as `this`:
 
 - `ctx`: The request context, with the query parameters to fetch the member
   with in `ctx.filteredQuery`, and its id in `ctx.memberId`. For lookups of
