@@ -13,6 +13,7 @@
       :dataPath="treeDataPath"
       :data="treeData"
       :path="treePath"
+      :childrenPath="treeChildrenPath"
       :draggable="draggable"
       :open="true"
       @change-children="changeChildren"
@@ -91,6 +92,17 @@ export default DitoTypeComponent.register(
         return this.isListSource ? '' : this.relativeSourcePath
       },
 
+      treeChildrenPath() {
+        // The routes of the items of tree lists continue the path of the list,
+        // which is empty in single-component views, while the routes of the
+        // children of tree objects continue the object's path with the path of
+        // the children, see `DitoTreeItem.childrenRoutePath`. Trees without a
+        // route component have no edit routes, see `path`.
+        return this.isListSource && this.routeComponent
+          ? this.relativeSourcePath
+          : null
+      },
+
       treeSchema() {
         return this.isListSource
           ? {
@@ -131,7 +143,7 @@ export default DitoTypeComponent.register(
     methods: {
       // Replaces the children of the tree item that holds them in `data`, as
       // the only writer of the tree, see `DitoTreeItem.changeChildren()`.
-      changeChildren({ data, childrenSchema, path, children }) {
+      changeChildren({ data, childrenSchema, childrenPath, children }) {
         const previousChildren = data[childrenSchema.name]
         updateOrder(childrenSchema, children)
         if (data === this.treeData && this.isListSource) {
@@ -142,7 +154,7 @@ export default DitoTypeComponent.register(
           data[childrenSchema.name] = children
         }
         this.followEditedChild({
-          childrenPath: childrenSchema.path && `${path}/${childrenSchema.path}`,
+          childrenPath,
           previousChildren,
           children
         })
@@ -154,7 +166,7 @@ export default DitoTypeComponent.register(
       followEditedChild({ childrenPath, previousChildren, children }) {
         const prefix = `${childrenPath}/`
         const { editPath } = this
-        if (childrenPath && editPath.startsWith(prefix)) {
+        if (childrenPath !== null && editPath.startsWith(prefix)) {
           const [index, ...rest] = editPath.slice(prefix.length).split('/')
           const newIndex = children.indexOf(previousChildren?.[index])
           if (newIndex !== +index) {

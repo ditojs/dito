@@ -644,5 +644,24 @@ describe('DitoTypeTreeList', () => {
         expect(pageFormComponent.data.title).toBe('Team')
       }
     )
+
+    it('opens the forms of the children of tree lists in a single-component view', async () => {
+      const schema = createSiteSchema({ editable: true })
+      schema.components.pages.children.editable = true
+      const { admin, findField, settle } = await mountSchema({
+        schema: { component: schema.components.pages },
+        data: { test: site.pages }
+      })
+      await findButton(findField('test'), 'Contact', '.dito-button--edit')
+        .trigger('click')
+      await settle()
+      expect(admin.router.currentRoute.value.path).toBe('/test/1')
+      let pageFormComponent = admin.getRouteComponent(it => it.isForm)
+      expect(pageFormComponent.data.title).toBe('Contact')
+      await admin.navigate('/test/0/subpages/1')
+      await settle()
+      pageFormComponent = admin.getRouteComponent(it => it.isForm)
+      expect(pageFormComponent.data.title).toBe('History')
+    })
   })
 })

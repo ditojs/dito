@@ -129,6 +129,10 @@ export default DitoComponent.component('DitoTreeItem', {
     dataPath: { type: String, required: true },
     data: { type: [Array, Object], default: null },
     path: { type: String, default: '' },
+    // The path that the edit routes of the children continue with their
+    // indices, if it differs from the path of the children within `path`, see
+    // `DitoTypeTreeList.treeChildrenPath`.
+    childrenPath: { type: String, default: null },
     open: { type: Boolean, default: false },
     active: { type: Boolean, default: false },
     draggable: { type: Boolean, default: false },
@@ -181,6 +185,17 @@ export default DitoComponent.component('DitoTreeItem', {
       return this.schema.children
     },
 
+    childrenRoutePath() {
+      const { childrenPath, childrenSchema } = this
+      return (
+        childrenPath ?? (
+          childrenSchema?.path
+            ? `${this.path}/${childrenSchema.path}`
+            : null
+        )
+      )
+    },
+
     childrenList() {
       const name = this.childrenSchema?.name
       return name && this.data[name]
@@ -210,17 +225,15 @@ export default DitoComponent.component('DitoTreeItem', {
     },
 
     childrenItems() {
-      const { childrenSchema, childrenList } = this
+      const { childrenSchema, childrenList, childrenRoutePath } = this
       if (childrenSchema && childrenList) {
         const { editPath } = this.sourceComponent
         // Build a children list with child meta information for the template.
         // `open` only reflects the edit path, so that items closed by the user
         // reopen when they come into it. `schema.open` is applied in `data()`.
         return childrenList.map((data, index) => {
-          const path = (
-            childrenSchema.path &&
-            `${this.path}/${childrenSchema.path}/${index}`
-          )
+          const path =
+            childrenRoutePath !== null ? `${childrenRoutePath}/${index}` : ''
           // Only count as "in edit path" when it's not the full edit path.
           const open = (
             !!path &&
@@ -289,7 +302,7 @@ export default DitoComponent.component('DitoTreeItem', {
       this.$emit('changeChildren', {
         data: this.data,
         childrenSchema: this.childrenSchema,
-        path: this.path,
+        childrenPath: this.childrenRoutePath,
         children
       })
     },
