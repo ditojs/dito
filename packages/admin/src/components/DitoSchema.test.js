@@ -393,6 +393,76 @@ describe('DitoSchema', () => {
       expect(admin.router.currentRoute.value.fullPath).toBe('/items/1')
       expect(schemaComponent.selectedTab).toBe('planning')
     })
+
+    // Mounts the admin at `path` directly, as when reloading the page, with
+    // an item form whose tabs differ from those of the forms of its pages.
+    async function mountAdminAt(path) {
+      const tabbedPageForm = {
+        type: 'form',
+        tabs: {
+          content: { type: 'tab', components: { title: { type: 'text' } } },
+          text: { type: 'tab', components: { body: { type: 'textarea' } } }
+        }
+      }
+      const item = { id: 1, title: 'Site', pages: [{ title: 'About' }] }
+      const admin = await mountAdmin({
+        views: {
+          items: {
+            type: 'view',
+            component: {
+              type: 'list',
+              resource: { path: 'items' },
+              form: {
+                type: 'form',
+                tabs: {
+                  details: {
+                    type: 'tab',
+                    components: { title: { type: 'text' } }
+                  },
+                  planning: {
+                    type: 'tab',
+                    components: {
+                      pages: {
+                        type: 'list',
+                        editable: true,
+                        path: 'pages',
+                        form: tabbedPageForm
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        request({ method = 'get', url }) {
+          if (method === 'get' && url === '/items') return { data: [item] }
+          if (method === 'get' && url === '/items/1') return { data: item }
+        }
+      })
+      await admin.navigate(path)
+      const getForms = () =>
+        appState.routeComponents.filter(component => component.isForm)
+      await settle(getForms()[0])
+      return { admin, getForms }
+    }
+
+    it('selects the default tab after closing a reloaded form', async () => {
+      const { admin, getForms } = await mountAdminAt('/items/1/pages/0#text')
+      const [itemForm, pageForm] = getForms()
+      const schemaComponent = itemForm.mainSchemaComponent
+      expect(pageForm.mainSchemaComponent.selectedTab).toBe('text')
+      await pageForm.close()
+      await flushPromises()
+      expect(admin.router.currentRoute.value.fullPath).toBe('/items/1')
+      // The tab of the page form isn't one of the item form's tabs:
+      expect(schemaComponent.selectedTab).toBe('details')
+    })
+
+    it('selects the tab of the route when loaded directly', async () => {
+      const { getForms } = await mountAdminAt('/items/1#planning')
+      expect(getForms()[0].mainSchemaComponent.selectedTab).toBe('planning')
+    })
   })
 
   it('makes the page wide while a `wide` view is shown', async () => {

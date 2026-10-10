@@ -433,8 +433,12 @@ export default DitoComponent.component('DitoSchema', {
   },
 
   mounted() {
-    if (this.routeTab) {
-      this.selectTab(this.routeTab)
+    // A schema mounted for a nested route, e.g. when reloading the form of an
+    // item of a list in a tab, isn't active, and the route's tab belongs to
+    // the nested form, so it may not be one of this schema's tabs.
+    const { routeTab, renderedTabs } = this
+    if (this.active && routeTab && renderedTabs && routeTab in renderedTabs) {
+      this.selectTab(routeTab)
     } else {
       this.selectDefaultTab()
     }
