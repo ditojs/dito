@@ -12,6 +12,7 @@
       :schema="treeSchema"
       :dataPath="treeDataPath"
       :data="treeData"
+      :path="treePath"
       :draggable="draggable"
       :open="true"
       @change-children="changeChildren"
@@ -44,14 +45,24 @@ export default DitoTypeComponent.register(
 
     computed: {
       path() {
-        // Accessed from DitoTreeItem through `sourceComponent.path`:
-        return this.formComponent?.path
+        // The path of the route component of the tree, in a form or a view,
+        // which the edit routes of the items continue. Accessed from
+        // DitoTreeItem through `sourceComponent.path`:
+        return this.routeComponent.path
+      },
+
+      relativeSourcePath() {
+        // The path of the tree within `path`, as in its routes, which is empty
+        // in single-component views, see `DitoView.getChildPath()`:
+        return this.routeComponent
+          .getChildPath(this.schema.path)
+          .slice(this.path.length)
       },
 
       editPath() {
         // Accessed from DitoTreeItem through `sourceComponent.editPath`:
-        const path = this.$route.path.slice(this.path?.length)
-        return isPathWithin(path, `/${this.schema.path}`) ? path : ''
+        const path = this.$route.path.slice(this.path.length)
+        return isPathWithin(path, this.relativeSourcePath) ? path : ''
       },
 
       treeData() {
@@ -68,6 +79,13 @@ export default DitoTypeComponent.register(
           : this.dataPath
       },
 
+      treePath() {
+        // The routes of the children of tree objects continue the path of the
+        // object, see `SourceMixin.processSchema()`. The root item of tree
+        // lists wraps the list, which brings its own path, see `treeSchema`.
+        return this.isListSource ? '' : this.relativeSourcePath
+      },
+
       treeSchema() {
         return this.isListSource
           ? {
@@ -80,17 +98,20 @@ export default DitoTypeComponent.register(
       },
 
       hasEditableForms() {
+        // Sources without forms of their own, e.g. tree objects, can still
+        // have children with editable forms.
         const hasEditableForms = schema => {
           return (
-            hasFormSchema(schema) && (
+            (
+              hasFormSchema(schema) &&
               this.getSchemaValue('editable', {
                 type: Boolean,
                 default: false,
                 schema
-              }) || (
-                schema.children &&
-                hasEditableForms(schema.children)
-              )
+              })
+            ) || (
+              !!schema.children &&
+              hasEditableForms(schema.children)
             )
           )
         }
