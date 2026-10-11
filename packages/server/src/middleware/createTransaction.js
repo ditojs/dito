@@ -10,6 +10,14 @@ export function createTransaction() {
         ctx.app.knex
       )
       ctx.transaction = trx
+      // Knex resolves `executionPromise` when handlers roll back without an
+      // error, so we need to record rollbacks to tell them from commits:
+      let isRolledBack = false
+      const { rollback } = trx
+      trx.rollback = error => {
+        isRolledBack = true
+        return rollback(error)
+      }
       // Knex doesn't offer a mechanism for code dealing with transactions to
       // be notified when the transaction is rolled back. So add support for
       // 'commit' and 'rollback' events here:
@@ -33,7 +41,7 @@ export function createTransaction() {
       }
       // Emit outside of the `try` block, so that errors in the listeners
       // don't trigger the rollback events of a committed transaction.
-      await emitAsync(trx, 'commit')
+      await emitAsync(trx, isRolledBack ? 'rollback' : 'commit')
     } else {
       // TODO: Consider setting `ctx.transaction = ctx.app.knex`, just like
       // Objection does in static hooks so `transaction is alway set.

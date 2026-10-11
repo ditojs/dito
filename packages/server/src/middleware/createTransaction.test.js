@@ -117,6 +117,19 @@ describe('createTransaction()', { timeout: 30_000 }, () => {
     expect(await knex('child').count('* as count')).toEqual([{ count: 0 }])
   })
 
+  it('succeeds when the handler rolls back the transaction without an error', async () => {
+    const ctx = createContext()
+    const events = []
+    await middleware(ctx, async () => {
+      await insertChild(ctx, null)
+      ctx.transaction.on('commit', () => events.push('commit'))
+      ctx.transaction.on('rollback', error => events.push(['rollback', error]))
+      await ctx.transaction.rollback()
+    })
+    expect(events).toEqual([['rollback', undefined]])
+    expect(await knex('child').count('* as count')).toEqual([{ count: 0 }])
+  })
+
   it('rolls back when the handler throws', async () => {
     const ctx = createContext()
     const events = []
