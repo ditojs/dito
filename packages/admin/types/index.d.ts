@@ -1143,7 +1143,9 @@ export interface SchemaRoute<$Item = any>
   /**
    * Enables copy/paste for the data. Set to `true`
    * for default behavior or provide custom
-   * copy/paste handlers.
+   * copy/paste handlers. Pasted data replaces the
+   * values of the schema as new items, without the
+   * values of sources with their own resource.
    */
   clipboard?: ClipboardConfig
   /**
@@ -1961,14 +1963,14 @@ export type DitoContext<$Item = any> = {
   /** The top-level root data item. */
   rootItem: any
   /**
-   * The cloned data being prepared for server
-   * submission. Available during `process` callbacks,
-   * allowing modification of sibling fields.
+   * The item processed for the server, built when it's
+   * read. In `process` callbacks, the item that is being
+   * processed, allowing modification of sibling fields.
    */
   processedItem: any
   /**
-   * The root-level cloned data being prepared for
-   * server submission.
+   * The root item processed for the server, built when
+   * it's read.
    */
   processedRootItem: any
   /**
@@ -2178,13 +2180,6 @@ export interface DitoComponentInstanceBase<$Item = any>
   parentItem: any
   /** The top-level root data item. */
   rootItem: any
-  /**
-   * The cloned data being prepared for server
-   * submission. Available during `process` callbacks.
-   */
-  processedItem: any
-  /** The root-level cloned data for server submission. */
-  processedRootItem: any
   /** The component's data object. */
   data: Record<string, any>
   /**
@@ -3158,6 +3153,10 @@ export type ClipboardConfig =
   | boolean
   | {
       copy?: (context: DitoContext) => unknown
+      /**
+       * Receives the copied data as `clipboardItem`, and
+       * returns the data to paste.
+       */
       paste?: (context: DitoContext) => unknown
     }
 

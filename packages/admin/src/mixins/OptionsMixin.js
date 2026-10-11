@@ -3,7 +3,7 @@ import DitoContext from '../DitoContext.js'
 import { hasViewSchema } from '../utils/schema/lookup.js'
 import { getMultipleValue } from '../utils/schema/data.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
-import { setTemporaryId, isReference } from '../utils/data.js'
+import { createTemporaryId, isReference } from '../utils/data.js'
 import {
   asArray,
   isObject,
@@ -255,7 +255,7 @@ export default {
           // them when saving, see `SchemaGraph`.
           // NOTE: We need to modify the actual data, making a copy won't
           // work as it won't propagate.
-          setTemporaryId(option, 'id')
+          option.id = createTemporaryId()
         }
         return option
       }
@@ -383,9 +383,6 @@ export default {
         ? normalizeDataPath(`${dataPath}/${path}`)
         : null
       graph.addRelation(dataPath, relatedDataPath, schema)
-      if (relatedDataPath) {
-        graph.setSourceRelated(relatedDataPath)
-      }
       // Convert relating objects to a shallow copy with only the id left.
       // TODO: Convert to using `relateBy`:
       const processRelate = value => (value ? { id: value.id } : value)

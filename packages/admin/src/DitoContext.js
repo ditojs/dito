@@ -226,12 +226,16 @@ export default class DitoContext {
     return get(this, 'rootData', null)
   }
 
+  // The processed items are built for the server when they're read, except
+  // in `process()`, which receives the ones being processed:
   get processedItem() {
-    return get(this, 'processedData', null)
+    return get(this, 'processedData', () =>
+      getProcessedData(this, this.dataPath, this.nested)
+    )
   }
 
   get processedRootItem() {
-    return get(this, 'processedRootData', null)
+    return getProcessedData(this, '', false)
   }
 
   get clipboardItem() {
@@ -392,4 +396,25 @@ export default class DitoContext {
       set(this, 'wasNotified', true)
     }
   }
+}
+
+// Processes the data of the schema component that holds `dataPath` for the
+// server, and returns the item at `dataPath` in it. Components that own their
+// data, e.g. forms, aren't inside a schema component, but hold their own.
+function getProcessedData(context, dataPath, nested) {
+  const { component } = context
+  let schemaComponent = (
+    component?.schemaComponent ??
+    component?.mainSchemaComponent
+  )
+  while (schemaComponent?.dataPath.length > dataPath.length) {
+    schemaComponent = schemaComponent.parentSchemaComponent
+  }
+  return schemaComponent
+    ? getItem(
+        schemaComponent.processData('server'),
+        dataPath.slice(schemaComponent.dataPath.length),
+        nested
+      ) || null
+    : null
 }

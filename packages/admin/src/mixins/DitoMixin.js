@@ -572,8 +572,8 @@ export default {
         return ['load', 'change'].includes(event)
           ? // The effects of these events need time to propagate, so that the
             // handlers see them: Components that are newly rendered due to
-            // data changes register, e.g. for `processedItem`, and the form
-            // model writes the values that it derives from the data.
+            // data changes register, and the form model writes the values that
+            // it derives from the data.
             // NOTE: The result of `handleListeners()` is returned as expected.
             this.waitUntilDataModelSettled().then(handleListeners)
           : handleListeners()

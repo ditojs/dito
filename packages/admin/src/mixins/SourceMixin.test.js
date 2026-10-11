@@ -424,7 +424,7 @@ describe('SourceMixin', () => {
           ]
         }
       })
-      expect(schemaComponent.getDataForClipboard()).toEqual({
+      expect(schemaComponent.processData('clipboard')).toEqual({
         authors: [{ name: 'Mary Shelley' }, { name: 'Bram Stoker' }]
       })
       expect(data.authors).toEqual([

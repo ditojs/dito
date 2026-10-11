@@ -1,5 +1,5 @@
 import DitoContext from '../DitoContext.js'
-import { getItem, getParentItem } from '../utils/data.js'
+import { getParentItem } from '../utils/data.js'
 
 // @vue/component
 export default {
@@ -19,15 +19,6 @@ export default {
       return data !== this.data ? data : null
     },
 
-    // @overridable
-    processedData() {
-      return getProcessedParentData(this, this.dataPath, this.nested)
-    },
-
-    processedRootData() {
-      return getProcessedParentData(this, '', false)
-    },
-
     item() {
       return this.data
     },
@@ -38,31 +29,6 @@ export default {
 
     rootItem() {
       return this.rootData
-    },
-
-    processedItem() {
-      return this.processedData
-    },
-
-    processedRootItem() {
-      return this.processedRootData
     }
   }
-}
-
-function getProcessedParentData(component, dataPath, nested = false) {
-  // We can only get the processed data through the schemaComponent, but
-  // that's not necessarily the item represented by this component.
-  // Solution: Find the relative path and the processed sub-item from there:
-  let { schemaComponent } = component
-  // Find the schema component that contains the desired data-path:
-  while (schemaComponent.dataPath.length > dataPath.length) {
-    schemaComponent = schemaComponent.parentSchemaComponent
-  }
-  return getItem(
-    schemaComponent.processedData,
-    // Get the dataPath relative to the schemaComponent's data:
-    dataPath.slice(schemaComponent.dataPath.length),
-    nested
-  )
 }

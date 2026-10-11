@@ -126,15 +126,9 @@ describe('DitoContext', () => {
 
     it('provides the processed and clipboard items when given', () => {
       const processedData = { title: 'Processed' }
-      const processedRootData = { authors: [] }
       const clipboardData = { title: 'Copied' }
-      const context = new DitoContext(null, {
-        processedData,
-        processedRootData,
-        clipboardData
-      })
+      const context = new DitoContext(null, { processedData, clipboardData })
       expect(context.processedItem).toBe(processedData)
-      expect(context.processedRootItem).toBe(processedRootData)
       expect(context.clipboardItem).toBe(clipboardData)
       const empty = new DitoContext(null, {})
       expect(empty.processedItem).toBe(null)

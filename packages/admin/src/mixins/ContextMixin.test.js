@@ -70,10 +70,10 @@ describe('ContextMixin', () => {
   it('provides the processed item and root item of components', async () => {
     const { getComponent } = await mountLibrary()
     const title = getComponent('authors/0/books/1/title')
-    expect(title.processedItem).toEqual({ id: 2, title: 'Persuasion' })
+    expect(title.context.processedItem).toEqual({ id: 2, title: 'Persuasion' })
     // The processed root item is found through the parent schema components,
     // and contains only the data that the schemas define:
-    expect(title.processedRootItem).toEqual({
+    expect(title.context.processedRootItem).toEqual({
       id: 1,
       name: 'City Library',
       authors: [
@@ -87,8 +87,8 @@ describe('ContextMixin', () => {
         }
       ]
     })
-    expect(getComponent('name').processedRootItem).toEqual(
-      title.processedRootItem
+    expect(getComponent('name').context.processedRootItem).toEqual(
+      title.context.processedRootItem
     )
   })
 
@@ -109,8 +109,7 @@ describe('ContextMixin', () => {
       return processedItems
     }
 
-    // Known bug: contexts of the data model lack the processed item
-    it.skip('is the processed item of the component in `if`', async () => {
+    it('is the processed item of the component in `if`', async () => {
       const processedItems = await getProcessedItems('if', true)
       expect(processedItems.length).toBeGreaterThan(0)
       for (const processedItem of processedItems) {
@@ -118,8 +117,7 @@ describe('ContextMixin', () => {
       }
     })
 
-    // Known bug: contexts of the data model process the whole form
-    it.skip('is the processed item of the component in `compute()`', async () => {
+    it('is the processed item of the component in `compute()`', async () => {
       const processedItems = await getProcessedItems('compute', undefined)
       expect(processedItems.length).toBeGreaterThan(0)
       for (const processedItem of processedItems) {

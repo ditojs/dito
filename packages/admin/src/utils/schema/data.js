@@ -331,36 +331,33 @@ export function getValueOrDefault(schema, data, name, context) {
   return shouldUseDefault ? getDefaultValue(schema, context) : data[name]
 }
 
-function cloneItem(sourceSchema, item, options) {
-  if (options.schemaOnly) {
-    const copy = {}
-    const { idKey = 'id', orderKey } = sourceSchema
-    const id = item[idKey]
-    if (id !== undefined) {
-      copy[idKey] = id
-    }
-    // Copy over type in case there are multiple forms to choose from.
-    if (hasMultipleFormSchemas(sourceSchema)) {
-      copy.type = item.type
-    }
-    if (orderKey) {
-      copy[orderKey] = item[orderKey]
-    }
-    return copy
-  } else {
-    return { ...item }
+// Copies what identifies the item, its id, type and order, for the processed
+// values of its components to be added to.
+function cloneItem(sourceSchema, item) {
+  const copy = {}
+  const { idKey = 'id', orderKey } = sourceSchema
+  const id = item[idKey]
+  if (id !== undefined) {
+    copy[idKey] = id
   }
+  // Copy over type in case there are multiple forms to choose from.
+  if (hasMultipleFormSchemas(sourceSchema)) {
+    copy.type = item.type
+  }
+  if (orderKey) {
+    copy[orderKey] = item[orderKey]
+  }
+  return copy
 }
 
 export function processData(schema, sourceSchema, data, dataPath, {
   component,
   rootData,
-  schemaOnly, // whether to only include data covered by the schema, or all data
   target
 } = {}) {
-  const options = { component, rootData, schemaOnly, target }
-  const processedData = cloneItem(sourceSchema, data, options)
-  const graph = new SchemaGraph()
+  const options = { component, rootData, target }
+  const processedData = cloneItem(sourceSchema, data)
+  const graph = new SchemaGraph(dataPath)
 
   const before = ({ schema, data, name, dataPath, processedData }) => {
     let value = getValueOrDefault(
@@ -590,7 +587,7 @@ export function processSchemaData(schema, data, {
             const form = getItemFormSchemaFromForms(forms, item)
             if (form) {
               const processedItem = processedData
-                ? cloneItem(componentSchema, item, options)
+                ? cloneItem(componentSchema, item)
                 : null
               return processSchemaData(form, item, {
                 ...walkOptions,

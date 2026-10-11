@@ -371,7 +371,7 @@ export default {
           // TODO: Use `handleDataSchema()` asynchronously here instead, to
           // offer the same amount of possibilities for data loading.
           button.getSchemaValue(['resource', 'data']) ||
-          button.processedItem
+          button.context.processedItem
         )
       )
     },

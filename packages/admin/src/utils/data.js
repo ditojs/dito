@@ -102,9 +102,9 @@ export function getLastDataPathIndex(dataPath) {
 }
 
 let temporaryId = 0
-export function setTemporaryId(data, idKey = 'id') {
+export function createTemporaryId() {
   // Temporary ids are marked with a '@' at the beginning.
-  data[idKey] = `@${++temporaryId}`
+  return `@${++temporaryId}`
 }
 
 export function isTemporaryId(id) {

@@ -115,13 +115,12 @@ describe('OptionsMixin', () => {
         },
         data: { mainAuthor: authors[1], coAuthors: authors }
       })
-      expect(schemaComponent.processedData).toMatchObject({
+      const { processedItem } = schemaComponent.context
+      expect(processedItem).toMatchObject({
         mainAuthor: { id: 2 },
         coAuthors: [{ id: 1 }, { id: 2 }]
       })
-      expect(schemaComponent.processedData.mainAuthor).not.toHaveProperty(
-        'name'
-      )
+      expect(processedItem.mainAuthor).not.toHaveProperty('name')
     })
 
     it('relates new options from the data at `options.dataPath`', async () => {
@@ -154,11 +153,11 @@ describe('OptionsMixin', () => {
       // New options get temporary ids to be referenced by:
       expect(newAuthor.id).toMatch(/^@\d+$/)
       expect(mainAuthor.selectedOption).toBe(newAuthor)
-      const { processedData } = schemaComponent
+      const { processedItem } = schemaComponent.context
       // The relation references the new author by the id of the reference:
-      const reference = processedData.mainAuthor['#ref']
-      expect(processedData.mainAuthor).toEqual({ '#ref': expect.any(String) })
-      expect(processedData.authors[1]).toEqual({
+      const reference = processedItem.mainAuthor['#ref']
+      expect(processedItem.mainAuthor).toEqual({ '#ref': expect.any(String) })
+      expect(processedItem.authors[1]).toEqual({
         '#id': reference,
         'name': 'Ann Radcliffe'
       })

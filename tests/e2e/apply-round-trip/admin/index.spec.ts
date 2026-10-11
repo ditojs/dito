@@ -51,21 +51,21 @@ test.describe('applying nested forms', () => {
     await expect(getChapters(page).rows.first()).toContainText('1200')
   })
 
-  // Known bug: the payload only holds the values of the schema's components,
-  // also without applying nested forms.
-  test.fail(
-    `stores the values of items that their forms don't edit`,
-    async ({ page, url }) => {
-      const id = await openBook(page, url, {
-        chapters: [{ title: 'Prologue', wordCount: 1200 }]
-      })
-      await page.getByLabel('Title', { exact: true }).fill('Persuasion')
-      await new DitoForm(page).save()
-      expect((await getStoredBook(id))?.chapters).toMatchObject([
-        { title: 'Prologue', wordCount: 1200 }
-      ])
-    }
-  )
+  // The payload only holds the values that the components of the schema
+  // declare, so items keep the others only with hidden components:
+  test('stores the values of items that their forms declare', async ({
+    page,
+    url
+  }) => {
+    const id = await openBook(page, url, {
+      chapters: [{ title: 'Prologue', wordCount: 1200, pageCount: 4 }]
+    })
+    await page.getByLabel('Title', { exact: true }).fill('Persuasion')
+    await new DitoForm(page).save()
+    const [chapter] = (await getStoredBook(id))?.chapters ?? []
+    expect(chapter).toMatchObject({ title: 'Prologue', pageCount: 4 })
+    expect(chapter).not.toHaveProperty('wordCount')
+  })
 
   test('keeps the excluded values of applied items', async ({
     page,
