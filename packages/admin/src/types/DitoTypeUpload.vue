@@ -37,7 +37,7 @@
         th(scope="col")
           span
     DitoDraggable(
-      v-model="files"
+      :modelValue="files"
       as="tbody"
       :options="getDraggableOptions()"
       :draggable="draggable"
@@ -109,7 +109,7 @@
               DitoDragHandle(
                 v-if="draggable"
                 :disabled="disabled"
-                @move="delta => moveFile(file, delta)"
+                @move="delta => moveItem(file, delta)"
               )
               DitoButton(
                 v-if="deletable"
@@ -155,7 +155,6 @@ import {
   resolveDownloadUrl
 } from '../utils/request.js'
 import { confirmAndRemove } from '../utils/dialogs.js'
-import { getListWithMovedItem } from '../utils/list.js'
 import { isArray, asArray, escapeHtml } from '@ditojs/utils'
 import VueUpload from 'vue-upload-component'
 
@@ -194,15 +193,13 @@ export default DitoTypeComponent.register('upload', {
       return this.multiple ? 'Upload Files' : 'Upload File'
     },
 
-    files: {
-      get() {
-        return asFiles(this.value)
-      },
+    files() {
+      return asFiles(this.value)
+    },
 
-      // Writes the reordered files, see `DitoDraggable` and `moveFile()`.
-      set(files) {
-        this.value = this.multiple ? files : files[0] ?? null
-      }
+    // Only multiple files can be dragged, which are the value itself.
+    sortableList() {
+      return this.files
     },
 
     downloadUrls() {
@@ -336,12 +333,21 @@ export default DitoTypeComponent.register('upload', {
     }
   },
 
+  created() {
+    // The functions that settle the pending loads of the running uploads in
+    // the data model, by upload id, see `onInputFile()`:
+    this.settleUploadById = new Map()
+  },
+
   mounted() {
     this.updateDropTarget()
   },
 
   unmounted() {
     this.removeDropTarget?.()
+    for (const settleUpload of this.settleUploadById.values()) {
+      settleUpload()
+    }
   },
 
   methods: {
@@ -419,7 +425,7 @@ export default DitoTypeComponent.register('upload', {
             return false
           }
           if (this.multiple) {
-            this.value.splice(index, 1)
+            this.dataModel.remove(this.value, index)
           } else {
             this.value = null
           }
@@ -431,15 +437,6 @@ export default DitoTypeComponent.register('upload', {
       })
     },
 
-    // Moves the file by `delta` positions, see `DitoDragHandle`.
-    moveFile(file, delta) {
-      const files = getListWithMovedItem(this.files, file, delta)
-      if (files) {
-        this.files = files
-        this.onChange()
-      }
-    },
-
     getFileIndex(file) {
       return this.multiple && this.value
         ? this.value.findIndex(it => it.id === file.id)
@@ -449,7 +446,7 @@ export default DitoTypeComponent.register('upload', {
     addFile(file) {
       if (this.multiple) {
         if (this.value) {
-          this.value.push(file)
+          this.dataModel.insert(this.value, this.value.length, file)
         } else {
           this.value = [file]
         }
@@ -463,9 +460,9 @@ export default DitoTypeComponent.register('upload', {
         const index = this.getFileIndex(file)
         if (index >= 0) {
           if (newFile) {
-            this.value[index] = newFile
+            this.dataModel.set(this.value, index, newFile)
           } else {
-            this.value.splice(index, 1)
+            this.dataModel.remove(this.value, index)
           }
         }
       } else {
@@ -485,8 +482,11 @@ export default DitoTypeComponent.register('upload', {
       if (newFile && !oldFile) {
         const { id, name, size } = newFile
         this.addFile({ id, name, size, upload: { id, success: false } })
-      }
-      if (newFile && oldFile) {
+        // Submitting waits for the upload, which writes the stored file:
+        const { promise, resolve } = Promise.withResolvers()
+        this.settleUploadById.set(id, resolve)
+        this.dataModel.trackPendingLoad(promise, { canTimeOut: false })
+      } else if (newFile && oldFile) {
         const { success, error } = newFile
         if (success) {
           this.onChange()
@@ -499,8 +499,10 @@ export default DitoTypeComponent.register('upload', {
           } else {
             this.removeFile(newFile)
           }
+          this.settleUpload(newFile.id)
         } else if (error) {
           this.removeFile(newFile)
+          this.settleUpload(newFile.id)
           const text = (
             {
               abort: 'Upload aborted',
@@ -520,7 +522,15 @@ export default DitoTypeComponent.register('upload', {
             text
           })
         }
+      } else {
+        // The upload was removed:
+        this.settleUpload(oldFile.id)
       }
+    },
+
+    settleUpload(id) {
+      this.settleUploadById.get(id)?.()
+      this.settleUploadById.delete(id)
     },
 
     onInputFilter(newFile /*, oldFile, prevent */) {

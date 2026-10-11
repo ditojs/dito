@@ -134,7 +134,7 @@ export default {
             ? data?.length > 0
               ? data[0]
               : null
-            : updateOrder(this.sourceSchema, data, this.paginationRange)
+            : updateOrder(this.sourceSchema, data, this.paginationRange?.[0])
         }
       }
     },
@@ -488,35 +488,37 @@ export default {
     // numbered by `DataModel`, see `initializeData()`.
     setLoadedListItems(items) {
       this.setLoadedValue(
-        updateOrder(this.sourceSchema, items, this.paginationRange)
+        updateOrder(this.sourceSchema, items, this.paginationRange?.[0])
       )
     },
 
-    // Writes the value loaded through the source's resource. Loading isn't an
-    // edit of the data, so the value is written as a clean change, which
-    // doesn't make the form dirty, e.g. for sources whose value is stored,
-    // like the order of their items, see `DataModel.applyCleanChanges()`.
+    // Writes the value loaded through the source's resource directly, as
+    // loading isn't an edit, and replaces the source's changes.
     setLoadedValue(value) {
-      this.dataModel
-        .applyCleanChanges(() => {
-          this.value = value
-        })
-        .catch(console.error)
+      this.data[this.name] = value
+      this.dataModel.markClean(this.data, this.name)
+    },
+
+    // @override ResourceMixin.submit()
+    async submit(button) {
+      const isSuccessful = await ResourceMixin.methods.submit.call(this, button)
+      if (isSuccessful) {
+        // The source saved its own changes, e.g. the order of its items:
+        this.dataModel.markClean(this.data, this.name)
+      }
+      return isSuccessful
     },
 
     createItem(schema, type, index = null) {
       const item = this.createData(schema, type)
       if (this.isObjectSource) {
         this.objectData = item
-      } else {
+      } else if (this.value) {
         const { listData } = this
-        if (index != null) {
-          listData.splice(index, 0, item)
-        } else {
-          listData.push(item)
-        }
-        // Set the list back, as `listData` is a new array for `null` values.
-        this.listData = listData
+        this.dataModel.insert(listData, index ?? listData.length, item)
+      } else {
+        // Lists that are `null` have no array to insert into yet:
+        this.listData = [item]
       }
       if (this.collapsible) {
         this.$nextTick(() => this.openSchemaComponent(index ?? -1))
@@ -526,29 +528,26 @@ export default {
     },
 
     removeItem(item, index) {
-      let removed = false
-      if (this.isObjectSource) {
-        this.objectData = null
-        removed = true
-      } else {
-        const { listData } = this
-        if (index >= 0) {
-          listData.splice(index, 1)
-          // Set the list back, to update the order of the remaining items.
-          this.listData = listData
-          removed = true
-        }
-      }
-      if (removed) {
+      if (this.isObjectSource || index >= 0) {
         this.itemStores.removeStore(this.getItemUid(this.schema, item))
-        // Items of lists with a resource are deleted through it, see
-        // `deleteItem()`, leaving no changes to save behind, but still
-        // changing the list.
         if (this.isTransient) {
-          this.onChange()
+          if (this.isObjectSource) {
+            this.objectData = null
+          } else {
+            this.dataModel.remove(this.listData, index)
+          }
         } else {
-          this.emitChangeEvent()
+          // Items of sources with a resource are deleted through it, so they're
+          // removed without marking the data dirty, numbering the others again:
+          if (this.isObjectSource) {
+            this.data[this.name] = null
+          } else {
+            const { listData } = this
+            listData.splice(index, 1)
+            updateOrder(this.sourceSchema, listData, this.paginationRange?.[0])
+          }
         }
+        this.onChange()
       }
     },
 

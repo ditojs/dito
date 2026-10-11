@@ -43,31 +43,7 @@ export default {
       },
 
       set(value) {
-        const convertValue = value => {
-          if (!this.relate) {
-            return value
-          }
-          // Keep related objects without options, see
-          // `DitoTypeMultiselect.getFallbackOption()`.
-          const option = (
-            this.getOptionForValue(value) ??
-            this.getRelatedObject(value)
-          )
-          if (this.shouldSetTemporaryId(option)) {
-            // Options without ids, e.g. new items of the edited data, get
-            // temporary ids when selected, so that the relation can reference
-            // them when saving, see `SchemaGraph`.
-            // NOTE: We need to modify the actual data, making a copy won't
-            // work as it won't propagate.
-            setTemporaryId(option, 'id')
-          }
-          return option
-        }
-
-        this.value =
-          this.multiple && isArray(value)
-            ? value.map(convertValue)
-            : convertValue(value)
+        this.value = this.getValueForSelectedValue(value)
       }
     },
 
@@ -257,18 +233,40 @@ export default {
       return isObject(option) && key in option ? key : null
     },
 
-    // Writes the selected value back into the data, through the setter of
-    // `selectedValue`, which converts it to the value, e.g. a reference id to
-    // its option with `relate`, or a value whose option disappeared to `null`.
-    // This is derived from the options, not a change by the user, so it is
-    // made as a clean change, which doesn't make the form dirty.
+    // Converts the selected value to the value, e.g. an option to its related
+    // object with `relate`.
+    getValueForSelectedValue(selectedValue) {
+      const convertValue = value => {
+        if (!this.relate) {
+          return value
+        }
+        // Keep related objects without options, see
+        // `DitoTypeMultiselect.getFallbackOption()`.
+        const option = (
+          this.getOptionForValue(value) ??
+          this.getRelatedObject(value)
+        )
+        if (this.shouldSetTemporaryId(option)) {
+          // Options without ids, e.g. new items of the edited data, get
+          // temporary ids when selected, so that the relation can reference
+          // them when saving, see `SchemaGraph`.
+          // NOTE: We need to modify the actual data, making a copy won't
+          // work as it won't propagate.
+          setTemporaryId(option, 'id')
+        }
+        return option
+      }
+
+      return this.multiple && isArray(selectedValue)
+        ? selectedValue.map(convertValue)
+        : convertValue(selectedValue)
+    },
+
+    // Writes the selected value back into the data, e.g. a reference id as its
+    // option with `relate`. It's derived from the options, not an edit, so it's
+    // written directly, without marking the data dirty.
     replaceValueWithSelectedValue() {
-      const { selectedValue } = this
-      this.dataModel
-        .applyCleanChanges(() => {
-          this.selectedValue = selectedValue
-        })
-        .catch(console.error)
+      this.data[this.name] = this.getValueForSelectedValue(this.selectedValue)
     },
 
     // Groups the options by the `groupBy` key, see `groupByLabel` and

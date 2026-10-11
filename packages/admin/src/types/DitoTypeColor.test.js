@@ -213,7 +213,7 @@ describe('DitoTypeColor', () => {
   })
 
   it('keeps the value when picking the same color', async () => {
-    const { getComponent, data, settle } = await mountSchema({
+    const { getComponent, data, dataModel, settle } = await mountSchema({
       schema: { components: { background: { type: 'color' } } },
       data: { background: 'red' }
     })
@@ -221,7 +221,7 @@ describe('DitoTypeColor', () => {
     color.colorValue = tinycolor('#ff0000')
     await settle()
     expect(data.background).toBe('red')
-    expect(color.isDirty).toBe(false)
+    expect(dataModel.isDirty).toBe(false)
     color.colorValue = tinycolor('#ff000080')
     await settle()
     expect(data.background).toBe('#ff000080')

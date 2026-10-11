@@ -202,6 +202,14 @@ export function getButtonSchemas(buttons) {
   )
 }
 
+// Returns whether the buttons can save the data, through a button of type
+// `submit`, whatever its name.
+export function hasSubmitButton(buttonSchemas) {
+  return Object.values(buttonSchemas ?? {}).some(
+    button => button.type === 'submit'
+  )
+}
+
 // Returns the entry of the panel described by `schema`, which `DitoPanels`
 // displays at `dataPath` and `componentPath`. Panels of components in tabs are
 // only displayed while their tab is selected: `tab` describes that tab as

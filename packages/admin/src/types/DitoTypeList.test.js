@@ -81,6 +81,20 @@ describe('DitoTypeList', () => {
       await vi.waitFor(() => expect(onChange).toHaveBeenCalledOnce())
     })
 
+    it('creates the first item of lists that are `null`', async () => {
+      const { findField, data, dataModel } = await mountSchema({
+        schema: createRecipeSchema({ creatable: true }),
+        data: { ingredients: null }
+      })
+      expect(data.ingredients).toBe(null)
+      await findField('ingredients')
+        .find('.dito-create-button button')
+        .trigger('click')
+      await flushPromises()
+      expect(data.ingredients).toEqual([{ name: null, amount: 1 }])
+      expect(dataModel.isDirty).toBe(true)
+    })
+
     it('labels the create button with `creatable.label`', async () => {
       const { findField } = await mountSchema({
         schema: createRecipeSchema({ creatable: { label: 'New Ingredient' } })
@@ -164,7 +178,7 @@ describe('DitoTypeList', () => {
     })
 
     it('numbers the items by `orderKey` and keeps numbering them', async () => {
-      const { findField, data, getComponent, settle } = await mountSchema({
+      const { findField, data, settle } = await mountSchema({
         schema: createRecipeSchema({
           creatable: true,
           draggable: true,
@@ -178,9 +192,9 @@ describe('DitoTypeList', () => {
         { name: 'Flour', position: 0 },
         { name: 'Salt', position: 1 }
       ])
-      // Reorder the items like dragging does:
-      const list = getComponent('ingredients')
-      list.listData = [...list.listData].reverse()
+      Sortable.get(findField('ingredients').find('tbody').element).option(
+        'onEnd'
+      )({ oldIndex: 0, newIndex: 1 })
       await settle()
       expect(data.ingredients).toMatchObject([
         { name: 'Salt', position: 0 },
@@ -196,7 +210,7 @@ describe('DitoTypeList', () => {
   describe('dragging', () => {
     it('reports changes only for items dropped at new positions', async () => {
       const onChange = vi.fn()
-      const { findField, getComponent, settle } = await mountSchema({
+      const { findField, dataModel, settle } = await mountSchema({
         schema: createRecipeSchema({ draggable: true, onChange }),
         data: { ingredients: [{ name: 'Flour' }, { name: 'Salt' }] }
       })
@@ -208,13 +222,13 @@ describe('DitoTypeList', () => {
       sortable.option('onEnd')({ oldIndex: 0, newIndex: 0 })
       await settle()
       expect(onChange).not.toHaveBeenCalled()
-      // Sortable moves the item and then ends the drag:
+      expect(dataModel.isDirty).toBe(false)
+      // Sortable restores its moved element, and the list moves the item:
       sortable.option('onStart')({ oldIndex: 0 })
-      const list = getComponent('ingredients')
-      list.listData = [...list.listData].reverse()
       sortable.option('onEnd')({ oldIndex: 0, newIndex: 1 })
       await settle()
       expect(onChange).toHaveBeenCalledOnce()
+      expect(dataModel.isDirty).toBe(true)
       expect(getItemNames(findField('ingredients'))).toEqual(['Salt', 'Flour'])
     })
   })
@@ -451,6 +465,33 @@ describe('DitoTypeList', () => {
       ])
       await enterValue(inputs[1], 'romance')
       expect(data.tags).toEqual(['classic', 'romance'])
+    })
+
+    it('creates the first primitive value of lists that are `null`', async () => {
+      const { findField, data, dataModel } = await mountSchema({
+        schema: {
+          components: {
+            tags: {
+              type: 'list',
+              inlined: true,
+              creatable: true,
+              wrapPrimitives: 'tag',
+              form: {
+                type: 'form',
+                components: { tag: { type: 'text' } }
+              }
+            }
+          }
+        },
+        data: { tags: null }
+      })
+      await findField('tags')
+        .find('.dito-create-button button')
+        .trigger('click')
+      await flushPromises()
+      await enterValue(findField('tags').find('input'), 'classic')
+      expect(data.tags).toEqual(['classic'])
+      expect(dataModel.isDirty).toBe(true)
     })
 
     it('renders wrapped primitive values of loaded data with stores', async () => {

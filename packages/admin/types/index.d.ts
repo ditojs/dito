@@ -2187,6 +2187,12 @@ export interface DitoComponentInstanceBase<$Item = any>
   processedRootItem: any
   /** The component's data object. */
   data: Record<string, any>
+  /**
+   * The data model of the closest view, form, dialog
+   * or panel with its own data, which components
+   * write the data through.
+   */
+  dataModel: DitoDataModel
   /** Parent data object, or `null` if same as data. */
   parentData: Record<string, any> | null
   /** The property name of the current component. */
@@ -2214,8 +2220,6 @@ export interface DitoComponentInstanceBase<$Item = any>
   parsedValue: any
   /** Whether the field has been focused at least once. */
   isTouched: boolean
-  /** Whether the field value has been modified. */
-  isDirty: boolean
   /** Whether the field is currently valid. */
   isValid: boolean
   /** Whether validation has been run on the field. */
@@ -2478,8 +2482,8 @@ export interface DitoComponentInstanceBase<$Item = any>
   verify(): boolean
   /** Marks the field as touched and clears errors. */
   markTouched(): void
-  /** Marks the field as dirty and resets validation. */
-  markDirty(): void
+  /** Clears the validation and the displayed errors. */
+  clearValidation(): void
   /** Resets all validation state. */
   resetValidation(): void
   /** Adds an error message to the errors array. */
@@ -2584,6 +2588,40 @@ export interface DitoResourceInstance {
   ): void
 }
 
+/**
+ * The data model of a view, form, dialog or panel with its own data.
+ * Components write the data through its change API, which marks the data
+ * edited until it's replaced or saved, if the write changes the value.
+ * Direct writes don't mark it.
+ */
+export interface DitoDataModel {
+  /**
+   * Whether the data has edits that can be saved: of the component if it
+   * has a button of type `submit`, and of the lists of sources with their
+   * own resource and such a button, which include the changes inside them.
+   */
+  readonly isDirty: boolean
+  /** Whether the data was edited, also where it can't be saved. */
+  readonly isEdited: boolean
+  /** Marks the data edited, e.g. after writing it directly. */
+  markDirty(): void
+  /**
+   * Marks the data clean, e.g. once it's saved, or only the list of the
+   * source with its own resource at `data[name]`, once the source saved it.
+   */
+  markClean(data?: object, name?: string): void
+  /** Sets `data[key]` to `value`, an edit if the value changes. */
+  set(data: object, key: string | number, value: any): void
+  /** Inserts `item` into `list` at `index`. */
+  insert(list: any[], index: number, item: any): void
+  /** Removes the item at `index` from `list`. */
+  remove(list: any[], index: number): void
+  /** Moves the item at `from` in `list` to `to`. */
+  move(list: any[], from: number, to: number): void
+  /** Replaces the items of `list` with `items`, in place. */
+  replaceChildren(list: any[], items: any[]): void
+}
+
 export interface DitoFormInstance<$Item = any>
   extends DitoComponentInstanceBase<$Item>,
     DitoResourceInstance {
@@ -2594,34 +2632,13 @@ export interface DitoFormInstance<$Item = any>
   isCreating: boolean
 
   /**
-   * Whether the form's processed data differs from
-   * the data it was loaded, saved or applied with.
-   * Values that are derived when the data is set up,
-   * e.g. defaults and computed values, don't count.
-   * Forms with `mutate: true` aren't dirty
-   * themselves, their changes make the form that
-   * owns the data dirty.
+   * Whether the form's data has edits that can be
+   * saved, see `DitoDataModel.isDirty`. Forms
+   * without a button of type `submit` aren't dirty,
+   * and forms with `mutate: true` that edit the item
+   * of their parent make the parent dirty instead.
    */
   isDirty: boolean
-
-  /**
-   * Makes clean changes to the data, which don't
-   * make the form dirty, while other changes still
-   * do, e.g. to apply what an action on the server
-   * already saved. `makeChanges()` is called
-   * synchronously, the returned promise resolves
-   * once the values derived from the changes are
-   * clean too.
-   *
-   * @example
-   * ```js
-   * const shopOrder = await request({ method: 'post', url })
-   * formComponent.applyCleanChanges(() => {
-   *   item.templateShopOrder = shopOrder
-   * })
-   * ```
-   */
-  applyCleanChanges(makeChanges: () => void): Promise<void>
 
   /**
    * Submits the form data to the API. Returns

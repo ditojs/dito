@@ -140,16 +140,14 @@ export const articles = createWidgetView<ArticleItem>(
                 }
               }
             },
-            // Like actions that the server saves: Applies the result as clean
-            // changes.
+            // Like actions that the server saves: Writes the result directly,
+            // which doesn't make the form dirty.
             applySavedTitle: {
               type: 'button',
               text: 'Apply Saved Title',
               events: {
-                click: ({ item, formComponent }) => {
-                  formComponent.applyCleanChanges(() => {
-                    item.title = 'Saved'
-                  })
+                click: ({ item }) => {
+                  item.title = 'Saved'
                 }
               }
             },

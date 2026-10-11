@@ -817,8 +817,8 @@ describe('DitoSchema', () => {
   })
 
   describe('setData()', () => {
-    it('merges the known values and marks their components dirty', async () => {
-      const { schemaComponent, data, getComponent } = await mountSchema({
+    it('merges the known values and marks the data dirty', async () => {
+      const { schemaComponent, data, dataModel } = await mountSchema({
         schema: {
           components: {
             title: { type: 'text' },
@@ -827,14 +827,14 @@ describe('DitoSchema', () => {
         },
         data: { title: 'Emma', year: 1815 }
       })
+      // Unchanged values don't make the data dirty:
+      schemaComponent.setData({ year: 1815 })
+      expect(dataModel.isDirty).toBe(false)
       expect(
         schemaComponent.setData({ title: 'Persuasion', year: 1815, isbn: 1 })
       ).toBe(data)
       expect(data).toEqual({ title: 'Persuasion', year: 1815 })
-      expect(getComponent('title').isDirty).toBe(true)
-      // Unchanged values don't make their components dirty:
-      expect(getComponent('year').isDirty).toBe(false)
-      expect(schemaComponent.isDirty).toBe(true)
+      expect(dataModel.isDirty).toBe(true)
     })
   })
 

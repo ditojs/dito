@@ -76,9 +76,9 @@ test.describe('route-refetch-race', () => {
 
     // Make a local edit while the held GET response sits in the request
     // pipeline. Without the fix, the response will land on top of this and
-    // overwrite `loadedData.name` back to 'before'. With the fix, the form
-    // is dirty (`isDirty` true) so `shouldApplyLoadedData()` returns false
-    // and the response is discarded.
+    // overwrite `loadedData.name` back to 'before'. With the fix, the form's
+    // data is edited (`dataModel.isEdited`), so `requestData()` discards the
+    // response.
     await form.fill('Name', 'after')
 
     releaseGet()

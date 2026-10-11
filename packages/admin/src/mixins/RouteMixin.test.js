@@ -1,3 +1,4 @@
+import { vi } from 'vitest'
 import {
   mountAdmin,
   mountForm,
@@ -131,8 +132,7 @@ describe('RouteMixin', () => {
       expect(admin.router.currentRoute.value.path).toBe('/authors')
     })
 
-    // Known bug: views keep component dirty flags after submits
-    it.skip(`doesn't ask when leaving a view after submitting its changes`, async () => {
+    it(`doesn't ask when leaving a view after submitting its changes`, async () => {
       const confirm = stubConfirm(true)
       const books = [
         { id: 1, title: 'Dune' },
@@ -179,6 +179,48 @@ describe('RouteMixin', () => {
       expect(admin.request).toHaveBeenCalledWith(
         expect.objectContaining({ method: 'post', url: '/books/order' })
       )
+      expect(view.isDirty).toBe(false)
+      await admin.navigate('/authors')
+      expect(confirm).not.toHaveBeenCalled()
+      expect(admin.router.currentRoute.value.path).toBe('/authors')
+    })
+
+    it(`doesn't ask when leaving a view whose list can't save its order`, async () => {
+      const confirm = stubConfirm(true)
+      const onChange = vi.fn()
+      const admin = await mountAdmin({
+        views: {
+          books: {
+            type: 'view',
+            component: {
+              type: 'list',
+              resource: { path: 'books' },
+              draggable: true,
+              orderKey: 'position',
+              columns: { title: {} },
+              // E.g. to save the order through an action of the app:
+              onChange
+            }
+          },
+          authors: {
+            type: 'view',
+            components: { name: { type: 'text' } }
+          }
+        },
+        request: () => ({
+          data: [
+            { id: 1, title: 'Dune' },
+            { id: 2, title: 'Emma' }
+          ]
+        })
+      })
+      await admin.navigate('/books')
+      const view = admin.getRouteComponent(it => it.isView)
+      await admin.wrapper
+        .findAll('.dito-button--drag')[0]
+        .trigger('keydown', { key: 'ArrowDown', altKey: true })
+      await settle(view)
+      expect(onChange).toHaveBeenCalledOnce()
       expect(view.isDirty).toBe(false)
       await admin.navigate('/authors')
       expect(confirm).not.toHaveBeenCalled()

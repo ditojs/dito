@@ -35,7 +35,7 @@ export default {
           value = parse(new DitoContext(this, { value }))
         }
         this.parsedValue = value
-        this.data[this.name] = value
+        this.dataModel.set(this.data, this.name, value)
       }
     }
   }

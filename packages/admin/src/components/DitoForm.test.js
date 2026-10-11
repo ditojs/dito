@@ -5,7 +5,8 @@ import {
   mountForm,
   mountSchema,
   settle,
-  enterValue
+  enterValue,
+  stubConfirm
 } from '../test/mount.js'
 
 const maliciousName = '<img src="x" onerror="alert(1)">'
@@ -130,7 +131,7 @@ describe('DitoForm', () => {
     expect(findField('title').find('input').element.value).toBe('Persuasion')
   })
 
-  describe('applyCleanChanges()', () => {
+  describe('direct writes', () => {
     async function mountPublishableForm(publish) {
       return mountForm({
         schema: {
@@ -155,13 +156,11 @@ describe('DitoForm', () => {
       await settle()
     }
 
-    it('applies changes that keep the form clean', async () => {
-      const result = await mountPublishableForm(
-        ({ formComponent, item }) =>
-          formComponent.applyCleanChanges(() => {
-            item.status = 'published'
-          })
-      )
+    it(`don't make the form dirty`, async () => {
+      // E.g. to apply what an action on the server already saved:
+      const result = await mountPublishableForm(({ item }) => {
+        item.status = 'published'
+      })
       await clickPublish(result)
       expect(result.data.status).toBe('published')
       expect(result.findField('status').find('input').element.value).toBe(
@@ -170,13 +169,207 @@ describe('DitoForm', () => {
       expect(result.routeComponent.isDirty).toBe(false)
     })
 
-    it('makes the form dirty with plain changes', async () => {
-      const result = await mountPublishableForm(({ item }) => {
+    it('make the form dirty with `dataModel.markDirty()`', async () => {
+      const result = await mountPublishableForm(({ formComponent, item }) => {
         item.status = 'published'
+        formComponent.dataModel.markDirty()
       })
       await clickPublish(result)
       expect(result.data.status).toBe('published')
       expect(result.routeComponent.isDirty).toBe(true)
+    })
+  })
+
+  describe('dirty state', () => {
+    const titleSchema = { components: { title: { type: 'text' } } }
+
+    it('stays dirty when an edit is reverted', async () => {
+      const { wrapper, routeComponent, settle } = await mountForm({
+        schema: titleSchema,
+        data: { title: 'Emma' }
+      })
+      const input = wrapper.find('input[name="title"]')
+      await enterValue(input, 'Persuasion')
+      await enterValue(input, 'Emma')
+      await settle()
+      expect(routeComponent.isDirty).toBe(true)
+    })
+
+    it('is clean once the changes are saved', async () => {
+      const { wrapper, routeComponent, settle, submit } = await mountForm({
+        schema: {
+          ...titleSchema,
+          buttons: { submit: { closeForm: false } }
+        },
+        data: { title: 'Emma' },
+        request: ({ data }) => ({ data: { id: 1, ...data } })
+      })
+      await enterValue(wrapper.find('input[name="title"]'), 'Persuasion')
+      await settle()
+      expect(routeComponent.isDirty).toBe(true)
+      expect(await submit()).toEqual({ id: 1, title: 'Persuasion' })
+      expect(routeComponent.isDirty).toBe(false)
+    })
+
+    it('is never dirty without a submit button', async () => {
+      const confirm = stubConfirm(false)
+      const { admin, wrapper, routeComponent, settle } = await mountForm({
+        schema: { ...titleSchema, buttons: { submit: false } },
+        data: { title: 'Emma' }
+      })
+      await enterValue(wrapper.find('input[name="title"]'), 'Persuasion')
+      await settle()
+      expect(routeComponent.isDirty).toBe(false)
+      await admin.navigate('/items')
+      expect(confirm).not.toHaveBeenCalled()
+      expect(admin.router.currentRoute.value.path).toBe('/items')
+    })
+
+    it('is dirty with a submit button of another name', async () => {
+      const { wrapper, routeComponent, settle } = await mountForm({
+        schema: {
+          ...titleSchema,
+          buttons: { submit: false, save: { type: 'submit', label: 'Save' } }
+        },
+        data: { title: 'Emma' }
+      })
+      await enterValue(wrapper.find('input[name="title"]'), 'Persuasion')
+      await settle()
+      expect(routeComponent.isDirty).toBe(true)
+    })
+
+    it('stays clean when a component writes the value that it has', async () => {
+      const { getComponent, routeComponent, settle, submit } = await mountForm({
+        schema: {
+          components: {
+            title: { type: 'text' },
+            tags: { type: 'multiselect', options: ['novel', 'classic'] }
+          },
+          buttons: { submit: { closeForm: false } }
+        },
+        data: { title: 'Emma', tags: ['novel'] },
+        request: ({ data }) => ({ data: { id: 1, ...data } })
+      })
+      getComponent('title').value = 'Emma'
+      getComponent('tags').value = ['novel']
+      await settle()
+      expect(routeComponent.isDirty).toBe(false)
+      getComponent('title').value = 'Persuasion'
+      await submit()
+      // E.g. components that write their value again after the save:
+      getComponent('title').value = 'Persuasion'
+      await settle()
+      expect(routeComponent.isDirty).toBe(false)
+    })
+
+    it('keeps the edits of forms without a submit button when loading', async () => {
+      const { wrapper, routeComponent, settle } = await mountForm({
+        schema: { ...titleSchema, buttons: { submit: false } },
+        data: { title: 'Emma' }
+      })
+      await enterValue(wrapper.find('input[name="title"]'), 'Persuasion')
+      routeComponent.reloadData()
+      await settle()
+      expect(routeComponent.data.title).toBe('Persuasion')
+    })
+
+    describe('with lists that save their order through their resource', () => {
+      async function mountChaptersForm() {
+        const result = await mountForm({
+          schema: {
+            components: {
+              title: { type: 'text' },
+              chapters: {
+                type: 'list',
+                resource: { path: 'chapters' },
+                draggable: true,
+                orderKey: 'position',
+                columns: { title: {} },
+                buttons: {
+                  saveOrder: {
+                    type: 'submit',
+                    label: 'Save Order',
+                    resource: { path: 'order', method: 'post' }
+                  }
+                }
+              }
+            },
+            buttons: { submit: { closeForm: false } }
+          },
+          data: { title: 'Emma' },
+          request: ({ method = 'get', url, data }) =>
+            method === 'get' && url === '/items/1/chapters'
+              ? { data: [{ id: 1, title: 'One' }, { id: 2, title: 'Two' }] }
+              : { data: { id: 1, ...data } }
+        })
+        const { findField, settle } = result
+        await enterValue(findField('title').find('input'), 'Persuasion')
+        await findField('chapters')
+          .findAll('.dito-button--drag')[0]
+          .trigger('keydown', { key: 'ArrowDown', altKey: true })
+        await settle()
+        return result
+      }
+
+      it('keep the edits of the form dirty once the list saved its order', async () => {
+        const { wrapper, routeComponent, request, settle } =
+          await mountChaptersForm()
+        expect(routeComponent.isDirty).toBe(true)
+        await wrapper.find('button[id$="saveOrder"]').trigger('click')
+        await settle()
+        expect(request).toHaveBeenCalledWith(
+          expect.objectContaining({
+            method: 'post',
+            url: '/items/1/chapters/order'
+          })
+        )
+        expect(routeComponent.isDirty).toBe(true)
+      })
+
+      it('are clean once the form is saved', async () => {
+        const { routeComponent, submit } = await mountChaptersForm()
+        expect(await submit()).toMatchObject({ title: 'Persuasion' })
+        expect(routeComponent.isDirty).toBe(false)
+      })
+    })
+
+    it('is dirty after items are added, moved or removed', async () => {
+      stubConfirm(true)
+      const { findField, routeComponent, data, settle } = await mountForm({
+        schema: {
+          components: {
+            chapters: {
+              type: 'list',
+              inlined: true,
+              creatable: true,
+              draggable: true,
+              deletable: true,
+              form: { type: 'form', components: { title: { type: 'text' } } }
+            }
+          }
+        },
+        data: { chapters: [{ title: 'One' }, { title: 'Two' }] }
+      })
+      const { dataModel } = routeComponent
+      const field = findField('chapters')
+      const expectDirtyAfter = async (selector, event = 'click', options) => {
+        expect(routeComponent.isDirty).toBe(false)
+        await field.findAll(selector)[0].trigger(event, options)
+        await settle()
+        expect(routeComponent.isDirty).toBe(true)
+        dataModel.markClean()
+      }
+      const getTitles = () => data.chapters.map(chapter => chapter.title)
+      // The first create button inserts before the first item:
+      await expectDirtyAfter('.dito-create-button button')
+      expect(getTitles()).toEqual([null, 'One', 'Two'])
+      await expectDirtyAfter('.dito-button--drag', 'keydown', {
+        key: 'ArrowDown',
+        altKey: true
+      })
+      expect(getTitles()).toEqual(['One', null, 'Two'])
+      await expectDirtyAfter('.dito-button--remove')
+      expect(data.chapters).toHaveLength(2)
     })
   })
 
@@ -922,6 +1115,8 @@ describe('DitoForm', () => {
       await settle(form)
       expect(form.isMutating).toBe(true)
       expect(form.data).toBe(data.chapters[0])
+      // Mutating forms write through the data model of their parent:
+      expect(form.dataModel).toBe(routeComponent.dataModel)
       await enterValue(new DOMWrapper(form.$el).find('input'), 'Opening')
       await settle(form)
       expect(data.chapters).toEqual([{ title: 'Opening' }])
@@ -934,6 +1129,67 @@ describe('DitoForm', () => {
           .find('.dito-buttons--main button[type="submit"]')
           .exists()
       ).toBe(false)
+    })
+
+    const chapterForm = {
+      type: 'form',
+      components: {
+        title: { type: 'text' },
+        slug: {
+          type: 'text',
+          compute: ({ item }) => item.title?.toLowerCase() ?? null
+        }
+      }
+    }
+
+    it('compute the values of the items that they create', async () => {
+      const { admin, data } = await mountForm({
+        schema: {
+          components: {
+            chapters: {
+              type: 'list',
+              creatable: true,
+              mutate: true,
+              form: chapterForm
+            }
+          }
+        },
+        data: { chapters: [] }
+      })
+      await admin.navigate('/items/1/chapters/create')
+      const form = admin.getRouteComponent(component => component.isCreating)
+      await settle(form)
+      // The new item isn't in the data of the parent, so the form handles it
+      // with its own model:
+      expect(form.dataModel).not.toBe(form.parentRouteComponent.dataModel)
+      await enterValue(new DOMWrapper(form.$el).find('input'), 'Opening')
+      await settle(form)
+      expect(form.data).toMatchObject({ title: 'Opening', slug: 'opening' })
+      expect(data.chapters).toEqual([])
+    })
+
+    it('compute the values of the items that they load', async () => {
+      const admin = await mountAdmin({
+        views: {
+          chapters: {
+            type: 'view',
+            component: {
+              type: 'list',
+              resource: { path: 'chapters' },
+              mutate: true,
+              form: chapterForm
+            }
+          }
+        },
+        request: ({ url }) =>
+          url === '/chapters'
+            ? { data: [{ id: 1, title: 'Opening' }] }
+            : { data: { id: 1, title: 'Opening' } }
+      })
+      await admin.navigate('/chapters/1')
+      const form = admin.getRouteComponent(component => component.isForm)
+      await settle(form)
+      expect(form.data).toMatchObject({ title: 'Opening', slug: 'opening' })
     })
   })
 

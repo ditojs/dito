@@ -2,7 +2,6 @@ import { vi } from 'vitest'
 import { reactive, ref, toRaw, nextTick } from 'vue'
 import { registerTypeComponent } from './schema/types.js'
 import { DataModel } from './DataModel.js'
-import { updateOrder } from './schema/data.js'
 
 // `setupForm()` needs the admin's API, see `getFormSchemas()`:
 vi.mock('./schema/setup.js', () => ({ setupForm: async form => form }))
@@ -33,13 +32,13 @@ registerTypeComponent('upload', {
   processValue: ({ value }) => (value?.isUploaded ? value.name : null)
 })
 
-function createDataModel(schema, data, { getSourceSchema } = {}) {
+function createDataModel(schema, data, options) {
   const dataRef = ref(reactive(data))
   const dataModel = new DataModel({
     component: { dataPath: '', componentPath: '' },
     getSchema: () => schema,
     getData: () => dataRef.value,
-    getSourceSchema
+    ...options
   })
   return { dataModel, dataRef, data: dataRef.value }
 }
@@ -490,33 +489,6 @@ describe('DataModel', () => {
     })
   })
 
-  it('tells which components it computes the values of', () => {
-    const schema = {
-      type: 'form',
-      components: { title: { type: 'text' }, slug },
-      panels: {
-        // Panels with their own data aren't part of the model's data.
-        search: {
-          type: 'panel',
-          data: () => ({}),
-          components: { query: { type: 'text', compute: () => 'Query' } }
-        }
-      }
-    }
-    const { dataModel, data } = createDataModel(schema, { title: 'Book' })
-    expect(dataModel.hasComputedValueEntry({ data, name: 'slug' })).toBe(true)
-    expect(dataModel.hasComputedValueEntry({ data, name: 'title' })).toBe(
-      false
-    )
-    expect(dataModel.hasComputedValueEntry({ data, name: 'query' })).toBe(
-      false
-    )
-    expect(
-      dataModel.hasComputedValueEntry({ data: {}, name: 'query' })
-    ).toBe(false)
-    dataModel.stop()
-  })
-
   it('resolves values from data schemas', async () => {
     const schema = {
       type: 'form',
@@ -751,526 +723,314 @@ describe('DataModel', () => {
   })
 
   describe('dirty state', () => {
-    const getSourceSchema = () => ({ type: 'list' })
-
-    // Resolves once the model settled after the snapshot was taken, see
-    // `DataModel.takeProcessedDataSnapshot()`:
-    async function waitForProcessedDataSnapshot(dataModel) {
-      await nextTick()
-      await dataModel.waitUntilSettled()
-      await nextTick()
+    const schema = {
+      type: 'form',
+      components: {
+        title: { type: 'text' },
+        slug,
+        chapters: {
+          type: 'list',
+          orderKey: 'position',
+          form: {
+            type: 'form',
+            components: {
+              title: { type: 'text' },
+              status: { type: 'text', default: 'draft' }
+            }
+          }
+        }
+      }
     }
 
-    it('compares the processed data with its snapshot', async () => {
-      const schema = {
-        type: 'form',
-        components: { title: { type: 'text' }, slug }
-      }
-      const { dataModel, data } = createDataModel(
-        schema,
-        { title: 'Hello' },
-        { getSourceSchema }
-      )
-      await waitForProcessedDataSnapshot(dataModel)
-      expect(dataModel.isDirty).toBe(false)
-      data.title = 'Changed'
-      expect(dataModel.isDirty).toBe(true)
-      data.title = 'Hello'
-      expect(dataModel.isDirty).toBe(false)
-      dataModel.stop()
-    })
-
-    it('records the values derived while the model settles once', async () => {
-      let resolveLength
-      const schema = {
-        type: 'form',
-        components: {
-          title: { type: 'text' },
-          slug,
-          length: {
-            type: 'computed',
-            data: () =>
-              new Promise(resolve => {
-                resolveLength = resolve
-              })
-          }
-        }
-      }
-      const { dataModel, data } = createDataModel(
-        schema,
-        { title: 'Hello' },
-        { getSourceSchema }
-      )
-      await nextTick()
-      // `slug` is written for each title while `length` still loads:
-      data.title = 'One'
-      await nextTick()
-      data.title = 'Two'
-      await nextTick()
-      expect([...dataModel.derivedValueDataPaths]).toEqual(['slug'])
-      resolveLength(3)
-      await waitForProcessedDataSnapshot(dataModel)
-      dataModel.stop()
-    })
-
-    it('counts changes made while the model settles', async () => {
-      // `size` selects its first option once the options are loaded, which is
-      // derived and doesn't count, while the edit of `title` does.
-      let resolveOptions
-      const schema = {
-        type: 'form',
-        components: {
-          title: { type: 'text' },
-          size: {
-            type: 'select',
-            options: {
-              data: () =>
-                new Promise(resolve => {
-                  resolveOptions = resolve
-                })
-            },
-            compute: ({ value, options }) => value ?? options?.[0].id
-          }
-        }
-      }
-      const { dataModel, data } = createDataModel(
-        schema,
-        { title: 'Hello' },
-        { getSourceSchema }
-      )
-      await nextTick()
-      data.title = 'Changed'
-      expect(dataModel.isDirty).toBe(true)
-      resolveOptions([{ id: 1 }, { id: 2 }])
-      await waitForProcessedDataSnapshot(dataModel)
-      expect(data.size).toBe(1)
-      expect(dataModel.isDirty).toBe(true)
-      data.title = 'Hello'
-      expect(dataModel.isDirty).toBe(false)
-      dataModel.stop()
-    })
-
-    it(`doesn't count values derived after loads as changes`, async () => {
-      const schema = {
-        type: 'form',
-        components: {
-          title: { type: 'text' },
-          length: {
-            type: 'computed',
-            data: ({ item }) => {
-              const { title } = item
-              return async () => title.length
-            }
-          },
-          size: {
-            type: 'select',
-            options: { data: async () => [{ id: 1 }, { id: 2 }] },
-            compute: ({ value, options }) => value ?? options?.[0].id
-          }
-        }
-      }
-      const { dataModel, data } = createDataModel(
-        schema,
-        { title: 'Hello' },
-        { getSourceSchema }
-      )
-      await waitForProcessedDataSnapshot(dataModel)
-      expect(data).toEqual({ title: 'Hello', length: 5, size: 1 })
-      expect(dataModel.isDirty).toBe(false)
-      data.size = 2
-      expect(dataModel.isDirty).toBe(true)
-      dataModel.stop()
-    })
-
-    it('ignores derived values that are excluded from the processed data', async () => {
-      // `preview` is computed while the model settles, but as it's excluded,
-      // the processed data never holds it, neither in the snapshot.
-      let resolveLength
-      const schema = {
-        type: 'form',
-        components: {
-          title: { type: 'text' },
-          preview: {
-            type: 'text',
-            exclude: true,
-            compute: ({ item }) => item.title?.toUpperCase()
-          },
-          length: {
-            type: 'computed',
-            data: () =>
-              new Promise(resolve => {
-                resolveLength = resolve
-              })
-          }
-        }
-      }
-      const { dataModel, data } = createDataModel(
-        schema,
-        { title: 'Hello' },
-        { getSourceSchema }
-      )
-      await nextTick()
-      // The title is edited while `length` still loads:
-      data.title = 'Edited'
-      await nextTick()
-      expect(data.preview).toBe('EDITED')
-      expect([...dataModel.derivedValueDataPaths]).toEqual(['preview'])
-      expect(dataModel.isDirty).toBe(true)
-      data.title = 'Hello'
-      await nextTick()
-      expect(dataModel.isDirty).toBe(false)
-      resolveLength(5)
-      await waitForProcessedDataSnapshot(dataModel)
-      expect(dataModel.derivedValueDataPaths).toBe(null)
-      expect(dataModel.processedDataSnapshot.value.processedData).toEqual({
-        title: 'Hello',
-        length: 5
+    function createBookModel() {
+      return createDataModel(schema, {
+        title: 'Emma',
+        chapters: [{ title: 'One' }, { title: 'Two' }, { title: 'Three' }]
       })
-      expect(dataModel.isDirty).toBe(false)
-      data.title = 'Changed'
+    }
+
+    const getTitles = list => list.map(({ title }) => title)
+    const getPositions = list => list.map(({ position }) => position)
+
+    it(`isn't dirty after the data is set up`, async () => {
+      const { dataModel, data } = createBookModel()
       await nextTick()
-      expect(data.preview).toBe('CHANGED')
-      expect(dataModel.isDirty).toBe(true)
-      dataModel.stop()
-    })
-
-    it('takes a new snapshot when the data is replaced', async () => {
-      const schema = {
-        type: 'form',
-        components: { title: { type: 'text' } }
-      }
-      const { dataModel, dataRef, data } = createDataModel(
-        schema,
-        { title: 'Hello' },
-        { getSourceSchema }
-      )
-      await waitForProcessedDataSnapshot(dataModel)
-      data.title = 'Changed'
-      expect(dataModel.isDirty).toBe(true)
-      dataRef.value = reactive({ title: 'Saved' })
-      await waitForProcessedDataSnapshot(dataModel)
+      // Defaults, computed values and order keys are the model's own writes:
+      expect(data.slug).toBe('emma')
+      expect(data.chapters[0].status).toBe('draft')
+      expect(getPositions(data.chapters)).toEqual([0, 1, 2])
       expect(dataModel.isDirty).toBe(false)
       dataModel.stop()
     })
 
-    it(`doesn't compare replaced data with the snapshot of its predecessor`, async () => {
-      const schema = {
-        type: 'form',
-        components: { title: { type: 'text' } }
-      }
-      const { dataModel, dataRef } = createDataModel(
-        schema,
-        { title: 'Hello' },
-        { getSourceSchema }
+    it('is dirty after `set()`, also when reverted', async () => {
+      const { dataModel, data } = createBookModel()
+      dataModel.set(data, 'title', 'Persuasion')
+      expect(data.title).toBe('Persuasion')
+      expect(dataModel.isDirty).toBe(true)
+      dataModel.set(data, 'title', 'Emma')
+      expect(dataModel.isDirty).toBe(true)
+      dataModel.stop()
+    })
+
+    it(`isn't dirty after \`set()\` of the value that it has`, () => {
+      const { dataModel, data } = createBookModel()
+      dataModel.set(data, 'title', 'Emma')
+      dataModel.set(
+        data,
+        'chapters',
+        data.chapters.map(chapter => ({
+          ...chapter
+        }))
       )
-      await waitForProcessedDataSnapshot(dataModel)
-      // Until its own snapshot is taken, the replaced data isn't dirty:
-      dataRef.value = reactive({ title: 'Saved' })
       expect(dataModel.isDirty).toBe(false)
       dataModel.stop()
     })
 
-    it('detects in-place changes of nested values against the snapshot', async () => {
-      const schema = {
-        type: 'form',
-        components: {
-          chapters: {
-            type: 'list',
-            form: { type: 'form', components: { title: { type: 'text' } } }
-          },
-          settings: {
-            type: 'object',
-            form: { type: 'form', components: { color: { type: 'text' } } }
-          }
-        }
-      }
+    it(`is only dirty if the component can save, but edited anyway`, () => {
       const { dataModel, data } = createDataModel(
         schema,
-        { chapters: [{ title: 'One' }], settings: { color: 'red' } },
-        { getSourceSchema }
+        { title: 'Emma', chapters: [] },
+        { canSave: () => false }
       )
-      await waitForProcessedDataSnapshot(dataModel)
-      data.chapters[0].title = 'Changed'
-      expect(dataModel.isDirty).toBe(true)
-      data.chapters[0].title = 'One'
+      dataModel.set(data, 'title', 'Persuasion')
       expect(dataModel.isDirty).toBe(false)
-      data.settings.color = 'blue'
-      expect(dataModel.isDirty).toBe(true)
-      data.settings.color = 'red'
-      expect(dataModel.isDirty).toBe(false)
+      expect(dataModel.isEdited).toBe(true)
+      dataModel.markClean()
+      expect(dataModel.isEdited).toBe(false)
       dataModel.stop()
     })
 
-    it(`doesn't count changes of excluded values`, async () => {
-      const schema = {
-        type: 'form',
-        components: { search: { type: 'text', exclude: true } }
-      }
+    it('is dirty after `set()` of nested values', () => {
+      const { dataModel, data } = createBookModel()
+      dataModel.set(data.chapters[1], 'title', 'Second')
+      expect(data.chapters[1].title).toBe('Second')
+      expect(dataModel.isDirty).toBe(true)
+      dataModel.stop()
+    })
+
+    it('inserts items and numbers the list by its order key', async () => {
+      const { dataModel, data } = createBookModel()
+      dataModel.insert(data.chapters, 1, { title: 'Prologue' })
+      expect(getTitles(data.chapters)).toEqual([
+        'One',
+        'Prologue',
+        'Two',
+        'Three'
+      ])
+      expect(getPositions(data.chapters)).toEqual([0, 1, 2, 3])
+      expect(dataModel.isDirty).toBe(true)
+      await nextTick()
+      // Inserted items get their defaults:
+      expect(data.chapters[1].status).toBe('draft')
+      dataModel.stop()
+    })
+
+    it('removes items and numbers the list by its order key', () => {
+      const { dataModel, data } = createBookModel()
+      dataModel.remove(data.chapters, 0)
+      expect(getTitles(data.chapters)).toEqual(['Two', 'Three'])
+      expect(getPositions(data.chapters)).toEqual([0, 1])
+      expect(dataModel.isDirty).toBe(true)
+      dataModel.stop()
+    })
+
+    it('moves items and numbers the list by its order key', () => {
+      const { dataModel, data } = createBookModel()
+      const list = data.chapters
+      dataModel.move(list, 0, 2)
+      expect(data.chapters).toBe(list)
+      expect(getTitles(list)).toEqual(['Two', 'Three', 'One'])
+      expect(getPositions(list)).toEqual([0, 1, 2])
+      expect(dataModel.isDirty).toBe(true)
+      dataModel.stop()
+    })
+
+    it('replaces the children of lists in place', () => {
+      const { dataModel, data } = createBookModel()
+      const list = data.chapters
+      dataModel.replaceChildren(list, [list[2], list[0]])
+      expect(data.chapters).toBe(list)
+      expect(getTitles(list)).toEqual(['Three', 'One'])
+      expect(getPositions(list)).toEqual([0, 1])
+      expect(dataModel.isDirty).toBe(true)
+      dataModel.stop()
+    })
+
+    it('keeps the offset of the order of lists loaded from later pages', () => {
+      // E.g. the second page of a list with its own resource, which the model
+      // doesn't walk otherwise, see `SourceMixin.setLoadedListItems()`:
       const { dataModel, data } = createDataModel(
-        schema,
-        { search: '' },
-        { getSourceSchema }
-      )
-      await waitForProcessedDataSnapshot(dataModel)
-      data.search = 'Changed'
-      expect(dataModel.isDirty).toBe(false)
-      dataModel.stop()
-    })
-
-    it("doesn't call `compute()` and `process()`", async () => {
-      const compute = vi.fn(() => 'Computed')
-      const process = vi.fn(({ value }) => value)
-      const schema = {
-        type: 'form',
-        components: {
-          title: { type: 'text', process },
-          subtitle: { type: 'text', compute }
-        }
-      }
-      const { dataModel, data } = createDataModel(
-        schema,
-        { title: 'Hello' },
-        { getSourceSchema }
-      )
-      await waitForProcessedDataSnapshot(dataModel)
-      const computeCallCount = compute.mock.calls.length
-      data.title = 'Changed'
-      expect(dataModel.isDirty).toBe(true)
-      expect(compute).toHaveBeenCalledTimes(computeCallCount)
-      expect(process).not.toHaveBeenCalled()
-      dataModel.stop()
-    })
-
-    it('reads the dirty state of data that `process()` rejects', async () => {
-      // Data that is edited isn't validated yet, see `processData()`.
-      const schema = {
-        type: 'form',
-        components: {
-          version: {
-            type: 'text',
-            process: ({ value }) => value.split('.').map(Number)
-          }
-        }
-      }
-      const { dataModel, data } = createDataModel(
-        schema,
-        { version: '1.0' },
-        { getSourceSchema }
-      )
-      await waitForProcessedDataSnapshot(dataModel)
-      data.version = null
-      expect(dataModel.isDirty).toBe(true)
-      data.version = '1.0'
-      expect(dataModel.isDirty).toBe(false)
-      dataModel.stop()
-    })
-
-    it('counts changes of excluded values that `process()` stores', async () => {
-      const schema = {
-        type: 'form',
-        components: {
-          tagsText: {
-            type: 'text',
-            exclude: true,
-            process: ({ value, processedItem }) => {
-              processedItem.tags = value.split(',')
-            }
-          }
-        }
-      }
-      const { dataModel, data } = createDataModel(
-        schema,
-        { tagsText: 'a' },
-        { getSourceSchema }
-      )
-      await waitForProcessedDataSnapshot(dataModel)
-      data.tagsText = 'a,b'
-      expect(dataModel.isDirty).toBe(true)
-      data.tagsText = 'a'
-      expect(dataModel.isDirty).toBe(false)
-      dataModel.stop()
-    })
-
-    it('compares values as processed by their types', async () => {
-      const schema = {
-        type: 'form',
-        components: { file: { type: 'upload' } }
-      }
-      const { dataModel, data } = createDataModel(
-        schema,
-        { file: null },
-        { getSourceSchema }
-      )
-      await waitForProcessedDataSnapshot(dataModel)
-      data.file = { name: 'font.zip', isUploaded: false }
-      expect(dataModel.isDirty).toBe(false)
-      data.file.isUploaded = true
-      expect(dataModel.isDirty).toBe(true)
-      dataModel.stop()
-    })
-
-    it(`doesn't count order keys numbered on setup as changes`, async () => {
-      const schema = {
-        type: 'form',
-        components: {
-          items: {
-            type: 'list',
-            orderKey: 'order',
-            form: { type: 'form', components: { name: { type: 'text' } } }
-          }
-        }
-      }
-      const { dataModel, dataRef, data } = createDataModel(
-        schema,
         {
-          items: [
-            { id: 1, name: 'A', order: 4 },
-            { id: 2, name: 'B', order: 7 }
-          ]
+          type: 'form',
+          components: {
+            books: {
+              type: 'list',
+              resource: { path: 'books' },
+              orderKey: 'position',
+              columns: { title: {} }
+            }
+          }
         },
-        { getSourceSchema }
+        {
+          books: [
+            { title: 'Emma', position: 10 },
+            { title: 'Persuasion', position: 11 }
+          ]
+        }
       )
-      await waitForProcessedDataSnapshot(dataModel)
-      expect(data.items.map(item => item.order)).toEqual([0, 1])
-      expect(dataModel.isDirty).toBe(false)
-      data.items.reverse()
-      updateOrder(schema.components.items, data.items)
-      expect(dataModel.isDirty).toBe(true)
-      // Replaced data is numbered too.
-      dataRef.value = reactive({ items: [{ id: 3, name: 'C', order: 8 }] })
-      await waitForProcessedDataSnapshot(dataModel)
-      expect(dataRef.value.items[0].order).toBe(0)
-      expect(dataModel.isDirty).toBe(false)
+      dataModel.move(data.books, 1, 0)
+      expect(data.books).toEqual([
+        { title: 'Persuasion', position: 10 },
+        { title: 'Emma', position: 11 }
+      ])
       dataModel.stop()
     })
 
-    describe('applyCleanChanges()', () => {
-      const schema = {
-        type: 'form',
-        components: {
-          title: { type: 'text' },
-          chapters: {
-            type: 'list',
-            form: { type: 'form', components: { title: { type: 'text' } } }
-          }
-        }
-      }
-
-      it(`doesn't count clean changes, but other changes`, async () => {
-        const { dataModel, data } = createDataModel(
-          schema,
-          { title: 'Hello', chapters: [{ title: 'One' }] },
-          { getSourceSchema }
-        )
-        await waitForProcessedDataSnapshot(dataModel)
-        data.title = 'Changed'
-        await dataModel.applyCleanChanges(() => {
-          data.chapters[0].title = 'Saved'
-          data.chapters.push({ title: 'Two' })
-        })
-        expect(dataModel.isDirty).toBe(true)
-        data.title = 'Hello'
-        expect(dataModel.isDirty).toBe(false)
-        data.chapters[1].title = 'Changed'
-        expect(dataModel.isDirty).toBe(true)
-        dataModel.stop()
-      })
-
-      it('keeps values derived from clean changes clean', async () => {
-        const { dataModel, data } = createDataModel(
-          { type: 'form', components: { title: { type: 'text' }, slug } },
-          { title: 'Hello' },
-          { getSourceSchema }
-        )
-        await waitForProcessedDataSnapshot(dataModel)
-        await dataModel.applyCleanChanges(() => {
-          data.title = 'Saved Title'
-        })
-        expect(data.slug).toBe('saved-title')
-        expect(dataModel.isDirty).toBe(false)
-        dataModel.stop()
-      })
-
-      it('takes over clean changes of nested values in place', async () => {
-        // Values without forms are processed as they are, sharing their
-        // nested values with the data.
-        const { dataModel, data } = createDataModel(
-          { type: 'form', components: { settings: { type: 'text' } } },
-          { settings: { color: 'red' } },
-          { getSourceSchema }
-        )
-        await waitForProcessedDataSnapshot(dataModel)
-        await dataModel.applyCleanChanges(() => {
-          data.settings.color = 'blue'
-        })
-        expect(dataModel.isDirty).toBe(false)
-        dataModel.stop()
-      })
-
-      it('includes clean changes in snapshots that are pending', async () => {
-        const { dataModel, data } = createDataModel(
-          schema,
-          { title: 'Hello', chapters: [] },
-          { getSourceSchema }
-        )
-        await dataModel.applyCleanChanges(() => {
-          data.title = 'Saved'
-        })
-        await waitForProcessedDataSnapshot(dataModel)
-        expect(dataModel.isDirty).toBe(false)
-        dataModel.stop()
-      })
-      it('keeps changes made while clean changes settle dirty', async () => {
-        // The clean change starts a load, e.g. of a value derived from it,
-        // and the user edits another value before the load finished.
-        const loads = []
-        const schema = {
+    it('marks the lists of sources with their own resource dirty per source', () => {
+      const { dataModel, data } = createDataModel(
+        {
           type: 'form',
           components: {
             title: { type: 'text' },
-            notes: { type: 'text' },
-            preview: {
-              type: 'computed',
-              data: ({ item }) => {
-                const { title } = item
-                return () =>
-                  new Promise(resolve => loads.push(() => resolve(title)))
+            books: {
+              type: 'list',
+              resource: { path: 'books' },
+              columns: { title: {} },
+              // The source can save, by a submit button of any name:
+              buttons: { saveOrder: { type: 'submit' } }
+            }
+          }
+        },
+        { title: 'Emma', books: [{ title: 'A' }, { title: 'B' }] }
+      )
+      dataModel.set(data, 'title', 'Persuasion')
+      dataModel.move(data.books, 1, 0)
+      // The source saves its list, which leaves the other changes dirty:
+      dataModel.markClean(data, 'books')
+      expect(dataModel.isDirty).toBe(true)
+      dataModel.move(data.books, 1, 0)
+      dataModel.markClean()
+      expect(dataModel.isDirty).toBe(false)
+      dataModel.move(data.books, 1, 0)
+      expect(dataModel.isDirty).toBe(true)
+      dataModel.stop()
+    })
+
+    it(`leaves the lists of sources that can't save clean`, () => {
+      // E.g. lists whose order the app saves in `onChange()`:
+      const { dataModel, data } = createDataModel(
+        {
+          type: 'form',
+          components: {
+            books: {
+              type: 'list',
+              resource: { path: 'books' },
+              columns: { title: {} }
+            }
+          }
+        },
+        { books: [{ title: 'A' }, { title: 'B' }] }
+      )
+      dataModel.move(data.books, 1, 0)
+      expect(getTitles(data.books)).toEqual(['B', 'A'])
+      expect(dataModel.isEdited).toBe(false)
+      dataModel.stop()
+    })
+
+    it('marks changes inside sources with their own resource for them', () => {
+      // E.g. the children of the items of a tree with a resource:
+      const { dataModel, data } = createDataModel(
+        {
+          type: 'form',
+          components: {
+            books: {
+              type: 'list',
+              resource: { path: 'books' },
+              buttons: { submit: { type: 'submit' } },
+              form: {
+                type: 'form',
+                components: {
+                  chapters: {
+                    type: 'list',
+                    form: { type: 'form', components: {} }
+                  }
+                }
               }
             }
           }
-        }
-        const { dataModel, data } = createDataModel(
-          schema,
-          { title: 'Hello', notes: 'Old' },
-          { getSourceSchema }
-        )
-        await nextTick()
-        loads.shift()()
-        await waitForProcessedDataSnapshot(dataModel)
-        const applying = dataModel.applyCleanChanges(() => {
-          data.title = 'Saved'
-        })
-        await nextTick()
-        await nextTick()
-        expect(dataModel.hasPendingLoads).toBe(true)
-        data.notes = 'Edited by the user'
-        loads.shift()()
-        await applying
-        expect(data.preview).toBe('Saved')
-        expect(dataModel.isDirty).toBe(true)
-        dataModel.stop()
-      })
+        },
+        { books: [{ chapters: [{ title: 'A' }, { title: 'B' }] }] }
+      )
+      dataModel.move(data.books[0].chapters, 1, 0)
+      expect(dataModel.isDirty).toBe(true)
+      dataModel.markClean(data, 'books')
+      expect(dataModel.isEdited).toBe(false)
+      dataModel.stop()
     })
 
-    it(`isn't tracked without a source schema`, async () => {
-      const schema = {
-        type: 'form',
-        components: { title: { type: 'text' } }
-      }
-      const { dataModel, data } = createDataModel(schema, { title: 'Hello' })
-      await waitForProcessedDataSnapshot(dataModel)
-      data.title = 'Changed'
+    it(`isn't dirty after direct writes until \`markDirty()\``, async () => {
+      const { dataModel, data } = createBookModel()
+      data.title = 'Persuasion'
+      data.chapters.push({ title: 'Four' })
+      await nextTick()
+      expect(data.slug).toBe('persuasion')
       expect(dataModel.isDirty).toBe(false)
+      dataModel.markDirty()
+      expect(dataModel.isDirty).toBe(true)
+      dataModel.stop()
+    })
+
+    it(`isn't dirty after \`markClean()\`, e.g. once saved`, () => {
+      const { dataModel, data } = createBookModel()
+      dataModel.set(data, 'title', 'Persuasion')
+      dataModel.markClean()
+      expect(dataModel.isDirty).toBe(false)
+      dataModel.stop()
+    })
+
+    it(`isn't dirty once the data is replaced`, async () => {
+      const { dataModel, dataRef, data } = createBookModel()
+      dataModel.set(data, 'title', 'Persuasion')
+      dataRef.value = reactive({ title: 'Saved', chapters: [] })
+      expect(dataModel.isDirty).toBe(false)
+      await nextTick()
+      expect(dataRef.value.slug).toBe('saved')
+      expect(dataModel.isDirty).toBe(false)
+      dataModel.stop()
+    })
+
+    it('stays clean while it writes values derived after loads', async () => {
+      // `size` selects its first option once the options are loaded, which is
+      // the model's own write, while the edit of `title` marks it dirty.
+      let resolveOptions
+      const { dataModel, data } = createDataModel(
+        {
+          type: 'form',
+          components: {
+            title: { type: 'text' },
+            size: {
+              type: 'select',
+              options: {
+                data: () =>
+                  new Promise(resolve => {
+                    resolveOptions = resolve
+                  })
+              },
+              compute: ({ value, options }) => value ?? options?.[0].id
+            }
+          }
+        },
+        { title: 'Hello' }
+      )
+      await nextTick()
+      resolveOptions([{ id: 1 }, { id: 2 }])
+      await dataModel.waitUntilSettled()
+      await nextTick()
+      expect(data.size).toBe(1)
+      expect(dataModel.isDirty).toBe(false)
+      dataModel.set(data, 'title', 'Changed')
+      expect(dataModel.isDirty).toBe(true)
       dataModel.stop()
     })
   })
@@ -1551,11 +1311,31 @@ describe('DataModel', () => {
       warn.mockRestore()
       dataModel.stop()
     })
+
+    it(`waits for loads that can't time out beyond the timeout`, async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const { dataModel } = createDataModel({ type: 'form' }, {})
+      // E.g. uploads, which take as long as their files need:
+      let isUploaded = false
+      dataModel.trackPendingLoad(
+        new Promise(resolve =>
+          setTimeout(() => {
+            isUploaded = true
+            resolve()
+          }, 30)
+        ),
+        { canTimeOut: false }
+      )
+      await dataModel.waitUntilSettled({ timeout: 10 })
+      expect(isUploaded).toBe(true)
+      expect(dataModel.hasPendingLoads).toBe(false)
+      expect(warn).not.toHaveBeenCalled()
+      warn.mockRestore()
+      dataModel.stop()
+    })
   })
 
   describe('edge cases', () => {
-    const getSourceSchema = () => ({ type: 'list' })
-
     it('works for components without data and component paths', () => {
       const schema = {
         type: 'form',
@@ -1568,27 +1348,22 @@ describe('DataModel', () => {
         getData: () => data
       })
       expect(data.slug).toBe('hello-world')
-      expect(dataModel.hasComputedValueEntry({ data, name: 'slug' })).toBe(
-        true
-      )
       dataModel.stop()
     })
 
     it('handles missing data and empty schemas', async () => {
-      const schema = {
-        type: 'form',
-        components: { title: { type: 'text', default: 'Untitled' } }
-      }
       const dataRef = ref(null)
       const dataModel = new DataModel({
         component: {},
-        getSchema: () => schema,
-        getData: () => dataRef.value,
-        getSourceSchema
+        getSchema: () => ({ type: 'form' }),
+        getData: () => dataRef.value
       })
       await nextTick()
       expect(dataModel.isDirty).toBe(false)
-      expect(dataModel.getProcessedDataForDirtyCheck()).toBe(null)
+      dataRef.value = reactive({ items: [{ id: 1 }, { id: 2 }] })
+      dataModel.move(dataRef.value.items, 0, 1)
+      expect(dataRef.value.items).toEqual([{ id: 2 }, { id: 1 }])
+      expect(dataModel.isDirty).toBe(true)
       dataModel.stop()
     })
 
@@ -1629,233 +1404,9 @@ describe('DataModel', () => {
       expect(data.authors[0].books[0].language).toBe('fr')
       dataModel.stop()
     })
-
-    it(`doesn't take snapshots once the model is stopped`, async () => {
-      let resolveLoad
-      const schema = {
-        type: 'form',
-        components: {
-          preview: {
-            type: 'computed',
-            data: () => () => new Promise(resolve => (resolveLoad = resolve))
-          }
-        }
-      }
-      const { dataModel } = createDataModel(
-        schema,
-        {},
-        { getSourceSchema }
-      )
-      await nextTick()
-      expect(dataModel.hasPendingLoads).toBe(true)
-      const snapshot = dataModel.processedDataSnapshot.value
-      dataModel.stop()
-      resolveLoad('Loaded')
-      await nextTick()
-      await nextTick()
-      expect(dataModel.processedDataSnapshot.value).toBe(snapshot)
-    })
-
-    it('takes the snapshot of data replaced while settling', async () => {
-      const loads = []
-      const schema = {
-        type: 'form',
-        components: {
-          title: { type: 'text' },
-          preview: {
-            type: 'computed',
-            data: ({ item }) => {
-              const { title } = item
-              return () =>
-                new Promise(resolve => loads.push(() => resolve(title)))
-            }
-          }
-        }
-      }
-      const { dataModel, dataRef } = createDataModel(
-        schema,
-        { title: 'First' },
-        { getSourceSchema }
-      )
-      await nextTick()
-      dataRef.value = reactive({ title: 'Second' })
-      await nextTick()
-      for (const load of loads) load()
-      await dataModel.waitUntilSettled()
-      await nextTick()
-      expect(dataRef.value.preview).toBe('Second')
-      expect(dataModel.isDirty).toBe(false)
-      dataRef.value.title = 'Changed'
-      expect(dataModel.isDirty).toBe(true)
-      dataModel.stop()
-    })
-
-    it('counts items removed or added while settling as changes', async () => {
-      const loads = []
-      const schema = {
-        type: 'form',
-        components: {
-          books: {
-            type: 'list',
-            form: {
-              type: 'form',
-              components: {
-                title: { type: 'text' },
-                summary: {
-                  type: 'computed',
-                  data: ({ item }) => {
-                    const { title } = item
-                    return () =>
-                      new Promise(resolve =>
-                        loads.push(() => resolve(`About ${title}`))
-                      )
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-      const { dataModel, data } = createDataModel(
-        schema,
-        { books: [{ title: 'One' }, { title: 'Two' }] },
-        { getSourceSchema }
-      )
-      await nextTick()
-      // The user removes the second book, and adds a third one:
-      data.books.splice(1, 1)
-      data.books.push({ title: 'Three' })
-      await nextTick()
-      while (loads.length > 0) {
-        loads.shift()()
-        await nextTick()
-      }
-      await dataModel.waitUntilSettled()
-      await nextTick()
-      expect(data.books.map(book => book.summary)).toEqual([
-        'About One',
-        'About Three'
-      ])
-      expect(dataModel.isDirty).toBe(true)
-      dataModel.stop()
-    })
-
-    describe('applyCleanChanges()', () => {
-      const schema = {
-        type: 'form',
-        components: {
-          settings: { type: 'text' },
-          chapters: {
-            type: 'list',
-            form: { type: 'form', components: { title: { type: 'text' } } }
-          }
-        }
-      }
-
-      it('only makes the changes without dirty tracking', async () => {
-        const { dataModel, data } = createDataModel(schema, { chapters: [] })
-        await dataModel.applyCleanChanges(() => {
-          data.settings = { color: 'red' }
-        })
-        expect(data.settings).toEqual({ color: 'red' })
-        expect(dataModel.isDirty).toBe(false)
-        dataModel.stop()
-      })
-
-      it('takes over clean changes of array entries only', async () => {
-        const { dataModel, data } = createDataModel(
-          schema,
-          { chapters: [{ title: 'One' }, { title: 'Two' }] },
-          { getSourceSchema }
-        )
-        await nextTick()
-        await dataModel.waitUntilSettled()
-        await nextTick()
-        data.chapters[1].title = 'Edited'
-        await dataModel.applyCleanChanges(() => {
-          data.chapters[0].title = 'Saved'
-        })
-        expect(dataModel.isDirty).toBe(true)
-        data.chapters[1].title = 'Two'
-        expect(dataModel.isDirty).toBe(false)
-        dataModel.stop()
-      })
-
-      it('keeps the defaults of items added by clean changes clean', async () => {
-        const { dataModel, data } = createDataModel(
-          {
-            type: 'form',
-            components: {
-              chapters: {
-                type: 'list',
-                form: {
-                  type: 'form',
-                  components: {
-                    title: { type: 'text' },
-                    status: { type: 'text', default: 'draft' }
-                  }
-                }
-              }
-            }
-          },
-          { chapters: [] },
-          { getSourceSchema }
-        )
-        await nextTick()
-        await dataModel.waitUntilSettled()
-        await nextTick()
-        await dataModel.applyCleanChanges(() => {
-          data.chapters.push({ title: 'One' })
-        })
-        expect(data.chapters[0].status).toBe('draft')
-        expect(dataModel.isDirty).toBe(false)
-        dataModel.stop()
-      })
-
-      it('takes over clean removals of nested values', async () => {
-        const { dataModel, data } = createDataModel(
-          schema,
-          { settings: { color: 'red', size: 2 }, chapters: [] },
-          { getSourceSchema }
-        )
-        await nextTick()
-        await dataModel.waitUntilSettled()
-        await nextTick()
-        await dataModel.applyCleanChanges(() => {
-          delete data.settings.size
-        })
-        expect(dataModel.isDirty).toBe(false)
-        dataModel.stop()
-      })
-
-      it(`doesn't apply to data replaced in the meantime`, async () => {
-        const { dataModel, dataRef, data } = createDataModel(
-          schema,
-          { settings: null, chapters: [] },
-          { getSourceSchema }
-        )
-        await nextTick()
-        await dataModel.waitUntilSettled()
-        await nextTick()
-        const applying = dataModel.applyCleanChanges(() => {
-          data.settings = 'saved'
-        })
-        dataRef.value = reactive({ settings: 'other', chapters: [] })
-        await applying
-        await nextTick()
-        await dataModel.waitUntilSettled()
-        await nextTick()
-        expect(dataModel.isDirty).toBe(false)
-        dataRef.value.settings = 'saved'
-        expect(dataModel.isDirty).toBe(true)
-        dataModel.stop()
-      })
-    })
   })
 
   describe('rare paths', () => {
-    const getSourceSchema = () => ({ type: 'list' })
-
     it(`asks the type with the item's context whether values are missing`, async () => {
       // Like types whose values may be left out, decided per item:
       const ignoreMissingValue = vi.fn(({ item }) => !!item.isDraft)
@@ -2010,7 +1561,7 @@ describe('DataModel', () => {
       )
     })
 
-    it('leaves out derived values of items added while settling', async () => {
+    it('stays dirty after changes while it settles', async () => {
       const loads = []
       const schema = {
         type: 'form',
@@ -2031,15 +1582,14 @@ describe('DataModel', () => {
           }
         }
       }
-      const { dataModel, data } = createDataModel(
-        schema,
-        { books: [] },
-        { getSourceSchema }
-      )
+      const { dataModel, data } = createDataModel(schema, {
+        books: [{ title: 'One' }, { title: 'Two' }]
+      })
       await nextTick()
-      // An item added while the model settles, whose computed `slug` is
-      // derived, but whose parent the snapshot doesn't hold:
-      data.books.push({ title: 'New Book' })
+      // The user removes the second book and adds a third one, while the
+      // summaries are still loading:
+      dataModel.remove(data.books, 1)
+      dataModel.insert(data.books, 1, { title: 'Three' })
       await nextTick()
       while (loads.length > 0) {
         loads.shift()('Summary')
@@ -2047,10 +1597,10 @@ describe('DataModel', () => {
       }
       await dataModel.waitUntilSettled()
       await nextTick()
-      expect(data.books[0].slug).toBe('new-book')
-      expect(dataModel.processedDataSnapshot.value.processedData.books).toEqual(
-        []
-      )
+      expect(data.books).toMatchObject([
+        { title: 'One', slug: 'one', summary: 'Summary' },
+        { title: 'Three', slug: 'three', summary: 'Summary' }
+      ])
       expect(dataModel.isDirty).toBe(true)
       dataModel.stop()
     })
