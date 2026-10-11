@@ -9,6 +9,14 @@ function createStorage(keys = ['test-secret']) {
   return new Storage(app, { name: 'test' })
 }
 
+function createImportStorage() {
+  const app = { keys: ['test-secret'] }
+  return new Storage(app, {
+    name: 'test',
+    allowedImports: ['https://example.com/**']
+  })
+}
+
 function simulateUpload(storage, key, originalname) {
   return storage.convertStorageFile({
     key,
@@ -33,6 +41,76 @@ describe('Storage: asset key signature verification', () => {
     expect(() => {
       storage.convertAssetFile(file, { trusted: false })
     }).toThrow('Invalid asset signature')
+  })
+
+  it('accepts unsigned files from allowed import sources', () => {
+    const storage = createImportStorage()
+    for (const key of ['5f3e8a2c-1b4d-4c6e-9f0a-7d2b3c4e5f6a.png', 'cover']) {
+      const file = { key, name: 'cover.png', url: 'https://example.com/a.png' }
+      storage.convertAssetFile(file, { trusted: false })
+      expect(file.key).toBe(key)
+    }
+  })
+
+  it('rejects unsigned imported files with keys of other formats', () => {
+    const storage = createImportStorage()
+    for (const key of [
+      '../escape.txt',
+      '/absolute.txt',
+      'nested/key.txt',
+      'nested\\key.txt',
+      '..',
+      '.',
+      '.htaccess',
+      'a',
+      'a.png',
+      'a.b',
+      'key.tar.gz',
+      'key.p g',
+      'key.png?x',
+      'key.png#x',
+      'key.png%00',
+      'key.png\0',
+      'http:example.org',
+      '%2e%2e'
+    ]) {
+      const file = { key, name: 'x.txt', url: 'https://example.com/x.txt' }
+      expect(() => {
+        storage.convertAssetFile(file, { trusted: false })
+      }).toThrow(`Invalid asset key for file 'x.txt'`)
+    }
+  })
+
+  it('accepts unsigned imported files with generated keys', () => {
+    const storage = createImportStorage()
+    for (const name of ['photo.JPÉ', 'code.c++', 'image.jp-g', 'trailing.']) {
+      const key = AssetFile.getUniqueKey(name)
+      const file = { key, name, url: 'https://example.com/a.png' }
+      storage.convertAssetFile(file, { trusted: false })
+      expect(file.key).toBe(key)
+    }
+  })
+
+  it('rejects unsigned files without string keys', () => {
+    const storage = createImportStorage()
+    for (const key of [undefined, null, 42, { length: 2 }]) {
+      const file = { key, name: 'x.txt', url: 'https://example.com/x.txt' }
+      expect(() => {
+        storage.convertAssetFile(file, { trusted: false })
+      }).toThrow(`Invalid asset key for file 'x.txt'`)
+      const other = { key, name: 'x.txt', url: 'https://other.com/x.txt' }
+      expect(() => {
+        storage.convertAssetFile(other, { trusted: false })
+      }).toThrow(`Invalid asset signature for file 'x.txt'`)
+    }
+  })
+
+  it('accepts signed files with keys of other formats', () => {
+    const storage = createImportStorage()
+    const uploaded = simulateUpload(storage, 'legacy/key.png', 'photo.png')
+    const fromClient = { ...uploaded, url: 'https://example.com/a.png' }
+    storage.convertAssetFile(fromClient, { trusted: false })
+    expect(fromClient.key).toBe('legacy/key.png')
   })
 
   it('throws when a valid signature is paired with a swapped key', () => {
