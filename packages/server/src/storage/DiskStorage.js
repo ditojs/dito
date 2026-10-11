@@ -4,6 +4,7 @@ import multer from '@koa/multer'
 import { mapConcurrently } from '@ditojs/utils'
 import { removeIfEmpty } from '../utils/fs.js'
 import { Storage } from './Storage.js'
+import { AssetError } from '../errors/AssetError.js'
 
 export class DiskStorage extends Storage {
   static type = 'disk'
@@ -32,7 +33,14 @@ export class DiskStorage extends Storage {
 
   // @override
   _getFilePath(file) {
-    return this._getPath(this._getNestedFolder(file.key), file.key)
+    const filePath = this._getPath(this._getNestedFolder(file.key), file.key)
+    // Never address files outside of the storage folder or the folder itself,
+    // whatever the key. `path.join()` also handles folders at the root.
+    const folder = path.join(this._getPath(), path.sep)
+    if (!filePath.startsWith(folder) || filePath === folder) {
+      throw new AssetError(`Invalid asset key: '${file.key}'`)
+    }
+    return filePath
   }
 
   // @override

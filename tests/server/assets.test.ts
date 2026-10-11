@@ -302,6 +302,26 @@ describe('AssetManager', () => {
       expect(storage.dataByKey.has(file.key)).toBe(false)
     })
 
+    it('rejects imported files of model writes with other key formats', async () => {
+      const fetch = vi.spyOn(globalThis, 'fetch')
+      try {
+        await expect(
+          Document.query().insert({
+            file: {
+              key: '../escape.txt',
+              name: 'escape.txt',
+              type: 'text/plain',
+              url: 'https://covers.example.com/escape.txt'
+            } as AssetFile
+          })
+        ).rejects.toThrow(`Invalid asset key for file 'escape.txt'`)
+        expect(fetch).not.toHaveBeenCalled()
+        expect(storage.dataByKey.has('../escape.txt')).toBe(false)
+      } finally {
+        fetch.mockRestore()
+      }
+    })
+
     it('rejects unknown files without data or url', async () => {
       const file = createForeignFile('lost.txt')
       await expect(app.addForeignAssets(storage, [file])).rejects.toThrow(

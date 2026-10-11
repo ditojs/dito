@@ -160,6 +160,33 @@ describe('DiskStorage', () => {
     })
   })
 
+  it('keeps the paths of files inside the storage folder', async () => {
+    const storage = await createDiskStorage({ nestedFolders: false })
+    const outside = path.join(basePath, 'outside.txt')
+    await fs.writeFile(outside, 'Outside')
+    expect(() => storage.getFilePath({ key: '../outside.txt' })).toThrow(
+      `Invalid asset key: '../outside.txt'`
+    )
+    await expect(storage.removeFile({ key: '../outside.txt' })).rejects.toThrow(
+      `Invalid asset key: '../outside.txt'`
+    )
+    await expect(storage.readFile({ key: '../outside.txt' })).rejects.toThrow(
+      `Invalid asset key: '../outside.txt'`
+    )
+    expect(await fs.readFile(outside, 'utf8')).toBe('Outside')
+  })
+
+  it('keeps the paths of files of storages at the filesystem root', () => {
+    const storage = new DiskStorage({ basePath }, { name: 'root', path: '/' })
+    storage.setup()
+    expect(storage.getFilePath({ key: 'ab.txt' })).toBe(
+      path.resolve('/', 'a', 'b', 'ab.txt')
+    )
+    expect(() => storage.getFilePath({ key: '..' })).toThrow(
+      `Invalid asset key: '..'`
+    )
+  })
+
   describe('without nested folders', () => {
     it('stores, lists and removes files in the storage folder', async () => {
       const storage = await createDiskStorage({ nestedFolders: false })
