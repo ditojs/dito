@@ -506,6 +506,22 @@ describe('DitoTypeMultiselect', () => {
       await search(findField('author'), 'Au')
       expect(getErrors('author')).toEqual(['Search is unavailable'])
     })
+
+    it('removes the error of a failed search once a search succeeds', async () => {
+      const { findField, getErrors } = await mountSchema({
+        schema: createAuthorSchema(async ({ searchTerm }) => {
+          if (searchTerm === 'Au') {
+            throw new Error('Search is unavailable')
+          }
+          return [authors[0]]
+        })
+      })
+      const field = findField('author')
+      await search(field, 'Au')
+      expect(getErrors('author')).toEqual(['Search is unavailable'])
+      await search(field, 'Aus')
+      expect(getErrors('author')).toEqual([])
+    })
   })
 
   it('opens and focuses multiselects with `autofocus`', async () => {

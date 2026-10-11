@@ -1035,6 +1035,217 @@ describe('DataModel', () => {
     })
   })
 
+  describe('errors', () => {
+    const schema = {
+      type: 'form',
+      components: {
+        title: { type: 'text' },
+        details: {
+          type: 'section',
+          nested: true,
+          components: { subtitle: { type: 'text' } }
+        },
+        chapters: {
+          type: 'list',
+          form: { type: 'form', components: { title: { type: 'text' } } }
+        },
+        tags: {
+          type: 'list',
+          wrapPrimitives: 'name',
+          form: { type: 'form', components: { name: { type: 'text' } } }
+        }
+      }
+    }
+    const createBook = () =>
+      createDataModel(schema, {
+        title: 'Emma',
+        details: { subtitle: '' },
+        chapters: [{ title: 'One' }, { title: 'Two' }],
+        tags: ['classic']
+      })
+    const tooShort = [{ message: 'is too short' }]
+
+    it('keeps the errors of list items when they move', () => {
+      const { dataModel, data } = createBook()
+      dataModel.setErrors('chapters/1/title', tooShort)
+      dataModel.insert(data.chapters, 0, { title: 'Zero' })
+      expect(dataModel.getErrors('chapters/1/title')).toBe(null)
+      expect(dataModel.getErrors('chapters/2/title')).toEqual(tooShort)
+      dataModel.move(data.chapters, 2, 0)
+      expect(dataModel.getErrors('chapters/0/title')).toEqual(tooShort)
+      dataModel.stop()
+    })
+
+    it('hides only the errors of the field whose value changes', () => {
+      const { dataModel, data } = createBook()
+      dataModel.setErrors('title', tooShort)
+      dataModel.setErrors('details/subtitle', tooShort)
+      dataModel.setErrors('chapters/0/title', tooShort)
+      dataModel.set(data.chapters[0], 'title', 'Prologue')
+      expect(dataModel.getErrors('chapters/0/title')).toBe(null)
+      expect(dataModel.getErrors('title')).toEqual(tooShort)
+      expect(dataModel.getErrors('details/subtitle')).toEqual(tooShort)
+      dataModel.stop()
+    })
+
+    it('applies the errors only to the values that they were set for', () => {
+      const { dataModel, data } = createBook()
+      dataModel.setErrors('details/subtitle', tooShort)
+      // E.g. `change` handlers write data directly:
+      data.details.subtitle = 'Volume'
+      expect(dataModel.getErrors('details/subtitle')).toBe(null)
+      expect(dataModel.getErrorDataPaths()).toEqual([])
+      dataModel.stop()
+    })
+
+    it('hides the errors of lists once they change in place', () => {
+      const { dataModel, data } = createBook()
+      dataModel.setErrors('chapters', tooShort)
+      dataModel.insert(data.chapters, 2, { title: 'Three' })
+      expect(dataModel.getErrors('chapters')).toBe(null)
+      dataModel.stop()
+    })
+
+    it('keeps the errors when the value is written unchanged', () => {
+      // E.g. server errors of values that the user enters again:
+      const { dataModel, data } = createBook()
+      dataModel.setErrors('title', tooShort)
+      dataModel.set(data, 'title', 'Emma')
+      expect(dataModel.getErrors('title')).toEqual(tooShort)
+      dataModel.stop()
+    })
+
+    it('keys the values of lists of primitives by their lists', () => {
+      const { dataModel, data } = createBook()
+      dataModel.insert(data.tags, 1, 'novel')
+      dataModel.setErrors('tags/0', tooShort)
+      dataModel.setErrors('tags/1', tooShort)
+      // Edits of the values write into their lists, see `SourceMixin`:
+      dataModel.set(data.tags, 1, 'romance')
+      expect(dataModel.getErrors('tags/0')).toEqual(tooShort)
+      expect(dataModel.getErrors('tags/1')).toBe(null)
+      // Replaced lists don't hold the errors of their values anymore:
+      dataModel.set(data, 'tags', ['classic', 'romance'])
+      expect(dataModel.getErrors('tags/0')).toBe(null)
+      dataModel.stop()
+    })
+
+    it('keeps the server errors when the value is validated again', () => {
+      const { dataModel } = createBook()
+      const taken = [{ message: 'is taken' }]
+      dataModel.replaceErrors({ title: taken }, { server: true })
+      dataModel.addError('title', 'Unable to load')
+      dataModel.setErrors('title', tooShort)
+      expect(dataModel.getErrors('title')).toEqual([
+        ...tooShort,
+        ...taken,
+        'Unable to load'
+      ])
+      // E.g. `validate()` on blur, without validation errors:
+      dataModel.setErrors('title', null)
+      expect(dataModel.getErrors('title')).toEqual([...taken, 'Unable to load'])
+      dataModel.stop()
+    })
+
+    it('drops the errors of other values when the value is validated', () => {
+      const { dataModel, data } = createBook()
+      dataModel.replaceErrors(
+        { title: [{ message: 'is taken' }] },
+        { server: true }
+      )
+      dataModel.set(data, 'title', 'Persuasion')
+      dataModel.setErrors('title', null)
+      dataModel.set(data, 'title', 'Emma')
+      expect(dataModel.getErrors('title')).toBe(null)
+      dataModel.stop()
+    })
+
+    it('keeps the errors of fields while their values change', () => {
+      const { dataModel, data } = createBook()
+      dataModel.addError('title', 'Unable to load')
+      dataModel.set(data, 'title', 'Persuasion')
+      expect(dataModel.getErrors('title')).toEqual(['Unable to load'])
+      // Their sources remove them, also while the value differs:
+      dataModel.removeError('title', 'Unable to load')
+      dataModel.set(data, 'title', 'Emma')
+      expect(dataModel.getErrors('title')).toBe(null)
+      dataModel.stop()
+    })
+
+    it('adds errors once, and removes them by message', () => {
+      const { dataModel } = createBook()
+      dataModel.addError('title', 'Unable to load')
+      dataModel.addError('title', 'Unable to load')
+      dataModel.addError('title', 'Offline')
+      expect(dataModel.getErrors('title')).toEqual([
+        'Unable to load', 'Offline'
+      ])
+      dataModel.removeError('title', 'Unable to load')
+      dataModel.removeError('title', 'Missing')
+      expect(dataModel.getErrors('title')).toEqual(['Offline'])
+      dataModel.removeError('title', 'Offline')
+      expect(dataModel.getErrors('title')).toBe(null)
+      dataModel.stop()
+    })
+
+    it('replaces the errors within a data path, returning unmatched ones', () => {
+      const { dataModel } = createBook()
+      dataModel.setErrors('title', tooShort)
+      dataModel.setErrors('chapters/0/title', tooShort)
+      const unmatchedErrors = dataModel.replaceErrors(
+        {
+          'chapters/1/title': tooShort,
+          'chapters/1/isbn': tooShort
+        },
+        { dataPath: 'chapters' }
+      )
+      expect(unmatchedErrors).toEqual({ 'chapters/1/isbn': tooShort })
+      expect(dataModel.getErrors('chapters/0/title')).toBe(null)
+      expect(dataModel.getErrors('chapters/1/title')).toEqual(tooShort)
+      // Errors outside of the data path are kept:
+      expect(dataModel.getErrors('title')).toEqual(tooShort)
+      expect(dataModel.getErrorDataPaths()).toEqual([
+        'title',
+        'chapters/1/title'
+      ])
+      expect(dataModel.replaceErrors({ 'details/subtitle': tooShort })).toBe(
+        null
+      )
+      expect(dataModel.getErrorDataPaths()).toEqual(['details/subtitle'])
+      dataModel.stop()
+    })
+
+    it('clears the errors of the values within a data path', () => {
+      const { dataModel } = createBook()
+      dataModel.setErrors('title', tooShort)
+      dataModel.replaceErrors(
+        { 'chapters/0/title': tooShort },
+        { dataPath: 'chapters', server: true }
+      )
+      dataModel.addError('chapters/0/title', 'Unable to load')
+      dataModel.clearErrors('chapters/0')
+      expect(dataModel.getErrors('chapters/0/title')).toEqual([
+        'Unable to load'
+      ])
+      expect(dataModel.getErrors('title')).toEqual(tooShort)
+      dataModel.clearErrors()
+      expect(dataModel.getErrors('title')).toBe(null)
+      dataModel.stop()
+    })
+
+    it('finds the errors within data', () => {
+      const { dataModel, data } = createBook()
+      dataModel.setErrors('chapters/1/title', tooShort)
+      expect(dataModel.hasErrorsWithin(data)).toBe(true)
+      expect(dataModel.hasErrorsWithin(data.chapters)).toBe(true)
+      expect(dataModel.hasErrorsWithin(data.chapters[0])).toBe(false)
+      expect(dataModel.hasErrorsWithin(data.details)).toBe(false)
+      dataModel.set(data.chapters[1], 'title', 'Second')
+      expect(dataModel.hasErrorsWithin(data)).toBe(false)
+      dataModel.stop()
+    })
+  })
+
   describe('list items that move or are removed', () => {
     // Books whose genre is selected from options loaded per book, with a
     // compute that keeps valid genres and selects the first one otherwise:

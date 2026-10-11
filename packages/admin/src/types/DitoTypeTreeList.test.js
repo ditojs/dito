@@ -124,6 +124,103 @@ describe('DitoTypeTreeList', () => {
     )
   })
 
+  it('shows the server errors of items in their forms', async () => {
+    const schema = createSiteSchema()
+    schema.components.pages.children.editable = true
+    const { admin, submit } = await mountForm({
+      schema,
+      data: site,
+      request: () => {
+        throw Object.assign(new Error('Validation failed'), {
+          response: {
+            status: 400,
+            data: {
+              type: 'ValidationError',
+              errors: { 'pages/0/subpages/1/title': [{ message: 'is taken' }] }
+            }
+          }
+        })
+      }
+    })
+    await submit()
+    await flushPromises()
+    expect(admin.router.currentRoute.value.path).toBe(
+      '/items/1/pages/0/subpages/1'
+    )
+    const form = admin.getRouteComponent(component => component.isForm)
+    expect(form.data.title).toBe('History')
+    expect(form.$el.querySelector('.dito-errors').textContent).toBe(
+      'The Title field is taken.'
+    )
+  })
+
+  it('shows the server errors of items in their open forms', async () => {
+    const schema = createSiteSchema()
+    schema.components.pages.children.editable = true
+    const { admin, wrapper, routeComponent } = await mountForm({
+      schema,
+      data: site,
+      request: ({ method = 'get' }) => {
+        if (method !== 'get') {
+          throw Object.assign(new Error('Validation failed'), {
+            response: {
+              status: 400,
+              data: {
+                type: 'ValidationError',
+                errors: {
+                  'pages/0/subpages/1/title': [{ message: 'is taken' }]
+                }
+              }
+            }
+          })
+        }
+        return { data: site }
+      }
+    })
+    await admin.navigate('/items/1/pages/0/subpages/1')
+    const form = admin.getRouteComponent(component => component.isForm)
+    expect(form.isNestedRoute).toBe(true)
+    // The form of the tree item displays inside its parent, which saves:
+    await wrapper
+      .findAll('.dito-buttons--main button[type="submit"]')
+      .find(
+        button => button.element.closest('.dito-form') === routeComponent.$el
+      )
+      .trigger('click')
+    await flushPromises()
+    expect(admin.router.currentRoute.value.path).toBe(
+      '/items/1/pages/0/subpages/1'
+    )
+    expect(form.$el.querySelector('.dito-errors')?.textContent).toBe(
+      'The Title field is taken.'
+    )
+  })
+
+  it('marks the items with errors within them', async () => {
+    const schema = createSiteSchema()
+    schema.components.pages.open = true
+    const { findField, dataModel, data } = await mountForm({
+      schema,
+      data: site
+    })
+    dataModel.replaceErrors(
+      { 'pages/0/subpages/1/title': [{ message: 'is taken' }] },
+      { server: true }
+    )
+    await flushPromises()
+    const getMarkedLabels = () =>
+      findField('pages')
+        .findAll('.dito-tree-item--error > .dito-tree-header')
+        .map(header => header.find('.dito-tree-label').text())
+    expect(getMarkedLabels()).toEqual(['About', 'History'])
+    data.pages[0].subpages[1].title = 'Heritage'
+    await flushPromises()
+    expect(getMarkedLabels()).toEqual([])
+    dataModel.setErrors('pages/0/title', [{ message: 'is taken' }])
+    await flushPromises()
+    expect(getMarkedLabels()).toEqual(['About'])
+  })
+
   it('opens the items that come into the edit path', async () => {
     const schema = createSiteSchema()
     schema.components.pages.children.editable = true

@@ -89,6 +89,8 @@ export default DitoTypeComponent.register('multiselect', {
       isLoadingSearchedOptions: false,
       // The term of the current search, see `onSearchChange()`:
       currentSearchTerm: null,
+      // The error of the last search, see `loadSearchedOptions()`:
+      searchError: null,
       // The options of the tags that were added, see `onAddTag()`:
       addedTagOptions: [],
       populate: false
@@ -308,11 +310,15 @@ export default DitoTypeComponent.register('multiselect', {
     // them, e.g. to search them when the search term is entered while they are
     // still loading.
     async loadSearchedOptions(searchTerm) {
+      // The error of a search replaces the one of the previous search:
+      this.dataModel.removeError(this.dataPath, this.searchError)
+      this.searchError = null
       try {
         await this.optionsResolver.waitForValue()
         return await this.searchFilter(new DitoContext(this, { searchTerm }))
       } catch (error) {
-        this.addError(error.message || error)
+        this.searchError = error.message || error
+        this.dataModel.addError(this.dataPath, this.searchError)
         return null
       }
     },

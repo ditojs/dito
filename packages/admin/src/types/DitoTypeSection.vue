@@ -27,7 +27,7 @@ import { hasComponentNamed, isCompact } from '../utils/schema/structure.js'
 // @vue/component
 export default DitoTypeComponent.register('section', {
   // Register the section's schema with the section rather than the form, so
-  // that the section can reveal its components, see `navigateToComponent()`.
+  // that the section can reveal its components, see `revealComponents()`.
   mixins: [SchemaParentMixin],
   // Nested sections hold their data in an object, other sections don't have
   // their own value, also with `default: undefined`, which `getDefaultValue()`
@@ -77,7 +77,7 @@ export default DitoTypeComponent.register('section', {
   methods: {
     getItemFormSchema,
 
-    async navigateToComponent(dataPath, onComplete, options) {
+    async revealComponents(dataPath) {
       // Unnested sections share the data path of their parent schema, so
       // decide by schema whether the section displays the value at `dataPath`:
       const { mainSchemaComponent } = this
@@ -87,10 +87,11 @@ export default DitoTypeComponent.register('section', {
         ? parseDataPath(normalizedDataPath.slice(dataPathPrefix.length))[0]
         : null
       return (
-        !!mainSchemaComponent &&
-        hasComponentNamed(mainSchemaComponent.schema, componentName) &&
-        mainSchemaComponent.navigateToComponent(dataPath, onComplete, options)
+        mainSchemaComponent &&
+        hasComponentNamed(mainSchemaComponent.schema, componentName)
       )
+        ? mainSchemaComponent.revealComponents(dataPath)
+        : []
     }
   },
 

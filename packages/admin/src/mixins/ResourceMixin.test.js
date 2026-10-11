@@ -511,6 +511,23 @@ describe('ResourceMixin', () => {
       expect(getNotifications()).toEqual([])
     })
 
+    it('removes the error once the list loads', async () => {
+      let isAuthorized = false
+      const { getComponent, getErrors } = await mountForm({
+        schema: {
+          components: { title: { type: 'text' }, reviews: reviewsSchema }
+        },
+        data: { title: 'Orlando' },
+        request: request =>
+          isAuthorized ? { data: [] } : unauthorized(request)
+      })
+      expect(getErrors('reviews')).toEqual([message])
+      isAuthorized = true
+      getComponent('reviews').reloadData()
+      await flushPromises()
+      expect(getErrors('reviews')).toEqual([])
+    })
+
     it('notifies the error on lists of views', async () => {
       const { getErrors } = await mountSchema({
         schema: { components: { reviews: reviewsSchema } },

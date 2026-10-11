@@ -2212,22 +2212,12 @@ export interface DitoComponentInstanceBase<$Item = any>
   /** The component type from the schema. */
   type: string
 
-  // -- State (TypeMixin, ValidationMixin) --
+  // -- State (TypeMixin) --
 
   /** Whether the component currently has focus. */
   focused: boolean
   /** The value after applying `schema.parse()`. */
   parsedValue: any
-  /** Whether the field has been focused at least once. */
-  isTouched: boolean
-  /** Whether the field is currently valid. */
-  isValid: boolean
-  /** Whether validation has been run on the field. */
-  isValidated: boolean
-  /** Validation error messages, or `null`. */
-  errors: string[] | null
-  /** Whether the field has validation errors. */
-  hasErrors: boolean
   /**
    * Whether the component works with data not yet
    * persisted to the server.
@@ -2470,36 +2460,12 @@ export interface DitoComponentInstanceBase<$Item = any>
   /** Scrolls the component into view. */
   scrollIntoView(): Promise<void>
 
-  // -- Actions (ValidationMixin) --
-
   /**
-   * Validates the field. Returns `true` if valid.
-   * When `notify` is `true` (default), updates state
-   * and emits errors.
+   * Validates the value and replaces the errors of the
+   * field in the data model, as on blur. Returns `true`
+   * if valid.
    */
-  validate(notify?: boolean): boolean
-  /** Validates without notifying (shorthand). */
-  verify(): boolean
-  /** Marks the field as touched and clears errors. */
-  markTouched(): void
-  /** Clears the validation and the displayed errors. */
-  clearValidation(): void
-  /** Resets all validation state. */
-  resetValidation(): void
-  /** Adds an error message to the errors array. */
-  addError(error: string, addLabel?: boolean): void
-  /**
-   * Shows server-side validation errors on the
-   * component. Returns `true` if errors were shown.
-   */
-  showValidationErrors(
-    errors: { message: string }[],
-    focus: boolean
-  ): boolean
-  /** Returns a copy of the current errors, or `null`. */
-  getErrors(): string[] | null
-  /** Clears all validation errors. */
-  clearErrors(): void
+  validate(): boolean
   /** Closes all notification toasts. */
   closeNotifications(): void
 }
@@ -2620,7 +2586,57 @@ export interface DitoDataModel {
   move(list: any[], from: number, to: number): void
   /** Replaces the items of `list` with `items`, in place. */
   replaceChildren(list: any[], items: any[]): void
+  /**
+   * Returns the errors of the field at `dataPath`, or `null`: the
+   * errors of its value, of validation and of the server, in the
+   * format of the server, followed by the errors of the field as
+   * messages. Errors are kept by the data that holds the value and
+   * its name, so they stay with items that move. The errors of the
+   * value only apply while it's the value that they were set for.
+   */
+  getErrors(dataPath: string): DitoFieldError[] | null
+  /**
+   * Replaces the validation errors of the value of the field at
+   * `dataPath`. The errors of the server stay while the value does.
+   */
+  setErrors(dataPath: string, errors: DitoValidationError[] | null): void
+  /**
+   * Adds an error message to the field rather than to its value,
+   * unless it has it already. It stays until it's removed.
+   */
+  addError(dataPath: string, message: string): void
+  /** Removes an error message from the field. */
+  removeError(dataPath: string, message: string): void
+  /**
+   * Replaces the validation errors, or with `server` the ones of
+   * the server, of the values within `dataPath` with `errors`,
+   * keyed by data path, and returns the ones of fields that aren't
+   * displayed, or `null`.
+   */
+  replaceErrors(
+    errors: Record<string, DitoValidationError[]>,
+    options?: { dataPath?: string; server?: boolean }
+  ): Record<string, DitoValidationError[]> | null
+  /**
+   * Clears the errors of the values within `dataPath`, of
+   * validation and of the server. The errors of fields stay.
+   */
+  clearErrors(dataPath?: string): void
+  /** Returns the data paths of the fields within `dataPath` with errors. */
+  getErrorDataPaths(dataPath?: string): string[]
+  /**
+   * Whether `data` or the data nested in it holds values with
+   * errors, also where they aren't displayed.
+   */
+  hasErrorsWithin(data: object): boolean
 }
+
+/** A validation error, as validation and the server return them. */
+export interface DitoValidationError {
+  message: string
+}
+
+export type DitoFieldError = DitoValidationError | string
 
 export interface DitoFormInstance<$Item = any>
   extends DitoComponentInstanceBase<$Item>,
@@ -2692,6 +2708,20 @@ export interface DitoFormInstance<$Item = any>
       | RegExp
       | ((field: string) => boolean)
   ): boolean
+
+  /**
+   * Shows the validation errors of the server, keyed by
+   * data path, and reveals them.
+   */
+  showValidationErrors(
+    errors: Record<string, DitoValidationError[]>
+  ): Promise<void>
+
+  /**
+   * Clears the errors of the values of the data, of validation and
+   * of the server, e.g. once it's saved.
+   */
+  resetValidation(): void
 
   // -- Resource & route (ResourceMixin, RouteMixin) --
 
@@ -2863,7 +2893,7 @@ export interface DitoViewInstance<$Item = any>
    */
   setData(data: any): any
 
-  // -- Validation (ValidatorMixin) --
+  // -- Validation --
 
   /**
    * Validates all fields in the view's data,
@@ -2891,6 +2921,20 @@ export interface DitoViewInstance<$Item = any>
       | RegExp
       | ((field: string) => boolean)
   ): boolean
+
+  /**
+   * Shows the validation errors of the server, keyed by
+   * data path, and reveals them.
+   */
+  showValidationErrors(
+    errors: Record<string, DitoValidationError[]>
+  ): Promise<void>
+
+  /**
+   * Clears the errors of the values of the data, of validation and
+   * of the server, e.g. once it's saved.
+   */
+  resetValidation(): void
 }
 
 export interface DitoSchemaInstance<$Item = any>
@@ -2925,6 +2969,24 @@ export interface DitoSchemaInstance<$Item = any>
       | RegExp
       | ((field: string) => boolean)
   ): boolean
+
+  /**
+   * Shows the validation errors of the server, keyed by data
+   * path in the data that was sent, which is at `dataPath`, by
+   * default the schema's own data or the root data, and reveals
+   * them.
+   */
+  showValidationErrors(
+    errors: Record<string, DitoValidationError[]>,
+    dataPath?: string
+  ): Promise<void>
+
+  /**
+   * Reveals the components that display the value at
+   * `dataPath`, opening collapsed schemas and inlined
+   * items, and returns them.
+   */
+  revealComponents(dataPath: string): Promise<DitoComponentInstanceBase[]>
 }
 
 export interface DitoSourceInstance<$Item = any>
@@ -3016,24 +3078,10 @@ export interface DitoSourceInstance<$Item = any>
    */
   deleteItem(item: any, index: number): void
   /**
-   * Navigates to a component identified by its
-   * data path. With `shouldRevealInlinedOnly`, only
-   * components in inlined schemas are revealed,
-   * without navigating to nested forms.
+   * Reveals the components of the inlined item that
+   * display the value at `dataPath`, and returns them.
    */
-  navigateToComponent(
-    dataPath: string,
-    onComplete?: Function,
-    options?: { shouldRevealInlinedOnly?: boolean }
-  ): Promise<boolean>
-  /**
-   * Navigates to the route component associated
-   * with a data path.
-   */
-  navigateToRouteComponent(
-    dataPath: string,
-    onComplete?: Function
-  ): Promise<boolean>
+  revealComponents(dataPath: string): Promise<DitoComponentInstanceBase[]>
 
   // -- Resource (ResourceMixin) --
 

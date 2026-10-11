@@ -354,32 +354,6 @@ export default DitoComponent.component('DitoForm', {
       }
     },
 
-    sourceItem: {
-      immediate: true,
-      handler(item) {
-        if (this.isTransient) {
-          if (!this.isMutating) {
-            // Edit a copy of the inherited item, so that changes are only
-            // applied through setSourceData(). Copy it again whenever the item
-            // itself is replaced, e.g. after applying the changes. The copy
-            // keeps the uids of the new items, see `transferUids()`.
-            const clonedData = clone(item)
-            transferUids(item, clonedData)
-            this.clonedData = clonedData
-          }
-          if (
-            item === null &&
-            !this.isCreating &&
-            isObjectSource(this.sourceSchema)
-          ) {
-            // If data of an object source is null, redirect to its create
-            // route.
-            this.$router.push({ path: `${this.path}/create` })
-          }
-        }
-      }
-    },
-
     isCreating(isCreating) {
       // Set up the data to create when navigating to the create route, e.g.
       // from another item in the same form, or when redirected to it by the
@@ -402,6 +376,9 @@ export default DitoComponent.component('DitoForm', {
         canSave: () => hasSubmitButton(this.buttonSchemas)
       })
     )
+    // Watch the item after the model is created, as the copy takes over the
+    // item's errors:
+    this.$watch('sourceItem', this.setupSourceItem, { immediate: true })
   },
 
   beforeUnmount() {
@@ -419,6 +396,49 @@ export default DitoComponent.component('DitoForm', {
     getResource(options) {
       const resource = ResourceMixin.methods.getResource.call(this, options)
       return getMemberResource(this.itemId, resource) || resource
+    },
+
+    setupSourceItem(item) {
+      if (this.isTransient) {
+        if (!this.isMutating) {
+          // Edit a copy of the inherited item, so that changes are only
+          // applied through setSourceData(). Copy it again whenever the item
+          // itself is replaced, e.g. after applying the changes. The copy
+          // keeps the uids of the new items, see `transferUids()`, and the
+          // errors of the item, e.g. of the server for the parent's data.
+          const clonedData = clone(item)
+          transferUids(item, clonedData)
+          this.ownDataModel.copyErrors(
+            this.parentRouteComponent.dataModel,
+            item,
+            clonedData
+          )
+          this.clonedData = clonedData
+        }
+        if (
+          item === null &&
+          !this.isCreating &&
+          isObjectSource(this.sourceSchema)
+        ) {
+          // If data of an object source is null, redirect to its create
+          // route.
+          this.$router.push({ path: `${this.path}/create` })
+        }
+      }
+    },
+
+    // Reveals the errors of the form's data, see `DitoSchema.revealErrors()`.
+    // Forms that edit a copy of their item take over its errors first, also
+    // when they're open already, e.g. when the parent shows its errors.
+    revealErrors() {
+      if (this.isTransient && !this.isMutating) {
+        this.ownDataModel.copyErrors(
+          this.parentRouteComponent.dataModel,
+          this.sourceItem,
+          this.clonedData
+        )
+      }
+      return this.mainSchemaComponent.revealErrors()
     },
 
     // Required by ResourceMixin, see its contract.

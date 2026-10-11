@@ -1,15 +1,17 @@
 import ValueMixin from './ValueMixin.js'
 import ContextMixin from './ContextMixin.js'
-import ValidationMixin from './ValidationMixin.js'
 import { getSchemaEventEntries } from '../utils/schema/events.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
 import { trackRegistration } from '../utils/registration.js'
-import { getValidations } from '../utils/schema/validation.js'
-import { asArray, camelize, equals } from '@ditojs/utils'
+import {
+  getValidations,
+  getValueValidationErrors
+} from '../utils/schema/validation.js'
+import { asArray, camelize } from '@ditojs/utils'
 
 // @vue/component
 export default {
-  mixins: [ValueMixin, ContextMixin, ValidationMixin],
+  mixins: [ValueMixin, ContextMixin],
   emits: ['update:component'],
 
   props: {
@@ -24,7 +26,8 @@ export default {
     label: { type: String, default: null },
     single: { type: Boolean, default: false },
     nested: { type: Boolean, default: true },
-    // The id of the element that displays the errors, see `DitoContainer`.
+    // The id of the element that displays the errors, while there are errors,
+    // see `DitoContainer`.
     errorsElementId: { type: String, default: null }
   },
 
@@ -126,8 +129,8 @@ export default {
         // Only text fields support `readonly`, disable all other components.
         'disabled': this.disabled || (this.readonly && !textField),
         // Link the displayed errors for assistive technology:
-        'aria-invalid': this.hasErrors || null,
-        'aria-describedby': this.hasErrors ? this.errorsElementId : null
+        'aria-invalid': !!this.errorsElementId || null,
+        'aria-describedby': this.errorsElementId
       }
 
       if (nativeField) {
@@ -149,19 +152,6 @@ export default {
 
     validations() {
       return getValidations(this.schema, this.context)
-    }
-  },
-
-  watch: {
-    value(value) {
-      // Displayed errors refer to the value that they were added for, see
-      // `addError()`, so they're cleared when the value changes, whether
-      // through input or by code, e.g. by a button that generates a value.
-      // Errors that were added for the new value already, e.g. by `validate()`
-      // on blur right after the change, are kept.
-      if (this.hasErrors && !equals(value, this.valueWithErrors)) {
-        this.clearErrors()
-      }
     }
   },
 
@@ -249,6 +239,14 @@ export default {
       this.blurElement()
     },
 
+    // Validates the value and replaces the validation errors of the field, see
+    // `DataModel.setErrors()`. Returns whether the value is valid.
+    validate() {
+      const errors = getValueValidationErrors(this.value, this.validations)
+      this.dataModel.setErrors(this.dataPath, errors.length > 0 ? errors : null)
+      return errors.length === 0
+    },
+
     clear() {
       this.value = null
       this.blur()
@@ -257,7 +255,6 @@ export default {
 
     onFocus() {
       this.focused = true
-      this.markTouched()
       this.emitEvent('focus')
     },
 
@@ -268,12 +265,10 @@ export default {
     },
 
     onInput() {
-      this.clearValidation()
       this.emitEvent('input')
     },
 
     onChange() {
-      this.clearValidation()
       this.emitEvent('change', {
         context: {
           // Prevent endless parse recursion:

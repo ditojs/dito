@@ -75,34 +75,51 @@ describe('TypeMixin', () => {
     })
   })
 
-  describe('displayed errors', () => {
-    it('are cleared when the value changes', async () => {
-      const { getComponent, getErrors, data, settle } = await mountSchema({
+  describe('validate()', () => {
+    const mountRequiredTitle = title =>
+      mountSchema({
         schema: {
           components: { title: { type: 'text', required: true } }
         },
-        data: { title: null }
+        data: { title }
       })
+
+    it('shows the errors until the value changes', async () => {
+      const { getComponent, getErrors, settle } = await mountRequiredTitle(null)
       const component = getComponent('title')
-      component.validate()
+      expect(component.validate()).toBe(false)
       await settle()
       expect(getErrors('title')).toEqual(['The title field is required.'])
-      data.title = 'Emma'
+      // E.g. a button that generates the value:
+      component.value = 'Emma'
       await settle()
       expect(getErrors('title')).toEqual([])
     })
 
-    it('are kept when added for the new value', async () => {
-      const { getComponent, getErrors, data, settle } = await mountSchema({
-        schema: {
-          components: { title: { type: 'text', required: true } }
-        },
-        data: { title: 'Emma' }
-      })
+    it('keeps the errors of the server and of the field on blur', async () => {
+      const { getComponent, getErrors, dataModel, settle } =
+        await mountRequiredTitle('Emma')
+      dataModel.replaceErrors(
+        { title: [{ message: 'is taken' }] },
+        { server: true }
+      )
+      dataModel.addError('title', 'Unable to load the titles.')
       const component = getComponent('title')
-      // Validated right after the change, before the watcher sees it:
-      data.title = null
-      component.validate()
+      await component.focus()
+      component.blur()
+      await settle()
+      expect(getErrors('title')).toEqual([
+        'The title field is taken.',
+        'Unable to load the titles.'
+      ])
+    })
+
+    it('shows the errors of the value right after it changed', async () => {
+      const { getComponent, getErrors, settle } =
+        await mountRequiredTitle('Emma')
+      const component = getComponent('title')
+      component.value = null
+      expect(component.validate()).toBe(false)
       await settle()
       expect(getErrors('title')).toEqual(['The title field is required.'])
     })

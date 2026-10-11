@@ -307,14 +307,12 @@ describe('RouteMixin', () => {
       await admin.navigate('/items/1/chapters/0')
       const chapterForm = admin.getRouteComponent(it => it.isForm)
       await settle(chapterForm)
-      // Validate the mounted components as on blur, so that they're all
-      // validated and valid, but not the field in the collapsed section:
+      // The mounted components are valid, as on blur, unlike the field in the
+      // collapsed section:
       for (const component of chapterForm.mainSchemaComponent.components) {
-        component.validate()
+        expect(component.validate()).toBe(true)
       }
       await settleForm()
-      expect(chapterForm.isValidated).toBe(true)
-      expect(chapterForm.isValid).toBe(true)
       await admin.navigate('/items/1')
       await settleForm()
       expect(admin.router.currentRoute.value.path).toBe('/items/1/chapters/0')

@@ -247,9 +247,9 @@ describe('SourceMixin', () => {
     unmountAdmin(admin)
   })
 
-  describe('navigateToComponent()', () => {
-    it('completes with the route component navigated to', async () => {
-      const { admin, getComponent, routeComponent } = await mountForm({
+  describe('errors of items in forms of nested routes', () => {
+    it('open the form of their item', async () => {
+      const { admin, schemaComponent, routeComponent } = await mountForm({
         schema: {
           components: {
             chapters: {
@@ -263,22 +263,22 @@ describe('SourceMixin', () => {
         },
         data: { chapters: [{ title: 'Arrakis' }, { title: 'Caladan' }] }
       })
-      const chapters = getComponent('chapters')
       // Navigate back and forth, so that route components are replaced:
       await admin.navigate('/items/1/chapters/0')
       await admin.navigate('/items/1')
       await admin.navigate('/items/1/chapters/1')
       await admin.navigate('/items/1')
-      const onComplete = vi.fn(([component]) => component)
-      const chapterForm = await chapters.navigateToComponent(
-        'chapters/1/title',
-        onComplete
-      )
+      await schemaComponent.showValidationErrors({
+        'chapters/1/title': [{ message: 'is taken' }]
+      })
       await flushPromises()
       expect(admin.router.currentRoute.value.path).toBe('/items/1/chapters/1')
+      const chapterForm = admin.getRouteComponent(component => component.isForm)
       expect(chapterForm).not.toBe(routeComponent)
-      expect(chapterForm.isForm).toBe(true)
       expect(chapterForm.data).toEqual({ title: 'Caladan' })
+      expect(chapterForm.dataModel.getErrors('chapters/1/title')).toEqual([
+        { message: 'is taken' }
+      ])
     })
   })
 
@@ -769,7 +769,7 @@ describe('SourceMixin', () => {
     })
   })
 
-  describe('navigateToComponent() outside the source', () => {
+  describe('revealComponents() outside the source', () => {
     it(`doesn't reveal data paths of other components`, async () => {
       const { getComponent } = await mountSchema({
         schema: {
@@ -784,14 +784,14 @@ describe('SourceMixin', () => {
         data: { chapters: [{ title: 'One' }] }
       })
       expect(
-        await getComponent('chapters').navigateToComponent('authors/0', null, {
-          shouldRevealInlinedOnly: true
-        })
-      ).toBe(false)
+        await getComponent('chapters').revealComponents('authors/0')
+      ).toEqual(
+        []
+      )
     })
   })
 
-  describe('navigateToRouteComponent()', () => {
+  describe('getFormRoute() of the route component', () => {
     const mountChapters = () =>
       mountForm({
         schema: {
@@ -808,30 +808,17 @@ describe('SourceMixin', () => {
         data: { chapters: [{ title: 'Arrakis' }] }
       })
 
-    it('completes right away when already at the route', async () => {
-      const { admin, getComponent } = await mountChapters()
-      const chapters = getComponent('chapters')
-      await admin.navigate('/items/1/chapters/0')
-      const routeComponent = admin.getRouteComponent()
-      const onComplete = vi.fn(([component]) => component)
-      expect(
-        await chapters.navigateToRouteComponent('chapters/0', onComplete)
-      ).toBe(routeComponent)
-      expect(onComplete).toHaveBeenCalledOnce()
-      // Without `onComplete()`, it resolves to `true`:
-      expect(await chapters.navigateToRouteComponent('chapters/0')).toBe(true)
+    it('resolves the form of the item at the data path', async () => {
+      const { routeComponent } = await mountChapters()
+      expect(routeComponent.getFormRoute('chapters/0/title')).toEqual({
+        path: '/items/1/chapters/0',
+        dataPath: 'title'
+      })
     })
 
-    it('resolves to false without a route for the data path', async () => {
-      const { getComponent } = await mountChapters()
-      const onComplete = vi.fn()
-      expect(
-        await getComponent('chapters').navigateToRouteComponent(
-          'unknown/path',
-          onComplete
-        )
-      ).toBe(false)
-      expect(onComplete).not.toHaveBeenCalled()
+    it('resolves to null without a form for the data path', async () => {
+      const { routeComponent } = await mountChapters()
+      expect(routeComponent.getFormRoute('unknown/path')).toBe(null)
     })
   })
 

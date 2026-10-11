@@ -3,7 +3,8 @@
   :id="componentPath"
   :class=`{
     'dito-tree-item--dragging': isDragging,
-    'dito-tree-item--active': active
+    'dito-tree-item--active': active,
+    'dito-tree-item--error': hasErrors
   }`
   :style="level > 0 && { '--level': level }"
 )
@@ -196,6 +197,10 @@ export default DitoComponent.component('DitoTreeItem', {
           schema: this.childrenSchema
         })
       )
+    },
+
+    hasErrors() {
+      return this.dataModel.hasErrorsWithin(this.data)
     },
 
     numChildren() {
@@ -420,6 +425,12 @@ export default DitoComponent.component('DitoTreeItem', {
       > .dito-buttons {
         visibility: hidden;
       }
+    }
+  }
+
+  &--error {
+    > .dito-tree-header {
+      box-shadow: inset $error-bar-width 0 $color-error;
     }
   }
 

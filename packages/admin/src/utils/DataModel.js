@@ -10,7 +10,11 @@ import {
 import {
   isArray,
   isPlainObject,
-  equals
+  isEmpty,
+  equals,
+  clone,
+  parseDataPath,
+  getValueAtDataPath
 } from '@ditojs/utils'
 import DitoContext from '../DitoContext.js'
 import { DataSchemaResolver } from './DataSchemaResolver.js'
@@ -62,6 +66,12 @@ import {
 //   that holds the changed list, through a submit button. The model's own
 //   writes, e.g. of defaults and computed values, don't mark the data edited,
 //   and neither do direct writes.
+// - The errors of the fields are kept by the data that holds their values and
+//   their names, see `#getFieldKey()`, so that they stay with items that move,
+//   and with components that aren't mounted, e.g. in collapsed sections. The
+//   errors of values only apply to the value that they were set for, so they
+//   hide once it changes, also in place, while the errors of fields stay until
+//   their sources remove them.
 //
 // Sources with their own resource are skipped, as their items are edited
 // through their own forms.
@@ -92,6 +102,10 @@ export class DataModel {
   // data and name, if they can save them:
   #isEdited = shallowRef(false)
   #dirtySources = shallowRef(new EntryMap())
+  // The errors of the fields, see `#getFieldKey()`, by their kind: the ones of
+  // `validation` and of the `server` with the `value` that they were set for,
+  // and the ones of the `field` itself:
+  #errors = shallowRef(new WeakEntryMap())
   // The number of writes of computed values per data path in the current
   // microtask, see `isWriteLoop()`:
   computedValueWriteCounts = null
@@ -247,6 +261,184 @@ export class DataModel {
       })
     }
     return { listEntry, sourceEntry }
+  }
+
+  // Returns the key of the field at `dataPath`: the data that holds its value,
+  // and its name. Unlike data paths, the data stays the same when list items
+  // move. The values of lists of primitives are held by their lists.
+  #getFieldKey(dataPath) {
+    const path = parseDataPath(getRelativeDataPath(dataPath, this.dataPath))
+    const name = path.pop()
+    return { data: getValueAtDataPath(this.getData(), path, () => null), name }
+  }
+
+  // Returns the errors of the field at `dataPath`, or `null`: the errors of its
+  // value, of validation and of the server as `{ message }`, followed by the
+  // errors of the field as messages, e.g. of options that failed to load.
+  getErrors(dataPath) {
+    const { data, name } = this.#getFieldKey(dataPath)
+    const entry = this.#errors.value.get({ data, name })
+    return entry ? getCurrentErrors(entry, data[name]) : null
+  }
+
+  // Sets the validation errors of the value of the field at `dataPath`, see
+  // `TypeMixin.validate()`. The errors of the server stay while the value does.
+  setErrors(dataPath, errors) {
+    this.#setErrors(this.#getFieldKey(dataPath), 'validation', errors)
+  }
+
+  // Adds an error of the field at `dataPath` rather than of its value, e.g. of
+  // options that failed to load, which stays until its source removes it.
+  addError(dataPath, message) {
+    const key = this.#getFieldKey(dataPath)
+    const errors = this.#errors.value.get(key)?.field ?? []
+    if (!errors.includes(message)) {
+      this.#setErrors(key, 'field', [...errors, message])
+    }
+  }
+
+  removeError(dataPath, message) {
+    const key = this.#getFieldKey(dataPath)
+    const errors = this.#errors.value.get(key)?.field ?? []
+    if (errors.includes(message)) {
+      this.#setErrors(
+        key,
+        'field',
+        errors.filter(error => error !== message)
+      )
+    }
+  }
+
+  // Replaces the validation errors of the values within `dataPath` with
+  // `errors`, or the ones of the server with `server`, keyed by data path, as
+  // validation and the server return them, and returns the ones of fields that
+  // aren't displayed, or `null`.
+  replaceErrors(errors, { dataPath = this.dataPath, server = false } = {}) {
+    const unmatchedErrors = { ...errors }
+    this.#processFieldEntries(dataPath, entry => {
+      const fieldErrors = errors[entry.dataPath] ?? null
+      this.#setErrors(
+        this.#getFieldKey(entry.dataPath),
+        server ? 'server' : 'validation',
+        fieldErrors
+      )
+      if (fieldErrors) {
+        delete unmatchedErrors[entry.dataPath]
+      }
+    })
+    return isEmpty(unmatchedErrors) ? null : unmatchedErrors
+  }
+
+  // Clears the errors of the values within `dataPath`, e.g. once they're saved.
+  // The errors of the fields stay until their sources remove them.
+  clearErrors(dataPath = this.dataPath) {
+    this.#processFieldEntries(dataPath, entry => {
+      const key = this.#getFieldKey(entry.dataPath)
+      this.#setErrors(key, 'validation', null)
+      this.#setErrors(key, 'server', null)
+    })
+  }
+
+  // Returns the data paths of the fields within `dataPath` that have errors,
+  // in the order of the schema.
+  getErrorDataPaths(dataPath = this.dataPath) {
+    const dataPaths = []
+    this.#processFieldEntries(dataPath, entry => {
+      if (this.getErrors(entry.dataPath)) {
+        dataPaths.push(entry.dataPath)
+      }
+    })
+    return dataPaths
+  }
+
+  // Returns whether `data` or the data nested in it hold fields with errors,
+  // also where they aren't displayed, e.g. in the items of nested forms.
+  hasErrorsWithin(data) {
+    if (isPlainObject(data) || isArray(data)) {
+      for (const [name, entry] of this.#errors.value.entriesOf(data)) {
+        if (getCurrentErrors(entry, data[name])) {
+          return true
+        }
+      }
+      return Object.values(data).some(value => this.hasErrorsWithin(value))
+    }
+    return false
+  }
+
+  // Copies the errors of the values of `source`, data of the model `model`,
+  // and of the data nested in it, to `target`, a clone of it, e.g. the item of
+  // a nested form. Data that `target` doesn't hold anymore is skipped.
+  copyErrors(model, source, target) {
+    const copy = (source, target) => {
+      if (
+        isPlainObject(source) && isPlainObject(target) ||
+        isArray(source) && isArray(target)
+      ) {
+        for (const [name, entry] of model.#errors.value.entriesOf(source)) {
+          const key = { data: target, name }
+          const field = this.#errors.value.get(key)?.field ?? []
+          if (entry.validation.length > 0 || entry.server.length > 0) {
+            this.#errors.value.set(key, { ...entry, field })
+          }
+        }
+        for (const [key, value] of Object.entries(source)) {
+          copy(value, target[key])
+        }
+      }
+    }
+    copy(source, target)
+    triggerRef(this.#errors)
+  }
+
+  // Sets the errors of the `kind` of the field at `key`, see `#errors`. The
+  // errors of a value replace the ones of other values.
+  #setErrors(key, kind, errors) {
+    const { data, name } = key
+    const errorsByField = this.#errors.value
+    let entry = errorsByField.get(key) ?? noErrors
+    if (kind !== 'field' && !equals(data[name], entry.value)) {
+      // Copy the value, as lists and objects also change in place:
+      entry = { ...noErrors, field: entry.field, value: clone(data[name]) }
+    }
+    entry = { ...entry, [kind]: errors ?? [] }
+    const { validation, server, field } = entry
+    if (validation.length > 0 || server.length > 0 || field.length > 0) {
+      errorsByField.set(key, entry)
+      triggerRef(this.#errors)
+    } else if (errorsByField.delete(key)) {
+      triggerRef(this.#errors)
+    }
+  }
+
+  // Walks the entries of the fields within `dataPath` whose `if` doesn't
+  // evaluate to `false`, and calls `handleEntry()` for each.
+  #processFieldEntries(dataPath, handleEntry) {
+    const schema = this.getSchema()
+    const data = this.getData()
+    const isWithin = entry => (
+      getRelativeDataPath(entry.dataPath, dataPath) !== null
+    )
+    if (data && !isEmptySchema(schema)) {
+      processSchemaData(schema, data, {
+        dataPath: this.dataPath,
+        componentPath: this.componentPath,
+        // Walk the components within `dataPath`, and the ones that contain it:
+        shouldProcess: entry => (
+          (
+            isWithin(entry) ||
+            getRelativeDataPath(dataPath, entry.dataPath) !== null
+          ) &&
+          this.shouldRenderEntry(entry)
+        ),
+        shouldSkipSourcesWithResource: true,
+        before: entry => {
+          if (isWithin(entry)) {
+            handleEntry(entry)
+          }
+        },
+        options: { component: this.component, rootData: this.rootData }
+      })
+    }
   }
 
   stop() {
@@ -771,6 +963,9 @@ const maxComputedValueWrites = 10
 // for pending loads, long enough for slow requests.
 const settleTimeout = 30_000
 
+// The errors of a field without any, see `DataModel.#errors`:
+const noErrors = { value: undefined, validation: [], server: [], field: [] }
+
 // Creates the record of the component of the entry, see
 // `DataModel.componentRecords`: its current entry, the scope of the watchers
 // that write its computed values, and the resolver of its options, with the
@@ -790,8 +985,9 @@ function createComponentRecord(entry) {
 
 // Holds values by the data and name of the entries of components. The data is
 // compared by its raw object, as it may be passed through reactive proxies.
-class EntryMap {
-  valuesByData = new Map()
+// Weak entry maps don't keep replaced data alive.
+class WeakEntryMap {
+  valuesByData = new WeakMap()
 
   get({ data, name }) {
     return this.valuesByData.get(toRaw(data))?.get(name)
@@ -807,16 +1003,29 @@ class EntryMap {
     valuesByName.set(name, value)
   }
 
-  get isEmpty() {
-    return this.valuesByData.size === 0
-  }
-
+  // Returns whether there was a value to delete.
   delete({ data, name }) {
     const rawData = toRaw(data)
     const valuesByName = this.valuesByData.get(rawData)
-    if (valuesByName?.delete(name) && valuesByName.size === 0) {
+    const isDeleted = !!valuesByName?.delete(name)
+    if (isDeleted && valuesByName.size === 0) {
       this.valuesByData.delete(rawData)
     }
+    return isDeleted
+  }
+
+  // Returns the names and values held for `data`.
+  entriesOf(data) {
+    return this.valuesByData.get(toRaw(data))?.entries() ?? []
+  }
+}
+
+// Entry maps can be iterated and cleared, but keep their data alive.
+class EntryMap extends WeakEntryMap {
+  valuesByData = new Map()
+
+  get isEmpty() {
+    return this.valuesByData.size === 0
   }
 
   clear() {
@@ -834,4 +1043,15 @@ class EntryMap {
 // `schema.compute()` or a data schema of the `computed` types.
 function hasComputedValueSource(schema) {
   return !!schema.compute || hasValueFromDataSchema(schema)
+}
+
+// Returns the errors of the field with the errors `entry` and the value
+// `value`, or `null`: the ones of the value only while it's the value that they
+// were set for, as values also change through direct writes, e.g. of `change`
+// handlers.
+function getCurrentErrors(entry, value) {
+  const errors = equals(value, entry.value)
+    ? [...entry.validation, ...entry.server, ...entry.field]
+    : entry.field
+  return errors.length > 0 ? errors : null
 }
