@@ -632,9 +632,9 @@ See [Model Relations](./model-relations.md) for
 more information on the relation's `owner` setting.
 
 Relations are part of their parent member, so their requests are authorized for
-it first: Reading a relation requires the authorization of the parent's `get`
-member action, and changing it the one of its `patch` member action, also when
-`allow` doesn't route these actions. `get` requests read the relation, all other
+it first: Accessing a relation requires the authorization of the parent's `get`
+member action, and changing it also the one of its `patch` member action, also
+when `allow` doesn't route these actions. `get` requests read the relation, all other
 requests change it, including asset uploads. Changes that the relation
 authorizes itself, through an `authorize` setting of its own for the action,
 only require the parent's `get` authorization, e.g. comments that anyone may add
