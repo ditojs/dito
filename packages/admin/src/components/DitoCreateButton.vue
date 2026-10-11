@@ -50,7 +50,7 @@ export default DitoComponent.component('DitoCreateButton', {
     meta: { type: Object, required: true },
     store: { type: Object, required: true },
     nested: { type: Boolean, default: false },
-    path: { type: String, required: true },
+    path: { type: String, default: null },
     verb: { type: String, required: true },
     text: { type: String, default: null },
     disabled: { type: Boolean, required: true },
@@ -106,7 +106,7 @@ export default DitoComponent.component('DitoCreateButton', {
             ...creatable?.query?.(this.context)
           }
           this.$router.push({
-            path: `${this.path}/create`,
+            path: this.path,
             query
           })
         }

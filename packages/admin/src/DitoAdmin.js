@@ -201,8 +201,6 @@ export default class DitoAdmin {
         // A default list of verbs are provided by $verbs() and can be
         // overridden at any point in the component hierarchy.
         $verbs: () => verbs,
-        // The views, once resolved for the logged in user, see `Session`:
-        $views: () => viewRegistry.views,
         // Provide defaults so DitoMixin can inject them for all components:
         //   inject: [  '$isPopulated', '$schemaComponent', '$routeComponent' ]
         $isPopulated: () => true,

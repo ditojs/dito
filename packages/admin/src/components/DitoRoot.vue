@@ -47,6 +47,7 @@ import DitoComponent from '../DitoComponent.js'
 import DomMixin from '../mixins/DomMixin.js'
 import DitoDialog from './DitoDialog.vue'
 import { setupSchemaComponents } from '../utils/schema/setup.js'
+import { RouteTree } from '../utils/RouteTree.ts'
 import { LoadingTracker } from '../utils/LoadingTracker.js'
 import { FileDropTargets } from '../utils/FileDropTargets.js'
 
@@ -187,14 +188,9 @@ export default DitoComponent.component('DitoRoot', {
       // to close the modal dialog and resolve / reject the promise at once.
       // Process components to resolve async schemas first, so that errors
       // reject the returned promise.
-      const routes = []
-      await setupSchemaComponents(
-        this.api,
-        { type: 'dialog', components },
-        routes,
-        0
-      )
-      if (routes.length > 0) {
+      const schema = { type: 'dialog', components }
+      await setupSchemaComponents(this.api, schema)
+      if (new RouteTree({ dialog: schema }, this.api).hasRoutedForms()) {
         throw new Error('Dialogs do not support components that produce routes')
       }
       return new Promise((resolve, reject) => {

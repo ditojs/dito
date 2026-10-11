@@ -172,99 +172,48 @@ export async function resolveSchemaComponents(schemas) {
   await mapConcurrently(Object.values(schemas || {}), resolveSchemaComponent)
 }
 
-// How many times each schema's components were set up, to stop recursive
-// forms at their `maxDepth`. The views are set up anew from the same schema
-// objects for each login, see `resetProcessedSchemaDepths()`.
-let processedSchemaDepths = new WeakMap()
+// Set up the components of each schema only once, as forms can contain
+// themselves:
+const setUpSchemas = new WeakSet()
 
-// Forgets the processed schemas, so that the next setup of the views processes
-// them again and sets up the routes of their forms, see `ViewRegistry`.
-export function resetProcessedSchemaDepths() {
-  processedSchemaDepths = new WeakMap()
-}
-
-export function setupSchemaComponents(
-  api,
-  schema,
-  routes = null,
-  level = 0,
-  maxDepth = 1
-) {
-  if (schema) {
-    const depth = processedSchemaDepths.get(schema) ?? 0
-    if (depth < maxDepth) {
-      processedSchemaDepths.set(schema, depth + 1)
-      const promises = []
-      const process = (component, name, relativeLevel) => {
-        promises.push(
-          setupSchemaComponent(
-            api,
-            component,
-            name,
-            routes,
-            level + relativeLevel
-          )
-        )
-      }
-
-      iterateNestedSchemaComponents(schema, process)
-      iterateSchemaComponents(getPanelSchemas(schema), process)
-
-      return Promise.all(promises)
+export function setupSchemaComponents(api, schema) {
+  if (schema && !setUpSchemas.has(schema)) {
+    setUpSchemas.add(schema)
+    const promises = []
+    const process = (component, name) => {
+      promises.push(setupSchemaComponent(api, component, name))
     }
+    iterateNestedSchemaComponents(schema, process)
+    iterateSchemaComponents(getPanelSchemas(schema), process)
+    return Promise.all(promises)
   }
 }
 
-export function setupSchemaComponent(
-  api,
-  schema,
-  name,
-  routes = null,
-  level = 0
-) {
+export function setupSchemaComponent(api, schema, name) {
   applySchemaDefaults(api, schema)
-
   return Promise.all([
     // Also process nested panel schemas.
     mapConcurrently(
       getPanelSchemas(schema),
-      panel => setupSchemaComponents(api, panel, routes, level)
+      panel => setupSchemaComponents(api, panel)
     ),
     // Delegate schema processing to the actual type components.
-    getTypeOptions(schema)?.processSchema?.(
-      api,
-      schema,
-      name,
-      routes,
-      level
-    )
+    getTypeOptions(schema)?.processSchema?.(api, schema, name)
   ])
 }
 
-export async function setupView(component, api, schema, name, fullPath = '') {
+export async function setupView(api, schema, name) {
   applySchemaDefaults(api, schema)
-  setupRouteSchema(api, schema, name, fullPath)
-  let children = []
+  schema.name ??= name
   if (isView(schema)) {
     await setupNestedSchemas(api, schema)
-    await setupSchemaComponents(api, schema, children)
+    await setupSchemaComponents(api, schema)
   } else if (isMenu(schema)) {
-    children = await Promise.all(
-      Object.entries(schema.items).map(async ([name, item]) =>
-        setupView(component, api, item, name, schema.fullPath)
-      )
+    await mapConcurrently(Object.entries(schema.items), ([name, item]) =>
+      setupView(api, item, name)
     )
   } else {
     throw new Error(`Invalid view schema: '${getSchemaIdentifier(schema)}'`)
-  }
-  return {
-    path: schema.fullPath,
-    children,
-    component,
-    meta: {
-      api,
-      schema
-    }
   }
 }
 
@@ -303,51 +252,28 @@ export function applyNestedSchemaDefaults(api, schema) {
   })
 }
 
-export function setupRouteSchema(api, schema, name, fullPath = null) {
-  // Used for view and source schemas, see SourceMixin.
-  schema.name ??= name
-  schema.path ??= api.normalizePath(name)
-  if (fullPath !== null) {
-    schema.fullPath = `${fullPath}/${schema.path}`
-  }
-}
-
-export async function setupForms(api, schema, level) {
-  const routes = []
-  // First resolve the forms and store the results back on the schema.
-  const { form, forms, components, maxDepth = 1 } = schema
+export async function setupForms(api, schema) {
+  // Resolve the forms and store the results back on the schema.
+  const { form, forms, components } = schema
   if (forms) {
-    schema.forms = await resolveSchemas(forms, form =>
-      setupForm(api, form, routes, level, maxDepth)
-    )
+    schema.forms = await resolveSchemas(forms, form => setupForm(api, form))
   } else if (form) {
-    schema.form = await setupForm(api, form, routes, level, maxDepth)
+    schema.form = await setupForm(api, form)
   } else if (isObject(components)) {
     // NOTE: Processing forms in computed components is not supported, since it
     // only can be computed in conjunction with actual data.
-    const form = {
-      type: 'form',
-      components
-    }
-    await setupForm(api, form, routes, level, maxDepth)
+    await setupForm(api, { type: 'form', components })
   }
-  return routes
 }
 
-export async function setupForm(
-  api,
-  schema,
-  routes = null,
-  level = 0,
-  maxDepth = 1
-) {
+export async function setupForm(api, schema) {
   schema = await resolveSchema(schema, true)
   if (!isForm(schema)) {
     throw new Error(`Invalid form schema: '${getSchemaIdentifier(schema)}'`)
   }
   applySchemaDefaults(api, schema)
   await setupNestedSchemas(api, schema)
-  await setupSchemaComponents(api, schema, routes, level, maxDepth)
+  await setupSchemaComponents(api, schema)
   return schema
 }
 

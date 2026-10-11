@@ -584,11 +584,14 @@ describe('DitoTypeTreeList', () => {
       const schema = createSiteSchema()
       delete schema.components.pages.form
       schema.components.pages.children.editable = true
-      const { admin, getComponent } = await mountForm({ schema, data: site })
+      const { admin, findField } = await mountForm({ schema, data: site })
       const paths = admin.router.getRoutes().map(route => route.path)
       expect(paths.filter(path => path.includes('/pages'))).toEqual([])
-      // Without routes, the forms of the children aren't editable in the tree:
-      expect(getComponent('pages').hasEditableForms).toBe(false)
+      // Without routes, the edit buttons of the children are disabled:
+      const buttons = findField('pages').findAll('.dito-button--edit')
+      expect(
+        buttons.map(button => button.attributes('aria-disabled'))
+      ).toEqual(['true', 'true'])
     })
 
     function getActiveLabels(field) {
@@ -651,8 +654,7 @@ describe('DitoTypeTreeList', () => {
         form: { type: 'form', components: { name: { type: 'text' } } }
       }
 
-      // Known bug: their child routes are absolute in single views
-      it.skip('open the forms of their children in single-component views', async () => {
+      it('open the forms of their children in single-component views', async () => {
         const { admin, settle } = await mountSchema({
           schema: { component: siteWithFormSchema },
           data: { test: siteData.site }
@@ -663,8 +665,7 @@ describe('DitoTypeTreeList', () => {
         expect(pageFormComponent?.data.title).toBe('Contact')
       })
 
-      // Known bug: flattened routes inherit the parent's sub-routes
-      it.skip(`don't add their own child routes to the routes of children`, async () => {
+      it(`don't add their own child routes to the routes of children`, async () => {
         const { admin } = await mountSchema({
           schema: { components: { site: siteWithFormSchema } },
           data: siteData

@@ -145,8 +145,6 @@ describe('DitoView', () => {
       expect(view.mainSchemaComponent.resourceComponent).toBe(
         view.mainComponent
       )
-      // Lists in single-component views use the view's path for sub-paths:
-      expect(view.getChildPath('books')).toBe('/books')
     })
 
     it('are missing in views with multiple components', async () => {
@@ -162,7 +160,6 @@ describe('DitoView', () => {
       const view = admin.getRouteComponent(it => it.isView)
       expect(view.mainComponent).toBe(null)
       expect(view.mainSchemaComponent.sourceComponent).toBe(null)
-      expect(view.getChildPath('books')).toBe('/library/books')
     })
   })
 

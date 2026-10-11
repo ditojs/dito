@@ -67,7 +67,7 @@ export function hasComponentNamed(schema, name) {
     schema,
     (component, componentName) => {
       if (
-        isNested(component)
+        hasNestedData(component)
           ? componentName === name
           : hasComponentNamed(component, name)
       ) {
@@ -113,6 +113,12 @@ export function getSchemaIdentifier(schema) {
   return JSON.stringify(schema)
 }
 
+// The path of views and sources in their routes, the name under which they're
+// declared by default:
+export function getSchemaPath(schema, name, api) {
+  return schema.path ?? api.normalizePath(name)
+}
+
 export function isSingleComponentView(schema) {
   return (
     isView(schema) &&
@@ -128,7 +134,9 @@ export function isInlined(schema) {
   return !!(schema.inlined || schema.components)
 }
 
-export function isNested(schema) {
+// Whether the component stores its data under its own key in its parent's
+// data, see `schema.nested`:
+export function hasNestedData(schema) {
   return !!(schema.nested || getTypeOptions(schema)?.defaultNested === true)
 }
 

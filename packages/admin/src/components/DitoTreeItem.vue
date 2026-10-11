@@ -128,11 +128,8 @@ export default DitoComponent.component('DitoTreeItem', {
     schema: { type: Object, required: true },
     dataPath: { type: String, required: true },
     data: { type: [Array, Object], default: null },
-    path: { type: String, default: '' },
-    // The path that the edit routes of the children continue with their
-    // indices, if it differs from the path of the children within `path`, see
-    // `DitoTypeTreeList.treeChildrenPath`.
-    childrenPath: { type: String, default: null },
+    // The path of the form that edits the item, if it has one:
+    path: { type: String, default: null },
     open: { type: Boolean, default: false },
     active: { type: Boolean, default: false },
     draggable: { type: Boolean, default: false },
@@ -185,17 +182,6 @@ export default DitoComponent.component('DitoTreeItem', {
       return this.schema.children
     },
 
-    childrenRoutePath() {
-      const { childrenPath, childrenSchema } = this
-      return (
-        childrenPath ?? (
-          childrenSchema?.path
-            ? `${this.path}/${childrenSchema.path}`
-            : null
-        )
-      )
-    },
-
     childrenList() {
       const name = this.childrenSchema?.name
       return name && this.data[name]
@@ -225,22 +211,17 @@ export default DitoComponent.component('DitoTreeItem', {
     },
 
     childrenItems() {
-      const { childrenSchema, childrenList, childrenRoutePath } = this
+      const { childrenSchema, childrenList } = this
       if (childrenSchema && childrenList) {
-        const { editPath } = this.sourceComponent
-        // Build a children list with child meta information for the template.
-        // `open` only reflects the edit path, so that items closed by the user
+        const routePath = this.$route.path
+        // `open` only reflects the route, so that items closed by the user
         // reopen when they come into it. `schema.open` is applied in `data()`.
         return childrenList.map((data, index) => {
-          const path =
-            childrenRoutePath !== null ? `${childrenRoutePath}/${index}` : ''
-          // Only count as "in edit path" when it's not the full edit path.
-          const open = (
-            !!path &&
-            editPath !== path &&
-            isPathWithin(editPath, path)
+          const path = this.sourceComponent.getFormPath(
+            this.getItemDataPath(childrenSchema, index)
           )
-          const active = editPath === path
+          const active = !!path && routePath === path
+          const open = !!path && !active && isPathWithin(routePath, path)
           return { data, path, open, active }
         })
       }
@@ -266,11 +247,7 @@ export default DitoComponent.component('DitoTreeItem', {
     },
 
     editPath() {
-      // The edit routes of the items are handled by the routes of the tree
-      // list, allowing reloads as well, see `DitoTypeTreeList.processSchema()`.
-      return this.editable && this.path
-        ? `${this.sourceComponent.path}${this.path}`
-        : null
+      return this.editable ? this.path : null
     },
 
     editable: getSchemaAccessor('editable', {
@@ -301,8 +278,8 @@ export default DitoComponent.component('DitoTreeItem', {
     changeChildren(children) {
       this.$emit('changeChildren', {
         data: this.data,
+        dataPath: this.dataPath,
         childrenSchema: this.childrenSchema,
-        childrenPath: this.childrenRoutePath,
         children
       })
     },

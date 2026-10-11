@@ -103,6 +103,21 @@ export default [
     }
   },
   {
+    files: ['packages/*/src/**/*.ts'],
+
+    languageOptions: {
+      parser: tsParser,
+      globals: globalsBrowser
+    },
+
+    rules: {
+      // TypeScript checks these, also for types, which these rules don't know.
+      'no-undef': 'off',
+      'no-unused-vars': 'off',
+      'no-redeclare': 'off'
+    }
+  },
+  {
     files: ['tests/**/*.ts'],
 
     languageOptions: {

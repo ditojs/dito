@@ -18,7 +18,6 @@ DitoEditButtons.dito-options-edit-buttons(
 <script>
 import DitoComponent from '../DitoComponent.js'
 import DitoEditButtons from './DitoEditButtons.vue'
-import { getViewEditPath } from '../utils/schema/lookup.js'
 
 // @vue/component
 export default DitoComponent.component('DitoOptionsEditButtons', {
@@ -30,18 +29,19 @@ export default DitoComponent.component('DitoOptionsEditButtons', {
     data: { type: [Object, Array], default: null },
     meta: { type: Object, required: true },
     store: { type: Object, required: true },
-    // The context of the options component, to resolve `schema.view`. Not
-    // named `context`, which is the component's own context, see DitoMixin.
-    parentContext: { type: Object, required: true },
     // The value of the option to edit, e.g. its id.
     optionValue: { type: null, default: null }
   },
 
   computed: {
     editPath() {
-      const { schema, optionValue, parentContext } = this
-      return optionValue != null
-        ? getViewEditPath(schema, optionValue, parentContext)
+      const { schema, optionValue } = this
+      const form = this.viewRegistry.routeTree?.getViewForm(schema.view)
+      return form && optionValue != null
+        ? this.$router.resolve({
+            name: form.routeName,
+            params: { [form.param]: optionValue }
+          }).path
         : null
     }
   }

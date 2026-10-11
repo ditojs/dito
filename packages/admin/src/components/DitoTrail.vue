@@ -24,7 +24,6 @@ nav.dito-trail(aria-label="Breadcrumb")
 
 <script>
 import DitoComponent from '../DitoComponent.js'
-import { getViewLinkPath } from '../utils/schema/lookup.js'
 
 // @vue/component
 export default DitoComponent.component('DitoTrail', {
@@ -41,8 +40,13 @@ export default DitoComponent.component('DitoTrail', {
   methods: {
     getComponentRoute(component) {
       // `force` reloads the view even if it is already the current route.
+      // Views are reached through the path of their route, so that the router
+      // also matches their default children, like the forms of objects:
       return {
-        path: getViewLinkPath(component.schema, component.path),
+        path: component.isView
+          ? this.$router.resolve({ name: component.meta.node.linkRouteName })
+              .path
+          : component.path,
         force: true
       }
     },

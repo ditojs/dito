@@ -11,15 +11,12 @@ import {
   getViewFormSchema,
   getViewSchema,
   hasViewSchema,
-  getViewPath,
-  getViewEditPath,
   getFormSchemas,
   getItemFormSchemaFromForms,
   getItemFormSchema,
   isEmptySchema,
   getNamedSchemas,
-  getButtonSchemas,
-  getViewLinkPath
+  getButtonSchemas
 } from './lookup.js'
 
 // Register minimal type options, as the actual type components can't be
@@ -160,13 +157,11 @@ describe('view lookups', () => {
   const bookForm = { type: 'form', components: { title: { type: 'text' } } }
   const books = {
     type: 'view',
-    fullPath: '/books',
     path: 'books',
     component: { type: 'list', form: bookForm }
   }
   const dashboard = {
     type: 'view',
-    fullPath: '/dashboard',
     path: 'dashboard',
     tabs: {
       stats: {
@@ -178,7 +173,7 @@ describe('view lookups', () => {
       }
     }
   }
-  const empty = { type: 'view', fullPath: '/empty', components: {} }
+  const empty = { type: 'view', components: {} }
   const context = { flattenedViews: { books, dashboard, empty } }
 
   it('find the component with a form of views, also in their tabs', () => {
@@ -196,17 +191,6 @@ describe('view lookups', () => {
     expect(getViewSchema({ view: 'empty' }, context)).toBe(null)
     expect(hasViewSchema({ view: 'dashboard' }, context)).toBe(true)
     expect(hasViewSchema({ view: 'empty' }, context)).toBe(false)
-  })
-
-  it('return the paths of views and of the items edited in them', () => {
-    // Single component views edit their items at their own path:
-    expect(getViewPath({ view: 'books' }, context)).toBe('/books')
-    expect(getViewPath({ view: 'dashboard' }, context)).toBe(
-      '/dashboard/dashboard'
-    )
-    expect(getViewPath({ view: 'empty' }, context)).toBe(null)
-    expect(getViewEditPath({ view: 'books' }, 7, context)).toBe('/books/7')
-    expect(getViewEditPath({ view: 'empty' }, 7, context)).toBe(null)
   })
 
   it('return the forms of views for lists that use them', () => {
@@ -393,25 +377,5 @@ describe('getNamedSchemas()', () => {
     expect(getButtonSchemas({ archive: { label: 'Archive' } })).toEqual({
       archive: { type: 'button', name: 'archive', label: 'Archive' }
     })
-  })
-})
-
-describe('getViewLinkPath()', () => {
-  it('links views to their path', () => {
-    const view = { type: 'view', fullPath: '/books' }
-    expect(getViewLinkPath(view)).toBe('/books')
-    expect(getViewLinkPath(view, '/books/1')).toBe('/books/1')
-  })
-
-  it('links menus to their first item', () => {
-    const menu = {
-      type: 'menu',
-      fullPath: '/catalog',
-      items: {
-        authors: { type: 'view', fullPath: '/catalog/authors' },
-        series: { type: 'view', fullPath: '/catalog/series' }
-      }
-    }
-    expect(getViewLinkPath(menu, '/catalog')).toBe('/catalog/authors')
   })
 })

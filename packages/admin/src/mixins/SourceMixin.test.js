@@ -803,8 +803,98 @@ describe('SourceMixin', () => {
       return form?.data
     }
 
-    // Known bug: shared forms get their nested routes only once
-    it.skip('adds the nested routes of forms shared by several lists', async () => {
+    it('links the items of lists with resources in inlined objects by id', async () => {
+      const reviews = [
+        { id: 7, title: 'Early' },
+        { id: 9, title: 'Late' }
+      ]
+      const { admin, findField, settle } = await mountForm({
+        schema: {
+          components: {
+            meta: {
+              type: 'object',
+              components: {
+                reviews: {
+                  type: 'list',
+                  resource: { path: 'reviews' },
+                  editable: true,
+                  form: {
+                    type: 'form',
+                    components: { title: { type: 'text' } }
+                  }
+                }
+              }
+            }
+          }
+        },
+        data: { title: 'Emma', meta: {} },
+        request: ({ url }) => ({
+          data: url.endsWith('/9')
+            ? reviews[1]
+            : url.endsWith('/reviews')
+              ? reviews
+              : null
+        })
+      })
+      await findField('meta')
+        .findAll('.dito-button--edit')[1]
+        .trigger('click')
+      await settle()
+      expect(admin.router.currentRoute.value.path).toBe(
+        '/items/1/meta/reviews/9'
+      )
+      const form = admin.getRouteComponent(
+        it => it.isForm && it.path.endsWith('/9')
+      )
+      expect(form.data).toEqual({ id: 9, title: 'Late' })
+    })
+
+    it('stops forms that contain themselves at their `maxDepth`', async () => {
+      const categoryForm = {
+        type: 'form',
+        components: { name: { type: 'text' } }
+      }
+      categoryForm.components.subcategories = {
+        type: 'list',
+        editable: true,
+        maxDepth: 2,
+        form: categoryForm
+      }
+      const category = {
+        id: 1,
+        name: 'Food',
+        subcategories: [
+          { name: 'Fruit', subcategories: [{ name: 'Apples' }] }
+        ]
+      }
+      const admin = await mountAdmin({
+        views: {
+          categories: {
+            type: 'view',
+            component: {
+              type: 'list',
+              resource: { path: 'categories' },
+              form: categoryForm
+            }
+          }
+        },
+        request: ({ url }) => ({
+          data: url === '/categories/1' ? category : [category]
+        })
+      })
+      const getFormLists = async path => {
+        await admin.navigate(path)
+        const form = admin.getRouteComponent(it => it.isForm)
+        await settle(form)
+        return form.$el.querySelectorAll('.dito-list').length
+      }
+      expect(await getFormLists('/categories/1/subcategories/0')).toBe(1)
+      expect(
+        await getFormLists('/categories/1/subcategories/0/subcategories/0')
+      ).toBe(0)
+    })
+
+    it('adds the nested routes of forms shared by several lists', async () => {
       const bookForm = {
         type: 'form',
         components: { chapters: createChaptersSchema() }
@@ -848,8 +938,7 @@ describe('SourceMixin', () => {
       ])
     })
 
-    // Known bug: lists with a `path` open empty forms
-    it.skip('opens the forms of items of lists with a `path`', async () => {
+    it('opens the forms of items of lists with a `path`', async () => {
       const { admin } = await mountView(
         { components: { chapters: createChaptersSchema({ path: 'parts' }) } },
         { chapters }
@@ -859,8 +948,7 @@ describe('SourceMixin', () => {
       })
     })
 
-    // Known bug: lists in nested sections open empty forms
-    it.skip('opens the forms of items of lists in nested sections', async () => {
+    it('opens the forms of items of lists in nested sections', async () => {
       const { admin } = await mountView(
         {
           components: {
@@ -873,13 +961,12 @@ describe('SourceMixin', () => {
         },
         { book: { chapters } }
       )
-      expect(await getFormData(admin, '/test/chapters/1')).toEqual({
+      expect(await getFormData(admin, '/test/book/chapters/1')).toEqual({
         title: 'Epilogue'
       })
     })
 
-    // Known bug: `normalizePaths` doesn't restore all names
-    it.skip('opens the forms of items of lists with normalized paths', async () => {
+    it('opens the forms of items of lists with normalized paths', async () => {
       const { admin } = await mountView(
         { components: { tableOfURLs: createChaptersSchema() } },
         { tableOfURLs: chapters },
@@ -890,8 +977,7 @@ describe('SourceMixin', () => {
       })
     })
 
-    // Known bug: sections of single-component views get dead links
-    it.skip('links the items of lists in sections of single-component views', async () => {
+    it('links the items of lists in sections of single-component views', async () => {
       const { admin, view } = await mountView(
         {
           component: {
@@ -902,12 +988,11 @@ describe('SourceMixin', () => {
         { chapters }
       )
       const list = view.mainSchemaComponent.getComponentByDataPath('chapters')
-      const path = list.getEditPath(chapters[1], 1)
+      const path = list.getEditPath(1)
       expect(await getFormData(admin, path)).toEqual({ title: 'Epilogue' })
     })
 
-    // Known bug: lists in inlined objects get no routes, silently
-    it.skip('links the items of lists in inlined objects to their forms', async () => {
+    it('links the items of lists in inlined objects to their forms', async () => {
       const { admin, view } = await mountView(
         {
           components: {
@@ -923,7 +1008,7 @@ describe('SourceMixin', () => {
         view.mainSchemaComponent.getComponentByDataPath(
           'book/chapters'
         )
-      const path = list.getEditPath(chapters[1], 1)
+      const path = list.getEditPath(1)
       expect(await getFormData(admin, path)).toEqual({ title: 'Epilogue' })
     })
 
@@ -962,14 +1047,12 @@ describe('SourceMixin', () => {
         return view.mainSchemaComponent.getComponentByDataPath('books')
       }
 
-      // Known bug: multi-component views get wrong edit links
-      it.skip('link the items to the forms in multi-component views', async () => {
+      it('link the items to the forms in multi-component views', async () => {
         const list = await mountLinkedList()
-        expect(list.getEditPath(list.listData[0], 0)).toBe('/books/items/5')
+        expect(list.getEditPath(0)).toBe('/books/items/5')
       })
 
-      // Known bug: lists linked to views can never create
-      it.skip('create items in the forms of the views', async () => {
+      it('create items in the forms of the views', async () => {
         const list = await mountLinkedList()
         expect(list.creatable).toBe(true)
         expect(list.createPath).toBe('/books/items/create')
@@ -988,7 +1071,7 @@ describe('SourceMixin', () => {
         form: { type: 'form', components: {} }
       }
       await expect(
-        getTypeOptions(schema).processSchema(api, schema, 'books', [], 0)
+        getTypeOptions(schema).processSchema(api, schema, 'books')
       ).rejects.toThrow('Nested lists cannot load data from their own')
     })
 
@@ -1000,7 +1083,7 @@ describe('SourceMixin', () => {
         form: { type: 'form', components: {} }
       }
       await expect(
-        getTypeOptions(schema).processSchema(api, schema, 'publisher', [], 0)
+        getTypeOptions(schema).processSchema(api, schema, 'publisher')
       ).rejects.toThrow('Nested objects cannot load data from their own')
     })
   })

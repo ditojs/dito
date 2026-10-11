@@ -46,6 +46,8 @@ const ditoOptionKeys = [
   'processValue',
   'getTypeValidations',
   'processSchema',
+  'hasNestedForms',
+  'getChildSourceSchemas',
   'getPanelSchema',
   'getFormSchemasForProcessing',
   // vue-router reads route guards from the raw component options, without

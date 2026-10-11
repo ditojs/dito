@@ -3,7 +3,6 @@ import { getItemFormSchema } from '../utils/schema/lookup.js'
 import { getItemUid } from '../utils/schema/data.js'
 import {
   getItemIdOrIndex,
-  findItemIndexById,
   getItemLabel
 } from '../utils/schema/item.js'
 import { appendDataPath } from '../utils/data.js'
@@ -33,12 +32,6 @@ export default {
         dataPath = appendDataPath(dataPath, index)
       }
       return dataPath
-    },
-
-    findItemIdIndex(sourceSchema, data, itemId) {
-      return findItemIndexById(sourceSchema, data, itemId, {
-        isTransient: this.isTransient
-      })
     },
 
     // Returns the label of `item` as HTML, see `getItemLabel()`.

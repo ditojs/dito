@@ -2739,10 +2739,18 @@ export interface DitoFormInstance<$Item = any>
    */
   isMutating: boolean
   /**
-   * Builds a child route path relative to this
-   * route component's path.
+   * Resolves the path of the deepest form that edits
+   * the data at `dataPath`, along with the data path
+   * that remains within that form, or `null`.
    */
-  getChildPath(path: string): string
+  getFormRoute(
+    dataPath: string
+  ): { path: string; dataPath: string } | null
+  /**
+   * Resolves the path of the form that creates an
+   * item of the source at `dataPath`, or `null`.
+   */
+  getCreatePath(dataPath: string): string | null
 }
 
 /** The root component of the admin (DitoRoot). */
@@ -2803,10 +2811,18 @@ export interface DitoViewInstance<$Item = any>
    */
   isMutating: boolean
   /**
-   * Builds a child route path relative to this
-   * route component's path.
+   * Resolves the path of the deepest form that edits
+   * the data at `dataPath`, along with the data path
+   * that remains within that form, or `null`.
    */
-  getChildPath(path: string): string
+  getFormRoute(
+    dataPath: string
+  ): { path: string; dataPath: string } | null
+  /**
+   * Resolves the path of the form that creates an
+   * item of the source at `dataPath`, or `null`.
+   */
+  getCreatePath(dataPath: string): string | null
 
   // -- Data & schema (DitoView) --
 
@@ -2914,12 +2930,25 @@ export interface DitoSourceInstance<$Item = any>
   /** Whether the source renders inline. */
   isInlined: boolean
   /**
-   * Nesting depth of sources (0 for top-level,
-   * increments for nested sources).
+   * The path of the form that creates an item, or
+   * `null` if the source isn't creatable.
    */
-  sourceDepth: number
-  /** The URL path for this source. */
-  path: string
+  createPath: string | null
+  /**
+   * The path of the form of object sources, which
+   * are their own item, or `null`.
+   */
+  objectPath: string | null
+  /**
+   * Resolves the path of the form that edits the
+   * list item at `index`, or `null`.
+   */
+  getItemPath(index: number): string | null
+  /**
+   * Resolves the path of the form that edits the
+   * item at `dataPath`, or `null`.
+   */
+  getFormPath(dataPath: string): string | null
 
   // -- Resolved schema accessors (SourceMixin) --
 
@@ -2937,8 +2966,6 @@ export interface DitoSourceInstance<$Item = any>
   collapsed: boolean
   /** Resolved pagination page size. */
   paginate: number | undefined
-  /** Maximum nesting depth for nested sources. */
-  maxDepth: number
   /** Whether the source renders in compact mode. */
   isCompact: boolean
 

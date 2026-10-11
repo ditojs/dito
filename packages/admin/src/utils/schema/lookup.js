@@ -10,9 +10,7 @@ import { reactive, computed } from 'vue'
 import { getTypeOptions } from './types.js'
 import {
   findNestedSchemaComponent,
-  isMenu,
-  isSchema,
-  isSingleComponentView
+  isSchema
 } from './structure.js'
 // TODO: Setting up the forms of `components()` callbacks causes the only
 // circular import between these modules.
@@ -61,29 +59,6 @@ export function getViewSchema(schema, context) {
 
 export function hasViewSchema(schema, context) {
   return !!getViewSchema(schema, context)
-}
-
-export function getViewPath(schema, context) {
-  const view = getViewSchema(schema, context)
-  if (view) {
-    return isSingleComponentView(view)
-      ? view.fullPath
-      : `${view.fullPath}/${view.path}`
-  }
-  return null
-}
-
-// Returns the path that links to the view or menu `schema`, displayed at
-// `path`: Menus link to their first item.
-export function getViewLinkPath(schema, path = schema.fullPath) {
-  return isMenu(schema)
-    ? Object.values(schema.items)[0].fullPath
-    : path
-}
-
-export function getViewEditPath(schema, id, context) {
-  const path = getViewPath(schema, context)
-  return path ? `${path}/${id}` : null
 }
 
 export function getFormSchemas(schema, context, modifyForm) {

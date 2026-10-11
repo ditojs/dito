@@ -52,6 +52,7 @@ these aspects separately:
 - [Migrations](docs/migrations.md)
 - [Seeds](docs/seeds.md)
 - [Admin](docs/admin.md)
+- [Upgrading to 4.0](docs/upgrading-to-4.0.md)
 
 ## Setting up `package.json` for a Dito.js Application
 

@@ -12,7 +12,7 @@ template(
   )
   .dito-view.dito-scroll-parent(
     v-else
-    :data-resource="sourceSchema.path"
+    :data-resource="schemaPath"
   )
     DitoSchema(
       :key="name"
@@ -115,6 +115,11 @@ export default DitoComponent.component('DitoView', {
       return someNestedSchemaComponent(this.viewSchema, hasResource)
     },
 
+    // The data paths of the view's components start at its data:
+    dataPath() {
+      return ''
+    },
+
     // @override DitoMixin.rootData()
     // The data paths of the view's components are relative to its data, also
     // when the view has no resource and thus isn't a data component.
@@ -168,13 +173,6 @@ export default DitoComponent.component('DitoView', {
     setData(data) {
       this.data = data
       return this.data
-    },
-
-    getChildPath(path) {
-      // Lists inside single-component views use the view's path for sub-paths:
-      return this.isSingleComponentView
-        ? this.path
-        : `${this.path}/${path}`
     }
   }
 })

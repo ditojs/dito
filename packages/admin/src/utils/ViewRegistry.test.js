@@ -7,7 +7,7 @@ describe('ViewRegistry', () => {
     vi.restoreAllMocks()
   })
 
-  it('provides the views only once their routes are set up', async () => {
+  it('provides the views only along with their route tree', async () => {
     const admin = await mountAdmin({
       views: {
         catalog: {
@@ -20,16 +20,21 @@ describe('ViewRegistry', () => {
       }
     })
     const { viewRegistry } = admin.root
-    // `DitoMenu` links to the paths of the views as soon as it receives
-    // them. Menus are resolved into new objects without paths each time.
+    // `DitoMenu` links to the paths of the route tree as soon as the views
+    // are provided:
     const providedPaths = []
     watch(
       () => viewRegistry.views,
-      views => providedPaths.push(views.catalog?.fullPath),
+      () =>
+        providedPaths.push(
+          admin.router.resolve({
+            name: viewRegistry.routeTree?.nodes[0].linkRouteName
+          }).path
+        ),
       { flush: 'sync' }
     )
     expect(await viewRegistry.resolve()).toBe(true)
-    expect(providedPaths).toEqual(['/catalog'])
+    expect(providedPaths).toEqual(['/catalog/authors'])
   })
 
   it('replaces the routes of the previous views', async () => {

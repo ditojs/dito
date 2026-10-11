@@ -32,7 +32,7 @@
     :creatable="creatable"
     :createPath="createPath"
     :editable="editable"
-    :editPath="path"
+    :editPath="objectPath"
     :deletable="!isInlined && deletable"
     @delete="deleteItem(objectData)"
   )
@@ -54,28 +54,10 @@ export default DitoTypeComponent.register('object', {
     return type
   },
 
-  async processSchema(
-    api,
-    schema,
-    name,
-    routes,
-    level,
-    nested = false,
-    flatten = false,
-    process = null
-  ) {
+  async processSchema(api, schema, name) {
     await Promise.all([
       resolveSchemaComponent(schema),
-      SourceMixin.processSchema(
-        api,
-        schema,
-        name,
-        routes,
-        level,
-        nested,
-        flatten,
-        process
-      )
+      SourceMixin.processSchema(api, schema, name)
     ])
   }
 })

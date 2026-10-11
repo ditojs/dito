@@ -1,10 +1,7 @@
 import { shallowRef } from 'vue'
 import { mapConcurrently } from '@ditojs/utils'
-import {
-  resolveViews,
-  setupView,
-  resetProcessedSchemaDepths
-} from './schema/setup.js'
+import { resolveViews, setupView } from './schema/setup.js'
+import { RouteTree } from './RouteTree.ts'
 
 // ViewRegistry resolves the schemas of the admin's views, sets up their routes,
 // and adds them to the router, replacing the routes of the previous resolve.
@@ -18,6 +15,7 @@ export class ViewRegistry {
   #unresolvedViews
   #viewComponent
   #views = shallowRef({})
+  #routeTree = shallowRef(null)
   #removeRoutes = shallowRef(null)
 
   constructor({ api, router, unresolvedViews, viewComponent }) {
@@ -27,10 +25,15 @@ export class ViewRegistry {
     this.#viewComponent = viewComponent
   }
 
-  // The resolved views, provided as `$views`, or an empty object until they
-  // are resolved and once they are cleared.
+  // The resolved views, or an empty object until they are resolved and once
+  // they are cleared.
   get views() {
     return this.#views.value
+  }
+
+  // The route tree of the resolved views, `null` until they are resolved.
+  get routeTree() {
+    return this.#routeTree.value
   }
 
   // Whether the routes of the views were added to the router.
@@ -49,17 +52,10 @@ export class ViewRegistry {
       console.error(error)
       return false
     }
-    // The schemas may be the same objects as in the previous resolve, which
-    // need to be processed again for their routes.
-    resetProcessedSchemaDepths()
-    const routes = await mapConcurrently(
-      Object.entries(views),
-      ([name, schema]) =>
-        setupView(this.#viewComponent, this.#api, schema, name)
+    await mapConcurrently(Object.entries(views), ([name, schema]) =>
+      setupView(this.#api, schema, name)
     )
-    // Only provide the views once they are set up, as `DitoMenu` links to
-    // their paths.
-    this.#views.value = views
+    const routeTree = new RouteTree(views, this.#api)
     const { fullPath } = this.#router.currentRoute.value
     this.#removeRoutes.value?.()
     this.#removeRoutes.value = addRoutes(this.#router, [
@@ -68,8 +64,12 @@ export class ViewRegistry {
         path: '/',
         components: {}
       },
-      ...routes.flat()
+      ...routeTree.createRouteRecords(this.#viewComponent)
     ])
+    // Only provide the views and their tree once their routes are added, as
+    // `DitoMenu` links to them by their names.
+    this.#routeTree.value = routeTree
+    this.#views.value = views
     this.#router.replace(fullPath)
     return true
   }
@@ -78,6 +78,7 @@ export class ViewRegistry {
   // Their routes stay until the views are resolved again.
   clear() {
     this.#views.value = {}
+    this.#routeTree.value = null
     return this.#router.push('/')
   }
 }

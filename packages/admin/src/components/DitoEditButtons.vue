@@ -51,6 +51,7 @@ import DitoDragHandle from './DitoDragHandle.vue'
 import ContextMixin from '../mixins/ContextMixin.js'
 import { DitoButton } from '@ditojs/ui/src'
 import { capitalize } from '@ditojs/utils'
+import { isInlined } from '../utils/schema/structure.js'
 
 // @vue/component
 export default DitoComponent.component('DitoEditButtons', {
@@ -116,7 +117,8 @@ export default DitoComponent.component('DitoEditButtons', {
     isCreatableDisabled() {
       return (
         this.disabled ||
-        !this.createPath ||
+        // Inlined sources create their items in place, without a route:
+        !this.createPath && !isInlined(this.schema) ||
         !this.hasFormOption('creatable')
       )
     },
