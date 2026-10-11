@@ -637,7 +637,7 @@ describe('DitoForm', () => {
       )
     })
 
-    it('applies the response of buttons with resources', async () => {
+    it('applies the response of buttons with resources to the draft', async () => {
       const { admin, data } = await mountForm({
         schema: {
           components: {
@@ -669,10 +669,17 @@ describe('DitoForm', () => {
         .find('button[id$="proofread"]')
         .trigger('click')
       await settle(form)
-      expect(data.chapters).toEqual([{ title: 'PROLOGUE' }])
-      // Unlike the submit button, other buttons don't close the form:
+      // Unlike the submit button, other buttons don't close the form, which
+      // holds the response in its draft until it's applied:
       expect(admin.router.currentRoute.value.path).toBe('/items/1/chapters/0')
       expect(form.data).toEqual({ title: 'PROLOGUE' })
+      expect(data.chapters).toEqual([{ title: 'prologue' }])
+      expect(form.isDirty).toBe(true)
+      await new DOMWrapper(form.$el)
+        .find('.dito-buttons--main button[type="submit"]')
+        .trigger('click')
+      await settle(form)
+      expect(data.chapters).toEqual([{ title: 'PROLOGUE' }])
     })
 
     it('adds created items to the list in the data of the form', async () => {
@@ -782,8 +789,7 @@ describe('DitoForm', () => {
       await settle(form)
     }
 
-    // Known bug: applying writes the payload back, dropping values
-    it.skip('keeps the values of the item that the form leaves out', async () => {
+    it('keeps the values of the item that the form leaves out', async () => {
       const { form, data } = await openChapterForm(
         { title: { type: 'text' } },
         { id: 7, title: 'Prologue', wordCount: 1200 }
@@ -794,8 +800,7 @@ describe('DitoForm', () => {
       ])
     })
 
-    // Known bug: applying writes the payload back, wiping excludes
-    it.skip('keeps the excluded values of the item', async () => {
+    it('keeps the excluded values of the item', async () => {
       const { form, data } = await openChapterForm(
         {
           title: { type: 'text' },
@@ -809,8 +814,7 @@ describe('DitoForm', () => {
       ])
     })
 
-    // Known bug: applying cuts related objects down to `{ id }`
-    it.skip('keeps the related objects of the item whole', async () => {
+    it('keeps the related objects of the item whole', async () => {
       const authors = [
         { id: 1, name: 'Jane' },
         { id: 2, name: 'Tom' }
@@ -832,8 +836,7 @@ describe('DitoForm', () => {
       ])
     })
 
-    // Known bug: applying calls `process()`, and saving again
-    it.skip('calls `process()` only when the parent is saved', async () => {
+    it('calls `process()` only when the parent is saved', async () => {
       const { form, data, submit } = await openChapterForm(
         { title: { type: 'text', process: ({ value }) => `${value}!` } },
         { id: 7, title: 'Prologue' }
@@ -867,8 +870,7 @@ describe('DitoForm', () => {
         featured: null
       }
 
-      // Known bug: options of nested forms read the parent's data
-      it.skip('resolve the options of data paths in the data of the form', async () => {
+      it('resolve the options of data paths in the data of the form', async () => {
         const { form } = await openChapterForm(chapterComponents, chapter)
         const featured = form.mainSchemaComponent.getComponentByName('featured')
         const sections = form.mainSchemaComponent.getComponentByName('sections')
@@ -879,8 +881,7 @@ describe('DitoForm', () => {
         expect(featured.options[0]).toBe(form.data.sections[0])
       })
 
-      // Known bug: selecting writes temporary ids into the parent
-      it.skip(`don't change the data of the parent when cancelled`, async () => {
+      it(`don't change the data of the parent when cancelled`, async () => {
         const { form, data } = await openChapterForm(chapterComponents, chapter)
         const featured = form.mainSchemaComponent.getComponentByName('featured')
         featured.selectedValue = featured.getValueForOption(featured.options[0])
@@ -891,8 +892,7 @@ describe('DitoForm', () => {
         expect(data.chapters[0].sections).toEqual([{ name: 'Opening' }])
       })
 
-      // Known bug: references lose their temporary ids when applied
-      it.skip('send the related items with the ids of their references', async () => {
+      it('send the related items with the ids of their references', async () => {
         const { form, submit } = await openChapterForm(
           chapterComponents,
           chapter
@@ -1155,7 +1155,8 @@ describe('DitoForm', () => {
     })
 
     // The data paths of the form's components are relative to the data of
-    // the view, which is their root item also when the view has no resource.
+    // the view, which is their root item with the form's draft in place of
+    // its item, also when the view has no resource.
     describe('without resources', () => {
       const recipesWithKitchenSchema = {
         ...recipesSchema,
@@ -1177,10 +1178,12 @@ describe('DitoForm', () => {
           form.mainSchemaComponent.getComponentByDataPath(
             'recipes/0/name'
           )
-        expect(form.rootData).toBe(view.data)
-        expect(name.rootItem).toBe(view.data)
-        expect(name.context.rootItem).toBe(view.data)
-        expect(name.context.parentItem).toBe(view.data)
+        const { rootData } = form
+        expect(rootData.venue).toBe('Bakery')
+        expect(rootData.recipes[0]).toBe(form.data)
+        expect(name.rootItem).toBe(rootData)
+        expect(name.context.rootItem).toBe(rootData)
+        expect(name.context.parentItem).toBe(rootData)
         expect(name.context.item).toBe(form.data)
         expect(form.data).toEqual({ ...recipe, kitchen: 'Bakery' })
       }

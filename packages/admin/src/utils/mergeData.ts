@@ -1,6 +1,6 @@
 import { isArray, isObject } from '@ditojs/utils'
 import { isTemporaryId } from './data.js'
-import { getItemId, processSchemaData } from './schema/data.js'
+import { getItemId, getItemUid, processSchemaData } from './schema/data.js'
 import type { SchemaDataEntry } from './schema/data.js'
 import { hasFormSchema, hasMultipleFormSchemas } from './schema/lookup.js'
 import { isSourceWithResource } from './schema/structure.js'
@@ -18,17 +18,21 @@ interface Merge {
 // Merges `source` into `target` in place along the components of `schema`, so
 // that the objects of `target` keep their uids, stores and open forms. Values
 // missing in `source` are removed, except the kept data of sources with their
-// own resource, which responses don't contain.
+// own resource, which responses don't contain. List items are matched by their
+// ids, or by their uids if `source` is a copy of `target` that shares them,
+// e.g. the draft of a nested form, see `cloneWithUids()`.
 export function mergeData(
   schema: Schema,
   target: Data,
   source: Data,
   {
     component = null,
-    shouldKeepSourcesWithResource = false
+    shouldKeepSourcesWithResource = false,
+    shouldMatchUids = false
   }: {
     component?: object | null
     shouldKeepSourcesWithResource?: boolean
+    shouldMatchUids?: boolean
   } = {}
 ): Data {
   const mergesBySource = new Map<Data, Merge>()
@@ -50,7 +54,7 @@ export function mergeData(
         merge.names.add(name)
       } else if (hasFormSchema(schema)) {
         if (isArray(sourceValue) && isArray(targetValue)) {
-          mergeList(schema, targetValue, sourceValue, addMerge)
+          mergeList(schema, targetValue, sourceValue, addMerge, shouldMatchUids)
           merge.names.add(name)
         } else if (
           isObject(sourceValue) &&
@@ -86,27 +90,37 @@ export function mergeData(
 
 // Matches the items of the lists by the ids of `sourceSchema`. The remaining
 // items are matched with the new items of `target` in order, as the server
-// keeps the order of new items when it gives them their ids.
+// keeps the order of new items when it gives them their ids. Copies that share
+// the uids of their items are matched by these only.
 function mergeList(
   sourceSchema: Schema,
   target: any[],
   source: any[],
-  addMerge: (source: Data, target: Data) => void
+  addMerge: (source: Data, target: Data) => void,
+  shouldMatchUids: boolean
 ) {
-  const getId = (item: any) =>
-    isObject(item) ? getItemId(sourceSchema, item) : undefined
-  const targetItemsById = new Map<string | undefined, Data>()
+  const getKey = (item: any) =>
+    isObject(item)
+      ? shouldMatchUids
+        ? getItemUid(sourceSchema, item)
+        : getItemId(sourceSchema, item)
+      : undefined
+  const targetItemsByKey = new Map<string | undefined, Data>()
   const newTargetItems: Data[] = []
   for (const item of target) {
-    const id = getId(item)
-    if (id !== undefined) {
-      targetItemsById.set(id, item)
+    const key = getKey(item)
+    if (key !== undefined) {
+      targetItemsByKey.set(key, item)
     }
-    if (isObject(item) && (id === undefined || isTemporaryId(id))) {
+    if (
+      !shouldMatchUids &&
+      isObject(item) &&
+      (key === undefined || isTemporaryId(key))
+    ) {
       newTargetItems.push(item)
     }
   }
-  const matchedItems = source.map(item => targetItemsById.get(getId(item)))
+  const matchedItems = source.map(item => targetItemsByKey.get(getKey(item)))
   const matchedItemSet = new Set(matchedItems)
   const unmatchedNewTargetItems = newTargetItems.filter(
     item => !matchedItemSet.has(item)

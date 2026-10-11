@@ -646,8 +646,7 @@ describe('DitoTypeList', () => {
       expect(admin.router.currentRoute.value.path).toBe('/items/1')
     })
 
-    // Known bug: open nested forms switch to the next item
-    it.skip('keep the form of an item open when removing an earlier one', async () => {
+    it('keep the form of an item open when removing an earlier one', async () => {
       const { admin, getComponent, data, settle } = await mountForm({
         schema: {
           components: {

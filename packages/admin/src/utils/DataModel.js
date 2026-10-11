@@ -20,6 +20,7 @@ import DitoContext from '../DitoContext.js'
 import { DataSchemaResolver } from './DataSchemaResolver.js'
 import { getParentDataPath, getRelativeDataPath } from './data.js'
 import { mergeData } from './mergeData.ts'
+import { getOriginal } from './uid.js'
 import {
   isEmptySchema,
   getButtonSchemas,
@@ -220,6 +221,23 @@ export class DataModel {
     data[key] = value
   }
 
+  // Merges `item`, a copy that shares the uids of `data[key]`, e.g. the draft
+  // of a nested form, into that item in place, along the form of its source
+  // with `sourceSchema`, see `cloneWithUids()`.
+  merge(data, key, item, sourceSchema) {
+    if (!equals(data[key], item)) {
+      this.markDirty()
+      // Merge the item as the value of its source, so that its form is the
+      // same as in the data, e.g. with the children of tree items:
+      data[key] = mergeData(
+        { components: { [key]: sourceSchema } },
+        { [key]: data[key] },
+        { [key]: item },
+        { component: this.component, shouldMatchUids: true }
+      )[key]
+    }
+  }
+
   insert(list, index, item) {
     this.changeList(list, () => list.splice(index, 0, item))
   }
@@ -391,28 +409,24 @@ export class DataModel {
     return false
   }
 
-  // Copies the errors of the values of `source`, data of the model `model`,
-  // and of the data nested in it, to `target`, a clone of it, e.g. the item of
-  // a nested form. Data that `target` doesn't hold anymore is skipped.
-  copyErrors(model, source, target) {
-    const copy = (source, target) => {
-      if (
-        isPlainObject(source) && isPlainObject(target) ||
-        isArray(source) && isArray(target)
-      ) {
-        for (const [name, entry] of model.#errors.value.entriesOf(source)) {
-          const key = { data: target, name }
+  // Copies the errors of the values of the originals of `data`, a copy made by
+  // `cloneWithUids()`, and of the data nested in it, from `model`, e.g. from
+  // the parent's model to the draft of a nested form.
+  copyErrors(model, data) {
+    const copy = data => {
+      if (isPlainObject(data) || isArray(data)) {
+        const original = getOriginal(data)
+        for (const [name, entry] of model.#errors.value.entriesOf(original)) {
+          const key = { data, name }
           const field = this.#errors.value.get(key)?.field ?? []
           if (entry.validation.length > 0 || entry.server.length > 0) {
             this.#errors.value.set(key, { ...entry, field })
           }
         }
-        for (const [key, value] of Object.entries(source)) {
-          copy(value, target[key])
-        }
+        Object.values(data).forEach(copy)
       }
     }
-    copy(source, target)
+    copy(data)
     triggerRef(this.#errors)
   }
 

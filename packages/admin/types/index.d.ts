@@ -2776,7 +2776,8 @@ export interface DitoFormInstance<$Item = any>
    * the form has no data yet. Returns the form's
    * reactive data, which can be modified to update
    * it. Forms of items in the data of their parent
-   * set the item there instead, and return it.
+   * merge it into their draft like an edit, which
+   * reaches the parent once the draft is applied.
    */
   setData(data: any): any
   /**
