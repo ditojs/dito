@@ -583,7 +583,7 @@ describe('DitoSchema', () => {
     expect(getErrors('author')).toEqual(['The author field is required.'])
   })
 
-  describe('navigateToComponent()', () => {
+  describe('revealComponents()', () => {
     async function mountCollapsedSection() {
       const result = await mountSchema({
         schema: {
@@ -609,17 +609,15 @@ describe('DitoSchema', () => {
     it('opens collapsed schemas to reveal the component', async () => {
       const { section } = await mountCollapsedSection()
       expect(section.opened).toBe(false)
-      const onComplete = vi.fn(() => true)
-      expect(await section.navigateToComponent('notes', onComplete)).toBe(true)
-      expect(section.opened).toBe(true)
-      expect(onComplete).toHaveBeenCalledWith([
+      expect(await section.revealComponents('notes')).toEqual([
         expect.objectContaining({ name: 'notes' })
       ])
+      expect(section.opened).toBe(true)
     })
 
     it('keeps collapsed schemas closed without a component', async () => {
       const { section } = await mountCollapsedSection()
-      expect(await section.navigateToComponent('isbn')).toBe(false)
+      expect(await section.revealComponents('isbn')).toEqual([])
       expect(section.opened).toBe(false)
     })
   })
@@ -838,18 +836,36 @@ describe('DitoSchema', () => {
     })
   })
 
-  describe('hasErrors', () => {
-    it('tells whether any of its components shows errors', async () => {
-      const { schemaComponent } = await mountSchema({
+  describe('validateAll()', () => {
+    it('shows the errors until they are reset', async () => {
+      const { routeComponent, getErrors, dataModel } = await mountSchema({
         schema: { components: { title: { type: 'text', required: true } } },
         data: { title: '' }
       })
-      expect(schemaComponent.hasErrors).toBe(false)
-      expect(schemaComponent.validateAll()).toBe(false)
+      expect(routeComponent.validateAll()).toBe(false)
       await flushPromises()
-      expect(schemaComponent.hasErrors).toBe(true)
-      schemaComponent.clearErrors()
-      expect(schemaComponent.hasErrors).toBe(false)
+      expect(getErrors('title')).toEqual(['The title field is required.'])
+      expect(dataModel.getErrorDataPaths()).toEqual(['title'])
+      routeComponent.resetValidation()
+      await flushPromises()
+      expect(getErrors('title')).toEqual([])
+    })
+
+    it('hides the errors of values that code changed', async () => {
+      const { schemaComponent, getErrors, data, dataModel } = await mountSchema(
+        {
+          schema: { components: { title: { type: 'text', required: true } } },
+          data: { title: '' }
+        }
+      )
+      schemaComponent.validateAll()
+      await flushPromises()
+      expect(getErrors('title')).toEqual(['The title field is required.'])
+      data.title = 'Emma'
+      await flushPromises()
+      expect(getErrors('title')).toEqual([])
+      expect(schemaComponent.validateAll()).toBe(true)
+      expect(dataModel.getErrorDataPaths()).toEqual([])
     })
   })
 
@@ -913,8 +929,7 @@ describe('DitoSchema', () => {
       )
     })
 
-    // Known bug: errors live on components, collapsing drops them
-    it.skip('keeps the errors of collapsed sections', async () => {
+    it('keeps the errors of collapsed sections', async () => {
       const { submit, getErrors, findContainer } = await mountBookForm(
         { subtitle: [{ message: 'is too long' }] },
         {
@@ -937,6 +952,32 @@ describe('DitoSchema', () => {
       await toggleDetails()
       await toggleDetails()
       expect(getErrors('subtitle')).toEqual(['The Subtitle field is too long.'])
+    })
+
+    it('keeps the errors of tabs that are not selected', async () => {
+      const { submit, getErrors, schemaComponent, dataModel } = await mountForm(
+        {
+          schema: {
+            tabs: {
+              main: { type: 'tab', components: { title: { type: 'text' } } },
+              notes: { type: 'tab', components: { summary: { type: 'text' } } }
+            }
+          },
+          data: { title: 'Emma', summary: 'Short' },
+          request: respondWithErrors({
+            title: [{ message: 'is taken' }],
+            summary: [{ message: 'is too short' }]
+          })
+        }
+      )
+      await submit()
+      expect(schemaComponent.selectedTab).toBe('main')
+      expect(dataModel.getErrors('summary')).toEqual([
+        { message: 'is too short' }
+      ])
+      schemaComponent.selectTab('notes')
+      await flushPromises()
+      expect(getErrors('summary')).toEqual(['The Summary field is too short.'])
     })
 
     it('shows the errors of items in their nested forms', async () => {
@@ -976,7 +1017,8 @@ describe('DitoSchema', () => {
           .$el.closest('.dito-container')
       expect(container('title').textContent).toContain('is too short')
       expect(container('pages').textContent).toContain('is too few')
-      expect(getErrors('title')).toEqual([])
+      // The parent keeps its own errors for when the nested form closes:
+      expect(getErrors('title')).toEqual(['The Title field is taken.'])
     })
   })
 
@@ -1087,26 +1129,32 @@ describe('DitoSchema', () => {
   })
 
   describe('showValidationErrors()', () => {
-    it(`doesn't notify the errors unless it's the first schema`, async () => {
+    it('replaces the errors, and notifies them once', async () => {
       const { schemaComponent, admin, getErrors } = await mountSchema({
-        schema: { components: { title: { type: 'text' } } },
-        data: { title: 'Emma' }
+        schema: {
+          components: { title: { type: 'text' }, author: { type: 'text' } }
+        },
+        data: { title: 'Emma', author: 'Jane' }
       })
       const notify = vi.spyOn(admin.root, 'notify')
-      const errors = { title: [{ message: 'is taken' }] }
-      expect(
-        await schemaComponent.showValidationErrors(errors, false, false)
-      ).toBe(true)
-      expect(getErrors('title')).toEqual(['The title field is taken.'])
-      expect(notify).not.toHaveBeenCalled()
-      expect(await schemaComponent.showValidationErrors(errors, false)).toBe(
-        true
-      )
-      expect(notify).toHaveBeenCalledOnce()
+      await schemaComponent.showValidationErrors({
+        title: [{ message: 'is taken' }]
+      })
+      await schemaComponent.showValidationErrors({
+        author: [{ message: 'is unknown' }]
+      })
+      await flushPromises()
+      expect(getErrors('title')).toEqual([])
+      expect(getErrors('author')).toEqual(['The author field is unknown.'])
+      expect(notify).toHaveBeenCalledTimes(2)
+      // Without errors, there's nothing to notify:
+      await schemaComponent.showValidationErrors({})
+      expect(notify).toHaveBeenCalledTimes(2)
+      vi.restoreAllMocks()
     })
   })
 
-  describe('navigateToComponent() with `onComplete()`', () => {
+  describe('revealComponents() of inlined schemas', () => {
     async function mountCollapsedAuthor() {
       return mountSchema({
         schema: {
@@ -1127,35 +1175,16 @@ describe('DitoSchema', () => {
     it('reveals the components of collapsed inlined schemas', async () => {
       const { schemaComponent } = await mountCollapsedAuthor()
       expect(schemaComponent.getComponent('author/name')).toBe(null)
-      expect(await schemaComponent.navigateToComponent('author/name')).toBe(
-        true
-      )
+      expect(await schemaComponent.revealComponents('author/name')).toEqual([
+        expect.objectContaining({ dataPath: 'author/name' })
+      ])
       expect(schemaComponent.getComponent('author/name')).not.toBe(null)
     })
 
-    it('reveals inlined ones with `shouldRevealInlinedOnly`', async () => {
+    it('keeps them collapsed without a component to reveal', async () => {
       const { schemaComponent } = await mountCollapsedAuthor()
-      const onComplete = vi.fn(() => true)
-      expect(
-        await schemaComponent.navigateToComponent('author/name', onComplete, {
-          shouldRevealInlinedOnly: true
-        })
-      ).toBe(true)
-      expect(onComplete).toHaveBeenCalledWith([
-        expect.objectContaining({ dataPath: 'author/name' })
-      ])
-    })
-
-    it('fails when `onComplete()` rejects the components', async () => {
-      const { schemaComponent } = await mountSchema({
-        schema: { components: { title: { type: 'text' } } },
-        data: { title: 'Emma' }
-      })
-      const onComplete = vi.fn(() => false)
-      expect(
-        await schemaComponent.navigateToComponent('title', onComplete)
-      ).toBe(false)
-      expect(onComplete).toHaveBeenCalledOnce()
+      expect(await schemaComponent.revealComponents('author/isbn')).toEqual([])
+      expect(schemaComponent.getComponent('author/name')).toBe(null)
     })
   })
 

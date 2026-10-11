@@ -1131,6 +1131,37 @@ describe('DitoForm', () => {
       ).toBe(false)
     })
 
+    it('reset the validation of their item only', async () => {
+      const { admin, routeComponent, dataModel } = await mountForm({
+        schema: {
+          components: {
+            title: { type: 'text' },
+            chapters: {
+              type: 'list',
+              editable: true,
+              mutate: true,
+              form: {
+                type: 'form',
+                components: { title: { type: 'text' } }
+              }
+            }
+          }
+        },
+        data: { title: 'Emma', chapters: [{ title: 'Prologue' }] }
+      })
+      const errors = [{ message: 'is taken' }]
+      dataModel.replaceErrors(
+        { 'title': errors, 'chapters/0/title': errors },
+        { server: true }
+      )
+      await admin.navigate('/items/1/chapters/0')
+      const form = admin.getRouteComponent(component => component.isForm)
+      expect(form).not.toBe(routeComponent)
+      form.resetValidation()
+      expect(dataModel.getErrors('chapters/0/title')).toBe(null)
+      expect(dataModel.getErrors('title')).toEqual(errors)
+    })
+
     const chapterForm = {
       type: 'form',
       components: {

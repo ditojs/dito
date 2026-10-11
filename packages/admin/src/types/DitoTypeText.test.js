@@ -202,17 +202,15 @@ describe('DitoTypeText', () => {
     })
 
     it('validates the format of the email type', async () => {
-      const { findField, getComponent, getErrors } = await mountSchema({
+      const { findField, getErrors } = await mountSchema({
         schema: { components: { email: { type: 'email' } } }
       })
       const input = findField('email').find('input')
       await input.setValue('reader@')
       await input.trigger('blur')
-      expect(getComponent('email').isValid).toBe(false)
       expect(getErrors('email')).toHaveLength(1)
       await input.setValue('reader@example.com')
       await input.trigger('blur')
-      expect(getComponent('email').isValid).toBe(true)
       expect(getErrors('email')).toEqual([])
     })
 

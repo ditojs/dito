@@ -1,4 +1,3 @@
-import { vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { mountSchema, mountForm } from '../test/mount.js'
 
@@ -203,7 +202,7 @@ describe('DitoTypeSection', () => {
     ])
   })
 
-  it(`doesn't navigate to data paths outside of its data`, async () => {
+  it(`doesn't reveal data paths outside of its data`, async () => {
     const { getComponent } = await mountSchema({
       schema: {
         components: {
@@ -225,18 +224,12 @@ describe('DitoTypeSection', () => {
       data: { chapters: [{ title: 'Emma' }] }
     })
     const section = getComponent('chapters/0/details')
-    const onComplete = vi.fn(() => true)
     expect(section.dataPath).toBe('chapters/0')
-    expect(await section.navigateToComponent('chapters/1/title', onComplete))
-      .toBe(false)
-    expect(await section.navigateToComponent('chapters/0', onComplete)).toBe(
-      false
-    )
-    expect(onComplete).not.toHaveBeenCalled()
-    expect(
-      await section.navigateToComponent('chapters/0/title', onComplete)
-    ).toBe(true)
-    expect(onComplete).toHaveBeenCalledOnce()
+    expect(await section.revealComponents('chapters/1/title')).toEqual([])
+    expect(await section.revealComponents('chapters/0')).toEqual([])
+    expect(await section.revealComponents('chapters/0/title')).toEqual([
+      expect.objectContaining({ dataPath: 'chapters/0/title' })
+    ])
   })
 
   it('shares the width of its container with its components', async () => {

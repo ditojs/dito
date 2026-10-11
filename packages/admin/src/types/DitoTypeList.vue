@@ -44,10 +44,11 @@
       :draggable="draggable"
       :modelValue="listData"
     )
-      tr(
+      tr.dito-table__row(
         v-for="(item, index) in listData"
         :id="getComponentPath(index)"
         :key="getItemUid(schema, item)"
+        :class="{ 'dito-table__row--error': dataModel.hasErrorsWithin(item) }"
       )
         template(
           v-if="columns"
@@ -255,7 +256,9 @@ export default DitoTypeComponent.register('list', {
       const filtersDataPath = appendDataPath(this.dataPath, '$filters')
       const panel = this.schemaComponent.getPanelByDataPath(filtersDataPath)
       if (panel) {
-        panel.showValidationErrors(getFiltersDataErrors(errors), true)
+        panel.mainSchemaComponent.showValidationErrors(
+          getFiltersDataErrors(errors)
+        )
         return true
       }
     }

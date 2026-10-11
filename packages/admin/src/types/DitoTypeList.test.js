@@ -439,6 +439,58 @@ describe('DitoTypeList', () => {
     })
   })
 
+  describe('list buttons with resources', () => {
+    it('notify the server errors of the items', async () => {
+      const { admin, findField, settle } = await mountForm({
+        schema: {
+          components: {
+            chapters: {
+              type: 'list',
+              resource: { path: 'chapters' },
+              columns: { title: {} },
+              buttons: {
+                saveOrder: {
+                  type: 'submit',
+                  label: 'Save Order',
+                  resource: { path: 'order', method: 'post' }
+                }
+              }
+            }
+          }
+        },
+        data: { title: 'Emma' },
+        request: ({ method = 'get', url }) => {
+          if (method === 'get') {
+            return url === '/items/1/chapters'
+              ? { data: [{ id: 1, title: 'One' }] }
+              : { data: { id: 1, title: 'Emma' } }
+          }
+          throw Object.assign(new Error('Validation failed'), {
+            response: {
+              status: 400,
+              data: {
+                type: 'ValidationError',
+                errors: { '0/title': [{ message: 'is taken' }] }
+              }
+            }
+          })
+        }
+      })
+      const notify = vi.spyOn(admin.root, 'notify')
+      await findField('chapters')
+        .find('.dito-buttons button[type="submit"]')
+        .trigger('click')
+      await settle()
+      // The items of lists with resources are edited in their own forms:
+      expect(notify).toHaveBeenCalledExactlyOnceWith({
+        type: 'error',
+        title: 'Validation Errors',
+        text: 'The field Title is taken'
+      })
+      notify.mockRestore()
+    })
+  })
+
   describe('primitive values', () => {
     it('edits primitive values through `wrapPrimitives`', async () => {
       const { findField, data } = await mountSchema({
@@ -465,6 +517,30 @@ describe('DitoTypeList', () => {
       ])
       await enterValue(inputs[1], 'romance')
       expect(data.tags).toEqual(['classic', 'romance'])
+    })
+
+    it('keeps the errors of the other values when one is edited', async () => {
+      const { findField, data, dataModel } = await mountSchema({
+        schema: {
+          components: {
+            tags: {
+              type: 'list',
+              inlined: true,
+              wrapPrimitives: 'tag',
+              form: {
+                type: 'form',
+                components: { tag: { type: 'text' } }
+              }
+            }
+          }
+        },
+        data: { tags: ['classic', 'novel'] }
+      })
+      const errors = [{ message: 'is unknown' }]
+      dataModel.replaceErrors({ 'tags/0': errors }, { server: true })
+      await enterValue(findField('tags').findAll('input')[1], 'romance')
+      expect(data.tags).toEqual(['classic', 'romance'])
+      expect(dataModel.getErrors('tags/0')).toEqual(errors)
     })
 
     it('creates the first primitive value of lists that are `null`', async () => {
@@ -903,6 +979,36 @@ describe('DitoTypeList', () => {
         'The Name field is required.'
       ])
       expect(getErrors('ingredients/0/name')).toEqual([])
+    })
+
+    it('marks the rows of items with errors in their forms', async () => {
+      const { routeComponent, findField, data } = await mountForm({
+        schema: {
+          components: {
+            chapters: {
+              type: 'list',
+              editable: true,
+              itemLabel: 'title',
+              form: {
+                type: 'form',
+                components: { title: { type: 'text', required: true } }
+              }
+            }
+          }
+        },
+        data: { chapters: [{ title: 'One' }, { title: '' }] }
+      })
+      const getMarkedRows = () =>
+        findField('chapters')
+          .findAll('tbody > tr')
+          .map(row => row.classes('dito-table__row--error'))
+      expect(getMarkedRows()).toEqual([false, false])
+      expect(routeComponent.validateAll()).toBe(false)
+      await flushPromises()
+      expect(getMarkedRows()).toEqual([false, true])
+      data.chapters[1].title = 'Two'
+      await flushPromises()
+      expect(getMarkedRows()).toEqual([false, false])
     })
 
     it('reveals collapsed items with errors', async () => {

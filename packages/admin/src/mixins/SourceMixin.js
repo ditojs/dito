@@ -389,10 +389,22 @@ export default {
     wrappedPrimitives: {
       deep: true,
       handler() {
-        // Map edits of the wrapped primitives back to the primitive values.
+        // Map edits of the wrapped primitives back to the primitive values, in
+        // place, as the list holds the errors of its values:
         const values = this.unwrapPrimitives()
+        const list = this.value
         if (values && !equals(values, this.primitiveValues)) {
-          this.value = values
+          if (isArray(list)) {
+            if (values.length === list.length) {
+              values.forEach((value, index) => {
+                this.dataModel.set(list, index, value)
+              })
+            } else {
+              this.dataModel.replaceChildren(list, values)
+            }
+          } else {
+            this.value = values
+          }
         }
       }
     }
@@ -507,6 +519,12 @@ export default {
         this.dataModel.markClean(this.data, this.name)
       }
       return isSuccessful
+    },
+
+    // Required by ResourceMixin, see its contract. The buttons of sources
+    // submit the source's data.
+    showValidationErrors(errors) {
+      return this.schemaComponent.showValidationErrors(errors, this.dataPath)
     },
 
     createItem(schema, type, index = null) {
@@ -630,48 +648,19 @@ export default {
       }
     },
 
-    // See `DitoSchema.navigateToComponent()`, and `shouldRevealInlinedOnly`
-    // there.
-    async navigateToComponent(
-      dataPath,
-      onComplete,
-      { shouldRevealInlinedOnly = false } = {}
-    ) {
+    // Reveals the components of the inlined item that display the value at
+    // `dataPath`, see `DitoSchema.revealComponents()`.
+    async revealComponents(dataPath) {
       const index = dataPath.startsWith(this.dataPath)
         ? this.isListSource
           ? parseDataPath(dataPath.slice(this.dataPath.length + 1))[0] ?? null
           : 0
         : null
-      if (index !== null && isNumber(+index)) {
-        // Inlined items reveal the component themselves, opening collapsed
-        // items and sections, see `DitoSchema.navigateToComponent()`.
-        const schemaComponent = this.getSchemaComponent(+index)
-        if (
-          await schemaComponent?.navigateToComponent(dataPath, onComplete, {
-            shouldRevealInlinedOnly
-          })
-        ) {
-          return true
-        }
-      }
-      return (
-        !shouldRevealInlinedOnly &&
-        this.navigateToRouteComponent(dataPath, onComplete)
-      )
-    },
-
-    async navigateToRouteComponent(dataPath, onComplete) {
-      const route = this.routeComponent.getFormRoute(dataPath)
-      if (route) {
-        if (this.$route.path !== route.path) {
-          await this.$router.push({ path: route.path })
-          // Wait for the route component to be mounted:
-          await this.$nextTick()
-        }
-        const level = this.$route.matched.length - 1
-        return onComplete?.([this.appState.routeComponents[level]]) ?? true
-      }
-      return false
+      const schemaComponent =
+        index !== null && isNumber(+index)
+          ? this.getSchemaComponent(+index)
+          : null
+      return (await schemaComponent?.revealComponents(dataPath)) ?? []
     },
 
     getItemPath(index) {

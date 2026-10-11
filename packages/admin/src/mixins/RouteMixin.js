@@ -1,4 +1,4 @@
-import ValidatorMixin from '../mixins/ValidatorMixin.js'
+import SchemaParentMixin from './SchemaParentMixin.js'
 import { markRaw } from 'vue'
 import { isPathWithin } from '../utils/route.js'
 import { getRelativeDataPath } from '../utils/data.js'
@@ -7,7 +7,7 @@ import { confirm } from '../utils/dialogs.js'
 
 // @vue/component
 export default {
-  mixins: [ValidatorMixin],
+  mixins: [SchemaParentMixin],
 
   provide() {
     return {
@@ -251,6 +251,24 @@ export default {
         }
       }
       return ok
+    },
+
+    validateAll(match, notify) {
+      return this.mainSchemaComponent.validateAll(match, notify)
+    },
+
+    verifyAll(match) {
+      return this.validateAll(match, false)
+    },
+
+    showValidationErrors(errors) {
+      return this.mainSchemaComponent.showValidationErrors(errors)
+    },
+
+    // Clears the errors of the values of the route's data, which mutating
+    // forms share with the data of their parent, see `DataModel.clearErrors()`.
+    resetValidation() {
+      this.dataModel.clearErrors(this.dataPath)
     },
 
     // Resolve the path of the deepest form that edits the data at

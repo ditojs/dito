@@ -49,7 +49,7 @@ import { isFunction } from '@ditojs/utils'
 import DitoComponent from '../DitoComponent.js'
 import DitoContext from '../DitoContext.js'
 import ContextMixin from '../mixins/ContextMixin.js'
-import ValidatorMixin from '../mixins/ValidatorMixin.js'
+import SchemaParentMixin from '../mixins/SchemaParentMixin.js'
 import { getButtonSchemas } from '../utils/schema/lookup.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
 import { trackRegistration } from '../utils/registration.js'
@@ -57,7 +57,7 @@ import { DataModel } from '../utils/DataModel.js'
 
 // @vue/component
 export default DitoComponent.component('DitoPanel', {
-  mixins: [ContextMixin, ValidatorMixin],
+  mixins: [ContextMixin, SchemaParentMixin],
 
   provide() {
     return {

@@ -215,10 +215,13 @@ export default {
     // when the options load again after the data is replaced.
     'optionsResolver.lastLoadError'(error, previousError) {
       if (previousError) {
-        this.removeError(getLoadErrorMessage(previousError))
+        this.dataModel.removeError(
+          this.dataPath,
+          getLoadErrorMessage(previousError)
+        )
       }
       if (error) {
-        this.addError(getLoadErrorMessage(error))
+        this.dataModel.addError(this.dataPath, getLoadErrorMessage(error))
       }
     }
   },

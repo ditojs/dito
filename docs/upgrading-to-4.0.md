@@ -65,8 +65,48 @@ which components write the data through, as `component.dataModel`.
   stored files are sent, also through the buttons of sources with their own
   resource, which also wait for the loads of data schemas and options now.
 - Type components, schemas and panels no longer have `isDirty`, type
-  components no longer `markDirty()`; `clearValidation()` resets their
-  validation state.
+  components no longer `markDirty()`.
+
+### Validation
+
+- Errors live in the data model, by the data that holds each value and its
+  name, so they stay with items that move, and with fields that aren't
+  mounted, e.g. in collapsed sections. Read and write them with
+  `dataModel.getErrors(dataPath)`, `setErrors(dataPath, errors)`,
+  `addError(dataPath, message)`, `removeError(dataPath, message)`,
+  `replaceErrors(errors, { dataPath, server })` and `clearErrors(dataPath)`.
+- The errors of values, of validation and of the server, apply to the value
+  that they were set for: they're hidden once the value changes, also in
+  place or through direct writes, until it changes back. Validating a value
+  again, e.g. on blur, only replaces its validation errors.
+- The errors of fields, e.g. of options that failed to load or of searches,
+  are added with `addError()` and stay until their source removes them with
+  `removeError()`.
+- Nested forms take over the errors of their item when they open, and when
+  their parent reveals errors while they're open.
+- The rows of lists and the items of trees whose items or children hold
+  values with errors are marked with `dito-table__row--error` and
+  `dito-tree-item--error`, e.g. for errors in the forms of nested routes.
+- The validation errors of the server for the buttons of lists with their own
+  resource are notified, as their items are edited in their own forms.
+- Type components no longer have `errors`, `hasErrors`, `isTouched`,
+  `isValid`, `isValidated`, `verify()`, `markTouched()`, `clearValidation()`,
+  `resetValidation()`, `addError()`, `getErrors()`, `clearErrors()` and
+  `showValidationErrors()`. `validate()` remains, and replaces the errors of
+  the field.
+- Forms, views and schemas no longer have `errors`, `hasErrors`, `isTouched`,
+  `isValid`, `isValidated` and `clearErrors()`, schemas no longer
+  `resetValidation()`. `resetValidation()` of forms and views clears the
+  errors of the values of their data, also of mutating forms, which share the
+  data model of their parent. `showValidationErrors(errors)` of forms and
+  views takes only the errors.
+- Panels no longer have `errors`, `isTouched`, `isValid`, `isValidated`,
+  `validateAll()`, `verifyAll()`, `resetValidation()` and `clearErrors()`.
+  Their `mainSchemaComponent` validates and shows errors instead.
+- `navigateToComponent()` and `navigateToRouteComponent()` are replaced by
+  `revealComponents(dataPath)`, which opens collapsed schemas and inlined
+  items, and returns the components that display the value. Errors in the
+  forms of nested routes open them through the route tree.
 
 ### Custom types
 

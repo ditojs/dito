@@ -14,6 +14,8 @@ import { transferUids } from '../utils/uid.js'
 import { LoadingTracker, LoadingSwitch } from '../utils/LoadingTracker.js'
 import DitoContext from '../DitoContext.js'
 
+const unauthorizedError = `You don't have permission to load this data.`
+
 // The components that use this mixin, `DitoForm` and the ones of
 // `SourceMixin`, need to implement this contract:
 // - `hasData`: A computed property that is true when the data is set.
@@ -21,6 +23,8 @@ import DitoContext from '../DitoContext.js'
 // - `clearData()`: Clears the data.
 // - `setData(data)`: Sets the loaded data and returns it as the reactive data
 //   of the component.
+// - `showValidationErrors(errors)`: Shows the validation errors that the
+//   server returned for the submitted data.
 
 // @vue/component
 export default {
@@ -256,11 +260,14 @@ export default {
                 // that loads its own data. Show it on the component, as
                 // several components of the form may be affected. Others
                 // notify like for errors.
-                this.addUnauthorizedError()
+                this.dataModel.addError(this.dataPath, unauthorizedError)
                 return true
               }
             }
           } else {
+            if (this.isInsideForm) {
+              this.dataModel.removeError(this.dataPath, unauthorizedError)
+            }
             // Skip applying response data on an edited form: `setData` would
             // wholesale-replace `loadedData` and clobber any local edits the
             // user made while the GET was in flight, also in forms that can't
@@ -291,13 +298,6 @@ export default {
 
     isUnauthorizedError(response) {
       return response?.status === 401
-    },
-
-    addUnauthorizedError() {
-      const error = `You don't have permission to load this data.`
-      if (!this.errors?.includes(error)) {
-        this.addError(error)
-      }
     },
 
     // Sends the request and awaits `callback(error, response)` with its
@@ -430,7 +430,7 @@ export default {
             // See if we're dealing with a Dito.js validation error:
             const errors = this.isValidationError(response) && data.errors
             if (errors) {
-              await this.showValidationErrors(errors, true)
+              await this.showValidationErrors(errors)
             } else {
               const error = isObject(data) ? data : err
               onError?.(error)

@@ -65,7 +65,7 @@ slot(name="prepend")
           :key="tab"
         )
           //- TODO: Switch to v-if instead of v-show, now that the dirty state
-          //- is based on the data. `navigateToComponent()` then needs to
+          //- is based on the data. `revealComponents()` then needs to
           //- select the tab that displays the component.
           DitoPane.dito-pane__tab(
             v-show="isTabSelected(tab)"
@@ -112,6 +112,7 @@ import {
   isObject,
   isArray,
   isFunction,
+  isEmpty,
   equals,
   parseDataPath,
   normalizeDataPath,
@@ -284,22 +285,6 @@ export default DitoComponent.component('DitoSchema', {
       return this.getLabel(
         getItemFormSchema(this.sourceSchema, this.data, this.context)
       )
-    },
-
-    isTouched() {
-      return this.someComponent(it => it.isTouched)
-    },
-
-    isValid() {
-      return this.everyComponent(it => it.isValid)
-    },
-
-    isValidated() {
-      return this.everyComponent(it => it.isValidated)
-    },
-
-    hasErrors() {
-      return this.someComponent(it => it.hasErrors)
     },
 
     hasData() {
@@ -502,14 +487,6 @@ export default DitoComponent.component('DitoSchema', {
       return this.getPanels(dataPathOrName)[0] || null
     },
 
-    someComponent(callback) {
-      return this.isPopulated && this.components.some(callback)
-    },
-
-    everyComponent(callback) {
-      return this.isPopulated && this.components.every(callback)
-    },
-
     // Selects the tab of the route's hash. The forms of nested routes, e.g. of
     // the items of lists in tabs, have their own hash for their own tabs, so
     // the tab is only followed while this schema's route is the last one, and
@@ -563,18 +540,6 @@ export default DitoComponent.component('DitoSchema', {
       this.emitEvent('change')
     },
 
-    resetValidation() {
-      for (const component of this.components) {
-        component.resetValidation()
-      }
-    },
-
-    clearErrors() {
-      for (const component of this.components) {
-        component.clearErrors()
-      }
-    },
-
     focus() {
       this.opened = true
       return this.parentSchemaComponent?.focus()
@@ -590,205 +555,136 @@ export default DitoComponent.component('DitoSchema', {
             rootData: this.rootData
           })
         : null
-      const matchingValidationErrors = match
+      const errors = match
         ? getMatchingValidationErrors(dataValidationErrors, match)
         : dataValidationErrors
       if (notify) {
-        if (matchingValidationErrors) {
-          this._showValidationErrorsByFullDataPath(
-            matchingValidationErrors,
-            true,
-            true
-          ).catch(console.error)
-        } else {
-          this.clearErrors()
-        }
+        this.showErrors(errors ?? {}).catch(console.error)
       }
-      return !matchingValidationErrors
+      return !errors
     },
 
     verifyAll(match) {
       return this.validateAll(match, false)
     },
 
-    async showValidationErrors(errors, focus, first = true) {
+    // Shows the errors of the server for the data that was sent, at `dataPath`:
+    // the root data, the schema's own data, or e.g. the data of a list with its
+    // own resource.
+    showValidationErrors(
+      errors,
+      dataPath = this.hasOwnData ? this.dataPath : ''
+    ) {
       // Convert the data paths from JavaScript property access notation to
-      // our own form of relative JSON pointers. If the schema is a data-root,
-      // prefix its own dataPath to all errors, since the data that it sends
-      // and validates will be unprefixed.
+      // our own form of relative JSON pointers, prefixed with the data path of
+      // the sent data, which the server validates unprefixed.
       const errorsByFullDataPath = Object.fromEntries(
-        Object.entries(errors).map(([dataPath, errs]) => [
-          normalizeDataPath(
-            this.hasOwnData
-              ? appendDataPath(this.dataPath, dataPath)
-              : dataPath
-          ),
+        Object.entries(errors).map(([path, errs]) => [
+          normalizeDataPath(appendDataPath(dataPath, path)),
           errs
         ])
       )
-      return this._showValidationErrorsByFullDataPath(
-        errorsByFullDataPath,
-        focus,
-        first
-      )
+      return this.showErrors(errorsByFullDataPath, { dataPath, server: true })
     },
 
-    // Finds all components that display the value at `dataPath` and passes
-    // them to `onComplete()`, revealing them first if needed: Collapsed
-    // schemas open, and the nearest components that display a part of the
-    // data path are asked to navigate to the rest, e.g. sections open and
-    // sources open their inlined items or navigate to nested forms, see
-    // `SourceMixin.navigateToComponent()`. Once components are found, the
-    // other ones are only revealed in inlined schemas
-    // (`shouldRevealInlinedOnly`), so that there's only one navigation to a
-    // nested form. Returns `true` if components were found and `onComplete()`
-    // accepted them.
-    async navigateToComponent(
-      dataPath,
-      onComplete,
-      { shouldRevealInlinedOnly = false } = {}
+    // Replaces the errors of validation, or of the `server`, within `dataPath`
+    // with `errors`, keyed by full data paths, reveals them, and notifies them,
+    // with the ones that no field displays.
+    async showErrors(errors, {
+      dataPath = this.dataPath,
+      server = false
+    } = {}) {
+      const unmatchedErrors = this.dataModel.replaceErrors(errors, {
+        dataPath,
+        server
+      })
+      await this.revealErrors(
+        Object.keys(errors).filter(dataPath => !unmatchedErrors?.[dataPath])
+      )
+      if (!isEmpty(errors)) {
+        const messages = Object.entries(unmatchedErrors ?? {}).flatMap(
+          ([dataPath, errs]) => {
+            const field = labelize(parseDataPath(dataPath).pop())
+            const prefix = field
+              ? `The field ${field}`
+              : `The ${this.formLabel}`
+            return errs.map(({ message }) => `${prefix} ${message}`)
+          }
+        )
+        this.notify({
+          type: 'error',
+          title: 'Validation Errors',
+          text: messages.join('\n') || 'Please correct the highlighted errors.'
+        })
+      }
+    },
+
+    // Reveals the fields with errors at `dataPaths`, opening collapsed schemas
+    // on the way, and focuses the first one. If it's in the form of a nested
+    // route, that form opens and reveals its own errors instead, which it takes
+    // over from its item, see `DitoForm.revealErrors()`.
+    async revealErrors(
+      dataPaths = this.dataModel.getErrorDataPaths(this.dataPath)
     ) {
+      const [firstDataPath] = dataPaths
+      // The data of schemas with their own data isn't part of any route:
+      const route =
+        firstDataPath && !this.hasOwnData
+          ? this.routeComponent.getFormRoute(firstDataPath)
+          : null
+      if (route) {
+        // The form may be open already, e.g. a nested form, which displays in
+        // the form of its parent:
+        const failure =
+          this.$route.path !== route.path
+            ? await this.$router.push({ path: route.path })
+            : null
+        if (!failure) {
+          await this.$nextTick()
+          const level = this.$route.matched.length - 1
+          await this.appState.routeComponents[level].revealErrors()
+        }
+      } else {
+        for (const dataPath of dataPaths) {
+          const [component] = await this.revealComponents(dataPath)
+          if (dataPath === firstDataPath) {
+            await component?.focus()
+          }
+        }
+      }
+    },
+
+    // Reveals the components that display the value at `dataPath`, opening this
+    // schema, and asking the nested components that display a part of the data
+    // path to reveal the rest, e.g. sections open and sources open their
+    // inlined items. Returns the components in document order.
+    async revealComponents(dataPath) {
       const { opened } = this
       if (!opened) {
         this.opened = true
         await this.$nextTick()
       }
-      const acceptedComponents = []
-      const completeWithComponents = components => {
-        const isAccepted = onComplete?.(components) ?? true
-        if (isAccepted) {
-          acceptedComponents.push(...components)
-        }
-        return isAccepted
-      }
-
-      const navigateViaNestedComponents = async nestedComponents => {
-        for (const nestedComponent of nestedComponents) {
-          // Skip components that contain accepted components already.
-          const componentPathPrefix = `${nestedComponent.componentPath}/`
-          const hasAcceptedComponents = acceptedComponents.some(
-            acceptedComponent =>
-              acceptedComponent.componentPath.startsWith(componentPathPrefix)
-          )
-          if (!hasAcceptedComponents) {
-            await nestedComponent.navigateToComponent?.(
-              dataPath,
-              completeWithComponents,
-              {
-                shouldRevealInlinedOnly: (
-                  shouldRevealInlinedOnly || acceptedComponents.length > 0
-                )
-              }
-            )
-          }
-        }
-      }
-
-      const displayingComponents = this.getComponentsByDataPath(dataPath)
-      if (displayingComponents.length > 0) {
-        completeWithComponents(displayingComponents)
-      }
-      // Walk up the data path and ask the nested components that display a
-      // part of it to navigate to the rest of it:
+      let components = this.getComponentsByDataPath(dataPath)
+      // Ask the deepest nested components first, and the unnested ones last, as
+      // they share the data path of the schema:
+      const nestedComponents = []
       const dataPathParts = parseDataPath(dataPath)
       const schemaDataPathLength = parseDataPath(this.dataPath).length
       while (dataPathParts.length > schemaDataPathLength + 1) {
         dataPathParts.pop()
-        await navigateViaNestedComponents(
-          this.getComponentsByDataPath(dataPathParts)
-        )
+        nestedComponents.push(...this.getComponentsByDataPath(dataPathParts))
       }
-      // Unnested components share the data path of the schema, so they
-      // decide by schema whether they can navigate to the data path:
-      await navigateViaNestedComponents(this.unnestedComponents)
-      const hasFoundComponents = acceptedComponents.length > 0
-      if (!hasFoundComponents) {
+      for (const component of [
+        ...nestedComponents,
+        ...this.unnestedComponents
+      ]) {
+        if (components.length > 0) break
+        components = (await component.revealComponents?.(dataPath)) ?? []
+      }
+      if (components.length === 0) {
         this.opened = opened
       }
-      return hasFoundComponents
-    },
-
-    // Shows `errorsByFullDataPath`, keyed by normalized data paths including
-    // the schema's own data path, see `showValidationErrors()`. Errors are
-    // shown on all components that display their data path, and the first one
-    // in document order is focused.
-    async _showValidationErrorsByFullDataPath(
-      errorsByFullDataPath,
-      focus,
-      first
-    ) {
-      this.clearErrors()
-      const unmatched = []
-      const wasFirst = first
-      for (const [dataPath, errs] of Object.entries(errorsByFullDataPath)) {
-        let nestedForm = null
-        const displayingComponents = []
-        const hasFoundComponents = await this.navigateToComponent(
-          dataPath,
-          foundComponents => {
-            for (const component of foundComponents) {
-              if (component.isForm) {
-                // A nested form was navigated to, display the errors that are
-                // part of its data there.
-                nestedForm = component
-              } else {
-                displayingComponents.push(component)
-              }
-            }
-            return true
-          }
-        )
-        // Focus the first component in document order, unless a nested form
-        // displays the errors:
-        sortInDocumentOrder(displayingComponents).forEach(
-          (component, index) => {
-            component.showValidationErrors(
-              errs,
-              first && focus && !nestedForm && index === 0
-            )
-          }
-        )
-        if (nestedForm) {
-          const nestedFormErrors = Object.fromEntries(
-            Object.entries(errorsByFullDataPath).filter(
-              ([errorDataPath]) => (
-                errorDataPath === nestedForm.dataPath ||
-                errorDataPath.startsWith(`${nestedForm.dataPath}/`)
-              )
-            )
-          )
-          // The nested form notifies the errors itself, as it can't display
-          // the remaining errors of this schema, so we're done here.
-          return nestedForm.showValidationErrors(
-            nestedFormErrors,
-            first && focus
-          )
-        }
-        if (!hasFoundComponents) {
-          // When the error can't be matched, add it to a list of unmatched
-          // errors with decent message, to report at the end.
-          const field = labelize(parseDataPath(dataPath).pop())
-          for (const err of errs) {
-            const prefix = field
-              ? `The field ${field}`
-              : `The ${this.formLabel}`
-            unmatched.push(`${prefix} ${err.message}`)
-          }
-        }
-        first = false
-      }
-      if (wasFirst && !first) {
-        this.notifyErrors(unmatched.join('\n'))
-      }
-      return !first
-    },
-
-    notifyErrors(message) {
-      this.notify({
-        type: 'error',
-        title: 'Validation Errors',
-        text: message || 'Please correct the highlighted errors.'
-      })
+      return components
     },
 
     resetData() {
@@ -797,7 +693,7 @@ export default DitoComponent.component('DitoSchema', {
       // `initializeData()`, as they are all reactive already from the starts:
       // eslint-disable-next-line vue/no-mutating-props
       Object.assign(this.data, initializeData(this.dataSchema, {}, this))
-      this.clearErrors()
+      this.dataModel.clearErrors(this.dataPath)
     },
 
     // Merges the values of `data` into the schema's data, and returns it.
@@ -877,7 +773,7 @@ export default DitoComponent.component('DitoSchema', {
 
     _registerUnnestedComponent(component, add, componentPath) {
       // Unnested components are only registered with their own schema, as
-      // they share its data path, see `navigateToComponent()`.
+      // they share its data path, see `revealComponents()`.
       this._registerEntry(
         this.unnestedComponentsRegistry,
         component,

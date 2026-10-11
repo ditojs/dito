@@ -36,8 +36,7 @@
     :label="label"
     :single="single"
     :nested="nested"
-    :errorsElementId="errorsElementId"
-    @errors="onErrors"
+    :errorsElementId="errors ? errorsElementId : null"
     @update:component="value => (component = value)"
   )
   DitoErrors(
@@ -92,7 +91,6 @@ export default DitoComponent.component('DitoContainer', {
 
   data() {
     return {
-      errors: null,
       // The nested type component instance, for context-based schema accessor
       // evaluation.
       component: null
@@ -151,6 +149,20 @@ export default DitoComponent.component('DitoContainer', {
       return (
         this.hasLabel &&
         !this.typeComponent?.rendersOwnLabel?.(this.context)
+      )
+    },
+
+    errors() {
+      // Unnested components share the data path of their parent, which their
+      // errors don't belong to:
+      const errors = this.nested
+        ? this.dataModel.getErrors(this.dataPath)
+        : null
+      const label = this.label || this.component?.placeholder || this.name
+      return (
+        errors?.map(error =>
+          isString(error) ? error : `The ${label} field ${error.message}.`
+        ) ?? null
       )
     },
 
@@ -304,10 +316,6 @@ export default DitoComponent.component('DitoContainer', {
         [`${prefix}--grow`]: this.flexGrow,
         [`${prefix}--shrink`]: this.flexShrink
       }
-    },
-
-    onErrors(errors) {
-      this.errors = errors
     }
   }
 })

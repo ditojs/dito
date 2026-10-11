@@ -272,7 +272,7 @@ describe('DitoView', () => {
     })
 
     it('are passed to callbacks in views without resources', async () => {
-      const { data, schemaComponent, getComponent } = await mountSchema({
+      const { data, schemaComponent } = await mountSchema({
         schema: {
           components: {
             strict: { type: 'checkbox' },
@@ -301,11 +301,10 @@ describe('DitoView', () => {
         data: { strict: true, address: { city: null, note: 'Note' } }
       })
       expect(data.address.label).toBe('Strict: true')
-      const city = getComponent('address/city')
-      expect(city.verify()).toBe(false)
+      expect(schemaComponent.verifyAll('address/city')).toBe(false)
       expect(schemaComponent.processData().address).not.toHaveProperty('note')
       data.strict = false
-      expect(city.verify()).toBe(true)
+      expect(schemaComponent.verifyAll('address/city')).toBe(true)
       expect(schemaComponent.processData().address.note).toBe('Note false')
     })
   })

@@ -174,7 +174,7 @@ export const projects = createWidgetView<Project>(
                 type: 'form',
                 label: 'Milestone',
                 components: {
-                  title: { type: 'text', label: 'Title' },
+                  title: { type: 'text', label: 'Title', required: true },
                   due: { type: 'date', label: 'Due' }
                 }
               }
@@ -197,7 +197,9 @@ export const projects = createWidgetView<Project>(
                 editable: true,
                 form: {
                   type: 'form',
-                  components: { name: { type: 'text', label: 'Task Name' } }
+                  components: {
+                    name: { type: 'text', label: 'Task Name', required: true }
+                  }
                 }
               }
             }
