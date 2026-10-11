@@ -9,7 +9,7 @@ import {
   getLastDataPathName,
   getLastDataPathIndex
 } from './utils/data.js'
-import { isNested } from './utils/schema/structure.js'
+import { hasNestedData } from './utils/schema/structure.js'
 import { getTextFromHtml } from './utils/html.js'
 
 const { hasOwnProperty } = Object.prototype
@@ -100,7 +100,7 @@ export default class DitoContext {
   static createForSchema(component, {
     schema,
     name,
-    nested = isNested(schema),
+    nested = hasNestedData(schema),
     data,
     dataPath,
     rootData
@@ -125,10 +125,10 @@ export default class DitoContext {
   // value of this context's component if that is nested, or else the same
   // data. The data path adds `name` if the child component is nested.
   createChildContext(schema, name) {
-    const nested = isNested(schema)
+    const nested = hasNestedData(schema)
     // Contexts without a schema don't hold a value either, e.g. the ones of
     // `DitoMenu` and `DitoPanels`, evaluating views and panels.
-    const holdsOwnValue = !!this.schema && isNested(this.schema)
+    const holdsOwnValue = !!this.schema && hasNestedData(this.schema)
     return DitoContext.createForSchema(this.component, {
       schema,
       name,

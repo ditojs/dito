@@ -1,7 +1,7 @@
 <template lang="pug">
 .dito-form.dito-scroll-parent(
   :class="{ 'dito-form-nested': isNestedRoute }"
-  :data-resource="sourceSchema.path"
+  :data-resource="schemaPath"
 )
   //- Only render a router-view here if this isn't the last data route and not a
   //- nested form route, which will appear elsewhere in its own view.
@@ -55,7 +55,6 @@ import { markRaw } from 'vue'
 import {
   clone,
   capitalize,
-  parseDataPath,
   assignDeeply,
   escapeHtml
 } from '@ditojs/utils'
@@ -69,7 +68,6 @@ import { getComponentPathByDataPath } from '../utils/schema/data.js'
 import { appendDataPath } from '../utils/data.js'
 import { resolvePath } from '../utils/path.js'
 import { getErrorMessage } from '../utils/request.js'
-import { isPathWithin } from '../utils/route.js'
 import { transferUids } from '../utils/uid.js'
 import { DataModel } from '../utils/DataModel.js'
 import { transientNote } from '../utils/dialogs.js'
@@ -226,7 +224,13 @@ export default DitoComponent.component('DitoForm', {
     },
 
     dataPath() {
-      return this.getDataPathFrom(this.dataRootComponent)
+      // Forms that load their own data start a new data path:
+      return this.isTransient
+        ? appendDataPath(
+            this.parentRouteComponent.dataPath,
+            this.sourceLocation?.dataPath ?? ''
+          )
+        : ''
     },
 
     // @override DitoMixin.rootData()
@@ -247,7 +251,7 @@ export default DitoComponent.component('DitoForm', {
               ? parentRouteComponent.viewSchema
               : parentRouteComponent.schema,
             parentRouteComponent.data,
-            this.getDataPathFrom(parentRouteComponent),
+            this.sourceLocation?.dataPath ?? '',
             {
               componentPath: parentRouteComponent.componentPath,
               component: this,
@@ -257,48 +261,17 @@ export default DitoComponent.component('DitoForm', {
         : ''
     },
 
+    // The item of the form in the data of its parent route component, found
+    // through the parameters of the form's own route, also while it's left:
     sourceLocation() {
-      // Possible parents are DitoForm for forms, or DitoView for root lists.
-      // Both have a data property which abstracts away loading and inheriting
-      // of data.
-      // Forms that are being left don't match the current route anymore, and
-      // mustn't resolve their source against it until they're unmounted.
-      let data = this.isLeavingRoute ? null : this.parentRouteComponent.data
-      if (!data) {
-        return null
-      }
-      // Handle nested data by splitting the dataPath, iterate through the
-      // actual data and look nest child-data up.
-      const dataParts = parseDataPath(
-        this.getDataPathFrom(this.parentRouteComponent)
-      )
-      // Compare dataParts against matched routePath parts, to identify those
-      // parts that need to be treated like ids and mapped to indices in data.
-      const pathParts = this.routeRecord.path.split('/')
-      const routeParts = pathParts.slice(pathParts.length - dataParts.length)
-      const lastDataPart = dataParts[dataParts.length - 1]
-      if (isObjectSource(this.sourceSchema) && lastDataPart === 'create') {
-        // If we have an object source and are creating, the dataPath needs to
-        // be shortened by the 'create' entry. This isn't needed for list
-        // sources, as there the parameter is actually mapped to the item id.
-        dataParts.length--
-      }
-      let key = null
-      for (let i = 0, l = dataParts.length; i < l && data; i++) {
-        const dataPart = dataParts[i]
-        // If this is an :id part, find the index of the item with given id.
-        key = /^:id/.test(routeParts[i])
-          ? dataPart === 'create'
-            ? null // There's no index for entries about to be created
-            : this.findItemIdIndex(this.sourceSchema, data, dataPart)
-          : dataPart
-        // Skip the final lookup, as we want the parent data so we can replace
-        // the entry at `key` on it.
-        if (i < l - 1) {
-          data = data[key]
-        }
-      }
-      return data ? { data, key } : null
+      const parent = this.parentRouteComponent
+      return parent?.data
+        ? parent.meta.node.findItem(this.meta.node, {
+            ...parent.routeState,
+            // The parameters of the form's own route include its item:
+            routeParams: this.routeParams
+          })
+        : null
     },
 
     sourceData() {
@@ -350,7 +323,7 @@ export default DitoComponent.component('DitoForm', {
       handler(to, from) {
         // Reload form data when navigating to a different entity in same form.
         // The create route sets up a new item instead, see `setupData()`.
-        const param = this.meta?.param
+        const param = this.meta?.node.param
         const toParam = to.params[param]
         const fromParam = from.params[param]
         // After submitting a new item, `setData()` replaced it with the created
@@ -430,22 +403,6 @@ export default DitoComponent.component('DitoForm', {
       return this.mainSchemaComponent?.emitEvent(event, params)
     },
 
-    // Returns the form's data path relative to the data of the given route
-    // component, from the form's route path relative to the component's path,
-    // e.g. `chapters/1` for the form of `/items/1/chapters/1` in the form of
-    // `/items/1`.
-    getDataPathFrom(routeComponent) {
-      const dataPath = this.api.denormalizePath(
-        this.path.slice(routeComponent.path.length + 1)
-      )
-      // The routes of single-component views don't contain the path of their
-      // component, see `DitoView.getChildPath()`, but its data is stored
-      // under its name, see `DitoView.viewSchema`:
-      return routeComponent.isView && routeComponent.isSingleComponentView
-        ? appendDataPath(routeComponent.name, dataPath)
-        : dataPath
-    },
-
     // @override ResourceMixin.getResource()
     getResource(options) {
       const resource = ResourceMixin.methods.getResource.call(this, options)
@@ -470,14 +427,14 @@ export default DitoComponent.component('DitoForm', {
     // Returns the source component that loads the form's item through its
     // resource in the parent route component, e.g. a list in a parent form, or
     // `null` if it isn't rendered, e.g. the list of a view, which renders the
-    // form instead. The form's path is within the path of the source.
+    // form instead.
     getParentSourceComponent() {
+      const sourceNode = this.meta.node.source
       return (
         this.parentRouteComponent?.mainSchemaComponent?.components.find(
           component => (
-            component.sourceComponent === component &&
             component.providesData &&
-            isPathWithin(this.path, component.path)
+            component.sourceNode === sourceNode
           )
         ) ?? null
       )

@@ -15,7 +15,6 @@ import {
   setupView,
   applySchemaDefaults,
   applyNestedSchemaDefaults,
-  setupRouteSchema,
   setupForms,
   setupForm,
   setupTab,
@@ -29,22 +28,18 @@ import {
 registerTypeComponent('text', { defaultNested: true })
 registerTypeComponent('section', {
   defaultNested: false,
-  processSchema: (api, schema, name, routes, level) =>
-    setupSchemaComponents(api, schema, routes, level)
+  processSchema: (api, schema) => setupSchemaComponents(api, schema)
 })
 registerTypeComponent('panel', {
   defaultNested: false,
-  processSchema: (api, schema, name, routes, level) =>
-    setupSchemaComponents(api, schema, routes, level)
+  processSchema: (api, schema) => setupSchemaComponents(api, schema)
 })
-// Like `SourceMixin.processSchema()`, adding a route per list with the routes
-// of its forms as children:
+// Like `SourceMixin.processSchema()`:
 registerTypeComponent('list', {
   defaultNested: true,
-  async processSchema(api, schema, name, routes, level) {
-    setupRouteSchema(api, schema, name)
-    const children = await setupForms(api, schema, level)
-    routes?.push({ path: schema.path, level, children })
+  async processSchema(api, schema, name) {
+    schema.name ??= name
+    await setupForms(api, schema)
   }
 })
 registerTypeComponent('component', {
@@ -345,27 +340,6 @@ describe('applyNestedSchemaDefaults()', () => {
   })
 })
 
-describe('setupRouteSchema()', () => {
-  it('sets the name and path, and the full path if given', () => {
-    const api = createApi()
-    const schema = { type: 'view' }
-    setupRouteSchema(api, schema, 'bookLoans', '/library')
-    expect(schema).toEqual({
-      type: 'view',
-      name: 'bookLoans',
-      path: 'book-loans',
-      fullPath: '/library/book-loans'
-    })
-  })
-
-  it('keeps existing names and paths', () => {
-    const api = createApi()
-    const schema = { type: 'view', name: 'loans', path: 'lending' }
-    setupRouteSchema(api, schema, 'bookLoans')
-    expect(schema).toEqual({ type: 'view', name: 'loans', path: 'lending' })
-  })
-})
-
 describe('setupForm()', () => {
   it('resolves forms, applies defaults and sets up their components', async () => {
     const api = createApi({
@@ -442,36 +416,16 @@ describe('setupForm()', () => {
 
   it('sets up each form only once, also when it is recursive', async () => {
     // E.g. categories with lists of sub-categories that use the same form:
-    const api = createApi()
+    const setupList = vi.fn()
+    const api = createApi({ list: setupList })
     const categoryForm = { type: 'form', components: {} }
     categoryForm.components.subcategories = {
       type: 'list',
       form: categoryForm
     }
-    const routes = []
-    await setupForm(api, categoryForm, routes)
-    expect(routes).toEqual([
-      { path: 'subcategories', level: 1, children: [] }
-    ])
-  })
-
-  it('sets up recursive forms up to `maxDepth` times', async () => {
-    const api = createApi()
-    const categoryForm = { type: 'form', components: {} }
-    categoryForm.components.subcategories = {
-      type: 'list',
-      form: categoryForm,
-      maxDepth: 2
-    }
-    const routes = []
-    await setupForm(api, categoryForm, routes)
-    expect(routes).toEqual([
-      {
-        path: 'subcategories',
-        level: 1,
-        children: [{ path: 'subcategories', level: 2, children: [] }]
-      }
-    ])
+    await setupForm(api, categoryForm)
+    expect(setupList).toHaveBeenCalledTimes(1)
+    expect(categoryForm.components.subcategories.name).toBe('subcategories')
   })
 })
 
@@ -482,7 +436,7 @@ describe('setupForms()', () => {
       type: 'list',
       form: Promise.resolve(createModule({ default: createBookForm() }))
     }
-    await setupForms(api, schema, 0)
+    await setupForms(api, schema)
     expect(schema.form.components.title.trim).toBe(true)
   })
 
@@ -495,7 +449,7 @@ describe('setupForms()', () => {
         comic: createBookForm()
       }
     }
-    await setupForms(api, schema, 0)
+    await setupForms(api, schema)
     expect(Object.keys(schema.forms)).toEqual(['novel', 'comic'])
     expect(schema.forms.novel.components.title.trim).toBe(true)
     expect(schema.forms.comic.components.isbn.trim).toBe(true)
@@ -507,36 +461,15 @@ describe('setupForms()', () => {
       type: 'object',
       components: { street: { type: 'text' } }
     }
-    await setupForms(api, schema, 0)
+    await setupForms(api, schema)
     expect(schema.components.street.trim).toBe(true)
     expect(schema.form).toBe(undefined)
-  })
-
-  it('returns the routes of the nested lists of its forms', async () => {
-    const api = createApi()
-    const schema = {
-      type: 'list',
-      form: {
-        type: 'form',
-        components: {
-          chapters: {
-            type: 'list',
-            form: { type: 'form', components: {} }
-          }
-        }
-      }
-    }
-    expect(await setupForms(api, schema, 1)).toEqual([
-      { path: 'chapters', level: 2, children: [] }
-    ])
   })
 
   it('leaves `components()` callbacks to be set up with the data', async () => {
     const api = createApi()
     const components = vi.fn(() => ({}))
-    expect(await setupForms(api, { type: 'section', components }, 0)).toEqual(
-      []
-    )
+    await setupForms(api, { type: 'section', components })
     expect(components).not.toHaveBeenCalled()
   })
 })
@@ -601,9 +534,7 @@ describe('setupSchemaComponents()', () => {
 })
 
 describe('setupView()', () => {
-  const DitoView = { name: 'DitoView' }
-
-  it('creates the route of views with the routes of their lists', async () => {
+  it('sets up the forms of the lists of views', async () => {
     const api = createApi({ text: { trim: true } })
     const books = {
       type: 'view',
@@ -612,13 +543,8 @@ describe('setupView()', () => {
         form: createBookForm()
       }
     }
-    const route = await setupView(DitoView, api, books, 'books')
-    expect(route).toEqual({
-      path: '/books',
-      children: [{ path: 'books', level: 0, children: [] }],
-      component: DitoView,
-      meta: { api, schema: books }
-    })
+    await setupView(api, books, 'books')
+    expect(books.name).toBe('books')
     expect(books.component.form.components.title.trim).toBe(true)
   })
 
@@ -635,11 +561,11 @@ describe('setupView()', () => {
         )
       }
     }
-    await setupView(DitoView, api, dashboard, 'dashboard')
+    await setupView(api, dashboard, 'dashboard')
     expect(dashboard.tabs.stats.components.total.trim).toBe(true)
   })
 
-  it('creates the routes of menus with their items as children', async () => {
+  it('sets up the items of menus', async () => {
     const api = createApi()
     const catalog = {
       type: 'menu',
@@ -647,21 +573,14 @@ describe('setupView()', () => {
         bookAuthors: { type: 'view', components: {} }
       }
     }
-    const route = await setupView(DitoView, api, catalog, 'catalog')
-    expect(route.path).toBe('/catalog')
-    expect(route.children).toEqual([
-      {
-        path: '/catalog/book-authors',
-        children: [],
-        component: DitoView,
-        meta: { api, schema: catalog.items.bookAuthors }
-      }
-    ])
+    await setupView(api, catalog, 'catalog')
+    expect(catalog.name).toBe('catalog')
+    expect(catalog.items.bookAuthors.name).toBe('bookAuthors')
   })
 
   it('rejects schemas that are neither views nor menus', async () => {
     await expect(
-      setupView(DitoView, createApi(), { type: 'form' }, 'books')
+      setupView(createApi(), { type: 'form' }, 'books')
     ).rejects.toThrow('Invalid view schema')
   })
 })

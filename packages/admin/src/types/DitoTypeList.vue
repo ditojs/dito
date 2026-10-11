@@ -86,7 +86,7 @@
               :deletable="deletable"
               :draggable="draggable && listData.length > 1"
               :editable="editable"
-              :editPath="getEditPath(item, index)"
+              :editPath="getEditPath(index)"
               :createPath="createPath"
               :insertIndex="creatable && draggable ? index : null"
               @delete="deleteItem(item, index)"
@@ -107,7 +107,7 @@
             :deletable="deletable"
             :draggable="draggable"
             :editable="editable"
-            :editPath="getEditPath(item, index)"
+            :editPath="getEditPath(index)"
             @delete="deleteItem(item, index)"
             @move="delta => moveItem(item, delta)"
           )
@@ -140,7 +140,6 @@ import {
   resolveSchemaComponent,
   resolveSchemaComponents
 } from '../utils/schema/setup.js'
-import { getViewEditPath } from '../utils/schema/lookup.js'
 import { createFiltersPanel, getFiltersDataErrors } from '../utils/filter.js'
 import { appendDataPath } from '../utils/data.js'
 import { getListWithMovedItem } from '../utils/list.js'
@@ -242,15 +241,8 @@ export default DitoTypeComponent.register('list', {
       return appendDataPath(this.componentPath, index)
     },
 
-    getEditPath(item, index) {
-      if (this.editable) {
-        const id = this.getItemId(this.schema, item, index)
-        return (
-          getViewEditPath(this.schema, id, this.context) ||
-          `${this.path}/${id}`
-        )
-      }
-      return null
+    getEditPath(index) {
+      return this.editable ? this.getItemPath(index) : null
     },
 
     // Moves the item by `delta` positions, see `DitoDragHandle`.
@@ -276,29 +268,11 @@ export default DitoTypeComponent.register('list', {
     }
   },
 
-  async processSchema(
-    api,
-    schema,
-    name,
-    routes,
-    level,
-    nested = false,
-    flatten = false,
-    process = null
-  ) {
+  async processSchema(api, schema, name) {
     await Promise.all([
       resolveSchemaComponent(schema),
       resolveSchemaComponents(schema.columns),
-      SourceMixin.processSchema(
-        api,
-        schema,
-        name,
-        routes,
-        level,
-        nested,
-        flatten,
-        process
-      )
+      SourceMixin.processSchema(api, schema, name)
     ])
   }
 })

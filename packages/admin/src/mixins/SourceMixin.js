@@ -1,4 +1,3 @@
-import DitoComponent from '../DitoComponent.js'
 import ItemMixin from './ItemMixin.js'
 import ResourceMixin from './ResourceMixin.js'
 import SchemaParentMixin from '../mixins/SchemaParentMixin.js'
@@ -12,14 +11,13 @@ import {
   isObjectSource,
   isListSource
 } from '../utils/schema/structure.js'
-import { setupRouteSchema, setupForms } from '../utils/schema/setup.js'
+import { setupForms } from '../utils/schema/setup.js'
 import {
   getNamedSchemas,
   getButtonSchemas,
   hasFormSchema,
   getFormSchemas,
-  getViewSchema,
-  getViewPath
+  getViewSchema
 } from '../utils/schema/lookup.js'
 import { updateOrder } from '../utils/schema/data.js'
 import { confirmAndRemove } from '../utils/dialogs.js'
@@ -29,10 +27,10 @@ import {
   isArray,
   isNumber,
   equals,
-  parseDataPath,
-  normalizeDataPath
+  parseDataPath
 } from '@ditojs/utils'
 import { markRaw } from 'vue'
+import { appendDataPath, getRelativeDataPath } from '../utils/data.js'
 
 // @vue/component
 export default {
@@ -82,7 +80,10 @@ export default {
     },
 
     shouldRender() {
-      return this.sourceDepth < this.maxDepth
+      // Lists with routed forms don't render where the recursion of forms that
+      // contain themselves stops, see `maxDepth`. Inlined lists render their
+      // data as it is:
+      return this.isInlined || !this.sourceNode?.isBeyondMaxDepth
     },
 
     isReady() {
@@ -153,20 +154,6 @@ export default {
     sourceSchema() {
       // The sourceSchema of a list is the list's schema itself.
       return this.schema
-    },
-
-    sourceDepth() {
-      return this.$route.matched.reduce(
-        (depth, record) => (
-          depth + (record.meta.schema === this.sourceSchema ? 1 : 0)
-        ),
-        0
-      )
-    },
-
-    path() {
-      // This is used in TypeList for DitoFormChooser.
-      return this.routeComponent.getChildPath(this.schema.path)
     },
 
     // The defaults of the query, see `ListQuery`.
@@ -281,7 +268,8 @@ export default {
       type: Boolean,
       default: false,
       get(creatable) {
-        return creatable && hasFormSchema(this.schema)
+        // Lists linked to views create their items in the form of the view:
+        return creatable && (hasFormSchema(this.schema) || this.linksToView)
           ? this.isObjectSource
             ? !this.value
             : true
@@ -329,19 +317,30 @@ export default {
       }
     }),
 
-    maxDepth: getSchemaAccessor('maxDepth', {
-      type: Number,
-      default: 1
-    }),
-
     createPath() {
-      if (this.creatable) {
-        return (
-          getViewPath(this.schema, this.context) ||
-          this.path
-        )
-      }
-      return null
+      return this.creatable
+        ? this.linksToView
+          ? this.getViewItemPath('create')
+          : (this.routeComponent?.getCreatePath(this.dataPath) ?? null)
+        : null
+    },
+
+    // The path of the form of object sources, which are their own item:
+    objectPath() {
+      return this.linksToView
+        ? this.value &&
+          this.getViewItemPath(this.getItemId(this.schema, this.value))
+        : this.getFormPath(this.dataPath)
+    },
+
+    // The node of the source in the route tree, if it has a route component:
+    sourceNode() {
+      const { routeComponent } = this
+      return (
+        routeComponent?.meta.node.findSource(
+          getRelativeDataPath(this.dataPath, routeComponent.dataPath)
+        ) ?? null
+      )
     }
   },
 
@@ -662,63 +661,49 @@ export default {
       )
     },
 
-    navigateToRouteComponent(dataPath, onComplete) {
-      return new Promise((resolve, reject) => {
-        const callOnComplete = () => {
-          // Retrieve the route component of the last route level, which is the
-          // component that we just navigated to, and pass it to `onComplete()`
-          const level = this.$route.matched.length - 1
-          const routeComponent = this.appState.routeComponents[level]
-          resolve(onComplete?.([routeComponent]) ?? true)
+    async navigateToRouteComponent(dataPath, onComplete) {
+      const route = this.routeComponent.getFormRoute(dataPath)
+      if (route) {
+        if (this.$route.path !== route.path) {
+          await this.$router.push({ path: route.path })
+          // Wait for the route component to be mounted:
+          await this.$nextTick()
         }
+        const level = this.$route.matched.length - 1
+        return onComplete?.([this.appState.routeComponents[level]]) ?? true
+      }
+      return false
+    },
 
-        const dataPathParts = parseDataPath(dataPath)
-        // See if we can find a route that can serve part of the given dataPath,
-        // and take it from there:
-        while (dataPathParts.length > 0) {
-          const path = this.routeComponent.getChildPath(
-            this.api.normalizePath(normalizeDataPath(dataPathParts))
+    getItemPath(index) {
+      return this.linksToView
+        ? this.getViewItemPath(
+            this.getItemId(this.schema, this.listData[index], index)
           )
-          // See if there actually is a route for this sub-component:
-          const { matched } = this.$router.resolve(path)
-          if (matched.length && matched[0].name !== 'catch-all') {
-            if (this.$route.path === path) {
-              // We're already there, so just call `onComplete()`:
-              callOnComplete()
-            } else {
-              // Navigate to the component's path, then call `onComplete()`_:
-              this.$router
-                .push({ path })
-                .catch(reject)
-                // Wait for the last route component to be mounted in the next
-                // tick before calling `onComplete()`
-                .then(() => {
-                  this.$nextTick(callOnComplete)
-                })
-            }
-            return
-          }
-          // Keep removing the last part until we find a match.
-          dataPathParts.pop()
-        }
-        resolve(false)
-      })
+        : this.getFormPath(appendDataPath(this.dataPath, index))
+    },
+
+    // Lists linked to views edit their items in the form of the view:
+    getViewItemPath(key) {
+      const form = this.viewRegistry.routeTree?.getViewForm(this.schema.view)
+      return form
+        ? this.$router.resolve({
+            name: form.routeName,
+            params: { [form.param]: key }
+          }).path
+        : null
+    },
+
+    // Resolve the path of the form that edits the item at `dataPath`:
+    getFormPath(dataPath) {
+      const route = this.routeComponent?.getFormRoute(dataPath)
+      return route && !route.dataPath ? route.path : null
     }
   }, // end of `methods`
 
-  async processSchema(
-    api,
-    schema,
-    name,
-    routes,
-    level,
-    nested = false,
-    flatten = false,
-    process = null
-  ) {
-    setupRouteSchema(api, schema, name)
-    const inlined = isInlined(schema)
-    if (inlined && schema.resource) {
+  async processSchema(api, schema, name) {
+    schema.name ??= name
+    if (isInlined(schema) && schema.resource) {
       throw new Error(
         `Nested ${
           isListSource(schema)
@@ -729,104 +714,7 @@ export default {
         } cannot load data from their own resources`
       )
     }
-    // Use differently named url parameters on each nested level for id as
-    // otherwise they would clash and override each other inside $route.params
-    // See: https://github.com/vuejs/vue-router/issues/1345
-    const param = `id${level + 1}`
-    const meta = {
-      api,
-      schema
-    }
-    const formMeta = {
-      ...meta,
-      // When children are flattened (e.g. tree-lists), include the `flatten`
-      // setting also, for flattening below.
-      flatten,
-      nested,
-      param
-    }
-    const childRoutes = await setupForms(api, schema, level)
-    if (process) {
-      await process(childRoutes, level + 1)
-    }
-    // Lists in single-component-views (level === 0) use their view's path,
-    // while all others need their path prefixed with the parent's path:
-    const sourcePath = level === 0 ? '' : schema.path
-    // Inlined forms don't need to actually add routes.
-    if (hasFormSchema(schema) && !inlined) {
-      const formRoute = {
-        path: getPathWithParam(
-          sourcePath,
-          // Object sources don't need id params in their form paths, as they
-          // directly edit one object.
-          isListSource(schema) ? param : null
-        ),
-        component: DitoComponent.component(
-          nested ? 'DitoFormNested' : 'DitoForm'
-        ),
-        meta: formMeta
-      }
-      if (isObjectSource(schema)) {
-        // Also add a param route, simply to handle '/create' links the same
-        // way that lists do, where it overlaps with :id for item ids.
-        routes.push({
-          ...formRoute,
-          path: getPathWithParam(sourcePath, param)
-        })
-      }
-      if (sourcePath && isListSource(schema)) {
-        // Just redirect back to the parent when a nested list route is hit.
-        // Object sources use this path for their form route instead.
-        routes.push({
-          path: sourcePath,
-          redirect: '.',
-          meta
-        })
-      }
-      // Partition childRoutes into those that need flattening (e.g. tree-lists)
-      // and those that don't, and process each group separately after.
-      const [flatRoutes, subRoutes] = childRoutes.reduce(
-        (res, route) => {
-          res[route.meta.flatten ? 0 : 1].push(route)
-          return res
-        },
-        [[], []]
-      )
-      if (subRoutes.length) {
-        formRoute.children = subRoutes
-      }
-      routes.push(formRoute)
-      // Add the prefixed formRoutes with their children for nested lists.
-      if (flatRoutes.length) {
-        for (const childRoute of flatRoutes) {
-          routes.push({
-            ...(childRoute.redirect ? childRoute : formRoute),
-            path: `${formRoute.path}/${childRoute.path}`,
-            meta: {
-              ...childRoute.meta,
-              flatten
-            }
-          })
-        }
-      }
-    } else if (!inlined && isObjectSource(schema)) {
-      // Object sources without forms, e.g. tree objects, can still have
-      // children with forms, see `DitoTypeTreeList.processSchema()`. Without
-      // a form route to nest their routes in, add them under the source path.
-      // List sources need their form route for the id param of their items.
-      for (const childRoute of childRoutes) {
-        routes.push({
-          ...childRoute,
-          path: sourcePath
-            ? `${sourcePath}/${childRoute.path}`
-            : childRoute.path,
-          meta: {
-            ...childRoute.meta,
-            flatten
-          }
-        })
-      }
-    }
+    await setupForms(api, schema)
   },
 
   processValue({ schema, value, dataPath }, graph) {
@@ -845,12 +733,4 @@ function copyItems(value) {
     : isObject(value)
       ? { ...value }
       : value
-}
-
-function getPathWithParam(path, param) {
-  return param
-    ? path
-      ? `${path}/:${param}`
-      : `:${param}`
-    : path
 }

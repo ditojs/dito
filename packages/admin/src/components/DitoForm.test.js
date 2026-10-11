@@ -729,7 +729,7 @@ describe('DitoForm', () => {
     }
 
     // The data path of the nested form is relative to the data of the view,
-    // without the path of the view, see `getDataPathFrom()`.
+    // without the path of the view.
     it('apply their changes to the data of the view', async () => {
       const { admin, data } = await mountSchema({
         schema: {

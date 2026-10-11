@@ -24,8 +24,8 @@ export default {
   inject: [
     'api',
     'session',
+    'viewRegistry',
     '$verbs',
-    '$views',
     '$isPopulated',
     '$parentComponent',
     '$schemaComponent',
@@ -79,7 +79,7 @@ export default {
       return this.session.user
     },
 
-    // $verbs, $verbs and $isPopulated are defined as functions, to preserve
+    // $verbs and $isPopulated are defined as functions, to preserve
     // reactiveness across provide/inject.
     // See: https://github.com/vuejs/vue/issues/7017#issuecomment-480906691
     verbs() {
@@ -87,7 +87,7 @@ export default {
     },
 
     views() {
-      return this.$views()
+      return this.viewRegistry.views
     },
 
     flattenedViews() {

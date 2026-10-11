@@ -1,76 +1,58 @@
 <template lang="pug">
 ul.dito-menu
   li.dito-menu__item(
-    v-for="item in items"
+    v-for="node in nodes"
   )
     template(
-      v-if="shouldShowItem(item)"
+      v-if="shouldShowNode(node)"
     )
       RouterLink(
         v-slot="{ href, navigate }"
-        :to="getItemRoute(item)"
+        :to="{ path: getPath(node.linkRouteName), force: true }"
         custom
       )
         a.dito-menu__link(
           :href="href"
-          :class="{ 'dito-menu__link--active': isActiveItem(item) }"
-          :aria-current="isActiveItem(item) ? 'page' : null"
+          :class="{ 'dito-menu__link--active': isActiveNode(node) }"
+          :aria-current="isActiveNode(node) ? 'page' : null"
           @click="navigate"
-        ) {{ getLabel(item) }}
+        ) {{ getLabel(node.schema) }}
       DitoMenu.dito-menu__sub(
-        v-if="item.items"
-        :items="item.items"
-        :path="getItemPath(item)"
+        v-if="node.items"
+        :nodes="node.items"
       )
 </template>
 
 <script>
 import DitoComponent from '../DitoComponent.js'
 import { isPathWithin } from '../utils/route.js'
-import { getViewLinkPath } from '../utils/schema/lookup.js'
 
+// The menu of the views and menus of the route tree. `force` reloads the view
+// of a link even if it is already the current route.
 // @vue/component
 export default DitoComponent.component('DitoMenu', {
   props: {
-    items: {
-      type: [Object, Array],
-      default: () => []
-    },
-    path: {
-      type: String,
-      default: ''
-    }
+    nodes: { type: Array, required: true }
   },
 
   methods: {
-    shouldShowItem(item) {
+    shouldShowNode(node) {
       return (
-        this.shouldRenderSchema(item) && (
-          !item.items ||
-          Object.values(item.items).some(this.shouldRenderSchema)
+        this.shouldRenderSchema(node.schema) && (
+          !node.items ||
+          node.items.some(item => this.shouldRenderSchema(item.schema))
         )
       )
     },
 
-    getItemPath(item) {
-      return `${this.path}/${item.path}`
+    isActiveNode(node) {
+      return isPathWithin(this.$route.path, this.getPath(node.routeName))
     },
 
-    getItemRoute(item) {
-      // `DitoRoot` only provides the views once their paths are set up.
-      // `force` reloads the view even if it is already the current route.
-      return {
-        path: getViewLinkPath(item, this.getItemPath(item)),
-        force: true
-      }
-    },
-
-    isActiveItem(item) {
-      const path = this.getItemPath(item)
-      return (
-        isPathWithin(this.$route.path, path) ||
-        item.items && Object.values(item.items).some(this.isActiveItem)
-      )
+    // Navigate to the paths of the routes rather than their names, so that the
+    // router also matches their default children, like the forms of objects:
+    getPath(routeName) {
+      return this.$router.resolve({ name: routeName }).path
     }
   }
 })

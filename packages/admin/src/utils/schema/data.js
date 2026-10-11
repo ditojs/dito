@@ -17,7 +17,7 @@ import {
   hasNestedSchemaComponents,
   isPanelWithOwnData,
   isSourceWithResource,
-  isNested
+  hasNestedData
 } from './structure.js'
 import {
   hasFormSchema,
@@ -505,7 +505,7 @@ export function processSchemaData(schema, data, {
   const processComponents = (components, parentComponentPath) => {
     if (components) {
       for (const [name, componentSchema] of Object.entries(components)) {
-        const isNestedComponent = isNested(componentSchema)
+        const isNestedComponent = hasNestedData(componentSchema)
         const isWrappedPrimitive = name === wrappedPrimitiveName
         const componentDataPath =
           isNestedComponent && !isWrappedPrimitive

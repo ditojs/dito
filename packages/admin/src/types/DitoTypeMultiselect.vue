@@ -62,7 +62,6 @@
     :data="data"
     :meta="meta"
     :store="store"
-    :parentContext="context"
     :optionValue="selectedValue"
   )
 </template>

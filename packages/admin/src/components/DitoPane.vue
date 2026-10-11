@@ -50,7 +50,7 @@ import DitoContext from '../DitoContext.js'
 import ContextMixin from '../mixins/ContextMixin.js'
 import { appendDataPath } from '../utils/data.js'
 import { trackRegistration } from '../utils/registration.js'
-import { hasLabel, isNested } from '../utils/schema/structure.js'
+import { hasLabel, hasNestedData } from '../utils/schema/structure.js'
 import { shouldRenderSchema } from '../utils/schema/data.js'
 
 // @vue/component
@@ -147,7 +147,7 @@ export default DitoComponent.component('DitoPane', {
           // mutating the original schema potentially used in multiple places.
           schema = { ...schema, name }
           // Share dataPath and store with parent if not nested:
-          const nested = isNested(schema)
+          const nested = hasNestedData(schema)
           const nestedDataPath = appendDataPath(this.dataPath, name)
           const dataPath =
             nested && !wrapPrimitives

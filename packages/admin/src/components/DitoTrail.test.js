@@ -40,7 +40,9 @@ describe('DitoTrail', () => {
     const push = vi.spyOn(admin.router, 'push')
     expect(await clickTrailLink(admin)).toBe(true)
     // `force` reloads the view even though it is the current route.
-    expect(push).toHaveBeenCalledWith({ path: '/books', force: true })
+    const [[location]] = push.mock.calls
+    expect(location.force).toBe(true)
+    expect(admin.router.resolve(location).path).toBe('/books')
   })
 
   it('leaves modifier-clicks to the browser', async () => {

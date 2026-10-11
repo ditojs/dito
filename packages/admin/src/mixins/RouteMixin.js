@@ -1,6 +1,8 @@
 import ValidatorMixin from '../mixins/ValidatorMixin.js'
 import { markRaw } from 'vue'
 import { isPathWithin } from '../utils/route.js'
+import { getRelativeDataPath } from '../utils/data.js'
+import { getSchemaPath } from '../utils/schema/structure.js'
 import { confirm } from '../utils/dialogs.js'
 
 // @vue/component
@@ -16,8 +18,10 @@ export default {
   data() {
     return {
       // The record of the route that this component renders, see the
-      // `matchedRouteRecord` watcher:
+      // `$route` watcher:
       routeRecord: null,
+      // The parameters of the route while its record is matched:
+      routeParams: {},
       // Whether leaving the route was prevented because the data is invalid,
       // so that the next attempt can leave, see `beforeRouteChange()`:
       hasPreventedLeavingInvalidData: false,
@@ -72,13 +76,13 @@ export default {
       // Returns true if this route component is the last one in the route that
       // needs its own router-view (= is not nested).
       const record = this.$route.matched.findLast(
-        record => !record.meta.nested
+        record => !record.meta.node?.isNestedForm
       )
       return this.routeRecord === record
     },
 
     isNestedRoute() {
-      return this.meta.nested
+      return !!this.meta.node.isNestedForm
     },
 
     isForm() {
@@ -94,7 +98,15 @@ export default {
     },
 
     path() {
-      return this.getRoutePath(this.routeRecord?.path)
+      const { routeRecord } = this
+      // The routes are replaced when the views are resolved again, e.g. after
+      // logging in, while the components of the previous ones still exist:
+      return routeRecord && this.$router.hasRoute(routeRecord.name)
+        ? this.$router.resolve({
+            name: routeRecord.name,
+            params: routeRecord.meta.node.getParams(this.routeParams)
+          }).path
+        : this.$route.path
     },
 
     label() {
@@ -114,12 +126,27 @@ export default {
       // Workaround for vue-router not being able to map multiple url parameters
       // with the same name to multiple components, see:
       // https://github.com/vuejs/vue-router/issues/1345
-      return this.$route.params[this.meta?.param] || null
+      return this.$route.params[this.meta?.node.param] || null
     },
 
     // @overridable, see DitoForm
     isMutating() {
       return false
+    },
+
+    // The path of the view or source, e.g. for selectors of its styles:
+    schemaPath() {
+      return getSchemaPath(this.sourceSchema, this.sourceSchema.name, this.api)
+    },
+
+    // The state that the routes below this component depend on, see
+    // `RouteTree`:
+    routeState() {
+      return {
+        data: this.data,
+        routeParams: this.routeParams,
+        isTransient: !!(this.isTransient || this.isCreating)
+      }
     },
 
     // Whether the component has changes that get lost when it's left, see
@@ -131,11 +158,12 @@ export default {
   },
 
   watch: {
-    matchedRouteRecord: {
+    $route: {
       immediate: true,
       // Update synchronously, so that the record changes with the route.
       flush: 'sync',
-      handler(routeRecord) {
+      handler() {
+        const routeRecord = this.matchedRouteRecord
         // Components belong to the record that they're rendered for, see
         // `DitoRouterView`. Records of other paths, or none, mean that
         // the component is being left, and it keeps its record until it's
@@ -150,6 +178,7 @@ export default {
           // Keep the record raw, as it's compared with the records in
           // `$route.matched`, which aren't reactive.
           this.routeRecord = markRaw(routeRecord)
+          this.routeParams = this.$route.params
         }
       }
     }
@@ -224,21 +253,37 @@ export default {
       return ok
     },
 
-    getRoutePath(recordPath) {
-      // Maps the route's actual path to the matched routes by counting its
-      // parts separated by '/', splitting the path into the mapped parts
-      // containing actual parameters.
-      const { path } = this.$route
-      return recordPath
-        ? path
-            .split('/')
-            .slice(0, recordPath.split('/').length)
-            .join('/')
-        : path
+    // Resolve the path of the deepest form that edits the data at
+    // `dataPath`, along with the data path that remains within that form:
+    getFormRoute(dataPath) {
+      const route = this.meta.node.getFormRoute(
+        getRelativeDataPath(dataPath, this.dataPath),
+        this.routeState
+      )
+      return (
+        route && {
+          path: this.$router.resolve({
+            name: route.form.routeName,
+            params: route.params
+          }).path,
+          dataPath: route.dataPath
+        }
+      )
     },
 
-    getChildPath(path) {
-      return `${this.path}/${path}`
+    // Resolve the path of the form that creates an item of the source at
+    // `dataPath`:
+    getCreatePath(dataPath) {
+      const route = this.meta.node.getCreateRoute(
+        getRelativeDataPath(dataPath, this.dataPath),
+        this.routeState
+      )
+      return route
+        ? this.$router.resolve({
+            name: route.form.routeName,
+            params: route.params
+          }).path
+        : null
     }
   }
 }

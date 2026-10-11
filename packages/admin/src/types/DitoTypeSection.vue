@@ -94,9 +94,9 @@ export default DitoTypeComponent.register('section', {
     }
   },
 
-  async processSchema(api, schema, name, routes, level) {
+  async processSchema(api, schema) {
     // Process section components so their forms get resolved too.
-    await setupSchemaComponents(api, schema, routes, level)
+    await setupSchemaComponents(api, schema)
   }
 })
 </script>

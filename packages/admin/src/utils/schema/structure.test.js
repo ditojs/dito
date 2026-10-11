@@ -19,7 +19,7 @@ import {
   isSingleComponentView,
   isCompact,
   isInlined,
-  isNested,
+  hasNestedData,
   hasLabel,
   omitSpacing,
   getTabSchemas,
@@ -178,7 +178,7 @@ describe('nested schema component lookups', () => {
     expect(
       someNestedSchemaComponent(schema, (component, name) => name === 'title')
     ).toBe(true)
-    expect(everyNestedSchemaComponent(schema, isNested)).toBe(true)
+    expect(everyNestedSchemaComponent(schema, hasNestedData)).toBe(true)
     expect(everyNestedSchemaComponent(schema, isListSource)).toBe(false)
   })
 
@@ -252,10 +252,10 @@ describe('schema setting predicates', () => {
   })
 
   it('use `nested` or the default of the type for nesting', () => {
-    expect(isNested({ type: 'text' })).toBe(true)
-    expect(isNested({ type: 'section' })).toBe(false)
-    expect(isNested({ type: 'section', nested: true })).toBe(true)
-    expect(isNested({ type: 'unregistered' })).toBe(false)
+    expect(hasNestedData({ type: 'text' })).toBe(true)
+    expect(hasNestedData({ type: 'section' })).toBe(false)
+    expect(hasNestedData({ type: 'section', nested: true })).toBe(true)
+    expect(hasNestedData({ type: 'unregistered' })).toBe(false)
   })
 
   it('tell components with labels apart, also generated ones', () => {

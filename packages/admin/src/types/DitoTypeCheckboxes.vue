@@ -25,7 +25,6 @@ DitoOptionList.dito-checkboxes(
       :data="data"
       :meta="meta"
       :store="store"
-      :parentContext="context"
       :optionValue="getValueForOption(option)"
     )
 </template>
