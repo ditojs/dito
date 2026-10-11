@@ -840,6 +840,32 @@ describe('DitoSchema', () => {
       )
     })
 
+    // Known bug: errors live on components, collapsing drops them
+    it.skip('keeps the errors of collapsed sections', async () => {
+      const { submit, getErrors, findContainer } = await mountBookForm(
+        { subtitle: [{ message: 'is too long' }] },
+        {
+          details: {
+            type: 'section',
+            label: 'Details',
+            collapsible: true,
+            components: { subtitle: { type: 'text' } }
+          }
+        }
+      )
+      await submit()
+      expect(getErrors('subtitle')).toEqual(['The Subtitle field is too long.'])
+      const toggleDetails = async () => {
+        await findContainer('details')
+          .find('.dito-schema-header .dito-label')
+          .trigger('click')
+        await flushPromises()
+      }
+      await toggleDetails()
+      await toggleDetails()
+      expect(getErrors('subtitle')).toEqual(['The Subtitle field is too long.'])
+    })
+
     it('shows the errors of items in their nested forms', async () => {
       const { admin, submit, getErrors } = await mountForm({
         schema: {

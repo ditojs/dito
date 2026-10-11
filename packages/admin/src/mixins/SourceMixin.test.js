@@ -765,6 +765,218 @@ describe('SourceMixin', () => {
     })
   })
 
+  describe('routes', () => {
+    const createChapterForm = () => ({
+      type: 'form',
+      components: { title: { type: 'text' } }
+    })
+
+    const createChaptersSchema = (schema = {}) => ({
+      type: 'list',
+      editable: true,
+      form: createChapterForm(),
+      ...schema
+    })
+
+    const chapters = [{ title: 'Prologue' }, { title: 'Epilogue' }]
+
+    // Mounts the `test` view with the properties of `viewSchema` next to the
+    // other `views`, and sets its `data`. Returns the admin and the view.
+    async function mountView(viewSchema, data, { views, ...options } = {}) {
+      const admin = await mountAdmin({
+        views: { ...views, test: { type: 'view', ...viewSchema } },
+        ...options
+      })
+      await admin.navigate('/test')
+      const view = admin.getRouteComponent(it => it.isView)
+      view.setData(data)
+      await settle(view)
+      return { admin, view }
+    }
+
+    // Navigates to `path` and returns the data of the form that opens there,
+    // or `undefined` without a form.
+    async function getFormData(admin, path) {
+      await admin.navigate(path)
+      const form = admin.getRouteComponent(it => it.isForm)
+      if (form) await settle(form)
+      return form?.data
+    }
+
+    // Known bug: shared forms get their nested routes only once
+    it.skip('adds the nested routes of forms shared by several lists', async () => {
+      const bookForm = {
+        type: 'form',
+        components: { chapters: createChaptersSchema() }
+      }
+      const admin = await mountAdmin({
+        views: {
+          books: {
+            type: 'view',
+            component: {
+              type: 'list',
+              resource: { path: 'books' },
+              form: bookForm
+            }
+          },
+          drafts: {
+            type: 'view',
+            component: {
+              type: 'list',
+              resource: { path: 'drafts' },
+              form: bookForm
+            }
+          }
+        }
+      })
+      const getRoutePaths = view =>
+        admin.router
+          .getRoutes()
+          .map(route => route.path)
+          .filter(path => path.startsWith(`/${view}/`))
+          .map(path => path.replace(/:\w+/g, ':id'))
+          .sort()
+      expect(getRoutePaths('books')).toEqual([
+        '/books/:id',
+        '/books/:id/chapters',
+        '/books/:id/chapters/:id'
+      ])
+      expect(getRoutePaths('drafts')).toEqual([
+        '/drafts/:id',
+        '/drafts/:id/chapters',
+        '/drafts/:id/chapters/:id'
+      ])
+    })
+
+    // Known bug: lists with a `path` open empty forms
+    it.skip('opens the forms of items of lists with a `path`', async () => {
+      const { admin } = await mountView(
+        { components: { chapters: createChaptersSchema({ path: 'parts' }) } },
+        { chapters }
+      )
+      expect(await getFormData(admin, '/test/parts/1')).toEqual({
+        title: 'Epilogue'
+      })
+    })
+
+    // Known bug: lists in nested sections open empty forms
+    it.skip('opens the forms of items of lists in nested sections', async () => {
+      const { admin } = await mountView(
+        {
+          components: {
+            book: {
+              type: 'section',
+              nested: true,
+              components: { chapters: createChaptersSchema() }
+            }
+          }
+        },
+        { book: { chapters } }
+      )
+      expect(await getFormData(admin, '/test/chapters/1')).toEqual({
+        title: 'Epilogue'
+      })
+    })
+
+    // Known bug: `normalizePaths` doesn't restore all names
+    it.skip('opens the forms of items of lists with normalized paths', async () => {
+      const { admin } = await mountView(
+        { components: { tableOfURLs: createChaptersSchema() } },
+        { tableOfURLs: chapters },
+        { api: { normalizePaths: true } }
+      )
+      expect(await getFormData(admin, '/test/table-of-urls/1')).toEqual({
+        title: 'Epilogue'
+      })
+    })
+
+    // Known bug: sections of single-component views get dead links
+    it.skip('links the items of lists in sections of single-component views', async () => {
+      const { admin, view } = await mountView(
+        {
+          component: {
+            type: 'section',
+            components: { chapters: createChaptersSchema() }
+          }
+        },
+        { chapters }
+      )
+      const list = view.mainSchemaComponent.getComponentByDataPath('chapters')
+      const path = list.getEditPath(chapters[1], 1)
+      expect(await getFormData(admin, path)).toEqual({ title: 'Epilogue' })
+    })
+
+    // Known bug: lists in inlined objects get no routes, silently
+    it.skip('links the items of lists in inlined objects to their forms', async () => {
+      const { admin, view } = await mountView(
+        {
+          components: {
+            book: {
+              type: 'object',
+              components: { chapters: createChaptersSchema() }
+            }
+          }
+        },
+        { book: { chapters } }
+      )
+      const list =
+        view.mainSchemaComponent.getComponentByDataPath(
+          'book/chapters'
+        )
+      const path = list.getEditPath(chapters[1], 1)
+      expect(await getFormData(admin, path)).toEqual({ title: 'Epilogue' })
+    })
+
+    describe('of lists linked to views', () => {
+      // Mounts a `books` view with a list that edits the books in its form,
+      // and the `test` view with a list linked to the `books` view.
+      async function mountLinkedList() {
+        const { view } = await mountView(
+          {
+            components: {
+              books: {
+                type: 'list',
+                view: 'books',
+                editable: true,
+                creatable: true
+              }
+            }
+          },
+          { books: [{ id: 5, title: 'Emma' }] },
+          {
+            views: {
+              books: {
+                type: 'view',
+                components: {
+                  items: {
+                    type: 'list',
+                    resource: { path: 'books' },
+                    form: createChapterForm()
+                  }
+                }
+              }
+            },
+            request: () => ({ data: [] })
+          }
+        )
+        return view.mainSchemaComponent.getComponentByDataPath('books')
+      }
+
+      // Known bug: multi-component views get wrong edit links
+      it.skip('link the items to the forms in multi-component views', async () => {
+        const list = await mountLinkedList()
+        expect(list.getEditPath(list.listData[0], 0)).toBe('/books/items/5')
+      })
+
+      // Known bug: lists linked to views can never create
+      it.skip('create items in the forms of the views', async () => {
+        const list = await mountLinkedList()
+        expect(list.creatable).toBe(true)
+        expect(list.createPath).toBe('/books/items/create')
+      })
+    })
+  })
+
   describe('processSchema()', () => {
     const api = { normalizePath: path => path }
 

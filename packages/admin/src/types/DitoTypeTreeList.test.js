@@ -645,6 +645,38 @@ describe('DitoTypeTreeList', () => {
       }
     )
 
+    describe('of tree objects with forms', () => {
+      const siteWithFormSchema = {
+        ...siteSchema.components.site,
+        form: { type: 'form', components: { name: { type: 'text' } } }
+      }
+
+      // Known bug: their child routes are absolute in single views
+      it.skip('open the forms of their children in single-component views', async () => {
+        const { admin, settle } = await mountSchema({
+          schema: { component: siteWithFormSchema },
+          data: { test: siteData.site }
+        })
+        await admin.navigate('/test/pages/1')
+        await settle()
+        const pageFormComponent = admin.getRouteComponent(it => it.isForm)
+        expect(pageFormComponent?.data.title).toBe('Contact')
+      })
+
+      // Known bug: flattened routes inherit the parent's sub-routes
+      it.skip(`don't add their own child routes to the routes of children`, async () => {
+        const { admin } = await mountSchema({
+          schema: { components: { site: siteWithFormSchema } },
+          data: siteData
+        })
+        const paths = admin.router
+          .getRoutes()
+          .map(route => route.path.replace(/:\w+/g, ':id'))
+        expect(paths).toContain('/test/site/pages/:id')
+        expect(paths).not.toContain('/test/site/pages/:id/pages')
+      })
+    })
+
     it('opens the forms of the children of tree lists in a single-component view', async () => {
       const schema = createSiteSchema({ editable: true })
       schema.components.pages.children.editable = true

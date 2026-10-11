@@ -528,6 +528,44 @@ describe('DitoTypeList', () => {
       expect(data.chapters[1].title).toBe('Departure')
       expect(admin.router.currentRoute.value.path).toBe('/items/1')
     })
+
+    // Known bug: open nested forms switch to the next item
+    it.skip('keep the form of an item open when removing an earlier one', async () => {
+      const { admin, getComponent, data, settle } = await mountForm({
+        schema: {
+          components: {
+            chapters: {
+              ...chaptersSchema.components.chapters,
+              deletable: true,
+              form: {
+                ...chaptersSchema.components.chapters.form,
+                nested: true
+              }
+            }
+          }
+        },
+        data: {
+          chapters: [
+            { title: 'Prologue' },
+            { title: 'Arrival' },
+            { title: 'Exit' }
+          ]
+        }
+      })
+      await admin.navigate('/items/1/chapters/1')
+      await settle()
+      const chapterForm = admin.getRouteComponent(it => it.isForm)
+      await enterValue(
+        admin.wrapper.find('input[name="chapters/1/title"]'),
+        'Departure'
+      )
+      await settle()
+      getComponent('chapters').removeItem(data.chapters[0], 0)
+      await settle()
+      // The form keeps editing its item, and follows it to its new index:
+      expect(chapterForm.data.title).toBe('Departure')
+      expect(admin.router.currentRoute.value.path).toBe('/items/1/chapters/0')
+    })
   })
 
   describe('item uids', () => {

@@ -1,7 +1,7 @@
 import { mountForm } from '../test/mount.js'
 
 describe('ContextMixin', () => {
-  const mountLibrary = () =>
+  const mountLibrary = (titleSchema = {}) =>
     // Forms provide the root data, as they load it through their resource:
     mountForm({
       schema: {
@@ -19,7 +19,7 @@ describe('ContextMixin', () => {
                   inlined: true,
                   form: {
                     type: 'form',
-                    components: { title: { type: 'text' } }
+                    components: { title: { type: 'text', ...titleSchema } }
                   }
                 }
               }
@@ -90,5 +90,41 @@ describe('ContextMixin', () => {
     expect(getComponent('name').processedRootItem).toEqual(
       title.processedRootItem
     )
+  })
+
+  describe('the processed item in callbacks', () => {
+    // Mounts the library with `callback` on the titles of the books, which
+    // returns `value`, and returns the processed items that it received for
+    // the title of the first book.
+    async function getProcessedItems(callback, value) {
+      const processedItems = []
+      await mountLibrary({
+        [callback]: ({ processedItem, dataPath }) => {
+          if (dataPath === 'authors/0/books/0/title') {
+            processedItems.push(processedItem)
+          }
+          return value
+        }
+      })
+      return processedItems
+    }
+
+    // Known bug: contexts of the data model lack the processed item
+    it.skip('is the processed item of the component in `if`', async () => {
+      const processedItems = await getProcessedItems('if', true)
+      expect(processedItems.length).toBeGreaterThan(0)
+      for (const processedItem of processedItems) {
+        expect(processedItem).toEqual({ id: 1, title: 'Emma' })
+      }
+    })
+
+    // Known bug: contexts of the data model process the whole form
+    it.skip('is the processed item of the component in `compute()`', async () => {
+      const processedItems = await getProcessedItems('compute', undefined)
+      expect(processedItems.length).toBeGreaterThan(0)
+      for (const processedItem of processedItems) {
+        expect(processedItem).toEqual({ id: 1, title: 'Emma' })
+      }
+    })
   })
 })

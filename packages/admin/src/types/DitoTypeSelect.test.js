@@ -211,6 +211,37 @@ describe('DitoTypeSelect', () => {
       )
     })
 
+    // Known bug: values missing from options are saved as `null`
+    it.skip('keeps values missing from the options when saving other values', async () => {
+      const { findField, data, routeComponent, settle, submit } =
+        await mountForm({
+          schema: {
+            components: {
+              title: { type: 'text' },
+              author: {
+                type: 'select',
+                options: {
+                  data: [{ id: 1, name: 'Jane' }],
+                  label: 'name',
+                  value: 'id'
+                }
+              }
+            }
+          },
+          data: { title: 'Emma', author: 2 },
+          request: ({ data }) => ({ data })
+        })
+      expect(data.author).toBe(2)
+      expect(routeComponent.isDirty).toBe(false)
+      await findField('title').find('input').setValue('Persuasion')
+      await settle()
+      expect(await submit()).toEqual({
+        id: 1,
+        title: 'Persuasion',
+        author: 2
+      })
+    })
+
     it('selects object values that equal options without a value key', async () => {
       const { findField } = await mountSchema({
         schema: {
