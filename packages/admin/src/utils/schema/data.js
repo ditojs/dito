@@ -467,6 +467,30 @@ export function processData(schema, sourceSchema, data, dataPath, {
  * object, and its component keeps the data path of the item, where the admin
  * maps errors of the value to. Values written into the objects don't reach
  * the data, e.g. defaults, as the primitive values themselves are the data.
+ *
+ * @typedef {object} SchemaDataEntry
+ * @property {Record<string, any>} schema
+ * @property {Record<string, any>} data
+ * @property {string} name
+ * @property {string | null} dataPath
+ * @property {string} componentPath
+ * @property {Record<string, any> | null} processedData
+ *
+ * @param {Record<string, any>} schema
+ * @param {Record<string, any>} data
+ * @param {object} walk
+ * @param {string | null} [walk.dataPath]
+ * @param {string} [walk.componentPath]
+ * @param {Record<string, any> | null} [walk.processedData]
+ * @param {string | null} [walk.wrappedPrimitiveName]
+ * @param {((entry: SchemaDataEntry) => void) | null} [walk.before]
+ * @param {((entry: SchemaDataEntry) => void) | null} [walk.after]
+ * @param {(
+ *   entry: SchemaDataEntry | Omit<SchemaDataEntry, 'name'> & { name: null }
+ * ) => boolean} [walk.shouldProcess] Tabs and panels have no name.
+ * @param {boolean} [walk.shouldSkipSourcesWithResource]
+ * @param {{ component: object | null, rootData: Record<string, any> }}
+ *   walk.options
  */
 export function processSchemaData(schema, data, {
   dataPath = null,

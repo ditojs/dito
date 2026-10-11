@@ -66,6 +66,16 @@ which components write the data through, as `component.dataModel`.
   resource, which also wait for the loads of data schemas and options now.
 - Type components, schemas and panels no longer have `isDirty`, type
   components no longer `markDirty()`.
+- Forms merge the data of the server into their data in place instead of
+  replacing it, when saving, when reloading their item and through
+  `formComponent.setData(data)`, which returns the form's data. Objects keep
+  their identity: open nested forms keep their edits, and items keep their
+  uids, item stores and the errors of unchanged values. Values missing in the
+  response are removed, new items get their ids from it in order. The data of
+  sources with their own resource is kept, wherever they are in the schema,
+  not only for mounted components. `dataModel.mergeFromServer(data)` does the
+  same for other code. Saving still clears the errors of the values.
+- `schemaComponent.filterData()` is removed.
 
 ### Validation
 
