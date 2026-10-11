@@ -1022,48 +1022,6 @@ describe('DitoSchema', () => {
     })
   })
 
-  describe('filterData()', () => {
-    it('keeps the data of lists with resources when saving', async () => {
-      const { submit, data, settle } = await mountForm({
-        schema: {
-          components: {
-            title: { type: 'text' },
-            tags: {
-              type: 'list',
-              inlined: true,
-              form: {
-                type: 'form',
-                components: { name: { type: 'text' } }
-              }
-            },
-            reviews: {
-              type: 'list',
-              resource: { path: 'reviews' },
-              columns: { text: {} }
-            }
-          }
-        },
-        data: {
-          title: 'Emma',
-          tags: [{ name: 'Classic' }],
-          reviews: [{ id: 1, text: 'Witty' }]
-        },
-        // The saved item doesn't contain the reviews, which have their own
-        // resource:
-        request: ({ method = 'get', url, data }) =>
-          method === 'get'
-            ? {
-                data: url.endsWith('/reviews') ? [{ id: 1, text: 'Witty' }] : []
-              }
-            : { data: { id: 1, title: data.title, tags: data.tags } }
-      })
-      await submit()
-      await settle()
-      expect(data.reviews).toEqual([{ id: 1, text: 'Witty' }])
-      expect(data.tags).toEqual([{ name: 'Classic' }])
-    })
-  })
-
   describe('resetData()', () => {
     it('clears the filters with their clear button', async () => {
       const { admin, settle } = await mountSchema({

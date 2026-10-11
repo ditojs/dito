@@ -422,6 +422,138 @@ describe('DitoForm', () => {
     })
   })
 
+  describe('saving', () => {
+    // Mounts a book form with chapters edited in nested forms, and reviews
+    // with their own resource. The server answers saves with `respond(data)`.
+    function mountBookForm(respond = data => ({ id: 1, ...data })) {
+      return mountForm({
+        schema: {
+          components: {
+            title: { type: 'text' },
+            chapters: {
+              type: 'list',
+              editable: true,
+              itemLabel: 'title',
+              form: {
+                type: 'form',
+                label: 'Chapter',
+                components: { title: { type: 'text' } }
+              }
+            },
+            reviews: {
+              type: 'list',
+              resource: { path: 'reviews' },
+              columns: { text: {} }
+            }
+          },
+          buttons: { submit: { closeForm: false } }
+        },
+        data: {
+          title: 'Emma',
+          chapters: [
+            { id: 1, title: 'One' },
+            { id: 2, title: 'Two' }
+          ],
+          reviews: [{ id: 1, text: 'Witty' }]
+        },
+        request: ({ method = 'get', url, data }) =>
+          method === 'get'
+            ? url.endsWith('/reviews')
+              ? { data: [{ id: 1, text: 'Witty' }] }
+              : null
+            : { data: respond(data) }
+      })
+    }
+
+    it('keeps the identity of the item and its lists and items', async () => {
+      const { wrapper, routeComponent, submit } = await mountBookForm()
+      const { data } = routeComponent
+      const { chapters, reviews } = data
+      const [first, second] = chapters
+      await enterValue(wrapper.find('input[name="title"]'), 'Persuasion')
+      await submit()
+      expect(routeComponent.data).toBe(data)
+      expect(data.chapters).toBe(chapters)
+      expect(data.chapters[0]).toBe(first)
+      expect(data.chapters[1]).toBe(second)
+      // The response doesn't contain the reviews, which have their own
+      // resource, so they're kept:
+      expect(data.reviews).toBe(reviews)
+      expect(data.reviews).toEqual([{ id: 1, text: 'Witty' }])
+      expect(data.title).toBe('Persuasion')
+      expect(routeComponent.isDirty).toBe(false)
+    })
+
+    it('gives new items their ids from the response in place', async () => {
+      const { routeComponent, submit } = await mountBookForm(data => ({
+        id: 1,
+        ...data,
+        chapters: data.chapters.map((chapter, index) => ({
+          ...chapter,
+          id: index + 1
+        }))
+      }))
+      const { chapters } = routeComponent.data
+      const chapter = { title: 'Three' }
+      routeComponent.dataModel.insert(chapters, 2, chapter)
+      await submit()
+      expect(routeComponent.data.chapters[2]).toBe(chapters[2])
+      expect(chapters[2]).toEqual({ id: 3, title: 'Three' })
+    })
+
+    it('removes the items that the server removed', async () => {
+      const { routeComponent, submit } = await mountBookForm(data => ({
+        id: 1,
+        ...data,
+        chapters: data.chapters.slice(1)
+      }))
+      const { chapters } = routeComponent.data
+      const [, second] = chapters
+      routeComponent.dataModel.set(routeComponent.data, 'title', 'Persuasion')
+      await submit()
+      expect(routeComponent.data.chapters).toBe(chapters)
+      expect(chapters).toEqual([second])
+    })
+
+    it('keeps the edits of open nested forms of its items', async () => {
+      const { admin, routeComponent } = await mountBookForm()
+      const { data } = routeComponent
+      await admin.navigate('/items/1/chapters/0')
+      const form = admin.getRouteComponent(component => component.isForm)
+      await settle(form)
+      await enterValue(
+        new DOMWrapper(form.$el).find('input[name$="title"]'),
+        'Opening'
+      )
+      // Save the book through its own submit button, outside the open form:
+      const [submitButton] = [
+        ...admin.element.querySelectorAll(
+          '.dito-buttons--main button[type="submit"]'
+        )
+      ].filter(button => !form.$el.contains(button))
+      submitButton.click()
+      await settle(routeComponent)
+      expect(form.data.title).toBe('Opening')
+      expect(data.chapters[0].title).toBe('One')
+    })
+
+    it('merges the data of `setData()` and returns it', async () => {
+      const { routeComponent } = await mountBookForm()
+      const { data } = routeComponent
+      const [first] = data.chapters
+      const mergedData = routeComponent.setData({
+        ...data,
+        title: 'Persuasion',
+        chapters: [{ id: 1, title: 'First' }]
+      })
+      expect(mergedData).toBe(data)
+      expect(routeComponent.data).toBe(data)
+      expect(data.chapters).toEqual([first])
+      expect(first.title).toBe('First')
+      expect(data.title).toBe('Persuasion')
+    })
+  })
+
   describe('nested forms of items in the form data', () => {
     const chapterForm = {
       type: 'form',

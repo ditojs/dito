@@ -22,9 +22,9 @@ export function getUid(item, getItemId = null) {
 
 // Transfers the uids of new objects in `source`, which are generated or
 // temporary ids, to the corresponding objects in `target` that don't have uids
-// yet, e.g. when the saved data replaces the data that was edited. This way,
-// the components and stores that are keyed by the uids of new items are kept,
-// even though the items only have their ids once they are saved.
+// yet, e.g. when the applied data of a nested form replaces its item. This
+// way, the components and stores that are keyed by the uids of new items are
+// kept, even though the items only have their ids once they are saved.
 // Objects are matched by their keys. Array items are matched by their `id`
 // properties, see `transferArrayUids()`. The items of lists with a custom
 // `idKey` have no `id`, so they count as new items and are matched in order.

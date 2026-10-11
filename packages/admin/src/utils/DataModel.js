@@ -19,6 +19,7 @@ import {
 import DitoContext from '../DitoContext.js'
 import { DataSchemaResolver } from './DataSchemaResolver.js'
 import { getParentDataPath, getRelativeDataPath } from './data.js'
+import { mergeData } from './mergeData.ts'
 import {
   isEmptySchema,
   getButtonSchemas,
@@ -140,7 +141,7 @@ export class DataModel {
         entries => this.setDefaultValues(entries),
         modelSetupWatchOptions
       )
-      // Data that is replaced, e.g. loaded, saved or applied, isn't dirty:
+      // Data that is replaced, e.g. loaded or applied, isn't dirty:
       watch(getData, () => this.markClean(), { flush: 'sync' })
     })
   }
@@ -184,6 +185,31 @@ export class DataModel {
       this.#isEdited.value = false
       this.#dirtySources.value = new EntryMap()
     }
+  }
+
+  // Merges `data` from the server, e.g. the response of a save, into the data
+  // in place, so that its objects keep their uids, item stores, open forms and
+  // errors, and keeps the parts of sources with their own resource, which load
+  // them themselves. Returns the merged data, which isn't dirty.
+  mergeFromServer(data) {
+    const mergedData = mergeData(this.getSchema(), this.getData(), data, {
+      component: this.component,
+      shouldKeepSourcesWithResource: true
+    })
+    // Compute the values of the merged data right away, e.g. to convert values
+    // that the server stores differently, as their watchers only run once it
+    // rendered, see `modelWatchOptions`:
+    for (const record of this.componentRecords.values()) {
+      const { schema } = record.entry
+      if (schema.compute && this.isRecordCurrent(record, schema)) {
+        const result = this.getComputedValueResult(record)
+        if (result) {
+          this.writeComputedValue(record.entry, result.value)
+        }
+      }
+    }
+    this.markClean()
+    return mergedData
   }
 
   set(data, key, value) {

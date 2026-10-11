@@ -1,5 +1,6 @@
 import { vi } from 'vitest'
 import { reactive, ref, toRaw, nextTick } from 'vue'
+import { isPlainObject } from '@ditojs/utils'
 import { registerTypeComponent } from './schema/types.js'
 import { DataModel } from './DataModel.js'
 
@@ -1032,6 +1033,82 @@ describe('DataModel', () => {
       dataModel.set(data, 'title', 'Changed')
       expect(dataModel.isDirty).toBe(true)
       dataModel.stop()
+    })
+  })
+
+  describe('mergeFromServer()', () => {
+    const schema = {
+      type: 'form',
+      components: {
+        title: { type: 'text' },
+        chapters: {
+          type: 'list',
+          form: { type: 'form', components: { title: { type: 'text' } } }
+        },
+        reviews: {
+          type: 'list',
+          resource: { path: 'reviews' },
+          form: { type: 'form', components: { text: { type: 'text' } } }
+        }
+      }
+    }
+
+    it('merges the data in place and marks it clean', () => {
+      const { dataModel, data } = createDataModel(schema, {
+        title: 'Emma',
+        chapters: [{ title: 'One' }],
+        reviews: [{ id: 1, text: 'Witty' }]
+      })
+      const { chapters, reviews } = data
+      const [chapter] = chapters
+      dataModel.set(data, 'title', 'Persuasion')
+      dataModel.setErrors('chapters/0/title', [{ message: 'is too short' }])
+      expect(dataModel.isDirty).toBe(true)
+      const mergedData = dataModel.mergeFromServer({
+        id: 1,
+        title: 'Persuasion',
+        chapters: [{ id: 2, title: 'One' }]
+      })
+      expect(mergedData).toBe(data)
+      expect(data.chapters).toBe(chapters)
+      expect(data.chapters[0]).toBe(chapter)
+      // The response doesn't contain the reviews, which have their own
+      // resource:
+      expect(data.reviews).toBe(reviews)
+      expect(toRaw(data)).toEqual({
+        id: 1,
+        title: 'Persuasion',
+        chapters: [{ id: 2, title: 'One' }],
+        reviews: [{ id: 1, text: 'Witty' }]
+      })
+      expect(dataModel.isDirty).toBe(false)
+      // The errors stay with the item, as long as its value is the same:
+      expect(dataModel.getErrors('chapters/0/title')).toEqual([
+        { message: 'is too short' }
+      ])
+    })
+
+    it('computes the values of the merged data right away', () => {
+      // Like widths that the server stores as numbers, which the form edits as
+      // objects:
+      const { dataModel, data } = createDataModel(
+        {
+          type: 'form',
+          components: {
+            width: {
+              type: 'section',
+              nested: true,
+              compute: ({ value }) =>
+                isPlainObject(value) ? value : { value, units: 'rem' },
+              components: { value: { type: 'text' } }
+            }
+          }
+        },
+        { width: 5 }
+      )
+      expect(data.width).toEqual({ value: 5, units: 'rem' })
+      dataModel.mergeFromServer({ width: 6 })
+      expect(data.width).toEqual({ value: 6, units: 'rem' })
     })
   })
 

@@ -109,8 +109,6 @@ slot(name="append")
 
 <script>
 import {
-  isObject,
-  isArray,
   isFunction,
   isEmpty,
   equals,
@@ -706,25 +704,6 @@ export default DitoComponent.component('DitoSchema', {
         }
       }
       return this.data
-    },
-
-    filterData(data) {
-      // Filters out arrays and objects that are backed by data resources
-      // themselves, as those are already taken care of through their own API
-      // resource end-points and shouldn't be set.
-      const localData = {}
-      const foreignData = {}
-      for (const [name, value] of Object.entries(data)) {
-        if (isArray(value) || isObject(value)) {
-          const components = this.getComponentsByName(name)
-          if (components.some(component => component.providesData)) {
-            foreignData[name] = value
-            continue
-          }
-        }
-        localData[name] = value
-      }
-      return { localData, foreignData }
     },
 
     // Called by `DitoClipboard` only when copying, as processing all data on

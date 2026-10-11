@@ -2,7 +2,6 @@ import { markRaw } from 'vue'
 import ItemMixin from './ItemMixin.js'
 import { initializeData } from '../utils/schema/data.js'
 import {
-  assignDeeply,
   deprecate,
   isObject,
   isString,
@@ -10,7 +9,6 @@ import {
 } from '@ditojs/utils'
 import { getResource } from '../utils/resource.js'
 import { getErrorMessage } from '../utils/request.js'
-import { transferUids } from '../utils/uid.js'
 import { LoadingTracker, LoadingSwitch } from '../utils/LoadingTracker.js'
 import DitoContext from '../DitoContext.js'
 
@@ -269,10 +267,9 @@ export default {
               this.dataModel.removeError(this.dataPath, unauthorizedError)
             }
             // Skip applying response data on an edited form: `setData` would
-            // wholesale-replace `loadedData` and clobber any local edits the
-            // user made while the GET was in flight, also in forms that can't
-            // save them. The `'load'` event still fires — the GET *did*
-            // complete; we just chose not to apply it.
+            // overwrite any local edits the user made while the GET was in
+            // flight, also in forms that can't save them. The `'load'` event
+            // still fires, as the GET did complete.
             if (!(this.isForm && this.dataModel.isEdited)) {
               this.setData(response.data)
             }
@@ -444,15 +441,7 @@ export default {
             // Update the underlying data before calling `notify()` or
             // `this.itemLabel`, so id is set after creating new items.
             if (setData && data) {
-              // Preserve the foreign data entries when updating the data.
-              const { foreignData } = this.mainSchemaComponent.filterData(
-                this.data
-              )
-              const savedData = assignDeeply({}, foreignData, data)
-              // Keep the uids of new items, which key their components and
-              // stores, see `transferUids()`.
-              transferUids(this.data, savedData)
-              this.setData(savedData)
+              this.setData(data)
             }
             onSuccess?.()
             await this.emitButtonEvent(button, 'success', {

@@ -12,6 +12,8 @@ describe('DitoComponentInstanceBase and DitoFormInstance', () => {
     expectTypeOf<Instance['dataModel']['isDirty']>().toBeBoolean()
     expectTypeOf<Instance['dataModel']['isEdited']>().toBeBoolean()
     expectTypeOf<Instance['dataModel']['markDirty']>().returns.toBeVoid()
+    expectTypeOf<Instance['dataModel']['mergeFromServer']>()
+      .returns.toEqualTypeOf<object>()
     expectTypeOf<Instance['submit']>().returns.toEqualTypeOf<Promise<boolean>>()
   })
 

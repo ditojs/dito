@@ -2576,6 +2576,15 @@ export interface DitoDataModel {
    * source with its own resource at `data[name]`, once the source saved it.
    */
   markClean(data?: object, name?: string): void
+  /**
+   * Merges `data` from the server, e.g. the response of a save,
+   * into the data in place, so that its objects keep their
+   * identity, along with their uids, item stores, open forms and
+   * errors. The data of sources with their own resource is kept.
+   * Values missing in `data` are removed. Returns the merged
+   * data, which isn't dirty.
+   */
+  mergeFromServer(data: object): object
   /** Sets `data[key]` to `value`, an edit if the value changes. */
   set(data: object, key: string | number, value: any): void
   /** Inserts `item` into `list` at `index`. */
@@ -2761,9 +2770,13 @@ export interface DitoFormInstance<$Item = any>
   /** Clears the loaded data. */
   clearData(): void
   /**
-   * Sets the component's loaded data directly, and
-   * returns it as the component's reactive data,
-   * which can be modified to update it.
+   * Merges `data`, e.g. returned by the server, into
+   * the form's data in place, see
+   * `DitoDataModel.mergeFromServer()`, or sets it if
+   * the form has no data yet. Returns the form's
+   * reactive data, which can be modified to update
+   * it. Forms of items in the data of their parent
+   * set the item there instead, and return it.
    */
   setData(data: any): any
   /**

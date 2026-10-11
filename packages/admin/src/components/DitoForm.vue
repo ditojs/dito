@@ -337,8 +337,8 @@ export default DitoComponent.component('DitoForm', {
         const param = this.meta?.node.param
         const toParam = to.params[param]
         const fromParam = from.params[param]
-        // After submitting a new item, `setData()` replaced it with the created
-        // one, which the form then opens without loading it, see `submit()`.
+        // After submitting a new item, `setData()` merged the created one into
+        // it, which the form then opens without loading it, see `submit()`.
         // A new item that wasn't submitted is still in `createdData`, and is
         // replaced by the loaded item.
         const isOpeningCreatedItem = fromParam === 'create' && !this.createdData
@@ -474,30 +474,28 @@ export default DitoComponent.component('DitoForm', {
 
     setSourceData(data) {
       if (this.sourceData && this.sourceKey !== null) {
-        const { mainSchemaComponent } = this
-        const { localData } = mainSchemaComponent.filterData(data)
         // Keep the uids of new items, which key their components and stores,
         // see `transferUids()`. The applied data is processed from the form's
         // data, which holds them since cloning the item.
-        transferUids(this.data, localData)
+        transferUids(this.data, data)
         // The forms of tree items don't contain their children, which are
         // edited in the tree, so keep the children of the applied item:
         const childrenName = this.sourceSchema.children?.name
         const { sourceItem } = this
         if (
           childrenName &&
-          !(childrenName in localData) &&
+          !(childrenName in data) &&
           sourceItem &&
           childrenName in sourceItem
         ) {
-          localData[childrenName] = sourceItem[childrenName]
+          data[childrenName] = sourceItem[childrenName]
         }
         this.parentRouteComponent.dataModel.set(
           this.sourceData,
           this.sourceKey,
-          localData
+          data
         )
-        mainSchemaComponent.onChange()
+        this.mainSchemaComponent.onChange()
         return true
       }
       return false
@@ -533,8 +531,13 @@ export default DitoComponent.component('DitoForm', {
         this.setSourceData(data)
         return this.sourceItem
       } else {
+        // Merge data from the server into the form's data, e.g. the response
+        // of a save, so that its objects keep their identity:
+        this.loadedData =
+          this.data && data
+            ? this.dataModel.mergeFromServer(data)
+            : data
         this.createdData = null
-        this.loadedData = data
         return this.data
       }
     },
@@ -642,8 +645,8 @@ export default DitoComponent.component('DitoForm', {
       }
       if (success) {
         this.resetValidation()
-        // The saved or applied data isn't dirty, also when it isn't replaced,
-        // e.g. by a response without data, and before the closing below:
+        // The saved or applied data isn't dirty, also without a response with
+        // data, and before the closing below:
         this.ownDataModel.markClean()
         if (closeForm || button.closeForm) {
           this.close()
