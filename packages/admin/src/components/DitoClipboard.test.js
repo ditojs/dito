@@ -1,8 +1,8 @@
 import { vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import appState from '../appState.js'
-import { copyClipboardData } from '../utils/clipboard.js'
-import { mountForm } from '../test/mount.js'
+import { copyClipboardData, getClipboardData } from '../utils/clipboard.js'
+import { mountForm, settle } from '../test/mount.js'
 
 function getNotificationTexts() {
   return [...document.querySelectorAll('.dito-notification')].map(
@@ -90,6 +90,61 @@ describe('DitoClipboard', () => {
     expect(getNotificationTexts().join()).toContain(
       'The data in the clipboard appears to be malformed'
     )
+  })
+
+  // Known bug: the clipboard of nested forms keeps the item ids
+  it.skip('copies the items of nested forms without their ids', async () => {
+    const { admin } = await mountForm({
+      schema: {
+        components: {
+          chapters: {
+            type: 'list',
+            editable: true,
+            itemLabel: 'title',
+            form: {
+              type: 'form',
+              name: 'chapter',
+              clipboard: true,
+              components: {
+                title: { type: 'text' },
+                sections: {
+                  type: 'list',
+                  inlined: true,
+                  form: {
+                    type: 'form',
+                    components: { name: { type: 'text' } }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      data: {
+        chapters: [
+          {
+            id: 7,
+            title: 'Prologue',
+            sections: [
+              { id: 5, name: 'Opening' },
+              { id: 6, name: 'Ending' }
+            ]
+          }
+        ]
+      }
+    })
+    await admin.navigate('/items/1/chapters/0')
+    const form = admin.getRouteComponent(it => it.isForm)
+    await settle(form)
+    await admin.wrapper
+      .find('.dito-clipboard .dito-button--copy')
+      .trigger('click')
+    await flushPromises()
+    // Pasted items are new items, which mustn't carry the ids of others:
+    expect(getClipboardData('chapter')).toEqual({
+      title: 'Prologue',
+      sections: [{ name: 'Opening' }, { name: 'Ending' }]
+    })
   })
 
   it('notifies errors of `clipboard.copy()`', async () => {

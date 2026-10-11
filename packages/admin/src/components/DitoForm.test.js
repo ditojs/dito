@@ -415,6 +415,229 @@ describe('DitoForm', () => {
     })
   })
 
+  describe('applying nested forms', () => {
+    // Mounts a book form whose chapters are edited in nested forms with the
+    // `components`, and opens the form of the `chapter`.
+    async function openChapterForm(components, chapter) {
+      const submitted = []
+      const result = await mountForm({
+        schema: {
+          label: 'Book',
+          components: {
+            title: { type: 'text' },
+            chapters: {
+              type: 'list',
+              editable: true,
+              itemLabel: 'title',
+              columns: { title: {}, wordCount: {} },
+              form: { type: 'form', label: 'Chapter', components }
+            }
+          }
+        },
+        data: { title: 'Emma', chapters: [chapter] },
+        request: ({ data }) => {
+          submitted.push(data)
+          return { data: { id: 1, ...data } }
+        }
+      })
+      await result.admin.navigate('/items/1/chapters/0')
+      const form = result.admin.getRouteComponent(it => it.isForm)
+      await settle(form)
+      return { ...result, form, submitted }
+    }
+
+    // Enters the `title` into the nested `form`, and applies it.
+    async function applyChapterForm(form, title) {
+      const element = new DOMWrapper(form.$el)
+      await enterValue(element.find('input[name$="title"]'), title)
+      await settle(form)
+      await element
+        .find('.dito-buttons--main button[type="submit"]')
+        .trigger('click')
+      await settle(form)
+    }
+
+    // Known bug: applying writes the payload back, dropping values
+    it.skip('keeps the values of the item that the form leaves out', async () => {
+      const { form, data } = await openChapterForm(
+        { title: { type: 'text' } },
+        { id: 7, title: 'Prologue', wordCount: 1200 }
+      )
+      await applyChapterForm(form, 'Opening')
+      expect(data.chapters).toEqual([
+        { id: 7, title: 'Opening', wordCount: 1200 }
+      ])
+    })
+
+    // Known bug: applying writes the payload back, wiping excludes
+    it.skip('keeps the excluded values of the item', async () => {
+      const { form, data } = await openChapterForm(
+        {
+          title: { type: 'text' },
+          note: { type: 'text', exclude: true }
+        },
+        { id: 7, title: 'Prologue', note: 'Draft' }
+      )
+      await applyChapterForm(form, 'Opening')
+      expect(data.chapters).toEqual([
+        { id: 7, title: 'Opening', note: 'Draft' }
+      ])
+    })
+
+    // Known bug: applying cuts related objects down to `{ id }`
+    it.skip('keeps the related objects of the item whole', async () => {
+      const authors = [
+        { id: 1, name: 'Jane' },
+        { id: 2, name: 'Tom' }
+      ]
+      const { form, data } = await openChapterForm(
+        {
+          title: { type: 'text' },
+          author: {
+            type: 'select',
+            relate: true,
+            options: { data: authors, label: 'name' }
+          }
+        },
+        { id: 7, title: 'Prologue', author: { id: 1, name: 'Jane' } }
+      )
+      await applyChapterForm(form, 'Opening')
+      expect(data.chapters).toEqual([
+        { id: 7, title: 'Opening', author: { id: 1, name: 'Jane' } }
+      ])
+    })
+
+    // Known bug: applying calls `process()`, and saving again
+    it.skip('calls `process()` only when the parent is saved', async () => {
+      const { form, data, submit } = await openChapterForm(
+        { title: { type: 'text', process: ({ value }) => `${value}!` } },
+        { id: 7, title: 'Prologue' }
+      )
+      await applyChapterForm(form, 'Opening')
+      expect(data.chapters).toEqual([{ id: 7, title: 'Opening' }])
+      const submittedData = await submit()
+      expect(submittedData.chapters).toEqual([{ id: 7, title: 'Opening!' }])
+    })
+
+    describe('with relations to items in their own data', () => {
+      const chapterComponents = {
+        title: { type: 'text' },
+        sections: {
+          type: 'list',
+          inlined: true,
+          creatable: true,
+          form: { type: 'form', components: { name: { type: 'text' } } }
+        },
+        featured: {
+          type: 'select',
+          relate: true,
+          options: { dataPath: '../sections', label: 'name' }
+        }
+      }
+
+      const chapter = {
+        id: 7,
+        title: 'Prologue',
+        sections: [{ name: 'Opening' }],
+        featured: null
+      }
+
+      // Known bug: options of nested forms read the parent's data
+      it.skip('resolve the options of data paths in the data of the form', async () => {
+        const { form } = await openChapterForm(chapterComponents, chapter)
+        const featured = form.mainSchemaComponent.getComponentByName('featured')
+        const sections = form.mainSchemaComponent.getComponentByName('sections')
+        sections.createItem(sections.forms[0])
+        form.data.sections[1].name = 'Ending'
+        await settle(form)
+        expect(featured.options).toHaveLength(2)
+        expect(featured.options[0]).toBe(form.data.sections[0])
+      })
+
+      // Known bug: selecting writes temporary ids into the parent
+      it.skip(`don't change the data of the parent when cancelled`, async () => {
+        const { form, data } = await openChapterForm(chapterComponents, chapter)
+        const featured = form.mainSchemaComponent.getComponentByName('featured')
+        featured.selectedValue = featured.getValueForOption(featured.options[0])
+        await settle(form)
+        expect(form.data.featured).not.toBe(data.chapters[0].sections[0])
+        form.cancel()
+        await settle(form)
+        expect(data.chapters[0].sections).toEqual([{ name: 'Opening' }])
+      })
+
+      // Known bug: references lose their temporary ids when applied
+      it.skip('send the related items with the ids of their references', async () => {
+        const { form, submit } = await openChapterForm(
+          chapterComponents,
+          chapter
+        )
+        const featured = form.mainSchemaComponent.getComponentByName('featured')
+        featured.selectedValue = featured.getValueForOption(featured.options[0])
+        await settle(form)
+        await new DOMWrapper(form.$el)
+          .find('.dito-buttons--main button[type="submit"]')
+          .trigger('click')
+        await settle(form)
+        const [submittedChapter] = (await submit()).chapters
+        expect(submittedChapter.featured['#ref']).toBeDefined()
+        expect(submittedChapter.sections[0]['#id']).toBe(
+          submittedChapter.featured['#ref']
+        )
+      })
+    })
+  })
+
+  // Known bug: forms of resource lists in new items aren't transient
+  it.skip('edits the items of resource lists in new items transiently', async () => {
+    const admin = await mountAdmin({
+      views: {
+        books: {
+          type: 'view',
+          component: {
+            type: 'list',
+            resource: { path: 'books' },
+            editable: true,
+            creatable: true,
+            form: {
+              type: 'form',
+              components: {
+                title: { type: 'text' },
+                chapters: {
+                  type: 'list',
+                  resource: { path: 'chapters' },
+                  editable: true,
+                  creatable: true,
+                  form: {
+                    type: 'form',
+                    components: { title: { type: 'text' } }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      request: () => ({ data: [] })
+    })
+    await admin.navigate('/books/create')
+    const bookForm = admin.getRouteComponent(it => it.isForm)
+    await settle(bookForm)
+    const chapters = bookForm.mainSchemaComponent.getComponentByName('chapters')
+    // Without the id of the book, the list can't load its chapters:
+    expect(chapters.isTransient).toBe(true)
+    bookForm.data.chapters = [{ title: 'Prologue' }]
+    await settle(bookForm)
+    await admin.navigate('/books/create/chapters/0')
+    const chapterForm = admin.getRouteComponent(it => it.isForm)
+    await settle(chapterForm)
+    expect(chapterForm.isTransient).toBe(true)
+    expect(chapterForm.data).toEqual({ title: 'Prologue' })
+    expect(admin.request).not.toHaveBeenCalledWith(
+      expect.objectContaining({ url: '/books/chapters/0' })
+    )
+  })
+
   describe('submit() of new items', () => {
     it('opens the created item unless the form closes', async () => {
       const { admin, submit, routeComponent } = await mountForm({

@@ -131,6 +131,60 @@ describe('RouteMixin', () => {
       expect(admin.router.currentRoute.value.path).toBe('/authors')
     })
 
+    // Known bug: views keep component dirty flags after submits
+    it.skip(`doesn't ask when leaving a view after submitting its changes`, async () => {
+      const confirm = stubConfirm(true)
+      const books = [
+        { id: 1, title: 'Dune' },
+        { id: 2, title: 'Emma' }
+      ]
+      const admin = await mountAdmin({
+        views: {
+          books: {
+            type: 'view',
+            component: {
+              type: 'list',
+              resource: { path: 'books' },
+              draggable: true,
+              orderKey: 'position',
+              columns: { title: {} },
+              buttons: {
+                saveOrder: {
+                  type: 'submit',
+                  label: 'Save Order',
+                  resource: { path: 'order', method: 'post' }
+                }
+              }
+            }
+          },
+          authors: {
+            type: 'view',
+            components: { name: { type: 'text' } }
+          }
+        },
+        request: ({ method = 'get', url, data }) =>
+          method === 'get' && url === '/books'
+            ? { data: books }
+            : { data }
+      })
+      await admin.navigate('/books')
+      const view = admin.getRouteComponent(it => it.isView)
+      await admin.wrapper
+        .findAll('.dito-button--drag')[0]
+        .trigger('keydown', { key: 'ArrowDown', altKey: true })
+      await settle(view)
+      expect(view.isDirty).toBe(true)
+      await admin.wrapper.find('button[id$="saveOrder"]').trigger('click')
+      await settle(view)
+      expect(admin.request).toHaveBeenCalledWith(
+        expect.objectContaining({ method: 'post', url: '/books/order' })
+      )
+      expect(view.isDirty).toBe(false)
+      await admin.navigate('/authors')
+      expect(confirm).not.toHaveBeenCalled()
+      expect(admin.router.currentRoute.value.path).toBe('/authors')
+    })
+
     it(`doesn't ask when redirecting to the created item`, async () => {
       const confirm = stubConfirm(false)
       const { admin, wrapper, routeComponent, submit } = await mountForm({
