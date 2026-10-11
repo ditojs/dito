@@ -251,6 +251,27 @@ class SharedCookbooks extends ModelController<any> {
   }
 }
 
+// Only routes and authorizes `member.get`, so its `patch` authorization is
+// open, which must not open the changes of its relations.
+class ReadOnlyCookbooks extends ModelController<any> {
+  override modelClass = Cookbook
+
+  override member: any = {
+    allow: ['get'],
+    authorize: {
+      get: 'admin'
+    }
+  }
+
+  override relations: any = {
+    recipes: {
+      relation: {
+        allow: ['get', 'post']
+      }
+    }
+  }
+}
+
 class Recipes extends ModelController<any> {
   override modelClass = Recipe
 
@@ -389,7 +410,14 @@ class Recipes extends ModelController<any> {
 describe('Controller authorization', () => {
   const app = createTestApp({
     models: { Member, Cookbook, Recipe, Review },
-    controllers: { Members, Recipes, RecipeTitles, Cookbooks, SharedCookbooks },
+    controllers: {
+      Members,
+      Recipes,
+      RecipeTitles,
+      Cookbooks,
+      SharedCookbooks,
+      ReadOnlyCookbooks
+    },
     // Resolve the requesting user from a header, in place of a session.
     async middleware(ctx: any, next: any) {
       const id = ctx.get('x-member-id')
@@ -731,6 +759,23 @@ describe('Controller authorization', () => {
       ).toBe(
         401
       )
+    })
+
+    it('also requires the parent `get` authorization for changes', async () => {
+      const { cookbook } = await createCookbook()
+      const stew = await Recipe.query().insert({
+        title: 'Stew',
+        ownerId: cook.id
+      })
+      const path = `/read-only-cookbooks/${cookbook.id}/recipes`
+      const body = [{ id: stew.id }]
+      expect((await request(path, null)).status).toBe(401)
+      expect((await request(path, null, { method: 'POST', body })).status).toBe(
+        401
+      )
+      expect((await Recipe.query().findById(stew.id))!.cookbookId).toBe(null)
+      const related = await request(path, admin, { method: 'POST', body })
+      expect(related.status).toBe(201)
     })
 
     it('authorizes the parent before looking it up', async () => {

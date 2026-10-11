@@ -71,19 +71,19 @@ export class RelationController extends CollectionController {
 
   // @override
   async handleRequestAuthorization(ctx, method, authorize) {
-    // Relations are part of their parent member: Reading them requires its
-    // `get` authorization, changing them its `patch` authorization, unless the
-    // relation authorizes the change itself. Like the parent's own member
-    // actions, authorize before looking up the member, so that requests learn
-    // nothing about members they aren't authorized for.
+    // Relations are part of their parent member: Accessing them requires its
+    // `get` authorization, changing them also its `patch` authorization,
+    // unless the relation authorizes the change itself. Like the parent's own
+    // member actions, authorize before looking up the member, so that requests
+    // learn nothing about members they aren't authorized for.
     const isReading = method === 'get'
     const isAuthorizedByRelation = authorize != null
     const { parent } = this
     const parentCtx = parent.getContextWithMemberId(ctx)
-    await parent.authorizeMember(
-      parentCtx,
-      isReading || isAuthorizedByRelation ? 'get' : 'patch'
-    )
+    await parent.authorizeMember(parentCtx, 'get')
+    if (!isReading && !isAuthorizedByRelation) {
+      await parent.authorizeMember(parentCtx, 'patch')
+    }
     if (!(await parent.getMember(parentCtx))) {
       throw new NotFoundError()
     }
