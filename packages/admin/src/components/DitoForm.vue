@@ -53,9 +53,10 @@
 <script>
 import { markRaw } from 'vue'
 import {
-  clone,
+  isArray,
   capitalize,
   assignDeeply,
+  equals,
   escapeHtml
 } from '@ditojs/utils'
 import DitoComponent from '../DitoComponent.js'
@@ -71,7 +72,9 @@ import { getComponentPathByDataPath } from '../utils/schema/data.js'
 import { appendDataPath } from '../utils/data.js'
 import { resolvePath } from '../utils/path.js'
 import { getErrorMessage } from '../utils/request.js'
-import { transferUids } from '../utils/uid.js'
+import { cloneWithUids, getOriginal } from '../utils/uid.js'
+import { mergeData } from '../utils/mergeData.ts'
+import { createDraftRoot } from '../utils/draftRoot.ts'
 import { DataModel } from '../utils/DataModel.js'
 import { transientNote } from '../utils/dialogs.js'
 import { getTextFromHtml } from '../utils/html.js'
@@ -83,7 +86,9 @@ export default DitoComponent.component('DitoForm', {
   data() {
     return {
       createdData: null,
-      clonedData: undefined
+      // The copy of the item in the data of the parent that the form edits,
+      // unless it mutates the item, see `setupSourceItem()`:
+      draft: null
     }
   },
 
@@ -211,27 +216,9 @@ export default DitoComponent.component('DitoForm', {
       //    directly loading an editing root).
       // 3. The data inherited from the parent, which itself may be either a
       //    view that loaded the data, or a form that either loaded the data, or
-      //    also inherited it from its parent. Note that we use a clone of it,
-      //    so, data changes aren't applied until setSourceData() is called.
+      //    also inherited it from its parent: a draft of the item, which is
+      //    merged into it when it's applied, see `submitTransient()`.
       return this.createdData || this.loadedData || this.inheritedData || null
-    },
-
-    // The view that the form is nested in: the closest parent route component
-    // that is a view, past the parent forms, and not the menus around the view,
-    // which are rendered by views as well.
-    parentViewComponent() {
-      let component = this.parentRouteComponent
-      while (component && !component.isView) {
-        component = component.parentRouteComponent
-      }
-      return component
-    },
-
-    // The route component that holds the root data of the form's data path:
-    // the closest one that provides its own data, or else the view, which
-    // holds the data of its components also when they have no resources.
-    dataRootComponent() {
-      return this.dataComponent ?? this.parentViewComponent
     },
 
     dataPath() {
@@ -245,10 +232,16 @@ export default DitoComponent.component('DitoForm', {
     },
 
     // @override DitoMixin.rootData()
-    // The data that `dataPath` is relative to, also in views without resources,
-    // which aren't data components.
+    // The data that `dataPath` is relative to. Forms of items in the data of
+    // their parent read the parent's root data, with their draft in place of
+    // the item, and read-only elsewhere:
     rootData() {
-      return this.dataRootComponent?.data
+      const { data, parentRouteComponent } = this
+      return this.isTransient
+        ? this.isMutating || !this.sourceData
+          ? parentRouteComponent.rootData
+          : createDraftRoot(parentRouteComponent.rootData, this.dataPath, data)
+        : data
     },
 
     componentPath() {
@@ -266,7 +259,7 @@ export default DitoComponent.component('DitoForm', {
             {
               componentPath: parentRouteComponent.componentPath,
               component: this,
-              rootData: this.rootData
+              rootData: parentRouteComponent.rootData
             }
           )
         : ''
@@ -301,14 +294,11 @@ export default DitoComponent.component('DitoForm', {
     },
 
     inheritedData() {
-      // Data inherited from parent, and cloned to protect against reactive
-      // changes until changes are applied through setSourceData(), unless
-      // `sourceSchema.mutate` is true, in which case data is mutated directly.
-      // See the `sourceItem` watcher.
+      // With `sourceSchema.mutate`, the form edits the item directly:
       return this.isTransient
         ? this.isMutating
           ? this.sourceItem
-          : this.clonedData
+          : this.draft
         : undefined
     },
 
@@ -376,7 +366,7 @@ export default DitoComponent.component('DitoForm', {
         canSave: () => hasSubmitButton(this.buttonSchemas)
       })
     )
-    // Watch the item after the model is created, as the copy takes over the
+    // Watch the item after the model is created, as the draft takes over the
     // item's errors:
     this.$watch('sourceItem', this.setupSourceItem, { immediate: true })
   },
@@ -400,20 +390,35 @@ export default DitoComponent.component('DitoForm', {
 
     setupSourceItem(item) {
       if (this.isTransient) {
-        if (!this.isMutating) {
-          // Edit a copy of the inherited item, so that changes are only
-          // applied through setSourceData(). Copy it again whenever the item
-          // itself is replaced, e.g. after applying the changes. The copy
-          // keeps the uids of the new items, see `transferUids()`, and the
-          // errors of the item, e.g. of the server for the parent's data.
-          const clonedData = clone(item)
-          transferUids(item, clonedData)
-          this.ownDataModel.copyErrors(
-            this.parentRouteComponent.dataModel,
-            item,
-            clonedData
-          )
-          this.clonedData = clonedData
+        const original = getOriginal(this.draft)
+        if (!this.isMutating && item !== original) {
+          const { sourceData } = this
+          const index =
+            original && isArray(sourceData)
+              ? sourceData.indexOf(original)
+              : -1
+          if (index !== -1) {
+            // Follow the item to its new index, e.g. when an earlier one was
+            // removed, as the form holds it by its identity. Its parameters
+            // change first, so that the form isn't left on the way, see
+            // `beforeRouteChange()`:
+            const { name, params, query, hash } = this.$route
+            const routeParams = {
+              ...params,
+              [this.meta.node.param]: String(index)
+            }
+            this.routeParams = routeParams
+            this.$router.replace({ name, params: routeParams, query, hash })
+          } else {
+            // Edit a draft of the item, with its uids and errors, e.g. of the
+            // server for the parent's data, see `submitTransient()`. Tree items
+            // share their children with the tree, which edits them:
+            const children = item?.[this.sourceSchema.children?.name]
+            this.draft = item
+              ? cloneWithUids(item, { transferables: [children] })
+              : null
+            this.copyErrors()
+          }
         }
         if (
           item === null &&
@@ -427,17 +432,21 @@ export default DitoComponent.component('DitoForm', {
       }
     },
 
-    // Reveals the errors of the form's data, see `DitoSchema.revealErrors()`.
-    // Forms that edit a copy of their item take over its errors first, also
-    // when they're open already, e.g. when the parent shows its errors.
-    revealErrors() {
-      if (this.isTransient && !this.isMutating) {
+    // Copies the errors of the item in the parent's model into the draft.
+    copyErrors() {
+      if (this.draft) {
         this.ownDataModel.copyErrors(
           this.parentRouteComponent.dataModel,
-          this.sourceItem,
-          this.clonedData
+          this.draft
         )
       }
+    },
+
+    // Reveals the errors of the form's data, see `DitoSchema.revealErrors()`.
+    // Drafts take over the errors of their item first, also when they're open
+    // already, e.g. when the parent shows its errors.
+    revealErrors() {
+      this.copyErrors()
       return this.mainSchemaComponent.revealErrors()
     },
 
@@ -472,51 +481,6 @@ export default DitoComponent.component('DitoForm', {
       )
     },
 
-    setSourceData(data) {
-      if (this.sourceData && this.sourceKey !== null) {
-        // Keep the uids of new items, which key their components and stores,
-        // see `transferUids()`. The applied data is processed from the form's
-        // data, which holds them since cloning the item.
-        transferUids(this.data, data)
-        // The forms of tree items don't contain their children, which are
-        // edited in the tree, so keep the children of the applied item:
-        const childrenName = this.sourceSchema.children?.name
-        const { sourceItem } = this
-        if (
-          childrenName &&
-          !(childrenName in data) &&
-          sourceItem &&
-          childrenName in sourceItem
-        ) {
-          data[childrenName] = sourceItem[childrenName]
-        }
-        this.parentRouteComponent.dataModel.set(
-          this.sourceData,
-          this.sourceKey,
-          data
-        )
-        this.mainSchemaComponent.onChange()
-        return true
-      }
-      return false
-    },
-
-    addSourceData(data) {
-      const { sourceData } = this
-      if (isObjectSource(this.sourceSchema)) {
-        return this.setSourceData(data)
-      } else if (sourceData) {
-        this.parentRouteComponent.dataModel.insert(
-          sourceData,
-          sourceData.length,
-          data
-        )
-        return true
-      } else {
-        return false
-      }
-    },
-
     // Required by ResourceMixin, see its contract.
     clearData() {
       this.setData(null)
@@ -524,12 +488,17 @@ export default DitoComponent.component('DitoForm', {
 
     // Required by ResourceMixin, see its contract.
     setData(data) {
-      // setData() is called after submit when data has changed.
       if (this.isTransient) {
-        // For components with transient data, modify this.sourceData, and
-        // return the item stored there, as the form's own data is a copy.
-        this.setSourceData(data)
-        return this.sourceItem
+        // Forms of items in the data of their parent merge the data into the
+        // item like an edit, which reaches the parent once the draft is
+        // applied, or right away if they mutate the item:
+        if (!equals(this.data, data)) {
+          mergeData(this.schema, this.data, data, {
+            component: this,
+            shouldKeepSourcesWithResource: true
+          })
+          this.dataModel.markDirty()
+        }
       } else {
         // Merge data from the server into the form's data, e.g. the response
         // of a save, so that its objects keep their identity:
@@ -538,8 +507,8 @@ export default DitoComponent.component('DitoForm', {
             ? this.dataModel.mergeFromServer(data)
             : data
         this.createdData = null
-        return this.data
       }
+      return this.data
     },
 
     async cancel() {
@@ -599,10 +568,9 @@ export default DitoComponent.component('DitoForm', {
       })
       resource = buttonResource || resource
       method = resource?.method || method
-      const data = this.getPayloadData(button, method)
       let success
       if (!buttonResource && this.isTransient) {
-        success = await this.submitTransient(button, resource, method, data, {
+        success = await this.submitTransient(button, {
           ...callbacks,
           notifySuccess: () => {
             const verb = getVerb(false)
@@ -623,6 +591,7 @@ export default DitoComponent.component('DitoForm', {
           notifyError: error => notifySubmitError(error)
         })
       } else {
+        const data = this.getPayloadData(button, method)
         success = await this.submitResource(button, resource, method, data, {
           ...callbacks,
           setData: true,
@@ -646,8 +615,11 @@ export default DitoComponent.component('DitoForm', {
       if (success) {
         this.resetValidation()
         // The saved or applied data isn't dirty, also without a response with
-        // data, and before the closing below:
-        this.ownDataModel.markClean()
+        // data, and before the closing below. Drafts hold the responses of
+        // buttons with resources like edits, see `setData()`:
+        if (!this.isTransient || !buttonResource) {
+          this.ownDataModel.markClean()
+        }
         if (closeForm || button.closeForm) {
           this.close()
         } else if (this.isCreating) {
@@ -663,17 +635,30 @@ export default DitoComponent.component('DitoForm', {
       return success
     },
 
-    async submitTransient(button, _resource, _method, data, {
+    async submitTransient(button, {
       onSuccess,
       onError,
       notifySuccess,
       notifyError
     }) {
-      // Handle the default "submitting" of transient, nested data:
-      const success = this.isCreating
-        ? this.addSourceData(data)
-        : this.setSourceData(data)
+      // Merge the draft into its item in the parent's data, or add it as a new
+      // item. A copy is applied, so that the parent never shares the draft's
+      // data, also while the form stays open:
+      const { sourceData, sourceKey, sourceSchema } = this
+      const parentModel = this.parentRouteComponent.dataModel
+      const item = cloneWithUids(this.data)
+      const success = !!sourceData
       if (success) {
+        if (this.isCreating && !isObjectSource(sourceSchema)) {
+          parentModel.insert(sourceData, sourceData.length, item)
+        } else {
+          if (this.isCreating) {
+            parentModel.set(sourceData, sourceKey, item)
+          } else {
+            parentModel.merge(sourceData, sourceKey, item, sourceSchema)
+          }
+          this.mainSchemaComponent.onChange()
+        }
         onSuccess?.()
         await this.emitButtonEvent(button, 'success', {
           notify: notifySuccess

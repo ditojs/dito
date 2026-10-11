@@ -76,6 +76,23 @@ which components write the data through, as `component.dataModel`.
   not only for mounted components. `dataModel.mergeFromServer(data)` does the
   same for other code. Saving still clears the errors of the values.
 - `schemaComponent.filterData()` is removed.
+- Nested forms without `mutate: true` edit a draft of their item, which
+  applying merges into the item in place, instead of writing the data
+  processed for the server back into the parent: values the form leaves out
+  or excludes stay, related objects stay whole, and `process()` only runs when
+  the parent is saved. New items in the draft keep their uids, and Cancel
+  leaves the parent untouched, also temporary ids of references.
+- In nested forms, `rootItem`, `parentItem` and the options and computed
+  values that read data paths see the parent's data with the draft in place
+  of the item. Everything outside the item is read-only there: writes warn
+  and are ignored. Forms with `mutate: true` edit the parent's data directly,
+  as before.
+- `formComponent.setData(data)` in nested forms merges the data into the
+  draft like an edit: it reaches the parent once the form is applied, and is
+  discarded on Cancel, which asks to discard it first. So are the responses of
+  their buttons with resources.
+- Open nested forms keep their item when items before it are added, removed
+  or moved, and follow it to its new index in the URL.
 
 ### Validation
 

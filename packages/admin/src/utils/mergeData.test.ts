@@ -1,5 +1,6 @@
 import { mergeData } from './mergeData.ts'
 import { getItemUid } from './schema/data.js'
+import { cloneWithUids } from './uid.js'
 import { registerTypeComponent } from './schema/types.js'
 
 // Register minimal type options, as the actual type components can't be
@@ -274,6 +275,24 @@ describe('mergeData()', () => {
     expect(target.chapters).toBe(chapters)
     mergeData(resourceSchema, target, { title: 'Saved' })
     expect(target).toEqual({ title: 'Saved' })
+  })
+
+  it('matches the items of copies by their uids', () => {
+    const one = { title: 'One' }
+    const two = { title: 'Two' }
+    const target = { chapters: [one, two] }
+    const copy = cloneWithUids(target)
+    copy.chapters.reverse()
+    copy.chapters[0].title = 'Second'
+    copy.chapters.push({ title: 'Three' })
+    mergeData(schema, target, copy, { shouldMatchUids: true })
+    expect(target.chapters).toEqual([
+      { title: 'Second' },
+      { title: 'One' },
+      { title: 'Three' }
+    ])
+    expect(target.chapters[0]).toBe(two)
+    expect(target.chapters[1]).toBe(one)
   })
 
   it('keeps the uids of new items', () => {

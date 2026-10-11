@@ -198,12 +198,15 @@ export default {
       return getParentComponent(this, 'resourceComponent')
     },
 
-    // Returns the data of the first component in the chain of parents that
-    // loads its own data from an associated API resource, or else the root
-    // data of the route component, e.g. the data of the view when it has no
-    // resource, see `DitoView.rootData()` and `DitoForm.rootData()`.
+    // Returns the data of the source with its own resource that the component
+    // is in, or else the root data of the route component, e.g. the data of
+    // the view when it has no resource, or the draft root of a nested form,
+    // see `DitoView.rootData()` and `DitoForm.rootData()`.
     rootData() {
-      return this.dataComponent?.data ?? this.routeComponent?.rootData
+      const { dataComponent } = this
+      return dataComponent && dataComponent !== dataComponent.routeComponent
+        ? dataComponent.data
+        : this.routeComponent?.rootData
     }
   },
 

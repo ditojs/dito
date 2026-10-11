@@ -3,6 +3,7 @@ import { reactive, ref, toRaw, nextTick } from 'vue'
 import { isPlainObject } from '@ditojs/utils'
 import { registerTypeComponent } from './schema/types.js'
 import { DataModel } from './DataModel.js'
+import { cloneWithUids } from './uid.js'
 
 // `setupForm()` needs the admin's API, see `getFormSchemas()`:
 vi.mock('./schema/setup.js', () => ({ setupForm: async form => form }))
@@ -1112,6 +1113,60 @@ describe('DataModel', () => {
     })
   })
 
+  describe('merge()', () => {
+    const chapterList = {
+      type: 'list',
+      form: {
+        type: 'form',
+        components: {
+          title: { type: 'text' },
+          notes: {
+            type: 'list',
+            form: { type: 'form', components: { text: { type: 'text' } } }
+          }
+        }
+      }
+    }
+    const schema = { type: 'form', components: { chapters: chapterList } }
+
+    it('merges copies into the item in place, matching their uids', () => {
+      const { dataModel, data } = createDataModel(schema, {
+        chapters: [{ title: 'One', notes: [{ text: 'A' }, { text: 'B' }] }]
+      })
+      const [chapter] = data.chapters
+      const [first, second] = chapter.notes
+      const draft = cloneWithUids(chapter)
+      draft.title = 'First'
+      draft.notes.reverse()
+      draft.notes.push({ text: 'C' })
+      dataModel.merge(data.chapters, 0, draft, chapterList)
+      expect(data.chapters[0]).toBe(chapter)
+      expect(chapter.notes).toEqual([
+        { text: 'B' },
+        { text: 'A' },
+        { text: 'C' }
+      ])
+      expect(chapter.notes[0]).toBe(second)
+      expect(chapter.notes[1]).toBe(first)
+      expect(dataModel.isDirty).toBe(true)
+      dataModel.stop()
+    })
+
+    it(`doesn't mark the data dirty for unchanged copies`, () => {
+      const { dataModel, data } = createDataModel(schema, {
+        chapters: [{ title: 'One', notes: [] }]
+      })
+      dataModel.merge(
+        data.chapters,
+        0,
+        cloneWithUids(data.chapters[0]),
+        chapterList
+      )
+      expect(dataModel.isDirty).toBe(false)
+      dataModel.stop()
+    })
+  })
+
   describe('errors', () => {
     const schema = {
       type: 'form',
@@ -1141,6 +1196,19 @@ describe('DataModel', () => {
         tags: ['classic']
       })
     const tooShort = [{ message: 'is too short' }]
+
+    it('copies the errors of the originals of copies', () => {
+      const { dataModel } = createBook()
+      dataModel.setErrors('chapters/1/title', tooShort)
+      const draft = cloneWithUids(dataModel.getData())
+      draft.chapters.reverse()
+      const { dataModel: draftModel } = createDataModel(schema, draft)
+      draftModel.copyErrors(dataModel, draftModel.getData())
+      expect(draftModel.getErrors('chapters/0/title')).toEqual(tooShort)
+      expect(draftModel.getErrors('chapters/1/title')).toBe(null)
+      dataModel.stop()
+      draftModel.stop()
+    })
 
     it('keeps the errors of list items when they move', () => {
       const { dataModel, data } = createBook()
