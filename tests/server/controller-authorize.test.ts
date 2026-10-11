@@ -19,6 +19,14 @@ class Member extends UserModel {
       items: { type: 'string' }
     }
   }
+
+  static override relations: any = {
+    recipes: {
+      relation: 'hasMany',
+      from: 'Member.id',
+      to: 'Recipe.ownerId'
+    }
+  }
 }
 
 class Cookbook extends Model {
@@ -43,6 +51,14 @@ class Cookbook extends Model {
 
   static override scopes: ModelScopes<Cookbook> = {
     published: query => query.where('published', true)
+  }
+
+  static override relations: any = {
+    recipes: {
+      relation: 'hasMany',
+      from: 'Cookbook.id',
+      to: 'Recipe.cookbookId'
+    }
   }
 
   $hasOwner(user: Member) {
@@ -125,6 +141,113 @@ class Members extends ModelController<any> {
   override member: any = {
     allow: ['get', 'patch'],
     authorize: ['$self', 'admin']
+  }
+
+  // Relations are authorized for their parent member first, here through the
+  // member-level `$self` setting.
+  override relations: any = {
+    recipes: {
+      relation: {
+        allow: ['get']
+      }
+    }
+  }
+}
+
+// Selects only some columns in `member.get`, which must not affect queries of
+// the relations.
+class RecipeTitles extends ModelController<any> {
+  override modelClass = Recipe
+  override authorize: any = 'cook'
+
+  override member: any = {
+    allow: ['get'],
+    get(this: any, ctx: any, modify: any) {
+      return this.controller.fetchMember(ctx, {
+        id: ctx.memberId,
+        modify: (query: any) => {
+          query.select('id', 'title', 'ownerId')
+          modify?.(query)
+        }
+      })
+    }
+  }
+
+  override relations: any = {
+    cookbook: {
+      relation: {
+        'allow': [],
+        'get published-title': {
+          parameters: {
+            cookbook: {
+              from: 'member'
+            }
+          },
+          handler(ctx: any, { cookbook }: any) {
+            return { title: cookbook.title }
+          }
+        }
+      }
+    }
+  }
+}
+
+class Cookbooks extends ModelController<any> {
+  override modelClass = Cookbook
+
+  // Members of hidden parents also hide their relations.
+  override scope = 'published'
+
+  // `$owner` is checked against the cookbook, also for its relations.
+  override authorize: any = ['$owner', 'admin']
+
+  override collection: any = {
+    allow: ['get'],
+    authorize: 'admin'
+  }
+
+  override member: any = {
+    allow: ['get', 'patch'],
+    authorize: {
+      patch: 'admin'
+    }
+  }
+
+  override relations: any = {
+    recipes: {
+      relation: {
+        allow: ['get', 'post']
+      },
+      member: {
+        allow: ['get']
+      }
+    }
+  }
+}
+
+// Authorizes relating recipes itself, so that relating only requires the
+// cookbook's `get` authorization, not its `patch` authorization.
+class SharedCookbooks extends ModelController<any> {
+  override modelClass = Cookbook
+  override scope = 'published'
+  override authorize: any = ['$owner', 'admin']
+
+  override member: any = {
+    allow: ['get', 'patch'],
+    authorize: {
+      patch: 'admin'
+    }
+  }
+
+  override relations: any = {
+    recipes: {
+      relation: {
+        allow: ['get', 'post'],
+        authorize: {
+          post: 'cook'
+        }
+      }
+    }
   }
 }
 
@@ -266,7 +389,7 @@ class Recipes extends ModelController<any> {
 describe('Controller authorization', () => {
   const app = createTestApp({
     models: { Member, Cookbook, Recipe, Review },
-    controllers: { Members, Recipes },
+    controllers: { Members, Recipes, RecipeTitles, Cookbooks, SharedCookbooks },
     // Resolve the requesting user from a header, in place of a session.
     async middleware(ctx: any, next: any) {
       const id = ctx.get('x-member-id')
@@ -521,6 +644,117 @@ describe('Controller authorization', () => {
       expect(response.status).toBe(200)
       expect(response.data).toEqual({ title: 'Soups' })
       expect((await request(`${path}?id=${other.id}`, cook)).status).toBe(404)
+    })
+  })
+
+  describe('relation authorization', () => {
+    const createCookbook = async (published = true) => {
+      const cookbook = await Cookbook.query().insert({
+        title: 'Soups',
+        ownerId: cook.id,
+        published
+      })
+      const recipe = await Recipe.query().insert({
+        title: 'Soup',
+        ownerId: cook.id,
+        cookbookId: cookbook.id
+      })
+      return { cookbook, recipe }
+    }
+
+    it('authorizes relations like the `get` action of their parent', async () => {
+      await Recipe.query().insert({ title: 'Stew', ownerId: guest.id })
+      const path = `/members/${guest.id}/recipes`
+      expect((await request(path, null)).status).toBe(401)
+      expect((await request(path, cook)).status).toBe(401)
+      const own = await request(path, guest)
+      expect(own.status).toBe(200)
+      expect(own.data).toMatchObject([{ title: 'Stew' }])
+      expect((await request(path, admin)).status).toBe(200)
+    })
+
+    it('falls back to the controller-level `authorize` setting', async () => {
+      const { recipe } = await createCookbook()
+      const path = `/recipes/${recipe.id}/cookbook/published-title`
+      expect((await request(path, null)).status).toBe(401)
+      expect((await request(path, guest)).status).toBe(401)
+      expect((await request(path, cook)).status).toBe(200)
+    })
+
+    it('checks `$owner` against the parent member', async () => {
+      const { cookbook, recipe } = await createCookbook()
+      const path = `/cookbooks/${cookbook.id}/recipes`
+      expect((await request(path, guest)).status).toBe(401)
+      const list = await request(path, cook)
+      expect(list.status).toBe(200)
+      expect(list.data).toMatchObject([{ title: 'Soup' }])
+      const member = await request(`${path}/${recipe.id}`, cook)
+      expect(member.status).toBe(200)
+      expect((await request(path, admin)).status).toBe(200)
+    })
+
+    it('authorizes relation changes like the `patch` action of their parent', async () => {
+      const { cookbook } = await createCookbook()
+      const stew = await Recipe.query().insert({
+        title: 'Stew',
+        ownerId: cook.id
+      })
+      const path = `/cookbooks/${cookbook.id}/recipes`
+      const body = [{ id: stew.id }]
+      const denied = await request(path, cook, { method: 'POST', body })
+      expect(denied.status).toBe(401)
+      expect((await Recipe.query().findById(stew.id))!.cookbookId).toBe(null)
+      const related = await request(path, admin, { method: 'POST', body })
+      expect(related.status).toBe(201)
+      expect((await Recipe.query().findById(stew.id))!.cookbookId).toBe(
+        cookbook.id
+      )
+    })
+
+    it('authorizes changes that relations authorize themselves like the `get` action of their parent', async () => {
+      const { cookbook } = await createCookbook()
+      const stew = await Recipe.query().insert({
+        title: 'Stew',
+        ownerId: cook.id
+      })
+      const body = [{ id: stew.id }]
+      // The owner may read the cookbook but not patch it, and is a cook.
+      const path = `/shared-cookbooks/${cookbook.id}/recipes`
+      const related = await request(path, cook, { method: 'POST', body })
+      expect(related.status).toBe(201)
+      expect((await Recipe.query().findById(stew.id))!.cookbookId).toBe(
+        cookbook.id
+      )
+      // Users who may not read the cookbook still can't relate.
+      expect(
+        (await request(path, guest, { method: 'POST', body })).status
+      ).toBe(
+        401
+      )
+    })
+
+    it('authorizes the parent before looking it up', async () => {
+      const path = '/cookbooks/999999/recipes'
+      expect((await request(path, null)).status).toBe(401)
+      expect((await request(path, admin)).status).toBe(404)
+    })
+
+    it('queries relations independently of the parent `member.get`', async () => {
+      const { cookbook, recipe } = await createCookbook()
+      // `RecipeTitles.member.get` only selects the ids and titles, without the
+      // foreign key of the `cookbook` relation.
+      const response = await request(
+        `/recipe-titles/${recipe.id}/cookbook/published-title`,
+        cook
+      )
+      expect(response.status).toBe(200)
+      expect(response.data).toEqual({ title: cookbook.title })
+    })
+
+    it('hides the relations of parents hidden by their scope', async () => {
+      const { cookbook } = await createCookbook(false)
+      const path = `/cookbooks/${cookbook.id}/recipes`
+      expect((await request(path, admin)).status).toBe(404)
     })
   })
 

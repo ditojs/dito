@@ -1,6 +1,6 @@
 import { isArray, asArray } from '@ditojs/utils'
 import { CollectionController, getModify } from './CollectionController.js'
-import { ControllerError } from '../errors/index.js'
+import { ControllerError, NotFoundError } from '../errors/index.js'
 import { setupPropertyInheritance } from '../utils/object.js'
 import { getScope } from '../utils/scope.js'
 
@@ -67,6 +67,26 @@ export class RelationController extends CollectionController {
       super.inheritValues(type)
     )
     return values
+  }
+
+  // @override
+  async handleRequestAuthorization(ctx, method, authorize) {
+    // Relations are part of their parent member: Reading them requires its
+    // `get` authorization, changing them its `patch` authorization, unless the
+    // relation authorizes the change itself. Like the parent's own member
+    // actions, authorize before looking up the member, so that requests learn
+    // nothing about members they aren't authorized for.
+    const isReading = method === 'get'
+    const isAuthorizedByRelation = authorize != null
+    const { parent } = this
+    const parentCtx = parent.getContextWithMemberId(ctx)
+    await parent.authorizeMember(
+      parentCtx,
+      isReading || isAuthorizedByRelation ? 'get' : 'patch'
+    )
+    if (!(await parent.getMember(parentCtx))) {
+      throw new NotFoundError()
+    }
   }
 
   // @override

@@ -631,6 +631,22 @@ not the owners of their members.
 See [Model Relations](./model-relations.md) for
 more information on the relation's `owner` setting.
 
+Relations are part of their parent member, so their requests are authorized for
+it first: Reading a relation requires the authorization of the parent's `get`
+member action, and changing it the one of its `patch` member action, also when
+`allow` doesn't route these actions. `get` requests read the relation, all other
+requests change it, including asset uploads. Changes that the relation
+authorizes itself, through an `authorize` setting of its own for the action,
+only require the parent's `get` authorization, e.g. comments that anyone may add
+to posts that only their authors may edit.
+
+As for the parent's own member actions, the parent is authorized before it is
+looked up, and `'$owner'` and `'$self'` refer to the parent member. Then the
+parent member needs to be found like its own member routes find it, through
+`member.get` and the parent controller's scope, or the request responds with a
+404 error. The relation's own `authorize` settings apply afterwards, to its
+related models.
+
 One-to-one relations have no member ids, so the single related model serves as
 the member of their `relation` actions: `'$owner'` authorizations check it, and
 `from: 'member'` parameters receive it. Actions that resolve it this way
@@ -669,6 +685,36 @@ class MyModels extends ModelController {
       },
       member: {
         allow: ['get']
+      }
+    }
+  }
+}
+```
+
+A relation that authorizes its changes itself, so that they only require the
+parent's `get` authorization:
+
+```js
+class Posts extends ModelController {
+  modelClass = Post
+
+  member = {
+    allow: ['get', 'patch'],
+    authorize: {
+      // Anyone may read posts, only their authors may edit them:
+      get: true,
+      patch: '$owner'
+    }
+  }
+
+  relations = {
+    comments: {
+      relation: {
+        allow: ['get', 'post'],
+        // Users with the `member` role may add comments to the posts:
+        authorize: {
+          post: 'member'
+        }
       }
     }
   }
