@@ -394,6 +394,79 @@ describe('DitoSchema', () => {
       expect(schemaComponent.selectedTab).toBe('planning')
     })
 
+    // Mounts an item form with the tabs `details` and `planning`, the latter
+    // holding a tree list whose forms have the tabs `pageTabs`, opens the
+    // form of its page and counts the route's replacements, stopping them
+    // after a few so that loops between the forms end.
+    async function openTabbedPageForm(pageTabs) {
+      const tabs = Object.fromEntries(
+        pageTabs.map(name => [
+          name,
+          { type: 'tab', components: { [name]: { type: 'text' } } }
+        ])
+      )
+      const { admin, schemaComponent, wrapper } = await mountForm({
+        schema: {
+          tabs: {
+            details: { type: 'tab', components: { title: { type: 'text' } } },
+            planning: {
+              type: 'tab',
+              components: {
+                pages: {
+                  type: 'tree-list',
+                  editable: true,
+                  path: 'pages',
+                  form: { type: 'form', tabs }
+                }
+              }
+            }
+          }
+        },
+        data: { title: 'Site', pages: [{ title: 'About' }] }
+      })
+      await admin.navigate('/items/1#planning')
+      const { router } = admin
+      const replace = router.replace.bind(router)
+      let replaceCount = 0
+      router.replace = to => (++replaceCount <= 10 ? replace(to) : undefined)
+      await wrapper.find('.dito-button--edit').trigger('click')
+      await flushPromises()
+      const [, pageForm] = appState.routeComponents.filter(
+        component => component.isForm
+      )
+      return {
+        admin,
+        schemaComponent,
+        pageSchemaComponent: pageForm.mainSchemaComponent,
+        getReplaceCount: () => replaceCount
+      }
+    }
+
+    it('follows the route with the tabs of the form of a tree item', async () => {
+      const { admin, schemaComponent, pageSchemaComponent, getReplaceCount } =
+        await openTabbedPageForm(['content', 'text'])
+      expect(getReplaceCount()).toBeLessThanOrEqual(1)
+      expect(admin.router.currentRoute.value.fullPath).toBe(
+        '/items/1/pages/0#content'
+      )
+      expect(schemaComponent.selectedTab).toBe('planning')
+      expect(pageSchemaComponent.selectedTab).toBe('content')
+      await admin.navigate('/items/1/pages/0#text')
+      expect(pageSchemaComponent.selectedTab).toBe('text')
+      expect(schemaComponent.selectedTab).toBe('planning')
+    })
+
+    it('keeps the tab of a form whose tab names its items use', async () => {
+      const { admin, schemaComponent, pageSchemaComponent, getReplaceCount } =
+        await openTabbedPageForm(['content', 'details'])
+      expect(getReplaceCount()).toBeLessThanOrEqual(1)
+      expect(schemaComponent.selectedTab).toBe('planning')
+      expect(pageSchemaComponent.selectedTab).toBe('content')
+      await admin.navigate('/items/1/pages/0#details')
+      expect(pageSchemaComponent.selectedTab).toBe('details')
+      expect(schemaComponent.selectedTab).toBe('planning')
+    })
+
     // Mounts the admin at `path` directly, as when reloading the page, with
     // an item form whose tabs differ from those of the forms of its pages.
     async function mountAdminAt(path) {
