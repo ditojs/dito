@@ -814,28 +814,6 @@ describe('DitoSchema', () => {
     })
   })
 
-  describe('setData()', () => {
-    it('merges the known values and marks the data dirty', async () => {
-      const { schemaComponent, data, dataModel } = await mountSchema({
-        schema: {
-          components: {
-            title: { type: 'text' },
-            year: { type: 'number' }
-          }
-        },
-        data: { title: 'Emma', year: 1815 }
-      })
-      // Unchanged values don't make the data dirty:
-      schemaComponent.setData({ year: 1815 })
-      expect(dataModel.isDirty).toBe(false)
-      expect(
-        schemaComponent.setData({ title: 'Persuasion', year: 1815, isbn: 1 })
-      ).toBe(data)
-      expect(data).toEqual({ title: 'Persuasion', year: 1815 })
-      expect(dataModel.isDirty).toBe(true)
-    })
-  })
-
   describe('validateAll()', () => {
     it('shows the errors until they are reset', async () => {
       const { routeComponent, getErrors, dataModel } = await mountSchema({

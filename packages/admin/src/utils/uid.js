@@ -5,7 +5,7 @@ const uidsByItem = new WeakMap()
 const originalsByCopy = new WeakMap()
 
 // Generated uids have their own prefix, so that they can't be mistaken for
-// temporary ids, see `setTemporaryId()`.
+// temporary ids, see `createTemporaryId()`.
 const generatedUidPrefix = 'uid-'
 let lastGeneratedUid = 0
 

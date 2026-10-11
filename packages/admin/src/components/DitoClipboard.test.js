@@ -59,6 +59,54 @@ describe('DitoClipboard', () => {
     expect(input.element.value).toBe('Emma')
   })
 
+  it(`doesn't make the data dirty by pasting the same values`, async () => {
+    const { copyButton, pasteButton, dataModel } = await mountBookForm()
+    await copyButton.trigger('click')
+    await flushPromises()
+    await pasteButton.trigger('click')
+    await flushPromises()
+    expect(dataModel.isDirty).toBe(false)
+  })
+
+  it('pastes the result of `clipboard.paste()` as new items', async () => {
+    const paste = vi.fn(({ clipboardItem }) => clipboardItem)
+    const { wrapper, data, dataModel } = await mountForm({
+      schema: {
+        clipboard: { paste },
+        components: {
+          authors: {
+            type: 'list',
+            inlined: true,
+            form: { type: 'form', components: { name: { type: 'text' } } }
+          },
+          mainAuthor: {
+            type: 'select',
+            relate: true,
+            options: { dataPath: '../authors', label: 'name' }
+          }
+        }
+      },
+      data: { authors: [{ id: 7, name: 'Jane Austen' }], mainAuthor: { id: 7 } }
+    })
+    await wrapper.find('.dito-clipboard .dito-button--copy').trigger('click')
+    await flushPromises()
+    await wrapper.find('.dito-clipboard .dito-button--paste').trigger('click')
+    await flushPromises()
+    // `paste()` receives the copied data, with the ids of related items marked:
+    const [[{ clipboardItem }]] = paste.mock.calls
+    expect(clipboardItem).toEqual({
+      authors: [{ id: '@7', name: 'Jane Austen' }],
+      mainAuthor: { id: '@7' }
+    })
+    const [author] = data.authors
+    expect(author).toEqual({
+      id: expect.stringMatching(/^@\d+$/),
+      name: 'Jane Austen'
+    })
+    expect(data.mainAuthor).toMatchObject({ id: author.id })
+    expect(dataModel.isDirty).toBe(true)
+  })
+
   it('reads the system clipboard in Chrome to enable pasting', async () => {
     appState.agent.chrome = true
     vi.spyOn(navigator.clipboard, 'readText').mockResolvedValue(
@@ -92,8 +140,7 @@ describe('DitoClipboard', () => {
     )
   })
 
-  // Known bug: the clipboard of nested forms keeps the item ids
-  it.skip('copies the items of nested forms without their ids', async () => {
+  it('copies the items of nested forms without their ids', async () => {
     const { admin } = await mountForm({
       schema: {
         components: {

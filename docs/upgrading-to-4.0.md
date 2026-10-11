@@ -93,6 +93,22 @@ which components write the data through, as `component.dataModel`.
   their buttons with resources.
 - Open nested forms keep their item when items before it are added, removed
   or moved, and follow it to its new index in the URL.
+- The data processed for the server and for the clipboard is only built when
+  saving and copying. `processedItem` and `processedRootItem` of contexts are
+  built when they're read, also in the callbacks of the data model, e.g. `if`
+  and `compute()`, which lacked them. Components no longer have
+  `processedData`, `processedRootData`, `processedItem` and
+  `processedRootItem`: read them from `component.context`.
+  `schemaComponent.processData(target)` takes only the target, `'server'` or
+  `'clipboard'`, and `schemaComponent.setData()` is removed.
+- Pasting writes the data through the data model as new items, after
+  `clipboard.paste()` received the copied data: related items get new
+  temporary ids each time, and sources with their own resource are left out.
+  Values that don't change don't make the data dirty.
+- Copying the item of a nested form leaves out the ids of its items, and keeps
+  the ids of relations to data outside the item. The copied ids of related
+  items are marked as `@7` for the id `7`, and as `@@7` for the temporary id
+  `@7`, which both turned into `@7` before.
 
 ### Validation
 

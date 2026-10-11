@@ -17,7 +17,6 @@ function createLibraryGraph() {
   graph.addSource('shelves/0/books', booksSchema)
   graph.addSource('shelves/1/books', booksSchema)
   graph.addRelation('shelves/0/books/0/author', 'authors', internalAuthorSchema)
-  graph.setSourceRelated('authors')
   graph.addSource('authors', authorsSchema)
   graph.addRelation(
     'shelves/0/books/0/publisher',
@@ -199,11 +198,29 @@ describe('SchemaGraph', () => {
       expect(data.shelves[0].books[1]).not.toHaveProperty('id')
     })
 
-    it('converts the ids of related items and internal relations to `@id`', () => {
+    it('marks the ids of related items and internal relations with `@`', () => {
       const data = processForClipboard()
-      expect(data.authors).toEqual([{ id: '@10' }, { id: '@1' }])
+      expect(data.authors).toEqual([{ id: '@10' }, { id: '@@1' }])
       expect(data.shelves[0].books[0].author).toEqual({ id: '@10' })
-      expect(data.shelves[0].books[1].author).toEqual({ id: '@1' })
+      expect(data.shelves[0].books[1].author).toEqual({ id: '@@1' })
+    })
+
+    it('keeps persisted and temporary ids with the same number apart', () => {
+      const graph = new SchemaGraph()
+      graph.addSource('authors', authorsSchema)
+      graph.addRelation('books/0/authors', 'authors', internalAuthorSchema)
+      const data = graph.process(
+        sourceSchema,
+        {
+          authors: [{ id: 7 }, { id: '@7' }],
+          books: [{ authors: [{ id: 7 }, { id: '@7' }] }]
+        },
+        { target: 'clipboard' }
+      )
+      expect(data).toEqual({
+        authors: [{ id: '@7' }, { id: '@@7' }],
+        books: [{ authors: [{ id: '@7' }, { id: '@@7' }] }]
+      })
     })
 
     it('keeps the ids of external relations', () => {
@@ -216,7 +233,6 @@ describe('SchemaGraph', () => {
     it('uses `idKey` of sources and `relateBy` of relations', () => {
       const graph = new SchemaGraph()
       graph.addSource('authors', { type: 'list', idKey: 'key' })
-      graph.setSourceRelated('authors')
       graph.addRelation('books/0/author', 'authors', {
         type: 'select',
         relateBy: 'key'
@@ -237,6 +253,60 @@ describe('SchemaGraph', () => {
     })
   })
 
+  describe('process() of nested data', () => {
+    it('handles the data paths relative to the processed data', () => {
+      // A book of a shelf, copied in its nested form:
+      const graph = new SchemaGraph('shelves/0/books/1')
+      graph.addSource('shelves/0/books/1/chapters', { type: 'list' })
+      graph.addRelation(
+        'shelves/0/books/1/author',
+        'authors',
+        internalAuthorSchema
+      )
+      graph.addRelation(
+        'shelves/0/books/1/chapters/0/editor',
+        'shelves/0/books/1/editors',
+        internalAuthorSchema
+      )
+      graph.addSource('shelves/0/books/1/editors', authorsSchema)
+      const data = graph.process(
+        booksSchema,
+        {
+          id: 30,
+          author: { id: 10 },
+          editors: [{ id: 11 }],
+          chapters: [{ id: 50, editor: { id: 11 } }]
+        },
+        { target: 'clipboard' }
+      )
+      expect(data).toEqual({
+        author: { id: 10 },
+        editors: [{ id: '@11' }],
+        chapters: [{ editor: { id: '@11' } }]
+      })
+    })
+
+    it('treats relations to data outside of it as external', () => {
+      const graph = new SchemaGraph('shelves/0/books/1')
+      graph.addRelation(
+        'shelves/0/books/1/author',
+        'authors',
+        internalAuthorSchema
+      )
+      expect(graph.flatten()).toEqual([
+        [
+          'author',
+          {
+            type: 'relation',
+            schema: internalAuthorSchema,
+            internal: false,
+            reference: null
+          }
+        ]
+      ])
+    })
+  })
+
   describe('process() with missing data', () => {
     it('ignores missing and empty values along the data paths', () => {
       const graph = createLibraryGraph()
@@ -250,7 +320,6 @@ describe('SchemaGraph', () => {
 
     it('handles relations to multiple items', () => {
       const graph = new SchemaGraph()
-      graph.setSourceRelated('authors')
       graph.addSource('authors', authorsSchema)
       graph.addRelation('books/0/authors', 'authors', internalAuthorSchema)
       const reference = graph.getReferencePrefix('authors')

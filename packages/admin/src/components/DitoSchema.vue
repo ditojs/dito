@@ -47,8 +47,8 @@ slot(name="prepend")
         :clipboard="clipboard"
         :schema="schema"
         :hasData="hasData"
-        :getData="getDataForClipboard"
-        @paste="setData"
+        :getData="() => processData('clipboard')"
+        @paste="pasteData"
       )
       slot(name="edit-buttons")
   TransitionHeight(:enabled="inlined")
@@ -111,7 +111,6 @@ slot(name="append")
 import {
   isFunction,
   isEmpty,
-  equals,
   parseDataPath,
   normalizeDataPath,
   labelize
@@ -129,6 +128,7 @@ import {
   isEmptySchema
 } from '../utils/schema/lookup.js'
 import { initializeData, processData } from '../utils/schema/data.js'
+import { fromClipboard } from '../utils/fromClipboard.ts'
 import {
   getDataValidationErrors,
   getMatchingValidationErrors
@@ -272,11 +272,6 @@ export default DitoComponent.component('DitoSchema', {
 
     hasHeader() {
       return this.hasLabel || this.hasTabs || !!this.clipboard
-    },
-
-    // @override
-    processedData() {
-      return this.processData({ target: 'server', schemaOnly: true })
     },
 
     formLabel() {
@@ -694,25 +689,24 @@ export default DitoComponent.component('DitoSchema', {
       this.dataModel.clearErrors(this.dataPath)
     },
 
-    // Merges the values of `data` into the schema's data, and returns it.
-    setData(data) {
-      for (const name in data) {
+    // Writes the data pasted through `DitoClipboard` into the schema's data,
+    // as new items:
+    pasteData(clipboardData) {
+      const data = fromClipboard(this.dataSchema, clipboardData, {
+        dataPath: this.dataPath,
+        component: this,
+        rootData: this.rootData
+      })
+      for (const [name, value] of Object.entries(data)) {
         if (name in this.data) {
-          if (!equals(this.data[name], data[name])) {
-            this.dataModel.set(this.data, name, data[name])
-          }
+          this.dataModel.set(this.data, name, value)
         }
       }
-      return this.data
     },
 
-    // Called by `DitoClipboard` only when copying, as processing all data on
-    // each change would be wasteful.
-    getDataForClipboard() {
-      return this.processData({ target: 'clipboard', schemaOnly: true })
-    },
-
-    processData({ target = 'clipboard', schemaOnly = true } = {}) {
+    // Processes the schema's data for `target`, the 'server' or the
+    // 'clipboard', see `SchemaGraph`.
+    processData(target) {
       return processData(
         this.dataSchema,
         this.sourceSchema,
@@ -723,7 +717,6 @@ export default DitoComponent.component('DitoSchema', {
           // `processSchemaData()`:
           rootData: this.rootData,
           component: this,
-          schemaOnly,
           target
         }
       )

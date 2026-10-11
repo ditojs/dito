@@ -447,8 +447,8 @@ describe('processData()', () => {
     expect(processed.works[0]).not.toBe(essay)
   })
 
-  describe('with `schemaOnly`', () => {
-    const options = { component: {}, target: 'server', schemaOnly: true }
+  describe('of items', () => {
+    const options = { component: {}, target: 'server' }
     const schema = {
       type: 'form',
       components: { title: { type: 'text' } }
