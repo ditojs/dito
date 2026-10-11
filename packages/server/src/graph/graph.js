@@ -1,6 +1,13 @@
-import { isObject, isArray, asArray, mapConcurrently } from '@ditojs/utils'
+import {
+  isObject,
+  isArray,
+  asArray,
+  mapConcurrently,
+  normalizeDataPath
+} from '@ditojs/utils'
 import { QueryBuilder } from '../query/index.js'
 import { collectExpressionPaths, expressionPathToString } from './expression.js'
+import { GraphError } from '../errors/index.js'
 
 // Similar to Objection's private `modelClass.ensureModel(model)`:
 export function ensureModel(modelClass, model, options) {
@@ -16,6 +23,43 @@ export function ensureModelArray(modelClass, data, options) {
   return data
     ? asArray(data).map(model => ensureModel(modelClass, model, options))
     : []
+}
+
+// Rejects Objection.js' graph control properties, as graphs often come from
+// clients, who must not be able to pass them on: `#dbRef` relates existing
+// models by id, even where relating is disabled, and `#unrelate` / `#delete`
+// override the `noUnrelate` / `noDelete` options. Code that needs them can use
+// Objection.js' own graph methods. `#id` and `#ref` only reference models
+// within the same graph, so they are fine.
+export function rejectGraphControlProps(modelClass, graph, dataPath = []) {
+  if (isArray(graph)) {
+    graph.forEach((model, index) =>
+      rejectGraphControlProps(modelClass, model, [...dataPath, index])
+    )
+  } else if (isObject(graph)) {
+    for (const prop of [
+      modelClass.dbRefProp,
+      modelClass.graphUnrelateProp,
+      modelClass.graphDeleteProp
+    ]) {
+      if (prop in graph) {
+        const path = normalizeDataPath(dataPath)
+        throw new GraphError(
+          `Unsupported graph control property '${prop}'${
+            path ? ` at '${path}'` : ''
+          }`
+        )
+      }
+    }
+    for (const { name, relatedModelClass } of Object.values(
+      modelClass.getRelations()
+    )) {
+      rejectGraphControlProps(relatedModelClass, graph[name], [
+        ...dataPath,
+        name
+      ])
+    }
+  }
 }
 
 // Converts a model graph to model instances, preserving its shape: A single
