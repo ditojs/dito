@@ -155,15 +155,18 @@ export default DitoComponent.component('DitoContainer', {
     errors() {
       // Unnested components share the data path of their parent, which their
       // errors don't belong to:
-      const errors = this.nested
-        ? this.dataModel.getErrors(this.dataPath)
-        : null
-      const label = this.label || this.component?.placeholder || this.name
-      return (
-        errors?.map(error =>
-          isString(error) ? error : `The ${label} field ${error.message}.`
-        ) ?? null
-      )
+      if (this.nested) {
+        const { dataModel, dataPath } = this
+        const label = this.label || this.component?.placeholder || this.name
+        const errors = [
+          ...(dataModel.getErrors(dataPath) ?? []).map(
+            ({ message }) => `The ${label} field ${message}.`
+          ),
+          ...(dataModel.getFieldErrors(dataPath) ?? [])
+        ]
+        return errors.length > 0 ? errors : null
+      }
+      return null
     },
 
     errorsElementId() {

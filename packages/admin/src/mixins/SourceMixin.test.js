@@ -175,7 +175,7 @@ describe('SourceMixin', () => {
       await findField('reviews').find('.dito-button--delete').trigger('click')
       await flushPromises()
       expect(data.reviews).toEqual([{ id: 8, text: 'Fine', position: 0 }])
-      expect(routeComponent.isDirty).toBe(false)
+      expect(routeComponent.dataModel.isEdited).toBe(false)
       reload.resolve({ data: data.reviews })
       await flushPromises()
     })

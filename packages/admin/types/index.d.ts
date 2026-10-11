@@ -2565,12 +2565,12 @@ export interface DitoDataModel {
   /** Whether the data was edited, also where it can't be saved. */
   readonly isEdited: boolean
   /** Marks the data edited, e.g. after writing it directly. */
-  markDirty(): void
+  markEdited(): void
   /**
-   * Marks the data clean, e.g. once it's saved, or only the list of the
-   * source with its own resource at `data[name]`, once the source saved it.
+   * Marks the data clean, e.g. once it's saved, or only the edits of the
+   * source with its own resource at `dataPath`, once the source saved them.
    */
-  markClean(data?: object, name?: string): void
+  markClean(dataPath?: string): void
   /**
    * Merges `data` from the server, e.g. the response of a save,
    * into the data in place, so that its objects keep their
@@ -2580,7 +2580,10 @@ export interface DitoDataModel {
    * data, which isn't dirty.
    */
   mergeFromServer(data: object): object
-  /** Sets `data[key]` to `value`, an edit if the value changes. */
+  /**
+   * Sets `data[key]` to `value`, an edit if the value changes. Values equal
+   * to the current one are not written, so it keeps its identity.
+   */
   set(data: object, key: string | number, value: any): void
   /** Inserts `item` into `list` at `index`. */
   insert(list: any[], index: number, item: any): void
@@ -2591,14 +2594,18 @@ export interface DitoDataModel {
   /** Replaces the items of `list` with `items`, in place. */
   replaceChildren(list: any[], items: any[]): void
   /**
-   * Returns the errors of the field at `dataPath`, or `null`: the
-   * errors of its value, of validation and of the server, in the
-   * format of the server, followed by the errors of the field as
-   * messages. Errors are kept by the data that holds the value and
-   * its name, so they stay with items that move. The errors of the
-   * value only apply while it's the value that they were set for.
+   * Returns the errors of the value at `dataPath`, of validation and of
+   * the server, in the format of the server, or `null`. Errors are kept
+   * by the data that holds the value and its name, so they stay with
+   * items that move. They only apply while it's the value that they were
+   * set for.
    */
-  getErrors(dataPath: string): DitoFieldError[] | null
+  getErrors(dataPath: string): DitoValidationError[] | null
+  /**
+   * Returns the error messages of the field itself at `dataPath`, e.g. of
+   * options that failed to load, or `null`.
+   */
+  getFieldErrors(dataPath: string): string[] | null
   /**
    * Replaces the validation errors of the value of the field at
    * `dataPath`. The errors of the server stay while the value does.
@@ -2639,8 +2646,6 @@ export interface DitoDataModel {
 export interface DitoValidationError {
   message: string
 }
-
-export type DitoFieldError = DitoValidationError | string
 
 export interface DitoFormInstance<$Item = any>
   extends DitoComponentInstanceBase<$Item>,

@@ -7,7 +7,8 @@ import {
   getParentItem,
   getItem,
   getLastDataPathName,
-  getLastDataPathIndex
+  getLastDataPathIndex,
+  getRelativeDataPath
 } from './utils/data.js'
 import { hasNestedData } from './utils/schema/structure.js'
 import { getTextFromHtml } from './utils/html.js'
@@ -227,7 +228,7 @@ export default class DitoContext {
   }
 
   // The processed items are built for the server when they're read, except
-  // in `process()`, which receives the ones being processed:
+  // in `process()`, which receives the ones being built:
   get processedItem() {
     return get(this, 'processedData', () =>
       getProcessedData(this, this.dataPath, this.nested)
@@ -235,7 +236,9 @@ export default class DitoContext {
   }
 
   get processedRootItem() {
-    return getProcessedData(this, '', false)
+    return get(this, 'processedRootData', () =>
+      getProcessedData(this, '', false)
+    )
   }
 
   get clipboardItem() {
@@ -398,23 +401,17 @@ export default class DitoContext {
   }
 }
 
-// Processes the data of the schema component that holds `dataPath` for the
-// server, and returns the item at `dataPath` in it. Components that own their
-// data, e.g. forms, aren't inside a schema component, but hold their own.
+// Returns the item at `dataPath` in the data that the model holding it
+// processed for the server.
 function getProcessedData(context, dataPath, nested) {
-  const { component } = context
-  let schemaComponent = (
-    component?.schemaComponent ??
-    component?.mainSchemaComponent
-  )
-  while (schemaComponent?.dataPath.length > dataPath.length) {
-    schemaComponent = schemaComponent.parentSchemaComponent
+  let dataModel = context.component?.dataModel
+  let path = null
+  while (dataModel) {
+    path = getRelativeDataPath(dataPath, dataModel.dataPath)
+    if (path !== null) break
+    dataModel = dataModel.component.parentComponent?.dataModel
   }
-  return schemaComponent
-    ? getItem(
-        schemaComponent.processData('server'),
-        dataPath.slice(schemaComponent.dataPath.length),
-        nested
-      ) || null
+  return dataModel
+    ? getItem(dataModel.processedData.value, path, nested) || null
     : null
 }

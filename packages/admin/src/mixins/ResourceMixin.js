@@ -376,24 +376,6 @@ export default {
       )
     },
 
-    async submit(button) {
-      // Wait for the data that's still loading, e.g. uploads, like forms do:
-      await this.waitUntilDataModelSettled()
-      let { resource } = button.schema
-      resource = getResource(resource, {
-        parent: this.getResource({
-          method: resource?.method,
-          child: resource
-        })
-      })
-      if (resource) {
-        const { method } = resource
-        const data = this.getPayloadData(button, method)
-        return this.submitResource(button, resource, method, data)
-      }
-      return false
-    },
-
     async submitResource(button, resource, method, data, {
       setData = false,
       onSuccess,

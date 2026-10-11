@@ -1,3 +1,4 @@
+import { vi } from 'vitest'
 import { mountForm } from '../test/mount.js'
 
 describe('ContextMixin', () => {
@@ -122,6 +123,39 @@ describe('ContextMixin', () => {
       expect(processedItems.length).toBeGreaterThan(0)
       for (const processedItem of processedItems) {
         expect(processedItem).toEqual({ id: 1, title: 'Emma' })
+      }
+    })
+
+    it('is processed once until the data changes', async () => {
+      // Callbacks may read the processed items reactively, e.g. for prices, so
+      // the processing must not run again on every read. It processes the
+      // titles of both books each time:
+      const process = vi.fn(({ value }) => value)
+      const { getComponent, data } = await mountLibrary({ process })
+      const { context } = getComponent('authors/0/books/1/title')
+      expect(context.processedItem).toEqual({ id: 2, title: 'Persuasion' })
+      expect(context.processedItem).toEqual({ id: 2, title: 'Persuasion' })
+      expect(process).toHaveBeenCalledTimes(2)
+      data.authors[0].books[1].title = 'Sanditon'
+      expect(context.processedItem).toEqual({ id: 2, title: 'Sanditon' })
+      expect(process).toHaveBeenCalledTimes(4)
+    })
+
+    it('is the data being processed in `process()`', async () => {
+      const processed = []
+      const { getComponent } = await mountLibrary({
+        process: ({ value, processedItem, processedRootItem }) => {
+          processed.push({ processedItem, processedRootItem })
+          return value
+        }
+      })
+      const processedRootItem = getComponent('name').context.processedRootItem
+      expect(processed.map(({ processedItem }) => processedItem)).toEqual([
+        { id: 1, title: 'Emma' },
+        { id: 2, title: 'Persuasion' }
+      ])
+      for (const entry of processed) {
+        expect(entry.processedRootItem).toBe(processedRootItem)
       }
     })
   })

@@ -169,10 +169,10 @@ describe('DitoForm', () => {
       expect(result.routeComponent.isDirty).toBe(false)
     })
 
-    it('make the form dirty with `dataModel.markDirty()`', async () => {
+    it('make the form dirty with `dataModel.markEdited()`', async () => {
       const result = await mountPublishableForm(({ formComponent, item }) => {
         item.status = 'published'
-        formComponent.dataModel.markDirty()
+        formComponent.dataModel.markEdited()
       })
       await clickPublish(result)
       expect(result.data.status).toBe('published')
@@ -612,6 +612,21 @@ describe('DitoForm', () => {
         .trigger('click')
       await settle(form)
     }
+
+    it('provides the processed draft and root item to its components', async () => {
+      const { admin } = await mountBookForm({
+        chapters: [{ title: 'Prologue' }]
+      })
+      const form = await openNestedForm(admin, '/items/1/chapters/0')
+      form.data.title = 'Opening'
+      const { context } = form.mainSchemaComponent
+      expect(context.processedItem).toEqual({ title: 'Opening' })
+      // The root item is the one of the book form, without the draft:
+      expect(context.processedRootItem).toMatchObject({
+        title: 'Emma',
+        chapters: [{ title: 'Prologue' }]
+      })
+    })
 
     it('applies the changes of an item to the data of the form', async () => {
       const { admin, data, notify, routeComponent } = await mountBookForm({

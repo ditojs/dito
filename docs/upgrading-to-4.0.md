@@ -41,11 +41,12 @@ which components write the data through, as `component.dataModel`.
   it, e.g. the order of its items or the children of tree items. Forms and
   such sources only count as dirty if they have a button of type `submit`,
   whatever its name, views by any edit. `dataModel.isDirty` tells this,
-  `dataModel.isEdited` whether the data was edited at all.
+  `dataModel.isEdited` whether the data was edited at all, also where it
+  can't be saved, e.g. the order of a source without such a button.
 - Direct writes to the data don't make it dirty, e.g. of what an action on the
   server saved. `formComponent.applyCleanChanges()` is removed: write the data
   directly instead. Code that edits data directly calls
-  `dataModel.markDirty()`, and `dataModel.markClean()` once it saved it.
+  `dataModel.markEdited()`, and `dataModel.markClean()` once it saved it.
 - Custom types that change their value in place write it through the data
   model: `set(data, key, value)`, `insert(list, index, item)`,
   `remove(list, index)`, `move(list, from, to)` and
@@ -95,16 +96,19 @@ which components write the data through, as `component.dataModel`.
   or moved, and follow it to its new index in the URL.
 - The data processed for the server and for the clipboard is only built when
   saving and copying. `processedItem` and `processedRootItem` of contexts are
-  built when they're read, also in the callbacks of the data model, e.g. `if`
-  and `compute()`, which lacked them. Components no longer have
+  built when they're read and cached until the data that they read changes,
+  also in the callbacks of the data model, e.g. `if` and `compute()`, which
+  lacked them. Components no longer have
   `processedData`, `processedRootData`, `processedItem` and
-  `processedRootItem`: read them from `component.context`.
+  `processedRootItem`: read them from `component.context`. In `process()`,
+  they're the data being built.
   `schemaComponent.processData(target)` takes only the target, `'server'` or
   `'clipboard'`, and `schemaComponent.setData()` is removed.
 - Pasting writes the data through the data model as new items, after
   `clipboard.paste()` received the copied data: related items get new
   temporary ids each time, and sources with their own resource are left out.
-  Values that don't change don't make the data dirty.
+  Values that don't change are kept as they are and don't make the data
+  dirty.
 - Copying the item of a nested form leaves out the ids of its items, and keeps
   the ids of relations to data outside the item. The copied ids of related
   items are marked as `@7` for the id `7`, and as `@@7` for the temporary id
@@ -115,7 +119,8 @@ which components write the data through, as `component.dataModel`.
 - Errors live in the data model, by the data that holds each value and its
   name, so they stay with items that move, and with fields that aren't
   mounted, e.g. in collapsed sections. Read and write them with
-  `dataModel.getErrors(dataPath)`, `setErrors(dataPath, errors)`,
+  `dataModel.getErrors(dataPath)`, `getFieldErrors(dataPath)`,
+  `setErrors(dataPath, errors)`,
   `addError(dataPath, message)`, `removeError(dataPath, message)`,
   `replaceErrors(errors, { dataPath, server })` and `clearErrors(dataPath)`.
 - The errors of values, of validation and of the server, apply to the value
@@ -124,7 +129,8 @@ which components write the data through, as `component.dataModel`.
   again, e.g. on blur, only replaces its validation errors.
 - The errors of fields, e.g. of options that failed to load or of searches,
   are added with `addError()` and stay until their source removes them with
-  `removeError()`.
+  `removeError()`. `getFieldErrors()` returns their messages, `getErrors()`
+  only the errors of the value.
 - Nested forms take over the errors of their item when they open, and when
   their parent reveals errors while they're open.
 - The rows of lists and the items of trees whose items or children hold
