@@ -150,11 +150,11 @@ export default [
       },
       value: [
         { add: { Text: 'Hello' }, form: 'Text' },
-        { add: { Url: 'https://lineto.com' }, form: 'Link' }
+        { add: { Url: 'https://example.com' }, form: 'Link' }
       ],
       stored: [
         { type: 'text', text: 'Hello' },
-        { type: 'link', url: 'https://lineto.com' }
+        { type: 'link', url: 'https://example.com' }
       ]
     }
   ]),
