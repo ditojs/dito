@@ -2,7 +2,7 @@ import ItemMixin from './ItemMixin.js'
 import ResourceMixin from './ResourceMixin.js'
 import SchemaParentMixin from '../mixins/SchemaParentMixin.js'
 import { getSchemaAccessor, getStoreAccessor } from '../utils/accessor.js'
-import { getMemberResource } from '../utils/resource.js'
+import { getResource, getMemberResource } from '../utils/resource.js'
 import { ListQuery } from '../utils/ListQuery.js'
 import { ItemStores } from '../utils/ItemStores.js'
 import {
@@ -134,7 +134,7 @@ export default {
             ? data?.length > 0
               ? data[0]
               : null
-            : updateOrder(this.sourceSchema, data, this.paginationRange?.[0])
+            : updateOrder(this.sourceSchema, data)
         }
       }
     },
@@ -493,11 +493,9 @@ export default {
       }
     },
 
-    // Sets the list items loaded through the source's resource, numbered by
-    // their order key with the offset of the loaded page, so that their order
-    // can be stored even if it never changes, e.g. by a button that saves the
-    // current order. Lists in the data of forms, views and dialogs are
-    // numbered by `DataModel`, see `initializeData()`.
+    // Number the loaded items by their order key from the offset of the page,
+    // so that their order can be stored even if it never changes, e.g. by a
+    // button that saves the current order.
     setLoadedListItems(items) {
       this.setLoadedValue(
         updateOrder(this.sourceSchema, items, this.paginationRange?.[0])
@@ -508,17 +506,35 @@ export default {
     // loading isn't an edit, and replaces the source's changes.
     setLoadedValue(value) {
       this.data[this.name] = value
-      this.dataModel.markClean(this.data, this.name)
+      this.dataModel.markClean(this.dataPath)
     },
 
-    // @override ResourceMixin.submit()
     async submit(button) {
-      const isSuccessful = await ResourceMixin.methods.submit.call(this, button)
-      if (isSuccessful) {
-        // The source saved its own changes, e.g. the order of its items:
-        this.dataModel.markClean(this.data, this.name)
+      // Wait for the data that's still loading, e.g. uploads, like forms do:
+      await this.waitUntilDataModelSettled()
+      let { resource } = button.schema
+      resource = getResource(resource, {
+        parent: this.getResource({
+          method: resource?.method,
+          child: resource
+        })
+      })
+      if (resource) {
+        const { method } = resource
+        const data = this.getPayloadData(button, method)
+        const isSuccessful = await this.submitResource(
+          button,
+          resource,
+          method,
+          data
+        )
+        if (isSuccessful) {
+          // The source saved its own changes, e.g. the order of its items:
+          this.dataModel.markClean(this.dataPath)
+        }
+        return isSuccessful
       }
-      return isSuccessful
+      return false
     },
 
     // Required by ResourceMixin, see its contract. The buttons of sources
@@ -548,21 +564,17 @@ export default {
     removeItem(item, index) {
       if (this.isObjectSource || index >= 0) {
         this.itemStores.removeStore(this.getItemUid(this.schema, item))
-        if (this.isTransient) {
-          if (this.isObjectSource) {
+        // Sources with a resource delete the item through it, not as an edit:
+        if (this.isObjectSource) {
+          if (this.isTransient) {
             this.objectData = null
           } else {
-            this.dataModel.remove(this.listData, index)
+            this.data[this.name] = null
           }
         } else {
-          // Items of sources with a resource are deleted through it, so they're
-          // removed without marking the data dirty, numbering the others again:
-          if (this.isObjectSource) {
-            this.data[this.name] = null
-          } else {
-            const { listData } = this
-            listData.splice(index, 1)
-            updateOrder(this.sourceSchema, listData, this.paginationRange?.[0])
+          this.dataModel.remove(this.listData, index)
+          if (!this.isTransient) {
+            this.dataModel.markClean(this.dataPath)
           }
         }
         this.onChange()

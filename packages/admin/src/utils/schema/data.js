@@ -356,7 +356,7 @@ export function processData(schema, sourceSchema, data, dataPath, {
   target
 } = {}) {
   const options = { component, rootData, target }
-  const processedData = cloneItem(sourceSchema, data)
+  const processedRootData = cloneItem(sourceSchema, data)
   const graph = new SchemaGraph(dataPath)
 
   const before = ({ schema, data, name, dataPath, processedData }) => {
@@ -402,9 +402,10 @@ export function processData(schema, sourceSchema, data, dataPath, {
         data,
         dataPath,
         rootData: options.rootData,
-        // Pass the already processed data to `process()`, so it can be modified
-        // through `processedItem` from there.
-        processedData
+        // Pass the data being processed to `process()`, so it can read and
+        // modify it through `processedItem` and `processedRootItem`:
+        processedData,
+        processedRootData
       })
 
     // First unwrap the wrapped primitives again, to bring the data back into
@@ -435,13 +436,13 @@ export function processData(schema, sourceSchema, data, dataPath, {
 
   processSchemaData(schema, data, {
     dataPath,
-    processedData,
+    processedData: processedRootData,
     before,
     after,
     options
   })
 
-  return graph.process(sourceSchema, processedData, options)
+  return graph.process(sourceSchema, processedRootData, options)
 }
 
 /**

@@ -497,7 +497,7 @@ export default DitoComponent.component('DitoForm', {
             component: this,
             shouldKeepSourcesWithResource: true
           })
-          this.dataModel.markDirty()
+          this.dataModel.markEdited()
         }
       } else {
         // Merge data from the server into the form's data, e.g. the response

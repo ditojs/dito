@@ -4,6 +4,7 @@ import {
   watch,
   nextTick,
   shallowRef,
+  shallowReactive,
   toRaw,
   triggerRef
 } from 'vue'
@@ -35,85 +36,27 @@ import {
   computeValue,
   hasValueFromDataSchema,
   processSchemaData,
+  processData,
   hasItemsNumberedByOrderKey,
   updateOrder
 } from './schema/data.js'
 
-// DataModel holds the state of the data edited by a form, view, dialog or panel
-// with its own data that is derived from schema and data, independently of what
-// is rendered:
-//
-// - Missing values are set to their defaults when the data is set up, and when
-//   they go missing later, e.g. in items that code adds, except the values of
-//   components with `compute()`, which fall back to their defaults when
-//   `compute()` doesn't return a value, unlike in new data, see
-//   `initializeData()`.
-// - The items of lists with `orderKey` are numbered when the data is set up,
-//   which doesn't make the data dirty.
-// - Computed values, the results of `schema.compute()` and of the data schemas
-//   of the `computed` types (`schema.data`, `schema.dataPath`), are written
-//   into the data by watchers that the model owns, one scope per component,
-//   for all components whose `if` doesn't evaluate to `false`.
-// - Options, `schema.options`, are resolved per component when they are first
-//   read, by `compute()` through `context.options` or by the component that
-//   displays them, see `getOptions()`. Both get the same option objects, and
-//   computes that read options only run once they are loaded.
-// - Submitting waits for the loads of data schemas and options that are still
-//   pending, for a limited time, and for running uploads, see
-//   `waitUntilSettled()`.
-// - Components write the data through the change API, `set()`, `insert()`,
-//   `remove()`, `move()` and `replaceChildren()`, which marks it edited until
-//   it's replaced or saved. Edits are dirty if their owner can save them: the
-//   component, see `canSave()`, or the nearest source with its own resource
-//   that holds the changed list, through a submit button. The model's own
-//   writes, e.g. of defaults and computed values, don't mark the data edited,
-//   and neither do direct writes.
-// - The errors of the fields are kept by the data that holds their values and
-//   their names, see `#getFieldKey()`, so that they stay with items that move,
-//   and with components that aren't mounted, e.g. in collapsed sections. The
-//   errors of values only apply to the value that they were set for, so they
-//   hide once it changes, also in place, while the errors of fields stay until
-//   their sources remove them.
-//
-// Sources with their own resource are skipped, as their items are edited
-// through their own forms.
-//
-// The model handles components through their entries, the objects that
-// `processSchemaData()` passes to `before()` and `after()`, with the schema,
-// data, name, data path and component path of each component. Components that
-// read their options pass entries of the same shape, see `getOptions()`.
-//
-// `component` is the component that owns the data, e.g. `DitoForm`. Its
-// `dataPath`, `componentPath`, `rootData` and `mainSchemaComponent` are used
-// when present. The model needs to be stopped before the component unmounts.
-
+// The state of the data that a form, view, dialog or panel edits, derived from
+// its schema and data independently of what is rendered.
 export class DataModel {
-  // The records of the components with computed values or options, by their
-  // data and name, so that they're kept when list items move, see
-  // `getComponentRecord()`. Records of components that the walk of the data
-  // doesn't visit anymore, e.g. of removed items or hidden components, are
-  // removed, see `updateComponentRecords()`:
+  // By data and name, so that records stay with list items that move:
   componentRecords = new EntryMap()
-  // The promises of the loads that are pending, e.g. of data schemas, options
-  // and uploads, and the ones of them that can't time out, see
-  // `waitUntilSettled()`:
   pendingLoads = new Set()
   #untimedLoads = new Set()
-  // Whether the data was changed through the change API since it was set up or
-  // saved, and the sources with their own resource whose lists were, by their
-  // data and name, if they can save them:
-  #isEdited = shallowRef(false)
-  #dirtySources = shallowRef(new EntryMap())
-  // The errors of the fields, see `#getFieldKey()`, by their kind: the ones of
-  // `validation` and of the `server` with the `value` that they were set for,
-  // and the ones of the `field` itself:
+  // The owners of edits with their schemas: '' for the container, else the
+  // data paths of sources with their own resource, which can't be inlined.
+  #editedOwners = shallowReactive(new Map())
+  // Errors by the data that holds the value and its name, so that they stay
+  // with items that move:
   #errors = shallowRef(new WeakEntryMap())
-  // The number of writes of computed values per data path in the current
-  // microtask, see `isWriteLoop()`:
+  #fieldErrors = shallowRef(new WeakEntryMap())
   computedValueWriteCounts = null
 
-  // `getSchema()` and `getData()` return the schema and the data that the
-  // model handles, `canSave()` whether the component can save its edits.
   constructor({ component, getSchema, getData, canSave = () => true }) {
     this.component = component
     this.getSchema = getSchema
@@ -121,29 +64,36 @@ export class DataModel {
     this.canSave = canSave
     this.rootScope = effectScope(true)
     this.rootScope.run(() => {
+      // Computed, so watchers can check synchronously if records are current:
+      this.dataEntries = computed(() => this.getDataEntries())
+      // Built only when read, e.g. by `context.processedItem`, and cached until
+      // the data that it read changes:
+      this.processedData = computed(() => this.getProcessedData())
+      // Set up data right away, so that edits never land before its computed
+      // values, whose watchers run after rendering:
       watch(
         [getSchema, getData],
-        ([schema, data]) => this.initializeData(schema, data),
-        modelSetupWatchOptions
+        ([schema, data], [, previousData] = []) => {
+          this.initializeData(schema, data)
+          this.writeComputedValues()
+          // Data that is replaced, e.g. loaded or applied, isn't edited:
+          if (data !== previousData) {
+            this.markClean()
+          }
+        },
+        { immediate: true, flush: 'sync' }
       )
-      // The entries are read through a computed property, so that the watchers
-      // of the records can check synchronously whether their record is still
-      // current, see `createComputedValueScope()`.
-      this.dataEntries = computed(() => this.getDataEntries())
       watch(
         () => this.dataEntries.value.recordedEntries,
         entries => this.updateComponentRecords(entries),
         modelSetupWatchOptions
       )
-      // Values that go missing after the data was set up, e.g. in items that
-      // code adds, get their defaults too:
+      // Values that go missing later, e.g. in added items, get defaults too:
       watch(
         () => this.dataEntries.value.entriesWithMissingValues,
         entries => this.setDefaultValues(entries),
         modelSetupWatchOptions
       )
-      // Data that is replaced, e.g. loaded or applied, isn't dirty:
-      watch(getData, () => this.markClean(), { flush: 'sync' })
     })
   }
 
@@ -159,76 +109,62 @@ export class DataModel {
     return this.component.rootData ?? this.getData()
   }
 
-  // Whether the data has edits that its owners can save, see `canSave()`.
   get isDirty() {
-    return (
-      this.#isEdited.value && this.canSave() ||
-      !this.#dirtySources.value.isEmpty
+    return [...this.#editedOwners.values()].some(sourceSchema =>
+      sourceSchema
+        ? hasSubmitButton(getButtonSchemas(sourceSchema.buttons))
+        : this.canSave()
     )
   }
 
-  // Whether the data was edited, also where it can't be saved.
   get isEdited() {
-    return this.#isEdited.value || !this.#dirtySources.value.isEmpty
+    return this.#editedOwners.size > 0
   }
 
-  markDirty() {
-    this.#isEdited.value = true
+  markEdited() {
+    this.#editedOwners.set('', null)
   }
 
-  // Marks all data clean, or only the list of the source with its own resource
-  // at `data[name]`, once the source saved it.
-  markClean(data, name) {
-    if (data) {
-      this.#dirtySources.value.delete({ data, name })
-      triggerRef(this.#dirtySources)
+  markClean(dataPath = null) {
+    if (dataPath) {
+      this.#editedOwners.delete(dataPath)
     } else {
-      this.#isEdited.value = false
-      this.#dirtySources.value = new EntryMap()
+      this.#editedOwners.clear()
     }
   }
 
-  // Merges `data` from the server, e.g. the response of a save, into the data
-  // in place, so that its objects keep their uids, item stores, open forms and
-  // errors, and keeps the parts of sources with their own resource, which load
-  // them themselves. Returns the merged data, which isn't dirty.
   mergeFromServer(data) {
     const mergedData = mergeData(this.getSchema(), this.getData(), data, {
       component: this.component,
       shouldKeepSourcesWithResource: true
     })
-    // Compute the values of the merged data right away, e.g. to convert values
-    // that the server stores differently, as their watchers only run once it
-    // rendered, see `modelWatchOptions`:
-    for (const record of this.componentRecords.values()) {
-      const { schema } = record.entry
-      if (schema.compute && this.isRecordCurrent(record, schema)) {
-        const result = this.getComputedValueResult(record)
-        if (result) {
-          this.writeComputedValue(record.entry, result.value)
-        }
-      }
-    }
+    this.writeComputedValues()
     this.markClean()
     return mergedData
   }
 
-  set(data, key, value) {
-    // Writes that don't change the value aren't edits:
-    if (!equals(data[key], value)) {
-      this.markDirty()
+  // Write the computed values of the current data right away, also of records
+  // that the update of the data entries hasn't created yet.
+  writeComputedValues() {
+    this.updateComponentRecords(this.dataEntries.value.recordedEntries)
+    for (const record of this.componentRecords.values()) {
+      record.writeComputedValue?.()
     }
-    data[key] = value
   }
 
-  // Merges `item`, a copy that shares the uids of `data[key]`, e.g. the draft
-  // of a nested form, into that item in place, along the form of its source
-  // with `sourceSchema`, see `cloneWithUids()`.
+  set(data, key, value) {
+    // Writes that don't change the value aren't edits, and keep its identity:
+    if (!equals(data[key], value)) {
+      this.markEdited()
+      data[key] = value
+    }
+  }
+
+  // Merge `item`, e.g. the draft of a nested form, into `data[key]` in place.
   merge(data, key, item, sourceSchema) {
     if (!equals(data[key], item)) {
-      this.markDirty()
-      // Merge the item as the value of its source, so that its form is the
-      // same as in the data, e.g. with the children of tree items:
+      this.markEdited()
+      // Merge it as the value of its source, e.g. with tree item children:
       data[key] = mergeData(
         { components: { [key]: sourceSchema } },
         { [key]: data[key] },
@@ -254,11 +190,9 @@ export class DataModel {
     this.changeList(list, () => list.splice(0, list.length, ...items))
   }
 
-  // Changes the list in place and numbers its items again by the order key of
-  // its schema, starting at the order of its first item, so that lists loaded
-  // from later pages keep their offset. The change belongs to the nearest
-  // source with its own resource that holds the list or is it, if any, e.g. a
-  // tree whose children change.
+  // Number the items from the order of the first one, which keeps the offset
+  // of loaded pages. The edit belongs to the nearest source with its own
+  // resource that holds the list or is it, e.g. a tree whose children change.
   changeList(list, change) {
     const { listEntry, sourceEntry } = this.getListEntries(list)
     const schema = listEntry?.schema
@@ -268,17 +202,13 @@ export class DataModel {
     if (isNumbered) {
       updateOrder(schema, list, offset)
     }
-    if (!sourceEntry) {
-      this.markDirty()
-    } else if (hasSubmitButton(getButtonSchemas(sourceEntry.schema.buttons))) {
-      this.#dirtySources.value.set(sourceEntry, true)
-      triggerRef(this.#dirtySources)
+    if (sourceEntry) {
+      this.#editedOwners.set(sourceEntry.dataPath, sourceEntry.schema)
+    } else {
+      this.markEdited()
     }
   }
 
-  // Returns the entry of the component whose value is the list, and the one of
-  // the nearest source with its own resource that holds the list or is it, by
-  // walking the data, also into sources with their own resource.
   getListEntries(list) {
     const schema = this.getSchema()
     const data = this.getData()
@@ -287,6 +217,7 @@ export class DataModel {
     let sourceEntry = null
     if (data && !isEmptySchema(schema)) {
       processSchemaData(schema, data, {
+        dataPath: this.dataPath,
         before: entry => {
           if (isSourceWithResource(entry.schema)) {
             sourceEntries.push(entry)
@@ -307,56 +238,54 @@ export class DataModel {
     return { listEntry, sourceEntry }
   }
 
-  // Returns the key of the field at `dataPath`: the data that holds its value,
-  // and its name. Unlike data paths, the data stays the same when list items
-  // move. The values of lists of primitives are held by their lists.
+  // Unlike data paths, the data that holds a value stays when items move.
   #getFieldKey(dataPath) {
     const path = parseDataPath(getRelativeDataPath(dataPath, this.dataPath))
     const name = path.pop()
     return { data: getValueAtDataPath(this.getData(), path, () => null), name }
   }
 
-  // Returns the errors of the field at `dataPath`, or `null`: the errors of its
-  // value, of validation and of the server as `{ message }`, followed by the
-  // errors of the field as messages, e.g. of options that failed to load.
   getErrors(dataPath) {
     const { data, name } = this.#getFieldKey(dataPath)
     const entry = this.#errors.value.get({ data, name })
     return entry ? getCurrentErrors(entry, data[name]) : null
   }
 
-  // Sets the validation errors of the value of the field at `dataPath`, see
-  // `TypeMixin.validate()`. The errors of the server stay while the value does.
+  // The errors of the field itself, e.g. of options that failed to load:
+  getFieldErrors(dataPath) {
+    return this.#fieldErrors.value.get(this.#getFieldKey(dataPath)) ?? null
+  }
+
   setErrors(dataPath, errors) {
     this.#setErrors(this.#getFieldKey(dataPath), 'validation', errors)
   }
 
-  // Adds an error of the field at `dataPath` rather than of its value, e.g. of
-  // options that failed to load, which stays until its source removes it.
   addError(dataPath, message) {
     const key = this.#getFieldKey(dataPath)
-    const errors = this.#errors.value.get(key)?.field ?? []
-    if (!errors.includes(message)) {
-      this.#setErrors(key, 'field', [...errors, message])
+    const messages = this.#fieldErrors.value.get(key) ?? []
+    if (!messages.includes(message)) {
+      this.#fieldErrors.value.set(key, [...messages, message])
+      triggerRef(this.#fieldErrors)
     }
   }
 
   removeError(dataPath, message) {
     const key = this.#getFieldKey(dataPath)
-    const errors = this.#errors.value.get(key)?.field ?? []
-    if (errors.includes(message)) {
-      this.#setErrors(
-        key,
-        'field',
-        errors.filter(error => error !== message)
-      )
+    const messages = this.#fieldErrors.value.get(key) ?? []
+    if (messages.includes(message)) {
+      if (messages.length > 1) {
+        this.#fieldErrors.value.set(
+          key,
+          messages.filter(error => error !== message)
+        )
+      } else {
+        this.#fieldErrors.value.delete(key)
+      }
+      triggerRef(this.#fieldErrors)
     }
   }
 
-  // Replaces the validation errors of the values within `dataPath` with
-  // `errors`, or the ones of the server with `server`, keyed by data path, as
-  // validation and the server return them, and returns the ones of fields that
-  // aren't displayed, or `null`.
+  // Return the errors that no field displays, or `null`.
   replaceErrors(errors, { dataPath = this.dataPath, server = false } = {}) {
     const unmatchedErrors = { ...errors }
     this.#processFieldEntries(dataPath, entry => {
@@ -373,22 +302,22 @@ export class DataModel {
     return isEmpty(unmatchedErrors) ? null : unmatchedErrors
   }
 
-  // Clears the errors of the values within `dataPath`, e.g. once they're saved.
   // The errors of the fields stay until their sources remove them.
   clearErrors(dataPath = this.dataPath) {
     this.#processFieldEntries(dataPath, entry => {
-      const key = this.#getFieldKey(entry.dataPath)
-      this.#setErrors(key, 'validation', null)
-      this.#setErrors(key, 'server', null)
+      if (this.#errors.value.delete(this.#getFieldKey(entry.dataPath))) {
+        triggerRef(this.#errors)
+      }
     })
   }
 
-  // Returns the data paths of the fields within `dataPath` that have errors,
-  // in the order of the schema.
   getErrorDataPaths(dataPath = this.dataPath) {
     const dataPaths = []
     this.#processFieldEntries(dataPath, entry => {
-      if (this.getErrors(entry.dataPath)) {
+      if (
+        this.getErrors(entry.dataPath) ||
+        this.getFieldErrors(entry.dataPath)
+      ) {
         dataPaths.push(entry.dataPath)
       }
     })
@@ -404,24 +333,22 @@ export class DataModel {
           return true
         }
       }
+      if (this.#fieldErrors.value.hasEntriesOf(data)) {
+        return true
+      }
       return Object.values(data).some(value => this.hasErrorsWithin(value))
     }
     return false
   }
 
-  // Copies the errors of the values of the originals of `data`, a copy made by
-  // `cloneWithUids()`, and of the data nested in it, from `model`, e.g. from
-  // the parent's model to the draft of a nested form.
+  // Copy the errors of the originals of `data` and of the data nested in it,
+  // e.g. from the parent's model to the draft of a nested form.
   copyErrors(model, data) {
     const copy = data => {
       if (isPlainObject(data) || isArray(data)) {
         const original = getOriginal(data)
         for (const [name, entry] of model.#errors.value.entriesOf(original)) {
-          const key = { data, name }
-          const field = this.#errors.value.get(key)?.field ?? []
-          if (entry.validation.length > 0 || entry.server.length > 0) {
-            this.#errors.value.set(key, { ...entry, field })
-          }
+          this.#errors.value.set({ data, name }, entry)
         }
         Object.values(data).forEach(copy)
       }
@@ -430,28 +357,23 @@ export class DataModel {
     triggerRef(this.#errors)
   }
 
-  // Sets the errors of the `kind` of the field at `key`, see `#errors`. The
-  // errors of a value replace the ones of other values.
+  // The errors of a value replace the ones of other values.
   #setErrors(key, kind, errors) {
     const { data, name } = key
-    const errorsByField = this.#errors.value
-    let entry = errorsByField.get(key) ?? noErrors
-    if (kind !== 'field' && !equals(data[name], entry.value)) {
+    let entry = this.#errors.value.get(key)
+    if (!entry || !equals(data[name], entry.value)) {
       // Copy the value, as lists and objects also change in place:
-      entry = { ...noErrors, field: entry.field, value: clone(data[name]) }
+      entry = { value: clone(data[name]), validation: [], server: [] }
     }
     entry = { ...entry, [kind]: errors ?? [] }
-    const { validation, server, field } = entry
-    if (validation.length > 0 || server.length > 0 || field.length > 0) {
-      errorsByField.set(key, entry)
+    if (entry.validation.length > 0 || entry.server.length > 0) {
+      this.#errors.value.set(key, entry)
       triggerRef(this.#errors)
-    } else if (errorsByField.delete(key)) {
+    } else if (this.#errors.value.delete(key)) {
       triggerRef(this.#errors)
     }
   }
 
-  // Walks the entries of the fields within `dataPath` whose `if` doesn't
-  // evaluate to `false`, and calls `handleEntry()` for each.
   #processFieldEntries(dataPath, handleEntry) {
     const schema = this.getSchema()
     const data = this.getData()
@@ -488,19 +410,13 @@ export class DataModel {
     this.#untimedLoads.clear()
   }
 
-  // Whether loads are pending, see `waitUntilSettled()`.
   get hasPendingLoads() {
     return this.pendingLoads.size > 0
   }
 
-  // Waits for the pending loads, including the ones that they cause, e.g.
-  // options that depend on computed values that depend on loaded options, and
-  // for the watchers to write the resulting computed values into the data.
-  // Loads that never finish, e.g. hung requests, would block callers like
-  // `submit()` forever. After `timeout` milliseconds, the wait gives up with a
-  // warning and resolves, as the server validates the data anyway, while the
-  // loads keep running. Loads that can't time out, e.g. uploads, which take as
-  // long as their files need, are waited for first.
+  // Loads that never finish would block `submit()` forever, so we give up
+  // after `timeout`, as the server validates the data anyway. Loads that can't
+  // time out, e.g. uploads, are waited for first.
   async waitUntilSettled({ timeout = settleTimeout } = {}) {
     while (this.#untimedLoads.size > 0) {
       await Promise.all(this.#untimedLoads)
@@ -530,9 +446,6 @@ export class DataModel {
     }
   }
 
-  // Tracks the promise of a pending load until it settles, so that
-  // `waitUntilSettled()` waits for it, also beyond its timeout with
-  // `canTimeOut: false`.
   trackPendingLoad(promise, { canTimeOut = true } = {}) {
     this.pendingLoads.add(promise)
     if (!canTimeOut) {
@@ -544,8 +457,6 @@ export class DataModel {
     })
   }
 
-  // Sets missing values to their defaults and numbers the items of lists by
-  // their order key when the data is set up, see `initializeData()`.
   initializeData(schema, data) {
     if (data && !isEmptySchema(schema)) {
       initializeData(schema, data, this.component, {
@@ -559,12 +470,18 @@ export class DataModel {
     }
   }
 
-  // Walks the data and returns the entries of `processSchemaData()` of the
-  // components whose `if` doesn't evaluate to `false`: the ones with computed
-  // values or options, by data and name, see `componentRecords`, and the ones
-  // whose values are missing. Called by a computed property, so that it runs
-  // again when the data structure changes, e.g. when list items are added,
-  // moved or removed, values go missing, or `if` conditions change.
+  getProcessedData() {
+    const schema = this.getSchema()
+    const data = this.getData()
+    return data && !isEmptySchema(schema)
+      ? processData(schema, this.component.sourceSchema, data, this.dataPath, {
+          component: this.component.mainSchemaComponent ?? this.component,
+          rootData: this.rootData,
+          target: 'server'
+        })
+      : null
+  }
+
   getDataEntries() {
     const schema = this.getSchema()
     const data = this.getData()
@@ -590,12 +507,7 @@ export class DataModel {
     return { recordedEntries, entriesWithMissingValues }
   }
 
-  // Returns whether the `if` of the entry's component doesn't evaluate to
-  // `false`. Unlike `shouldRenderSchema()`, it doesn't evaluate the components
-  // of sections and tabs, as the walk of the data visits them anyway, see
-  // `getDataEntries()`, which leads to the same entries.
-  // An `if` that fails only affects its own component, which is treated as
-  // shown, not the walk of all others, which would stop computing them.
+  // An `if` that fails only affects its own component, which counts as shown.
   shouldRenderEntry(entry) {
     if (entry.schema.if === undefined) {
       return true
@@ -613,9 +525,6 @@ export class DataModel {
     }
   }
 
-  // Returns whether the value of the entry is missing and needs its default.
-  // The model writes the values of components with `compute()`, including
-  // their defaults, see `computeValue()`.
   shouldSetDefaultValue(entry) {
     const { schema, data, name } = entry
     return shouldSetDefaultValue(
@@ -627,8 +536,6 @@ export class DataModel {
     )
   }
 
-  // Sets the defaults of the values of the entries, unless they were set in
-  // the meantime.
   setDefaultValues(entries) {
     for (const entry of entries) {
       if (this.shouldSetDefaultValue(entry)) {
@@ -640,10 +547,6 @@ export class DataModel {
     }
   }
 
-  // Keeps the records of the components that are still present, with their
-  // current entries, e.g. with the data paths of items that moved, creates
-  // records for new ones, and removes the others, stopping their scopes. The
-  // scopes of records whose schema changed are replaced.
   updateComponentRecords(entries) {
     const previousRecords = this.componentRecords
     this.componentRecords = new EntryMap()
@@ -653,11 +556,11 @@ export class DataModel {
       if (record.entry.schema !== entry.schema) {
         record.computedValueScope?.stop()
         record.computedValueScope = null
+        record.writeComputedValue = null
       }
       record.entry = entry
       record.dataPath.value = entry.dataPath
-      // Add the record before its scope is created, as its watchers may read
-      // its options right away, see `getOptionsResolver()`.
+      // Add the record first, as its watchers may read its options right away:
       this.componentRecords.set(entry, record)
       if (hasComputedValueSource(entry.schema)) {
         record.computedValueScope ??= this.createComputedValueScope(record)
@@ -668,9 +571,6 @@ export class DataModel {
     }
   }
 
-  // Returns the record of the component of the entry, see `componentRecords`,
-  // and creates it if the walk of the data didn't, e.g. for components that
-  // read their options before it visits them.
   getComponentRecord(entry) {
     let record = this.componentRecords.get(entry)
     if (!record) {
@@ -680,14 +580,8 @@ export class DataModel {
     return record
   }
 
-  // Creates the scope of the watchers that write the computed values of the
-  // record's component into the data, with its current entry, so that the
-  // values of items that move are only computed again if their computes read
-  // their position, see `getComputedValueResult()`. Records stop being
-  // current before their scope is stopped, as watchers that don't belong to
-  // components run in the order in which they're triggered, e.g. when list
-  // items are removed or `if` conditions change. The watchers skip these
-  // records, see `isRecordCurrent()`.
+  // Records stop being current before their scope is stopped, as watchers
+  // outside of components run in the order in which they're triggered.
   createComputedValueScope(record) {
     const { schema } = record.entry
     const scope = this.rootScope.run(() => effectScope())
@@ -695,43 +589,32 @@ export class DataModel {
       const isRecordCurrent = computed(() =>
         this.isRecordCurrent(record, schema)
       )
-      if (schema.compute) {
-        watch(
-          // Return a new object each time, so that the value is also written
-          // when only the value in the data changed, e.g. through user input.
-          () =>
-            isRecordCurrent.value
-              ? this.getComputedValueResult(record)
-              : null,
-          computedResult => {
-            if (computedResult) {
-              this.writeComputedValue(record.entry, computedResult.value)
-            }
-          },
-          modelWatchOptions
-        )
+      const dataSchemaResolver = schema.compute
+        ? null
+        : this.createDataSchemaResolver(schema, record)
+      // Return a new object each time, so that the value is also written when
+      // only the value in the data changed, e.g. through user input:
+      const currentResult = computed(() =>
+        !isRecordCurrent.value
+          ? null
+          : schema.compute
+            ? this.getComputedValueResult(record)
+            : dataSchemaResolver.isLoading
+              ? null
+              : { value: dataSchemaResolver.value }
+      )
+      const write = result => {
+        if (result) {
+          this.writeComputedValue(record.entry, result.value)
+        }
       }
-      if (hasValueFromDataSchema(schema)) {
-        const dataSchemaResolver = this.createDataSchemaResolver(schema, record)
-        watch(
-          () =>
-            isRecordCurrent.value && !dataSchemaResolver.isLoading
-              ? { value: dataSchemaResolver.value }
-              : null,
-          resolved => {
-            if (resolved) {
-              this.writeComputedValue(record.entry, resolved.value)
-            }
-          },
-          modelWatchOptions
-        )
-      }
+      record.writeComputedValue = () => write(currentResult.value)
+      watch(currentResult, write, modelWatchOptions)
+      record.writeComputedValue()
     })
     return scope
   }
 
-  // Returns whether the record's component is still one of the current
-  // entries, with the same schema, see `getDataEntries()`.
   isRecordCurrent(record, schema) {
     const currentEntry = this.dataEntries.value.recordedEntries.get(
       record.entry
@@ -739,16 +622,8 @@ export class DataModel {
     return currentEntry?.schema === schema
   }
 
-  // Calls `schema.compute()` with the main schema component of the data, like
-  // `processData()`, and with the options resolved by the model, so that the
-  // result doesn't depend on whether the component is rendered. Returns the
-  // value as `{ value }`, or `null` if `compute()` reads options that aren't
-  // loaded, which aborts it, so that the current value is kept until they are
-  // and `compute()` can rely on them. The watcher that calls it depends on the
-  // options through reading them, and calls it again once they're loaded.
-  // Computes the value of the record's component. Its data path is read
-  // through the record, so that only computes that read their position are
-  // computed again when their items move, see `updateComponentRecords()`.
+  // Return `null` while `compute()` reads options that aren't loaded yet, to
+  // keep the current value until they are.
   getComputedValueResult(record) {
     const { entry } = record
     const { schema, data, name } = entry
@@ -757,6 +632,8 @@ export class DataModel {
         schema,
         data,
         name,
+        // Read the data path through the record, so that only computes that
+        // read their position run again when their items move:
         () => record.dataPath.value,
         {
           component: this.component.mainSchemaComponent ?? this.component,
@@ -773,12 +650,7 @@ export class DataModel {
     }
   }
 
-  // Returns the options of the component of the entry, or aborts the
-  // `compute()` that reads them, while they're loading, see
-  // `getComputedValueResult()`. Options that resolve to `undefined` aren't
-  // loading, e.g. when their load failed, which logs the error, or when their
-  // data path points to a missing value: `compute()` sees them as `undefined`,
-  // and falls back on `options?.…` like components do, see `OptionsMixin`.
+  // Options that resolve to `undefined` aren't loading, e.g. failed loads.
   getLoadedOptions(entry) {
     const resolver = this.getOptionsResolver(entry)
     if (resolver.isLoading) {
@@ -787,19 +659,7 @@ export class DataModel {
     return resolver.value
   }
 
-  // Returns the options of the component of the entry, resolved from
-  // `schema.options` when they're first read, `undefined` while loading, see
-  // `getLoadedOptions()`.
-  getOptions(entry) {
-    return this.getOptionsResolver(entry).value
-  }
-
-  // Returns the resolver of the options of the component of the entry, shared
-  // by all callers with the same data, name and options, so that computes and
-  // the component that displays the options get the same option objects, and
-  // the options only load once, also when list items move. Components that
-  // keep displaying options of records that were removed keep their own
-  // resolvers, see `OptionsMixin`.
+  // Computes and components share the resolver, so they get the same options.
   getOptionsResolver(entry) {
     const record = this.getComponentRecord(entry)
     const { options } = entry.schema
@@ -810,8 +670,6 @@ export class DataModel {
     return record.optionsResolver
   }
 
-  // Creates the resolver of a data schema of the record's component, with the
-  // context of its current entry.
   createDataSchemaResolver(dataSchema, record) {
     return new DataSchemaResolver(dataSchema, {
       createContext: () => this.createEntryContext(record.entry),
@@ -819,30 +677,19 @@ export class DataModel {
     })
   }
 
-  // Writes the computed value into the data, with the defaults of its nested
-  // values, unless it equals the value in the data.
   writeComputedValue(entry, computedValue) {
     const { data, name } = entry
     const value = this.getValueWithNestedDefaultValues(entry, computedValue)
-    if (!equals(value, data[name])) {
-      const dataPath = this.getRelativeDataPath(entry)
-      if (this.isWriteLoop(dataPath)) {
-        return
-      }
-      // Access `data[name]` directly to update the value without calling
-      // `parse()`, see `ValueMixin`:
+    const dataPath = getRelativeDataPath(entry.dataPath, this.dataPath)
+    if (!equals(value, data[name]) && !this.isWriteLoop(dataPath)) {
+      // Write `data[name]` directly, without calling `parse()`:
       data[name] = value
     }
   }
 
-  // Returns the computed value of the entry with the missing defaults of its
-  // nested values, e.g. of the items that `compute()` returns, as
-  // `setDefaultValues()` would set them once the value is written. Otherwise,
-  // the two would disagree on the value and keep replacing each other's
-  // writes. The value isn't modified, as it may be shared, e.g. a constant:
-  // The objects and arrays that hold missing values are copied, along with the
-  // ones that hold these, and the value is returned as it is when nothing is
-  // missing, keeping its identity, e.g. of options.
+  // Add the defaults that `setDefaultValues()` would add once it's written, or
+  // the two keep replacing each other's writes. We copy only what holds missing
+  // values, as the value may be shared, e.g. a constant.
   getValueWithNestedDefaultValues(entry, value) {
     const { data, name } = entry
     if (
@@ -880,11 +727,6 @@ export class DataModel {
     return valueWithDefaults
   }
 
-  // Walks the entries nested in `value`, as the value of the entry's
-  // component, in place of its current one in a copy of the data that holds it,
-  // and calls `handleNestedEntry()` before visiting each of them. The entry is
-  // one of the recorded entries, which are all of nested components, see
-  // `getRelativeDataPath()`.
   processNestedEntries(entry, value, handleNestedEntry) {
     const { schema, data, name, dataPath } = entry
     const valueData = { ...data, [name]: value }
@@ -901,10 +743,8 @@ export class DataModel {
     })
   }
 
-  // Returns whether the computed value at the data path was written too often
-  // in the current microtask, which happens when the sources of the value keep
-  // disagreeing on it, e.g. two computes. Reports the data path once, instead
-  // of letting the writes loop endlessly.
+  // Sources of a value may keep disagreeing on it, e.g. two computes, so we
+  // report it once instead of letting the writes loop endlessly.
   isWriteLoop(dataPath) {
     if (!this.computedValueWriteCounts) {
       this.computedValueWriteCounts = new Map()
@@ -925,19 +765,7 @@ export class DataModel {
     return count > maxComputedValueWrites
   }
 
-  // Returns the data path of the value of the entry, relative to the model's
-  // data, as in its processed data. The entry is one of the recorded entries,
-  // which are all of nested components, as `processSchemaData()` only calls
-  // `before()` for these, and walks the components of unnested ones instead.
-  // Their data paths include their own name, except for the ones of wrapped
-  // primitives, whose values are the items themselves.
-  getRelativeDataPath({ dataPath }) {
-    return getRelativeDataPath(dataPath, this.dataPath)
-  }
-
-  // Returns the context for `if`, data schemas and options, with the component
-  // that owns the data, which stays the same when components are mounted, so
-  // that data schemas and options don't load again.
+  // The component that owns the data stays, so options don't load again.
   createEntryContext({ schema, data, name, dataPath }) {
     return DitoContext.createForSchema(this.component, {
       schema,
@@ -949,11 +777,8 @@ export class DataModel {
   }
 }
 
-// Returns `value` with the plain objects and arrays in it that are one of
-// `objects` or hold one of them copied, shallowly, and the others as they are.
-// Values that occur more than once are copied at each occurrence, so that
-// setting defaults in the copies never reaches the originals. Only the values
-// that hold themselves, `ancestorValues`, are left as they are.
+// Copy the objects and arrays that are or hold one of `objects` shallowly, at
+// each occurrence, so that defaults set in copies never reach the originals.
 function copyContainersHolding(value, objects, ancestorValues = new Set()) {
   if (
     !isPlainObject(value) && !isArray(value) ||
@@ -975,57 +800,32 @@ function copyContainersHolding(value, objects, ancestorValues = new Set()) {
   return copy ?? value
 }
 
-// The watchers of the model that set up the data and the scopes of its
-// components run before the components render, so that components of new
-// data, e.g. loaded data or added items, receive their defaults and computed
-// values from the start: The scopes compute their values right away, see
-// `createComputedValueScope()`.
+// Set up before rendering, so new data renders with its defaults right away:
 const modelSetupWatchOptions = { immediate: true, flush: 'pre' }
 
-// The other watchers of the model run after the post-flush hooks, so that they
-// write the values that they derive from the data after the components that
-// display them are mounted. Otherwise, the `mounted` hooks of `v-model`
-// directives would restore the values that inputs had when they were mounted,
-// see https://github.com/vuejs/core/issues/15774. Vue processes the updates
-// that the written values cause in the same flush, before the browser renders
-// them.
-const modelWatchOptions = { immediate: true, flush: 'post' }
+// Write derived values after mounting, or the `mounted` hooks of `v-model`
+// restore the values that inputs had then (vuejs/core#15774):
+const modelWatchOptions = { flush: 'post' }
 
-// Aborts `compute()` when it reads options that aren't loaded, see
-// `DataModel.getComputedValueResult()`.
 const optionsNotLoaded = Symbol('optionsNotLoaded')
 
-// The number of writes of a computed value in one microtask after which they
-// are considered a loop, see `DataModel.isWriteLoop()`.
 const maxComputedValueWrites = 10
 
-// The milliseconds after which `DataModel.waitUntilSettled()` stops waiting
-// for pending loads, long enough for slow requests.
 const settleTimeout = 30_000
 
-// The errors of a field without any, see `DataModel.#errors`:
-const noErrors = { value: undefined, validation: [], server: [], field: [] }
-
-// Creates the record of the component of the entry, see
-// `DataModel.componentRecords`: its current entry, the scope of the watchers
-// that write its computed values, and the resolver of its options, with the
-// options schema that it resolves, once they're read.
 function createComponentRecord(entry) {
   return {
     entry,
-    // The data path of the entry, read by computes, see
-    // `getComputedValueResult()`. Unlike `entry`, it's reactive, as items
-    // that move keep their records.
+    // Reactive, as items that move keep their records:
     dataPath: shallowRef(entry.dataPath),
     computedValueScope: null,
+    writeComputedValue: null,
     optionsResolver: null,
     optionsSchema: null
   }
 }
 
-// Holds values by the data and name of the entries of components. The data is
-// compared by its raw object, as it may be passed through reactive proxies.
-// Weak entry maps don't keep replaced data alive.
+// Compare data by its raw object, as it may come through reactive proxies.
 class WeakEntryMap {
   valuesByData = new WeakMap()
 
@@ -1043,7 +843,6 @@ class WeakEntryMap {
     valuesByName.set(name, value)
   }
 
-  // Returns whether there was a value to delete.
   delete({ data, name }) {
     const rawData = toRaw(data)
     const valuesByName = this.valuesByData.get(rawData)
@@ -1054,7 +853,10 @@ class WeakEntryMap {
     return isDeleted
   }
 
-  // Returns the names and values held for `data`.
+  hasEntriesOf(data) {
+    return this.valuesByData.has(toRaw(data))
+  }
+
   entriesOf(data) {
     return this.valuesByData.get(toRaw(data))?.entries() ?? []
   }
@@ -1063,10 +865,6 @@ class WeakEntryMap {
 // Entry maps can be iterated and cleared, but keep their data alive.
 class EntryMap extends WeakEntryMap {
   valuesByData = new Map()
-
-  get isEmpty() {
-    return this.valuesByData.size === 0
-  }
 
   clear() {
     this.valuesByData.clear()
@@ -1079,19 +877,14 @@ class EntryMap extends WeakEntryMap {
   }
 }
 
-// Returns whether the schema is a source of computed values, through
-// `schema.compute()` or a data schema of the `computed` types.
 function hasComputedValueSource(schema) {
   return !!schema.compute || hasValueFromDataSchema(schema)
 }
 
-// Returns the errors of the field with the errors `entry` and the value
-// `value`, or `null`: the ones of the value only while it's the value that they
-// were set for, as values also change through direct writes, e.g. of `change`
-// handlers.
+// Errors apply only to the value that they were set for, as values also
+// change through direct writes, e.g. of `change` handlers.
 function getCurrentErrors(entry, value) {
-  const errors = equals(value, entry.value)
-    ? [...entry.validation, ...entry.server, ...entry.field]
-    : entry.field
-  return errors.length > 0 ? errors : null
+  return equals(value, entry.value)
+    ? [...entry.validation, ...entry.server]
+    : null
 }

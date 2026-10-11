@@ -125,6 +125,26 @@ describe('DataModel', () => {
     expect(data.slug).toBe('good-bye')
   })
 
+  it('writes the computed values of replaced data before edits', async () => {
+    // A compute that keeps the first value it sees, like a price on order:
+    const schema = {
+      type: 'form',
+      components: {
+        price: { type: 'text' },
+        orderedPrice: {
+          type: 'computed',
+          compute: ({ item }) => item.orderedPrice ?? item.price
+        }
+      }
+    }
+    const { dataModel, dataRef } = createDataModel(schema, {})
+    dataRef.value = reactive({ price: 10 })
+    dataRef.value.price = 20
+    await nextTick()
+    expect(dataRef.value).toEqual({ price: 20, orderedPrice: 10 })
+    dataModel.stop()
+  })
+
   it('writes computed values of fields in tabs and unnested sections', () => {
     const schema = {
       type: 'form',
@@ -628,13 +648,13 @@ describe('DataModel', () => {
       }
       const { dataModel, data } = createDataModel(schema, {})
       await dataModel.waitUntilSettled()
-      const options = dataModel.getOptions({
+      const options = dataModel.getOptionsResolver({
         schema: schema.components.size,
         data,
         name: 'size',
         dataPath: 'size',
         componentPath: 'size'
-      })
+      }).value
       expect(options).toEqual([{ id: 1 }, { id: 2 }])
       expect(toRaw(data.size)).toBe(options[0])
       dataModel.stop()
@@ -777,15 +797,18 @@ describe('DataModel', () => {
 
     it(`isn't dirty after \`set()\` of the value that it has`, () => {
       const { dataModel, data } = createBookModel()
+      const { chapters } = data
       dataModel.set(data, 'title', 'Emma')
       dataModel.set(
         data,
         'chapters',
-        data.chapters.map(chapter => ({
+        chapters.map(chapter => ({
           ...chapter
         }))
       )
       expect(dataModel.isDirty).toBe(false)
+      // Equal values aren't written, so the data keeps its objects:
+      expect(data.chapters).toBe(chapters)
       dataModel.stop()
     })
 
@@ -909,7 +932,7 @@ describe('DataModel', () => {
       dataModel.set(data, 'title', 'Persuasion')
       dataModel.move(data.books, 1, 0)
       // The source saves its list, which leaves the other changes dirty:
-      dataModel.markClean(data, 'books')
+      dataModel.markClean('books')
       expect(dataModel.isDirty).toBe(true)
       dataModel.move(data.books, 1, 0)
       dataModel.markClean()
@@ -919,7 +942,7 @@ describe('DataModel', () => {
       dataModel.stop()
     })
 
-    it(`leaves the lists of sources that can't save clean`, () => {
+    it(`marks the lists of sources that can't save edited only`, () => {
       // E.g. lists whose order the app saves in `onChange()`:
       const { dataModel, data } = createDataModel(
         {
@@ -936,6 +959,9 @@ describe('DataModel', () => {
       )
       dataModel.move(data.books, 1, 0)
       expect(getTitles(data.books)).toEqual(['B', 'A'])
+      expect(dataModel.isEdited).toBe(true)
+      expect(dataModel.isDirty).toBe(false)
+      dataModel.markClean('books')
       expect(dataModel.isEdited).toBe(false)
       dataModel.stop()
     })
@@ -966,19 +992,19 @@ describe('DataModel', () => {
       )
       dataModel.move(data.books[0].chapters, 1, 0)
       expect(dataModel.isDirty).toBe(true)
-      dataModel.markClean(data, 'books')
+      dataModel.markClean('books')
       expect(dataModel.isEdited).toBe(false)
       dataModel.stop()
     })
 
-    it(`isn't dirty after direct writes until \`markDirty()\``, async () => {
+    it(`isn't dirty after direct writes until \`markEdited()\``, async () => {
       const { dataModel, data } = createBookModel()
       data.title = 'Persuasion'
       data.chapters.push({ title: 'Four' })
       await nextTick()
       expect(data.slug).toBe('persuasion')
       expect(dataModel.isDirty).toBe(false)
-      dataModel.markDirty()
+      dataModel.markEdited()
       expect(dataModel.isDirty).toBe(true)
       dataModel.stop()
     })
@@ -1110,6 +1136,27 @@ describe('DataModel', () => {
       expect(data.width).toEqual({ value: 5, units: 'rem' })
       dataModel.mergeFromServer({ width: 6 })
       expect(data.width).toEqual({ value: 6, units: 'rem' })
+    })
+
+    it('resolves the values from data schemas of the merged data right away', () => {
+      const { dataModel, data } = createDataModel(
+        {
+          type: 'form',
+          components: {
+            title: { type: 'text' },
+            label: {
+              type: 'computed',
+              data: ({ item }) => item.title.toUpperCase()
+            }
+          }
+        },
+        { title: 'Emma' }
+      )
+      expect(data.label).toBe('EMMA')
+      // The server doesn't store `label`, which the merge removes:
+      dataModel.mergeFromServer({ title: 'Persuasion' })
+      expect(data.label).toBe('PERSUASION')
+      dataModel.stop()
     })
   })
 
@@ -1270,7 +1317,7 @@ describe('DataModel', () => {
       expect(dataModel.getErrors('tags/0')).toEqual(tooShort)
       expect(dataModel.getErrors('tags/1')).toBe(null)
       // Replaced lists don't hold the errors of their values anymore:
-      dataModel.set(data, 'tags', ['classic', 'romance'])
+      dataModel.set(data, 'tags', ['classic', 'novel'])
       expect(dataModel.getErrors('tags/0')).toBe(null)
       dataModel.stop()
     })
@@ -1279,16 +1326,11 @@ describe('DataModel', () => {
       const { dataModel } = createBook()
       const taken = [{ message: 'is taken' }]
       dataModel.replaceErrors({ title: taken }, { server: true })
-      dataModel.addError('title', 'Unable to load')
       dataModel.setErrors('title', tooShort)
-      expect(dataModel.getErrors('title')).toEqual([
-        ...tooShort,
-        ...taken,
-        'Unable to load'
-      ])
+      expect(dataModel.getErrors('title')).toEqual([...tooShort, ...taken])
       // E.g. `validate()` on blur, without validation errors:
       dataModel.setErrors('title', null)
-      expect(dataModel.getErrors('title')).toEqual([...taken, 'Unable to load'])
+      expect(dataModel.getErrors('title')).toEqual(taken)
       dataModel.stop()
     })
 
@@ -1309,11 +1351,15 @@ describe('DataModel', () => {
       const { dataModel, data } = createBook()
       dataModel.addError('title', 'Unable to load')
       dataModel.set(data, 'title', 'Persuasion')
-      expect(dataModel.getErrors('title')).toEqual(['Unable to load'])
+      expect(dataModel.getFieldErrors('title')).toEqual(['Unable to load'])
+      expect(dataModel.getErrors('title')).toBe(null)
+      expect(dataModel.getErrorDataPaths()).toEqual(['title'])
+      expect(dataModel.hasErrorsWithin(data)).toBe(true)
       // Their sources remove them, also while the value differs:
       dataModel.removeError('title', 'Unable to load')
       dataModel.set(data, 'title', 'Emma')
-      expect(dataModel.getErrors('title')).toBe(null)
+      expect(dataModel.getFieldErrors('title')).toBe(null)
+      expect(dataModel.hasErrorsWithin(data)).toBe(false)
       dataModel.stop()
     })
 
@@ -1322,14 +1368,14 @@ describe('DataModel', () => {
       dataModel.addError('title', 'Unable to load')
       dataModel.addError('title', 'Unable to load')
       dataModel.addError('title', 'Offline')
-      expect(dataModel.getErrors('title')).toEqual([
+      expect(dataModel.getFieldErrors('title')).toEqual([
         'Unable to load', 'Offline'
       ])
       dataModel.removeError('title', 'Unable to load')
       dataModel.removeError('title', 'Missing')
-      expect(dataModel.getErrors('title')).toEqual(['Offline'])
+      expect(dataModel.getFieldErrors('title')).toEqual(['Offline'])
       dataModel.removeError('title', 'Offline')
-      expect(dataModel.getErrors('title')).toBe(null)
+      expect(dataModel.getFieldErrors('title')).toBe(null)
       dataModel.stop()
     })
 
@@ -1369,7 +1415,8 @@ describe('DataModel', () => {
       )
       dataModel.addError('chapters/0/title', 'Unable to load')
       dataModel.clearErrors('chapters/0')
-      expect(dataModel.getErrors('chapters/0/title')).toEqual([
+      expect(dataModel.getErrors('chapters/0/title')).toBe(null)
+      expect(dataModel.getFieldErrors('chapters/0/title')).toEqual([
         'Unable to load'
       ])
       expect(dataModel.getErrors('title')).toEqual(tooShort)
@@ -1860,9 +1907,12 @@ describe('DataModel', () => {
         dataPath: 'genre',
         componentPath: 'genre'
       }
-      expect(dataModel.getOptions(entry)).toBe(undefined)
+      expect(dataModel.getOptionsResolver(entry).value).toBe(undefined)
       await dataModel.waitUntilSettled()
-      expect(dataModel.getOptions(entry)).toEqual(['novel', 'poetry'])
+      expect(dataModel.getOptionsResolver(entry).value).toEqual([
+        'novel',
+        'poetry'
+      ])
       expect(loadGenres).toHaveBeenCalledOnce()
       dataModel.stop()
     })
