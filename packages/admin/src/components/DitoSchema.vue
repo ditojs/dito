@@ -328,6 +328,13 @@ export default DitoComponent.component('DitoSchema', {
       return this.hasTabs && this.isTopLevelSchema
     },
 
+    // The route's hash belongs to the tabs of the last route only. Forms that
+    // remain active while their items' forms are open as nested routes keep
+    // their selected tab.
+    shouldFollowRouteTab() {
+      return this.hasTopLevelTabs && this.routeComponent.isLastRoute
+    },
+
     hasMainPane() {
       const { components } = this.schema
       return !!components && Object.keys(components).length > 0
@@ -394,10 +401,10 @@ export default DitoComponent.component('DitoSchema', {
       }
     },
 
-    active(active) {
+    shouldFollowRouteTab(shouldFollowRouteTab) {
       // Returning from a nested form, e.g. through the browser's history, the
       // route may carry a different tab.
-      if (active) {
+      if (shouldFollowRouteTab) {
         this.followRouteTab()
       }
     },
@@ -419,7 +426,7 @@ export default DitoComponent.component('DitoSchema', {
         })
       }
       // The route of a nested form doesn't belong to this schema.
-      if (this.hasTopLevelTabs && this.active) {
+      if (this.shouldFollowRouteTab) {
         this.replaceRouteTab(newTab)
       }
     }
@@ -434,10 +441,10 @@ export default DitoComponent.component('DitoSchema', {
 
   mounted() {
     // A schema mounted for a nested route, e.g. when reloading the form of an
-    // item of a list in a tab, isn't active, and the route's tab belongs to
+    // item of a list in a tab, doesn't follow the route's tab, as it belongs to
     // the nested form, so it may not be one of this schema's tabs.
     const { routeTab, renderedTabs } = this
-    if (this.active && routeTab && renderedTabs && routeTab in renderedTabs) {
+    if (this.shouldFollowRouteTab && routeTab && routeTab in renderedTabs) {
       this.selectTab(routeTab)
     } else {
       this.selectDefaultTab()
@@ -510,16 +517,12 @@ export default DitoComponent.component('DitoSchema', {
 
     // Selects the tab of the route's hash. The forms of nested routes, e.g. of
     // the items of lists in tabs, have their own hash for their own tabs, so
-    // the tab is only followed while this schema's route is active, and a route
-    // without a hash, e.g. after closing such a form, keeps the selected tab.
+    // the tab is only followed while this schema's route is the last one, and
+    // a route without a hash, e.g. after closing such a form, keeps the
+    // selected tab.
     followRouteTab() {
       const { routeTab, selectedTab } = this
-      if (
-        this.hasTopLevelTabs &&
-        this.active &&
-        routeTab &&
-        routeTab !== selectedTab
-      ) {
+      if (this.shouldFollowRouteTab && routeTab && routeTab !== selectedTab) {
         // Changes of the hash to the selected tab are the route following the
         // selection, see `selectedTab()`, not a selection by the route.
         this.selectTab(routeTab)
