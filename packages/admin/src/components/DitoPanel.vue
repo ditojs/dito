@@ -44,6 +44,7 @@ component.dito-panel(
 </template>
 
 <script>
+import { markRaw } from 'vue'
 import { isFunction } from '@ditojs/utils'
 import DitoComponent from '../DitoComponent.js'
 import DitoContext from '../DitoContext.js'
@@ -52,6 +53,7 @@ import ValidatorMixin from '../mixins/ValidatorMixin.js'
 import { getButtonSchemas } from '../utils/schema/lookup.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
 import { trackRegistration } from '../utils/registration.js'
+import { DataModel } from '../utils/DataModel.js'
 
 // @vue/component
 export default DitoComponent.component('DitoPanel', {
@@ -177,7 +179,22 @@ export default DitoComponent.component('DitoPanel', {
       this.ownData = isFunction(data)
         ? data(this.context)
         : data
+      // Own data gets its own model, like in dialogs, so that its edits don't
+      // make the displayed data dirty:
+      this.ownDataModel = markRaw(
+        new DataModel({
+          component: this,
+          getSchema: () => this.schema,
+          getData: () => this.ownData
+        })
+      )
     }
+  },
+
+  beforeUnmount() {
+    // Stop the model before the component's own watchers are stopped, as the
+    // model's watchers aren't part of the component, see `DataModel`.
+    this.ownDataModel?.stop()
   },
 
   unmounted() {

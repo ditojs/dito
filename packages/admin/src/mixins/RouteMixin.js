@@ -150,10 +150,10 @@ export default {
     },
 
     // Whether the component has changes that get lost when it's left, see
-    // `beforeRouteChange()` and `DitoRoot`. Directly mutating forms aren't
-    // dirty, as their parent's data keeps the changes, see `DitoForm.isDirty`.
-    hasUnsavedChanges() {
-      return this.isDirty
+    // `beforeRouteChange()` and `DitoRoot`. Forms that edit the item of their
+    // parent leave their changes in the parent's data model.
+    isDirty() {
+      return this.ownDataModel.isDirty
     }
   },
 
@@ -236,7 +236,7 @@ export default {
         } else {
           // The form or view doesn't directly mutate data. If it has unsaved
           // changes, ask if the user wants to persist the data first.
-          if (this.hasUnsavedChanges) {
+          if (this.isDirty) {
             this.discardConfirmation ??= confirm(this, {
               message: (
                 'You have unsaved changes. ' +

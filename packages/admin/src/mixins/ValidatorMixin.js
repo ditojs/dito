@@ -13,10 +13,6 @@ export default {
       return this.schemaComponents.some(it => it.isTouched)
     },
 
-    isDirty() {
-      return this.schemaComponents.some(it => it.isDirty)
-    },
-
     isValid() {
       return this.schemaComponents.every(it => it.isValid)
     },

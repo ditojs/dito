@@ -65,8 +65,7 @@ slot(name="prepend")
           :key="tab"
         )
           //- TODO: Switch to v-if instead of v-show, now that the dirty state
-          //- of forms is based on their data (views still use the dirty flags
-          //- of their components). `navigateToComponent()` then needs to
+          //- is based on the data. `navigateToComponent()` then needs to
           //- select the tab that displays the component.
           DitoPane.dito-pane__tab(
             v-show="isTabSelected(tab)"
@@ -219,7 +218,7 @@ export default DitoComponent.component('DitoSchema', {
     parentSchemaComponent() {
       // Don't return the actual parent schema is this schema handles its own
       // data. This prevents delegating events to the parent, and registering
-      // components with the parent that would cause it to set isDirty flags.
+      // components with the parent.
       return this.hasOwnData ? null : this.parentComponent.schemaComponent
     },
 
@@ -285,10 +284,6 @@ export default DitoComponent.component('DitoSchema', {
       return this.getLabel(
         getItemFormSchema(this.sourceSchema, this.data, this.context)
       )
-    },
-
-    isDirty() {
-      return this.someComponent(it => it.isDirty)
     },
 
     isTouched() {
@@ -810,11 +805,7 @@ export default DitoComponent.component('DitoSchema', {
       for (const name in data) {
         if (name in this.data) {
           if (!equals(this.data[name], data[name])) {
-            // eslint-disable-next-line vue/no-mutating-props
-            this.data[name] = data[name]
-            for (const component of this.getComponentsByName(name)) {
-              component.markDirty()
-            }
+            this.dataModel.set(this.data, name, data[name])
           }
         }
       }

@@ -53,12 +53,13 @@ describe('ValidationMixin', () => {
     })
   })
 
-  describe('markDirty()', () => {
-    it('clears the displayed errors', () => {
+  describe('clearValidation()', () => {
+    it('clears the validation and the displayed errors', () => {
       const component = mountValidation()
-      component.showValidationErrors([{ message: 'is required' }])
-      component.markDirty()
+      expect(component.validate()).toBe(false)
+      component.clearValidation()
       expect(component.errors).toBe(null)
+      expect(component.isValidated).toBe(false)
     })
   })
   describe('verify()', () => {

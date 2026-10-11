@@ -4,20 +4,23 @@ import {
   watch,
   nextTick,
   shallowRef,
-  toRaw
+  toRaw,
+  triggerRef
 } from 'vue'
 import {
   isArray,
   isPlainObject,
-  equals,
-  clone,
-  parseDataPath,
-  getValueAtDataPath
+  equals
 } from '@ditojs/utils'
 import DitoContext from '../DitoContext.js'
 import { DataSchemaResolver } from './DataSchemaResolver.js'
 import { getParentDataPath, getRelativeDataPath } from './data.js'
-import { isEmptySchema } from './schema/lookup.js'
+import {
+  isEmptySchema,
+  getButtonSchemas,
+  hasSubmitButton
+} from './schema/lookup.js'
+import { isSourceWithResource } from './schema/structure.js'
 import {
   getSchemaValue,
   shouldSetDefaultValue,
@@ -26,11 +29,13 @@ import {
   computeValue,
   hasValueFromDataSchema,
   processSchemaData,
-  processData
+  hasItemsNumberedByOrderKey,
+  updateOrder
 } from './schema/data.js'
 
-// DataModel holds the state of the data edited by a form, view or dialog that
-// is derived from schema and data, independently of what is rendered:
+// DataModel holds the state of the data edited by a form, view, dialog or panel
+// with its own data that is derived from schema and data, independently of what
+// is rendered:
 //
 // - Missing values are set to their defaults when the data is set up, and when
 //   they go missing later, e.g. in items that code adds, except the values of
@@ -48,12 +53,15 @@ import {
 //   displays them, see `getOptions()`. Both get the same option objects, and
 //   computes that read options only run once they are loaded.
 // - Submitting waits for the loads of data schemas and options that are still
-//   pending, for a limited time, see `waitUntilSettled()`.
-// - The data is dirty when its processed data differs from a snapshot taken
-//   when the data was set up, saved or applied, see `isDirty`. The values that
-//   the model derives until it settled, e.g. from loaded options, don't count,
-//   see `takeProcessedDataSnapshot()`. Only forms track this, by passing
-//   `getSourceSchema()`, see the constructor.
+//   pending, for a limited time, and for running uploads, see
+//   `waitUntilSettled()`.
+// - Components write the data through the change API, `set()`, `insert()`,
+//   `remove()`, `move()` and `replaceChildren()`, which marks it edited until
+//   it's replaced or saved. Edits are dirty if their owner can save them: the
+//   component, see `canSave()`, or the nearest source with its own resource
+//   that holds the changed list, through a submit button. The model's own
+//   writes, e.g. of defaults and computed values, don't mark the data edited,
+//   and neither do direct writes.
 //
 // Sources with their own resource are skipped, as their items are edited
 // through their own forms.
@@ -74,32 +82,27 @@ export class DataModel {
   // doesn't visit anymore, e.g. of removed items or hidden components, are
   // removed, see `updateComponentRecords()`:
   componentRecords = new EntryMap()
-  // The promises of the loads of data schemas and options that are pending,
-  // see `waitUntilSettled()`:
+  // The promises of the loads that are pending, e.g. of data schemas, options
+  // and uploads, and the ones of them that can't time out, see
+  // `waitUntilSettled()`:
   pendingLoads = new Set()
-  // The data that the snapshot was taken of, and its processed data to compare
-  // with in `isDirty`, see `takeProcessedDataSnapshot()`:
-  processedDataSnapshot = shallowRef(null)
-  // The data paths of the values that the model writes while it settles after
-  // the snapshot is taken, which `isDirty` takes from the current data, `null`
-  // once it settled, see `takeProcessedDataSnapshot()`:
-  derivedValueDataPaths = null
-  // The sets of data paths of the values that the model writes while clean
-  // changes settle, one per pending `applyCleanChanges()`:
-  cleanChangesDerivedValueDataPaths = new Set()
+  #untimedLoads = new Set()
+  // Whether the data was changed through the change API since it was set up or
+  // saved, and the sources with their own resource whose lists were, by their
+  // data and name, if they can save them:
+  #isEdited = shallowRef(false)
+  #dirtySources = shallowRef(new EntryMap())
   // The number of writes of computed values per data path in the current
   // microtask, see `isWriteLoop()`:
   computedValueWriteCounts = null
 
   // `getSchema()` and `getData()` return the schema and the data that the
-  // model handles. `getSourceSchema()` returns the schema of the source that
-  // the data is an item of, as needed by `processData()`. Only forms pass it,
-  // to track whether their data is dirty, see `isDirty`.
-  constructor({ component, getSchema, getData, getSourceSchema = null }) {
+  // model handles, `canSave()` whether the component can save its edits.
+  constructor({ component, getSchema, getData, canSave = () => true }) {
     this.component = component
     this.getSchema = getSchema
     this.getData = getData
-    this.getSourceSchema = getSourceSchema
+    this.canSave = canSave
     this.rootScope = effectScope(true)
     this.rootScope.run(() => {
       watch(
@@ -123,15 +126,8 @@ export class DataModel {
         entries => this.setDefaultValues(entries),
         modelSetupWatchOptions
       )
-      if (getSourceSchema) {
-        // Data that is set up, e.g. loaded, saved or applied, isn't dirty:
-        // After the data is set up, see `modelSetupWatchOptions`.
-        watch(
-          getData,
-          () => this.takeProcessedDataSnapshot().catch(console.error),
-          modelWatchOptions
-        )
-      }
+      // Data that is replaced, e.g. loaded, saved or applied, isn't dirty:
+      watch(getData, () => this.markClean(), { flush: 'sync' })
     })
   }
 
@@ -147,60 +143,140 @@ export class DataModel {
     return this.component.rootData ?? this.getData()
   }
 
-  // Returns whether the processed data differs from the snapshot taken when
-  // the data was set up, saved or applied, see `takeProcessedDataSnapshot()`.
-  // Excluded values don't count, unless their components have `process()`,
-  // see `processData()`, and neither do the values that the model derives
-  // until it settled.
+  // Whether the data has edits that its owners can save, see `canSave()`.
   get isDirty() {
-    const processedDataSnapshot = this.processedDataSnapshot.value
-    const data = this.getData()
-    // A snapshot only applies to the data that it was taken of. Data that was
-    // replaced since isn't dirty until its own snapshot is taken, and neither
-    // is missing data.
-    if (!data || processedDataSnapshot?.data !== data) {
-      return false
+    return (
+      this.#isEdited.value && this.canSave() ||
+      !this.#dirtySources.value.isEmpty
+    )
+  }
+
+  // Whether the data was edited, also where it can't be saved.
+  get isEdited() {
+    return this.#isEdited.value || !this.#dirtySources.value.isEmpty
+  }
+
+  markDirty() {
+    this.#isEdited.value = true
+  }
+
+  // Marks all data clean, or only the list of the source with its own resource
+  // at `data[name]`, once the source saved it.
+  markClean(data, name) {
+    if (data) {
+      this.#dirtySources.value.delete({ data, name })
+      triggerRef(this.#dirtySources)
+    } else {
+      this.#isEdited.value = false
+      this.#dirtySources.value = new EntryMap()
     }
-    const processedData = this.getProcessedDataForDirtyCheck()
-    const processedDataToCompare = this.derivedValueDataPaths
-      ? takeOverValuesAtDataPaths(
-          processedDataSnapshot.processedData,
-          processedData,
-          this.derivedValueDataPaths
-        )
-      : processedDataSnapshot.processedData
-    return !equals(processedData, processedDataToCompare)
+  }
+
+  set(data, key, value) {
+    // Writes that don't change the value aren't edits:
+    if (!equals(data[key], value)) {
+      this.markDirty()
+    }
+    data[key] = value
+  }
+
+  insert(list, index, item) {
+    this.changeList(list, () => list.splice(index, 0, item))
+  }
+
+  remove(list, index) {
+    this.changeList(list, () => list.splice(index, 1))
+  }
+
+  move(list, from, to) {
+    this.changeList(list, () => list.splice(to, 0, ...list.splice(from, 1)))
+  }
+
+  replaceChildren(list, items) {
+    this.changeList(list, () => list.splice(0, list.length, ...items))
+  }
+
+  // Changes the list in place and numbers its items again by the order key of
+  // its schema, starting at the order of its first item, so that lists loaded
+  // from later pages keep their offset. The change belongs to the nearest
+  // source with its own resource that holds the list or is it, if any, e.g. a
+  // tree whose children change.
+  changeList(list, change) {
+    const { listEntry, sourceEntry } = this.getListEntries(list)
+    const schema = listEntry?.schema
+    const isNumbered = !!schema && hasItemsNumberedByOrderKey(schema)
+    const offset = isNumbered ? (list[0]?.[schema.orderKey] ?? 0) : 0
+    change()
+    if (isNumbered) {
+      updateOrder(schema, list, offset)
+    }
+    if (!sourceEntry) {
+      this.markDirty()
+    } else if (hasSubmitButton(getButtonSchemas(sourceEntry.schema.buttons))) {
+      this.#dirtySources.value.set(sourceEntry, true)
+      triggerRef(this.#dirtySources)
+    }
+  }
+
+  // Returns the entry of the component whose value is the list, and the one of
+  // the nearest source with its own resource that holds the list or is it, by
+  // walking the data, also into sources with their own resource.
+  getListEntries(list) {
+    const schema = this.getSchema()
+    const data = this.getData()
+    const sourceEntries = []
+    let listEntry = null
+    let sourceEntry = null
+    if (data && !isEmptySchema(schema)) {
+      processSchemaData(schema, data, {
+        before: entry => {
+          if (isSourceWithResource(entry.schema)) {
+            sourceEntries.push(entry)
+          }
+          if (toRaw(entry.data[entry.name]) === toRaw(list)) {
+            listEntry = entry
+            sourceEntry = sourceEntries.at(-1) ?? null
+          }
+        },
+        after: entry => {
+          if (isSourceWithResource(entry.schema)) {
+            sourceEntries.pop()
+          }
+        },
+        options: { component: this.component, rootData: this.rootData }
+      })
+    }
+    return { listEntry, sourceEntry }
   }
 
   stop() {
     this.rootScope.stop()
     this.componentRecords.clear()
     this.pendingLoads.clear()
+    this.#untimedLoads.clear()
   }
 
-  // Whether loads of data schemas or options are pending, see
-  // `waitUntilSettled()`.
+  // Whether loads are pending, see `waitUntilSettled()`.
   get hasPendingLoads() {
     return this.pendingLoads.size > 0
   }
 
-  // Waits for the pending loads of data schemas and options, including the
-  // ones that they cause, e.g. options that depend on computed values that
-  // depend on loaded options, and for the watchers to write the resulting
-  // computed values into the data.
+  // Waits for the pending loads, including the ones that they cause, e.g.
+  // options that depend on computed values that depend on loaded options, and
+  // for the watchers to write the resulting computed values into the data.
   // Loads that never finish, e.g. hung requests, would block callers like
   // `submit()` forever. After `timeout` milliseconds, the wait gives up with a
   // warning and resolves, as the server validates the data anyway, while the
-  // loads keep running. `timeout: null` waits as long as it takes, for the
-  // model's own bookkeeping, which nothing waits for.
+  // loads keep running. Loads that can't time out, e.g. uploads, which take as
+  // long as their files need, are waited for first.
   async waitUntilSettled({ timeout = settleTimeout } = {}) {
+    while (this.#untimedLoads.size > 0) {
+      await Promise.all(this.#untimedLoads)
+    }
     let timeoutId = null
-    const timedOut =
-      timeout != null
-        ? new Promise(resolve => {
-            timeoutId = setTimeout(() => resolve(true), timeout)
-          })
-        : null
+    const timedOut = new Promise(resolve => {
+      timeoutId = setTimeout(() => resolve(true), timeout)
+    })
     const settled = (async () => {
       while (this.hasPendingLoads) {
         await Promise.all(this.pendingLoads)
@@ -209,11 +285,7 @@ export class DataModel {
       return false
     })()
     try {
-      const hasTimedOut = await (
-        timedOut
-          ? Promise.race([settled, timedOut])
-          : settled
-      )
+      const hasTimedOut = await Promise.race([settled, timedOut])
       if (hasTimedOut) {
         console.warn(
           `The data model didn't settle within ${timeout}ms, as ` +
@@ -226,146 +298,18 @@ export class DataModel {
     }
   }
 
-  // Takes the snapshot of the processed data that `isDirty` compares with,
-  // when the data is set up, saved or applied. Until the model settled, i.e.
-  // the pending loads finished and the computed values that depend on them are
-  // written into the data, see `waitUntilSettled()`, the values that the
-  // model writes are recorded in `derivedValueDataPaths` and don't count, as
-  // they're derived from the data, e.g. from loaded options. Once settled, they
-  // are taken over into the snapshot, so that changes made in the meantime,
-  // e.g. by the user, count right away. Values that the model derives from
-  // these changes while it settles are taken over too, so reverting the
-  // changes afterwards leaves the data dirty, which only asks for confirmation
-  // unnecessarily.
-  async takeProcessedDataSnapshot() {
-    const data = this.getData()
-    const derivedValueDataPaths = data ? new Set() : null
-    this.derivedValueDataPaths = derivedValueDataPaths
-    this.processedDataSnapshot.value = data
-      ? { data, processedData: clone(this.getProcessedDataForDirtyCheck()) }
-      : null
-    if (!data) {
-      return
-    }
-    // Let the watchers and the rendering start their loads first:
-    await nextTick()
-    await this.waitUntilSettled({ timeout: null })
-    // Snapshots that were taken since settle by themselves.
-    const isSnapshotReplaced = (
-      this.derivedValueDataPaths !==
-      derivedValueDataPaths
-    )
-    // Check whether the model stopped first, as its component may be gone.
-    const isModelStopped = !this.rootScope.active
-    if (isSnapshotReplaced || isModelStopped) {
-      return
-    }
-    this.derivedValueDataPaths = null
-    const processedDataSnapshot = this.processedDataSnapshot.value
-    // Guard against data that its component replaced while the model settled
-    // without taking a new snapshot, whose values don't belong to this one:
-    if (processedDataSnapshot?.data === this.getData()) {
-      this.processedDataSnapshot.value = {
-        data,
-        processedData: takeOverValuesAtDataPaths(
-          processedDataSnapshot.processedData,
-          this.getProcessedDataForDirtyCheck(),
-          derivedValueDataPaths
-        )
-      }
-    }
-  }
-
-  // Returns the processed data that `isDirty` compares with
-  // `processedDataSnapshot`, and that the snapshot is taken of. The data is
-  // processed like for the clipboard, not for the server, which gives
-  // references to new items random prefixes each time, see
-  // `SchemaGraph.getReferencePrefix()`.
-  getProcessedDataForDirtyCheck() {
-    const schema = this.getSchema()
-    const data = this.getData()
-    return data && !isEmptySchema(schema)
-      ? processData(schema, this.getSourceSchema(), data, this.dataPath, {
-          // Like `getComputedValueResult()`:
-          component: this.component.mainSchemaComponent ?? this.component,
-          rootData: this.rootData,
-          schemaOnly: true,
-          target: 'clipboard',
-          // Reading the dirty state doesn't call `process()`, see
-          // `processData()`:
-          shouldCallProcess: false
-        })
-      : null
-  }
-
-  // Makes clean changes to the data, which don't make it dirty, while other
-  // changes still do, e.g. to apply what an action on the server already
-  // saved: The values that `makeChanges()` changes in the processed data are
-  // compared right after it is called synchronously, so that changes made
-  // while the model settles, e.g. by the user, aren't included. Once the model
-  // settled, they are taken over into the snapshot, along with the values that
-  // the model writes in the meantime, e.g. derived from the changes. Like in
-  // `takeProcessedDataSnapshot()`, these include the values derived from
-  // other changes. Arrays whose length changes are taken over as a whole, see
-  // `takeOverChangedValues()`.
-  async applyCleanChanges(makeChanges) {
-    const data = this.getData()
-    const hasSnapshotOfData = this.processedDataSnapshot.value?.data === data
-    // Clone the processed data, as it shares nested values with the data,
-    // which `makeChanges()` may change in place.
-    const processedDataBeforeChanges = hasSnapshotOfData
-      ? clone(this.getProcessedDataForDirtyCheck())
-      : null
-    makeChanges()
-    if (hasSnapshotOfData) {
-      const processedDataAfterChanges = clone(
-        this.getProcessedDataForDirtyCheck()
-      )
-      const derivedValueDataPaths = new Set()
-      this.cleanChangesDerivedValueDataPaths.add(derivedValueDataPaths)
-      try {
-        // Let the watchers write the values derived from the changes first:
-        await nextTick()
-        await this.waitUntilSettled({ timeout: null })
-      } finally {
-        this.cleanChangesDerivedValueDataPaths.delete(derivedValueDataPaths)
-      }
-      // Take the changes over into the current snapshot of the data, which may
-      // have been replaced in the meantime, e.g. once the model settled.
-      const processedDataSnapshot = this.processedDataSnapshot.value
-      if (processedDataSnapshot?.data === data && this.rootScope.active) {
-        this.processedDataSnapshot.value = {
-          data,
-          processedData: takeOverValuesAtDataPaths(
-            takeOverChangedValues(
-              processedDataSnapshot.processedData,
-              processedDataBeforeChanges,
-              processedDataAfterChanges
-            ),
-            this.getProcessedDataForDirtyCheck(),
-            derivedValueDataPaths
-          )
-        }
-      }
-    }
-  }
-
-  // Records the data path of a computed value that the model writes, as
-  // derived while it settles, see `takeProcessedDataSnapshot()` and
-  // `applyCleanChanges()`. Defaults don't need to be recorded, as the processed
-  // data holds the defaults of missing values already, see `processData()`.
-  recordDerivedValueDataPath(dataPath) {
-    this.derivedValueDataPaths?.add(dataPath)
-    for (const dataPaths of this.cleanChangesDerivedValueDataPaths) {
-      dataPaths.add(dataPath)
-    }
-  }
-
   // Tracks the promise of a pending load until it settles, so that
-  // `waitUntilSettled()` waits for it.
-  trackPendingLoad(promise) {
+  // `waitUntilSettled()` waits for it, also beyond its timeout with
+  // `canTimeOut: false`.
+  trackPendingLoad(promise, { canTimeOut = true } = {}) {
     this.pendingLoads.add(promise)
-    promise.finally(() => this.pendingLoads.delete(promise))
+    if (!canTimeOut) {
+      this.#untimedLoads.add(promise)
+    }
+    promise.finally(() => {
+      this.pendingLoads.delete(promise)
+      this.#untimedLoads.delete(promise)
+    })
   }
 
   // Sets missing values to their defaults and numbers the items of lists by
@@ -554,14 +498,6 @@ export class DataModel {
     return scope
   }
 
-  // Returns whether the model computes the value of the component with the
-  // data and name of the entry, i.e. whether its walk of the data visits the
-  // component.
-  hasComputedValueEntry(entry) {
-    const currentEntry = this.dataEntries.value.recordedEntries.get(entry)
-    return !!currentEntry && hasComputedValueSource(currentEntry.schema)
-  }
-
   // Returns whether the record's component is still one of the current
   // entries, with the same schema, see `getDataEntries()`.
   isRecordCurrent(record, schema) {
@@ -661,9 +597,6 @@ export class DataModel {
       if (this.isWriteLoop(dataPath)) {
         return
       }
-      // Values written while the model settles are derived, see
-      // `takeProcessedDataSnapshot()`:
-      this.recordDerivedValueDataPath(dataPath)
       // Access `data[name]` directly to update the value without calling
       // `parse()`, see `ValueMixin`:
       data[name] = value
@@ -784,76 +717,6 @@ export class DataModel {
   }
 }
 
-// Returns a copy of `processedData` with the values at `dataPaths` taken over
-// from `currentProcessedData`, or removed if they're missing there. Values
-// whose parents are missing in `processedData` are left out, as their parents
-// differ anyway.
-function takeOverValuesAtDataPaths(
-  processedData,
-  currentProcessedData,
-  dataPaths
-) {
-  if (dataPaths.size === 0) {
-    return processedData
-  }
-  const result = clone(processedData)
-  for (const dataPath of dataPaths) {
-    const tokens = parseDataPath(dataPath)
-    const parentDataPath = tokens.slice(0, -1)
-    const key = tokens.at(-1)
-    const parent = getValueAtDataPath(result, parentDataPath, () => null)
-    if (parent && typeof parent === 'object') {
-      const value = getValueAtDataPath(
-        currentProcessedData,
-        dataPath,
-        () => notFound
-      )
-      if (value === notFound) {
-        delete parent[key]
-      } else {
-        parent[key] = clone(value)
-      }
-    }
-  }
-  return result
-}
-
-// Returns a copy of `target` with the values that differ between `before` and
-// `after` taken over from `after`, comparing objects and arrays of the same
-// length entry by entry. Arrays whose length changed are taken over as a whole,
-// as their entries can't be matched, including changes of their entries that
-// were made before.
-function takeOverChangedValues(target, before, after) {
-  if (equals(before, after)) {
-    return target
-  }
-  const isSameShape = (
-    (
-      isPlainObject(before) &&
-      isPlainObject(after) &&
-      isPlainObject(target)
-    ) || (
-      isArray(before) &&
-      isArray(after) &&
-      isArray(target) &&
-      before.length === after.length &&
-      after.length === target.length
-    )
-  )
-  if (!isSameShape) {
-    return clone(after)
-  }
-  const result = isArray(target) ? [...target] : { ...target }
-  for (const key of new Set([...Object.keys(before), ...Object.keys(after)])) {
-    if (!(key in after)) {
-      delete result[key]
-    } else {
-      result[key] = takeOverChangedValues(target[key], before[key], after[key])
-    }
-  }
-  return result
-}
-
 // Returns `value` with the plain objects and arrays in it that are one of
 // `objects` or hold one of them copied, shallowly, and the others as they are.
 // Values that occur more than once are copied at each occurrence, so that
@@ -879,8 +742,6 @@ function copyContainersHolding(value, objects, ancestorValues = new Set()) {
   ancestorValues.delete(value)
   return copy ?? value
 }
-
-const notFound = Symbol('notFound')
 
 // The watchers of the model that set up the data and the scopes of its
 // components run before the components render, so that components of new
@@ -927,9 +788,8 @@ function createComponentRecord(entry) {
   }
 }
 
-// Holds values by the data and name of the entries of components, see
-// `DataModel.componentRecords`. The data is compared by its raw object, as it
-// may be passed through reactive proxies.
+// Holds values by the data and name of the entries of components. The data is
+// compared by its raw object, as it may be passed through reactive proxies.
 class EntryMap {
   valuesByData = new Map()
 
@@ -945,6 +805,10 @@ class EntryMap {
       this.valuesByData.set(rawData, valuesByName)
     }
     valuesByName.set(name, value)
+  }
+
+  get isEmpty() {
+    return this.valuesByData.size === 0
   }
 
   delete({ data, name }) {

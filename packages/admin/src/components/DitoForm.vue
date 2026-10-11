@@ -63,7 +63,10 @@ import RouteMixin from '../mixins/RouteMixin.js'
 import ResourceMixin from '../mixins/ResourceMixin.js'
 import { getResource, getMemberResource } from '../utils/resource.js'
 import { isObjectSource } from '../utils/schema/structure.js'
-import { getButtonSchemas } from '../utils/schema/lookup.js'
+import {
+  getButtonSchemas,
+  hasSubmitButton
+} from '../utils/schema/lookup.js'
 import { getComponentPathByDataPath } from '../utils/schema/data.js'
 import { appendDataPath } from '../utils/data.js'
 import { resolvePath } from '../utils/path.js'
@@ -157,17 +160,25 @@ export default DitoComponent.component('DitoForm', {
       return this.param === 'create'
     },
 
-    isDirty() {
-      // Forms that mutate the inherited data directly aren't dirty themselves,
-      // their changes make the form that owns the data dirty instead.
-      return !this.isMutating && this.dataModel.isDirty
-    },
-
     isMutating() {
       // When `sourceSchema.mutate` is true, the form edits the inherited data
       // directly instead of making a copy for persistence upon submission.
       // See `inheritedData()` computed property for more details.
       return !!this.sourceSchema.mutate
+    },
+
+    // Whether the form edits the item in the data of its parent directly,
+    // unlike mutating forms that create their item or load it themselves.
+    isEditingSourceItem() {
+      return this.isMutating && this.data === this.inheritedData
+    },
+
+    // @override DitoMixin.dataModel()
+    // Forms that edit the item of their parent edit it through its model:
+    dataModel() {
+      return this.isEditingSourceItem
+        ? this.parentRouteComponent.dataModel
+        : this.ownDataModel
     },
 
     selectedTab() {
@@ -381,13 +392,14 @@ export default DitoComponent.component('DitoForm', {
 
   created() {
     // Writes defaults and computed values into the form's data, resolves
-    // options and tracks whether the data is dirty, see `DataModel`:
+    // options and tracks whether the data is dirty, see `DataModel`. The item
+    // of the parent is handled by the parent's model, see `dataModel`:
     this.ownDataModel = markRaw(
       new DataModel({
         component: this,
         getSchema: () => this.schema,
-        getData: () => this.data,
-        getSourceSchema: () => this.sourceSchema
+        getData: () => (this.isEditingSourceItem ? null : this.data),
+        canSave: () => hasSubmitButton(this.buttonSchemas)
       })
     )
   },
@@ -460,7 +472,11 @@ export default DitoComponent.component('DitoForm', {
         ) {
           localData[childrenName] = sourceItem[childrenName]
         }
-        this.sourceData[this.sourceKey] = localData
+        this.parentRouteComponent.dataModel.set(
+          this.sourceData,
+          this.sourceKey,
+          localData
+        )
         mainSchemaComponent.onChange()
         return true
       }
@@ -468,9 +484,19 @@ export default DitoComponent.component('DitoForm', {
     },
 
     addSourceData(data) {
-      return isObjectSource(this.sourceSchema)
-        ? this.setSourceData(data)
-        : !!this.sourceData?.push(data)
+      const { sourceData } = this
+      if (isObjectSource(this.sourceSchema)) {
+        return this.setSourceData(data)
+      } else if (sourceData) {
+        this.parentRouteComponent.dataModel.insert(
+          sourceData,
+          sourceData.length,
+          data
+        )
+        return true
+      } else {
+        return false
+      }
     },
 
     // Required by ResourceMixin, see its contract.
@@ -491,13 +517,6 @@ export default DitoComponent.component('DitoForm', {
         this.loadedData = data
         return this.data
       }
-    },
-
-    // Makes clean changes to the data, which don't make the form dirty, e.g. to
-    // apply what an action on the server already saved, see
-    // `DataModel.applyCleanChanges()`.
-    applyCleanChanges(makeChanges) {
-      return this.dataModel.applyCleanChanges(makeChanges)
     },
 
     async cancel() {
@@ -605,9 +624,7 @@ export default DitoComponent.component('DitoForm', {
         this.resetValidation()
         // The saved or applied data isn't dirty, also when it isn't replaced,
         // e.g. by a response without data, and before the closing below:
-        this.dataModel
-          .takeProcessedDataSnapshot()
-          .catch(console.error)
+        this.ownDataModel.markClean()
         if (closeForm || button.closeForm) {
           this.close()
         } else if (this.isCreating) {

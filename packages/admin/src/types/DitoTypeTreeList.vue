@@ -29,7 +29,6 @@ import DitoTypeComponent from '../DitoTypeComponent.js'
 import SourceMixin from '../mixins/SourceMixin.js'
 import { resolveSchemaComponents } from '../utils/schema/setup.js'
 import { getFormSchemas } from '../utils/schema/lookup.js'
-import { updateOrder } from '../utils/schema/data.js'
 import { appendDataPath, getParentDataPath } from '../utils/data.js'
 import { isPathWithin } from '../utils/route.js'
 
@@ -92,30 +91,21 @@ export default DitoTypeComponent.register(
       // writer of the tree, see `DitoTreeItem.changeChildren()`.
       changeChildren({ data, dataPath, childrenSchema, children }) {
         const { name } = childrenSchema
-        const previousChildren = data[name]
+        const list = data[name]
         // Keep the form of an edited child, or of one of its descendants, open
         // at the child's new index, or close it if the child was removed:
         const getChildPath = index =>
           this.getFormPath(appendDataPath(dataPath, `${name}/${index}`))
         const { path: routePath, query } = this.$route
-        const editedIndex = (
-          previousChildren?.findIndex((child, index) => {
-            const path = getChildPath(index)
-            return !!path && isPathWithin(routePath, path)
-          }) ??
-          -1
-        )
+        const editedIndex = list.findIndex((child, index) => {
+          const path = getChildPath(index)
+          return !!path && isPathWithin(routePath, path)
+        })
+        const editedChild = list[editedIndex]
         const editedPath = editedIndex >= 0 ? getChildPath(editedIndex) : null
-        updateOrder(childrenSchema, children)
-        if (data === this.treeData && this.isListSource) {
-          // The root item of tree lists holds the list in a wrapper object,
-          // see `treeData`.
-          this.value = children
-        } else {
-          data[name] = children
-        }
+        this.dataModel.replaceChildren(list, children)
         if (editedPath) {
-          const index = children.indexOf(previousChildren[editedIndex])
+          const index = list.indexOf(editedChild)
           if (index !== editedIndex) {
             const path =
               index >= 0

@@ -43,7 +43,6 @@
       :options="getDraggableOptions()"
       :draggable="draggable"
       :modelValue="listData"
-      @update:modelValue="value => (listData = value)"
     )
       tr(
         v-for="(item, index) in listData"
@@ -142,7 +141,6 @@ import {
 } from '../utils/schema/setup.js'
 import { createFiltersPanel, getFiltersDataErrors } from '../utils/filter.js'
 import { appendDataPath } from '../utils/data.js'
-import { getListWithMovedItem } from '../utils/list.js'
 import { hyphenate } from '@ditojs/utils'
 import { computed } from 'vue'
 
@@ -183,6 +181,10 @@ export default DitoTypeComponent.register('list', {
   },
 
   computed: {
+    sortableList() {
+      return this.listData
+    },
+
     hasPagination() {
       return !!this.paginate
     },
@@ -243,15 +245,6 @@ export default DitoTypeComponent.register('list', {
 
     getEditPath(index) {
       return this.editable ? this.getItemPath(index) : null
-    },
-
-    // Moves the item by `delta` positions, see `DitoDragHandle`.
-    moveItem(item, delta) {
-      const listData = getListWithMovedItem(this.listData, item, delta)
-      if (listData) {
-        this.listData = listData
-        this.onChange()
-      }
     },
 
     getCellClass(column) {

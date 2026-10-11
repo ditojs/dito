@@ -356,15 +356,7 @@ export function processData(schema, sourceSchema, data, dataPath, {
   component,
   rootData,
   schemaOnly, // whether to only include data covered by the schema, or all data
-  target,
-  // Whether to call the schema callbacks `process()`. Data that is compared
-  // while it's edited, e.g. by `DataModel.isDirty`, isn't validated yet, which
-  // the callbacks may rely on. Without them, the types still process the values
-  // through `processValue()`, and the excluded values of components with
-  // `process()` are kept, as `process()` may store them elsewhere through
-  // `processedItem`. Computed values are in the data already, as `DataModel`
-  // writes them, see `computeValue()`.
-  shouldCallProcess = true
+  target
 } = {}) {
   const options = { component, rootData, schemaOnly, target }
   const processedData = cloneItem(sourceSchema, data, options)
@@ -433,14 +425,11 @@ export function processData(schema, sourceSchema, data, dataPath, {
 
     // Handle the user's `process()` callback next, if one is provided, so that
     // it can modify data in `processedData` even if it provides `exclude: true`
-    if (process && shouldCallProcess) {
+    if (process) {
       value = process(getContext(context))
     }
 
-    // Without calling `process()`, keep the excluded values that it may store
-    // elsewhere, see `shouldCallProcess`:
-    const shouldKeepExcludedValue = !!process && !shouldCallProcess
-    if (!shouldKeepExcludedValue && shouldExcludeValue(schema, context)) {
+    if (shouldExcludeValue(schema, context)) {
       delete processedData[name]
     } else {
       processedData[name] = value
@@ -712,12 +701,11 @@ export function hasItemsNumberedByOrderKey(schema) {
   return !!schema.orderKey && !schema.wrapPrimitives
 }
 
-export function updateOrder(sourceSchema, list, paginationRange) {
+// Numbers the items of the list by the order key of `sourceSchema`, starting
+// at `offset`, e.g. of the loaded page.
+export function updateOrder(sourceSchema, list, offset = 0) {
   const { orderKey } = sourceSchema
   if (orderKey) {
-    // Reorder the changed entries by their order key, taking pagination
-    // offsets into account:
-    const offset = paginationRange?.[0] || 0
     for (let i = 0; i < list.length; i++) {
       list[i][orderKey] = i + offset
     }

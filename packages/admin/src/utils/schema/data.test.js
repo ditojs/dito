@@ -474,68 +474,6 @@ describe('processData()', () => {
       })
     })
   })
-
-  describe('with `shouldCallProcess: false`', () => {
-    // `DitoContext` needs a component to inherit from:
-    const component = {}
-    const options = {
-      component,
-      target: 'clipboard',
-      shouldCallProcess: false
-    }
-
-    it('falls back to defaults without calling `process()`', () => {
-      const process = vi.fn(({ value }) => value)
-      const schema = {
-        type: 'form',
-        components: {
-          title: { type: 'text', process },
-          upper: { type: 'text', default: 'None' }
-        }
-      }
-      expect(
-        processData(schema, { type: 'list' }, { title: 'Book' }, '', options)
-      ).toEqual({ title: 'Book', upper: 'None' })
-      expect(process).not.toHaveBeenCalled()
-    })
-
-    it("processes values through their types' `processValue()`", () => {
-      const schema = {
-        type: 'form',
-        components: { author: { type: 'reference' } }
-      }
-      const data = { author: { id: 1, name: 'Author' } }
-      expect(processData(schema, { type: 'list' }, data, '', options)).toEqual({
-        author: { id: 1 }
-      })
-    })
-
-    it('keeps excluded values of components with `process()`', () => {
-      const schema = {
-        type: 'form',
-        components: {
-          tagsText: {
-            type: 'text',
-            exclude: true,
-            process: ({ value, processedItem }) => {
-              processedItem.tags = value.split(',')
-            }
-          },
-          search: { type: 'text', exclude: true }
-        }
-      }
-      const data = { tagsText: 'a,b', search: 'Search' }
-      expect(processData(schema, { type: 'list' }, data, '', options)).toEqual({
-        tagsText: 'a,b'
-      })
-      expect(
-        processData(schema, { type: 'list' }, data, '', {
-          component,
-          target: 'server'
-        })
-      ).toEqual({ tags: ['a', 'b'] })
-    })
-  })
 })
 
 describe('shouldRenderSchema()', () => {
@@ -856,9 +794,9 @@ describe('getItemUid()', () => {
 })
 
 describe('updateOrder()', () => {
-  it('numbers the items by their order key, offset by the pagination', () => {
+  it('numbers the items by their order key, starting at the offset', () => {
     const list = [{ title: 'A' }, { title: 'B' }]
-    expect(updateOrder({ orderKey: 'position' }, list, [10, 20])).toBe(list)
+    expect(updateOrder({ orderKey: 'position' }, list, 10)).toBe(list)
     expect(list).toEqual([
       { title: 'A', position: 10 },
       { title: 'B', position: 11 }

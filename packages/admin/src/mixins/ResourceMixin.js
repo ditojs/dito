@@ -261,11 +261,12 @@ export default {
               }
             }
           } else {
-            // Skip applying response data on a dirty form: `setData` would
+            // Skip applying response data on an edited form: `setData` would
             // wholesale-replace `loadedData` and clobber any local edits the
-            // user made while the GET was in flight. The `'load'` event still
-            // fires — the GET *did* complete; we just chose not to apply it.
-            if (!(this.isForm && this.isDirty)) {
+            // user made while the GET was in flight, also in forms that can't
+            // save them. The `'load'` event still fires — the GET *did*
+            // complete; we just chose not to apply it.
+            if (!(this.isForm && this.dataModel.isEdited)) {
               this.setData(response.data)
             }
             // Await the handlers, so that their errors are notified below.
@@ -379,6 +380,8 @@ export default {
     },
 
     async submit(button) {
+      // Wait for the data that's still loading, e.g. uploads, like forms do:
+      await this.waitUntilDataModelSettled()
       let { resource } = button.schema
       resource = getResource(resource, {
         parent: this.getResource({

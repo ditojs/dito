@@ -264,10 +264,11 @@ describe('DitoTypeTreeList', () => {
     }
 
     it('moves children with their drag handles by keyboard', async () => {
-      const { findField, data } = await mountForm({
+      const { findField, data, routeComponent } = await mountForm({
         schema: createDraggableSiteSchema(),
         data: site
       })
+      expect(routeComponent.isDirty).toBe(false)
       await findHandle(findField('pages'), 'Team').trigger('keydown', {
         key: 'ArrowDown',
         altKey: true
@@ -277,6 +278,7 @@ describe('DitoTypeTreeList', () => {
         { title: 'History' },
         { title: 'Team' }
       ])
+      expect(routeComponent.isDirty).toBe(true)
       await findHandle(findField('pages'), 'Contact').trigger('keydown', {
         key: 'ArrowUp',
         altKey: true
@@ -381,7 +383,7 @@ describe('DitoTypeTreeList', () => {
     })
 
     it('reorders the children of tree objects in the object', async () => {
-      const { admin, findField, data } = await mountForm({
+      const { admin, findField, data, routeComponent } = await mountForm({
         schema: {
           components: {
             site: {
@@ -412,6 +414,7 @@ describe('DitoTypeTreeList', () => {
         title: 'Home',
         pages: [{ title: 'Contact' }, { title: 'About' }]
       })
+      expect(routeComponent.isDirty).toBe(true)
       await findHandle(findField('site'), 'Contact').trigger('keydown', {
         key: 'ArrowDown',
         altKey: true

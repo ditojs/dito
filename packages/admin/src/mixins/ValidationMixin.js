@@ -7,7 +7,6 @@ export default {
   data() {
     return {
       isTouched: false,
-      isDirty: false,
       isValidated: false,
       isValid: false,
       errors: null,
@@ -25,10 +24,7 @@ export default {
   methods: {
     resetValidation() {
       this.isTouched = false
-      this.isDirty = false
-      this.isValidated = false
-      this.isValid = false
-      this.clearErrors()
+      this.clearValidation()
     },
 
     validate(notify = true) {
@@ -55,11 +51,10 @@ export default {
       this.isTouched = true
     },
 
-    markDirty() {
-      this.isDirty = true
+    // Clears the validation and the displayed errors on new input.
+    clearValidation() {
       this.isValidated = false
       this.isValid = false
-      // Clear currently displayed errors on new input.
       this.clearErrors()
     },
 

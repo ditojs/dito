@@ -173,7 +173,6 @@ export default {
       this._registerWithSchemaComponent
     )
     this.setupSchemaFields()
-    this.warnAboutUncomputedValue()
   },
 
   unmounted() {
@@ -182,24 +181,6 @@ export default {
   },
 
   methods: {
-    // Only the data model calls `compute()`, see `computeValue()`. Components
-    // that it doesn't visit, e.g. in panels with their own data, never get
-    // their values computed.
-    warnAboutUncomputedValue() {
-      if (
-        this.schema.compute &&
-        !this.dataModel.hasComputedValueEntry({
-          data: this.data,
-          name: this.name
-        })
-      ) {
-        console.warn(
-          `The value of the component at '${this.componentPath}' isn't ` +
-          `computed, as its data isn't part of a data model.`
-        )
-      }
-    },
-
     _registerWithSchemaComponent(add, componentPath) {
       // Register unnested type components separately, to prevent them from
       // overriding parent data paths.
@@ -287,20 +268,13 @@ export default {
     },
 
     onInput() {
-      this.markDirty()
+      this.clearValidation()
       this.emitEvent('input')
     },
 
     onChange() {
-      this.markDirty()
-      this.emitChangeEvent()
-    },
-
-    // Emits the `change` event without marking the component dirty, e.g. for
-    // changes that are already persisted through a resource, see
-    // `SourceMixin.removeItem()`.
-    emitChangeEvent() {
-      return this.emitEvent('change', {
+      this.clearValidation()
+      this.emitEvent('change', {
         context: {
           // Prevent endless parse recursion:
           value: this.parsedValue !== undefined ? this.parsedValue : this.value

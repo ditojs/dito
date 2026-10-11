@@ -116,7 +116,7 @@ describe('SourceMixin', () => {
       stubConfirm()
       const onChange = vi.fn()
       const requests = []
-      const { findField, getComponent, routeComponent } = await mountForm({
+      const { findField, routeComponent } = await mountForm({
         schema: {
           components: {
             title: { type: 'text' },
@@ -140,9 +140,111 @@ describe('SourceMixin', () => {
       await flushPromises()
       expect(requests).toContain('delete /items/1/reviews/7')
       expect(onChange).toHaveBeenCalledOnce()
-      expect(getComponent('reviews').isDirty).toBe(false)
       expect(routeComponent.isDirty).toBe(false)
     })
+
+    it('numbers the items left after deleting one through the resource', async () => {
+      stubConfirm()
+      // The list loads again after the deletion, which we hold back:
+      let reload = null
+      const { findField, data, routeComponent } = await mountForm({
+        schema: {
+          components: {
+            title: { type: 'text' },
+            reviews: {
+              type: 'list',
+              resource: { path: 'reviews' },
+              deletable: true,
+              orderKey: 'position',
+              form: { type: 'form', components: { text: { type: 'text' } } }
+            }
+          }
+        },
+        data: { title: 'Orlando' },
+        request: ({ method = 'get' }) =>
+          method === 'delete'
+            ? { data: {} }
+            : (reload?.promise ?? {
+                data: [
+                  { id: 7, text: 'Great' },
+                  { id: 8, text: 'Fine' }
+                ]
+              })
+      })
+      reload = Promise.withResolvers()
+      await findField('reviews').find('.dito-button--delete').trigger('click')
+      await flushPromises()
+      expect(data.reviews).toEqual([{ id: 8, text: 'Fine', position: 0 }])
+      expect(routeComponent.isDirty).toBe(false)
+      reload.resolve({ data: data.reviews })
+      await flushPromises()
+    })
+
+    it('removes objects deleted through their resource, staying clean', async () => {
+      stubConfirm()
+      let review = { id: 7, text: 'Great' }
+      const { findField, data, routeComponent } = await mountForm({
+        schema: {
+          components: {
+            title: { type: 'text' },
+            review: {
+              type: 'object',
+              resource: { path: 'review' },
+              deletable: true,
+              form: { type: 'form', components: { text: { type: 'text' } } }
+            }
+          }
+        },
+        data: { title: 'Orlando' },
+        request: ({ method = 'get' }) => {
+          if (method === 'delete') {
+            review = null
+          }
+          return { data: method === 'get' ? review : {} }
+        }
+      })
+      await findField('review').find('.dito-button--delete').trigger('click')
+      await flushPromises()
+      expect(data.review).toBe(null)
+      expect(routeComponent.isDirty).toBe(false)
+    })
+  })
+
+  it('waits for pending loads before submitting through its buttons', async () => {
+    const admin = await mountAdmin({
+      views: {
+        books: {
+          type: 'view',
+          component: {
+            type: 'list',
+            resource: { path: 'books' },
+            columns: { title: {} },
+            buttons: {
+              saveOrder: {
+                type: 'submit',
+                resource: { path: 'order', method: 'post' }
+              }
+            }
+          }
+        }
+      },
+      request: ({ method = 'get', data }) =>
+        method === 'get' ? { data: [{ id: 1, title: 'Dune' }] } : { data }
+    })
+    await admin.navigate('/books')
+    const view = admin.getRouteComponent(it => it.isView)
+    // E.g. a running upload, which can't time out:
+    const upload = Promise.withResolvers()
+    view.dataModel.trackPendingLoad(upload.promise, { canTimeOut: false })
+    await admin.wrapper.find('button[id$="saveOrder"]').trigger('click')
+    await flushPromises()
+    const isPosted = () =>
+      admin.request.mock.calls.some(([{ method }]) => method === 'post')
+    expect(isPosted()).toBe(false)
+    upload.resolve()
+    await settle(view)
+    expect(isPosted()).toBe(true)
+    unmountAdmin(admin)
   })
 
   describe('navigateToComponent()', () => {
