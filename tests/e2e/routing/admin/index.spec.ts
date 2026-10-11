@@ -35,9 +35,6 @@ async function editSecondEntry(page: Page, listLabel: string) {
   ).toHaveValue('Second')
 }
 
-// The tests marked with `test.fail()` describe known bugs: Routes, edit links
-// and the data paths of forms are each derived on their own, and disagree in
-// these configurations.
 test.describe('routes of nested forms', () => {
   test('opens the forms of list items', async ({ page, url }) => {
     const id = await openBook(page, url, { chapters: entries })
@@ -72,68 +69,56 @@ test.describe('routes of nested forms', () => {
     await expect(page.getByLabel('Title', { exact: true })).toHaveValue('Emma')
   })
 
-  test.fail(
-    'opens the forms of lists with their own path',
-    async ({
-      page,
-      url
-    }) => {
-      const id = await openBook(page, url, { appendices: entries })
-      await editSecondEntry(page, 'Appendices')
-      await expect(page).toHaveURL(new RegExp(`/books/${id}/extras/1$`))
-    }
-  )
+  test('opens the forms of lists with their own path', async ({
+    page,
+    url
+  }) => {
+    const id = await openBook(page, url, { appendices: entries })
+    await editSecondEntry(page, 'Appendices')
+    await expect(page).toHaveURL(new RegExp(`/books/${id}/extras/1$`))
+  })
 
-  test.fail(
-    'opens the forms of lists in nested sections',
-    async ({
-      page,
-      url
-    }) => {
-      await openBook(page, url, { contents: { notes: entries } })
-      await editSecondEntry(page, 'Notes')
-    }
-  )
+  test('opens the forms of lists in nested sections', async ({
+    page,
+    url
+  }) => {
+    await openBook(page, url, { contents: { notes: entries } })
+    await editSecondEntry(page, 'Notes')
+  })
 
   test('opens the forms of lists in sections', async ({ page, url }) => {
     await openBook(page, url, { quotes: entries })
     await editSecondEntry(page, 'Quotes')
   })
 
-  test.fail(
-    'opens the forms of lists in inlined objects',
-    async ({
-      page,
-      url
-    }) => {
-      await openBook(page, url, { meta: { sources: entries } })
-      await editSecondEntry(page, 'Sources')
-    }
-  )
+  test('opens the forms of lists in inlined objects', async ({
+    page,
+    url
+  }) => {
+    await openBook(page, url, { meta: { sources: entries } })
+    await editSecondEntry(page, 'Sources')
+  })
 
-  test.fail(
-    `opens the forms of lists whose names don't survive their paths`,
-    async ({ page, url }) => {
-      const id = await openBook(page, url, { sourceURLs: entries })
-      await editSecondEntry(page, 'Source URLs')
-      await expect(page).toHaveURL(new RegExp(`/books/${id}/source-urls/1$`))
-    }
-  )
+  test(`opens the forms of lists whose names don't survive their paths`, async ({
+    page,
+    url
+  }) => {
+    const id = await openBook(page, url, { sourceURLs: entries })
+    await editSecondEntry(page, 'Source URLs')
+    await expect(page).toHaveURL(new RegExp(`/books/${id}/source-urls/1$`))
+  })
 
-  test.fail(
-    'opens the forms of lists in forms shared by views',
-    async ({
-      page,
-      url
-    }) => {
-      await openBook(page, url, { chapters: entries }, 'drafts')
-      await editSecondEntry(page, 'Chapters')
-    }
-  )
+  test('opens the forms of lists in forms shared by views', async ({
+    page,
+    url
+  }) => {
+    await openBook(page, url, { chapters: entries }, 'drafts')
+    await editSecondEntry(page, 'Chapters')
+  })
 })
 
 test.describe('routes of linked views', () => {
-  test.fail('edits items in the linked view', async ({ page, url }) => {
+  test('edits items in the linked view', async ({ page, url }) => {
     const id = await insertBook()
     await page.goto(`${url}/admin/featured`)
     await page
@@ -144,11 +129,11 @@ test.describe('routes of linked views', () => {
     await expect(page.getByLabel('Title', { exact: true })).toHaveValue('Emma')
   })
 
-  test.fail('creates items in the linked view', async ({ page, url }) => {
+  test('creates items in the linked view', async ({ page, url }) => {
     await page.goto(`${url}/admin/featured`)
     await page
       .getByRole('region', { name: 'Featured', exact: true })
-      .getByRole('link', { name: 'Create' })
+      .getByRole('button', { name: 'Create Book' })
       .click()
     await expect(page).toHaveURL(/\/shelf\/shelf-books\/create$/)
   })
