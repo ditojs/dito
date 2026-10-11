@@ -2519,7 +2519,7 @@ export interface EmitterMixin {
       | Record<string, Function>,
     callback?: Function
   ): this
-  /** Emits an event asynchronously (queued). */
+  /** Emits an event, awaiting its callbacks one after the other. */
   emit(event: string, ...args: any[]): Promise<any>
   /** Returns `true` if listeners exist for the event(s). */
   hasListeners(event: string | string[]): boolean

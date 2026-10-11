@@ -65,6 +65,21 @@ describe('EmitterMixin', () => {
       expect(callback).toHaveBeenCalledOnce()
     })
 
+    it('calls a callback registering itself again once per emit', async () => {
+      const emitter = createEmitter()
+      let calls = 0
+      const callback = () => {
+        // Throw instead of hanging if the callback is called endlessly.
+        if (++calls > 3) throw new Error('Called endlessly')
+        emitter.once('load', callback)
+      }
+      emitter.once('load', callback)
+      await emitter.emit('load')
+      expect(calls).toBe(1)
+      await emitter.emit('load')
+      expect(calls).toBe(2)
+    })
+
     it('can be removed through the original callback', async () => {
       const emitter = createEmitter()
       const callback = vi.fn()
@@ -222,12 +237,12 @@ describe('EmitterMixin', () => {
       expect(after).toHaveBeenCalledOnce()
     })
 
-    it('calls the callbacks registered during the emit', async () => {
+    it('calls the callbacks registered during an emit from the next emit on', async () => {
       const emitter = createEmitter()
       const registeredByCallback = vi.fn()
       const registeredWhileAwaiting = vi.fn()
       let resolveFirst
-      emitter.on('load', async () => {
+      emitter.once('load', async () => {
         emitter.on('load', registeredByCallback)
         await new Promise(resolve => (resolveFirst = resolve))
       })
@@ -235,6 +250,9 @@ describe('EmitterMixin', () => {
       emitter.on('load', registeredWhileAwaiting)
       resolveFirst()
       await promise
+      expect(registeredByCallback).not.toHaveBeenCalled()
+      expect(registeredWhileAwaiting).not.toHaveBeenCalled()
+      await emitter.emit('load')
       expect(registeredByCallback).toHaveBeenCalledOnce()
       expect(registeredWhileAwaiting).toHaveBeenCalledOnce()
     })
@@ -256,6 +274,20 @@ describe('EmitterMixin', () => {
       await promise
       expect(removedByCallback).not.toHaveBeenCalled()
       expect(removedWhileAwaiting).not.toHaveBeenCalled()
+    })
+
+    it('skips the callbacks of events removed during the emit', async () => {
+      for (const removeEvent of [
+        emitter => emitter.off('load'),
+        emitter => emitter.off()
+      ]) {
+        const emitter = createEmitter()
+        const removed = vi.fn()
+        emitter.on('load', () => removeEvent(emitter))
+        emitter.on('load', removed)
+        await emitter.emit('load')
+        expect(removed).not.toHaveBeenCalled()
+      }
     })
 
     it('calls the next callback after removing an earlier one and itself', async () => {
@@ -286,6 +318,26 @@ describe('EmitterMixin', () => {
       emitter.on('load', removed)
       emitter.on('load', last)
       await emitter.emit('load')
+      expect(removed).not.toHaveBeenCalled()
+      expect(last).toHaveBeenCalledOnce()
+    })
+
+    it('calls the next callback after removing an earlier one, itself and the next one', async () => {
+      const emitter = createEmitter()
+      const earlier = vi.fn()
+      const removed = vi.fn()
+      const last = vi.fn()
+      const removing = () => {
+        emitter.off('load', earlier)
+        emitter.off('load', removing)
+        emitter.off('load', removed)
+      }
+      emitter.on('load', earlier)
+      emitter.on('load', removing)
+      emitter.on('load', removed)
+      emitter.on('load', last)
+      await emitter.emit('load')
+      expect(earlier).toHaveBeenCalledOnce()
       expect(removed).not.toHaveBeenCalled()
       expect(last).toHaveBeenCalledOnce()
     })
