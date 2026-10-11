@@ -8,6 +8,7 @@ import {
   asArray,
   clone,
   mapKeys,
+  pickBy,
   parseDataPath,
   deprecate
 } from '@ditojs/utils'
@@ -549,26 +550,17 @@ export class QueryBuilder extends objection.QueryBuilder {
   }
 
   upsertAndFetch(data) {
-    return this.#upsertAndFetch(data, {
-      // Insert missing nodes only at root by allowing `insertMissing`,
-      // but set `noInsert` for all relations:
-      insertMissing: true,
-      noInsert: this.modelClass().getRelationNames()
-    })
+    // Also insert the models with ids that don't exist yet.
+    return this.#upsertAndFetch(data, { insertMissing: true })
   }
 
   #upsertAndFetch(data, options) {
     rejectGraphControlProps(this.modelClass(), data)
-    return this.upsertGraphAndFetch(data, {
+    // Like `patch()` and `update()` of single models, only save the models
+    // themselves, not their relations: Writing graphs is the job of the
+    // `*DitoGraph*()` methods. Models without ids are inserted.
+    return this.upsertGraphAndFetch(omitRelations(this.modelClass(), data), {
       fetchStrategy: 'OnlyNeeded',
-      // Unlike the other operations, inserts aren't disabled: new models are
-      // inserted at all levels, as before 3.3.1, where a misspelled option
-      // meant to disable them had no effect.
-      // TODO: Decide in 4.0 which models patches and updates may insert, see
-      // https://github.com/ditojs/dito/issues/191
-      noDelete: true,
-      noRelate: true,
-      noUnrelate: true,
       ...options
     })
   }
@@ -795,6 +787,16 @@ for (const key of [
     }
     return method.call(this, ...args)
   }
+}
+
+// Returns the models without their relations, see `#upsertAndFetch()`.
+function omitRelations(modelClass, data) {
+  const relations = modelClass.getRelations()
+  const omit = model =>
+    model instanceof modelClass
+      ? model.$clone({ shallow: true })
+      : pickBy(model, (value, key) => !(key in relations))
+  return isArray(data) ? data.map(omit) : omit(data)
 }
 
 function getScopes(scopes) {

@@ -974,29 +974,39 @@ describe('QueryBuilder', () => {
       expect(await Cook.query()).toHaveLength(3)
     })
 
-    it('inserts new related models in array patchAndFetch()', async () => {
+    it('leaves relations alone in array patchAndFetch() and updateAndFetch()', async () => {
       const [ada] = await insertCooks()
       const apple = await Recipe.query().insert({
         name: 'Apple pie',
         cookId: ada.id
       })
-      await Cook.query().patchAndFetch([
+      // Client data, which the model types don't describe.
+      const data: any = [
         {
           id: ada.id,
-          recipes: [{ id: apple.id, steps: [{ text: 'Peel apples' }] }]
-        } as any,
-        { name: 'Edsger', recipes: [{ name: 'Banana bread' }] } as any
+          name: 'Ada L.',
+          recipes: [
+            {
+              id: apple.id,
+              name: 'Apple tart',
+              steps: [{ text: 'Peel apples' }]
+            }
+          ]
+        },
+        { name: 'Edsger', recipes: [{ name: 'Banana bread' }] }
+      ]
+      await Cook.query().patchAndFetch(data)
+      await Cook.query().updateAndFetch(data.slice(0, 1))
+      const cooks = await Cook.query().orderBy('id')
+      expect(cooks.map((cook: Cook) => cook.name)).toEqual([
+        'Ada L.',
+        'Grace',
+        'Edsger'
       ])
-      expect(await Cook.query()).toHaveLength(3)
-      expect(await Recipe.query()).toHaveLength(2)
-      expect(await Step.query()).toHaveLength(1)
-      // The new step belongs to the existing recipe, and the new recipe to the
-      // new cook, not to the other parent in the array.
-      const edsger = await Cook.query().findOne({ name: 'Edsger' })
-      const bread = await Recipe.query().findOne({ name: 'Banana bread' })
-      expect(bread?.cookId).toBe(edsger?.id)
-      const [step] = await Step.query()
-      expect(step.recipeId).toBe(apple.id)
+      expect((await Recipe.query()).map(recipe => recipe.name)).toEqual([
+        'Apple pie'
+      ])
+      expect(await Step.query()).toHaveLength(0)
     })
 
     it('patches single models with patchAndFetch()', async () => {
