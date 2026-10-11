@@ -283,7 +283,6 @@ export default DitoComponent.component('DitoTreeItem', {
     changeChildren(children) {
       this.$emit('changeChildren', {
         data: this.data,
-        dataPath: this.dataPath,
         childrenSchema: this.childrenSchema,
         children
       })

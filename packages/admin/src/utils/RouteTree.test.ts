@@ -323,14 +323,10 @@ describe('RouteTree', () => {
         })
       }
     })
-    const record = admin.router.resolve('/books/1/chapters/2').matched.at(-1)!
-    const { node } = record.meta as { node: { routeName: symbol } }
-    expect(record.name).toBe(node.routeName)
-    expect(
-      admin.router.resolve({
-        name: node.routeName,
-        params: { id1: '1', id2: '2' }
-      }).path
-    ).toBe('/books/1/chapters/2')
+    const { name, params } = admin.router.resolve('/books/1/chapters/2')
+    expect(typeof name).toBe('symbol')
+    expect(admin.router.resolve({ name: name!, params }).path).toBe(
+      '/books/1/chapters/2'
+    )
   })
 })

@@ -682,6 +682,29 @@ describe('DitoTypeList', () => {
       expect(chapterForm.data.title).toBe('Departure')
       expect(admin.router.currentRoute.value.path).toBe('/items/1/chapters/0')
     })
+
+    it('close the form of an item when removing it', async () => {
+      const { admin, getComponent, data, settle } = await mountForm({
+        schema: {
+          components: {
+            chapters: {
+              ...chaptersSchema.components.chapters,
+              deletable: true,
+              form: {
+                ...chaptersSchema.components.chapters.form,
+                nested: true
+              }
+            }
+          }
+        },
+        data: { chapters: [{ title: 'Prologue' }, { title: 'Arrival' }] }
+      })
+      await admin.navigate('/items/1/chapters/0')
+      await settle()
+      getComponent('chapters').removeItem(data.chapters[0], 0)
+      await settle()
+      expect(admin.router.currentRoute.value.path).toBe('/items/1')
+    })
   })
 
   describe('item uids', () => {

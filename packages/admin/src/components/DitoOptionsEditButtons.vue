@@ -36,13 +36,14 @@ export default DitoComponent.component('DitoOptionsEditButtons', {
   computed: {
     editPath() {
       const { schema, optionValue } = this
-      const form = this.viewRegistry.routeTree?.getViewForm(schema.view)
-      return form && optionValue != null
-        ? this.$router.resolve({
-            name: form.routeName,
-            params: { [form.param]: optionValue }
-          }).path
-        : null
+      const route = (
+        optionValue != null &&
+        this.viewRegistry.routeTree?.getViewItemRoute(
+          schema.view,
+          String(optionValue)
+        )
+      )
+      return route ? this.$router.resolve(route).path : null
     }
   }
 })

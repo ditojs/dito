@@ -685,13 +685,11 @@ export default {
 
     // Lists linked to views edit their items in the form of the view:
     getViewItemPath(key) {
-      const form = this.viewRegistry.routeTree?.getViewForm(this.schema.view)
-      return form
-        ? this.$router.resolve({
-            name: form.routeName,
-            params: { [form.param]: key }
-          }).path
-        : null
+      const route = this.viewRegistry.routeTree?.getViewItemRoute(
+        this.schema.view,
+        key
+      )
+      return route ? this.$router.resolve(route).path : null
     },
 
     // Resolve the path of the form that edits the item at `dataPath`:

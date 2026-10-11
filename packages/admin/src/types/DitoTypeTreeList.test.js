@@ -390,6 +390,8 @@ describe('DitoTypeTreeList', () => {
         data: site
       })
       await admin.navigate('/items/1/pages/0/subpages/0')
+      const push = vi.spyOn(admin.router, 'push')
+      const replace = vi.spyOn(admin.router, 'replace')
       await findHandle(findField('pages'), 'Team').trigger('keydown', {
         key: 'ArrowDown',
         altKey: true
@@ -398,6 +400,7 @@ describe('DitoTypeTreeList', () => {
       expect(admin.router.currentRoute.value.path).toBe(
         '/items/1/pages/0/subpages/1'
       )
+      expect(push.mock.calls.length + replace.mock.calls.length).toBe(1)
       // Moving the parent moves the form of its child along:
       await findHandle(findField('pages'), 'About').trigger('keydown', {
         key: 'ArrowDown',
@@ -407,6 +410,47 @@ describe('DitoTypeTreeList', () => {
       expect(admin.router.currentRoute.value.path).toBe(
         '/items/1/pages/1/subpages/1'
       )
+    })
+
+    it('edits other children in the form when navigating to them', async () => {
+      const { admin } = await mountForm({
+        schema: createDraggableSiteSchema(),
+        data: site
+      })
+      await admin.navigate('/items/1/pages/0/subpages/0')
+      const form = admin.getRouteComponent()
+      await admin.navigate('/items/1/pages/0/subpages/1')
+      expect(admin.router.currentRoute.value.path).toBe(
+        '/items/1/pages/0/subpages/1'
+      )
+      expect(admin.getRouteComponent()).toBe(form)
+      expect(form.data.title).toBe('History')
+    })
+
+    it('keeps the form of a child on it when its parent moves', async () => {
+      const { admin, findField } = await mountForm({
+        schema: createDraggableSiteSchema(),
+        data: site
+      })
+      await admin.navigate('/items/1/pages/0/subpages/1')
+      const form = admin.getRouteComponent()
+      await enterValue(
+        admin.wrapper.find('input[name="pages/0/subpages/1/title"]'),
+        'Archive'
+      )
+      const push = vi.spyOn(admin.router, 'push')
+      const replace = vi.spyOn(admin.router, 'replace')
+      await findHandle(findField('pages'), 'About').trigger('keydown', {
+        key: 'ArrowDown',
+        altKey: true
+      })
+      await flushPromises()
+      expect(admin.router.currentRoute.value.path).toBe(
+        '/items/1/pages/1/subpages/1'
+      )
+      expect(push.mock.calls.length + replace.mock.calls.length).toBe(1)
+      expect(admin.getRouteComponent()).toBe(form)
+      expect(form.data.title).toBe('Archive')
     })
 
     it('keeps the children moved while their parent form is open', async () => {
