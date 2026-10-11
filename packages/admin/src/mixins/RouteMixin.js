@@ -280,10 +280,7 @@ export default {
       )
       return (
         route && {
-          path: this.$router.resolve({
-            name: route.form.routeName,
-            params: route.params
-          }).path,
+          path: this.$router.resolve(route).path,
           dataPath: route.dataPath
         }
       )
@@ -296,12 +293,7 @@ export default {
         getRelativeDataPath(dataPath, this.dataPath),
         this.routeState
       )
-      return route
-        ? this.$router.resolve({
-            name: route.form.routeName,
-            params: route.params
-          }).path
-        : null
+      return route ? this.$router.resolve(route).path : null
     }
   }
 }

@@ -51,9 +51,8 @@
 </template>
 
 <script>
-import { markRaw } from 'vue'
+import { markRaw, toRaw } from 'vue'
 import {
-  isArray,
   capitalize,
   assignDeeply,
   equals,
@@ -63,7 +62,7 @@ import DitoComponent from '../DitoComponent.js'
 import RouteMixin from '../mixins/RouteMixin.js'
 import ResourceMixin from '../mixins/ResourceMixin.js'
 import { getResource, getMemberResource } from '../utils/resource.js'
-import { isObjectSource } from '../utils/schema/structure.js'
+import { isListSource, isObjectSource } from '../utils/schema/structure.js'
 import {
   getButtonSchemas,
   hasSubmitButton
@@ -72,7 +71,7 @@ import { getComponentPathByDataPath } from '../utils/schema/data.js'
 import { appendDataPath } from '../utils/data.js'
 import { resolvePath } from '../utils/path.js'
 import { getErrorMessage } from '../utils/request.js'
-import { cloneWithUids, getOriginal } from '../utils/uid.js'
+import { cloneWithUids } from '../utils/uid.js'
 import { mergeData } from '../utils/mergeData.ts'
 import { createDraftRoot } from '../utils/draftRoot.ts'
 import { DataModel } from '../utils/DataModel.js'
@@ -86,8 +85,10 @@ export default DitoComponent.component('DitoForm', {
   data() {
     return {
       createdData: null,
-      // The copy of the item in the data of the parent that the form edits,
-      // unless it mutates the item, see `setupSourceItem()`:
+      // The item in the data of the parent that the form edits, held by its
+      // identity, and the copy of it that the form edits unless it mutates the
+      // item, see `setupSourceItem()`:
+      original: null,
       draft: null
     }
   },
@@ -367,8 +368,13 @@ export default DitoComponent.component('DitoForm', {
       })
     )
     // Watch the item after the model is created, as the draft takes over the
-    // item's errors:
-    this.$watch('sourceItem', this.setupSourceItem, { immediate: true })
+    // item's errors, and along with the path of the form, to tell changes of
+    // the data from changes of the route:
+    this.$watch(
+      () => [this.sourceItem, this.path],
+      this.setupSourceItem,
+      { immediate: true }
+    )
   },
 
   beforeUnmount() {
@@ -388,36 +394,48 @@ export default DitoComponent.component('DitoForm', {
       return getMemberResource(this.itemId, resource) || resource
     },
 
-    setupSourceItem(item) {
+    // Hold the item of the form by its identity, in a draft unless the form
+    // mutates it. When the data changes and the item moves, e.g. as an earlier
+    // item or the item of a parent form moved or was removed, the form follows
+    // it to its new route. Forms of list items close once their item is gone,
+    // while objects keep their place.
+    setupSourceItem([item, path], [, previousPath] = []) {
       if (this.isTransient) {
-        const original = getOriginal(this.draft)
-        if (!this.isMutating && item !== original) {
-          const { sourceData } = this
-          const index =
-            original && isArray(sourceData)
-              ? sourceData.indexOf(original)
-              : -1
-          if (index !== -1) {
-            // Follow the item to its new index, e.g. when an earlier one was
-            // removed, as the form holds it by its identity. Its parameters
-            // change first, so that the form isn't left on the way, see
-            // `beforeRouteChange()`:
-            const { name, params, query, hash } = this.$route
-            const routeParams = {
-              ...params,
-              [this.meta.node.param]: String(index)
-            }
+        const { original } = this
+        if (toRaw(item) !== toRaw(original)) {
+          // Other items at the same path mean that the data changed:
+          const hasDataChanged = !!original && path === previousPath
+          const parent = this.parentRouteComponent
+          const params = (
+            hasDataChanged &&
+            parent.meta.node.findItemParams(
+              this.meta.node,
+              { ...parent.routeState, routeParams: this.routeParams },
+              original
+            )
+          )
+          if (params) {
+            // Change the parameters first, so that the form isn't left on the
+            // way, see `beforeRouteChange()`:
+            const { name, query, hash } = this.$route
+            const routeParams = { ...this.$route.params, ...params }
             this.routeParams = routeParams
             this.$router.replace({ name, params: routeParams, query, hash })
+          } else if (hasDataChanged && isListSource(this.sourceSchema)) {
+            this.close()
           } else {
-            // Edit a draft of the item, with its uids and errors, e.g. of the
-            // server for the parent's data, see `submitTransient()`. Tree items
-            // share their children with the tree, which edits them:
-            const children = item?.[this.sourceSchema.children?.name]
-            this.draft = item
-              ? cloneWithUids(item, { transferables: [children] })
-              : null
-            this.copyErrors()
+            this.original = item ?? null
+            if (!this.isMutating) {
+              // Edit a draft of the item, with its uids and errors, e.g. of
+              // the server for the parent's data, see `submitTransient()`.
+              // Tree items share their children with the tree, which edits
+              // them:
+              const children = item?.[this.sourceSchema.children?.name]
+              this.draft = item
+                ? cloneWithUids(item, { transferables: [children] })
+                : null
+              this.copyErrors()
+            }
           }
         }
         if (

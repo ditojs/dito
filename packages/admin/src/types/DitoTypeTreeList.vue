@@ -29,8 +29,7 @@ import DitoTypeComponent from '../DitoTypeComponent.js'
 import SourceMixin from '../mixins/SourceMixin.js'
 import { resolveSchemaComponents } from '../utils/schema/setup.js'
 import { getFormSchemas } from '../utils/schema/lookup.js'
-import { appendDataPath, getParentDataPath } from '../utils/data.js'
-import { isPathWithin } from '../utils/route.js'
+import { getParentDataPath } from '../utils/data.js'
 
 export default DitoTypeComponent.register(
   ['tree-list', 'tree-object'],
@@ -87,33 +86,11 @@ export default DitoTypeComponent.register(
     },
 
     methods: {
-      // Replaces the children of the tree item at `dataPath`, as the only
-      // writer of the tree, see `DitoTreeItem.changeChildren()`.
-      changeChildren({ data, dataPath, childrenSchema, children }) {
-        const { name } = childrenSchema
-        const list = data[name]
-        // Keep the form of an edited child, or of one of its descendants, open
-        // at the child's new index, or close it if the child was removed:
-        const getChildPath = index =>
-          this.getFormPath(appendDataPath(dataPath, `${name}/${index}`))
-        const { path: routePath, query } = this.$route
-        const editedIndex = list.findIndex((child, index) => {
-          const path = getChildPath(index)
-          return !!path && isPathWithin(routePath, path)
-        })
-        const editedChild = list[editedIndex]
-        const editedPath = editedIndex >= 0 ? getChildPath(editedIndex) : null
-        this.dataModel.replaceChildren(list, children)
-        if (editedPath) {
-          const index = list.indexOf(editedChild)
-          if (index !== editedIndex) {
-            const path =
-              index >= 0
-                ? getChildPath(index) + routePath.slice(editedPath.length)
-                : this.routeComponent.path
-            this.$router.push({ path, query })
-          }
-        }
+      // Replaces the children of the tree item, as the only writer of the tree,
+      // see `DitoTreeItem.changeChildren()`. Open forms follow their items,
+      // see `DitoForm.setupSourceItem()`.
+      changeChildren({ data, childrenSchema, children }) {
+        this.dataModel.replaceChildren(data[childrenSchema.name], children)
         this.onChange()
       }
     },

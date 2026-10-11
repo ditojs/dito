@@ -1,4 +1,4 @@
-import type { Component } from 'vue'
+import { toRaw, type Component } from 'vue'
 import type { RouteRecordRaw } from 'vue-router'
 import { getValueAtDataPath, parseDataPath } from '@ditojs/utils'
 import DitoComponent from '../DitoComponent.js'
@@ -26,10 +26,14 @@ interface Api {
   normalizePath(path: string): string
 }
 
-// The route of the deepest form that edits the data at a data path:
-export interface FormRoute {
-  form: FormNode
+// The route of a form, which the router resolves by its name:
+export interface Route {
+  name: symbol
   params: Params
+}
+
+// The route of the deepest form that edits the data at a data path:
+export interface FormRoute extends Route {
   // The data path that remains within the form:
   dataPath: string
 }
@@ -103,31 +107,54 @@ abstract class ContainerNode extends RouteNode {
   }
 
   findSource(dataPath: string): SourceNode | null {
-    return this.#walk(dataPath, {
-      data: null,
-      routeParams: {},
-      isTransient: false
-    }).source
+    let node: ContainerNode | SourceNode = this
+    for (
+      let step = stepIntoSource(node, dataPath);
+      step;
+      step = stepIntoSource(node, step.path)
+    ) {
+      const { source, key, path } = step
+      if (key === undefined && !path) return source
+      node = source.form ?? source
+    }
+    return null
   }
 
   getFormRoute(dataPath: string, state: RouteState): FormRoute | null {
     return this.#walk(dataPath, state).route
   }
 
-  getCreateRoute(dataPath: string, state: RouteState): FormRoute | null {
+  getCreateRoute(dataPath: string, state: RouteState): Route | null {
     const { source, params } = this.#walk(dataPath, state)
     const form = source?.form
     return form && !form.isInlined
-      ? { form, params: { ...params, [form.param]: 'create' }, dataPath: '' }
+      ? { name: form.routeName, params: { ...params, [form.param]: 'create' } }
       : null
   }
 
   // Find the item of `form` below this container, through the parameters of
   // its route:
-  findItem(
+  findItem(form: FormNode, state: RouteState): ItemLocation | null {
+    return this.#findItem(form, state, null)?.location ?? null
+  }
+
+  // Find the parameters of the route of `form` that lead to `item`, by its
+  // identity, e.g. after it or the item of a parent form moved:
+  findItemParams(
     form: FormNode,
-    { data, routeParams, isTransient }: RouteState
-  ): ItemLocation | null {
+    state: RouteState,
+    item: object
+  ): Params | null {
+    return this.#findItem(form, state, item)?.params ?? null
+  }
+
+  // Descend to the item of `form` through the parameters of its route, or
+  // search the items of lists with index keys for `item`, if it's given.
+  #findItem(
+    form: FormNode,
+    { data, routeParams, isTransient }: RouteState,
+    item: object | null
+  ) {
     const nodes: RouteNode[] = []
     for (let node: RouteNode | null = form; node !== this; node = node.parent) {
       // The form isn't below this container, e.g. after the views were
@@ -135,36 +162,68 @@ abstract class ContainerNode extends RouteNode {
       if (!node) return null
       nodes.unshift(node)
     }
-    let dataPath = ''
-    let parentData = null
-    let key: string | number | null = null
-    for (const node of nodes) {
-      if (node instanceof SourceNode) {
-        const segments = parseDataPath(node.dataPath)
-        key = segments.pop()!
-        parentData = getValueAtDataPath(data, segments, () => null)
-        data = parentData?.[key]
-        dataPath = appendDataPath(dataPath, node.dataPath)
-      } else if (node instanceof FormNode) {
-        if (node.source.isList) {
-          const { schema, hasResource } = node.source
-          const param = routeParams[node.param]
-          key =
-            param === 'create'
-              ? null
-              : findItemIndexById(schema, data, param, {
-                  isTransient: isTransient || !hasResource
-                })
-          parentData = data
-          data = key !== null ? data?.[key] : null
-          dataPath = appendDataPath(dataPath, key ?? param)
-        }
-        if (!node.isInlined) {
-          isTransient ||= isTransientForm(node)
+    const params: Params = {}
+    const find = (
+      index: number,
+      value: any,
+      { dataPath, data, key }: ItemLocation,
+      isTransient: boolean
+    ): ItemLocation | null => {
+      for (; index < nodes.length; index++) {
+        const node = nodes[index]
+        if (node instanceof SourceNode) {
+          const segments = parseDataPath(node.dataPath)
+          key = segments.pop()!
+          data = getValueAtDataPath(value, segments, () => null)
+          value = data?.[key]
+          dataPath = appendDataPath(dataPath, node.dataPath)
+        } else if (node instanceof FormNode) {
+          const { source } = node
+          const usesIndexKeys = source.usesIndexKeys(isTransient)
+          if (!node.isInlined) {
+            isTransient = usesIndexKeys
+          }
+          if (source.isList) {
+            data = value
+            if (item && usesIndexKeys) {
+              // Indices change when items move, so search all of them:
+              for (const key of Object.keys(data ?? [])) {
+                params[node.param] = key
+                const location = find(
+                  index + 1,
+                  data[key],
+                  { dataPath: appendDataPath(dataPath, key), data, key },
+                  isTransient
+                )
+                if (location) return location
+              }
+              return null
+            } else {
+              const param = routeParams[node.param]
+              key =
+                param === 'create'
+                  ? null
+                  : findItemIndexById(source.schema, data, param, {
+                      isTransient: usesIndexKeys
+                    })
+              params[node.param] = param
+              value = key !== null ? data?.[key] : null
+              dataPath = appendDataPath(dataPath, key ?? param)
+            }
+          }
         }
       }
+      return !item || toRaw(value) === toRaw(item)
+        ? { dataPath, data, key }
+        : null
     }
-    return { dataPath, data: parentData, key }
+    const location = find(
+      0,
+      data,
+      { dataPath: '', data: null, key: null },
+      isTransient
+    )
+    return location && { location, params }
   }
 
   // Walk the data path through the sources below this container, to the
@@ -175,42 +234,37 @@ abstract class ContainerNode extends RouteNode {
     let route: FormRoute | null = null
     let source: SourceNode | null = null
     let params = this.getParams(routeParams)
-    let path = dataPath
     let node: ContainerNode | SourceNode = this
     for (
-      let child = findChildSource(node, path);
-      child;
-      child = findChildSource(node, path)
+      let step = stepIntoSource(node, dataPath);
+      step;
+      step = stepIntoSource(node, step.path)
     ) {
+      const { source: child, key, path } = step
       data = getValueAtDataPath(data, child.dataPath, () => null)
-      path = getRelativeDataPath(path, child.dataPath)!
       // The source that the path ends at, if any:
-      source = path ? null : child
+      source = key === undefined && !path ? child : null
       const { form } = child
       if (form) {
+        const usesIndexKeys = child.usesIndexKeys(isTransient)
         if (child.isList) {
-          const [key, ...rest] = parseDataPath(path)
           // Paths that end at a list lead to no item:
           if (key === undefined) break
           data = data?.[key]
           params = {
             ...params,
-            [form.param]:
-              isTransient || !child.hasResource
-                ? key
-                : (data && getItemId(child.schema, data)) ?? key
+            [form.param]: usesIndexKeys
+              ? key
+              : (data && getItemId(child.schema, data)) ?? key
           }
-          path = rest.join('/')
         }
-        node = form
         if (!form.isInlined) {
-          isTransient ||= isTransientForm(form)
-          route = { form, params, dataPath: path }
+          isTransient = usesIndexKeys
+          route = { name: form.routeName, params, dataPath: path }
         }
-      } else {
-        // Object sources without forms continue with their sources:
-        node = child
       }
+      // Object sources without forms continue with their sources:
+      node = form ?? child
     }
     return { route, source, params }
   }
@@ -293,6 +347,13 @@ export class SourceNode extends RouteNode {
   get hasResource(): boolean {
     return !!this.schema.resource
   }
+
+  // Lists address their items by index in transient data, and in sources
+  // without a resource, which edit their items in the data of their parent,
+  // so the sources below their routed forms are transient too:
+  usesIndexKeys(isTransient: boolean): boolean {
+    return isTransient || !this.hasResource
+  }
 }
 
 // RouteTree describes the routes of the views, built from their set-up
@@ -319,9 +380,10 @@ export class RouteTree {
 
   // Lists and options linked to views edit their items in the form of the
   // view.
-  getViewForm(name: string): FormNode | null {
+  getViewItemRoute(name: string, key: string): Route | null {
     const view = this.#viewsByName.get(name)
-    return view ? findRoutedForm(view) : null
+    const form = view && findRoutedForm(view)
+    return form ? { name: form.routeName, params: { [form.param]: key } } : null
   }
 
   createRouteRecords(viewComponent: Component): RouteRecordRaw[] {
@@ -609,19 +671,21 @@ function getForms(schema: Schema): Schema[] {
     : [schema.form ?? schema.components].filter(Boolean)
 }
 
-// Forms with routes whose sources have no resource edit their items in the data
-// of their parent, so the sources below them are transient too:
-function isTransientForm(form: FormNode): boolean {
-  return !form.source.hasResource
-}
-
-function findChildSource(
-  node: ContainerNode | SourceNode,
-  dataPath: string
-): SourceNode | undefined {
-  return node.sources.find(
-    source => getRelativeDataPath(dataPath, source.dataPath) !== null
-  )
+// Step from `node` into the source that `dataPath` leads to, with the key of
+// the item in lists with forms, and the path that remains below them:
+function stepIntoSource(node: ContainerNode | SourceNode, dataPath: string) {
+  for (const source of node.sources) {
+    const path = getRelativeDataPath(dataPath, source.dataPath)
+    if (path !== null) {
+      if (source.form && source.isList) {
+        const [key, ...rest] = parseDataPath(path)
+        return { source, key, path: rest.join('/') }
+      } else {
+        return { source, key: undefined, path }
+      }
+    }
+  }
+  return null
 }
 
 function findRoutedForm(node: RouteNode): FormNode | null {

@@ -983,6 +983,21 @@ describe('SourceMixin', () => {
       ).toBe(0)
     })
 
+    it('renders the lists in inlined objects without routes', async () => {
+      const { admin } = await mountForm({
+        schema: {
+          components: {
+            meta: {
+              type: 'object',
+              components: { notes: { type: 'list', itemLabel: 'text' } }
+            }
+          }
+        },
+        data: { meta: { notes: [{ text: 'Late' }] } }
+      })
+      expect(admin.wrapper.find('.dito-list').text()).toContain('Late')
+    })
+
     it('adds the nested routes of forms shared by several lists', async () => {
       const bookForm = {
         type: 'form',

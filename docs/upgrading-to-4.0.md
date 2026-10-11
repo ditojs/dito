@@ -92,8 +92,10 @@ which components write the data through, as `component.dataModel`.
   draft like an edit: it reaches the parent once the form is applied, and is
   discarded on Cancel, which asks to discard it first. So are the responses of
   their buttons with resources.
-- Open nested forms keep their item when items before it are added, removed
-  or moved, and follow it to its new index in the URL.
+- Open nested forms keep their item when it or the item of a parent form
+  moves, e.g. as items before it are added, removed or moved, and follow it to
+  its new index in the URL. Forms of list items close once their item is
+  removed, like the forms of tree items did, instead of showing the next one.
 - The data processed for the server and for the clipboard is only built when
   saving and copying. `processedItem` and `processedRootItem` of contexts are
   built when they're read and cached until the data that they read changes,
