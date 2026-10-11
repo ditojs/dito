@@ -13,7 +13,7 @@ import {
 } from '@ditojs/utils'
 import { QueryParameters } from './QueryParameters.js'
 import { KnexHelper } from '../lib/index.js'
-import { DitoGraphProcessor } from '../graph/index.js'
+import { DitoGraphProcessor, rejectGraphControlProps } from '../graph/index.js'
 import { QueryBuilderError, RelationError } from '../errors/index.js'
 import { createLookup } from '../utils/object.js'
 import { getScope } from '../utils/scope.js'
@@ -447,9 +447,11 @@ export class QueryBuilder extends objection.QueryBuilder {
   insert(data) {
     // Only PostgreSQL is able to insert multiple entries at once it seems,
     // all others have to fall back on insertGraph() to do so for now:
-    return !this.isPostgreSQL() && isArray(data) && data.length > 1
-      ? this.insertGraph(data)
-      : super.insert(data)
+    if (!this.isPostgreSQL() && isArray(data) && data.length > 1) {
+      rejectGraphControlProps(this.modelClass(), data)
+      return this.insertGraph(data)
+    }
+    return super.insert(data)
   }
 
   // https://github.com/Vincit/objection.js/issues/101#issuecomment-200363667
@@ -556,6 +558,7 @@ export class QueryBuilder extends objection.QueryBuilder {
   }
 
   #upsertAndFetch(data, options) {
+    rejectGraphControlProps(this.modelClass(), data)
     return this.upsertGraphAndFetch(data, {
       fetchStrategy: 'OnlyNeeded',
       // Unlike the other operations, inserts aren't disabled: new models are
@@ -683,6 +686,7 @@ export class QueryBuilder extends objection.QueryBuilder {
         'Objection.js resolves cyclic `#ref` references on its own now.'
       )
     }
+    rejectGraphControlProps(this.modelClass(), data)
     const graphProcessor = new DitoGraphProcessor(
       this.modelClass(),
       data,

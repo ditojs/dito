@@ -76,10 +76,13 @@ which requires the foreign key column to be nullable (or its constraint to be
 deferrable). Cycles that can't be resolved this way are rejected with an error.
 The former `cyclic` option is deprecated and has no effect anymore.
 
-In the upsert, update and patch versions, related models can be marked with
-Objection.js' `'#unrelate': true` or `'#delete': true` to unrelate or delete
-them individually, e.g. together with the `noUnrelate` and `noDelete` options.
-The markers are kept when related models are reduced to their references.
+Objection.js' other graph control properties are rejected with a
+`GraphError` (400), as graphs often come from clients: `'#dbRef'` would relate
+existing models by id, even where relating is disabled, and `'#unrelate'` /
+`'#delete'` would override the `noUnrelate` / `noDelete` options. This also
+applies to `upsertAndFetch()` and to the arrays that `patchAndFetch()` and
+`updateAndFetch()` accept. Code that needs them can use Objection.js' own
+`insertGraph()` and `upsertGraph()`.
 
 ## Raw Methods
 

@@ -1,8 +1,11 @@
 import type { ModelProperties } from '@ditojs/server'
-import { Model } from '@ditojs/server'
-// @ts-expect-error -- The graph processor is internal and not exported by the
-// package, so it comes without type declarations.
-import { DitoGraphProcessor } from '../../packages/server/src/graph/index.js'
+import { Model, GraphError } from '@ditojs/server'
+import {
+  DitoGraphProcessor,
+  rejectGraphControlProps
+  // @ts-expect-error -- The graph module is internal and not exported by the
+  // package, so it comes without type declarations.
+} from '../../packages/server/src/graph/index.js'
 import {
   createTestApp,
   createTestDatabase,
@@ -543,25 +546,87 @@ describe('Dito.js graph handling', () => {
       ])
     })
 
-    it('unrelates and deletes models marked with #unrelate and #delete', async () => {
-      const { book, fantasy, drama } = await insertBook()
-      const [one, two] = book.chapters
-      await Book.query().patchDitoGraph(
-        {
+    describe('graph control properties of clients', () => {
+      // The data of the tests is client data, which the model types don't
+      // describe. `GraphError` responds with 400.
+      const expectToReject = (callback: () => unknown, message: string) => {
+        expect(callback).toThrow(GraphError)
+        expect(callback).toThrow(message)
+      }
+
+      it('rejects #unrelate on related references', async () => {
+        const { book, fantasy, drama } = await insertBook()
+        const data: any = {
           id: book.id,
-          // `#delete` on owned models, `#unrelate` on related references,
-          // which are otherwise reduced to their ids:
-          chapters: [{ 'id': one.id, '#delete': true }],
-          genres: [{ 'id': fantasy.id, '#unrelate': true }]
-        },
-        { noDelete: true, noUnrelate: true }
-      )
-      expect(await Chapter.query().findById(one.id)).toBeUndefined()
-      expect(await Chapter.query().findById(two.id)).toBeDefined()
-      expect(await Genre.query().findById(fantasy.id)).toBeDefined()
-      expect(await getBookGenreRows(book.id)).toEqual([
-        { genreId: drama.id, rank: 2 }
-      ])
+          genres: [{ 'id': fantasy.id, '#unrelate': true }, { id: drama.id }]
+        }
+        expectToReject(
+          () => Book.query().patchDitoGraph(data, { noUnrelate: true }),
+          `Unsupported graph control property '#unrelate' at 'genres/0'`
+        )
+        expect(await getBookGenreRows(book.id)).toEqual([
+          { genreId: fantasy.id, rank: 1 },
+          { genreId: drama.id, rank: 2 }
+        ])
+      })
+
+      it('rejects #delete on owned models', async () => {
+        const { book } = await insertBook()
+        const [one, two] = book.chapters
+        const data: any = {
+          id: book.id,
+          chapters: [{ 'id': one.id, '#delete': true }, { id: two.id }]
+        }
+        expectToReject(
+          () => Book.query().patchDitoGraph(data, { noDelete: true }),
+          `Unsupported graph control property '#delete' at 'chapters/0'`
+        )
+        expect(await Chapter.query().findById(one.id)).toBeDefined()
+      })
+
+      it('rejects #dbRef in relations', async () => {
+        const other = await Book.query().insertDitoGraphAndFetch({
+          title: 'Dune',
+          chapters: [{ title: 'Prologue', position: 1 }]
+        })
+        const [foreign] = other.chapters
+        const data: any = {
+          title: 'Earthsea',
+          chapters: [{ '#dbRef': foreign.id }]
+        }
+        expectToReject(
+          () => Book.query().insertDitoGraph(data),
+          `Unsupported graph control property '#dbRef' at 'chapters/0'`
+        )
+        expect((await Chapter.query().findById(foreign.id))!.bookId).toBe(
+          other.id
+        )
+      })
+
+      it('rejects them in arrays passed to patchAndFetch() & co.', async () => {
+        const { book } = await insertBook()
+        const [one] = book.chapters
+        const data: any = [
+          { id: book.id, chapters: [{ 'id': one.id, '#delete': true }] }
+        ]
+        const message = `Unsupported graph control property '#delete' at '0/chapters/0'`
+        expectToReject(() => Book.query().patchAndFetch(data), message)
+        expectToReject(() => Book.query().updateAndFetch(data), message)
+        expectToReject(() => Book.query().upsertAndFetch(data), message)
+        expect(await Chapter.query().findById(one.id)).toBeDefined()
+      })
+
+      it('keeps #id and #ref references within the graph', async () => {
+        const book = await Book.query().insertDitoGraphAndFetch({
+          title: 'Tehanu',
+          genres: [
+            { '#id': 'fantasy', 'name': 'Fantasy' },
+            { '#ref': 'fantasy' }
+          ]
+        })
+        expect(book.genres).toHaveLength(2)
+        expect(book.genres[0].id).toBe(book.genres[1].id)
+      })
     })
 
     it('inserts missing root models', async () => {
@@ -1051,6 +1116,43 @@ describe('Dito.js graph handling', () => {
         title: 'Tehanu'
       })
       expect(result.title).toBe('Tehanu')
+    })
+  })
+
+  describe('rejectGraphControlProps()', () => {
+    it('rejects control properties with their data path', () => {
+      for (const prop of ['#dbRef', '#unrelate', '#delete']) {
+        expect(() =>
+          rejectGraphControlProps(Book, {
+            title: 'Earthsea',
+            chapters: [{ title: 'One' }, { title: 'Two', [prop]: null }]
+          })
+        ).toThrow(
+          `Unsupported graph control property '${prop}' at 'chapters/1'`
+        )
+      }
+      expect(() =>
+        rejectGraphControlProps(Book, [{ 'title': 'Earthsea', '#dbRef': 1 }])
+      ).toThrow(`Unsupported graph control property '#dbRef' at '0'`)
+    })
+
+    it('rejects them in model instances', () => {
+      const book = createBookGraph({
+        title: 'Earthsea',
+        featuredChapter: { title: 'One' }
+      })
+      Object.assign(book.featuredChapter!, { '#delete': true })
+      expect(() => rejectGraphControlProps(Book, book)).toThrow(GraphError)
+    })
+
+    it('accepts #id and #ref references', () => {
+      expect(() =>
+        rejectGraphControlProps(Book, {
+          title: 'Earthsea',
+          chapters: [{ '#id': 'one', 'title': 'One' }],
+          featuredChapter: { '#ref': 'one' }
+        })
+      ).not.toThrow()
     })
   })
 

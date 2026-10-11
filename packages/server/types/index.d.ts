@@ -3070,8 +3070,7 @@ export interface DitoGraphOptions {
   /**
    * Objection.js' `upsertGraph()` options to disable inserts, updates,
    * deletes, relates or unrelates, for the whole graph (`true`) or for the
-   * given relation paths. Models marked with `'#unrelate': true` or
-   * `'#delete': true` are still unrelated or deleted.
+   * given relation paths.
    */
   noInsert?: boolean | string[]
   noUpdate?: boolean | string[]
