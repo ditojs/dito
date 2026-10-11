@@ -81,10 +81,9 @@ export default {
     // resolves with the last result that isn't undefined, or rejects with an
     // `AggregateError` of all errors thrown. Separate emits don't wait for
     // each other, so that a callback can await an emit of its own event
-    // without waiting for itself. Callbacks added to or removed from the
-    // event's callbacks during the emit are respected, e.g. a callback
-    // registered by an earlier one is called, and one removed by `off()` or
-    // `once()` in a concurrent emit isn't.
+    // without waiting for itself. Like EventTarget dispatching events, we call
+    // the callbacks registered when the emit starts and skip the ones removed
+    // in the meantime, e.g. by `off()` or `once()` in a concurrent emit.
     async emit(event, ...args) {
       const callbacks = this.listeners?.[event]?.callbacks
       if (!callbacks) {
@@ -92,30 +91,18 @@ export default {
       }
       let result
       const errors = []
-      // Iterate over the live `callbacks`, so that callbacks added or removed
-      // during the emit are respected.
-      let index = 0
-      while (index < callbacks.length) {
-        const callback = callbacks[index]
-        const nextCallback = callbacks[index + 1]
-        try {
-          const callbackResult = await callback.apply(this, args)
-          if (callbackResult !== undefined) {
-            result = callbackResult
+      for (const callback of [...callbacks]) {
+        // `off()` can also remove the event's callbacks altogether:
+        if (this.listeners?.[event]?.callbacks.includes(callback)) {
+          try {
+            const callbackResult = await callback.apply(this, args)
+            if (callbackResult !== undefined) {
+              result = callbackResult
+            }
+          } catch (error) {
+            errors.push(error)
           }
-        } catch (error) {
-          errors.push(error)
         }
-        // Callbacks removed during the call, e.g. this one through `once()` or
-        // others through `off()` in concurrent emits, moved the following ones
-        // down, so continue with the next callback wherever it ended up. New
-        // callbacks are only appended, so it can't have moved up. If it was
-        // removed itself, continue with the one now following this callback.
-        const isInPlace = callbacks[index] === callback
-        const nextIndex = nextCallback
-          ? callbacks.lastIndexOf(nextCallback, index + 1)
-          : -1
-        index = nextIndex !== -1 ? nextIndex : isInPlace ? index + 1 : index
       }
       if (errors.length > 0) {
         throw new AggregateError(
