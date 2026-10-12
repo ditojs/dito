@@ -392,8 +392,7 @@ describe('DitoTypeButton', () => {
     await findField('publish').trigger('click')
     await flushPromises()
     expect(onError.mock.calls[0][0].error?.errors[0].message).toBe(
-      'Unable to submit: There is no button of a form or of a list with a ' +
-      'resource.'
+      'Unable to submit: There is no button of a form or source.'
     )
   })
 

@@ -260,7 +260,7 @@ only, not with the component as `this`.
   item. Panels keep `data` for their own data, e.g. filters.
 - `this.submit()` in buttons: `submit()` of the button's context, which
   resolves with whether it succeeded, and throws outside of buttons of forms
-  and lists with a resource.
+  and sources.
 
 ```js
 // Before:
