@@ -107,12 +107,6 @@ export default DitoComponent.component('DitoPanel', {
       return this.panelComponentPath
     },
 
-    // Panels display the item of their schema component, or their own data
-    // next to it, see `DitoSchema.sourceSchema`:
-    sourceSchema() {
-      return this.schemaComponent.sourceSchema
-    },
-
     buttonSchemas() {
       return getButtonSchemas(this.schema.buttons)
     },

@@ -5,8 +5,7 @@ import { flattenViews } from './schema/setup.js'
 import type { RouteTree } from './RouteTree.ts'
 import type { Session } from './Session.js'
 import type { ViewRegistry } from './ViewRegistry.js'
-
-type Schema = Record<string, any>
+import type { Api, Schema } from './types.ts'
 
 export interface DialogOptions {
   data?: Record<string, any>
@@ -23,7 +22,7 @@ export interface NotifyOptions {
 }
 
 // The dialogs and notifications that `DitoRoot` renders:
-export interface UserInterface {
+export interface DialogsAndNotifications {
   showDialog(schema: Schema, options?: DialogOptions): Promise<unknown>
   notify(options: NotifyOptions): void
   closeNotifications(): void
@@ -32,14 +31,14 @@ export interface UserInterface {
 // The context of the admin, provided once to all its components. The user and
 // the views change with each login, and are read reactively.
 export class AdminContext {
-  readonly api: Record<string, any>
+  readonly api: Api
   readonly router: Router
   readonly session: Session
-  // Tracks all pending requests of the admin, for the header's spinner:
+  // The pending requests of the admin, for the header's spinner:
   readonly loadingTracker = new LoadingTracker()
   readonly #viewRegistry: ViewRegistry
   readonly #flattenedViews = computed(() => flattenViews(this.views))
-  #userInterface: UserInterface | null = null
+  #dialogsAndNotifications: DialogsAndNotifications | null = null
 
   constructor({
     api,
@@ -47,7 +46,7 @@ export class AdminContext {
     session,
     viewRegistry
   }: {
-    api: Record<string, any>
+    api: Api
     router: Router
     session: Session
     viewRegistry: ViewRegistry
@@ -75,20 +74,22 @@ export class AdminContext {
     return this.#flattenedViews.value
   }
 
-  attachUserInterface(userInterface: UserInterface) {
-    this.#userInterface = userInterface
+  attachDialogsAndNotifications(
+    dialogsAndNotifications: DialogsAndNotifications
+  ) {
+    this.#dialogsAndNotifications = dialogsAndNotifications
   }
 
-  // Resolves with the value that the dialog is closed with, see `DitoDialog`.
+  // Resolve with the value that the dialog is closed with:
   showDialog(schema: Schema, options?: DialogOptions) {
-    return this.#userInterface!.showDialog(schema, options)
+    return this.#dialogsAndNotifications!.showDialog(schema, options)
   }
 
   notify(options: NotifyOptions) {
-    this.#userInterface!.notify(options)
+    this.#dialogsAndNotifications!.notify(options)
   }
 
   closeNotifications() {
-    this.#userInterface!.closeNotifications()
+    this.#dialogsAndNotifications!.closeNotifications()
   }
 }

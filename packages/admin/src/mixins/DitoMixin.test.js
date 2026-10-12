@@ -323,7 +323,7 @@ describe('DitoMixin', () => {
       component.value = 'new'
       await flushPromises()
       expect(component.dataModel.hasPendingLoads).toBe(true)
-      const tracker = component.$loadingTracker().root
+      const tracker = component.admin.loadingTracker
       let isSettled = false
       const settled = component
         .waitUntilDataModelSettled()

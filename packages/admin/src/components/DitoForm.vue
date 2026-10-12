@@ -104,8 +104,8 @@ export default DitoComponent.component('DitoForm', {
       return true
     },
 
-    // The schema of the source of the form's item, see
-    // `DitoSchema.sourceSchema`:
+    // @override SchemaParentMixin.sourceSchema()
+    // The schema of the source of the form's item:
     sourceSchema() {
       return this.route.node.source.schema
     },
@@ -198,6 +198,19 @@ export default DitoComponent.component('DitoForm', {
         : this.ownDataModel
     },
 
+    // @override RouteMixin.isDirty()
+    // Forms that edit the item of their parent leave their changes in the
+    // parent's data, which isn't left with them:
+    isDirty() {
+      return !this.isEditingSourceItem && this.container.isDirty
+    },
+
+    // @override DitoMixin.source()
+    // The callbacks of the form don't see the source of its parent either:
+    source() {
+      return null
+    },
+
     creationType() {
       // The type of form to create, if there are multiple forms to choose from.
       return this.$route.query.type
@@ -233,7 +246,7 @@ export default DitoComponent.component('DitoForm', {
       // Forms that load their own data start a new data path:
       return this.isTransient
         ? appendDataPath(
-            this.parentRoute.container.dataPath,
+            this.parentRoute.dataPath,
             this.sourceLocation?.dataPath ?? ''
           )
         : ''
@@ -244,12 +257,11 @@ export default DitoComponent.component('DitoForm', {
     // their parent read the parent's root data, with their draft in place of
     // the item, and read-only elsewhere:
     rootData() {
-      const { data } = this
-      const { container } = this.parentRoute
+      const { data, parentRoute } = this
       return this.isTransient
         ? this.isMutating || !this.sourceData
-          ? container.rootData
-          : createDraftRoot(container.rootData, this.dataPath, data)
+          ? parentRoute.rootData
+          : createDraftRoot(parentRoute.rootData, this.dataPath, data)
         : data
     },
 
@@ -258,16 +270,15 @@ export default DitoComponent.component('DitoForm', {
       // their item in the parent route, e.g. `main/chapters/1`. Forms that
       // load their own data start a new one, like their data path.
       const { parentRoute } = this
-      const { container } = parentRoute
       return this.isTransient
         ? getComponentPathByDataPath(
-            container.schema,
+            parentRoute.schema,
             parentRoute.state.data,
             this.sourceLocation?.dataPath ?? '',
             {
-              componentPath: container.componentPath,
+              componentPath: parentRoute.componentPath,
               services: this,
-              rootData: container.rootData
+              rootData: parentRoute.rootData
             }
           )
         : ''
@@ -564,7 +575,7 @@ export default DitoComponent.component('DitoForm', {
       if (validate && !this.validateAll()) {
         return false
       }
-      // The edits that the submit carries, see `markClean()` below:
+      // The edits that the submit carries:
       const { editCount } = this.ownDataModel
 
       const getVerb = present => this.verbs[this.getSubmitVerb(present)]

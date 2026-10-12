@@ -2231,12 +2231,6 @@ export interface ContainerContext {
    * for forms that mutate the item of their parent.
    */
   readonly model: DitoDataModel
-  /** The schema of the data. */
-  readonly schema: Component
-  /** The data path of the data, relative to `rootData`. */
-  readonly dataPath: string
-  /** The data that `dataPath` is relative to. */
-  readonly rootData: Record<string, any> | null
   /** See {@link DitoDataModel.isDirty}. */
   readonly isDirty: boolean
   /** See {@link DitoDataModel.isEdited}. */
@@ -2269,6 +2263,21 @@ export interface RouteContext {
   readonly parent: RouteContext | null
   /** The context of the data of the view or form. */
   readonly container: ContainerContext
+  /** The schema of the data that the route renders. */
+  readonly schema: Component
+  /** The data path of the data, relative to `rootData`. */
+  readonly dataPath: string
+  /**
+   * The data that the data paths of the route are relative to, e.g. the
+   * draft root of nested forms.
+   */
+  readonly rootData: Record<string, any> | null
+  readonly componentPath: string
+  /**
+   * Tracks the requests of the view, along with the ones of the resources of
+   * its forms.
+   */
+  readonly loadingTracker: LoadingTracker
   /** The depth of the route, starting at `0` for views. */
   readonly level: number
   readonly isForm: boolean
@@ -3028,8 +3037,11 @@ export interface DitoViewInstance<$Item = any>
 
   /** The view's reactive data object. */
   data: Record<string, any>
-  /** The resolved view schema definition. */
-  viewSchema: ViewSchema
+  /**
+   * The view's own schema. Its `schema` is the one that it renders, with the
+   * component of single-component views as its only component.
+   */
+  sourceSchema: ViewSchema
   /**
    * Whether this view contains a single inlined
    * source component (renders without a table header).

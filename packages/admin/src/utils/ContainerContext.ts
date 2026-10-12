@@ -1,16 +1,13 @@
 import type { DataModel } from './DataModel.ts'
 
-type Schema = Record<string, any>
 type Match = string | string[] | RegExp | ((dataPath: string) => boolean)
 
 // The component that owns a data model: a form, view, dialog or panel with its
 // own data.
 export interface ContainerOwner {
-  // The model of its own data, and the one that holds its data, which is the
-  // parent's for forms that edit the item of their parent:
-  readonly ownDataModel: DataModel
+  // The model that holds the data, which is the parent's for forms that edit
+  // the item of their parent:
   readonly dataModel: DataModel
-  readonly componentPath: string
   readonly isCreating?: boolean
   readonly hasData?: boolean
   readonly mainSchemaComponent: {
@@ -34,22 +31,6 @@ export class ContainerContext {
 
   get model(): DataModel {
     return this.#owner.dataModel
-  }
-
-  get schema(): Schema | null {
-    return this.#owner.ownDataModel.schema
-  }
-
-  get dataPath(): string {
-    return this.#owner.ownDataModel.dataPath
-  }
-
-  get componentPath(): string {
-    return this.#owner.componentPath
-  }
-
-  get rootData(): Record<string, any> | null {
-    return this.#owner.ownDataModel.rootData
   }
 
   get isDirty(): boolean {

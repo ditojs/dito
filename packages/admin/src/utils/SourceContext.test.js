@@ -85,6 +85,8 @@ describe('SourceContext', () => {
       form.mainSchemaComponent.getComponentByDataPath('pages/0/title')
     expect(title.source).toBe(null)
     expect(title.context.listQuery).toBe(null)
+    // Nor the callbacks of the form itself:
+    expect(form.context.listQuery).toBe(null)
   })
 
   it('reloads the list of a saved item in the parent form', async () => {

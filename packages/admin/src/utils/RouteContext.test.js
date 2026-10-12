@@ -43,6 +43,22 @@ describe('RouteContext', () => {
     expect(view.route.isLastRoute).toBe(false)
   })
 
+  it('describes the data that the route renders', async () => {
+    const { admin, routeComponent: form } = await mountChapters()
+    const view = admin.getRouteComponent(component => component.isView)
+    expect(view.route.schema).toBe(view.schema)
+    expect(view.route.rootData).toBe(view.data)
+    const chapterForm = await openChapterForm(admin, '/items/1/chapters/0')
+    const { route } = chapterForm
+    expect(route.schema).toBe(chapterForm.schema)
+    expect(route.dataPath).toBe('chapters/0')
+    expect(route.componentPath).toBe('chapters/0')
+    expect(route.rootData.chapters[0]).toBe(chapterForm.data)
+    // Forms track their requests along with the ones of their view:
+    expect(route.loadingTracker).toBe(view.loadingTracker)
+    expect(form.route.loadingTracker).toBe(view.loadingTracker)
+  })
+
   it('tells the state that the routes below it depend on', async () => {
     const { admin, routeComponent: form } = await mountChapters()
     expect(form.route.state).toEqual({

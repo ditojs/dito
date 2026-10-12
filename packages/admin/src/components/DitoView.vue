@@ -1,6 +1,6 @@
 <template lang="pug">
 template(
-  v-if="admin.user && shouldRenderSchema(viewSchema)"
+  v-if="admin.user && shouldRenderSchema(schema)"
 )
   //- Only render DitoView when it is active, otherwise a normal router-view
   //- instead, to nest further route components.
@@ -16,7 +16,7 @@ template(
   )
     DitoSchema(
       :key="name"
-      :schema="viewSchema"
+      :schema="schema"
       :data="data"
       :store="getChildStore(name)"
       padding="root"
@@ -42,15 +42,16 @@ export default DitoComponent.component('DitoView', {
   provide() {
     return {
       source: computed(() => this.mainSource),
-      resource: computed(() => this.mainResource),
-      $loadingTracker: () => this.loadingTracker
+      resource: computed(() => this.mainResource)
     }
   },
 
   data() {
     // Tracks the requests of all resource components in the view, which is
     // disabled while any of them is pending, see `isLoading`:
-    const loadingTracker = new LoadingTracker(this.$loadingTracker())
+    const loadingTracker = new LoadingTracker(
+      this.parentRoute?.loadingTracker ?? this.admin.loadingTracker
+    )
     return {
       loadingTracker: markRaw(loadingTracker),
       // The loading operation of the deprecated `setLoading()`.
@@ -63,13 +64,27 @@ export default DitoComponent.component('DitoView', {
 
   computed: {
     schema() {
-      return this.route.node.schema
+      const { component, ...schema } = this.sourceSchema
+      // Render single-component views as views with that component:
+      return this.isSingleComponentView
+        ? {
+            ...schema,
+            components: {
+              [schema.name]: {
+                name: schema.name,
+                label: false,
+                ...component
+              }
+            }
+          }
+        : schema
     },
 
+    // @override SchemaParentMixin.sourceSchema()
     // The view's components display the view's data, as if it were an item of
-    // a source with the view's schema, see `DitoSchema.sourceSchema`:
+    // a source with the view's schema:
     sourceSchema() {
-      return this.schema
+      return this.route.node.schema
     },
 
     name() {
@@ -85,7 +100,7 @@ export default DitoComponent.component('DitoView', {
     },
 
     isSingleComponentView() {
-      return isSingleComponentView(this.schema)
+      return isSingleComponentView(this.sourceSchema)
     },
 
     mainComponent() {
@@ -100,24 +115,6 @@ export default DitoComponent.component('DitoView', {
 
     mainResource() {
       return this.mainComponent?.ownResource ?? null
-    },
-
-    viewSchema() {
-      const { component, ...schema } = this.schema
-      // Translate single-component schemas into multi-component schemas,
-      // so they can be rendered directly through DitoSchema also:
-      return this.isSingleComponentView
-        ? {
-            ...schema,
-            components: {
-              [schema.name]: {
-                name: schema.name,
-                label: false,
-                ...component
-              }
-            }
-          }
-        : schema
     },
 
     // The data paths of the view's components start at its data:
@@ -138,7 +135,7 @@ export default DitoComponent.component('DitoView', {
     const view = this
     this.ownDataModel = markRaw(
       new DataModel({
-        schema: () => this.viewSchema,
+        schema: () => this.schema,
         data: () => this.data,
         sourceSchema: () => this.sourceSchema,
         services: {
@@ -158,7 +155,7 @@ export default DitoComponent.component('DitoView', {
 
   mounted() {
     // Prevent bypassing of if-condition by direct URL access.
-    if (!this.shouldRenderSchema(this.viewSchema)) {
+    if (!this.shouldRenderSchema(this.schema)) {
       this.$router.replace({ path: '/' })
     }
   },

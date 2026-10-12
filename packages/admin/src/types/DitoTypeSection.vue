@@ -59,12 +59,6 @@ export default DitoTypeComponent.register('section', {
       return !!this.schema.label
     },
 
-    // Sections display the item of their schema component, see
-    // `DitoSchema.sourceSchema`:
-    sourceSchema() {
-      return this.schemaComponent.sourceSchema
-    },
-
     collapsible: getSchemaAccessor('collapsible', {
       type: Boolean,
       default: false

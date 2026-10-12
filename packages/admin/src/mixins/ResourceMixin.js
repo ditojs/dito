@@ -38,8 +38,10 @@ export default {
 
   data() {
     // Tracks the pending requests of the component, see `handleRequest()`,
-    // and forwards them to the tracker of the enclosing scope, e.g. a view.
-    const loadingTracker = new LoadingTracker(this.$loadingTracker())
+    // and forwards them to the tracker of the view that renders it:
+    const loadingTracker = new LoadingTracker(
+      this.parentRoute?.loadingTracker ?? this.admin.loadingTracker
+    )
     return {
       loadedData: null,
       // The abort controller of the pending data load, see `requestData()`.
@@ -184,7 +186,7 @@ export default {
     },
 
     getVerbs() {
-      // Continue the verbs of the parent, see `ResourceContext.parent`:
+      // Continue the verbs of the parent:
       const parentVerbs = this.ownResource.parent?.verbs ?? verbs
       return this.isTransient
         ? {

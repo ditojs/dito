@@ -4,9 +4,7 @@ import { getItemId, getItemUid, processSchemaData } from './schema/data.js'
 import type { SchemaDataEntry } from './schema/data.js'
 import { hasFormSchema, hasMultipleFormSchemas } from './schema/lookup.js'
 import { isSourceWithResource } from './schema/structure.js'
-
-type Schema = Record<string, any>
-type Data = Record<string, any>
+import type { Data, Schema } from './types.ts'
 
 // A target object with the names of its values that are merged in place or
 // kept, which aren't replaced by the values of the source object:

@@ -41,7 +41,7 @@ export default {
       // browser's back button, see `beforeRouteChange()`:
       discardConfirmation: null,
       // The navigations away from the route that wait for the pending submits
-      // of its data, until they settle, see `navigateAfterSubmits()`:
+      // of its data, until they settle:
       waitingNavigations: markRaw(new Set()),
       // Each route-component defines a store that gets passed on to its
       // child components, so they can store values in them that live beyond
@@ -134,10 +134,9 @@ export default {
     },
 
     // Whether the component has changes that get lost when it's left, see
-    // `beforeRouteChange()` and `DitoRoot`. Forms that edit the item of their
-    // parent leave their changes in the parent's data model.
+    // `beforeRouteChange()` and `DitoRoot`:
     isDirty() {
-      return this.ownDataModel.isDirty
+      return this.container.isDirty
     }
   },
 
@@ -224,12 +223,12 @@ export default {
           // The form or view doesn't directly mutate data. Its data stays
           // dirty while it's being submitted, so wait for the submits first,
           // and leave without asking once they succeeded:
-          const { ownDataModel, waitingNavigations } = this
-          if (ownDataModel.hasPendingSubmits) {
+          const { dataModel, waitingNavigations } = this
+          if (dataModel.hasPendingSubmits) {
             const navigation = waitForNavigation(this.$router, to)
             waitingNavigations.add(navigation)
             navigation.then(() => waitingNavigations.delete(navigation))
-            await ownDataModel.waitUntilSubmitted()
+            await dataModel.waitUntilSubmitted()
           }
           // If it has unsaved changes, ask if the user wants to persist the
           // data first.
