@@ -17,7 +17,7 @@ function createApp({ admin, env } = {}) {
       app: { normalizePaths: true },
       log: { silent: true },
       logger: { prettyPrint: false, level: 'silent' },
-      server: { port: 0 },
+      server: { host: '127.0.0.1', port: 0 },
       admin,
       ...(env && { env })
     },
@@ -60,7 +60,7 @@ describe('AdminController', () => {
     try {
       const { port } = app.server.address()
       const response = await fetch(
-        `http://localhost:${port}/admin/catalog.js`
+        `http://127.0.0.1:${port}/admin/catalog.js`
       )
       expect(await response.text()).toBe('export default "catalog"')
       const [[config]] = createServer.mock.calls

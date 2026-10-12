@@ -18,7 +18,7 @@ function createApp({ config, ...options } = {}) {
     config: {
       log: { silent: true },
       logger: { prettyPrint: false, level: 'silent' },
-      server: { port: 0 },
+      server: { host: '127.0.0.1', port: 0 },
       ...config
     }
   })
@@ -28,7 +28,7 @@ async function withServer(app, callback) {
   await app.start()
   try {
     const { port } = app.server.address()
-    return await callback(`http://localhost:${port}`)
+    return await callback(`http://127.0.0.1:${port}`)
   } finally {
     await app.stop()
   }
