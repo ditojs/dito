@@ -52,7 +52,7 @@ const DitoTypeTreeList = DitoComponent.component('DitoTypeTreeList', {
       // tree, see `DitoTreeItem.changeChildren()`. Open forms follow their
       // items, see `DitoForm.setupSourceItem()`.
       changeChildren({ entry, children }) {
-        services.container.model.replaceChildren(entry, children)
+        services.container.model.replaceItems(entry, children)
         onChange()
       }
     }

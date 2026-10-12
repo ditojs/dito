@@ -322,7 +322,7 @@ export class DataModel {
     this.#changeList(entry, list => list.splice(to, 0, ...list.splice(from, 1)))
   }
 
-  replaceChildren(entry: ListEntry, items: any[]) {
+  replaceItems(entry: ListEntry, items: any[]) {
     this.#changeList(entry, list => list.splice(0, list.length, ...items))
   }
 
