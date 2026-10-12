@@ -236,7 +236,7 @@ describe('DitoTrigger positioning', () => {
     })
     const popup = wrapper.find('.dito-popup')
     expect(popup.classes()).toEqual(
-      expect.arrayContaining(['dito-popup-bottom-right', 'book-menu'])
+      expect.arrayContaining(['dito-popup--bottom-right', 'book-menu'])
     )
     expect(popup.element.style.zIndex).toBe('20')
     wrapper.unmount()
@@ -306,7 +306,7 @@ describe('DitoTrigger in hover mode', () => {
     await wrapper.find('.dito-trigger').trigger('mouseenter')
     expect(isPopupShown(wrapper)).toBe(false)
     expect(wrapper.find('.dito-trigger').classes()).toContain(
-      'dito-trigger-disabled'
+      'dito-trigger--disabled'
     )
     wrapper.unmount()
   })

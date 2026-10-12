@@ -555,3 +555,12 @@ Only `SchemaContext`, `AdminContext`, `DitoAdmin`, the schema types and the
 contracts of types and custom components are exported. The contexts of data,
 routes, sources and resources, the data model, the UI registry and the loading
 tracker are internal.
+
+## UI
+
+### Styles
+
+The modifiers of `DitoTrigger` follow BEM like the rest of the styles:
+`.dito-trigger-disabled` is `.dito-trigger--disabled`, and the placement
+classes of the popups, e.g. `.dito-popup-bottom-left`, are
+`.dito-popup--bottom-left`.

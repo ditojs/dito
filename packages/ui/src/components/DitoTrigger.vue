@@ -109,13 +109,13 @@ export default {
   computed: {
     triggerClass() {
       return {
-        'dito-trigger-disabled': this.disabled
+        'dito-trigger--disabled': this.disabled
       }
     },
 
     popupClass() {
       const classes = {
-        [`dito-popup-${hyphenate(this.placement)}`]: true
+        [`dito-popup--${hyphenate(this.placement)}`]: true
       }
       if (this.customClass) {
         classes[this.customClass] = true
@@ -585,7 +585,7 @@ export default {
   position: relative;
 }
 
-.dito-trigger-disabled {
+.dito-trigger--disabled {
   color: $color-disabled;
   border-color: $border-color;
   cursor: default;
