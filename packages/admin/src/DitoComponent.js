@@ -1,5 +1,4 @@
 import DitoMixin from './mixins/DitoMixin.js'
-import { resolveMergedOptions } from './utils/options.js'
 import { isPlainObject } from '@ditojs/utils'
 
 const components = {}
@@ -13,11 +12,7 @@ export default {
   component(name, definition) {
     if (definition) {
       if (isPlainObject(definition)) {
-        definition = resolveMergedOptions({
-          extends: this,
-          name,
-          ...definition
-        })
+        definition = { extends: this, name, ...definition }
       }
       components[name] = definition
     }

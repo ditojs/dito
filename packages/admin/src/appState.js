@@ -3,8 +3,6 @@ import { parseUserAgent } from './utils/agent'
 
 export default reactive({
   title: '',
-  // The route components by route level, see `RouteMixin`:
-  routeComponents: [],
   /** @type {Record<string, any> | null} */
   user: null,
   agent: parseUserAgent(navigator.userAgent || ''),

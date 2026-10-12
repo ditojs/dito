@@ -1,6 +1,7 @@
 import { computed } from 'vue'
 import type { Router } from 'vue-router'
 import { LoadingTracker } from './LoadingTracker.ts'
+import { UiRegistry } from './UiRegistry.ts'
 import { flattenViews } from './schema/setup.js'
 import type { RouteTree } from './RouteTree.ts'
 import type { Session } from './Session.js'
@@ -36,6 +37,8 @@ export class AdminContext {
   readonly session: Session
   // The pending requests of the admin, for the header's spinner:
   readonly loadingTracker = new LoadingTracker()
+  // The rendered routes and components, to reveal and focus them:
+  readonly ui = new UiRegistry()
   readonly #viewRegistry: ViewRegistry
   readonly #flattenedViews = computed(() => flattenViews(this.views))
   #dialogsAndNotifications: DialogsAndNotifications | null = null

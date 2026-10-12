@@ -9,8 +9,7 @@ const DitoTypePanel = DitoComponent.component('DitoTypePanel', {
   props: fieldProps,
 
   setup(props) {
-    const { focus } = useField(props)
-    return { focus }
+    useField(props)
   },
 
   render() {

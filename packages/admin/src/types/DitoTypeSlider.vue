@@ -41,11 +41,10 @@ const DitoTypeSlider = DitoComponent.component('DitoTypeSlider', {
 
   setup(props) {
     const field = useField(props, { nativeField: true })
-    const { attributes, focus, getSchemaValue } = field
+    const { attributes, getSchemaValue } = field
     return {
       ...useNumber(props, field),
       attributes,
-      focus,
       // TODO: Rename to `showInput`?
       input: computed(() =>
         getSchemaValue('input', { type: Boolean, default: true })

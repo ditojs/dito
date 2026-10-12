@@ -205,8 +205,6 @@ export default class DitoAdmin {
         // Provide defaults so DitoMixin can inject them for all components:
         $parentComponent: () => null,
         $schemaComponent: () => null,
-        $schemaParentComponent: () => null,
-        $tabComponent: () => null,
         container: null,
         route: null,
         source: null,

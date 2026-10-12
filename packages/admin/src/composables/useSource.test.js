@@ -472,8 +472,7 @@ describe('useSource()', () => {
       await settle(view)
       return {
         data: view.data,
-        getComponent: dataPath =>
-          view.mainSchemaComponent.getComponentByDataPath(dataPath)
+        getComponent: dataPath => admin.getComponent(view, dataPath)
       }
     }
 
@@ -778,36 +777,6 @@ describe('useSource()', () => {
     })
   })
 
-  describe('revealComponents()', () => {
-    it(`reveals nothing for missing items and other components`, async () => {
-      const { getComponent } = await mountSchema({
-        schema: {
-          components: {
-            chapters: {
-              type: 'list',
-              inlined: true,
-              form: { type: 'form', components: { title: { type: 'text' } } }
-            },
-            prologue: {
-              type: 'list',
-              inlined: true,
-              form: { type: 'form', components: { title: { type: 'text' } } }
-            }
-          }
-        },
-        data: { chapters: [{ title: 'One' }], prologue: [] }
-      })
-      const chapters = getComponent('chapters')
-      expect(await chapters.revealComponents('chapters/5/title')).toEqual([])
-      expect(await chapters.revealComponents('authors/0')).toEqual([])
-      expect(
-        await getComponent('prologue').revealComponents('prologue/0/title')
-      ).toEqual([])
-      const [title] = await chapters.revealComponents('chapters/0/title')
-      expect(title.dataPath).toBe('chapters/0/title')
-    })
-  })
-
   describe('routes', () => {
     const createChapterForm = () => ({
       type: 'form',
@@ -1045,7 +1014,7 @@ describe('useSource()', () => {
         },
         { chapters }
       )
-      const list = view.mainSchemaComponent.getComponentByDataPath('chapters')
+      const list = admin.getComponent(view, 'chapters')
       const path = list.getEditPath(1)
       expect(await getFormData(admin, path)).toEqual({ title: 'Epilogue' })
     })
@@ -1062,10 +1031,7 @@ describe('useSource()', () => {
         },
         { book: { chapters } }
       )
-      const list =
-        view.mainSchemaComponent.getComponentByDataPath(
-          'book/chapters'
-        )
+      const list = admin.getComponent(view, 'book/chapters')
       const path = list.getEditPath(1)
       expect(await getFormData(admin, path)).toEqual({ title: 'Epilogue' })
     })
@@ -1074,7 +1040,7 @@ describe('useSource()', () => {
       // Mounts a `books` view with a list that edits the books in its form,
       // and the `test` view with a list linked to the `books` view.
       async function mountLinkedList() {
-        const { view } = await mountView(
+        const { admin, view } = await mountView(
           {
             components: {
               books: {
@@ -1102,7 +1068,7 @@ describe('useSource()', () => {
             request: () => ({ data: [] })
           }
         )
-        return view.mainSchemaComponent.getComponentByDataPath('books')
+        return admin.getComponent(view, 'books')
       }
 
       it('link the items to the forms in multi-component views', async () => {

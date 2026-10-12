@@ -202,36 +202,6 @@ describe('DitoTypeSection', () => {
     ])
   })
 
-  it(`doesn't reveal data paths outside of its data`, async () => {
-    const { getComponent } = await mountSchema({
-      schema: {
-        components: {
-          chapters: {
-            type: 'list',
-            inlined: true,
-            form: {
-              type: 'form',
-              components: {
-                details: {
-                  type: 'section',
-                  components: { title: { type: 'text' } }
-                }
-              }
-            }
-          }
-        }
-      },
-      data: { chapters: [{ title: 'Emma' }] }
-    })
-    const section = getComponent('chapters/0/details')
-    expect(section.dataPath).toBe('chapters/0')
-    expect(await section.revealComponents('chapters/1/title')).toEqual([])
-    expect(await section.revealComponents('chapters/0')).toEqual([])
-    expect(await section.revealComponents('chapters/0/title')).toEqual([
-      expect.objectContaining({ dataPath: 'chapters/0/title' })
-    ])
-  })
-
   it('shares the width of its container with its components', async () => {
     const { findContainer } = await mountSchema({
       schema: {

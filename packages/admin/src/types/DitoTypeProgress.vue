@@ -25,7 +25,6 @@ const DitoTypeProgress = DitoComponent.component('DitoTypeProgress', {
     const { settings } = useNumber(props, field)
     return {
       attributes: field.attributes,
-      focus: field.focus,
 
       progressValue: computed(() => {
         let value = field.value.value

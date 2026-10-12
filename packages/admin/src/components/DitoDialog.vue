@@ -19,6 +19,7 @@
         v-show="false"
       )
       DitoSchema(
+        ref="schema"
         :schema="schema"
         :data="dialogData"
         padding="root"
@@ -36,7 +37,6 @@
 import { markRaw } from 'vue'
 import { clone } from '@ditojs/utils'
 import DitoComponent from '../DitoComponent.js'
-import SchemaParentMixin from '../mixins/SchemaParentMixin.js'
 import { getButtonSchemas } from '../utils/schema/lookup.js'
 import { DataModel } from '../utils/DataModel.ts'
 import { DialogContext } from '../utils/ContainerContext.ts'
@@ -44,7 +44,6 @@ import { UseFocusTrap } from '@vueuse/integrations/useFocusTrap/component'
 
 // @vue/component
 export default DitoComponent.component('DitoDialog', {
-  mixins: [SchemaParentMixin],
   components: { UseFocusTrap },
   emits: ['remove'],
 

@@ -174,7 +174,7 @@ describe('DitoTypeList', () => {
     })
 
     it('keeps the state of each item when inserting items', async () => {
-      const { findField, getComponent, settle } = await mountSchema({
+      const { wrapper, findField, getComponent, settle } = await mountSchema({
         schema: createRecipeSchema({ collapsible: true, collapsed: true }),
         data: {
           ingredients: [{ name: 'Flour' }, { name: 'Salt' }, { name: 'Yeast' }]
@@ -189,9 +189,11 @@ describe('DitoTypeList', () => {
       // The inserted item is opened, see `createItem()`, and the others keep
       // their state:
       const getOpenedNames = () =>
-        list.schemaComponents
-          .filter(schemaComponent => schemaComponent.opened)
-          .map(schemaComponent => schemaComponent.data.name)
+        wrapper
+          .findAllComponents({ name: 'DitoSchema' })
+          .map(({ vm }) => vm)
+          .filter(schema => schema.inlined && schema.opened)
+          .map(schema => schema.data.name)
           .sort()
       expect(getOpenedNames()).toEqual(['Salt', null])
       expect(getItemNames(findField('ingredients'))).toEqual(['', 'Salt'])
@@ -1122,7 +1124,7 @@ describe('DitoTypeList', () => {
           .findAll('tbody > tr')
           .map(row => row.classes('dito-table__row--error'))
       expect(getMarkedRows()).toEqual([false, false])
-      expect(routeComponent.validateAll()).toBe(false)
+      expect(routeComponent.container.validate()).toBe(false)
       await flushPromises()
       expect(getMarkedRows()).toEqual([false, true])
       data.chapters[1].title = 'Two'

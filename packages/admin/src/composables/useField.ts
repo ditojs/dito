@@ -12,7 +12,6 @@ import {
 import { useValue } from './useValue.ts'
 import { useFocus, type FocusOptions } from './useFocus.ts'
 import { useFieldEvents, type FieldEventsOptions } from './useFieldEvents.ts'
-import { useRegistration } from './useRegistration.ts'
 import type { Services } from '../utils/services.ts'
 import type { Data, Schema } from '../utils/types.ts'
 
@@ -124,8 +123,7 @@ export function useField(
     getEvents,
     validate
   })
-  const focus = useFocus({ focusElement, blurElement })
-  useRegistration(props)
+  const focus = useFocus(schemaContext.services, { focusElement, blurElement })
 
   // The attributes and event handlers of the element that edits the value:
   const attributes = computed(() => {

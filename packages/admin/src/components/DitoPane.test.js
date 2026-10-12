@@ -199,12 +199,14 @@ describe('DitoPane', () => {
       return admin
     }
 
-    it('select their tab when focused', async () => {
+    it('are selected when their components are focused', async () => {
       const admin = await mountTabs()
-      const panes = admin.wrapper.findAllComponents({ name: 'DitoPane' })
-      const details = panes.find(({ vm }) => vm.tab === 'details').vm
       await admin.navigate('/books#notes')
-      await details.focus()
+      const title = admin.getComponent(admin.getRouteComponent(), 'title')
+      await admin.context.ui.reveal(title.container, title.componentPath, {
+        focus: true
+      })
+      await flushPromises()
       expect(admin.router.currentRoute.value.hash).toBe('#details')
     })
 
@@ -219,13 +221,13 @@ describe('DitoPane', () => {
     })
   })
 
-  it(`doesn't navigate when focusing panes that aren't tabs`, async () => {
-    const { admin, wrapper } = await mountSchema({
+  it(`doesn't navigate when focusing components outside of tabs`, async () => {
+    const { admin, focusField } = await mountSchema({
       schema: { components: { title: { type: 'text' } } },
       data: { title: 'Emma' }
     })
-    const pane = wrapper.findComponent({ name: 'DitoPane' }).vm
-    expect(pane.focus()).toBe(undefined)
+    await focusField('title')
+    await flushPromises()
     expect(admin.router.currentRoute.value.fullPath).toBe('/test')
   })
 })

@@ -216,7 +216,6 @@ const DitoTypeMultiselect = DitoComponent.component('DitoTypeMultiselect', {
       ...optionsField,
       attributes: field.attributes,
       inputAffixesProps: field.inputAffixesProps,
-      focus: field.focus,
       clear: field.clear,
       selectedOptions,
       populate,

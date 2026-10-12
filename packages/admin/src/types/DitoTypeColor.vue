@@ -118,7 +118,6 @@ const DitoTypeColor = DitoComponent.component('DitoTypeColor', {
       showPopup,
       attributes: field.attributes,
       inputAffixesProps: field.inputAffixesProps,
-      focus: field.focus,
 
       colorValue: computed({
         get() {

@@ -548,13 +548,13 @@ describe('DitoTypeMarkup', () => {
   it('focuses the editor', async () => {
     const focus = vi.fn()
     const blur = vi.fn()
-    const { getComponent } = await mountSchema({
+    const { getComponent, focusField } = await mountSchema({
       schema: {
         components: { body: { type: 'markup', events: { focus, blur } } }
       }
     })
     const component = getComponent('body')
-    await component.focus()
+    await focusField('body')
     await vi.waitFor(() => expect(focus).toHaveBeenCalledOnce())
     expect(component.editor.isFocused).toBe(true)
     component.editor.commands.blur()

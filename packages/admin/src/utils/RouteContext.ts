@@ -1,3 +1,4 @@
+import { shallowReactive } from 'vue'
 import type { RouteRecordNormalized, Router } from 'vue-router'
 import { getRelativeDataPath } from './data.js'
 import {
@@ -27,7 +28,10 @@ export interface RouteOwner {
   readonly isCreating?: boolean
   readonly path: string
   readonly isLastRoute: boolean
-  readonly mainSchemaComponent?: { selectedTab: string | null }
+  readonly isLeavingRoute: boolean
+  readonly isDirty: boolean
+  readonly breadcrumb: string
+  readonly selectedTab?: string | null
   readonly ownResource?: ResourceContext | null
 }
 
@@ -42,7 +46,7 @@ export class RouteContext {
   readonly #owner: RouteOwner
   readonly #router: Router
   // The sources that the route renders, while they're mounted:
-  readonly #sources = new Set<SourceContext>()
+  readonly #sources = shallowReactive(new Set<SourceContext>())
 
   constructor(
     owner: RouteOwner,
@@ -114,8 +118,23 @@ export class RouteContext {
     return this.#owner.isLastRoute
   }
 
+  // Whether the current route doesn't match the route's record anymore, while
+  // it's being left, until it's unmounted:
+  get isLeaving(): boolean {
+    return this.#owner.isLeavingRoute
+  }
+
+  // Whether leaving the route loses changes, see `useLeaveGuard()`:
+  get isDirty(): boolean {
+    return this.#owner.isDirty
+  }
+
+  get breadcrumb(): string {
+    return this.#owner.breadcrumb
+  }
+
   get selectedTab(): string | null {
-    return this.#owner.mainSchemaComponent?.selectedTab ?? null
+    return this.#owner.selectedTab ?? null
   }
 
   // Views have no resource, forms their own:
@@ -160,12 +179,14 @@ export class RouteContext {
 
   // Find the mounted source of `node`, e.g. to reload it:
   findSource(node: SourceNode): SourceContext | null {
-    for (const source of this.#sources) {
-      if (source.node === node) {
-        return source
-      }
-    }
-    return null
+    return [...this.#sources].find(source => source.node === node) ?? null
+  }
+
+  // Find the mounted source at `dataPath`, e.g. the main source of a view:
+  findSourceByDataPath(dataPath: string): SourceContext | null {
+    return (
+      [...this.#sources].find(source => source.dataPath === dataPath) ?? null
+    )
   }
 
   // Close the form, by navigating to the route of its parent:

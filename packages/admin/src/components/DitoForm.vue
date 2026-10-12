@@ -27,6 +27,7 @@
       disabled
     )
     DitoSchema(
+      ref="schema"
       :schema="schema"
       :dataPath="dataPath"
       :data="data"
@@ -36,6 +37,7 @@
       :disabled="isLoading"
       :scrollable="!isNestedRoute"
       generateLabels
+      @update:selected-tab="tab => (selectedTab = tab)"
     )
       template(#buttons)
         DitoButtons.dito-buttons--round.dito-buttons--large.dito-buttons--main(
@@ -49,7 +51,7 @@
 </template>
 
 <script>
-import { getCurrentInstance, inject, markRaw, toRaw } from 'vue'
+import { computed, getCurrentInstance, markRaw, toRaw } from 'vue'
 import {
   capitalize,
   assignDeeply,
@@ -57,7 +59,7 @@ import {
   escapeHtml
 } from '@ditojs/utils'
 import DitoComponent from '../DitoComponent.js'
-import RouteMixin from '../mixins/RouteMixin.js'
+import { useRouteContainer } from '../composables/useRouteContainer.ts'
 import { useResource } from '../composables/useResource.ts'
 import { useResourceSubmit } from '../composables/useResourceSubmit.ts'
 import { useItemLabel } from '../composables/useItemLabel.ts'
@@ -86,30 +88,25 @@ import { getTextFromHtml } from '../utils/html.js'
 
 // @vue/component
 export default DitoComponent.component('DitoForm', {
-  mixins: [RouteMixin],
-
   provide() {
     // The components of the form don't continue the source of its parent,
     // e.g. of a tree that renders the forms of its items:
     return {
+      sourceSchema: computed(() => this.sourceSchema),
       source: null,
       resource: this.ownResource
     }
   },
 
   setup() {
-    // NOTE: The form's data and route state are still members of the component:
+    // NOTE: The form's data is still a member of the component:
     const form = getCurrentInstance().proxy
+    const routeContainer = useRouteContainer()
+    const { ownContainer, ownRoute } = routeContainer
     // The components of the form don't see the source of its parent:
     const services = useServices({
-      get container() {
-        return form.ownContainer
-      },
-
-      get route() {
-        return form.ownRoute
-      },
-
+      container: ownContainer,
+      route: ownRoute,
       source: null,
 
       get resource() {
@@ -118,7 +115,7 @@ export default DitoComponent.component('DitoForm', {
     })
     const { verbs: resourceVerbs, ...requests } = useResource({
       services,
-      parentRoute: inject('route'),
+      parentRoute: ownRoute.parent,
       getSchema: () => form.sourceSchema,
       getItemId: () => form.itemId,
       isTransient: providesData => !providesData,
@@ -134,6 +131,7 @@ export default DitoComponent.component('DitoForm', {
       emitLoad: () => form.emitSchemaEvent('load')
     })
     return {
+      ...routeContainer,
       services,
       ...requests,
       resourceVerbs,
@@ -149,7 +147,8 @@ export default DitoComponent.component('DitoForm', {
         handleRequest: requests.handleRequest,
         getData: () => form.data,
         getItemLabel: () => form.itemLabel,
-        showValidationErrors: errors => form.showValidationErrors(errors)
+        showValidationErrors: errors =>
+          ownContainer.showValidationErrors(errors)
       })
     }
   },
@@ -166,7 +165,9 @@ export default DitoComponent.component('DitoForm', {
       // identity, and the copy of it that the form edits unless it mutates the
       // item, see `setupSourceItem()`:
       original: null,
-      draft: null
+      draft: null,
+      // The selected tab of the form's schema, see `context.selectedTab`:
+      selectedTab: null
     }
   },
 
@@ -175,7 +176,6 @@ export default DitoComponent.component('DitoForm', {
       return true
     },
 
-    // @override SchemaParentMixin.sourceSchema()
     // The schema of the source of the form's item:
     sourceSchema() {
       return this.route.node.source.schema
@@ -234,12 +234,30 @@ export default DitoComponent.component('DitoForm', {
       )
     },
 
+    // Whether the route is the last one that needs its own router-view, as it
+    // isn't nested:
+    isLastUnnestedRoute() {
+      const record = this.$route.matched.findLast(
+        record => !record.meta.node?.isNestedForm
+      )
+      return this.routeRecord === record
+    },
+
+    isNestedRoute() {
+      return this.route.node.isNestedForm
+    },
+
     isActiveRoute() {
       return this.isLastRoute || this.isLastUnnestedRoute
     },
 
+    // vue-router can't map several parameters of the same name to several
+    // components, see https://github.com/vuejs/vue-router/issues/1345
+    param() {
+      return this.$route.params[this.route.node.param] ?? null
+    },
+
     isCreating() {
-      // this.param is inherited from RouteMixin
       return this.param === 'create'
     },
 
@@ -264,9 +282,8 @@ export default DitoComponent.component('DitoForm', {
         : this.ownDataModel
     },
 
-    // @override RouteMixin.isDirty()
-    // Forms that edit the item of their parent leave their changes in the
-    // parent's data, which isn't left with them:
+    // Whether leaving the form loses changes. Forms that edit the item of their
+    // parent leave their changes in the parent's data, which isn't left:
     isDirty() {
       return !this.isEditingSourceItem && this.container.isDirty
     },
@@ -292,8 +309,14 @@ export default DitoComponent.component('DitoForm', {
       return this.isCreating ? 'post' : 'patch'
     },
 
-    breadcrumbPrefix() {
-      return capitalize(this.isCreating ? this.verbs.create : this.verbs.edit)
+    breadcrumb() {
+      const { verbs } = this
+      return (
+        this.schema.breadcrumb ||
+        `${capitalize(this.isCreating ? verbs.create : verbs.edit)} ${
+          this.getLabel(this.schema)
+        }`
+      )
     },
 
     data() {
@@ -340,8 +363,9 @@ export default DitoComponent.component('DitoForm', {
         ? getComponentPathByDataPath(
             parentRoute.schema,
             parentRoute.state.data,
-            this.sourceLocation?.dataPath ?? '',
+            this.dataPath,
             {
+              dataPath: parentRoute.dataPath,
               componentPath: parentRoute.componentPath,
               services: this,
               rootData: parentRoute.rootData
@@ -479,7 +503,7 @@ export default DitoComponent.component('DitoForm', {
 
   methods: {
     emitSchemaEvent(event, params) {
-      return this.mainSchemaComponent?.emitEvent(event, params)
+      return this.$refs.schema?.emitEvent(event, params)
     },
 
     // Hold the item of the form by its identity, in a draft unless the form
@@ -538,7 +562,7 @@ export default DitoComponent.component('DitoForm', {
       }
     },
 
-    // Copies the errors of the item in the parent's model into the draft.
+    // Copy the errors of the item in the parent's model into the draft:
     copyErrors() {
       if (this.draft) {
         this.ownDataModel.copyErrors(
@@ -546,14 +570,6 @@ export default DitoComponent.component('DitoForm', {
           this.draft
         )
       }
-    },
-
-    // Reveals the errors of the form's data, see `DitoSchema.revealErrors()`.
-    // Drafts take over the errors of their item first, also when they're open
-    // already, e.g. when the parent shows its errors.
-    revealErrors() {
-      this.copyErrors()
-      return this.mainSchemaComponent.revealErrors()
     },
 
     setupData() {
@@ -622,7 +638,7 @@ export default DitoComponent.component('DitoForm', {
       const { path, data } = this
       // Wait for computed values that depend on pending loads, e.g. options.
       await this.waitUntilDataModelSettled()
-      if (validate && !this.validateAll()) {
+      if (validate && !this.container.validate()) {
         return false
       }
       // The edits that the submit carries:
@@ -712,7 +728,7 @@ export default DitoComponent.component('DitoForm', {
         }
       }
       if (success) {
-        this.resetValidation()
+        this.dataModel.clearErrors(this.dataPath)
         // The saved or applied data isn't dirty, also without a response with
         // data, and before the closing below, but edits made meanwhile are.
         // Drafts hold the responses of buttons with resources like edits, see
@@ -765,7 +781,7 @@ export default DitoComponent.component('DitoForm', {
           } else {
             parentModel.merge(sourceData, sourceKey, item, sourceSchema)
           }
-          this.mainSchemaComponent.onChange()
+          this.$refs.schema.onChange()
         }
         onSuccess?.()
         await this.emitButtonEvent(button, 'success', {

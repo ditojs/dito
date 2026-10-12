@@ -89,9 +89,6 @@ export default DitoComponent.component('DitoRoot', {
 
   created() {
     this.appState.title = document.title || 'Dito.js Admin'
-    // With hot-reloading, it looks like destroyed hooks aren't always called
-    // for route components so reset the array of registered components instead.
-    this.appState.routeComponents = []
     this.admin.attachDialogsAndNotifications({
       showDialog: (schema, options) => this.showDialog(schema, options),
       notify: options => this.notify(options),
@@ -123,13 +120,13 @@ export default DitoComponent.component('DitoRoot', {
     })
 
     // Warn before the page is reloaded or closed with unsaved changes. Route
-    // changes within the admin are guarded by `RouteMixin` instead.
+    // changes within the admin are guarded by `useLeaveGuard()` instead.
     this.domOn(window, {
       beforeunload: event => {
         // Write the edits that are held back first, e.g. debounced markup
         // edits:
-        for (const routeComponent of this.appState.routeComponents) {
-          routeComponent.dataModel.writePendingValues()
+        for (const route of this.admin.ui.routes) {
+          route.container.model.writePendingValues()
         }
         if (this.hasUnsavedChanges()) {
           event.preventDefault()
@@ -159,9 +156,7 @@ export default DitoComponent.component('DitoRoot', {
     // Data that is being submitted still counts as unsaved, as `beforeunload`
     // can't wait for the submits:
     hasUnsavedChanges() {
-      return this.appState.routeComponents.some(
-        routeComponent => routeComponent.isDirty
-      )
+      return this.admin.ui.routes.some(route => route.isDirty)
     },
 
     // Show a dialog with the `components` and `buttons` of `schema`, and

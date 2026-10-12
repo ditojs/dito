@@ -159,18 +159,21 @@ which components write the data through, as `component.dataModel`.
   `showValidationErrors()`. `validate()` remains, and replaces the errors of
   the field.
 - Forms, views and schemas no longer have `errors`, `hasErrors`, `isTouched`,
-  `isValid`, `isValidated` and `clearErrors()`, schemas no longer
-  `resetValidation()`. `resetValidation()` of forms and views clears the
-  errors of the values of their data, also of mutating forms, which share the
-  data model of their parent. `showValidationErrors(errors)` of forms and
-  views takes only the errors.
+  `isValid`, `isValidated`, `clearErrors()` and `resetValidation()`, forms
+  and views no longer `validateAll()`, `verifyAll()` and
+  `showValidationErrors()`. Their `container` validates with `validate()` and
+  `verify()`, and shows the errors of the server with
+  `showValidationErrors(errors, dataPath)`. Forms clear the errors of their
+  data once they're submitted, also mutating forms, which share the data
+  model of their parent.
 - Panels no longer have `errors`, `isTouched`, `isValid`, `isValidated`,
   `validateAll()`, `verifyAll()`, `resetValidation()` and `clearErrors()`.
-  Their `mainSchemaComponent` validates and shows errors instead.
-- `navigateToComponent()` and `navigateToRouteComponent()` are replaced by
-  `revealComponents(dataPath)`, which opens collapsed schemas and inlined
-  items, and returns the components that display the value. Errors in the
-  forms of nested routes open them through the route tree.
+  The `container` of panels with their own data validates and shows errors.
+- `navigateToComponent()` and `navigateToRouteComponent()` are removed.
+  `container.revealErrors()` reveals the errors of the data: it opens the
+  forms of nested routes through the route tree, and opens collapsed schemas
+  and inlined items and renders tabs through `admin.ui`, see
+  [Routes and the UI registry](#routes-and-the-ui-registry).
 
 ### Contexts
 
@@ -300,8 +303,9 @@ them through two contexts, instead of components:
 
 - `container`, provided by views, forms, dialogs and panels with their own
   data: the `model` that holds the data, `isDirty`, `isEdited`, `isCreating`,
-  `hasData`, `validate()`, `verify()`, `markEdited()` and `replaceItem()`.
-  Dialogs add `close(value)`.
+  `hasData`, `validate()`, `verify()`, `showValidationErrors()`,
+  `revealErrors()`, `markEdited()` and `replaceItem()`. Dialogs add
+  `close(value)`.
 - `route`, provided by views and forms: its `parent` route, `container`, the
   `schema`, `dataPath`, `rootData` and `componentPath` of the data that it
   renders, `loadingTracker`, `level`, `isForm`, `state`, `path`,
@@ -357,10 +361,11 @@ Views provide both contexts of their main component, e.g. to their panels.
 - `dataComponent`: `resource.resourceOwner`. The components in sources
   with a resource read the root data of their route, like all others.
 - `isPopulated`: `container.hasData`.
-- `sourceSchema` is only defined by the components that render schemas:
-  sources, views, forms, panels, sections, dialogs and `DitoSchema`. In views,
-  the components outside of the main component keep the view's schema.
-  Forms don't see a `source` in their own callbacks either.
+- `sourceSchema` is only defined by views, forms and `DitoSchema`, which
+  injects it from the view, form or source item that renders it. In views,
+  the components outside of the main component keep the view's schema. Forms
+  don't see a `source` in their own callbacks either. `source.resource` is
+  the resource of the source.
 - `getFormPath()` of sources: `route.getFormPath()`.
 - The `meta` prop of the components and types is removed, along with
   `nestedMeta`.
@@ -377,6 +382,35 @@ Views provide both contexts of their main component, e.g. to their panels.
   forms and sources is removed, use `loadingTracker.begin()` or `track()`.
   `createData()`, `forms`, `isCompact` and `linksToView` of sources and forms
   are removed, and `setData()` of sources returns nothing.
+
+### Routes and the UI registry
+
+Views and forms are built from composables, `useRouteContainer()` and
+`useLeaveGuard()`, instead of `RouteMixin`, and `SchemaParentMixin` is
+removed. Components no longer reach each other to reveal and focus
+components: `admin.ui`, the `UiRegistry` of the admin, holds the handles of
+the rendered components by component path, and the contexts of the rendered
+routes.
+
+- `appState.routeComponents`: `admin.ui.routes`, the route contexts by level.
+  Route contexts add `isLeaving`, `isDirty` and `breadcrumb`.
+- The `$schemaParentComponent` and `$tabComponent` injects, `tabComponent`,
+  `parentSchemaComponent`, `schemaComponents` and `mainSchemaComponent` are
+  removed. The `$schemaComponent` inject only remains for schema events.
+- Schemas no longer have `getComponent()`, `getComponents()`,
+  `getComponentByName()`, `getComponentsByDataPath()` and the other lookups,
+  `getPanel()` and `getPanels()`, `components`, `panes`, `panels` and
+  `revealComponents()`, sections and sources no longer
+  `revealComponents()`, panes no longer `focus()`.
+- `admin.ui.reveal(container, componentPath, { focus })` asks the components
+  on the way to the component from the outside in to render it, e.g.
+  collapsed schemas open and render the tab that contains it, which focusing
+  selects, and then focuses it. Focusing components in nested tabs selects
+  these tabs too.
+- Forms and views no longer have `label` and `breadcrumbPrefix`, views no
+  longer `param`, `isNestedRoute` and `isMutating`. Their route guards use
+  `onBeforeRouteLeave()` and `onBeforeRouteUpdate()`, so components no longer
+  merge the route guards of their mixins.
 
 ### Custom types
 
@@ -442,7 +476,8 @@ Views provide both contexts of their main component, e.g. to their panels.
   instances no longer have `value`, `item`, `parentItem`, `rootItem`,
   `focused`, `validate()` or the resolved schema values, e.g. `readonly`, and
   their contexts are built from their props and services instead of the
-  instance. Their schema component reveals them through `focus()`.
+  instance. They no longer have `focus()`: `admin.ui.reveal()` reveals and
+  focuses them by their component path.
 - The data model replaces the values of components with options once the
   options are loaded, e.g. references with their related objects, and shows
   the errors of failed loads, also while the component isn't rendered. Values

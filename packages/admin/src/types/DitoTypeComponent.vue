@@ -28,8 +28,8 @@ const DitoTypeComponent = DitoComponent.component('DitoTypeComponent', {
   props: fieldProps,
 
   setup(props) {
-    const { context, value, onChange, focus } = useField(props)
-    return { context, value, onChange, focus }
+    const { context, value, onChange } = useField(props)
+    return { context, value, onChange }
   },
 
   computed: {

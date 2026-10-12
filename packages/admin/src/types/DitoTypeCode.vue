@@ -103,7 +103,6 @@ const DitoTypeCode = DitoComponent.component('DitoTypeCode', {
     })
 
     return {
-      focus: field.focus,
       height,
       resizable: computed(() =>
         getSchemaValue('resizable', { type: Boolean, default: false })

@@ -9,6 +9,7 @@ component.dito-panel(
   @submit.prevent
 )
   DitoSchema.dito-panel__schema(
+    ref="schema"
     :schema="schema"
     :dataSchema="panelDataSchema"
     :dataPath="panelDataPath"
@@ -45,18 +46,14 @@ import { markRaw } from 'vue'
 import { isFunction } from '@ditojs/utils'
 import DitoComponent from '../DitoComponent.js'
 import DitoContext from '../DitoContext.js'
-import SchemaParentMixin from '../mixins/SchemaParentMixin.js'
 import { getButtonSchemas } from '../utils/schema/lookup.js'
 import { shouldRenderComponents } from '../utils/schema/data.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
-import { trackRegistration } from '../utils/registration.js'
 import { DataModel } from '../utils/DataModel.ts'
 import { ContainerContext } from '../utils/ContainerContext.ts'
 
 // @vue/component
 export default DitoComponent.component('DitoPanel', {
-  mixins: [SchemaParentMixin],
-
   provide() {
     // Only panels with their own data own a data model:
     return this.ownContainer ? { container: this.ownContainer } : {}
@@ -158,11 +155,6 @@ export default DitoComponent.component('DitoPanel', {
   },
 
   created() {
-    // Register the panels so that other components can find them by their
-    // data-path, e.g. in TypeList.onFilterErrors()
-    this._unregister = trackRegistration(this, (add, componentPath) =>
-      this.schemaComponent._registerPanel(this, add, componentPath)
-    )
     const { data } = this.schema
     if (data) {
       this.ownData = isFunction(data) ? data(this.context) : data
@@ -193,10 +185,6 @@ export default DitoComponent.component('DitoPanel', {
     // Stop the model before the component's own watchers are stopped, as the
     // model's watchers aren't part of the component, see `DataModel`.
     this.ownDataModel?.stop()
-  },
-
-  unmounted() {
-    this._unregister()
   },
 
   methods: {

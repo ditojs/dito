@@ -2251,10 +2251,57 @@ export interface AdminContext {
   readonly flattenedViews: Record<string, ViewSchema>
   /** Tracks the pending requests of the whole admin. */
   readonly loadingTracker: LoadingTracker
+  /** The rendered routes and components, to reveal and focus them. */
+  readonly ui: UiRegistry
   showDialog: DitoContext['showDialog']
   notify: DitoContext['notify']
   /** Closes all notification toasts. */
   closeNotifications(): void
+}
+
+/** What a rendered component offers to reveal and focus it. */
+export interface UiHandle {
+  /** The context of the data that the component displays. */
+  readonly container: ContainerContext | null
+  /**
+   * Renders what leads to the component at `componentPath` inside this one,
+   * e.g. opens a collapsed schema and renders its tab, which `focus` also
+   * selects.
+   */
+  reveal?(componentPath: string, options: { focus: boolean }): Promise<void>
+  /** Focuses the element of the component, once it's revealed. */
+  focus?(): void
+}
+
+/**
+ * The handles of the rendered components by component path, and the contexts
+ * of the rendered routes, as `admin.ui`.
+ */
+export interface UiRegistry {
+  /** The contexts of the rendered routes by level. Reactive. */
+  readonly routes: readonly RouteContext[]
+  /**
+   * Registers `handle` under the component path, and again under the new one
+   * whenever it changes. Returns the function that unregisters it.
+   */
+  register(getComponentPath: () => string, handle: UiHandle): () => void
+  /**
+   * Returns the handles at `componentPath`, of all containers or of
+   * `container`, the outer ones first.
+   */
+  getHandles(
+    componentPath: string,
+    container?: ContainerContext | null
+  ): UiHandle[]
+  /**
+   * Reveals the component at `componentPath` in `container`, by asking the
+   * components on the way from the outside in, and with `focus`, focuses it.
+   */
+  reveal(
+    container: ContainerContext | null,
+    componentPath: string,
+    options?: { focus?: boolean }
+  ): Promise<void>
 }
 
 /**
@@ -2281,6 +2328,20 @@ export interface ContainerContext {
   readonly hasData: boolean
   validate: DitoContext['validate']
   verify: DitoContext['verify']
+  /**
+   * Shows the validation errors of the server for the data that was sent,
+   * keyed by data paths relative to `dataPath`, by default the root data, and
+   * reveals them.
+   */
+  showValidationErrors(
+    errors: Record<string, DitoValidationError[]>,
+    dataPath?: string
+  ): Promise<void>
+  /**
+   * Reveals the errors of the data, opening the forms, collapsed schemas and
+   * tabs that display them, and focuses the first one.
+   */
+  revealErrors(): Promise<void>
   markEdited: DitoContext['markEdited']
   replaceItem: DitoContext['replaceItem']
 }
@@ -2331,6 +2392,15 @@ export interface RouteContext {
   readonly path: string
   /** Whether the route is the last one of the current route. */
   readonly isLastRoute: boolean
+  /** Whether the route is being left, until its view or form is unmounted. */
+  readonly isLeaving: boolean
+  /**
+   * Whether leaving the route loses changes. Forms that edit the item of their
+   * parent leave their changes in the parent's data.
+   */
+  readonly isDirty: boolean
+  /** The text of the route in the breadcrumb trail. */
+  readonly breadcrumb: string
   /** The name of the selected tab, `null` without tabs. */
   readonly selectedTab: string | null
   /**
@@ -2393,6 +2463,8 @@ export interface SourceContext {
   getSourceItemLabel(item: any, index?: number | null): any
   /** Loads the data of the source again, e.g. after its item was saved. */
   reload(): void
+  /** The resource of the source, see {@link ResourceContext}. */
+  readonly resource: ResourceContext
 }
 
 /**
@@ -2516,10 +2588,6 @@ export interface DitoComponentInstanceBase<$Item = any>
    * one of their main component.
    */
   resource: ResourceContext | null
-  /** The parent schema component. */
-  parentSchemaComponent: DitoComponentInstanceBase | null
-  /** The nearest ancestor tab component. */
-  tabComponent: DitoComponentInstanceBase | null
 
   // -- Environment (DitoMixin) --
 
@@ -2640,16 +2708,6 @@ export interface DitoComponentInstanceBase<$Item = any>
   setStore(key: string, value: any): any
   /** Removes a value from the component store. */
   removeStore(key: string): void
-}
-
-/**
- * The component of a type, which its schema component reveals and focuses,
- * e.g. to show its errors.
- */
-export interface DitoTypeInstance<$Item = any>
-  extends DitoComponentInstanceBase<$Item> {
-  /** Focuses the component and scrolls it into view. */
-  focus(): Promise<void>
 }
 
 export interface EmitterMixin {
@@ -2883,56 +2941,10 @@ export interface DitoFormInstance<$Item = any>
    */
   close(): Promise<void>
 
-  /**
-   * Validates all fields in the form's data, including
-   * fields that aren't rendered, e.g. in collapsed
-   * sections or closed nested forms. Optionally
-   * filter fields with a match pattern. Returns
-   * `true` if all matched fields are valid.
-   */
-  validateAll(
-    match?:
-      | string
-      | string[]
-      | RegExp
-      | ((field: string) => boolean),
-    notify?: boolean
-  ): boolean
-
-  /**
-   * Like {@link validateAll} but without
-   * triggering error notifications.
-   */
-  verifyAll(
-    match?:
-      | string
-      | string[]
-      | RegExp
-      | ((field: string) => boolean)
-  ): boolean
-
-  /**
-   * Shows the validation errors of the server, keyed by
-   * data path, and reveals them.
-   */
-  showValidationErrors(
-    errors: Record<string, DitoValidationError[]>
-  ): Promise<void>
-
-  /**
-   * Clears the errors of the values of the data, of validation and
-   * of the server, e.g. once it's saved.
-   */
-  resetValidation(): void
-
   // -- Resource & route --
 
-  /** Display label for this form. */
-  label: string
   /** Breadcrumb text for navigation. */
   breadcrumb: string
-  /** Prefix prepended to the breadcrumb label. */
-  breadcrumbPrefix: string
   /** Whether this is the last route in the hierarchy. */
   isLastRoute: boolean
   /** Whether this route is nested inside another route. */
@@ -2991,28 +3003,12 @@ export interface DitoViewInstance<$Item = any>
   /** Tracks the pending requests of the view's components. */
   readonly loadingTracker: LoadingTracker
 
-  // -- Route (RouteMixin) --
+  // -- Route (useRouteContainer) --
 
-  /** Display label for this view. */
-  label: string
   /** Breadcrumb text for navigation. */
   breadcrumb: string
-  /** Prefix prepended to the breadcrumb label. */
-  breadcrumbPrefix: string
   /** Whether this is the last route in the hierarchy. */
   isLastRoute: boolean
-  /** Whether this route is nested inside another route. */
-  isNestedRoute: boolean
-  /**
-   * The route parameter value for this route
-   * component (e.g. an item id or `'create'`).
-   */
-  param: string | number | null
-  /**
-   * Whether the view directly mutates the
-   * parent's data instead of working on a copy.
-   */
-  isMutating: boolean
 
   // -- Data & schema (DitoView) --
 
@@ -3033,49 +3029,6 @@ export interface DitoViewInstance<$Item = any>
    * as the view's reactive data.
    */
   setData(data: any): any
-
-  // -- Validation --
-
-  /**
-   * Validates all fields in the view's data,
-   * including fields that aren't rendered.
-   * Optionally filter fields with a match pattern.
-   * Returns `true` if all matched fields are valid.
-   */
-  validateAll(
-    match?:
-      | string
-      | string[]
-      | RegExp
-      | ((field: string) => boolean),
-    notify?: boolean
-  ): boolean
-
-  /**
-   * Like {@link validateAll} but without
-   * triggering error notifications.
-   */
-  verifyAll(
-    match?:
-      | string
-      | string[]
-      | RegExp
-      | ((field: string) => boolean)
-  ): boolean
-
-  /**
-   * Shows the validation errors of the server, keyed by
-   * data path, and reveals them.
-   */
-  showValidationErrors(
-    errors: Record<string, DitoValidationError[]>
-  ): Promise<void>
-
-  /**
-   * Clears the errors of the values of the data, of validation and
-   * of the server, e.g. once it's saved.
-   */
-  resetValidation(): void
 }
 
 export interface DitoSchemaInstance<$Item = any>
@@ -3121,13 +3074,6 @@ export interface DitoSchemaInstance<$Item = any>
     errors: Record<string, DitoValidationError[]>,
     dataPath?: string
   ): Promise<void>
-
-  /**
-   * Reveals the components that display the value at
-   * `dataPath`, opening collapsed schemas and inlined
-   * items, and returns them.
-   */
-  revealComponents(dataPath: string): Promise<DitoTypeInstance[]>
 }
 
 export interface DitoSourceInstance<$Item = any>
@@ -3209,11 +3155,6 @@ export interface DitoSourceInstance<$Item = any>
    * from the list.
    */
   deleteItem(item: any, index: number): void
-  /**
-   * Reveals the components of the inlined item that
-   * display the value at `dataPath`, and returns them.
-   */
-  revealComponents(dataPath: string): Promise<DitoTypeInstance[]>
 
   // -- Resource --
 

@@ -1,4 +1,5 @@
 import type { SourceNode } from './RouteTree.ts'
+import type { ResourceContext } from './ResourceContext.ts'
 import type { ListQuery } from './ListQuery.js'
 import type { Schema } from './types.ts'
 
@@ -23,4 +24,6 @@ export interface SourceContext {
   getSourceItemLabel(item: any, index?: number | null): any
   // Load the data of the source again, e.g. after its item was saved:
   reload(): void
+  // The resource of the source, which views provide with their main source:
+  readonly resource: ResourceContext
 }

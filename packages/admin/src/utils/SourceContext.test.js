@@ -80,8 +80,7 @@ describe('SourceContext', () => {
     })
     expect(getComponent('pages').context.listQuery).not.toBe(null)
     const form = await openForm(admin, '/items/1/pages/0')
-    const title =
-      form.mainSchemaComponent.getComponentByDataPath('pages/0/title')
+    const title = admin.getComponent(form, 'pages/0/title')
     expect(title.source).toBe(null)
     expect(title.context.listQuery).toBe(null)
     // Nor the callbacks of the form itself:

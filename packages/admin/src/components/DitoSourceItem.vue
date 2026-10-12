@@ -35,12 +35,18 @@ span(
 </template>
 
 <script>
+import { computed } from 'vue'
 import DitoComponent from '../DitoComponent.js'
 import { isInlined } from '../utils/schema/structure.js'
 
 // @vue/component
 export default DitoComponent.component('DitoSourceItem', {
   emits: ['delete', 'move'],
+
+  provide() {
+    // The form of the item displays an item of the source:
+    return { sourceSchema: computed(() => this.schema) }
+  },
 
   props: {
     // The schema of the list or object source that holds the item.

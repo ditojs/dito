@@ -19,10 +19,10 @@ const DitoTypeCheckbox = DitoComponent.component('DitoTypeCheckbox', {
   props: fieldProps,
 
   setup(props) {
-    const { value, attributes, focus } = useField(props, {
+    const { value, attributes } = useField(props, {
       nativeField: true
     })
-    return { value, attributes, focus }
+    return { value, attributes }
   }
 })
 

@@ -348,7 +348,6 @@ const DitoTypeUpload = DitoComponent.component('DitoTypeUpload', {
 
     return {
       ...sortable,
-      focus: field.focus,
       disabled,
       uploads,
       multiple,

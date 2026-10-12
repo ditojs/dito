@@ -20,8 +20,8 @@ const DitoTypeSwitch = DitoComponent.component('DitoTypeSwitch', {
   props: fieldProps,
 
   setup(props) {
-    const { value, attributes, focus } = useField(props)
-    return { value, attributes, focus }
+    const { value, attributes } = useField(props)
+    return { value, attributes }
   }
 })
 

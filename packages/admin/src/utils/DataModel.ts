@@ -580,7 +580,7 @@ export class DataModel {
   }
 
   // The data stays dirty until its submits succeed, which leaving the route
-  // waits for, see `RouteMixin.beforeRouteChange()`.
+  // waits for, see `useLeaveGuard()`.
   get hasPendingSubmits(): boolean {
     return this.#pendingSubmits.size > 0
   }

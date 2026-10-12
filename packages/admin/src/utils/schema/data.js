@@ -704,25 +704,36 @@ export function processSchemaData(schema, data, {
 
 /**
  * Returns the component path of the value at `dataPath` in `data`, by walking
- * `data` along the components of `schema` to the deepest component that
- * contains the value, e.g. `main/chapters/1` for `chapters/1`, with the list
- * `chapters` in the tab `main`. The part of `dataPath` inside that component,
- * e.g. item indices, is appended to its component path. Of several components
- * that display the same data, the first in schema order is used.
+ * `data` along the rendered components of `schema` to the deepest component
+ * that contains the value, e.g. `main/chapters/1` for `chapters/1`, with the
+ * list `chapters` in the tab `main`. The part of `dataPath` inside that
+ * component, e.g. item indices, is appended to its component path. Of several
+ * components that display the same data, the first in schema order is used.
+ * `options.dataPath` is the data path of `data`, which `dataPath` contains.
  */
 export function getComponentPathByDataPath(schema, data, dataPath, {
+  dataPath: itemDataPath = '',
   componentPath = '',
   services = null,
   rootData = data
 } = {}) {
-  let deepestEntry = { dataPath: '', componentPath }
+  let deepestEntry = { dataPath: itemDataPath, componentPath }
   if (data) {
     processSchemaData(schema, data, {
-      dataPath: '',
+      dataPath: itemDataPath,
       componentPath,
-      // Only walk the components that contain the value at `dataPath`:
+      // Only walk the rendered components that contain the value:
       shouldProcess: entry => (
-        getRelativeDataPath(dataPath, entry.dataPath) !== null
+        getRelativeDataPath(dataPath, entry.dataPath) !== null &&
+        getSchemaValue('if', {
+          type: Boolean,
+          schema: entry.schema,
+          context: DitoContext.createForSchema(services, {
+            ...entry,
+            rootData
+          }),
+          default: true
+        })
       ),
       before: entry => {
         if (entry.dataPath.length > deepestEntry.dataPath.length) {

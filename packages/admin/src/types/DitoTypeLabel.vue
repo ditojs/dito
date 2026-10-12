@@ -12,8 +12,8 @@ const DitoTypeLabel = DitoComponent.component('DitoTypeLabel', {
   props: fieldProps,
 
   setup(props) {
-    const { value, focus } = useField(props)
-    return { value, focus }
+    const { value } = useField(props)
+    return { value }
   }
 })
 
