@@ -1079,6 +1079,19 @@ describe('QueryBuilder', () => {
       expect((await Recipe.query().findById(apple.id))!.servings).toBe(8)
     })
 
+    it('leaves relations alone in array insert() and insertAndFetch()', async () => {
+      // Client data, which the model types don't describe.
+      const data: any[] = [
+        { name: 'Ada', recipes: [{ name: 'Apple pie' }] },
+        { name: 'Grace', recipes: [{ name: 'Banana bread' }] }
+      ]
+      await Cook.query().insert(data)
+      const cooks = await Cook.query().insertAndFetch(data)
+      expect(cooks.map(cook => cook.name)).toEqual(['Ada', 'Grace'])
+      expect(await Cook.query()).toHaveLength(4)
+      expect(await Recipe.query()).toHaveLength(0)
+    })
+
     it('runs queries that wrap themselves in transactions more than once', async () => {
       const [ada, grace] = await insertCooks()
       const patch = Cook.query().patchAndFetch([
