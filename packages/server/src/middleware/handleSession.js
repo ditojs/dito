@@ -63,10 +63,12 @@ const createSessionStore = modelClass =>
     }
 
     async set(id, value) {
-      await this.query().upsert({
-        ...this.modelClass.getReference(id),
-        value
-      })
+      await this.query()
+        .findById(id)
+        .upsert({
+          ...this.modelClass.getReference(id),
+          value
+        })
     }
 
     async destroy(key) {

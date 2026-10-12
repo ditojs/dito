@@ -3268,12 +3268,18 @@ export class QueryBuilder<
   ): this
 
   /**
-   * Inserts the models, or updates the ones whose ids exist already,
-   * atomically through `insert().onConflict(idColumns).merge()`. The models
-   * are validated as full models, like in `insert()`.
+   * Patches the model matched by the query, e.g. through `findById()` or
+   * `where()`, or inserts it if none matched, in one transaction. With
+   * `update`, it updates instead of patching, and with `fetch`, it fetches the
+   * inserted model.
    */
-  upsert(data: PartialModelObject<M>[]): objection.ArrayQueryBuilder<this>
-  upsert(data: PartialModelObject<M>): objection.SingleQueryBuilder<this>
+  upsert(
+    data: PartialModelObject<M>,
+    options?: {
+      update?: boolean
+      fetch?: boolean
+    }
+  ): objection.SingleQueryBuilder<this>
 
   /**
    * Applies query parameters through the handlers registered in
@@ -3313,7 +3319,10 @@ export class QueryBuilder<
     data: objection.PartialModelObject<M>
   ): objection.SingleQueryBuilder<this>
 
-  /** Like `upsert()`, and fetches the models, as `insertAndFetch()` does. */
+  /**
+   * Patches the models by their ids and inserts the missing ones, in one
+   * transaction, and fetches them. Their relations are left untouched.
+   */
   upsertAndFetch(
     data: objection.PartialModelGraph<M>[]
   ): objection.ArrayQueryBuilder<this>

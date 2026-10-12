@@ -53,16 +53,24 @@ Also accept arrays of models in databases other than PostgreSQL, which insert
 them one by one in one transaction. Their relations are left untouched, as in
 PostgreSQL.
 
-### `upsert(data)`
+### `upsert(data, options)`
 
-Inserts the models, or updates the ones whose ids exist already, atomically
-through `insert(data).onConflict(idColumns).merge()`. The ids come from the
-data, and the models are validated as full models, like in `insert()`.
+Patches the model matched by the query, e.g. through `findById(id)` or
+`where()`, or inserts it if none matched, in one transaction:
+
+```js
+await Session.query().findById(id).upsert({ id, value })
+```
+
+With `{ update: true }`, the model is updated instead of patched, and with
+`{ fetch: true }`, the inserted model is fetched like in `insertAndFetch()`.
+A query without `where()` clauses patches all models.
 
 ### `upsertAndFetch(data)`
 
-Upserts the models like `upsert()`, and fetches them like `insertAndFetch()`.
-Their relations are left untouched.
+Patches the models by their ids, inserts the ones without ids or with ids that
+don't exist yet, and fetches them, in one transaction. Their relations are left
+untouched.
 
 ### `patchAndFetch(data)`
 ### `updateAndFetch(data)`

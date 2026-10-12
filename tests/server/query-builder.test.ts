@@ -1,5 +1,5 @@
 import type { ModelProperties } from '@ditojs/server'
-import { Model, QueryBuilder } from '@ditojs/server'
+import { Model, QueryBuilder, TimeStampedModel } from '@ditojs/server'
 import {
   createTestApp,
   createTestDatabase,
@@ -104,8 +104,48 @@ class Recipe extends Model {
   } as any
 }
 
+// The write hooks that ran on notes, in their order:
+const noteHooks: string[] = []
+
+class Note extends TimeStampedModel {
+  declare id: number
+  declare title: string
+  declare pinned: boolean
+  declare createdAt: Date
+  declare updatedAt: Date
+
+  static override properties: ModelProperties = {
+    title: { type: 'string', required: true },
+    pinned: { type: 'boolean', default: false }
+  }
+
+  static override hooks = {
+    'before:insert'() {
+      noteHooks.push('insert')
+    },
+
+    'before:update'() {
+      noteHooks.push('update')
+    },
+
+    'after:insert'({ inputItems }: any) {
+      throwForFailingNotes(inputItems)
+    },
+
+    'after:update'({ inputItems }: any) {
+      throwForFailingNotes(inputItems)
+    }
+  } as any
+}
+
+function throwForFailingNotes(notes: Note[]) {
+  if (notes.some(note => note.title === 'Fail')) {
+    throw new Error('Unable to save failing note.')
+  }
+}
+
 describe('QueryBuilder', () => {
-  const app = createTestApp({ models: { Cook, Step, Recipe } })
+  const app = createTestApp({ models: { Cook, Step, Recipe, Note } })
 
   beforeAll(async () => {
     await createTestDatabase(app)
@@ -117,9 +157,10 @@ describe('QueryBuilder', () => {
   })
 
   afterEach(async () => {
-    for (const table of ['Step', 'Recipe', 'Cook']) {
+    for (const table of ['Step', 'Recipe', 'Cook', 'Note']) {
       await app.knex(table).del()
     }
+    noteHooks.length = 0
   })
 
   function getNames(models: { name: string }[]) {
@@ -832,44 +873,97 @@ describe('QueryBuilder', () => {
       expect(recipe.id).toBeGreaterThan(1)
     })
 
-    it('updates existing rows by their ids with upsert()', async () => {
-      const [apple] = await insertRecipes()
-      const result = await Recipe.query().upsert({
-        id: apple.id,
-        name: 'Apple pie',
-        servings: 10
-      })
+    it('patches the rows matched by where() with upsert()', async () => {
+      await insertRecipes()
+      const result = await Recipe.query()
+        .where('name', 'Apple pie')
+        .upsert({ servings: 10 })
       expect(result).toBeInstanceOf(Recipe)
       expect(result.servings).toBe(10)
-      expect((await Recipe.query().findById(apple.id))!.servings).toBe(10)
-      expect(await Recipe.query().ignoreScope()).toHaveLength(4)
+      const recipe = await Recipe.query().findOne('name', 'Apple pie')
+      expect(recipe!.servings).toBe(10)
+      expect(recipe!.published).toBe(true)
     })
 
-    it('inserts rows without ids or with new ids with upsert()', async () => {
-      await Recipe.query().upsert({ name: 'Apple pie', servings: 6 })
-      await Recipe.query().upsert({ id: 100, name: 'Banana bread' })
-      expect(getNames(await Recipe.query())).toEqual([
-        'Apple pie',
-        'Banana bread'
-      ])
+    it('inserts missing rows with upsert()', async () => {
+      const recipe = await Recipe.query()
+        .where('name', 'Apple pie')
+        .upsert({ name: 'Apple pie', servings: 6 }, { fetch: true })
+      expect(recipe).toBeInstanceOf(Recipe)
+      expect(recipe.servings).toBe(6)
+      expect(await Recipe.query()).toHaveLength(1)
     })
 
-    it('upserts atomically under the conflict of their ids', async () => {
-      // Two writes of the same new model, which can't both insert it:
-      await Promise.all([
-        Recipe.query().upsert({ id: 100, name: 'Apple pie' }),
-        Recipe.query().upsert({ id: 100, name: 'Apple tart' })
-      ])
-      const recipes = await Recipe.query()
-      expect(recipes).toHaveLength(1)
-      expect(recipes[0].id).toBe(100)
-    })
-
-    it('validates full models with upsert()', async () => {
-      const [apple] = await insertRecipes()
+    it('validates full models when upserting with `update`', async () => {
+      await insertRecipes()
       await expect(
-        Recipe.query().upsert({ id: apple.id, servings: 10 })
+        Recipe.query()
+          .where('name', 'Apple pie')
+          .upsert({ servings: 10 }, { update: true })
       ).rejects.toThrow(/not valid/)
+    })
+
+    async function insertNote() {
+      const note = await Note.query().insert({
+        title: 'Shopping',
+        pinned: true
+      })
+      noteHooks.length = 0
+      return note
+    }
+
+    it('patches existing rows found by id with upsert()', async () => {
+      const note = await insertNote()
+      await Note.query()
+        .findById(note.id)
+        .upsert({ id: note.id, title: 'Groceries' })
+      const notes = await Note.query()
+      expect(notes).toHaveLength(1)
+      expect(notes[0].title).toBe('Groceries')
+      expect(notes[0].pinned).toBe(true)
+      expect(notes[0].createdAt).toEqual(note.createdAt)
+      expect(noteHooks).toEqual(['update'])
+    })
+
+    it('runs the insert hooks for missing rows with upsert()', async () => {
+      await Note.query().findById(1).upsert({ title: 'Shopping' })
+      // The patch runs its hooks before it finds no row to patch:
+      expect(noteHooks).toEqual(['update', 'insert'])
+      expect(await Note.query()).toHaveLength(1)
+    })
+
+    it('rolls back upsert() when saving fails', async () => {
+      const note = await insertNote()
+      await expect(
+        Note.query().findById(note.id).upsert({ id: note.id, title: 'Fail' })
+      ).rejects.toThrow('Unable to save failing note.')
+      expect((await Note.query().findById(note.id))!.title).toBe('Shopping')
+    })
+
+    it('patches existing rows and fetches them with upsertAndFetch()', async () => {
+      const note = await insertNote()
+      const result = await Note.query().upsertAndFetch({
+        id: note.id,
+        title: 'Groceries'
+      })
+      expect(result).toBeInstanceOf(Note)
+      expect(result.title).toBe('Groceries')
+      expect(result.pinned).toBe(true)
+      expect(result.createdAt).toEqual(note.createdAt)
+      expect(noteHooks).toEqual(['update'])
+      expect(await Note.query()).toHaveLength(1)
+    })
+
+    it('rolls back upsertAndFetch() when saving fails', async () => {
+      const note = await insertNote()
+      await expect(
+        Note.query().upsertAndFetch([
+          { id: note.id, title: 'Groceries' },
+          { title: 'Fail' }
+        ])
+      ).rejects.toThrow('Unable to save failing note.')
+      const notes = await Note.query()
+      expect(notes.map(({ title }) => title)).toEqual(['Shopping'])
     })
 
     it('patches and updates by id', async () => {

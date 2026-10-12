@@ -682,13 +682,8 @@ builds and the `require` conditions of their exports are removed.
 
 ### Queries
 
-- `upsert(data)` inserts the models, or updates the ones whose ids exist
-  already, atomically through `insert(data).onConflict(idColumns).merge()`.
-  The ids come from the data: the form that patched the models matched by
-  `where()` and inserted them if none matched is removed, and so are the
-  options `update` and `fetch`. Like `insert()`, it validates full models.
-- `upsertAndFetch(data)` upserts the same way, and fetches the models like
-  `insertAndFetch()`. Their relations are still left untouched.
+- `upsert()` and `upsertAndFetch()` run in a transaction, so a failure rolls
+  back the patch, or the models saved before it.
 - The array forms of `patchAndFetch()` and `updateAndFetch()` save each model
   by its id in one transaction, and throw for models without ids instead of
   inserting them: insert these with `insertAndFetch()`. The collection actions
