@@ -676,6 +676,39 @@ export function getComponentPathByDataPath(schema, data, dataPath, {
     : deepestEntry.componentPath
 }
 
+// Get the text of the value `name` of the item through the type of the
+// component that edits it in the item's form, also in sections and tabs:
+export function getItemValueText(sourceSchema, item, name, {
+  services,
+  dataPath,
+  context
+}) {
+  let schema = null
+  walkSchemaData(getItemFormSchema(sourceSchema, item, context), item, {
+    // Leave out the items of nested sources:
+    shouldWalk: entry => !getSourceType(entry.schema),
+    before: entry => {
+      if (entry.name === name) {
+        // Of several components of the value, the first wins:
+        schema ??= entry.schema
+      }
+    },
+    options: { services, rootData: context.rootItem }
+  })
+  const getValueText = schema && getTypeDescriptor(schema)?.getValueText
+  return getValueText
+    ? getValueText(
+        SchemaContext.createForSchema(services, {
+          schema,
+          name,
+          data: item,
+          dataPath: appendDataPath(dataPath, name),
+          rootData: context.rootItem
+        })
+      )
+    : item[name]
+}
+
 export function getItemId(sourceSchema, item) {
   const id = item[sourceSchema.idKey || 'id']
   return id != null ? String(id) : undefined

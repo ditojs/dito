@@ -2889,6 +2889,11 @@ export interface TypeDescriptor {
       }
     } | null
   ): Record<string, any> | null | undefined
+  /**
+   * The text that cells without `render()` and item labels show for the
+   * edited value, e.g. formatted dates. Without it, they show the value.
+   */
+  getValueText?(context: SchemaContext): any
   getValidations?(
     schema: Record<string, any>,
     context: SchemaContext

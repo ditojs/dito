@@ -416,6 +416,27 @@ describe('DitoTypeList', () => {
       const texts = await getItemTexts({})
       expect(texts).toEqual(['Flour', 'Salt'])
     })
+
+    it('shows loaded dates in their label as their type formats them', async () => {
+      const { findField } = await mountForm({
+        schema: {
+          components: {
+            milestones: {
+              type: 'list',
+              itemLabel: 'due',
+              form: {
+                type: 'form',
+                components: { due: { type: 'date' } }
+              }
+            }
+          }
+        },
+        data: { milestones: [{ due: '2026-06-01' }] }
+      })
+      expect(findField('milestones').find('tbody td').text()).toBe(
+        'June 1, 2026'
+      )
+    })
   })
 
   describe('list buttons', () => {
@@ -1068,6 +1089,47 @@ describe('DitoTypeList', () => {
       expect(findField('books').find('tbody td').text()).toBe(
         'books/0/title'
       )
+    })
+
+    it('shows loaded dates as their types format them', async () => {
+      const { findField } = await mountForm({
+        schema: {
+          components: {
+            events: {
+              type: 'list',
+              columns: { day: {}, start: {}, doors: {} },
+              form: {
+                type: 'form',
+                components: {
+                  day: { type: 'date' },
+                  // Columns find components in sections too:
+                  times: {
+                    type: 'section',
+                    components: {
+                      start: { type: 'datetime' },
+                      doors: { type: 'time' }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        data: {
+          events: [
+            {
+              day: '2026-06-01',
+              start: '2026-06-01T19:30',
+              doors: '2026-06-01T18:45'
+            }
+          ]
+        }
+      })
+      expect(
+        findField('events')
+          .findAll('tbody td')
+          .map(cell => cell.text())
+      ).toEqual(['June 1, 2026', 'June 1, 2026 at 07:30:00 PM', '06:45:00 PM'])
     })
   })
 
