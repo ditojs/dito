@@ -30,7 +30,7 @@ schemas of the views, instead of by the types while they set up their schemas.
 ### Data
 
 Views, forms, dialogs and panels with their own data each have a data model,
-which components write the data through, as `component.dataModel`.
+which components write the data through.
 
 - Forms are dirty once their data is edited, until it's saved, applied or
   loaded again, instead of when it differs from the data they started with.
@@ -548,3 +548,23 @@ export default {
   }
 }
 ```
+
+The admin's own components are no longer part of the API: they're built with
+`setup()` and composables, without mixins, and custom components can't reach
+them or their members. `DitoMixin`, `EmitterMixin` and
+`DitoComponent.component()` are removed, and so are the types of their
+instances, `DitoComponentInstanceBase`, `DitoFormInstance`, `DitoViewInstance`,
+`DitoSchemaInstance`, `DitoSourceInstance` and `EmitterMixin`. Their actions
+are members of the context:
+
+- `this.request()`, `this.format()`, `this.navigate()`, `this.download()` and
+  `this.getResourceUrl()`: `context.request()`, `context.format()`,
+  `context.navigate()`, `context.download()` and `context.getResourceUrl()`.
+  `sendRequest()` and `getQueryLink()` are removed: use `context.request()`,
+  and `context.routeQuery` with `context.navigate()`.
+- `getLabel()`, `getStore()`, `setStore()` and `removeStore()` are removed.
+  `labelize()` is exported by `@ditojs/utils`.
+- The handlers of schema events receive the context only. `on()`, `off()`,
+  `emit()` and `emitEvent()` are removed. `change` events bubble from the
+  components to the schemas above them unless a handler returns `false`,
+  which now also stops them between schemas.
