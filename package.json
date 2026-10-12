@@ -30,7 +30,8 @@
     "update:sync": "pnpm update -r --depth 0 && pnpm run peers:sync",
     "peers:sync": "node scripts/sync-peers.js && pnpm install && (pnpm audit --fix update || true)",
     "peers:check": "node scripts/sync-peers.js --check",
-    "coverage": "vitest run --coverage"
+    "coverage": "vitest run --coverage",
+    "check": "concurrently --group pnpm:lint pnpm:types 'pnpm -C tests test:types'"
   },
   "lint-staged": {
     "packages/**/src/**/*.{js,ts}": [

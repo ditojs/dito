@@ -47,6 +47,10 @@ pnpm -C tests screenshots --update-snapshots
 
 ### Linting & Code Quality
 ```bash
+# Run linters, types and type tests in parallel, as a quick local check. The
+# full suites (coverage, e2e, screenshots) run on CI.
+pnpm run check
+
 # Run all linters
 pnpm run lint
 
