@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    // TypeScript modules import the admin's JavaScript modules, which stay
+    // unchecked until they're migrated.
+    "allowJs": true,
+    "checkJs": false
+  },
+  "include": ["src/**/*.ts"]
+}
