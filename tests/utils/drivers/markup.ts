@@ -1,4 +1,4 @@
-import { expect, type Page } from '@playwright/test'
+import { expect, type Locator, type Page } from '@playwright/test'
 import type { DriverComponent, TypeComponentDriver } from './index.js'
 
 /** One editing step: text to type, a toolbar button, a key, or a link. */
@@ -49,9 +49,19 @@ export const markup: TypeComponentDriver = {
         // The editor reads typed text asynchronously, wait for it before
         // selecting it.
         await expect(editor).toContainText(text)
-        for (const _ of text) {
-          await page.keyboard.press('Shift+ArrowLeft')
-        }
+        // ProseMirror reads keyboard selections asynchronously, and a timer
+        // that it sets on focus resets selections it hasn't read yet, which
+        // only happens when the keys follow the focus as fast as here. Select
+        // until the editor holds the selection:
+        await expect(async () => {
+          await page.keyboard.press('End')
+          for (const _ of text) {
+            await page.keyboard.press('Shift+ArrowLeft')
+          }
+          await expect
+            .poll(() => getSelectedText(editor), { timeout: 1000 })
+            .toBe(text)
+        }).toPass()
         await container
           .getByRole('button', { name: 'Link', exact: true })
           .click()
@@ -68,5 +78,23 @@ export const markup: TypeComponentDriver = {
     return this.getElement(page, component).evaluate(element =>
       element.innerHTML.replace(/<br class="ProseMirror-trailingBreak">/g, '')
     )
+  }
+}
+
+// Read the selection from the editor's state rather than the DOM, through the
+// Tiptap editor that its element exposes:
+function getSelectedText(editor: Locator) {
+  return editor.evaluate((element: TiptapElement) => {
+    const { doc, selection } = element.editor.state
+    return doc.textBetween(selection.from, selection.to)
+  })
+}
+
+type TiptapElement = HTMLElement & {
+  editor: {
+    state: {
+      doc: { textBetween(from: number, to: number): string }
+      selection: { from: number; to: number }
+    }
   }
 }
