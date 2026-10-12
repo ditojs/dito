@@ -22,19 +22,11 @@ export default {
     const adminContext = inject(adminContextKey)
     return {
       adminContext,
-      items: [
-        { value: 'settings', label: 'Settings' },
-        { value: 'logout', label: 'Logout' }
-      ],
+      items: [{ value: 'logout', label: 'Logout' }],
 
       onSelectMenuItem({ value }) {
-        switch (value) {
-          case 'logout':
-            adminContext.session.logout()
-            break
-          case 'settings':
-            console.info('TODO: Implement Settings')
-            break
+        if (value === 'logout') {
+          adminContext.session.logout()
         }
       }
     }
