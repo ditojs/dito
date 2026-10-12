@@ -165,32 +165,20 @@ export function getValueForSelectedValue(
     : convertValue(selectedValue)
 }
 
-// Values whose option disappeared become `null` unless `taggable`, and
-// references become their options' objects. Return `null` if `value` stays:
+// References become their related options, other values stay, also without
+// options. Return `null` if `value` stays:
 export function getReplacedValue(
-  schema: Schema,
   settings: OptionsSettings,
   options: any[],
   value: any
 ): { value: any } | null {
-  const findOption = (value: any) =>
-    findOptionForValue(settings, options, value)
-  const selectedValue = getSelectedValue(settings, value, {
-    hasOptions: options.length > 0,
-    findOption
-  })
-  return (
-    options.length > 0 && (
-      selectedValue === null && value !== null && !schema.taggable ||
-      isReference(value, settings.relateKey || 'id')
-    )
+  const { relateKey } = settings
+  const option = (
+    relateKey &&
+    isReference(value, relateKey) &&
+    findOptionForValue(settings, options, getValueForOption(settings, value))
   )
-    ? {
-        value: getValueForSelectedValue(settings, selectedValue, value, {
-          findOption
-        })
-      }
-    : null
+  return option ? { value: option } : null
 }
 
 interface SelectedValueOptions {

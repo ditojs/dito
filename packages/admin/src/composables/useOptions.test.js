@@ -156,14 +156,14 @@ describe('useOptions()', () => {
       { value: 'poetry', label: 'Poetry' }
     ]
 
-    it('replaces values whose option disappeared, without editing', async () => {
+    it('keeps values that no option has, without editing', async () => {
       const { data, routeComponent } = await mountForm({
         schema: {
           components: { genre: { type: 'select', options: genres } }
         },
         data: { genre: 'drama' }
       })
-      expect(data.genre).toBe(null)
+      expect(data.genre).toBe('drama')
       expect(routeComponent.routeContext.isDirty).toBe(false)
     })
 
