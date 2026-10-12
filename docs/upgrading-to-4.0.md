@@ -692,7 +692,8 @@ builds and the `require` conditions of their exports are removed.
 - The array forms of `patchAndFetch()` and `updateAndFetch()` save each model
   by its id in one transaction, and throw for models without ids instead of
   inserting them: insert these with `insertAndFetch()`. The collection actions
-  `put` and `patch` of controllers still insert the models without ids.
+  `put` and `patch` of controllers still insert the models without ids, in one
+  transaction with the saved models.
 
 ### Removals
 

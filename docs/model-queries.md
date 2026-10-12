@@ -47,6 +47,12 @@ In addition to Objection.js' many database methods, ...:
 
 ### `truncate()`
 ### `insert(data)`
+### `insertAndFetch(data)`
+
+Also accept arrays of models in databases other than PostgreSQL, which insert
+them one by one in one transaction. Their relations are left untouched, as in
+PostgreSQL.
+
 ### `upsert(data)`
 
 Inserts the models, or updates the ones whose ids exist already, atomically

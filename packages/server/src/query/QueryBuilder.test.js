@@ -86,6 +86,14 @@ describe('QueryBuilder: write queries in other databases', () => {
     expect(query.has('insertGraph')).toBe(true)
   })
 
+  it('inserts and fetches multiple models through insertGraphAndFetch()', () => {
+    const query = Ingredient.query().insertAndFetch([
+      { name: 'Flour' },
+      { name: 'Sugar' }
+    ])
+    expect(query.has('insertGraphAndFetch')).toBe(true)
+  })
+
   it('inserts single models and single-entry arrays directly', () => {
     expect(Ingredient.query().insert({ name: 'Flour' }).has('insert'))
       .toBe(true)
