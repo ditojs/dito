@@ -212,7 +212,7 @@ export default class DitoAdmin {
         $sourceComponent: () => null,
         $resourceComponent: () => null,
         $dialogComponent: () => null,
-        $dataModel: () => null,
+        $dataModelComponent: () => null,
         $panelComponent: () => null,
         $tabComponent: () => null,
         $loadingTracker: () => null

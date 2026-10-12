@@ -489,6 +489,57 @@ describe('DitoTypeList', () => {
       })
       notify.mockRestore()
     })
+
+    it('clear the errors of the list once they succeed', async () => {
+      let isValid = false
+      const { findField, getErrors, settle } = await mountForm({
+        schema: {
+          components: {
+            chapters: {
+              type: 'list',
+              inlined: true,
+              form: {
+                type: 'form',
+                components: { title: { type: 'text' } }
+              },
+              buttons: {
+                saveTitles: {
+                  type: 'submit',
+                  resource: { path: 'titles', method: 'post' }
+                }
+              }
+            }
+          }
+        },
+        data: { chapters: [{ title: 'One' }] },
+        request: () => {
+          if (isValid) {
+            return { data: null }
+          }
+          throw Object.assign(new Error('Validation failed'), {
+            response: {
+              status: 400,
+              data: {
+                type: 'ValidationError',
+                errors: { '0/title': [{ message: 'is taken' }] }
+              }
+            }
+          })
+        }
+      })
+      const button = findField('chapters').find(
+        '.dito-buttons button[type="submit"]'
+      )
+      await button.trigger('click')
+      await settle()
+      expect(getErrors('chapters/0/title')).toEqual([
+        'The Title field is taken.'
+      ])
+      isValid = true
+      await button.trigger('click')
+      await settle()
+      expect(getErrors('chapters/0/title')).toEqual([])
+    })
   })
 
   describe('primitive values', () => {
@@ -1155,6 +1206,55 @@ describe('DitoTypeList', () => {
       expect(JSON.stringify(request.mock.lastCall[0].query)).toContain(
         'title:\\"Soup\\"'
       )
+    })
+
+    it('clears the filters to their defaults and applies them', async () => {
+      const request = vi.fn(({ query }) => {
+        if (JSON.stringify(query).includes('Soup')) {
+          throw new RequestError({
+            status: 400,
+            statusText: 'Error',
+            data: {
+              type: 'FilterValidation',
+              message: 'The query filter is not valid',
+              errors: { 'course/course': [{ message: 'is no course' }] }
+            }
+          })
+        }
+        return { data: { results: [], total: 0 } }
+      })
+      const { wrapper, getComponent } = await mountSchema({
+        schema: {
+          components: {
+            recipes: {
+              type: 'list',
+              resource: { path: 'recipes' },
+              filters: {
+                course: {
+                  components: { course: { type: 'text', default: 'Main' } }
+                }
+              },
+              form: { type: 'form', components: { title: { type: 'text' } } }
+            }
+          }
+        },
+        request
+      })
+      const recipes = getComponent('recipes')
+      const panel = wrapper.find('.dito-panel')
+      const input = panel.find('input[type="text"]')
+      expect(input.element.value).toBe('Main')
+      await enterValue(input, 'Soup')
+      await panel.find('button[type="submit"]').trigger('click')
+      await flushPromises()
+      expect(recipes.query.filter).toEqual(['course:"Soup"'])
+      expect(panel.findAll('.dito-errors li').length).toBe(1)
+      await panel.find('button[id$="clear"]').trigger('click')
+      await flushPromises()
+      // The filters are applied with their defaults:
+      expect(recipes.query.filter).toEqual(['course:"Main"'])
+      expect(input.element.value).toBe('Main')
+      expect(panel.findAll('.dito-errors li').length).toBe(0)
     })
 
     it('notifies filter errors of lists without filters panel', async () => {

@@ -157,8 +157,8 @@ export const articles = createWidgetView<ArticleItem>(
               type: 'button',
               text: 'Replace Data',
               events: {
-                click: ({ item, formComponent }) => {
-                  const article = formComponent.setData({
+                click: ({ item, replaceItem }) => {
+                  const article = replaceItem({
                     ...item,
                     title: 'Replaced'
                   })

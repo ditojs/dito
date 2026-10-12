@@ -1,4 +1,5 @@
 import { vi } from 'vitest'
+import { flushPromises } from '@vue/test-utils'
 import { mountSchema, enterValue } from '../test/mount.js'
 
 describe('DitoPanel', () => {
@@ -40,15 +41,13 @@ describe('DitoPanel', () => {
       },
       data: { title: 'Dune' }
     })
-    const panel = wrapper.findComponent({ name: 'DitoPanel' }).vm
     const [context] = createData.mock.calls[0]
-    expect(context.panelComponent).toBe(panel)
     // The panel's data path addresses a value in the item that it displays:
     expect(context.processedItem).toEqual({ title: 'Dune' })
     expect(wrapper.find('.dito-panel input').element.value).toBe('Emma')
   })
 
-  it('is the panel component of its buttons', async () => {
+  it('passes the data that it displays to its buttons', async () => {
     const click = vi.fn()
     const { wrapper } = await mountSchema({
       schema: {
@@ -70,11 +69,9 @@ describe('DitoPanel', () => {
       },
       data: { title: 'Dune', notes: 'Classic' }
     })
-    const panel = wrapper.findComponent({ name: 'DitoPanel' }).vm
     await wrapper.find('.dito-panel button[id$="refresh"]').trigger('click')
     expect(click).toHaveBeenCalledOnce()
-    const [{ panelComponent, item }] = click.mock.calls[0]
-    expect(panelComponent).toBe(panel)
+    const [{ item }] = click.mock.calls[0]
     expect(item).toMatchObject({ notes: 'Classic' })
   })
 
@@ -107,5 +104,37 @@ describe('DitoPanel', () => {
     expect(panel.vm.panelData).toEqual({ words: 3, pages: 30 })
     expect(panel.vm.dataModel.isDirty).toBe(true)
     expect(dataModel.isDirty).toBe(false)
+  })
+
+  it('validates and edits its own data through contexts', async () => {
+    const click = vi.fn()
+    const { wrapper, getComponent } = await mountSchema({
+      schema: {
+        components: { title: { type: 'text' } },
+        panels: {
+          search: {
+            type: 'panel',
+            label: 'Search',
+            data: { query: '' },
+            components: { query: { type: 'text', required: true } },
+            buttons: {
+              check: { type: 'button', text: 'Check', events: { click } }
+            }
+          }
+        }
+      },
+      data: { title: 'Dune' }
+    })
+    const panel = wrapper.find('.dito-panel')
+    await panel.find('button[id$="check"]').trigger('click')
+    const [context] = click.mock.calls[0]
+    expect(context.validate()).toBe(false)
+    await flushPromises()
+    expect(panel.find('.dito-errors').text()).toContain('required')
+    await enterValue(panel.find('input'), 'Emma')
+    expect(context.isDirty).toBe(true)
+    expect(context.validate()).toBe(true)
+    // The panel's data is its own, not the view's:
+    expect(getComponent('title').context.isDirty).toBe(false)
   })
 })

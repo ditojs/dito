@@ -83,8 +83,8 @@ export const projects = createWidgetView<Project>(
               type: 'button',
               text: 'Open Dialog',
               events: {
-                click: ({ component }) => {
-                  component?.showDialog({
+                click: ({ showDialog }) => {
+                  showDialog({
                     components: {
                       message: {
                         type: 'text',

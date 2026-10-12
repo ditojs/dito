@@ -64,11 +64,11 @@ describe('MultiselectSchema', () => {
     assertType<MultiselectSchema<Entry, Tag>>({
       type: 'multiselect',
       searchable: true,
-      search({ item, query }) {
+      search({ item, searchTerm }) {
         expectTypeOf(item).not.toBeAny()
         expectTypeOf(item).toMatchTypeOf<Entry>()
-        expectTypeOf(query).not.toBeAny()
-        expectTypeOf(query).toBeString()
+        expectTypeOf(searchTerm).not.toBeAny()
+        expectTypeOf(searchTerm).toBeString()
         return [] as Tag[]
       },
       options: {

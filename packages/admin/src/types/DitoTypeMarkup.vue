@@ -308,31 +308,33 @@ export default DitoTypeComponent.register('markup', {
     },
 
     async onClickLink(editor) {
-      const attributes = await this.showDialog({
-        components: {
-          href: {
-            type: 'url',
-            label: 'Link',
-            autofocus: true
+      const attributes = await this.showDialog(
+        {
+          components: {
+            href: {
+              type: 'url',
+              label: 'Link',
+              autofocus: true
+            },
+            title: {
+              type: 'text',
+              label: 'Title'
+            }
           },
-          title: {
-            type: 'text',
-            label: 'Title'
-          }
-        },
-        buttons: {
-          cancel: {},
-          apply: { type: 'submit' },
-          remove: {
-            events: {
-              click({ dialogComponent }) {
-                dialogComponent.resolve(null)
+          buttons: {
+            cancel: {},
+            apply: { type: 'submit' },
+            remove: {
+              events: {
+                click({ closeDialog }) {
+                  closeDialog(null)
+                }
               }
             }
           }
         },
-        data: getMarkAttributes(this.editor.state, 'link')
-      })
+        { data: getMarkAttributes(this.editor.state, 'link') }
+      )
       if (attributes) {
         let { href, title } = attributes
         if (href) {

@@ -191,7 +191,6 @@ describe('DitoContext', () => {
       flattenedViews: { books: {} },
       itemLabel: 'Book',
       formLabel: 'Books',
-      formComponent: { name: 'DitoForm' },
       $route: { query: { page: '2' } },
       request: vi.fn(async options => ({ options })),
       format: vi.fn((value, options) => `${value} ${options.unit}`),
@@ -204,7 +203,6 @@ describe('DitoContext', () => {
     it('falls back to the values of the component', () => {
       const component = createComponent()
       const context = new DitoContext(component, { dataPath: 'title' })
-      expect(context.component).toBe(component)
       expect(context.schema).toBe(component.schema)
       expect(context.user).toBe(component.user)
       expect(context.api).toBe(component.api)
@@ -213,8 +211,7 @@ describe('DitoContext', () => {
       expect(context.itemLabel).toBe('Book')
       expect(context.itemLabelText).toBe('Book')
       expect(context.formLabel).toBe('Books')
-      expect(context.formComponent).toBe(component.formComponent)
-      expect(context.query).toEqual({ page: '2' })
+      expect(context.routeQuery).toEqual({ page: '2' })
     })
 
     it('returns the text of the item label with unescaped values', () => {
@@ -240,19 +237,19 @@ describe('DitoContext', () => {
       expect(context.user).toBe(null)
       expect(context.api).toBe(null)
       expect(context.itemLabelText).toBe(null)
-      expect(context.dialogComponent).toBe(null)
-      expect(context.panelComponent).toBe(null)
-      expect(context.resourceComponent).toBe(null)
-      expect(context.sourceComponent).toBe(null)
-      expect(context.viewComponent).toBe(null)
-      expect(context.schemaComponent).toBe(null)
       expect(context.option).toBe(undefined)
       expect(context.options).toBe(undefined)
+      expect(context.isValueLabel).toBe(false)
       expect(context.open).toBe(undefined)
       expect(context.searchTerm).toBe(undefined)
       expect(context.error).toBe(undefined)
       expect(context.wasNotified).toBe(false)
       expect(context.isRunning).toBe(false)
+      // Contexts outside of forms, views and lists, e.g. of dialogs:
+      expect(context.isDirty).toBe(false)
+      expect(context.isCreating).toBe(false)
+      expect(context.selectedTab).toBe(null)
+      expect(context.listQuery).toBe(null)
     })
 
     it('provides values of options and searches when given', () => {
@@ -262,12 +259,14 @@ describe('DitoContext', () => {
         {
           option,
           options: [option],
+          isValueLabel: true,
           searchTerm: 'nov',
           open: true
         }
       )
       expect(context.option).toBe(option)
       expect(context.options).toEqual([option])
+      expect(context.isValueLabel).toBe(true)
       expect(context.searchTerm).toBe('nov')
       expect(context.open).toBe(true)
     })

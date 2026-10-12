@@ -350,9 +350,9 @@ export interface BaseSchema<$Item>
    * value and not change data.
    *
    * As it doesn't depend on the field's component, the
-   * context's component properties, e.g. `component`
-   * and `schemaComponent`, refer to the form, view or
-   * dialog that holds the data, not to the field.
+   * context's members that depend on components, e.g.
+   * `listQuery`, refer to the form, view or dialog that
+   * holds the data, not to the field.
    *
    * Reading `context.options` waits while the options
    * load, and is `undefined` when the load fails or its
@@ -830,9 +830,9 @@ export type SchemaOptions<$Item, $Option = any> =
        *
        * The options are loaded independently of the
        * field's component, also for computes, so the
-       * context's component properties, e.g. `component`
-       * and `schemaComponent`, refer to the form, view or
-       * dialog that holds the data, not to the field.
+       * context's members that depend on components, e.g.
+       * `listQuery`, refer to the form, view or dialog that
+       * holds the data, not to the field.
        */
       data?: OrItemAccessor<
         $Item,
@@ -932,14 +932,14 @@ export interface SchemaOptionsMixin<$Item, $Option = any> {
    * searching for specific options.
    */
   search?:
-    | ItemAccessor<$Item, { query: string }, OrPromiseOf<$Option[]>>
+    | ItemAccessor<$Item, {}, OrPromiseOf<$Option[]>>
     | {
         /**
-         * Filters options based on the search `query`
+         * Filters options based on the `searchTerm`
          * available in the context. Returns matching
          * options, optionally as a promise.
          */
-        filter?: ItemAccessor<$Item, { query: string }, OrPromiseOf<$Option[]>>
+        filter?: ItemAccessor<$Item, {}, OrPromiseOf<$Option[]>>
         /**
          * Debounce config for the filter. Delays
          * invocation until input pauses.
@@ -2003,28 +2003,6 @@ export type DitoContext<$Item = any> = {
   itemLabelText: string | null
   /** Display label of the current form. */
   formLabel: string | null
-  /** The current Vue component instance. */
-  component: DitoComponentInstanceBase | null
-  /**
-   * The nearest ancestor `DitoSchema` component that
-   * manages this field's layout.
-   */
-  schemaComponent: DitoSchemaInstance | null
-  /** The nearest ancestor form component. */
-  formComponent: DitoFormInstance
-  /** The nearest ancestor view component. */
-  viewComponent: DitoViewInstance | null
-  /** The nearest ancestor dialog component. */
-  dialogComponent: DitoComponentInstanceBase | null
-  /** The nearest ancestor panel component. */
-  panelComponent: DitoComponentInstanceBase | null
-  /** The nearest ancestor resource component. */
-  resourceComponent:
-    | DitoFormInstance
-    | DitoSourceInstance
-    | null
-  /** The nearest ancestor source component. */
-  sourceComponent: DitoSourceInstance | null
   /** The currently focused option in a select. */
   option: any
   /**
@@ -2036,7 +2014,14 @@ export type DitoContext<$Item = any> = {
    */
   options: any
   /**
-   * Whether a pulldown/select is currently open.
+   * Whether `options.label()` labels the selected value,
+   * e.g. of a closed multiselect or its tags, rather than
+   * an option in the list of options.
+   */
+  isValueLabel: boolean
+  /**
+   * Whether a collapsible schema opens, in its `open`
+   * event.
    */
   open: boolean | undefined
   /**
@@ -2047,8 +2032,31 @@ export type DitoContext<$Item = any> = {
    * Whether a button request is currently running.
    */
   isRunning: boolean
+  /**
+   * Whether the data has unsaved changes: the data of the
+   * form, view, dialog or panel with its own data that the
+   * context belongs to. Nested forms tell their own,
+   * unless they mutate the item of their parent.
+   */
+  isDirty: boolean
+  /**
+   * Whether the form creates a new item, `false` outside
+   * of forms, e.g. in dialogs and panels with their own
+   * data.
+   */
+  isCreating: boolean
+  /**
+   * The name of the selected tab of the nearest form, `null`
+   * without tabs.
+   */
+  selectedTab: string | null
   /** Current URL query parameters. */
-  query: Record<string, string | (string | null)[]>
+  routeQuery: Record<string, string | (string | null)[]>
+  /**
+   * The query of the nearest list, e.g. its scope, page,
+   * order and filters, or `null` outside of lists.
+   */
+  listQuery: Record<string, any> | null
   /**
    * The error object, populated in button `error`
    * event handler contexts.
@@ -2088,6 +2096,13 @@ export type DitoContext<$Item = any> = {
   format: typeof utilsFormat
   /** Navigates to a route programmatically. */
   navigate: VueRouter['push']
+  /** Returns the URL of a route location. */
+  getRouteUrl(location: Parameters<VueRouter['resolve']>[0]): string
+  /**
+   * Closes the form, navigating to its parent route.
+   * Throws outside of forms.
+   */
+  closeForm(): Promise<unknown>
   /**
    * Triggers a file download from the given URL or
    * options.
@@ -2096,8 +2111,56 @@ export type DitoContext<$Item = any> = {
     (url: string): void
     (options: { url: string; filename: string }): void
   }
-  /** Returns the full URL for a given resource. */
-  getResourceUrl(resource: Resource): string
+  /**
+   * Returns the full URL for a given resource, resolved
+   * relative to the nearest resource. Without one, returns
+   * the URL of the nearest form or list with a resource:
+   * of the item that the form edits, or of the collection
+   * that the list loads or the form creates its item in.
+   * Throws without such a form or list.
+   */
+  getResourceUrl(resource?: Resource): string
+  /**
+   * Validates the data of the form, view, dialog or panel
+   * with its own data that the context belongs to, and
+   * shows its errors. Returns whether the data is valid.
+   */
+  validate(): boolean
+  /**
+   * Marks the data of the form, view, dialog or panel with
+   * its own data as edited, e.g. after changing it
+   * directly.
+   */
+  markEdited(): void
+  /**
+   * Sets `data`, e.g. the response of a request, as the
+   * data of the form, view, dialog or panel with its own
+   * data, and returns it. Forms merge it into their item,
+   * the others replace their data with it and set up its
+   * defaults.
+   */
+  replaceItem(data: Record<string, any>): $Item
+  /**
+   * Shows a modal dialog and resolves with the value that
+   * it's closed with: its data when submitted, `undefined`
+   * when cancelled, or the value of `closeDialog()`.
+   */
+  showDialog(
+    schema: {
+      components?: Components
+      buttons?: Buttons<any>
+    },
+    options?: {
+      data?: Record<string, any>
+      settings?: Record<string, any>
+    }
+  ): Promise<unknown>
+  /**
+   * Closes the dialog that the context belongs to, and
+   * resolves `showDialog()` with `value`. Throws outside
+   * of dialogs.
+   */
+  closeDialog(value?: unknown): void
   /**
    * Displays a notification to the user, with the
    * paragraphs of either `text` or `html`.
@@ -2351,12 +2414,7 @@ export interface DitoComponentInstanceBase<$Item = any>
    * Shows a modal dialog and returns a promise that
    * resolves with the dialog result.
    */
-  showDialog(options: {
-    components?: Components
-    buttons?: Buttons<any>
-    data?: Record<string, any>
-    settings?: Record<string, any>
-  }): Promise<unknown>
+  showDialog: DitoContext['showDialog']
   /**
    * Resolves a schema value by key or data-path,
    * with optional type coercion and default.

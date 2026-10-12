@@ -235,6 +235,24 @@ describe('DitoTypeTreeList', () => {
     ])
   })
 
+  it('provides the processed draft and root item to the forms of its items', async () => {
+    const schema = createSiteSchema()
+    schema.components.pages.children.editable = true
+    const { admin } = await mountForm({ schema, data: site })
+    await admin.navigate('/items/1/pages/0/subpages/1')
+    const form = admin.getRouteComponent(component => component.isForm)
+    form.data.title = 'Story'
+    const { context } = form.mainSchemaComponent
+    expect(context.processedItem).toEqual({ title: 'Story' })
+    // The root item is the one of the site form, without the draft:
+    expect(context.processedRootItem).toMatchObject({
+      pages: [
+        { title: 'About', subpages: [{ title: 'Team' }, { title: 'History' }] },
+        { title: 'Contact', subpages: [] }
+      ]
+    })
+  })
+
   it('reopens closed items of `open` trees that come into the edit path', async () => {
     const schema = createSiteSchema({ open: true })
     schema.components.pages.children.editable = true

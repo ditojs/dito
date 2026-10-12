@@ -69,7 +69,7 @@ which components write the data through, as `component.dataModel`.
   components no longer `markDirty()`.
 - Forms merge the data of the server into their data in place instead of
   replacing it, when saving, when reloading their item and through
-  `formComponent.setData(data)`, which returns the form's data. Objects keep
+  `context.replaceItem(data)`, which returns the form's data. Objects keep
   their identity: open nested forms keep their edits, and items keep their
   uids, item stores and the errors of unchanged values. Values missing in the
   response are removed, new items get their ids from it in order. The data of
@@ -88,7 +88,7 @@ which components write the data through, as `component.dataModel`.
   of the item. Everything outside the item is read-only there: writes warn
   and are ignored. Forms with `mutate: true` edit the parent's data directly,
   as before.
-- `formComponent.setData(data)` in nested forms merges the data into the
+- `context.replaceItem(data)` in nested forms merges the data into the
   draft like an edit: it reaches the parent once the form is applied, and is
   discarded on Cancel, which asks to discard it first. So are the responses of
   their buttons with resources.
@@ -158,6 +158,52 @@ which components write the data through, as `component.dataModel`.
   `revealComponents(dataPath)`, which opens collapsed schemas and inlined
   items, and returns the components that display the value. Errors in the
   forms of nested routes open them through the route tree.
+
+### Contexts
+
+The contexts that callbacks receive no longer expose components:
+`component`, `formComponent`, `schemaComponent`, `viewComponent`,
+`dialogComponent`, `panelComponent`, `resourceComponent` and `sourceComponent`
+are removed. The state and actions that callbacks used them for are members of
+the context. `isDirty`, `isCreating`, `validate()`, `markEdited()` and
+`replaceItem()` belong to the data of the context: of its form, view, dialog or
+panel with its own data, e.g. the filters panel, a nested form being its own.
+
+- `formComponent.isDirty` and `formComponent.isCreating`: `isDirty` and
+  `isCreating`, which is `false` outside of forms.
+- `formComponent.validateAll()`: `validate()`, which shows the errors and
+  returns whether the data is valid.
+- `formComponent.dataModel.markEdited()`: `markEdited()`.
+- `formComponent.setData(data)`: `replaceItem(data)`, which returns the data.
+  Forms merge `data` into their item, views, dialogs and panels replace their
+  data with it, which is set up with the defaults right away.
+- `navigate(formComponent.parentRouteComponent.path)`: `closeForm()`, which
+  throws outside of forms, as `closeDialog()` does outside of dialogs.
+- `component.$router.resolve(location).href`: `getRouteUrl(location)`.
+- `query`, the query of the route: `routeQuery`. `sourceComponent.query`:
+  `listQuery`, the query of the nearest list, e.g. its scope and filters.
+- `getResourceUrl(resourceComponent.resource)`: `getResourceUrl()`, the URL of
+  the nearest form or list with a resource: of the item that the form edits, or
+  of the collection that the list loads or the form creates its item in. It
+  throws without such a form or list, instead of returning `null`.
+- `component.showDialog({ components, buttons, data, settings })`:
+  `showDialog({ components, buttons }, { data, settings })`, which resolves
+  with the value that the dialog is closed with. In the dialog,
+  `dialogComponent.resolve(value)` is `closeDialog(value)`.
+  `dialogComponent.reject()` is removed. The `showDialog()` of components
+  takes the same arguments.
+- `formComponent.selectedTab`: `selectedTab`, the selected tab of the nearest
+  form. Tabs render once they're selected and stay rendered, so their
+  components don't need to check for their tab. Revealing errors renders the
+  tabs of their fields.
+- `viewComponent.resetValidation()` after submits: the buttons of sources clear
+  the errors of the source's data once they submitted it, like forms do.
+- `component.$refs.element.isOpen` in `options.label()`: `isValueLabel`, which
+  tells whether the label is for the selected value, e.g. of a closed
+  multiselect or its tags, rather than an option in the list.
+
+`schemaComponent.resetData()` is removed: the filters panel clears its data
+with `replaceItem({})`.
 
 ### Custom types
 

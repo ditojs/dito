@@ -36,12 +36,14 @@
 import { markRaw } from 'vue'
 import { clone } from '@ditojs/utils'
 import DitoComponent from '../DitoComponent.js'
+import SchemaParentMixin from '../mixins/SchemaParentMixin.js'
 import { getButtonSchemas } from '../utils/schema/lookup.js'
 import { DataModel } from '../utils/DataModel.js'
 import { UseFocusTrap } from '@vueuse/integrations/useFocusTrap/component'
 
 // @vue/component
 export default DitoComponent.component('DitoDialog', {
+  mixins: [SchemaParentMixin],
   components: { UseFocusTrap },
   emits: ['remove'],
 
@@ -153,13 +155,13 @@ export default DitoComponent.component('DitoDialog', {
       this.$emit('remove')
     },
 
-    resolve(value) {
-      this.promise.resolve(value)
-      this.remove()
+    setData(data) {
+      this.dialogData = data
+      return this.dialogData
     },
 
-    reject(value) {
-      this.promise.reject(value)
+    resolve(value) {
+      this.promise.resolve(value)
       this.remove()
     },
 

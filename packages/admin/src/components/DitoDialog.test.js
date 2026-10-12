@@ -4,11 +4,11 @@ import { mountAdmin } from '../test/mount.js'
 
 // Shows a dialog through `DitoRoot.showDialog()`, and returns its promise, the
 // dialog element, and whether the promise settled.
-async function showDialog(options) {
+async function showDialog(schema, options) {
   const admin = await mountAdmin({ views: {} })
   const removeDialog = vi.spyOn(admin.root, 'removeDialog')
   let isSettled = false
-  const promise = admin.root.showDialog(options).finally(() => {
+  const promise = admin.root.showDialog(schema, options).finally(() => {
     isSettled = true
   })
   await flushPromises()
@@ -28,37 +28,35 @@ const components = { title: { type: 'text' } }
 
 describe('DitoDialog', () => {
   it('renders tree lists with children', async () => {
-    const { dialog } = await showDialog({
-      components: {
-        pages: {
-          type: 'tree-list',
-          children: { name: 'subpages' }
-        }
+    const { dialog } = await showDialog(
+      {
+        components: {
+          pages: {
+            type: 'tree-list',
+            children: { name: 'subpages' }
+          }
+        },
+        buttons: { cancel: {} }
       },
-      data: {
-        pages: [{ name: 'About', subpages: [{ name: 'Team' }] }]
-      },
-      buttons: { cancel: {} }
-    })
+      { data: { pages: [{ name: 'About', subpages: [{ name: 'Team' }] }] } }
+    )
     expect(dialog.find('.dito-tree-item').exists()).toBe(true)
     expect(dialog.text()).toContain('About')
   })
 
   it('labels the dialog with `settings.label`', async () => {
-    const { dialog } = await showDialog({
-      components,
-      buttons: { cancel: {} },
-      settings: { label: 'Rename Book' }
-    })
+    const { dialog } = await showDialog(
+      { components, buttons: { cancel: {} } },
+      { settings: { label: 'Rename Book' } }
+    )
     expect(dialog.attributes('aria-label')).toBe('Rename Book')
   })
 
   it('closes with `clickToClose` only when the overlay is clicked', async () => {
-    const result = await showDialog({
-      components,
-      buttons: { cancel: {} },
-      settings: { clickToClose: true }
-    })
+    const result = await showDialog(
+      { components, buttons: { cancel: {} } },
+      { settings: { clickToClose: true } }
+    )
     await result.dialog.find('input').trigger('mouseup')
     await flushPromises()
     expect(result.isSettled).toBe(false)
@@ -86,11 +84,10 @@ describe('DitoDialog', () => {
   })
 
   it('resolves with the data on submit and removes itself once', async () => {
-    const { dialog, promise, removeDialog } = await showDialog({
-      components,
-      buttons: { cancel: {}, apply: { type: 'submit' } },
-      data: { title: 'Emma' }
-    })
+    const { dialog, promise, removeDialog } = await showDialog(
+      { components, buttons: { cancel: {}, apply: { type: 'submit' } } },
+      { data: { title: 'Emma' } }
+    )
     await dialog.find('form').trigger('submit')
     expect(await promise).toEqual({ title: 'Emma' })
     await flushPromises()
@@ -110,31 +107,66 @@ describe('DitoDialog', () => {
     expect(result.isSettled).toBe(false)
   })
 
-  it('rejects through `dialogComponent.reject()` of its buttons', async () => {
-    const error = new Error('Renaming is not allowed')
+  it('resolves with the value of `closeDialog()` of its buttons', async () => {
     const { dialog, promise, removeDialog } = await showDialog({
       components,
       buttons: {
-        forbid: {
+        keep: {
           type: 'button',
-          text: 'Forbid',
+          text: 'Keep',
           events: {
-            click: ({ dialogComponent }) => dialogComponent.reject(error)
+            click: ({ closeDialog }) => closeDialog('kept')
           }
         }
       }
     })
-    await dialog.find('button[id="$buttons/forbid"]').trigger('click')
-    await expect(promise).rejects.toBe(error)
+    await dialog.find('button[id="$buttons/keep"]').trigger('click')
+    expect(await promise).toBe('kept')
     expect(removeDialog).toHaveBeenCalledOnce()
   })
 
-  it('resolves as `undefined` with its cancel button', async () => {
-    const { dialog, promise, removeDialog } = await showDialog({
-      components,
-      buttons: { cancel: {} },
-      data: { title: 'Emma' }
+  it('validates, edits and replaces its data through contexts', async () => {
+    const click = vi.fn()
+    const { dialog, promise } = await showDialog({
+      components: {
+        title: { type: 'text', required: true },
+        rating: { type: 'number', default: 3 }
+      },
+      buttons: {
+        check: { type: 'button', text: 'Check', events: { click } },
+        apply: { type: 'submit' }
+      }
     })
+    await dialog.find('button[id="$buttons/check"]').trigger('click')
+    const [context] = click.mock.calls[0]
+    expect(context.isDirty).toBe(false)
+    expect(context.isCreating).toBe(false)
+    expect(context.validate()).toBe(false)
+    await flushPromises()
+    expect(dialog.find('.dito-errors').text()).toContain('required')
+    context.markEdited()
+    expect(context.isDirty).toBe(true)
+    // Replaced data is set up with the defaults, and isn't edited:
+    expect(context.replaceItem({ title: 'Emma' })).toEqual({
+      title: 'Emma',
+      rating: 3
+    })
+    expect(context.isDirty).toBe(false)
+    await flushPromises()
+    expect(dialog.find('input[name="title"]').element.value).toBe('Emma')
+    expect(context.validate()).toBe(true)
+    expect(() => context.closeForm()).toThrow(
+      'Unable to close the form: There is no form.'
+    )
+    await dialog.find('form').trigger('submit')
+    expect(await promise).toEqual({ title: 'Emma', rating: 3 })
+  })
+
+  it('resolves as `undefined` with its cancel button', async () => {
+    const { dialog, promise, removeDialog } = await showDialog(
+      { components, buttons: { cancel: {} } },
+      { data: { title: 'Emma' } }
+    )
     await dialog.find('button.dito-button--cancel').trigger('click')
     expect(await promise).toBe(undefined)
     expect(removeDialog).toHaveBeenCalledOnce()
@@ -147,11 +179,10 @@ describe('DitoDialog', () => {
   })
 
   it('submits with Enter in its inputs only', async () => {
-    const result = await showDialog({
-      components,
-      buttons: { cancel: {}, apply: { type: 'submit' } },
-      data: { title: 'Emma' }
-    })
+    const result = await showDialog(
+      { components, buttons: { cancel: {}, apply: { type: 'submit' } } },
+      { data: { title: 'Emma' } }
+    )
     await result.dialog.find('button.dito-button--cancel').trigger('keydown', {
       key: 'Enter'
     })

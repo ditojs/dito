@@ -354,6 +354,41 @@ describe('DitoSchema', () => {
         expect(schemaComponent.selectedTab).toBe('details')
       })
     })
+
+    it('renders tabs once they are selected, and keeps them', async () => {
+      const { wrapper, schemaComponent } = await mountSchema({
+        schema: { tabs: createTabs(false) },
+        data: { title: 'Emma', rating: 5 }
+      })
+      const hasRating = () => wrapper.find('input[name="rating"]').exists()
+      expect(hasRating()).toBe(false)
+      schemaComponent.selectTab('reviews')
+      await flushPromises()
+      expect(hasRating()).toBe(true)
+      schemaComponent.selectTab('details')
+      await flushPromises()
+      expect(hasRating()).toBe(true)
+    })
+
+    it('reveals the errors of tabs that were not selected', async () => {
+      const { submit, getErrors, schemaComponent } = await mountForm({
+        schema: {
+          tabs: {
+            details: { type: 'tab', components: { title: { type: 'text' } } },
+            reviews: {
+              type: 'tab',
+              components: { rating: { type: 'number', required: true } }
+            }
+          }
+        },
+        data: { title: 'Emma', rating: null }
+      })
+      expect(schemaComponent.selectedTab).toBe('details')
+      expect(await submit()).toBe(null)
+      expect(schemaComponent.selectedTab).toBe('reviews')
+      expect(getErrors('rating')).toEqual(['The Rating field is required.'])
+      expect(document.activeElement.name).toBe('rating')
+    })
   })
 
   // ditojs/dito#192: The forms of the items of trees and lists in tabs are
@@ -771,6 +806,11 @@ describe('DitoSchema', () => {
         },
         data: { title: 'Emma' }
       })
+      // Tabs render once they're selected:
+      schemaComponent.selectTab('print')
+      await flushPromises()
+      schemaComponent.selectTab('details')
+      await flushPromises()
       const components = schemaComponent.getComponents('title')
       expect(components.map(component => component.label)).toEqual([
         'Short Title',
@@ -809,6 +849,8 @@ describe('DitoSchema', () => {
         schemaComponent.getComponents('title').map(({ label }) => label)
       expect(getLabels()).toEqual(['Full Title'])
       data.hasSummary = true
+      await settle()
+      schemaComponent.selectTab('summary')
       await settle()
       expect(getLabels()).toEqual(['Short Title', 'Full Title'])
     })
@@ -1000,7 +1042,7 @@ describe('DitoSchema', () => {
     })
   })
 
-  describe('resetData()', () => {
+  describe('filters', () => {
     it('clears the filters with their clear button', async () => {
       const { admin, settle } = await mountSchema({
         schema: {
