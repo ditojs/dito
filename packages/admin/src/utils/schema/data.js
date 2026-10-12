@@ -440,14 +440,12 @@ export function processData(schema, sourceSchema, data, dataPath, {
         processedRootData
       })
 
-    // First unwrap the items again, to bring the data back into its native
-    // form, see `before()`.
+    // Unwrap the items again, to bring the data back into its native form:
     if (itemAdapter && isArray(value)) {
       value = value.map(itemAdapter.unwrap)
     }
 
-    // Each type descriptor can provide its own `processValue()` to convert the
-    // data for storage.
+    // Let the type convert the value for storage:
     const processValue = getTypeDescriptor(schema)?.processValue
     if (processValue) {
       value = processValue(getContext(context), graph)
@@ -477,29 +475,14 @@ export function processData(schema, sourceSchema, data, dataPath, {
   return graph.process(sourceSchema, processedRootData, options)
 }
 
+// Walk `data` along the components of `schema`, including the forms of items
+// and their child sources, e.g. the children of tree items, and call `before()`
+// and `after()` for each nested component. Components, tabs and panels for
+// which `shouldProcess()` returns `false` are skipped with their content.
+// Sources with an item adapter, e.g. `wrapPrimitives`, are walked with their
+// items wrapped, and the component of the wrapped value keeps the data path of
+// the item. Values written into the wrapped items don't reach the data.
 /**
- * Walks `data` along the components of `schema`, including nested forms of
- * list and object items and the child sources of the items, e.g. the children
- * of tree items, calling `before()` and `after()` for each nested component,
- * e.g. to process the data into `processedData`. `shouldProcess()`
- * is called for all components, tabs and panels, and the ones for which it
- * returns `false` are skipped along with their content. The entries passed to
- * them contain the `componentPath` of the component, tab or panel, continuing
- * `componentPath` like `DitoMixin.componentPath` does.
- *
- * With `shouldSkipSourcesWithResource`, sources with their own resource are
- * skipped along with their items, which they load and save through their
- * resource, but not their panels, which display the data that contains them,
- * see `DitoContainer.panelEntries`.
- *
- * The items of sources with an item adapter, e.g. the primitive values of
- * lists with `wrapPrimitives`, are walked wrapped in objects, like the admin
- * edits them, see `getItemAdapter()`. `wrappedValueName` is the name of the
- * wrapped value while walking such an object, and its component keeps the data
- * path of the item, where the admin maps errors of the value to. Values written
- * into the objects don't reach the data, e.g. defaults, as the primitive values
- * themselves are the data.
- *
  * @typedef {object} SchemaDataEntry
  * @property {Record<string, any>} schema
  * @property {Record<string, any>} data
@@ -573,6 +556,7 @@ export function processSchemaData(schema, data, {
           shouldSkipSourcesWithResource &&
           isSourceWithResource(componentSchema)
         ) {
+          // Their panels display the data that contains them:
           processTabOrPanelSchemas(componentSchema.panels, entry.componentPath)
           continue
         }

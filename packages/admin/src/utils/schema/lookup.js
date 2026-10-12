@@ -202,8 +202,8 @@ export function getButtonSchemas(buttons) {
   )
 }
 
-// Returns whether the buttons can save the data, through a button that
-// submits it, e.g. of type `submit`, whatever its name.
+// Whether the buttons can save the data, through a button with `submitData`,
+// whatever its name:
 export function hasSubmitButton(buttonSchemas) {
   return Object.values(buttonSchemas ?? {}).some(
     button => !!getTypeDescriptor(button)?.submitData

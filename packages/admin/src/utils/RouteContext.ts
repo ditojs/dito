@@ -68,18 +68,14 @@ export class RouteContext {
     return this.#owner.routeRecord.meta.node!
   }
 
-  // The schema of the data that the route renders:
   get schema(): Schema | null {
     return this.#owner.schema
   }
 
-  // The data path of the data, relative to `rootData`:
   get dataPath(): string {
     return this.#owner.dataPath
   }
 
-  // The data that the data paths of the route are relative to, e.g. the draft
-  // root of nested forms:
   get rootData(): Record<string, any> | null {
     return this.#owner.rootData
   }
@@ -122,8 +118,7 @@ export class RouteContext {
     return this.#owner.mainSchemaComponent?.selectedTab ?? null
   }
 
-  // The resource of forms, which the resources of their components and
-  // nested forms continue. Views have none:
+  // Views have no resource, forms their own:
   get resource(): ResourceContext | null {
     return this.#owner.ownResource ?? null
   }

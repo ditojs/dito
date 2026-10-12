@@ -127,10 +127,8 @@ export default DitoComponent.component('DitoPane', {
       // and adds the key as the name to each component, used for labels, etc.
       // NOTE: schema can be null while multi-form lists load their data,
       // because only the available data will determine the type of form.
-      // When editing values wrapped by an item adapter through a form, do not
-      // append 'name' to the component's dataPath so it can be mapped to from
-      // validation errors, like `processSchemaData()` does.
-      // NOTE: Not all schemas have a source schema, e.g. the ones of dialogs.
+      // The component of a value wrapped by an item adapter keeps the data
+      // path of the item, which the errors of the value map to.
       const itemAdapter = getItemAdapter(this.schemaComponent.sourceSchema)
       return Object.entries(this.schema?.components || {}).map(
         ([name, schema]) => {

@@ -108,8 +108,7 @@ const DitoTypeTreeList = DitoComponent.component('DitoTypeTreeList', {
 const treeTraits = {
   ...sourceTraits,
   component: DitoTypeTreeList,
-  // The forms of tree items render inside the form or view of the tree,
-  // and the forms of their children next to theirs:
+  // The forms of their children are routed next to theirs:
   nestForms: true,
 
   getChildSourceSchemas(schema) {

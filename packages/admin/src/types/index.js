@@ -1,6 +1,4 @@
-// NOTE: Importing the types defines them, see `defineType()`, and registers
-// their components in DitoComponent, to be rendered through their names, e.g.
-// `dito-type-list`.
+// NOTE: Importing the types defines them and registers their components.
 
 export { default as DitoTypeButton } from './DitoTypeButton.vue'
 export { default as DitoTypeCheckbox } from './DitoTypeCheckbox.vue'
