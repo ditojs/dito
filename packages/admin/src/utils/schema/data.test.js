@@ -27,7 +27,7 @@ defineType({
   type: 'section',
   defaultNested: false,
   defaultValue: ({ schema }) => (schema.nested ? {} : undefined),
-  treatNullAsMissing: ({ schema }) => !!schema.nested
+  treatsNullAsMissing: ({ schema }) => !!schema.nested
 })
 defineType({ type: 'panel', defaultNested: false })
 defineType({
@@ -42,7 +42,7 @@ defineType({
   deserializeValue: ({ value }) => value / 100,
   serializeValue: ({ value }) => Math.round(value * 100)
 })
-defineType({ type: 'hidden', excludeValue: true })
+defineType({ type: 'hidden', defaultExclude: true })
 
 const chapters = {
   type: 'list',
@@ -909,7 +909,7 @@ describe('shouldExcludeValue()', () => {
     )
   })
 
-  it('falls back on the `excludeValue` of the type', () => {
+  it('falls back on the `defaultExclude` of the type', () => {
     expect(shouldExcludeValue({ type: 'hidden' }, {})).toBe(true)
     expect(shouldExcludeValue({ type: 'hidden', exclude: false }, {})).toBe(
       false

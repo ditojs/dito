@@ -80,7 +80,7 @@ defineType({
   ],
   component: DitoTypeText,
   ...textTraits,
-  ignoreMissingValue: ({ schema }) => schema.type === 'password',
+  ignoresMissingValue: ({ schema }) => schema.type === 'password',
 
   getValidations(schema) {
     const validationName = {

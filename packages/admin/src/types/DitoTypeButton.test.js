@@ -350,7 +350,7 @@ describe('DitoTypeButton', () => {
       type: 'save-button',
       component: DitoTypeButton,
       defaultValue: undefined,
-      excludeValue: true
+      defaultExclude: true
     })
     const request = vi.fn(({ data }) => ({ data }))
     let isSubmitted = null

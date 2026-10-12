@@ -18,7 +18,7 @@ import { getRelateKey } from '../utils/schema/options.ts'
 export const sourceTraits = {
   defaultValue: ({ schema }: Context) => (isListSource(schema) ? [] : null),
   // Exclude all sources that have their own resource handling the data.
-  excludeValue: ({ schema }: Context) => !!schema.resource,
+  defaultExclude: ({ schema }: Context) => !!schema.resource,
 
   // Wrap primitive values in objects under the key `wrapPrimitives`:
   getItemAdapter({ wrapPrimitives: name }) {

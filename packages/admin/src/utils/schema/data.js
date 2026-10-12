@@ -138,24 +138,22 @@ export function setDefaultValue(schema, data, name, context) {
 }
 
 export function shouldExcludeValue(schema, context) {
-  const excludeValue =
+  const exclude =
     schema.exclude !== undefined
       ? schema.exclude
-      : getTypeDescriptor(schema)?.excludeValue
-  return isFunction(excludeValue)
-    ? excludeValue(getContext(context))
-    : !!excludeValue
+      : getTypeDescriptor(schema)?.defaultExclude
+  return isFunction(exclude) ? exclude(getContext(context)) : !!exclude
 }
 
 function shouldIgnoreMissingValue(schema, context) {
-  return !!getTypeDescriptor(schema)?.ignoreMissingValue?.(getContext(context))
+  return !!getTypeDescriptor(schema)?.ignoresMissingValue?.(getContext(context))
 }
 
 function isMissingValue(schema, data, name, context) {
   // Read the value only if needed, or tracked walks would depend on all values:
   return (
     !(name in data) || (
-      !!getTypeDescriptor(schema)?.treatNullAsMissing?.(getContext(context)) &&
+      !!getTypeDescriptor(schema)?.treatsNullAsMissing?.(getContext(context)) &&
       data[name] === null
     )
   )

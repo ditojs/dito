@@ -2806,22 +2806,22 @@ export interface TypeDescriptor {
   /** The default of `width`. */
   readonly defaultWidth?: string | number
   /** The default of `exclude`. */
-  readonly excludeValue?: boolean | ((context: SchemaContext) => boolean)
+  readonly defaultExclude?: boolean | ((context: SchemaContext) => boolean)
   /** Don't give values that are missing their defaults, e.g. passwords. */
-  readonly ignoreMissingValue?: (context: SchemaContext) => boolean
+  readonly ignoresMissingValue?: (context: SchemaContext) => boolean
   /** Give values that are `null` their defaults, e.g. nested sections. */
-  readonly treatNullAsMissing?: (context: SchemaContext) => boolean
+  readonly treatsNullAsMissing?: (context: SchemaContext) => boolean
   /** The value resolves from `schema.data` or `schema.dataPath`. */
   readonly resolvesValue?: boolean
   /** Generate a label from the name for components without `label`. */
-  readonly generateLabel?: boolean
+  readonly generatesLabel?: boolean
   /**
    * The container shows the label, `true` if not set. Types that display the
    * label themselves return `false`.
    */
   readonly hasLabel?: (context: SchemaContext) => boolean
   /** Omit the spacing around the component. */
-  readonly omitSpacing?: boolean
+  readonly omitsSpacing?: boolean
   /** The component renders as the label of its container, if it has one. */
   readonly rendersLabel?: boolean
   /**

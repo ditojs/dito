@@ -60,11 +60,11 @@ defineType({
   component: DitoTypeSection,
   // Nested sections hold their data in an object, others have no own value:
   defaultValue: ({ schema }) => (schema.nested ? {} : undefined),
-  ignoreMissingValue: ({ schema }) => !schema.nested && !('default' in schema),
+  ignoresMissingValue: ({ schema }) => !schema.nested && !('default' in schema),
   // Unlike for `object` types, `null` doesn't mean there's no object:
-  treatNullAsMissing: ({ schema }) => !!schema.nested,
+  treatsNullAsMissing: ({ schema }) => !!schema.nested,
   defaultNested: false,
-  generateLabel: false,
+  generatesLabel: false,
 
   // The form's header shows the label, except in compact forms. The form can
   // depend on the item:

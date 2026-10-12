@@ -13,7 +13,7 @@ const typeDefaults = {
   defaultValue: null,
   defaultNested: true,
   defaultVisible: true,
-  generateLabel: true
+  generatesLabel: true
 }
 
 const descriptorsByType: Record<string, TypeDescriptor> = {}

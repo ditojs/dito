@@ -19,7 +19,7 @@ import {
   isInlined,
   hasNestedData,
   hasLabel,
-  omitSpacing,
+  omitsSpacing,
   getTabSchemas,
   getPanelSchemas,
   isObjectSource,
@@ -30,8 +30,8 @@ import {
 // Define minimal types, as the actual type components can't be
 // imported without a Vue SFC compiler:
 defineType({ type: 'text' })
-defineType({ type: 'section', defaultNested: false, generateLabel: false })
-defineType({ type: 'label', omitSpacing: true })
+defineType({ type: 'section', defaultNested: false, generatesLabel: false })
+defineType({ type: 'label', omitsSpacing: true })
 defineType({ type: 'list', sourceType: 'list' })
 defineType({ type: 'object', sourceType: 'object' })
 
@@ -206,8 +206,8 @@ describe('schema setting predicates', () => {
   })
 
   it('tell components without spacing apart by their type', () => {
-    expect(omitSpacing({ type: 'label' })).toBe(true)
-    expect(omitSpacing({ type: 'text' })).toBe(false)
+    expect(omitsSpacing({ type: 'label' })).toBe(true)
+    expect(omitsSpacing({ type: 'text' })).toBe(false)
   })
 })
 
