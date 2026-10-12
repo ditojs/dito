@@ -8,7 +8,6 @@ import { assignDeeply } from '@ditojs/utils'
 import { Controller } from './Controller.js'
 import { handleConnectMiddleware } from '../middleware/index.js'
 import { ControllerError } from '../errors/index.js'
-import { getRandomFreePort } from '../utils/net.js'
 import { formatJson } from '../utils/json.js'
 
 export class AdminController extends Controller {
@@ -114,6 +113,8 @@ export class AdminController extends Controller {
     const defaultConfig = {
       server: {
         middlewareMode: true,
+        // Serve HMR through the app's server, instead of on a port of its own:
+        ws: { server: this.app.server },
         ...(this.mode === 'development' && {
           watch: {
             // Watch the @ditojs packages while in dev mode, although they are
@@ -130,13 +131,6 @@ export class AdminController extends Controller {
     )
 
     const config = assignDeeply(defaultConfig, viteConfig)
-
-    if (config.server?.hmr?.port === 0) {
-      // Setting the port to 0 means use a random free port instead of vite's
-      // default 24678, since we may be running multiple servers in parallel.
-      config.server.hmr.port = await getRandomFreePort()
-    }
-
     const server = await createServer(config)
 
     this.closed = false

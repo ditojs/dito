@@ -95,7 +95,7 @@ describe('AdminController', () => {
     const app = createApp({ admin: { mode: 'production', dist: os.tmpdir() } })
     vi.spyOn(app, 'loadAdminViteConfig').mockResolvedValue({
       logLevel: 'silent',
-      server: { hmr: { port: 0 } }
+      server: { hmr: { overlay: false } }
     })
     await app.setupControllers()
     await app.getAdminController().setupViteServer()
@@ -104,10 +104,23 @@ describe('AdminController', () => {
       logLevel: 'silent',
       server: {
         middlewareMode: true,
-        hmr: { port: expect.any(Number) }
+        ws: { server: null },
+        hmr: { overlay: false }
       }
     })
-    // Port 0 is replaced with a random free port.
-    expect(config.server.hmr.port).toBeGreaterThan(0)
+  })
+
+  it(`serves HMR through the app's server`, async () => {
+    mockViteServer()
+    const app = createApp({
+      admin: { mode: 'development', root: os.tmpdir() }
+    })
+    await app.start()
+    try {
+      const [[config]] = createServer.mock.calls
+      expect(config.server.ws.server).toBe(app.server)
+    } finally {
+      await app.stop()
+    }
   })
 })
