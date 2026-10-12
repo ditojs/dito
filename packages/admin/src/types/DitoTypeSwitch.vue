@@ -22,7 +22,7 @@ const DitoTypeSwitch = {
 }
 
 defineType({
-  types: ['switch'],
+  type: 'switch',
   component: DitoTypeSwitch,
   defaultValue: false,
   defaultWidth: 'auto'

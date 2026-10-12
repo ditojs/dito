@@ -95,7 +95,7 @@ const DitoTypeDate = {
 }
 
 defineType({
-  types: ['date', 'datetime', 'time'],
+  type: ['date', 'datetime', 'time'],
   component: DitoTypeDate,
 
   processValue({ schema, value }) {

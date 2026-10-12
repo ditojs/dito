@@ -53,7 +53,7 @@ const DitoTypeSection = {
 }
 
 defineType({
-  types: ['section'],
+  type: 'section',
   component: DitoTypeSection,
   // Nested sections hold their data in an object, others have no own value:
   defaultValue: ({ schema }) => (schema.nested ? {} : undefined),

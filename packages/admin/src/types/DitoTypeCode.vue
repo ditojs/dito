@@ -119,7 +119,7 @@ const DitoTypeCode = {
 }
 
 defineType({
-  types: ['code'],
+  type: 'code',
   component: DitoTypeCode
 })
 

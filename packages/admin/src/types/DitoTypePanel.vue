@@ -19,7 +19,7 @@ const DitoTypePanel = {
 }
 
 defineType({
-  types: ['panel'],
+  type: 'panel',
   component: DitoTypePanel,
   // Panels share the data of their schema, or have their own `schema.data`:
   defaultNested: false,

@@ -427,12 +427,15 @@ routes.
   import DitoRating from './DitoRating.vue'
 
   defineType({
-    types: ['rating'],
+    type: 'rating',
     component: DitoRating,
     defaultValue: 0,
     getValidations: schema => ({ range: [0, schema.max ?? 5] })
   })
   ```
+
+  `type` also takes an array of types that share the descriptor, e.g.
+  `type: ['date', 'datetime']`.
 
 - The static options of type components move to the descriptor:
   `defaultValue`, `defaultNested`, `defaultVisible`, `defaultMultiple`,

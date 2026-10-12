@@ -15,7 +15,7 @@ const DitoTypeSpacer = {
 }
 
 defineType({
-  types: ['spacer'],
+  type: 'spacer',
   component: DitoTypeSpacer,
   defaultValue: undefined,
   excludeValue: true,

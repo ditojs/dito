@@ -32,7 +32,7 @@ const DitoTypeTextarea = {
 }
 
 defineType({
-  types: ['textarea'],
+  type: 'textarea',
   component: DitoTypeTextarea,
   ...textTraits
 })

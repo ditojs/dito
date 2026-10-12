@@ -16,14 +16,14 @@ vi.mock('./setup.js', () => ({ setupForm: async form => form }))
 
 // Define minimal types, as the actual type components can't be
 // imported without a Vue SFC compiler:
-defineType({ types: ['text'] })
-defineType({ types: ['password'], getValidations: () => ({ password: true }) })
-defineType({ types: ['number'], ...numberTraits })
-defineType({ types: ['integer'], ...numberTraits })
-defineType({ types: ['section'], defaultNested: false })
-defineType({ types: ['panel'], defaultNested: false })
-defineType({ ...sourceTraits, types: ['list'], sourceType: 'list' })
-defineType({ types: ['object'], sourceType: 'object' })
+defineType({ type: 'text' })
+defineType({ type: 'password', getValidations: () => ({ password: true }) })
+defineType({ type: 'number', ...numberTraits })
+defineType({ type: 'integer', ...numberTraits })
+defineType({ type: 'section', defaultNested: false })
+defineType({ type: 'panel', defaultNested: false })
+defineType({ ...sourceTraits, type: 'list', sourceType: 'list' })
+defineType({ type: 'object', sourceType: 'object' })
 
 describe('getValidations()', () => {
   it('returns no validations for plain schemas', () => {

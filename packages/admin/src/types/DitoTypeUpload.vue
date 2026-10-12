@@ -547,7 +547,7 @@ const DitoTypeUpload = {
 }
 
 defineType({
-  types: ['upload'],
+  type: 'upload',
   component: DitoTypeUpload,
 
   processValue({ schema, value }) {

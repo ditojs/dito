@@ -43,7 +43,7 @@ const DitoTypeNumber = {
 }
 
 defineType({
-  types: ['number', 'integer'],
+  type: ['number', 'integer'],
   component: DitoTypeNumber,
   ...numberTraits
 })

@@ -11,25 +11,25 @@ vi.mock('./schema/setup.js', () => ({ setupForm: async form => form }))
 
 // Define minimal types, as the actual type components can't be
 // imported without a Vue SFC compiler:
-defineType({ types: ['text'] })
-defineType({ ...optionsTraits, types: ['select'] })
+defineType({ type: 'text' })
+defineType({ ...optionsTraits, type: 'select' })
 defineType({
-  types: ['computed'],
+  type: 'computed',
   defaultValue: undefined,
   resolveValue: true
 })
-defineType({ types: ['section'], defaultNested: false })
-defineType({ types: ['panel'], defaultNested: false })
+defineType({ type: 'section', defaultNested: false })
+defineType({ type: 'panel', defaultNested: false })
 defineType({
-  types: ['list'],
+  type: 'list',
   defaultValue: () => [],
   sourceType: 'list'
 })
-defineType({ types: ['object'], sourceType: 'object' })
-defineType({ types: ['submit'], submitData: true })
+defineType({ type: 'object', sourceType: 'object' })
+defineType({ type: 'submit', submitData: true })
 // Like `DitoTypeUpload`, which leaves out files that aren't uploaded yet:
 defineType({
-  types: ['upload'],
+  type: 'upload',
   processValue: ({ value }) => (value?.isUploaded ? value.name : null)
 })
 
@@ -1869,7 +1869,7 @@ describe('DataModel', () => {
     it(`asks the type with the item's context whether values are missing`, async () => {
       // Like types whose values may be left out, decided per item:
       const ignoreMissingValue = vi.fn(({ item }) => !!item.isDraft)
-      defineType({ types: ['note'], ignoreMissingValue })
+      defineType({ type: 'note', ignoreMissingValue })
       const schema = {
         type: 'form',
         components: {

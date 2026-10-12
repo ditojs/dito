@@ -456,7 +456,7 @@ const DitoTypeMarkup = {
 }
 
 defineType({
-  types: ['markup'],
+  type: 'markup',
   component: DitoTypeMarkup
 })
 

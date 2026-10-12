@@ -182,7 +182,7 @@ const DitoTypeColor = {
 }
 
 defineType({
-  types: ['color'],
+  type: 'color',
   component: DitoTypeColor
 })
 

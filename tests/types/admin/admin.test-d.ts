@@ -43,7 +43,7 @@ describe('defineType()', () => {
   it('accepts descriptors and returns them', () => {
     expectTypeOf(
       defineType({
-        types: ['rating'],
+        type: 'rating',
         component: { template: '<span />' },
         defaultValue: 0,
         sourceType: 'list',
@@ -53,18 +53,22 @@ describe('defineType()', () => {
     ).toEqualTypeOf<TypeDescriptor>()
   })
 
-  it('requires the types and the component', () => {
+  it('accepts several types', () => {
+    defineType({ type: ['rating', 'stars'], component: {} })
+  })
+
+  it('requires the type and the component', () => {
     // @ts-expect-error - `component` is missing.
-    defineType({ types: ['rating'] })
+    defineType({ type: 'rating' })
   })
 
   it('accepts shared traits', () => {
-    defineType({ types: ['tags'], component: {}, ...optionsTraits })
+    defineType({ type: 'tags', component: {}, ...optionsTraits })
   })
 
   it('refuses unknown source types', () => {
     defineType({
-      types: ['rating'],
+      type: 'rating',
       component: {},
       // @ts-expect-error - Sources hold lists or objects.
       sourceType: 'tree'

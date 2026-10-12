@@ -68,7 +68,7 @@ const DitoTypeText = {
 }
 
 defineType({
-  types: [
+  type: [
     'text',
     'email',
     'url',

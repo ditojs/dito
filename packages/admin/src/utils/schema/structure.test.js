@@ -29,11 +29,11 @@ import {
 
 // Define minimal types, as the actual type components can't be
 // imported without a Vue SFC compiler:
-defineType({ types: ['text'] })
-defineType({ types: ['section'], defaultNested: false, generateLabel: false })
-defineType({ types: ['label'], omitSpacing: true })
-defineType({ types: ['list'], sourceType: 'list' })
-defineType({ types: ['object'], sourceType: 'object' })
+defineType({ type: 'text' })
+defineType({ type: 'section', defaultNested: false, generateLabel: false })
+defineType({ type: 'label', omitSpacing: true })
+defineType({ type: 'list', sourceType: 'list' })
+defineType({ type: 'object', sourceType: 'object' })
 
 describe('iterateSchemaComponents()', () => {
   it('passes the components with their names and relative levels', () => {

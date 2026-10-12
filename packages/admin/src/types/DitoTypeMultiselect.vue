@@ -315,7 +315,7 @@ const DitoTypeMultiselect = {
 }
 
 defineType({
-  types: ['multiselect'],
+  type: 'multiselect',
   component: DitoTypeMultiselect,
   ...optionsTraits
 })

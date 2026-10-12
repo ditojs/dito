@@ -21,7 +21,7 @@ const DitoTypeCheckbox = {
 }
 
 defineType({
-  types: ['checkbox'],
+  type: 'checkbox',
   component: DitoTypeCheckbox
 })
 
