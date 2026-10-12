@@ -51,7 +51,7 @@ In addition to Objection.js' many database methods, ...:
 
 Also accept arrays of models in databases other than PostgreSQL, which insert
 them one by one in one transaction. Their relations are left untouched, as in
-PostgreSQL.
+PostgreSQL: insert graphs with `insertDitoGraph()`.
 
 ### `upsert(data, options)`
 
@@ -108,9 +108,10 @@ Objection.js' other graph control properties are rejected with a
 `GraphError` (400), as graphs often come from clients: `'#dbRef'` would relate
 existing models by id, even where relating is disabled, and `'#unrelate'` /
 `'#delete'` would override the `noUnrelate` / `noDelete` options. This also
-applies to `upsertAndFetch()` and to the arrays that `patchAndFetch()` and
-`updateAndFetch()` accept. Code that needs them can use Objection.js' own
-`insertGraph()` and `upsertGraph()`.
+applies to `upsertAndFetch()`, to the arrays that `patchAndFetch()` and
+`updateAndFetch()` accept, and to the arrays that `insert()` and
+`insertAndFetch()` accept outside PostgreSQL. Code that needs them can use
+Objection.js' own `insertGraph()` and `upsertGraph()`.
 
 ## Raw Methods
 

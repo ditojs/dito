@@ -37,11 +37,12 @@ which components write the data through.
   Reverting an edit leaves the form dirty, while writes that don't change the
   value aren't edits.
 - Dirty state belongs to the one that saves the data: the form or view, and
-  each source with its own resource for the changes of its list and inside
-  it, e.g. the order of its items or the children of tree items. They only
-  count as dirty if they have a button of type `submit`, whatever its name,
-  like views, dialogs and panels with their own data. Views without one no
-  longer ask about unsaved changes. `context.isDirty` tells this.
+  each source with its own resource for the edits of its list and inside it,
+  e.g. the order of its items, the children of tree items, applied nested
+  forms and inline fields. They only count as dirty if they have a button of
+  type `submit`, whatever its name, like views, dialogs and panels with their
+  own data. Views without one no longer ask about unsaved changes.
+  `context.isDirty` tells this.
 - Direct writes to the data don't make it dirty, e.g. of what an action on the
   server saved. `formComponent.applyCleanChanges()` is removed: write the data
   directly instead. Code that edits data directly calls
@@ -54,10 +55,11 @@ which components write the data through.
   model of the parent, which turns dirty right away. Cancel only closes them.
   When they create their item or load it through their own resource, they
   have their own data model.
-- Applying a nested form makes the parent dirty if it changes the item.
-- Changes of the lists of sources with their own resource are clean again
-  once a button of the source submitted them through a resource, while other
-  edits stay dirty. Saving the form leaves them dirty, as it doesn't send them.
+- Applying a nested form makes the parent dirty if it changes the item, or
+  the source with its own resource that holds the item.
+- The edits of sources with their own resource are clean again once a button
+  of the source submitted them through a resource. Saving the form leaves
+  them dirty, as it doesn't send them.
 - The response of a save is merged into the form's data, also over edits that
   code made while the save was pending (its fields are disabled meanwhile).
   If the form opened another item in the meantime, the response is dropped.
@@ -153,7 +155,8 @@ hook converts stored values to the values that the components edit:
 - Cells without `render()` and item labels show values as their component's
   type describes them in `getValueText()`: the date types format their dates
   with `context.format()` and the type's `format`, e.g. 'June 1, 2026' for
-  `type: 'date'`, instead of the stored string.
+  `type: 'date'`, instead of the stored string. Columns that format their
+  values otherwise use `render()` with `context.format()`.
 - `formats` of the date types is `format`, and the color type reads `format`
   as before, which no longer clashes with `format()`.
 - Schemas that still define `format()`, `parse()`, `compute()`, `process()`
@@ -252,9 +255,9 @@ component that renders them. Events that bubble up from components, e.g.
   dialogs. `cache: 'global'` caches for the admin session, until the user
   changes.
 - `itemLabel` and `itemLabelText` are set in the contexts of the `success` and
-  `error` events of the buttons of forms and sources. The form's own context,
-  e.g. of its events, no longer has them, and they're `null` in the `if` and
-  `default` callbacks of the components of forms.
+  `error` events of the buttons of forms. The form's own context, e.g. of its
+  events, no longer has them, and they're `null` in the `if` and `default`
+  callbacks of the components of forms.
 - `component.showDialog({ components, buttons, data, settings })`:
   `showDialog({ components, buttons }, { data, settings })`, which resolves
   with the value that the dialog is closed with. In the dialog,
@@ -370,6 +373,10 @@ events: {
 // After:
 onClick({ item }) {}
 ```
+
+An `onClick()` of the submit or cancel button of forms, or of the cancel
+button of dialogs, replaces the default handler instead of running next to it:
+call `submit()`, `closeForm()` or `closeDialog()` from it.
 
 `input` fires for each edit that changes the value, in all types, and `change`
 once the edit is done:
@@ -492,18 +499,21 @@ context, see [Contexts](#contexts), the rest is internal:
   type names: `hasLabel()` returns `false` when the component displays the
   label itself instead of its container, `rendersLabel` renders the component
   as the label of its container, `resolvesValue` resolves the value from
-  `schema.data` or `schema.dataPath`, `submitsData` makes buttons submit and
-  count for the dirty state like `submit`, `hasFormat` reads `format` from
-  the schema, which other types reject as the `format()` of 3.x, and
-  `hasNestedForms` renders the
-  forms of the items inside the form or view of their source. Buttons submit
-  through `context.submit()` because the button component provides it, not
-  because of an option.
+  `schema.data` or `schema.dataPath`, `submitsData` makes forms and sources
+  count the type's buttons like `submit` buttons, for their dirty state and
+  whether they can save, `hasFormat` reads `format` from the schema, which
+  other types reject as the `format()` of 3.x, and `hasNestedForms` renders
+  the forms of the items inside the form or view of their source. Submitting
+  is up to the component: `context.submit()` is provided by dito's button
+  component, not by the flag.
+- `getValueText(context)` returns the text that cells without `render()` and
+  item labels show for the value, e.g. the formatted dates of the date types.
 - Only types with `getOptionsDataSchema(schema)` load options, which returns
   the data schema of the options that the data model loads. Custom types that
   load `schema.options` like `select` spread `optionsTraits` into their
-  descriptor, and `numberTraits` and `textTraits` share the validations of
-  numbers and the serializing of text values. All three are exported by
+  descriptor, and receive the loaded options as `context.options`, without
+  grouping. `numberTraits` and `textTraits` share the validations of numbers
+  and the serializing of text values. All three are exported by
   `@ditojs/admin`.
 - `getItemAdapter(schema)` wraps the items of sources for their forms and
   unwraps them again, e.g. the values of `wrapPrimitives`. In inlined forms
@@ -542,16 +552,16 @@ context, see [Contexts](#contexts), the rest is internal:
 
 The components of `type: 'component'` schemas no longer get `DitoMixin` and
 `TypeMixin` mixed in. They receive the `schema`, its `context` and the value as
-`modelValue`, emit `update:modelValue` to change the value, and `change` once
-the change is done, which emits the schema's `change` event. `context.item`
-follows the changes of the data. Components declare these props and events, so
-that they don't fall through to their root element, which gets the id that the
-label of the component points to, and dito warns in development if they don't.
-`CustomComponentProps` and `CustomComponentEmits` describe them. The field's
-attributes, e.g. `aria-describedby` and `disabled`, the optional prop
-`errorsElementId`, and the `focus`, `blur` and `input` listeners fall through
-too, unless the component declares them: they emit the schema's events, and
-`blur` validates the value.
+`modelValue`, emit `update:modelValue` to change the value, which emits the
+schema's `input` event, and `change` once the change is done, which emits the
+schema's `change` event. `context.item` follows the changes of the data.
+Components declare these props and events, so that they don't fall through to
+their root element, which gets the id that the label of the component points
+to, and dito warns in development if they don't. `CustomComponentProps` and
+`CustomComponentEmits` describe them. The field's attributes, e.g.
+`aria-describedby` and `disabled`, the optional prop `errorsElementId`, and the
+`focus` and `blur` listeners fall through too, unless the component declares
+them: they emit the schema's events, and `blur` validates the value.
 
 - `value`: `modelValue`. `this.value = value`:
   `this.$emit('update:modelValue', value)`, which writes the value through
@@ -633,6 +643,8 @@ are members of the context:
 | `groupBy` of options components        | `options.group`                           |
 | `relate: true` with `relateBy: 'code'` | `relate: 'code'`, `relate: true` for `id` |
 
+- Schemas that still define `relateBy` or `groupBy`, and trees that still
+  define `open`, throw an error when they're set up, naming the replacement.
 - `options.group` is like `options.label`: the key of the options' group, or a
   callback that returns the group of the `option` of its context. The grouping
   of `groupBy` on the schema and `options.groupBy` is removed.
@@ -673,8 +685,10 @@ tracker are internal.
 - `defaultSort` and `defaultScope` of sources and `omitSpacing` of schemas
   are removed from the types, as they aren't read: use `defaultSort` of
   columns, `defaultScope` of scopes, and `omitsSpacing` of type descriptors.
-- `dateFormat` of date schemas is removed from the types, as it isn't read:
-  use `format.date`.
+- `dateFormat` and `locale` of date schemas are removed from the types, as
+  they aren't read: use `format.date`, and `locale` of the admin's `api`.
+- `nested` of lists and objects is removed from the types, as it isn't read:
+  their data is always stored under their name. Sections keep it.
 - The `HTTPVerb` type is removed: use `HTTPMethod`.
 - The `$pulldown-radius`, `$pulldown-padding-ver`, `$pulldown-padding-hor` and
   `$pulldown-padding` SCSS variables are removed.
@@ -687,6 +701,12 @@ The modifiers of `DitoTrigger` follow BEM like the rest of the styles:
 `.dito-trigger-disabled` is `.dito-trigger--disabled`, and the placement
 classes of the popups, e.g. `.dito-popup-bottom-left`, are
 `.dito-popup--bottom-left`.
+
+### Pickers
+
+`DitoDatePicker`, `DitoTimePicker` and `DitoDateTimePicker` emit `change` once
+the edit is done, when the popup closes, the input loses focus or Enter is
+pressed, instead of with each value. `update:modelValue` fires for each value.
 
 ## Builds
 
@@ -707,6 +727,10 @@ builds and the `require` conditions of their exports are removed.
 
 - `upsert()` and `upsertAndFetch()` run in a transaction, so a failure rolls
   back the patch, or the models saved before it.
+- Outside PostgreSQL, the arrays that `insert()` and `insertAndFetch()`
+  receive are inserted in one transaction without their relations, as in
+  PostgreSQL, instead of through `insertGraph()` with them: insert graphs with
+  `insertDitoGraph()` or `insertGraph()`.
 - The array forms of `patchAndFetch()` and `updateAndFetch()` save each model
   by its id in one transaction, and throw for models without ids instead of
   inserting them: insert these with `insertAndFetch()`. The collection actions
@@ -723,13 +747,16 @@ builds and the `require` conditions of their exports are removed.
 
 ### Validation
 
-- `type: 'color'` validates the values that the admin's color type stores:
-  the hex colors `#rgb`, `#rgba`, `#rrggbb` and `#rrggbbaa`, color keywords,
-  and the objects of its `rgb`, `prgb`, `hsl` and `hsv` formats. Other color
-  strings, e.g. `'rgb(0, 0, 0)'`, are rejected: use `type: 'string'` for them.
+- `type: 'color'` validates the color strings that the admin's color type
+  stores: the hex colors `#rgb`, `#rgba`, `#rrggbb` and `#rrggbbaa`, and
+  color keywords. Other color strings, e.g. `'rgb(0, 0, 0)'`, are rejected:
+  use `type: 'string'` for them. The objects of the admin's `rgb`, `prgb`,
+  `hsl` and `hsv` formats need properties of `type: 'object'`, which are
+  stored as JSON.
 
 ### Admin development server
 
 - The admin's HMR is served through the app's server (`server.ws.server` in
   the admin's Vite config), instead of on a port of its own: remove
-  `server.hmr.port`, and `port: 0` no longer picks a free port.
+  `server.hmr.port`, and `port: 0` no longer picks a free port. `app.stop()`
+  closes the Vite server before the app's server.
