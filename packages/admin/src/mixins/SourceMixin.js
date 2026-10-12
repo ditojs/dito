@@ -392,7 +392,7 @@ export default {
                 this.dataModel.set(list, index, value)
               })
             } else {
-              this.dataModel.replaceChildren(
+              this.dataModel.replaceItems(
                 { schema: this.schema, list, dataPath: this.dataPath },
                 values
               )
@@ -694,8 +694,7 @@ export default {
         : (this.route?.getFormPath(dataPath) ?? null)
     },
 
-    // The label that `DitoSourceItem` shows for `item`, see
-    // `SourceContext.getItemLabel()`:
+    // The label that `DitoSourceItem` shows for `item`:
     getSourceItemLabel(item, index = null) {
       if (this.isInlined) {
         // Inlined items show the label in their schema, but only in lists and

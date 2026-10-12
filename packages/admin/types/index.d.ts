@@ -2301,7 +2301,7 @@ export interface RouteContext {
   /** The context of the data of the view or form. */
   readonly container: ContainerContext
   /** The schema of the data that the route renders. */
-  readonly schema: Component
+  readonly schema: Component | null
   /** The data path of the data, relative to `rootData`. */
   readonly dataPath: string
   /**
@@ -2386,6 +2386,11 @@ export interface SourceContext {
    * several forms, inserts it at `index`, or else at the end, and returns it.
    */
   createItem(schema: Form, type?: string | null, index?: number | null): any
+  /**
+   * The label of `item` as the source shows it: an object for inlined items,
+   * HTML for others, through `render()` if the source has it.
+   */
+  getSourceItemLabel(item: any, index?: number | null): any
   /** Loads the data of the source again, e.g. after its item was saved. */
   reload(): void
 }
@@ -2777,7 +2782,7 @@ export interface DitoDataModel {
   /** Moves the item at `from` in the list of `entry` to `to`. */
   move(entry: DitoListEntry, from: number, to: number): void
   /** Replaces the items of the list of `entry` with `items`, in place. */
-  replaceChildren(entry: DitoListEntry, items: any[]): void
+  replaceItems(entry: DitoListEntry, items: any[]): void
   /**
    * Returns the errors of the value at `dataPath`, of validation and of
    * the server, in the format of the server, or `null`. Errors are kept

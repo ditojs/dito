@@ -50,7 +50,7 @@ which components write the data through, as `component.dataModel`.
 - Custom types that change their value in place write it through the data
   model: `set(data, key, value)`, `insert(list, index, item)`,
   `remove(list, index)`, `move(list, from, to)` and
-  `replaceChildren(list, items)`. Assigning `value` does this already.
+  `replaceItems(list, items)`. Assigning `value` does this already.
   `emitChangeEvent()` is removed: call `onChange()`.
 - Forms with `mutate: true` edit the item of their parent through the data
   model of the parent, which turns dirty right away. Cancel only closes them.

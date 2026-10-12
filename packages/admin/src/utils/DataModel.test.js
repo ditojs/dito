@@ -878,7 +878,7 @@ describe('DataModel', () => {
     it('replaces the children of lists in place', () => {
       const { dataModel, data, getListEntry } = createBookModel()
       const list = data.chapters
-      dataModel.replaceChildren(getListEntry('chapters'), [list[2], list[0]])
+      dataModel.replaceItems(getListEntry('chapters'), [list[2], list[0]])
       expect(data.chapters).toBe(list)
       expect(getTitles(list)).toEqual(['Three', 'One'])
       expect(getPositions(list)).toEqual([0, 1])

@@ -68,7 +68,7 @@ export class SourceContext {
 
   // The label of `item`, an object for inlined items and HTML for others. Each
   // item reads its own, so that edits only update the label of their item:
-  getItemLabel(item: any, index: number | null = null) {
+  getSourceItemLabel(item: any, index: number | null = null) {
     return this.#owner.getSourceItemLabel(item, index)
   }
 

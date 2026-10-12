@@ -70,7 +70,7 @@ export default DitoComponent.component('DitoSourceItem', {
     },
 
     label() {
-      return this.source.getItemLabel(this.data, this.index)
+      return this.source.getSourceItemLabel(this.data, this.index)
     }
   }
 })
