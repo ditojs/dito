@@ -334,68 +334,6 @@ export interface ApiConfig {
   >
 }
 
-export interface BaseSchema<$Item>
-  extends SchemaDitoMixin<$Item>,
-    SchemaTypeMixin<$Item> {
-  /**
-   * Value used when the field's key is absent from the
-   * data object.
-   */
-  default?: OrItemAccessor<$Item>
-  /**
-   * Computes and sets the field value reactively, also
-   * when the field isn't rendered, unless its `if`
-   * evaluates to `false`. If the callback returns
-   * `undefined`, the current value is preserved. The
-   * value is computed into the data, which is what is
-   * displayed and saved. As the callback runs whenever
-   * the data it reads changes, it should only return a
-   * value and not change data.
-   *
-   * As it doesn't depend on the field's component, the
-   * context's members that depend on components, e.g.
-   * `sourceQuery`, refer to the form, view or dialog that
-   * holds the data, not to the field.
-   *
-   * Reading `context.options` waits while the options
-   * load, and is `undefined` when the load fails or its
-   * data resolves to nothing, so use `options?.`.
-   */
-  compute?: ItemAccessor<$Item>
-  /**
-   * Custom CSS class(es) added to the component's container
-   * element. Accepts a string or an object of class-boolean
-   * pairs.
-   */
-  class?: string | Record<string, boolean>
-  /**
-   * Whether the component type omits surrounding spacing.
-   *
-   * @internal Set as a static option on component type
-   * definitions, not configured in schemas.
-   */
-  omitSpacing?: boolean
-  /**
-   * Forces a layout line break before, after, or on
-   * both sides of the component.
-   */
-  break?: 'before' | 'after' | 'both'
-}
-
-export interface SchemaDitoMixin<$Item> {
-  /**
-   * Only displays the component if the schema accessor returns `true`
-   */
-  if?: OrItemAccessor<$Item, {}, boolean>
-
-  /**
-   * Specifies validations rules to add, remove (by setting to `undefined`) or
-   * change before value validation occurs. Rule changes do not influence how
-   * the component is rendered.
-   */
-  rules?: SchemaRules
-}
-
 /**
  * Validation rules shared by all schemas, extended by the individual types.
  */
@@ -458,7 +396,64 @@ export interface SchemaOpen<$Item = any> {
   onOpen?: OpenEventHandler<$Item>
 }
 
-export interface SchemaTypeMixin<$Item> extends SchemaFields<$Item> {
+/** The schema options shared by all components. */
+export interface BaseSchema<$Item> extends SchemaFields<$Item> {
+  /**
+   * Only displays the component if the schema accessor returns `true`
+   */
+  if?: OrItemAccessor<$Item, {}, boolean>
+
+  /**
+   * Specifies validations rules to add, remove (by setting to `undefined`) or
+   * change before value validation occurs. Rule changes do not influence how
+   * the component is rendered.
+   */
+  rules?: SchemaRules
+
+  /**
+   * Value used when the field's key is absent from the
+   * data object.
+   */
+  default?: OrItemAccessor<$Item>
+  /**
+   * Computes and sets the field value reactively, also
+   * when the field isn't rendered, unless its `if`
+   * evaluates to `false`. If the callback returns
+   * `undefined`, the current value is preserved. The
+   * value is computed into the data, which is what is
+   * displayed and saved. As the callback runs whenever
+   * the data it reads changes, it should only return a
+   * value and not change data.
+   *
+   * As it doesn't depend on the field's component, the
+   * context's members that depend on components, e.g.
+   * `sourceQuery`, refer to the form, view or dialog that
+   * holds the data, not to the field.
+   *
+   * Reading `context.options` waits while the options
+   * load, and is `undefined` when the load fails or its
+   * data resolves to nothing, so use `options?.`.
+   */
+  compute?: ItemAccessor<$Item>
+  /**
+   * Custom CSS class(es) added to the component's container
+   * element. Accepts a string or an object of class-boolean
+   * pairs.
+   */
+  class?: string | Record<string, boolean>
+  /**
+   * Whether the component type omits surrounding spacing.
+   *
+   * @internal Set as a static option on component type
+   * definitions, not configured in schemas.
+   */
+  omitSpacing?: boolean
+  /**
+   * Forces a layout line break before, after, or on
+   * both sides of the component.
+   */
+  break?: 'before' | 'after' | 'both'
+
   /**
    * The label of the component.
    *
@@ -614,7 +609,8 @@ export interface BaseSchemaEvents<$Item> extends SchemaEvents<$Item> {
   input?: ItemEventHandler<$Item>
 }
 
-export interface SchemaSourceMixin<$Item> {
+/** The schema options shared by lists, objects and trees. */
+export interface SchemaSource<$Item> {
   /**
    * The form schema used for editing items.
    */
@@ -858,7 +854,7 @@ export type SchemaOptions<$Item, $Option = any> =
       /**
        * @deprecated Not supported, the options are grouped by the `groupBy`
        * setting of the component's schema, see
-       * {@link SchemaOptionsMixin.groupBy}.
+       * {@link SchemaSelection.groupBy}.
        */
       groupBy?: keyof $Option
       /**
@@ -900,7 +896,11 @@ export type SchemaOptions<$Item, $Option = any> =
       dataPath?: string
     }
 
-export interface SchemaOptionsMixin<$Item, $Option = any> {
+/**
+ * The schema options shared by components that select from options, e.g.
+ * selects, radios and checkboxes.
+ */
+export interface SchemaSelection<$Item, $Option = any> {
   /** The available options for selection. */
   options?: SchemaOptions<$Item, $Option>
   /**
@@ -963,7 +963,8 @@ export interface SchemaOptionsMixin<$Item, $Option = any> {
   view?: string
 }
 
-export interface SchemaNumberMixin<$Item> {
+/** The schema options shared by numbers, sliders and progress bars. */
+export interface SchemaNumber<$Item> {
   /**
    * The minimum value.
    */
@@ -989,13 +990,14 @@ export interface SchemaNumberMixin<$Item> {
   decimals?: OrItemAccessor<$Item, {}, number>
   /** Validation rules for numeric constraints. */
   rules?: SchemaRules &
-    Omit<SchemaNumberMixin<$Item>, 'rules'> & {
+    Omit<SchemaNumber<$Item>, 'rules'> & {
       /** Restrict the value to whole numbers. */
       integer?: boolean
     }
 }
 
-export interface SchemaTextMixin<$Item> {
+/** The schema options shared by text inputs and textareas. */
+export interface SchemaText<$Item> {
   /**
    * Whether to trim whitespace from the value.
    */
@@ -1015,7 +1017,8 @@ export type SchemaAffix =
       if?: OrItemAccessor<any, {}, boolean>
     }
 
-export interface SchemaAffixMixin<$Item> {
+/** The schema options of components with a prefix and a suffix. */
+export interface SchemaAffixes<$Item> {
   /**
    * Prefix content displayed before the input.
    */
@@ -1026,7 +1029,11 @@ export interface SchemaAffixMixin<$Item> {
   suffix?: OrArrayOf<SchemaAffix>
 }
 
-export interface SchemaDataMixin<$Item> {
+/**
+ * The schema options of components that resolve their value from data, e.g.
+ * computed and hidden components.
+ */
+export interface SchemaData<$Item> {
   /**
    * Data source for the component.
    */
@@ -1076,9 +1083,6 @@ export interface SchemaFields<$Item> {
   onChange?: ItemEventHandler<$Item>
 }
 
-/** @deprecated Use {@link SchemaFields} instead. */
-export type SchemaSetupMixin<$Item = any> = SchemaFields<$Item>
-
 /**
  * Properties shared by route-level schemas
  * ({@link ViewSchema} and {@link Form}).
@@ -1123,9 +1127,6 @@ export interface SchemaRoute<$Item = any>
    */
   if?: OrItemAccessor<$Item, {}, boolean>
 }
-
-/** @deprecated Use {@link SchemaRoute} instead. */
-export type SchemaRouteMixin<$Item = any> = SchemaRoute<$Item>
 
 export interface ComponentSchema<$Item = any> extends BaseSchema<$Item> {
   type: 'component'
@@ -1177,8 +1178,8 @@ export function getSchemaValue<$Item = any>(
 
 export interface InputSchema<$Item = any>
   extends BaseSchema<$Item>,
-    SchemaTextMixin<$Item>,
-    SchemaAffixMixin<$Item> {
+    SchemaText<$Item>,
+    SchemaAffixes<$Item> {
   /**
    * The type of the component.
    */
@@ -1204,7 +1205,7 @@ export interface InputSchema<$Item = any>
 
 export interface DateSchema<$Item = any>
   extends BaseSchema<$Item>,
-    SchemaAffixMixin<$Item> {
+    SchemaAffixes<$Item> {
   /**
    * The type of the component.
    */
@@ -1233,7 +1234,7 @@ export interface DateSchema<$Item = any>
 
 export interface ButtonSchema<$Item = any>
   extends BaseSchema<$Item>,
-    SchemaAffixMixin<$Item> {
+    SchemaAffixes<$Item> {
   /**
    * The type of the component.
    */
@@ -1273,10 +1274,10 @@ export interface SwitchSchema<$Item = any> extends BaseSchema<$Item> {
 }
 
 export interface NumberSchema<$Item = any>
-  // `rules` comes from `SchemaNumberMixin`, which extends `SchemaRules`.
-  extends SchemaNumberMixin<$Item>,
+  // `rules` comes from `SchemaNumber`, which extends `SchemaRules`.
+  extends SchemaNumber<$Item>,
     Omit<BaseSchema<$Item>, 'rules'>,
-    SchemaAffixMixin<$Item> {
+    SchemaAffixes<$Item> {
   /**
    * The type of the component.
    */
@@ -1284,8 +1285,8 @@ export interface NumberSchema<$Item = any>
 }
 
 export interface SliderSchema<$Item = any>
-  // `rules` comes from `SchemaNumberMixin`, which extends `SchemaRules`.
-  extends SchemaNumberMixin<$Item>,
+  // `rules` comes from `SchemaNumber`, which extends `SchemaRules`.
+  extends SchemaNumber<$Item>,
     Omit<BaseSchema<$Item>, 'rules'> {
   /**
    * The type of the component.
@@ -1301,7 +1302,7 @@ export interface SliderSchema<$Item = any>
 
 export interface TextareaSchema<$Item = any>
   extends BaseSchema<$Item>,
-    SchemaTextMixin<$Item> {
+    SchemaText<$Item> {
   /**
    * The type of the component.
    */
@@ -1433,7 +1434,7 @@ export interface LabelSchema<$Item = any> extends BaseSchema<$Item> {
  */
 export interface HiddenSchema<$Item = any>
   extends BaseSchema<$Item>,
-    SchemaDataMixin<$Item> {
+    SchemaData<$Item> {
   /**
    * The type of the component.
    */
@@ -1504,8 +1505,8 @@ export interface UploadSchema<$Item = any> extends BaseSchema<$Item> {
 
 export interface MultiselectSchema<$Item = any, $Option = any>
   extends BaseSchema<$Item>,
-    SchemaOptionsMixin<$Item, $Option>,
-    SchemaAffixMixin<$Item> {
+    SchemaSelection<$Item, $Option>,
+    SchemaAffixes<$Item> {
   /**
    * The type of the component.
    */
@@ -1543,8 +1544,8 @@ export interface MultiselectSchema<$Item = any, $Option = any>
 
 export interface SelectSchema<$Item = any>
   extends BaseSchema<$Item>,
-    SchemaOptionsMixin<$Item>,
-    SchemaAffixMixin<$Item> {
+    SchemaSelection<$Item>,
+    SchemaAffixes<$Item> {
   /**
    * The type of the component.
    */
@@ -1553,7 +1554,7 @@ export interface SelectSchema<$Item = any>
 
 export interface RadioSchema<$Item = any>
   extends BaseSchema<$Item>,
-    SchemaOptionsMixin<$Item> {
+    SchemaSelection<$Item> {
   /**
    * The type of the component.
    */
@@ -1727,7 +1728,7 @@ export interface CheckboxSchema<$Item = any> extends BaseSchema<$Item> {
 
 export interface CheckboxesSchema<$Item = any>
   extends BaseSchema<$Item>,
-    SchemaOptionsMixin<$Item> {
+    SchemaSelection<$Item> {
   /**
    * The type of the component.
    */
@@ -1759,7 +1760,7 @@ export interface ColorSchema<$Item = any>
   // `format` is the color format here, not the formatting function of
   // `BaseSchema`.
   extends Omit<BaseSchema<$Item>, 'format'>,
-    SchemaAffixMixin<$Item> {
+    SchemaAffixes<$Item> {
   /**
    * The type of the component.
    */
@@ -1837,7 +1838,7 @@ export type ColumnSchema<$Item = any, $Value = any> = {
 export type ResolvableForm<$Item = any> = Resolvable<Form<$Item>>
 
 export interface ListSchema<$Item = { [key: string]: any }>
-  extends SchemaSourceMixin<$Item>,
+  extends SchemaSource<$Item>,
     BaseSchema<$Item>,
     SchemaOpen<$Item> {
   /**
@@ -2771,7 +2772,7 @@ export interface ViewSchema<$Item = any> extends SchemaRoute<$Item> {
  */
 export interface ComputedSchema<$Item = any>
   extends BaseSchema<$Item>,
-    SchemaDataMixin<$Item> {
+    SchemaData<$Item> {
   /**
    * The type of the component.
    */
@@ -2784,7 +2785,7 @@ export interface ComputedSchema<$Item = any>
  */
 export interface DataSchema<$Item = any>
   extends BaseSchema<$Item>,
-    SchemaDataMixin<$Item> {
+    SchemaData<$Item> {
   /**
    * The type of the component.
    */
@@ -2792,7 +2793,7 @@ export interface DataSchema<$Item = any>
 }
 
 export interface ObjectSchema<$Item = { [key: string]: any }>
-  extends SchemaSourceMixin<$Item>,
+  extends SchemaSource<$Item>,
     BaseSchema<$Item>,
     SchemaOpen<$Item> {
   /**
@@ -2812,7 +2813,7 @@ export interface ObjectSchema<$Item = { [key: string]: any }>
 }
 
 interface TreeSchema<$Item, $Type extends 'tree-list' | 'tree-object'>
-  extends SchemaSourceMixin<$Item>,
+  extends SchemaSource<$Item>,
     BaseSchema<$Item> {
   /**
    * The type of the component.
@@ -2883,8 +2884,8 @@ export interface SpacerSchema<$Item = any> extends BaseSchema<$Item> {
 }
 
 export interface ProgressSchema<$Item = any>
-  // `rules` comes from `SchemaNumberMixin`, which extends `SchemaRules`.
-  extends SchemaNumberMixin<$Item>,
+  // `rules` comes from `SchemaNumber`, which extends `SchemaRules`.
+  extends SchemaNumber<$Item>,
     Omit<BaseSchema<$Item>, 'rules'> {
   /**
    * The type of the component.
@@ -2954,8 +2955,8 @@ type NonOptionFieldComponent<$Item = any> = Exclude<
  * contextual typing for callbacks in the `Components` mapped type.
  */
 type OptionComponent<$Item, $Option> = BaseSchema<$Item> &
-  SchemaOptionsMixin<$Item, $Option> &
-  SchemaAffixMixin<$Item> &
+  SchemaSelection<$Item, $Option> &
+  SchemaAffixes<$Item> &
   Pick<
     MultiselectSchema,
     'multiple' | 'searchable' | 'stayOpen' | 'taggable'
