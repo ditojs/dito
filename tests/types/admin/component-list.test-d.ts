@@ -27,7 +27,8 @@ describe('ListSchema', () => {
       columns: {
         title: {
           label: 'Title',
-          sortable: true
+          sortable: true,
+          defaultSort: true
         } satisfies ColumnSchema<Entry>
       }
     })

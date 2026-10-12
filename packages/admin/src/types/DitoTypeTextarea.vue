@@ -4,7 +4,7 @@ textarea.dito-textarea.dito-input(
   ref="element"
   v-model="value"
   v-bind="attributes"
-  :rows="schema.lines || 4"
+  :rows="lines"
   :class="{ 'dito-textarea--resizable': resizable }"
 )
 </template>
@@ -26,6 +26,9 @@ const DitoTypeTextarea = {
       ...field,
       resizable: computed(() =>
         field.getSchemaValue('resizable', { type: Boolean, default: false })
+      ),
+      lines: computed(() =>
+        field.getSchemaValue('lines', { type: Number, default: 4 })
       )
     }
   }

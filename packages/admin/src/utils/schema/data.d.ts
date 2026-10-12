@@ -26,7 +26,7 @@ export function setDefaultValue(
   context: Context | (() => Context)
 ): void
 export function hasValueFromDataSchema(schema: Schema): boolean
-export function getMultipleValue(schema: Schema, context?: Context): boolean
+export function getMultipleValue(schema: Schema, context: Context): boolean
 export function initializeData(
   schema: Schema,
   data?: Data,
