@@ -152,9 +152,12 @@ export default DitoComponent.component('DitoRoot', {
     // `beforeunload`, which can't wait for pending submits, so data that is
     // being submitted still counts as unsaved.
     hasUnsavedChanges() {
-      return this.appState.routeComponents.some(
-        routeComponent => routeComponent.isDirty
-      )
+      const { routeComponents } = this.appState
+      // Write the edits that are held back, e.g. debounced markup edits:
+      for (const routeComponent of routeComponents) {
+        routeComponent.dataModel.writePendingValues()
+      }
+      return routeComponents.some(routeComponent => routeComponent.isDirty)
     },
 
     // Shows a dialog with the `components` and `buttons` of `schema`, and
