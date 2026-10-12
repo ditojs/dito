@@ -3,7 +3,7 @@
 The changes of each release of Dito.js. For upgrading to a new major
 version, see the upgrade guides in `docs/`.
 
-## 4.0.0 (unreleased)
+## 4.0.0 (2026-10-12)
 
 Dito.js 4.0 rebuilds the admin around its data instead of its components. Routes, links and form items are generated from a route tree built once from the view schemas. Each view, form, dialog and panel with its own data has a data model that owns all of it: edits, dirty state and errors live there, also for fields that aren't rendered. Nested forms edit drafts of their items, and save responses are merged in place. Callbacks receive typed contexts instead of components, custom types are described by type descriptors through `defineType()`, and the admin's components are built with composables instead of mixins. The hooks that convert values share one vocabulary (`formatValue()`, `parseValue()`, `computeValue()`, `serializeValue()` and the new `deserializeValue()`). See [`docs/upgrading-to-4.0.md`](docs/upgrading-to-4.0.md) for the details of every change below.
 
