@@ -26,7 +26,9 @@ export function useLeaveGuard(
   let hasPreventedLeavingInvalidData = false
   // Shared by the navigations while its dialog is open, e.g. the back button:
   let discardConfirmation: Promise<boolean> | null = null
-  let isWaitingToLeave = false
+  // The navigations that wait for the submits, which they may give up on at
+  // different times:
+  let waitingNavigationCount = 0
 
   const beforeRouteChange = async (
     to: RouteLocationNormalized,
@@ -52,9 +54,9 @@ export function useLeaveGuard(
       } else {
         // Data stays dirty while it's submitted, so wait for the submits:
         if (model.hasPendingSubmits) {
-          isWaitingToLeave = true
+          waitingNavigationCount++
           await model.waitUntilSubmitted()
-          isWaitingToLeave = false
+          waitingNavigationCount--
         }
         if (routeContext.isDirty) {
           discardConfirmation ??= confirm(
@@ -82,7 +84,7 @@ export function useLeaveGuard(
   // Navigate after a submit only while the route is within the form's `path`.
   // If a navigation away waits for the submit, we decide once it settled:
   const navigateWithin = (path: string, navigate: () => unknown) => {
-    if (isWaitingToLeave) {
+    if (waitingNavigationCount > 0) {
       const removeHook = router.afterEach(() => {
         removeHook()
         navigateWithin(path, navigate)

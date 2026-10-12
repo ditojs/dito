@@ -365,6 +365,27 @@ describe('useLeaveGuard()', () => {
         response.reject(new Error('Server unavailable'))
       })
 
+      it('waits for the last navigation that waits for the submit', async () => {
+        const confirm = stubConfirm(false)
+        const { admin, response } = await mountSubmittingForm()
+        vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+        const first = admin.router.push('/items')
+        await flushPromises()
+        await vi.advanceTimersByTimeAsync(20_000)
+        // A second navigation, e.g. a click on the link again, waits too:
+        const second = admin.router.push('/items')
+        await flushPromises()
+        // The first one gives up waiting, while the second still waits:
+        await vi.advanceTimersByTimeAsync(10_000)
+        vi.useRealTimers()
+        await first
+        expect(confirm).toHaveBeenCalledOnce()
+        response.resolve({ data: { id: 1, title: 'Dune' } })
+        await second
+        await flushPromises()
+        expect(admin.router.currentRoute.value.path).toBe('/items')
+      })
+
       it(`doesn't open the created item after opening another one`, async () => {
         const { admin, routeComponent, response } = await mountSubmittingForm()
         const navigation = admin.router.push('/items/5')

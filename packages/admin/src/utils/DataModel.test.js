@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import { reactive, ref, toRaw, nextTick } from 'vue'
+import { computed, reactive, ref, toRaw, nextTick } from 'vue'
 import { isPlainObject } from '@ditojs/utils'
 import { defineType } from './schema/types.ts'
 import { optionsTraits } from '../types/traits.ts'
@@ -1383,6 +1383,26 @@ describe('DataModel', () => {
       data.details.subtitle = ''
       expect(dataModel.getErrors('details/subtitle')).toBe(null)
       expect(dataModel.hasErrorsWithin(data)).toBe(false)
+      dataModel.stop()
+    })
+
+    it('stops watching the values of replaced data', () => {
+      const { dataModel, data } = createBook()
+      dataModel.replaceErrors(
+        { title: [{ message: 'is taken' }] },
+        { server: true }
+      )
+      dataModel.replace(reactive({ title: 'Persuasion' }))
+      let evaluationCount = 0
+      const errors = computed(() => {
+        evaluationCount++
+        return dataModel.getErrors('title')
+      })
+      expect(errors.value).toBe(null)
+      // A change of the replaced data doesn't affect the model:
+      data.title = 'Sanditon'
+      expect(errors.value).toBe(null)
+      expect(evaluationCount).toBe(1)
       dataModel.stop()
     })
 

@@ -97,6 +97,29 @@ describe('DataContext', () => {
     expect(await promise).toBe('closed')
   })
 
+  it('closes dialogs from panels with their own data in them', async () => {
+    const admin = await mountAdmin({
+      views: { books: { type: 'view', components: {} } }
+    })
+    await admin.navigate('/books')
+    const promise = admin.context.showDialog({
+      components: {
+        speed: {
+          type: 'panel',
+          data: { mode: 'fast' },
+          components: { mode: { type: 'text' } }
+        }
+      },
+      buttons: { cancel: {} }
+    })
+    await flushPromises()
+    const mode = admin.wrapper
+      .findAllComponents({ name: 'DitoTypeText' })
+      .find(({ vm }) => vm.componentPath === 'speed/mode').vm
+    mode.context.closeDialog(mode.context.item.mode)
+    expect(await promise).toBe('fast')
+  })
+
   it('is provided by panels with their own data', async () => {
     const { wrapper, routeComponent: view } = await mountSchema({
       schema: {

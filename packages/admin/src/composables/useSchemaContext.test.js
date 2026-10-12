@@ -1,6 +1,12 @@
 import { vi } from 'vitest'
 import { DOMWrapper, flushPromises } from '@vue/test-utils'
-import { mountForm, mountSchema, enterValue, isForm } from '../test/mount.js'
+import {
+  mountAdmin,
+  mountForm,
+  mountSchema,
+  enterValue,
+  isForm
+} from '../test/mount.js'
 
 describe('useSchemaContext()', () => {
   const mountLibrary = (titleSchema = {}) =>
@@ -323,6 +329,36 @@ describe('useSchemaContext()', () => {
       )
       expect(() => context.closeDialog()).toThrow(
         'Unable to close the dialog: There is no dialog.'
+      )
+    })
+
+    // E.g. in the `if` of views, which the menu evaluates:
+    it('fail to act on data outside of views, forms, dialogs and panels', async () => {
+      let menuContext = null
+      await mountAdmin({
+        views: {
+          books: {
+            type: 'view',
+            if: context => {
+              menuContext ??= context
+              return true
+            },
+            components: { title: { type: 'text' } }
+          }
+        }
+      })
+      expect(menuContext.isDirty).toBe(false)
+      expect(() => menuContext.validate()).toThrow(
+        'Unable to validate: There is no data.'
+      )
+      expect(() => menuContext.verify()).toThrow(
+        'Unable to verify: There is no data.'
+      )
+      expect(() => menuContext.markEdited()).toThrow(
+        'Unable to mark the data edited: There is no data.'
+      )
+      expect(() => menuContext.replaceItem({})).toThrow(
+        'Unable to replace the item: There is no data.'
       )
     })
 
