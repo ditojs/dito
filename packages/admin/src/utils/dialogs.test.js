@@ -27,6 +27,14 @@ describe('confirm()', () => {
     expect(dialog.find('button[type="submit"]').text()).toBe('Delete')
   })
 
+  it('follows the contract of custom components', async () => {
+    const warn = vi.spyOn(console, 'warn')
+    await showConfirmDialog(root =>
+      confirm(root, { message: 'Delete Dune?', verb: 'delete' })
+    )
+    expect(warn).not.toHaveBeenCalled()
+  })
+
   it('resolves to true when confirmed', async () => {
     const { promise, dialog } = await showConfirmDialog(root =>
       confirm(root, { message: 'Delete Dune?', verb: 'delete' })
