@@ -170,6 +170,8 @@ describe('CustomComponentProps and CustomComponentEmits', () => {
     expectTypeOf<CustomComponentEmits<number>['update:modelValue']>()
       .parameter(0)
       .toBeNumber()
+    // `update:modelValue` emits the schema's `input` event:
+    expectTypeOf<CustomComponentEmits>().not.toHaveProperty('input')
   })
 
   it('reads schema values with `getSchemaValue()`', () => {

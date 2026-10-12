@@ -588,11 +588,8 @@ export interface BaseSchema<$Item> extends SchemaFields<$Item> {
    */
   onInput?: ItemEventHandler<$Item>
   /**
-   * Grouped event handlers, equivalent to the `on[A-Z]`-style
-   * callbacks on the schema (e.g. {@link BaseSchema.onFocus}).
-   *
-   * @see {@link SchemaFields.onInitialize} and other `on`-
-   * prefixed properties for per-event documentation.
+   * Grouped event handlers, each replacing the `on…` handler of the same
+   * event in the same schema.
    *
    * @deprecated Use the `on…` handlers, e.g. `onChange()`.
    */
@@ -709,14 +706,6 @@ export interface SourceSettings<$Item> {
    * @defaultValue `'id'`
    */
   idKey?: string
-  /**
-   * Whether the data is stored under its own key in the parent item.
-   * When `true`, an "address" source stores data at `item.address`.
-   * When `false`, its fields are stored directly on `item`.
-   *
-   * @defaultValue `true`
-   */
-  nested?: boolean
   /**
    * Inline form components. When defined, items are
    * edited inline rather than navigating to a separate
@@ -841,8 +830,8 @@ export type SchemaOptions<$Item, $Option = any> =
        * treated as the value or a function returning the option
        * value.
        *
-       * @defaultValue `'id'` when `relate` is set, otherwise
-       * `'value'` when the options are objects.
+       * @defaultValue The key of `relate` when it is set, `'id'` for
+       * `relate: true`, otherwise `'value'` when the options are objects.
        */
       value?: keyof $Option | ItemAccessor<$Item, { option: $Option }>
       /**
@@ -1135,14 +1124,16 @@ export interface CustomComponentProps<$Item = any, $Value = any> {
 
 /** The events of the custom components of `type: 'component'` schemas. */
 export interface CustomComponentEmits<$Value = any> {
-  /** Changes the value of the component, through `parseValue()`. */
+  /**
+   * Changes the value of the component, through `parseValue()`, which emits
+   * the schema's `input` event.
+   */
   'update:modelValue': (value: $Value) => void
   /** Ends the change of the value, which emits the schema's `change` event. */
   'change': () => void
   /** Emit the schema's events, and `blur` validates the value. */
   'focus'?: () => void
   'blur'?: () => void
-  'input'?: () => void
 }
 
 /**
@@ -1190,10 +1181,6 @@ export interface DateSchema<$Item = any>
    */
   type: 'date' | 'datetime' | 'time'
   /**
-   * @defaultValue `En/US`
-   */
-  locale?: string
-  /**
    * Format configuration for date/time display.
    */
   format?: OrItemAccessor<
@@ -1219,7 +1206,12 @@ export interface ButtonSchema<$Item = any>
   onClick?: ItemEventHandler<$Item>
   onSuccess?: ItemEventHandler<$Item>
   onError?: ErrorEventHandler<$Item>
-  /** @deprecated Use the `on…` handlers, e.g. `onChange()`. */
+  /**
+   * Grouped event handlers, each replacing the `on…` handler of the same
+   * event in the same schema.
+   *
+   * @deprecated Use the `on…` handlers, e.g. `onChange()`.
+   */
   events?: BaseSchemaEvents<$Item> & {
     click?: ItemEventHandler<$Item>
     success?: ItemEventHandler<$Item>
@@ -1658,7 +1650,8 @@ export type SectionSchema<$Item = any, $Nested = $Item> = BaseSchema<$Item> &
     /** Whether the section is collapsed. */
     collapsed?: OrItemAccessor<$Item, {}, boolean>
     /**
-     * Grouped event handlers.
+     * Grouped event handlers, each replacing the `on…` handler of the same
+     * event in the same schema.
      *
      * @deprecated Use the `on…` handlers, e.g. `onChange()`.
      */
@@ -1855,7 +1848,8 @@ export interface ListSchema<$Item = { [key: string]: any }>
       | undefined
   }
   /**
-   * Grouped event handlers.
+   * Grouped event handlers, each replacing the `on…` handler of the same
+   * event in the same schema.
    *
    * @deprecated Use the `on…` handlers, e.g. `onChange()`.
    */
@@ -2328,13 +2322,8 @@ export interface ViewSchema<$Item = any> extends SchemaRoute<$Item> {
     }
   >
   /**
-   * Grouped event handlers, equivalent to the
-   * `on[A-Z]`-style callbacks on the view schema
-   * (e.g. {@link ViewSchema.onOpen}).
-   *
-   * @see {@link SchemaFields.onInitialize} and
-   * other `on`-prefixed properties for per-event
-   * documentation.
+   * Grouped event handlers, each replacing the `on…` handler of the same
+   * event in the same schema.
    *
    * @deprecated Use the `on…` handlers, e.g. `onChange()`.
    */
@@ -2384,7 +2373,8 @@ export interface ObjectSchema<$Item = { [key: string]: any }>
    */
   type: 'object'
   /**
-   * Grouped event handlers.
+   * Grouped event handlers, each replacing the `on…` handler of the same
+   * event in the same schema.
    *
    * @deprecated Use the `on…` handlers, e.g. `onChange()`.
    */
@@ -2692,13 +2682,8 @@ export interface Form<$Item = any> extends SchemaRoute<$Item> {
   /** The form's field components. */
   components?: Components<$Item>
   /**
-   * Grouped event handlers, equivalent to the
-   * `on[A-Z]`-style callbacks on the form schema
-   * (e.g. {@link Form.onOpen}).
-   *
-   * @see {@link SchemaFields.onInitialize} and
-   * other `on`-prefixed properties for per-event
-   * documentation.
+   * Grouped event handlers, each replacing the `on…` handler of the same
+   * event in the same schema.
    *
    * @deprecated Use the `on…` handlers, e.g. `onChange()`.
    */
@@ -2855,8 +2840,9 @@ export interface TypeDescriptor {
   /** The component renders as the label of its container, if it has one. */
   readonly rendersLabel?: boolean
   /**
-   * The buttons of the type submit the data of the form, like `submit`, and
-   * count for the dirty state of forms and sources.
+   * Forms and sources count the buttons of the type like `submit` buttons, for
+   * their dirty state and whether they can save. Submitting the data is up to
+   * the component of the type, like the button component of `submit`.
    */
   readonly submitsData?: boolean
   /** Sources hold their items in a list or an object. */
