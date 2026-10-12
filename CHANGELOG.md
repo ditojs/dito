@@ -8,6 +8,7 @@ version, see the upgrade guides in `docs/`.
 ### New
 
 - **admin:** The context of event handlers has `handlerDataPath`, the data path of the schema whose handler runs, next to `dataPath` of the component that emitted the event, e.g. the form's own path and the changed field's in the `onChange()` of a form (#228).
+- **admin:** Selects support `placeholder`, shown in the placeholder color while no option is selected, and not offered as an option (#229).
 
 ## 4.0.0 (2026-10-12)
 

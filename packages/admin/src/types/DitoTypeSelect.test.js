@@ -376,6 +376,75 @@ describe('DitoTypeSelect', () => {
     )
   })
 
+  describe('placeholder', () => {
+    function getSelectedText(field) {
+      const { options, selectedIndex } = field.find('select').element
+      return options[selectedIndex]?.text ?? null
+    }
+
+    it('shows the placeholder while no option is selected', async () => {
+      const { findField, data } = await mountSchema({
+        schema: {
+          components: {
+            genre: {
+              type: 'select',
+              options: genres,
+              placeholder: 'Pick a genre',
+              clearable: true
+            }
+          }
+        }
+      })
+      const field = findField('genre')
+      expect(getSelectedText(field)).toBe('Pick a genre')
+      expect(field.find('.dito-select--placeholder').exists()).toBe(true)
+      const placeholder = field.find('option')
+      expect(placeholder.attributes()).toHaveProperty('disabled')
+      expect(placeholder.attributes()).toHaveProperty('hidden')
+
+      await field.find('select').setValue('drama')
+      expect(data.genre).toBe('drama')
+      expect(getSelectedText(field)).toBe('Drama')
+      expect(getOptions(field).map(([, label]) => label)).toEqual([
+        'Fiction',
+        'Poetry',
+        'Drama'
+      ])
+      expect(field.find('.dito-select--placeholder').exists()).toBe(false)
+
+      await field.find('.dito-affixes__clear').trigger('click')
+      expect(data.genre).toBe(null)
+      expect(getSelectedText(field)).toBe('Pick a genre')
+    })
+
+    it('resolves placeholder callbacks', async () => {
+      const { findField } = await mountSchema({
+        schema: {
+          components: {
+            genre: {
+              type: 'select',
+              options: genres,
+              placeholder: ({ item }) => `Pick a genre for ${item.title}`
+            }
+          }
+        },
+        data: { title: 'Emma' }
+      })
+      expect(getSelectedText(findField('genre'))).toBe(
+        'Pick a genre for Emma'
+      )
+    })
+
+    it('shows no placeholder without one', async () => {
+      const { findField } = await mountSchema({
+        schema: {
+          components: { genre: { type: 'select', options: genres } }
+        }
+      })
+      expect(getOptions(findField('genre'))).toHaveLength(3)
+    })
+  })
+
   describe('values', () => {
     it(
       'keeps values without option once loaded, without making the form ' +
