@@ -396,7 +396,7 @@ export interface SchemaOpen<$Item = any> {
   onOpen?: OpenEventHandler<$Item>
 }
 
-/** The schema options shared by all components. */
+/** The schema settings shared by all components. */
 export interface BaseSchema<$Item> extends SchemaFields<$Item> {
   /**
    * Only displays the component if the schema accessor returns `true`
@@ -609,8 +609,8 @@ export interface BaseSchemaEvents<$Item> extends SchemaEvents<$Item> {
   input?: ItemEventHandler<$Item>
 }
 
-/** The schema options shared by lists, objects and trees. */
-export interface SchemaSource<$Item> {
+/** The schema settings shared by lists, objects and trees. */
+export interface SourceSettings<$Item> {
   /**
    * The form schema used for editing items.
    */
@@ -854,7 +854,7 @@ export type SchemaOptions<$Item, $Option = any> =
       /**
        * @deprecated Not supported, the options are grouped by the `groupBy`
        * setting of the component's schema, see
-       * {@link SchemaSelection.groupBy}.
+       * {@link SelectionSettings.groupBy}.
        */
       groupBy?: keyof $Option
       /**
@@ -897,10 +897,10 @@ export type SchemaOptions<$Item, $Option = any> =
     }
 
 /**
- * The schema options shared by components that select from options, e.g.
+ * The schema settings shared by components that select from options, e.g.
  * selects, radios and checkboxes.
  */
-export interface SchemaSelection<$Item, $Option = any> {
+export interface SelectionSettings<$Item, $Option = any> {
   /** The available options for selection. */
   options?: SchemaOptions<$Item, $Option>
   /**
@@ -963,8 +963,8 @@ export interface SchemaSelection<$Item, $Option = any> {
   view?: string
 }
 
-/** The schema options shared by numbers, sliders and progress bars. */
-export interface SchemaNumber<$Item> {
+/** The schema settings shared by numbers, sliders and progress bars. */
+export interface NumberSettings<$Item> {
   /**
    * The minimum value.
    */
@@ -990,14 +990,14 @@ export interface SchemaNumber<$Item> {
   decimals?: OrItemAccessor<$Item, {}, number>
   /** Validation rules for numeric constraints. */
   rules?: SchemaRules &
-    Omit<SchemaNumber<$Item>, 'rules'> & {
+    Omit<NumberSettings<$Item>, 'rules'> & {
       /** Restrict the value to whole numbers. */
       integer?: boolean
     }
 }
 
-/** The schema options shared by text inputs and textareas. */
-export interface SchemaText<$Item> {
+/** The schema settings shared by text inputs and textareas. */
+export interface TextSettings<$Item> {
   /**
    * Whether to trim whitespace from the value.
    */
@@ -1017,8 +1017,8 @@ export type SchemaAffix =
       if?: OrItemAccessor<any, {}, boolean>
     }
 
-/** The schema options of components with a prefix and a suffix. */
-export interface SchemaAffixes<$Item> {
+/** The schema settings of components with a prefix and a suffix. */
+export interface AffixSettings<$Item> {
   /**
    * Prefix content displayed before the input.
    */
@@ -1030,10 +1030,10 @@ export interface SchemaAffixes<$Item> {
 }
 
 /**
- * The schema options of components that resolve their value from data, e.g.
+ * The schema settings of components that resolve their value from data, e.g.
  * computed and hidden components.
  */
-export interface SchemaData<$Item> {
+export interface DataSettings<$Item> {
   /**
    * Data source for the component.
    */
@@ -1178,8 +1178,8 @@ export function getSchemaValue<$Item = any>(
 
 export interface InputSchema<$Item = any>
   extends BaseSchema<$Item>,
-    SchemaText<$Item>,
-    SchemaAffixes<$Item> {
+    TextSettings<$Item>,
+    AffixSettings<$Item> {
   /**
    * The type of the component.
    */
@@ -1205,7 +1205,7 @@ export interface InputSchema<$Item = any>
 
 export interface DateSchema<$Item = any>
   extends BaseSchema<$Item>,
-    SchemaAffixes<$Item> {
+    AffixSettings<$Item> {
   /**
    * The type of the component.
    */
@@ -1234,7 +1234,7 @@ export interface DateSchema<$Item = any>
 
 export interface ButtonSchema<$Item = any>
   extends BaseSchema<$Item>,
-    SchemaAffixes<$Item> {
+    AffixSettings<$Item> {
   /**
    * The type of the component.
    */
@@ -1274,10 +1274,10 @@ export interface SwitchSchema<$Item = any> extends BaseSchema<$Item> {
 }
 
 export interface NumberSchema<$Item = any>
-  // `rules` comes from `SchemaNumber`, which extends `SchemaRules`.
-  extends SchemaNumber<$Item>,
+  // `rules` comes from `NumberSettings`, which extends `SchemaRules`.
+  extends NumberSettings<$Item>,
     Omit<BaseSchema<$Item>, 'rules'>,
-    SchemaAffixes<$Item> {
+    AffixSettings<$Item> {
   /**
    * The type of the component.
    */
@@ -1285,8 +1285,8 @@ export interface NumberSchema<$Item = any>
 }
 
 export interface SliderSchema<$Item = any>
-  // `rules` comes from `SchemaNumber`, which extends `SchemaRules`.
-  extends SchemaNumber<$Item>,
+  // `rules` comes from `NumberSettings`, which extends `SchemaRules`.
+  extends NumberSettings<$Item>,
     Omit<BaseSchema<$Item>, 'rules'> {
   /**
    * The type of the component.
@@ -1302,7 +1302,7 @@ export interface SliderSchema<$Item = any>
 
 export interface TextareaSchema<$Item = any>
   extends BaseSchema<$Item>,
-    SchemaText<$Item> {
+    TextSettings<$Item> {
   /**
    * The type of the component.
    */
@@ -1434,7 +1434,7 @@ export interface LabelSchema<$Item = any> extends BaseSchema<$Item> {
  */
 export interface HiddenSchema<$Item = any>
   extends BaseSchema<$Item>,
-    SchemaData<$Item> {
+    DataSettings<$Item> {
   /**
    * The type of the component.
    */
@@ -1505,8 +1505,8 @@ export interface UploadSchema<$Item = any> extends BaseSchema<$Item> {
 
 export interface MultiselectSchema<$Item = any, $Option = any>
   extends BaseSchema<$Item>,
-    SchemaSelection<$Item, $Option>,
-    SchemaAffixes<$Item> {
+    SelectionSettings<$Item, $Option>,
+    AffixSettings<$Item> {
   /**
    * The type of the component.
    */
@@ -1544,8 +1544,8 @@ export interface MultiselectSchema<$Item = any, $Option = any>
 
 export interface SelectSchema<$Item = any>
   extends BaseSchema<$Item>,
-    SchemaSelection<$Item>,
-    SchemaAffixes<$Item> {
+    SelectionSettings<$Item>,
+    AffixSettings<$Item> {
   /**
    * The type of the component.
    */
@@ -1554,7 +1554,7 @@ export interface SelectSchema<$Item = any>
 
 export interface RadioSchema<$Item = any>
   extends BaseSchema<$Item>,
-    SchemaSelection<$Item> {
+    SelectionSettings<$Item> {
   /**
    * The type of the component.
    */
@@ -1728,7 +1728,7 @@ export interface CheckboxSchema<$Item = any> extends BaseSchema<$Item> {
 
 export interface CheckboxesSchema<$Item = any>
   extends BaseSchema<$Item>,
-    SchemaSelection<$Item> {
+    SelectionSettings<$Item> {
   /**
    * The type of the component.
    */
@@ -1760,7 +1760,7 @@ export interface ColorSchema<$Item = any>
   // `format` is the color format here, not the formatting function of
   // `BaseSchema`.
   extends Omit<BaseSchema<$Item>, 'format'>,
-    SchemaAffixes<$Item> {
+    AffixSettings<$Item> {
   /**
    * The type of the component.
    */
@@ -1838,7 +1838,7 @@ export type ColumnSchema<$Item = any, $Value = any> = {
 export type ResolvableForm<$Item = any> = Resolvable<Form<$Item>>
 
 export interface ListSchema<$Item = { [key: string]: any }>
-  extends SchemaSource<$Item>,
+  extends SourceSettings<$Item>,
     BaseSchema<$Item>,
     SchemaOpen<$Item> {
   /**
@@ -2366,7 +2366,7 @@ export interface ViewSchema<$Item = any> extends SchemaRoute<$Item> {
  */
 export interface ComputedSchema<$Item = any>
   extends BaseSchema<$Item>,
-    SchemaData<$Item> {
+    DataSettings<$Item> {
   /**
    * The type of the component.
    */
@@ -2379,7 +2379,7 @@ export interface ComputedSchema<$Item = any>
  */
 export interface DataSchema<$Item = any>
   extends BaseSchema<$Item>,
-    SchemaData<$Item> {
+    DataSettings<$Item> {
   /**
    * The type of the component.
    */
@@ -2387,7 +2387,7 @@ export interface DataSchema<$Item = any>
 }
 
 export interface ObjectSchema<$Item = { [key: string]: any }>
-  extends SchemaSource<$Item>,
+  extends SourceSettings<$Item>,
     BaseSchema<$Item>,
     SchemaOpen<$Item> {
   /**
@@ -2407,7 +2407,7 @@ export interface ObjectSchema<$Item = { [key: string]: any }>
 }
 
 interface TreeSchema<$Item, $Type extends 'tree-list' | 'tree-object'>
-  extends SchemaSource<$Item>,
+  extends SourceSettings<$Item>,
     BaseSchema<$Item> {
   /**
    * The type of the component.
@@ -2478,8 +2478,8 @@ export interface SpacerSchema<$Item = any> extends BaseSchema<$Item> {
 }
 
 export interface ProgressSchema<$Item = any>
-  // `rules` comes from `SchemaNumber`, which extends `SchemaRules`.
-  extends SchemaNumber<$Item>,
+  // `rules` comes from `NumberSettings`, which extends `SchemaRules`.
+  extends NumberSettings<$Item>,
     Omit<BaseSchema<$Item>, 'rules'> {
   /**
    * The type of the component.
@@ -2549,8 +2549,8 @@ type NonOptionFieldComponent<$Item = any> = Exclude<
  * contextual typing for callbacks in the `Components` mapped type.
  */
 type OptionComponent<$Item, $Option> = BaseSchema<$Item> &
-  SchemaSelection<$Item, $Option> &
-  SchemaAffixes<$Item> &
+  SelectionSettings<$Item, $Option> &
+  AffixSettings<$Item> &
   Pick<
     MultiselectSchema,
     'multiple' | 'searchable' | 'stayOpen' | 'taggable'
