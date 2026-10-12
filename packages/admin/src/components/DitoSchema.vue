@@ -539,7 +539,7 @@ export default DitoComponent.component('DitoSchema', {
             { tabs: renderedTabs },
             this.data,
             getRelativeDataPath(dataPath, this.dataPath),
-            { component: this, rootData: this.rootData }
+            { services: this, rootData: this.rootData }
           )
         )
         if (tab in renderedTabs) {
@@ -569,7 +569,7 @@ export default DitoComponent.component('DitoSchema', {
       const dataValidationErrors = this.hasData
         ? getDataValidationErrors(this.schema, this.data, {
             dataPath: this.dataPath,
-            component: this,
+            services: this,
             rootData: this.rootData
           })
         : null
@@ -718,7 +718,7 @@ export default DitoComponent.component('DitoSchema', {
     pasteData(clipboardData) {
       const data = fromClipboard(this.dataSchema, clipboardData, {
         dataPath: this.dataPath,
-        component: this,
+        services: this,
         rootData: this.rootData
       })
       for (const [name, value] of Object.entries(data)) {
@@ -740,7 +740,7 @@ export default DitoComponent.component('DitoSchema', {
           // Needed for DitoContext handling inside `processData` and
           // `processSchemaData()`:
           rootData: this.rootData,
-          component: this,
+          services: this,
           target
         }
       )

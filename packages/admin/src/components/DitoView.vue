@@ -32,7 +32,7 @@ import { deprecate } from '@ditojs/utils'
 import DitoComponent from '../DitoComponent.js'
 import RouteMixin from '../mixins/RouteMixin.js'
 import { isSingleComponentView } from '../utils/schema/structure.js'
-import { DataModel } from '../utils/DataModel.js'
+import { DataModel } from '../utils/DataModel.ts'
 import { LoadingTracker, LoadingSwitch } from '../utils/LoadingTracker.js'
 
 // @vue/component
@@ -41,10 +41,8 @@ export default DitoComponent.component('DitoView', {
 
   provide() {
     return {
-      // Provide the contexts of the main component to the other components of
-      // the view, e.g. its panels and buttons:
-      source: computed(() => this.mainComponent?.ownSource ?? null),
-      resource: computed(() => this.mainComponent?.ownResource ?? null),
+      source: computed(() => this.mainSource),
+      resource: computed(() => this.mainResource),
       $loadingTracker: () => this.loadingTracker
     }
   },
@@ -94,6 +92,16 @@ export default DitoComponent.component('DitoView', {
       return this.mainSchemaComponent?.getComponentByDataPath(this.name)
     },
 
+    // The contexts of the main component, which the view provides to its other
+    // components, e.g. its panels and buttons:
+    mainSource() {
+      return this.mainComponent?.ownSource ?? null
+    },
+
+    mainResource() {
+      return this.mainComponent?.ownResource ?? null
+    },
+
     viewSchema() {
       const { component, ...schema } = this.schema
       // Translate single-component schemas into multi-component schemas,
@@ -127,11 +135,23 @@ export default DitoComponent.component('DitoView', {
   created() {
     // Writes defaults and computed values into the view's data and resolves
     // options, see `DataModel`:
+    const view = this
     this.ownDataModel = markRaw(
       new DataModel({
-        component: this,
-        getSchema: () => this.viewSchema,
-        getData: () => this.data
+        schema: () => this.viewSchema,
+        data: () => this.data,
+        sourceSchema: () => this.sourceSchema,
+        services: {
+          admin: this.admin,
+          container: this.ownContainer,
+          route: this.ownRoute,
+          get source() {
+            return view.mainSource
+          },
+          get resource() {
+            return view.mainResource
+          }
+        }
       })
     )
   },

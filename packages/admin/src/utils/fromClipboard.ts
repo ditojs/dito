@@ -19,11 +19,11 @@ export function fromClipboard(
   clipboardData: Data,
   {
     dataPath = null,
-    component = null,
+    services = null,
     rootData = null
   }: {
     dataPath?: string | null
-    component?: object | null
+    services?: object | null
     rootData?: Data | null
   } = {}
 ): Data {
@@ -51,7 +51,7 @@ export function fromClipboard(
   processSchemaData(schema, data, {
     dataPath,
     before,
-    options: { component, rootData: rootData ?? data }
+    options: { services, rootData: rootData ?? data }
   })
   return data
 }

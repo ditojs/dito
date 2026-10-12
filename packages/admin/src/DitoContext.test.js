@@ -2,6 +2,7 @@ import { vi } from 'vitest'
 import { reactive } from 'vue'
 import DitoContext from './DitoContext.js'
 import { registerTypeComponent } from './utils/schema/types.js'
+import { mountSchema } from './test/mount.js'
 
 // Register minimal type options, as the actual type components can't be
 // imported without a Vue SFC compiler:
@@ -186,11 +187,7 @@ describe('DitoContext', () => {
     const createComponent = () => ({
       schema: { type: 'text' },
       itemLabel: 'Book',
-      formLabel: 'Books',
-      request: vi.fn(async options => ({ options })),
-      format: vi.fn((value, options) => `${value} ${options.unit}`),
-      download: vi.fn(),
-      getResourceUrl: vi.fn(resource => `/api/${resource.path}`)
+      formLabel: 'Books'
     })
 
     it('falls back to the values of the component', () => {
@@ -259,17 +256,28 @@ describe('DitoContext', () => {
       expect(context.open).toBe(true)
     })
 
-    it('delegates the helper methods to the component', async () => {
-      const component = createComponent()
-      const context = new DitoContext(component, {})
-      const { request, format, download, getResourceUrl } = context
-      expect(await request({ method: 'get' })).toEqual({
-        options: { method: 'get' }
+    it('provides the helper methods through its services', async () => {
+      // E.g. the contexts that data models create for `compute()`, which
+      // have no component:
+      let context = null
+      await mountSchema({
+        schema: {
+          components: {
+            title: {
+              type: 'text',
+              compute: computeContext => {
+                context = computeContext
+              }
+            }
+          }
+        },
+        api: { locale: 'en-US' },
+        request: () => ({ data: { title: 'Orlando' } })
       })
-      expect(format(3, { unit: 'kg' })).toBe('3 kg')
-      download({ url: '/file' })
-      expect(component.download).toHaveBeenCalledWith({ url: '/file' })
-      expect(getResourceUrl({ path: 'books' })).toBe('/api/books')
+      const { request, format, getResourceUrl } = context
+      expect(await request({ url: 'books/1' })).toEqual({ title: 'Orlando' })
+      expect(format(1234.5, { date: false, time: false })).toBe('1,234.5')
+      expect(getResourceUrl({ path: 'books' })).toBe('/books')
     })
 
     it('stores whether its action is running', () => {

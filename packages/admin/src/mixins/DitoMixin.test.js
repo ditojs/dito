@@ -263,7 +263,7 @@ describe('DitoMixin', () => {
       expect(anchors).toEqual([
         {
           href: '/books/export.csv',
-          download: 'null',
+          download: '',
           isConnected: true
         }
       ])

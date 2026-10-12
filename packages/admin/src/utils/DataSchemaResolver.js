@@ -42,6 +42,13 @@ export class DataSchemaResolver {
     error: null
   })
 
+  /**
+   * @param {any} dataSchema
+   * @param {{
+   *   createContext: () => object,
+   *   onLoadStart?: ((promise: Promise<unknown>) => void) | null
+   * }} options
+   */
   constructor(dataSchema, { createContext, onLoadStart = null }) {
     this.dataSchema = isObject(dataSchema) ? dataSchema : { data: dataSchema }
     this.createContext = createContext

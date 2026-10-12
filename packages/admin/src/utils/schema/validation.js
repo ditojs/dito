@@ -84,13 +84,13 @@ function getValidator(name) {
  */
 export function getDataValidationErrors(schema, data, {
   dataPath = '',
-  component = null,
+  services = null,
   rootData = data
 } = {}) {
   let errors = null
 
   const createContext = ({ schema, data, name, dataPath }) =>
-    new DitoContext(component, {
+    new DitoContext(services, {
       schema,
       value: name != null ? data[name] : undefined,
       name,
@@ -125,7 +125,7 @@ export function getDataValidationErrors(schema, data, {
     shouldProcess,
     shouldSkipSourcesWithResource: true,
     before,
-    options: { component, rootData }
+    options: { services, rootData }
   })
   return errors
 }

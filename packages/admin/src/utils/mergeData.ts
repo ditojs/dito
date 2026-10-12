@@ -26,11 +26,11 @@ export function mergeData(
   target: Data,
   source: Data,
   {
-    component = null,
+    services = null,
     shouldKeepSourcesWithResource = false,
     shouldMatchUids = false
   }: {
-    component?: object | null
+    services?: object | null
     shouldKeepSourcesWithResource?: boolean
     shouldMatchUids?: boolean
   } = {}
@@ -69,7 +69,7 @@ export function mergeData(
   }
   processSchemaData(schema, source, {
     before,
-    options: { component, rootData: source }
+    options: { services, rootData: source }
   })
 
   // 2. Replace all other values of the matched objects:

@@ -38,7 +38,7 @@ import { clone } from '@ditojs/utils'
 import DitoComponent from '../DitoComponent.js'
 import SchemaParentMixin from '../mixins/SchemaParentMixin.js'
 import { getButtonSchemas } from '../utils/schema/lookup.js'
-import { DataModel } from '../utils/DataModel.js'
+import { DataModel } from '../utils/DataModel.ts'
 import { DialogContext } from '../utils/ContainerContext.ts'
 import { UseFocusTrap } from '@vueuse/integrations/useFocusTrap/component'
 
@@ -135,9 +135,16 @@ export default DitoComponent.component('DitoDialog', {
     // options, see `DataModel`:
     this.ownDataModel = markRaw(
       new DataModel({
-        component: this,
-        getSchema: () => this.schema,
-        getData: () => this.dialogData
+        schema: () => this.schema,
+        data: () => this.dialogData,
+        // Dialogs render in the root, outside of routes and sources:
+        services: {
+          admin: this.admin,
+          container: this.ownContainer,
+          route: null,
+          source: null,
+          resource: null
+        }
       })
     )
   },

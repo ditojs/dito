@@ -1,5 +1,5 @@
 // Components that sort a list of their data by dragging provide it as
-// `sortableList`, and move its items through their data model.
+// `listEntry`, see `ListEntry`, and move its items through their data model.
 // @vue/component
 export default {
   data() {
@@ -28,14 +28,15 @@ export default {
 
     // Moves the item by `delta` positions, see `DitoDragHandle`.
     moveItem(item, delta) {
-      const index = this.sortableList.indexOf(item)
+      const index = this.listEntry.list.indexOf(item)
       this.moveSortableItem(index, index + delta)
     },
 
     moveSortableItem(from, to) {
-      const list = this.sortableList
-      if (from >= 0 && from !== to && to >= 0 && to < list.length) {
-        this.dataModel.move(list, from, to)
+      const { listEntry } = this
+      const { length } = listEntry.list
+      if (from >= 0 && from !== to && to >= 0 && to < length) {
+        this.dataModel.move(listEntry, from, to)
         this.onChange()
       }
     },

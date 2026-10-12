@@ -197,9 +197,9 @@ export default DitoTypeComponent.register('upload', {
       return asFiles(this.value)
     },
 
-    // Only multiple files can be dragged, which are the value itself.
-    sortableList() {
-      return this.files
+    // Only multiple files can be dragged or added, which are the value itself.
+    listEntry() {
+      return { schema: this.schema, list: this.files, dataPath: this.dataPath }
     },
 
     downloadUrls() {
@@ -425,7 +425,7 @@ export default DitoTypeComponent.register('upload', {
             return false
           }
           if (this.multiple) {
-            this.dataModel.remove(this.value, index)
+            this.dataModel.remove(this.listEntry, index)
           } else {
             this.value = null
           }
@@ -446,7 +446,7 @@ export default DitoTypeComponent.register('upload', {
     addFile(file) {
       if (this.multiple) {
         if (this.value) {
-          this.dataModel.insert(this.value, this.value.length, file)
+          this.dataModel.insert(this.listEntry, this.value.length, file)
         } else {
           this.value = [file]
         }
@@ -462,7 +462,7 @@ export default DitoTypeComponent.register('upload', {
           if (newFile) {
             this.dataModel.set(this.value, index, newFile)
           } else {
-            this.dataModel.remove(this.value, index)
+            this.dataModel.remove(this.listEntry, index)
           }
         }
       } else {

@@ -27,6 +27,16 @@ import {
   getItemFormSchemaFromForms
 } from './lookup.js'
 
+/**
+ * @param {string | string[]} keyOrDataPath
+ * @param {{
+ *   type?: any,
+ *   schema?: Record<string, any> | null,
+ *   callback?: boolean,
+ *   default?: any,
+ *   context?: any
+ * }} [options]
+ */
 export function getSchemaValue(
   keyOrDataPath,
   { type, schema, callback = true, default: def, context } = {}
@@ -205,8 +215,19 @@ export function shouldSetDefaultValue(schema, data, name, context, {
  * their defaults, so they can be correctly watched for changes, and numbers
  * the items of lists by their order key, see `updateOrder()`, so that their
  * order is stored even if it never changes.
+ *
+ * @param {Record<string, any>} schema
+ * @param {Record<string, any>} [data]
+ * @param {object | null} [services]
+ * @param {{
+ *   dataPath?: string | null,
+ *   rootData?: Record<string, any> | null,
+ *   shouldProcess?: (entry: any) => boolean,
+ *   shouldSkipSourcesWithResource?: boolean,
+ *   shouldSetDefaultsOfComponentsWithCompute?: boolean
+ * }} [options]
  */
-export function initializeData(schema, data = {}, component, {
+export function initializeData(schema, data = {}, services, {
   dataPath = null,
   rootData = data,
   shouldProcess,
@@ -217,11 +238,11 @@ export function initializeData(schema, data = {}, component, {
   // to their defaults only if it doesn't return a value, see `computeValue()`.
   shouldSetDefaultsOfComponentsWithCompute = true
 } = {}) {
-  const options = { component, rootData }
+  const options = { services, rootData }
 
   const before = ({ schema, data, name, dataPath }) => {
     const context = () =>
-      new DitoContext(component, {
+      new DitoContext(services, {
         schema,
         name,
         data,
@@ -263,16 +284,26 @@ export function initializeData(schema, data = {}, component, {
  * only when they're read. `dataPath` can also be a function that returns it,
  * called only when `compute()` reads the data path or values derived from it,
  * e.g. `index` or `parentItem`, so that only these computes depend on it.
+ *
+ * @param {Record<string, any>} schema
+ * @param {Record<string, any>} data
+ * @param {string} name
+ * @param {string | (() => string)} dataPath
+ * @param {{
+ *   services?: object | null,
+ *   rootData?: Record<string, any> | null,
+ *   getOptions?: (() => any) | null
+ * }} [options]
  */
 export function computeValue(schema, data, name, dataPath, {
-  component = null,
-  rootData = component?.rootData,
+  services = null,
+  rootData = null,
   getOptions = null
 } = {}) {
   const context = () =>
     // Pass a function, so that the `options` getter isn't evaluated when the
     // context is created.
-    new DitoContext(component, () => {
+    new DitoContext(services, () => {
       const properties = {
         schema,
         // Override value to prevent endless recursion through calling the
@@ -351,11 +382,11 @@ function cloneItem(sourceSchema, item) {
 }
 
 export function processData(schema, sourceSchema, data, dataPath, {
-  component,
+  services,
   rootData,
   target
 } = {}) {
-  const options = { component, rootData, target }
+  const options = { services, rootData, target }
   const processedRootData = cloneItem(sourceSchema, data)
   const graph = new SchemaGraph(dataPath)
 
@@ -365,7 +396,7 @@ export function processData(schema, sourceSchema, data, dataPath, {
       data,
       name,
       () =>
-        DitoContext.createForSchema(component, {
+        DitoContext.createForSchema(services, {
           schema,
           name,
           data,
@@ -395,7 +426,7 @@ export function processData(schema, sourceSchema, data, dataPath, {
 
     // NOTE: We don't cache this context, since `value` is changing.
     const context = () =>
-      new DitoContext(component, {
+      new DitoContext(services, {
         schema,
         value,
         name,
@@ -487,7 +518,7 @@ export function processData(schema, sourceSchema, data, dataPath, {
  *   entry: SchemaDataEntry | Omit<SchemaDataEntry, 'name'> & { name: null }
  * ) => boolean} [walk.shouldProcess] Tabs and panels have no name.
  * @param {boolean} [walk.shouldSkipSourcesWithResource]
- * @param {{ component: object | null, rootData: Record<string, any> }}
+ * @param {{ services: object | null, rootData: Record<string, any> | null }}
  *   walk.options
  */
 export function processSchemaData(schema, data, {
@@ -573,7 +604,7 @@ export function processSchemaData(schema, data, {
               index !== null
                 ? appendDataPath(entry.componentPath, index)
                 : entry.componentPath
-            const context = new DitoContext(options.component, {
+            const context = new DitoContext(options.services, {
               schema: componentSchema,
               data,
               dataPath: componentDataPath,
@@ -660,7 +691,7 @@ export function processSchemaData(schema, data, {
       getItemFormSchema(
         schema,
         data,
-        new DitoContext(options.component, {
+        new DitoContext(options.services, {
           schema,
           data,
           dataPath,
@@ -685,7 +716,7 @@ export function processSchemaData(schema, data, {
  */
 export function getComponentPathByDataPath(schema, data, dataPath, {
   componentPath = '',
-  component = null,
+  services = null,
   rootData = data
 } = {}) {
   let deepestEntry = { dataPath: '', componentPath }
@@ -702,7 +733,7 @@ export function getComponentPathByDataPath(schema, data, dataPath, {
           deepestEntry = entry
         }
       },
-      options: { component, rootData }
+      options: { services, rootData }
     })
   }
   const relativeDataPath = getRelativeDataPath(dataPath, deepestEntry.dataPath)

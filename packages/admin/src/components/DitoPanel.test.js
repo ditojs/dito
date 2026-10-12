@@ -1,6 +1,6 @@
 import { vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
-import { mountSchema, enterValue } from '../test/mount.js'
+import { mountSchema, mountForm, enterValue } from '../test/mount.js'
 
 describe('DitoPanel', () => {
   it('edits its own data in its own form with object `data`', async () => {
@@ -104,6 +104,34 @@ describe('DitoPanel', () => {
     expect(panel.vm.panelData).toEqual({ words: 3, pages: 30 })
     expect(panel.vm.dataModel.isDirty).toBe(true)
     expect(dataModel.isDirty).toBe(false)
+  })
+
+  it('gives the callbacks of its own data the contexts of its form', async () => {
+    const { wrapper } = await mountForm({
+      schema: {
+        components: { title: { type: 'text' } },
+        panels: {
+          links: {
+            type: 'panel',
+            data: () => ({}),
+            components: {
+              url: {
+                type: 'text',
+                compute: ({ getResourceUrl }) => getResourceUrl()
+              },
+              // Forms don't continue the source of their parent:
+              hasListQuery: {
+                type: 'checkbox',
+                compute: ({ listQuery }) => !!listQuery
+              }
+            }
+          }
+        }
+      },
+      data: { title: 'Emma' }
+    })
+    const panel = wrapper.findComponent({ name: 'DitoPanel' })
+    expect(panel.vm.panelData).toEqual({ url: '/items/1', hasListQuery: false })
   })
 
   it('validates and edits its own data through contexts', async () => {

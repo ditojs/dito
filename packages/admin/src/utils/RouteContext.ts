@@ -30,7 +30,7 @@ export class RouteContext {
   readonly parent: RouteContext | null
   readonly container: ContainerContext
   // The responses of `request({ cache: 'local' })` of the components that the
-  // route renders, released with it, see `DitoMixin.request()`:
+  // route renders, released with it, see `request()`:
   readonly loadCache: Record<string, Promise<unknown>> = {}
   readonly #owner: RouteOwner
   readonly #router: Router

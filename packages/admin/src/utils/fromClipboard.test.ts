@@ -90,7 +90,7 @@ const createLibrary = () => ({
 
 function copy(schema: Record<string, any>, data: Record<string, any>) {
   return processData(schema, { type: 'list' }, data, '', {
-    component: null,
+    services: null,
     target: 'clipboard'
   })
 }
