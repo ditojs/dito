@@ -155,6 +155,8 @@ export class DataModel {
   readonly #data: Ref<Data | null>
   readonly #options: Required<Omit<DataModelOptions, 'data'>>
   readonly #scope = effectScope(true)
+  // The watchers that clear the errors of values, which the data holds:
+  #errorScope!: EffectScope
   #dataEntries!: ComputedRef<DataEntries>
   #rootData!: ComputedRef<Data | null>
   processedData!: ComputedRef<Data | null>
@@ -189,9 +191,13 @@ export class DataModel {
         ([schema, data], previousValues) => {
           this.#initializeData(schema, data)
           this.#writeComputedValues()
-          // Data that is replaced, e.g. loaded or applied, isn't edited:
+          // Data that is replaced, e.g. loaded or applied, isn't edited, and
+          // its errors go with it:
           if (data !== previousValues?.[1]) {
             this.markClean()
+            this.#errorScope?.stop()
+            this.#errorScope = effectScope(true)
+            this.#errors.value = new WeakEntryMap()
           }
         },
         { immediate: true, flush: 'sync' }
@@ -548,7 +554,7 @@ export class DataModel {
       // through direct writes, e.g. of `change` handlers:
       errors.stopWatching = (
         currentErrors?.stopWatching ??
-        this.#scope.run(() =>
+        this.#errorScope.run(() =>
           watch(
             () => data[name],
             () => this.#setValueErrors(key, null),
@@ -596,6 +602,7 @@ export class DataModel {
 
   stop() {
     this.#scope.stop()
+    this.#errorScope.stop()
     this.componentRecords.clear()
     this.#pendingLoads.clear()
     this.#untimedLoads.clear()
