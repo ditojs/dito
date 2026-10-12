@@ -30,8 +30,8 @@ function getImportedSpecifiers(code) {
   const patterns = [
     // `import … from "x"`, `export … from "x"` and `import "x"`:
     /(?:^|[\s;}])(?:import|export)\s*(?:[^"'`;]*?\sfrom\s*)?["']([^"']+)["']/g,
-    // `require("x")` in UMD bundles and dynamic `import("x")`:
-    /\b(?:require|import)\(\s*["']([^"']+)["']\s*\)/g
+    // Dynamic `import("x")`:
+    /\bimport\(\s*["']([^"']+)["']\s*\)/g
   ]
   for (const pattern of patterns) {
     for (const [, specifier] of code.matchAll(pattern)) {
@@ -89,17 +89,13 @@ for (const { directory, name, expectedExports } of packages) {
     fs.readFileSync(path.join(directory, 'package.json'), 'utf8')
   )
   const esFile = path.join(directory, 'dist', `${name}.es.js`)
-  const umdFile = path.join(directory, 'dist', `${name}.umd.js`)
   const cssFile = path.join(directory, 'dist', `${name}.css`)
-  const missingFiles = [esFile, umdFile, cssFile].filter(
-    file => !fs.existsSync(file)
-  )
+  const missingFiles = [esFile, cssFile].filter(file => !fs.existsSync(file))
   if (missingFiles.length > 0) {
     errors.push(`${directory}: missing ${missingFiles.join(', ')}, build first`)
     continue
   }
   checkBundle(packageJson, esFile)
-  checkBundle(packageJson, umdFile)
   try {
     const exports = await import(pathToFileURL(path.resolve(esFile)).href)
     for (const key of expectedExports) {
