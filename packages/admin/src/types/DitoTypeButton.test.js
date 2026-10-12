@@ -283,6 +283,56 @@ describe('DitoTypeButton', () => {
     })
   })
 
+  it('submits the form through `submit()` of its context', async () => {
+    const request = vi.fn(({ data }) => ({ data }))
+    let isSubmitted = null
+    const { findField } = await mountForm({
+      schema: {
+        components: { title: { type: 'text' } },
+        buttons: {
+          submit: {
+            closeForm: false,
+            events: {
+              async click({ submit }) {
+                isSubmitted = await submit()
+              }
+            }
+          }
+        }
+      },
+      data: { title: 'Emma' },
+      request
+    })
+    await findField('submit').trigger('click')
+    await vi.waitFor(() => expect(isSubmitted).toBe(true))
+    expect(request).toHaveBeenCalledOnce()
+    expect(request.mock.calls[0][0]).toMatchObject({
+      url: '/items/1',
+      data: { title: 'Emma' }
+    })
+  })
+
+  it(`throws from \`submit()\` without a form or list to submit`, async () => {
+    const onError = vi.fn(() => false)
+    const { findField } = await mountSchema({
+      schema: {
+        components: {
+          publish: {
+            type: 'button',
+            onClick: ({ submit }) => submit(),
+            onError
+          }
+        }
+      }
+    })
+    await findField('publish').trigger('click')
+    await flushPromises()
+    expect(onError.mock.calls[0][0].error?.errors[0].message).toBe(
+      'Unable to submit: There is no button of a form or of a list with a ' +
+      'resource.'
+    )
+  })
+
   it('notifies errors of preparing the data to submit', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
     const request = vi.fn(({ data }) => ({ data }))

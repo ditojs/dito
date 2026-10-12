@@ -10,7 +10,7 @@ import {
   getLastDataPathIndex,
   getRelativeDataPath
 } from './utils/data.js'
-import { hasNestedData } from './utils/schema/structure.js'
+import { hasNestedData, isButton } from './utils/schema/structure.js'
 import { getTextFromHtml } from './utils/html.js'
 
 const { hasOwnProperty } = Object.prototype
@@ -236,8 +236,10 @@ export default class DitoContext {
   }
 
   get processedRootItem() {
-    return get(this, 'processedRootData', () =>
-      getProcessedData(this, '', false)
+    return get(
+      this,
+      'processedRootData',
+      () => getComponent(this)?.dataModel?.processedRootData.value ?? null
     )
   }
 
@@ -405,9 +407,17 @@ export default class DitoContext {
     }
   }
 
-  // Validate the data and show its errors, and return whether it's valid:
+  // Validate the data, or only the values whose data paths match `match`, and
+  // show their errors. Return whether they're valid:
   get validate() {
-    return () => getDataModelComponent(this).mainSchemaComponent.validateAll()
+    return match =>
+      getDataModelComponent(this).mainSchemaComponent.validateAll(match)
+  }
+
+  // Like `validate()`, but without showing the errors:
+  get verify() {
+    return match =>
+      getDataModelComponent(this).mainSchemaComponent.verifyAll(match)
   }
 
   get markEdited() {
@@ -418,6 +428,21 @@ export default class DitoContext {
   // which their data model sets up with the defaults right away:
   get replaceItem() {
     return data => getDataModelComponent(this).setData(data)
+  }
+
+  // Submit the data through the button of the context, like buttons with a
+  // resource do when clicked, and resolve with whether it succeeded:
+  get submit() {
+    return options => {
+      const component = getComponent(this)
+      if (!isButton(component.schema) || !component.resourceComponent) {
+        throw new Error(
+          'Unable to submit: There is no button of a form or of a list with a ' +
+          'resource.'
+        )
+      }
+      return component.submit(options)
+    }
   }
 
   get closeForm() {

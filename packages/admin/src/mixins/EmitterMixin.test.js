@@ -26,14 +26,14 @@ describe('EmitterMixin', () => {
       expect(change).toHaveBeenCalledOnce()
     })
 
-    it('calls the callbacks with the component as `this`', async () => {
+    it('calls the callbacks without `this`', async () => {
       const emitter = createEmitter()
       let receiver = null
       emitter.on('load', function () {
         receiver = this
       })
       await emitter.emit('load')
-      expect(receiver).toBe(emitter)
+      expect(receiver).toBe(undefined)
     })
   })
 

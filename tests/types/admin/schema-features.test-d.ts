@@ -4,133 +4,48 @@ import type {
   Components,
   PanelSchema,
   UploadSchema,
-  DitoComponentInstance,
   HiddenSchema
 } from '@ditojs/admin'
 import type { Entry, Parent } from './fixtures.ts'
 
-describe('SchemaFields: methods', () => {
-  it('methods have `this` typed as component instance', () => {
+describe('SchemaFields: no component members', () => {
+  it('rejects `methods`, `computed`, `watch` and `data`', () => {
     assertType<Form<Entry>>({
       type: 'form',
       components: {
         title: { type: 'text' }
       },
-      methods: {
-        greet() {
-          expectTypeOf(this).not.toBeAny()
-          expectTypeOf(this).toEqualTypeOf<DitoComponentInstance<Entry>>()
-          expectTypeOf(this.item).not.toBeAny()
-          expectTypeOf(this.item.title).toBeString()
-          expectTypeOf(this.item.id).toBeNumber()
-        },
-        getTitle() {
-          return this.item.title
-        }
-      }
+      // @ts-expect-error — handlers receive their context instead
+      methods: {}
     })
-  })
-})
-
-describe('SchemaFields: computed', () => {
-  it('computed getter uses `this` typing', () => {
     assertType<Form<Entry>>({
       type: 'form',
-      components: {
-        title: { type: 'text' }
-      },
-      computed: {
-        upperTitle() {
-          expectTypeOf(this).not.toBeAny()
-          expectTypeOf(this.item).not.toBeAny()
-          expectTypeOf(this.item.title).toBeString()
-          return this.item.title.toUpperCase()
-        }
-      }
+      // @ts-expect-error — handlers receive their context instead
+      computed: {}
+    })
+    assertType<Form<Entry>>({
+      type: 'form',
+      // @ts-expect-error — use `events.change` instead
+      watch: {}
+    })
+    assertType<Form<Entry>>({
+      type: 'form',
+      // @ts-expect-error — keep state in module scope instead
+      data: {}
     })
   })
 
-  it('computed getter/setter object uses `this` typing', () => {
+  it('passes the context members to handlers', () => {
     assertType<Form<Entry>>({
       type: 'form',
       components: {
         title: { type: 'text' }
       },
-      computed: {
-        upperTitle: {
-          get() {
-            expectTypeOf(this).not.toBeAny()
-            expectTypeOf(this.item).not.toBeAny()
-            expectTypeOf(this.item.title).toBeString()
-            return this.item.title.toUpperCase()
-          },
-          set(_value) {
-            expectTypeOf(this).not.toBeAny()
-            expectTypeOf(this.item.id).toBeNumber()
-          }
-        }
-      }
-    })
-  })
-})
-
-describe('SchemaFields: watch', () => {
-  it('watch with plain handler function', () => {
-    assertType<Form<Entry>>({
-      type: 'form',
-      components: {
-        title: { type: 'text' }
-      },
-      watch: {
-        title(value, oldValue) {
-          expectTypeOf(this).not.toBeAny()
-          expectTypeOf(this.item).not.toBeAny()
-          expectTypeOf(this.item.title).toBeString()
-          expectTypeOf(value).toBeAny()
-          expectTypeOf(oldValue).toBeAny()
-        }
-      }
-    })
-  })
-
-  it('watch with object containing deep and immediate', () => {
-    assertType<Form<Entry>>({
-      type: 'form',
-      components: {
-        title: { type: 'text' }
-      },
-      watch: {
-        title: {
-          handler(value, oldValue) {
-            expectTypeOf(this).not.toBeAny()
-            expectTypeOf(this.item).not.toBeAny()
-            expectTypeOf(this.item.title).toBeString()
-            expectTypeOf(value).toBeAny()
-            expectTypeOf(oldValue).toBeAny()
-          },
-          deep: true,
-          immediate: true
-        }
-      }
-    })
-  })
-
-  it('watch as factory function returning handlers', () => {
-    assertType<Form<Entry>>({
-      type: 'form',
-      components: {
-        title: { type: 'text' }
-      },
-      watch() {
-        expectTypeOf(this).not.toBeAny()
-        expectTypeOf(this.item).not.toBeAny()
-        expectTypeOf(this.item.title).toBeString()
-        return {
-          title(value) {
-            expectTypeOf(this).not.toBeAny()
-            expectTypeOf(this.item).not.toBeAny()
-            expectTypeOf(this.item.id).toBeNumber()
-          }
+      events: {
+        change({ dataPath, submit, verify }) {
+          expectTypeOf(dataPath).toBeString()
+          expectTypeOf(submit).returns.toEqualTypeOf<Promise<boolean>>()
+          expectTypeOf(verify(/^title/)).toBeBoolean()
         }
       }
     })

@@ -94,6 +94,10 @@ export function isTab(schema) {
   return isSchema(schema) && schema.type === 'tab'
 }
 
+export function isButton(schema) {
+  return isSchema(schema) && ['button', 'submit'].includes(schema.type)
+}
+
 export function isPanel(schema) {
   return isSchema(schema) && schema.type === 'panel'
 }

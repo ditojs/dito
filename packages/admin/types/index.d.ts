@@ -360,11 +360,6 @@ export interface BaseSchema<$Item>
    */
   compute?: ItemAccessor<$Item>
   /**
-   * Additional reactive data properties merged into
-   * the component's data scope.
-   */
-  data?: OrItemAccessor<$Item, {}, Record<string, any>>
-  /**
    * Custom CSS class(es) added to the component's container
    * element. Accepts a string or an object of class-boolean
    * pairs.
@@ -1039,53 +1034,11 @@ export interface SchemaDataMixin<$Item> {
 }
 
 /**
- * Properties shared by all schemas that support custom
- * instance members and lifecycle events — component
- * schemas, views, and forms.
+ * Properties shared by all schemas that support panels
+ * and lifecycle events — component schemas, views, and
+ * forms.
  */
 export interface SchemaFields<$Item> {
-  /**
-   * Methods accessible via `this` from event handlers,
-   * computed properties, watchers, and templates. Unlike
-   * event handlers, methods do not receive a context
-   * parameter — use `this.context` to access it.
-   */
-  methods?: Record<string, (...args: any[]) => any> &
-    ThisType<DitoComponentInstance<$Item>>
-
-  /**
-   * Computed properties defined on the component. Can be a
-   * getter function or a `{ get, set }` object for
-   * read-write computed properties. Getters and setters
-   * are called with the component as `this`. Like
-   * {@link SchemaFields.methods}, use `this.context` to
-   * access the context.
-   */
-  computed?: Record<
-    string,
-    | ((this: DitoComponentInstance<$Item>) => any)
-    | {
-        get: (this: DitoComponentInstance<$Item>) => any
-        set: (
-          this: DitoComponentInstance<$Item>,
-          value: any
-        ) => void
-      }
-  >
-
-  /**
-   * Watchers on data properties or expression paths. Keys
-   * are either component names (resolved to
-   * `data.${name}`) or arbitrary expression paths. Can be
-   * a plain handler function or an object with `handler`,
-   * `deep`, and `immediate` options.
-   */
-  watch?:
-    | WatchHandlers<$Item>
-    | ((
-        this: DitoComponentInstance<$Item>
-      ) => WatchHandlers<$Item>)
-
   /**
    * Panel schemas rendered in the sidebar. Panels share
    * the parent's data unless their schema defines its
@@ -1148,11 +1101,6 @@ export interface SchemaRoute<$Item = any>
    * values of sources with their own resource.
    */
   clipboard?: ClipboardConfig
-  /**
-   * Additional reactive data properties merged into
-   * the component's data scope.
-   */
-  data?: OrItemAccessor<$Item, {}, Record<string, any>>
   /**
    * Whether to use a wider content area.
    *
@@ -1970,7 +1918,8 @@ export type DitoContext<$Item = any> = {
   processedItem: any
   /**
    * The root item processed for the server, built when
-   * it's read.
+   * it's read. In nested forms, with the draft in place
+   * of the item, like `rootItem`.
    */
   processedRootItem: any
   /**
@@ -2099,6 +2048,17 @@ export type DitoContext<$Item = any> = {
   /** Returns the URL of a route location. */
   getRouteUrl(location: Parameters<VueRouter['resolve']>[0]): string
   /**
+   * Submits the data through the button that the context
+   * belongs to, to the resource of its form or list, like
+   * buttons with a resource do when clicked. Resolves with
+   * whether it succeeded. Throws outside of buttons of
+   * forms or lists with a resource.
+   */
+  submit(options?: {
+    validate?: boolean
+    closeForm?: boolean
+  }): Promise<boolean>
+  /**
    * Closes the form, navigating to its parent route.
    * Throws outside of forms.
    */
@@ -2122,10 +2082,20 @@ export type DitoContext<$Item = any> = {
   getResourceUrl(resource?: Resource): string
   /**
    * Validates the data of the form, view, dialog or panel
-   * with its own data that the context belongs to, and
-   * shows its errors. Returns whether the data is valid.
+   * with its own data that the context belongs to, or only
+   * the values whose data paths match `match`, and shows
+   * their errors. Returns whether they are valid.
    */
-  validate(): boolean
+  validate(
+    match?: string | string[] | RegExp | ((dataPath: string) => boolean)
+  ): boolean
+  /**
+   * Like {@link DitoContext.validate}, but without showing
+   * the errors.
+   */
+  verify(
+    match?: string | string[] | RegExp | ((dataPath: string) => boolean)
+  ): boolean
   /**
    * Marks the data of the form, view, dialog or panel with
    * its own data as edited, e.g. after changing it
@@ -2211,21 +2181,6 @@ export type DitoContext<$Item = any> = {
     )
   ): void
 }
-
-/**
- * The `this` type inside schema `methods`, `computed`,
- * and `watch` handlers. Unlike the context passed to
- * schema accessors like `if` and `label`, this is the
- * live component instance.
- *
- * @template $Item The data item type.
- * @template $Members Additional schema-defined methods
- *   and computed properties available on `this`.
- */
-export type DitoComponentInstance<
-  $Item = any,
-  $Members extends Record<string, any> = {}
-> = DitoComponentInstanceBase<$Item> & $Members
 
 export interface DitoComponentInstanceBase<$Item = any>
   extends ComponentPublicInstance,
@@ -3358,6 +3313,12 @@ export type PanelSchema<$Item = any> = BaseSchema<$Item> & {
    */
   type: 'panel'
   /**
+   * The panel's own data, e.g. of filters, instead of
+   * the data of its form or view. Its edits don't make
+   * the form or view dirty.
+   */
+  data?: OrItemAccessor<$Item, {}, Record<string, any>>
+  /**
    * The components within the panel.
    */
   components?: Components<$Item>
@@ -3772,21 +3733,5 @@ export type OrPromiseOf<T> = T | Promise<T>
 export type OrFunctionReturning<T> = (() => T) | T
 export type OrArrayOf<T> = T | T[]
 export type Resolvable<T> = OrFunctionReturning<OrPromiseOf<OrRecordOf<T>>>
-
-type WatchHandler<$Item> = (
-  this: DitoComponentInstance<$Item>,
-  value: any,
-  oldValue: any
-) => void
-
-type WatchEntry<$Item> =
-  | WatchHandler<$Item>
-  | {
-      handler: WatchHandler<$Item>
-      deep?: boolean
-      immediate?: boolean
-    }
-
-type WatchHandlers<$Item> = Record<string, WatchEntry<$Item>>
 
 type LiteralUnion<T extends U, U = string> = T | (U & Record<never, never>)

@@ -162,7 +162,7 @@ export default {
       this,
       this._registerWithSchemaComponent
     )
-    this.setupSchemaFields()
+    this.setupEvents()
   },
 
   unmounted() {

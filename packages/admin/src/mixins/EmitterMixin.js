@@ -35,7 +35,7 @@ export default {
     once(event, callback) {
       const on = (...args) => {
         this.off(event, on)
-        return callback.apply(this, args)
+        return callback(...args)
       }
       on.callback = callback // Needed for `off()`, see below.
       return this.on(event, on)
@@ -95,7 +95,7 @@ export default {
         // `off()` can also remove the event's callbacks altogether:
         if (this.listeners?.[event]?.callbacks.includes(callback)) {
           try {
-            const callbackResult = await callback.apply(this, args)
+            const callbackResult = await callback(...args)
             if (callbackResult !== undefined) {
               result = callbackResult
             }

@@ -201,9 +201,65 @@ panel with its own data, e.g. the filters panel, a nested form being its own.
 - `component.$refs.element.isOpen` in `options.label()`: `isValueLabel`, which
   tells whether the label is for the selected value, e.g. of a closed
   multiselect or its tags, rather than an option in the list.
+- In nested forms, `processedRootItem` is the projection of `rootItem`, with
+  the draft in place of the item, instead of the parent's processed data.
+- `validate(match)` and `verify(match)` validate only the values whose data
+  paths match, e.g. a regular expression. `verify()` doesn't show the errors.
 
 `schemaComponent.resetData()` is removed: the filters panel clears its data
 with `replaceItem({})`.
+
+### Schema handlers
+
+Schemas no longer define members of their components: `methods`, `computed`,
+`watch` and `data` are removed, and handlers, e.g. `events`, `onClick`,
+`itemLabel`, `render` and `clipboard.copy()`, are called with their context
+only, not with the component as `this`.
+
+- Methods: plain functions in the module of the schema, which take the
+  context or the values they need.
+- `computed`: read the values from the context, e.g. `item` and
+  `processedItem`, or write derived values with `compute()`.
+- `watch` on data: `events.change` of the form or of a component above the
+  changed values, which receives the `dataPath` of the changed value, also of
+  nested data. Unlike watchers, it fires for edits only, not for writes of the
+  data model, e.g. defaults, computed and loaded values, or of app code. Values
+  that derive from other values use `compute()`.
+- `data`: state in module scope, e.g. in a `WeakMap` or `WeakSet` keyed by the
+  item. Panels keep `data` for their own data, e.g. filters.
+- `this.submit()` in buttons: `submit()` of the button's context, which
+  resolves with whether it succeeded, and throws outside of buttons of forms
+  and lists with a resource.
+
+```js
+// Before:
+watch: {
+  'item.deliveryAddress': {
+    deep: true,
+    handler() {
+      this.copyAddress()
+    }
+  }
+},
+methods: {
+  copyAddress() {
+    Object.assign(this.item.billingAddress, this.item.deliveryAddress)
+  }
+}
+
+// After:
+events: {
+  change({ dataPath, rootItem }) {
+    if (dataPath.startsWith('deliveryAddress/')) {
+      copyAddress(rootItem)
+    }
+  }
+}
+
+function copyAddress(order) {
+  Object.assign(order.billingAddress, order.deliveryAddress)
+}
+```
 
 ### Custom types
 

@@ -73,6 +73,9 @@ export const filterComponents = {
 
 export function createFiltersPanel(api, filters, dataPath, query) {
   const { sticky, ...filterSchemas } = filters
+  // The contexts of the filters don't reach the data of the panel, so we keep
+  // it here to apply it on changes:
+  let filtersData = null
 
   const applyFilters = data => {
     query.value = {
@@ -92,7 +95,8 @@ export function createFiltersPanel(api, filters, dataPath, query) {
         click({ replaceItem }) {
           // The data model sets up the new data with the defaults right away,
           // and the errors stay with the replaced data:
-          applyFilters(replaceItem({}))
+          filtersData = replaceItem({})
+          applyFilters(filtersData)
         }
       }
     },
@@ -117,14 +121,10 @@ export function createFiltersPanel(api, filters, dataPath, query) {
     disabled: false,
     sticky,
 
-    // NOTE: On panels, the data() callback does something else than on normal
-    // schema: It produces the `data` property to be passed to the panel's
-    // schema, not the data to be used for the panel component directly.
+    // The panel's own data, see `DitoPanel`:
     data() {
-      return parseFiltersData(
-        panel,
-        query.value
-      )
+      filtersData = parseFiltersData(panel, query.value)
+      return filtersData
     },
 
     components: createFiltersComponents(filterSchemas),
@@ -133,7 +133,7 @@ export function createFiltersPanel(api, filters, dataPath, query) {
 
     events: {
       change() {
-        applyFilters(this.data)
+        applyFilters(filtersData)
       }
     }
   }

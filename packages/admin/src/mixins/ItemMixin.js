@@ -56,8 +56,7 @@ export default {
         asObject,
         getFormLabel,
         evaluateItemLabel: () =>
-          sourceSchema.itemLabel.call(
-            this,
+          sourceSchema.itemLabel(
             new DitoContext(this, {
               nested: false,
               data: item,

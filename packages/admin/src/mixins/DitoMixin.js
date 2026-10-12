@@ -1,5 +1,4 @@
 import {
-  isObject,
   isString,
   isFunction,
   equals,
@@ -15,7 +14,7 @@ import { getSchemaValue, shouldRenderSchema } from '../utils/schema/data.js'
 import { getResource, getMemberResource } from '../utils/resource.js'
 import { getRequestCacheKey } from '../utils/request.js'
 import { appendDataPath, getRelativeDataPath } from '../utils/data.js'
-import { computed, reactive } from 'vue'
+import { reactive } from 'vue'
 
 // @vue/component
 export default {
@@ -466,68 +465,7 @@ export default {
       this.rootComponent.closeNotifications()
     },
 
-    setupSchemaFields() {
-      this.setupMethods()
-      this.setupComputed()
-      this.setupEvents()
-    },
-
-    setupMethods() {
-      for (const [key, value] of Object.entries(this.schema.methods || {})) {
-        if (isFunction(value)) {
-          warnAboutOverriddenMember(this, key, 'method')
-          this[key] = value
-        } else {
-          console.error(`Invalid method definition: ${key}: ${value}`)
-        }
-      }
-    },
-
-    setupComputed() {
-      const getComputedAccessor = ({ get, set }) => {
-        const getter = computed(() => get.call(this))
-        return {
-          get: () => getter.value,
-          set: set ? value => set.call(this, value) : undefined
-        }
-      }
-
-      for (const [key, item] of Object.entries(this.schema.computed || {})) {
-        const accessor = isFunction(item)
-          ? getComputedAccessor({ get: item })
-          : isObject(item) && isFunction(item.get)
-            ? getComputedAccessor(item)
-            : null
-        if (accessor) {
-          warnAboutOverriddenMember(this, key, 'computed property')
-          Object.defineProperty(this, key, accessor)
-        } else {
-          console.error(
-            `Invalid computed property definition: ${key}: ${item}`
-          )
-        }
-      }
-    },
-
     setupEvents() {
-      const { watch } = this.schema
-      if (watch) {
-        const handlers = isFunction(watch) ? watch.call(this) : watch
-        if (isObject(handlers)) {
-          // Install the watch handlers in the next tick, so all components are
-          // initialized and we can check against their names.
-          this.$nextTick(() => {
-            for (const [key, callback] of Object.entries(handlers)) {
-              // Expand property names to 'data.property':
-              const expr = this.schemaComponent.getComponentByName(key)
-                ? `data.${key}`
-                : key
-              this.$watch(expr, callback)
-            }
-          })
-        }
-      }
-
       const eventEntries = getSchemaEventEntries(this.schema)
       for (const { key, event, callback } of eventEntries) {
         if (isFunction(callback)) {
@@ -598,27 +536,6 @@ export default {
       return this.schemaComponent.emitEvent(event, params)
     }
   }
-}
-
-// The keys of the members that the schemas define on components, through
-// `methods` and `computed`, to tell them apart from the component's own ones
-// when the schema is set up again.
-const schemaMemberKeysByComponent = new WeakMap()
-
-// Warns when the schema defines a method or computed property that overrides
-// a member of the component, e.g. a method or property of Dito.js itself.
-function warnAboutOverriddenMember(component, key, kind) {
-  let schemaMemberKeys = schemaMemberKeysByComponent.get(component)
-  if (!schemaMemberKeys) {
-    schemaMemberKeys = new Set()
-    schemaMemberKeysByComponent.set(component, schemaMemberKeys)
-  }
-  if (key in component && !schemaMemberKeys.has(key)) {
-    console.warn(
-      `The schema ${kind} '${key}' overrides a member of the component.`
-    )
-  }
-  schemaMemberKeys.add(key)
 }
 
 function getParentComponent(component, key) {

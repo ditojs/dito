@@ -144,10 +144,7 @@ export default DitoComponent.component('DitoForm', {
               // Submit buttons close the form by default:
               closeForm: true,
               events: {
-                // Handlers are called on their button:
-                click() {
-                  return this.submit()
-                }
+                click: ({ submit }) => submit()
               }
             }
           },
