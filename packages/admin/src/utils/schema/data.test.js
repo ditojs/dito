@@ -101,13 +101,14 @@ describe('processSchemaData()', () => {
 })
 
 describe('processSchemaData() with child sources', () => {
+  // Like trees, whose items hold their children:
+  defineType({
+    types: ['outline'],
+    sourceType: 'list',
+    getChildSourceSchemas: schema => [schema.children]
+  })
+
   it('walks the child sources of items like components of their forms', () => {
-    // Like trees, whose items hold their children:
-    defineType({
-      types: ['outline'],
-      sourceType: 'list',
-      getChildSourceSchemas: schema => [schema.children]
-    })
     const children = {
       type: 'list',
       name: 'sections',
@@ -142,6 +143,31 @@ describe('processSchemaData() with child sources', () => {
       'book/outline/0/sections': 'outline/0/sections',
       'book/outline/0/sections/0/heading': 'outline/0/sections/0/heading'
     })
+  })
+
+  it('walks child sources once that are components of the form too', () => {
+    const children = {
+      type: 'list',
+      name: 'sections',
+      form: { type: 'form', components: { heading: { type: 'text' } } }
+    }
+    const before = vi.fn()
+    processSchemaData(
+      {
+        type: 'form',
+        components: {
+          outline: {
+            type: 'outline',
+            form: { type: 'form', components: { sections: children } },
+            children
+          }
+        }
+      },
+      { outline: [{ sections: [{ heading: 'Arrakis' }] }] },
+      { dataPath: '', before, options: { services: null } }
+    )
+    const names = before.mock.calls.map(([{ name }]) => name)
+    expect(names).toEqual(['outline', 'sections', 'heading'])
   })
 })
 

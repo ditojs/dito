@@ -34,6 +34,14 @@ export const sourceTraits = {
 
   async processSchema(api, schema, name) {
     schema.name ??= name
+    // Routed forms edit the items in the data, where primitives can't be:
+    if (schema.wrapPrimitives && hasFormSchema(schema) && !isInlined(schema)) {
+      throw new Error(
+        `Unsupported 'wrapPrimitives' in lists with routed forms: '${
+          schema.name
+        }'.`
+      )
+    }
     if (isInlined(schema) && schema.resource) {
       throw new Error(
         `Nested ${
