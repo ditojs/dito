@@ -634,16 +634,20 @@ export default DitoComponent.component('DitoForm', {
         if (!this.isTransient || !buttonResource) {
           this.ownDataModel.markClean()
         }
-        if (closeForm || button.closeForm) {
-          this.close()
-        } else if (this.isCreating) {
-          // Redirect to the form editing the newly created item:
-          const id = this.getItemId(this.schema, this.data)
-          this.$router.replace({
-            path: resolvePath(`${this.path}/../${id}`),
-            // Preserve hash for tabs:
-            hash: this.$route.hash
-          })
+        // Navigating while the form is being left would cancel the navigation
+        // that waits for this submit, see `beforeRouteChange()`:
+        if (!this.isLeavingAfterSubmits) {
+          if (closeForm || button.closeForm) {
+            this.close()
+          } else if (this.isCreating) {
+            // Redirect to the form editing the newly created item:
+            const id = this.getItemId(this.schema, this.data)
+            this.$router.replace({
+              path: resolvePath(`${this.path}/../${id}`),
+              // Preserve hash for tabs:
+              hash: this.$route.hash
+            })
+          }
         }
       }
       return success

@@ -148,7 +148,9 @@ export default DitoComponent.component('DitoRoot', {
       this.notifications.destroyAll()
     },
 
-    // Returns true if any of the route components has unsaved changes.
+    // Returns true if any of the route components has unsaved changes. Used by
+    // `beforeunload`, which can't wait for pending submits, so data that is
+    // being submitted still counts as unsaved.
     hasUnsavedChanges() {
       return this.appState.routeComponents.some(
         routeComponent => routeComponent.isDirty
