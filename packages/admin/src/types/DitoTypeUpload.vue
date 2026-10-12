@@ -131,7 +131,7 @@
             .dito-buttons.dito-buttons--round
               DitoButton(
                 v-if="isUploadActive"
-                @click.prevent="upload.active = false"
+                @click.prevent="$refs.upload.active = false"
               ) Cancel
               DitoButton.dito-button--upload(
                 v-if="multiple || !hasFiles"
@@ -141,15 +141,25 @@
 </template>
 
 <script>
-import DitoTypeComponent from '../DitoTypeComponent.js'
+import {
+  computed,
+  inject,
+  nextTick,
+  onMounted,
+  onUnmounted,
+  ref,
+  useTemplateRef,
+  watch
+} from 'vue'
+import DitoComponent from '../DitoComponent.js'
 import { defineType } from '../utils/schema/types.ts'
-import DitoContext from '../DitoContext.js'
+import { fieldProps, useField } from '../composables/useField.ts'
+import { useSortable } from '../composables/useSortable.ts'
 import DitoDragHandle from '../components/DitoDragHandle.vue'
 import { DitoButton } from '@ditojs/ui/src'
-import SortableMixin from '../mixins/SortableMixin.js'
-import { getSchemaAccessor } from '../utils/accessor.js'
 import { formatFileSize, parseFileSize } from '../utils/units.js'
 import { appendDataPath } from '../utils/data.js'
+import { download, getResourceUrl } from '../utils/services.ts'
 import {
   fetchBlob,
   getUploadOptions,
@@ -160,415 +170,402 @@ import { isArray, asArray, escapeHtml } from '@ditojs/utils'
 import VueUpload from 'vue-upload-component'
 
 // @vue/component
-const DitoTypeUpload = DitoTypeComponent.component('DitoTypeUpload', {
-  mixins: [SortableMixin],
+const DitoTypeUpload = DitoComponent.component('DitoTypeUpload', {
   components: { VueUpload, DitoButton, DitoDragHandle },
-  inject: ['$fileDropTargets'],
+  props: fieldProps,
 
-  data() {
-    return {
-      uploads: [],
-      // Removes the upload from the targets of dragged files, see
-      // `updateDropTarget()`.
-      removeDropTarget: null
-    }
-  },
+  setup(props) {
+    const field = useField(props)
+    const { value, context, createContext, services, disabled, onChange } =
+      field
+    const { admin } = services
+    const getModel = () => services.container.model
+    const getFileDropTargets = inject('$fileDropTargets')
+    const dropTarget = useTemplateRef('dropTarget')
+    const upload = useTemplateRef('upload')
+    const uploads = ref([])
+    // Removes the upload from the targets of dragged files, see
+    // `updateDropTarget()`:
+    let removeDropTarget = null
+    // The functions that settle the pending loads of the running uploads in
+    // the data model, by upload id, see `onInputFile()`:
+    const settleUploadById = new Map()
 
-  computed: {
-    fileDropTargets() {
-      return this.$fileDropTargets()
-    },
-
-    // Whether files are dragged over the admin while the upload is enabled, for
-    // which it stands out above the overlay of `DitoRoot`. The dragged files'
-    // types can't be read before the drop, so `accept` isn't checked here.
-    isDropTarget() {
-      return this.fileDropTargets.isDraggingFiles && !this.disabled
-    },
-
-    upload() {
-      return this.$refs.upload
-    },
-
-    uploadTitle() {
-      return this.multiple ? 'Upload Files' : 'Upload File'
-    },
-
-    files() {
-      return asFiles(this.value)
-    },
-
-    // Only multiple files can be dragged or added, which are the value itself.
-    listEntry() {
-      return { schema: this.schema, list: this.files, dataPath: this.dataPath }
-    },
-
-    downloadUrls() {
-      // Resolve the URLs like `fetchBlob()` does, so that the links point to
-      // the same files that clicking them downloads:
-      return this.files.map((file, index) => {
-        const url = this.getDownloadUrl(file, index)
-        return url ? resolveDownloadUrl(this.admin.api, url) : null
+    const { getSchemaValue } = field
+    // No callback, as it's used in `processValue()`:
+    const multiple = computed(() =>
+      getSchemaValue('multiple', {
+        type: Boolean,
+        default: false,
+        callback: false
       })
-    },
+    )
+    const render = computed(() =>
+      getSchemaValue('render', { type: Function, default: null })
+    )
+    const files = computed(() => asFiles(value.value))
+    // Only multiple files can be dragged or added, which are the value itself:
+    const listEntry = computed(() => ({
+      schema: props.schema,
+      list: files.value,
+      dataPath: props.dataPath
+    }))
 
-    thumbnailUrls() {
-      return this.files.map((file, index) => this.getThumbnailUrl(file, index))
-    },
-
-    multiple: getSchemaAccessor('multiple', {
-      type: Boolean,
-      default: false,
-      // No callback as it's used in `processValue()`
-      callback: false
-    }),
-
-    extensions: getSchemaAccessor('extensions', {
-      type: [Array, String, RegExp]
-    }),
-
-    accept: getSchemaAccessor('accept', {
-      type: Array,
-      get(accept) {
-        return isArray(accept) ? accept.join(',') : accept
-      }
-    }),
-
-    maxSize: getSchemaAccessor('maxSize', {
-      type: [String, Number],
-      get(maxSize) {
-        return maxSize ? parseFileSize(maxSize) : undefined
-      }
-    }),
-
-    draggable: getSchemaAccessor('draggable', {
-      type: Boolean,
-      default: false,
-      get(draggable) {
-        return draggable && this.files.length > 1
-      }
-    }),
-
-    deletable: getSchemaAccessor('deletable', {
-      type: Boolean,
-      default: false
-    }),
-
-    render: getSchemaAccessor('render', {
-      type: Function,
-      default: null
-    }),
-
-    thumbnails: getSchemaAccessor('thumbnails', {
-      type: [Boolean, String],
-      default(thumbnails) {
-        return thumbnails ?? !!this.schema.thumbnailUrl
-      },
-      get(thumbnails) {
-        return thumbnails === true ? 'medium' : thumbnails || null
-      }
-    }),
-
-    hasFiles() {
-      return this.files.length > 0
-    },
+    const sortable = useSortable({
+      getListEntry: () => listEntry.value,
+      onChange
+    })
 
     // The files of the upload component by their ids. It replaces a file's
     // object on each update, so the files in the value only refer to their
     // upload by id, see `onInputFile()` and `getUpload()`.
-    uploadsById() {
-      return new Map(this.uploads.map(upload => [upload.id, upload]))
-    },
+    const uploadsById = computed(
+      () => new Map(uploads.value.map(upload => [upload.id, upload]))
+    )
+    const hasUploads = computed(() => uploads.value.length > 0)
 
-    hasUploads() {
-      return this.uploads.length > 0
-    },
-
-    isUploadReady() {
-      return (
-        this.hasUploads &&
-        !(this.upload.active || this.upload.uploaded)
+    const isUploadReady = computed(
+      () => (
+        hasUploads.value &&
+        !(upload.value.active || upload.value.uploaded)
       )
-    },
+    )
 
-    isUploadActive() {
-      return this.hasUploads && this.upload.active
-    },
-
-    uploadProgress() {
-      return (
-        this.uploads.reduce((total, file) => total + +file.progress, 0) /
-        this.uploads.length
-      )
-    },
-
-    uploadPath() {
-      // Uploads are posted to the resource of the data, see
-      // `api.resources.upload()`, which views without resource don't have.
-      return this.resource?.resourceOwner
-        ? this.getResourceUrl({
+    // Uploads are posted to the resource of the data, see
+    // `api.resources.upload()`, which views without resource don't have.
+    const uploadPath = computed(() =>
+      services.resource?.resourceOwner
+        ? getResourceUrl(services, {
             type: 'upload',
             method: 'post',
-            path: this.admin.api.normalizePath(this.dataPath)
+            path: admin.api.normalizePath(props.dataPath)
           })
         : null
-    },
+    )
 
-    uploadOptions() {
-      return this.uploadPath
-        ? getUploadOptions(this.admin.api, this.uploadPath)
-        : null
-    }
-  },
+    const uploadOptions = computed(() =>
+      uploadPath.value ? getUploadOptions(admin.api, uploadPath.value) : null
+    )
 
-  watch: {
-    disabled: 'updateDropTarget',
+    const getFileContext = (file, index) =>
+      multiple.value
+        ? createContext({
+            value: file,
+            data: files.value,
+            index,
+            dataPath: appendDataPath(props.dataPath, index)
+          })
+        : context
 
-    isUploadReady(ready) {
-      if (ready) {
-        // Auto-upload.
-        this.$nextTick(() => {
-          this.upload.active = true
-        })
+    const getDownloadUrl = (file, index) =>
+      file.url
+        ? file.url
+        : !file.upload || file.upload.success
+          ? getSchemaValue('downloadUrl', {
+              type: String,
+              default: null,
+              context: getFileContext(file, index)
+            })
+          : null
+
+    const downloadUrls = computed(() =>
+      // Resolve the URLs like `fetchBlob()` does, so that the links point to
+      // the same files that clicking them downloads:
+      files.value.map((file, index) => {
+        const url = getDownloadUrl(file, index)
+        return url ? resolveDownloadUrl(admin.api, url) : null
+      })
+    )
+
+    const getFileIndex = file =>
+      multiple.value && value.value
+        ? value.value.findIndex(it => it.id === file.id)
+        : -1
+
+    const addFile = file => {
+      if (multiple.value) {
+        if (value.value) {
+          getModel().insert(listEntry.value, value.value.length, file)
+        } else {
+          value.value = [file]
+        }
+      } else {
+        value.value = file
       }
     }
-  },
 
-  created() {
-    // The functions that settle the pending loads of the running uploads in
-    // the data model, by upload id, see `onInputFile()`:
-    this.settleUploadById = new Map()
-  },
-
-  mounted() {
-    this.updateDropTarget()
-  },
-
-  unmounted() {
-    this.removeDropTarget?.()
-    for (const settleUpload of this.settleUploadById.values()) {
-      settleUpload()
+    const replaceFile = (file, newFile) => {
+      if (multiple.value) {
+        const index = getFileIndex(file)
+        if (index >= 0) {
+          if (newFile) {
+            getModel().set(value.value, index, newFile)
+          } else {
+            getModel().remove(listEntry.value, index)
+          }
+        }
+      } else {
+        value.value = newFile
+      }
     }
-  },
 
-  methods: {
-    formatFileSize,
+    const removeFile = file => replaceFile(file, null)
+
+    const settleUpload = id => {
+      settleUploadById.get(id)?.()
+      settleUploadById.delete(id)
+    }
 
     // Adds the upload to the targets of dragged files while it's enabled.
     // `VueUpload` handles the files dropped on its parent, which is the same
     // element, see `:drop="true"`.
-    updateDropTarget() {
-      this.removeDropTarget?.()
-      this.removeDropTarget = this.disabled
+    const updateDropTarget = () => {
+      removeDropTarget?.()
+      removeDropTarget = disabled.value
         ? null
-        : this.fileDropTargets.add(this.$refs.dropTarget)
-    },
+        : getFileDropTargets().add(dropTarget.value)
+    }
 
-    getFileContext(file, index) {
-      return this.multiple
-        ? new DitoContext(this, {
-            value: file,
-            data: this.files,
-            index,
-            dataPath: appendDataPath(this.dataPath, index)
-          })
-        : this.context
-    },
+    watch(disabled, updateDropTarget)
 
-    renderFile(file, index) {
-      return this.render(this.getFileContext(file, index))
-    },
-
-    // Returns the current file object of the upload component for a file that
-    // was added through it, or `null`.
-    getUpload(file) {
-      return file.upload ? (this.uploadsById.get(file.upload.id) ?? null) : null
-    },
-
-    getDownloadUrl(file, index) {
-      return file.url
-        ? file.url
-        : !file.upload || file.upload.success
-          ? this.getSchemaValue('downloadUrl', {
-              type: String,
-              default: null,
-              context: this.getFileContext(file, index)
-            })
-          : null
-    },
-
-    getThumbnailUrl(file, index) {
-      return !file.upload || file.upload.success
-        ? this.getSchemaValue('thumbnailUrl', {
-            type: String,
-            default: null,
-            context: this.getFileContext(file, index)
-          }) || (
-            file.type.startsWith('image/')
-              ? file.url
-              : null
-          )
-        : null
-    },
-
-    async deleteFile(file) {
-      await confirmAndRemove(this, {
-        label: escapeHtml(file.name),
-        // The file is only removed from the value, which still needs the form
-        // to be saved.
-        isTransient: true,
-        remove: () => {
-          // Look up the file by identity once confirmed, as the files may have
-          // changed while the dialog was open. Stored files may not have ids,
-          // see `getFileIndex()`.
-          const index = this.files.indexOf(file)
-          if (index < 0) {
-            return false
-          }
-          if (this.multiple) {
-            this.dataModel.remove(this.listEntry, index)
-          } else {
-            this.value = null
-          }
-          if (file.upload) {
-            this.upload.remove(file.upload.id)
-          }
-          this.onChange()
-        }
-      })
-    },
-
-    getFileIndex(file) {
-      return this.multiple && this.value
-        ? this.value.findIndex(it => it.id === file.id)
-        : -1
-    },
-
-    addFile(file) {
-      if (this.multiple) {
-        if (this.value) {
-          this.dataModel.insert(this.listEntry, this.value.length, file)
-        } else {
-          this.value = [file]
-        }
-      } else {
-        this.value = file
-      }
-    },
-
-    replaceFile(file, newFile) {
-      if (this.multiple) {
-        const index = this.getFileIndex(file)
-        if (index >= 0) {
-          if (newFile) {
-            this.dataModel.set(this.value, index, newFile)
-          } else {
-            this.dataModel.remove(this.listEntry, index)
-          }
-        }
-      } else {
-        this.value = newFile
-      }
-    },
-
-    removeFile(file) {
-      this.replaceFile(file, null)
-    },
-
-    // Files added through the upload component refer to their upload with
-    // `upload: { id, success }` in the value: `success` tells `processValue()`
-    // which files were stored, and the upload's state is read through
-    // `getUpload()`.
-    onInputFile(newFile, oldFile) {
-      if (newFile && !oldFile) {
-        const { id, name, size } = newFile
-        this.addFile({ id, name, size, upload: { id, success: false } })
-        // Submitting waits for the upload, which writes the stored file:
-        const { promise, resolve } = Promise.withResolvers()
-        this.settleUploadById.set(id, resolve)
-        this.dataModel.trackPendingLoad(promise, { canTimeOut: false })
-      } else if (newFile && oldFile) {
-        const { success, error } = newFile
-        if (success) {
-          this.onChange()
-          const file = newFile.response[0]
-          if (file) {
-            file.upload = { id: newFile.id, success: true }
-            // Replace the file added for the upload with the file received
-            // in the upload response.
-            this.replaceFile(newFile, file)
-          } else {
-            this.removeFile(newFile)
-          }
-          this.settleUpload(newFile.id)
-        } else if (error) {
-          this.removeFile(newFile)
-          this.settleUpload(newFile.id)
-          const text = (
-            {
-              abort: 'Upload aborted',
-              denied: 'Upload denied',
-              extension: `Unsupported file-type: ${newFile.name}`,
-              network: 'Network error encountered during upload',
-              server: 'Server error occurred during upload',
-              size: `File is too large: ${formatFileSize(newFile.size)}`,
-              timeout: 'Timeout occurred during upload'
-            }[error] ||
-            `Unknown File Upload Error: '${error}'`
-          )
-          this.admin.notify({
-            type: 'error',
-            error,
-            title: 'File Upload Error',
-            text
-          })
-        }
-      } else {
-        // The upload was removed:
-        this.settleUpload(oldFile.id)
-      }
-    },
-
-    settleUpload(id) {
-      this.settleUploadById.get(id)?.()
-      this.settleUploadById.delete(id)
-    },
-
-    onInputFilter(newFile /*, oldFile, prevent */) {
-      // `VueUpload` only creates the request when uploading, and has no setting
-      // for its credentials:
-      const xhr = newFile?.xhr
-      if (this.uploadOptions?.withCredentials && xhr && !xhr.withCredentials) {
-        xhr.withCredentials = true
-      }
-    },
-
-    async onClickDownload(file, index) {
-      try {
-        const blob = await fetchBlob(this.admin.api, this.downloadUrls[index])
-        const url = URL.createObjectURL(blob)
-        try {
-          this.download({ filename: file.name, url })
-        } finally {
-          // Release the blob once the browser started the download, which
-          // some browsers don't do synchronously when the link is clicked.
-          setTimeout(() => URL.revokeObjectURL(url), 1000)
-        }
-      } catch (error) {
-        this.admin.notify({
-          type: 'error',
-          error,
-          title: 'File Download Error',
-          text: `Unable to download ${file.name}: ${error.message}`
+    watch(isUploadReady, ready => {
+      if (ready) {
+        // Auto-upload.
+        nextTick(() => {
+          upload.value.active = true
         })
       }
-    },
+    })
 
-    onClickUpload(event) {
-      // Delegate the click event to the hidden file input.
-      this.upload.$el.querySelector('input').dispatchEvent(
-        new event.constructor(event.type, event)
-      )
+    onMounted(updateDropTarget)
+
+    onUnmounted(() => {
+      removeDropTarget?.()
+      for (const settleUpload of settleUploadById.values()) {
+        settleUpload()
+      }
+    })
+
+    return {
+      ...sortable,
+      focus: field.focus,
+      disabled,
+      uploads,
+      multiple,
+      render,
+      files,
+      downloadUrls,
+      uploadPath,
+      uploadOptions,
+      formatFileSize,
+
+      // Whether files are dragged over the admin while the upload is enabled,
+      // for which it stands out above the overlay of `DitoRoot`. The dragged
+      // files' types can't be read before the drop, so `accept` isn't checked
+      // here.
+      isDropTarget: computed(
+        () => getFileDropTargets().isDraggingFiles && !disabled.value
+      ),
+
+      uploadTitle: computed(() =>
+        multiple.value ? 'Upload Files' : 'Upload File'
+      ),
+
+      thumbnailUrls: computed(() =>
+        files.value.map((file, index) =>
+          !file.upload || file.upload.success
+            ? getSchemaValue('thumbnailUrl', {
+                type: String,
+                default: null,
+                context: getFileContext(file, index)
+              }) || (
+                file.type.startsWith('image/')
+                  ? file.url
+                  : null
+              )
+            : null
+        )
+      ),
+
+      extensions: computed(() =>
+        getSchemaValue('extensions', { type: [Array, String, RegExp] })
+      ),
+
+      accept: computed(() => {
+        const accept = getSchemaValue('accept', { type: Array })
+        return isArray(accept) ? accept.join(',') : accept
+      }),
+
+      maxSize: computed(() => {
+        const maxSize = getSchemaValue('maxSize', {
+          type: [String, Number]
+        })
+        return maxSize ? parseFileSize(maxSize) : undefined
+      }),
+
+      draggable: computed(
+        () => (
+          getSchemaValue('draggable', { type: Boolean, default: false }) &&
+          files.value.length > 1
+        )
+      ),
+
+      deletable: computed(() =>
+        getSchemaValue('deletable', { type: Boolean, default: false })
+      ),
+
+      thumbnails: computed(() => {
+        const thumbnails = getSchemaValue('thumbnails', {
+          type: [Boolean, String],
+          default: () => !!props.schema.thumbnailUrl
+        })
+        return thumbnails === true ? 'medium' : thumbnails || null
+      }),
+
+      hasFiles: computed(() => files.value.length > 0),
+
+      isUploadActive: computed(() => hasUploads.value && upload.value.active),
+
+      uploadProgress: computed(
+        () => (
+          uploads.value.reduce((total, file) => total + +file.progress, 0) /
+          uploads.value.length
+        )
+      ),
+
+      renderFile(file, index) {
+        return render.value(getFileContext(file, index))
+      },
+
+      // Returns the current file object of the upload component for a file
+      // that was added through it, or `null`.
+      getUpload(file) {
+        return file.upload
+          ? (uploadsById.value.get(file.upload.id) ?? null)
+          : null
+      },
+
+      async deleteFile(file) {
+        await confirmAndRemove(services, {
+          label: escapeHtml(file.name),
+          // The file is only removed from the value, which still needs the
+          // form to be saved.
+          isTransient: true,
+          remove: () => {
+            // Look up the file by identity once confirmed, as the files may
+            // have changed while the dialog was open. Stored files may not
+            // have ids, see `getFileIndex()`.
+            const index = files.value.indexOf(file)
+            if (index < 0) {
+              return false
+            }
+            if (multiple.value) {
+              getModel().remove(listEntry.value, index)
+            } else {
+              value.value = null
+            }
+            if (file.upload) {
+              upload.value.remove(file.upload.id)
+            }
+            onChange()
+          }
+        })
+      },
+
+      // Files added through the upload component refer to their upload with
+      // `upload: { id, success }` in the value: `success` tells
+      // `processValue()` which files were stored, and the upload's state is
+      // read through `getUpload()`.
+      onInputFile(newFile, oldFile) {
+        if (newFile && !oldFile) {
+          const { id, name, size } = newFile
+          addFile({ id, name, size, upload: { id, success: false } })
+          // Submitting waits for the upload, which writes the stored file:
+          const { promise, resolve } = Promise.withResolvers()
+          settleUploadById.set(id, resolve)
+          getModel().trackPendingLoad(promise, { canTimeOut: false })
+        } else if (newFile && oldFile) {
+          const { success, error } = newFile
+          if (success) {
+            onChange()
+            const file = newFile.response[0]
+            if (file) {
+              file.upload = { id: newFile.id, success: true }
+              // Replace the file added for the upload with the file received
+              // in the upload response.
+              replaceFile(newFile, file)
+            } else {
+              removeFile(newFile)
+            }
+            settleUpload(newFile.id)
+          } else if (error) {
+            removeFile(newFile)
+            settleUpload(newFile.id)
+            const text = (
+              {
+                abort: 'Upload aborted',
+                denied: 'Upload denied',
+                extension: `Unsupported file-type: ${newFile.name}`,
+                network: 'Network error encountered during upload',
+                server: 'Server error occurred during upload',
+                size: `File is too large: ${formatFileSize(newFile.size)}`,
+                timeout: 'Timeout occurred during upload'
+              }[error] ||
+              `Unknown File Upload Error: '${error}'`
+            )
+            admin.notify({
+              type: 'error',
+              error,
+              title: 'File Upload Error',
+              text
+            })
+          }
+        } else {
+          // The upload was removed:
+          settleUpload(oldFile.id)
+        }
+      },
+
+      onInputFilter(newFile /*, oldFile, prevent */) {
+        // `VueUpload` only creates the request when uploading, and has no
+        // setting for its credentials:
+        const xhr = newFile?.xhr
+        if (
+          uploadOptions.value?.withCredentials &&
+          xhr &&
+          !xhr.withCredentials
+        ) {
+          xhr.withCredentials = true
+        }
+      },
+
+      async onClickDownload(file, index) {
+        try {
+          const blob = await fetchBlob(admin.api, downloadUrls.value[index])
+          const url = URL.createObjectURL(blob)
+          try {
+            download(services, { filename: file.name, url })
+          } finally {
+            // Release the blob once the browser started the download, which
+            // some browsers don't do synchronously when the link is clicked.
+            setTimeout(() => URL.revokeObjectURL(url), 1000)
+          }
+        } catch (error) {
+          admin.notify({
+            type: 'error',
+            error,
+            title: 'File Download Error',
+            text: `Unable to download ${file.name}: ${error.message}`
+          })
+        }
+      },
+
+      onClickUpload(event) {
+        // Delegate the click event to the hidden file input.
+        upload.value.$el
+          .querySelector('input')
+          .dispatchEvent(new event.constructor(event.type, event))
+      }
     }
   }
 })

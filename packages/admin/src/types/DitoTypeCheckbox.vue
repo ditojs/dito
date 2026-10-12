@@ -10,12 +10,20 @@
 </template>
 
 <script>
-import DitoTypeComponent from '../DitoTypeComponent.js'
+import DitoComponent from '../DitoComponent.js'
 import { defineType } from '../utils/schema/types.ts'
+import { fieldProps, useField } from '../composables/useField.ts'
 
 // @vue/component
-const DitoTypeCheckbox = DitoTypeComponent.component('DitoTypeCheckbox', {
-  nativeField: true
+const DitoTypeCheckbox = DitoComponent.component('DitoTypeCheckbox', {
+  props: fieldProps,
+
+  setup(props) {
+    const { value, attributes, focus } = useField(props, {
+      nativeField: true
+    })
+    return { value, attributes, focus }
+  }
 })
 
 defineType({

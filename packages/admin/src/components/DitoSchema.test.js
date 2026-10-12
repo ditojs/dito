@@ -630,7 +630,7 @@ describe('DitoSchema', () => {
       const { section } = await mountCollapsedSection()
       expect(section.opened).toBe(false)
       expect(await section.revealComponents('notes')).toEqual([
-        expect.objectContaining({ name: 'notes' })
+        expect.objectContaining({ dataPath: 'notes' })
       ])
       expect(section.opened).toBe(true)
     })
@@ -738,7 +738,7 @@ describe('DitoSchema', () => {
     it('finds components by name or by data path', async () => {
       const { schemaComponent, author } = await mountBookSchema()
       const title = schemaComponent.getComponent('title')
-      expect(title.name).toBe('title')
+      expect(title.dataPath).toBe('title')
       expect(schemaComponent.getComponentByName('title')).toBe(title)
       expect(schemaComponent.getComponentByName('isbn')).toBe(null)
       expect(schemaComponent.getComponent('isbn')).toBe(null)

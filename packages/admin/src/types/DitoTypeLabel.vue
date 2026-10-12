@@ -3,11 +3,19 @@ DitoLabel.dito-label-component(:label="value")
 </template>
 
 <script>
-import DitoTypeComponent from '../DitoTypeComponent.js'
+import DitoComponent from '../DitoComponent.js'
 import { defineType } from '../utils/schema/types.ts'
+import { fieldProps, useField } from '../composables/useField.ts'
 
 // @vue/component
-const DitoTypeLabel = DitoTypeComponent.component('DitoTypeLabel', {})
+const DitoTypeLabel = DitoComponent.component('DitoTypeLabel', {
+  props: fieldProps,
+
+  setup(props) {
+    const { value, focus } = useField(props)
+    return { value, focus }
+  }
+})
 
 defineType({
   types: ['label'],

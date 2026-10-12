@@ -13,7 +13,7 @@ const createForm = (components: Record<string, any>) => ({
 const relateAuthors = (options: Record<string, any> = {}) => ({
   type: 'select',
   relate: true,
-  // From the items of the books list, see `OptionsMixin.processValue()`:
+  // From the items of the books list, see `optionsDescriptor.processValue()`:
   options: { dataPath: '../../../authors', label: 'name' },
   ...options
 })

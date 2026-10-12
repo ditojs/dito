@@ -14,15 +14,20 @@ component(
 //   component: import('./component')
 // }
 
-import DitoTypeComponent from '../DitoTypeComponent.js'
+import DitoComponent from '../DitoComponent.js'
 import { defineType } from '../utils/schema/types.ts'
+import { fieldProps, useField } from '../composables/useField.ts'
 import { resolveSchemaComponent } from '../utils/schema/setup.js'
 
 // @vue/component
-const DitoTypeCustomComponent = DitoTypeComponent.component(
-  'DitoTypeComponent',
-  {}
-)
+const DitoTypeCustomComponent = DitoComponent.component('DitoTypeComponent', {
+  props: fieldProps,
+
+  setup(props) {
+    const { focus } = useField(props)
+    return { focus }
+  }
+})
 
 defineType({
   types: ['component'],

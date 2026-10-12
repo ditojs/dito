@@ -1,10 +1,18 @@
 <script>
-import DitoTypeComponent from '../DitoTypeComponent.js'
+import DitoComponent from '../DitoComponent.js'
 import { defineType } from '../utils/schema/types.ts'
+import { fieldProps, useField } from '../composables/useField.ts'
 import { setupSchemaComponents } from '../utils/schema/setup.js'
 
 // @vue/component
-const DitoTypePanel = DitoTypeComponent.component('DitoTypePanel', {
+const DitoTypePanel = DitoComponent.component('DitoTypePanel', {
+  props: fieldProps,
+
+  setup(props) {
+    const { focus } = useField(props)
+    return { focus }
+  },
+
   render() {
     // Panel components are displayed in the sidebar, see
     // `DitoContainer.panelEntries`, not in place.

@@ -86,8 +86,10 @@ export default {
       return this.resource?.verbs ?? verbs
     },
 
+    // Components with a `nested` prop, e.g. buttons, point to a value inside
+    // their data:
     context() {
-      return new DitoContext(this, { nested: false })
+      return new DitoContext(this, { nested: this.$props.nested ?? false })
     },
 
     // The path of component names through views, tabs, panels and forms, with

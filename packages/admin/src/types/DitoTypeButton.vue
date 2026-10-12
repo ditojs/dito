@@ -2,8 +2,8 @@
 DitoButton(
   :id="componentPath"
   ref="element"
-  :type="type"
-  :verb="verb"
+  :type="schema.type"
+  :verb="verbs[schema.name]"
   :text="text"
   :title="text"
   :aria-busy="isRunning"
@@ -32,93 +32,102 @@ DitoButton(
 </template>
 
 <script>
-import DitoTypeComponent from '../DitoTypeComponent.js'
+import { computed, getCurrentInstance, inject, ref } from 'vue'
+import DitoComponent from '../DitoComponent.js'
 import { defineType } from '../utils/schema/types.ts'
+import { fieldProps, useField } from '../composables/useField.ts'
+import { useServices } from '../composables/useSchemaContext.ts'
 import DitoAffixes from '../components/DitoAffixes.vue'
 import { DitoButton } from '@ditojs/ui/src'
-import { getSchemaAccessor } from '../utils/accessor.js'
 import { hasResource } from '../utils/resource.js'
 import { asArray } from '@ditojs/utils'
 
 // @vue/component
-const DitoTypeButton = DitoTypeComponent.component('DitoTypeButton', {
+const DitoTypeButton = DitoComponent.component('DitoTypeButton', {
   components: { DitoAffixes, DitoButton },
+  props: fieldProps,
 
-  data() {
-    return {
-      isRunning: false
-    }
-  },
+  setup(props) {
+    // Forms and sources submit through the button's component, see
+    // `ResourceContext.submit()`:
+    const component = getCurrentInstance().proxy
+    const getSchemaComponent = inject('$schemaComponent')
+    const isRunning = ref(false)
+    const services = useServices({
+      // Whether the action of the button is running, which handlers can end
+      // early, e.g. before opening a dialog:
+      get isRunning() {
+        return isRunning.value
+      },
 
-  computed: {
-    verb() {
-      return this.verbs[this.name]
-    },
+      set isRunning(value) {
+        isRunning.value = value
+      },
 
-    text: getSchemaAccessor('text', {
-      type: String
-    }),
-
-    prefixes() {
-      return asArray(this.schema.prefix)
-    },
-
-    suffixes() {
-      return asArray(this.schema.suffix)
-    },
-
-    closeForm: getSchemaAccessor('closeForm', {
-      type: Boolean,
-      default: false
+      // Buttons of forms and lists with a resource submit their data:
+      get submit() {
+        const { resource } = services
+        return resource
+          ? options => resource.submit(component, options)
+          : null
+      }
     })
-  },
+    const field = useField(props, {
+      services,
+      getEvents: ({ onFocus, onBlur }) => ({ onFocus, onBlur, onClick })
+    })
+    const { getSchemaValue, emitEvent } = field
 
-  methods: {
-    // @override
-    getEvents() {
-      const { onFocus, onBlur, onClick } = this
-      return { onFocus, onBlur, onClick }
-    },
-
-    async submit(options) {
-      return this.resource?.submit(this, options)
-    },
-
-    async onClick() {
+    async function onClick() {
       // Prevent running the action again while it's running, e.g. submits.
       // The button isn't disabled meanwhile, as `disabled` reflects the
       // state of the schema, e.g. of forms that can't be submitted when
       // they're clean, which a running action doesn't change:
-      if (this.isRunning) return
-      this.isRunning = true
+      if (isRunning.value) return
+      isRunning.value = true
       // Write the edits that are held back first, e.g. debounced markup
       // edits, for the handlers to see them:
-      this.dataModel.writePendingValues()
+      services.container.model.writePendingValues()
       try {
-        const res = await this.emitEvent('click', {
-          parent: this.schemaComponent
-        })
-        // Have buttons that define resources call `this.submit()` by default:
+        const res = await emitEvent('click', { parent: getSchemaComponent() })
+        // Have buttons that define resources submit by default:
         if (
           res === undefined && // Meaning: don't prevent default.
-          hasResource(this.schema)
+          hasResource(props.schema)
         ) {
-          await this.submit()
+          await services.submit?.()
         }
       } catch (error) {
-        const res = await this.emitEvent('error', { context: { error } })
+        const res = await emitEvent('error', { context: { error } })
         if (res === undefined) {
+          const { admin } = services
           if (error instanceof AggregateError) {
             for (const err of error.errors) {
-              this.admin.notify({ type: 'error', text: err })
+              admin.notify({ type: 'error', text: err })
             }
           } else {
-            this.admin.notify({ type: 'error', text: error })
+            admin.notify({ type: 'error', text: error })
           }
         }
       } finally {
-        this.isRunning = false
+        isRunning.value = false
       }
+    }
+
+    return {
+      context: field.context,
+      createContext: field.createContext,
+      isRunning,
+      info: field.info,
+      disabled: field.disabled,
+      attributes: field.attributes,
+      focus: field.focus,
+      text: computed(() => getSchemaValue('text', { type: String })),
+      prefixes: computed(() => asArray(props.schema.prefix)),
+      suffixes: computed(() => asArray(props.schema.suffix)),
+      closeForm: computed(() =>
+        getSchemaValue('closeForm', { type: Boolean, default: false })
+      )
     }
   }
 })

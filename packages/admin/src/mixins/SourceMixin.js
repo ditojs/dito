@@ -31,8 +31,9 @@ import {
   equals,
   parseDataPath
 } from '@ditojs/utils'
-import { markRaw } from 'vue'
+import { getCurrentInstance, markRaw } from 'vue'
 import { appendDataPath, getRelativeDataPath } from '../utils/data.js'
+import { useServices } from '../composables/useSchemaContext.ts'
 
 // @vue/component
 export default {
@@ -62,11 +63,11 @@ export default {
 
   computed: {
     isObjectSource() {
-      return isObjectSource(this.type)
+      return isObjectSource(this.schema.type)
     },
 
     isListSource() {
-      return isListSource(this.type)
+      return isListSource(this.schema.type)
     },
 
     // Required by ResourceMixin, see its contract.
@@ -507,7 +508,7 @@ export default {
     // Writes the value loaded through the source's resource directly, as
     // loading isn't an edit, and replaces the source's changes.
     setLoadedValue(value) {
-      this.data[this.name] = value
+      this.data[this.schema.name] = value
       this.dataModel.markClean({ dataPath: this.dataPath })
     },
 
@@ -578,7 +579,7 @@ export default {
           if (this.isTransient) {
             this.objectData = null
           } else {
-            this.data[this.name] = null
+            this.data[this.schema.name] = null
           }
         } else {
           this.dataModel.remove(this.listEntry, index)
@@ -725,4 +726,19 @@ export default {
       return route ? this.$router.resolve(route).path : null
     }
   } // end of `methods`
+}
+
+// The services of the types that use the mixin, which own their source and
+// resource contexts, for their `setup()`:
+export function useSourceServices() {
+  const component = getCurrentInstance().proxy
+  return useServices({
+    get source() {
+      return component.ownSource
+    },
+
+    get resource() {
+      return component.ownResource
+    }
+  })
 }

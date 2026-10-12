@@ -255,6 +255,37 @@ describe('DitoTypeButton', () => {
     finishClick()
   })
 
+  it('tells the schema values whether its action is running', async () => {
+    let finishClick
+    const { findField } = await mountSchema({
+      schema: {
+        components: {
+          publish: {
+            type: 'button',
+            suffix: {
+              type: 'text',
+              text: 'Running',
+              if: ({ isRunning }) => isRunning
+            },
+            onClick() {
+              return new Promise(resolve => {
+                finishClick = resolve
+              })
+            }
+          }
+        }
+      }
+    })
+    const button = findField('publish')
+    expect(button.text()).not.toContain('Running')
+    await button.trigger('click')
+    await flushPromises()
+    expect(button.text()).toContain('Running')
+    finishClick()
+    await flushPromises()
+    expect(button.text()).not.toContain('Running')
+  })
+
   it('lets error handlers prevent the notification of errors', async () => {
     const onError = vi.fn(() => false)
     const { findField } = await mountSchema({

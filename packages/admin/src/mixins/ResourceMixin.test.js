@@ -476,7 +476,7 @@ describe('ResourceMixin', () => {
       const list = getComponent('recipes')
       const share = wrapper
         .findAllComponents({ name: 'DitoTypeButton' })
-        .find(({ vm }) => vm.name === 'share').vm
+        .find(({ vm }) => vm.schema.name === 'share').vm
       expect(await list.submit(share)).toBe(false)
       expect(request).not.toHaveBeenCalled()
     })

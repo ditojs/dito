@@ -13,13 +13,12 @@ UseSortable.dito-draggable(
 
 <script>
 import DitoComponent from '../DitoComponent'
-import DomMixin from '../mixins/DomMixin.js'
+import { useDomEvents } from '../composables/useDomEvents.ts'
 import { UseSortable } from '@vueuse/integrations/useSortable/component'
 import Sortable from 'sortablejs'
 
 // @vue/component
 export default DitoComponent.component('DitoDraggable', {
-  mixins: [DomMixin],
   components: { UseSortable },
   emits: ['update:modelValue'],
 
@@ -40,6 +39,10 @@ export default DitoComponent.component('DitoDraggable', {
       type: Boolean,
       default: true
     }
+  },
+
+  setup() {
+    return useDomEvents()
   },
 
   data() {

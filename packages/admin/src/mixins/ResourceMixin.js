@@ -10,7 +10,6 @@ import {
 import { getResource } from '../utils/resource.js'
 import { getErrorMessage } from '../utils/request.js'
 import { LoadingTracker, LoadingSwitch } from '../utils/LoadingTracker.js'
-import DitoContext from '../DitoContext.js'
 import verbs from '../verbs.js'
 import { ResourceContext } from '../utils/ResourceContext.ts'
 
@@ -433,7 +432,7 @@ export default {
     async emitButtonEvent(button, event, { notify, error }) {
       // Create the context outside of `emitEvent()`, so that
       // `context.wasNotified` can be checked after.
-      const context = new DitoContext(button, {
+      const context = button.createContext({
         nested: false,
         data: this.data,
         itemLabel: this.itemLabel,

@@ -46,7 +46,6 @@
 <script>
 import DitoComponent from '../DitoComponent.js'
 import DitoContext from '../DitoContext.js'
-import ContextMixin from '../mixins/ContextMixin.js'
 import { appendDataPath } from '../utils/data.js'
 import { trackRegistration } from '../utils/registration.js'
 import { hasLabel, hasNestedData } from '../utils/schema/structure.js'
@@ -55,8 +54,6 @@ import { getItemAdapter } from '../utils/schema/types.ts'
 
 // @vue/component
 export default DitoComponent.component('DitoPane', {
-  mixins: [ContextMixin],
-
   provide() {
     return {
       $tabComponent: () => this.tabComponent
@@ -83,12 +80,6 @@ export default DitoComponent.component('DitoPane', {
   },
 
   computed: {
-    nested() {
-      // Read by `ContextMixin`: Panes render the item at their data path, not
-      // a value nested in it. Without this, `DitoContext` defaults to `true`.
-      return false
-    },
-
     classes() {
       const prefix = 'dito-pane'
       return {

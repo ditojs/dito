@@ -23,28 +23,18 @@
 <script>
 import { DitoButton, DitoMenuButton } from '@ditojs/ui/src'
 import DitoComponent from '../DitoComponent.js'
-import ContextMixin from '../mixins/ContextMixin.js'
 import { isInlined } from '../utils/schema/structure.js'
 import { getCreatableForms } from '../utils/schema/data.js'
 
 // @vue/component
 export default DitoComponent.component('DitoCreateButton', {
-  mixins: [ContextMixin],
   components: { DitoButton, DitoMenuButton },
 
   props: {
     // The schema of the list or object source that creates the item, also
     // when inserting at `insertIndex` from the buttons of an item.
     schema: { type: Object, required: true },
-    // The next four props are there for `DitoContext` and the `context()`
-    // getter in `DitoMixin`.
-    // TODO: Should they be moved to shared mixin that defines them as required
-    // and also provides the `context()` getter, perhaps `ContextMixin`?
-    // `schema` could be included as well, and `ContextMixin` could be used in
-    // `DitoForm`, `DitoView`, `DitoPanel`, `DitoSchema`, `DitoEditButtons`,
-    // etc? But the problem with the root components is that they don't have
-    // these props. We could add a `contextAttributes()` getter for easy passing
-    // on as `v-bind="contextAttributes"`.
+    // The next four props are there for the `context` of `DitoMixin`:
     dataPath: { type: String, required: true },
     data: { type: [Object, Array], default: null },
     store: { type: Object, required: true },

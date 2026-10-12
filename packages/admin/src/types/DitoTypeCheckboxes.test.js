@@ -94,7 +94,7 @@ describe('DitoTypeCheckboxes', () => {
         components: { genres: { type: 'checkboxes', options: genres } }
       }
     })
-    getComponent('genres').focusElement()
+    await getComponent('genres').focus()
     expect(document.activeElement).toBe(
       findField('genres').find('input[type="checkbox"]').element
     )

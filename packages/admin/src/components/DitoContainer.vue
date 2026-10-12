@@ -30,12 +30,10 @@
     :dataPath="dataPath"
     :data="data"
     :store="store"
-    :width="width"
     :label="label"
     :single="single"
     :nested="nested"
     :errorsElementId="errors ? errorsElementId : null"
-    @update:component="value => (component = value)"
   )
   DitoErrors(
     :id="errorsElementId"
@@ -46,9 +44,8 @@
 <script>
 import { isString, isNumber } from '@ditojs/utils'
 import DitoComponent from '../DitoComponent.js'
-import ValueMixin from '../mixins/ValueMixin.js'
-import ContextMixin from '../mixins/ContextMixin.js'
-import DitoContext from '../DitoContext.js'
+import { useSchemaContext } from '../composables/useSchemaContext.ts'
+import { useValue } from '../composables/useValue.ts'
 import { getSchemaAccessor } from '../utils/accessor.js'
 import { getTypeComponent, getTypeDescriptor } from '../utils/schema/types.ts'
 import { hasLabel, omitSpacing } from '../utils/schema/structure.js'
@@ -58,8 +55,6 @@ import { appendDataPath } from '../utils/data.js'
 
 // @vue/component
 export default DitoComponent.component('DitoContainer', {
-  mixins: [ValueMixin, ContextMixin],
-
   provide() {
     return {
       $accumulatedBasis: () => this.combinedBasis
@@ -86,30 +81,17 @@ export default DitoComponent.component('DitoContainer', {
     verticalLabels: { type: Boolean, default: false }
   },
 
-  data() {
-    return {
-      // The nested type component instance, for context-based schema accessor
-      // evaluation.
-      component: null
-    }
+  setup(props) {
+    // The context of the container's schema values, e.g. `visible` and
+    // `label`, which holds the value that the type component displays:
+    const schemaContext = useSchemaContext(props, {
+      getValue: () => value.value
+    })
+    const { value } = useValue(props, schemaContext)
+    return { context: schemaContext.context }
   },
 
   computed: {
-    context() {
-      return new DitoContext(
-        // When available, use the type component for context-based schema
-        // accessors, but fall back to container.
-        // TODO: Consider architectural inversion to eliminate timing issues:
-        // - Type components render DitoContainer at their root
-        // - Pass type component content through container's default slot
-        // - DitoPane/DitoButtons render type components directly
-        // - Eliminates need for component instance synchronization
-        // - Provides true synchronous access to component context
-        this.component ?? this,
-        { nested: this.nested }
-      )
-    },
-
     name() {
       return this.schema.name
     },
@@ -158,7 +140,11 @@ export default DitoComponent.component('DitoContainer', {
       // errors don't belong to:
       if (this.nested) {
         const { dataModel, dataPath } = this
-        const label = this.label || this.component?.placeholder || this.name
+        const label = (
+          this.label ||
+          this.getSchemaValue('placeholder', { type: String }) ||
+          this.name
+        )
         const errors = [
           ...(dataModel.getErrors(dataPath) ?? []).map(
             ({ message }) => `The ${label} field ${message}.`

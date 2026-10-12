@@ -1,4 +1,4 @@
-import { numberDescriptor } from './descriptors.ts'
+import { numberDescriptor, getNumberSettings } from './descriptors.ts'
 
 const { getValidations } = numberDescriptor
 
@@ -61,5 +61,49 @@ describe('numberDescriptor.getValidations()', () => {
         context
       )
     ).toEqual({ range: [1, 500] })
+  })
+})
+
+describe('getNumberSettings()', () => {
+  it('reads `min` and `max` from the range, rounded for integers', () => {
+    expect(
+      getNumberSettings({ type: 'number', range: [0.5, 9.5] }, {})
+    ).toEqual(
+      {
+        min: 0.5,
+        max: 9.5,
+        step: undefined,
+        decimals: undefined,
+        range: [0.5, 9.5]
+      }
+    )
+    expect(
+      getNumberSettings({ type: 'integer', range: [0.5, 9.5], step: 1.5 }, {})
+    ).toMatchObject({ min: 0, max: 10, step: 2, range: [0, 10] })
+  })
+
+  it('prefers `min` and `max` over the range', () => {
+    expect(
+      getNumberSettings(
+        { type: 'integer', min: 2.5, max: 7.5, range: [0, 10] },
+        {}
+      ).range
+    ).toEqual([2, 8])
+  })
+
+  it('has no range without both limits', () => {
+    expect(getNumberSettings({ type: 'number', min: 1 }, {})).toMatchObject({
+      min: 1,
+      max: undefined,
+      range: undefined
+    })
+  })
+
+  it('reads the decimals from the schema', () => {
+    expect(
+      getNumberSettings({ type: 'number', decimals: 2 }, {}).decimals
+    ).toBe(
+      2
+    )
   })
 })

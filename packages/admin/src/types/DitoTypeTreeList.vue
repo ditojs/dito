@@ -25,16 +25,38 @@
 </template>
 
 <script>
-import DitoTypeComponent from '../DitoTypeComponent.js'
+import DitoComponent from '../DitoComponent.js'
 import { defineType } from '../utils/schema/types.ts'
 import { sourceDescriptor } from './descriptors.ts'
-import SourceMixin from '../mixins/SourceMixin.js'
+import { fieldProps, useField } from '../composables/useField.ts'
+import SourceMixin, { useSourceServices } from '../mixins/SourceMixin.js'
 import { resolveSchemaComponents } from '../utils/schema/setup.js'
 import { getParentDataPath } from '../utils/data.js'
 
 // @vue/component
-const DitoTypeTreeList = DitoTypeComponent.component('DitoTypeTreeList', {
+const DitoTypeTreeList = DitoComponent.component('DitoTypeTreeList', {
   mixins: [SourceMixin],
+  props: fieldProps,
+
+  setup(props) {
+    const field = useField(props, { services: useSourceServices() })
+    const { value, context, disabled, onChange, focus, services } = field
+    return {
+      value,
+      context,
+      disabled,
+      onChange,
+      focus,
+
+      // Replaces the children of the tree item, as the only writer of the
+      // tree, see `DitoTreeItem.changeChildren()`. Open forms follow their
+      // items, see `DitoForm.setupSourceItem()`.
+      changeChildren({ entry, children }) {
+        services.container.model.replaceChildren(entry, children)
+        onChange()
+      }
+    }
+  },
 
   computed: {
     // The forms of the items of the tree are routed right after its route
@@ -53,7 +75,7 @@ const DitoTypeTreeList = DitoTypeComponent.component('DitoTypeTreeList', {
 
     treeData() {
       return this.isListSource
-        ? { [this.name]: this.value }
+        ? { [this.schema.name]: this.value }
         : this.value
     },
 
@@ -74,21 +96,11 @@ const DitoTypeTreeList = DitoTypeComponent.component('DitoTypeTreeList', {
       return this.isListSource
         ? {
             children: {
-              name: this.name,
+              name: this.schema.name,
               ...this.schema
             }
           }
         : this.schema
-    }
-  },
-
-  methods: {
-    // Replaces the children of the tree item, as the only writer of the tree,
-    // see `DitoTreeItem.changeChildren()`. Open forms follow their items,
-    // see `DitoForm.setupSourceItem()`.
-    changeChildren({ entry, children }) {
-      this.dataModel.replaceChildren(entry, children)
-      this.onChange()
     }
   }
 })

@@ -13,6 +13,9 @@ import { Router as VueRouter } from 'vue-router'
 
 declare global {
   const dito: DitoGlobal
+  interface Window {
+    dito: DitoGlobal
+  }
 }
 
 export default DitoAdmin
@@ -2382,7 +2385,7 @@ export interface ResourceContext {
   }): Resource | null
   /** Submits the data through `button`, resolving with whether it succeeded. */
   submit(
-    button: DitoComponentInstanceBase,
+    button: DitoTypeInstance,
     options?: { validate?: boolean; closeForm?: boolean }
   ): Promise<boolean>
 }
@@ -2390,19 +2393,8 @@ export interface ResourceContext {
 export interface DitoComponentInstanceBase<$Item = any>
   extends ComponentPublicInstance,
     EmitterMixin {
-  // -- Data access (ValueMixin, ContextMixin, TypeMixin) --
+  // -- Data access --
 
-  /** The current value of the component (getter/setter). */
-  value: any
-  /** The current data item. */
-  item: OmitNever<$Item>
-  /**
-   * The closest parent item that isn't an array (e.g.
-   * for relations or nested JSON data).
-   */
-  parentItem: any
-  /** The top-level root data item. */
-  rootItem: any
   /** The component's data object. */
   data: Record<string, any>
   /**
@@ -2411,10 +2403,6 @@ export interface DitoComponentInstanceBase<$Item = any>
    * write the data through.
    */
   dataModel: DitoDataModel
-  /** Parent data object, or `null` if same as data. */
-  parentData: Record<string, any> | null
-  /** The property name of the current component. */
-  name: string
   /** Full dot-separated path to the current data. */
   dataPath: string
   /**
@@ -2427,15 +2415,9 @@ export interface DitoComponentInstanceBase<$Item = any>
   componentPath: string
   /** The schema definition for the current component. */
   schema: Component
-  /** The component type from the schema. */
-  type: string
 
-  // -- State (TypeMixin) --
+  // -- State --
 
-  /** Whether the component currently has focus. */
-  focused: boolean
-  /** The value after applying `schema.parse()`. */
-  parsedValue: any
   /**
    * Whether the component works with data not yet
    * persisted to the server.
@@ -2448,31 +2430,6 @@ export interface DitoComponentInstanceBase<$Item = any>
    * source, see {@link ResourceContext.verbs}.
    */
   verbs: Record<string, string>
-
-  // -- Resolved schema accessors (TypeMixin) --
-
-  /** Resolved `schema.visible` value. */
-  visible: boolean
-  /** Resolved `schema.exclude` value. */
-  exclude: boolean
-  /** Resolved `schema.required` value. */
-  required: boolean
-  /** Resolved `schema.readonly` value. */
-  readonly: boolean
-  /** Resolved `schema.disabled` value. */
-  disabled: boolean
-  /** Resolved `schema.clearable` value. */
-  clearable: boolean
-  /** Resolved `schema.autofocus` value. */
-  autofocus: boolean
-  /** Resolved `schema.placeholder` value. */
-  placeholder: string | undefined
-  /** Resolved `schema.info` value. */
-  info: string | null
-  /** Resolved `schema.maxLength` value. */
-  maxLength: number | undefined
-  /** Resolved `schema.autocomplete` value. */
-  autocomplete: string | undefined
 
   // -- Component hierarchy (DitoMixin) --
 
@@ -2627,24 +2584,16 @@ export interface DitoComponentInstanceBase<$Item = any>
   setStore(key: string, value: any): any
   /** Removes a value from the component store. */
   removeStore(key: string): void
+}
 
-  // -- Actions (TypeMixin) --
-
+/**
+ * The component of a type, which its schema component reveals and focuses,
+ * e.g. to show its errors.
+ */
+export interface DitoTypeInstance<$Item = any>
+  extends DitoComponentInstanceBase<$Item> {
   /** Focuses the component and scrolls it into view. */
   focus(): Promise<void>
-  /** Blurs the component. */
-  blur(): void
-  /** Clears the value, blurs, and triggers onChange. */
-  clear(): void
-  /** Scrolls the component into view. */
-  scrollIntoView(): Promise<void>
-
-  /**
-   * Validates the value and replaces the errors of the
-   * field in the data model, as on blur. Returns `true`
-   * if valid.
-   */
-  validate(): boolean
 }
 
 export interface EmitterMixin {
@@ -2872,7 +2821,7 @@ export interface DitoFormInstance<$Item = any>
    * fails or the request errors.
    */
   submit(
-    button?: DitoComponentInstanceBase,
+    button?: DitoTypeInstance,
     options?: {
       validate?: boolean
       closeForm?: boolean
@@ -3154,7 +3103,7 @@ export interface DitoSchemaInstance<$Item = any>
    * `dataPath`, opening collapsed schemas and inlined
    * items, and returns them.
    */
-  revealComponents(dataPath: string): Promise<DitoComponentInstanceBase[]>
+  revealComponents(dataPath: string): Promise<DitoTypeInstance[]>
 }
 
 export interface DitoSourceInstance<$Item = any>
@@ -3244,7 +3193,7 @@ export interface DitoSourceInstance<$Item = any>
    * Reveals the components of the inlined item that
    * display the value at `dataPath`, and returns them.
    */
-  revealComponents(dataPath: string): Promise<DitoComponentInstanceBase[]>
+  revealComponents(dataPath: string): Promise<DitoTypeInstance[]>
 
   // -- Resource (ResourceMixin) --
 

@@ -46,14 +46,12 @@ DitoButtons.dito-edit-buttons(
 <script>
 import DitoComponent from '../DitoComponent.js'
 import DitoDragHandle from './DitoDragHandle.vue'
-import ContextMixin from '../mixins/ContextMixin.js'
 import { DitoButton } from '@ditojs/ui/src'
 import { capitalize } from '@ditojs/utils'
 import { isInlined } from '../utils/schema/structure.js'
 
 // @vue/component
 export default DitoComponent.component('DitoEditButtons', {
-  mixins: [ContextMixin],
   components: { DitoButton, DitoDragHandle },
   emits: ['delete', 'move'],
 

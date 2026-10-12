@@ -45,7 +45,6 @@ import { markRaw } from 'vue'
 import { isFunction } from '@ditojs/utils'
 import DitoComponent from '../DitoComponent.js'
 import DitoContext from '../DitoContext.js'
-import ContextMixin from '../mixins/ContextMixin.js'
 import SchemaParentMixin from '../mixins/SchemaParentMixin.js'
 import { getButtonSchemas } from '../utils/schema/lookup.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
@@ -55,7 +54,7 @@ import { ContainerContext } from '../utils/ContainerContext.ts'
 
 // @vue/component
 export default DitoComponent.component('DitoPanel', {
-  mixins: [ContextMixin, SchemaParentMixin],
+  mixins: [SchemaParentMixin],
 
   provide() {
     // Only panels with their own data own a data model:
@@ -85,13 +84,7 @@ export default DitoComponent.component('DitoPanel', {
   },
 
   computed: {
-    nested() {
-      // For `ContextMixin`: The panel's address, `dataPath`, points into the
-      // item that it displays, see `getAllPanelEntries()`.
-      return true
-    },
-
-    // @override ContextMixin.context
+    // @override
     context() {
       // Evaluate the callbacks of the panel and of its components with the
       // data that the panel displays: its own data, e.g. of `$filters`, or the

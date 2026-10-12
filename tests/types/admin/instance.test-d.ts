@@ -14,8 +14,8 @@ import type { Entry } from './fixtures.ts'
 describe('DitoComponentInstanceBase and DitoFormInstance', () => {
   it('DitoFormInstance extends base with item and form properties', () => {
     type Instance = DitoFormInstance<Entry>
-    expectTypeOf<Instance['item']>().not.toBeAny()
-    expectTypeOf<Instance['item']['title']>().toBeString()
+    expectTypeOf<Instance['context']['item']>().not.toBeAny()
+    expectTypeOf<Instance['context']['item']['title']>().toBeString()
     expectTypeOf<Instance['isCreating']>().toBeBoolean()
     expectTypeOf<Instance['isDirty']>().toBeBoolean()
     expectTypeOf<Instance['dataModel']['isDirty']>().toBeBoolean()

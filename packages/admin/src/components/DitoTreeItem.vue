@@ -105,7 +105,7 @@
 import DitoComponent from '../DitoComponent.js'
 import DitoEditButtons from './DitoEditButtons.vue'
 import ItemMixin from '../mixins/ItemMixin'
-import SortableMixin from '../mixins/SortableMixin.js'
+import { useSortable } from '../composables/useSortable.ts'
 import { appendDataPath, getRelativeDataPath } from '../utils/data.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
 import { getNamedSchemas, hasFormSchema } from '../utils/schema/lookup.js'
@@ -119,7 +119,7 @@ import { isPathWithin } from '../utils/route.js'
 // changed children with `changeChildren`, which the tree list applies.
 // @vue/component
 export default DitoComponent.component('DitoTreeItem', {
-  mixins: [ItemMixin, SortableMixin],
+  mixins: [ItemMixin],
   components: { DitoEditButtons },
   emits: ['delete', 'move', 'changeChildren'],
 
@@ -134,6 +134,13 @@ export default DitoComponent.component('DitoTreeItem', {
     draggable: { type: Boolean, default: false },
     label: { type: String, default: null },
     level: { type: Number, default: 0 }
+  },
+
+  setup() {
+    // The tree list applies the reordered children and notifies of the change,
+    // see `changeChildren()`:
+    const { isDragging, getDraggableOptions } = useSortable()
+    return { isDragging, getDraggableOptions }
   },
 
   data() {
@@ -307,13 +314,6 @@ export default DitoComponent.component('DitoTreeItem', {
           this.changeChildren(children)
         }
       })
-    },
-
-    // @override
-    onEndDrag() {
-      // The tree list applies the reordered children and notifies of the
-      // change, see `DitoTypeTreeList.changeChildren()`.
-      this.isDragging = false
     }
   }
 })

@@ -3,7 +3,7 @@
 //- once, e.g. radio buttons and checkboxes. Grouped options, see
 //- `schema.groupBy`, are listed in a fieldset per group. The `option` slot
 //- renders each option, and receives `isFirstOption` so that the component can
-//- reference the input to focus, see `TypeMixin.getFocusElement()`.
+//- reference the input to focus, see `useFocus()`.
 ul.dito-option-list(:class="layoutClass")
   template(
     v-if="isGrouped"
@@ -43,7 +43,7 @@ import DitoComponent from '../DitoComponent.js'
 export default DitoComponent.component('DitoOptionList', {
   props: {
     // The options, or with `isGrouped` their groups, each with `label` and
-    // `options`, see `OptionsMixin.groupOptions()`.
+    // `options`, see `groupOptions()`.
     options: { type: Array, required: true },
     isGrouped: { type: Boolean, default: false },
     layout: { type: String, default: null }

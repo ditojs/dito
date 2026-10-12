@@ -1,7 +1,7 @@
 <template lang="pug">
 .dito-date
   component(
-    :is="getComponent(type)"
+    :is="pickerComponents[schema.type]"
     :id="componentPath"
     ref="element"
     v-model="dateValue"
@@ -25,11 +25,11 @@
 </template>
 
 <script>
-import DitoTypeComponent from '../DitoTypeComponent.js'
+import { computed } from 'vue'
+import DitoComponent from '../DitoComponent.js'
 import { defineType } from '../utils/schema/types.ts'
-import { getSchemaAccessor } from '../utils/accessor.js'
+import { fieldProps, useField } from '../composables/useField.ts'
 import DitoInputAffixes from '../components/DitoInputAffixes.vue'
-import { getInputAffixesProps } from '../utils/affixes.js'
 import {
   DitoDatePicker,
   DitoTimePicker,
@@ -42,57 +42,65 @@ import {
   parsePlainDate
 } from '@ditojs/utils'
 
+const pickerComponents = {
+  date: DitoDatePicker,
+  time: DitoTimePicker,
+  datetime: DitoDateTimePicker
+}
+
 // @vue/component
-const DitoTypeDate = DitoTypeComponent.component('DitoTypeDate', {
+const DitoTypeDate = DitoComponent.component('DitoTypeDate', {
   components: { DitoInputAffixes },
-  // TODO: This is only here so we get placeholder added. Come up with a
-  // better way to support attributes per component (a list of actually
-  // supported attributes)
-  nativeField: true,
-  textField: true,
+  props: fieldProps,
 
-  computed: {
-    inputAffixesProps() {
-      return getInputAffixesProps(this)
-    },
+  setup(props) {
+    const {
+      value,
+      services,
+      attributes,
+      inputAffixesProps,
+      clear,
+      focus,
+      getSchemaValue
+    } = useField(props, {
+      // TODO: This is only here so we get placeholder added. Come up with a
+      // better way to support attributes per component (a list of actually
+      // supported attributes)
+      nativeField: true,
+      textField: true
+    })
+    return {
+      pickerComponents,
+      attributes,
+      inputAffixesProps,
+      clear,
+      focus,
 
-    dateValue: {
-      get() {
-        const { value } = this
-        return value ? parsePlainDate(value) ?? new Date(value) : value
-      },
+      dateValue: computed({
+        get() {
+          const date = value.value
+          return date ? (parsePlainDate(date) ?? new Date(date)) : date
+        },
 
-      set(value) {
-        this.value = value
-      }
-    },
+        set(date) {
+          value.value = date
+        }
+      }),
 
-    // TODO: Rename to `format`, once `schema.format()` was removed to
-    // `formatValue()`.
-    formats: getSchemaAccessor('formats', {
-      type: Object,
-      default: null,
-      get(formats) {
+      // TODO: Rename to `format`, once `schema.format()` was removed to
+      // `formatValue()`.
+      formats: computed(() => {
+        const { type } = props.schema
         const { date, time } = assignDeeply(
           {},
-          this.admin.api.formats,
-          formats
+          services.admin.api.formats,
+          getSchemaValue('formats', { type: Object, default: null })
         )
         return {
-          date: ['date', 'datetime'].includes(this.type) ? date : null,
-          time: ['time', 'datetime'].includes(this.type) ? time : null
+          date: ['date', 'datetime'].includes(type) ? date : null,
+          time: ['time', 'datetime'].includes(type) ? time : null
         }
-      }
-    })
-  },
-
-  methods: {
-    getComponent(type) {
-      return {
-        date: DitoDatePicker,
-        time: DitoTimePicker,
-        datetime: DitoDateTimePicker
-      }[type]
+      })
     }
   }
 })

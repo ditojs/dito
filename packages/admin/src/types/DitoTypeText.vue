@@ -3,7 +3,7 @@ DitoInput.dito-text(
   :id="componentPath"
   ref="element"
   v-model="inputValue"
-  :type="inputType"
+  :type="inputTypes[schema.type] ?? schema.type"
   v-bind="attributes"
 )
   template(#prefix)
@@ -20,53 +20,52 @@ DitoInput.dito-text(
 </template>
 
 <script>
-import DitoTypeComponent from '../DitoTypeComponent.js'
+import { computed } from 'vue'
+import DitoComponent from '../DitoComponent.js'
 import { defineType } from '../utils/schema/types.ts'
 import { textDescriptor } from './descriptors.ts'
-import TextMixin from '../mixins/TextMixin'
+import { fieldProps, useField } from '../composables/useField.ts'
 import DitoInputAffixes from '../components/DitoInputAffixes.vue'
-import { getInputAffixesProps } from '../utils/affixes.js'
 import { DitoInput } from '@ditojs/ui/src'
 
 const maskedPassword = '****************'
 
+// The input types of the types that browsers don't know:
+const inputTypes = {
+  creditcard: 'text',
+  hostname: 'text',
+  domain: 'text'
+}
+
 // @vue/component
-const DitoTypeText = DitoTypeComponent.component('DitoTypeText', {
-  mixins: [TextMixin],
+const DitoTypeText = DitoComponent.component('DitoTypeText', {
   components: { DitoInput, DitoInputAffixes },
-  nativeField: true,
-  textField: true,
+  props: fieldProps,
 
-  computed: {
-    inputAffixesProps() {
-      return getInputAffixesProps(this)
-    },
+  setup(props) {
+    const { value, focused, attributes, inputAffixesProps, clear, focus } =
+      useField(props, { nativeField: true, textField: true })
+    return {
+      inputValue: computed({
+        get() {
+          return (
+            props.schema.type === 'password' &&
+            value.value === undefined &&
+            !focused.value
+          )
+            ? maskedPassword
+            : value.value
+        },
 
-    inputType() {
-      return (
-        {
-          creditcard: 'text',
-          hostname: 'text',
-          domain: 'text'
-        }[this.type] ||
-        this.type
-      )
-    },
-
-    inputValue: {
-      get() {
-        return (
-          this.type === 'password' &&
-          this.value === undefined &&
-          !this.focused
-        )
-          ? maskedPassword
-          : this.value
-      },
-
-      set(value) {
-        this.value = value
-      }
+        set(inputValue) {
+          value.value = inputValue
+        }
+      }),
+      inputTypes,
+      attributes,
+      inputAffixesProps,
+      clear,
+      focus
     }
   }
 })

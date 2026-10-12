@@ -29,38 +29,61 @@ DitoOptionList.dito-checkboxes(
 </template>
 
 <script>
-import DitoTypeComponent from '../DitoTypeComponent.js'
+import { computed } from 'vue'
+import DitoComponent from '../DitoComponent.js'
 import { defineType } from '../utils/schema/types.ts'
 import { optionsDescriptor } from './descriptors.ts'
-import OptionsMixin from '../mixins/OptionsMixin.js'
+import { fieldProps, useField } from '../composables/useField.ts'
+import { useOptions } from '../composables/useOptions.ts'
 import DitoOptionList from '../components/DitoOptionList.vue'
 import DitoOptionsEditButtons from '../components/DitoOptionsEditButtons.vue'
 import { getMultipleValue } from '../utils/schema/data.js'
 
 // @vue/component
-const DitoTypeCheckboxes = DitoTypeComponent.component('DitoTypeCheckboxes', {
-  mixins: [OptionsMixin],
+const DitoTypeCheckboxes = DitoComponent.component('DitoTypeCheckboxes', {
   components: { DitoOptionList, DitoOptionsEditButtons },
-  nativeField: true,
+  props: fieldProps,
 
-  computed: {
-    // The values of the checked checkboxes, as an array for their `v-model`,
-    // also with `multiple: false`.
-    checkedValues: {
-      get() {
-        const { selectedValue } = this
-        return this.multiple
-          ? (selectedValue || []).filter(value => value != null)
-          : selectedValue != null
-            ? [selectedValue]
-            : []
-      },
+  setup(props) {
+    const field = useField(props, { nativeField: true })
+    const {
+      options,
+      groupBy,
+      editable,
+      multiple,
+      selectedValue,
+      getValueForOption,
+      getLabelForOption
+    } = useOptions(props, field)
+    return {
+      attributes: field.attributes,
+      focus: field.focus,
+      options,
+      groupBy,
+      editable,
+      getValueForOption,
+      getLabelForOption,
 
-      set(values) {
-        // With `multiple: false`, checking a checkbox unchecks the checked
-        // one, as the `v-model` of checkboxes appends checked values.
-        this.selectedValue = this.multiple ? values : (values.at(-1) ?? null)
-      }
+      // The values of the checked checkboxes, as an array for their `v-model`,
+      // also with `multiple: false`.
+      checkedValues: computed({
+        get() {
+          const selected = selectedValue.value
+          return multiple.value
+            ? (selected || []).filter(value => value != null)
+            : selected != null
+              ? [selected]
+              : []
+        },
+
+        set(values) {
+          // With `multiple: false`, checking a checkbox unchecks the checked
+          // one, as the `v-model` of checkboxes appends checked values.
+          selectedValue.value = multiple.value
+            ? values
+            : (values.at(-1) ?? null)
+        }
+      })
     }
   }
 })
