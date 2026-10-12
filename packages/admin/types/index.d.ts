@@ -686,7 +686,8 @@ export interface SchemaSourceMixin<$Item> {
   buttons?: Buttons<$Item>
   /**
    * The key under which primitive values are wrapped in objects, so that the
-   * source's forms can edit them, e.g. `'value'` for a list of strings.
+   * source's forms can edit them, e.g. `'value'` for a list of strings. Lists
+   * with forms need `inlined: true` for it.
    */
   wrapPrimitives?: string
   /**
@@ -3625,7 +3626,7 @@ export type Components<$Item = any> = 0 extends 1 & $Item
           ? E extends Record<string, any>
             ? NonSectionComponent<E>
             : // Lists of primitive values edit them wrapped in objects under
-              // the key given by `wrapPrimitives`, see `SchemaSourceMixin`.
+              // the key given by `wrapPrimitives`.
               NonSectionComponent<Record<string, E>>
           : NonNullable<$Item[K]> extends Record<string, any>
             ?

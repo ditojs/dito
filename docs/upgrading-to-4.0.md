@@ -418,7 +418,9 @@ Views provide both contexts of their main component, e.g. to their panels.
 - `getItemAdapter(schema)` wraps the items of sources for their forms and
   unwraps them again, e.g. the values of `wrapPrimitives`. In the forms of
   such items, only the component of the wrapped value shares the data path of
-  the item, the others get their own.
+  the item, the others get their own. Lists with `wrapPrimitives` and forms
+  need `inlined: true`: routed forms edit the items in the data, where
+  primitive values can't be edited in place, and are refused.
 - `getPanelSchema(api, schema, dataPath, source)` receives the source context
   of the component instead of the component, with `source.listQuery`.
 - `processSchema(api, schema, name)` only sets up the schema, e.g. resolves the

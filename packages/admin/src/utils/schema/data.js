@@ -591,9 +591,8 @@ export function processSchemaData(schema, data, {
         } else {
           const itemAdapter = getItemAdapter(componentSchema)
           const processItem = (item, index = null) => {
-            // Data that isn't processed holds the values themselves, processed
-            // data holds them wrapped already, see `processData()`.
-            if (itemAdapter && !isObject(item)) {
+            // Processed data holds the items wrapped already:
+            if (itemAdapter && !processedData) {
               item = itemAdapter.wrap(item)
             }
             if (!isObject(item)) {
@@ -704,8 +703,13 @@ export function processSchemaData(schema, data, {
       ).components
     : schema.components
   processComponents(components, componentPath)
+  // Walk the child sources like components of the form, unless they are:
   processComponents(
-    Object.fromEntries(childSourceSchemas.map(child => [child.name, child])),
+    Object.fromEntries(
+      childSourceSchemas
+        .filter(({ name }) => !components?.[name])
+        .map(child => [child.name, child])
+    ),
     componentPath
   )
   processTabOrPanelSchemas(schema.tabs, componentPath)

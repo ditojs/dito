@@ -1159,5 +1159,18 @@ describe('SourceMixin', () => {
         getTypeDescriptor(schema).processSchema(api, schema, 'publisher')
       ).rejects.toThrow('Nested objects cannot load data from their own')
     })
+
+    it('refuses wrapped primitives in routed forms', async () => {
+      const schema = {
+        type: 'list',
+        wrapPrimitives: 'tag',
+        form: { type: 'form', components: { tag: { type: 'text' } } }
+      }
+      await expect(
+        getTypeDescriptor(schema).processSchema(api, schema, 'tags')
+      ).rejects.toThrow(
+        `Unsupported 'wrapPrimitives' in lists with routed forms: 'tags'.`
+      )
+    })
   })
 })
