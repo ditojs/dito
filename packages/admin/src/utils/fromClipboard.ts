@@ -1,6 +1,6 @@
 import { asArray, clone } from '@ditojs/utils'
 import { createTemporaryId, isTemporaryId } from './data.js'
-import { walkSchemaData } from './schema/data.js'
+import { walkSchemaData, deserializeData } from './schema/data.js'
 import { getSourceType } from './schema/types.ts'
 import { isSourceWithResource } from './schema/structure.js'
 import type { Data, Schema, SchemaDataEntry } from './types.ts'
@@ -42,10 +42,7 @@ export function fromClipboard(
       replaceTemporaryIds(data[name], schema.relateBy || 'id')
     }
   }
-  walkSchemaData(schema, data, {
-    dataPath,
-    before,
-    options: { services, rootData: rootData ?? data }
-  })
-  return data
+  const options = { services, rootData: rootData ?? data }
+  walkSchemaData(schema, data, { dataPath, before, options })
+  return deserializeData(schema, data, { dataPath, ...options })
 }

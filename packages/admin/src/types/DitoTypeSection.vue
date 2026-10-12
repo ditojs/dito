@@ -77,7 +77,7 @@ defineType({
       )
     ),
 
-  async processSchema(api, schema) {
+  async setupSchema(api, schema) {
     await setupSchemaComponents(api, schema)
   }
 })

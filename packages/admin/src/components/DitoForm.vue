@@ -73,7 +73,8 @@ import {
 } from '../utils/schema/lookup.js'
 import {
   getComponentPathByDataPath,
-  initializeData
+  initializeData,
+  deserializeData
 } from '../utils/schema/data.js'
 import { appendDataPath, getParentDataPath } from '../utils/data.js'
 import { getErrorMessage } from '../utils/request.js'
@@ -304,6 +305,11 @@ export default {
     // identity of its objects:
     const setData = value => {
       if (isTransient.value) {
+        deserializeData(schema.value, value, {
+          services,
+          dataPath: dataPath.value,
+          rootData: dataContext.model.rootData
+        })
         if (!equals(data.value, value)) {
           mergeData(schema.value, data.value, value, {
             services,
@@ -338,7 +344,7 @@ export default {
       model.replace(null)
       return requests.loadData({
         onLoad: async data => {
-          model.replace(data)
+          model.replaceFromServer(data)
           await emitSchemaEvent('load')
         }
       })

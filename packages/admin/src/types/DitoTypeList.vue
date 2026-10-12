@@ -265,11 +265,11 @@ defineType({
     }
   },
 
-  async processSchema(api, schema, name) {
+  async setupSchema(api, schema, name) {
     await Promise.all([
       resolveSchemaComponent(schema),
       resolveSchemaComponents(schema.columns),
-      sourceTraits.processSchema(api, schema, name)
+      sourceTraits.setupSchema(api, schema, name)
     ])
   }
 })

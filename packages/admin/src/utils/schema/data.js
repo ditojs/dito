@@ -9,7 +9,8 @@ import {
   isFunction,
   asArray,
   clone,
-  getValueAtDataPath
+  getValueAtDataPath,
+  normalizeDataPath
 } from '@ditojs/utils'
 import {
   getTypeDescriptor,
@@ -128,7 +129,7 @@ export function getDefaultValue(schema, context) {
 }
 
 // Types without values, e.g. buttons, get no key, like in the data of items
-// that `compute()` returns:
+// that `computeValue()` returns:
 export function setDefaultValue(schema, data, name, context) {
   const value = getDefaultValue(schema, context)
   if (value !== undefined) {
@@ -167,7 +168,7 @@ export function hasValueFromDataSchema(schema) {
   )
 }
 
-// `optionsTraits.processValue()` calls this without a context:
+// `optionsTraits.serializeValue()` calls this without a context:
 export function getMultipleValue(schema, context) {
   return getSchemaValue('multiple', {
     type: Boolean,
@@ -182,7 +183,7 @@ export function shouldSetDefaultValue(schema, data, name, context, {
   shouldSetDefaultsOfComponentsWithCompute = true
 } = {}) {
   return (
-    (shouldSetDefaultsOfComponentsWithCompute || !schema.compute) &&
+    (shouldSetDefaultsOfComponentsWithCompute || !schema.computeValue) &&
     isMissingValue(schema, data, name, context) &&
     !shouldIgnoreMissingValue(schema, context)
   )
@@ -195,8 +196,8 @@ export function initializeData(schema, data = {}, services, {
   rootData = data,
   shouldWalk,
   shouldSkipSourcesWithResource = false,
-  // New data starts with all defaults for `compute()` to rely on, but in loaded
-  // data, `compute()` may derive missing values instead:
+  // New data starts with all defaults for `computeValue()` to rely on, but in
+  // loaded data, `computeValue()` may derive missing values instead:
   shouldSetDefaultsOfComponentsWithCompute = true
 } = {}) {
   const options = { services, rootData }
@@ -247,8 +248,8 @@ export function getComputedValue(schema, data, name, dataPath, {
       const properties = {
         schema,
         // Override value to prevent endless recursion through `this.value` in
-        // `SchemaContext`, and read it lazily, so `compute()` only depends on
-        // it if it reads it:
+        // `SchemaContext`, and read it lazily, so `computeValue()` only depends
+        // on it if it reads it:
         get value() {
           return data[name]
         },
@@ -267,11 +268,11 @@ export function getComputedValue(schema, data, name, dataPath, {
       }
       return properties
     })
-  const { compute } = schema
+  const { computeValue } = schema
   // Like the data model, only compute values of shown components, as
-  // `compute()` may rely on the conditions of `if`:
+  // `computeValue()` may rely on the conditions of `if`:
   if (
-    compute &&
+    computeValue &&
     getSchemaValue('if', {
       type: Boolean,
       schema,
@@ -279,7 +280,7 @@ export function getComputedValue(schema, data, name, dataPath, {
       default: true
     })
   ) {
-    const value = compute(getContext(context))
+    const value = computeValue(getContext(context))
     if (value !== undefined) {
       return value
     }
@@ -347,12 +348,26 @@ export function serializeData(schema, sourceSchema, data, dataPath, {
   }
 
   const after = ({ schema, data, name, dataPath, serializedData }) => {
-    const { process } = schema
     const itemAdapter = getItemAdapter(schema)
     let value = serializedData[name]
-
-    // NOTE: We don't cache this context, since `value` is changing.
-    const context = () =>
+    // Unwrap the items again, to bring the data back into its native form:
+    if (itemAdapter && isArray(value)) {
+      value = value.map(itemAdapter.unwrap)
+    }
+    // Register the sources and relations whose ids the graph serializes:
+    if (getSourceType(schema)) {
+      graph.addSource(dataPath, schema)
+    } else if (schema.relate) {
+      // Internally related data (`options.dataPath`) needs both the options
+      // (for '#ref') and the value ('#id') serialized:
+      const path = schema.options?.dataPath
+      graph.addRelation(
+        dataPath,
+        path ? normalizeDataPath(`${dataPath}/${path}`) : null,
+        schema
+      )
+    }
+    const createContext = value =>
       new SchemaContext(services, {
         schema,
         value,
@@ -360,28 +375,14 @@ export function serializeData(schema, sourceSchema, data, dataPath, {
         data,
         dataPath,
         rootData: options.rootData,
-        // For `serializedItem` and `serializedRootItem` in `process()`:
+        // For `serializedItem` and `serializedRootItem`:
         serializedData,
         serializedRootData
       })
-
-    // Unwrap the items again, to bring the data back into its native form:
-    if (itemAdapter && isArray(value)) {
-      value = value.map(itemAdapter.unwrap)
-    }
-
-    // Let the type convert the value for storage:
-    const processValue = getTypeDescriptor(schema)?.processValue
-    if (processValue) {
-      value = processValue(getContext(context), graph)
-    }
-
-    // Call `process()` before `exclude`, so it can modify `serializedData`:
-    if (process) {
-      value = process(getContext(context))
-    }
-
-    if (shouldExcludeValue(schema, context)) {
+    // Convert before `exclude`, so `serializeValue()` can write other values
+    // into `serializedItem`:
+    value = convertValue(schema, 'serializeValue', value, createContext)
+    if (shouldExcludeValue(schema, () => createContext(value))) {
       delete serializedData[name]
     } else {
       serializedData[name] = value
@@ -399,10 +400,47 @@ export function serializeData(schema, sourceSchema, data, dataPath, {
   return graph.serialize(sourceSchema, serializedRootData, options)
 }
 
+// Convert the stored values of `data` in place to the values that the
+// components edit. Values are converted before the items in them are walked:
+export function deserializeData(schema, data, {
+  services = null,
+  dataPath = null,
+  rootData = data
+} = {}) {
+  const before = ({ schema, data, name, dataPath }) => {
+    if (name in data) {
+      const createContext = value =>
+        new SchemaContext(services, {
+          schema,
+          value,
+          name,
+          data,
+          dataPath,
+          rootData
+        })
+      const value = convertValue(
+        schema,
+        'deserializeValue',
+        data[name],
+        createContext
+      )
+      if (value !== data[name]) {
+        data[name] = value
+      }
+    }
+  }
+  walkSchemaData(schema, data, {
+    dataPath,
+    before,
+    options: { services, rootData }
+  })
+  return data
+}
+
 // Walk `data` along the components of `schema`, the forms of items and their
 // child sources, and call `before()` and `after()` for each nested component.
 // NOTE: Items with an item adapter are walked wrapped, and the wrapped value
-// keeps the item's data path. Writes into them don't reach the data.
+// keeps the item's data path. Walks in place write changed values back.
 export function walkSchemaData(schema, data, {
   dataPath = null,
   componentPath = '',
@@ -469,13 +507,15 @@ export function walkSchemaData(schema, data, {
         } else {
           const itemAdapter = getItemAdapter(componentSchema)
           const walkItem = (item, index = null) => {
-            // Processed data holds the items wrapped already:
-            if (itemAdapter && !serializedData) {
-              item = itemAdapter.wrap(item)
+            // Serialized data holds the items wrapped already:
+            const isWrapping = !!itemAdapter && !serializedData
+            const value = item
+            if (isWrapping) {
+              item = itemAdapter.wrap(value)
             }
             if (!isObject(item)) {
               // Values that aren't objects hold no data of the form, e.g. ones
-              // that `compute()` converts to objects:
+              // that `computeValue()` converts to objects:
               return item
             }
             const itemDataPath =
@@ -501,7 +541,7 @@ export function walkSchemaData(schema, data, {
               const serializedItem = serializedData
                 ? cloneItem(componentSchema, item)
                 : null
-              return walkSchemaData(form, item, {
+              const result = walkSchemaData(form, item, {
                 ...walkOptions,
                 dataPath: itemDataPath,
                 componentPath: itemComponentPath,
@@ -509,6 +549,15 @@ export function walkSchemaData(schema, data, {
                 wrappedValueName: itemAdapter?.name ?? null,
                 childSourceSchemas: getChildSourceSchemas(componentSchema)
               })
+              const unwrapped = isWrapping ? itemAdapter.unwrap(item) : value
+              if (unwrapped !== value) {
+                if (index !== null) {
+                  data[name][index] = unwrapped
+                } else {
+                  data[name] = unwrapped
+                }
+              }
+              return result
             } else {
               // Pass through items without a matching form, e.g. unknown types:
               return { ...item }
@@ -655,4 +704,17 @@ export function getItemUid(sourceSchema, item) {
   // Pass ids through `getUid()` too, to associate them with the item in a weak
   // map, as `serializeData()` can filter out ids still used as component keys.
   return getUid(item, item => getItemId(sourceSchema, item))
+}
+
+// Convert the value with the hook of its type first, then with the schema's:
+function convertValue(schema, hookName, value, createContext) {
+  for (const convert of [
+    getTypeDescriptor(schema)?.[hookName],
+    schema[hookName]
+  ]) {
+    if (convert) {
+      value = convert(createContext(value))
+    }
+  }
+  return value
 }

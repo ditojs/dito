@@ -162,7 +162,7 @@ function setupSchemaComponent(api, schema, name) {
       getPanelSchemas(schema),
       panel => setupSchemaComponents(api, panel)
     ),
-    getTypeDescriptor(schema)?.processSchema?.(api, schema, name)
+    getTypeDescriptor(schema)?.setupSchema?.(api, schema, name)
   ])
 }
 

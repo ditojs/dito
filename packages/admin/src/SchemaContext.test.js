@@ -257,7 +257,7 @@ describe('SchemaContext', () => {
     })
 
     it('provides the helper methods through its services', async () => {
-      // E.g. the contexts that data models create for `compute()`, which
+      // E.g. the contexts that data models create for `computeValue()`, which
       // have no component:
       let context = null
       await mountSchema({
@@ -265,7 +265,7 @@ describe('SchemaContext', () => {
           components: {
             title: {
               type: 'text',
-              compute: computeContext => {
+              computeValue: computeContext => {
                 context = computeContext
               }
             }
@@ -331,7 +331,7 @@ describe('SchemaContext', () => {
 
   describe('extend()', () => {
     it('overrides values and keeps the others', () => {
-      // E.g. to pass a processed value on to a nested `process()` callback:
+      // E.g. to pass a serialized value on to a nested `serializeValue()`:
       const rootData = createLibrary()
       const context = new SchemaContext(null, {
         rootData,

@@ -434,7 +434,7 @@ export interface BaseSchema<$Item> extends SchemaFields<$Item> {
    * load, and is `undefined` when the load fails or its
    * data resolves to nothing, so use `options?.`.
    */
-  compute?: ItemAccessor<$Item>
+  computeValue?: ItemAccessor<$Item>
   /**
    * Custom CSS class(es) added to the component's container
    * element. Accepts a string or an object of class-boolean
@@ -539,11 +539,11 @@ export interface BaseSchema<$Item> extends SchemaFields<$Item> {
   autocomplete?: OrItemAccessor<$Item, {}, 'on' | 'off'>
 
   /**
-   * Specifies a function which transforms the stored
+   * Specifies a function which transforms the edited
    * value into a display format before it is passed
    * to the component for rendering.
    */
-  format?: ItemAccessor<$Item, {}, any>
+  formatValue?: ItemAccessor<$Item, {}, any>
   /**
    * Whether the component is disabled.
    *
@@ -554,18 +554,25 @@ export interface BaseSchema<$Item> extends SchemaFields<$Item> {
   /**
    * Specifies a function which parses the component
    * value when it changes, transforming the raw
-   * input before it is stored.
+   * input before it is written into the data.
    */
-  parse?: ItemAccessor<$Item, {}>
+  parseValue?: ItemAccessor<$Item, {}>
 
   /**
-   * Specifies a function which processes the field value after
-   * type-specific processing but before exclusion, allowing
-   * custom value transformation before sending data to the
-   * server. Can also modify sibling data via `serializedItem`
-   * in the context, even when `exclude` is `true`.
+   * Specifies a function which converts the stored value to the
+   * edited value, when data is loaded, merged from the response
+   * of a save or pasted, after the type's own conversion.
    */
-  process?: ItemAccessor<$Item, {}>
+  deserializeValue?: ItemAccessor<$Item, {}>
+
+  /**
+   * Specifies a function which converts the edited value for
+   * the server and the clipboard, after the type's own
+   * conversion but before exclusion. Can also modify sibling
+   * data via `serializedItem` in the context, even when
+   * `exclude` is `true`.
+   */
+  serializeValue?: ItemAccessor<$Item, {}>
 
   /**
    * The property key used to identify the field in data objects.
@@ -1142,7 +1149,7 @@ export interface CustomComponentProps<$Item = any, $Value = any> {
   schema: ComponentSchema<$Item>
   /** The context of the component, which follows the changes of its data. */
   context: SchemaContext<$Item>
-  /** The value of the component, after `format()`. */
+  /** The value of the component, after `formatValue()`. */
   modelValue: $Value
   /** The id of the element that displays the errors, while there are any. */
   errorsElementId?: string | null
@@ -1150,7 +1157,7 @@ export interface CustomComponentProps<$Item = any, $Value = any> {
 
 /** The events of the custom components of `type: 'component'` schemas. */
 export interface CustomComponentEmits<$Value = any> {
-  /** Changes the value of the component, through `parse()`. */
+  /** Changes the value of the component, through `parseValue()`. */
   'update:modelValue': (value: $Value) => void
   /** Ends the change of the value, which emits the schema's `change` event. */
   'change': () => void
@@ -1211,7 +1218,7 @@ export interface DateSchema<$Item = any>
   /**
    * Format configuration for date/time display.
    */
-  formats?: OrItemAccessor<
+  format?: OrItemAccessor<
     $Item,
     {},
     {
@@ -1746,9 +1753,7 @@ export type ColorFormat =
   | 'hsl'
   | 'hsv'
 export interface ColorSchema<$Item = any>
-  // `format` is the color format here, not the formatting function of
-  // `BaseSchema`.
-  extends Omit<BaseSchema<$Item>, 'format'>,
+  extends BaseSchema<$Item>,
     AffixSettings<$Item> {
   /**
    * The type of the component.
@@ -1951,7 +1956,7 @@ export type SchemaContext<$Item = any> = {
   rootItem: any
   /**
    * The item serialized for the server, built when it's
-   * read. In `process` callbacks, the item that is being
+   * read. In `serializeValue()`, the item that is being
    * serialized, allowing modification of sibling fields.
    */
   serializedItem: any
@@ -1991,7 +1996,7 @@ export type SchemaContext<$Item = any> = {
   /** The currently focused option in a select. */
   option: any
   /**
-   * All available options in a select. In `compute()`, they are
+   * All available options in a select. In `computeValue()`, they are
    * loaded when first read, also when the field isn't rendered.
    * Reading them while they load ends the callback, which keeps
    * the current value and runs again once they are loaded, so
@@ -2883,13 +2888,15 @@ export interface TypeDescriptor {
     context: SchemaContext
   ): Record<string, any>
   /** Sets up the schema, e.g. resolves the schemas that it contains. */
-  processSchema?(
+  setupSchema?(
     api: ApiConfig,
     schema: Record<string, any>,
     name: string
   ): Promise<any> | void
-  /** Converts the value for storage. */
-  processValue?(context: SchemaContext, graph: any): any
+  /** Converts the stored value to the edited value, before the schema. */
+  deserializeValue?(context: SchemaContext): any
+  /** Converts the edited value for storage, before the schema. */
+  serializeValue?(context: SchemaContext): any
 }
 
 /**

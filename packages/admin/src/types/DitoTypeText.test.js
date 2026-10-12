@@ -26,14 +26,14 @@ describe('DitoTypeText', () => {
     expect(findField('title').find('input').element.value).toBe('Untitled')
   })
 
-  it('displays the value through `format()` and stores it through `parse()`', async () => {
+  it('displays the value through `formatValue()` and stores it through `parseValue()`', async () => {
     const { findField, data } = await mountSchema({
       schema: {
         components: {
           tags: {
             type: 'text',
-            format: ({ value }) => value?.join(', '),
-            parse: ({ value }) =>
+            formatValue: ({ value }) => value?.join(', '),
+            parseValue: ({ value }) =>
               value
                 .split(',')
                 .map(tag => tag.trim())

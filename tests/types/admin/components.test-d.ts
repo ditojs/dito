@@ -51,7 +51,7 @@ describe('Components', () => {
     assertType<Components<Parent>>({
       title: {
         type: 'text',
-        format({ item }) {
+        formatValue({ item }) {
           expectTypeOf(item).not.toBeAny()
           expectTypeOf(item.title).toBeString()
           expectTypeOf(item.entries).toEqualTypeOf<Entry[]>()

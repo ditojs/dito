@@ -1165,12 +1165,12 @@ describe('DitoTypeList', () => {
   })
 
   describe('serializing', () => {
-    it('sends empty lists as `null` with `process()`', async () => {
+    it('sends empty lists as `null` with `serializeValue()`', async () => {
       const { findField, submit } = await mountForm({
         schema: createRecipeSchema({
           deletable: true,
-          compute: ({ value }) => value ?? [],
-          process: ({ value }) => (value?.length > 0 ? value : null)
+          computeValue: ({ value }) => value ?? [],
+          serializeValue: ({ value }) => (value?.length > 0 ? value : null)
         }),
         data: { ingredients: [{ name: 'Flour', amount: 1 }] },
         request: ({ data }) => ({ data })
@@ -1184,9 +1184,11 @@ describe('DitoTypeList', () => {
       expect(await submit()).toMatchObject({ ingredients: null })
     })
 
-    it('fills in `null` lists through `compute()`', async () => {
+    it('fills in `null` lists through `computeValue()`', async () => {
       const { data } = await mountForm({
-        schema: createRecipeSchema({ compute: ({ value }) => value ?? [] }),
+        schema: createRecipeSchema({
+          computeValue: ({ value }) => value ?? []
+        }),
         data: { ingredients: null }
       })
       expect(data.ingredients).toEqual([])

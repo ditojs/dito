@@ -53,6 +53,11 @@ export function serializeData(
   dataPath: string,
   options?: Options
 ): Data
+export function deserializeData(
+  schema: Schema,
+  data: Data,
+  options?: Options
+): Data
 export function walkSchemaData(
   schema: Schema,
   data: Data,

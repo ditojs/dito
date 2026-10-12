@@ -17,13 +17,13 @@ const box = {
       type: 'section',
       label: 'Width',
       nested: true,
-      compute: ({ value }: { value: unknown }) =>
+      computeValue: ({ value }: { value: unknown }) =>
         typeof value === 'object' && value !== null
           ? value
           : typeof value === 'string'
             ? { value: parseFloat(value), units: '%' }
             : { value: value ?? null, units: 'rem' },
-      process: ({ value: { value, units } }: { value: Width }) =>
+      serializeValue: ({ value: { value, units } }: { value: Width }) =>
         value === null || units === 'rem' ? value : `${value}${units}`,
       components: {
         value: { type: 'number', label: 'Value' },
@@ -54,7 +54,7 @@ export default [
           upper: {
             type: 'computed',
             label: 'Upper',
-            compute: ({ item }: { item: { first?: string } }) =>
+            computeValue: ({ item }: { item: { first?: string } }) =>
               item.first?.toUpperCase()
           }
         }
@@ -110,7 +110,8 @@ export default [
       shown: { First: 'Filled' }
     },
     {
-      title: 'converts stored numbers to objects with compute and process',
+      title:
+        'converts stored numbers to objects with computeValue and serializeValue',
       schema: box,
       seed: { name: 'Box', width: 5 },
       value: { Name: 'Changed' },
@@ -118,7 +119,8 @@ export default [
       shown: { Name: 'Changed', Value: '5', Units: 'rem' }
     },
     {
-      title: 'converts stored strings to objects with compute and process',
+      title:
+        'converts stored strings to objects with computeValue and serializeValue',
       schema: box,
       seed: { name: 'Box', width: '50%' },
       value: { Value: '25' },

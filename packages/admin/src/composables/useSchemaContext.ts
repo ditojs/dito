@@ -49,7 +49,7 @@ export function useServices(ownServices: Partial<Services> = {}): Services {
 }
 
 // `getValue()` returns the value that the component displays, e.g. after
-// `format()`.
+// `formatValue()`.
 export function useSchemaContext(
   props: ContextProps,
   {

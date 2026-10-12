@@ -32,7 +32,7 @@ describe('DitoContainer', () => {
         components: {
           title: {
             type: 'text',
-            format: ({ value }) => value.toUpperCase(),
+            formatValue: ({ value }) => value.toUpperCase(),
             label: ({ value, name, item }) => `${name} of ${item.id}: ${value}`
           }
         }

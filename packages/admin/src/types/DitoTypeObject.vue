@@ -60,10 +60,10 @@ defineType({
   ...sourceTraits,
   sourceType: 'object',
 
-  async processSchema(api, schema, name) {
+  async setupSchema(api, schema, name) {
     await Promise.all([
       resolveSchemaComponent(schema),
-      sourceTraits.processSchema(api, schema, name)
+      sourceTraits.setupSchema(api, schema, name)
     ])
   }
 })

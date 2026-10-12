@@ -180,7 +180,7 @@ describe('useOptions()', () => {
     })
   })
 
-  describe('processValue()', () => {
+  describe('serializeValue()', () => {
     const authors = [
       { id: 1, name: 'Mary Shelley' },
       { id: 2, name: 'Bram Stoker' }

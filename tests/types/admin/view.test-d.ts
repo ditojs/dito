@@ -58,7 +58,7 @@ describe('View with list component', () => {
       components: {
         title: {
           type: 'text',
-          format({ item }) {
+          formatValue({ item }) {
             expectTypeOf(item).not.toBeAny()
             expectTypeOf(item.title).toBeString()
           }

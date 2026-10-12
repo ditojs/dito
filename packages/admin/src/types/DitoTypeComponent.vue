@@ -46,7 +46,7 @@ defineType({
   defaultValue: undefined,
   ignoreMissingValue: ({ schema }) => !('default' in schema),
 
-  async processSchema(api, schema) {
+  async setupSchema(api, schema) {
     await resolveSchemaComponent(schema)
     checkContract(schema.component)
   }

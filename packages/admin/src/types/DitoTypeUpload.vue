@@ -194,7 +194,7 @@ const DitoTypeUpload = {
     const settleUploadById = new Map()
 
     const { getSchemaValue } = field
-    // No callback, as it's used in `processValue()`:
+    // No callback, as it's used in `serializeValue()`:
     const multiple = computed(() =>
       getSchemaValue('multiple', {
         type: Boolean,
@@ -465,7 +465,7 @@ const DitoTypeUpload = {
       },
 
       // Added files refer to their upload with `upload: { id, success }`,
-      // `success` telling `processValue()` which files were stored:
+      // `success` telling `serializeValue()` which files were stored:
       onInputFile(newFile, oldFile) {
         if (newFile && !oldFile) {
           const { id, name, size } = newFile
@@ -563,7 +563,7 @@ defineType({
   type: 'upload',
   component: DitoTypeUpload,
 
-  processValue({ schema, value }) {
+  serializeValue({ schema, value }) {
     // Filter out added files that weren't uploaded:
     const files = asFiles(value)
       .map(({ upload, ...file }) => (!upload || upload.success ? file : null))

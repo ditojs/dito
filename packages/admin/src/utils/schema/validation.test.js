@@ -422,7 +422,7 @@ describe('getDataValidationErrors()', () => {
         name: {
           type: 'text',
           required: true,
-          format: ({ value }) => value?.trim()
+          formatValue: ({ value }) => value?.trim()
         }
       }
     }

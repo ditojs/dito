@@ -51,8 +51,8 @@ async function loadDelayed<T>(value: T): Promise<T> {
   return value
 }
 
-// Keeps valid values, and selects the first option otherwise. `compute()` only
-// runs once the options that it reads are loaded.
+// Keeps valid values, and selects the first option otherwise. `computeValue()`
+// only runs once the options that it reads are loaded.
 function getValidOrFirstOption({
   value,
   options
@@ -87,7 +87,7 @@ export const articles = createWidgetView<ArticleItem>(
               label: 'Permalink',
               disabled: true,
               exclude: true,
-              compute: ({ item }) =>
+              computeValue: ({ item }) =>
                 item.slug ? `/articles/${item.slug}` : null
             },
             // Selects the first option once the options are loaded.
@@ -100,7 +100,7 @@ export const articles = createWidgetView<ArticleItem>(
                   { label: 'Published', value: 'published' }
                 ]
               },
-              compute: ({ value, options }) => (
+              computeValue: ({ value, options }) => (
                 value ?? options[0]?.value ?? undefined
               )
             },
@@ -108,7 +108,7 @@ export const articles = createWidgetView<ArticleItem>(
               type: 'select',
               label: 'Category',
               options: { data: () => loadDelayed(categoryOptions) },
-              compute: getValidOrFirstOption,
+              computeValue: getValidOrFirstOption,
               events: {
                 // Sees the topic that the data model derives from the
                 // category, once the options of the topic are loaded.
@@ -178,7 +178,7 @@ export const articles = createWidgetView<ArticleItem>(
                 { label: 'Automatic', value: 'auto' },
                 { label: 'Custom Factor', value: 'factor' }
               ],
-              compute: ({ value, item }) => {
+              computeValue: ({ value, item }) => {
                 const pricing = (
                   value ??
                   (item.customFactor != null ? 'factor' : undefined)
@@ -195,13 +195,15 @@ export const articles = createWidgetView<ArticleItem>(
               visible: ({ item }) => item.pricing === 'factor'
             },
             // The excluded value is stored under another key through
-            // `process()`.
+            // `serializeValue()`.
             tagsText: {
               type: 'text',
               label: 'Tags',
               exclude: true,
-              compute: ({ value, item }) => value ?? item.tags?.join(',') ?? '',
-              process: ({ value, serializedItem }) => {
+              computeValue: ({ value, item }) => (
+                value ?? item.tags?.join(',') ?? ''
+              ),
+              serializeValue: ({ value, serializedItem }) => {
                 serializedItem.tags = value ? value.split(',') : null
               }
             },
@@ -210,9 +212,11 @@ export const articles = createWidgetView<ArticleItem>(
             version: {
               type: 'text',
               label: 'Version',
-              compute: ({ value }) =>
+              computeValue: ({ value }) =>
                 Array.isArray(value) ? value.join('.') : value,
-              process: ({ value }) => value?.split('.').map(Number) ?? null
+              serializeValue: ({ value }) => (
+                value?.split('.').map(Number) ?? null
+              )
             },
             // The compute relies on the default of new items, and always shows
             // one keyword to fill in.
@@ -222,7 +226,7 @@ export const articles = createWidgetView<ArticleItem>(
               inlined: true,
               creatable: true,
               wrapPrimitives: 'keyword',
-              compute: ({ value }: { value: (string | null)[] }) =>
+              computeValue: ({ value }: { value: (string | null)[] }) =>
                 value.length > 0 ? value : [''],
               form: {
                 type: 'form',
@@ -304,7 +308,7 @@ export const articles = createWidgetView<ArticleItem>(
                     label: 'Double Amount',
                     disabled: true,
                     exclude: true,
-                    compute: ({ rootItem, dataPath }) => {
+                    computeValue: ({ rootItem, dataPath }) => {
                       const line = getValueAtDataPath(
                         rootItem,
                         parseDataPath(dataPath).slice(0, 2)
@@ -338,7 +342,7 @@ export const articles = createWidgetView<ArticleItem>(
               components: {
                 slug: {
                   type: 'computed',
-                  compute: ({ item }) => (
+                  computeValue: ({ item }) => (
                     item.title?.toLowerCase().replaceAll(' ', '-') ?? null
                   )
                 },
@@ -365,7 +369,7 @@ export const articles = createWidgetView<ArticleItem>(
                         )
                     }
                   },
-                  compute: getValidOrFirstOption
+                  computeValue: getValidOrFirstOption
                 },
                 topicOnCategoryChange: {
                   type: 'text',

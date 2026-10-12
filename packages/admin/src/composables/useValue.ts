@@ -1,5 +1,4 @@
 import { computed, shallowRef } from 'vue'
-import { isFunction } from '@ditojs/utils'
 import { getValueOrDefault } from '../utils/schema/data.js'
 import type {
   SchemaContextSetup,
@@ -10,24 +9,23 @@ export function useValue(
   props: SchemaContextProps,
   { createContext, services }: Omit<SchemaContextSetup, 'context'>
 ) {
-  // The last value that was written, after `parse()`:
+  // The last value that was written, after `parseValue()`:
   const parsedValue = shallowRef<any>(undefined)
   const value = computed<any>({
     get() {
       const { schema, data } = props
-      const { name, format } = schema
+      const { name, formatValue } = schema
       const value = getValueOrDefault(schema, data, name, () =>
         createContext({ value: data[name] })
       )
-      // Some types use `format` for other things, like the color format:
-      return isFunction(format) ? format(createContext({ value })) : value
+      return formatValue ? formatValue(createContext({ value })) : value
     },
 
     set(value) {
       const { schema, data } = props
-      const { parse } = schema
-      if (parse) {
-        value = parse(createContext({ value }))
+      const { parseValue } = schema
+      if (parseValue) {
+        value = parseValue(createContext({ value }))
       }
       parsedValue.value = value
       services.dataContext!.model.set(data, schema.name, value)
