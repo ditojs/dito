@@ -3132,7 +3132,11 @@ export class Service<$Config extends object = Record<string, unknown>> {
   /** Whether this service has been initialized. */
   initialized: boolean
 
-  setup(config: $Config): void
+  /**
+   * Receives the service's configuration from `config.services`.
+   * @overridable
+   */
+  configure(config: $Config): void
 
   /**
    * Override in sub-classes if the service needs async

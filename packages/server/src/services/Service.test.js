@@ -52,25 +52,12 @@ describe('Service', () => {
     })
   })
 
-  describe('setup()', () => {
+  describe('configure()', () => {
     it('stores the config', () => {
       const service = new BookCatalogService(createApp())
       const config = { initialBooks: [] }
-      service.setup(config)
+      service.configure(config)
       expect(service.config).toBe(config)
-    })
-
-    it('starts and stops the service with the application', async () => {
-      const app = createApp()
-      const service = new BookCatalogService(app)
-      const start = vi.spyOn(service, 'start')
-      const stop = vi.spyOn(service, 'stop')
-      service.setup({})
-      await app.emit('before:start')
-      expect(start).toHaveBeenCalledTimes(1)
-      expect(stop).not.toHaveBeenCalled()
-      await app.emit('after:stop')
-      expect(stop).toHaveBeenCalledTimes(1)
     })
   })
 
@@ -149,6 +136,40 @@ describe('Application services', () => {
     expect(service.initialized).toBe(true)
     expect(service.findBook('Moby Dick')).toEqual({ title: 'Moby Dick' })
     expect(service.findBook('Ulysses')).toBe(null)
+  })
+
+  it('configures services before initializing them', async () => {
+    class ShelfService extends Service {
+      configure(config) {
+        super.configure({ ...config, shelves: config.shelves ?? 1 })
+      }
+
+      async initialize() {
+        this.capacity = this.config.shelves * 10
+      }
+    }
+    const app = createApp({
+      services: { shelf: ShelfService },
+      config: { services: { shelf: {} } }
+    })
+    await app.setupServices()
+    expect(app.getService('shelf').capacity).toBe(10)
+  })
+
+  it('starts and stops services with the application', async () => {
+    const app = createApp({
+      services: { catalog: BookCatalogService },
+      config: { services: { catalog: {} } }
+    })
+    const service = app.getService('catalog')
+    const start = vi.spyOn(service, 'start')
+    const stop = vi.spyOn(service, 'stop')
+    await app.setupServices()
+    await app.emit('before:start')
+    expect(start).toHaveBeenCalledTimes(1)
+    expect(stop).not.toHaveBeenCalled()
+    await app.emit('after:stop')
+    expect(stop).toHaveBeenCalledTimes(1)
   })
 
   it('only initializes services once', async () => {
