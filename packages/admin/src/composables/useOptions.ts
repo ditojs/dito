@@ -139,6 +139,14 @@ export function useOptions(
     }
   })
 
+  const isSelected = (option: any) => {
+    const value = getValueForOption(settings.value, option)
+    const selected = selectedValue.value
+    return multiple.value && isArray(selected)
+      ? selected.includes(value)
+      : selected === value
+  }
+
   const optionLabel = computed<string | ((context: Context) => any) | null>(
     () => (
       getSchemaValue(['options', 'label'], {
@@ -196,12 +204,14 @@ export function useOptions(
     getOptionForValue,
     findOptionForValue: findOption,
 
-    getLabelForOption(option: any, { isValueLabel = false } = {}) {
+    getLabelForOption(option: any) {
       const label = optionLabel.value
       return isString(label)
         ? option?.[label as string]
         : isFunction(label)
-          ? label(createOptionsContext({ option, isValueLabel }))
+          ? label(
+              createOptionsContext({ option, isSelected: isSelected(option) })
+            )
           : labelize(`${option}`)
     }
   }

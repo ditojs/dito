@@ -35,7 +35,7 @@
       @search-change="onSearchChange"
     )
       template(#singleLabel="{ option }")
-        | {{ getLabelForOption(option, { isValueLabel: true }) }}
+        | {{ getLabelForOption(option) }}
       //- Mark values without options:
       template(#tag="{ option, remove }")
         span.multiselect__tag.dito-multiselect__tag(
@@ -45,7 +45,7 @@
           :title="isUnavailableOption(option) ? 'Not among the options' : null"
           @mousedown.prevent
         )
-          span {{ getLabelForOption(option, { isValueLabel: true }) }}
+          span {{ getLabelForOption(option) }}
           i.multiselect__tag-icon(
             tabindex="0"
             @keydown.enter.prevent="remove(option)"

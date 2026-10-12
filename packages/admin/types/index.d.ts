@@ -2006,11 +2006,11 @@ export type DitoContext<$Item = any> = {
    */
   options: any
   /**
-   * Whether `options.label()` labels the selected value,
-   * e.g. of a closed multiselect or its tags, rather than
-   * an option in the list of options.
+   * Whether the option that `options.label()` labels is
+   * selected: the shown value, e.g. of a closed multiselect
+   * or its tags, and the selected entries in the open list.
    */
-  isValueLabel: boolean
+  isSelected: boolean
   /**
    * Whether a collapsible schema opens, in its `open`
    * event.
