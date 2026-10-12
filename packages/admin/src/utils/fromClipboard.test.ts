@@ -1,7 +1,7 @@
 // Register the actual type components, for their `processValue()`:
 import '../types/index.js'
 import { fromClipboard } from './fromClipboard.ts'
-import { processData } from './schema/data.js'
+import { serializeData } from './schema/data.js'
 
 const text = { type: 'text' }
 
@@ -89,7 +89,7 @@ const createLibrary = () => ({
 })
 
 function copy(schema: Record<string, any>, data: Record<string, any>) {
-  return processData(schema, { type: 'list' }, data, '', {
+  return serializeData(schema, { type: 'list' }, data, '', {
     services: null,
     target: 'clipboard'
   })

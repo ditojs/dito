@@ -135,7 +135,7 @@ import {
   getItemFormSchema,
   isEmptySchema
 } from '../utils/schema/lookup.js'
-import { processData } from '../utils/schema/data.js'
+import { serializeData } from '../utils/schema/data.js'
 import { fromClipboard } from '../utils/fromClipboard.ts'
 import {
   accumulatedBasisKey,
@@ -456,7 +456,7 @@ export default {
       },
 
       getClipboardData() {
-        return processData(
+        return serializeData(
           props.dataSchema,
           unref(sourceSchema),
           props.data,

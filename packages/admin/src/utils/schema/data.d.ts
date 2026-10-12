@@ -33,7 +33,7 @@ export function initializeData(
   services?: object | null,
   options?: Options
 ): Data
-export function computeValue(
+export function getComputedValue(
   schema: Schema,
   data: Data,
   name: string,
@@ -46,14 +46,14 @@ export function getValueOrDefault(
   name: string,
   context: Context | (() => Context)
 ): any
-export function processData(
+export function serializeData(
   schema: Schema | null,
   sourceSchema: Schema | null,
   data: Data,
   dataPath: string,
   options?: Options
 ): Data
-export function processSchemaData(
+export function walkSchemaData(
   schema: Schema,
   data: Data,
   walk: SchemaDataWalk

@@ -132,9 +132,9 @@ export const dashboards = createWidgetView<Dashboard>('name', 'dashboards', {
                         screen,
                         ...(size as object)
                       })),
-              process: ({ value, processedItem }) => {
+              process: ({ value, serializedItem }) => {
                 for (const { screen, ...size } of value) {
-                  processedItem[screen] = size
+                  serializedItem[screen] = size
                 }
               }
             }

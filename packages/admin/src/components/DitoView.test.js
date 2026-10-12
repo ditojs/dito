@@ -262,10 +262,10 @@ describe('DitoView', () => {
       })
       expect(data.address.label).toBe('Strict: true')
       expect(routeComponent.dataContext.verify('address/city')).toBe(false)
-      expect(dataModel.processedData.value.address).not.toHaveProperty('note')
+      expect(dataModel.serializedData.value.address).not.toHaveProperty('note')
       data.strict = false
       expect(routeComponent.dataContext.verify('address/city')).toBe(true)
-      expect(dataModel.processedData.value.address.note).toBe('Note false')
+      expect(dataModel.serializedData.value.address.note).toBe('Note false')
     })
   })
 })

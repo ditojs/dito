@@ -645,17 +645,17 @@ describe('DitoForm', () => {
       await settle(form)
     }
 
-    it('provides the processed draft and root item to its components', async () => {
+    it('provides the serialized draft and root item to its components', async () => {
       const { admin } = await mountBookForm({
         chapters: [{ title: 'Prologue' }]
       })
       const form = await openNestedForm(admin, '/items/1/chapters/0')
       form.data.title = 'Opening'
       const { context } = admin.getSchemaComponent(form)
-      expect(context.processedItem).toEqual({ title: 'Opening' })
+      expect(context.serializedItem).toEqual({ title: 'Opening' })
       // The root item is the one of the book form, with the draft in place of
       // the item, like `rootItem`:
-      expect(context.processedRootItem).toMatchObject({
+      expect(context.serializedRootItem).toMatchObject({
         title: 'Emma',
         chapters: [{ title: 'Opening' }]
       })

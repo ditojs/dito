@@ -312,7 +312,7 @@ export interface ApiConfig {
 
   /**
    * Default schema property values per component type. During
-   * schema processing, defaults for a matching type are applied
+   * schema setup, defaults for a matching type are applied
    * to the schema: top-level properties that are `undefined` are
    * set directly, while existing object properties are
    * deep-merged. When a function is provided, it receives the
@@ -481,7 +481,7 @@ export interface BaseSchema<$Item> extends SchemaFields<$Item> {
   visible?: OrItemAccessor<$Item, {}, boolean>
 
   /**
-   * Whether to exclude the field's value from the processed data
+   * Whether to exclude the field's value from the serialized data
    * sent to the server.
    *
    * @defaultValue `false`
@@ -562,7 +562,7 @@ export interface BaseSchema<$Item> extends SchemaFields<$Item> {
    * Specifies a function which processes the field value after
    * type-specific processing but before exclusion, allowing
    * custom value transformation before sending data to the
-   * server. Can also modify sibling data via `processedItem`
+   * server. Can also modify sibling data via `serializedItem`
    * in the context, even when `exclude` is `true`.
    */
   process?: ItemAccessor<$Item, {}>
@@ -1950,19 +1950,19 @@ export type SchemaContext<$Item = any> = {
   /** The top-level root data item. */
   rootItem: any
   /**
-   * The item processed for the server, built when it's
+   * The item serialized for the server, built when it's
    * read. In `process` callbacks, the item that is being
-   * processed, allowing modification of sibling fields.
+   * serialized, allowing modification of sibling fields.
    */
-  processedItem: any
+  serializedItem: any
   /**
-   * The root item processed for the server, built when
+   * The root item serialized for the server, built when
    * it's read. In nested forms, with the draft in place
    * of the item, like `rootItem`.
    */
-  processedRootItem: any
+  serializedRootItem: any
   /**
-   * The form's current data processed for clipboard
+   * The form's current data serialized for clipboard
    * copy/paste operations.
    */
   clipboardItem: any

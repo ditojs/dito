@@ -5,7 +5,7 @@ import { getTypeDescriptor } from './types.ts'
 import {
   getSchemaValue,
   shouldRenderSchema,
-  processSchemaData
+  walkSchemaData
 } from './data.js'
 
 export function getValidations(schema, context) {
@@ -85,7 +85,7 @@ export function getDataValidationErrors(schema, data, {
       rootData
     })
 
-  const shouldProcess = entry =>
+  const shouldWalk = entry =>
     shouldRenderSchema(entry.schema, createContext(entry))
 
   const before = entry => {
@@ -105,9 +105,9 @@ export function getDataValidationErrors(schema, data, {
     }
   }
 
-  processSchemaData(schema, data, {
+  walkSchemaData(schema, data, {
     dataPath,
-    shouldProcess,
+    shouldWalk,
     shouldSkipSourcesWithResource: true,
     before,
     options: { services, rootData }

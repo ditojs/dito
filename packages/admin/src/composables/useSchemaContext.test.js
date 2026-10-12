@@ -37,7 +37,7 @@ describe('useSchemaContext()', () => {
       },
       data: {
         name: 'City Library',
-        // Data that the schema doesn't define, and processing removes:
+        // Data that the schema doesn't define, and serializing removes:
         notes: 'Closed on Sundays',
         authors: [
           {
@@ -71,13 +71,13 @@ describe('useSchemaContext()', () => {
     expect(context.parentItem).toBe(null)
   })
 
-  it('provides the processed item and root item of components', async () => {
+  it('provides the serialized item and root item of components', async () => {
     const { getComponent } = await mountLibrary()
     const title = getComponent('authors/0/books/1/title')
-    expect(title.context.processedItem).toEqual({ id: 2, title: 'Persuasion' })
-    // The processed root item is found through the parent schema components,
+    expect(title.context.serializedItem).toEqual({ id: 2, title: 'Persuasion' })
+    // The serialized root item is found through the parent schema components,
     // and contains only the data that the schemas define:
-    expect(title.context.processedRootItem).toEqual({
+    expect(title.context.serializedRootItem).toEqual({
       id: 1,
       name: 'City Library',
       authors: [
@@ -91,74 +91,74 @@ describe('useSchemaContext()', () => {
         }
       ]
     })
-    expect(getComponent('name').context.processedRootItem).toEqual(
-      title.context.processedRootItem
+    expect(getComponent('name').context.serializedRootItem).toEqual(
+      title.context.serializedRootItem
     )
   })
 
-  describe('the processed item in callbacks', () => {
+  describe('the serialized item in callbacks', () => {
     // Mounts the library with `callback` on the titles of the books, which
-    // returns `value`, and returns the processed items that it received for
+    // returns `value`, and returns the serialized items that it received for
     // the title of the first book.
-    async function getProcessedItems(callback, value) {
-      const processedItems = []
+    async function getSerializedItems(callback, value) {
+      const serializedItems = []
       await mountLibrary({
-        [callback]: ({ processedItem, dataPath }) => {
+        [callback]: ({ serializedItem, dataPath }) => {
           if (dataPath === 'authors/0/books/0/title') {
-            processedItems.push(processedItem)
+            serializedItems.push(serializedItem)
           }
           return value
         }
       })
-      return processedItems
+      return serializedItems
     }
 
-    it('is the processed item of the component in `if`', async () => {
-      const processedItems = await getProcessedItems('if', true)
-      expect(processedItems.length).toBeGreaterThan(0)
-      for (const processedItem of processedItems) {
-        expect(processedItem).toEqual({ id: 1, title: 'Emma' })
+    it('is the serialized item of the component in `if`', async () => {
+      const serializedItems = await getSerializedItems('if', true)
+      expect(serializedItems.length).toBeGreaterThan(0)
+      for (const serializedItem of serializedItems) {
+        expect(serializedItem).toEqual({ id: 1, title: 'Emma' })
       }
     })
 
-    it('is the processed item of the component in `compute()`', async () => {
-      const processedItems = await getProcessedItems('compute', undefined)
-      expect(processedItems.length).toBeGreaterThan(0)
-      for (const processedItem of processedItems) {
-        expect(processedItem).toEqual({ id: 1, title: 'Emma' })
+    it('is the serialized item of the component in `compute()`', async () => {
+      const serializedItems = await getSerializedItems('compute', undefined)
+      expect(serializedItems.length).toBeGreaterThan(0)
+      for (const serializedItem of serializedItems) {
+        expect(serializedItem).toEqual({ id: 1, title: 'Emma' })
       }
     })
 
-    it('is processed once until the data changes', async () => {
-      // Callbacks may read the processed items reactively, e.g. for prices, so
-      // the processing must not run again on every read. It processes the
+    it('is serialized once until the data changes', async () => {
+      // Callbacks may read the serialized items reactively, e.g. for prices, so
+      // the serializing must not run again on every read. It serializes the
       // titles of both books each time:
       const process = vi.fn(({ value }) => value)
       const { getComponent, data } = await mountLibrary({ process })
       const { context } = getComponent('authors/0/books/1/title')
-      expect(context.processedItem).toEqual({ id: 2, title: 'Persuasion' })
-      expect(context.processedItem).toEqual({ id: 2, title: 'Persuasion' })
+      expect(context.serializedItem).toEqual({ id: 2, title: 'Persuasion' })
+      expect(context.serializedItem).toEqual({ id: 2, title: 'Persuasion' })
       expect(process).toHaveBeenCalledTimes(2)
       data.authors[0].books[1].title = 'Sanditon'
-      expect(context.processedItem).toEqual({ id: 2, title: 'Sanditon' })
+      expect(context.serializedItem).toEqual({ id: 2, title: 'Sanditon' })
       expect(process).toHaveBeenCalledTimes(4)
     })
 
     it('is the data being processed in `process()`', async () => {
-      const processed = []
+      const serialized = []
       const { getComponent } = await mountLibrary({
-        process: ({ value, processedItem, processedRootItem }) => {
-          processed.push({ processedItem, processedRootItem })
+        process: ({ value, serializedItem, serializedRootItem }) => {
+          serialized.push({ serializedItem, serializedRootItem })
           return value
         }
       })
-      const processedRootItem = getComponent('name').context.processedRootItem
-      expect(processed.map(({ processedItem }) => processedItem)).toEqual([
+      const serializedRootItem = getComponent('name').context.serializedRootItem
+      expect(serialized.map(({ serializedItem }) => serializedItem)).toEqual([
         { id: 1, title: 'Emma' },
         { id: 2, title: 'Persuasion' }
       ])
-      for (const entry of processed) {
-        expect(entry.processedRootItem).toBe(processedRootItem)
+      for (const entry of serialized) {
+        expect(entry.serializedRootItem).toBe(serializedRootItem)
       }
     })
   })

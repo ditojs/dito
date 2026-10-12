@@ -43,7 +43,7 @@ describe('DitoPanel', () => {
     })
     const [context] = createData.mock.calls[0]
     // The context is the one of the data around the panel:
-    expect(context.processedItem).toEqual({ title: 'Dune' })
+    expect(context.serializedItem).toEqual({ title: 'Dune' })
     expect(wrapper.find('.dito-panel input').element.value).toBe('Emma')
   })
 
@@ -76,7 +76,7 @@ describe('DitoPanel', () => {
     for (const callback of [createData, isRendered, isVisible]) {
       const [context] = callback.mock.lastCall
       expect(context.schema.label).toBe('Search')
-      expect(context.processedItem).toEqual({ title: 'Dune' })
+      expect(context.serializedItem).toEqual({ title: 'Dune' })
     }
     // The components inside the panel see the panel's data:
     expect(isQueryRendered.mock.lastCall[0].item).toEqual({ query: 'Emma' })
@@ -136,7 +136,7 @@ describe('DitoPanel', () => {
     expect(dataPath).toBe('search/refresh')
   })
 
-  it(`processes its own data without the view's ids or types`, async () => {
+  it(`serializes its own data without the view's ids or types`, async () => {
     const click = vi.fn()
     const { wrapper } = await mountSchema({
       schema: {
@@ -156,7 +156,7 @@ describe('DitoPanel', () => {
       data: { title: 'Dune' }
     })
     await wrapper.find('.dito-panel button[id$="refresh"]').trigger('click')
-    expect(click.mock.calls[0][0].processedItem).toEqual({ query: 'Emma' })
+    expect(click.mock.calls[0][0].serializedItem).toEqual({ query: 'Emma' })
   })
 
   it('computes the values of its own data in its own data model', async () => {

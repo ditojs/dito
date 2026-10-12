@@ -418,8 +418,8 @@ describe('useSource()', () => {
     })
   })
 
-  describe('processing', () => {
-    it('processes the items of lists without forms as copies', async () => {
+  describe('serializing', () => {
+    it('serializes the items of lists without forms as copies', async () => {
       // Copying to the clipboard removes the ids of the items, which mustn't
       // remove them from the edited data:
       const { schemaComponent, data } = await mountSchema({
@@ -444,16 +444,16 @@ describe('useSource()', () => {
       ])
     })
 
-    it('processes objects without forms as copies', () => {
+    it('serializes objects without forms as copies', () => {
       const schema = { type: 'object' }
       const graph = { addSource: vi.fn() }
       const value = { id: 1, name: 'Mary Shelley' }
-      const processed = getTypeDescriptor(schema).processValue(
+      const serialized = getTypeDescriptor(schema).processValue(
         { schema, value, dataPath: 'author' },
         graph
       )
-      expect(processed).toEqual(value)
-      expect(processed).not.toBe(value)
+      expect(serialized).toEqual(value)
+      expect(serialized).not.toBe(value)
       expect(graph.addSource).toHaveBeenCalledWith('author', schema)
       expect(
         getTypeDescriptor(schema).processValue(

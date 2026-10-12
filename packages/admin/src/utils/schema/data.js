@@ -193,7 +193,7 @@ export function shouldSetDefaultValue(schema, data, name, context, {
 export function initializeData(schema, data = {}, services, {
   dataPath = null,
   rootData = data,
-  shouldProcess,
+  shouldWalk,
   shouldSkipSourcesWithResource = false,
   // New data starts with all defaults for `compute()` to rely on, but in loaded
   // data, `compute()` may derive missing values instead:
@@ -225,10 +225,10 @@ export function initializeData(schema, data = {}, services, {
     }
   }
 
-  return processSchemaData(schema, data, {
+  return walkSchemaData(schema, data, {
     dataPath,
     before,
-    shouldProcess,
+    shouldWalk,
     shouldSkipSourcesWithResource,
     options
   })
@@ -236,7 +236,7 @@ export function initializeData(schema, data = {}, services, {
 
 // Never write into `data`, as `DataModel` writes the computed values. Functions
 // in `dataPath` are only called by computes that read it, e.g. through `index`.
-export function computeValue(schema, data, name, dataPath, {
+export function getComputedValue(schema, data, name, dataPath, {
   services = null,
   rootData = null,
   getOptions = null
@@ -295,7 +295,7 @@ export function getValueOrDefault(schema, data, name, context) {
   return shouldUseDefault ? getDefaultValue(schema, context) : data[name]
 }
 
-// Copy what identifies the item, for its processed values to be added to:
+// Copy what identifies the item, for its serialized values to be added to:
 function cloneItem(sourceSchema, item) {
   const copy = {}
   const { idKey = 'id', orderKey } = sourceSchema
@@ -312,17 +312,17 @@ function cloneItem(sourceSchema, item) {
   return copy
 }
 
-export function processData(schema, sourceSchema, data, dataPath, {
+export function serializeData(schema, sourceSchema, data, dataPath, {
   services,
   rootData,
   target
 } = {}) {
   const options = { services, rootData, target }
   // Data without a source, e.g. of dialogs and panels, has nothing to identify:
-  const processedRootData = sourceSchema ? cloneItem(sourceSchema, data) : {}
+  const serializedRootData = sourceSchema ? cloneItem(sourceSchema, data) : {}
   const graph = new SchemaGraph(dataPath)
 
-  const before = ({ schema, data, name, dataPath, processedData }) => {
+  const before = ({ schema, data, name, dataPath, serializedData }) => {
     const value = getValueOrDefault(
       schema,
       data,
@@ -339,17 +339,17 @@ export function processData(schema, sourceSchema, data, dataPath, {
     // The forms of the items expect them wrapped by the item adapter of the
     // schema, so wrap before and unwrap after. Always shallow-clone arrays:
     const itemAdapter = getItemAdapter(schema)
-    processedData[name] = isArray(value)
+    serializedData[name] = isArray(value)
       ? itemAdapter
         ? value.map(itemAdapter.wrap)
         : [...value]
       : value
   }
 
-  const after = ({ schema, data, name, dataPath, processedData }) => {
+  const after = ({ schema, data, name, dataPath, serializedData }) => {
     const { process } = schema
     const itemAdapter = getItemAdapter(schema)
-    let value = processedData[name]
+    let value = serializedData[name]
 
     // NOTE: We don't cache this context, since `value` is changing.
     const context = () =>
@@ -360,9 +360,9 @@ export function processData(schema, sourceSchema, data, dataPath, {
         data,
         dataPath,
         rootData: options.rootData,
-        // For `processedItem` and `processedRootItem` in `process()`:
-        processedData,
-        processedRootData
+        // For `serializedItem` and `serializedRootItem` in `process()`:
+        serializedData,
+        serializedRootData
       })
 
     // Unwrap the items again, to bring the data back into its native form:
@@ -376,49 +376,49 @@ export function processData(schema, sourceSchema, data, dataPath, {
       value = processValue(getContext(context), graph)
     }
 
-    // Call `process()` before `exclude`, so it can modify `processedData`:
+    // Call `process()` before `exclude`, so it can modify `serializedData`:
     if (process) {
       value = process(getContext(context))
     }
 
     if (shouldExcludeValue(schema, context)) {
-      delete processedData[name]
+      delete serializedData[name]
     } else {
-      processedData[name] = value
+      serializedData[name] = value
     }
   }
 
-  processSchemaData(schema, data, {
+  walkSchemaData(schema, data, {
     dataPath,
-    processedData: processedRootData,
+    serializedData: serializedRootData,
     before,
     after,
     options
   })
 
-  return graph.process(sourceSchema, processedRootData, options)
+  return graph.serialize(sourceSchema, serializedRootData, options)
 }
 
 // Walk `data` along the components of `schema`, the forms of items and their
 // child sources, and call `before()` and `after()` for each nested component.
 // NOTE: Items with an item adapter are walked wrapped, and the wrapped value
 // keeps the item's data path. Writes into them don't reach the data.
-export function processSchemaData(schema, data, {
+export function walkSchemaData(schema, data, {
   dataPath = null,
   componentPath = '',
-  processedData = null,
+  serializedData = null,
   wrappedValueName = null,
   childSourceSchemas = [],
   before = null,
   after = null,
-  shouldProcess = () => true,
+  shouldWalk = () => true,
   shouldSkipSourcesWithResource = false,
   options
 }) {
   const walkOptions = {
     before,
     after,
-    shouldProcess,
+    shouldWalk,
     shouldSkipSourcesWithResource,
     options
   }
@@ -427,7 +427,7 @@ export function processSchemaData(schema, data, {
       ? appendDataPath(dataPath, token)
       : null
 
-  const processComponents = (components, parentComponentPath) => {
+  const walkComponents = (components, parentComponentPath) => {
     if (components) {
       for (const [name, componentSchema] of Object.entries(components)) {
         const isNestedComponent = hasNestedData(componentSchema)
@@ -442,9 +442,9 @@ export function processSchemaData(schema, data, {
           name,
           dataPath: componentDataPath,
           componentPath: appendDataPath(parentComponentPath, name),
-          processedData
+          serializedData
         }
-        if (!shouldProcess(entry)) {
+        if (!shouldWalk(entry)) {
           continue
         }
         if (
@@ -452,7 +452,7 @@ export function processSchemaData(schema, data, {
           isSourceWithResource(componentSchema)
         ) {
           // Their panels display the data that contains them:
-          processTabOrPanelSchemas(componentSchema.panels, entry.componentPath)
+          walkTabOrPanelSchemas(componentSchema.panels, entry.componentPath)
           continue
         }
         if (isPanelWithOwnData(componentSchema)) {
@@ -460,17 +460,17 @@ export function processSchemaData(schema, data, {
           continue
         }
         if (!isNestedComponent) {
-          processSchemaData(componentSchema, data, {
+          walkSchemaData(componentSchema, data, {
             ...walkOptions,
             dataPath,
             componentPath: entry.componentPath,
-            processedData
+            serializedData
           })
         } else {
           const itemAdapter = getItemAdapter(componentSchema)
-          const processItem = (item, index = null) => {
+          const walkItem = (item, index = null) => {
             // Processed data holds the items wrapped already:
-            if (itemAdapter && !processedData) {
+            if (itemAdapter && !serializedData) {
               item = itemAdapter.wrap(item)
             }
             if (!isObject(item)) {
@@ -498,14 +498,14 @@ export function processSchemaData(schema, data, {
               item
             )
             if (form) {
-              const processedItem = processedData
+              const serializedItem = serializedData
                 ? cloneItem(componentSchema, item)
                 : null
-              return processSchemaData(form, item, {
+              return walkSchemaData(form, item, {
                 ...walkOptions,
                 dataPath: itemDataPath,
                 componentPath: itemComponentPath,
-                processedData: processedItem,
+                serializedData: serializedItem,
                 wrappedValueName: itemAdapter?.name ?? null,
                 childSourceSchemas: getChildSourceSchemas(componentSchema)
               })
@@ -520,31 +520,31 @@ export function processSchemaData(schema, data, {
           // Only read the values of sources with forms, or tracked walks would
           // depend on all values:
           if (hasFormSchema(componentSchema)) {
-            let value = processedData ? processedData[name] : data[name]
+            let value = serializedData ? serializedData[name] : data[name]
             if (value != null) {
               if (isArray(value)) {
                 // Optimization: No need to collect values if not cloning!
-                value = processedData
-                  ? value.map(processItem)
-                  : value.forEach(processItem)
+                value = serializedData
+                  ? value.map(walkItem)
+                  : value.forEach(walkItem)
               } else {
-                value = processItem(value)
+                value = walkItem(value)
               }
-              if (processedData) {
-                processedData[name] = value
+              if (serializedData) {
+                serializedData[name] = value
               }
             }
           }
 
           after?.(entry)
           // Their panels display the data that contains them, as above:
-          processTabOrPanelSchemas(componentSchema.panels, entry.componentPath)
+          walkTabOrPanelSchemas(componentSchema.panels, entry.componentPath)
         }
       }
     }
   }
 
-  const processTabOrPanelSchemas = (schemas, parentComponentPath) => {
+  const walkTabOrPanelSchemas = (schemas, parentComponentPath) => {
     // Tabs and panels add their names to component paths, not to data paths.
     for (const [name, tabOrPanelSchema] of Object.entries(schemas || {})) {
       const entry = {
@@ -553,10 +553,10 @@ export function processSchemaData(schema, data, {
         name: null,
         dataPath,
         componentPath: appendDataPath(parentComponentPath, name),
-        processedData
+        serializedData
       }
-      if (shouldProcess(entry) && !isPanelWithOwnData(tabOrPanelSchema)) {
-        processComponents(tabOrPanelSchema.components, entry.componentPath)
+      if (shouldWalk(entry) && !isPanelWithOwnData(tabOrPanelSchema)) {
+        walkComponents(tabOrPanelSchema.components, entry.componentPath)
       }
     }
   }
@@ -574,9 +574,9 @@ export function processSchemaData(schema, data, {
         })
       ).components
     : schema.components
-  processComponents(components, componentPath)
+  walkComponents(components, componentPath)
   // Walk the child sources like components of the form, unless they are:
-  processComponents(
+  walkComponents(
     Object.fromEntries(
       childSourceSchemas
         .filter(({ name }) => !components?.[name])
@@ -584,10 +584,10 @@ export function processSchemaData(schema, data, {
     ),
     componentPath
   )
-  processTabOrPanelSchemas(schema.tabs, componentPath)
-  processTabOrPanelSchemas(schema.panels, componentPath)
+  walkTabOrPanelSchemas(schema.tabs, componentPath)
+  walkTabOrPanelSchemas(schema.panels, componentPath)
 
-  return processedData || data
+  return serializedData || data
 }
 
 // Walk the rendered components to the deepest one containing `dataPath`, e.g.
@@ -601,11 +601,11 @@ export function getComponentPathByDataPath(schema, data, dataPath, {
 } = {}) {
   let deepestEntry = { dataPath: itemDataPath, componentPath }
   if (data) {
-    processSchemaData(schema, data, {
+    walkSchemaData(schema, data, {
       dataPath: itemDataPath,
       componentPath,
       // Only walk the rendered components that contain the value:
-      shouldProcess: entry => (
+      shouldWalk: entry => (
         getRelativeDataPath(dataPath, entry.dataPath) !== null &&
         getSchemaValue('if', {
           type: Boolean,
@@ -653,6 +653,6 @@ export function updateOrder(sourceSchema, list, offset = 0) {
 
 export function getItemUid(sourceSchema, item) {
   // Pass ids through `getUid()` too, to associate them with the item in a weak
-  // map, as `processData()` can filter out ids still used as component keys.
+  // map, as `serializeData()` can filter out ids still used as component keys.
   return getUid(item, item => getItemId(sourceSchema, item))
 }

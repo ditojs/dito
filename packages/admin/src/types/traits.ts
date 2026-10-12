@@ -61,7 +61,7 @@ export const sourceTraits = {
 
   processValue({ schema, value, dataPath }, graph) {
     graph.addSource(dataPath, schema)
-    // `SchemaGraph.process()` changes item ids, and only the items of sources
+    // `SchemaGraph.serialize()` changes item ids, and only the items of sources
     // with forms are copies already:
     return hasFormSchema(schema) ? value : copyItems(value)
   }

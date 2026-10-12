@@ -236,7 +236,7 @@ describe('DitoTypeTreeList', () => {
     ])
   })
 
-  it('provides the processed draft and root item to the forms of its items', async () => {
+  it('provides the serialized draft and root item to the forms of its items', async () => {
     const schema = createSiteSchema()
     schema.components.pages.children.editable = true
     const { admin } = await mountForm({ schema, data: site })
@@ -244,10 +244,10 @@ describe('DitoTypeTreeList', () => {
     const form = admin.getRouteComponent(isForm)
     form.data.title = 'Story'
     const { context } = admin.getSchemaComponent(form)
-    expect(context.processedItem).toEqual({ title: 'Story' })
+    expect(context.serializedItem).toEqual({ title: 'Story' })
     // The root item is the one of the site form, with the draft in place of
     // the item, like `rootItem`:
-    expect(context.processedRootItem).toMatchObject({
+    expect(context.serializedRootItem).toMatchObject({
       pages: [
         { title: 'About', subpages: [{ title: 'Team' }, { title: 'Story' }] },
         { title: 'Contact', subpages: [] }

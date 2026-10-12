@@ -155,17 +155,17 @@ export default class SchemaContext {
   }
 
   // `process()` receives the processed items being built:
-  get processedItem() {
-    return get(this, 'processedData', () =>
+  get serializedItem() {
+    return get(this, 'serializedData', () =>
       getProcessedData(this, this.dataPath, this.nested)
     )
   }
 
-  get processedRootItem() {
+  get serializedRootItem() {
     return get(
       this,
-      'processedRootData',
-      () => getDataContext(this)?.model.processedRootData.value ?? null
+      'serializedRootData',
+      () => getDataContext(this)?.model.serializedRootData.value ?? null
     )
   }
 
@@ -401,7 +401,7 @@ function getProcessedData(context, dataPath, nested) {
     dataModel = dataModel.parent
   }
   return dataModel
-    ? getItem(dataModel.processedData.value, path, nested) || null
+    ? getItem(dataModel.serializedData.value, path, nested) || null
     : null
 }
 
