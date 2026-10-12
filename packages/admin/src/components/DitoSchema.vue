@@ -127,7 +127,7 @@ import { useSchemaValue } from '../composables/useSchemaValue.ts'
 import { useSchemaEvents } from '../composables/useSchemaEvents.ts'
 import { useComponentPath } from '../composables/useComponentPath.ts'
 import { useStore } from '../composables/useStore.ts'
-import { getRelativeDataPath } from '../utils/data.js'
+import { appendDataPath, getRelativeDataPath } from '../utils/data.js'
 import { isPanel } from '../utils/schema/structure.js'
 import {
   getNamedSchemas,
@@ -450,7 +450,14 @@ export default {
         })
         for (const [name, value] of Object.entries(data)) {
           if (name in props.data) {
-            getModel().set(props.data, name, value)
+            getModel().set(
+              {
+                data: props.data,
+                name,
+                dataPath: appendDataPath(props.dataPath, name)
+              },
+              value
+            )
           }
         }
       },

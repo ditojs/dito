@@ -71,7 +71,7 @@ describe('useField()', () => {
       await settle()
       expect(getErrors('title')).toEqual(['The title field is required.'])
       // E.g. a button that generates the value:
-      dataModel.set(data, 'title', 'Emma')
+      dataModel.set({ data, name: 'title', dataPath: 'title' }, 'Emma')
       await settle()
       expect(getErrors('title')).toEqual([])
     })

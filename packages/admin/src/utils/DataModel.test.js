@@ -829,10 +829,10 @@ describe('DataModel', () => {
 
     it('is dirty after `set()`, also when reverted', async () => {
       const { dataModel, data } = createBookModel()
-      dataModel.set(data, 'title', 'Persuasion')
+      dataModel.set({ data, name: 'title', dataPath: 'title' }, 'Persuasion')
       expect(data.title).toBe('Persuasion')
       expect(dataModel.isDirty).toBe(true)
-      dataModel.set(data, 'title', 'Emma')
+      dataModel.set({ data, name: 'title', dataPath: 'title' }, 'Emma')
       expect(dataModel.isDirty).toBe(true)
       dataModel.stop()
     })
@@ -840,10 +840,9 @@ describe('DataModel', () => {
     it(`isn't dirty after \`set()\` of the value that it has`, () => {
       const { dataModel, data } = createBookModel()
       const { chapters } = data
-      dataModel.set(data, 'title', 'Emma')
+      dataModel.set({ data, name: 'title', dataPath: 'title' }, 'Emma')
       dataModel.set(
-        data,
-        'chapters',
+        { data, name: 'chapters', dataPath: 'chapters' },
         chapters.map(chapter => ({
           ...chapter
         }))
@@ -860,7 +859,7 @@ describe('DataModel', () => {
         { title: 'Emma', chapters: [] },
         { canSave: () => false }
       )
-      dataModel.set(data, 'title', 'Persuasion')
+      dataModel.set({ data, name: 'title', dataPath: 'title' }, 'Persuasion')
       expect(dataModel.isDirty).toBe(false)
       expect(dataModel.isEdited).toBe(true)
       dataModel.markClean()
@@ -879,7 +878,10 @@ describe('DataModel', () => {
         createModel({ save: { type: 'submit' } })
       ]
       for (const dataModel of [unsavable, savable]) {
-        dataModel.set(dataModel.data, 'title', 'Persuasion')
+        dataModel.set(
+          { data: dataModel.data, name: 'title', dataPath: 'title' },
+          'Persuasion'
+        )
         expect(dataModel.isEdited).toBe(true)
         dataModel.stop()
       }
@@ -889,7 +891,10 @@ describe('DataModel', () => {
 
     it('is dirty after `set()` of nested values', () => {
       const { dataModel, data } = createBookModel()
-      dataModel.set(data.chapters[1], 'title', 'Second')
+      dataModel.set(
+        { data: data.chapters[1], name: 'title', dataPath: 'chapters/1/title' },
+        'Second'
+      )
       expect(data.chapters[1].title).toBe('Second')
       expect(dataModel.isDirty).toBe(true)
       dataModel.stop()
@@ -990,7 +995,7 @@ describe('DataModel', () => {
         },
         { title: 'Emma', books: [{ title: 'A' }, { title: 'B' }] }
       )
-      dataModel.set(data, 'title', 'Persuasion')
+      dataModel.set({ data, name: 'title', dataPath: 'title' }, 'Persuasion')
       dataModel.move(getListEntry('books'), 1, 0)
       // The source saves its list, which leaves the other changes dirty:
       dataModel.markClean({ dataPath: 'books' })
@@ -1056,6 +1061,70 @@ describe('DataModel', () => {
       dataModel.stop()
     })
 
+    describe('writes inside sources with their own resource', () => {
+      const chapters = {
+        type: 'list',
+        form: { type: 'form', components: { title: { type: 'text' } } }
+      }
+
+      // The container can't save, only the source with its own resource:
+      function createLibraryModel() {
+        return createDataModel(
+          {
+            type: 'form',
+            components: {
+              books: {
+                type: 'list',
+                resource: { path: 'books' },
+                buttons: { submit: { type: 'submit' } },
+                form: { type: 'form', components: { chapters } }
+              }
+            }
+          },
+          { books: [{ chapters: [{ title: 'A' }] }] },
+          { canSave: () => false }
+        )
+      }
+
+      it('marks values that `set()` writes for the source', () => {
+        // E.g. a field edited inline in the source's list:
+        const { dataModel, data } = createLibraryModel()
+        dataModel.set(
+          {
+            data: data.books[0].chapters[0],
+            name: 'title',
+            dataPath: 'books/0/chapters/0/title'
+          },
+          'One'
+        )
+        expect(dataModel.isDirty).toBe(true)
+        dataModel.markClean({ dataPath: 'books' })
+        expect(dataModel.isEdited).toBe(false)
+        dataModel.stop()
+      })
+
+      it('marks items that `merge()` applies for the source', () => {
+        // E.g. a nested form of a child of a tree item that is applied:
+        const { dataModel, data } = createLibraryModel()
+        const draft = cloneWithUids(data.books[0].chapters[0])
+        draft.title = 'One'
+        dataModel.merge(
+          {
+            data: data.books[0].chapters,
+            name: 0,
+            dataPath: 'books/0/chapters/0'
+          },
+          draft,
+          chapters
+        )
+        expect(data.books[0].chapters[0].title).toBe('One')
+        expect(dataModel.isDirty).toBe(true)
+        dataModel.markClean({ dataPath: 'books' })
+        expect(dataModel.isEdited).toBe(false)
+        dataModel.stop()
+      })
+    })
+
     it(`isn't dirty after direct writes until \`markEdited()\``, async () => {
       const { dataModel, data } = createBookModel()
       data.title = 'Persuasion'
@@ -1070,7 +1139,7 @@ describe('DataModel', () => {
 
     it(`isn't dirty after \`markClean()\`, e.g. once saved`, () => {
       const { dataModel, data } = createBookModel()
-      dataModel.set(data, 'title', 'Persuasion')
+      dataModel.set({ data, name: 'title', dataPath: 'title' }, 'Persuasion')
       dataModel.markClean()
       expect(dataModel.isDirty).toBe(false)
       dataModel.stop()
@@ -1078,9 +1147,9 @@ describe('DataModel', () => {
 
     it('stays dirty with edits after the ones that a save carried', () => {
       const { dataModel, data } = createBookModel()
-      dataModel.set(data, 'title', 'Persuasion')
+      dataModel.set({ data, name: 'title', dataPath: 'title' }, 'Persuasion')
       const { editCount } = dataModel
-      dataModel.set(data, 'title', 'Emma')
+      dataModel.set({ data, name: 'title', dataPath: 'title' }, 'Emma')
       dataModel.markClean({ editCount })
       expect(dataModel.isDirty).toBe(true)
       dataModel.markClean()
@@ -1090,7 +1159,7 @@ describe('DataModel', () => {
 
     it(`isn't dirty once the data is replaced`, async () => {
       const { dataModel, data } = createBookModel()
-      dataModel.set(data, 'title', 'Persuasion')
+      dataModel.set({ data, name: 'title', dataPath: 'title' }, 'Persuasion')
       dataModel.replace(reactive({ title: 'Saved', chapters: [] }))
       expect(dataModel.isDirty).toBe(false)
       await nextTick()
@@ -1128,7 +1197,7 @@ describe('DataModel', () => {
       await nextTick()
       expect(data.size).toBe(1)
       expect(dataModel.isDirty).toBe(false)
-      dataModel.set(data, 'title', 'Changed')
+      dataModel.set({ data, name: 'title', dataPath: 'title' }, 'Changed')
       expect(dataModel.isDirty).toBe(true)
       dataModel.stop()
     })
@@ -1159,7 +1228,7 @@ describe('DataModel', () => {
       })
       const { chapters, reviews } = data
       const [chapter] = chapters
-      dataModel.set(data, 'title', 'Persuasion')
+      dataModel.set({ data, name: 'title', dataPath: 'title' }, 'Persuasion')
       dataModel.setErrors('chapters/0/title', [{ message: 'is too short' }])
       expect(dataModel.isDirty).toBe(true)
       const mergedData = dataModel.mergeFromServer({
@@ -1257,7 +1326,11 @@ describe('DataModel', () => {
       draft.title = 'First'
       draft.notes.reverse()
       draft.notes.push({ text: 'C' })
-      dataModel.merge(data.chapters, 0, draft, chapterList)
+      dataModel.merge(
+        { data: data.chapters, name: 0, dataPath: 'chapters/0' },
+        draft,
+        chapterList
+      )
       expect(data.chapters[0]).toBe(chapter)
       expect(chapter.notes).toEqual([
         { text: 'B' },
@@ -1303,7 +1376,11 @@ describe('DataModel', () => {
       draft.title = 'First'
       await nextTick()
       expect(toRaw(draft.details.chapter)).toBe(toRaw(draft))
-      dataModel.merge(data.chapters, 0, draft, chapterList)
+      dataModel.merge(
+        { data: data.chapters, name: 0, dataPath: 'chapters/0' },
+        draft,
+        chapterList
+      )
       const [chapter] = data.chapters
       expect(toRaw(chapter.details.chapter)).toBe(toRaw(chapter))
       dataModel.stop()
@@ -1315,8 +1392,7 @@ describe('DataModel', () => {
         chapters: [{ title: 'One', notes: [] }]
       })
       dataModel.merge(
-        data.chapters,
-        0,
+        { data: data.chapters, name: 0, dataPath: 'chapters/0' },
         cloneWithUids(data.chapters[0]),
         chapterList
       )
@@ -1384,7 +1460,10 @@ describe('DataModel', () => {
       dataModel.setErrors('title', tooShort)
       dataModel.setErrors('details/subtitle', tooShort)
       dataModel.setErrors('chapters/0/title', tooShort)
-      dataModel.set(data.chapters[0], 'title', 'Prologue')
+      dataModel.set(
+        { data: data.chapters[0], name: 'title', dataPath: 'chapters/0/title' },
+        'Prologue'
+      )
       expect(dataModel.getErrors('chapters/0/title')).toBe(null)
       expect(dataModel.getErrors('title')).toEqual(tooShort)
       expect(dataModel.getErrors('details/subtitle')).toEqual(tooShort)
@@ -1413,7 +1492,7 @@ describe('DataModel', () => {
       // E.g. server errors of values that the user enters again:
       const { dataModel, data } = createBook()
       dataModel.setErrors('title', tooShort)
-      dataModel.set(data, 'title', 'Emma')
+      dataModel.set({ data, name: 'title', dataPath: 'title' }, 'Emma')
       expect(dataModel.getErrors('title')).toEqual(tooShort)
       dataModel.stop()
     })
@@ -1424,11 +1503,13 @@ describe('DataModel', () => {
       dataModel.setErrors('tags/0', tooShort)
       dataModel.setErrors('tags/1', tooShort)
       // Edits of the values write into their lists, see `useSourceData()`:
-      dataModel.set(data.tags, 1, 'romance')
+      dataModel.set({ data: data.tags, name: 1, dataPath: 'tags/1' }, 'romance')
       expect(dataModel.getErrors('tags/0')).toEqual(tooShort)
       expect(dataModel.getErrors('tags/1')).toBe(null)
       // Replaced lists don't hold the errors of their values anymore:
-      dataModel.set(data, 'tags', ['classic', 'novel'])
+      dataModel.set({ data, name: 'tags', dataPath: 'tags' }, [
+        'classic', 'novel'
+      ])
       expect(dataModel.getErrors('tags/0')).toBe(null)
       dataModel.stop()
     })
@@ -1452,8 +1533,8 @@ describe('DataModel', () => {
         { 'title': taken, 'details/subtitle': taken },
         { server: true }
       )
-      dataModel.set(data, 'title', 'Persuasion')
-      dataModel.set(data, 'title', 'Emma')
+      dataModel.set({ data, name: 'title', dataPath: 'title' }, 'Persuasion')
+      dataModel.set({ data, name: 'title', dataPath: 'title' }, 'Emma')
       expect(dataModel.getErrors('title')).toBe(null)
       // Also when code writes the values directly:
       data.details.subtitle = 'Volume'
@@ -1489,9 +1570,9 @@ describe('DataModel', () => {
         { title: [{ message: 'is taken' }] },
         { server: true }
       )
-      dataModel.set(data, 'title', 'Persuasion')
+      dataModel.set({ data, name: 'title', dataPath: 'title' }, 'Persuasion')
       dataModel.setErrors('title', null)
-      dataModel.set(data, 'title', 'Emma')
+      dataModel.set({ data, name: 'title', dataPath: 'title' }, 'Emma')
       expect(dataModel.getErrors('title')).toBe(null)
       dataModel.stop()
     })
@@ -1499,14 +1580,14 @@ describe('DataModel', () => {
     it('keeps the errors of fields while their values change', () => {
       const { dataModel, data } = createBook()
       dataModel.addError('title', 'Unable to load')
-      dataModel.set(data, 'title', 'Persuasion')
+      dataModel.set({ data, name: 'title', dataPath: 'title' }, 'Persuasion')
       expect(dataModel.getFieldErrors('title')).toEqual(['Unable to load'])
       expect(dataModel.getErrors('title')).toBe(null)
       expect(dataModel.getErrorDataPaths()).toEqual(['title'])
       expect(dataModel.hasErrorsWithin(data)).toBe(true)
       // Their sources remove them, also while the value differs:
       dataModel.removeError('title', 'Unable to load')
-      dataModel.set(data, 'title', 'Emma')
+      dataModel.set({ data, name: 'title', dataPath: 'title' }, 'Emma')
       expect(dataModel.getFieldErrors('title')).toBe(null)
       expect(dataModel.hasErrorsWithin(data)).toBe(false)
       dataModel.stop()
@@ -1610,7 +1691,10 @@ describe('DataModel', () => {
       expect(dataModel.hasErrorsWithin(data.chapters)).toBe(true)
       expect(dataModel.hasErrorsWithin(data.chapters[0])).toBe(false)
       expect(dataModel.hasErrorsWithin(data.details)).toBe(false)
-      dataModel.set(data.chapters[1], 'title', 'Second')
+      dataModel.set(
+        { data: data.chapters[1], name: 'title', dataPath: 'chapters/1/title' },
+        'Second'
+      )
       expect(dataModel.hasErrorsWithin(data)).toBe(false)
       dataModel.stop()
     })

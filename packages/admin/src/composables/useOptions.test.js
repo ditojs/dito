@@ -68,7 +68,7 @@ describe('useOptions()', () => {
         data: { category: 'lost', genre: null }
       })
       expect(getErrors('genre')).toEqual(['The lost genres are unavailable'])
-      dataModel.set(data, 'category', 'books')
+      dataModel.set({ data, name: 'category', dataPath: 'category' }, 'books')
       await settle()
       expect(getErrors('genre')).toEqual([])
     })

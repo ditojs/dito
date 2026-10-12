@@ -225,7 +225,7 @@ describe('services', () => {
       const { dataContext } = routeComponent
       const { model: dataModel } = dataContext
       expect(data.cover).toBe('cover-old')
-      dataModel.set(data, 'isbn', 'new')
+      dataModel.set({ data, name: 'isbn', dataPath: 'isbn' }, 'new')
       await flushPromises()
       expect(dataModel.hasPendingLoads).toBe(true)
       const tracker = admin.context.loadingTracker

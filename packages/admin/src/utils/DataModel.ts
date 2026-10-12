@@ -260,12 +260,17 @@ export class DataModel {
   }
 
   markEdited() {
-    this.#markEdited('', null)
+    this.#markEdited('')
   }
 
-  #markEdited(dataPath: string, sourceSchema: Schema | null) {
-    this.#editedOwners.set(dataPath, {
-      sourceSchema,
+  // Edits of data in sources with their own resource belong to these sources,
+  // e.g. a tree whose children change, all other edits to the container:
+  #markEdited(dataPath: string) {
+    const sourceEntry = this.#dataEntries.value.sourceEntriesWithResource.find(
+      entry => getRelativeDataPath(dataPath, entry.dataPath) !== null
+    )
+    this.#editedOwners.set(sourceEntry?.dataPath ?? '', {
+      sourceSchema: sourceEntry?.schema ?? null,
       editCount: ++this.#editCount
     })
   }
@@ -348,25 +353,29 @@ export class DataModel {
     }
   }
 
-  set(data: Data, key: Key, value: any) {
+  set({ data, name, dataPath }: FieldKey & { dataPath: string }, value: any) {
     // Writes that don't change the value aren't edits, and keep its identity:
-    if (!equals(data[key], value)) {
-      this.markEdited()
-      data[key] = value
+    if (!equals(data[name], value)) {
+      this.#markEdited(dataPath)
+      data[name] = value
     }
   }
 
-  // Merge `item`, e.g. the draft of a nested form, into `data[key]` in place.
-  merge(data: Data, key: Key, item: Data, sourceSchema: Schema) {
-    if (!equals(data[key], item)) {
-      this.markEdited()
+  // Merge `item`, e.g. the draft of a nested form, into `data[name]` in place.
+  merge(
+    { data, name, dataPath }: FieldKey & { dataPath: string },
+    item: Data,
+    sourceSchema: Schema
+  ) {
+    if (!equals(data[name], item)) {
+      this.#markEdited(dataPath)
       // Merge it as the value of its source, e.g. with tree item children:
-      data[key] = mergeData(
-        { components: { [key]: sourceSchema } },
-        { [key]: data[key] },
-        { [key]: item },
+      data[name] = mergeData(
+        { components: { [name]: sourceSchema } },
+        { [name]: data[name] },
+        { [name]: item },
         { services: this.#options.services, shouldMatchUids: true }
-      )[key]
+      )[name]
       // The item takes over the computed values of the draft, which may hold
       // references to the draft:
       this.#writeComputedValues()
@@ -390,25 +399,17 @@ export class DataModel {
   }
 
   // Number the items from the order of the first one, which keeps the offset
-  // of loaded pages. The change belongs to the source with its own resource
-  // that holds the list or is it, e.g. a tree whose children change.
+  // of loaded pages.
   #changeList(
     { schema, list, dataPath }: ListEntry,
     change: (list: any[]) => void
   ) {
-    const sourceEntry = this.#dataEntries.value.sourceEntriesWithResource.find(
-      entry => getRelativeDataPath(dataPath, entry.dataPath) !== null
-    )
+    this.#markEdited(dataPath)
     const isNumbered = hasItemsNumberedByOrderKey(schema)
     const offset = isNumbered ? (list[0]?.[schema.orderKey] ?? 0) : 0
     change(list)
     if (isNumbered) {
       updateOrder(schema, list, offset)
-    }
-    if (sourceEntry) {
-      this.#markEdited(sourceEntry.dataPath!, sourceEntry.schema)
-    } else {
-      this.markEdited()
     }
   }
 
