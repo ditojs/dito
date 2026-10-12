@@ -194,10 +194,8 @@ const DitoTypeMarkup = {
             cancel: {},
             apply: { type: 'submit' },
             remove: {
-              events: {
-                click({ closeDialog }) {
-                  closeDialog(null)
-                }
+              onClick({ closeDialog }) {
+                closeDialog(null)
               }
             }
           }

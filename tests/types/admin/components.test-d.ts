@@ -34,14 +34,12 @@ describe('Components', () => {
       viewButton: {
         type: 'button',
         text: 'View',
-        events: {
-          click({ item }) {
-            expectTypeOf(item).not.toBeAny()
-            expectTypeOf(item).toHaveProperty('title')
-            expectTypeOf(item).toHaveProperty('entries')
-            expectTypeOf(item).not.toHaveProperty('viewButton')
-            expectTypeOf(item).not.toHaveProperty('spacer')
-          }
+        onClick({ item }) {
+          expectTypeOf(item).not.toBeAny()
+          expectTypeOf(item).toHaveProperty('title')
+          expectTypeOf(item).toHaveProperty('entries')
+          expectTypeOf(item).not.toHaveProperty('viewButton')
+          expectTypeOf(item).not.toHaveProperty('spacer')
         }
       }
     })

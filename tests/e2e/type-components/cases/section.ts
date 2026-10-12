@@ -97,10 +97,8 @@ export default [
           fill: {
             type: 'button',
             text: 'Fill',
-            events: {
-              click: ({ item }: { item: { first?: string } }) => {
-                item.first = 'Filled'
-              }
+            onClick: ({ item }: { item: { first?: string } }) => {
+              item.first = 'Filled'
             }
           }
         }

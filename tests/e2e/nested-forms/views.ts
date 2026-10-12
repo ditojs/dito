@@ -31,10 +31,8 @@ export const albums = createWidgetView<Album>(
               fillLength: {
                 type: 'button',
                 text: 'Fill Length',
-                events: {
-                  click: ({ item, replaceItem }) => {
-                    replaceItem({ ...item, length: '3:30' })
-                  }
+                onClick: ({ item, replaceItem }) => {
+                  replaceItem({ ...item, length: '3:30' })
                 }
               }
             }

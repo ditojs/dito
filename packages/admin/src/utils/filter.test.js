@@ -275,7 +275,7 @@ describe('createFiltersPanel()', () => {
   // Applies the filters of `data` through the panel's submit button, like the
   // data that the panel displays, and returns the formatted filters:
   function applyFilters(panel, query, data) {
-    panel.buttons.submit.events.click({ item: data })
+    panel.buttons.submit.onClick({ item: data })
     return query.value.filter
   }
 
@@ -346,7 +346,7 @@ describe('createFiltersPanel()', () => {
       const { panel, query } = createPanel()
       const data = panel.data()
       data.$author.text = 'Woolf'
-      panel.events.change()
+      panel.onChange()
       expect(query.value.filter).toEqual(['author:"Woolf"'])
     })
   })

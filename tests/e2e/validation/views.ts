@@ -23,10 +23,8 @@ export const widgets = createWidgetView<Widget>(
         name: {
           type: 'button',
           text: 'Suggest Name',
-          events: {
-            click: ({ item }) => {
-              item.name = 'Suggested Name'
-            }
+          onClick: ({ item }) => {
+            item.name = 'Suggested Name'
           }
         }
       }

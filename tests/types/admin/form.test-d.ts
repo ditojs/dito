@@ -46,7 +46,7 @@ describe('Form assignability', () => {
     assertType<ResolvableForm<Entry>>(importForm)
   })
 
-  it('accepts event callbacks with typed item', () => {
+  it('accepts the deprecated `events` with typed item', () => {
     assertType<Form<Entry>>({
       type: 'form',
       events: {

@@ -9,7 +9,7 @@ describe('useField()', () => {
       const blur = vi.fn()
       const { focusField, findField } = await mountSchema({
         schema: {
-          components: { title: { type: 'text', events: { focus, blur } } }
+          components: { title: { type: 'text', onFocus: focus, onBlur: blur } }
         },
         data: { title: 'Emma' }
       })
@@ -106,7 +106,7 @@ describe('useField()', () => {
               type: 'text',
               formatValue: ({ value }) => value?.toUpperCase(),
               parseValue: ({ value }) => value.toLowerCase(),
-              events: { change }
+              onChange: change
             }
           }
         },

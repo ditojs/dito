@@ -127,10 +127,8 @@ export const books = createWidgetView<BookItem>(
             fillEdition: {
               type: 'button',
               text: 'Fill Edition',
-              events: {
-                click: ({ item }) => {
-                  item.edition = 'First'
-                }
+              onClick: ({ item }) => {
+                item.edition = 'First'
               }
             },
             // Only required in the admin, not on the server.

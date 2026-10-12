@@ -82,22 +82,20 @@ export const projects = createWidgetView<Project>(
             openDialog: {
               type: 'button',
               text: 'Open Dialog',
-              events: {
-                click: ({ showDialog }) => {
-                  showDialog({
-                    components: {
-                      message: {
-                        type: 'text',
-                        label: 'Message',
-                        required: true
-                      }
-                    },
-                    buttons: {
-                      cancel: { text: 'Cancel' },
-                      submit: { text: 'Send' }
+              onClick: ({ showDialog }) => {
+                showDialog({
+                  components: {
+                    message: {
+                      type: 'text',
+                      label: 'Message',
+                      required: true
                     }
-                  })
-                }
+                  },
+                  buttons: {
+                    cancel: { text: 'Cancel' },
+                    submit: { text: 'Send' }
+                  }
+                })
               }
             }
           }

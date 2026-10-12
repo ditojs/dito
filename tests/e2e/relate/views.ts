@@ -18,10 +18,8 @@ const playlists = createWidgetView<PlaylistItem>(
     editFirstTrack: {
       type: 'button',
       text: 'Edit First Track',
-      events: {
-        click: async ({ item, navigate }) => {
-          await navigate(`/library/tracks/${item.tracks?.[0]?.id}`)
-        }
+      onClick: async ({ item, navigate }) => {
+        await navigate(`/library/tracks/${item.tracks?.[0]?.id}`)
       }
     },
     tracks: {

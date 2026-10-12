@@ -525,7 +525,7 @@ describe('DitoTypeMarkup', () => {
     const blur = vi.fn()
     const { getComponent, focusField } = await mountSchema({
       schema: {
-        components: { body: { type: 'markup', events: { focus, blur } } }
+        components: { body: { type: 'markup', onFocus: focus, onBlur: blur } }
       }
     })
     const component = getComponent('body')
