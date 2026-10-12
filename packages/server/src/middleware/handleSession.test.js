@@ -13,11 +13,11 @@ function createSessionModel() {
           then: (resolve, reject) =>
             Promise.resolve(
               values.has(id) ? { id, value: values.get(id) } : undefined
-            ).then(resolve, reject)
+            ).then(resolve, reject),
+          upsert: async ({ id, value }) => {
+            values.set(id, value)
+          }
         }),
-        upsert: async ({ id, value }) => {
-          values.set(id, value)
-        },
         deleteById: async id => {
           values.delete(id)
         }

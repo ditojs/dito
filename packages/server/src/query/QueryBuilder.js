@@ -470,21 +470,35 @@ export class QueryBuilder extends objection.QueryBuilder {
     return super[method](data)
   }
 
-  // Insert the models, or update the ones whose ids exist already, atomically:
-  upsert(data) {
-    rejectGraphControlProps(this.modelClass(), data)
-    return super
-      .insert(data)
-      .onConflict(this.modelClass().getIdColumnArray())
-      .merge()
-  }
-
-  upsertAndFetch(data) {
-    rejectGraphControlProps(this.modelClass(), data)
-    return super
-      .insertAndFetch(data)
-      .onConflict(this.modelClass().getIdColumnArray())
-      .merge()
+  // Patch the models matched by the query, or insert them if none matched, in
+  // one transaction:
+  // https://github.com/Vincit/objection.js/issues/101#issuecomment-200363667
+  upsert(data, options = {}) {
+    let mainQuery
+    this.#isTransacted = true
+    return this.runBefore((result, builder) => {
+      if (!builder.context().isMainQuery) {
+        // At this point the builder should only contain a bunch of `where*`
+        // operations. Store this query for later use in runAfter(). Also mark
+        // the query with `isMainQuery: true` so we can skip all this when
+        // this function is called for the `mainQuery`.
+        mainQuery = builder.clone().context({ isMainQuery: true })
+        // Call update() on the original query, turning it into an update.
+        builder[options.update ? 'update' : 'patch'](data)
+      }
+      return result
+    }).runAfter((result, builder) => {
+      if (!builder.context().isMainQuery) {
+        return result === 0
+          ? mainQuery[options.fetch ? 'insertAndFetch' : 'insert'](data)
+          : // We can use the `mainQuery` we saved in runBefore() to fetch the
+            // inserted results. It is noteworthy that this query will return
+            // the wrong results if the update changed any of the columns the
+            // where operates with. This also returns all updated models.
+            mainQuery.first()
+      }
+      return result
+    })
   }
 
   find(query, allowParam) {
@@ -553,11 +567,20 @@ export class QueryBuilder extends objection.QueryBuilder {
       : super.updateAndFetch(data)
   }
 
+  upsertAndFetch(data) {
+    return this.#saveAndFetch(data, 'upsert')
+  }
+
   #saveAndFetch(data, action) {
     const modelClass = this.modelClass()
     rejectGraphControlProps(modelClass, data)
+    // Upserts also insert models without ids, or with ids that don't exist yet:
+    const isUpsert = action === 'upsert'
     const idProperties = modelClass.getIdPropertyArray()
-    if (data.some(model => idProperties.some(key => model[key] == null))) {
+    if (
+      !isUpsert &&
+      data.some(model => idProperties.some(key => model[key] == null))
+    ) {
       throw new QueryBuilderError(`Unable to ${action} models without ids.`)
     }
     this.#isTransacted = true
@@ -566,7 +589,8 @@ export class QueryBuilder extends objection.QueryBuilder {
     // `*DitoGraph*()` methods.
     return this.upsertGraphAndFetch(omitRelations(modelClass, data), {
       fetchStrategy: 'OnlyNeeded',
-      noInsert: true,
+      insertMissing: isUpsert,
+      noInsert: !isUpsert,
       noDelete: true,
       update: action === 'update'
     })
