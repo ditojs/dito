@@ -106,7 +106,8 @@ export const test = base.extend<{ url: string }, { workerUrl: string }>({
         await fs.rm(tmpDir, { recursive: true, force: true })
       }
     },
-    { scope: 'worker' }
+    // As in `defineScenario()`, setting up takes as long as it takes:
+    { scope: 'worker', timeout: 0 }
   ],
 
   url: async ({ workerUrl }, use) => {

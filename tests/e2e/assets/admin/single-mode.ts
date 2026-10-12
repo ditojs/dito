@@ -20,7 +20,7 @@ test.describe('single mode', () => {
       `${url}/admin/assets/${widgetId}`
     )
     const upload = new DitoUploadField(page, 'file')
-    await upload.waitUntilVisible({ timeout: 15_000 })
+    await upload.waitUntilVisible()
 
     // Upload initial file
     await upload.upload(
@@ -53,7 +53,7 @@ test.describe('single mode', () => {
       `${url}/admin/assets/${widgetId}`
     )
     const upload = new DitoUploadField(page, 'file')
-    await upload.waitUntilVisible({ timeout: 15_000 })
+    await upload.waitUntilVisible()
 
     // No file: footer upload button visible
     await expect(upload.addButton).toBeVisible()

@@ -20,7 +20,7 @@ test.describe('drag reorder', () => {
       `${url}/admin/assets/${widgetId}`
     )
     const upload = new DitoUploadField(page, 'files')
-    await upload.waitUntilVisible({ timeout: 15_000 })
+    await upload.waitUntilVisible()
 
     // Upload one file — no drag handle
     await upload.upload(
@@ -39,13 +39,13 @@ test.describe('drag reorder', () => {
     ).toHaveCount(2)
   })
 
-  test('reorder via drag and persist', async ({ page, url }) => {
+  test('reorder via drag handle and persist', async ({ page, url }) => {
     const widgetId = await seed()
     await page.goto(
       `${url}/admin/assets/${widgetId}`
     )
     const upload = new DitoUploadField(page, 'files')
-    await upload.waitUntilVisible({ timeout: 15_000 })
+    await upload.waitUntilVisible()
 
     await upload.upload(
       path.resolve(fixturesDir, 'tiny.png')
@@ -62,45 +62,12 @@ test.describe('drag reorder', () => {
       'tiny.jpg'
     )
 
-    // Reorder programmatically via the Vue
-    // component instance. The upload component's
-    // `value` is the reactive array backing
-    // `files`.
-    await page.evaluate(() => {
-      const uploadEl = document.querySelector(
-        '.dito-upload:has(input#files)'
-      ) as HTMLElement | null
-      if (!uploadEl) return
-      // Get the Vue component instance
-      const vueEl = uploadEl as any
-      const vm = (
-        vueEl.__vueParentComponent ||
-        vueEl._vei?.[''] ||
-        vueEl.__vue_app__
-      )
-      // Walk up to find the upload component
-      let comp = vueEl.__vueParentComponent
-      while (comp) {
-        if (Array.isArray(comp.data?.uploads)) {
-          break
-        }
-        comp = comp.parent
-      }
-      if (!comp) return
-      const value = (
-        comp.props?.value ??
-        comp.data?.value ??
-        comp.ctx?.value
-      )
-      if (
-        Array.isArray(value) &&
-        value.length >= 2
-      ) {
-        const [a, b] = value
-        value[0] = b
-        value[1] = a
-      }
-    })
+    // Move the first file down with the keyboard, which moves it through
+    // the data model like dropping it there does:
+    await upload
+      .getRow(0)
+      .locator('.dito-button--drag')
+      .press('Alt+ArrowDown')
 
     // Verify new order in DOM
     await expect(upload.getRow(0)).toContainText(
