@@ -254,7 +254,6 @@ const DitoTypeUpload = {
         ? createContext({
             value: file,
             data: files.value,
-            index,
             dataPath: appendDataPath(props.dataPath, index)
           })
         : context

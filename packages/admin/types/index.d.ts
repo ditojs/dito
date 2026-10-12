@@ -1908,8 +1908,11 @@ export type SchemaContext<$Item = any> = {
   dataPath: string
   /** The property name of the current component. */
   name: string
-  /** The index within a list, if applicable. */
-  index: number | null
+  /**
+   * The index of the value in its list, `null` for values that aren't list
+   * entries, e.g. of fields, whose item has `itemIndex`.
+   */
+  valueIndex: number | null
   /**
    * Data path of the closest item ancestor.
    */

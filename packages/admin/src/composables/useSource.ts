@@ -378,7 +378,6 @@ export function useSource(
               new SchemaContext(services, {
                 data: item,
                 value: item,
-                index,
                 dataPath: getItemDataPath(schema, index)
               })
             )
