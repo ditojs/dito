@@ -1,11 +1,17 @@
-import { computed, markRaw, onUnmounted, shallowRef } from 'vue'
+import { computed, markRaw, onUnmounted } from 'vue'
 import { isObject, isString, labelize } from '@ditojs/utils'
 import defaultVerbs from '../verbs.js'
-import { getResource, getMemberResource } from '../utils/resource.js'
+import {
+  getResource,
+  getMemberResource,
+  hasResource
+} from '../utils/resource.js'
 import { getErrorMessage } from '../utils/request.js'
 import { LoadingTracker } from '../utils/LoadingTracker.ts'
-import { sendRequest, type Services } from '../utils/services.ts'
+import { sendRequest } from '../utils/services.ts'
+import type { AdminContext } from '../utils/AdminContext.ts'
 import type {
+  ResourceContext,
   ResourceOptions,
   SubmitButton
 } from '../utils/ResourceContext.ts'
@@ -21,80 +27,72 @@ export interface RequestHandlerOptions {
   isDataLoad?: boolean
 }
 
-export interface SubmitResourceOptions {
+export interface LoadOptions {
+  query?: Record<string, any>
+  onLoad(data: any): Promise<unknown>
+  // Handle the error response of the load, and return whether it was handled:
+  onError?: (response: any) => boolean
+}
+
+export interface ButtonEventOptions {
+  // The data and item label that the events of the button receive:
+  data: Data | null
+  getItemLabel?: () => string | null
+  notify?: (error?: any) => void
+  error?: any
+}
+
+export interface SubmitResourceOptions
+  extends Omit<ButtonEventOptions, 'notify' | 'error'> {
   onSuccess?: (data: any) => void
   onError?: (error: any) => void
   notifySuccess?: () => void
   notifyError?: (error: any) => void
+  showValidationErrors(errors: Record<string, any>): Promise<unknown>
 }
 
-export interface UseResourceOptions {
-  services: Services
+// Load and submit the data of a form or source through its resource, which
+// continues `parentResourceContext`, tracking the requests in the loading
+// state of the component and of the route.
+export function useResource({
+  adminContext,
+  parentResourceContext,
+  parentRouteContext,
+  getSchema,
+  getItemId = () => null,
+  isTransient: getIsTransient
+}: {
+  adminContext: AdminContext
+  parentResourceContext: ResourceContext | null
   // The route of sources, and the parent route of forms:
   parentRouteContext: RouteContext | null
   getSchema(): Schema
   getItemId?: () => string | null
   isTransient(providesData: boolean): boolean
-  hasData(): boolean
-  clearData(): void
-  setLoadedData(data: any): void
-  getQuery?: () => Record<string, any>
-  // The pending navigation to a changed query, which the load waits for:
-  whenQueryNavigated?: () => Promise<boolean> | null
-  // Handle the error of a load, and return whether it was handled:
-  handleLoadError?: (response: any) => boolean
-  emitLoad(): Promise<unknown>
-  // The data and item label that the events of submit buttons receive:
-  getData(): Data | null
-  getItemLabel?: () => string | null
-  showValidationErrors(errors: Record<string, any>): Promise<unknown>
-}
-
-// Load and submit the data of a form or source through its resource, tracking
-// the requests in the loading state of the component and its view.
-export function useResource({
-  services,
-  parentRouteContext,
-  getSchema,
-  getItemId,
-  isTransient: getIsTransient,
-  hasData,
-  clearData,
-  setLoadedData,
-  getQuery = () => ({}),
-  whenQueryNavigated,
-  handleLoadError,
-  emitLoad,
-  getData,
-  getItemLabel = () => null,
-  showValidationErrors
-}: UseResourceOptions) {
-  const { adminContext } = services
+}) {
   const loadingTracker = markRaw(
     new LoadingTracker(
       parentRouteContext?.loadingTracker ?? adminContext.loadingTracker
     )
   )
-  const loadAbortController = shallowRef<AbortController | null>(null)
+  let loadAbortController: AbortController | null = null
 
   const getOwnResource = ({ method = 'get', child }: ResourceOptions = {}) => {
     const { resource } = getSchema()
     const collection = getResource(resource, {
       type: 'collection',
       method,
-      parent: parentRouteContext?.resourceContext?.getResource({
-        method,
-        child: resource
-      }) ?? null,
+      parent: (
+        parentResourceContext?.getResource({ method, child: resource }) ?? null
+      ),
       child
     })
-    return getMemberResource(getItemId?.(), collection) || collection
+    return getMemberResource(getItemId(), collection) || collection
   }
 
   const providesData = computed(() => !!getOwnResource())
   const isTransient = computed(() => getIsTransient(providesData.value))
   const isLoading = computed(() => loadingTracker.isLoading)
-  let isUnmounted = false
 
   // Continue the verbs of the parent, with the transient ones in nested data:
   const verbs = computed(() => {
@@ -120,10 +118,15 @@ export function useResource({
     adminContext.notify({ type: 'error', error, title, text })
   }
 
+  // Abort only the pending data load, as other requests, e.g. submits, change
+  // data on the server and their outcome needs to be notified:
+  const abortLoad = () => loadAbortController?.abort()
+  onUnmounted(abortLoad)
+
   // Errors are notified unless `callback()` returns `true`. Aborted requests
   // settle without calling it: Each data load aborts the previous one, and
   // unmounting aborts the pending one.
-  const handleRequest = async (
+  const request = async (
     {
       method,
       resource = getOwnResource({ method }),
@@ -135,25 +138,28 @@ export function useResource({
   ) => {
     const controller = new AbortController()
     if (isDataLoad) {
-      loadAbortController.value?.abort()
-      loadAbortController.value = controller
+      abortLoad()
+      loadAbortController = controller
     }
     const endLoading = loadingTracker.begin()
     let response = null
     let error: any = null
     try {
-      response = await sendRequest(services, {
-        method: resource?.method || method,
-        resource: resource ?? undefined,
-        query,
-        data,
-        signal: controller.signal
-      })
+      response = await sendRequest(
+        { adminContext, resourceContext: null },
+        {
+          method: resource?.method || method,
+          resource: resource ?? undefined,
+          query,
+          data,
+          signal: controller.signal
+        }
+      )
     } catch (err) {
       error = err
     } finally {
-      if (loadAbortController.value === controller) {
-        loadAbortController.value = null
+      if (loadAbortController === controller) {
+        loadAbortController = null
       }
       endLoading()
     }
@@ -168,64 +174,17 @@ export function useResource({
     }
   }
 
-  const requestData = (): Promise<void> => {
-    // While navigating to a changed query, the route watcher loads the list.
-    // Only load here if the navigation failed or was superseded:
-    const navigated = whenQueryNavigated?.()
-    return navigated
-      ? navigated.then(hasNavigated => {
-          if (!hasNavigated && !isUnmounted) {
-            return requestData()
-          }
-        })
-      : handleRequest(
-          { method: 'get', query: getQuery(), isDataLoad: true },
-          async (err, response) => {
-            if (err) {
-              return !!response && !!handleLoadError?.(response)
-            } else {
-              setLoadedData(response.data)
-              // Await the handlers, so that their errors are notified below.
-              await emitLoad()
-            }
-          }
-        ).catch(error => {
-          // The emitter aggregates the errors of the `load` handlers:
-          const errors =
-            error instanceof AggregateError ? error.errors : [error]
-          for (const err of errors) {
-            notifyRequestError(err)
-          }
-        })
-  }
-
-  const loadData = (clear: boolean) => {
-    if (!isTransient.value) {
-      if (clear) {
-        clearData()
-      }
-      return requestData()
-    }
-  }
-
-  // Abort only the pending data load, as other requests, e.g. submits, change
-  // data on the server and their outcome needs to be notified:
-  onUnmounted(() => {
-    isUnmounted = true
-    loadAbortController.value?.abort()
-  })
-
   // Emit the event of the button, and call `notify()` unless its handlers
   // returned a value or notified themselves:
   const emitButtonEvent = async (
     button: SubmitButton,
     event: string,
-    { notify, error }: { notify?: (error?: any) => void; error?: any }
+    { data, getItemLabel, notify, error }: ButtonEventOptions
   ) => {
     const context = button.createContext({
       nested: false,
-      data: getData(),
-      itemLabel: getItemLabel(),
+      data,
+      itemLabel: getItemLabel?.() ?? null,
       error
     })
     const res = await button.emitEvent(event, { context })
@@ -236,25 +195,38 @@ export function useResource({
   }
 
   return {
+    // Only forms and sources with a resource provide it to their components:
+    resourceContext: hasResource(getSchema())
+      ? markRaw({ getResource: getOwnResource })
+      : null,
     loadingTracker,
-    loadAbortController,
     isLoading,
     providesData,
     isTransient,
     verbs,
     getResource: getOwnResource,
-    handleRequest,
-    loadData,
+    request,
+    abortLoad,
     emitButtonEvent,
 
-    reloadData() {
-      loadData(false)
-    },
-
-    ensureData() {
-      if (!isTransient.value && !isLoading.value) {
-        loadData(!hasData())
-      }
+    loadData({ query, onLoad, onError }: LoadOptions) {
+      return request(
+        { method: 'get', query, isDataLoad: true },
+        async (err, response) => {
+          if (err) {
+            return !!response && !!onError?.(response)
+          } else {
+            // Await the handlers, so that their errors are notified below.
+            await onLoad(response.data)
+          }
+        }
+      ).catch(error => {
+        // The emitter aggregates the errors of the `load` handlers:
+        const errors = error instanceof AggregateError ? error.errors : [error]
+        for (const err of errors) {
+          notifyRequestError(err)
+        }
+      })
     },
 
     // Only post, put and patch requests pass the data as payload:
@@ -272,8 +244,10 @@ export function useResource({
       button: SubmitButton,
       resource: Resource,
       method: HTTPMethod,
-      data: any,
+      payload: any,
       {
+        data,
+        getItemLabel,
         onSuccess,
         onError,
         notifySuccess = () =>
@@ -292,23 +266,26 @@ export function useResource({
               ? ['Unable to send request:', message]
               : 'Unable to send request.'
           })
-        }
-      }: SubmitResourceOptions = {}
+        },
+        showValidationErrors
+      }: SubmitResourceOptions
     ) {
       let isSuccessful = false
-      await handleRequest(
-        { method, resource, data },
+      await request(
+        { method, resource, data: payload },
         async (err, response) => {
-          const data = response?.data
+          const responseData = response?.data
           if (err) {
             // Dito.js validation errors are shown on the fields:
-            const errors = response?.status === 400 && data.errors
+            const errors = response?.status === 400 && responseData.errors
             if (errors) {
               await showValidationErrors(errors)
             } else {
-              const error = isObject(data) ? data : err
+              const error = isObject(responseData) ? responseData : err
               onError?.(error)
               await emitButtonEvent(button, 'error', {
+                data,
+                getItemLabel,
                 notify: notifyError,
                 error
               })
@@ -317,8 +294,12 @@ export function useResource({
           } else {
             // Forms merge the id of created items in `onSuccess()`, before the
             // notification reads the item label:
-            onSuccess?.(data)
-            await emitButtonEvent(button, 'success', { notify: notifySuccess })
+            onSuccess?.(responseData)
+            await emitButtonEvent(button, 'success', {
+              data,
+              getItemLabel,
+              notify: notifySuccess
+            })
             isSuccessful = true
           }
         }

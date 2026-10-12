@@ -1,93 +1,231 @@
 import {
   computed,
   inject,
+  markRaw,
   onUnmounted,
-  provide,
   reactive,
+  shallowReactive,
   shallowRef,
   watch
 } from 'vue'
 import { useRouter, type RouteRecordNormalized } from 'vue-router'
+import { getRelativeDataPath } from '../utils/data.js'
 import { getSchemaPath } from '../utils/schema/structure.js'
+import { adminContextKey, routeContextKey } from '../utils/keys.ts'
+import { LoadingTracker } from '../utils/LoadingTracker.ts'
 import {
-  DataContext,
-  type DataOwner
-} from '../utils/DataContext.ts'
-import { RouteContext, type RouteOwner } from '../utils/RouteContext.ts'
+  FormNode,
+  type FormRoute,
+  type Route,
+  type ViewNode
+} from '../utils/RouteTree.ts'
+import { useContainer, type ContainerOptions } from './useContainer.ts'
 import { useLeaveGuard } from './useLeaveGuard.ts'
-import type { AdminContext } from '../utils/AdminContext.ts'
-import type { Schema } from '../utils/types.ts'
+import type { RouteContext } from '../utils/RouteContext.ts'
+import type {
+  ResourceContext,
+  SubmitButton,
+  SubmitOptions
+} from '../utils/ResourceContext.ts'
 
-// The view or form, without the state of its route:
-type RouteContainerOwner = DataOwner &
-  Omit<
-    RouteOwner,
-    'routeRecord' | 'routeParams' | 'path' | 'isLastRoute' | 'isLeavingRoute'
-  > & {
-    readonly sourceSchema: Schema
-    readonly isMutating?: boolean
-    readonly verbs: Record<string, string>
-  }
+export interface RouteContainerOptions
+  extends Omit<ContainerOptions, 'routeContext'> {
+  route: RouteRecord
+  sourceSchema: NonNullable<ContainerOptions['sourceSchema']>
+  isTransient?: () => boolean
+  isMutating?: () => boolean
+  breadcrumb: () => string
+  verbs: () => Record<string, string>
+  // Forms with a resource of their own:
+  resourceContext?: ResourceContext | null
+  submit?: (button: SubmitButton, options?: SubmitOptions) => Promise<boolean>
+}
 
-export function useRouteContainer(owner: RouteContainerOwner) {
-  const adminContext = inject<AdminContext>('adminContext')!
+export type RouteRecord = ReturnType<typeof useRouteRecord>
+
+// The route record that the view or form at the next level is rendered for,
+// with its node and parameters.
+export function useRouteRecord() {
   const router = useRouter()
-  const dataContext = new DataContext(owner)
-  const routeContext = new RouteContext(
-    Object.setPrototypeOf(
-      {
-        get routeRecord() {
-          return routeRecord.value
-        },
-
-        get routeParams() {
-          return routeParams.value
-        },
-
-        get path() {
-          return path.value
-        },
-
-        get isLastRoute() {
-          return isLastRoute.value
-        },
-
-        get isLeavingRoute() {
-          return isLeavingRoute.value
-        }
-      },
-      owner
-    ),
-    {
-      parent: inject<RouteContext | null>('routeContext', null),
-      dataContext,
-      router
-    }
-  )
-  const { level } = routeContext
-  provide('routeContext', routeContext)
-
-  const routeRecord = shallowRef<RouteRecordNormalized | null>(null)
-  const routeParams = shallowRef<Record<string, any>>({})
+  const parent = inject(routeContextKey, null)
+  const level = parent ? parent.level + 1 : 0
+  const record = shallowRef<RouteRecordNormalized | null>(null)
+  const params = shallowRef<Record<string, any>>({})
   watch(
     router.currentRoute,
-    ({ matched, params }) => {
+    ({ matched, params: routeParams }) => {
       // Components belong to the record that they're rendered for. While
       // they're left, they keep it until they're unmounted, as their data model
       // still reads their schema and node. Records of the same path replace it,
       // e.g. when the routes are set up again:
-      const record = matched[level]
+      const matchedRecord = matched[level]
       if (
-        record &&
-        (!routeRecord.value || record.path === routeRecord.value.path)
+        matchedRecord &&
+        (!record.value || matchedRecord.path === record.value.path)
       ) {
-        routeRecord.value = record
-        routeParams.value = params
+        record.value = matchedRecord
+        params.value = routeParams
       }
     },
     // Update synchronously, so the record changes with the route:
     { immediate: true, flush: 'sync' }
   )
+  return {
+    parent,
+    level,
+    record,
+    params,
+    node: computed(() => record.value!.meta.node!)
+  }
+}
+
+// Set up a view or form as the container of its data and of its route.
+export function useRouteContainer({
+  route,
+  isTransient = () => false,
+  isMutating = () => false,
+  breadcrumb,
+  verbs,
+  resourceContext = null,
+  submit,
+  ...options
+}: RouteContainerOptions) {
+  const adminContext = inject(adminContextKey)!
+  const router = useRouter()
+  const { parent, level, record: routeRecord, params: routeParams } = route
+  const getMatched = () => router.currentRoute.value.matched
+  const getNode = () => route.node.value
+
+  const path = computed(() => {
+    const { name } = routeRecord.value!
+    // The routes are replaced when the views are resolved again, e.g. after
+    // logging in, while the components of the previous ones still exist:
+    return router.hasRoute(name!)
+      ? router.resolve({
+          name,
+          params: getNode().getParams(routeParams.value)
+        }).path
+      : router.currentRoute.value.path
+  })
+
+  // Resolve the routes of the data path in the data of the route, which only
+  // views and forms render, menus don't:
+  const resolveRoute = (
+    dataPath: string,
+    getRoute: (
+      node: ViewNode | FormNode,
+      path: string
+    ) => (Route & Partial<FormRoute>) | null
+  ) => {
+    const path = getRelativeDataPath(
+      dataPath,
+      routeContext.dataContext.dataPath
+    )
+    const route = (
+      path !== null &&
+      getRoute(getNode() as ViewNode | FormNode, path)
+    )
+    return route
+      ? { path: router.resolve(route).path, dataPath: route.dataPath ?? '' }
+      : null
+  }
+
+  const routeContext: RouteContext = shallowReactive({
+    parent,
+    level,
+    selectedTab: null,
+    loadCache: {},
+    resourceContext: resourceContext ?? parent?.resourceContext ?? null,
+
+    get dataContext() {
+      return container.dataContext
+    },
+
+    get node() {
+      return getNode()
+    },
+
+    get childNode() {
+      return getMatched()[level + 1]?.meta.node ?? null
+    },
+
+    get isForm() {
+      return getNode() instanceof FormNode
+    },
+
+    get state() {
+      return {
+        data: container.dataContext.data,
+        routeParams: routeParams.value,
+        isTransient: isTransient() || container.dataContext.isCreating
+      }
+    },
+
+    get path() {
+      return path.value
+    },
+
+    get isLastRoute() {
+      return routeRecord.value === getMatched().at(-1)
+    },
+
+    get isLeaving() {
+      return getMatched()[level]?.path !== routeRecord.value?.path
+    },
+
+    get isDirty() {
+      return container.dataContext.isDirty
+    },
+
+    get breadcrumb() {
+      return breadcrumb()
+    },
+
+    get verbs() {
+      return verbs()
+    },
+
+    loadingTracker: (
+      parent?.loadingTracker ??
+      markRaw(new LoadingTracker(adminContext.loadingTracker))
+    ),
+
+    getFormRoute(dataPath: string) {
+      return resolveRoute(dataPath, (node, path) =>
+        node.getFormRoute(path, routeContext.state)
+      )
+    },
+
+    getFormPath(dataPath: string) {
+      const route = routeContext.getFormRoute(dataPath)
+      return route && !route.dataPath ? route.path : null
+    },
+
+    getCreatePath(dataPath: string) {
+      return (
+        resolveRoute(dataPath, (node, path) =>
+          node.getCreateRoute(path, routeContext.state)
+        )?.path ?? null
+      )
+    },
+
+    close() {
+      if (!parent) {
+        throw new Error('Unable to close the route: Views cannot be closed.')
+      }
+      return router.push(parent.path)
+    },
+
+    submit(button: SubmitButton, options?: SubmitOptions) {
+      if (!submit) {
+        throw new Error(
+          'Unable to submit the route: Views cannot be submitted.'
+        )
+      }
+      return submit(button, options)
+    }
+  })
+  const container = useContainer({ ...options, routeContext })
 
   // Components of new routes replace the ones of the previous routes at their
   // level, which are unmounted after:
@@ -101,46 +239,19 @@ export function useRouteContainer(owner: RouteContainerOwner) {
 
   const { navigateWithin } = useLeaveGuard(routeContext, {
     adminContext,
-    isMutating: () => !!owner.isMutating,
-    getCancelVerb: () => owner.verbs.cancel
-  })
-
-  const getMatched = () => router.currentRoute.value.matched
-
-  const isLeavingRoute = computed(
-    () => getMatched()[level]?.path !== routeRecord.value?.path
-  )
-
-  const isLastRoute = computed(
-    () => routeRecord.value === getMatched().at(-1)
-  )
-
-  const path = computed(() => {
-    const { name } = routeRecord.value!
-    // The routes are replaced when the views are resolved again, e.g. after
-    // logging in, while the components of the previous ones still exist:
-    return router.hasRoute(name!)
-      ? router.resolve({
-          name,
-          params: routeContext.node.getParams(routeParams.value)
-        }).path
-      : router.currentRoute.value.path
+    isMutating,
+    getCancelVerb: () => routeContext.verbs.cancel
   })
 
   return {
-    ownDataContext: dataContext,
-    ownRouteContext: routeContext,
-    routeRecord,
-    routeParams,
-    isLeavingRoute,
-    isLastRoute,
-    path,
+    ...container,
+    routeContext,
+    navigateWithin,
     // The state that outlives the components, e.g. the query of lists:
     store: reactive({}),
-    navigateWithin,
 
     schemaPath: computed(() => {
-      const { sourceSchema } = owner
+      const sourceSchema = options.sourceSchema()!
       return getSchemaPath(sourceSchema, sourceSchema.name, adminContext.api)
     })
   }

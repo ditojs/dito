@@ -36,6 +36,7 @@ import {
   useComponentPath
 } from '../composables/useComponentPath.ts'
 import { appendDataPath } from '../utils/data.js'
+import { panelTabKey } from '../utils/keys.ts'
 
 export default {
   name: 'DitoButtons',
@@ -52,7 +53,7 @@ export default {
 
   setup(props) {
     // Buttons don't belong to the tab of a pane:
-    provide('panelTab', null)
+    provide(panelTabKey, null)
     // Add the group name, so buttons don't share their component paths with
     // components of the same name, like a `publish` button and field:
     useComponentPath(

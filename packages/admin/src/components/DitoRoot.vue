@@ -21,7 +21,7 @@
       @remove="removeDialog(key)"
     )
   DitoNavigation
-  main.dito-page.dito-scroll-parent(:class="appState.pageClass")
+  main.dito-page.dito-scroll-parent(:class="adminContext.pageClass")
     DitoHeader(
       :spinner="options.spinner"
       :isLoading="adminContext.loadingTracker.isLoading"
@@ -58,6 +58,7 @@ import DitoDialog from './DitoDialog.vue'
 import { setupSchemaComponents } from '../utils/schema/setup.js'
 import { RouteTree } from '../utils/RouteTree.ts'
 import { FileDropTargets } from '../utils/FileDropTargets.js'
+import { adminContextKey, fileDropTargetsKey } from '../utils/keys.ts'
 
 export default {
   name: 'DitoRoot',
@@ -68,14 +69,14 @@ export default {
   },
 
   setup(props) {
-    const adminContext = inject('adminContext')
+    const adminContext = inject(adminContextKey)
     const { domOn } = useDomEvents()
     const root = useTemplateRef('root')
     const notifications = useTemplateRef('notifications')
     const dialogs = reactive({})
     // The files dragged over the admin, for the uploads to drop them on:
     const fileDropTargets = markRaw(new FileDropTargets())
-    provide('fileDropTargets', fileDropTargets)
+    provide(fileDropTargetsKey, fileDropTargets)
     // The login link shows without a user once the session started:
     const hasSessionStarted = ref(false)
 
@@ -102,11 +103,9 @@ export default {
 
     const notify = options => notifications.value.notify(options)
 
-    appState.title = document.title || 'Dito.js Admin'
     adminContext.attachDialogsAndNotifications({
       showDialog,
-      notify,
-      closeNotifications: () => notifications.value.destroyAll()
+      notify
     })
     const detachSessionUserInterface = adminContext.session.attachUserInterface(
       {

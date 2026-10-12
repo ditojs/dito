@@ -9,14 +9,14 @@ describe('useRouteContainer()', () => {
     const { routes } = admin.context.ui
     const view = admin.getRouteComponent(isView)
     const form = admin.getRouteComponent(isForm)
-    expect(routes).toEqual([view.ownRouteContext, form.ownRouteContext])
+    expect(routes).toEqual([view.routeContext, form.routeContext])
     await admin.navigate('/items')
     expect(form.$.isUnmounted).toBe(true)
-    expect(routes).toEqual([view.ownRouteContext])
+    expect(routes).toEqual([view.routeContext])
     await admin.navigate('/items/1')
     const newForm = admin.getRouteComponent(isForm)
     expect(newForm).not.toBe(form)
-    expect(routes).toEqual([view.ownRouteContext, newForm.ownRouteContext])
+    expect(routes).toEqual([view.routeContext, newForm.routeContext])
   })
 
   it('replaces the routes of other views at their level', async () => {
@@ -32,7 +32,7 @@ describe('useRouteContainer()', () => {
     expect(view.$.isUnmounted).toBe(true)
     const authorsView = admin.getRouteComponent(isView)
     expect(authorsView.name).toBe('authors')
-    expect(admin.context.ui.routes).toEqual([authorsView.ownRouteContext])
+    expect(admin.context.ui.routes).toEqual([authorsView.routeContext])
   })
 
   it('uses the breadcrumb of the schema', async () => {

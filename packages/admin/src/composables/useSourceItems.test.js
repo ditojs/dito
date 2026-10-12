@@ -9,7 +9,7 @@ const bookForm = {
 
 const maliciousTitle = '<img src="x" onerror="alert(1)">'
 
-describe('useItemLabel()', () => {
+describe('useSourceItems()', () => {
   describe('getItemLabel()', () => {
     it('escapes the values of items in list labels', async () => {
       const { findField } = await mountSchema({

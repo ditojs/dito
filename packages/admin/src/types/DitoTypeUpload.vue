@@ -107,7 +107,7 @@
               DitoDragHandle(
                 v-if="draggable"
                 :disabled="disabled"
-                @move="delta => moveItem(file, delta)"
+                @move="delta => moveItem(index, delta)"
               )
               DitoButton(
                 v-if="deletable"
@@ -165,6 +165,7 @@ import {
 import { confirmAndRemove } from '../utils/dialogs.js'
 import { isArray, asArray, escapeHtml } from '@ditojs/utils'
 import VueUpload from 'vue-upload-component'
+import { fileDropTargetsKey } from '../utils/keys.ts'
 
 // @vue/component
 const DitoTypeUpload = {
@@ -178,7 +179,7 @@ const DitoTypeUpload = {
       field
     const { adminContext } = services
     const getModel = () => services.dataContext.model
-    const fileDropTargets = inject('fileDropTargets')
+    const fileDropTargets = inject(fileDropTargetsKey)
     const dropTarget = useTemplateRef('dropTarget')
     const upload = useTemplateRef('upload')
     const uploads = ref([])

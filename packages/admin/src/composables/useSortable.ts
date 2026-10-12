@@ -1,6 +1,6 @@
 import { inject, ref } from 'vue'
-import type { DataContext } from '../utils/DataContext.ts'
 import type { ListEntry } from '../utils/DataModel.ts'
+import { dataContextKey } from '../utils/keys.ts'
 
 export interface SortableOptions {
   // Components without it apply the sorted list themselves, like tree items:
@@ -12,7 +12,7 @@ export function useSortable({
   getListEntry,
   onChange
 }: SortableOptions = {}) {
-  const dataContext = inject<DataContext | null>('dataContext', null)
+  const dataContext = inject(dataContextKey, null)
   const isDragging = ref(false)
 
   const moveSortableItem = (from: number, to: number) => {
@@ -55,8 +55,7 @@ export function useSortable({
     },
 
     // Move by `delta` positions, from the keyboard in `DitoDragHandle`:
-    moveItem(item: any, delta: number) {
-      const index = getListEntry!().list.indexOf(item)
+    moveItem(index: number, delta: number) {
       moveSortableItem(index, index + delta)
     }
   }

@@ -1,4 +1,4 @@
-import appState from '../appState.js'
+import { shallowRef } from 'vue'
 import AdminUser from '../AdminUser.js'
 
 // The views depend on the user, so we resolve them for each login and clear
@@ -9,6 +9,11 @@ export class Session {
   #viewRegistry
   #redirectAfterLogin
   #userInterface = null
+  /** @type {import('vue').ShallowRef<Record<string, any> | null>} */
+  #user = shallowRef(null)
+  // The responses of `request({ cache: 'global' })`, kept for the same user:
+  /** @type {Record<string, Promise<any>>} */
+  loadCache = {}
 
   constructor({ api, viewRegistry, redirectAfterLogin = null }) {
     this.#api = api
@@ -16,9 +21,8 @@ export class Session {
     this.#redirectAfterLogin = redirectAfterLogin
   }
 
-  // Reactive, as it's kept in the app state:
   get user() {
-    return appState.user
+    return this.#user.value
   }
 
   // `requestLoginData()` returns the credentials, or `null` when cancelled.
@@ -93,12 +97,10 @@ export class Session {
   }
 
   #setUser(user) {
-    // Responses loaded with `cache: 'global'` belong to the user that loaded
-    // them, and are kept only while the same user is fetched again:
-    if (!user || user.id !== appState.user?.id) {
-      appState.loadCache = {}
+    if (!user || user.id !== this.user?.id) {
+      this.loadCache = {}
     }
-    appState.user = user && Object.setPrototypeOf(user, AdminUser.prototype)
+    this.#user.value = user && Object.setPrototypeOf(user, AdminUser.prototype)
     if (!user) {
       this.#viewRegistry.clear()
     }

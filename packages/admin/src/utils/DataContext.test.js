@@ -1,6 +1,5 @@
 import { vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
-import { DataContext, DialogContext } from './DataContext.ts'
 import {
   mountAdmin,
   mountForm,
@@ -31,11 +30,11 @@ describe('DataContext', () => {
       schema: { components: { title: { type: 'text' } } },
       data: { title: 'Emma' }
     })
-    const dataContext = view.ownDataContext
-    expect(dataContext).toBeInstanceOf(DataContext)
+    const { dataContext } = view
     expect(admin.getSchemaComponent(view)).not.toBe(null)
+    expect(getComponent('title').services.dataContext).toBe(dataContext)
     expect(getComponent('title').context.isDirty).toBe(false)
-    expect(dataContext.model).toBe(view.dataModel)
+    expect(dataContext.model.data).toBe(view.data)
     expect(dataContext.isCreating).toBe(false)
   })
 
@@ -44,13 +43,11 @@ describe('DataContext', () => {
       schema: { components: { title: { type: 'text' } } },
       data: { title: 'Emma' }
     })
-    const dataContext = form.ownDataContext
+    const dataContext = form.dataContext
     expect(dataContext.isDirty).toBe(false)
-    expect(dataContext.isEdited).toBe(false)
     wrapper.find('input[name="title"]').setValue('Persuasion')
     await flushPromises()
     expect(dataContext.isDirty).toBe(true)
-    expect(dataContext.isEdited).toBe(true)
   })
 
   it('is provided by nested forms for their items', async () => {
@@ -61,9 +58,9 @@ describe('DataContext', () => {
     await admin.navigate('/items/1/chapters/0')
     const form = admin.getRouteComponent(isForm)
     await settle(form)
-    const dataContext = form.ownDataContext
-    expect(dataContext).not.toBe(parent.ownDataContext)
-    expect(dataContext.model).not.toBe(parent.ownDataContext.model)
+    const dataContext = form.dataContext
+    expect(dataContext).not.toBe(parent.dataContext)
+    expect(dataContext.model).not.toBe(parent.dataContext.model)
     expect(admin.getSchemaComponent(form)).not.toBe(null)
   })
 
@@ -82,8 +79,8 @@ describe('DataContext', () => {
     await admin.navigate('/items/1/chapters/0')
     const form = admin.getRouteComponent(isForm)
     await settle(form)
-    expect(form.ownDataContext).not.toBe(parent.ownDataContext)
-    expect(form.ownDataContext.model).toBe(parent.ownDataContext.model)
+    expect(form.dataContext).not.toBe(parent.dataContext)
+    expect(form.dataContext.model).toBe(parent.dataContext.model)
   })
 
   it('is provided by dialogs, which it closes', async () => {
@@ -95,9 +92,8 @@ describe('DataContext', () => {
     await flushPromises()
     const dialog = admin.wrapper.findComponent({ name: 'DitoDialog' })
     const { dataContext } = dialog.findComponent({ name: 'DitoSchema' }).vm
-    expect(dataContext).toBeInstanceOf(DialogContext)
     expect(dataContext.model.data).toBe(dialog.vm.dialogData)
-    dataContext.close('closed')
+    dataContext.closeDialog('closed')
     expect(await promise).toBe('closed')
   })
 
@@ -117,7 +113,7 @@ describe('DataContext', () => {
     })
     const panel = wrapper.findComponent({ name: 'DitoPanel' })
     const { dataContext } = panel.findComponent({ name: 'DitoSchema' }).vm
-    expect(dataContext).not.toBe(view.ownDataContext)
+    expect(dataContext).not.toBe(view.dataContext)
     expect(dataContext.model.data).toBe(panel.vm.panelData)
   })
 
@@ -127,7 +123,7 @@ describe('DataContext', () => {
         schema: { components: { title: { type: 'text', required: true } } },
         data: { title: '' }
       })
-      expect(routeComponent.ownDataContext.validate()).toBe(false)
+      expect(routeComponent.dataContext.validate()).toBe(false)
       await flushPromises()
       expect(getErrors('title')).toEqual(['The title field is required.'])
       expect(dataModel.getErrorDataPaths()).toEqual(['title'])
@@ -143,13 +139,13 @@ describe('DataContext', () => {
           data: { title: '' }
         }
       )
-      routeComponent.ownDataContext.validate()
+      routeComponent.dataContext.validate()
       await flushPromises()
       expect(getErrors('title')).toEqual(['The title field is required.'])
       data.title = 'Emma'
       await flushPromises()
       expect(getErrors('title')).toEqual([])
-      expect(routeComponent.ownDataContext.validate()).toBe(true)
+      expect(routeComponent.dataContext.validate()).toBe(true)
       expect(dataModel.getErrorDataPaths()).toEqual([])
     })
   })
@@ -165,12 +161,12 @@ describe('DataContext', () => {
         },
         data: { title: 'Emma', author: '' }
       })
-      expect(routeComponent.ownDataContext.verify()).toBe(false)
-      expect(routeComponent.ownDataContext.verify('title')).toBe(true)
-      expect(routeComponent.ownDataContext.verify(/^author$/)).toBe(false)
+      expect(routeComponent.dataContext.verify()).toBe(false)
+      expect(routeComponent.dataContext.verify('title')).toBe(true)
+      expect(routeComponent.dataContext.verify(/^author$/)).toBe(false)
       // Unlike `validate()`, no errors are shown:
       expect(getErrors('author')).toEqual([])
-      expect(routeComponent.ownDataContext.validate('author')).toBe(false)
+      expect(routeComponent.dataContext.validate('author')).toBe(false)
       await flushPromises()
       expect(getErrors('author')).toEqual(['The author field is required.'])
     })
@@ -185,10 +181,10 @@ describe('DataContext', () => {
         data: { title: 'Emma', author: 'Jane' }
       })
       const notify = vi.spyOn(admin.context, 'notify')
-      await routeComponent.ownDataContext.showValidationErrors({
+      await routeComponent.dataContext.showValidationErrors({
         title: [{ message: 'is taken' }]
       })
-      await routeComponent.ownDataContext.showValidationErrors({
+      await routeComponent.dataContext.showValidationErrors({
         author: [{ message: 'is unknown' }]
       })
       await flushPromises()
@@ -196,7 +192,7 @@ describe('DataContext', () => {
       expect(getErrors('author')).toEqual(['The author field is unknown.'])
       expect(notify).toHaveBeenCalledTimes(2)
       // Without errors, there's nothing to notify:
-      await routeComponent.ownDataContext.showValidationErrors({})
+      await routeComponent.dataContext.showValidationErrors({})
       expect(notify).toHaveBeenCalledTimes(2)
       vi.restoreAllMocks()
     })
@@ -217,7 +213,7 @@ describe('DataContext', () => {
         data: { address: { city: 'Bath' } }
       })
       const notify = vi.spyOn(admin.context, 'notify')
-      await routeComponent.ownDataContext.showValidationErrors({
+      await routeComponent.dataContext.showValidationErrors({
         'address/street': [{ message: 'is required' }]
       })
       await flushPromises()

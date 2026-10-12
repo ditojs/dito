@@ -16,6 +16,7 @@ DitoEditButtons.dito-options-edit-buttons(
 import { computed, inject } from 'vue'
 import { useRouter } from 'vue-router'
 import DitoEditButtons from './DitoEditButtons.vue'
+import { adminContextKey } from '../utils/keys.ts'
 
 export default {
   name: 'DitoOptionsEditButtons',
@@ -30,7 +31,7 @@ export default {
   },
 
   setup(props) {
-    const adminContext = inject('adminContext')
+    const adminContext = inject(adminContextKey)
     const router = useRouter()
     return {
       editPath: computed(() => {

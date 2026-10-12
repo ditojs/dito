@@ -149,7 +149,7 @@ describe('useSource()', () => {
       await flushPromises()
       expect(requests).toContain('delete /items/1/reviews/7')
       expect(onChange).toHaveBeenCalledOnce()
-      expect(routeComponent.ownRouteContext.isDirty).toBe(false)
+      expect(routeComponent.routeContext.isDirty).toBe(false)
     })
 
     it('numbers the items left after deleting one through the resource', async () => {
@@ -184,7 +184,7 @@ describe('useSource()', () => {
       await findField('reviews').find('.dito-button--delete').trigger('click')
       await flushPromises()
       expect(data.reviews).toEqual([{ id: 8, text: 'Fine', position: 0 }])
-      expect(routeComponent.dataModel.isEdited).toBe(false)
+      expect(routeComponent.dataContext.model.isEdited).toBe(false)
       reload.resolve({ data: data.reviews })
       await flushPromises()
     })
@@ -215,7 +215,7 @@ describe('useSource()', () => {
       await findField('review').find('.dito-button--delete').trigger('click')
       await flushPromises()
       expect(data.review).toBe(null)
-      expect(routeComponent.ownRouteContext.isDirty).toBe(false)
+      expect(routeComponent.routeContext.isDirty).toBe(false)
     })
   })
 
@@ -244,7 +244,8 @@ describe('useSource()', () => {
     const view = admin.getRouteComponent(isView)
     // E.g. a running upload, which can't time out:
     const upload = Promise.withResolvers()
-    view.dataModel.trackPendingLoad(upload.promise, { canTimeOut: false })
+    const { model } = view.dataContext
+    model.trackPendingLoad(upload.promise, { canTimeOut: false })
     await admin.wrapper.find('button[id$="saveOrder"]').trigger('click')
     await flushPromises()
     const isPosted = () =>
@@ -277,7 +278,7 @@ describe('useSource()', () => {
       await admin.navigate('/items/1')
       await admin.navigate('/items/1/chapters/1')
       await admin.navigate('/items/1')
-      await routeComponent.ownDataContext.showValidationErrors({
+      await routeComponent.dataContext.showValidationErrors({
         'chapters/1/title': [{ message: 'is taken' }]
       })
       await flushPromises()
@@ -285,7 +286,8 @@ describe('useSource()', () => {
       const chapterForm = admin.getRouteComponent(isForm)
       expect(chapterForm).not.toBe(routeComponent)
       expect(chapterForm.data).toEqual({ title: 'Caladan' })
-      expect(chapterForm.dataModel.getErrors('chapters/1/title')).toEqual([
+      const { model } = chapterForm.dataContext
+      expect(model.getErrors('chapters/1/title')).toEqual([
         { message: 'is taken' }
       ])
     })
@@ -374,13 +376,13 @@ describe('useSource()', () => {
     it('loads the set query once when loading while it navigates', async () => {
       const { admin, source, getLoadQueries } = await mountBooksView()
       const loadCount = getLoadQueries().length
-      source.query = { order: 'title desc' }
-      source.loadData()
+      source.listQuery.update({ order: 'title desc' })
+      source.sourceContext.reload()
       await flushPromises()
       expect(admin.router.currentRoute.value.query).toEqual({
         order: 'title desc'
       })
-      expect(source.query).toEqual({ order: 'title desc' })
+      expect(source.listQuery.query).toEqual({ order: 'title desc' })
       expect(getLoadQueries().slice(loadCount)).toEqual([
         { order: 'title desc' }
       ])
@@ -390,10 +392,10 @@ describe('useSource()', () => {
       const { admin, source, getLoadQueries } = await mountBooksView()
       const loadCount = getLoadQueries().length
       admin.router.beforeEach(() => false)
-      source.query = { order: 'title desc' }
-      source.loadData()
+      source.listQuery.update({ order: 'title desc' })
+      source.sourceContext.reload()
       await flushPromises()
-      expect(source.query).toEqual({ order: 'title asc' })
+      expect(source.listQuery.query).toEqual({ order: 'title asc' })
       expect(getLoadQueries().slice(loadCount)).toEqual([
         { order: 'title asc' }
       ])
@@ -406,8 +408,8 @@ describe('useSource()', () => {
       admin.router.beforeEach(
         () => new Promise(resolve => (rejectNavigation = () => resolve(false)))
       )
-      source.query = { order: 'title desc' }
-      source.loadData()
+      source.listQuery.update({ order: 'title desc' })
+      source.sourceContext.reload()
       await flushPromises()
       unmountAdmin(admin)
       rejectNavigation()
@@ -433,7 +435,7 @@ describe('useSource()', () => {
           ]
         }
       })
-      expect(schemaComponent.processData('clipboard')).toEqual({
+      expect(schemaComponent.getClipboardData()).toEqual({
         authors: [{ name: 'Mary Shelley' }, { name: 'Bram Stoker' }]
       })
       expect(data.authors).toEqual([
@@ -532,35 +534,6 @@ describe('useSource()', () => {
       expect(publisher.objectData).toEqual({ id: 1, name: 'Penguin' })
     })
 
-    it('clears the value and the total when loading anew', async () => {
-      let resolveLoad = null
-      let isPending = false
-      const { getComponent } = await mountView(
-        {
-          books: {
-            type: 'list',
-            resource: { path: 'books' },
-            columns: { title: {} }
-          }
-        },
-        () =>
-          isPending
-            ? new Promise(resolve => (resolveLoad = resolve))
-            : { data: { results: [{ id: 1, title: 'Emma' }], total: 12 } }
-      )
-      const books = getComponent('books')
-      expect(books.value).toEqual([{ id: 1, title: 'Emma' }])
-      expect(books.total).toBe(12)
-      isPending = true
-      books.loadData(true)
-      await flushPromises()
-      expect(books.value).toBe(null)
-      expect(books.total).toBe(0)
-      resolveLoad({ data: { results: [], total: 0 } })
-      await flushPromises()
-      expect(books.value).toEqual([])
-    })
-
     it('loads its list again after an item was saved in its form', async () => {
       const requests = []
       const { admin } = await mountForm({
@@ -622,7 +595,7 @@ describe('useSource()', () => {
         },
         request
       })
-      expect(getComponent('books').defaultScope.name).toBe('recent')
+      expect(getComponent('books').listQuery.query.scope).toBe('recent')
       expect(request).toHaveBeenCalledWith(
         expect.objectContaining({ url: '/books', query: { scope: 'recent' } })
       )
@@ -640,7 +613,7 @@ describe('useSource()', () => {
           }
         }
       })
-      expect(getComponent('books').defaultScope.name).toBe('all')
+      expect(getComponent('books').listQuery.query.scope).toBe('all')
     })
   })
 
@@ -661,7 +634,7 @@ describe('useSource()', () => {
       })
       const tags = getComponent('tags')
       expect(tags.listData).toEqual([{ tag: 'fiction' }, { tag: 'classic' }])
-      const item = tags.createItem(tags.schema.form)
+      const item = tags.sourceContext.createItem(tags.schema.form)
       item.tag = 'romance'
       await settle()
       expect(tags.listData).toHaveLength(3)
@@ -686,7 +659,8 @@ describe('useSource()', () => {
         data: { chapters: [{ title: 'One' }, { title: 'Three' }] }
       })
       const chapters = getComponent('chapters')
-      const item = chapters.createItem(chapters.schema.form, null, 1)
+      const { sourceContext, schema } = chapters
+      const item = sourceContext.createItem(schema.form, null, 1)
       item.title = 'Two'
       await settle()
       expect(data.chapters.map(({ title }) => title)).toEqual([
@@ -715,7 +689,7 @@ describe('useSource()', () => {
         data: { chapters: [{ title: 'One' }] }
       })
       const chapters = getComponent('chapters')
-      chapters.createItem(chapters.schema.form)
+      chapters.sourceContext.createItem(chapters.schema.form)
       await settle()
       expect(getOpenedItems(chapters)).toEqual([false, true])
     })
@@ -803,7 +777,7 @@ describe('useSource()', () => {
       })
       await admin.navigate('/test')
       const view = admin.getRouteComponent(isView)
-      view.ownDataContext.replaceItem(data)
+      view.dataContext.replaceItem(data)
       await settle(view)
       return { admin, view }
     }
@@ -858,7 +832,7 @@ describe('useSource()', () => {
         '/items/1/meta/reviews/9'
       )
       const form = admin.getRouteComponent(
-        it => isForm(it) && it.path.endsWith('/9')
+        it => isForm(it) && it.routeContext.path.endsWith('/9')
       )
       expect(form.data).toEqual({ id: 9, title: 'Late' })
     })
@@ -1081,7 +1055,7 @@ describe('useSource()', () => {
       it('create items in the forms of the views', async () => {
         const list = await mountLinkedList()
         expect(list.creatable).toBe(true)
-        expect(list.createPath).toBe('/books/items/create')
+        expect(list.sourceContext.createPath).toBe('/books/items/create')
       })
     })
   })

@@ -107,12 +107,17 @@ import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import DitoEditButtons from './DitoEditButtons.vue'
 import { useSortable } from '../composables/useSortable.ts'
-import { useItemLabel } from '../composables/useItemLabel.ts'
+import { useSourceItems } from '../composables/useSourceItems.ts'
 import { useSchemaContext } from '../composables/useSchemaContext.ts'
 import { useSchemaValue } from '../composables/useSchemaValue.ts'
 import { useComponentPath } from '../composables/useComponentPath.ts'
 import { appendDataPath, getRelativeDataPath } from '../utils/data.js'
-import { getNamedSchemas, hasFormSchema } from '../utils/schema/lookup.js'
+import {
+  getItemFormSchema,
+  getNamedSchemas,
+  hasFormSchema
+} from '../utils/schema/lookup.js'
+import { getItemUid } from '../utils/schema/data.js'
 import { getTextFromHtml } from '../utils/html.js'
 import { getListWithMovedItem } from '../utils/list.js'
 import { confirmAndRemove } from '../utils/dialogs.js'
@@ -156,13 +161,12 @@ export default {
           : sourceContext.componentPath
       }
     )
-    const itemLabel = useItemLabel({
+    const { getItemDataPath, getItemLabel } = useSourceItems({
       services,
       getContext: () => context,
       getSchema: () => props.schema,
       getDataPath: () => props.dataPath
     })
-    const { getItemDataPath, getItemLabel } = itemLabel
     const opened = ref(props.open || props.schema.open)
 
     // Open the item also when it comes into the edit path later:
@@ -205,7 +209,10 @@ export default {
     }
 
     return {
-      ...itemLabel,
+      getItemUid,
+      getItemFormSchema,
+      getItemDataPath,
+      getItemLabel,
       context,
       componentPath,
       ...useSortable(),

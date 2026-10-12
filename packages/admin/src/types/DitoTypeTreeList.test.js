@@ -385,7 +385,7 @@ describe('DitoTypeTreeList', () => {
         schema: createDraggableSiteSchema(),
         data: site
       })
-      expect(routeComponent.ownRouteContext.isDirty).toBe(false)
+      expect(routeComponent.routeContext.isDirty).toBe(false)
       await findHandle(findField('pages'), 'Team').trigger('keydown', {
         key: 'ArrowDown',
         altKey: true
@@ -395,7 +395,7 @@ describe('DitoTypeTreeList', () => {
         { title: 'History' },
         { title: 'Team' }
       ])
-      expect(routeComponent.ownRouteContext.isDirty).toBe(true)
+      expect(routeComponent.routeContext.isDirty).toBe(true)
       await findHandle(findField('pages'), 'Contact').trigger('keydown', {
         key: 'ArrowUp',
         altKey: true
@@ -575,7 +575,7 @@ describe('DitoTypeTreeList', () => {
         title: 'Home',
         pages: [{ title: 'Contact' }, { title: 'About' }]
       })
-      expect(routeComponent.ownRouteContext.isDirty).toBe(true)
+      expect(routeComponent.routeContext.isDirty).toBe(true)
       await findHandle(findField('site'), 'Contact').trigger('keydown', {
         key: 'ArrowDown',
         altKey: true

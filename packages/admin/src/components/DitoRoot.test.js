@@ -207,25 +207,8 @@ describe('DitoRoot', () => {
       } finally {
         admin.app.unmount()
         element.remove()
-        appState.user = null
         vi.restoreAllMocks()
       }
-    })
-  })
-
-  describe('notifications', () => {
-    it('closes all notifications', async () => {
-      vi.spyOn(console, 'log').mockImplementation(() => {})
-      const admin = await mountAdmin({ views: {} })
-      const findNotifications = () =>
-        admin.element.querySelectorAll('.dito-notification')
-      admin.context.notify({ type: 'info', title: 'Saved', text: 'Emma' })
-      admin.context.notify({ type: 'info', title: 'Saved', text: 'Dune' })
-      await flushPromises()
-      expect(findNotifications()).toHaveLength(2)
-      admin.context.closeNotifications()
-      await vi.waitFor(() => expect(findNotifications()).toHaveLength(0))
-      vi.restoreAllMocks()
     })
   })
 

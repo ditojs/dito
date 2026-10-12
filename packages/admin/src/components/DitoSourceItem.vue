@@ -37,6 +37,7 @@ span(
 import { computed, provide } from 'vue'
 import { useSchemaContext } from '../composables/useSchemaContext.ts'
 import { isInlined } from '../utils/schema/structure.js'
+import { sourceSchemaKey } from '../utils/keys.ts'
 
 export default {
   name: 'DitoSourceItem',
@@ -67,7 +68,7 @@ export default {
   setup(props) {
     // The form of the item displays an item of the source:
     provide(
-      'sourceSchema',
+      sourceSchemaKey,
       computed(() => props.schema)
     )
     const { createContext, services } = useSchemaContext(props)

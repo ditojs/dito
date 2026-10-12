@@ -1,19 +1,13 @@
-import {
-  inject,
-  markRaw,
-  onBeforeUnmount,
-  provide,
-  unref,
-  type MaybeRef
-} from 'vue'
+import { inject, markRaw, unref } from 'vue'
 import SchemaContext from '../SchemaContext.js'
 import { getLastDataPathName } from '../utils/data.js'
-import { DataModel, type DataModelOptions } from '../utils/DataModel.ts'
-import type { AdminContext } from '../utils/AdminContext.ts'
-import type { DataContext } from '../utils/DataContext.ts'
-import type { ResourceContext } from '../utils/ResourceContext.ts'
-import type { RouteContext } from '../utils/RouteContext.ts'
-import type { SourceContext } from '../utils/SourceContext.ts'
+import {
+  adminContextKey,
+  dataContextKey,
+  resourceContextKey,
+  routeContextKey,
+  sourceContextKey
+} from '../utils/keys.ts'
 import type { Context } from '../utils/schema/types.ts'
 import type { Services } from '../utils/services.ts'
 import type { Data, Schema } from '../utils/types.ts'
@@ -33,55 +27,25 @@ type ContextProps = Pick<SchemaContextProps, 'dataPath'> & {
 }
 
 // The services that the component sees: the ones provided above, unless it owns
-// them, e.g. sources their own source.
+// them, e.g. sources their own source. Raw, so that containers can hand them on
+// through reactive objects:
 export function useServices(ownServices: Partial<Services> = {}): Services {
-  // Views provide the source and resource of their main component as refs:
-  const sourceContext = inject<MaybeRef<SourceContext | null>>(
-    'sourceContext',
-    null
-  )
-  const resourceContext = inject<MaybeRef<ResourceContext | null>>(
-    'resourceContext',
-    null
-  )
-  // Raw, so that containers can hand them on through reactive objects:
+  const sourceContext = inject(sourceContextKey, null)
   return markRaw(
     Object.defineProperties(
       {
-        adminContext: inject<AdminContext>('adminContext')!,
-        dataContext: inject<DataContext | null>('dataContext', null),
-        routeContext: inject<RouteContext | null>('routeContext', null),
+        adminContext: inject(adminContextKey)!,
+        dataContext: inject(dataContextKey, null),
+        routeContext: inject(routeContextKey, null),
+        resourceContext: inject(resourceContextKey, null),
 
         get sourceContext() {
           return unref(sourceContext)
-        },
-
-        get resourceContext() {
-          return unref(resourceContext)
         }
       },
       Object.getOwnPropertyDescriptors(ownServices)
     )
   )
-}
-
-// Provide the data context of a component with its own data, with the services
-// of its components. Forms create the model of the data once it's set up:
-export function useContainer(
-  ownServices: Partial<Services> & { dataContext: DataContext }
-) {
-  provide('dataContext', ownServices.dataContext)
-  const services = useServices(ownServices)
-  return {
-    services,
-
-    createDataModel(options: Omit<DataModelOptions, 'services'>) {
-      const dataModel = markRaw(new DataModel({ ...options, services }))
-      // The model's watchers aren't the component's, see `DataModel`:
-      onBeforeUnmount(() => dataModel.stop())
-      return dataModel
-    }
-  }
 }
 
 // `getValue()` returns the value that the component displays, e.g. after

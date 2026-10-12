@@ -20,6 +20,7 @@ import { request, getApiUrl, isApiUrl } from './utils/request.js'
 import { Session } from './utils/Session.js'
 import { ViewRegistry } from './utils/ViewRegistry.js'
 import { AdminContext } from './utils/AdminContext.ts'
+import { adminContextKey } from './utils/keys.ts'
 
 export default class DitoAdmin {
   constructor(el, {
@@ -133,7 +134,7 @@ export default class DitoAdmin {
     }))
 
     const app = (this.app = createApp({
-      provide: { adminContext: admin },
+      provide: { [adminContextKey]: admin },
 
       render: () =>
         createElement(DitoRoot, {

@@ -4,12 +4,14 @@ import {
   watch,
   watchEffect,
   nextTick,
+  ref,
   shallowRef,
   shallowReactive,
   toRaw,
   triggerRef,
   type ComputedRef,
   type EffectScope,
+  type Ref,
   type ShallowRef
 } from 'vue'
 import {
@@ -28,7 +30,6 @@ import { mergeData } from './mergeData.ts'
 import { getOriginal } from './uid.js'
 import {
   isEmptySchema,
-  getButtonSchemas,
   hasSubmitButton
 } from './schema/lookup.js'
 import { isSourceWithResource } from './schema/structure.js'
@@ -59,10 +60,11 @@ type Key = string | number
 
 export interface DataModelOptions {
   schema: () => Schema | null
-  data: () => Data | null
+  // The data that the model starts with, see `replace()`:
+  data?: Data | null
   // The data that `dataPath` is relative to, e.g. the root of the parent's data
   // with the draft in place of the item, in nested forms:
-  rootData?: () => Data | null
+  rootData?: (data: Data | null) => Data | null
   dataPath?: () => string
   // The schema of the source of the data's item, for its processed data:
   sourceSchema?: () => Schema | null
@@ -150,23 +152,29 @@ export class DataModel {
   readonly #errors = shallowRef(new WeakEntryMap<ValueErrors>())
   readonly #fieldErrors = shallowRef(new WeakEntryMap<string[]>())
   #computedValueWriteCounts: Map<string | null, number> | null = null
-  readonly #options: Required<DataModelOptions>
+  readonly #data: Ref<Data | null>
+  readonly #options: Required<Omit<DataModelOptions, 'data'>>
   readonly #scope = effectScope(true)
   #dataEntries!: ComputedRef<DataEntries>
+  #rootData!: ComputedRef<Data | null>
   processedData!: ComputedRef<Data | null>
   processedRootData!: ComputedRef<Data | null>
 
-  constructor(options: DataModelOptions) {
+  constructor({ data = null, ...options }: DataModelOptions) {
+    // Deeply reactive, as components and callbacks write it directly too:
+    this.#data = ref(data)
     this.#options = {
-      rootData: options.data,
+      rootData: data => data,
       dataPath: () => '',
       sourceSchema: () => null,
       parent: () => null,
-      canSave: () => hasSubmitButton(getButtonSchemas(this.schema?.buttons)),
+      canSave: () => hasSubmitButton(this.schema?.buttons),
       services: null,
       ...options
     }
     this.#scope.run(() => {
+      // Computed, as the root data of drafts is created:
+      this.#rootData = computed(() => this.#options.rootData(this.data))
       // Computed, so watchers can check synchronously if records are current:
       this.#dataEntries = computed(() => this.#getDataEntries())
       // Built only when read, e.g. by `context.processedItem`:
@@ -177,7 +185,7 @@ export class DataModel {
       // Set up data right away, so that edits never land before its computed
       // values, whose watchers run after rendering:
       watch(
-        [options.schema, options.data],
+        [() => this.schema, () => this.data],
         ([schema, data], previousValues) => {
           this.#initializeData(schema, data)
           this.#writeComputedValues()
@@ -202,16 +210,17 @@ export class DataModel {
     })
   }
 
+  // Forms resolve their schema from their data, which they may not have yet:
   get schema(): Schema | null {
-    return this.#options.schema()
+    return this.data ? this.#options.schema() : null
   }
 
   get data(): Data | null {
-    return this.#options.data()
+    return this.#data.value
   }
 
   get rootData(): Data | null {
-    return this.#options.rootData()
+    return this.#rootData.value
   }
 
   get dataPath(): string {
@@ -225,7 +234,7 @@ export class DataModel {
   get isDirty(): boolean {
     return [...this.#editedOwners.values()].some(({ sourceSchema }) =>
       sourceSchema
-        ? hasSubmitButton(getButtonSchemas(sourceSchema.buttons))
+        ? hasSubmitButton(sourceSchema.buttons)
         : this.#options.canSave()
     )
   }
@@ -265,15 +274,35 @@ export class DataModel {
     }
   }
 
-  mergeFromServer(data: Data): Data {
-    const mergedData = mergeData(this.schema!, this.data!, data, {
-      services: this.#options.services,
-      shouldKeepSourcesWithResource: true
-    })
-    this.#writeComputedValues()
-    // Sources with their own resource keep their data and their edits:
-    this.markClean({ dataPath: '' })
-    return mergedData
+  // Replace the data, e.g. with a new item or a draft, which isn't an edit:
+  replace(data: Data | null) {
+    this.#data.value = data
+  }
+
+  // Merge data from the server into the data, to keep the identity of its
+  // objects. Sources with their own resource keep their data and their edits:
+  mergeFromServer(data: Data | null): Data | null {
+    if (this.data && data) {
+      mergeData(this.schema!, this.data, data, {
+        services: this.#options.services,
+        shouldKeepSourcesWithResource: true
+      })
+      this.#writeComputedValues()
+      this.markClean({ dataPath: '' })
+    } else {
+      this.replace(data)
+    }
+    return this.data
+  }
+
+  // Set the value that a source loaded or deleted through its own resource,
+  // which replaces the source's edits:
+  setLoaded(
+    { data, name, dataPath }: FieldKey & { dataPath: string },
+    value: any
+  ) {
+    data[name] = value
+    this.markClean({ dataPath })
   }
 
   // Write the computed values of the current data right away, also of records

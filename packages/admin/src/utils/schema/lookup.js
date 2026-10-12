@@ -171,8 +171,8 @@ export function getButtonSchemas(buttons) {
 }
 
 // Buttons with `submitsData` save the data, whatever their name:
-export function hasSubmitButton(buttonSchemas) {
-  return Object.values(buttonSchemas ?? {}).some(
+export function hasSubmitButton(buttons) {
+  return Object.values(getButtonSchemas(buttons) ?? {}).some(
     button => !!getTypeDescriptor(button)?.submitsData
   )
 }

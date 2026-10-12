@@ -49,8 +49,7 @@ import {
   onMounted,
   provide,
   ref,
-  unref,
-  useTemplateRef
+  unref
 } from 'vue'
 import { isString, isNumber } from '@ditojs/utils'
 import { useSchemaContext } from '../composables/useSchemaContext.ts'
@@ -62,6 +61,7 @@ import { hasLabel, omitSpacing } from '../utils/schema/structure.js'
 import { getAllPanelEntries } from '../utils/schema/lookup.js'
 import { parseFraction } from '../utils/math.js'
 import { appendDataPath } from '../utils/data.js'
+import { accumulatedBasisKey, panelTabKey } from '../utils/keys.ts'
 
 export default {
   name: 'DitoContainer',
@@ -92,9 +92,8 @@ export default {
       parent => appendDataPath(parent.path, props.schema.name)
     )
     // A fraction of the width of the closest non-inlined schema:
-    const accumulatedBasis = inject('accumulatedBasis', 1)
-    const panelTab = inject('panelTab', null)
-    const component = useTemplateRef('component')
+    const accumulatedBasis = inject(accumulatedBasisKey, 1)
+    const panelTab = inject(panelTabKey, null)
     const isMounted = ref(false)
     onMounted(() => {
       isMounted.value = true
@@ -149,7 +148,7 @@ export default {
         ? basis * flexBasis.value
         : null
     })
-    provide('accumulatedBasis', combinedBasis)
+    provide(accumulatedBasisKey, combinedBasis)
 
     // Unnested components share the data path of their parent, which their
     // errors don't belong to:
@@ -267,7 +266,10 @@ export default {
           // The panel of the type is addressed relative to the data path:
           props.nested ? componentPath.value : parentComponentPath.value,
           componentPath.value,
-          component.value?.ownSourceContext ?? null,
+          // The source that the type component provides, e.g. for filters:
+          [...services.dataContext.sources].find(
+            source => source.componentPath === componentPath.value
+          ) ?? null,
           panelTab
         )
       )

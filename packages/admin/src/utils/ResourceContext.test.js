@@ -1,6 +1,5 @@
 import { vi } from 'vitest'
 import { DOMWrapper } from '@vue/test-utils'
-import { ResourceContext } from './ResourceContext.ts'
 import { mountForm, settle, isForm, enterValue } from '../test/mount.js'
 
 describe('ResourceContext', () => {
@@ -38,14 +37,17 @@ describe('ResourceContext', () => {
 
   it('is provided by forms and sources with a resource', async () => {
     const { routeComponent: form, getComponent } = await mountBook()
-    const { resourceContext } = form.ownRouteContext
-    expect(resourceContext).toBeInstanceOf(ResourceContext)
-    const { getResourceUrl } = getComponent('chapters').context
-    expect(getResourceUrl(resourceContext.getResource())).toBe('/items/1')
-    const chapters = getComponent('chapters').ownSourceContext.resourceContext
-    expect(chapters).toBeInstanceOf(ResourceContext)
+    const { resourceContext } = form.routeContext
+    const { context, services } = getComponent('chapters')
+    expect(context.getResourceUrl(resourceContext.getResource())).toBe(
+      '/items/1'
+    )
+    // The list provides its own to its components:
+    const chapters = services.resourceContext
     expect(chapters).not.toBe(resourceContext)
-    expect(getResourceUrl(chapters.getResource())).toBe('/items/1/chapters')
+    expect(context.getResourceUrl(chapters.getResource())).toBe(
+      '/items/1/chapters'
+    )
   })
 
   // Inlined lists have no resource, so their items see the resource of the
@@ -54,8 +56,10 @@ describe('ResourceContext', () => {
     const request = vi.fn(({ url }) => ({
       data: url === '/items/1/notes' ? ['Late'] : []
     }))
-    const { getComponent } = await mountBook({ request })
-    expect(getComponent('notes').ownSourceContext.resourceContext).toBe(null)
+    const { routeComponent: form, getComponent } = await mountBook({ request })
+    expect(getComponent('notes').services.resourceContext).toBe(
+      form.routeContext.resourceContext
+    )
     const { context } = getComponent('notes/0/text')
     expect(context.getResourceUrl()).toBe('/items/1')
     expect(context.getResourceUrl({ path: 'notes' })).toBe('/items/1/notes')
@@ -147,8 +151,8 @@ describe('ResourceContext', () => {
 
     it('continues the resource of the parent form', async () => {
       const { admin, form, routeComponent: parent } = await openNoteForm()
-      expect(form.ownRouteContext.resourceContext).toBe(
-        parent.ownRouteContext.resourceContext
+      expect(form.routeContext.resourceContext).toBe(
+        parent.routeContext.resourceContext
       )
       const { context } = admin.getSchemaComponent(form)
       expect(context.getResourceUrl()).toBe('/items/1')
@@ -171,11 +175,11 @@ describe('ResourceContext', () => {
 
     it('names the transient verbs', async () => {
       const { form, getComponent } = await openNoteForm()
-      expect(form.ownRouteContext.verbs).toMatchObject({
+      expect(form.routeContext.verbs).toMatchObject({
         submit: 'apply',
         delete: 'remove'
       })
-      expect(getComponent('notes').ownSourceContext.verbs.delete).toBe(
+      expect(getComponent('notes').sourceContext.verbs.delete).toBe(
         'remove'
       )
     })
@@ -183,11 +187,11 @@ describe('ResourceContext', () => {
 
   it('names the verbs of sources with and without a resource', async () => {
     const { routeComponent: form, getComponent } = await mountBook()
-    expect(form.ownRouteContext.verbs.delete).toBe('delete')
-    expect(getComponent('chapters').ownSourceContext.verbs.delete).toBe(
+    expect(form.routeContext.verbs.delete).toBe('delete')
+    expect(getComponent('chapters').sourceContext.verbs.delete).toBe(
       'delete'
     )
-    expect(getComponent('notes').ownSourceContext.verbs.delete).toBe('remove')
+    expect(getComponent('notes').sourceContext.verbs.delete).toBe('remove')
   })
 
   // The forms of tree items render inside the tree, but continue the resource

@@ -1,13 +1,13 @@
 import { labelize } from '@ditojs/utils'
 import SchemaContext from '../SchemaContext.js'
 import { appendDataPath } from '../utils/data.js'
-import { getItemUid, getSchemaValue } from '../utils/schema/data.js'
+import { getSchemaValue } from '../utils/schema/data.js'
 import { getItemFormSchema } from '../utils/schema/lookup.js'
 import { getItemIdOrIndex, getItemLabel } from '../utils/schema/item.js'
 import type { Context } from '../utils/schema/types.ts'
 import type { Data, Schema } from '../utils/types.ts'
 
-export interface ItemLabelOptions {
+export interface SourceItemsOptions {
   services: object
   getContext: () => Context
   getSchema: () => Schema
@@ -17,13 +17,13 @@ export interface ItemLabelOptions {
 
 // The ids, data paths and labels of the items of the component's own source
 // schema, or of a source in its data, like the children of tree items.
-export function useItemLabel({
+export function useSourceItems({
   services,
   getContext,
   getSchema,
   getDataPath,
   isTransient = () => false
-}: ItemLabelOptions) {
+}: SourceItemsOptions) {
   const getItemDataPath = (sourceSchema: Schema, index?: number | null) => {
     let dataPath = getDataPath()
     if (sourceSchema !== getSchema()) {
@@ -33,8 +33,6 @@ export function useItemLabel({
   }
 
   return {
-    getItemUid,
-    getItemFormSchema,
     getItemDataPath,
 
     getItemId(sourceSchema: Schema, item: Data, index: number | null = null) {

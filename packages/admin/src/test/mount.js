@@ -8,7 +8,6 @@ import { nextTick } from 'vue'
 import { VueWrapper, DOMWrapper, flushPromises } from '@vue/test-utils'
 import { clone } from '@ditojs/utils'
 import DitoAdmin from '../DitoAdmin.js'
-import appState from '../appState.js'
 import { appendDataPath } from '../utils/data.js'
 
 const mountedAdmins = new Set()
@@ -46,7 +45,7 @@ export async function mountSchema({
   })
   await admin.navigate(`/${name}`)
   const view = admin.getRouteComponent(isView)
-  view.ownDataContext.replaceItem(clone(data))
+  view.dataContext.replaceItem(clone(data))
   await settle(view)
   return createMountResult(admin, view)
 }
@@ -149,7 +148,7 @@ export async function mountAdmin({ views, request = null, api = {} }) {
       )
       return context.ui.routes
         .map(route =>
-          components.find(({ ownRouteContext }) => ownRouteContext === route)
+          components.find(({ routeContext }) => routeContext === route)
         )
         .filter(component => component && filter(component))
     },
@@ -172,7 +171,7 @@ export async function mountAdmin({ views, request = null, api = {} }) {
         .map(({ vm }) => vm)
         .filter(
           ({ componentPath }) => (
-            context.ui.getHandles(componentPath, routeComponent.ownDataContext)
+            context.ui.getHandles(componentPath, routeComponent.dataContext)
               .length > 0
           )
         )
@@ -205,7 +204,7 @@ export async function mountAdmin({ views, request = null, api = {} }) {
       return (
         wrapper
           .findAllComponents({ name: 'DitoSchema' })
-          .find(({ vm }) => vm.dataContext === routeComponent.ownDataContext)
+          .find(({ vm }) => vm.dataContext === routeComponent.dataContext)
           ?.vm ?? null
       )
     }
@@ -234,7 +233,7 @@ export async function mountAdminWithGenresView({ components, data = {} }) {
   })
   await admin.navigate('/test')
   const view = admin.getRouteComponent(isView)
-  view.ownDataContext.replaceItem(data)
+  view.dataContext.replaceItem(data)
   await settle(view)
   return { admin, view }
 }
@@ -243,18 +242,16 @@ export function unmountAdmin(admin) {
   mountedAdmins.delete(admin)
   admin.app.unmount()
   admin.element.remove()
-  // `DitoRoot` sets the user, which outlives the app in the shared app state:
-  appState.user = null
 }
 
 // Tell the route components of views and forms apart, e.g. in
 // `admin.getRouteComponent(isForm)`:
 export function isView(component) {
-  return !component.ownRouteContext.isForm
+  return !component.routeContext.isForm
 }
 
 export function isForm(component) {
-  return component.ownRouteContext.isForm
+  return component.routeContext.isForm
 }
 
 // Waits until rendering, events and requests are done, and the data model of
@@ -262,7 +259,7 @@ export function isForm(component) {
 // computed values are written into the data.
 export async function settle(component) {
   await flushPromises()
-  await component.dataModel?.waitUntilSettled()
+  await component.dataContext?.model.waitUntilSettled()
   await flushPromises()
   await nextTick()
 }
@@ -316,7 +313,7 @@ function createMountResult(admin, routeComponent) {
   // errors does.
   const focusField = dataPath =>
     admin.context.ui.reveal(
-      routeComponent.ownDataContext,
+      routeComponent.dataContext,
       admin.getContainer(routeComponent, dataPath).componentPath,
       { focus: true }
     )
@@ -361,7 +358,7 @@ function createMountResult(admin, routeComponent) {
     wrapper,
     routeComponent,
     schemaComponent,
-    dataModel: routeComponent.dataModel,
+    dataModel: routeComponent.dataContext.model,
     request: admin.request,
     get data() {
       return routeComponent.data

@@ -186,7 +186,7 @@ describe('DitoTypeList', () => {
       await settle()
       expect(getItemNames(findField('ingredients'))).toEqual(['Salt'])
       const list = getComponent('ingredients')
-      list.createItem(ingredientForm, null, 1)
+      list.sourceContext.createItem(ingredientForm, null, 1)
       await settle()
       // The inserted item is opened, see `createItem()`, and the others keep
       // their state:
@@ -596,6 +596,36 @@ describe('DitoTypeList', () => {
       expect(data.tags).toEqual(['classic', 'romance'])
     })
 
+    it('moves primitive values of `wrapPrimitives`', async () => {
+      const { findField, data, settle } = await mountSchema({
+        schema: {
+          components: {
+            tags: {
+              type: 'list',
+              inlined: true,
+              draggable: true,
+              wrapPrimitives: 'tag',
+              form: {
+                type: 'form',
+                components: { tag: { type: 'text' } }
+              }
+            }
+          }
+        },
+        data: { tags: ['classic', 'novel'] }
+      })
+      await findField('tags')
+        .findAll('.dito-button--drag')[0]
+        .trigger('keydown', { key: 'ArrowDown', altKey: true })
+      await settle()
+      expect(data.tags).toEqual(['novel', 'classic'])
+      const inputs = findField('tags').findAll('input')
+      expect(inputs.map(input => input.element.value)).toEqual([
+        'novel',
+        'classic'
+      ])
+    })
+
     it('gives only the component of the value the data path of the item', async () => {
       const { getComponent } = await mountSchema({
         schema: {
@@ -748,7 +778,7 @@ describe('DitoTypeList', () => {
       await applyTagForm(admin, '/items/1/tags/1', 'romance')
       expect(data.tags).toBe(tags)
       expect(data.tags).toEqual(['classic', 'romance'])
-      expect(routeComponent.ownRouteContext.isDirty).toBe(true)
+      expect(routeComponent.routeContext.isDirty).toBe(true)
     })
 
     it('create values unwrapped', async () => {
@@ -770,7 +800,7 @@ describe('DitoTypeList', () => {
       await admin.navigate('/items/1/tags/0')
       const form = admin.getRouteComponent(isForm)
       await settle(form)
-      expect(form.dataModel.getErrors('tags/0/tag')).toEqual(errors)
+      expect(form.dataContext.model.getErrors('tags/0/tag')).toEqual(errors)
       expect(new DOMWrapper(form.$el).find('.dito-errors').text()).toContain(
         'is unknown'
       )
@@ -808,7 +838,7 @@ describe('DitoTypeList', () => {
       await settle()
       expect(admin.router.currentRoute.value.path).toBe('/items/1/chapters/1')
       const chapterForm = admin.getRouteComponent(isForm)
-      expect(chapterForm.isTransient).toBe(true)
+      expect(chapterForm.routeContext.state.isTransient).toBe(true)
       const input = admin.wrapper.find('input[name="chapters/1/title"]')
       await enterValue(input, 'Departure')
       // Nested forms edit a copy of the item until the changes are applied:
@@ -1202,7 +1232,7 @@ describe('DitoTypeList', () => {
           .findAll('tbody > tr')
           .map(row => row.classes('dito-table__row--error'))
       expect(getMarkedRows()).toEqual([false, false])
-      expect(routeComponent.ownDataContext.validate()).toBe(false)
+      expect(routeComponent.dataContext.validate()).toBe(false)
       await flushPromises()
       expect(getMarkedRows()).toEqual([false, true])
       data.chapters[1].title = 'Two'
@@ -1319,13 +1349,13 @@ describe('DitoTypeList', () => {
       const recipes = getComponent('recipes')
       recipes.listQuery.update({ page: 1 })
       await flushPromises()
-      expect(recipes.query.page).toBe('1')
+      expect(recipes.listQuery.query.page).toBe('1')
       const panel = wrapper.find('.dito-panel')
       await enterValue(panel.find('input[type="text"]'), 'Soup')
       await panel.find('button[type="submit"]').trigger('click')
       await flushPromises()
       // Filtering resets the page, as the filtered list has other pages:
-      expect(recipes.query).toMatchObject({
+      expect(recipes.listQuery.query).toMatchObject({
         filter: ['title:"Soup"'],
         page: '0'
       })
@@ -1392,18 +1422,18 @@ describe('DitoTypeList', () => {
       await enterValue(input, 'Soup')
       await panel.find('button[type="submit"]').trigger('click')
       await flushPromises()
-      expect(recipes.query.filter).toEqual(['course:"Soup"'])
+      expect(recipes.listQuery.query.filter).toEqual(['course:"Soup"'])
       expect(panel.findAll('.dito-errors li').length).toBe(1)
       await panel.find('button[id$="clear"]').trigger('click')
       await flushPromises()
       // The filters are applied with their defaults:
-      expect(recipes.query.filter).toEqual(['course:"Main"'])
+      expect(recipes.listQuery.query.filter).toEqual(['course:"Main"'])
       expect(input.element.value).toBe('Main')
       expect(panel.findAll('.dito-errors li').length).toBe(0)
       // Changes apply the cleared data:
       await enterValue(input, 'Dessert')
       await flushPromises()
-      expect(recipes.query.filter).toEqual(['course:"Dessert"'])
+      expect(recipes.listQuery.query.filter).toEqual(['course:"Dessert"'])
     })
 
     it('notifies filter errors of lists without filters panel', async () => {

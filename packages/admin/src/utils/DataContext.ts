@@ -1,4 +1,4 @@
-import { nextTick } from 'vue'
+import { nextTick, shallowReactive } from 'vue'
 import {
   isEmpty,
   labelize,
@@ -17,130 +17,92 @@ import {
 } from './schema/validation.js'
 import type { DataModel } from './DataModel.ts'
 import type { Services } from './services.ts'
+import type { SourceContext } from './SourceContext.ts'
 import type { Data, Schema } from './types.ts'
 
 type Match = string | string[] | RegExp | ((dataPath: string) => boolean)
 
 type Errors = Record<string, { message: string }[]>
 
-export interface DataOwner {
-  // The parent's model, in forms that edit the item of their parent:
-  readonly dataModel: DataModel
-  // The services of the components of the data:
+// The data of a view, form, dialog or panel with its own data, and its state.
+export interface DataContext {
+  // The model that holds the data, the parent's in forms that edit its item:
+  readonly model: DataModel
   readonly services: Services
   // The schema that displays the data at `dataPath`, at `componentPath`:
   readonly schema: Schema
   readonly data: Data | null
   readonly dataPath: string
   readonly componentPath: string
-  readonly isCreating?: boolean
-  readonly hasData?: boolean
-  setData(data: any): any
-  // Forms take over the errors of their item in the parent's data:
-  copyErrors?(): void
+  readonly isDirty: boolean
+  readonly isCreating: boolean
+  readonly hasData: boolean
+  // The sources in the data, e.g. to reload the list of a saved item:
+  readonly sources: Set<SourceContext>
+  // Dialogs and the containers in them, e.g. panels with their own data:
+  readonly closeDialog: ((value?: unknown) => void) | null
+  validate(match?: Match): boolean
+  verify(match?: Match): boolean
+  showValidationErrors(errors: Errors, dataPath?: string): Promise<void>
+  revealErrors(): Promise<void>
+  markEdited(): void
+  replaceItem(data: any): any
 }
 
-export class DataContext {
-  readonly #owner: DataOwner
+export interface DataContextOptions {
+  getModel(): DataModel
+  services: Services
+  getSchema(): Schema
+  getData(): Data | null
+  getDataPath(): string
+  getComponentPath(): string
+  isCreating(): boolean
+  closeDialog: ((value?: unknown) => void) | null
+  replaceItem(data: any): any
+  // Forms take over the errors of their item in the parent's data:
+  copyErrors?: () => void
+}
 
-  constructor(owner: DataOwner) {
-    this.#owner = owner
-  }
-
-  get model(): DataModel {
-    return this.#owner.dataModel
-  }
-
-  get isDirty(): boolean {
-    return this.model.isDirty
-  }
-
-  get isEdited(): boolean {
-    return this.model.isEdited
-  }
-
-  // Forms load or create their data, the others always have it:
-  get hasData(): boolean {
-    return this.#owner.hasData ?? true
-  }
-
-  get isCreating(): boolean {
-    return !!this.#owner.isCreating
-  }
-
-  validate(match?: Match): boolean {
-    const errors = this.#getValidationErrors(match)
-    this.#showErrors(errors ?? {}).catch(console.error)
-    return !errors
-  }
-
-  verify(match?: Match): boolean {
-    return !this.#getValidationErrors(match)
-  }
-
-  // Show the server's errors of the data that was sent, at `dataPath`. Their
-  // paths in property access notation lack the data path of the sent data:
-  showValidationErrors(
-    errors: Errors,
-    dataPath: string = this.#owner.dataPath
-  ) {
-    return this.#showErrors(
-      Object.fromEntries(
-        Object.entries(errors).map(([path, errs]) => [
-          normalizeDataPath(appendDataPath(dataPath, path)),
-          errs
-        ])
-      ),
-      { dataPath, server: true }
-    )
-  }
-
-  // Forms take over the errors of their item first, also when they're open
-  // already, e.g. when their parent shows its errors:
-  revealErrors() {
-    this.#owner.copyErrors?.()
-    return this.#revealErrors(
-      this.model.getErrorDataPaths(this.#owner.dataPath)
-    )
-  }
-
-  markEdited() {
-    this.model.markEdited()
-  }
-
-  // Forms merge `data` into their item, the others replace their data with it:
-  replaceItem(data: any): any {
-    return this.#owner.setData(data)
-  }
-
+export function createDataContext({
+  getModel,
+  services,
+  getSchema,
+  getData,
+  getDataPath,
+  getComponentPath,
+  isCreating,
+  closeDialog,
+  replaceItem,
+  copyErrors
+}: DataContextOptions): DataContext {
   // Validate the data, not the mounted components, to include collapsed
   // schemas and closed nested forms:
-  #getValidationErrors(match?: Match): Errors | null {
-    const { schema, data, dataPath, services } = this.#owner
+  const getValidationErrors = (match?: Match): Errors | null => {
+    const { schema, data, dataPath, model } = context
     const errors = data
       ? getDataValidationErrors(schema, data, {
           dataPath,
           services,
-          rootData: this.model.rootData
+          rootData: model.rootData
         })
       : null
     return match ? getMatchingValidationErrors(errors, match) : errors
   }
 
   // Notify the errors that no field displays:
-  async #showErrors(
+  const showErrors = async (
     errors: Errors,
-    { dataPath = this.#owner.dataPath, server = false } = {}
-  ) {
-    const unmatchedErrors = this.model.replaceErrors(errors, {
+    { dataPath = context.dataPath, server = false } = {}
+  ) => {
+    const unmatchedErrors = context.model.replaceErrors(errors, {
       dataPath,
       server
     })
-    await this.#revealErrors(
+    await revealErrorDataPaths(
       Object.keys(errors).filter(dataPath => !unmatchedErrors?.[dataPath])
     )
     if (!isEmpty(errors)) {
-      const { schema, data, services } = this.#owner
+      const { schema, data } = context
       const label = (
         getSchemaValue('label', {
           type: String,
@@ -166,13 +128,13 @@ export class DataContext {
 
   // Fields in the forms of nested routes open the form, which reveals the
   // errors that it takes over from its item:
-  async #revealErrors(dataPaths: string[]) {
-    const { schema, data, dataPath, componentPath, services } = this.#owner
+  const revealErrorDataPaths = async (dataPaths: string[]) => {
+    const { schema, data, dataPath, componentPath, model } = context
     const { adminContext, routeContext } = services
     const [firstDataPath] = dataPaths
     // Dialogs and panels with their own data aren't part of routes:
     const formRoute =
-      firstDataPath && routeContext?.dataContext === this
+      firstDataPath && routeContext?.dataContext === context
         ? routeContext.getFormRoute(firstDataPath)
         : null
     if (formRoute) {
@@ -193,25 +155,89 @@ export class DataContext {
           dataPath,
           componentPath,
           services,
-          rootData: this.model.rootData
+          rootData: model.rootData
         })
-        await adminContext.ui.reveal(this, path, {
+        await adminContext.ui.reveal(context, path, {
           focus: errorDataPath === firstDataPath
         })
       }
     }
   }
-}
 
-export class DialogContext extends DataContext {
-  readonly #resolve: (value: unknown) => void
+  const context: DataContext = shallowReactive({
+    get model() {
+      return getModel()
+    },
 
-  constructor(owner: DataOwner & { resolve(value: unknown): void }) {
-    super(owner)
-    this.#resolve = owner.resolve
-  }
+    services,
 
-  close(value?: unknown) {
-    this.#resolve(value)
-  }
+    get schema() {
+      return getSchema()
+    },
+
+    get data() {
+      return getData()
+    },
+
+    get dataPath() {
+      return getDataPath()
+    },
+
+    get componentPath() {
+      return getComponentPath()
+    },
+
+    get isDirty() {
+      return getModel().isDirty
+    },
+
+    get isCreating() {
+      return isCreating()
+    },
+
+    get hasData() {
+      return !!getData()
+    },
+
+    sources: shallowReactive(new Set<SourceContext>()),
+    closeDialog,
+
+    validate(match?: Match) {
+      const errors = getValidationErrors(match)
+      showErrors(errors ?? {}).catch(console.error)
+      return !errors
+    },
+
+    verify(match?: Match) {
+      return !getValidationErrors(match)
+    },
+
+    // Show the server's errors of the data that was sent, at `dataPath`. Their
+    // paths in property access notation lack the data path of the sent data:
+    showValidationErrors(errors: Errors, dataPath = getDataPath()) {
+      return showErrors(
+        Object.fromEntries(
+          Object.entries(errors).map(([path, errs]) => [
+            normalizeDataPath(appendDataPath(dataPath, path)),
+            errs
+          ])
+        ),
+        { dataPath, server: true }
+      )
+    },
+
+    // Forms take over the errors of their item first, also when they're open
+    // already, e.g. when their parent shows its errors:
+    revealErrors() {
+      copyErrors?.()
+      return revealErrorDataPaths(getModel().getErrorDataPaths(getDataPath()))
+    },
+
+    markEdited() {
+      getModel().markEdited()
+    },
+
+    replaceItem
+  })
+  return context
 }

@@ -1,5 +1,5 @@
-import { computed, ref, watch, type WritableComputedRef } from 'vue'
-import { equals, isArray, isNumber, isObject } from '@ditojs/utils'
+import { computed, watch, type WritableComputedRef } from 'vue'
+import { isArray, isNumber, isObject } from '@ditojs/utils'
 import { updateOrder } from '../utils/schema/data.js'
 import { isListSource } from '../utils/schema/structure.js'
 import { getItemAdapter } from '../utils/schema/types.ts'
@@ -26,7 +26,6 @@ export function useSourceData(
 ) {
   const isList = () => isListSource(props.schema)
   const itemAdapter = computed(() => getItemAdapter(props.schema))
-  const wrappedPrimitives = ref<Data[] | null>(null)
   const getModel = () => services.dataContext!.model
 
   const isListResults = (data: any) => (
@@ -36,7 +35,8 @@ export function useSourceData(
     isArray(data.results)
   )
 
-  const valueListData = computed<any[]>(() => {
+  // The items in the data, primitives in lists that wrap them:
+  const items = computed<any[]>(() => {
     const data = value.value
     return !isList()
       ? data != null
@@ -45,32 +45,40 @@ export function useSourceData(
       : (isListResults(data) ? data.results : data) || []
   })
 
-  // Copy the values to track their changes too:
-  const primitiveValues = computed(() =>
-    itemAdapter.value ? [...valueListData.value] : null
-  )
-
-  const unwrapPrimitives = () => {
-    const adapter = itemAdapter.value
-    return adapter && wrappedPrimitives.value
-      ? wrappedPrimitives.value.map(adapter.unwrap)
-      : null
-  }
+  // Wrap the primitives by index, in items that read and write them in the
+  // list, which also holds their errors. Each index keeps its item, so that
+  // edits don't replace the item and its components:
+  const wrappedItems: Data[] = []
+  const getWrappedItem = (index: number) =>
+    (wrappedItems[index] ??= Object.defineProperty(
+      {},
+      itemAdapter.value!.name,
+      {
+        get: () => items.value[index],
+        set: value => {
+          items.value[index] = value
+        },
+        enumerable: true
+      }
+    ))
 
   const listData = computed<Data[]>({
     get: () =>
-      itemAdapter.value ? wrappedPrimitives.value || [] : valueListData.value,
+      itemAdapter.value
+        ? Array.from({ length: items.value.length }, (_, index) =>
+            getWrappedItem(index)
+          )
+        : items.value,
 
     set(data) {
-      if (itemAdapter.value) {
-        wrappedPrimitives.value = data
-      } else {
-        value.value = !isList()
+      const adapter = itemAdapter.value
+      value.value = adapter
+        ? data.map(adapter.unwrap)
+        : !isList()
           ? data?.length > 0
             ? data[0]
             : null
           : updateOrder(props.schema, data)
-      }
     }
   })
 
@@ -79,16 +87,17 @@ export function useSourceData(
     set: data => (listData.value = data ? [data] : [])
   })
 
+  // The list in the data, for the change API of the data model:
   const listEntry = computed<ListEntry>(() => ({
     schema: props.schema,
-    list: listData.value,
+    list: items.value,
     dataPath: props.dataPath
   }))
 
   // Loading isn't an edit, and replaces the source's changes:
-  const setLoadedValue = (data: any) => {
-    props.data[props.schema.name] = data
-    getModel().markClean({ dataPath: props.dataPath })
+  const setLoadedValue = (value: any) => {
+    const { data, schema, dataPath } = props
+    getModel().setLoaded({ data, name: schema.name, dataPath }, value)
   }
 
   // Number the loaded items from the offset of the page, so that buttons can
@@ -108,37 +117,6 @@ export function useSourceData(
   // Unwrap `{ results, total }` also when inherited from the parent:
   watch(value, data => unwrapListData(data), { immediate: true })
 
-  // Wrap the primitives for the forms, unless they were just unwrapped:
-  watch(
-    primitiveValues,
-    values => {
-      if (values && !equals(values, unwrapPrimitives())) {
-        wrappedPrimitives.value = values.map(itemAdapter.value!.wrap)
-      }
-    },
-    { immediate: true }
-  )
-
-  // Write edits back in place, as the list holds the errors of its values:
-  watch(
-    wrappedPrimitives,
-    () => {
-      const values = unwrapPrimitives()
-      const list = value.value
-      if (values && !equals(values, primitiveValues.value)) {
-        if (!isArray(list)) {
-          value.value = values
-        } else if (values.length === list.length) {
-          values.forEach((value, index) => getModel().set(list, index, value))
-        } else {
-          const { schema, dataPath } = props
-          getModel().replaceItems({ schema, list, dataPath }, values)
-        }
-      }
-    },
-    { deep: true }
-  )
-
   return {
     isListSource: computed(isList),
     isObjectSource: computed(() => !isList()),
@@ -147,9 +125,15 @@ export function useSourceData(
     listEntry,
     hasData: computed(() => !!value.value),
 
-    clearData() {
-      total.value = 0
-      setLoadedValue(null)
+    // Insert the item, or the primitive that it wraps, and return it as listed:
+    insertItem(index: number, item: Data) {
+      const adapter = itemAdapter.value
+      getModel().insert(
+        listEntry.value,
+        index,
+        adapter ? adapter.unwrap(item) : item
+      )
+      return listData.value[index]
     },
 
     // Views load their whole data through the resource of their list:

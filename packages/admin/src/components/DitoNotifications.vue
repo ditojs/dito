@@ -15,6 +15,7 @@
 import { inject } from 'vue'
 import { notify as showNotification } from '@kyvg/vue3-notification'
 import { asArray, isString, escapeHtml, stripHtml } from '@ditojs/utils'
+import { adminContextKey } from '../utils/keys.ts'
 
 // Detect opening tags of formatted text passed through the escaped `text`:
 function isLikelyMarkup(paragraph) {
@@ -28,7 +29,7 @@ export default {
   name: 'DitoNotifications',
 
   setup() {
-    const adminContext = inject('adminContext')
+    const adminContext = inject(adminContextKey)
     return {
       // `text` is escaped, `html` is rendered as is: Only pass trusted HTML to
       // it, and escape all values that it includes.

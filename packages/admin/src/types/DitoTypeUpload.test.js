@@ -101,7 +101,7 @@ describe('DitoTypeUpload', () => {
       'Do you really want to remove cover.png?'
     )
     expect(data.attachments).toEqual([scan])
-    expect(routeComponent.ownRouteContext.isDirty).toBe(true)
+    expect(routeComponent.routeContext.isDirty).toBe(true)
     await findField('file').find('.dito-button--delete').trigger('click')
     await flushPromises()
     expect(data.file).toBe(null)
@@ -189,7 +189,7 @@ describe('DitoTypeUpload', () => {
     const uploadFile = createUploadFile(cover)
     upload.onInputFile(uploadFile, null)
     await flushPromises()
-    expect(routeComponent.ownRouteContext.isDirty).toBe(true)
+    expect(routeComponent.routeContext.isDirty).toBe(true)
     expect(data.attachments).toEqual([
       scan,
       {
