@@ -21,14 +21,13 @@ const DitoTypeTextarea = DitoComponent.component('DitoTypeTextarea', {
   props: fieldProps,
 
   setup(props) {
-    const { value, attributes, focus, getSchemaValue } = useField(props, {
+    const { value, attributes, getSchemaValue } = useField(props, {
       nativeField: true,
       textField: true
     })
     return {
       value,
       attributes,
-      focus,
       resizable: computed(() =>
         getSchemaValue('resizable', { type: Boolean, default: false })
       )

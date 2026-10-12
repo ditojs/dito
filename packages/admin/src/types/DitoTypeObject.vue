@@ -44,12 +44,10 @@ import { sourceTraits } from './traits.ts'
 import { fieldProps } from '../composables/useField.ts'
 import { useSource } from '../composables/useSource.ts'
 import DitoSourceItem from '../components/DitoSourceItem.vue'
-import SchemaParentMixin from '../mixins/SchemaParentMixin.js'
 import { resolveSchemaComponent } from '../utils/schema/setup.js'
 
 // @vue/component
 const DitoTypeObject = DitoComponent.component('DitoTypeObject', {
-  mixins: [SchemaParentMixin],
   components: { DitoSourceItem },
   props: fieldProps,
   setup: props => useSource(props)

@@ -195,7 +195,7 @@ describe('useResource()', () => {
 
     it('waits for the success handlers of buttons', async () => {
       let finishHandler
-      const { form } = await mountBookForm({
+      const { getComponent } = await mountBookForm({
         schema: {
           components: {
             publish: {
@@ -211,7 +211,7 @@ describe('useResource()', () => {
         },
         request: () => ({ data: { published: true } })
       })
-      const button = form.mainSchemaComponent.getComponentByName('publish')
+      const button = getComponent('publish')
       let isSubmitted = false
       const submitted = button.context.submit().then(() => {
         isSubmitted = true

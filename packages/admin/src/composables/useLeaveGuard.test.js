@@ -6,11 +6,9 @@ import {
   enterValue,
   stubConfirm
 } from '../test/mount.js'
-import { toRaw } from 'vue'
 import { flushPromises } from '@vue/test-utils'
-import appState from '../appState.js'
 
-describe('RouteMixin', () => {
+describe('useLeaveGuard()', () => {
   describe('unsaved changes', () => {
     it('asks before replacing the item of a form with a longer id', async () => {
       const confirm = stubConfirm(false)
@@ -546,59 +544,5 @@ describe('RouteMixin', () => {
       await admin.navigate('/items/1')
       expect(admin.router.currentRoute.value.path).toBe('/items/1')
     })
-  })
-
-  it('keeps the route components of the new route by level', async () => {
-    const { admin } = await mountForm({
-      schema: { components: { title: { type: 'text' } } },
-      data: { title: 'Dune' }
-    })
-    const view = admin.getRouteComponent(it => it.isView)
-    const form = admin.getRouteComponent(it => it.isForm)
-    expect(appState.routeComponents.map(toRaw)).toEqual([
-      toRaw(view),
-      toRaw(form)
-    ])
-    await admin.navigate('/items')
-    expect(form.$.isUnmounted).toBe(true)
-    expect(appState.routeComponents.map(toRaw)).toEqual([toRaw(view)])
-    await admin.navigate('/items/1')
-    const newForm = admin.getRouteComponent(it => it.isForm)
-    expect(newForm).not.toBe(form)
-    expect(appState.routeComponents.map(toRaw)).toEqual([
-      toRaw(view),
-      toRaw(newForm)
-    ])
-  })
-
-  it('replaces stale route components at their level', async () => {
-    const admin = await mountAdmin({
-      views: {
-        books: { type: 'view', components: { title: { type: 'text' } } },
-        authors: { type: 'view', components: { name: { type: 'text' } } }
-      }
-    })
-    await admin.navigate('/books')
-    const view = admin.getRouteComponent(it => it.isView)
-    // Replace the view with a component that is never unmounted, as happens
-    // with hot-reloading:
-    const staleView = { isView: true }
-    appState.routeComponents[0] = staleView
-    await admin.navigate('/authors')
-    expect(view.$.isUnmounted).toBe(true)
-    const authorsView = admin.getRouteComponent(it => it.isView)
-    expect(authorsView.name).toBe('authors')
-    expect(appState.routeComponents.map(toRaw)).toEqual([toRaw(authorsView)])
-  })
-  it('uses the breadcrumb of the schema', async () => {
-    const { routeComponent } = await mountForm({
-      schema: {
-        label: 'Book',
-        breadcrumb: 'Edit Book',
-        components: { title: { type: 'text' } }
-      },
-      data: { title: 'Emma' }
-    })
-    expect(routeComponent.breadcrumb).toBe('Edit Book')
   })
 })

@@ -57,7 +57,6 @@ const DitoTypeCheckboxes = DitoComponent.component('DitoTypeCheckboxes', {
     } = useOptions(props, field)
     return {
       attributes: field.attributes,
-      focus: field.focus,
       options,
       groupBy,
       editable,

@@ -53,8 +53,7 @@ describe('ContainerContext', () => {
     expect(container).not.toBe(parent.container)
     expect(container.model).not.toBe(parent.container.model)
     expect(
-      form.mainSchemaComponent.getComponentByDataPath('chapters/0/title')
-        .container
+      admin.getComponent(form, 'chapters/0/title').container
     ).toBe(container)
   })
 
@@ -87,7 +86,7 @@ describe('ContainerContext', () => {
     const dialog = admin.wrapper.findComponent({ name: 'DitoDialog' }).vm
     const { container } = dialog
     expect(container).toBeInstanceOf(DialogContext)
-    expect(dialog.mainSchemaComponent.getComponentByDataPath('title').container)
+    expect(admin.getComponent(dialog, 'title').container)
       .toBe(container)
     expect(container.model.data).toBe(dialog.dialogData)
     container.close('closed')
@@ -112,6 +111,6 @@ describe('ContainerContext', () => {
     const { container } = panel
     expect(container).not.toBe(view.container)
     expect(container.model).toBe(panel.dataModel)
-    expect(panel.mainSchemaComponent.container).toBe(container)
+    expect(panel.$refs.schema.container).toBe(container)
   })
 })

@@ -34,7 +34,7 @@ import { hasSlotContent, hasVNodeContent } from '@ditojs/ui/src'
 // @vue/component
 export default DitoComponent.component('DitoButtons', {
   provide: {
-    $tabComponent: () => null
+    panelTab: null
   },
 
   props: {

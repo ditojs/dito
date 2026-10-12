@@ -98,10 +98,10 @@ describe('DitoView', () => {
       })
       await admin.navigate('/books')
       const view = admin.getRouteComponent(it => it.isView)
-      expect(view.mainComponent.schema.name).toBe('books')
+      const list = admin.getComponent(view, 'books')
       // Components of the view outside of the list, e.g. its schema, use the
       // contexts of the list, but display the view's data:
-      const { mainSchemaComponent: schema, mainComponent: list } = view
+      const { schema } = view.$refs
       expect(schema.source).toBe(list.source)
       expect(schema.resource).toBe(list.resource)
       expect(list.source.schema).toBe(list.schema)
@@ -119,9 +119,8 @@ describe('DitoView', () => {
       })
       await admin.navigate('/library')
       const view = admin.getRouteComponent(it => it.isView)
-      expect(view.mainComponent).toBe(null)
-      expect(view.mainSchemaComponent.source).toBe(null)
-      expect(view.mainSchemaComponent.resource).toBe(null)
+      expect(view.$refs.schema.source).toBe(null)
+      expect(view.$refs.schema.resource).toBe(null)
     })
   })
 

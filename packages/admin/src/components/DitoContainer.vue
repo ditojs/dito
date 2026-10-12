@@ -65,7 +65,9 @@ export default DitoComponent.component('DitoContainer', {
     // The basis of the closest ancestor container as a fraction of the width
     // of the closest non-inlined schema, which provides `1`, see `DitoSchema`.
     // The default is a factory that returns the injected function.
-    $accumulatedBasis: { default: () => () => 1 }
+    $accumulatedBasis: { default: () => () => 1 },
+    // The tab of the pane that the container is in, see `DitoPane.panelTab`:
+    panelTab: { default: null }
   },
 
   props: {
@@ -294,7 +296,7 @@ export default DitoComponent.component('DitoContainer', {
         this.nested ? this.componentPath : this.parentComponent.componentPath,
         this.componentPath,
         this.$refs.component?.ownSource ?? null,
-        this.tabComponent?.panelTab ?? null
+        this.panelTab
       )
     }
   },

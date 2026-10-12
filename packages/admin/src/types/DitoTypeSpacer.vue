@@ -9,8 +9,7 @@ const DitoTypeSpacer = DitoComponent.component('DitoTypeSpacer', {
   props: fieldProps,
 
   setup(props) {
-    const { focus } = useField(props)
-    return { focus }
+    useField(props)
   }
 })
 

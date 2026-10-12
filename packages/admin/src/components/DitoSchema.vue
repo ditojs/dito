@@ -135,6 +135,7 @@ import { getSchemaAccessor, getStoreAccessor } from '../utils/accessor.js'
 export default DitoComponent.component('DitoSchema', {
   components: { TransitionHeight },
   inheritAttrs: false,
+  emits: ['update:selectedTab'],
 
   provide() {
     return {
@@ -146,9 +147,13 @@ export default DitoComponent.component('DitoSchema', {
     }
   },
 
-  inject: [
-    '$schemaParentComponent'
-  ],
+  inject: {
+    // The schema of the source whose item the schema displays, provided by the
+    // view, form or source item that renders it:
+    sourceSchema: { default: null },
+    // The tab of the pane that the schema is in, see `DitoPane.panelTab`:
+    panelTab: { default: null }
+  },
 
   props: {
     schema: { type: Object, required: true },
@@ -183,10 +188,6 @@ export default DitoComponent.component('DitoSchema', {
       // or the user select a tab, or until the data that `defaultTab()` and
       // the tabs' `if` are evaluated with is there, see `selectDefaultTab()`.
       shouldFollowDefaultTab: true,
-      componentsRegistry: {},
-      unnestedComponentsRegistry: {},
-      panesRegistry: {},
-      panelsRegistry: {},
       scrollPositions: {}
     }
   },
@@ -204,12 +205,6 @@ export default DitoComponent.component('DitoSchema', {
       return this.hasOwnData ? null : this.parentComponent.schemaComponent
     },
 
-    // The schema of the source whose item the schema displays, as the
-    // component that renders the schema tells:
-    sourceSchema() {
-      return this.$schemaParentComponent()?.sourceSchema ?? null
-    },
-
     panelEntries() {
       // Panels of schemas inlined in tabs are only shown with their tab, as
       // the panels of components in tabs, see `DitoContainer.panelEntries`.
@@ -217,7 +212,7 @@ export default DitoComponent.component('DitoSchema', {
         this.schema.panels,
         this.dataPath,
         this.componentPath,
-        this.tabComponent?.panelTab ?? null
+        this.panelTab
       )
     },
 
@@ -308,34 +303,6 @@ export default DitoComponent.component('DitoSchema', {
       }
     }),
 
-    components() {
-      return Object.values(this.componentsRegistry)
-    },
-
-    unnestedComponents() {
-      return Object.values(this.unnestedComponentsRegistry)
-    },
-
-    panes() {
-      return Object.values(this.panesRegistry)
-    },
-
-    panels() {
-      return Object.values(this.panelsRegistry)
-    },
-
-    componentsByDataPath() {
-      return this._listEntriesByDataPath(this.componentsRegistry)
-    },
-
-    panesByDataPath() {
-      return this._listEntriesByDataPath(this.panesRegistry)
-    },
-
-    panelsByDataPath() {
-      return this._listEntriesByDataPath(this.panelsRegistry)
-    },
-
     wide: getSchemaAccessor('wide', {
       type: Boolean,
       default: false
@@ -398,7 +365,25 @@ export default DitoComponent.component('DitoSchema', {
   },
 
   created() {
-    this._register(true)
+    // Reveal the components inside the schema, e.g. to show their errors, by
+    // opening it and rendering the tab that leads to them, which focusing them
+    // also selects:
+    this.unregisterUi = this.admin.ui.register(() => this.componentPath, {
+      container: this.container,
+      reveal: async (componentPath, { focus }) => {
+        const [tab] = parseDataPath(
+          getRelativeDataPath(componentPath, this.componentPath)
+        )
+        if (this.renderedTabs?.[tab]) {
+          this.mountedTabs[tab] = true
+          if (focus) {
+            this.selectTab(tab)
+          }
+        }
+        this.opened = true
+        await this.$nextTick()
+      }
+    })
     if (this.scrollable && this.wide) {
       this.appState.pageClass = 'dito-page--wide'
     }
@@ -418,7 +403,7 @@ export default DitoComponent.component('DitoSchema', {
 
   unmounted() {
     this.emitEvent('destroy')
-    this._register(false)
+    this.unregisterUi()
     if (this.scrollable && this.wide) {
       this.appState.pageClass = null
     }
@@ -430,46 +415,6 @@ export default DitoComponent.component('DitoSchema', {
       // Delegate change events through to parent schema:
       this.delegate('change', this.parentSchemaComponent)
       this.emitEvent('initialize') // Not `'create'`, since that's for data.
-    },
-
-    getComponentsByDataPath(dataPath) {
-      return this._getEntriesByDataPath(this.componentsByDataPath, dataPath)
-    },
-
-    getComponentByDataPath(dataPath) {
-      return this.getComponentsByDataPath(dataPath)[0] || null
-    },
-
-    getComponentsByName(dataPath) {
-      return this._getEntriesByName(this.componentsByDataPath, dataPath)
-    },
-
-    getComponentByName(name) {
-      return this.getComponentsByName(name)[0] || null
-    },
-
-    getComponents(dataPathOrName) {
-      return this._getEntries(this.componentsByDataPath, dataPathOrName)
-    },
-
-    getComponent(dataPathOrName) {
-      return this.getComponents(dataPathOrName)[0] || null
-    },
-
-    getPanelsByDataPath(dataPath) {
-      return this._getEntriesByDataPath(this.panelsByDataPath, dataPath)
-    },
-
-    getPanelByDataPath(dataPath) {
-      return this.getPanelsByDataPath(dataPath)[0] || null
-    },
-
-    getPanels(dataPathOrName) {
-      return this._getEntries(this.panelsByDataPath, dataPathOrName)
-    },
-
-    getPanel(dataPathOrName) {
-      return this.getPanels(dataPathOrName)[0] || null
     },
 
     // Selects the tab of the route's hash. The forms of nested routes, e.g. of
@@ -499,10 +444,12 @@ export default DitoComponent.component('DitoSchema', {
       }
     },
 
-    // Selects the tab chosen by the route or the user.
+    // Selects the tab chosen by the route or the user, and tells the form,
+    // e.g. for `context.selectedTab`:
     selectTab(tab) {
       this.selectedTab = tab
       this.shouldFollowDefaultTab = false
+      this.$emit('update:selectedTab', tab)
     },
 
     // Selects `defaultTab`, and keeps following it until there is data, but
@@ -510,6 +457,7 @@ export default DitoComponent.component('DitoSchema', {
     selectDefaultTab() {
       this.selectedTab = this.defaultTab
       this.shouldFollowDefaultTab = !this.hasData
+      this.$emit('update:selectedTab', this.selectedTab)
     },
 
     isTabSelected(tab) {
@@ -521,25 +469,6 @@ export default DitoComponent.component('DitoSchema', {
       return this.isTabSelected(tab) || !!this.mountedTabs[tab]
     },
 
-    // The first tab that displays the value at `dataPath`, if any:
-    getTabByDataPath(dataPath) {
-      const { renderedTabs } = this
-      if (renderedTabs) {
-        const [tab] = parseDataPath(
-          getComponentPathByDataPath(
-            { tabs: renderedTabs },
-            this.data,
-            getRelativeDataPath(dataPath, this.dataPath),
-            { services: this, rootData: this.rootData }
-          )
-        )
-        if (tab in renderedTabs) {
-          return tab
-        }
-      }
-      return null
-    },
-
     onOpen(open) {
       this.emitEvent('open', { context: { open } })
       this.opened = open
@@ -547,11 +476,6 @@ export default DitoComponent.component('DitoSchema', {
 
     onChange() {
       this.emitEvent('change')
-    },
-
-    focus() {
-      this.opened = true
-      return this.parentSchemaComponent?.focus()
     },
 
     validateAll(match, notify = true) {
@@ -631,7 +555,7 @@ export default DitoComponent.component('DitoSchema', {
     // Reveals the fields with errors at `dataPaths`, opening collapsed schemas
     // on the way, and focuses the first one. If it's in the form of a nested
     // route, that form opens and reveals its own errors instead, which it takes
-    // over from its item, see `DitoForm.revealErrors()`.
+    // over from its item, see `ContainerContext.revealErrors()`.
     async revealErrors(
       dataPaths = this.dataModel.getErrorDataPaths(this.dataPath)
     ) {
@@ -652,56 +576,26 @@ export default DitoComponent.component('DitoSchema', {
         if (!failure) {
           await this.$nextTick()
           const level = this.$route.matched.length - 1
-          await this.appState.routeComponents[level].revealErrors()
+          await this.admin.ui.routes[level].container.revealErrors()
         }
       } else {
         for (const dataPath of dataPaths) {
-          const [component] = await this.revealComponents(dataPath)
-          if (dataPath === firstDataPath) {
-            await component?.focus()
-          }
+          const componentPath = getComponentPathByDataPath(
+            this.schema,
+            this.data,
+            dataPath,
+            {
+              dataPath: this.dataPath,
+              componentPath: this.componentPath,
+              services: this,
+              rootData: this.rootData
+            }
+          )
+          await this.admin.ui.reveal(this.container, componentPath, {
+            focus: dataPath === firstDataPath
+          })
         }
       }
-    },
-
-    // Reveals the components that display the value at `dataPath`, opening this
-    // schema, and asking the nested components that display a part of the data
-    // path to reveal the rest, e.g. sections open and sources open their
-    // inlined items. Returns the components in document order.
-    async revealComponents(dataPath) {
-      const { opened } = this
-      // Render the tab that displays the value, without selecting it, as
-      // focusing its components does:
-      const tab = this.getTabByDataPath(dataPath)
-      const shouldMountTab = !!tab && !this.mountedTabs[tab]
-      if (shouldMountTab) {
-        this.mountedTabs[tab] = true
-      }
-      if (!opened || shouldMountTab) {
-        this.opened = true
-        await this.$nextTick()
-      }
-      let components = this.getComponentsByDataPath(dataPath)
-      // Ask the deepest nested components first, and the unnested ones last, as
-      // they share the data path of the schema:
-      const nestedComponents = []
-      const dataPathParts = parseDataPath(dataPath)
-      const schemaDataPathLength = parseDataPath(this.dataPath).length
-      while (dataPathParts.length > schemaDataPathLength + 1) {
-        dataPathParts.pop()
-        nestedComponents.push(...this.getComponentsByDataPath(dataPathParts))
-      }
-      for (const component of [
-        ...nestedComponents,
-        ...this.unnestedComponents
-      ]) {
-        if (components.length > 0) break
-        components = (await component.revealComponents?.(dataPath)) ?? []
-      }
-      if (components.length === 0) {
-        this.opened = opened
-      }
-      return components
     },
 
     // Writes the data pasted through `DitoClipboard` into the schema's data,
@@ -735,109 +629,9 @@ export default DitoComponent.component('DitoSchema', {
           target
         }
       )
-    },
-
-    _register(add) {
-      // `$schemaParentComponent()` is only set if one of the ancestors uses
-      // the `SchemaParentMixin`:
-      this.$schemaParentComponent()?._registerSchemaComponent(this, add)
-    },
-
-    _registerComponent(component, add, componentPath) {
-      this._registerEntry(
-        this.componentsRegistry,
-        component,
-        add,
-        componentPath
-      )
-      // Only register with the parent if schema shares data with it.
-      this.parentSchemaComponent?._registerComponent(
-        component,
-        add,
-        componentPath
-      )
-    },
-
-    _registerUnnestedComponent(component, add, componentPath) {
-      // Unnested components are only registered with their own schema, as
-      // they share its data path, see `revealComponents()`.
-      this._registerEntry(
-        this.unnestedComponentsRegistry,
-        component,
-        add,
-        componentPath
-      )
-    },
-
-    _registerPane(pane, add, componentPath) {
-      this._registerEntry(this.panesRegistry, pane, add, componentPath)
-    },
-
-    _registerPanel(panel, add, componentPath) {
-      this._registerEntry(this.panelsRegistry, panel, add, componentPath)
-    },
-
-    // Registries are keyed by component path. Component paths change when list
-    // items move, and the entries then register again under their new path,
-    // see `trackRegistration()`.
-    _registerEntry(registry, entry, add, componentPath) {
-      if (add) {
-        registry[componentPath] = entry
-      } else if (registry[componentPath] === entry) {
-        // Unless another entry registered under the path already, e.g. when
-        // list items swap places.
-        delete registry[componentPath]
-      }
-    },
-
-    _listEntriesByDataPath(registry) {
-      return Object.values(registry).reduce((entriesByDataPath, entry) => {
-        // Multiple entries can be linked to the same data-path, e.g. when
-        // there are tabs. Link each data-path to an array of entries.
-        const { dataPath } = entry
-        const entries = (entriesByDataPath[dataPath] ||= [])
-        entries.push(entry)
-        return entriesByDataPath
-      }, {})
-    },
-
-    _getEntries(entriesByDataPath, dataPath) {
-      return normalizeDataPath(dataPath).startsWith(this.dataPath)
-        ? this._getEntriesByDataPath(entriesByDataPath, dataPath)
-        : this._getEntriesByName(entriesByDataPath, dataPath)
-    },
-
-    _getEntriesByDataPath(entriesByDataPath, dataPath) {
-      return sortInDocumentOrder(
-        entriesByDataPath[normalizeDataPath(dataPath)] || []
-      )
-    },
-
-    _getEntriesByName(entriesByDataPath, name) {
-      return sortInDocumentOrder(
-        entriesByDataPath[appendDataPath(this.dataPath, name)] || []
-      )
     }
   }
 })
-
-// Sorts components that display the same data, e.g. in different tabs, in the
-// document order of their elements, which is the order of their schemas.
-function sortInDocumentOrder(components) {
-  return components.length > 1
-    ? [...components].sort(compareByDocumentPosition)
-    : components
-}
-
-function compareByDocumentPosition(component1, component2) {
-  const node1 = component1.$el
-  const node2 = component2.$el
-  if (!node1 || !node2 || node1 === node2) {
-    return 0
-  }
-  const position = node1.compareDocumentPosition(node2)
-  return position & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1
-}
 </script>
 
 <style lang="scss">

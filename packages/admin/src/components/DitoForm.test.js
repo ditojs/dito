@@ -659,7 +659,7 @@ describe('DitoForm', () => {
       })
       const form = await openNestedForm(admin, '/items/1/chapters/0')
       form.data.title = 'Opening'
-      const { context } = form.mainSchemaComponent
+      const { context } = form.$refs.schema
       expect(context.processedItem).toEqual({ title: 'Opening' })
       // The root item is the one of the book form, with the draft in place of
       // the item, like `rootItem`:
@@ -927,9 +927,12 @@ describe('DitoForm', () => {
       }
 
       it('resolve the options of data paths in the data of the form', async () => {
-        const { form } = await openChapterForm(chapterComponents, chapter)
-        const featured = form.mainSchemaComponent.getComponentByName('featured')
-        const sections = form.mainSchemaComponent.getComponentByName('sections')
+        const { admin, form } = await openChapterForm(
+          chapterComponents,
+          chapter
+        )
+        const featured = admin.getComponent(form, `${form.dataPath}/featured`)
+        const sections = admin.getComponent(form, `${form.dataPath}/sections`)
         sections.$el.querySelector('.dito-create-button button').click()
         await settle(form)
         form.data.sections[1].name = 'Ending'
@@ -939,8 +942,11 @@ describe('DitoForm', () => {
       })
 
       it(`don't change the data of the parent when cancelled`, async () => {
-        const { form, data } = await openChapterForm(chapterComponents, chapter)
-        const featured = form.mainSchemaComponent.getComponentByName('featured')
+        const { admin, form, data } = await openChapterForm(
+          chapterComponents,
+          chapter
+        )
+        const featured = admin.getComponent(form, `${form.dataPath}/featured`)
         featured.selectedValue = featured.getValueForOption(featured.options[0])
         await settle(form)
         expect(form.data.featured).not.toBe(data.chapters[0].sections[0])
@@ -950,11 +956,11 @@ describe('DitoForm', () => {
       })
 
       it('send the related items with the ids of their references', async () => {
-        const { form, submit } = await openChapterForm(
+        const { admin, form, submit } = await openChapterForm(
           chapterComponents,
           chapter
         )
-        const featured = form.mainSchemaComponent.getComponentByName('featured')
+        const featured = admin.getComponent(form, `${form.dataPath}/featured`)
         featured.selectedValue = featured.getValueForOption(featured.options[0])
         await settle(form)
         await new DOMWrapper(form.$el)
@@ -1005,7 +1011,7 @@ describe('DitoForm', () => {
     await admin.navigate('/books/create')
     const bookForm = admin.getRouteComponent(it => it.isForm)
     await settle(bookForm)
-    const chapters = bookForm.mainSchemaComponent.getComponentByName('chapters')
+    const chapters = admin.getComponent(bookForm, 'chapters')
     // Without the id of the book, the list can't load its chapters:
     expect(chapters.isTransient).toBe(true)
     bookForm.data.chapters = [{ title: 'Prologue' }]
@@ -1237,12 +1243,9 @@ describe('DitoForm', () => {
         }
       }
 
-      function expectItemsOfComponents(form, view) {
+      function expectItemsOfComponents(admin, form, view) {
         const recipe = view.data.recipes[0]
-        const name =
-          form.mainSchemaComponent.getComponentByDataPath(
-            'recipes/0/name'
-          )
+        const name = admin.getComponent(form, 'recipes/0/name')
         const { rootData } = form
         expect(rootData.venue).toBe('Bakery')
         expect(rootData.recipes[0]).toBe(form.data)
@@ -1265,7 +1268,7 @@ describe('DitoForm', () => {
         await admin.navigate('/test/recipes/0')
         const form = admin.getRouteComponent(component => component.isForm)
         await settle(form)
-        expectItemsOfComponents(form, view)
+        expectItemsOfComponents(admin, form, view)
       })
 
       it('provide the root item in single-component views', async () => {
@@ -1285,7 +1288,7 @@ describe('DitoForm', () => {
         await admin.navigate('/cookbook/0')
         const form = admin.getRouteComponent(component => component.isForm)
         await settle(form)
-        expectItemsOfComponents(form, view)
+        expectItemsOfComponents(admin, form, view)
       })
     })
   })
@@ -1330,7 +1333,7 @@ describe('DitoForm', () => {
       ).toBe(false)
     })
 
-    it('reset the validation of their item only', async () => {
+    it('clear the errors of their item only once submitted', async () => {
       const { admin, routeComponent, dataModel } = await mountForm({
         schema: {
           components: {
@@ -1341,7 +1344,13 @@ describe('DitoForm', () => {
               mutate: true,
               form: {
                 type: 'form',
-                components: { title: { type: 'text' } }
+                components: { title: { type: 'text' } },
+                buttons: {
+                  apply: {
+                    type: 'submit',
+                    events: { click: ({ submit }) => submit() }
+                  }
+                }
               }
             }
           }
@@ -1356,7 +1365,10 @@ describe('DitoForm', () => {
       await admin.navigate('/items/1/chapters/0')
       const form = admin.getRouteComponent(component => component.isForm)
       expect(form).not.toBe(routeComponent)
-      form.resetValidation()
+      await new DOMWrapper(form.$el)
+        .find('.dito-buttons--main button[type="submit"]')
+        .trigger('click')
+      await settle(form)
       expect(dataModel.getErrors('chapters/0/title')).toBe(null)
       expect(dataModel.getErrors('title')).toEqual(errors)
     })

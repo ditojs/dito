@@ -89,12 +89,12 @@ describe('DitoTypeCheckboxes', () => {
   })
 
   it('focuses the first checkbox', async () => {
-    const { getComponent, findField } = await mountSchema({
+    const { focusField, findField } = await mountSchema({
       schema: {
         components: { genres: { type: 'checkboxes', options: genres } }
       }
     })
-    await getComponent('genres').focus()
+    await focusField('genres')
     expect(document.activeElement).toBe(
       findField('genres').find('input[type="checkbox"]').element
     )

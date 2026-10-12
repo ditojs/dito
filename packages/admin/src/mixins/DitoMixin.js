@@ -23,7 +23,6 @@ export default {
     admin: 'admin',
     $parentComponent: '$parentComponent',
     $schemaComponent: '$schemaComponent',
-    $tabComponent: '$tabComponent',
     // The contexts that the closest owners above provide, which the component
     // sees unless it owns them:
     parentContainer: 'container',
@@ -123,14 +122,6 @@ export default {
       return this.$schemaComponent()
     },
 
-    tabComponent() {
-      return this.$tabComponent()
-    },
-
-    parentSchemaComponent() {
-      return getParentComponent(this, 'schemaComponent')
-    },
-
     // The data that the data paths of the container are relative to:
     rootData() {
       return this.dataModel?.rootData ?? this.route?.rootData
@@ -151,7 +142,8 @@ export default {
     // We can't store this in `data`, as this is already the pure data from the
     // API server. That's what the `store` is for: Memory that's available as
     // long as the current editing path is still valid. For type components,
-    // this memory is provided by the parent, see RouteMixin and DitoPane.
+    // this memory is provided by the parent, see `useRouteContainer()` and
+    // DitoPane.
     getStore(key) {
       return this.store[key]
     },
@@ -340,13 +332,4 @@ export default {
       return this.schemaComponent.emitEvent(event, params)
     }
   }
-}
-
-function getParentComponent(component, key) {
-  const current = component[key]
-  let parent = component.parentComponent
-  while (parent && parent[key] === current) {
-    parent = parent.parentComponent
-  }
-  return parent?.[key] ?? null
 }

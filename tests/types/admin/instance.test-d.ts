@@ -10,7 +10,8 @@ import type {
   ResourceContext,
   RouteContext,
   SourceContext,
-  SubmitButton
+  SubmitButton,
+  UiRegistry
 } from '@ditojs/admin'
 import type { Entry } from './fixtures.ts'
 
@@ -44,6 +45,9 @@ describe('DitoComponentInstanceBase and DitoFormInstance', () => {
     expectTypeOf<Admin['showDialog']>()
       .toEqualTypeOf<DitoContext['showDialog']>()
     expectTypeOf<Admin['loadingTracker']['isLoading']>().toBeBoolean()
+    expectTypeOf<Admin['ui']>().toEqualTypeOf<UiRegistry>()
+    expectTypeOf<Admin['ui']['routes']>()
+      .toEqualTypeOf<readonly RouteContext[]>()
   })
 
   it('provides the contexts of its container and route', () => {
@@ -96,5 +100,13 @@ describe('DitoComponentInstanceBase and DitoFormInstance', () => {
     expectTypeOf<DitoSourceInstance>().not.toHaveProperty('forms')
     expectTypeOf<DitoSourceInstance>().not.toHaveProperty('isCompact')
     expectTypeOf<DitoSourceInstance['setData']>().returns.toBeVoid()
+  })
+
+  it('validates and shows errors through the container context', () => {
+    expectTypeOf<DitoFormInstance>().not.toHaveProperty('validateAll')
+    expectTypeOf<DitoFormInstance>().not.toHaveProperty('resetValidation')
+    expectTypeOf<DitoViewInstance>().not.toHaveProperty('showValidationErrors')
+    expectTypeOf<DitoSourceInstance>().not.toHaveProperty('revealComponents')
+    expectTypeOf<ContainerContext['revealErrors']>().returns.resolves.toBeVoid()
   })
 })

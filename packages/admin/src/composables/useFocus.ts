@@ -1,5 +1,11 @@
-import { getCurrentInstance, inject, useTemplateRef } from 'vue'
+import {
+  getCurrentInstance,
+  onBeforeMount,
+  onUnmounted,
+  useTemplateRef
+} from 'vue'
 import { asArray } from '@ditojs/utils'
+import type { Services } from '../utils/services.ts'
 
 export interface FocusOptions {
   // Focus and blur the element that edits the value, by default the one with
@@ -8,16 +14,15 @@ export interface FocusOptions {
   blurElement?: () => void
 }
 
-// Focus the component, revealing it in its schema and tab first.
-export function useFocus({
-  focusElement,
-  blurElement
-}: FocusOptions = {}) {
-  // Components without an `element` ref focus their root element:
-  const component = getCurrentInstance()!.proxy!
+// Focus the component, revealing it first, e.g. in a collapsed schema or a tab
+// that isn't selected, through its handle in the UI registry.
+export function useFocus(
+  { admin, container }: Services,
+  { focusElement, blurElement }: FocusOptions = {}
+) {
+  // NOTE: The component path is still a member of the component:
+  const component = getCurrentInstance()!.proxy as any
   const element = useTemplateRef<any>('element')
-  const getSchemaComponent = inject<() => any>('$schemaComponent')!
-  const getTabComponent = inject<() => any>('$tabComponent')!
 
   const getElement = () => asArray(element.value)[0] ?? null
 
@@ -36,25 +41,29 @@ export function useFocus({
   focusElement ??= () => getFocusTarget('focus')?.focus?.()
   blurElement ??= () => getFocusTarget('blur')?.blur?.()
 
-  // Also focus the schema and the tab of the component, e.g. to open them:
-  const focusSchema = async () => {
-    await getSchemaComponent().focus()
-    await getTabComponent()?.focus()
-  }
-
-  const scrollIntoView = async () => {
-    await focusSchema()
-    getFocusElement()?.scrollIntoView?.({ behavior: 'smooth', block: 'center' })
-  }
+  let unregister: () => void
+  onBeforeMount(() => {
+    unregister = admin.ui.register(() => component.componentPath, {
+      container,
+      focus() {
+        getFocusElement()?.scrollIntoView?.({
+          behavior: 'smooth',
+          block: 'center'
+        })
+        focusElement()
+      }
+    })
+  })
+  onUnmounted(() => unregister())
 
   return {
     // The template ref `element`, which can only be used once per component:
     element,
 
-    async focus() {
-      await focusSchema()
-      scrollIntoView()
-      focusElement()
+    focus() {
+      return admin.ui.reveal(container, component.componentPath, {
+        focus: true
+      })
     },
 
     blur() {

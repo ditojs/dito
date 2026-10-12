@@ -15,6 +15,7 @@ template(
     :data-resource="schemaPath"
   )
     DitoSchema(
+      ref="schema"
       :key="name"
       :schema="schema"
       :data="data"
@@ -29,20 +30,23 @@ template(
 <script>
 import { computed, markRaw } from 'vue'
 import DitoComponent from '../DitoComponent.js'
-import RouteMixin from '../mixins/RouteMixin.js'
+import { useRouteContainer } from '../composables/useRouteContainer.ts'
 import { isSingleComponentView } from '../utils/schema/structure.js'
 import { DataModel } from '../utils/DataModel.ts'
 import { LoadingTracker } from '../utils/LoadingTracker.ts'
 
 // @vue/component
 export default DitoComponent.component('DitoView', {
-  mixins: [RouteMixin],
-
   provide() {
     return {
+      sourceSchema: computed(() => this.sourceSchema),
       source: computed(() => this.mainSource),
       resource: computed(() => this.mainResource)
     }
+  },
+
+  setup() {
+    return useRouteContainer()
   },
 
   data() {
@@ -78,7 +82,6 @@ export default DitoComponent.component('DitoView', {
         : schema
     },
 
-    // @override SchemaParentMixin.sourceSchema()
     // The view's components display the view's data, as if it were an item of
     // a source with the view's schema:
     sourceSchema() {
@@ -97,22 +100,26 @@ export default DitoComponent.component('DitoView', {
       return this.loadingTracker.isLoading
     },
 
-    isSingleComponentView() {
-      return isSingleComponentView(this.sourceSchema)
+    isDirty() {
+      return this.container.isDirty
     },
 
-    mainComponent() {
-      return this.mainSchemaComponent?.getComponentByDataPath(this.name)
+    breadcrumb() {
+      return this.schema.breadcrumb || this.getLabel(this.schema)
+    },
+
+    isSingleComponentView() {
+      return isSingleComponentView(this.sourceSchema)
     },
 
     // The contexts of the main component, which the view provides to its other
     // components, e.g. its panels and buttons:
     mainSource() {
-      return this.mainComponent?.ownSource ?? null
+      return this.ownRoute.findSourceByDataPath(this.name)
     },
 
     mainResource() {
-      return this.mainComponent?.ownResource ?? null
+      return this.mainSource?.resource ?? null
     },
 
     // The data paths of the view's components start at its data:

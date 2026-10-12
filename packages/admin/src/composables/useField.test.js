@@ -3,18 +3,18 @@ import { flushPromises } from '@vue/test-utils'
 import { mountSchema, enterValue } from '../test/mount.js'
 
 describe('useField()', () => {
-  describe('focus()', () => {
+  describe('focusing', () => {
     it('focuses the input of input components', async () => {
       const focus = vi.fn()
       const blur = vi.fn()
-      const { getComponent, findField } = await mountSchema({
+      const { focusField, findField } = await mountSchema({
         schema: {
           components: { title: { type: 'text', events: { focus, blur } } }
         },
         data: { title: 'Emma' }
       })
       const input = findField('title').find('input').element
-      await getComponent('title').focus()
+      await focusField('title')
       await flushPromises()
       expect(document.activeElement).toBe(input)
       expect(focus).toHaveBeenCalledOnce()
@@ -25,21 +25,21 @@ describe('useField()', () => {
     })
 
     it('focuses native element refs themselves', async () => {
-      const { getComponent, findField } = await mountSchema({
+      const { focusField, findField } = await mountSchema({
         schema: { components: { summary: { type: 'textarea' } } },
         data: { summary: 'A novel' }
       })
       const textarea = findField('summary').element
       expect(textarea.tagName).toBe('TEXTAREA')
-      await getComponent('summary').focus()
+      await focusField('summary')
       expect(document.activeElement).toBe(textarea)
     })
 
     it(`skips root nodes that can't be focused without an element ref`, async () => {
-      const { getComponent } = await mountSchema({
+      const { focusField } = await mountSchema({
         schema: { components: { gap: { type: 'spacer' } } }
       })
-      await expect(getComponent('gap').focus()).resolves.toBe(undefined)
+      await expect(focusField('gap')).resolves.toBe(undefined)
     })
   })
 

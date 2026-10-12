@@ -137,7 +137,6 @@ import { fieldProps } from '../composables/useField.ts'
 import { useSource } from '../composables/useSource.ts'
 import { useSortable } from '../composables/useSortable.ts'
 import DitoSourceItem from '../components/DitoSourceItem.vue'
-import SchemaParentMixin from '../mixins/SchemaParentMixin.js'
 import {
   resolveSchemaComponent,
   resolveSchemaComponents
@@ -145,24 +144,21 @@ import {
 import { createFiltersPanel, getFiltersDataErrors } from '../utils/filter.js'
 import { appendDataPath } from '../utils/data.js'
 import { hyphenate } from '@ditojs/utils'
-import { computed, inject } from 'vue'
+import { computed } from 'vue'
 
 // @vue/component
 const DitoTypeList = DitoComponent.component('DitoTypeList', {
-  mixins: [SchemaParentMixin],
   components: { DitoSourceItem },
   props: fieldProps,
 
   setup(props) {
-    const getSchemaComponent = inject('$schemaComponent')
     const source = useSource(props, {
       onFilterErrors(errors) {
-        const panel = getSchemaComponent().getPanelByDataPath(
-          appendDataPath(props.dataPath, '$filters')
+        // The filters panel is its own container:
+        const [panel] = source.services.admin.ui.getHandles(
+          appendDataPath(source.ownSource.componentPath, '$filters')
         )
-        panel?.mainSchemaComponent.showValidationErrors(
-          getFiltersDataErrors(errors)
-        )
+        panel?.container.showValidationErrors(getFiltersDataErrors(errors))
         return !!panel
       }
     })

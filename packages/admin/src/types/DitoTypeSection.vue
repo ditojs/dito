@@ -15,26 +15,20 @@
 </template>
 
 <script>
-import { normalizeDataPath, parseDataPath } from '@ditojs/utils'
 import { computed } from 'vue'
 import DitoComponent from '../DitoComponent.js'
 import { defineType } from '../utils/schema/types.ts'
 import { fieldProps, useField } from '../composables/useField.ts'
-import SchemaParentMixin from '../mixins/SchemaParentMixin.js'
 import { setupSchemaComponents } from '../utils/schema/setup.js'
 import { getItemFormSchema } from '../utils/schema/lookup.js'
-import { hasComponentNamed, isCompact } from '../utils/schema/structure.js'
+import { isCompact } from '../utils/schema/structure.js'
 
 // @vue/component
 const DitoTypeSection = DitoComponent.component('DitoTypeSection', {
-  // Register the section's schema with the section rather than the form, so
-  // that the section can reveal its components, see `revealComponents()`.
-  mixins: [SchemaParentMixin],
   props: fieldProps,
 
   setup(props) {
-    const { value, context, info, disabled, focus, getSchemaValue } =
-      useField(props)
+    const { value, context, info, disabled, getSchemaValue } = useField(props)
     // Nested sections hold their item in their value:
     const item = computed(() => (props.nested ? value.value : props.data))
     const collapsible = computed(() =>
@@ -44,7 +38,6 @@ const DitoTypeSection = DitoComponent.component('DitoTypeSection', {
       item,
       info,
       disabled,
-      focus,
       collapsible,
       collapsed: computed(
         () => (
@@ -55,25 +48,6 @@ const DitoTypeSection = DitoComponent.component('DitoTypeSection', {
       formSchema: computed(() =>
         getItemFormSchema(props.schema, item.value, context)
       )
-    }
-  },
-
-  methods: {
-    async revealComponents(dataPath) {
-      // Unnested sections share the data path of their parent schema, so
-      // decide by schema whether the section displays the value at `dataPath`:
-      const { mainSchemaComponent } = this
-      const dataPathPrefix = this.dataPath ? `${this.dataPath}/` : ''
-      const normalizedDataPath = normalizeDataPath(dataPath)
-      const componentName = normalizedDataPath.startsWith(dataPathPrefix)
-        ? parseDataPath(normalizedDataPath.slice(dataPathPrefix.length))[0]
-        : null
-      return (
-        mainSchemaComponent &&
-        hasComponentNamed(mainSchemaComponent.schema, componentName)
-      )
-        ? mainSchemaComponent.revealComponents(dataPath)
-        : []
     }
   }
 })

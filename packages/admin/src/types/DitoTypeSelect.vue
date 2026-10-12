@@ -91,7 +91,6 @@ const DitoTypeSelect = DitoComponent.component('DitoTypeSelect', {
     return {
       attributes: field.attributes,
       inputAffixesProps: field.inputAffixesProps,
-      focus: field.focus,
       clear: field.clear,
       options,
       groupBy,

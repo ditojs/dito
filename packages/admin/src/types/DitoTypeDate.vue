@@ -60,7 +60,6 @@ const DitoTypeDate = DitoComponent.component('DitoTypeDate', {
       attributes,
       inputAffixesProps,
       clear,
-      focus,
       getSchemaValue
     } = useField(props, {
       // TODO: This is only here so we get placeholder added. Come up with a
@@ -74,7 +73,6 @@ const DitoTypeDate = DitoComponent.component('DitoTypeDate', {
       attributes,
       inputAffixesProps,
       clear,
-      focus,
 
       dateValue: computed({
         get() {

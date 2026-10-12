@@ -404,7 +404,6 @@ const DitoTypeMarkup = DitoComponent.component('DitoTypeMarkup', {
     onUnmounted(() => editor.destroy())
 
     return {
-      focus: field.focus,
       editor,
       height,
       resizable: computed(() =>

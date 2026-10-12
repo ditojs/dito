@@ -29,11 +29,11 @@ export default DitoComponent.component('DitoTabs', {
     // Tabs are identified through the component path of their schema, like in
     // `DitoPane.tabId` and `tabPanelId`.
     getTabId(key) {
-      return `${this.schemaComponent.componentPath}-tab-${key}`
+      return `${this.parentComponent.componentPath}-tab-${key}`
     },
 
     getTabPanelId(key) {
-      return `${this.schemaComponent.componentPath}-tabpanel-${key}`
+      return `${this.parentComponent.componentPath}-tabpanel-${key}`
     },
 
     // Supports the keyboard interaction of tabs with manual activation: The

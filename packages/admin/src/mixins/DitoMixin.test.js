@@ -43,7 +43,7 @@ describe('DitoMixin', () => {
       await admin.navigate('/')
       await admin.navigate('/test')
       const view = admin.getRouteComponent(component => component.isView)
-      await view.mainSchemaComponent.request({ url, cache: 'local' })
+      await view.$refs.schema.request({ url, cache: 'local' })
       expect(request).toHaveBeenCalledTimes(2)
     })
 
@@ -402,9 +402,7 @@ describe('DitoMixin', () => {
     await admin.navigate('/items/1/chapters/0')
     const form = admin.getRouteComponent(component => component.isForm)
     await settle(form)
-    const comments = form.mainSchemaComponent.getComponentByDataPath(
-      'chapters/0/comments'
-    )
+    const comments = admin.getComponent(form, 'chapters/0/comments')
     expect(comments.rootData).toBe(form.rootData)
     expect(comments.context.item).toBe(form.data)
   })

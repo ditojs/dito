@@ -47,7 +47,6 @@
 import DitoComponent from '../DitoComponent.js'
 import DitoContext from '../DitoContext.js'
 import { appendDataPath } from '../utils/data.js'
-import { trackRegistration } from '../utils/registration.js'
 import { hasLabel, hasNestedData } from '../utils/schema/structure.js'
 import { shouldRenderSchema } from '../utils/schema/data.js'
 import { getItemAdapter } from '../utils/schema/types.ts'
@@ -55,9 +54,12 @@ import { getItemAdapter } from '../utils/schema/types.ts'
 // @vue/component
 export default DitoComponent.component('DitoPane', {
   provide() {
-    return {
-      $tabComponent: () => this.tabComponent
-    }
+    // Tab panes tell their components about their tab, for their panels:
+    return this.tab ? { panelTab: this.panelTab } : {}
+  },
+
+  inject: {
+    sourceSchema: { default: null }
   },
 
   props: {
@@ -88,19 +90,14 @@ export default DitoComponent.component('DitoPane', {
       }
     },
 
-    tabComponent() {
-      return this.tab ? this : this.$tabComponent()
-    },
-
-    // Describes the tab of tab panes with data for the entries of the panels
-    // of their components, see `getAllPanelEntries()`. Panes in tabs that
-    // aren't tab panes themselves are reached through `tabComponent`.
+    // Describes the tab of tab panes for the entries of the panels of their
+    // components, see `getAllPanelEntries()`:
     panelTab() {
-      const { tab, schemaComponent } = this
+      const { tab, parentComponent } = this
       return tab
         ? {
             tabName: tab,
-            isTabSelected: () => schemaComponent.isTabSelected(tab)
+            isTabSelected: () => parentComponent.isTabSelected(tab)
           }
         : null
     },
@@ -113,12 +110,12 @@ export default DitoComponent.component('DitoPane', {
 
     // See `DitoTabs.getTabId()` and `getTabPanelId()`:
     tabId() {
-      const { componentPath } = this.schemaComponent
+      const { componentPath } = this.parentComponent
       return this.tab ? `${componentPath}-tab-${this.tab}` : null
     },
 
     tabPanelId() {
-      const { componentPath } = this.schemaComponent
+      const { componentPath } = this.parentComponent
       return this.tab ? `${componentPath}-tabpanel-${this.tab}` : null
     },
 
@@ -129,7 +126,7 @@ export default DitoComponent.component('DitoPane', {
       // because only the available data will determine the type of form.
       // The component of a value wrapped by an item adapter keeps the data
       // path of the item, which the errors of the value map to.
-      const itemAdapter = getItemAdapter(this.schemaComponent.sourceSchema)
+      const itemAdapter = getItemAdapter(this.sourceSchema)
       return Object.entries(this.schema?.components || {}).map(
         ([name, schema]) => {
           // Always add name to component schema, but clone it first to avoid
@@ -236,16 +233,6 @@ export default DitoComponent.component('DitoPane', {
     }
   },
 
-  created() {
-    this._unregister = trackRegistration(this, (add, componentPath) =>
-      this.schemaComponent._registerPane(this, add, componentPath)
-    )
-  },
-
-  unmounted() {
-    this._unregister()
-  },
-
   methods: {
     shouldRenderComponent(schema, nested, dataPath) {
       // Evaluate the component's `if` before it is rendered, with its own
@@ -261,12 +248,6 @@ export default DitoComponent.component('DitoPane', {
           rootData: this.rootData
         })
       )
-    },
-
-    focus() {
-      if (this.tab) {
-        return this.$router.push({ hash: `#${this.tab}` })
-      }
     },
 
     onResizePane() {

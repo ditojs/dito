@@ -43,8 +43,8 @@ const DitoTypeText = DitoComponent.component('DitoTypeText', {
   props: fieldProps,
 
   setup(props) {
-    const { value, focused, attributes, inputAffixesProps, clear, focus } =
-      useField(props, { nativeField: true, textField: true })
+    const field = useField(props, { nativeField: true, textField: true })
+    const { value, focused, attributes, inputAffixesProps, clear } = field
     return {
       inputValue: computed({
         get() {
@@ -64,8 +64,7 @@ const DitoTypeText = DitoComponent.component('DitoTypeText', {
       inputTypes,
       attributes,
       inputAffixesProps,
-      clear,
-      focus
+      clear
     }
   }
 })

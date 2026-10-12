@@ -20,8 +20,8 @@ const DitoTypeComputed = DitoComponent.component('DitoTypeComputed', {
   props: fieldProps,
 
   setup(props) {
-    const { value, disabled, focus } = useField(props)
-    return { value, disabled, focus }
+    const { value, disabled } = useField(props)
+    return { value, disabled }
   }
 })
 

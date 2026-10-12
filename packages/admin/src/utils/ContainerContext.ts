@@ -2,6 +2,16 @@ import type { DataModel } from './DataModel.ts'
 
 type Match = string | string[] | RegExp | ((dataPath: string) => boolean)
 
+// The schema component that renders the data, which shows its errors:
+interface SchemaComponent {
+  validateAll(match?: Match, notify?: boolean): boolean
+  showValidationErrors(
+    errors: Record<string, any>,
+    dataPath?: string
+  ): Promise<void>
+  revealErrors(): Promise<void>
+}
+
 // The component that owns a data model: a form, view, dialog or panel with its
 // own data.
 export interface ContainerOwner {
@@ -10,10 +20,10 @@ export interface ContainerOwner {
   readonly dataModel: DataModel
   readonly isCreating?: boolean
   readonly hasData?: boolean
-  readonly mainSchemaComponent: {
-    validateAll(match?: Match, notify?: boolean): boolean
-  }
+  readonly $refs: { schema?: SchemaComponent }
   setData(data: any): any
+  // Take over the errors of the item in the parent's data, in forms:
+  copyErrors?(): void
 }
 
 export interface DialogOwner extends ContainerOwner {
@@ -31,6 +41,10 @@ export class ContainerContext {
 
   get model(): DataModel {
     return this.#owner.dataModel
+  }
+
+  get #schema(): SchemaComponent {
+    return this.#owner.$refs.schema!
   }
 
   get isDirty(): boolean {
@@ -55,12 +69,26 @@ export class ContainerContext {
   // Validate the data, or only the values whose data paths match `match`, and
   // show their errors. Return whether they're valid:
   validate(match?: Match): boolean {
-    return this.#owner.mainSchemaComponent.validateAll(match)
+    return this.#schema.validateAll(match)
   }
 
   // Like `validate()`, but without showing the errors:
   verify(match?: Match): boolean {
-    return this.#owner.mainSchemaComponent.validateAll(match, false)
+    return this.#schema.validateAll(match, false)
+  }
+
+  // Show the errors of the server for the data that was sent, which is at
+  // `dataPath`, by default the root data:
+  showValidationErrors(errors: Record<string, any>, dataPath?: string) {
+    return this.#schema.showValidationErrors(errors, dataPath)
+  }
+
+  // Reveal the errors of the data, e.g. once the form that edits them opened.
+  // Forms take over the errors of their item first, also when they're open
+  // already, e.g. when their parent shows its errors:
+  revealErrors() {
+    this.#owner.copyErrors?.()
+    return this.#schema.revealErrors()
   }
 
   markEdited() {

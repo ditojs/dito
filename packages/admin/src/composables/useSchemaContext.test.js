@@ -238,9 +238,7 @@ describe('useSchemaContext()', () => {
         return admin.getRouteComponent(component => component.isForm)
       }
       const getTitleContext = form =>
-        form.mainSchemaComponent.getComponentByDataPath(
-          `${form.dataPath}/title`
-        ).context
+        admin.getComponent(form, `${form.dataPath}/title`).context
       const newForm = await openChapterForm('/items/1/chapters/create')
       expect(getTitleContext(newForm).isCreating).toBe(true)
       const form = await openChapterForm('/items/1/chapters/0')

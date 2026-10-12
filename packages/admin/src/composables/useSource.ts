@@ -40,8 +40,8 @@ export function useSource(
     onFilterErrors
   }: { onFilterErrors?: (errors: Record<string, any>) => boolean } = {}
 ) {
-  // NOTE: The component path, the waiting for the data model and the schema
-  // components of the inlined items are still members of the component:
+  // NOTE: The component path and the waiting for the data model are still
+  // members of the component:
   const component = getCurrentInstance()!.proxy as any
   const getSchemaComponent = inject<() => any>('$schemaComponent')!
   const services = useServices({
@@ -133,7 +133,7 @@ export function useSource(
     handleRequest: requests.handleRequest,
     getData: () => props.data,
     showValidationErrors: errors =>
-      getSchemaComponent().showValidationErrors(errors, props.dataPath)
+      services.container!.showValidationErrors(errors, props.dataPath)
   })
 
   // Submit the data of the source to the resource of the button:
@@ -213,20 +213,6 @@ export function useSource(
     )
   )
 
-  const source: SourceContext = reactive({
-    schema: toRef(props, 'schema'),
-    node: sourceNode,
-    query: listQuery.query,
-    listQuery: listQuery.listQuery,
-    dataPath: toRef(props, 'dataPath'),
-    componentPath: computed(() => component.componentPath),
-    store: toRef(props, 'store'),
-    isDisabled: disabled,
-    createItem: actions.createItem,
-    getSourceItemLabel,
-    reload: requests.reloadData
-  })
-
   const resource = markRaw(
     new ResourceContext(
       reactive({
@@ -238,6 +224,21 @@ export function useSource(
       { route }
     )
   )
+
+  const source: SourceContext = reactive({
+    schema: toRef(props, 'schema'),
+    node: sourceNode,
+    query: listQuery.query,
+    listQuery: listQuery.listQuery,
+    dataPath: toRef(props, 'dataPath'),
+    componentPath: computed(() => component.componentPath),
+    store: toRef(props, 'store'),
+    isDisabled: disabled,
+    createItem: actions.createItem,
+    getSourceItemLabel,
+    reload: requests.reloadData,
+    resource
+  })
 
   provide('source', source)
   provide('resource', resource)
@@ -254,7 +255,6 @@ export function useSource(
     context,
     disabled,
     onChange,
-    focus: field.focus,
     services,
     ...requests,
     ...listQuery,
@@ -263,20 +263,10 @@ export function useSource(
     ...itemLabel,
     ownSource: source,
     ownResource: resource,
-    sourceSchema: computed(() => props.schema),
     sourceNode,
     isReady,
     isInlined: computed(hasInlinedItems),
     paginate,
-    buttonSchemas: computed(() => getButtonSchemas(props.schema.buttons)),
-
-    // Reveal the components of the inlined item that display the value at
-    // `dataPath`, see `DitoSchema.revealComponents()`:
-    async revealComponents(dataPath: string) {
-      const schemaComponent = component.schemaComponents.find(
-        (it: any) => getRelativeDataPath(dataPath, it.dataPath) !== null
-      )
-      return (await schemaComponent?.revealComponents(dataPath)) ?? []
-    }
+    buttonSchemas: computed(() => getButtonSchemas(props.schema.buttons))
   }
 }

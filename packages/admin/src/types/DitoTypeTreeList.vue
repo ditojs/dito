@@ -30,13 +30,11 @@ import { defineType } from '../utils/schema/types.ts'
 import { sourceTraits } from './traits.ts'
 import { fieldProps } from '../composables/useField.ts'
 import { useSource } from '../composables/useSource.ts'
-import SchemaParentMixin from '../mixins/SchemaParentMixin.js'
 import { resolveSchemaComponents } from '../utils/schema/setup.js'
 import { getParentDataPath } from '../utils/data.js'
 
 // @vue/component
 const DitoTypeTreeList = DitoComponent.component('DitoTypeTreeList', {
-  mixins: [SchemaParentMixin],
   props: fieldProps,
 
   setup(props) {

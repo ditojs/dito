@@ -2,23 +2,23 @@
 nav.dito-trail(aria-label="Breadcrumb")
   ul
     li(
-      v-for="component in trail"
+      v-for="route in trail"
     )
       RouterLink(
         v-slot="{ href, navigate }"
-        :to="getComponentRoute(component)"
+        :to="getRouteLocation(route)"
         custom
       )
         a.dito-trail__link(
-          :class="{ 'dito-trail__link--active': isCurrentComponent(component) }"
-          :aria-current="isCurrentComponent(component) ? 'page' : null"
+          :class="{ 'dito-trail__link--active': isCurrentRoute(route) }"
+          :aria-current="isCurrentRoute(route) ? 'page' : null"
           :href="href"
           @click="navigate"
         )
           span.dito-trail__text(
-            :class="{ 'dito-trail__text--dirty': component.isDirty }"
+            :class="{ 'dito-trail__text--dirty': route.isDirty }"
           )
-            | {{ component.breadcrumb }}
+            | {{ route.breadcrumb }}
   slot
 </template>
 
@@ -29,30 +29,26 @@ import DitoComponent from '../DitoComponent.js'
 export default DitoComponent.component('DitoTrail', {
   computed: {
     trail() {
-      // The route components by route level. Leave out the components that are
-      // being left, until they're unmounted.
-      return this.appState.routeComponents.filter(
-        component => !component.isLeavingRoute
-      )
+      // Leave out the routes that are being left, until they're unmounted.
+      return this.admin.ui.routes.filter(route => !route.isLeaving)
     }
   },
 
   methods: {
-    getComponentRoute(component) {
+    getRouteLocation(route) {
       // `force` reloads the view even if it is already the current route.
       // Views are reached through the path of their route, so that the router
       // also matches their default children, like the forms of objects:
       return {
-        path: component.isView
-          ? this.$router.resolve({ name: component.route.node.linkRouteName })
-              .path
-          : component.path,
+        path: route.isForm
+          ? route.path
+          : this.$router.resolve({ name: route.node.linkRouteName }).path,
         force: true
       }
     },
 
-    isCurrentComponent(component) {
-      return component.path === this.$route.path
+    isCurrentRoute(route) {
+      return route.path === this.$route.path
     }
   }
 })

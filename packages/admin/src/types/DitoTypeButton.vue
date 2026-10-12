@@ -133,7 +133,6 @@ const DitoTypeButton = DitoComponent.component('DitoTypeButton', {
       info: field.info,
       disabled: field.disabled,
       attributes: field.attributes,
-      focus: field.focus,
       text: computed(() => getSchemaValue('text', { type: String })),
       prefixes: computed(() => asArray(props.schema.prefix)),
       suffixes: computed(() => asArray(props.schema.suffix))
