@@ -286,13 +286,14 @@ Components reach the owner of their data and the view or form that renders
 them through two contexts, instead of components:
 
 - `container`, provided by views, forms, dialogs and panels with their own
-  data: the `model` that holds the data, `schema`, `dataPath`, `rootData`,
-  `isDirty`, `isEdited`, `isCreating`, `hasData`, `validate()`, `verify()`,
-  `markEdited()` and `replaceItem()`. Dialogs add `close(value)`.
-- `route`, provided by views and forms: its `parent` route, `container`,
-  `level`, `isForm`, `state`, `path`, `isLastRoute`, `selectedTab`, the
-  `resource` of forms, `getFormRoute()`, `getFormPath()`, `getCreatePath()`,
-  and `close()` for forms.
+  data: the `model` that holds the data, `isDirty`, `isEdited`, `isCreating`,
+  `hasData`, `validate()`, `verify()`, `markEdited()` and `replaceItem()`.
+  Dialogs add `close(value)`.
+- `route`, provided by views and forms: its `parent` route, `container`, the
+  `schema`, `dataPath`, `rootData` and `componentPath` of the data that it
+  renders, `loadingTracker`, `level`, `isForm`, `state`, `path`,
+  `isLastRoute`, `selectedTab`, the `resource` of forms, `getFormRoute()`,
+  `getFormPath()`, `getCreatePath()`, and `close()` for forms.
 
 `routeComponent`, `formComponent`, `viewComponent`, `parentRouteComponent`,
 `parentFormComponent`, `dataModelComponent`, `dialogComponent` and
@@ -303,6 +304,10 @@ them through two contexts, instead of components:
 - `routeComponent.getFormRoute()` and `getCreatePath()`: `route.getFormRoute()`
   and `route.getCreatePath()`.
 - `parentRouteComponent.dataModel`: `route.parent.container.model`.
+- `viewComponent.viewSchema`: `viewComponent.schema`, the schema that the view
+  renders. The view's own schema is its `sourceSchema`.
+- The `$loadingTracker` inject is removed: `route.loadingTracker`, the tracker
+  of the view, or `admin.loadingTracker` outside of views.
 - `dialogComponent.resolve(value)`: `container.close(value)`.
 - Route records no longer have `meta.schema`: views and forms take their
   schemas from their node in the route tree.
@@ -322,7 +327,9 @@ contexts:
   `submit(button)`. Resources continue the one of the form that renders the
   source, or of the parent form of forms. The forms of tree items no longer
   continue the resource of the tree, which resolved their item at
-  `pages/pages/1` instead of `pages/1`.
+  `pages/pages/1` instead of `pages/1`. Lists in the items of inlined lists
+  resolve their relative resources against the form too, like the lists next
+  to them, instead of against the API root.
 
 Views provide both contexts of their main component, e.g. to their panels.
 `sourceComponent`, `resourceComponent`, `dataComponent` and
@@ -338,8 +345,9 @@ Views provide both contexts of their main component, e.g. to their panels.
   with a resource read the root data of their route, like all others.
 - `isPopulated`: `container.hasData`.
 - `sourceSchema` is only defined by the components that render schemas:
-  sources, views, forms, panels, sections and `DitoSchema`. In views, the
-  components outside of the main component keep the view's schema.
+  sources, views, forms, panels, sections, dialogs and `DitoSchema`. In views,
+  the components outside of the main component keep the view's schema.
+  Forms don't see a `source` in their own callbacks either.
 - `getFormPath()` of sources: `route.getFormPath()`.
 - The `meta` prop of the components and types is removed, along with
   `nestedMeta`.

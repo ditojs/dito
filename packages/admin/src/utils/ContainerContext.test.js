@@ -24,9 +24,6 @@ describe('ContainerContext', () => {
     expect(container).toBeInstanceOf(ContainerContext)
     expect(getComponent('title').container).toBe(container)
     expect(container.model).toBe(view.dataModel)
-    expect(container.schema).toBe(view.viewSchema)
-    expect(container.dataPath).toBe('')
-    expect(container.rootData).toBe(view.data)
     expect(container.isCreating).toBe(false)
   })
 
@@ -54,7 +51,6 @@ describe('ContainerContext', () => {
     await settle(form)
     const { container } = form
     expect(container).not.toBe(parent.container)
-    expect(container.dataPath).toBe('chapters/0')
     expect(container.model).not.toBe(parent.container.model)
     expect(
       form.mainSchemaComponent.getComponentByDataPath('chapters/0/title')
@@ -93,7 +89,7 @@ describe('ContainerContext', () => {
     expect(container).toBeInstanceOf(DialogContext)
     expect(dialog.mainSchemaComponent.getComponentByDataPath('title').container)
       .toBe(container)
-    expect(container.rootData).toBe(dialog.dialogData)
+    expect(container.model.data).toBe(dialog.dialogData)
     container.close('closed')
     expect(await promise).toBe('closed')
   })

@@ -18,13 +18,16 @@ import { getSourceType, getTypeOptions } from './schema/types.js'
 import { getItemId } from './schema/data.js'
 import { findItemIndexById } from './schema/item.js'
 import { appendDataPath, getRelativeDataPath } from './data.js'
+import type { Api, Schema } from './types.ts'
 
-type Schema = Record<string, any>
-type Params = Record<string, string>
-
-interface Api {
-  normalizePath(path: string): string
+// The records that the route tree creates carry their node:
+declare module 'vue-router' {
+  interface RouteMeta {
+    node?: MenuNode | ViewNode | FormNode
+  }
 }
+
+type Params = Record<string, string>
 
 // The route of a form, which the router resolves by its name:
 export interface Route {
@@ -361,11 +364,14 @@ export class SourceNode extends RouteNode {
 // their node in `meta.node`, and links resolve through the names of its routes.
 export class RouteTree {
   readonly nodes: (MenuNode | ViewNode)[]
-  readonly #api: Api
+  readonly #api: Pick<Api, 'normalizePath'>
   readonly #viewsByName = new Map<string, ViewNode>()
   readonly #sourcesWithRoutes: Set<Schema>
 
-  constructor(views: Record<string, Schema>, api: Api) {
+  constructor(
+    views: Record<string, Schema>,
+    api: Pick<Api, 'normalizePath'>
+  ) {
     this.#api = api
     this.#sourcesWithRoutes = findSourcesWithRoutes(views)
     this.nodes = Object.entries(views).map(([name, schema]) =>

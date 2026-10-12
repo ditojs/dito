@@ -458,8 +458,8 @@ export default class DitoContext {
     }
   }
 
-  // Resolves with the value that the dialog is closed with, see `closeDialog()`
-  // in the contexts of the dialog's components.
+  // Resolve with the value that the dialog is closed with, see `closeDialog()`
+  // in the contexts of the dialog's components:
   get showDialog() {
     return (schema, options) => getAdmin(this).showDialog(schema, options)
   }

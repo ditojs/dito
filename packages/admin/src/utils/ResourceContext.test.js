@@ -53,6 +53,37 @@ describe('ResourceContext', () => {
       .toBe('/items/1/notes')
   })
 
+  // Inlined lists have no resource, so lists in their items continue the
+  // resource of the form, like the lists next to them:
+  it('continues the form in lists of inlined items', async () => {
+    const { getComponent } = await mountForm({
+      schema: {
+        components: {
+          notes: {
+            type: 'list',
+            inlined: true,
+            form: {
+              type: 'form',
+              components: {
+                links: {
+                  type: 'list',
+                  resource: { path: 'links' },
+                  columns: { url: {} }
+                }
+              }
+            }
+          }
+        }
+      },
+      data: { notes: [{}] },
+      request: () => ({ data: [] })
+    })
+    const links = getComponent('notes/0/links')
+    expect(links.getResourceUrl(links.resource.getResource())).toBe(
+      '/items/1/links'
+    )
+  })
+
   it('names the verbs of transient sources', async () => {
     const { routeComponent: form, getComponent } = await mountBook()
     expect(form.resource.verbs.delete).toBe('delete')

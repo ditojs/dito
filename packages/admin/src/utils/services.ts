@@ -7,8 +7,8 @@ import type { ContainerContext } from './ContainerContext.ts'
 import type { ResourceContext } from './ResourceContext.ts'
 import type { RouteContext } from './RouteContext.ts'
 import type { SourceContext } from './SourceContext.ts'
-
-type Resource = Record<string, any>
+import type { HTTPMethod } from '../../types/index.d.ts'
+import type { Resource } from './types.ts'
 
 // The contexts that the callbacks of a component read, as the component sees
 // them. Components provide them, and data models for the contexts that they
@@ -22,7 +22,7 @@ export interface Services {
 }
 
 export interface RequestOptions {
-  method?: string
+  method?: HTTPMethod
   url?: string
   resource?: Resource
   query?: Record<string, any>
@@ -42,7 +42,7 @@ export interface DownloadOptions {
 
 export function getResourceUrl(
   { admin, resource: resourceContext }: Services,
-  resource: Resource | null
+  resource: Resource
 ): string | null {
   // Resources without a parent continue the one of the closest form or source
   // with a resource:
@@ -50,12 +50,12 @@ export function getResourceUrl(
   const url = admin.api.resources.any(
     getResource(resource, {
       parent: (
-        parent?.getResource({ method: resource?.method, child: resource }) ??
+        parent?.getResource({ method: resource.method, child: resource }) ??
         null
       )
     })
   )
-  return url ? admin.api.getApiUrl({ url, query: resource!.query }) : null
+  return url ? admin.api.getApiUrl({ url, query: resource.query }) : null
 }
 
 export async function sendRequest(
@@ -63,7 +63,10 @@ export async function sendRequest(
   { method, url, resource, query, data, signal, internal }: RequestOptions
 ) {
   const { api, session } = services.admin
-  url ||= getResourceUrl(services, resource!) ?? undefined
+  url ||= (resource && getResourceUrl(services, resource)) || undefined
+  if (!url) {
+    throw new Error('Unable to send request: There is no URL or resource.')
+  }
   method ||= resource?.method
   const checkUser = !internal && api.isApiUrl(url)
   if (checkUser) {

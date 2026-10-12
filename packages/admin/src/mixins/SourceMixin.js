@@ -156,8 +156,7 @@ export default {
       }
     },
 
-    // The schema of the source whose items the schemas of the component
-    // display, see `DitoSchema.sourceSchema`:
+    // @override SchemaParentMixin.sourceSchema()
     sourceSchema() {
       return this.schema
     },
@@ -337,7 +336,7 @@ export default {
       const { route } = this
       return (
         route?.node.findSource(
-          getRelativeDataPath(this.dataPath, route.container.dataPath)
+          getRelativeDataPath(this.dataPath, route.dataPath)
         ) ?? null
       )
     }

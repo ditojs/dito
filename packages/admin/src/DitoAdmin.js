@@ -211,8 +211,7 @@ export default class DitoAdmin {
         container: null,
         route: null,
         source: null,
-        resource: null,
-        $loadingTracker: () => admin.loadingTracker
+        resource: null
       },
 
       render: () =>

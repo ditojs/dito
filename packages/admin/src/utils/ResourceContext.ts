@@ -1,7 +1,6 @@
 import type { DataModel } from './DataModel.ts'
 import type { RouteContext } from './RouteContext.ts'
-
-type Resource = Record<string, any>
+import type { Resource } from './types.ts'
 
 export interface ResourceOptions {
   method?: string
@@ -54,8 +53,8 @@ export class ResourceContext {
     return this.#owner.getResource(options)
   }
 
-  // Submit the data through `button`, which waiting to leave the route
-  // respects, and resolve with whether it succeeded:
+  // Submit the data through `button`, and resolve with whether it succeeded.
+  // Leaving the route waits for it:
   submit(button: unknown, options?: Record<string, any>): Promise<boolean> {
     return this.#owner.dataModel.trackPendingSubmit(
       this.#owner.submit(button, options)

@@ -143,7 +143,7 @@ describe('DitoView', () => {
       expect(schema.source).toBe(list.source)
       expect(schema.resource).toBe(list.resource)
       expect(list.source.schema).toBe(list.schema)
-      expect(schema.sourceSchema).toBe(view.schema)
+      expect(schema.sourceSchema).toBe(view.sourceSchema)
     })
 
     it('are missing in views with multiple components', async () => {

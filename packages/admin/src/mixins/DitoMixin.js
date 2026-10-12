@@ -24,10 +24,8 @@ export default {
     $parentComponent: '$parentComponent',
     $schemaComponent: '$schemaComponent',
     $tabComponent: '$tabComponent',
-    $loadingTracker: '$loadingTracker',
-    // The contexts that the closest owners of a data model, a route, a source
-    // and a resource provide, see `container`, `route`, `source` and
-    // `resource`:
+    // The contexts that the closest owners above provide, which the component
+    // sees unless it owns them:
     parentContainer: 'container',
     parentRoute: 'route',
     parentSource: 'source',
@@ -45,9 +43,7 @@ export default {
       appState,
       isMounted: false,
       overrides: null, // See accessor.js
-      // The data model that the component owns, see `dataModel`, and the
-      // contexts that it provides, see `container`, `route`, `source` and
-      // `resource`:
+      // The data model and the contexts that the component owns, if any:
       ownDataModel: null,
       ownContainer: null,
       ownRoute: null,
@@ -57,9 +53,8 @@ export default {
   },
 
   computed: {
-    // The context of the owner of the data model of the data: the component
-    // itself, e.g. a form, view, dialog or panel with its own data, or else its
-    // closest ancestor that owns one.
+    // The context of the data that the component displays: its own, e.g. of a
+    // form, view, dialog or panel with its own data, or else the one above:
     container() {
       return this.ownContainer ?? this.parentContainer
     },
@@ -71,8 +66,7 @@ export default {
     },
 
     // The context of the list, object or tree that the component is, or that
-    // displays it. Forms don't continue the source of their parent, while
-    // views provide the one of their main component:
+    // displays it. Views provide the one of their main component:
     source() {
       return this.ownSource ?? this.parentSource
     },
@@ -139,7 +133,7 @@ export default {
     // data of the view, or the draft root of a nested form, see
     // `DitoView.rootData()` and `DitoForm.rootData()`:
     rootData() {
-      return this.route?.container.rootData
+      return this.route?.rootData
     }
   },
 

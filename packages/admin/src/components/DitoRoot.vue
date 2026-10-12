@@ -89,7 +89,7 @@ export default DitoComponent.component('DitoRoot', {
     // With hot-reloading, it looks like destroyed hooks aren't always called
     // for route components so reset the array of registered components instead.
     this.appState.routeComponents = []
-    this.admin.attachUserInterface({
+    this.admin.attachDialogsAndNotifications({
       showDialog: (schema, options) => this.showDialog(schema, options),
       notify: options => this.notify(options),
       closeNotifications: () => this.closeNotifications()
@@ -161,8 +161,8 @@ export default DitoComponent.component('DitoRoot', {
       )
     },
 
-    // Shows a dialog with the `components` and `buttons` of `schema`, and
-    // resolves with the value that it's closed with, see `DitoDialog`.
+    // Show a dialog with the `components` and `buttons` of `schema`, and
+    // resolve with the value that it's closed with:
     async showDialog({ components, buttons }, { data, settings } = {}) {
       // Process components to resolve async schemas first, so that errors
       // reject the returned promise.

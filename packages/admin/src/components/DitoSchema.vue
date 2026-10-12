@@ -212,9 +212,7 @@ export default DitoComponent.component('DitoSchema', {
     },
 
     // The schema of the source whose item the schema displays, as the
-    // component that renders the schema tells: the list or object of inlined
-    // items, the list of the form's item, the view, or for sections and panels
-    // the source of their schema. Dialogs have none.
+    // component that renders the schema tells:
     sourceSchema() {
       return this.$schemaParentComponent()?.sourceSchema ?? null
     },
@@ -530,7 +528,7 @@ export default DitoComponent.component('DitoSchema', {
       return this.isTabSelected(tab) || !!this.mountedTabs[tab]
     },
 
-    // Returns the first tab that displays the value at `dataPath`, if any:
+    // The first tab that displays the value at `dataPath`, if any:
     getTabByDataPath(dataPath) {
       const { renderedTabs } = this
       if (renderedTabs) {

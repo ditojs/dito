@@ -45,9 +45,8 @@ import {
   type SchemaDataEntry
 } from './schema/data.js'
 import type { Services } from './services.ts'
+import type { Data, Schema } from './types.ts'
 
-type Schema = Record<string, any>
-type Data = Record<string, any>
 type Key = string | number
 
 export interface DataModelOptions {

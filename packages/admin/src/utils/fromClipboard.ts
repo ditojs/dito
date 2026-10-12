@@ -4,9 +4,7 @@ import { processSchemaData } from './schema/data.js'
 import type { SchemaDataEntry } from './schema/data.js'
 import { getSourceType } from './schema/types.js'
 import { isSourceWithResource } from './schema/structure.js'
-
-type Schema = Record<string, any>
-type Data = Record<string, any>
+import type { Data, Schema } from './types.ts'
 
 // Turns data that `processData()` copied for the clipboard back into data of
 // new items for `schema`. Copied items have no ids, except the related ones,

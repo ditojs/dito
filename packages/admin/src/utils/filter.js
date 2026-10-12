@@ -121,7 +121,7 @@ export function createFiltersPanel(api, filters, dataPath, query) {
     disabled: false,
     sticky,
 
-    // The panel's own data, see `DitoPanel`:
+    // The panel's own data:
     data() {
       filtersData = parseFiltersData(panel, query.value)
       return filtersData

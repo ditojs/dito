@@ -1,6 +1,5 @@
 import type { SourceNode } from './RouteTree.ts'
-
-type Schema = Record<string, any>
+import type { Schema } from './types.ts'
 
 // The list, object or tree that provides the context.
 export interface SourceOwner {
