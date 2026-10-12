@@ -59,7 +59,14 @@ which components write the data through, as `component.dataModel`.
 - Applying a nested form makes the parent dirty if it changes the item.
 - Changes of the lists of sources with their own resource are clean again
   once a button of the source submitted them through a resource, while other
-  edits stay dirty.
+  edits stay dirty. Saving the form leaves them dirty, as it doesn't send them.
+- The response of a save is merged into the form's data, also over edits that
+  code made while the save was pending (its fields are disabled meanwhile).
+  If the form opened another item in the meantime, the response is dropped.
+- Leaving a form while it saves waits for the save, for up to 30 seconds.
+  "Save & close" and opening a created item only navigate if the route is
+  still within the form once the save is done, so they never override where
+  the user went in the meantime.
 - Components in panels with their own data, e.g. filters, get their defaults
   and computed values, and their edits don't make the view or form dirty.
 - Panels with their own data, e.g. filters, and dialogs are the containers of

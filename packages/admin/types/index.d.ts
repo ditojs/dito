@@ -2760,7 +2760,8 @@ export interface DitoDataModel {
    * identity, along with their uids, item stores, open forms and
    * errors. The data of sources with their own resource is kept.
    * Values missing in `data` are removed. Returns the merged
-   * data, which isn't dirty.
+   * data, which isn't dirty, apart from the edits of sources with
+   * their own resource.
    */
   mergeFromServer(data: object): object
   /**

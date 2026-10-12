@@ -349,9 +349,11 @@ export default DitoComponent.component('DitoForm', {
         const fromParam = from.params[param]
         // After submitting a new item, `setData()` merged the created one into
         // it, which the form then opens without loading it, see `submit()`.
-        // A new item that wasn't submitted is still in `createdData`, and is
-        // replaced by the loaded item.
-        const isOpeningCreatedItem = fromParam === 'create' && !this.createdData
+        const isOpeningCreatedItem = (
+          fromParam === 'create' &&
+          !this.createdData &&
+          this.getItemId(this.sourceSchema, this.data) === toParam
+        )
         if (
           param &&
           this.providesData &&
@@ -571,6 +573,8 @@ export default DitoComponent.component('DitoForm', {
     },
 
     async submit(button, { validate = true, closeForm = false } = {}) {
+      // The form may open another item or be left while the submit is pending:
+      const { path, data } = this
       // Wait for computed values that depend on pending loads, e.g. options.
       await this.waitUntilDataModelSettled()
       if (validate && !this.validateAll()) {
@@ -634,10 +638,16 @@ export default DitoComponent.component('DitoForm', {
           notifyError: error => notifySubmitError(error)
         })
       } else {
-        const data = this.getPayloadData(button, method)
-        success = await this.submitResource(button, resource, method, data, {
+        const payload = this.getPayloadData(button, method)
+        success = await this.submitResource(button, resource, method, payload, {
           ...callbacks,
-          setData: true,
+          onSuccess: response => {
+            // Merge the response only into the data that was submitted:
+            if (response && this.data === data) {
+              this.setData(response)
+            }
+            callbacks.onSuccess()
+          },
           notifySuccess: () => {
             const verb = getVerb(false)
             this.admin.notify({
@@ -663,16 +673,16 @@ export default DitoComponent.component('DitoForm', {
         // Drafts hold the responses of buttons with resources like edits, see
         // `setData()`:
         if (!this.isTransient || !buttonResource) {
-          this.ownDataModel.markClean({ editCount })
+          this.ownDataModel.markClean({ dataPath: '', editCount })
         }
         if (closeForm || button.closeForm) {
-          this.navigateAfterSubmits(() => this.close())
+          this.navigateWithin(path, () => this.close())
         } else if (this.isCreating) {
           // Redirect to the form editing the newly created item:
-          const id = this.getItemId(this.schema, this.data)
-          this.navigateAfterSubmits(() =>
+          const id = this.getItemId(this.sourceSchema, data)
+          this.navigateWithin(path, () =>
             this.$router.replace({
-              path: resolvePath(`${this.path}/../${id}`),
+              path: resolvePath(`${path}/../${id}`),
               // Preserve hash for tabs:
               hash: this.$route.hash
             })

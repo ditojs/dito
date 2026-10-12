@@ -274,7 +274,8 @@ export class DataModel {
       shouldKeepSourcesWithResource: true
     })
     this.#writeComputedValues()
-    this.markClean()
+    // Sources with their own resource keep their data and their edits:
+    this.markClean({ dataPath: '' })
     return mergedData
   }
 
