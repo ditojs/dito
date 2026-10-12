@@ -283,9 +283,6 @@ const DitoTypeMultiselect = {
             label && key
               ? {
                   [label]: tag,
-                  // TODO: Define a simple schema option to convert the tag
-                  // value to something else, e.g.
-                  // `toTag: tag => underscore(tag)`
                   [key]: tag
                 }
               : tag

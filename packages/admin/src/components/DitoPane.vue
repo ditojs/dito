@@ -192,7 +192,6 @@ export default {
       for (const row of rows) {
         // Compact labels display next to their components, so only count the
         // ones of containers higher than one line.
-        // TODO: Detect the labels in nested schemas too.
         const hasLabelsInRow = row.some(
           index => (
             renderedPositions[index]?.height > 2 &&
