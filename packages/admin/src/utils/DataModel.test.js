@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import { computed, reactive, ref, toRaw, nextTick } from 'vue'
+import { computed, reactive, ref, toRaw, nextTick, watch } from 'vue'
 import { isPlainObject } from '@ditojs/utils'
 import { defineType } from './schema/types.ts'
 import { optionsTraits } from '../types/traits.ts'
@@ -211,6 +211,30 @@ describe('DataModel', () => {
     // equal and therefore not written again.
     expect(computeValue).toHaveBeenCalledTimes(2)
     expect(data.entries).toEqual([{ name: 'One', upper: 'ONE' }])
+    dataModel.stop()
+  })
+
+  it('keeps computed values that are new but equal arrays', async () => {
+    const computeValue = vi.fn(({ item }) =>
+      item.authors.map(author => author.name.toUpperCase())
+    )
+    const schema = {
+      type: 'form',
+      components: { names: { type: 'computed', computeValue } }
+    }
+    const { dataModel, data } = createDataModel(schema, {
+      authors: [{ name: 'Jane' }]
+    })
+    await nextTick()
+    const { names } = data
+    const onChange = vi.fn()
+    watch(() => data.names, onChange, { deep: true, flush: 'sync' })
+    data.authors[0].name = 'JANE'
+    await nextTick()
+    expect(computeValue).toHaveBeenCalledTimes(2)
+    expect(data.names).toBe(names)
+    expect(onChange).not.toHaveBeenCalled()
+    expect(dataModel.isEdited).toBe(false)
     dataModel.stop()
   })
 
@@ -1244,6 +1268,46 @@ describe('DataModel', () => {
       expect(chapter.notes[1]).toBe(first)
       expect(dataModel.isDirty).toBe(true)
       dataModel.stop()
+    })
+
+    it('rewrites computed values that hold the merged copy', async () => {
+      const chapterList = {
+        type: 'list',
+        form: {
+          type: 'form',
+          components: {
+            title: { type: 'text' },
+            details: {
+              type: 'section',
+              nested: true,
+              components: {
+                chapter: {
+                  type: 'computed',
+                  computeValue: ({ parentItem }) => parentItem
+                }
+              }
+            }
+          }
+        }
+      }
+      const { dataModel, data } = createDataModel(
+        { type: 'form', components: { chapters: chapterList } },
+        { chapters: [{ title: 'One', details: {} }] }
+      )
+      await nextTick()
+      // The draft's own model computes its reference to the draft:
+      const { dataModel: draftModel, data: draft } = createDataModel(
+        chapterList.form,
+        cloneWithUids(data.chapters[0])
+      )
+      draft.title = 'First'
+      await nextTick()
+      expect(toRaw(draft.details.chapter)).toBe(toRaw(draft))
+      dataModel.merge(data.chapters, 0, draft, chapterList)
+      const [chapter] = data.chapters
+      expect(toRaw(chapter.details.chapter)).toBe(toRaw(chapter))
+      dataModel.stop()
+      draftModel.stop()
     })
 
     it(`doesn't mark the data dirty for unchanged copies`, () => {
