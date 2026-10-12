@@ -344,7 +344,7 @@ describe('createFiltersPanel()', () => {
       const { panel, query } = createPanel()
       const data = panel.data()
       data.$author.text = 'Woolf'
-      panel.events.change({ rootItem: data })
+      panel.events.change()
       expect(query.value.filter).toEqual(['author:"Woolf"'])
     })
   })

@@ -62,6 +62,7 @@ import { useComponentPath } from '../composables/useComponentPath.ts'
 import { getButtonSchemas } from '../utils/schema/lookup.js'
 import { shouldRenderComponents } from '../utils/schema/data.js'
 import { DataContext } from '../utils/DataContext.ts'
+import { getRootData } from '../utils/services.ts'
 
 export default {
   name: 'DitoPanel',
@@ -95,8 +96,10 @@ export default {
     const ownData = ref(null)
     const hasOwnData = computed(() => !!ownData.value)
     const panelData = computed(() => ownData.value || props.data)
+    // Own data is addressed by the panel's data path, within the root data
+    // around it:
     const panelDataPath = computed(() =>
-      hasOwnData.value ? '' : schemaContext.dataPath
+      hasOwnData.value ? props.dataPath : schemaContext.dataPath
     )
 
     // Own data gets its own container, so that its edits don't make the data
@@ -125,7 +128,10 @@ export default {
       panelServices = ownServices
       const dataModel = createDataModel({
         schema: () => props.schema,
-        data: () => ownData.value
+        data: () => ownData.value,
+        rootData: () => getRootData(services),
+        dataPath: () => props.dataPath,
+        parent: () => services.dataContext?.model ?? null
       })
     }
 

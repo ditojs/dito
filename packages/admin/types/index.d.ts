@@ -2843,10 +2843,11 @@ export type PanelSchema<$Item = any> = BaseSchema<$Item> & {
   /**
    * The panel's own data, e.g. of filters, instead of
    * the data of its form or view. Its edits don't make
-   * the form or view dirty. The panel is the root of the
-   * contexts inside it, while `data()`, `if`, `visible`,
-   * `label` and `sticky` receive the context of the data
-   * around the panel.
+   * the form or view dirty. It's the `item` of the
+   * contexts inside the panel, and `rootItem` stays the
+   * root data of the page, while `data()`, `if`,
+   * `visible`, `label` and `sticky` receive the context of
+   * the data around the panel.
    */
   data?: OrItemAccessor<$Item, {}, Record<string, any>>
   /**

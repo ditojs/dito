@@ -110,7 +110,7 @@ describe('DitoPanel', () => {
     expect(item).toMatchObject({ notes: 'Classic' })
   })
 
-  it('is the root of the contexts in its own data', async () => {
+  it('gives its own data as item, within the root data around it', async () => {
     const click = vi.fn()
     const { wrapper } = await mountSchema({
       schema: {
@@ -131,9 +131,9 @@ describe('DitoPanel', () => {
     })
     await wrapper.find('.dito-panel button[id$="refresh"]').trigger('click')
     const [{ item, rootItem, dataPath }] = click.mock.calls[0]
-    expect(rootItem).toEqual({ query: 'Emma' })
-    expect(item).toBe(rootItem)
-    expect(dataPath).toBe('refresh')
+    expect(item).toEqual({ query: 'Emma' })
+    expect(rootItem).toEqual({ title: 'Dune' })
+    expect(dataPath).toBe('search/refresh')
   })
 
   it(`processes its own data without the view's ids or types`, async () => {
