@@ -23,7 +23,7 @@ test.describe('validation', () => {
     // because the file is rejected client-side, so no /upload/ response
     // ever fires for it to await.
     const upload = new DitoUploadField(page, 'files')
-    await upload.waitUntilVisible({ timeout: 15_000 })
+    await upload.waitUntilVisible()
 
     await upload.container.locator(
       'input[type="file"]'
@@ -58,7 +58,7 @@ test.describe('validation', () => {
     // the file is rejected client-side, so no
     // /upload/ response ever fires.
     const upload = new DitoUploadField(page, 'filesSmall')
-    await upload.waitUntilVisible({ timeout: 15_000 })
+    await upload.waitUntilVisible()
 
     await upload.container.locator(
       'input[type="file"]'

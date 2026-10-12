@@ -172,7 +172,7 @@ export class DitoForm {
         expect(
           isClean || notificationCount > existingNotifications
         ).toBe(true)
-      }).toPass({ timeout: 15_000 })
+      }).toPass()
     await assertSettled()
     await assertSettled()
   }
@@ -394,8 +394,8 @@ export class DitoUploadField {
     return this.rows.nth(index)
   }
 
-  async waitUntilVisible(options?: { timeout?: number }) {
-    await expect(this.container).toBeVisible(options)
+  async waitUntilVisible() {
+    await expect(this.container).toBeVisible()
   }
 
   async upload(filePath: string | string[]): Promise<void> {

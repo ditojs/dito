@@ -136,11 +136,15 @@ describe('useOptions()', () => {
 
     it('debounces the filter of search objects if asked to', async () => {
       const filter = vi.fn(({ searchTerm }) => [searchTerm])
-      const { findField } = await mountWithSearch({ filter, debounce: 1 })
+      const { findField } = await mountWithSearch({ filter, debounce: 100 })
       const field = findField('genres')
+      // Control the time, so that busy machines don't outlast the debounce:
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
       await search(field, 'B')
       await search(field, 'Bio')
-      await vi.waitFor(() => expect(filter).toHaveBeenCalled())
+      expect(filter).not.toHaveBeenCalled()
+      await vi.advanceTimersByTimeAsync(100)
+      vi.useRealTimers()
       expect(filter).toHaveBeenCalledOnce()
       expect(filter.mock.calls[0][0].searchTerm).toBe('Bio')
     })

@@ -13,16 +13,18 @@ process.env.TZ = timezone
 const screenshotsEndpoint = process.env.SCREENSHOTS_WS_ENDPOINT
 const screenshotFiles = /\.screenshot\.ts$/
 
+// Actions and expectations wait for their conditions as long as the test may
+// take, so that tests don't fail on busy machines:
+const timeout = 60_000
+
 export default defineConfig({
   testDir: './e2e',
-  timeout: 60_000,
+  timeout,
+  expect: { timeout },
   retries: process.env.CI ? 1 : 0,
   snapshotPathTemplate: '{testDir}/{testFileDir}/__screenshots__/{arg}{ext}',
   use: {
     headless: true,
-    // Fail fast when an element doesn't show up, instead of waiting for the
-    // test timeout.
-    actionTimeout: process.env.CI ? 15_000 : 5_000,
     timezoneId: timezone,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
