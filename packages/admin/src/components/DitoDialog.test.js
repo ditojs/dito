@@ -8,7 +8,7 @@ async function showDialog(schema, options) {
   const admin = await mountAdmin({ views: {} })
   const removeDialog = vi.spyOn(admin.root, 'removeDialog')
   let isSettled = false
-  const promise = admin.root.showDialog(schema, options).finally(() => {
+  const promise = admin.context.showDialog(schema, options).finally(() => {
     isSettled = true
   })
   await flushPromises()

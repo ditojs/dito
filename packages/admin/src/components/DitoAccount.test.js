@@ -8,7 +8,7 @@ describe('DitoAccount', () => {
       views: { test: { type: 'view', label: 'Test', components: {} } }
     })
     await flushPromises()
-    const { session } = admin.root
+    const { session } = admin.context
     const logout = vi.spyOn(session, 'logout').mockResolvedValue()
     const account = admin.wrapper.find('.dito-account')
     const button = account.find('button[aria-haspopup="menu"]')
@@ -27,7 +27,7 @@ describe('DitoAccount', () => {
       views: { test: { type: 'view', label: 'Test', components: {} } }
     })
     await flushPromises()
-    const logout = vi.spyOn(admin.root.session, 'logout').mockResolvedValue()
+    const logout = vi.spyOn(admin.context.session, 'logout').mockResolvedValue()
     const account = admin.wrapper.find('.dito-account')
     await account.find('button[aria-haspopup="menu"]').trigger('click')
     await account.findAll('[role="menuitem"]')[0].trigger('click')

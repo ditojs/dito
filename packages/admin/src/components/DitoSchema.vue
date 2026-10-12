@@ -625,7 +625,7 @@ export default DitoComponent.component('DitoSchema', {
             return errs.map(({ message }) => `${prefix} ${message}`)
           }
         )
-        this.notify({
+        this.admin.notify({
           type: 'error',
           title: 'Validation Errors',
           text: messages.join('\n') || 'Please correct the highlighted errors.'

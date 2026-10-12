@@ -22,7 +22,7 @@ async function mountBookForm(request) {
     request
   })
   // The form notifies through the root component, see `DitoMixin.notify()`:
-  const notify = vi.spyOn(result.admin.root, 'notify')
+  const notify = vi.spyOn(result.admin.context, 'notify')
   return { ...result, notify }
 }
 
@@ -590,7 +590,7 @@ describe('DitoForm', () => {
         },
         data: { title: 'Emma', chapters, author }
       })
-      const notify = vi.spyOn(result.admin.root, 'notify')
+      const notify = vi.spyOn(result.admin.context, 'notify')
       return { ...result, notify }
     }
 

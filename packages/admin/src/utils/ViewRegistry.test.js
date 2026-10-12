@@ -1,25 +1,38 @@
 import { vi } from 'vitest'
 import { watch } from 'vue'
 import { mountAdmin } from '../test/mount.js'
+import { ViewRegistry } from './ViewRegistry.js'
+import DitoView from '../components/DitoView.vue'
 
 describe('ViewRegistry', () => {
   afterEach(() => {
     vi.restoreAllMocks()
   })
 
+  // Creates a registry for `views` with the router and API of an admin
+  // without views of its own:
+  async function createViewRegistry(views) {
+    const admin = await mountAdmin({ views: {} })
+    const { api, router } = admin.context
+    const viewRegistry = new ViewRegistry({
+      api,
+      router,
+      unresolvedViews: views,
+      viewComponent: DitoView
+    })
+    return { admin, viewRegistry }
+  }
+
   it('provides the views only along with their route tree', async () => {
-    const admin = await mountAdmin({
-      views: {
-        catalog: {
-          type: 'menu',
-          label: 'Catalog',
-          items: {
-            authors: { type: 'view', label: 'Authors', components: {} }
-          }
+    const { admin, viewRegistry } = await createViewRegistry({
+      catalog: {
+        type: 'menu',
+        label: 'Catalog',
+        items: {
+          authors: { type: 'view', label: 'Authors', components: {} }
         }
       }
     })
-    const { viewRegistry } = admin.root
     // `DitoMenu` links to the paths of the route tree as soon as the views
     // are provided:
     const providedPaths = []
@@ -38,10 +51,10 @@ describe('ViewRegistry', () => {
   })
 
   it('replaces the routes of the previous views', async () => {
-    const admin = await mountAdmin({
-      views: { books: { type: 'view', label: 'Books', components: {} } }
+    const { admin, viewRegistry } = await createViewRegistry({
+      books: { type: 'view', label: 'Books', components: {} }
     })
-    const { viewRegistry } = admin.root
+    expect(await viewRegistry.resolve()).toBe(true)
     expect(await viewRegistry.resolve()).toBe(true)
     const paths = admin.router.getRoutes().map(route => route.path)
     expect(paths.filter(path => path === '/books')).toHaveLength(1)
@@ -50,13 +63,11 @@ describe('ViewRegistry', () => {
   it('returns false when the views fail to resolve', async () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     let shouldFail = false
-    const admin = await mountAdmin({
-      views: async () => {
-        if (shouldFail) throw new Error('Forbidden')
-        return { books: { type: 'view', label: 'Books', components: {} } }
-      }
+    const { viewRegistry } = await createViewRegistry(async () => {
+      if (shouldFail) throw new Error('Forbidden')
+      return { books: { type: 'view', label: 'Books', components: {} } }
     })
-    const { viewRegistry } = admin.root
+    expect(await viewRegistry.resolve()).toBe(true)
     shouldFail = true
     expect(await viewRegistry.resolve()).toBe(false)
     expect(error).toHaveBeenCalledWith(new Error('Forbidden'))
@@ -64,14 +75,17 @@ describe('ViewRegistry', () => {
   })
 
   it('clears the views and navigates home', async () => {
-    const admin = await mountAdmin({
-      views: { books: { type: 'view', label: 'Books', components: {} } }
+    const { admin, viewRegistry } = await createViewRegistry({
+      books: { type: 'view', label: 'Books', components: {} }
     })
+    await viewRegistry.resolve()
     await admin.navigate('/books')
-    const { viewRegistry } = admin.root
     await viewRegistry.clear()
     expect(viewRegistry.views).toEqual({})
-    expect(viewRegistry.hasRoutes).toBe(true)
+    expect(viewRegistry.routeTree).toBe(null)
+    // The routes stay until the views are resolved again:
+    const paths = admin.router.getRoutes().map(route => route.path)
+    expect(paths).toContain('/books')
     expect(admin.router.currentRoute.value.path).toBe('/')
   })
 })
@@ -108,7 +122,7 @@ describe('ViewRegistry across sessions', () => {
         throw new Error(`Unexpected request: ${method} ${url}`)
       }
     })
-    const { session } = admin.root
+    const { session } = admin.context
     session.attachUserInterface({
       requestLoginData: async () => ({ username: 'tester', password: 'x' }),
       notify: vi.fn()

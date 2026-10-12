@@ -133,17 +133,17 @@ describe('ResourceMixin', () => {
     it('begins and ends a loading operation and warns once', async () => {
       const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
       const { form } = await mountBookForm({})
-      const { rootComponent } = form
+      const { loadingTracker } = form.admin
       expect(form.isLoading).toBe(false)
       form.setLoading(true)
       form.setLoading(true)
       expect(form.isLoading).toBe(true)
-      expect(rootComponent.isLoading).toBe(true)
+      expect(loadingTracker.isLoading).toBe(true)
       form.setLoading(false)
       expect(form.isLoading).toBe(false)
-      expect(rootComponent.isLoading).toBe(false)
+      expect(loadingTracker.isLoading).toBe(false)
       form.setLoading(false)
-      expect(rootComponent.isLoading).toBe(false)
+      expect(loadingTracker.isLoading).toBe(false)
       const deprecationWarnings = warn.mock.calls.filter(([message]) =>
         String(message).includes('setLoading() is deprecated')
       )
@@ -153,11 +153,11 @@ describe('ResourceMixin', () => {
     it('ends its loading operation when the component unmounts', async () => {
       vi.spyOn(console, 'warn').mockImplementation(() => {})
       const { form, admin } = await mountBookForm({})
-      const { rootComponent } = form
+      const { loadingTracker } = form.admin
       form.setLoading(true)
-      expect(rootComponent.isLoading).toBe(true)
+      expect(loadingTracker.isLoading).toBe(true)
       await admin.navigate('/items')
-      expect(rootComponent.isLoading).toBe(false)
+      expect(loadingTracker.isLoading).toBe(false)
     })
   })
 

@@ -557,7 +557,7 @@ export default DitoComponent.component('DitoForm', {
       const notifySubmitError = (error, message = null) => {
         const verb = getVerb(true)
         const { itemLabel } = this
-        this.notify({
+        this.admin.notify({
           type: 'error',
           error,
           title: 'Request Error',
@@ -589,7 +589,7 @@ export default DitoComponent.component('DitoForm', {
           notifySuccess: () => {
             const verb = getVerb(false)
             const { itemLabel } = this
-            this.notify({
+            this.admin.notify({
               type: 'info',
               title: this.isCreating
                 ? `Item ${capitalize(verb)}`
@@ -611,7 +611,7 @@ export default DitoComponent.component('DitoForm', {
           setData: true,
           notifySuccess: () => {
             const verb = getVerb(false)
-            this.notify({
+            this.admin.notify({
               type: 'success',
               title: `Successfully ${capitalize(verb)}`,
               html: `${this.itemLabel} was ${verb}.`

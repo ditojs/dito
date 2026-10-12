@@ -119,16 +119,17 @@ export async function mountAdmin({ views, request = null, api = {} }) {
     api: { url: '/', ...api, request: requestStub },
     views
   })
-  const { app } = dito
-  const router = app.config.globalProperties.$router
+  const { app, context } = dito
+  const { router } = context
   const root = app._instance.proxy.$refs.root
   // Wait for `DitoRoot` to fetch the user and add the routes of the views:
   await vi.waitFor(() => {
-    if (!root.viewRegistry.hasRoutes) throw new Error('Views not resolved yet')
+    if (!context.routeTree) throw new Error('Views not resolved yet')
   })
   const admin = {
     dito,
     app,
+    context,
     router,
     root,
     element,

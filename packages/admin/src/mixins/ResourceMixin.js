@@ -361,7 +361,7 @@ export default {
       const data = error?.response?.data
       const title = isString(data?.type) ? labelize(data.type) : 'Error'
       const text = data?.message ?? error
-      this.notify({ type: 'error', error, title, text })
+      this.admin.notify({ type: 'error', error, title, text })
     },
 
     getPayloadData(button, method) {
@@ -381,7 +381,7 @@ export default {
       onSuccess,
       onError,
       notifySuccess = () =>
-        this.notify({
+        this.admin.notify({
           type: 'success',
           title: 'Request Successful',
           text: 'Request was successfully sent.'
@@ -389,7 +389,7 @@ export default {
       notifyError = error => {
         // Errors without a message are notified without details:
         const message = getErrorMessage(error)
-        this.notify({
+        this.admin.notify({
           type: 'error',
           error,
           title: 'Request Error',

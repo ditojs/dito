@@ -7,7 +7,7 @@ import { confirm, confirmAndRemove, transientNote } from './dialogs.js'
 // the dialog element.
 async function showConfirmDialog(ask) {
   const admin = await mountAdmin({ views: {} })
-  const notify = vi.spyOn(admin.root, 'notify')
+  const notify = vi.spyOn(admin.context, 'notify')
   const promise = ask(admin.root)
   await flushPromises()
   const dialog = admin.wrapper.find('.dito-dialog')

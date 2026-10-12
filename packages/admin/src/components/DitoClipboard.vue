@@ -121,7 +121,12 @@ export default DitoComponent.component('DitoClipboard', {
 
     notifyClipboardError(error, text = error.message) {
       // Notifications log their error too.
-      this.notify({ type: 'error', error, title: 'Clipboard Error', text })
+      this.admin.notify({
+        type: 'error',
+        error,
+        title: 'Clipboard Error',
+        text
+      })
     }
   }
 })

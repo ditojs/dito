@@ -136,7 +136,8 @@ export default {
 
     // The path of the view or source, e.g. for selectors of its styles:
     schemaPath() {
-      return getSchemaPath(this.sourceSchema, this.sourceSchema.name, this.api)
+      const { sourceSchema } = this
+      return getSchemaPath(sourceSchema, sourceSchema.name, this.admin.api)
     },
 
     // The state that the routes below this component depend on, see

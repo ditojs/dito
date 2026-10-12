@@ -112,10 +112,10 @@ export default DitoTypeComponent.register(
           if (res === undefined) {
             if (error instanceof AggregateError) {
               for (const err of error.errors) {
-                this.notify({ type: 'error', text: err })
+                this.admin.notify({ type: 'error', text: err })
               }
             } else {
-              this.notify({ type: 'error', text: error })
+              this.admin.notify({ type: 'error', text: error })
             }
           }
         } finally {

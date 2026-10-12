@@ -129,11 +129,11 @@ describe('DitoRoot', () => {
               ? { data: { user: { id: 1, username: data.username } } }
               : null
       })
-      const { session, viewRegistry } = admin.root
+      const { session } = admin.context
       await admin.navigate('/books')
       await session.logout()
       await flushPromises()
-      expect(viewRegistry.views).toEqual({})
+      expect(admin.context.views).toEqual({})
       expect(admin.router.currentRoute.value.path).toBe('/')
       expect(admin.wrapper.find('.dito-view').exists()).toBe(false)
 
@@ -145,7 +145,7 @@ describe('DitoRoot', () => {
       await dialog.find('button[type="submit"]').trigger('click')
       await flushPromises()
       expect(session.user.username).toBe('reader')
-      expect(Object.keys(viewRegistry.views)).toEqual(['books'])
+      expect(Object.keys(admin.context.views)).toEqual(['books'])
       await admin.navigate('/books')
       expect(
         admin.wrapper.find('.dito-view input[name="title"]').exists()
@@ -157,7 +157,7 @@ describe('DitoRoot', () => {
     it('rejects when the components fail to set up', async () => {
       const admin = await mountAdmin({ views: {} })
       await expect(
-        admin.root.showDialog({
+        admin.context.showDialog({
           components: {
             books: {
               type: 'list',
@@ -167,33 +167,6 @@ describe('DitoRoot', () => {
         })
       ).rejects.toThrow('Dialogs do not support components that produce routes')
       expect(admin.root.dialogs).toEqual({})
-    })
-  })
-
-  describe('registerLoading()', () => {
-    it('counts the registered loading operations and warns once', async () => {
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-      const admin = await mountAdmin({ views: {} })
-      const { root } = admin
-      const header = admin.wrapper.find('.dito-header')
-      root.registerLoading(true)
-      root.registerLoading(true)
-      root.registerLoading(false)
-      await flushPromises()
-      expect(root.isLoading).toBe(true)
-      expect(header.attributes('aria-busy')).toBe('true')
-      root.registerLoading(false)
-      root.registerLoading(false)
-      expect(root.isLoading).toBe(false)
-      // Unbalanced calls don't end the operations of others:
-      const end = root.loadingTracker.begin()
-      root.registerLoading(false)
-      expect(root.isLoading).toBe(true)
-      end()
-      const deprecationWarnings = warn.mock.calls.filter(([message]) =>
-        String(message).includes('registerLoading() is deprecated')
-      )
-      expect(deprecationWarnings).toHaveLength(1)
     })
   })
 
@@ -236,11 +209,11 @@ describe('DitoRoot', () => {
       const admin = await mountAdmin({ views: {} })
       const findNotifications = () =>
         admin.element.querySelectorAll('.dito-notification')
-      admin.root.notify({ type: 'info', title: 'Saved', text: 'Emma' })
-      admin.root.notify({ type: 'info', title: 'Saved', text: 'Dune' })
+      admin.context.notify({ type: 'info', title: 'Saved', text: 'Emma' })
+      admin.context.notify({ type: 'info', title: 'Saved', text: 'Dune' })
       await flushPromises()
       expect(findNotifications()).toHaveLength(2)
-      admin.root.closeNotifications()
+      admin.context.closeNotifications()
       await vi.waitFor(() => expect(findNotifications()).toHaveLength(0))
       vi.restoreAllMocks()
     })

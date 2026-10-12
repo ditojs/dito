@@ -78,14 +78,14 @@ describe('DitoView', () => {
       const admin = await mountAdmin({ views })
       await admin.navigate('/books')
       const view = admin.getRouteComponent(it => it.isView)
-      const { rootComponent } = view
+      const { loadingTracker } = view.admin
       view.setLoading(true)
       view.setLoading(true)
       expect(view.isLoading).toBe(true)
-      expect(rootComponent.isLoading).toBe(true)
+      expect(loadingTracker.isLoading).toBe(true)
       view.setLoading(false)
       expect(view.isLoading).toBe(false)
-      expect(rootComponent.isLoading).toBe(false)
+      expect(loadingTracker.isLoading).toBe(false)
       const deprecationWarnings = warn.mock.calls.filter(([message]) =>
         String(message).includes('DitoView.setLoading() is deprecated')
       )
@@ -97,10 +97,10 @@ describe('DitoView', () => {
       const admin = await mountAdmin({ views })
       await admin.navigate('/books')
       const view = admin.getRouteComponent(it => it.isView)
-      const { rootComponent } = view
+      const { loadingTracker } = view.admin
       view.setLoading(true)
       await admin.navigate('/authors')
-      expect(rootComponent.isLoading).toBe(false)
+      expect(loadingTracker.isLoading).toBe(false)
     })
   })
 

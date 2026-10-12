@@ -1,6 +1,6 @@
 <template lang="pug">
 template(
-  v-if="user && shouldRenderSchema(viewSchema)"
+  v-if="admin.user && shouldRenderSchema(viewSchema)"
 )
   //- Only render DitoView when it is active, otherwise a normal router-view
   //- instead, to nest further route components.

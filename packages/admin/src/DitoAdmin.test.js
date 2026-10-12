@@ -65,7 +65,7 @@ describe('DitoAdmin', () => {
 
   it('provides an object as the views until they are resolved', () => {
     const admin = createAdmin()
-    expect(admin.app._instance.provides.viewRegistry.views).toEqual({})
+    expect(admin.context.views).toEqual({})
   })
 
   it('declares the page class in the app state', async () => {

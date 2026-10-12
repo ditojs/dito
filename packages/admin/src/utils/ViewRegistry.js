@@ -7,7 +7,7 @@ import { RouteTree } from './RouteTree.ts'
 // and adds them to the router, replacing the routes of the previous resolve.
 // `Session` resolves the views anew for each login and clears them once the
 // user is logged out, as the schemas may depend on the user, e.g. on functions
-// or modules that request the API. `views` and `hasRoutes` are reactive.
+// or modules that request the API. `views` and `routeTree` are reactive.
 
 export class ViewRegistry {
   #api
@@ -16,7 +16,7 @@ export class ViewRegistry {
   #viewComponent
   #views = shallowRef({})
   #routeTree = shallowRef(null)
-  #removeRoutes = shallowRef(null)
+  #removeRoutes = null
 
   constructor({ api, router, unresolvedViews, viewComponent }) {
     this.#api = api
@@ -36,11 +36,6 @@ export class ViewRegistry {
     return this.#routeTree.value
   }
 
-  // Whether the routes of the views were added to the router.
-  get hasRoutes() {
-    return !!this.#removeRoutes.value
-  }
-
   // Resolves the views and replaces the routes of the previous resolve with
   // theirs, keeping the current path. Returns `false` if the views couldn't be
   // resolved, e.g. because the API refused a request of their schemas.
@@ -57,8 +52,8 @@ export class ViewRegistry {
     )
     const routeTree = new RouteTree(views, this.#api)
     const { fullPath } = this.#router.currentRoute.value
-    this.#removeRoutes.value?.()
-    this.#removeRoutes.value = addRoutes(this.#router, [
+    this.#removeRoutes?.()
+    this.#removeRoutes = addRoutes(this.#router, [
       {
         name: 'root',
         path: '/',

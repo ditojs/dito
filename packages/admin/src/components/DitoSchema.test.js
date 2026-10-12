@@ -897,7 +897,7 @@ describe('DitoSchema', () => {
         data: { title: 'Emma' },
         request: respondWithErrors(errors)
       })
-      const notify = vi.spyOn(result.admin.root, 'notify')
+      const notify = vi.spyOn(result.admin.context, 'notify')
       return { ...result, notify }
     }
 
@@ -1099,7 +1099,7 @@ describe('DitoSchema', () => {
         },
         data: { title: 'Emma', author: 'Jane' }
       })
-      const notify = vi.spyOn(admin.root, 'notify')
+      const notify = vi.spyOn(admin.context, 'notify')
       await schemaComponent.showValidationErrors({
         title: [{ message: 'is taken' }]
       })

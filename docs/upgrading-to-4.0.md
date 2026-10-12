@@ -190,8 +190,8 @@ panel with its own data, e.g. the filters panel, a nested form being its own.
   `showDialog({ components, buttons }, { data, settings })`, which resolves
   with the value that the dialog is closed with. In the dialog,
   `dialogComponent.resolve(value)` is `closeDialog(value)`.
-  `dialogComponent.reject()` is removed. The `showDialog()` of components
-  takes the same arguments.
+  `dialogComponent.reject()` is removed. `admin.showDialog()` takes the same
+  arguments.
 - `formComponent.selectedTab`: `selectedTab`, the selected tab of the nearest
   form. Tabs render once they're selected and stay rendered, so their
   components don't need to check for their tab. Revealing errors renders the
@@ -260,6 +260,25 @@ function copyAddress(order) {
   Object.assign(order.billingAddress, order.deliveryAddress)
 }
 ```
+
+### Admin context
+
+`DitoAdmin` provides the services of the admin to all components as one object,
+`component.admin`, which it keeps as its `context` too. It replaces the `api`,
+`session` and `viewRegistry` injects, and the members of components that
+reached them:
+
+- `api`, `user`, `views` and `flattenedViews`: `admin.api`, `admin.user`,
+  `admin.views` and `admin.flattenedViews`, which are reactive. `locale`:
+  `admin.api.locale`. `session`: `admin.session`.
+- `notify()`, `showDialog()` and `closeNotifications()`: `admin.notify()`,
+  `admin.showDialog()` and `admin.closeNotifications()`. Contexts keep
+  `notify()` and `showDialog()`.
+- `rootComponent` is removed. `rootComponent.isLoading`:
+  `admin.loadingTracker.isLoading`. The deprecated
+  `rootComponent.registerLoading()` is removed: use
+  `admin.loadingTracker.begin()` or `track()`.
+- Route records no longer have `meta.api`.
 
 ### Custom types
 

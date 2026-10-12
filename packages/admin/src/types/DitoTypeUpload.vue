@@ -207,7 +207,7 @@ export default DitoTypeComponent.register('upload', {
       // the same files that clicking them downloads:
       return this.files.map((file, index) => {
         const url = this.getDownloadUrl(file, index)
-        return url ? resolveDownloadUrl(this.api, url) : null
+        return url ? resolveDownloadUrl(this.admin.api, url) : null
       })
     },
 
@@ -308,14 +308,14 @@ export default DitoTypeComponent.register('upload', {
         ? this.getResourceUrl({
             type: 'upload',
             method: 'post',
-            path: this.api.normalizePath(this.dataPath)
+            path: this.admin.api.normalizePath(this.dataPath)
           })
         : null
     },
 
     uploadOptions() {
       return this.uploadPath
-        ? getUploadOptions(this.api, this.uploadPath)
+        ? getUploadOptions(this.admin.api, this.uploadPath)
         : null
     }
   },
@@ -515,7 +515,7 @@ export default DitoTypeComponent.register('upload', {
             }[error] ||
             `Unknown File Upload Error: '${error}'`
           )
-          this.notify({
+          this.admin.notify({
             type: 'error',
             error,
             title: 'File Upload Error',
@@ -544,7 +544,7 @@ export default DitoTypeComponent.register('upload', {
 
     async onClickDownload(file, index) {
       try {
-        const blob = await fetchBlob(this.api, this.downloadUrls[index])
+        const blob = await fetchBlob(this.admin.api, this.downloadUrls[index])
         const url = URL.createObjectURL(blob)
         try {
           this.download({ filename: file.name, url })
@@ -554,7 +554,7 @@ export default DitoTypeComponent.register('upload', {
           setTimeout(() => URL.revokeObjectURL(url), 1000)
         }
       } catch (error) {
-        this.notify({
+        this.admin.notify({
           type: 'error',
           error,
           title: 'File Download Error',

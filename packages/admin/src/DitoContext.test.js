@@ -185,33 +185,21 @@ describe('DitoContext', () => {
     // A stand-in for the component that the context is created for:
     const createComponent = () => ({
       schema: { type: 'text' },
-      user: { name: 'Librarian' },
-      api: { locale: 'en-US' },
-      views: { books: {} },
-      flattenedViews: { books: {} },
       itemLabel: 'Book',
       formLabel: 'Books',
-      $route: { query: { page: '2' } },
       request: vi.fn(async options => ({ options })),
       format: vi.fn((value, options) => `${value} ${options.unit}`),
-      navigate: vi.fn(),
       download: vi.fn(),
-      getResourceUrl: vi.fn(resource => `/api/${resource.path}`),
-      notify: vi.fn()
+      getResourceUrl: vi.fn(resource => `/api/${resource.path}`)
     })
 
     it('falls back to the values of the component', () => {
       const component = createComponent()
       const context = new DitoContext(component, { dataPath: 'title' })
       expect(context.schema).toBe(component.schema)
-      expect(context.user).toBe(component.user)
-      expect(context.api).toBe(component.api)
-      expect(context.views).toBe(component.views)
-      expect(context.flattenedViews).toBe(component.flattenedViews)
       expect(context.itemLabel).toBe('Book')
       expect(context.itemLabelText).toBe('Book')
       expect(context.formLabel).toBe('Books')
-      expect(context.routeQuery).toEqual({ page: '2' })
     })
 
     it('returns the text of the item label with unescaped values', () => {
@@ -273,29 +261,15 @@ describe('DitoContext', () => {
 
     it('delegates the helper methods to the component', async () => {
       const component = createComponent()
-      const { request, format, navigate, download, getResourceUrl } =
-        new DitoContext(component, {})
+      const context = new DitoContext(component, {})
+      const { request, format, download, getResourceUrl } = context
       expect(await request({ method: 'get' })).toEqual({
         options: { method: 'get' }
       })
       expect(format(3, { unit: 'kg' })).toBe('3 kg')
-      navigate('/books')
-      expect(component.navigate).toHaveBeenCalledWith('/books')
       download({ url: '/file' })
       expect(component.download).toHaveBeenCalledWith({ url: '/file' })
       expect(getResourceUrl({ path: 'books' })).toBe('/api/books')
-    })
-
-    it('remembers that a notification was shown', () => {
-      const component = createComponent()
-      const context = new DitoContext(component, {})
-      const { notify } = context
-      notify({ type: 'info', text: 'Saved' })
-      expect(component.notify).toHaveBeenCalledWith({
-        type: 'info',
-        text: 'Saved'
-      })
-      expect(context.wasNotified).toBe(true)
     })
 
     it('stores whether its action is running', () => {
@@ -313,16 +287,6 @@ describe('DitoContext', () => {
           return true
         }
       })
-
-    it(`doesn't remember notifications on the component`, () => {
-      const component = { notify: vi.fn() }
-      const proxy = createComponentProxy(component)
-      const context = new DitoContext(proxy, {})
-      context.notify({ type: 'info', text: 'Saved' })
-      expect(context.wasNotified).toBe(true)
-      expect(component).not.toHaveProperty('wasNotified')
-      expect(new DitoContext(proxy, {}).wasNotified).toBe(false)
-    })
 
     it('sets whether the action of the component is running on it', () => {
       // E.g. to end the running state of a button before its click handler
@@ -381,10 +345,10 @@ describe('DitoContext', () => {
     })
 
     it('shares the state of the extended context', () => {
-      const context = new DitoContext({ notify() {} }, {})
+      const context = new DitoContext({}, {})
       const extended = context.extend({})
-      extended.notify({ text: 'Done' })
-      expect(context.wasNotified).toBe(true)
+      extended.isRunning = true
+      expect(context.isRunning).toBe(true)
     })
   })
 

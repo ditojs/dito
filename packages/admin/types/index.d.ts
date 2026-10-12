@@ -2182,6 +2182,44 @@ export type DitoContext<$Item = any> = {
   ): void
 }
 
+/**
+ * The context of the admin, provided once to all its components as
+ * `admin`. `user`, `views` and `flattenedViews` change with each login,
+ * and are reactive.
+ */
+export interface AdminContext {
+  /** The admin API configuration. */
+  readonly api: ApiConfig
+  readonly router: VueRouter
+  /** Logs users in and out through the `api.users` resources. */
+  readonly session: {
+    /** The logged in user, `null` when logged out. */
+    readonly user: DitoContext['user']
+    /**
+     * Asks for the credentials and logs in, again after
+     * each failure, until it succeeds or the user cancels.
+     */
+    login(): Promise<DitoContext['user']>
+    logout(): Promise<void>
+    /** Fetches the user of the server's session. */
+    fetchUser(): Promise<DitoContext['user']>
+    /** Asks to log in if the session expired. */
+    ensureUser(): Promise<void>
+  }
+  /** The logged in user, `null` when logged out. */
+  readonly user: DitoContext['user']
+  /** All registered top-level views. */
+  readonly views: Record<string, View>
+  /** All views flattened into a single record. */
+  readonly flattenedViews: Record<string, ViewSchema>
+  /** Tracks the pending requests of the whole admin. */
+  readonly loadingTracker: LoadingTracker
+  showDialog: DitoContext['showDialog']
+  notify: DitoContext['notify']
+  /** Closes all notification toasts. */
+  closeNotifications(): void
+}
+
 export interface DitoComponentInstanceBase<$Item = any>
   extends ComponentPublicInstance,
     EmitterMixin {
@@ -2307,8 +2345,6 @@ export interface DitoComponentInstanceBase<$Item = any>
   parentSchemaComponent: DitoComponentInstanceBase | null
   /** The parent form component. */
   parentFormComponent: DitoComponentInstanceBase | null
-  /** The root component instance. */
-  rootComponent: DitoRootInstance | null
   /** The nearest ancestor tab component. */
   tabComponent: DitoComponentInstanceBase | null
   /** The parent route component. */
@@ -2324,16 +2360,8 @@ export interface DitoComponentInstanceBase<$Item = any>
 
   // -- Environment (DitoMixin) --
 
-  /** The currently authenticated user. */
-  user: DitoContext['user']
-  /** The admin API configuration. */
-  api: ApiConfig
-  /** Current locale from the API config. */
-  locale: string
-  /** All registered top-level views. */
-  views: Record<string, View>
-  /** All views flattened into a single record. */
-  flattenedViews: Record<string, ViewSchema>
+  /** The context of the admin. */
+  admin: AdminContext
   /** Data from the first parent route that loads data. */
   rootData: any
 
@@ -2347,8 +2375,6 @@ export interface DitoComponentInstanceBase<$Item = any>
   navigate: DitoContext['navigate']
   /** Triggers a file download. */
   download: DitoContext['download']
-  /** Displays a notification to the user. */
-  notify: DitoContext['notify']
   /** Returns the full URL for a given resource. */
   getResourceUrl: DitoContext['getResourceUrl']
   /**
@@ -2365,11 +2391,6 @@ export interface DitoComponentInstanceBase<$Item = any>
     signal?: AbortSignal
     internal?: boolean
   }): Promise<unknown>
-  /**
-   * Shows a modal dialog and returns a promise that
-   * resolves with the dialog result.
-   */
-  showDialog: DitoContext['showDialog']
   /**
    * Resolves a schema value by key or data-path,
    * with optional type coercion and default.
@@ -2474,8 +2495,6 @@ export interface DitoComponentInstanceBase<$Item = any>
    * if valid.
    */
   validate(): boolean
-  /** Closes all notification toasts. */
-  closeNotifications(): void
 }
 
 export interface EmitterMixin {
@@ -2828,16 +2847,6 @@ export interface DitoFormInstance<$Item = any>
 }
 
 /** The root component of the admin (DitoRoot). */
-export interface DitoRootInstance extends DitoComponentInstanceBase {
-  /**
-   * Whether any request or other operation within the
-   * admin is pending, as tracked by its `LoadingTracker`.
-   */
-  readonly isLoading: boolean
-  /** Tracks the pending requests of the whole admin. */
-  readonly loadingTracker: LoadingTracker
-}
-
 export interface DitoViewInstance<$Item = any>
   extends DitoComponentInstanceBase<$Item> {
   /** Always `true` for view components. */
@@ -3634,6 +3643,8 @@ export class DitoAdmin<
   el: Element
   /** The resolved API configuration. */
   api: ApiConfig
+  /** The context of the admin, provided to all its components. */
+  context: AdminContext
   /** The Vue application instance. */
   app: import('vue').App
   /** Additional options passed at construction. */

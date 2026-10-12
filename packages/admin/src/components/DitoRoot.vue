@@ -23,17 +23,17 @@
   main.dito-page.dito-scroll-parent(:class="appState.pageClass")
     DitoHeader(
       :spinner="options.spinner"
-      :isLoading="isLoading"
+      :isLoading="admin.loadingTracker.isLoading"
     )
     DitoRouterView(:routeLevel="0")
   DitoSidebar
     DitoAccount(
-      v-if="user"
+      v-if="admin.user"
     )
     button.dito-login(
       v-else-if="hasSessionStarted"
       type="button"
-      @click="session.login()"
+      @click="admin.session.login()"
     )
       span Login
   DitoNotifications(ref="notifications")
@@ -42,24 +42,20 @@
 <script>
 import { markRaw } from 'vue'
 import { delegate as tippyDelegate } from 'tippy.js'
-import { deprecate } from '@ditojs/utils'
 import DitoComponent from '../DitoComponent.js'
 import DomMixin from '../mixins/DomMixin.js'
 import DitoDialog from './DitoDialog.vue'
 import { setupSchemaComponents } from '../utils/schema/setup.js'
 import { RouteTree } from '../utils/RouteTree.ts'
-import { LoadingTracker } from '../utils/LoadingTracker.js'
 import { FileDropTargets } from '../utils/FileDropTargets.js'
 
 // @vue/component
 export default DitoComponent.component('DitoRoot', {
   mixins: [DomMixin],
   components: { DitoDialog },
-  inject: ['viewRegistry'],
 
   provide() {
     return {
-      $loadingTracker: () => this.loadingTracker,
       $fileDropTargets: () => this.fileDropTargets
     }
   },
@@ -71,11 +67,6 @@ export default DitoComponent.component('DitoRoot', {
   data() {
     return {
       dialogs: {},
-      // Tracks all pending requests of the admin, for the header's spinner:
-      loadingTracker: markRaw(new LoadingTracker()),
-      // The functions that end the loading operations begun by the deprecated
-      // `registerLoading(true)`, ended in reverse by `registerLoading(false)`:
-      registeredLoadingEnds: markRaw([]),
       // Tracks the files dragged over the admin, for the uploads to drop them
       // on, see `DitoTypeUpload`:
       fileDropTargets: markRaw(new FileDropTargets()),
@@ -90,10 +81,6 @@ export default DitoComponent.component('DitoRoot', {
   computed: {
     notifications() {
       return this.isMounted && this.$refs.notifications
-    },
-
-    isLoading() {
-      return this.loadingTracker.isLoading
     }
   },
 
@@ -102,7 +89,12 @@ export default DitoComponent.component('DitoRoot', {
     // With hot-reloading, it looks like destroyed hooks aren't always called
     // for route components so reset the array of registered components instead.
     this.appState.routeComponents = []
-    this.detachSessionUserInterface = this.session.attachUserInterface({
+    this.admin.attachUserInterface({
+      showDialog: (schema, options) => this.showDialog(schema, options),
+      notify: options => this.notify(options),
+      closeNotifications: () => this.closeNotifications()
+    })
+    this.detachSessionUserInterface = this.admin.session.attachUserInterface({
       requestLoginData: () => this.showLoginDialog(),
       notify: options => this.notify(options)
     })
@@ -140,7 +132,7 @@ export default DitoComponent.component('DitoRoot', {
     })
 
     try {
-      await this.session.start()
+      await this.admin.session.start()
     } catch (error) {
       console.error(error)
     }
@@ -148,23 +140,6 @@ export default DitoComponent.component('DitoRoot', {
   },
 
   methods: {
-    /**
-     * @deprecated `isLoading` is tracked by `loadingTracker` now. Use
-     * `loadingTracker.begin()` and call the function that it returns, or
-     * `loadingTracker.track(callback)` instead.
-     */
-    registerLoading(isLoading) {
-      deprecate(
-        'DitoRoot.registerLoading() is deprecated, use ' +
-        '`loadingTracker.begin()` or `loadingTracker.track()` instead.'
-      )
-      if (isLoading) {
-        this.registeredLoadingEnds.push(this.loadingTracker.begin())
-      } else {
-        this.registeredLoadingEnds.pop()?.()
-      }
-    },
-
     notify(options) {
       this.notifications.notify(options)
     },
@@ -186,8 +161,9 @@ export default DitoComponent.component('DitoRoot', {
       // Process components to resolve async schemas first, so that errors
       // reject the returned promise.
       const schema = { type: 'dialog', components }
-      await setupSchemaComponents(this.api, schema)
-      if (new RouteTree({ dialog: schema }, this.api).hasRoutedForms()) {
+      const { api } = this.admin
+      await setupSchemaComponents(api, schema)
+      if (new RouteTree({ dialog: schema }, api).hasRoutedForms()) {
         throw new Error('Dialogs do not support components that produce routes')
       }
       return new Promise(resolve => {
