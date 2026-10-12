@@ -86,8 +86,9 @@ const DitoTypeMultiselect = {
 
   setup(props) {
     const field = useField(props, {
-      // Only emit blur events once closed, see `onClose()`:
-      getEvents: handlers => ({ ...handlers, onBlur }),
+      // Only emit blur events once closed, see `onClose()`. Picking options
+      // emits change events, not the native ones of the search input:
+      getEvents: ({ onFocus }) => ({ onFocus, onBlur }),
       focusElement: () => element.value.activate(),
       blurElement: () => element.value.deactivate()
     })

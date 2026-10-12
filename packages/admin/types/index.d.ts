@@ -582,8 +582,9 @@ export interface BaseSchema<$Item> extends SchemaFields<$Item> {
    */
   onBlur?: ItemEventHandler<$Item>
   /**
-   * Called on every keystroke or value modification. Unlike
-   * {@link BaseSchema.onChange}, fires synchronously.
+   * Called for each edit that changes the value, e.g. per keystroke, while
+   * {@link BaseSchema.onChange} is called once the edit is done. Bubbles to
+   * the schemas above like `onChange`, unless a handler returns `false`.
    */
   onInput?: ItemEventHandler<$Item>
   /**

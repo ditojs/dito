@@ -35,7 +35,6 @@ export type FieldProps = Readonly<ExtractPropTypes<typeof fieldProps>>
 export interface FieldEventHandlers {
   onFocus(): void
   onBlur(): void
-  onInput(): void
   onChange(): void
 }
 
@@ -69,9 +68,8 @@ export function useField(
     // The context holds the value that the component displays:
     getValue: () => value.value
   })
-  const fieldValue = useValue(props, schemaContext)
+  const { value: dataValue, parsedValue } = useValue(props, schemaContext)
   const { context } = schemaContext
-  const { value } = fieldValue
   const { getSchemaValue } = useSchemaValue(context)
   const { componentPath } = useComponentPath(() => props.dataPath)
 
@@ -109,6 +107,19 @@ export function useField(
 
   const { emitEvent } = useSchemaEvents(() => props.schema, schemaContext)
   const focused = ref(false)
+
+  // Edits emit `input` when they change the value, and `change` when they're
+  // done. Edits that don't write the value, e.g. of lists, emit both at once:
+  let hasEmittedInput = false
+  const value = computed({
+    get: () => dataValue.value,
+    set(newValue) {
+      dataValue.value = newValue
+      hasEmittedInput = true
+      emitEvent('input')
+    }
+  })
+
   const handlers: FieldEventHandlers = {
     onFocus() {
       focused.value = true
@@ -121,28 +132,29 @@ export function useField(
       emitEvent('blur')
     },
 
-    onInput() {
-      emitEvent('input')
-    },
-
     onChange() {
+      if (!hasEmittedInput) {
+        emitEvent('input')
+      }
+      hasEmittedInput = false
       emitEvent('change', {
         context: {
           // Prevent endless `parseValue()` recursion:
           value:
-            fieldValue.parsedValue.value !== undefined
-              ? fieldValue.parsedValue.value
-              : value.value
+            parsedValue.value !== undefined ? parsedValue.value : value.value
         }
       })
     }
   }
 
-  // Schema events that the component doesn't handle are native events:
+  // Schema events that the component doesn't handle are native events, but
+  // not `input` and `change`, which its edits emit:
   const events = computed(() => {
     const events = getEvents ? getEvents(handlers) : { ...handlers }
     for (const { event } of getSchemaEventEntries(props.schema)) {
-      events[`on${camelize(event, true)}`] ??= () => emitEvent(event)
+      if (event !== 'input' && event !== 'change') {
+        events[`on${camelize(event, true)}`] ??= () => emitEvent(event)
+      }
     }
     return events
   })
@@ -195,7 +207,7 @@ export function useField(
 
   return {
     ...schemaContext,
-    ...fieldValue,
+    value,
     ...handlers,
     ...focus,
     focused,

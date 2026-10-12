@@ -77,7 +77,6 @@ const DitoTypeCode = {
           ignoreWatch = true
           value.value = code
           changeOnceEdited.markEdited()
-          field.onInput()
           changeOnceEdited.emitIfDone()
         }
       })
