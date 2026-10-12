@@ -1,5 +1,5 @@
 import { computed, inject } from 'vue'
-import DitoContext from '../DitoContext.js'
+import SchemaContext from '../SchemaContext.js'
 import { SchemaEvents } from '../utils/SchemaEvents.ts'
 import {
   waitUntilDataModelSettled,
@@ -49,7 +49,7 @@ export function useSchemaEvents(
         }
         return events.value.emit(
           event,
-          context instanceof DitoContext ? context : createContext(context),
+          context instanceof SchemaContext ? context : createContext(context),
           { bubble }
         )
       }

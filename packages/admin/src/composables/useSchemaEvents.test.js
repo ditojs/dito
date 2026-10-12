@@ -1,6 +1,6 @@
 import { vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
-import DitoContext from '../DitoContext.js'
+import SchemaContext from '../SchemaContext.js'
 import { mountSchema, enterValue } from '../test/mount.js'
 
 describe('useSchemaEvents()', () => {
@@ -50,7 +50,7 @@ describe('useSchemaEvents()', () => {
     })
     await enterValue(findField('title').find('input'), 'Emma')
     expect(receiver).toBe(undefined)
-    expect(context).toBeInstanceOf(DitoContext)
+    expect(context).toBeInstanceOf(SchemaContext)
     expect(context.value).toBe('Emma')
   })
 

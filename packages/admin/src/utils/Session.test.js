@@ -1,6 +1,6 @@
 import { vi } from 'vitest'
 import { Session } from './Session.js'
-import DitoUser from '../DitoUser.js'
+import AdminUser from '../AdminUser.js'
 import appState from '../appState.js'
 
 const user = { id: 1, username: 'tester' }
@@ -55,7 +55,7 @@ describe('Session', () => {
       })
       await session.start()
       expect(session.user).toEqual(user)
-      expect(session.user).toBeInstanceOf(DitoUser)
+      expect(session.user).toBeInstanceOf(AdminUser)
       expect(viewRegistry.resolve).toHaveBeenCalledOnce()
       expect(userInterface.requestLoginData).not.toHaveBeenCalled()
     })

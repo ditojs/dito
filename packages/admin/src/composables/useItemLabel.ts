@@ -1,5 +1,5 @@
 import { labelize } from '@ditojs/utils'
-import DitoContext from '../DitoContext.js'
+import SchemaContext from '../SchemaContext.js'
 import { appendDataPath } from '../utils/data.js'
 import { getItemUid, getSchemaValue } from '../utils/schema/data.js'
 import { getItemFormSchema } from '../utils/schema/lookup.js'
@@ -77,7 +77,7 @@ export function useItemLabel({
         getFormLabel,
         evaluateItemLabel: () =>
           sourceSchema.itemLabel(
-            new DitoContext(services, {
+            new SchemaContext(services, {
               nested: false,
               data: item,
               value: item,

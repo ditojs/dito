@@ -9,7 +9,7 @@ import {
   watch
 } from 'vue'
 import { isString } from '@ditojs/utils'
-import DitoContext from '../DitoContext.js'
+import SchemaContext from '../SchemaContext.js'
 import { ItemStores } from '../utils/ItemStores.js'
 import { ListQuery } from '../utils/ListQuery.js'
 import { appendDataPath, getRelativeDataPath } from '../utils/data.js'
@@ -406,7 +406,7 @@ export function useSource(
     } else {
       return render.value
         ? render.value(
-            new DitoContext(services, {
+            new SchemaContext(services, {
               data: item,
               value: item,
               index,

@@ -12,14 +12,14 @@ import { Component as VueComponent } from 'vue'
 import { Router as VueRouter } from 'vue-router'
 
 declare global {
-  const dito: DitoGlobal
+  const dito: GlobalConfig
   interface Window {
-    dito: DitoGlobal
+    dito: GlobalConfig
   }
 }
 
 export default DitoAdmin
-export interface DitoGlobal {
+export interface GlobalConfig {
   /** Global API configuration shared across the admin. */
   api?: ApiConfig
   /** Base URL path for the admin application. */
@@ -411,15 +411,15 @@ export interface SchemaRules {
 // Handlers can be async, as events are awaited, e.g. by buttons that show
 // their progress while their `click` handler runs.
 export type ItemEventHandler<$Item = any> = (
-  itemParams: DitoContext<$Item>
+  itemParams: SchemaContext<$Item>
 ) => void | false | Promise<void | false>
 
 export type OpenEventHandler<$Item = any> = (
-  itemParams: DitoContext<$Item> & { open: boolean }
+  itemParams: SchemaContext<$Item> & { open: boolean }
 ) => void | false
 
 export type ErrorEventHandler<$Item = any> = (
-  itemParams: DitoContext<$Item> & { error: Error }
+  itemParams: SchemaContext<$Item> & { error: Error }
 ) => void | false
 
 /**
@@ -757,7 +757,7 @@ export interface SchemaSourceMixin<$Item> {
          * Returns additional query parameters to include in the
          * URL when navigating to the create form.
          */
-        query?: (context: DitoContext) => Record<string, any>
+        query?: (context: SchemaContext) => Record<string, any>
       }
   >
   /**
@@ -823,7 +823,7 @@ export type SchemaOptions<$Item, $Option = any> =
       /**
        * The function which is called to load the options.
        * Can be a double-function: the outer function
-       * receives the `DitoContext` and returns an inner
+       * receives the `SchemaContext` and returns an inner
        * function that is called to fetch the actual data,
        * enabling reactive dependency tracking.
        *
@@ -866,7 +866,7 @@ export type SchemaOptions<$Item, $Option = any> =
        * option. Receives a context with `value` and `option`.
        */
       equals?: (
-        context: DitoContext & {
+        context: SchemaContext & {
           value: any
           option: $Option
         }
@@ -1146,7 +1146,7 @@ export interface CustomComponentProps<$Item = any, $Value = any> {
   /** The schema of the component, see {@link getSchemaValue}. */
   schema: ComponentSchema<$Item>
   /** The context of the component, which follows the changes of its data. */
-  context: DitoContext<$Item>
+  context: SchemaContext<$Item>
   /** The value of the component, after `format()`. */
   modelValue: $Value
   /** The id of the element that displays the errors, while there are any. */
@@ -1172,7 +1172,7 @@ export interface CustomComponentEmits<$Value = any> {
 export function getSchemaValue<$Item = any>(
   schema: Record<string, any>,
   key: string,
-  context: DitoContext<$Item>
+  context: SchemaContext<$Item>
 ): any
 
 export interface InputSchema<$Item = any>
@@ -1912,9 +1912,15 @@ export type ItemAccessor<
   $Item = any,
   $Params extends {} = {},
   $ReturnValue = any
-> = (params: Merge<DitoContext<$Item>, $Params>) => $ReturnValue
+> = (params: Merge<SchemaContext<$Item>, $Params>) => $ReturnValue
 
-export type DitoContext<$Item = any> = {
+/** The user that is logged in to the admin. */
+export interface AdminUser {
+  roles?: string[]
+  hasRole(...roles: string[]): boolean
+}
+
+export type SchemaContext<$Item = any> = {
   /**
    * `true` when the data-path points to a value inside
    * an item, `false` when it points to the item itself.
@@ -1971,10 +1977,7 @@ export type DitoContext<$Item = any> = {
    */
   clipboardItem: any
   /** The currently authenticated user, `null` when logged out. */
-  user: {
-    roles?: string[]
-    hasRole(...roles: string[]): boolean
-  } | null
+  user: AdminUser | null
   /** The admin API configuration. */
   api: ApiConfig
   /** The schema definition for the current component. */
@@ -2133,7 +2136,7 @@ export type DitoContext<$Item = any> = {
     match?: string | string[] | RegExp | ((dataPath: string) => boolean)
   ): boolean
   /**
-   * Like {@link DitoContext.validate}, but without showing
+   * Like {@link SchemaContext.validate}, but without showing
    * the errors.
    */
   verify(
@@ -2237,20 +2240,20 @@ export interface AdminContext {
   /** Logs users in and out through the `api.users` resources. */
   readonly session: {
     /** The logged in user, `null` when logged out. */
-    readonly user: DitoContext['user']
+    readonly user: SchemaContext['user']
     /**
      * Asks for the credentials and logs in, again after
      * each failure, until it succeeds or the user cancels.
      */
-    login(): Promise<DitoContext['user']>
+    login(): Promise<SchemaContext['user']>
     logout(): Promise<void>
     /** Fetches the user of the server's session. */
-    fetchUser(): Promise<DitoContext['user']>
+    fetchUser(): Promise<SchemaContext['user']>
     /** Asks to log in if the session expired. */
     ensureUser(): Promise<void>
   }
   /** The logged in user, `null` when logged out. */
-  readonly user: DitoContext['user']
+  readonly user: SchemaContext['user']
   /** All registered top-level views. */
   readonly views: Record<string, View>
   /** All views flattened into a single record. */
@@ -2259,8 +2262,8 @@ export interface AdminContext {
   readonly loadingTracker: LoadingTracker
   /** The rendered routes and components, to reveal and focus them. */
   readonly ui: UiRegistry
-  showDialog: DitoContext['showDialog']
-  notify: DitoContext['notify']
+  showDialog: SchemaContext['showDialog']
+  notify: SchemaContext['notify']
   /** Closes all notification toasts. */
   closeNotifications(): void
 }
@@ -2320,10 +2323,10 @@ export interface DataContext {
    * The data model that holds the data, which is the model of the parent
    * for forms that mutate the item of their parent.
    */
-  readonly model: DitoDataModel
-  /** See {@link DitoDataModel.isDirty}. */
+  readonly model: DataModel
+  /** See {@link DataModel.isDirty}. */
   readonly isDirty: boolean
-  /** See {@link DitoDataModel.isEdited}. */
+  /** See {@link DataModel.isEdited}. */
   readonly isEdited: boolean
   /** Whether the form creates a new item, `false` outside of forms. */
   readonly isCreating: boolean
@@ -2332,15 +2335,15 @@ export interface DataContext {
    * the others always have their data.
    */
   readonly hasData: boolean
-  validate: DitoContext['validate']
-  verify: DitoContext['verify']
+  validate: SchemaContext['validate']
+  verify: SchemaContext['verify']
   /**
    * Shows the validation errors of the server for the data that was sent,
    * keyed by data paths relative to `dataPath`, by default the root data, and
    * reveals them.
    */
   showValidationErrors(
-    errors: Record<string, DitoValidationError[]>,
+    errors: Record<string, ValidationError[]>,
     dataPath?: string
   ): Promise<void>
   /**
@@ -2348,8 +2351,8 @@ export interface DataContext {
    * tabs that display them, and focuses the first one.
    */
   revealErrors(): Promise<void>
-  markEdited: DitoContext['markEdited']
-  replaceItem: DitoContext['replaceItem']
+  markEdited: SchemaContext['markEdited']
+  replaceItem: SchemaContext['replaceItem']
 }
 
 /** The context that dialogs provide as `dataContext`. */
@@ -2527,14 +2530,14 @@ export interface ResourceContext {
  */
 export interface SubmitButton {
   readonly schema: ButtonSchema<any>
-  readonly context: DitoContext
+  readonly context: SchemaContext
   /** Whether the form closes after the submit. */
   readonly closeForm: boolean
-  createContext(values?: Record<string, any>): DitoContext
+  createContext(values?: Record<string, any>): SchemaContext
   getSchemaValue(keyOrDataPath: string | string[], options?: object): any
   emitEvent(
     event: string,
-    options?: { context?: Record<string, any> | DitoContext }
+    options?: { context?: Record<string, any> | SchemaContext }
   ): Promise<any>
 }
 
@@ -2564,11 +2567,11 @@ export interface LoadingTracker {
 }
 
 /**
- * A list that the change API of `DitoDataModel` changes, with the schema
+ * A list that the change API of `DataModel` changes, with the schema
  * that numbers its items by its `orderKey`, and its data path, which tells
  * the source with its own resource that the change belongs to, if any.
  */
-export interface DitoListEntry {
+export interface ListEntry {
   schema: Record<string, any>
   list: any[]
   dataPath: string
@@ -2580,7 +2583,7 @@ export interface DitoListEntry {
  * edited until it's replaced or saved, if the write changes the value.
  * Direct writes don't mark it.
  */
-export interface DitoDataModel {
+export interface DataModel {
   /**
    * Whether the data has edits that can be saved: of the component if it
    * has a button of type `submit`, and of the lists of sources with their
@@ -2618,13 +2621,13 @@ export interface DitoDataModel {
    */
   set(data: object, key: string | number, value: any): void
   /** Inserts `item` into the list of `entry` at `index`. */
-  insert(entry: DitoListEntry, index: number, item: any): void
+  insert(entry: ListEntry, index: number, item: any): void
   /** Removes the item at `index` from the list of `entry`. */
-  remove(entry: DitoListEntry, index: number): void
+  remove(entry: ListEntry, index: number): void
   /** Moves the item at `from` in the list of `entry` to `to`. */
-  move(entry: DitoListEntry, from: number, to: number): void
+  move(entry: ListEntry, from: number, to: number): void
   /** Replaces the items of the list of `entry` with `items`, in place. */
-  replaceItems(entry: DitoListEntry, items: any[]): void
+  replaceItems(entry: ListEntry, items: any[]): void
   /**
    * Returns the errors of the value at `dataPath`, of validation and of
    * the server, in the format of the server, or `null`. Errors are kept
@@ -2632,7 +2635,7 @@ export interface DitoDataModel {
    * items that move. They only apply while it's the value that they were
    * set for.
    */
-  getErrors(dataPath: string): DitoValidationError[] | null
+  getErrors(dataPath: string): ValidationError[] | null
   /**
    * Returns the error messages of the field itself at `dataPath`, e.g. of
    * options that failed to load, or `null`.
@@ -2642,7 +2645,7 @@ export interface DitoDataModel {
    * Replaces the validation errors of the value of the field at
    * `dataPath`. The errors of the server stay while the value does.
    */
-  setErrors(dataPath: string, errors: DitoValidationError[] | null): void
+  setErrors(dataPath: string, errors: ValidationError[] | null): void
   /**
    * Adds an error message to the field rather than to its value,
    * unless it has it already. It stays until it's removed.
@@ -2657,9 +2660,9 @@ export interface DitoDataModel {
    * displayed, or `null`.
    */
   replaceErrors(
-    errors: Record<string, DitoValidationError[]>,
+    errors: Record<string, ValidationError[]>,
     options?: { dataPath?: string; server?: boolean }
-  ): Record<string, DitoValidationError[]> | null
+  ): Record<string, ValidationError[]> | null
   /**
    * Clears the errors of the values within `dataPath`, of
    * validation and of the server. The errors of fields stay.
@@ -2675,7 +2678,7 @@ export interface DitoDataModel {
 }
 
 /** A validation error, as validation and the server return them. */
-export interface DitoValidationError {
+export interface ValidationError {
   message: string
 }
 
@@ -2698,12 +2701,12 @@ export interface MenuSchema<$Item = any> {
 export type ClipboardConfig =
   | boolean
   | {
-      copy?: (context: DitoContext) => unknown
+      copy?: (context: SchemaContext) => unknown
       /**
        * Receives the copied data as `clipboardItem`, and
        * returns the data to paste.
        */
-      paste?: (context: DitoContext) => unknown
+      paste?: (context: SchemaContext) => unknown
     }
 
 export type View<$Item = any> =
@@ -3178,7 +3181,7 @@ export class DitoAdmin<
     options?: {
       // `dito` contains the base and api settings passed from
       // `AdminController`
-      dito?: DitoGlobal
+      dito?: GlobalConfig
       api?: ApiConfig
       views: OrFunctionReturning<OrPromiseOf<$Views>>
       login?: {
@@ -3236,17 +3239,17 @@ export interface TypeDescriptor {
   /** The default of `width`. */
   readonly defaultWidth?: string | number
   /** The default of `exclude`. */
-  readonly excludeValue?: boolean | ((context: DitoContext) => boolean)
+  readonly excludeValue?: boolean | ((context: SchemaContext) => boolean)
   /** Don't give values that are missing their defaults, e.g. passwords. */
-  readonly ignoreMissingValue?: (context: DitoContext) => boolean
+  readonly ignoreMissingValue?: (context: SchemaContext) => boolean
   /** Give values that are `null` their defaults, e.g. nested sections. */
-  readonly treatNullAsMissing?: (context: DitoContext) => boolean
+  readonly treatNullAsMissing?: (context: SchemaContext) => boolean
   /** Resolve the value from `schema.data` or `schema.dataPath`. */
   readonly resolveValue?: boolean
   /** Generate a label from the name for components without `label`. */
   readonly generateLabel?: boolean
   /** Omit the label of the container, as the component displays it. */
-  readonly omitLabel?: (context: DitoContext) => boolean
+  readonly omitLabel?: (context: SchemaContext) => boolean
   /** Omit the spacing around the component. */
   readonly omitSpacing?: boolean
   /** Replace the component with the label of its container, if it has one. */
@@ -3279,7 +3282,7 @@ export interface TypeDescriptor {
   ): Record<string, any> | null | undefined
   getValidations?(
     schema: Record<string, any>,
-    context: DitoContext
+    context: SchemaContext
   ): Record<string, any>
   /** Sets up the schema, e.g. resolves the schemas that it contains. */
   processSchema?(
@@ -3288,7 +3291,7 @@ export interface TypeDescriptor {
     name: string
   ): Promise<any> | void
   /** Converts the value for storage. */
-  processValue?(context: DitoContext, graph: any): any
+  processValue?(context: SchemaContext, graph: any): any
 }
 
 /**

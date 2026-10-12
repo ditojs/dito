@@ -1,5 +1,5 @@
 import appState from '../appState.js'
-import DitoUser from '../DitoUser.js'
+import AdminUser from '../AdminUser.js'
 
 // The views depend on the user, so we resolve them for each login and clear
 // them once the user is logged out.
@@ -98,7 +98,7 @@ export class Session {
     if (!user || user.id !== appState.user?.id) {
       appState.loadCache = {}
     }
-    appState.user = user && Object.setPrototypeOf(user, DitoUser.prototype)
+    appState.user = user && Object.setPrototypeOf(user, AdminUser.prototype)
     if (!user) {
       this.#viewRegistry.clear()
     }

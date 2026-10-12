@@ -1,11 +1,14 @@
 import { computed, shallowRef } from 'vue'
 import { isFunction } from '@ditojs/utils'
 import { getValueOrDefault } from '../utils/schema/data.js'
-import type { SchemaContext, SchemaContextProps } from './useSchemaContext.ts'
+import type {
+  SchemaContextSetup,
+  SchemaContextProps
+} from './useSchemaContext.ts'
 
 export function useValue(
   props: SchemaContextProps,
-  { createContext, services }: Omit<SchemaContext, 'context'>
+  { createContext, services }: Omit<SchemaContextSetup, 'context'>
 ) {
   // The last value that was written, after `parse()`:
   const parsedValue = shallowRef<any>(undefined)

@@ -25,7 +25,7 @@ ul.dito-menu
 
 <script>
 import { useRoute, useRouter } from 'vue-router'
-import DitoContext from '../DitoContext.js'
+import SchemaContext from '../SchemaContext.js'
 import { useServices } from '../composables/useSchemaContext.ts'
 import { useSchemaValue } from '../composables/useSchemaValue.ts'
 import { isPathWithin } from '../utils/route.js'
@@ -42,7 +42,7 @@ export default {
     const route = useRoute()
     const router = useRouter()
     const { getLabel, shouldRenderSchema } = useSchemaValue(
-      new DitoContext(useServices(), { nested: false })
+      new SchemaContext(useServices(), { nested: false })
     )
 
     // Navigate to the paths of the routes rather than their names, so that the

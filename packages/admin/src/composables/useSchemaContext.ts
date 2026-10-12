@@ -6,7 +6,7 @@ import {
   unref,
   type MaybeRef
 } from 'vue'
-import DitoContext from '../DitoContext.js'
+import SchemaContext from '../SchemaContext.js'
 import { getLastDataPathName } from '../utils/data.js'
 import { DataModel, type DataModelOptions } from '../utils/DataModel.ts'
 import type { AdminContext } from '../utils/AdminContext.ts'
@@ -93,7 +93,7 @@ export function useSchemaContext(
   // Create a context with `values` that add to or override the component's,
   // e.g. the `value` of an event. It reads the props when they're used:
   const createContext = (values: Record<string, any> = {}): Context =>
-    new DitoContext(services, () =>
+    new SchemaContext(services, () =>
       Object.defineProperties(
         {
           get schema() {
@@ -132,4 +132,4 @@ export function useSchemaContext(
   }
 }
 
-export type SchemaContext = ReturnType<typeof useSchemaContext>
+export type SchemaContextSetup = ReturnType<typeof useSchemaContext>

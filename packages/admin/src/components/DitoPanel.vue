@@ -52,7 +52,7 @@ import {
   useTemplateRef
 } from 'vue'
 import { isFunction } from '@ditojs/utils'
-import DitoContext from '../DitoContext.js'
+import SchemaContext from '../SchemaContext.js'
 import {
   useContainer,
   useSchemaContext
@@ -146,7 +146,7 @@ export default {
           getSchemaValue('if', { type: Boolean, default: true }) &&
           shouldRenderComponents(
             props.schema,
-            new DitoContext(panelServices, {
+            new SchemaContext(panelServices, {
               nested: false,
               data: panelData.value,
               dataPath: panelDataPath.value

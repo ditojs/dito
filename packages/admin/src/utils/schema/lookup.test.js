@@ -1,7 +1,7 @@
 import { vi } from 'vitest'
 import { reactive } from 'vue'
 import { hyphenate } from '@ditojs/utils'
-import DitoContext from '../../DitoContext.js'
+import SchemaContext from '../../SchemaContext.js'
 import { defineType } from './types.ts'
 import {
   getAllPanelEntries,
@@ -263,7 +263,7 @@ describe('getFormSchemas()', () => {
     )
     const schema = { type: 'section', components: createComponents }
     const api = { defaults: {}, normalizePath: hyphenate }
-    const createContext = data => new DitoContext(null, { api, data })
+    const createContext = data => new SchemaContext(null, { api, data })
 
     beforeEach(() => {
       createComponents.mockClear()

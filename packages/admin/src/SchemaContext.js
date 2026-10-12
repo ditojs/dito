@@ -62,7 +62,7 @@ function set(context, key, value) {
   })
 }
 
-export default class DitoContext {
+export default class SchemaContext {
   constructor(services, context) {
     context = context
       ? isFunction(context)
@@ -85,7 +85,7 @@ export default class DitoContext {
     rootData
   }) {
     // Read `value` only when it's used, so watchers only depend on it then:
-    return new DitoContext(services, () => ({
+    return new SchemaContext(services, () => ({
       schema,
       name,
       nested,
@@ -102,7 +102,7 @@ export default class DitoContext {
     const nested = hasNestedData(schema)
     // Contexts without a schema don't hold a value, e.g. of `DitoMenu`:
     const holdsOwnValue = !!this.schema && hasNestedData(this.schema)
-    return DitoContext.createForSchema(getServices(this), {
+    return SchemaContext.createForSchema(getServices(this), {
       schema,
       name,
       nested,

@@ -53,7 +53,7 @@ import {
   useTemplateRef,
   watch
 } from 'vue'
-import DitoContext from '../DitoContext.js'
+import SchemaContext from '../SchemaContext.js'
 import { useServices } from '../composables/useSchemaContext.ts'
 import { useStore } from '../composables/useStore.ts'
 import { useComponentPath } from '../composables/useComponentPath.ts'
@@ -142,7 +142,7 @@ export default {
       componentSchemas.value.map(({ schema, nested, dataPath }) =>
         shouldRenderSchema(
           schema,
-          DitoContext.createForSchema(services, {
+          SchemaContext.createForSchema(services, {
             schema,
             name: schema.name,
             nested,

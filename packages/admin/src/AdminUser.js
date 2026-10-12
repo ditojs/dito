@@ -1,4 +1,4 @@
-export default class DitoUser {
+export default class AdminUser {
   hasRole(...roles) {
     if (this.roles) {
       for (const role of roles) {
