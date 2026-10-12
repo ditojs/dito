@@ -386,6 +386,18 @@ describe('useLeaveGuard()', () => {
         expect(admin.router.currentRoute.value.path).toBe('/items')
       })
 
+      it('waits for the navigation that cancels the waiting one', async () => {
+        const { admin, response } = await mountSubmittingForm()
+        const first = admin.router.push('/')
+        await flushPromises()
+        const second = admin.router.push('/items')
+        await flushPromises()
+        response.resolve({ data: { id: 1, title: 'Dune' } })
+        await Promise.all([first, second])
+        await flushPromises()
+        expect(admin.router.currentRoute.value.path).toBe('/items')
+      })
+
       it(`doesn't open the created item after opening another one`, async () => {
         const { admin, routeComponent, response } = await mountSubmittingForm()
         const navigation = admin.router.push('/items/5')
