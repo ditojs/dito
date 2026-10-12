@@ -2,7 +2,7 @@ import { vi } from 'vitest'
 import { reactive, isReactive } from 'vue'
 import { hyphenate } from '@ditojs/utils'
 import { defineType } from './types.ts'
-import { sourceDescriptor } from '../../types/descriptors.ts'
+import { sourceTraits } from '../../types/traits.ts'
 import {
   resolveSchema,
   resolveSchemas,
@@ -35,7 +35,7 @@ defineType({
   defaultNested: false,
   processSchema: (api, schema) => setupSchemaComponents(api, schema)
 })
-defineType({ ...sourceDescriptor, types: ['list'], sourceType: 'list' })
+defineType({ ...sourceTraits, types: ['list'], sourceType: 'list' })
 defineType({
   types: ['component'],
   processSchema: (api, schema) => resolveSchemaComponent(schema)

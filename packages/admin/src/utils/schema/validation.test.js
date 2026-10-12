@@ -1,8 +1,8 @@
 import { vi } from 'vitest'
 import {
-  numberDescriptor,
-  sourceDescriptor
-} from '../../types/descriptors.ts'
+  numberTraits,
+  sourceTraits
+} from '../../types/traits.ts'
 import { defineType } from './types.ts'
 import {
   getValidations,
@@ -18,11 +18,11 @@ vi.mock('./setup.js', () => ({ setupForm: async form => form }))
 // imported without a Vue SFC compiler:
 defineType({ types: ['text'] })
 defineType({ types: ['password'], getValidations: () => ({ password: true }) })
-defineType({ types: ['number'], ...numberDescriptor })
-defineType({ types: ['integer'], ...numberDescriptor })
+defineType({ types: ['number'], ...numberTraits })
+defineType({ types: ['integer'], ...numberTraits })
 defineType({ types: ['section'], defaultNested: false })
 defineType({ types: ['panel'], defaultNested: false })
-defineType({ ...sourceDescriptor, types: ['list'], sourceType: 'list' })
+defineType({ ...sourceTraits, types: ['list'], sourceType: 'list' })
 defineType({ types: ['object'], sourceType: 'object' })
 
 describe('getValidations()', () => {

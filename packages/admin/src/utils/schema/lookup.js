@@ -206,7 +206,7 @@ export function getButtonSchemas(buttons) {
 // submits it, e.g. of type `submit`, whatever its name.
 export function hasSubmitButton(buttonSchemas) {
   return Object.values(buttonSchemas ?? {}).some(
-    button => !!getTypeDescriptor(button)?.submitsData
+    button => !!getTypeDescriptor(button)?.submitData
   )
 }
 

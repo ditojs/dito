@@ -1,8 +1,8 @@
-import { numberDescriptor, getNumberSettings } from './descriptors.ts'
+import { numberTraits, getNumberSettings } from './traits.ts'
 
-const { getValidations } = numberDescriptor
+const { getValidations } = numberTraits
 
-describe('numberDescriptor.getValidations()', () => {
+describe('numberTraits.getValidations()', () => {
   it('returns no validations without settings', () => {
     expect(getValidations({ type: 'number' }, {})).toEqual({})
   })

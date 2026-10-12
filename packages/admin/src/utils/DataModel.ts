@@ -32,7 +32,7 @@ import {
   hasSubmitButton
 } from './schema/lookup.js'
 import { isSourceWithResource } from './schema/structure.js'
-import { getTypeDescriptor } from './schema/types.ts'
+import { getOptionsDataSchema } from './schema/types.ts'
 import {
   getSchemaValue,
   shouldSetDefaultValue,
@@ -1141,10 +1141,6 @@ function hasComputedValueSource(schema: Schema): boolean {
 
 function getErrorMessage(error: any): string {
   return error.message || error
-}
-
-function getOptionsDataSchema(schema: Schema): any {
-  return getTypeDescriptor(schema)?.getOptionsDataSchema?.(schema) ?? null
 }
 
 // Errors apply only to the value that they were set for, as values also

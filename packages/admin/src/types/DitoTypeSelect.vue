@@ -64,7 +64,7 @@
 import { computed, ref } from 'vue'
 import DitoComponent from '../DitoComponent.js'
 import { defineType } from '../utils/schema/types.ts'
-import { optionsDescriptor } from './descriptors.ts'
+import { optionsTraits } from './traits.ts'
 import { fieldProps, useField } from '../composables/useField.ts'
 import { useOptions } from '../composables/useOptions.ts'
 import DitoInputAffixes from '../components/DitoInputAffixes.vue'
@@ -127,7 +127,7 @@ const DitoTypeSelect = DitoComponent.component('DitoTypeSelect', {
 defineType({
   types: ['select'],
   component: DitoTypeSelect,
-  ...optionsDescriptor
+  ...optionsTraits
 })
 
 export default DitoTypeSelect

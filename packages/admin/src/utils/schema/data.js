@@ -182,15 +182,11 @@ export function isMissingValue(schema, data, name, context) {
   )
 }
 
-/**
- * Returns whether the value of the component described by `schema` is
- * resolved from its data schema, `schema.data` or `schema.dataPath`, as for
- * the types with the `valueFromDataSchema` option, e.g. `computed`. See
- * `DataModel`.
- */
+// Returns whether the data model resolves the value of the component from
+// `schema.data` or `schema.dataPath`, for types with `resolveValue`:
 export function hasValueFromDataSchema(schema) {
   return (
-    !!getTypeDescriptor(schema)?.valueFromDataSchema &&
+    !!getTypeDescriptor(schema)?.resolveValue &&
     !!(schema.data || schema.dataPath)
   )
 }

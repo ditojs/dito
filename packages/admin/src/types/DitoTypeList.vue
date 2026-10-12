@@ -132,7 +132,7 @@
 <script>
 import DitoComponent from '../DitoComponent.js'
 import { defineType } from '../utils/schema/types.ts'
-import { sourceDescriptor } from './descriptors.ts'
+import { sourceTraits } from './traits.ts'
 import { fieldProps, useField } from '../composables/useField.ts'
 import { useSortable } from '../composables/useSortable.ts'
 import DitoSourceItem from '../components/DitoSourceItem.vue'
@@ -255,7 +255,7 @@ const DitoTypeList = DitoComponent.component('DitoTypeList', {
 defineType({
   types: ['list'],
   component: DitoTypeList,
-  ...sourceDescriptor,
+  ...sourceTraits,
   sourceType: 'list',
 
   getPanelSchema(api, schema, dataPath, source) {
@@ -288,7 +288,7 @@ defineType({
     await Promise.all([
       resolveSchemaComponent(schema),
       resolveSchemaComponents(schema.columns),
-      sourceDescriptor.processSchema(api, schema, name)
+      sourceTraits.processSchema(api, schema, name)
     ])
   }
 })

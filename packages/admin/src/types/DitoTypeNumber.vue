@@ -25,7 +25,7 @@ DitoInput.dito-number(
 <script>
 import DitoComponent from '../DitoComponent.js'
 import { defineType } from '../utils/schema/types.ts'
-import { numberDescriptor } from './descriptors.ts'
+import { numberTraits } from './traits.ts'
 import { fieldProps, useField } from '../composables/useField.ts'
 import { useNumber } from '../composables/useNumber.ts'
 import DitoInputAffixes from '../components/DitoInputAffixes.vue'
@@ -52,7 +52,7 @@ const DitoTypeNumber = DitoComponent.component('DitoTypeNumber', {
 defineType({
   types: ['number', 'integer'],
   component: DitoTypeNumber,
-  ...numberDescriptor
+  ...numberTraits
 })
 
 export default DitoTypeNumber

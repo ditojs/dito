@@ -40,7 +40,7 @@
 <script>
 import DitoComponent from '../DitoComponent.js'
 import { defineType } from '../utils/schema/types.ts'
-import { sourceDescriptor } from './descriptors.ts'
+import { sourceTraits } from './traits.ts'
 import { fieldProps, useField } from '../composables/useField.ts'
 import DitoSourceItem from '../components/DitoSourceItem.vue'
 import SourceMixin, { useSourceServices } from '../mixins/SourceMixin.js'
@@ -63,13 +63,13 @@ const DitoTypeObject = DitoComponent.component('DitoTypeObject', {
 defineType({
   types: ['object'],
   component: DitoTypeObject,
-  ...sourceDescriptor,
+  ...sourceTraits,
   sourceType: 'object',
 
   async processSchema(api, schema, name) {
     await Promise.all([
       resolveSchemaComponent(schema),
-      sourceDescriptor.processSchema(api, schema, name)
+      sourceTraits.processSchema(api, schema, name)
     ])
   }
 })

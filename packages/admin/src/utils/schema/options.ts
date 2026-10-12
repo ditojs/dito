@@ -33,7 +33,7 @@ export function getOptionsSettings(
     getSchemaValue(key, { type, schema, context: createContext({}) }) ?? null
   )
   // `relate` is read without callbacks, as values are processed without
-  // contexts, see `optionsDescriptor.processValue()`:
+  // contexts, see `optionsTraits.processValue()`:
   const relate = !!schema.relate
   return {
     relate,

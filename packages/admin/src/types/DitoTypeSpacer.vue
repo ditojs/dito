@@ -17,7 +17,7 @@ const DitoTypeSpacer = DitoComponent.component('DitoTypeSpacer', {
 defineType({
   types: ['spacer'],
   component: DitoTypeSpacer,
-  defaultValue: () => undefined, // Callback to override `defaultValue: null`
+  defaultValue: undefined,
   excludeValue: true,
   generateLabel: false
 })

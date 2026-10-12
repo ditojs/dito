@@ -374,7 +374,9 @@ Views provide both contexts of their main component, e.g. to their panels.
 - Types are defined with `defineType(descriptor)`, exported by `@ditojs/admin`,
   instead of `admin.register(type, options)`. The descriptor describes how the
   admin handles the schemas and values of the type, also when they aren't
-  rendered, and names the component that renders it, which is used as it is:
+  rendered, and names the component that renders it. The component receives
+  the `schema`, its `context` and the value as `modelValue`, like the
+  components of `type: 'component'` (see Custom components):
 
   ```js
   import { defineType } from '@ditojs/admin'
@@ -391,26 +393,35 @@ Views provide both contexts of their main component, e.g. to their panels.
 - The static options of type components move to the descriptor:
   `defaultValue`, `defaultNested`, `defaultVisible`, `defaultMultiple`,
   `defaultWidth`, `excludeValue`, `ignoreMissingValue()`,
-  `treatNullAsMissing()`, `valueFromDataSchema`, `generateLabel`,
-  `rendersOwnLabel()`, `omitSpacing`, `hasNestedForms`, `processSchema()`,
+  `treatNullAsMissing()`, `generateLabel`, `omitSpacing`, `processSchema()`,
   `processValue()` and `getChildSourceSchemas()`. `getSourceType(type)` becomes
   `sourceType: 'list'` or `'object'`, `getTypeValidations()` becomes
   `getValidations(schema, context)`, and `getFormSchemasForProcessing()` is
   removed: the child sources of items are walked like components of their
   forms.
-- Descriptors replace the checks of type names in the admin: `isButton` marks
-  buttons, `submitsData` the buttons that save the data of their form, like
-  `submit`, and `isLabel` the types that the label of their container replaces.
-  `getOptionsDataSchema(schema)` returns the data schema of the options that
-  the data model loads, `getItemAdapter(schema)` wraps the items of sources for
-  their forms and unwraps them again, e.g. the values of `wrapPrimitives`.
+- Options tell the admin what to do for the type, as verb phrases, instead of
+  checking type names: `omitLabel()` omits the label of the container, as the
+  component displays it, `replaceWithLabel` replaces the component with the
+  label of its container, `resolveValue` resolves the value from `schema.data`
+  or `schema.dataPath`, `submitData` makes buttons count for the dirty state
+  like `submit`, and `nestForms` renders the forms of the items inside the
+  form or view of their source. Buttons submit through `context.submit()`
+  because the button component provides it, not because of an option.
+- Only types with `getOptionsDataSchema(schema)` load options, which returns
+  the data schema of the options that the data model loads. Custom types that
+  load `schema.options` like `select` spread `optionsTraits` into their
+  descriptor, and `numberTraits` and `textTraits` share the validations of
+  numbers and the processing of text values. All three are exported by
+  `@ditojs/admin`.
+- `getItemAdapter(schema)` wraps the items of sources for their forms and
+  unwraps them again, e.g. the values of `wrapPrimitives`. In the forms of
+  such items, only the component of the wrapped value shares the data path of
+  the item, the others get their own.
 - `getPanelSchema(api, schema, dataPath, source)` receives the source context
   of the component instead of the component, with `source.listQuery`.
 - `processSchema(api, schema, name)` only sets up the schema, e.g. resolves the
   schemas that it contains. It no longer receives `routes` and `level`, and
   doesn't add routes.
-- Types whose forms render inside the form or view of their parent route set
-  `hasNestedForms: true`.
 - Types that route sources next to the forms of their items, like the children
   of tree items, return their schemas from `getChildSourceSchemas(schema)`.
 - Components no longer have `getTypeComponent()`.

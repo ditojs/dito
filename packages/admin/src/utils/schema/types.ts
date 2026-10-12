@@ -3,62 +3,45 @@ import type { Component } from 'vue'
 import type { SourceContext } from '../SourceContext.ts'
 import type { Api, Data, Schema } from '../types.ts'
 
-// The `DitoContext` of the component, see `DitoContext.js`:
 export type Context = Record<string, any>
 type ContextCallback<T> = (context: Context) => T
 
 export type SourceType = 'list' | 'object'
 
 // Wraps the items of a source for the forms that edit them, e.g. primitive
-// values in objects, and unwraps them again.
+// values in objects, and unwraps them again. The component `name` edits the
+// value, and shares the data path of the item:
 export interface ItemAdapter {
-  // The name of the component that edits the value. It shares the data path
-  // of the item, where the errors of the value are mapped to:
   readonly name: string
   wrap(value: any): Data
   unwrap(item: Data): any
 }
 
 // Describes a type of schema components: the component that renders it, and
-// how the generic code of the admin handles its schemas and values, also when
-// they aren't rendered.
+// how the admin handles its schemas and values, also when they aren't
+// rendered. Its options tell the admin what to do for the type, and are
+// documented in `index.d.ts`.
 export interface TypeDescriptor {
   readonly types: string[]
   readonly component: Component
-  // The defaults of the schema settings of the same name: `default`,
-  // `nested`, `visible`, `multiple`, `width` and `exclude`:
   readonly defaultValue?: any
   readonly defaultNested?: boolean
   readonly defaultVisible?: boolean
   readonly defaultMultiple?: boolean
   readonly defaultWidth?: string | number
   readonly excludeValue?: boolean | ContextCallback<boolean>
-  // Values that are missing don't get their defaults, e.g. passwords:
   readonly ignoreMissingValue?: ContextCallback<boolean>
-  // Values that are `null` get their defaults, e.g. the objects of sections:
   readonly treatNullAsMissing?: ContextCallback<boolean>
-  // The value is resolved from `schema.data` or `schema.dataPath`:
-  readonly valueFromDataSchema?: boolean
-  // Whether components without `label` get one generated from their name:
+  readonly resolveValue?: boolean
   readonly generateLabel?: boolean
-  // Whether the component displays its label itself, e.g. in a header:
-  readonly rendersOwnLabel?: ContextCallback<boolean>
+  readonly omitLabel?: ContextCallback<boolean>
   readonly omitSpacing?: boolean
-  // Labels are replaced by the label of their container, if they have one:
-  readonly isLabel?: boolean
-  readonly isButton?: boolean
-  // Whether the button submits the data of its form, see `hasSubmitButton()`:
-  readonly submitsData?: boolean
-  // Sources hold their items in a list or an object, edited in forms:
+  readonly replaceWithLabel?: boolean
+  readonly submitData?: boolean
   readonly sourceType?: SourceType
-  // Whether the forms of the items render inside the form or view of their
-  // source, instead of in their own routes:
-  readonly hasNestedForms?: boolean
-  // The sources that hold the children of items, routed next to the forms of
-  // their items, e.g. of trees:
+  readonly nestForms?: boolean
   getChildSourceSchemas?(schema: Schema): Schema[]
   getItemAdapter?(schema: Schema): ItemAdapter | null
-  // The data schema of the options, see `DataSchemaResolver`:
   getOptionsDataSchema?(schema: Schema): any
   getPanelSchema?(
     api: Api,
@@ -67,9 +50,7 @@ export interface TypeDescriptor {
     source: SourceContext | null
   ): Schema | null | undefined
   getValidations?(schema: Schema, context: Context): Record<string, any>
-  // Set up the schema, e.g. resolve the schemas that it contains:
   processSchema?(api: Api, schema: Schema, name: string): Promise<any> | void
-  // Convert the value for storage, see `processData()`:
   processValue?(context: Context, graph: any): any
 }
 
@@ -121,4 +102,8 @@ export function getChildSourceSchemas(schema: Schema): Schema[] {
 
 export function getItemAdapter(schema: Schema | null): ItemAdapter | null {
   return (schema && getTypeDescriptor(schema)?.getItemAdapter?.(schema)) ?? null
+}
+
+export function getOptionsDataSchema(schema: Schema): any {
+  return getTypeDescriptor(schema)?.getOptionsDataSchema?.(schema) ?? null
 }

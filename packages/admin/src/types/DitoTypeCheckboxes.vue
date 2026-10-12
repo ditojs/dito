@@ -32,7 +32,7 @@ DitoOptionList.dito-checkboxes(
 import { computed } from 'vue'
 import DitoComponent from '../DitoComponent.js'
 import { defineType } from '../utils/schema/types.ts'
-import { optionsDescriptor } from './descriptors.ts'
+import { optionsTraits } from './traits.ts'
 import { fieldProps, useField } from '../composables/useField.ts'
 import { useOptions } from '../composables/useOptions.ts'
 import DitoOptionList from '../components/DitoOptionList.vue'
@@ -91,7 +91,7 @@ const DitoTypeCheckboxes = DitoComponent.component('DitoTypeCheckboxes', {
 defineType({
   types: ['checkboxes'],
   component: DitoTypeCheckboxes,
-  ...optionsDescriptor,
+  ...optionsTraits,
   defaultValue: ({ schema }) => (getMultipleValue(schema) ? [] : null),
   defaultWidth: 'auto',
   defaultMultiple: true

@@ -22,7 +22,7 @@ defineType({
   component: DitoTypeLabel,
   excludeValue: true,
   generateLabel: false,
-  isLabel: true
+  replaceWithLabel: true
 })
 
 export default DitoTypeLabel

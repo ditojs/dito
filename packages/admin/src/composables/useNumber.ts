@@ -1,5 +1,5 @@
 import { computed } from 'vue'
-import { getNumberSettings } from '../types/descriptors.ts'
+import { getNumberSettings } from '../types/traits.ts'
 import type { Field, FieldProps } from './useField.ts'
 
 // The settings and the input value of number types, see `getNumberSettings()`.

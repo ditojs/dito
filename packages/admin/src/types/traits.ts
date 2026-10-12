@@ -14,10 +14,9 @@ import {
   getSchemaValue
 } from '../utils/schema/data.js'
 
-// The parts of type descriptors that several types share, to be spread into
-// their descriptors.
+// The traits that several types share, spread into their descriptors.
 
-export const sourceDescriptor = {
+export const sourceTraits = {
   defaultValue: ({ schema }: Context) => (isListSource(schema) ? [] : null),
   // Exclude all sources that have their own resource handling the data.
   excludeValue: ({ schema }: Context) => !!schema.resource,
@@ -58,7 +57,7 @@ export const sourceDescriptor = {
   }
 } satisfies Partial<TypeDescriptor>
 
-export const optionsDescriptor = {
+export const optionsTraits = {
   getOptionsDataSchema: schema => schema.options,
 
   processValue({ schema, value, dataPath }, graph) {
@@ -84,7 +83,7 @@ export const optionsDescriptor = {
   }
 } satisfies Partial<TypeDescriptor>
 
-export const numberDescriptor = {
+export const numberTraits = {
   getValidations(schema, context) {
     const { min, max, step, decimals } = getNumberSettings(schema, context)
     const validations: Record<string, any> = {}
@@ -149,7 +148,7 @@ export function getNumberSettings(
   }
 }
 
-export const textDescriptor = {
+export const textTraits = {
   processValue(context) {
     let { schema, value } = context
     if (schema.trim && value != null && isString(value)) {
