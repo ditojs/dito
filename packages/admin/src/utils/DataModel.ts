@@ -8,6 +8,7 @@ import {
   shallowRef,
   shallowReactive,
   toRaw,
+  isProxy,
   triggerRef,
   type ComputedRef,
   type EffectScope,
@@ -366,6 +367,9 @@ export class DataModel {
         { [key]: item },
         { services: this.#options.services, shouldMatchUids: true }
       )[key]
+      // The item takes over the computed values of the draft, which may hold
+      // references to the draft:
+      this.#writeComputedValues()
     }
   }
 
@@ -1028,7 +1032,17 @@ export class DataModel {
     const { data, name } = entry
     const value = this.#getValueWithNestedDefaultValues(entry, computedValue)
     const dataPath = getRelativeDataPath(entry.dataPath, this.dataPath)
-    if (!equals(value, data[name]) && !this.#isWriteLoop(dataPath)) {
+    if (
+      // Values from the reactive data are references, e.g. `parentItem`, which
+      // may equal stale copies like applied drafts. Values that
+      // `computeValue()` creates anew each time are compared by content:
+      (
+        isProxy(value)
+          ? toRaw(value) !== toRaw(data[name])
+          : !equals(value, data[name])
+      ) &&
+      !this.#isWriteLoop(dataPath)
+    ) {
       // Write `data[name]` directly, without calling `parseValue()`:
       data[name] = value
     }

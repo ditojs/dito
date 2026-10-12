@@ -1,5 +1,6 @@
 import { vi } from 'vitest'
 import { flushPromises, DOMWrapper } from '@vue/test-utils'
+import { toRaw } from 'vue'
 import {
   mountAdmin,
   mountForm,
@@ -961,7 +962,10 @@ describe('DitoForm', () => {
         { id: 7, title: 'Prologue', details: {} }
       )
       await applyChapterForm(form, 'Opening')
-      expect(data.chapters[0]).toMatchObject({ id: 7, title: 'Opening' })
+      const [chapter] = data.chapters
+      expect(chapter).toMatchObject({ id: 7, title: 'Opening' })
+      // Not the draft that the form edited:
+      expect(toRaw(chapter.details.chapter)).toBe(toRaw(chapter))
     })
 
     it('calls `serializeValue()` only when the parent is saved', async () => {
