@@ -41,18 +41,15 @@ which components write the data through.
   it, e.g. the order of its items or the children of tree items. They only
   count as dirty if they have a button of type `submit`, whatever its name,
   like views, dialogs and panels with their own data. Views without one no
-  longer ask about unsaved changes. `dataModel.isDirty` tells this,
-  `dataModel.isEdited` whether the data was edited at all, also where it
-  can't be saved, e.g. the order of a source without such a button.
+  longer ask about unsaved changes. `context.isDirty` tells this.
 - Direct writes to the data don't make it dirty, e.g. of what an action on the
   server saved. `formComponent.applyCleanChanges()` is removed: write the data
   directly instead. Code that edits data directly calls
-  `dataModel.markEdited()`, and `dataModel.markClean()` once it saved it.
-- Custom types that change their value in place write it through the data
-  model: `set(data, key, value)`, `insert(list, index, item)`,
-  `remove(list, index)`, `move(list, from, to)` and
-  `replaceItems(list, items)`. Assigning `value` does this already.
-  `emitChangeEvent()` is removed: call `onChange()`.
+  `context.markEdited()`.
+- Custom types and custom components change their value by emitting
+  `update:modelValue`, which writes it through the data model, an edit if the
+  value changes. Code that changes a value in place calls
+  `context.markEdited()`. `emitChangeEvent()` is removed: emit `change`.
 - Forms with `mutate: true` edit the item of their parent through the data
   model of the parent, which turns dirty right away. Cancel only closes them.
   When they create their item or load it through their own resource, they
@@ -90,8 +87,8 @@ which components write the data through.
   uids, item stores and the errors of unchanged values. Values missing in the
   response are removed, new items get their ids from it in order. The data of
   sources with their own resource is kept, wherever they are in the schema,
-  not only for mounted components. `dataModel.mergeFromServer(data)` does the
-  same for other code. Saving still clears the errors of the values.
+  not only for mounted components. Saving still clears the errors of the
+  values.
 - `schemaComponent.filterData()` is removed.
 - Nested forms without `mutate: true` edit a draft of their item, which
   applying merges into the item in place, instead of writing the data
@@ -110,18 +107,17 @@ which components write the data through.
   their buttons with resources.
 - Open nested forms keep their item when it or the item of a parent form
   moves, e.g. as items before it are added, removed or moved, and follow it to
-  its new index in the URL. Forms of list items close once their item is
-  removed, like the forms of tree items did, instead of showing the next one.
+  its new index in the URL, which replaces the current history entry. Forms of
+  list items close once their item is removed, like the forms of tree items
+  did, instead of showing the next one.
 - The data processed for the server and for the clipboard is only built when
   saving and copying. `processedItem` and `processedRootItem` of contexts are
   built when they're read and cached until the data that they read changes,
   also in the callbacks of the data model, e.g. `if` and `compute()`, which
-  lacked them. Components no longer have
-  `processedData`, `processedRootData`, `processedItem` and
-  `processedRootItem`: read them from `component.context`. In `process()`,
-  they're the data being built.
-  `schemaComponent.processData(target)` takes only the target, `'server'` or
-  `'clipboard'`, and `schemaComponent.setData()` is removed.
+  lacked them. In `process()`, they're the data being built. Components no
+  longer have `processedData`, `processedRootData`, `processedItem`,
+  `processedRootItem`, `processData()` and `setData()`: read `processedItem`
+  and `processedRootItem` from the context.
 - Pasting writes the data through the data model as new items, after
   `clipboard.paste()` received the copied data: related items get new
   temporary ids each time, and sources with their own resource are left out.
@@ -136,19 +132,13 @@ which components write the data through.
 
 - Errors live in the data model, by the data that holds each value and its
   name, so they stay with items that move, and with fields that aren't
-  mounted, e.g. in collapsed sections. Read and write them with
-  `dataModel.getErrors(dataPath)`, `getFieldErrors(dataPath)`,
-  `setErrors(dataPath, errors)`,
-  `addError(dataPath, message)`, `removeError(dataPath, message)`,
-  `replaceErrors(errors, { dataPath, server })` and `clearErrors(dataPath)`.
+  mounted, e.g. in collapsed sections.
 - The errors of values, of validation and of the server, apply to the value
   that they were set for: any change of the value clears them for good, also
   in place or through direct writes, even if it changes back. Validating a
   value again, e.g. on blur, only replaces its validation errors.
 - The errors of fields, e.g. of options that failed to load or of searches,
-  are added with `addError()` and stay until their source removes them with
-  `removeError()`. `getFieldErrors()` returns their messages, `getErrors()`
-  only the errors of the value.
+  stay until their source removes them, unlike the errors of values.
 - Errors inside values that no deeper field displays show on the field of the
   value, with their `path` in it, e.g. "The address field's street is
   required." for an object edited as code, instead of only in the
@@ -162,25 +152,23 @@ which components write the data through.
   resource are notified, as their items are edited in their own forms.
 - Type components no longer have `errors`, `hasErrors`, `isTouched`,
   `isValid`, `isValidated`, `verify()`, `markTouched()`, `clearValidation()`,
-  `resetValidation()`, `addError()`, `getErrors()`, `clearErrors()` and
-  `showValidationErrors()`. `validate()` remains, and replaces the errors of
-  the field.
+  `resetValidation()`, `addError()`, `getErrors()`, `clearErrors()`,
+  `showValidationErrors()` and `validate()`: `context.validate(match)`
+  validates the values whose data paths match.
 - Forms, views and schemas no longer have `errors`, `hasErrors`, `isTouched`,
   `isValid`, `isValidated`, `clearErrors()` and `resetValidation()`, and no
-  longer `validateAll()`, `verifyAll()` and `showValidationErrors()`. Their
-  `dataContext` validates with `validate()` and
-  `verify()`, and shows the errors of the server with
-  `showValidationErrors(errors, dataPath)`. Forms clear the errors of their
+  longer `validateAll()`, `verifyAll()` and `showValidationErrors()`:
+  `context.validate()` and `context.verify()` validate the data of the form,
+  view, dialog or panel with its own data. Forms clear the errors of their
   data once they're submitted, also mutating forms, which share the data
   model of their parent.
 - Panels no longer have `errors`, `isTouched`, `isValid`, `isValidated`,
-  `validateAll()`, `verifyAll()`, `resetValidation()` and `clearErrors()`.
-  The `dataContext` of panels with their own data validates and shows errors.
-- `navigateToComponent()` and `navigateToRouteComponent()` are removed.
-  `dataContext.revealErrors()` reveals the errors of the data: it opens the
-  forms of nested routes through the route tree, and opens collapsed schemas
-  and inlined items and renders tabs through `adminContext.ui`, see
-  [Routes and the UI registry](#routes-and-the-ui-registry).
+  `validateAll()`, `verifyAll()`, `resetValidation()` and `clearErrors()`:
+  `context.validate()` in panels with their own data validates their data.
+- `navigateToComponent()` and `navigateToRouteComponent()` are removed:
+  validating reveals the errors, opening the forms of nested routes, collapsed
+  schemas, inlined items and the tabs of their fields, and focuses the first
+  one.
 
 ### Contexts
 
@@ -192,7 +180,8 @@ the context. `isDirty`, `isCreating`, `validate()`, `markEdited()` and
 `replaceItem()` belong to the data of the context: of its form, view, dialog or
 panel with its own data, e.g. the filters panel, a nested form being its own.
 Forms with `mutate: true` are the exception: they edit the item of their
-parent in the parent's data, so their `isDirty` reports the parent's state.
+parent in the parent's data, so their `isDirty` reports the parent's state, as
+does their entry in the breadcrumb trail.
 
 A callback sees the context of the place where it is declared: the callbacks of
 a component, e.g. its `if`, `label` and `events`, see the item that the
@@ -222,11 +211,22 @@ changed value.
   the nearest form or list with a resource: of the item that the form edits, or
   of the collection that the list loads or the form creates its item in. It
   throws without such a form or list, instead of returning `null`.
+  `getResourceUrl(resource)` and `request({ resource })` resolve `resource`
+  relative to that form or list.
+- `request({ cache: 'local' })` caches the response while the route of the
+  form or view is shown, instead of in the nearest component with a resource
+  that loads its own data, and doesn't cache outside of routes, e.g. in
+  dialogs. `cache: 'global'` caches for the admin session, until the user
+  changes.
+- `itemLabel` and `itemLabelText` are set in the contexts of the `success` and
+  `error` events of the buttons of forms and sources. The form's own context,
+  e.g. of its events, no longer has them, and they're `null` in the `if` and
+  `default` callbacks of the components of forms.
 - `component.showDialog({ components, buttons, data, settings })`:
   `showDialog({ components, buttons }, { data, settings })`, which resolves
   with the value that the dialog is closed with. In the dialog,
   `dialogComponent.resolve(value)` is `closeDialog(value)`.
-  `dialogComponent.reject()` is removed. `adminContext.showDialog()` takes
+  `dialogComponent.reject()` is removed. `admin.context.showDialog()` takes
   the same arguments.
 - `formComponent.selectedTab`: `selectedTab`, the selected tab of the nearest
   form. Tabs render once they're selected and stay rendered, so their
@@ -299,148 +299,71 @@ function copyAddress(order) {
 
 ### Admin context
 
-`DitoAdmin` provides the services of the admin to all components as one object,
-the `adminContext` inject, which it keeps as its `context` too. It replaces the
-`api`, `session` and `viewRegistry` injects, and the members of components that
-reached them:
+`DitoAdmin` holds the services of the admin in one object, its `context` of
+type `AdminContext`, instead of the `api`, `session` and `viewRegistry` injects
+and the members of components that reached them:
 
-- `api`, `user`, `views` and `flattenedViews`: `adminContext.api`,
-  `adminContext.user`, `adminContext.views` and `adminContext.flattenedViews`,
-  which are reactive. `locale`: `adminContext.api.locale`. `session`:
-  `adminContext.session`.
-- `notify()`, `showDialog()` and `closeNotifications()`:
-  `adminContext.notify()`, `adminContext.showDialog()` and
-  `adminContext.closeNotifications()`. Contexts keep `notify()` and
-  `showDialog()`.
-- `rootComponent` is removed. `rootComponent.isLoading`:
-  `adminContext.loadingTracker.isLoading`. The deprecated
-  `rootComponent.registerLoading()` is removed: use
-  `adminContext.loadingTracker.begin()` or `track()`.
-- Route records no longer have `meta.api`.
+- `api`, `user`, `views`, `flattenedViews`, `notify()` and `showDialog()`: the
+  same members of the context in callbacks, and of `admin.context` elsewhere,
+  where they're reactive. `locale`: `context.api.locale`. `session`:
+  `admin.context.session`.
+- `closeNotifications()` and `rootComponent` are removed, along with
+  `rootComponent.isLoading` and the deprecated `registerLoading()`.
+- Route records no longer have `meta.api` and `meta.schema`.
+- Dito's components and types are registered globally with `app.component()`,
+  instead of as components of the root component, so custom components can
+  render them by name.
 
-### Data and route contexts
+### Routes, sources and resources
 
-Components reach the owner of their data and the view or form that renders
-them through two contexts, instead of components:
+Views, forms, lists, objects and trees no longer expose themselves to the
+components that they render. What callbacks need of them are members of the
+context, see [Contexts](#contexts), the rest is internal:
 
-- `dataContext`, provided by views, forms, dialogs and panels with their own
-  data: the `model` that holds the data, `isDirty`, `isEdited`, `isCreating`,
-  `hasData`, `validate()`, `verify()`, `showValidationErrors()`,
-  `revealErrors()`, `markEdited()` and `replaceItem()`. Dialogs add
-  `close(value)`.
-- `routeContext`, provided by views and forms: its `parent` route,
-  `dataContext`, the `schema`, `dataPath`, `rootData` and `componentPath` of
-  the data that it renders, `loadingTracker`, `level`, `isForm`, `state`,
-  `path`, `isLastRoute`, `selectedTab`, `verbs`, the `resourceContext` of
-  forms, `getFormRoute()`, `getFormPath()`, `getCreatePath()`, and `close()`
-  and `submit(button)` for forms, which save their data through their
-  resource or apply it to their parent.
-
-`routeComponent`, `formComponent`, `viewComponent`, `parentRouteComponent`,
-`parentFormComponent`, `dataModelComponent`, `dialogComponent` and
-`panelComponent` are removed, along with the `$routeComponent`,
-`$dataModelComponent`, `$dialogComponent` and `$panelComponent` injects:
-
-- `routeComponent.routeLevel`: `routeContext.level`.
-- `routeComponent.getFormRoute()` and `getCreatePath()`:
-  `routeContext.getFormRoute()` and `routeContext.getCreatePath()`.
-- `parentRouteComponent.dataModel`: `routeContext.parent.dataContext.model`.
-- `viewComponent.viewSchema`: `viewComponent.schema`, the schema that the view
-  renders. The view's own schema is its `sourceSchema`.
-- The `$loadingTracker` inject is removed: `routeContext.loadingTracker`, the
-  tracker of the view, or `adminContext.loadingTracker` outside of views.
-- `dialogComponent.resolve(value)`: `dataContext.close(value)`.
-- Route records no longer have `meta.schema`: views and forms take their
-  schemas from their node in the route tree.
-
-### Source and resource contexts
-
-Lists, objects and trees, and the forms that edit items, provide two more
-contexts:
-
-- `sourceContext`, provided by lists, objects and trees to the components that
-  display them and their items: `schema`, `query`, `dataPath`,
-  `componentPath`, `store`, `isDisabled`, `verbs`, `createItem()`, `reload()`,
-  `submit(button)` and their `resourceContext`. Forms don't continue the
-  source of their parent, e.g. the forms of tree items, whose `sourceQuery` was
-  the tree's query.
-- `resourceContext`, provided only by forms and sources with a resource of
-  their own: `getResource()` and `submit(button)`. Components see the nearest
-  one, e.g. in an inlined list of a form the form's, and resolve their
-  relative resources against it. The resources of sources continue the one of
-  their route, of forms the one of their parent route: forms without a
-  resource continue the one of the nearest form above with a resource. The
-  forms of tree items no longer continue the resource of the tree, which
-  resolved their item at `pages/pages/1` instead of `pages/1`. Lists in the
-  items of inlined lists resolve their relative resources against the form
-  too, like the lists next to them, instead of against the API root.
-- Buttons submit through their source, or else to their form, which saves
-  its data through its resource or applies it to its parent. The verbs of
-  forms and sources, e.g. `apply` and `remove` in nested data, belong to
-  them, not to resources.
-
-Views provide both contexts of their main component, e.g. to their panels.
-`sourceComponent`, `resourceComponent`, `dataComponent` and
-`parentResourceComponent` are removed, along with the `$sourceComponent`,
-`$resourceComponent`, `$dataComponent`, `$verbs` and `$isPopulated` injects:
-
-- `sourceComponent.query`: `sourceContext.query`.
-  `sourceComponent.createItem()`: `sourceContext.createItem()`.
-- `resourceComponent.resource`, the `resource` of forms and sources:
-  `resourceContext.getResource()`. `resourceComponent.submit(button)`:
-  `routeContext.submit(button)` in forms and `sourceContext.submit(button)` in
-  sources.
-- `dataComponent`: `resourceContext`. The components in sources with a
-  resource read the root data of their route, like all others.
-- `isPopulated`: `dataContext.hasData`.
-- `sourceSchema` is only defined by views, forms and `DitoSchema`, which
-  injects it from the view, form or source item that renders it. In views,
-  the components outside of the main component keep the view's schema. Forms
-  don't see a `sourceContext` in their own callbacks either.
-- `getFormPath()` of sources: `routeContext.getFormPath()`.
+- `routeComponent`, `formComponent`, `viewComponent`, `parentRouteComponent`,
+  `parentFormComponent`, `dataModelComponent`, `dialogComponent`,
+  `panelComponent`, `sourceComponent`, `resourceComponent`, `dataComponent`,
+  `parentResourceComponent`, `tabComponent`, `parentSchemaComponent`,
+  `schemaComponents` and `mainSchemaComponent` are removed, along with the
+  `$routeComponent`, `$dataModelComponent`, `$dialogComponent`,
+  `$panelComponent`, `$sourceComponent`, `$resourceComponent`,
+  `$dataComponent`, `$schemaComponent`, `$schemaParentComponent`,
+  `$tabComponent`, `$loadingTracker`, `$verbs` and `$isPopulated` injects and
+  `appState.routeComponents`.
+- `RouteMixin`, `SchemaParentMixin`, `SourceMixin`, `ResourceMixin` and
+  `ItemMixin` are removed, and so are the members of views, forms and sources
+  that they added, e.g. `routeLevel`, `getFormRoute()`, `getCreatePath()`,
+  `getFormPath()`, `resource`, `createItem()`, `createData()`, `forms`,
+  `isCompact`, `linksToView`, the deprecated `setLoading()`, `label`,
+  `breadcrumbPrefix`, `param`, `isNestedRoute` and `isMutating`, and the
+  lookups of schemas, `getComponent()`, `getComponents()`,
+  `getComponentByName()`, `getComponentsByDataPath()`, `getPanel()`,
+  `getPanels()`, `components`, `panes`, `panels` and `revealComponents()`.
 - The `meta` prop of the components and types is removed, along with
   `nestedMeta`.
-- The verbs and the relative resources of the components of single-component
-  views outside of their list, e.g. view buttons, are the list's, like their
-  submits.
 - `DitoScopes`, `DitoPagination` and `DitoTableHead` take the `ListQuery` of
   their list as `listQuery` instead of `query`. `DitoSourceItem` takes the
   `formSchema` and `label` of the item from its source.
-- `submit(button)` takes the `SubmitButton` that buttons pass, not the
-  button's component. Handlers keep using `context.submit()`.
-- `SourceMixin`, `ResourceMixin` and `ItemMixin` are removed: sources and
-  forms are built from composables. The deprecated `setLoading()` of views,
-  forms and sources is removed, use `loadingTracker.begin()` or `track()`.
-  `createData()`, `forms`, `isCompact` and `linksToView` of sources and forms
-  are removed, and `setData()` of sources returns nothing.
-
-### Routes and the UI registry
-
-Views and forms are built from composables, `useRouteContainer()` and
-`useLeaveGuard()`, instead of `RouteMixin`, and `SchemaParentMixin` is removed.
-Components no longer reach each other to reveal and focus components:
-`adminContext.ui`, the `UiRegistry` of the admin, holds the handles of the
-rendered components by component path, and the contexts of the rendered routes.
-
-- `appState.routeComponents`: `adminContext.ui.routes`, the route contexts by
-  level. Route contexts add `isLeaving`, `isDirty` and `breadcrumb`.
-- The `$schemaParentComponent` and `$tabComponent` injects, `tabComponent`,
-  `parentSchemaComponent`, `schemaComponents` and `mainSchemaComponent` are
-  removed. The `$schemaComponent` inject only remains for schema events.
-- Schemas no longer have `getComponent()`, `getComponents()`,
-  `getComponentByName()`, `getComponentsByDataPath()` and the other lookups,
-  `getPanel()` and `getPanels()`, `components`, `panes`, `panels` and
-  `revealComponents()`, sections and sources no longer
-  `revealComponents()`, panes no longer `focus()`.
-- `adminContext.ui.reveal(dataContext, componentPath, { focus })` asks the
-  components on the way to the component from the outside in to render it, e.g.
-  collapsed schemas open and render the tab that contains it, which focusing
-  selects, and then focuses it. Focusing components in nested tabs selects these
-  tabs too.
-- Forms and views no longer have `label` and `breadcrumbPrefix`, views no
-  longer `param`, `isNestedRoute` and `isMutating`. Their route guards use
-  `onBeforeRouteLeave()` and `onBeforeRouteUpdate()`, so components no longer
-  merge the route guards of their mixins.
+- Forms don't continue the source of their parent, e.g. the forms of tree
+  items, whose `sourceQuery` was the tree's query.
+- Relative resources resolve against the nearest form or source with a
+  resource of its own: sources continue the one of their route, forms the one
+  of their parent route, which is the one of the nearest form above with a
+  resource. The forms of tree items no longer continue the resource of the
+  tree, which resolved their item at `pages/pages/1` instead of `pages/1`.
+  Lists in the items of inlined lists resolve their relative resources against
+  the form too, like the lists next to them, instead of against the API root.
+- Buttons submit through their source, or else to their form, which saves its
+  data through its resource or applies it to its parent. The verbs of forms
+  and sources, e.g. `apply` and `remove` in nested data, belong to them, not
+  to resources.
+- Views provide the source of their main component to their other
+  components: the verbs, `sourceQuery` and submits of the components of
+  single-component views outside of their list, e.g. view buttons, are the
+  list's. Views have no resource: outside of their lists, relative resources
+  resolve against the API root, and `getResourceUrl()` throws.
+- Focusing components in nested tabs selects these tabs too, and replaces the
+  hash of the route instead of adding a history entry.
 
 ### Custom types
 
@@ -495,9 +418,11 @@ rendered components by component path, and the contexts of the rendered routes.
   of such items, only the component of the wrapped value shares the data path
   of the item, the others get their own. Routed forms edit the wrapped value
   as their draft, and write the unwrapped value back at its index when
-  applied. They can't `mutate` the values, which aren't objects.
-- `getPanelSchema(api, schema, dataPath, source)` receives the source context
-  of the component instead of the component, with `sourceContext.listQuery`.
+  applied. They can't `mutate` the values, which aren't objects. Inlined
+  items read and write the values at their index, so their state, e.g. being
+  collapsed, stays at the index when the values move.
+- `getPanelSchema(api, schema, dataPath, source)` receives the `listQuery` of
+  the list as `source.listQuery` instead of the component.
 - `processSchema(api, schema, name)` only sets up the schema, e.g. resolves the
   schemas that it contains. It no longer receives `routes` and `level`, and
   doesn't add routes.
@@ -510,8 +435,8 @@ rendered components by component path, and the contexts of the rendered routes.
   instances no longer have `value`, `item`, `parentItem`, `rootItem`, `focused`,
   `validate()` or the resolved schema values, e.g. `readonly`, and their
   contexts are built from their props and services instead of the instance. They
-  no longer have `focus()`: `adminContext.ui.reveal()` reveals and focuses them
-  by their component path.
+  no longer have `focus()`: validating reveals and focuses the fields with
+  errors.
 - The data model replaces the values of components with options once the
   options are loaded, e.g. references with their related objects, and shows
   the errors of failed loads, also while the component isn't rendered. Values
@@ -539,7 +464,7 @@ too, unless the component declares them: they emit the schema's events, and
   `this.$emit('update:modelValue', value)`, which writes the value through
   `parse()`, and `onChange()`: `this.$emit('change')`.
 - `item`, `parentItem` and `rootItem`: `context.item`, `context.parentItem` and
-  `context.rootItem`. `adminContext.api`: `context.api`.
+  `context.rootItem`. `api`: `context.api`.
 - `getSchemaValue(key)`: `getSchemaValue(schema, key, context)`, exported by
   `@ditojs/admin`, which calls schema values that are functions with the
   context.
@@ -614,8 +539,8 @@ are named after what they are, like the classes they describe:
 
 - `DitoContext`: `SchemaContext`, the context that callbacks receive.
 - The type of `context.user`: `AdminUser`.
-- `DitoDataModel`, `DitoListEntry` and `DitoValidationError`: `DataModel`,
-  `ListEntry` and `ValidationError`.
+- `DitoDataModel`, `DitoListEntry` and `DitoValidationError` are removed, as
+  the data model is internal.
 - `DitoGlobal`, the type of the global `dito` object: `GlobalConfig`.
 - The schema options named after the removed mixins are named after the
   schemas that share them: `SchemaDitoMixin` and `SchemaTypeMixin` are part of
@@ -625,3 +550,8 @@ are named after what they are, like the classes they describe:
   `SchemaText`, `SchemaAffixes` and `SchemaData`. The deprecated
   `SchemaSetupMixin` and `SchemaRouteMixin` are removed: use `SchemaFields` and
   `SchemaRoute`.
+
+Only `SchemaContext`, `AdminContext`, `DitoAdmin`, the schema types and the
+contracts of types and custom components are exported. The contexts of data,
+routes, sources and resources, the data model, the UI registry and the loading
+tracker are internal.

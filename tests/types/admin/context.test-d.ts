@@ -45,12 +45,29 @@ describe('SchemaContext', () => {
     expectTypeOf<Ctx['selectedTab']>().toEqualTypeOf<string | null>()
     expectTypeOf<Ctx['validate']>().returns.toBeBoolean()
     expectTypeOf<Ctx['replaceItem']>().returns.toEqualTypeOf<Entry>()
-    expectTypeOf<Ctx['getResourceUrl']>().toBeCallableWith()
-    expectTypeOf<Ctx['getResourceUrl']>().returns.toBeString()
     expectTypeOf<Ctx['sourceQuery']>().toExtend<Record<string, any> | null>()
     expectTypeOf<Ctx>().not.toHaveProperty('formComponent')
     expectTypeOf<Ctx>().not.toHaveProperty('component')
     expectTypeOf<Ctx>().not.toHaveProperty('query')
+  })
+
+  it('resolves resource URLs and requests', () => {
+    const context = {} as SchemaContext<Entry>
+    expectTypeOf(context.getResourceUrl()).toBeString()
+    expectTypeOf(context.getResourceUrl('pages')).toEqualTypeOf<
+      string | null
+    >()
+    assertType(context.request({ resource: 'pages', cache: 'local' }))
+    assertType(context.request({ url: '/api/pages' }))
+    // @ts-expect-error A request needs a url or a resource.
+    assertType(context.request({ method: 'get' }))
+  })
+
+  it('extends contexts with values', () => {
+    const context = {} as SchemaContext<Entry>
+    const extended = context.extend({ value: 1 })
+    expectTypeOf(extended.value).toBeNumber()
+    expectTypeOf(extended.item).toEqualTypeOf<Entry>()
   })
 
   it('OrItemAccessor accepts value or callback', () => {
