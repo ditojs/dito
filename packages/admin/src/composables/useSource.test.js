@@ -258,7 +258,7 @@ describe('useSource()', () => {
 
   describe('errors of items in forms of nested routes', () => {
     it('open the form of their item', async () => {
-      const { admin, schemaComponent, routeComponent } = await mountForm({
+      const { admin, routeComponent } = await mountForm({
         schema: {
           components: {
             chapters: {
@@ -277,7 +277,7 @@ describe('useSource()', () => {
       await admin.navigate('/items/1')
       await admin.navigate('/items/1/chapters/1')
       await admin.navigate('/items/1')
-      await schemaComponent.showValidationErrors({
+      await routeComponent.ownDataContext.showValidationErrors({
         'chapters/1/title': [{ message: 'is taken' }]
       })
       await flushPromises()

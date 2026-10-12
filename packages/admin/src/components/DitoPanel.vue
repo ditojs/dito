@@ -9,7 +9,6 @@ component.dito-panel(
   @submit.prevent
 )
   DitoSchema.dito-panel__schema(
-    ref="schema"
     :schema="schema"
     :dataSchema="panelDataSchema"
     :dataPath="panelDataPath"
@@ -48,8 +47,8 @@ import {
   markRaw,
   reactive,
   ref,
-  toRefs,
-  useTemplateRef
+  toRef,
+  toRefs
 } from 'vue'
 import { isFunction } from '@ditojs/utils'
 import SchemaContext from '../SchemaContext.js'
@@ -111,9 +110,15 @@ export default {
       const dataContext = markRaw(
         new DataContext(
           reactive({
-            schemaComponent: useTemplateRef('schema'),
+            schema: toRef(props, 'schema'),
+            data: ownData,
+            dataPath: toRef(props, 'dataPath'),
+            componentPath: toRef(props, 'panelComponentPath'),
             get dataModel() {
               return dataModel
+            },
+            get services() {
+              return ownServices
             },
             setData(data) {
               ownData.value = data

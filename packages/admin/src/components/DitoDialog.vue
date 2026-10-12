@@ -18,7 +18,6 @@
         v-show="false"
       )
       DitoSchema(
-        ref="schema"
         :schema="schema"
         :data="dialogData"
         padding="root"
@@ -83,9 +82,15 @@ export default {
     const dataContext = markRaw(
       new DialogContext(
         reactive({
-          schemaComponent: useTemplateRef('schema'),
+          schema,
+          data: dialogData,
+          dataPath: '',
+          componentPath: '',
           get dataModel() {
             return dataModel
+          },
+          get services() {
+            return services
           },
           setData(data) {
             dialogData.value = data

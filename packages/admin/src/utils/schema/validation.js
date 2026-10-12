@@ -63,6 +63,11 @@ function getValidator(name) {
 }
 
 // Return errors like the server, `{ [dataPath]: [{ message }] }`:
+/**
+ * @param {Record<string, any>} schema
+ * @param {Record<string, any>} data
+ * @param {Record<string, any>} [options]
+ */
 export function getDataValidationErrors(schema, data, {
   dataPath = '',
   services = null,

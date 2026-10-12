@@ -119,13 +119,7 @@ import {
   watch
 } from 'vue'
 import { useRouter } from 'vue-router'
-import {
-  isFunction,
-  isEmpty,
-  parseDataPath,
-  normalizeDataPath,
-  labelize
-} from '@ditojs/utils'
+import { isFunction, parseDataPath } from '@ditojs/utils'
 import { TransitionHeight } from '@ditojs/ui/src'
 import appState from '../appState.js'
 import { useSchemaContext } from '../composables/useSchemaContext.ts'
@@ -133,7 +127,7 @@ import { useSchemaValue } from '../composables/useSchemaValue.ts'
 import { useSchemaEvents } from '../composables/useSchemaEvents.ts'
 import { useComponentPath } from '../composables/useComponentPath.ts'
 import { useStore } from '../composables/useStore.ts'
-import { appendDataPath, getRelativeDataPath } from '../utils/data.js'
+import { getRelativeDataPath } from '../utils/data.js'
 import { isPanel } from '../utils/schema/structure.js'
 import {
   getNamedSchemas,
@@ -141,15 +135,8 @@ import {
   getItemFormSchema,
   isEmptySchema
 } from '../utils/schema/lookup.js'
-import {
-  processData,
-  getComponentPathByDataPath
-} from '../utils/schema/data.js'
+import { processData } from '../utils/schema/data.js'
 import { fromClipboard } from '../utils/fromClipboard.ts'
-import {
-  getDataValidationErrors,
-  getMatchingValidationErrors
-} from '../utils/schema/validation.js'
 
 export default {
   name: 'DitoSchema',
@@ -402,102 +389,9 @@ export default {
       }
     })
 
-    // Notify the errors that no field displays:
-    const showErrors = async (
-      errors,
-      { dataPath = props.dataPath, server = false } = {}
-    ) => {
-      const unmatchedErrors = getModel().replaceErrors(errors, {
-        dataPath,
-        server
-      })
-      await revealErrors(
-        Object.keys(errors).filter(dataPath => !unmatchedErrors?.[dataPath])
-      )
-      if (!isEmpty(errors)) {
-        const messages = Object.entries(unmatchedErrors ?? {}).flatMap(
-          ([dataPath, errs]) => {
-            const field = labelize(parseDataPath(dataPath).pop())
-            const prefix = field
-              ? `The field ${field}`
-              : `The ${formLabel.value}`
-            return errs.map(({ message }) => `${prefix} ${message}`)
-          }
-        )
-        adminContext.notify({
-          type: 'error',
-          title: 'Validation Errors',
-          text: messages.join('\n') || 'Please correct the highlighted errors.'
-        })
-      }
-    }
-
-    // Fields in the forms of nested routes open the form, which reveals the
-    // errors that it takes over from its item:
-    const revealErrors = async (
-      dataPaths = getModel().getErrorDataPaths(props.dataPath)
-    ) => {
-      const { dataContext, routeContext } = services
-      const [firstDataPath] = dataPaths
-      // Dialogs and panels with their own data aren't part of routes:
-      const formRoute =
-        firstDataPath && dataContext === routeContext?.dataContext
-          ? routeContext.getFormRoute(firstDataPath)
-          : null
-      if (formRoute) {
-        // The form may be open already, e.g. a nested form:
-        const failure =
-          router.currentRoute.value.path !== formRoute.path
-            ? await router.push({ path: formRoute.path })
-            : null
-        if (!failure) {
-          await nextTick()
-          const level = router.currentRoute.value.matched.length - 1
-          await adminContext.ui.routes[level].dataContext.revealErrors()
-        }
-      } else {
-        for (const dataPath of dataPaths) {
-          const path = getComponentPathByDataPath(
-            props.schema,
-            props.data,
-            dataPath,
-            {
-              dataPath: props.dataPath,
-              componentPath: componentPath.value,
-              services,
-              rootData: context.rootItem
-            }
-          )
-          await adminContext.ui.reveal(dataContext, path, {
-            focus: dataPath === firstDataPath
-          })
-        }
-      }
-    }
-
-    // Validate the data, not the mounted components, to include collapsed
-    // schemas and closed nested forms:
-    const validateAll = (match, notify = true) => {
-      const dataValidationErrors = hasData.value
-        ? getDataValidationErrors(props.schema, props.data, {
-            dataPath: props.dataPath,
-            services,
-            rootData: context.rootItem
-          })
-        : null
-      const errors = match
-        ? getMatchingValidationErrors(dataValidationErrors, match)
-        : dataValidationErrors
-      if (notify) {
-        showErrors(errors ?? {}).catch(console.error)
-      }
-      return !errors
-    }
-
     return {
       context,
       createContext,
-      emitEvent,
       dataContext: services.dataContext,
       opened,
       tabs,
@@ -509,8 +403,6 @@ export default {
       selectTab,
       isTopLevelSchema,
       isTabSelected,
-      validateAll,
-      revealErrors,
 
       panelEntries: computed(() =>
         // Panels of schemas inlined in tabs only show with their tab:
@@ -540,26 +432,6 @@ export default {
       onOpen(open) {
         emitEvent('open', { context: { open } })
         opened.value = open
-      },
-
-      onChange() {
-        emitEvent('change')
-      },
-
-      // The sent data is at `dataPath`, e.g. of a list with its own resource:
-      showValidationErrors(
-        errors,
-        dataPath = props.hasOwnData ? props.dataPath : ''
-      ) {
-        // Convert the server's paths in property access notation, which lack
-        // the data path of the sent data:
-        const errorsByFullDataPath = Object.fromEntries(
-          Object.entries(errors).map(([path, errs]) => [
-            normalizeDataPath(appendDataPath(dataPath, path)),
-            errs
-          ])
-        )
-        return showErrors(errorsByFullDataPath, { dataPath, server: true })
       },
 
       pasteData(clipboardData) {

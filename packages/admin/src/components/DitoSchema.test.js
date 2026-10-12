@@ -272,7 +272,7 @@ describe('DitoSchema', () => {
         return {
           admin,
           routeComponent: form,
-          schemaComponent: form.$refs.schema,
+          schemaComponent: admin.getSchemaComponent(form),
           async loadItem() {
             loadItem()
             await settle(form)
@@ -430,7 +430,7 @@ describe('DitoSchema', () => {
       return {
         admin,
         schemaComponent,
-        pageSchemaComponent: pageForm.$refs.schema,
+        pageSchemaComponent: admin.getSchemaComponent(pageForm),
         getReplaceCount: () => replaceCount
       }
     }
@@ -515,8 +515,8 @@ describe('DitoSchema', () => {
     it('selects the default tab after closing a reloaded form', async () => {
       const { admin, getForms } = await mountAdminAt('/items/1/pages/0#text')
       const [itemForm, pageForm] = getForms()
-      const schemaComponent = itemForm.$refs.schema
-      expect(pageForm.$refs.schema.selectedTab).toBe('text')
+      const schemaComponent = admin.getSchemaComponent(itemForm)
+      expect(admin.getSchemaComponent(pageForm).selectedTab).toBe('text')
       await pageForm.ownRouteContext.close()
       await flushPromises()
       expect(admin.router.currentRoute.value.fullPath).toBe('/items/1')
@@ -525,8 +525,10 @@ describe('DitoSchema', () => {
     })
 
     it('selects the tab of the route when loaded directly', async () => {
-      const { getForms } = await mountAdminAt('/items/1#planning')
-      expect(getForms()[0].$refs.schema.selectedTab).toBe('planning')
+      const { admin, getForms } = await mountAdminAt('/items/1#planning')
+      expect(admin.getSchemaComponent(getForms()[0]).selectedTab).toBe(
+        'planning'
+      )
     })
   })
 
@@ -553,26 +555,6 @@ describe('DitoSchema', () => {
     await admin.navigate('/authors')
     expect(appState.pageClass).toBe(null)
     expect(page().classList.contains('dito-page--wide')).toBe(false)
-  })
-
-  it('verifies matching data silently with `verify()`', async () => {
-    const { routeComponent, getErrors } = await mountSchema({
-      schema: {
-        components: {
-          title: { type: 'text', required: true },
-          author: { type: 'text', required: true }
-        }
-      },
-      data: { title: 'Emma', author: '' }
-    })
-    expect(routeComponent.ownDataContext.verify()).toBe(false)
-    expect(routeComponent.ownDataContext.verify('title')).toBe(true)
-    expect(routeComponent.ownDataContext.verify(/^author$/)).toBe(false)
-    // Unlike `validate()`, no errors are shown:
-    expect(getErrors('author')).toEqual([])
-    expect(routeComponent.ownDataContext.validate('author')).toBe(false)
-    await flushPromises()
-    expect(getErrors('author')).toEqual(['The author field is required.'])
   })
 
   describe('revealing components', () => {
@@ -727,39 +709,6 @@ describe('DitoSchema', () => {
       const inputs = wrapper.findAll('input[name="title"]')
       expect(inputs).toHaveLength(1)
       expect(document.activeElement).toBe(inputs[0].element)
-    })
-  })
-
-  describe('validateAll()', () => {
-    it('shows the errors until they are cleared', async () => {
-      const { schemaComponent, getErrors, dataModel } = await mountSchema({
-        schema: { components: { title: { type: 'text', required: true } } },
-        data: { title: '' }
-      })
-      expect(schemaComponent.validateAll()).toBe(false)
-      await flushPromises()
-      expect(getErrors('title')).toEqual(['The title field is required.'])
-      expect(dataModel.getErrorDataPaths()).toEqual(['title'])
-      dataModel.clearErrors()
-      await flushPromises()
-      expect(getErrors('title')).toEqual([])
-    })
-
-    it('hides the errors of values that code changed', async () => {
-      const { schemaComponent, getErrors, data, dataModel } = await mountSchema(
-        {
-          schema: { components: { title: { type: 'text', required: true } } },
-          data: { title: '' }
-        }
-      )
-      schemaComponent.validateAll()
-      await flushPromises()
-      expect(getErrors('title')).toEqual(['The title field is required.'])
-      data.title = 'Emma'
-      await flushPromises()
-      expect(getErrors('title')).toEqual([])
-      expect(schemaComponent.validateAll()).toBe(true)
-      expect(dataModel.getErrorDataPaths()).toEqual([])
     })
   })
 
@@ -977,63 +926,6 @@ describe('DitoSchema', () => {
       await enterValue(panel.find('input[name$="text"]'), 'E')
       await settle()
       expect(panel.find('.dito-errors').text()).toContain('is too short')
-    })
-  })
-
-  describe('showValidationErrors()', () => {
-    it('replaces the errors, and notifies them once', async () => {
-      const { schemaComponent, admin, getErrors } = await mountSchema({
-        schema: {
-          components: { title: { type: 'text' }, author: { type: 'text' } }
-        },
-        data: { title: 'Emma', author: 'Jane' }
-      })
-      const notify = vi.spyOn(admin.context, 'notify')
-      await schemaComponent.showValidationErrors({
-        title: [{ message: 'is taken' }]
-      })
-      await schemaComponent.showValidationErrors({
-        author: [{ message: 'is unknown' }]
-      })
-      await flushPromises()
-      expect(getErrors('title')).toEqual([])
-      expect(getErrors('author')).toEqual(['The author field is unknown.'])
-      expect(notify).toHaveBeenCalledTimes(2)
-      // Without errors, there's nothing to notify:
-      await schemaComponent.showValidationErrors({})
-      expect(notify).toHaveBeenCalledTimes(2)
-      vi.restoreAllMocks()
-    })
-  })
-
-  describe('errors inside values', () => {
-    it('shows them on the field of the value', async () => {
-      const { schemaComponent, admin, getErrors } = await mountSchema({
-        schema: {
-          components: {
-            address: {
-              type: 'code',
-              format: ({ value }) => JSON.stringify(value),
-              parse: ({ value }) => JSON.parse(value)
-            }
-          }
-        },
-        data: { address: { city: 'Bath' } }
-      })
-      const notify = vi.spyOn(admin.context, 'notify')
-      await schemaComponent.showValidationErrors({
-        'address/street': [{ message: 'is required' }]
-      })
-      await flushPromises()
-      expect(getErrors('address')).toEqual([
-        `The address field's street is required.`
-      ])
-      expect(notify).toHaveBeenCalledWith(
-        expect.objectContaining({
-          text: 'Please correct the highlighted errors.'
-        })
-      )
-      vi.restoreAllMocks()
     })
   })
 

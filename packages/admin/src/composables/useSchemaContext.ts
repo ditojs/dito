@@ -44,21 +44,24 @@ export function useServices(ownServices: Partial<Services> = {}): Services {
     'resourceContext',
     null
   )
-  return Object.defineProperties(
-    {
-      adminContext: inject<AdminContext>('adminContext')!,
-      dataContext: inject<DataContext | null>('dataContext', null),
-      routeContext: inject<RouteContext | null>('routeContext', null),
+  // Raw, so that containers can hand them on through reactive objects:
+  return markRaw(
+    Object.defineProperties(
+      {
+        adminContext: inject<AdminContext>('adminContext')!,
+        dataContext: inject<DataContext | null>('dataContext', null),
+        routeContext: inject<RouteContext | null>('routeContext', null),
 
-      get sourceContext() {
-        return unref(sourceContext)
+        get sourceContext() {
+          return unref(sourceContext)
+        },
+
+        get resourceContext() {
+          return unref(resourceContext)
+        }
       },
-
-      get resourceContext() {
-        return unref(resourceContext)
-      }
-    },
-    Object.getOwnPropertyDescriptors(ownServices)
+      Object.getOwnPropertyDescriptors(ownServices)
+    )
   )
 }
 

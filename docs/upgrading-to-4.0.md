@@ -166,9 +166,9 @@ which components write the data through.
   `showValidationErrors()`. `validate()` remains, and replaces the errors of
   the field.
 - Forms, views and schemas no longer have `errors`, `hasErrors`, `isTouched`,
-  `isValid`, `isValidated`, `clearErrors()` and `resetValidation()`, forms
-  and views no longer `validateAll()`, `verifyAll()` and
-  `showValidationErrors()`. Their `dataContext` validates with `validate()` and
+  `isValid`, `isValidated`, `clearErrors()` and `resetValidation()`, and no
+  longer `validateAll()`, `verifyAll()` and `showValidationErrors()`. Their
+  `dataContext` validates with `validate()` and
   `verify()`, and shows the errors of the server with
   `showValidationErrors(errors, dataPath)`. Forms clear the errors of their
   data once they're submitted, also mutating forms, which share the data

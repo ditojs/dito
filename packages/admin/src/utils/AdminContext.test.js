@@ -112,7 +112,7 @@ describe('AdminContext', () => {
       const admin = await mountAdmin({ views })
       await admin.navigate('/library/books?page=2')
       const view = admin.getRouteComponent(isView)
-      const { context } = view.$refs.schema
+      const { context } = admin.getSchemaComponent(view)
       expect(context.routeQuery).toEqual({ page: '2' })
       expect(context.getRouteUrl({ path: '/library/books' })).toBe(
         '/library/books'

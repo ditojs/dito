@@ -661,7 +661,7 @@ describe('DitoForm', () => {
       })
       const form = await openNestedForm(admin, '/items/1/chapters/0')
       form.data.title = 'Opening'
-      const { context } = form.$refs.schema
+      const { context } = admin.getSchemaComponent(form)
       expect(context.processedItem).toEqual({ title: 'Opening' })
       // The root item is the one of the book form, with the draft in place of
       // the item, like `rootItem`:

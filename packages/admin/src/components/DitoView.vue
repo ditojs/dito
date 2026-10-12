@@ -12,7 +12,6 @@ template(
     :data-resource="schemaPath"
   )
     DitoSchema(
-      ref="schema"
       :key="name"
       :schema="schema"
       :data="data"
@@ -32,8 +31,7 @@ import {
   onMounted,
   provide,
   reactive,
-  ref,
-  useTemplateRef
+  ref
 } from 'vue'
 import { useRouter } from 'vue-router'
 import { useRouteContainer } from '../composables/useRouteContainer.ts'
@@ -103,7 +101,6 @@ export default {
         rootData: data,
         componentPath: '',
         loadingTracker,
-        schemaComponent: useTemplateRef('schema'),
         isDirty: computed(() => routeContainer.ownDataContext.isDirty),
         breadcrumb: computed(
           () => schema.value.breadcrumb || getLabel(schema.value)
@@ -112,6 +109,10 @@ export default {
 
         get dataModel() {
           return dataModel
+        },
+
+        get services() {
+          return services
         },
 
         setData(value) {
