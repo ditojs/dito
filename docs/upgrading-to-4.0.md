@@ -613,3 +613,11 @@ are named after what they are, like the classes they describe:
 - `DitoDataModel`, `DitoListEntry` and `DitoValidationError`: `DataModel`,
   `ListEntry` and `ValidationError`.
 - `DitoGlobal`, the type of the global `dito` object: `GlobalConfig`.
+- The schema options named after the removed mixins are named after the
+  schemas that share them: `SchemaDitoMixin` and `SchemaTypeMixin` are part of
+  `BaseSchema`, and `SchemaSourceMixin`, `SchemaOptionsMixin`,
+  `SchemaNumberMixin`, `SchemaTextMixin`, `SchemaAffixMixin` and
+  `SchemaDataMixin` become `SchemaSource`, `SchemaSelection`, `SchemaNumber`,
+  `SchemaText`, `SchemaAffixes` and `SchemaData`. The deprecated
+  `SchemaSetupMixin` and `SchemaRouteMixin` are removed: use `SchemaFields` and
+  `SchemaRoute`.
