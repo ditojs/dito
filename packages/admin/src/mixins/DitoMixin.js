@@ -523,6 +523,9 @@ export default {
     // spinner in the header while loads are pending, like requests do, but
     // without disabling the view, as the user may still be editing.
     async waitUntilDataModelSettled() {
+      // Write the values that components hold back first, so that the values
+      // derived from them follow:
+      this.dataModel?.writePendingValues()
       await this.$nextTick()
       const { dataModel } = this
       if (dataModel?.hasPendingLoads) {
