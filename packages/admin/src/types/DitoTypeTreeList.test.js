@@ -1,6 +1,7 @@
 import { vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
-import { getValueAtDataPath } from '@ditojs/utils'
+import { getValueAtDataPath, hyphenate } from '@ditojs/utils'
+import { setupView } from '../utils/schema/setup.js'
 import {
   mountForm,
   mountSchema,
@@ -92,6 +93,20 @@ describe('DitoTypeTreeList', () => {
       'History',
       'Contact'
     ])
+  })
+
+  it.each([
+    ['trees', 'pages', schema => schema.components.pages],
+    ['their children', 'subpages', schema => schema.components.pages.children]
+  ])('rejects `open` of 3.x in %s', async (_, name, getTree) => {
+    const schema = { type: 'view', ...createSiteSchema() }
+    getTree(schema).open = true
+    await expect(
+      setupView({ defaults: {}, normalizePath: hyphenate }, schema, 'site')
+    ).rejects.toThrow(
+      `Unsupported schema key 'open' in '${name}': Use 'collapsed: false' ` +
+      'instead.'
+    )
   })
 
   it('renders the `properties` of the items', async () => {

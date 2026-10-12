@@ -332,6 +332,17 @@ describe('the schema keys of 3.x', () => {
     )
   })
 
+  it.each([
+    ['relateBy', 'relate: <key>'],
+    ['groupBy', 'options.group']
+  ])('rejects the option setting %s with its replacement', async (key, by) => {
+    await expect(
+      setupBookView({ author: { type: 'text', [key]: 'id' } })
+    ).rejects.toThrow(
+      `Unsupported schema key '${key}' in 'author': Use '${by}' instead.`
+    )
+  })
+
   it('rejects keys that the defaults of the type add', () => {
     const api = createApi({ text: { process: ({ value }) => value } })
     expect(() => applySchemaDefaults(api, { type: 'text' }, 'title')).toThrow(
