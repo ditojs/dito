@@ -1,6 +1,5 @@
 <template lang="pug">
-//- The handle that resizes the height of an element, by dragging it with the
-//- pointer or with the arrow keys while it is focused, see `dragResize.js`.
+//- Resize the height of an element by dragging, or with the arrow keys:
 .dito-resize(
   tabindex="0"
   role="separator"
@@ -14,15 +13,12 @@
 <script>
 import { startDragResize, resizeByArrowKey } from '../utils/dragResize.js'
 
-// Emits `resize` with each new height of the element in pixels, which the
-// owner of the element applies.
 export default {
   name: 'DitoResizeHandle',
   emits: ['resize'],
 
   props: {
-    // Returns the element to resize, which is measured at the start of each
-    // resize.
+    // Measure the element at the start of each resize:
     getElement: { type: Function, required: true }
   },
 

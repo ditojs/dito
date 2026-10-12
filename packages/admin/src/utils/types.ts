@@ -24,3 +24,31 @@ export type Api = ApiConfig &
       | 'defaults'
     >
   >
+
+// The components that `processSchemaData()` walks, with the data they edit:
+export interface SchemaDataEntry {
+  schema: Schema
+  data: Data
+  name: string
+  dataPath: string | null
+  componentPath: string
+  processedData: Data | null
+}
+
+// Tabs and panels are walked without a name:
+export type ProcessedEntry = Omit<SchemaDataEntry, 'name'> & {
+  name: string | null
+}
+
+export interface SchemaDataWalk {
+  dataPath?: string | null
+  componentPath?: string
+  processedData?: Data | null
+  wrappedValueName?: string | null
+  childSourceSchemas?: Schema[]
+  before?: ((entry: SchemaDataEntry) => void) | null
+  after?: ((entry: SchemaDataEntry) => void) | null
+  shouldProcess?: (entry: ProcessedEntry) => boolean
+  shouldSkipSourcesWithResource?: boolean
+  options: { services: object | null; rootData: Data | null }
+}

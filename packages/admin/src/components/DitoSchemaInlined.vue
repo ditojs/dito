@@ -14,10 +14,8 @@ DitoSchema.dito-schema-inlined(
   :collapsible="collapsible"
   :generateLabels="!isCompact"
 )
-  //- Render dito-edit-buttons for inlined schemas separately from all
-  //- others in `TypeList` as a scope, for better handling of layout.
   //- The edit buttons take the schema of the list or object that holds the
-  //- item, while `schema` is the item's form.
+  //- item, while `schema` is the item's form:
   template(#edit-buttons)
     DitoEditButtons(
       v-if="deletable || draggable || editable || insertIndex != null"

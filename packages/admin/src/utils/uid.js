@@ -4,13 +4,10 @@ import { isArray, isPlainObject, clone } from '@ditojs/utils'
 const uidsByItem = new WeakMap()
 const originalsByCopy = new WeakMap()
 
-// Generated uids have their own prefix, so that they can't be mistaken for
-// temporary ids, see `createTemporaryId()`.
+// Generated uids can't be mistaken for temporary ids with their own prefix:
 const generatedUidPrefix = 'uid-'
 let lastGeneratedUid = 0
 
-// Generates and remembers unique ids per passed object using a weak map.
-// Copies share the uids of their originals, see `cloneWithUids()`.
 export function getUid(item, getItemId = null) {
   const raw = toRaw(item)
   let uid = uidsByItem.get(raw)
@@ -24,10 +21,8 @@ export function getUid(item, getItemId = null) {
   return uid
 }
 
-// Clones `value` deeply with `clone()`, into copies that remember their
-// originals and share their uids, e.g. the draft of a nested form, so that the
-// components and stores keyed by them stay attached, and the copies can be
-// merged back by their uids.
+// Copies share the uids of their originals, e.g. drafts of nested forms, so the
+// components and stores keyed by them stay attached, and they merge back.
 export function cloneWithUids(value, options) {
   const copy = clone(value, options)
   const link = (original, copy) => {
@@ -43,7 +38,6 @@ export function cloneWithUids(value, options) {
   return copy
 }
 
-// Returns the object that `copy` was cloned from by `cloneWithUids()`.
 export function getOriginal(copy) {
   return originalsByCopy.get(toRaw(copy)) ?? null
 }

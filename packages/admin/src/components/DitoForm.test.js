@@ -23,7 +23,7 @@ async function mountBookForm(request) {
     data: { name: maliciousName },
     request
   })
-  // The form notifies through the root component, see `DitoMixin.notify()`:
+  // The form notifies through the admin context:
   const notify = vi.spyOn(result.admin.context, 'notify')
   return { ...result, notify }
 }

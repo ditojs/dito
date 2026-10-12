@@ -28,16 +28,16 @@ const DitoTypeSection = {
   props: fieldProps,
 
   setup(props) {
-    const { value, context, info, disabled, getSchemaValue } = useField(props)
+    const field = useField(props)
+    const { value, context, getSchemaValue } = field
     // Nested sections hold their item in their value:
     const item = computed(() => (props.nested ? value.value : props.data))
     const collapsible = computed(() =>
       getSchemaValue('collapsible', { type: Boolean, default: false })
     )
     return {
+      ...field,
       item,
-      info,
-      disabled,
       collapsible,
       collapsed: computed(
         () => (
@@ -58,15 +58,13 @@ defineType({
   // Nested sections hold their data in an object, others have no own value:
   defaultValue: ({ schema }) => (schema.nested ? {} : undefined),
   ignoreMissingValue: ({ schema }) => !schema.nested && !('default' in schema),
-  // The object of nested sections can't be `null`, unlike the value of the
-  // `object` type, where `null` means that there's no object.
+  // Unlike for `object` types, `null` doesn't mean there's no object:
   treatNullAsMissing: ({ schema }) => !!schema.nested,
   defaultNested: false,
   generateLabel: false,
 
-  // The header of the section's form displays the label, except in compact
-  // forms, which don't have labels in their header, see `DitoSchemaInlined`.
-  // The form can depend on the item, see `item`.
+  // The form's header shows the label, except in compact forms. The form can
+  // depend on the item:
   omitLabel: context =>
     !isCompact(
       getItemFormSchema(
@@ -77,7 +75,6 @@ defineType({
     ),
 
   async processSchema(api, schema) {
-    // Process section components so their forms get resolved too.
     await setupSchemaComponents(api, schema)
   }
 })

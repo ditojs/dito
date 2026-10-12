@@ -1,18 +1,12 @@
 import { shallowRef } from 'vue'
 
-// FileDropTargets tracks the files that are dragged over the document, and the
-// elements that accept them, e.g. the ones of `DitoTypeUpload`, which handle
-// the dropped files themselves. The root of the admin creates one instance and
-// passes it the drag events of the document, see `DitoRoot`. A drag of files
-// only begins while there are targets, and only targets let files be dropped,
-// so that the browser doesn't open files dropped elsewhere.
-// `isDraggingFiles` is reactive.
+// Only targets let files be dropped, so the browser doesn't open files dropped
+// elsewhere.
 
 export class FileDropTargets {
   #targets = new Set()
   #isDraggingFiles = shallowRef(false)
-  // The number of elements that the drag entered and didn't leave yet, as
-  // `dragenter` and `dragleave` are triggered for each element.
+  // `dragenter` and `dragleave` are triggered for each element:
   #enteredElementCount = 0
 
   get isDraggingFiles() {
@@ -23,7 +17,6 @@ export class FileDropTargets {
     return this.#targets.size > 0
   }
 
-  // Adds `element` as a target, and returns the function that removes it.
   add(element) {
     this.#targets.add(element)
     return () => {
@@ -31,7 +24,6 @@ export class FileDropTargets {
     }
   }
 
-  // Returns whether `node` is a target or inside one.
   isInTarget(node) {
     for (const target of this.#targets) {
       if (target.contains(node)) {
@@ -41,8 +33,6 @@ export class FileDropTargets {
     return false
   }
 
-  // Returns the handlers of the drag events of the document, to be added to it
-  // by the owner of the instance.
   getDocumentEventHandlers() {
     return {
       dragenter: event => this.#onDragEnter(event),
@@ -76,8 +66,7 @@ export class FileDropTargets {
         // The target allows the drop by preventing the default itself.
         event.dataTransfer.dropEffect = 'copy'
       } else {
-        // Prevent the default, which opens the files in the browser, and show
-        // that they can't be dropped here instead.
+        // Prevent the browser from opening the files:
         event.preventDefault()
         event.dataTransfer.dropEffect = 'none'
       }

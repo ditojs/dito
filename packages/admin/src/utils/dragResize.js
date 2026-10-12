@@ -1,10 +1,4 @@
-// Resizes the height of `element` through a resize handle, either by dragging
-// it with the pointer or with the arrow keys while it is focused. `onResize()`
-// receives each new height in pixels.
-
-// Starts dragging the resize handle from its `pointerdown` event. The pointer
-// is captured by the handle, so that the drag continues outside of it, and the
-// handlers are removed again when the drag ends.
+// Capture the pointer, so the drag continues outside of the handle:
 export function startDragResize(event, { element, onResize }) {
   if (event.button !== 0) return
   const handle = event.currentTarget
@@ -39,13 +33,9 @@ export function startDragResize(event, { element, onResize }) {
   handle.addEventListener('lostpointercapture', stop, { signal })
 }
 
-const resizeDirectionsByKey = {
-  ArrowUp: -1,
-  ArrowDown: 1
-}
+const resizeDirectionsByKey = { ArrowUp: -1, ArrowDown: 1 }
 
-// Resizes by one step of the element's font size per `ArrowUp` / `ArrowDown`
-// `keydown` event on the focused resize handle, or by ten steps with Shift.
+// Resize by one step of the element's font size, or by ten with Shift:
 export function resizeByArrowKey(event, { element, onResize }) {
   const direction = resizeDirectionsByKey[event.key]
   if (direction) {

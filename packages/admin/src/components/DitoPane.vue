@@ -17,8 +17,7 @@
       store
     }, index in componentSchemas`
   )
-    //- Use <span> for .dito-pane__break so we can use the
-    //- `.dito-container:first-of-type` selector.
+    //- A <span>, for the `.dito-container:first-of-type` selector:
     span.dito-pane__break(
       v-if="['before', 'both'].includes(schema.break)"
     )
@@ -73,7 +72,6 @@ export default {
     data: { type: Object, default: null },
     store: { type: Object, required: true },
     tab: { type: String, default: null },
-    // Whether the tab of the pane is selected:
     selected: { type: Boolean, default: false },
     single: { type: Boolean, default: false },
     padding: { type: String, default: null },
@@ -93,7 +91,6 @@ export default {
         props.tab ? appendDataPath(parent.path, props.tab) : parent.path
     )
     if (props.tab) {
-      // Tab panes tell their components about their tab, for their panels:
       provide('panelTab', {
         tabName: props.tab,
         isTabSelected: () => props.selected
@@ -103,15 +100,13 @@ export default {
     const positions = ref([])
 
     // NOTE: The schema can be null while multi-form lists load their data. The
-    // component of a value wrapped by an item adapter keeps the data path of
-    // the item, which the errors of the value map to.
+    // value of an item adapter keeps the item's data path, for its errors:
     const componentSchemas = computed(() => {
       const itemAdapter = getItemAdapter(unref(sourceSchema))
       return Object.entries(props.schema?.components || {}).map(
         ([name, schema]) => {
-          // Clone the schema to add its name, as it may be used elsewhere too:
+          // The schema may be used elsewhere too:
           schema = { ...schema, name }
-          // Share dataPath and store with parent if not nested:
           const nested = hasNestedData(schema)
           const nestedDataPath = appendDataPath(props.dataPath, name)
           const dataPath =
@@ -135,8 +130,7 @@ export default {
       () => props.single && componentSchemas.value.length === 1
     )
 
-    // Evaluate the `if` of the components with their own context before
-    // they're rendered:
+    // Evaluate the `if` of the components before they're rendered:
     const shouldRenderComponentByIndex = computed(() =>
       componentSchemas.value.map(({ schema, nested, dataPath }) =>
         shouldRenderSchema(
@@ -154,8 +148,7 @@ export default {
     )
 
     const verticalLabelsByIndices = computed(() => {
-      // Ignore the positions of containers that aren't rendered anymore, as
-      // their removal doesn't necessarily resize the pane:
+      // Removed containers don't necessarily resize the pane:
       const renderedPositions = positions.value.map((position, index) =>
         shouldRenderComponentByIndex.value[index] ? position : null
       )
@@ -189,10 +182,9 @@ export default {
 
       const verticalLabelsByIndices = []
       for (const row of rows) {
-        // Labels in compact schemas are displayed next to their components, so
-        // only count labels of containers that are higher than one line.
-        // TODO: Handle nested schemas, e.g. 'section' or 'object' and detect
-        // labels there too.
+        // Compact labels display next to their components, so only count the
+        // ones of containers higher than one line.
+        // TODO: Detect the labels in nested schemas too.
         const hasLabelsInRow = row.some(
           index => (
             renderedPositions[index]?.height > 2 &&

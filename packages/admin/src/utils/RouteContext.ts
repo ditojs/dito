@@ -14,7 +14,6 @@ import type { ResourceContext } from './ResourceContext.ts'
 import type { SourceContext } from './SourceContext.ts'
 import type { Schema } from './types.ts'
 
-// The view or form that renders a route.
 export interface RouteOwner {
   readonly routeRecord: RouteRecordNormalized
   readonly routeParams: Record<string, any>
@@ -35,17 +34,13 @@ export interface RouteOwner {
   readonly ownResource?: ResourceContext | null
 }
 
-// The context of a view or form, provided to the components that it renders,
-// with its location in the route tree.
 export class RouteContext {
   readonly parent: RouteContext | null
   readonly container: ContainerContext
-  // The responses of `request({ cache: 'local' })` of the components that the
-  // route renders, released with it:
+  // The responses of `request({ cache: 'local' })`, released with the route:
   readonly loadCache: Record<string, Promise<unknown>> = {}
   readonly #owner: RouteOwner
   readonly #router: Router
-  // The sources that the route renders, while they're mounted:
   readonly #sources = shallowReactive(new Set<SourceContext>())
 
   constructor(
@@ -66,8 +61,7 @@ export class RouteContext {
     this.#router = router
   }
 
-  // Menus render the routes of their views through a view without data. Route
-  // components only render the records of the route tree:
+  // Menus render the routes of their views through a view without data:
   get node(): MenuNode | ViewNode | FormNode {
     return this.#owner.routeRecord.meta.node!
   }
@@ -88,8 +82,7 @@ export class RouteContext {
     return this.#owner.componentPath
   }
 
-  // Views track the requests of their resources, along with the ones of the
-  // resources of their forms:
+  // Views track the requests of their forms too:
   get loadingTracker(): LoadingTracker {
     return this.isForm
       ? this.parent!.loadingTracker
@@ -104,7 +97,6 @@ export class RouteContext {
     return this.node instanceof FormNode
   }
 
-  // The state that the routes below this one depend on:
   get state(): RouteState {
     const { data, routeParams, isTransient, isCreating } = this.#owner
     return { data, routeParams, isTransient: !!(isTransient || isCreating) }
@@ -118,13 +110,10 @@ export class RouteContext {
     return this.#owner.isLastRoute
   }
 
-  // Whether the current route doesn't match the route's record anymore, while
-  // it's being left, until it's unmounted:
   get isLeaving(): boolean {
     return this.#owner.isLeavingRoute
   }
 
-  // Whether leaving the route loses changes, see `useLeaveGuard()`:
   get isDirty(): boolean {
     return this.#owner.isDirty
   }
@@ -137,13 +126,10 @@ export class RouteContext {
     return this.#owner.selectedTab ?? null
   }
 
-  // Views have no resource, forms their own:
   get resource(): ResourceContext | null {
     return this.#owner.ownResource ?? null
   }
 
-  // Resolve the path of the deepest form that edits the data at `dataPath`,
-  // along with the data path that remains within that form:
   getFormRoute(dataPath: string): { path: string; dataPath: string } | null {
     const path = getRelativeDataPath(dataPath, this.dataPath)
     // Only views and forms render data, menus don't:
@@ -154,14 +140,11 @@ export class RouteContext {
       : null
   }
 
-  // Resolve the path of the form that edits the item at `dataPath`:
   getFormPath(dataPath: string): string | null {
     const route = this.getFormRoute(dataPath)
     return route && !route.dataPath ? route.path : null
   }
 
-  // Resolve the path of the form that creates an item of the source at
-  // `dataPath`:
   getCreatePath(dataPath: string): string | null {
     const path = getRelativeDataPath(dataPath, this.dataPath)
     const node = this.node as ViewNode | FormNode
@@ -177,19 +160,16 @@ export class RouteContext {
     }
   }
 
-  // Find the mounted source of `node`, e.g. to reload it:
   findSource(node: SourceNode): SourceContext | null {
     return [...this.#sources].find(source => source.node === node) ?? null
   }
 
-  // Find the mounted source at `dataPath`, e.g. the main source of a view:
   findSourceByDataPath(dataPath: string): SourceContext | null {
     return (
       [...this.#sources].find(source => source.dataPath === dataPath) ?? null
     )
   }
 
-  // Close the form, by navigating to the route of its parent:
   close() {
     if (!this.parent) {
       throw new Error('Unable to close the route: Views cannot be closed.')

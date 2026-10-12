@@ -1,6 +1,14 @@
-import { inject, unref, type MaybeRef } from 'vue'
+import {
+  inject,
+  markRaw,
+  onBeforeUnmount,
+  provide,
+  unref,
+  type MaybeRef
+} from 'vue'
 import DitoContext from '../DitoContext.js'
 import { getLastDataPathName } from '../utils/data.js'
+import { DataModel, type DataModelOptions } from '../utils/DataModel.ts'
 import type { AdminContext } from '../utils/AdminContext.ts'
 import type { ContainerContext } from '../utils/ContainerContext.ts'
 import type { ResourceContext } from '../utils/ResourceContext.ts'
@@ -9,13 +17,12 @@ import type { SourceContext } from '../utils/SourceContext.ts'
 import type { Context } from '../utils/schema/types.ts'
 import type { Services } from '../utils/services.ts'
 import type { Data, Schema } from '../utils/types.ts'
+import type { FieldProps } from './useField.ts'
 
-export interface SchemaContextProps {
-  readonly schema: Schema
-  readonly data: Data
-  readonly dataPath: string
-  readonly nested: boolean
-}
+export type SchemaContextProps = Pick<
+  FieldProps,
+  'schema' | 'data' | 'dataPath' | 'nested'
+>
 
 // Components without a schema or data of their own, e.g. buttons, leave them
 // out, and the ones that don't tell are unnested:
@@ -25,11 +32,10 @@ type ContextProps = Pick<SchemaContextProps, 'dataPath'> & {
   readonly nested?: boolean
 }
 
-// The contexts that the callbacks of the component see: the ones provided
-// above, unless the component owns them, e.g. sources their own source.
+// The services that the component sees: the ones provided above, unless it owns
+// them, e.g. sources their own source.
 export function useServices(ownServices: Partial<Services> = {}): Services {
-  // Views provide the source and resource of their main component as computed
-  // refs, see `DitoView`:
+  // Views provide the source and resource of their main component as refs:
   const source = inject<MaybeRef<SourceContext | null>>('source', null)
   const resource = inject<MaybeRef<ResourceContext | null>>('resource', null)
   return Object.defineProperties(
@@ -50,9 +56,27 @@ export function useServices(ownServices: Partial<Services> = {}): Services {
   )
 }
 
-// The context of a component that displays the value at `schema.name` in
-// `data`, built from its props and services. `getValue()` returns the value
-// that the component displays, e.g. after `format()`.
+// Provide the container of a component with its own data, with the services of
+// its components. Forms create the model of the data once it's set up:
+export function useContainer(
+  ownServices: Partial<Services> & { container: ContainerContext }
+) {
+  provide('container', ownServices.container)
+  const services = useServices(ownServices)
+  return {
+    services,
+
+    createDataModel(options: Omit<DataModelOptions, 'services'>) {
+      const dataModel = markRaw(new DataModel({ ...options, services }))
+      // The model's watchers aren't the component's, see `DataModel`:
+      onBeforeUnmount(() => dataModel.stop())
+      return dataModel
+    }
+  }
+}
+
+// `getValue()` returns the value that the component displays, e.g. after
+// `format()`.
 export function useSchemaContext(
   props: ContextProps,
   {

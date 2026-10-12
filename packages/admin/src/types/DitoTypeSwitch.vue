@@ -18,11 +18,7 @@ const DitoTypeSwitch = {
   name: 'DitoTypeSwitch',
   components: { DitoSwitch },
   props: fieldProps,
-
-  setup(props) {
-    const { value, attributes, context, componentPath } = useField(props)
-    return { value, attributes, context, componentPath }
-  }
+  setup: props => useField(props)
 }
 
 defineType({

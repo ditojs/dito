@@ -39,8 +39,7 @@ DitoTrigger.dito-color(
 </template>
 
 <script>
-// Use the `tinycolor` exported by `vue-color`, as required for its
-// `v-model:tinyColor` binding.
+// `v-model:tinyColor` requires the `tinycolor` exported by `vue-color`:
 import { SketchPicker, tinycolor } from 'vue-color'
 import { DitoTrigger, DitoInput } from '@ditojs/ui/src'
 import { computed, ref, watch } from 'vue'
@@ -57,9 +56,8 @@ const DitoTypeColor = {
 
   setup(props) {
     const field = useField(props, {
-      // The input's native change events don't tell when the editing is done,
-      // as the picker edits the value too, see `changeOnceEdited`. They are
-      // handled to keep them from emitting the schema's change events.
+      // Native change events don't tell when editing is done, as the picker
+      // edits the value too. Swallow them, see `changeOnceEdited`:
       getEvents: ({ onFocus, onInput }) => ({
         onFocus,
         onBlur,
@@ -72,8 +70,6 @@ const DitoTypeColor = {
     // The value of the input while it can't be written, see `hexValue`:
     const convertedValue = ref(null)
 
-    // Emits the change of the value once the editing is done, i.e. once
-    // neither the input is focused nor the picker is open.
     const changeOnceEdited = createChangeOnceEdited({
       isEditing: () => focused.value || showPopup.value,
       emitChange: () => field.onChange()
@@ -87,8 +83,7 @@ const DitoTypeColor = {
 
     const canUpdateValue = computed(() => !focused.value || readonly.value)
 
-    // Sets a value that the user edited, through the input or the picker.
-    // Values changed by code don't emit change events.
+    // Only edits by the user emit change events:
     const setEditedValue = editedValue => {
       value.value = editedValue
       changeOnceEdited.markEdited()
@@ -114,12 +109,8 @@ const DitoTypeColor = {
     })
 
     return {
-      value,
+      ...field,
       showPopup,
-      attributes: field.attributes,
-      context: field.context,
-      componentPath: field.componentPath,
-      inputAffixesProps: field.inputAffixesProps,
 
       colorValue: computed({
         get() {
@@ -127,7 +118,6 @@ const DitoTypeColor = {
         },
 
         set(color) {
-          // Picker changes take precedence over values typed into the input.
           convertedValue.value = null
           // Skip unchanged colors, as converting formats like `hsl` back and
           // forth isn't lossless and would cause endless updates.
@@ -182,8 +172,7 @@ const DitoTypeColor = {
       ),
 
       clear() {
-        // Clearing replaces the edits that are pending, see `hexValue` and
-        // `changeOnceEdited`, and emits its own change event.
+        // Replace the pending edits, as clearing emits its own change event:
         convertedValue.value = null
         changeOnceEdited.reset()
         field.clear()
@@ -223,8 +212,7 @@ function convertColor(color, format) {
   return toTinyColorFormat(tinycolor(color), format)
 }
 
-// This should really be in tinycolor, but it only has the string equivalent
-// of it.
+// tinycolor only has the string equivalent of this:
 function toTinyColorFormat(color, format) {
   switch (format) {
     case 'rgb':
@@ -246,7 +234,6 @@ function toTinyColorFormat(color, format) {
     case 'hex':
     case 'hex6':
     default:
-      // Preserve alpha channel if present
       return color.getAlpha() < 1
         ? `#${color.toHex8()}`
         : `#${color.toHex()}`

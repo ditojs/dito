@@ -17,13 +17,7 @@ import { fieldProps, useField } from '../composables/useField.ts'
 const DitoTypeCheckbox = {
   name: 'DitoTypeCheckbox',
   props: fieldProps,
-
-  setup(props) {
-    const { value, attributes, context, componentPath } = useField(props, {
-      nativeField: true
-    })
-    return { value, attributes, context, componentPath }
-  }
+  setup: props => useField(props, { nativeField: true })
 }
 
 defineType({

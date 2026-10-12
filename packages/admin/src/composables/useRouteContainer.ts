@@ -18,8 +18,8 @@ import { useLeaveGuard } from './useLeaveGuard.ts'
 import type { AdminContext } from '../utils/AdminContext.ts'
 import type { Schema } from '../utils/types.ts'
 
-// The view or form, apart from the state of its route:
-export type RouteContainerOwner = ContainerOwner &
+// The view or form, without the state of its route:
+type RouteContainerOwner = ContainerOwner &
   Omit<
     RouteOwner,
     'routeRecord' | 'routeParams' | 'path' | 'isLastRoute' | 'isLeavingRoute'
@@ -29,13 +29,10 @@ export type RouteContainerOwner = ContainerOwner &
     readonly verbs: Record<string, string>
   }
 
-// The container and route contexts of a view or form, which it provides to its
-// components, and the state of its route.
 export function useRouteContainer(owner: RouteContainerOwner) {
   const admin = inject<AdminContext>('admin')!
   const router = useRouter()
   const container = new ContainerContext(owner)
-  // The route context reads the state of the route along with the owner:
   const route = new RouteContext(
     Object.setPrototypeOf(
       {
@@ -68,23 +65,17 @@ export function useRouteContainer(owner: RouteContainerOwner) {
     }
   )
   const { level } = route
-  provide('container', container)
   provide('route', route)
 
-  // The record of the route that the component renders, and its parameters
-  // while the record is matched:
   const routeRecord = shallowRef<RouteRecordNormalized | null>(null)
   const routeParams = shallowRef<Record<string, any>>({})
-  // Update synchronously, so that the record changes with the route:
   watch(
     router.currentRoute,
     ({ matched, params }) => {
-      // Components belong to the record that they're rendered for, see
-      // `DitoRouterView`. Records of other paths, or none, mean that the
-      // component is being left, and it keeps its record until it's
-      // unmounted, as its schema and node are still read in the meantime,
-      // e.g. by the watchers of its data model. Records of the same path
-      // replace it, e.g. when the routes are set up again.
+      // Components belong to the record that they're rendered for. While
+      // they're left, they keep it until they're unmounted, as their data model
+      // still reads their schema and node. Records of the same path replace it,
+      // e.g. when the routes are set up again:
       const record = matched[level]
       if (
         record &&
@@ -102,8 +93,7 @@ export function useRouteContainer(owner: RouteContainerOwner) {
   admin.ui.routes[level] = route
   onUnmounted(() => {
     if (admin.ui.routes[level] === route) {
-      // Also drop the deeper levels, which aren't replaced by those of a new
-      // route either, as their components are unmounted before their parents.
+      // Drop the deeper levels too, as their components unmount first:
       admin.ui.routes.length = level
     }
   })
@@ -144,12 +134,9 @@ export function useRouteContainer(owner: RouteContainerOwner) {
     isLeavingRoute,
     isLastRoute,
     path,
-    // Each view and form has a store that it passes on to its components, for
-    // the state that outlives them, e.g. the query of lists, see `useStore()`:
     store: reactive({}),
     navigateWithin,
 
-    // The path of the view or source, e.g. for selectors of its styles:
     schemaPath: computed(() => {
       const { sourceSchema } = owner
       return getSchemaPath(sourceSchema, sourceSchema.name, admin.api)

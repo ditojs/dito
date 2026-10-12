@@ -41,8 +41,7 @@ export default {
     listQuery: { type: Object, required: true },
     columns: { type: Object, required: true },
     hasEditButtons: { type: Boolean, required: true },
-    // The context of the list, for the callbacks of the columns, the same as
-    // for the cells:
+    // For the callbacks of the columns, like for the cells:
     context: { type: Object, required: true }
   },
 

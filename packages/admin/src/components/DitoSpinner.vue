@@ -15,22 +15,10 @@ export default {
   name: 'DitoSpinner',
 
   props: {
-    loading: {
-      type: Boolean,
-      default: true
-    },
-    color: {
-      type: String,
-      default: null
-    },
-    size: {
-      type: String,
-      default: null
-    },
-    margin: {
-      type: String,
-      default: null
-    }
+    loading: { type: Boolean, default: true },
+    color: { type: String, default: null },
+    size: { type: String, default: null },
+    margin: { type: String, default: null }
   }
 }
 </script>

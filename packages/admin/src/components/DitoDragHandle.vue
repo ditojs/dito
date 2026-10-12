@@ -20,9 +20,6 @@ import { DitoButton } from '@ditojs/ui/src'
 import { useServices } from '../composables/useSchemaContext.ts'
 import { getVerbs } from '../utils/services.ts'
 
-// The handle that items are dragged by, see `useSortable()`. With the keyboard,
-// Alt+ArrowUp and Alt+ArrowDown move the item by emitting `move` with the
-// delta of its index, which the owner of the list applies.
 export default {
   name: 'DitoDragHandle',
   components: { DitoButton },
@@ -41,8 +38,7 @@ export default {
       async move(delta) {
         if (!props.disabled) {
           emit('move', delta)
-          // Moving the item can move the handle's element in the DOM, which
-          // loses its focus.
+          // Moving the item in the DOM loses the focus of the handle:
           await nextTick()
           handle.value.$el.focus()
         }

@@ -36,7 +36,7 @@
     )
       template(#singleLabel="{ option }")
         | {{ getLabelForOption(option, { isValueLabel: true }) }}
-      //- The default tag, which marks values without options.
+      //- Mark values without options:
       template(#tag="{ option, remove }")
         span.multiselect__tag.dito-multiselect__tag(
           :class=`{
@@ -86,8 +86,7 @@ const DitoTypeMultiselect = {
 
   setup(props) {
     const field = useField(props, {
-      // Don't emit blur events while the multiselect is open, but once it
-      // closes, see `onClose()`:
+      // Only emit blur events once closed, see `onClose()`:
       getEvents: handlers => ({ ...handlers, onBlur }),
       focusElement: () => element.value.activate(),
       blurElement: () => element.value.deactivate()
@@ -98,11 +97,8 @@ const DitoTypeMultiselect = {
     const populate = ref(false)
     const searchedOptions = shallowRef(null)
     const isLoadingSearchedOptions = ref(false)
-    // The term of the current search, see `onSearchChange()`:
     let currentSearchTerm = null
-    // The error of the last search, see `loadSearchedOptions()`:
     let searchError = null
-    // The options of the tags that were added, see `onAddTag()`:
     const addedTagOptions = ref([])
 
     const getBoolean = key =>
@@ -137,9 +133,8 @@ const DitoTypeMultiselect = {
       }
     }
 
-    // Returns an option for a value without one, e.g. of options that only
-    // hold the results of searches: Related objects are their own options,
-    // other values get an option that holds them as value and label.
+    // Values without options, like from searches, get an option that holds
+    // them as value and label. Related objects are their own options:
     const getFallbackOption = value =>
       isObject(value) || !isString(optionValue.value)
         ? value
@@ -152,9 +147,8 @@ const DitoTypeMultiselect = {
 
     const selectedOptions = computed({
       get() {
-        // Values without options stay visible once the options are loaded,
-        // and are kept when the selection changes, see `getFallbackOption()`.
-        // Taggable multiselects may have no options besides their values.
+        // Keep values without options visible. Taggable multiselects may have
+        // no options besides their values.
         const values = value.value
         return multiple.value
           ? (
@@ -175,8 +169,7 @@ const DitoTypeMultiselect = {
       },
 
       set(option) {
-        // Convert value to options object, since vue-multiselect can't map that
-        // itself unfortunately. `track-by` is used for :key mapping it seems.
+        // vue-multiselect can't map options to values itself:
         selectedValue.value = multiple.value
           ? (option || []).map(value => getValueForOption(value))
           : getValueForOption(option)
@@ -184,10 +177,8 @@ const DitoTypeMultiselect = {
       }
     })
 
-    // Returns the options that `searchFilter()` returns for the search term,
-    // or `null` if it fails. Waits for the options, as the filter receives
-    // them, e.g. to search them when the search term is entered while they are
-    // still loading.
+    // Wait for the options, as the filter receives them. Return `null` on
+    // errors:
     const loadSearchedOptions = async searchTerm => {
       // The error of a search replaces the one of the previous search:
       const { model } = services.container
@@ -206,18 +197,14 @@ const DitoTypeMultiselect = {
     onMounted(() => {
       isMounted.value = true
       if (autofocus.value) {
-        // vue-multiselect doesn't support the autofocus attribute. We need to
-        // handle it here.
+        // vue-multiselect doesn't support the autofocus attribute:
         field.focus()
       }
     })
 
     return {
+      ...field,
       ...optionsField,
-      attributes: field.attributes,
-      componentPath: field.componentPath,
-      inputAffixesProps: field.inputAffixesProps,
-      clear: field.clear,
       selectedOptions,
       populate,
       searchable,
@@ -258,9 +245,7 @@ const DitoTypeMultiselect = {
           : placeholder
       }),
 
-      // Returns whether the option is a fallback option for a value without
-      // one, see `getFallbackOption()`. Plain options are their own values.
-      // Taggable multiselects can hold any value.
+      // See `getFallbackOption()`. Taggable multiselects hold any value:
       isUnavailableOption(option) {
         return (
           !taggable.value && (
@@ -276,8 +261,6 @@ const DitoTypeMultiselect = {
       },
 
       onClose() {
-        // Since we don't fire blur events while the multiselect is open (see
-        // `onBlur()`), we need to do it here, when it's actually closed.
         if (focused.value) {
           onBlur()
         }
@@ -298,8 +281,7 @@ const DitoTypeMultiselect = {
                 }
               : tag
           addedTagOptions.value.push(option)
-          // Select the option through `selectedOptions`, which emits the
-          // change:
+          // `selectedOptions` emits the change:
           selectedOptions.value = multiple.value
             ? [...selectedOptions.value, option]
             : option
@@ -310,24 +292,19 @@ const DitoTypeMultiselect = {
         if (searchFilter.value) {
           currentSearchTerm = searchTerm
           if (searchTerm) {
-            // Set `searchedOptions` to an empty array, before it will be
-            // populated asynchronously with the actual results.
             searchedOptions.value = []
-            // Use a timeout to allow already resolved promises to return
-            // options without showing a loading indicator.
+            // Resolved promises return options without a loading indicator:
             const timer = setTimeout(() => {
               isLoadingSearchedOptions.value = true
             }, 0)
             const options = await loadSearchedOptions(searchTerm)
             clearTimeout(timer)
-            // Searches that were replaced by newer ones in the meantime
-            // neither show their options nor end the loading state.
+            // Ignore searches that newer ones replaced in the meantime:
             if (searchTerm === currentSearchTerm) {
               searchedOptions.value = options
               isLoadingSearchedOptions.value = false
             }
           } else {
-            // Clear `searchedOptions` when the query is cleared.
             searchedOptions.value = null
             isLoadingSearchedOptions.value = false
           }

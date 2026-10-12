@@ -51,8 +51,7 @@ const DitoTypeButton = {
   setup(props) {
     const isRunning = ref(false)
     const services = useServices({
-      // Whether the action of the button is running, which handlers can end
-      // early, e.g. before opening a dialog:
+      // Handlers can end it early, like before opening a dialog:
       get isRunning() {
         return isRunning.value
       },
@@ -94,14 +93,13 @@ const DitoTypeButton = {
     }
 
     async function onClick() {
-      // Run the action once at a time, e.g. submits. The button stays enabled,
-      // as `disabled` reflects the state of the schema:
+      // Run once at a time. The button stays enabled, as `disabled` reflects
+      // the state of the schema:
       if (!isRunning.value) {
         isRunning.value = true
         // Write the edits that are held back, for the handlers to see them:
         services.container.model.writePendingValues()
         try {
-          // Clicks bubble to the handlers of the schema:
           const res = await emitEvent('click', { bubble: true })
           // Have buttons that define resources submit by default:
           if (
@@ -129,13 +127,9 @@ const DitoTypeButton = {
     }
 
     return {
-      context: field.context,
-      componentPath: field.componentPath,
+      ...field,
       verbs: computed(() => getVerbs(services)),
       isRunning,
-      info: field.info,
-      disabled: field.disabled,
-      attributes: field.attributes,
       text: computed(() => getSchemaValue('text', { type: String })),
       prefixes: computed(() => asArray(props.schema.prefix)),
       suffixes: computed(() => asArray(props.schema.suffix))

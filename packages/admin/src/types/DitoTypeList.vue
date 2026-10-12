@@ -14,8 +14,7 @@
       :scopes="scopes"
       :context="context"
     )
-    //- When there's only pagination without scopes, we need a good ol' spacer
-    //- div, for the layout not to break...
+    //- Pagination without scopes needs a spacer for the layout:
     .dito-spacer(
       v-else-if="hasPagination"
     )
@@ -242,22 +241,17 @@ defineType({
 
   getPanelSchema(api, schema, dataPath, source) {
     const { filters } = schema
-    // See if this list component wants to display a filter panel, and if so,
-    // create the panel schema for it through `getFiltersPanel()`.
     if (filters) {
       return createFiltersPanel(
         api,
         filters,
         dataPath,
-        // Pass a computed value to get / set the query, see
-        // `createFiltersPanel()`.
         computed({
           get() {
             return source.listQuery.query
           },
 
-          // The panel clears the page, but it's only reset when the filters
-          // change the query, as the filtered list then has other pages.
+          // Only reset the page that the panel clears when the query changes:
           set({ page, ...query }) {
             source.listQuery.update(query, { resetPage: true })
           }

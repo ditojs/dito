@@ -60,12 +60,9 @@ export default {
 
   props: {
     buttons: { type: Object, default: null },
-    // The schema of the component that owns the buttons, e.g. the list or
-    // object source, or the select. The `draggable`, `editable`, `creatable`
-    // and `deletable` props are already resolved from it.
+    // The owning source or select, which the flag props are resolved from:
     schema: { type: Object, required: true },
-    // The form schema of the item that per-item buttons act on, which can
-    // disable the buttons for its items, see `hasFormOption()`.
+    // The form of the item, which can disable the buttons of its items:
     formSchema: { type: Object, default: null },
     dataPath: { type: String, required: true },
     data: { type: [Object, Array], default: null },
@@ -77,12 +74,10 @@ export default {
     creatable: { type: Boolean, default: false },
     deletable: { type: Boolean, default: false },
     editPath: { type: String, default: null },
-    // The query of the edit route, e.g. to keep the current one in trees.
     editQuery: { type: Object, default: null },
     createPath: { type: String, default: null },
     insertIndex: { type: Number, default: null },
-    // Whether the buttons are round, as in lists and objects, or square and
-    // compact, as in the rows of trees.
+    // Round in lists and objects, square and compact in the rows of trees:
     round: { type: Boolean, default: true }
   },
 
@@ -91,8 +86,7 @@ export default {
     const { getSchemaValue, getLabel } = useSchemaValue(context)
     const verbs = computed(() => getVerbs(services))
 
-    // All options can be disabled on a per-form basis by setting
-    // `formSchema[name]` to `false` or a callback returning `false`.
+    // Forms can disable each option with `false` or a callback returning it:
     const hasFormOption = name => (
       !props.formSchema ||
       getSchemaValue(name, {
@@ -138,8 +132,7 @@ export default {
         return (
           // Allow schema to override create button through creatable object:
           props.schema.creatable?.label ||
-          // Auto-generate create button labels from from labels for list
-          // sources with only one form:
+          // Derive the label from the form label for sources with one form:
           (formLabel && `${capitalize(verbs.value.create)} ${formLabel}`) ||
           null
         )

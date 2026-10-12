@@ -8,12 +8,6 @@ import {
   processSchemaData
 } from './data.js'
 
-/**
- * Returns the validations of a component schema, without requiring a
- * component: the validations of the type's `getValidations()`, `required`,
- * and finally the `schema.rules` overrides, where `undefined` removes a
- * validation. Schema values are evaluated with `context`.
- */
 export function getValidations(schema, context) {
   const validations = {
     ...getTypeDescriptor(schema)?.getValidations?.(schema, context)
@@ -21,7 +15,7 @@ export function getValidations(schema, context) {
   if (getSchemaValue('required', { type: Boolean, schema, context })) {
     validations.required = true
   }
-  // Allow schema to override default rules and add any new ones:
+  // `schema.rules` override and add rules, and `undefined` removes them:
   for (const [name, setting] of Object.entries(schema.rules || {})) {
     if (setting === undefined) {
       delete validations[name]
@@ -32,19 +26,14 @@ export function getValidations(schema, context) {
   return validations
 }
 
-/**
- * Returns the errors of validating `value` against `validations`, in the
- * format of server errors, `[{ message }]`, with messages without the label
- * prefix, or an empty array if the value is valid.
- */
+// Return errors in the format of server errors, `[{ message }]`:
 export function getValueValidationErrors(value, validations) {
   const errors = []
   for (const [name, setting] of Object.entries(validations)) {
     const validator = getValidator(name)
     if (
       validator &&
-      // Only apply 'required' validator to empty values.
-      // Apply all other validators only to non-empty values.
+      // Apply all validators except 'required' only to non-empty values:
       (name === 'required' || value != null && value !== '')
     ) {
       const { validate, message } = validator
@@ -60,11 +49,9 @@ export function getValueValidationErrors(value, validations) {
   return errors
 }
 
-// The names of unknown validators that were warned about, see `getValidator()`:
 const warnedUnknownValidatorNames = new Set()
 
-// Returns the validator of the name, or `null` with a warning, once per name,
-// e.g. for misspelled `schema.rules`.
+// Warn once per name about unknown validators, e.g. misspelled `schema.rules`:
 function getValidator(name) {
   // eslint-disable-next-line import/namespace
   const validator = validators[name] ?? null
@@ -75,13 +62,7 @@ function getValidator(name) {
   return validator
 }
 
-/**
- * Validates `data` along the components of `schema`, including tabs, panels
- * and the nested forms of list and object items, skipping components whose
- * `if` evaluates to `false` and sources with their own resource. Returns the
- * errors in the format of server errors, `{ [dataPath]: [{ message }] }`, or
- * `null` if the data is valid.
- */
+// Return errors like the server, `{ [dataPath]: [{ message }] }`:
 export function getDataValidationErrors(schema, data, {
   dataPath = '',
   services = null,
@@ -106,8 +87,7 @@ export function getDataValidationErrors(schema, data, {
     const { schema, data, name, dataPath } = entry
     const context = createContext(entry)
     let value = data[name]
-    // Validate the value as displayed, like the components do, see
-    // `useValue()`:
+    // Validate the value as displayed, like the components do:
     const { format } = schema
     if (isFunction(format)) {
       value = format(context)
@@ -130,11 +110,6 @@ export function getDataValidationErrors(schema, data, {
   return errors
 }
 
-/**
- * Returns the entries of `errors` whose data paths match `match`, or `null` if
- * none match. `match` can be a function receiving the data path, a regular
- * expression, a data path, or an array of data paths.
- */
 export function getMatchingValidationErrors(errors, match) {
   let isMatchingDataPath
   if (isFunction(match)) {

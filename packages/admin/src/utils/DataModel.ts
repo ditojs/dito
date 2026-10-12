@@ -44,12 +44,16 @@ import {
   processData,
   hasItemsNumberedByOrderKey,
   updateOrder,
-  getMultipleValue,
-  type SchemaDataEntry
+  getMultipleValue
 } from './schema/data.js'
 import { getOptionsSettings, getReplacedValue } from './schema/options.ts'
 import type { Services } from './services.ts'
-import type { Data, Schema } from './types.ts'
+import type {
+  Data,
+  Schema,
+  SchemaDataEntry,
+  ProcessedEntry
+} from './types.ts'
 
 type Key = string | number
 
@@ -68,21 +72,19 @@ export interface DataModelOptions {
   // Edits are unsaved only where they can be saved, by default through a
   // submit button of the schema:
   canSave?: () => boolean
-  // The services of the contexts that the model creates for callbacks, as the
-  // components of its container see them:
+  // The services of the contexts that the model creates for callbacks:
   services?: Services | null
 }
 
 // The data that holds a value at `name`, which errors and records are keyed by,
 // as it stays with list items that move, unlike data paths:
-export interface FieldKey {
+interface FieldKey {
   data: Data
   name: Key
 }
 
-// A list that the change API changes, with the schema that numbers its items
-// by its order key. Changes of lists in sources with their own resource belong
-// to these sources, which their data path tells:
+// Changes of lists in sources with their own resource belong to these sources,
+// which their data path tells:
 export interface ListEntry {
   schema: Schema
   list: any[]
@@ -96,7 +98,7 @@ interface EditedOwner {
   editCount: number
 }
 
-export interface ValueError {
+interface ValueError {
   message: string
 }
 
@@ -119,13 +121,7 @@ interface ComponentRecord {
   optionsScope: EffectScope | null
 }
 
-// The entries that the walk passes to `shouldProcess()`, where tabs and panels
-// have no name:
-type ProcessedEntry = Omit<SchemaDataEntry, 'name'> & { name: string | null }
-
-// The entries of the components that records are kept for, which the
-// components look up themselves too:
-export type FieldEntry = Pick<
+type FieldEntry = Pick<
   SchemaDataEntry,
   'schema' | 'data' | 'name' | 'dataPath'
 >
@@ -173,8 +169,7 @@ export class DataModel {
     this.#scope.run(() => {
       // Computed, so watchers can check synchronously if records are current:
       this.#dataEntries = computed(() => this.#getDataEntries())
-      // Built only when read, e.g. by `context.processedItem`, and cached until
-      // the data that it read changes:
+      // Built only when read, e.g. by `context.processedItem`:
       this.processedData = computed(() => this.#getProcessedData())
       this.processedRootData = computed(() =>
         this.#getProcessedRootData(this.rootData)

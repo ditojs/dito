@@ -30,8 +30,7 @@ export default {
   },
 
   setup(props, { emit }) {
-    // Tabs are identified through the component path of their schema, like in
-    // `DitoPane`:
+    // Identify tabs through the component path of their schema, like panes:
     const schemaComponentPath = inject('componentPath')
     const getTabId = key => `${schemaComponentPath.path}-tab-${key}`
 
@@ -43,10 +42,8 @@ export default {
         return `${schemaComponentPath.path}-tabpanel-${key}`
       },
 
-      // Supports the keyboard interaction of tabs with manual activation: The
-      // arrow keys, Home and End move the focus to other tabs, Enter and Space
-      // select the focused tab, so that moving through the tabs doesn't switch
-      // their panels and the route hash on each key press.
+      // Manual activation: Arrow keys, Home and End only move the focus, Enter
+      // and Space select, to not switch the panels and hash on each key press.
       onKeyDown(event, key) {
         const keys = Object.keys(props.tabs)
         const index = keys.indexOf(key)

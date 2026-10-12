@@ -43,25 +43,7 @@ const DitoTypeRadio = {
 
   setup(props) {
     const field = useField(props, { nativeField: true })
-    const {
-      options,
-      groupBy,
-      editable,
-      selectedValue,
-      getValueForOption,
-      getLabelForOption
-    } = useOptions(props, field)
-    return {
-      attributes: field.attributes,
-      context: field.context,
-      componentPath: field.componentPath,
-      options,
-      groupBy,
-      editable,
-      selectedValue,
-      getValueForOption,
-      getLabelForOption
-    }
+    return { ...field, ...useOptions(props, field) }
   }
 }
 

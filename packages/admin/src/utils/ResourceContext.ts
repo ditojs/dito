@@ -13,7 +13,6 @@ export interface ResourceOptions {
   child?: Resource | null
 }
 
-// The button that submits the data, and receives the events of the submit:
 export interface SubmitButton {
   readonly schema: Schema
   readonly context: Context
@@ -23,8 +22,7 @@ export interface SubmitButton {
   emitEvent(event: string, options?: { context?: object }): Promise<any>
 }
 
-// The form, list, object or tree that submits its data and resolves the
-// resources of its components.
+// The form, list, object or tree that owns the resource:
 export interface ResourceOwner {
   readonly verbs: Record<string, string>
   readonly dataModel: DataModel
@@ -32,8 +30,7 @@ export interface ResourceOwner {
   submit(button: SubmitButton, options?: SubmitOptions): Promise<boolean>
 }
 
-// The context of a form or source, provided to the components that it
-// renders, also when it has no resource of its own, e.g. in nested data.
+// Forms and sources provide it also without a resource of their own:
 export class ResourceContext {
   readonly #owner: ResourceOwner
   readonly #route: RouteContext | null
@@ -47,14 +44,12 @@ export class ResourceContext {
     this.#route = route
   }
 
-  // The context that the resource of the owner continues: the one of the form
-  // that renders the owner, or of the parent form of forms, `null` in views.
+  // The context of the form that renders the owner, or of the parent form:
   get parent(): ResourceContext | null {
     return this.#route?.resource ?? null
   }
 
-  // The context itself if it has a resource, or else the closest one above
-  // with a resource, which loads the data that its components display:
+  // The closest context with a resource, which loads the displayed data:
   get resourceOwner(): ResourceContext | null {
     return this.getResource()
       ? this
@@ -69,8 +64,7 @@ export class ResourceContext {
     return this.#owner.getResource(options)
   }
 
-  // Submit the data through `button`, and resolve with whether it succeeded.
-  // Leaving the route waits for it:
+  // Leaving the route waits for pending submits:
   submit(button: SubmitButton, options?: SubmitOptions): Promise<boolean> {
     return this.#owner.dataModel.trackPendingSubmit(
       this.#owner.submit(button, options)

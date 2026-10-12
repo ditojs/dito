@@ -118,9 +118,7 @@ import { getListWithMovedItem } from '../utils/list.js'
 import { confirmAndRemove } from '../utils/dialogs.js'
 import { isPathWithin } from '../utils/route.js'
 
-// Renders an item of a tree list or tree object, see `DitoTypeTreeList`, which
-// provides the item's `source`. Items don't write the tree: They emit the
-// changed children with `changeChildren`, which the tree list applies.
+// Items don't write the tree: They emit `changeChildren` for the tree list.
 export default {
   name: 'DitoTreeItem',
   components: { DitoEditButtons },
@@ -158,7 +156,6 @@ export default {
           : source.componentPath
       }
     )
-    const { isDragging, getDraggableOptions } = useSortable()
     const itemLabel = useItemLabel({
       services,
       getContext: () => context,
@@ -197,7 +194,7 @@ export default {
 
     const changeChildren = children => {
       emit('changeChildren', {
-        // The children for the change API of the data model, see `ListEntry`:
+        // The list entry for the change API of the data model:
         entry: {
           schema: childrenSchema.value,
           list: childrenList.value,
@@ -211,8 +208,7 @@ export default {
       ...itemLabel,
       context,
       componentPath,
-      isDragging,
-      getDraggableOptions,
+      ...useSortable(),
       getLabel,
       opened,
       properties,
@@ -257,8 +253,7 @@ export default {
         const list = childrenList.value
         if (schema && list) {
           const routePath = currentRoute.path
-          // `open` reflects the route, so that items closed by the user reopen
-          // when they come into it:
+          // Reflect the route in `open`, to reopen items closed by the user:
           return list.map((data, index) => {
             const path = services.route?.getFormPath(
               getItemDataPath(schema, index)
@@ -271,7 +266,6 @@ export default {
         return []
       }),
 
-      // Moves the child by `delta` positions, see `DitoDragHandle`.
       moveChild(child, delta) {
         const children = getListWithMovedItem(childrenList.value, child, delta)
         if (children) {
@@ -279,8 +273,7 @@ export default {
         }
       },
 
-      // Removes the child after confirming it. The removal is transient, as the
-      // tree is part of its form's data:
+      // The removal is transient, as the tree is part of its form's data:
       async deleteChild(child) {
         await confirmAndRemove(services, {
           label: getItemLabel(childrenSchema.value, child, {

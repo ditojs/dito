@@ -36,11 +36,9 @@ export default {
     clipboard: { type: [Boolean, Object], required: true },
     schema: { type: Object, required: true },
     hasData: { type: Boolean, required: true },
-    // Returns the data to copy. A function rather than the data itself, so
-    // that it's only processed when copying.
+    // A function, to only process the data when copying:
     getData: { type: Function, required: true },
-    // Creates the context of the schema for the `copy()` and `paste()`
-    // callbacks of `clipboard`:
+    // For the `copy()` and `paste()` callbacks of `clipboard`:
     createContext: { type: Function, required: true }
   },
 
@@ -49,11 +47,9 @@ export default {
     const { domOn } = useDomEvents()
 
     const updateClipboardData = () => {
-      // Only Chrome reads the clipboard without asking for permission, so
-      // other browsers only read it when pasting.
+      // Only Chrome reads the clipboard without asking for permission:
       if (appState.agent.chrome) {
-        // Errors are only reported when pasting.
-        readClipboardData().catch(() => {})
+        readClipboardData().catch(() => {}) // Report errors only when pasting.
       }
     }
 
@@ -67,9 +63,7 @@ export default {
     )
 
     onMounted(() => {
-      // Read the clipboard right away, and whenever something gets copied or
-      // the window gets (re)activated, as those are the moments when it can
-      // change:
+      // Read it now, and again when it can change, on copy and window focus:
       updateClipboardData()
       domOn(document, { copy: updateClipboardData })
       domOn(window, { focus: updateClipboardData })

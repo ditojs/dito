@@ -21,7 +21,6 @@
     .dito-tree-form-container(
       v-if="isEditingItem"
     )
-      //- Include a router-view for the optional DitoFormInlined
       DitoRouterView(:routeLevel="route.level + 1")
 </template>
 
@@ -48,8 +47,7 @@ const DitoTypeTreeList = {
       ...source,
       route: computed(() => services.route),
 
-      // The forms of the items of the tree are routed right after its route
-      // component, if there is one:
+      // The forms of the tree's items are routed right after its route:
       isEditingItem: computed(() => {
         const node = source.sourceNode.value
         let routeNode = (
@@ -83,9 +81,7 @@ const DitoTypeTreeList = {
           : props.schema
       ),
 
-      // Replaces the children of the tree item, as the only writer of the
-      // tree, see `DitoTreeItem`. Open forms follow their items, see
-      // `DitoForm`.
+      // The only writer of the tree, see `DitoTreeItem`:
       changeChildren({ entry, children }) {
         services.container.model.replaceItems(entry, children)
         onChange()
@@ -107,7 +103,6 @@ const treeTraits = {
   async processSchema(api, schema, name) {
     const { children } = schema
     if (children) {
-      // Add `type` to the nested tree list.
       children.type = 'tree-list'
     }
     await Promise.all([

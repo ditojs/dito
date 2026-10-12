@@ -13,11 +13,7 @@ import { fieldProps, useField } from '../composables/useField.ts'
 const DitoTypeLabel = {
   name: 'DitoTypeLabel',
   props: fieldProps,
-
-  setup(props) {
-    const { value, context } = useField(props)
-    return { value, context }
-  }
+  setup: props => useField(props)
 }
 
 defineType({

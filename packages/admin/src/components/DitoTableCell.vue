@@ -27,12 +27,10 @@ export default {
   name: 'DitoTableCell',
 
   props: {
-    // The schema of the cell, e.g. a column of a list or a property of a tree
-    // item, whose `name` is the key of its value in `data`.
+    // A column or tree property, whose `name` is the key of its value:
     cell: { type: Object, required: true },
-    // The schema of the list or tree that holds the item.
+    // The list or tree that holds the item:
     schema: { type: Object, required: true },
-    // The data path and data of the item, see `cellContext`.
     dataPath: { type: String, required: true },
     data: { type: Object, required: true },
     store: { type: Object, required: true },
@@ -43,13 +41,10 @@ export default {
   setup(props) {
     const { createContext } = useSchemaContext(props)
     const cellContext = computed(() => {
-      const {
-        cell: { name },
-        data
-      } = props
+      const { name } = props.cell
       return createContext({
         name,
-        value: data[name],
+        value: props.data[name],
         dataPath: appendDataPath(props.dataPath, name),
         nested: true
       })

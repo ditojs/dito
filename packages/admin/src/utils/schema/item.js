@@ -8,9 +8,7 @@ import {
 import { isListSource } from './structure.js'
 import { getItemId } from './data.js'
 
-// Returns the id of `item`, by which routes address it. Transient items aren't
-// stored yet and may lack ids, so they're addressed by their `index` instead,
-// when it's known.
+// Address transient items by their index, as they may lack ids:
 export function getItemIdOrIndex(
   sourceSchema,
   item,
@@ -21,9 +19,7 @@ export function getItemIdOrIndex(
     : getItemId(sourceSchema, item)
 }
 
-// Returns the index of the item in `items` that `itemId` addresses, see
-// `getItemIdOrIndex()`, or `null` if there is none. The ids of transient items
-// are their indices already, and are returned as they are.
+// The ids of transient items are their indices already:
 export function findItemIndexById(sourceSchema, items, itemId, {
   isTransient
 }) {
@@ -33,12 +29,8 @@ export function findItemIndexById(sourceSchema, items, itemId, {
   return index != null && index !== -1 ? index : null
 }
 
-// Returns the label of `item` as HTML: Values of the item are escaped,
-// while labels that the schema provides, e.g. through `itemLabel()`, can
-// contain HTML, so they need to escape the values that they include.
-// The label depends on the component that displays the item through two
-// callbacks: `evaluateItemLabel()` calls `sourceSchema.itemLabel()` with the
-// item's context, and `getFormLabel()` returns the label of the item's form.
+// Labels are HTML: We escape the values of the item, while labels from the
+// schema may contain HTML and need to escape the values they include.
 export function getItemLabel(
   sourceSchema,
   item,
@@ -68,13 +60,10 @@ export function getItemLabel(
     // It's up to `itemLabel()` entirely to produce the label:
     extended = false
   } else if (isString(itemLabel) && !(itemLabel in item)) {
-    // `itemLabel` can be both a key, or simply a label.
+    // `itemLabel` can be both a key, or simply a label:
     text = itemLabel
   } else {
-    // Look up the name on the item, by these rules:
-    // 1. If `itemLabel` is a string, use it as the property key
-    // 2. Otherwise, if there are columns, use the value of the first
-    // 3. Otherwise, see if the item has a property named 'name'
+    // Use `itemLabel` as key, or else the first column, or else `name`:
     const { columns } = sourceSchema
     const key = (
       isString(itemLabel) && itemLabel ||
@@ -82,9 +71,7 @@ export function getItemLabel(
       'name'
     )
     const value = item[key]
-    // Only primitives display as a label. If the property holds an array
-    // or object, fall through to the auto-generated label. Strings are
-    // escaped, as the label is rendered as HTML.
+    // Arrays and objects fall through to the generated label:
     text = isString(value)
       ? escapeHtml(value)
       : isNumber(value)
@@ -92,17 +79,15 @@ export function getItemLabel(
         : null
   }
   const hadLabel = !!text
-  // If no label was found so far, try to produce one from the index.
   if (text == null) {
-    // Always use extended style when auto-generating labels from index/id:
+    // Generate the label from the index, always in the extended style:
     extended = true
     text = isListSource(sourceSchema) && index != null ? `${index + 1}` : ''
   }
   if (extended) {
     const formLabel = getFormLabel()
     if (formLabel) {
-      // If a label was provided, put in quotes when prefixed with the
-      // form label for the extended style:
+      // Quote found labels after the form label:
       text = `${formLabel} ${hadLabel ? `'${text}'` : text}`
     }
   }

@@ -3,10 +3,8 @@
   ref="dropTarget"
   :class="{ 'dito-upload--drop-target': isDropTarget }"
 )
-  //- In order to handle upload buttons in multiple possible places, depending
-  //- on whether they handle single or multiple uploads, render the upload
-  //- component invisibly at the root, and delegate the click events to it from
-  //- the buttons rendered further below. Luckily this works surprisingly well.
+  //- Render the upload component invisibly at the root, and delegate the clicks
+  //- of the upload buttons further below to it:
   VueUpload.dito-upload__input(
     ref="upload"
     v-model="uploads"
@@ -184,11 +182,8 @@ const DitoTypeUpload = {
     const dropTarget = useTemplateRef('dropTarget')
     const upload = useTemplateRef('upload')
     const uploads = ref([])
-    // Removes the upload from the targets of dragged files, see
-    // `updateDropTarget()`:
     let removeDropTarget = null
-    // The functions that settle the pending loads of the running uploads in
-    // the data model, by upload id, see `onInputFile()`:
+    // Settle the data model's pending loads of running uploads:
     const settleUploadById = new Map()
 
     const { getSchemaValue } = field
@@ -204,7 +199,7 @@ const DitoTypeUpload = {
       getSchemaValue('render', { type: Function, default: null })
     )
     const files = computed(() => asFiles(value.value))
-    // Only multiple files can be dragged or added, which are the value itself:
+    // Only multiple files are dragged or added, as the value itself:
     const listEntry = computed(() => ({
       schema: props.schema,
       list: files.value,
@@ -216,9 +211,8 @@ const DitoTypeUpload = {
       onChange
     })
 
-    // The files of the upload component by their ids. It replaces a file's
-    // object on each update, so the files in the value only refer to their
-    // upload by id, see `onInputFile()` and `getUpload()`.
+    // The upload component replaces its file objects on each update, so the
+    // value's files refer to their upload by id:
     const uploadsById = computed(
       () => new Map(uploads.value.map(upload => [upload.id, upload]))
     )
@@ -231,8 +225,7 @@ const DitoTypeUpload = {
       )
     )
 
-    // Uploads are posted to the resource of the data, see
-    // `api.resources.upload()`, which views without resource don't have.
+    // Views without resource can't upload, see `api.resources.upload()`:
     const uploadPath = computed(() =>
       services.resource?.resourceOwner
         ? getResourceUrl(services, {
@@ -269,8 +262,7 @@ const DitoTypeUpload = {
           : null
 
     const downloadUrls = computed(() =>
-      // Resolve the URLs like `fetchBlob()` does, so that the links point to
-      // the same files that clicking them downloads:
+      // Resolve like `fetchBlob()`, for links and clicks to match:
       files.value.map((file, index) => {
         const url = getDownloadUrl(file, index)
         return url ? resolveDownloadUrl(admin.api, url) : null
@@ -316,9 +308,7 @@ const DitoTypeUpload = {
       settleUploadById.delete(id)
     }
 
-    // Adds the upload to the targets of dragged files while it's enabled.
-    // `VueUpload` handles the files dropped on its parent, which is the same
-    // element, see `:drop="true"`.
+    // `VueUpload` handles the files dropped on its parent, see `:drop="true"`:
     const updateDropTarget = () => {
       removeDropTarget?.()
       removeDropTarget = disabled.value
@@ -330,7 +320,6 @@ const DitoTypeUpload = {
 
     watch(isUploadReady, ready => {
       if (ready) {
-        // Auto-upload.
         nextTick(() => {
           upload.value.active = true
         })
@@ -347,9 +336,9 @@ const DitoTypeUpload = {
     })
 
     return {
+      ...field,
       ...sortable,
       verbs: computed(() => getVerbs(services)),
-      disabled,
       uploads,
       multiple,
       render,
@@ -359,10 +348,7 @@ const DitoTypeUpload = {
       uploadOptions,
       formatFileSize,
 
-      // Whether files are dragged over the admin while the upload is enabled,
-      // for which it stands out above the overlay of `DitoRoot`. The dragged
-      // files' types can't be read before the drop, so `accept` isn't checked
-      // here.
+      // Dragged files' types can't be read before the drop, so ignore `accept`:
       isDropTarget: computed(
         () => fileDropTargets.isDraggingFiles && !disabled.value
       ),
@@ -437,8 +423,6 @@ const DitoTypeUpload = {
         return render.value(getFileContext(file, index))
       },
 
-      // Returns the current file object of the upload component for a file
-      // that was added through it, or `null`.
       getUpload(file) {
         return file.upload
           ? (uploadsById.value.get(file.upload.id) ?? null)
@@ -448,13 +432,11 @@ const DitoTypeUpload = {
       async deleteFile(file) {
         await confirmAndRemove(services, {
           label: escapeHtml(file.name),
-          // The file is only removed from the value, which still needs the
-          // form to be saved.
+          // The form still needs to be saved:
           isTransient: true,
           remove: () => {
-            // Look up the file by identity once confirmed, as the files may
-            // have changed while the dialog was open. Stored files may not
-            // have ids, see `getFileIndex()`.
+            // The files may have changed while the dialog was open, and stored
+            // files may not have ids:
             const index = files.value.indexOf(file)
             if (index < 0) {
               return false
@@ -472,10 +454,8 @@ const DitoTypeUpload = {
         })
       },
 
-      // Files added through the upload component refer to their upload with
-      // `upload: { id, success }` in the value: `success` tells
-      // `processValue()` which files were stored, and the upload's state is
-      // read through `getUpload()`.
+      // Added files refer to their upload with `upload: { id, success }`,
+      // `success` telling `processValue()` which files were stored:
       onInputFile(newFile, oldFile) {
         if (newFile && !oldFile) {
           const { id, name, size } = newFile
@@ -491,8 +471,6 @@ const DitoTypeUpload = {
             const file = newFile.response[0]
             if (file) {
               file.upload = { id: newFile.id, success: true }
-              // Replace the file added for the upload with the file received
-              // in the upload response.
               replaceFile(newFile, file)
             } else {
               removeFile(newFile)
@@ -546,8 +524,7 @@ const DitoTypeUpload = {
           try {
             download(services, { filename: file.name, url })
           } finally {
-            // Release the blob once the browser started the download, which
-            // some browsers don't do synchronously when the link is clicked.
+            // Some browsers don't start the download synchronously:
             setTimeout(() => URL.revokeObjectURL(url), 1000)
           }
         } catch (error) {
@@ -561,7 +538,6 @@ const DitoTypeUpload = {
       },
 
       onClickUpload(event) {
-        // Delegate the click event to the hidden file input.
         upload.value.$el
           .querySelector('input')
           .dispatchEvent(new event.constructor(event.type, event))
@@ -575,7 +551,7 @@ defineType({
   component: DitoTypeUpload,
 
   processValue({ schema, value }) {
-    // Filter out all newly added files that weren't actually uploaded.
+    // Filter out added files that weren't uploaded:
     const files = asFiles(value)
       .map(({ upload, ...file }) => (!upload || upload.success ? file : null))
       .filter(file => file)

@@ -1,8 +1,5 @@
-// Returns the props of the `DitoInputAffixes` of the input of a type
-// component, by position: The prefix and suffix items come from
-// `schema.prefix` and `schema.suffix`. The suffix also holds the clear button
-// of clearable components with a value, and their info when they have no label
-// to show it, as the label component shows the info otherwise.
+// The suffix also holds the clear button, and the info of components without a
+// label, as the label shows it otherwise.
 export function getInputAffixesProps({
   schema,
   disabled,

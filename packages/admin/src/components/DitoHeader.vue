@@ -16,14 +16,8 @@ export default {
   name: 'DitoHeader',
 
   props: {
-    spinner: {
-      type: Object,
-      default: null
-    },
-    isLoading: {
-      type: Boolean,
-      default: false
-    }
+    spinner: { type: Object, default: null },
+    isLoading: { type: Boolean, default: false }
   }
 }
 </script>

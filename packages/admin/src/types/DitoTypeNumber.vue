@@ -38,16 +38,7 @@ const DitoTypeNumber = {
 
   setup(props) {
     const field = useField(props, { nativeField: true, textField: true })
-    const { attributes, context, componentPath, inputAffixesProps, clear } =
-      field
-    return {
-      ...useNumber(props, field),
-      attributes,
-      context,
-      componentPath,
-      inputAffixesProps,
-      clear
-    }
+    return { ...field, ...useNumber(props, field) }
   }
 }
 

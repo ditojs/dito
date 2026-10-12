@@ -1,8 +1,6 @@
 <template lang="pug">
-//- The edit button of an option of an editable options component, which
-//- navigates to the form of the option in the view of `schema.view`. It's never
-//- disabled, even if the component is disabled. The props come from the
-//- options component, which renders it only when it's editable.
+//- Edit the option in the view of `schema.view`. It's never disabled, even if
+//- the options component is.
 DitoEditButtons.dito-options-edit-buttons(
   :schema="schema"
   :dataPath="dataPath"
@@ -28,7 +26,6 @@ export default {
     dataPath: { type: String, required: true },
     data: { type: [Object, Array], default: null },
     store: { type: Object, required: true },
-    // The value of the option to edit, e.g. its id.
     optionValue: { type: null, default: null }
   },
 

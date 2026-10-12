@@ -5,9 +5,7 @@ import type { Schema } from './types.ts'
 
 type Callback = (context: Context) => any
 
-// The handlers of the events of a schema. `change` events bubble to the events
-// of the parent, from fields to their schema and on to the schemas above,
-// unless a handler returns `false`.
+// `change` events bubble to the schemas above, unless handlers return `false`:
 export class SchemaEvents {
   readonly parent: SchemaEvents | null
   readonly #callbacks: Record<string, Callback[]> = {}
@@ -28,10 +26,9 @@ export class SchemaEvents {
     return !!this.#callbacks[event] || (bubble && !!this.parent?.has(event))
   }
 
-  // Call the handlers one after the other, awaiting each, and resolve with the
-  // last result that isn't undefined, or reject with an `AggregateError` of
-  // all errors thrown. Separate emits don't wait for each other, so that a
-  // handler can await an emit of its own event.
+  // Await the handlers one after the other, and resolve with the last result
+  // that isn't undefined. Separate emits don't wait for each other, so a
+  // handler can await an emit of its own event:
   async emit(
     event: string,
     context: Context,

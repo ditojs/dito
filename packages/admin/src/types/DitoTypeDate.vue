@@ -54,30 +54,16 @@ const DitoTypeDate = {
   props: fieldProps,
 
   setup(props) {
-    const {
-      value,
-      services,
-      context,
-      componentPath,
-      attributes,
-      inputAffixesProps,
-      clear,
-      getSchemaValue
-    } = useField(props, {
-      // TODO: This is only here so we get placeholder added. Come up with a
-      // better way to support attributes per component (a list of actually
-      // supported attributes)
+    const field = useField(props, {
+      // TODO: Only here to add `placeholder`. Support attributes per component.
       nativeField: true,
       textField: true
     })
+    const { value, services, getSchemaValue } = field
     return {
+      ...field,
       admin: services.admin,
-      context,
-      componentPath,
       pickerComponents,
-      attributes,
-      inputAffixesProps,
-      clear,
 
       dateValue: computed({
         get() {
@@ -113,8 +99,7 @@ defineType({
   component: DitoTypeDate,
 
   processValue({ schema, value }) {
-    // Send dates as their plain date, so they can't shift to another day
-    // through time zones, and all other date types as ISO strings.
+    // Send plain dates, so they can't shift to another day through time zones:
     return isDate(value)
       ? schema.type === 'date'
         ? formatPlainDate(value)

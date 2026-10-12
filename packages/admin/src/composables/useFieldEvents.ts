@@ -15,15 +15,12 @@ export interface FieldEventHandlers {
 }
 
 export interface FieldEventsOptions {
-  // The handlers that the element of the component binds, by default all of
-  // `FieldEventHandlers`:
+  // Bind all handlers by default:
   getEvents?: (handlers: FieldEventHandlers) => Record<string, Handler>
-  // Validate the value when the element loses focus:
+  // Called on blur:
   validate(): boolean
 }
 
-// Emit the events of the schema for the edits of the component, which handlers
-// receive with the component's context.
 export function useFieldEvents(
   props: SchemaContextProps,
   {
@@ -68,8 +65,7 @@ export function useFieldEvents(
     }
   }
 
-  // The handlers to bind to the element, with the ones of the events that the
-  // schema handles and the component doesn't, which are native events:
+  // Schema events that the component doesn't handle are native events:
   const events = computed(() => {
     const events = getEvents ? getEvents(handlers) : { ...handlers }
     for (const { event } of getSchemaEventEntries(props.schema)) {

@@ -14,8 +14,6 @@ import {
   getSchemaValue
 } from '../utils/schema/data.js'
 
-// The traits that several types share, spread into their descriptors.
-
 export const sourceTraits = {
   defaultValue: ({ schema }: Context) => (isListSource(schema) ? [] : null),
   // Exclude all sources that have their own resource handling the data.
@@ -58,9 +56,8 @@ export const sourceTraits = {
 
   processValue({ schema, value, dataPath }, graph) {
     graph.addSource(dataPath, schema)
-    // `SchemaGraph.process()` changes the ids of the items in the processed
-    // data. The items of sources with forms are processed into copies, but the
-    // ones of sources without forms are still the items of the data.
+    // `SchemaGraph.process()` changes item ids, and only the items of sources
+    // with forms are copies already:
     return hasFormSchema(schema) ? value : copyItems(value)
   }
 } satisfies Partial<TypeDescriptor>
@@ -68,11 +65,10 @@ export const sourceTraits = {
 export const optionsTraits = {
   getOptionsDataSchema: schema => schema.options,
 
-  processValue({ schema, value, dataPath }, graph) {
+  processValue({ schema, value, dataPath }: Context, graph) {
     if (schema.relate) {
-      // For internally relating data (`schema.options.dataPath`), we need to
-      // process both the options (for '#ref') and the value ('#id').
-      // See `DataSchemaResolver`:
+      // Internally related data (`options.dataPath`) needs both the options
+      // (for '#ref') and the value ('#id') processed:
       const path = schema.options?.dataPath
       const relatedDataPath = path
         ? normalizeDataPath(`${dataPath}/${path}`)
@@ -130,9 +126,7 @@ export interface NumberSettings {
   range: [number, number] | undefined
 }
 
-// Returns the settings of number types, which their components and validations
-// share: `min` and `max` default to `range`, and integers round them and their
-// `step` outwards.
+// `min` and `max` default to `range`, integers round them and `step` outwards.
 export function getNumberSettings(
   schema: Schema,
   context: Context
@@ -157,7 +151,7 @@ export function getNumberSettings(
 }
 
 export const textTraits = {
-  processValue(context) {
+  processValue(context: Context) {
     let { schema, value } = context
     if (schema.trim && value != null && isString(value)) {
       // Text fields don't necessarily have a `String` value when `format()`
@@ -171,7 +165,6 @@ export const textTraits = {
   }
 } satisfies Partial<TypeDescriptor>
 
-// Returns shallow copies of the items of a list, or of an object.
 function copyItems(value: any) {
   return isArray(value)
     ? value.map(item => (isObject(item) ? { ...item } : item))

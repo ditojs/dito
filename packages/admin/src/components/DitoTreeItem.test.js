@@ -35,7 +35,7 @@ async function mountBookForm() {
       chapters: [{ title: 'Intro', sections: [{ title: 'Tom & Jerry' }] }]
     }
   })
-  // Tree items notify through the root component, see `DitoMixin.notify()`:
+  // Tree items notify through the admin context:
   const notify = vi.spyOn(result.admin.context, 'notify')
   return { ...result, notify }
 }

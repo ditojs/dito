@@ -25,8 +25,7 @@ export default {
 
   props: {
     file: { type: Object, required: true },
-    // The file object of the upload component while the file is added through
-    // it, see `DitoTypeUpload.getUpload()`.
+    // The file object of the upload component while the file is being added:
     upload: { type: Object, default: null },
     thumbnail: { type: String, default: null },
     thumbnailUrl: { type: String, default: null }

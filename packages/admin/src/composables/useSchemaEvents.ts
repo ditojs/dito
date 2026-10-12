@@ -14,16 +14,12 @@ export interface EmitOptions {
   bubble?: boolean
 }
 
-// The events of a schema, which DitoSchema provides to its components: Their
-// events bubble to it, and sources emit their `load` event through it.
 export interface SchemaEventsEmitter {
   readonly events: SchemaEvents
   emitEvent(event: string, options?: EmitOptions): Promise<any>
 }
 
-// Emit the events of the component's schema, which the handlers receive with
-// the component's context. They bubble to the closest schema above, unless the
-// component is `isolated()`, e.g. a schema with its own data.
+// Events bubble to the schema above, unless the component is `isolated()`:
 export function useSchemaEvents(
   getSchema: () => Schema,
   {
@@ -47,8 +43,7 @@ export function useSchemaEvents(
 
     async emitEvent(event, { context = {}, bubble } = {}) {
       if (events.value.has(event, { bubble })) {
-        // The handlers of these events see their effects, e.g. the values
-        // that the data model derives from the changed data:
+        // The handlers see the values that the model derives from the data:
         if (event === 'load' || event === 'change') {
           await waitUntilDataModelSettled(services)
         }

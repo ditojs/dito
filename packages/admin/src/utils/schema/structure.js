@@ -43,39 +43,8 @@ export function someNestedSchemaComponent(schema, callback) {
   )
 }
 
-export function everyNestedSchemaComponent(schema, callback) {
-  return (
-    iterateNestedSchemaComponents(
-      schema,
-      component => (callback(component) ? undefined : false)
-    ) ?? true
-  )
-}
-
 export function hasNestedSchemaComponents(schema) {
   return someNestedSchemaComponent(schema, () => true)
-}
-
-/**
- * Returns whether `schema` has a component named `name` in its components or
- * tabs, or in those of its unnested components, e.g. sections without
- * `nested: true`, which share the data of `schema` without adding their own
- * name to the data path.
- */
-export function hasComponentNamed(schema, name) {
-  const found = iterateNestedSchemaComponents(
-    schema,
-    (component, componentName) => {
-      if (
-        hasNestedData(component)
-          ? componentName === name
-          : hasComponentNamed(component, name)
-      ) {
-        return true
-      }
-    }
-  )
-  return !!found
 }
 
 export function isSchema(schema) {
@@ -98,9 +67,7 @@ export function isPanel(schema) {
   return isSchema(schema) && schema.type === 'panel'
 }
 
-// Returns whether `schema` is a panel that provides its own data through
-// `schema.data`, e.g. a filters panel, instead of sharing the data of its
-// schema, see `DitoPanel`.
+// Panels with `schema.data`, e.g. filters, don't share their schema's data:
 export function isPanelWithOwnData(schema) {
   return isPanel(schema) && !!schema.data
 }
@@ -113,17 +80,13 @@ export function getSchemaIdentifier(schema) {
   return JSON.stringify(schema)
 }
 
-// The path of views and sources in their routes, the name under which they're
-// declared by default:
+// Views and sources are routed under their names by default:
 export function getSchemaPath(schema, name, api) {
   return schema.path ?? api.normalizePath(name)
 }
 
 export function isSingleComponentView(schema) {
-  return (
-    isView(schema) &&
-    isObject(schema.component)
-  )
+  return isView(schema) && isObject(schema.component)
 }
 
 export function isCompact(schema) {
@@ -134,8 +97,7 @@ export function isInlined(schema) {
   return !!(schema.inlined || schema.components)
 }
 
-// Whether the component stores its data under its own key in its parent's
-// data, see `schema.nested`:
+// Nested components store their data under their own key in their parent's:
 export function hasNestedData(schema) {
   return !!(schema.nested || getTypeDescriptor(schema)?.defaultNested)
 }
@@ -170,11 +132,8 @@ export function isListSource(schemaOrType) {
   return getSourceType(schemaOrType) === 'list'
 }
 
-/**
- * Returns whether `schema` is a source with its own resource, whose items are
- * loaded, validated and submitted through their own forms, separately from
- * the data that contains them.
- */
+// The items of sources with their own resource are loaded, validated and
+// submitted through their own forms, separately from the data containing them:
 export function isSourceWithResource(schema) {
   return !!getSourceType(schema) && !!schema.resource
 }

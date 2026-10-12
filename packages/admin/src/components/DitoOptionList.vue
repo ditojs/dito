@@ -1,9 +1,6 @@
 <template lang="pug">
-//- The list of the options of an options component that shows all of them at
-//- once, e.g. radio buttons and checkboxes. Grouped options, see
-//- `schema.groupBy`, are listed in a fieldset per group. The `option` slot
-//- renders each option, and receives `isFirstOption` so that the component can
-//- reference the input to focus, see `useFocus()`.
+//- Options shown all at once, like radios and checkboxes, grouped in fieldsets.
+//- `isFirstOption` lets the component reference the input to focus.
 ul.dito-option-list(:class="layoutClass")
   template(
     v-if="isGrouped"
@@ -43,8 +40,7 @@ export default {
   name: 'DitoOptionList',
 
   props: {
-    // The options, or with `isGrouped` their groups, each with `label` and
-    // `options`, see `groupOptions()`.
+    // With `isGrouped`, the groups of options with `label` and `options`:
     options: { type: Array, required: true },
     isGrouped: { type: Boolean, default: false },
     layout: { type: String, default: null }

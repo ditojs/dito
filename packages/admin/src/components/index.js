@@ -1,6 +1,5 @@
-// NOTE: The admin registers all components globally, see `DitoAdmin`. The
-// sequence is meaningful for reasons of CSS declaration sequence. The
-// convention is in order of encountered hierarchy in the DOM.
+// NOTE: The sequence determines the CSS declaration sequence, so follow the
+// hierarchy encountered in the DOM.
 
 export { default as DitoRoot } from './DitoRoot.vue'
 export { default as DitoMenu } from './DitoMenu.vue'

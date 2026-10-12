@@ -46,27 +46,13 @@ const DitoTypeCheckboxes = {
 
   setup(props) {
     const field = useField(props, { nativeField: true })
-    const {
-      options,
-      groupBy,
-      editable,
-      multiple,
-      selectedValue,
-      getValueForOption,
-      getLabelForOption
-    } = useOptions(props, field)
+    const optionsField = useOptions(props, field)
+    const { multiple, selectedValue } = optionsField
     return {
-      attributes: field.attributes,
-      context: field.context,
-      componentPath: field.componentPath,
-      options,
-      groupBy,
-      editable,
-      getValueForOption,
-      getLabelForOption,
+      ...field,
+      ...optionsField,
 
-      // The values of the checked checkboxes, as an array for their `v-model`,
-      // also with `multiple: false`.
+      // An array for the `v-model` of checkboxes, also with `multiple: false`:
       checkedValues: computed({
         get() {
           const selected = selectedValue.value
@@ -78,8 +64,7 @@ const DitoTypeCheckboxes = {
         },
 
         set(values) {
-          // With `multiple: false`, checking a checkbox unchecks the checked
-          // one, as the `v-model` of checkboxes appends checked values.
+          // Uncheck the checked one, as the `v-model` appends checked values:
           selectedValue.value = multiple.value
             ? values
             : (values.at(-1) ?? null)

@@ -5,18 +5,13 @@ import { isListSource } from '../utils/schema/structure.js'
 import { getItemAdapter } from '../utils/schema/types.ts'
 import type { ListEntry } from '../utils/DataModel.ts'
 import type { Services } from '../utils/services.ts'
-import type { Data, Schema } from '../utils/types.ts'
+import type { Data } from '../utils/types.ts'
+import type { FieldProps } from './useField.ts'
 
-export interface SourceDataProps {
-  readonly schema: Schema
-  readonly data: Data
-  readonly dataPath: string
-}
-
-// The items of a list or object source in its value, wrapped for its forms if
-// they're primitives, and the data that the source loads through its resource.
+// The items of a list or object source, with primitives wrapped for its forms,
+// and the data that it loads through its resource.
 export function useSourceData(
-  props: SourceDataProps,
+  props: FieldProps,
   {
     services,
     value,
@@ -29,13 +24,11 @@ export function useSourceData(
     getPageOffset: () => number | undefined
   }
 ) {
-  // Sources hold either a list or an object:
   const isList = () => isListSource(props.schema)
   const itemAdapter = computed(() => getItemAdapter(props.schema))
   const wrappedPrimitives = ref<Data[] | null>(null)
   const getModel = () => services.container!.model
 
-  // Lists can also be loaded as `{ results, total }`, see `setData()`:
   const isListResults = (data: any) => (
     isList() &&
     isObject(data) &&
@@ -43,7 +36,6 @@ export function useSourceData(
     isArray(data.results)
   )
 
-  // The items held by the value, before wrapping primitives:
   const valueListData = computed<any[]>(() => {
     const data = value.value
     return !isList()
@@ -53,7 +45,7 @@ export function useSourceData(
       : (isListResults(data) ? data.results : data) || []
   })
 
-  // Copied, so that changes of the values are tracked too:
+  // Copy the values to track their changes too:
   const primitiveValues = computed(() =>
     itemAdapter.value ? [...valueListData.value] : null
   )
@@ -87,28 +79,23 @@ export function useSourceData(
     set: data => (listData.value = data ? [data] : [])
   })
 
-  // The list for the change API of the data model:
   const listEntry = computed<ListEntry>(() => ({
     schema: props.schema,
     list: listData.value,
     dataPath: props.dataPath
   }))
 
-  // Write the value loaded through the source's resource directly, as loading
-  // isn't an edit, and replace the source's changes:
+  // Loading isn't an edit, and replaces the source's changes:
   const setLoadedValue = (data: any) => {
     props.data[props.schema.name] = data
     getModel().markClean({ dataPath: props.dataPath })
   }
 
-  // Number the loaded items by their order key from the offset of the page,
-  // so that their order can be stored even if it never changes, e.g. by a
-  // button that saves the current order:
+  // Number the loaded items from the offset of the page, so that buttons can
+  // store their order even if it never changes:
   const setLoadedListItems = (items: Data[]) =>
     setLoadedValue(updateOrder(props.schema, items, getPageOffset()))
 
-  // Replace the value with the results of `{ results, total }`, and remember
-  // the total in the store:
   const unwrapListData = (data: any) => {
     if (isListResults(data)) {
       total.value = data.total
@@ -118,11 +105,10 @@ export function useSourceData(
     return false
   }
 
-  // Values that were inherited from the parent are unwrapped here:
+  // Unwrap `{ results, total }` also when inherited from the parent:
   watch(value, data => unwrapListData(data), { immediate: true })
 
-  // Wrap the primitive values in objects for the list's forms to edit, unless
-  // they're the values that were just unwrapped from them:
+  // Wrap the primitives for the forms, unless they were just unwrapped:
   watch(
     primitiveValues,
     values => {
@@ -133,8 +119,7 @@ export function useSourceData(
     { immediate: true }
   )
 
-  // Map edits of the wrapped primitives back to the primitive values, in
-  // place, as the list holds the errors of its values:
+  // Write edits back in place, as the list holds the errors of its values:
   watch(
     wrappedPrimitives,
     () => {
@@ -157,7 +142,6 @@ export function useSourceData(
   return {
     isListSource: computed(isList),
     isObjectSource: computed(() => !isList()),
-    itemAdapter,
     listData,
     objectData,
     listEntry,
@@ -168,9 +152,7 @@ export function useSourceData(
       setLoadedValue(null)
     },
 
-    // Set the data loaded through the resource, as an array, an object, or
-    // `{ results, total }`. Views also load their whole data through the
-    // resource of their list, including the list:
+    // Views load their whole data through the resource of their list:
     setData(data: any) {
       const { route } = services
       if (isList() && isArray(data)) {
@@ -187,5 +169,3 @@ export function useSourceData(
     }
   }
 }
-
-export type SourceData = ReturnType<typeof useSourceData>

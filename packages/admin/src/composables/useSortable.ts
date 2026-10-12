@@ -3,15 +3,11 @@ import type { ContainerContext } from '../utils/ContainerContext.ts'
 import type { ListEntry } from '../utils/DataModel.ts'
 
 export interface SortableOptions {
-  // The list that dragging sorts, which moves its items through the data
-  // model. Components without it apply the sorted list themselves, e.g. tree
-  // items:
+  // Components without it apply the sorted list themselves, like tree items:
   getListEntry?: () => ListEntry
   onChange?: () => void
 }
 
-// Sort a list of the component's data by dragging its items, see
-// `DitoDraggable`.
 export function useSortable({
   getListEntry,
   onChange
@@ -48,8 +44,7 @@ export function useSortable({
           isDragging.value = true
         },
 
-        // The reordered list that `DitoDraggable` emits is ignored, as the
-        // item moves in place:
+        // Ignore the list `DitoDraggable` emits, the item moves in place:
         onEnd({ oldIndex, newIndex }: { oldIndex: number; newIndex: number }) {
           isDragging.value = false
           if (getListEntry) {
@@ -59,7 +54,7 @@ export function useSortable({
       }
     },
 
-    // Move the item by `delta` positions, see `DitoDragHandle`:
+    // Move by `delta` positions, from the keyboard in `DitoDragHandle`:
     moveItem(item: any, delta: number) {
       const index = getListEntry!().list.indexOf(item)
       moveSortableItem(index, index + delta)

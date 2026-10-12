@@ -12,22 +12,10 @@ import { applyNestedSchemaDefaults } from './schema/setup.js'
 export const filterComponents = {
   'text'(filter) {
     const options = [
-      {
-        label: 'contains',
-        value: 'contains'
-      },
-      {
-        label: 'equals',
-        value: 'equals'
-      },
-      {
-        label: 'starts with',
-        value: 'starts-with'
-      },
-      {
-        label: 'ends with',
-        value: 'ends-with'
-      }
+      { label: 'contains', value: 'contains' },
+      { label: 'equals', value: 'equals' },
+      { label: 'starts with', value: 'starts-with' },
+      { label: 'ends with', value: 'ends-with' }
     ]
     return {
       operator: filter.operators
@@ -56,18 +44,11 @@ export const filterComponents = {
       width: '1/2',
       formats: {
         // Use shorter date format in date-range filters:
-        date: {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric'
-        }
+        date: { day: '2-digit', month: '2-digit', year: 'numeric' }
       },
       clearable: true
     }
-    return {
-      from: datetime,
-      to: datetime
-    }
+    return { from: datetime, to: datetime }
   }
 }
 
@@ -112,11 +93,9 @@ export function createFiltersPanel(api, filters, dataPath, query) {
     type: 'panel',
     label: 'Filters',
     name: '$filters',
-    // Override the default value
     disabled: false,
     sticky,
 
-    // The panel's own data:
     data() {
       return parseFiltersData(panel, query.value)
     },
@@ -143,10 +122,7 @@ function getDataName(filterName) {
 }
 
 // The server keys the validation errors of filters by filter name, e.g.
-// `title/text`, see the server's `models/definitions/filters.js`, while the
-// filters panel keys the filter data by data name, e.g. `$title`. Returns the
-// errors keyed by the data paths of the panel. Paths that already start with a
-// data name, and empty paths, are kept.
+// `title/text`, while the panel keys the filter data by data name, `$title`:
 export function getFiltersDataErrors(errors) {
   const dataErrors = {}
   for (const [dataPath, errs] of Object.entries(errors)) {
@@ -170,10 +146,8 @@ function getFilterName(dataName) {
 function createFiltersComponents(filters) {
   const comps = {}
   for (const filter of Object.values(getNamedSchemas(filters) || {})) {
-    // Support both custom forms and default filter components, through the
-    // `filterComponents` registry. Even for default filters, still use the
-    // properties in `filter` as the base for `form`, so things like `label`
-    // can be changed on the resulting form.
+    // Use the properties of default filters as the base of `form` too, so
+    // things like `label` can be changed:
     const { filter: type, width, ...form } = filter
     const components = type
       ? filterComponents[type]?.(filter)
@@ -220,9 +194,7 @@ function formatFiltersData(schema, data) {
     const entry = data[dataName]
     if (entry) {
       // Map components sequence to arguments:
-      const args = Object.keys(
-        getComponentsForFilter(schema, dataName)
-      ).map(
+      const args = Object.keys(getComponentsForFilter(schema, dataName)).map(
         key => entry[key] ?? null
       )
       // Only apply filter if there are some arguments that aren't null:
@@ -261,8 +233,7 @@ function parseFiltersData(schema, query) {
   const filtersData = {}
   for (const dataName in schema.components) {
     const data = {}
-    // If we have retrieved params from the query, fetch the associated
-    // form components so we can map the values back to object keys:
+    // Map the params from the query back to the keys of the form components:
     const args = filters[getFilterName(dataName)]
     if (args) {
       const components = getComponentsForFilter(schema, dataName)

@@ -9,8 +9,6 @@ import { confirm } from '../utils/dialogs.js'
 import type { AdminContext } from '../utils/AdminContext.ts'
 import type { RouteContext } from '../utils/RouteContext.ts'
 
-// Guard the route of a view or form against leaving it with changes that get
-// lost, and let it navigate after submits without overriding the user.
 export function useLeaveGuard(
   route: RouteContext,
   {
@@ -24,13 +22,10 @@ export function useLeaveGuard(
   }
 ) {
   const router = useRouter()
-  // Whether leaving was prevented because the data is invalid, so that the
-  // next attempt can leave:
+  // The next attempt to leave invalid data can leave:
   let hasPreventedLeavingInvalidData = false
-  // The pending confirmation to discard the changes, shared by the navigations
-  // that happen while its dialog is open, e.g. through the back button:
+  // Shared by the navigations while its dialog is open, e.g. the back button:
   let discardConfirmation: Promise<boolean> | null = null
-  // Whether a navigation away from the route waits for its pending submits:
   let isWaitingToLeave = false
 
   const beforeRouteChange = async (
@@ -39,29 +34,22 @@ export function useLeaveGuard(
   ) => {
     let ok = true
     const isClosing = (
-      // Only handle this route change if the form is actually mapped to the
-      // `from` route, but include parent forms of closing nested forms as
-      // well, by matching the from/to paths against `route.path`. Hash changes
-      // only (= tab changes) and nested forms that open stay within it, while
-      // other items, e.g. `/items/12` for `/items/1`, are outside of it.
+      // Include the parents of closing nested forms. Tab changes and nested
+      // forms that open stay within the path, other items leave it:
       isPathWithin(from.path, route.path) &&
       !isPathWithin(to.path, route.path)
     )
     if (isClosing) {
       const { model } = route.container
-      // Write the edits that are held back, e.g. debounced markup edits:
+      // Write the edits that are held back, e.g. debounced ones:
       model.writePendingValues()
       if (isMutating()) {
-        // Directly mutating (nested) forms validate their data once, which
-        // includes the fields that aren't mounted, e.g. in collapsed schemas.
-        // If the user then still wants to leave them, they can click close /
-        // navigate away again.
+        // Mutating forms validate their data once, also the fields that
+        // aren't mounted. Leaving again leaves the invalid data:
         ok = hasPreventedLeavingInvalidData || route.container.validate()
         hasPreventedLeavingInvalidData = !ok
       } else {
-        // The form or view doesn't directly mutate data. Its data stays dirty
-        // while it's being submitted, so wait for the submits first, and leave
-        // without asking once they succeeded:
+        // Data stays dirty while it's submitted, so wait for the submits:
         if (model.hasPendingSubmits) {
           isWaitingToLeave = true
           await model.waitUntilSubmitted()
@@ -90,9 +78,8 @@ export function useLeaveGuard(
   onBeforeRouteLeave(beforeRouteChange)
   onBeforeRouteUpdate(beforeRouteChange)
 
-  // Navigate after a submit only while the route is within `path`, the path of
-  // the form when it started. If a navigation away waits for the submit, we
-  // decide once it settled, as navigating now would cancel it:
+  // Navigate after a submit only while the route is within the form's `path`.
+  // If a navigation away waits for the submit, we decide once it settled:
   const navigateWithin = (path: string, navigate: () => unknown) => {
     if (isWaitingToLeave) {
       const removeHook = router.afterEach(() => {

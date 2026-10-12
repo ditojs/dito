@@ -8,7 +8,6 @@ import type { Context } from '../utils/schema/types.ts'
 import type { Data, Schema } from '../utils/types.ts'
 
 export interface ItemLabelOptions {
-  // The services of the item contexts, and the context of the forms' callbacks:
   services: object
   getContext: () => Context
   getSchema: () => Schema
@@ -16,9 +15,8 @@ export interface ItemLabelOptions {
   isTransient?: () => boolean
 }
 
-// The ids, data paths and labels of the items of `sourceSchema`: of the
-// component's own source schema, or of a source in its data, e.g. the children
-// of tree items.
+// The ids, data paths and labels of the items of the component's own source
+// schema, or of a source in its data, like the children of tree items.
 export function useItemLabel({
   services,
   getContext,
@@ -46,7 +44,7 @@ export function useItemLabel({
       })
     },
 
-    // Return the label of `item` as HTML, see `getItemLabel()`:
+    // Labels are HTML:
     getItemLabel(
       sourceSchema: Schema,
       item: Data | null,

@@ -46,8 +46,6 @@ import {
   computed,
   inject,
   markRaw,
-  onBeforeUnmount,
-  provide,
   reactive,
   ref,
   toRefs,
@@ -56,14 +54,13 @@ import {
 import { isFunction } from '@ditojs/utils'
 import DitoContext from '../DitoContext.js'
 import {
-  useServices,
+  useContainer,
   useSchemaContext
 } from '../composables/useSchemaContext.ts'
 import { useSchemaValue } from '../composables/useSchemaValue.ts'
 import { useComponentPath } from '../composables/useComponentPath.ts'
 import { getButtonSchemas } from '../utils/schema/lookup.js'
 import { shouldRenderComponents } from '../utils/schema/data.js'
-import { DataModel } from '../utils/DataModel.ts'
 import { ContainerContext } from '../utils/ContainerContext.ts'
 
 export default {
@@ -75,10 +72,8 @@ export default {
     data: { type: Object, required: true },
     store: { type: Object, required: true },
     disabled: { type: Boolean, required: true },
-    // Tells if the tab of the panel's component is selected, for panels of
-    // components in tabs, see `getAllPanelEntries()`:
+    // For panels of components in tabs:
     isTabSelected: { type: Function, default: null },
-    // The component path of the panel's entry, see `getAllPanelEntries()`:
     panelComponentPath: { type: String, required: true }
   },
 
@@ -97,46 +92,41 @@ export default {
       })
     )
     const { getSchemaValue, getLabel } = useSchemaValue(context)
-    const schemaComponent = useTemplateRef('schema')
     const ownData = ref(null)
     const hasOwnData = computed(() => !!ownData.value)
     const panelData = computed(() => ownData.value || props.data)
-    // Panels with their own data are their own container:
     const panelDataPath = computed(() =>
       hasOwnData.value ? '' : schemaContext.dataPath
     )
 
-    // Own data gets its own data model, so that its edits don't make the data
+    // Own data gets its own container, so that its edits don't make the data
     // around the panel dirty:
     let panelServices = services
     if (props.schema.data) {
       const { data } = props.schema
       ownData.value = isFunction(data) ? data(context) : data
       const container = markRaw(
-        new ContainerContext({
-          get dataModel() {
-            return dataModel
-          },
-          get schemaComponent() {
-            return schemaComponent.value
-          },
-          setData(data) {
-            ownData.value = data
-            return ownData.value
-          }
-        })
+        new ContainerContext(
+          reactive({
+            schemaComponent: useTemplateRef('schema'),
+            get dataModel() {
+              return dataModel
+            },
+            setData(data) {
+              ownData.value = data
+              return ownData.value
+            }
+          })
+        )
       )
-      provide('container', container)
-      panelServices = useServices({ container })
-      const dataModel = markRaw(
-        new DataModel({
-          schema: () => props.schema,
-          data: () => ownData.value,
-          services: panelServices
-        })
-      )
-      // The model's watchers aren't the component's, see `DataModel`:
-      onBeforeUnmount(() => dataModel.stop())
+      const { services: ownServices, createDataModel } = useContainer({
+        container
+      })
+      panelServices = ownServices
+      const dataModel = createDataModel({
+        schema: () => props.schema,
+        data: () => ownData.value
+      })
     }
 
     return {

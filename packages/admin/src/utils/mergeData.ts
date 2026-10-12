@@ -1,24 +1,19 @@
 import { isArray, isObject } from '@ditojs/utils'
 import { isTemporaryId } from './data.js'
 import { getItemId, getItemUid, processSchemaData } from './schema/data.js'
-import type { SchemaDataEntry } from './schema/data.js'
 import { hasFormSchema, hasMultipleFormSchemas } from './schema/lookup.js'
 import { isSourceWithResource } from './schema/structure.js'
-import type { Data, Schema } from './types.ts'
+import type { Data, Schema, SchemaDataEntry } from './types.ts'
 
-// A target object with the names of its values that are merged in place or
-// kept, which aren't replaced by the values of the source object:
+// The names of the values that are merged in place or kept, not replaced:
 interface Merge {
   target: Data
   names: Set<string>
 }
 
-// Merges `source` into `target` in place along the components of `schema`, so
-// that the objects of `target` keep their uids, stores and open forms. Values
-// missing in `source` are removed, except the kept data of sources with their
-// own resource, which responses don't contain. List items are matched by their
-// ids, or by their uids if `source` is a copy of `target` that shares them,
-// e.g. the draft of a nested form, see `cloneWithUids()`.
+// Merge in place, so the objects of `target` keep their uids, stores and open
+// forms. List items are matched by their ids, or by their uids if `source` is a
+// copy of `target` that shares them, e.g. the draft of a nested form.
 export function mergeData(
   schema: Schema,
   target: Data,
@@ -86,10 +81,8 @@ export function mergeData(
   return target
 }
 
-// Matches the items of the lists by the ids of `sourceSchema`. The remaining
-// items are matched with the new items of `target` in order, as the server
-// keeps the order of new items when it gives them their ids. Copies that share
-// the uids of their items are matched by these only.
+// Match the remaining items with the new items of `target` in order, as the
+// server keeps the order of new items when it gives them their ids.
 function mergeList(
   sourceSchema: Schema,
   target: any[],
@@ -137,9 +130,7 @@ function mergeList(
   target.splice(0, target.length, ...items)
 }
 
-// Items of sources with several forms are only merged if they have the same
-// type, which selects their form. Otherwise, they're replaced, as they have a
-// different shape.
+// Items of a different type have a different shape, and are replaced:
 function hasSameFormSchema(sourceSchema: Schema, source: Data, target: Data) {
   return !hasMultipleFormSchemas(sourceSchema) || source.type === target.type
 }
