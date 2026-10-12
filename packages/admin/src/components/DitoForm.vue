@@ -443,14 +443,19 @@ export default {
             item
           )
         } else {
+          const location = {
+            data: list,
+            name: sourceKey.value,
+            dataPath: dataPath.value
+          }
           if (isCreating.value || adapter) {
-            parentModel.set(list, sourceKey.value, item)
+            parentModel.set(location, item)
             // Primitives have no identity, so keep the draft of the new value:
             if (adapter) {
               original.value = item
             }
           } else {
-            parentModel.merge(list, sourceKey.value, item, sourceSchema.value)
+            parentModel.merge(location, item, sourceSchema.value)
           }
           emitSchemaEvent('change')
         }

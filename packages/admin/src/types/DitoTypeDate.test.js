@@ -72,7 +72,7 @@ describe('DitoTypeDate', () => {
       request: ({ data }) => ({ data: clone(data) })
     })
     await enterValue(findField('publishedOn').find('input'), 'May 14, 2026')
-    dataModel.set(data, 'createdAt', createdAt)
+    dataModel.set({ data, name: 'createdAt', dataPath: 'createdAt' }, createdAt)
     expect(await submit()).toMatchObject({
       publishedOn: '2026-05-14',
       createdAt: createdAt.toISOString()

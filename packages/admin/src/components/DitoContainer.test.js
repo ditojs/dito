@@ -108,7 +108,7 @@ describe('DitoContainer', () => {
       })
       formatValue.mockClear()
       info.mockClear()
-      dataModel.set(data, 'title', 'persuasion')
+      dataModel.set({ data, name: 'title', dataPath: 'title' }, 'persuasion')
       await settle()
       const container = findContainer('title')
       expect(container.find('input').element.value).toBe('PERSUASION')

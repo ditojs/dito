@@ -293,7 +293,14 @@ const DitoTypeUpload = {
         const index = getFileIndex(file)
         if (index >= 0) {
           if (newFile) {
-            getModel().set(value.value, index, newFile)
+            getModel().set(
+              {
+                data: value.value,
+                name: index,
+                dataPath: appendDataPath(props.dataPath, index)
+              },
+              newFile
+            )
           } else {
             getModel().remove(listEntry.value, index)
           }

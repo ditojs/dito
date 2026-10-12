@@ -254,7 +254,8 @@ describe('DitoForm', () => {
         request: ({ data }) => ({ data: { id: 1, ...data } })
       })
       // Components write their values through the data model:
-      const write = (name, value) => form.dataModel.set(form.data, name, value)
+      const write = (name, value) =>
+        form.dataModel.set({ data: form.data, name, dataPath: name }, value)
       write('title', 'Emma')
       write('tags', ['novel'])
       await form.settle()
@@ -481,7 +482,10 @@ describe('DitoForm', () => {
         .trigger('click')
       await flushPromises()
       const { dataContext, data } = routeComponent
-      dataContext.model.set(data, 'title', 'Sanditon')
+      dataContext.model.set(
+        { data, name: 'title', dataPath: 'title' },
+        'Sanditon'
+      )
       // A response without data, which leaves the edit in place:
       response.resolve({})
       await settle(routeComponent)
@@ -542,7 +546,10 @@ describe('DitoForm', () => {
       const { chapters } = routeComponent.data
       const [, second] = chapters
       const { model } = routeComponent.dataContext
-      model.set(routeComponent.data, 'title', 'Persuasion')
+      model.set(
+        { data: routeComponent.data, name: 'title', dataPath: 'title' },
+        'Persuasion'
+      )
       await submit()
       expect(routeComponent.data.chapters).toBe(chapters)
       expect(chapters).toEqual([second])

@@ -22,13 +22,16 @@ export function useValue(
     },
 
     set(value) {
-      const { schema, data } = props
+      const { schema, data, dataPath } = props
       const { parseValue } = schema
       if (parseValue) {
         value = parseValue(createContext({ value }))
       }
       parsedValue.value = value
-      services.dataContext!.model.set(data, schema.name, value)
+      services.dataContext!.model.set(
+        { data, name: schema.name, dataPath },
+        value
+      )
     }
   })
   return { value, parsedValue }
