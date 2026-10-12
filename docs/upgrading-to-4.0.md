@@ -187,6 +187,18 @@ are removed. The state and actions that callbacks used them for are members of
 the context. `isDirty`, `isCreating`, `validate()`, `markEdited()` and
 `replaceItem()` belong to the data of the context: of its form, view, dialog or
 panel with its own data, e.g. the filters panel, a nested form being its own.
+Forms with `mutate: true` are the exception: they edit the item of their
+parent in the parent's data, so their `isDirty` reports the parent's state.
+
+A callback sees the context of the place where it is declared: the callbacks of
+a component, e.g. its `if`, `label` and `events`, see the item that the
+component is in, the callbacks that decide about a panel the data around the
+panel, and the ones of the panel's components the panel's data. Components
+without a schema or data of their own, e.g. tabs, scopes, the table head, label
+affixes and the clipboard, give their callbacks the context of the component
+that renders them. Events that bubble up from components, e.g. `change`, keep
+the context of the component that emitted them, with the `dataPath` of the
+changed value.
 
 - `formComponent.isDirty` and `formComponent.isCreating`: `isDirty` and
   `isCreating`, which is `false` outside of forms.
@@ -209,8 +221,8 @@ panel with its own data, e.g. the filters panel, a nested form being its own.
   `showDialog({ components, buttons }, { data, settings })`, which resolves
   with the value that the dialog is closed with. In the dialog,
   `dialogComponent.resolve(value)` is `closeDialog(value)`.
-  `dialogComponent.reject()` is removed. `adminContext.showDialog()` takes the same
-  arguments.
+  `dialogComponent.reject()` is removed. `adminContext.showDialog()` takes
+  the same arguments.
 - `formComponent.selectedTab`: `selectedTab`, the selected tab of the nearest
   form. Tabs render once they're selected and stay rendered, so their
   components don't need to check for their tab. Revealing errors renders the
@@ -283,16 +295,18 @@ function copyAddress(order) {
 ### Admin context
 
 `DitoAdmin` provides the services of the admin to all components as one object,
-the `adminContext` inject, which it keeps as its `context` too. It replaces the `api`,
-`session` and `viewRegistry` injects, and the members of components that
+the `adminContext` inject, which it keeps as its `context` too. It replaces the
+`api`, `session` and `viewRegistry` injects, and the members of components that
 reached them:
 
-- `api`, `user`, `views` and `flattenedViews`: `adminContext.api`, `adminContext.user`,
-  `adminContext.views` and `adminContext.flattenedViews`, which are reactive. `locale`:
-  `adminContext.api.locale`. `session`: `adminContext.session`.
-- `notify()`, `showDialog()` and `closeNotifications()`: `adminContext.notify()`,
-  `adminContext.showDialog()` and `adminContext.closeNotifications()`. Contexts keep
-  `notify()` and `showDialog()`.
+- `api`, `user`, `views` and `flattenedViews`: `adminContext.api`,
+  `adminContext.user`, `adminContext.views` and `adminContext.flattenedViews`,
+  which are reactive. `locale`: `adminContext.api.locale`. `session`:
+  `adminContext.session`.
+- `notify()`, `showDialog()` and `closeNotifications()`:
+  `adminContext.notify()`, `adminContext.showDialog()` and
+  `adminContext.closeNotifications()`. Contexts keep `notify()` and
+  `showDialog()`.
 - `rootComponent` is removed. `rootComponent.isLoading`:
   `adminContext.loadingTracker.isLoading`. The deprecated
   `rootComponent.registerLoading()` is removed: use
@@ -398,14 +412,13 @@ Views provide both contexts of their main component, e.g. to their panels.
 ### Routes and the UI registry
 
 Views and forms are built from composables, `useRouteContainer()` and
-`useLeaveGuard()`, instead of `RouteMixin`, and `SchemaParentMixin` is
-removed. Components no longer reach each other to reveal and focus
-components: `adminContext.ui`, the `UiRegistry` of the admin, holds the handles of
-the rendered components by component path, and the contexts of the rendered
-routes.
+`useLeaveGuard()`, instead of `RouteMixin`, and `SchemaParentMixin` is removed.
+Components no longer reach each other to reveal and focus components:
+`adminContext.ui`, the `UiRegistry` of the admin, holds the handles of the
+rendered components by component path, and the contexts of the rendered routes.
 
-- `appState.routeComponents`: `adminContext.ui.routes`, the route contexts by level.
-  Route contexts add `isLeaving`, `isDirty` and `breadcrumb`.
+- `appState.routeComponents`: `adminContext.ui.routes`, the route contexts by
+  level. Route contexts add `isLeaving`, `isDirty` and `breadcrumb`.
 - The `$schemaParentComponent` and `$tabComponent` injects, `tabComponent`,
   `parentSchemaComponent`, `schemaComponents` and `mainSchemaComponent` are
   removed. The `$schemaComponent` inject only remains for schema events.
@@ -414,11 +427,11 @@ routes.
   `getPanel()` and `getPanels()`, `components`, `panes`, `panels` and
   `revealComponents()`, sections and sources no longer
   `revealComponents()`, panes no longer `focus()`.
-- `adminContext.ui.reveal(dataContext, componentPath, { focus })` asks the components
-  on the way to the component from the outside in to render it, e.g.
+- `adminContext.ui.reveal(dataContext, componentPath, { focus })` asks the
+  components on the way to the component from the outside in to render it, e.g.
   collapsed schemas open and render the tab that contains it, which focusing
-  selects, and then focuses it. Focusing components in nested tabs selects
-  these tabs too.
+  selects, and then focuses it. Focusing components in nested tabs selects these
+  tabs too.
 - Forms and views no longer have `label` and `breadcrumbPrefix`, views no
   longer `param`, `isNestedRoute` and `isMutating`. Their route guards use
   `onBeforeRouteLeave()` and `onBeforeRouteUpdate()`, so components no longer
@@ -488,11 +501,11 @@ routes.
 - The components of dito's types are built with composables instead of
   `TypeMixin`, `ValueMixin`, `ContextMixin`, `TextMixin`, `NumberMixin`,
   `OptionsMixin`, `DomMixin` and `SortableMixin`, which are removed. Their
-  instances no longer have `value`, `item`, `parentItem`, `rootItem`,
-  `focused`, `validate()` or the resolved schema values, e.g. `readonly`, and
-  their contexts are built from their props and services instead of the
-  instance. They no longer have `focus()`: `adminContext.ui.reveal()` reveals and
-  focuses them by their component path.
+  instances no longer have `value`, `item`, `parentItem`, `rootItem`, `focused`,
+  `validate()` or the resolved schema values, e.g. `readonly`, and their
+  contexts are built from their props and services instead of the instance. They
+  no longer have `focus()`: `adminContext.ui.reveal()` reveals and focuses them
+  by their component path.
 - The data model replaces the values of components with options once the
   options are loaded, e.g. references with their related objects, and shows
   the errors of failed loads, also while the component isn't rendered. Values
