@@ -234,17 +234,17 @@ const DitoTypeMultiselect = {
       }),
 
       placeholder: computed(() => {
-        let { placeholder, searchable, taggable } = props.schema
+        let { placeholder } = props.schema
         if (isBoolean(placeholder)) {
           placeholder = placeholder ? undefined : null
         }
         const label = field.label.value
         return placeholder === undefined
-          ? searchable && taggable
+          ? searchable.value && taggable.value
             ? label
               ? `Search or add a ${label}`
               : 'Search or add'
-            : searchable
+            : searchable.value
               ? label
                 ? `Select or search ${label}`
                 : 'Select or search'
