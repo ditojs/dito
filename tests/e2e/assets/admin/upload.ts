@@ -37,7 +37,7 @@ test.describe('upload', () => {
       `${url}/admin/assets/${widgetId}`
     )
     const upload = new DitoUploadField(page, 'files')
-    await upload.waitUntilVisible({ timeout: 15_000 })
+    await upload.waitUntilVisible()
 
     await upload.upload(
       path.resolve(fixturesDir, 'tiny.png')
@@ -56,7 +56,7 @@ test.describe('upload', () => {
       `${url}/admin/assets/${widgetId}`
     )
     const upload = new DitoUploadField(page, 'files')
-    await upload.waitUntilVisible({ timeout: 15_000 })
+    await upload.waitUntilVisible()
 
     await upload.upload(
       path.resolve(fixturesDir, 'tiny.png')
@@ -84,7 +84,7 @@ test.describe('upload', () => {
       `${url}/admin/assets/${widgetId}`
     )
     const upload = new DitoUploadField(page, 'files')
-    await upload.waitUntilVisible({ timeout: 15_000 })
+    await upload.waitUntilVisible()
 
     await upload.upload(
       path.resolve(fixturesDir, 'tiny.png')
@@ -122,7 +122,7 @@ test.describe('upload', () => {
       `${url}/admin/assets/${widgetId}`
     )
     const upload = new DitoUploadField(page, 'files')
-    await upload.waitUntilVisible({ timeout: 15_000 })
+    await upload.waitUntilVisible()
 
     await upload.upload(
       path.resolve(fixturesDir, 'tiny.png')
@@ -133,7 +133,7 @@ test.describe('upload', () => {
     await page.goto(
       `${url}/admin/assets/${widgetId}`
     )
-    await upload.waitUntilVisible({ timeout: 15_000 })
+    await upload.waitUntilVisible()
 
     const row = upload.getRow(0)
     await expect(row).toContainText('Stored')

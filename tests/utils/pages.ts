@@ -1,4 +1,9 @@
-import { expect, type Locator, type Page } from '@playwright/test'
+import {
+  expect,
+  type Locator,
+  type Page,
+  type Response
+} from '@playwright/test'
 import { acceptConfirmDialog } from './dialogs.js'
 
 // Dito multiselect uses role=combobox + role=option in a portal. Option click
@@ -65,16 +70,14 @@ export class DitoList {
   async delete(text: string) {
     const row = this.getRow(text)
     await row.hover()
-    const deleted = this.page
-      .waitForResponse(
-        resp => (
-          resp.request().method() === 'DELETE' &&
-          /\/api\//.test(resp.url()) &&
-          resp.ok()
-        ),
-        { timeout: 5_000 }
-      )
-      .catch(() => null)
+    const deleted = this.page.waitForResponse(
+      resp => (
+        resp.request().method() === 'DELETE' &&
+        /\/api\//.test(resp.url()) &&
+        resp.ok()
+      ),
+      { timeout: 0 } // Up to the test's timeout.
+    )
     await row.getByRole('button', { name: 'Delete' }).click()
     await acceptConfirmDialog(this.page)
     await deleted
@@ -172,7 +175,7 @@ export class DitoForm {
         expect(
           isClean || notificationCount > existingNotifications
         ).toBe(true)
-      }).toPass({ timeout: 15_000 })
+      }).toPass()
     await assertSettled()
     await assertSettled()
   }
@@ -185,28 +188,32 @@ export class DitoForm {
     await this.submitButton(button)
   }
 
+  // Settle once the server responded to the submit, or a notification shows
+  // that the form didn't send it, e.g. after failed validation:
   private async submitButton(button: Locator) {
-    // Anchor on the PATCH/POST so callers' assertions run *after* the
-    // server response.
-    const pending = this.page
-      .waitForResponse(
-        response => {
-          const method = response.request().method()
-          return (
-            (method === 'PATCH' || method === 'POST') &&
-            /\/api\//.test(response.url())
-          )
-        },
-        { timeout: 5_000 }
-      )
-      .catch(() => null)
-    // Click with a forgiving timeout: if the form is currently clean (the
-    // button is disabled because nothing's pending) the click would
-    // otherwise hang waiting for it to enable. Async events can flip the
-    // button between an isDisabled() guard and the click, so prefer
-    // click-with-timeout.
-    await button.click({ timeout: 5_000 }).catch(() => {})
-    await pending
+    const notificationCount = await this.getNotificationCount()
+    let hasResponded = false
+    const onResponse = (response: Response) => {
+      const method = response.request().method()
+      if (
+        (method === 'PATCH' || method === 'POST') &&
+        /\/api\//.test(response.url())
+      ) {
+        hasResponded = true
+      }
+    }
+    this.page.on('response', onResponse)
+    try {
+      await button.click()
+      await expect(async () => {
+        expect(
+          hasResponded ||
+          (await this.getNotificationCount()) > notificationCount
+        ).toBe(true)
+      }).toPass()
+    } finally {
+      this.page.off('response', onResponse)
+    }
   }
 
   private getNotificationCount() {
@@ -394,8 +401,8 @@ export class DitoUploadField {
     return this.rows.nth(index)
   }
 
-  async waitUntilVisible(options?: { timeout?: number }) {
-    await expect(this.container).toBeVisible(options)
+  async waitUntilVisible() {
+    await expect(this.container).toBeVisible()
   }
 
   async upload(filePath: string | string[]): Promise<void> {
