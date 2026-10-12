@@ -267,6 +267,17 @@ describe('Application', () => {
       )
     })
 
+    it('rejects services with setup() instead of configure()', () => {
+      class LegacyService extends Service {
+        setup(config) {
+          this.config = config
+        }
+      }
+      expect(() => createApp({ services: { LegacyService } })).toThrow(
+        `Unsupported setup() in service 'legacy', use configure() instead.`
+      )
+    })
+
     it('requires a configuration for each service', async () => {
       const app = createApp({ services: { MailerService }, config: {} })
       app.config.services = {}
