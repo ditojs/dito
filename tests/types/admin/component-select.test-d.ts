@@ -82,6 +82,16 @@ describe('MultiselectSchema', () => {
     })
   })
 
+  it('accepts callbacks for multiple, searchable, taggable', () => {
+    assertType<MultiselectSchema<Entry>>({
+      type: 'multiselect',
+      multiple: ({ item }) => !!item.title,
+      searchable: () => true,
+      taggable: () => false,
+      stayOpen: () => true
+    })
+  })
+
   it('accepts typed $Option with search callback', () => {
     type Tag = { id: number; name: string }
 

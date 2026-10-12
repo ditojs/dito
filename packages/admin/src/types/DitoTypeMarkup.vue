@@ -389,7 +389,9 @@ const DitoTypeMarkup = {
       styles: computed(() => ({
         height: (
           height.value ||
-          `calc(${props.schema.lines || 10}em * var(--line-height))`
+          `calc(${
+            getSchemaValue('lines', { type: Number, default: 10 })
+          }em * var(--line-height))`
         )
       })),
 

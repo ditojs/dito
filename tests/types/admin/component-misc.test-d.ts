@@ -2,6 +2,8 @@ import { expectTypeOf, assertType, describe, it } from 'vitest'
 import { getSchemaValue } from '@ditojs/admin'
 import type {
   MenuSchema,
+  UploadSchema,
+  TextareaSchema,
   View,
   NumberSchema,
   Form,
@@ -10,6 +12,19 @@ import type {
   SchemaContext
 } from '@ditojs/admin'
 import type { Entry } from './fixtures.ts'
+
+describe('Schemas with callbacks', () => {
+  it('accepts callbacks for the settings of uploads and lines', () => {
+    assertType<UploadSchema<Entry>>({
+      type: 'upload',
+      multiple: ({ item }) => !!item.title,
+      extensions: () => ['png'],
+      accept: () => 'image/png',
+      maxSize: () => '1MB'
+    })
+    assertType<TextareaSchema<Entry>>({ type: 'textarea', lines: () => 4 })
+  })
+})
 
 describe('MenuSchema', () => {
   it('accepts menu with items containing views', () => {

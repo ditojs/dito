@@ -156,6 +156,7 @@ import DitoDragHandle from '../components/DitoDragHandle.vue'
 import { DitoButton } from '@ditojs/ui/src'
 import { formatFileSize, parseFileSize } from '../utils/units.js'
 import { appendDataPath } from '../utils/data.js'
+import { getMultipleValue } from '../utils/schema/data.js'
 import { download, getResourceUrl, getVerbs } from '../utils/services.ts'
 import {
   fetchBlob,
@@ -194,14 +195,7 @@ const DitoTypeUpload = {
     const settleUploadById = new Map()
 
     const { getSchemaValue } = field
-    // No callback, as it's used in `serializeValue()`:
-    const multiple = computed(() =>
-      getSchemaValue('multiple', {
-        type: Boolean,
-        default: false,
-        callback: false
-      })
-    )
+    const multiple = computed(() => getMultipleValue(props.schema, context))
     const render = computed(() =>
       getSchemaValue('render', { type: Function, default: null })
     )
@@ -562,12 +556,12 @@ defineType({
   type: 'upload',
   component: DitoTypeUpload,
 
-  serializeValue({ schema, value }) {
+  serializeValue(context) {
     // Filter out added files that weren't uploaded:
-    const files = asFiles(value)
+    const files = asFiles(context.value)
       .map(({ upload, ...file }) => (!upload || upload.success ? file : null))
       .filter(file => file)
-    return schema.multiple ? files : files[0] || null
+    return getMultipleValue(context.schema, context) ? files : files[0] || null
   }
 })
 

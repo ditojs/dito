@@ -45,6 +45,19 @@ describe('DitoTypeUpload', () => {
     ])
   })
 
+  it('sends single files with a `multiple()` callback that is false', async () => {
+    const { submit } = await mountForm({
+      schema: {
+        components: {
+          attachment: { type: 'upload', multiple: ({ item }) => item.isGallery }
+        }
+      },
+      data: { isGallery: false, attachment: cover },
+      request: ({ data }) => ({ data })
+    })
+    expect((await submit()).attachment).toEqual(cover)
+  })
+
   it('renders files with `render()`', async () => {
     const { findField } = await mountForm({
       schema: {

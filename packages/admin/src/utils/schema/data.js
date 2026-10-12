@@ -166,13 +166,11 @@ export function hasValueFromDataSchema(schema) {
   )
 }
 
-// `optionsTraits.serializeValue()` calls this without a context:
 export function getMultipleValue(schema, context) {
   return getSchemaValue('multiple', {
     type: Boolean,
     schema,
     context,
-    callback: !!context,
     default: !!getTypeDescriptor(schema)?.defaultMultiple
   })
 }

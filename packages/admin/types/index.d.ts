@@ -1289,7 +1289,7 @@ export interface TextareaSchema<$Item = any>
    *
    * @defaultValue `4`
    */
-  lines?: number
+  lines?: OrItemAccessor<$Item, {}, number>
 }
 
 export interface CodeSchema<$Item = any> extends BaseSchema<$Item> {
@@ -1343,7 +1343,7 @@ export interface MarkupSchema<$Item = any> extends BaseSchema<$Item> {
    *
    * @defaultValue `10`
    */
-  lines?: number
+  lines?: OrItemAccessor<$Item, {}, number>
 
   /**
    * Whether TipTap input and paste rules are enabled. When
@@ -1424,14 +1424,14 @@ export interface UploadSchema<$Item = any> extends BaseSchema<$Item> {
    *
    * @default false
    */
-  multiple?: boolean
+  multiple?: OrItemAccessor<$Item, {}, boolean>
   /**
    * Allowed file extensions for upload.
    * @example 'zip' // Only files with zip extension
    * @example ['jpg', 'jpeg', 'gif', 'png']
    * @example /\.(gif|jpe?g|png)$/i
    */
-  extensions?: OrArrayOf<RegExp | string>
+  extensions?: OrItemAccessor<$Item, {}, OrArrayOf<RegExp | string>>
   /**
    * One or more unique file type specifiers that describe the type of file
    * that may be selected for upload by the user.
@@ -1440,13 +1440,13 @@ export interface UploadSchema<$Item = any> extends BaseSchema<$Item> {
    * @example ['image/png', 'image/gif', 'image/jpeg']
    * @see {@link https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/file#Unique_file_type_specifiers }
    */
-  accept?: OrArrayOf<string>
+  accept?: OrItemAccessor<$Item, {}, OrArrayOf<string>>
   /**
    * The maximum size of the file expressed as number of bytes or as a string
    * like `'200kB'`, `'1MB'`, `'3.2GB'`, etc., using base 10 (1 kB = 1000
    * bytes). IEC units like `'1MiB'` use base 2 (1 KiB = 1024 bytes).
    */
-  maxSize?: string | number
+  maxSize?: OrItemAccessor<$Item, {}, string | number>
   /**
    * Whether uploaded files can be reordered by dragging.
    *
@@ -1489,14 +1489,14 @@ export interface MultiselectSchema<$Item = any, $Option = any>
    *
    * @defaultValue `false`
    */
-  multiple?: boolean
+  multiple?: OrItemAccessor<$Item, {}, boolean>
   /**
    * Whether to enable a search input field in the dropdown
    * for filtering options.
    *
    * @defaultValue `false`
    */
-  searchable?: boolean
+  searchable?: OrItemAccessor<$Item, {}, boolean>
   /**
    * Whether the dropdown stays open after selecting an option,
    * useful for making multiple selections without repeated
@@ -1504,7 +1504,7 @@ export interface MultiselectSchema<$Item = any, $Option = any>
    *
    * @defaultValue `false`
    */
-  stayOpen?: boolean
+  stayOpen?: OrItemAccessor<$Item, {}, boolean>
   /**
    * Whether users can create new options by typing and
    * pressing Enter, adding custom tags not in the options
@@ -1512,7 +1512,7 @@ export interface MultiselectSchema<$Item = any, $Option = any>
    *
    * @defaultValue `false`
    */
-  taggable?: boolean
+  taggable?: OrItemAccessor<$Item, {}, boolean>
 }
 
 export interface SelectSchema<$Item = any>
@@ -1713,7 +1713,7 @@ export interface CheckboxesSchema<$Item = any>
    *
    * @defaultValue `true`
    */
-  multiple?: boolean
+  multiple?: OrItemAccessor<$Item, {}, boolean>
   /**
    * @defaultValue `'vertical'`
    */
@@ -1796,10 +1796,10 @@ export type ColumnSchema<$Item = any, $Value = any> = {
    */
   style?: string | Partial<CSSStyleDeclaration>
   /**
-   * Sort the colum in ascending or descending order. Columns are ordered by the
-   * first column to specify `defaultSort`.
+   * Sort the colum in ascending or descending order, `true` for ascending.
+   * Columns are ordered by the first column to specify `defaultSort`.
    */
-  defaultSort?: 'asc' | 'desc'
+  defaultSort?: true | 'asc' | 'desc'
   /** Whether to display the column. */
   if?: OrItemAccessor<$Item, {}, boolean>
 }

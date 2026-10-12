@@ -70,14 +70,15 @@ export const sourceTraits = {
 export const optionsTraits = {
   getOptionsDataSchema: schema => schema.options,
 
-  serializeValue({ schema, value }: Context) {
+  serializeValue(context: Context) {
+    const { schema, value } = context
     const relateKey = getRelateKey(schema)
     if (relateKey) {
       // Convert relating objects to a shallow copy with only the id left:
       const toRelate = (value: any) =>
         value ? { [relateKey]: value[relateKey] } : value
       // Selected options can be both objects & arrays, e.g. 'checkboxes':
-      return getMultipleValue(schema) && isArray(value)
+      return getMultipleValue(schema, context) && isArray(value)
         ? value.map(toRelate)
         : toRelate(value)
     } else {

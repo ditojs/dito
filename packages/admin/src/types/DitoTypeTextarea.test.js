@@ -19,6 +19,18 @@ describe('DitoTypeTextarea', () => {
     expect(data.summary).toBe('A longer story.')
   })
 
+  it('resolves `lines` callbacks', async () => {
+    const { findField } = await mountSchema({
+      schema: {
+        components: {
+          summary: { type: 'textarea', lines: ({ item }) => item.size }
+        }
+      },
+      data: { size: 8 }
+    })
+    expect(findField('summary').attributes('rows')).toBe('8')
+  })
+
   it('defaults to four lines', async () => {
     const { findField } = await mountSchema({
       schema: { components: { summary: { type: 'textarea' } } }
