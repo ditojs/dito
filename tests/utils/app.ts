@@ -1,5 +1,4 @@
 // tests/utils/app.ts
-import os from 'os'
 import path from 'path'
 import { Application } from '@ditojs/server'
 import type { Knex } from 'knex'
@@ -131,11 +130,14 @@ export function createTestApp(
         // never visit /admin/ (e.g. programmatic-only playwright workers).
         // Same workaround vitest applies for tests, see vitest commit e379f64.
         optimizeDeps: { noDiscovery: true, include: [] },
-        cacheDir: path.join(
-          os.tmpdir(),
-          'dito-e2e-vite-cache',
-          // Give each scenario its own cache, as they share the admin root.
-          admin.name
+        // Give each checkout, scenario and worker its own cache, as their
+        // vite servers optimize dependencies concurrently, and they share the
+        // admin root:
+        cacheDir: path.resolve(
+          import.meta.dirname,
+          '../node_modules/.vite-e2e',
+          admin.name,
+          process.env.TEST_PARALLEL_INDEX ?? '0'
         )
       })
       app.loadAdminViteConfig = async () => viteConfig
