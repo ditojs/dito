@@ -1,5 +1,5 @@
 <template lang="pug">
-.dito-tree-list
+.dito-tree-list(ref="element")
   DitoScopes(
     v-if="scopes"
     :listQuery="listQuery"

@@ -1,15 +1,17 @@
-import { computed, type ExtractPropTypes, type PropType } from 'vue'
+import { computed, ref, type ExtractPropTypes, type PropType } from 'vue'
+import { camelize } from '@ditojs/utils'
 import {
   getValidations,
   getValueValidationErrors
 } from '../utils/schema/validation.js'
 import { getInputAffixesProps } from '../utils/affixes.js'
+import { getSchemaEventEntries } from '../utils/schema/events.js'
 import { useSchemaContext } from './useSchemaContext.ts'
 import { useValue } from './useValue.ts'
 import { useSchemaValue } from './useSchemaValue.ts'
 import { useComponentPath } from './useComponentPath.ts'
 import { useFocus, type FocusOptions } from './useFocus.ts'
-import { useFieldEvents, type FieldEventsOptions } from './useFieldEvents.ts'
+import { useSchemaEvents } from './useSchemaEvents.ts'
 import type { Services } from '../utils/services.ts'
 import type { Data, Schema } from '../utils/types.ts'
 
@@ -30,9 +32,18 @@ export const fieldProps = {
 
 export type FieldProps = Readonly<ExtractPropTypes<typeof fieldProps>>
 
-export interface FieldOptions
-  extends FocusOptions,
-    Pick<FieldEventsOptions, 'getEvents'> {
+export interface FieldEventHandlers {
+  onFocus(): void
+  onBlur(): void
+  onInput(): void
+  onChange(): void
+}
+
+export interface FieldOptions extends FocusOptions {
+  // The handlers of the element's events, all of them by default:
+  getEvents?: (
+    handlers: FieldEventHandlers
+  ) => Record<string, (...args: any[]) => any>
   // The services of components that own some, e.g. sources and buttons:
   services?: Services
   // Fields that render native inputs get their `name`, `title`, `readonly` and
@@ -96,11 +107,44 @@ export function useField(
     return errors.length === 0
   }
 
-  const { events, ...fieldEvents } = useFieldEvents(props, {
-    ...schemaContext,
-    ...fieldValue,
-    getEvents,
-    validate
+  const { emitEvent } = useSchemaEvents(() => props.schema, schemaContext)
+  const focused = ref(false)
+  const handlers: FieldEventHandlers = {
+    onFocus() {
+      focused.value = true
+      emitEvent('focus')
+    },
+
+    onBlur() {
+      focused.value = false
+      validate()
+      emitEvent('blur')
+    },
+
+    onInput() {
+      emitEvent('input')
+    },
+
+    onChange() {
+      emitEvent('change', {
+        context: {
+          // Prevent endless parse recursion:
+          value:
+            fieldValue.parsedValue.value !== undefined
+              ? fieldValue.parsedValue.value
+              : value.value
+        }
+      })
+    }
+  }
+
+  // Schema events that the component doesn't handle are native events:
+  const events = computed(() => {
+    const events = getEvents ? getEvents(handlers) : { ...handlers }
+    for (const { event } of getSchemaEventEntries(props.schema)) {
+      events[`on${camelize(event, true)}`] ??= () => emitEvent(event)
+    }
+    return events
   })
   const focus = useFocus(schemaContext.services, componentPath, {
     focusElement,
@@ -152,8 +196,10 @@ export function useField(
   return {
     ...schemaContext,
     ...fieldValue,
-    ...fieldEvents,
+    ...handlers,
     ...focus,
+    focused,
+    emitEvent,
     readonly,
     disabled,
     autofocus,
@@ -170,7 +216,7 @@ export function useField(
     clear() {
       value.value = null
       focus.blur()
-      fieldEvents.onChange()
+      handlers.onChange()
     }
   }
 }

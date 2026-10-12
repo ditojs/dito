@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import { Session } from './Session.js'
+import { Session } from './Session.ts'
 import AdminUser from '../AdminUser.js'
 
 const user = { id: 1, username: 'tester' }

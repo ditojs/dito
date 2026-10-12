@@ -2,6 +2,7 @@
 .dito-object(
   v-if="isReady"
   :id="componentPath"
+  ref="element"
 )
   .dito-object-content(
     v-if="objectData"

@@ -1,6 +1,6 @@
 <template lang="pug">
 .dito-upload(
-  ref="dropTarget"
+  ref="element"
   :class="{ 'dito-upload--drop-target': isDropTarget }"
 )
   //- Render the upload component invisibly at the root, and delegate the clicks
@@ -175,12 +175,18 @@ const DitoTypeUpload = {
 
   setup(props) {
     const field = useField(props)
-    const { value, context, createContext, services, disabled, onChange } =
-      field
+    const {
+      value,
+      context,
+      createContext,
+      services,
+      disabled,
+      onChange,
+      element
+    } = field
     const { adminContext } = services
     const getModel = () => services.dataContext.model
     const fileDropTargets = inject(fileDropTargetsKey)
-    const dropTarget = useTemplateRef('dropTarget')
     const upload = useTemplateRef('upload')
     const uploads = ref([])
     let removeDropTarget = null
@@ -316,7 +322,7 @@ const DitoTypeUpload = {
       removeDropTarget?.()
       removeDropTarget = disabled.value
         ? null
-        : fileDropTargets.add(dropTarget.value)
+        : fileDropTargets.add(element.value)
     }
 
     watch(disabled, updateDropTarget)

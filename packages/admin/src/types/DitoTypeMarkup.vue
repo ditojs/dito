@@ -1,5 +1,8 @@
 <template lang="pug">
-.dito-markup(:id="componentPath")
+.dito-markup(
+  :id="componentPath"
+  ref="element"
+)
   .dito-buttons.dito-buttons--toolbar(
     v-if="groupedButtons.length > 0"
   )

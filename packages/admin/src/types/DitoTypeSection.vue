@@ -1,5 +1,8 @@
 <template lang="pug">
-.dito-section(:class="{ 'dito-section--labelled': !!schema.label }")
+.dito-section(
+  ref="element"
+  :class="{ 'dito-section--labelled': !!schema.label }"
+)
   DitoSchemaInlined.dito-section__schema(
     :schema="formSchema"
     :dataPath="dataPath"
