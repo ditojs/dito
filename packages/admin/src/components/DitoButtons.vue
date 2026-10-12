@@ -11,7 +11,6 @@
       :schema="buttonSchema"
       :dataPath="buttonDataPath"
       :data="data"
-      :meta="meta"
       :nested="nested"
       :store="getChildStore(buttonSchema.name)"
       :disabled="disabled"
@@ -45,7 +44,6 @@ export default DitoComponent.component('DitoButtons', {
     buttons: { type: Object, default: null },
     dataPath: { type: String, default: '' },
     data: { type: [Object, Array], default: null },
-    meta: { type: Object, default: () => ({}) },
     store: { type: Object, default: () => ({}) },
     nested: { type: Boolean, default: true },
     disabled: { type: Boolean, default: false },

@@ -11,6 +11,7 @@ export interface ContainerOwner {
   readonly ownDataModel: DataModel
   readonly dataModel: DataModel
   readonly isCreating?: boolean
+  readonly hasData?: boolean
   readonly mainSchemaComponent: {
     validateAll(match?: Match, notify?: boolean): boolean
   }
@@ -56,6 +57,12 @@ export class ContainerContext {
 
   get isEdited(): boolean {
     return this.model.isEdited
+  }
+
+  // Whether the data is there to display: Forms load or create their item,
+  // the others always have their data:
+  get hasData(): boolean {
+    return this.#owner.hasData ?? true
   }
 
   // Only forms that create their item are creating:

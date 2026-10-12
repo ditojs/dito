@@ -6,8 +6,8 @@
   )
     .dito-thumbnail__inner
       img(
-        v-if="source"
-        :src="source"
+        v-if="imageUrl"
+        :src="imageUrl"
         crossorigin="anonymous"
       )
       .dito-thumbnail__type(
@@ -45,7 +45,7 @@ export default DitoComponent.component('DitoUploadFile', {
       )
     },
 
-    source() {
+    imageUrl() {
       return this.uploadUrl || this.thumbnailUrl
     }
   },

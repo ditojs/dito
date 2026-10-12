@@ -1,13 +1,13 @@
 <template lang="pug">
 //- Renders an item of a list or object source: Inlined items render their
-//- form, others the source's `component`, `render()` or the item's label.
+//- form, others the source's `component`, or the label that the source renders
+//- for them, see `SourceMixin.getSourceItemLabel()`.
 DitoSchemaInlined(
   v-if="isInlined"
-  :label="inlinedLabel"
+  :label="label"
   :schema="formSchema"
   :dataPath="dataPath"
   :data="data"
-  :meta="meta"
   :store="store"
   :disabled="disabled"
   :collapsed="collapsed"
@@ -29,20 +29,14 @@ component(
   :nested="false"
 )
 span(
-  v-else-if="sourceComponent.render"
-  v-html="renderedItem"
-)
-span(
   v-else
-  v-html="itemLabel"
+  v-html="label"
 )
 </template>
 
 <script>
 import DitoComponent from '../DitoComponent.js'
-import DitoContext from '../DitoContext.js'
-import { isInlined, isListSource } from '../utils/schema/structure.js'
-import { getItemFormSchema } from '../utils/schema/lookup.js'
+import { isInlined } from '../utils/schema/structure.js'
 
 // @vue/component
 export default DitoComponent.component('DitoSourceItem', {
@@ -51,11 +45,12 @@ export default DitoComponent.component('DitoSourceItem', {
   props: {
     // The schema of the list or object source that holds the item.
     schema: { type: Object, required: true },
+    // The form of the item, which inlined items render:
+    formSchema: { type: Object, required: true },
+    // The label of the item, an object for inlined items and HTML for others:
+    label: { type: [String, Object], default: null },
     dataPath: { type: String, required: true },
     data: { type: Object, required: true },
-    // The index of the item in a list source, `null` in object sources.
-    index: { type: Number, default: null },
-    meta: { type: Object, required: true },
     store: { type: Object, required: true },
     disabled: { type: Boolean, required: true },
     // The remaining props only apply to inlined items, see `DitoSchemaInlined`:
@@ -72,42 +67,6 @@ export default DitoComponent.component('DitoSourceItem', {
   computed: {
     isInlined() {
       return isInlined(this.schema)
-    },
-
-    formSchema() {
-      return getItemFormSchema(
-        this.schema,
-        this.data,
-        this.sourceComponent.context
-      )
-    },
-
-    inlinedLabel() {
-      // List items always show their label, objects only when collapsible.
-      return isListSource(this.schema) || this.collapsible
-        ? this.sourceComponent.getItemLabel(this.schema, this.data, {
-            index: this.index,
-            asObject: true
-          })
-        : null
-    },
-
-    itemLabel() {
-      return this.sourceComponent.getItemLabel(this.schema, this.data, {
-        index: this.index
-      })
-    },
-
-    renderedItem() {
-      const { sourceComponent } = this
-      return sourceComponent.render(
-        new DitoContext(sourceComponent, {
-          data: this.data,
-          value: this.data,
-          index: this.index,
-          dataPath: this.dataPath
-        })
-      )
     }
   }
 })

@@ -304,7 +304,7 @@ export default DitoTypeComponent.register('upload', {
     uploadPath() {
       // Uploads are posted to the resource of the data, see
       // `api.resources.upload()`, which views without resource don't have.
-      return this.dataComponent?.resource
+      return this.resource?.closestWithResource
         ? this.getResourceUrl({
             type: 'upload',
             method: 'post',

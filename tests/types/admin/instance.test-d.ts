@@ -5,7 +5,9 @@ import type {
   DitoFormInstance,
   DitoContext,
   DitoDataModel,
-  RouteContext
+  ResourceContext,
+  RouteContext,
+  SourceContext
 } from '@ditojs/admin'
 import type { Entry } from './fixtures.ts'
 
@@ -55,5 +57,23 @@ describe('DitoComponentInstanceBase and DitoFormInstance', () => {
       .returns.toEqualTypeOf<string | null>()
     expectTypeOf<Instance>().not.toHaveProperty('routeComponent')
     expectTypeOf<Instance>().not.toHaveProperty('parentRouteComponent')
+  })
+
+  it('provides the contexts of its source and resource', () => {
+    type Instance = DitoFormInstance<Entry>
+    expectTypeOf<Instance['source']>().toEqualTypeOf<SourceContext | null>()
+    expectTypeOf<Instance['resource']>()
+      .toEqualTypeOf<ResourceContext | null>()
+    expectTypeOf<SourceContext['query']>()
+      .toEqualTypeOf<Record<string, any>>()
+    expectTypeOf<ResourceContext['parent']>()
+      .toEqualTypeOf<ResourceContext | null>()
+    expectTypeOf<ResourceContext['submit']>()
+      .returns.toEqualTypeOf<Promise<boolean>>()
+    expectTypeOf<RouteContext['resource']>()
+      .toEqualTypeOf<ResourceContext | null>()
+    expectTypeOf<Instance>().not.toHaveProperty('sourceComponent')
+    expectTypeOf<Instance>().not.toHaveProperty('resourceComponent')
+    expectTypeOf<Instance>().not.toHaveProperty('dataComponent')
   })
 })

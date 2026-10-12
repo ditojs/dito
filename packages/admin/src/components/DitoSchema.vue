@@ -5,14 +5,13 @@ slot(name="prepend")
   v-bind="$attrs"
 )
   Teleport(
-    v-if="isPopulated && panelEntries.length > 0"
+    v-if="container.hasData && panelEntries.length > 0"
     to=".dito-sidebar__teleport"
   )
     DitoPanels(
       v-if="active"
       :panels="panelEntries"
       :data="data"
-      :meta="meta"
       :store="store"
       :disabled="disabled"
     )
@@ -72,7 +71,6 @@ slot(name="prepend")
             :schema="tabSchema"
             :dataPath="dataPath"
             :data="data"
-            :meta="meta"
             :store="store"
             :padding="padding"
             :single="single && !inlined && !hasMainPane"
@@ -86,7 +84,6 @@ slot(name="prepend")
         :schema="schema"
         :dataPath="dataPath"
         :data="data"
-        :meta="meta"
         :store="store"
         :padding="padding"
         :single="single && !inlined && !hasTabs"
@@ -95,7 +92,7 @@ slot(name="prepend")
         :generateLabels="generateLabels"
       )
       slot(
-        v-if="!inlined && isPopulated"
+        v-if="!inlined && container.hasData"
         name="buttons"
       )
   slot(
@@ -162,7 +159,6 @@ export default DitoComponent.component('DitoSchema', {
     dataSchema: { type: Object, default: props => props.schema },
     dataPath: { type: String, default: '' },
     data: { type: Object, default: null },
-    meta: { type: Object, default: () => ({}) },
     store: { type: Object, default: () => ({}) },
     label: { type: [String, Object], default: null },
     info: { type: String, default: null },
@@ -213,6 +209,14 @@ export default DitoComponent.component('DitoSchema', {
       // data. This prevents delegating events to the parent, and registering
       // components with the parent.
       return this.hasOwnData ? null : this.parentComponent.schemaComponent
+    },
+
+    // The schema of the source whose item the schema displays, as the
+    // component that renders the schema tells: the list or object of inlined
+    // items, the list of the form's item, the view, or for sections and panels
+    // the source of their schema. Dialogs have none.
+    sourceSchema() {
+      return this.$schemaParentComponent()?.sourceSchema ?? null
     },
 
     panelEntries() {

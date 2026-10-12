@@ -62,7 +62,6 @@
     :schema="schema"
     :dataPath="dataPath"
     :data="data"
-    :meta="meta"
     :store="store"
     :optionValue="selectedValue"
   )

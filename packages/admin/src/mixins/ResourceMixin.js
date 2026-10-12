@@ -11,6 +11,8 @@ import { getResource } from '../utils/resource.js'
 import { getErrorMessage } from '../utils/request.js'
 import { LoadingTracker, LoadingSwitch } from '../utils/LoadingTracker.js'
 import DitoContext from '../DitoContext.js'
+import verbs from '../verbs.js'
+import { ResourceContext } from '../utils/ResourceContext.ts'
 
 const unauthorizedError = `You don't have permission to load this data.`
 
@@ -30,10 +32,7 @@ export default {
 
   provide() {
     return {
-      $resourceComponent: () => this,
-      // Pass local verbs overrides on to children, see verbs() computed prop.
-      $verbs: () => this.verbs,
-      $isPopulated: () => this.hasData
+      resource: this.ownResource
     }
   },
 
@@ -47,7 +46,12 @@ export default {
       loadAbortController: null,
       loadingTracker: markRaw(loadingTracker),
       // The loading operation of the deprecated `setLoading()`.
-      setLoadingSwitch: markRaw(new LoadingSwitch(loadingTracker))
+      setLoadingSwitch: markRaw(new LoadingSwitch(loadingTracker)),
+      // The resource continues the one of `parentRoute`: the route that renders
+      // sources, and the parent route of forms.
+      ownResource: markRaw(
+        new ResourceContext(this, { route: this.parentRoute })
+      )
     }
   },
 
@@ -58,21 +62,13 @@ export default {
       return !this.isForm && !!this.route?.isForm
     },
 
-    resourceComponent() {
-      return this
-    },
-
     isLoading() {
       return this.loadingTracker.isLoading
     },
 
-    resource() {
-      return this.getResource()
-    },
-
     providesData() {
       // This component is a data-source if it has an associated API resource:
-      return !!this.resource
+      return !!this.getResource()
     },
 
     linksToView() {
@@ -179,7 +175,7 @@ export default {
       return getResource(resource, {
         type: 'collection',
         method,
-        parent: this.parentResourceComponent?.getResource({
+        parent: this.ownResource.parent?.getResource({
           method,
           child: resource
         }) ?? null,
@@ -188,10 +184,11 @@ export default {
     },
 
     getVerbs() {
-      const verbs = this.$verbs()
+      // Continue the verbs of the parent, see `ResourceContext.parent`:
+      const parentVerbs = this.ownResource.parent?.verbs ?? verbs
       return this.isTransient
         ? {
-            ...verbs,
+            ...parentVerbs,
             // Override default verbs with their transient versions:
             create: 'add',
             created: 'added',
@@ -200,7 +197,7 @@ export default {
             delete: 'remove',
             deleted: 'removed'
           }
-        : verbs
+        : parentVerbs
     },
 
     // Loads the data if needed. Called by the `setupData()` implementations,

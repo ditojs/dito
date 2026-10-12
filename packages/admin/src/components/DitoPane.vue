@@ -1,7 +1,7 @@
 <!-- eslint-disable vue/no-template-shadow -->
 <template lang="pug">
 .dito-pane(
-  v-if="isPopulated && componentSchemas.length > 0"
+  v-if="container.hasData && componentSchemas.length > 0"
   :id="tabPanelId"
   v-resize="onResizePane"
   :role="tab ? 'tabpanel' : null"
@@ -30,7 +30,6 @@
       :schema="schema"
       :dataPath="dataPath"
       :data="data"
-      :meta="meta"
       :store="store"
       :single="isSingleComponent"
       :nested="nested"
@@ -67,7 +66,6 @@ export default DitoComponent.component('DitoPane', {
     schema: { type: Object, required: true },
     dataPath: { type: String, default: '' },
     data: { type: Object, default: null },
-    meta: { type: Object, required: true },
     store: { type: Object, required: true },
     tab: { type: String, default: null },
     single: { type: Boolean, default: false },
@@ -139,8 +137,8 @@ export default DitoComponent.component('DitoPane', {
       // because only the available data will determine the type of form.
       // When editing primitive values through a form, do not append 'name' to
       // the component's dataPath so it can be mapped to from validation errors.
-      // NOTE: Not all schemas / components have a sourceSchema, e.g. dialogs.
-      const wrapPrimitives = this.sourceSchema?.wrapPrimitives
+      // NOTE: Not all schemas have a source schema, e.g. the ones of dialogs.
+      const wrapPrimitives = this.schemaComponent.sourceSchema?.wrapPrimitives
       return Object.entries(this.schema?.components || {}).map(
         ([name, schema]) => {
           // Always add name to component schema, but clone it first to avoid

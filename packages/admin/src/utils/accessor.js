@@ -30,9 +30,8 @@ export function getSchemaAccessor(
       // wants to receive the value and process it further:
       const value =
         !get || get.length > 0
-          ? // NOTE: Because `schema` objects are retrieved from `meta`, they
-            // don't seem to be reactive. To allow changed in `schema` values,
-            // `set()` stores changed values in the separate `overrides` object.
+          ? // NOTE: `schema` objects aren't reactive. To allow changed
+            // `schema` values, `set()` stores them in `overrides`.
             this.overrides && name in this.overrides
             ? this.overrides[name]
             : this.getSchemaValue(keyOrDataPath, {

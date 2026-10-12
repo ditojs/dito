@@ -10,7 +10,7 @@
   )
     DitoScopes(
       v-if="scopes"
-      :query="query"
+      :listQuery="listQuery"
       :scopes="scopes"
     )
     //- When there's only pagination without scopes, we need a good ol' spacer
@@ -20,7 +20,7 @@
     )
     DitoPagination(
       v-if="hasPagination"
-      :query="query"
+      :listQuery="listQuery"
       :limit="paginate"
       :total="total || 0"
     )
@@ -34,7 +34,7 @@
   )
     DitoTableHead(
       v-if="columns"
-      :query="query"
+      :listQuery="listQuery"
       :columns="columns"
       :hasEditButtons="hasEditButtons"
     )
@@ -64,7 +64,6 @@
               :schema="schema"
               :dataPath="getDataPath(index)"
               :data="item"
-              :meta="nestedMeta"
               :store="store"
               :nested="false"
               :disabled="disabled || isLoading"
@@ -75,10 +74,10 @@
           td
             DitoSourceItem(
               :schema="schema"
+              :formSchema="getItemFormSchema(schema, item, context)"
+              :label="getSourceItemLabel(item, index)"
               :dataPath="getDataPath(index)"
               :data="item"
-              :index="index"
-              :meta="nestedMeta"
               :store="getItemStore(item)"
               :disabled="disabled || isLoading"
               :collapsed="collapsed"
@@ -101,7 +100,6 @@
             :formSchema="getItemFormSchema(schema, item, context)"
             :dataPath="getDataPath(index)"
             :data="item"
-            :meta="nestedMeta"
             :store="getItemStore(item)"
             :disabled="disabled || isLoading"
             :deletable="deletable"
@@ -199,7 +197,6 @@ export default DitoTypeComponent.register('list', {
         buttons: this.buttonSchemas,
         schema: this.schema,
         dataPath: this.dataPath,
-        meta: this.meta,
         store: this.store,
         nested: this.nested,
         disabled: this.disabled || this.isLoading,

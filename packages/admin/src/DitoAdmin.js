@@ -19,7 +19,6 @@ import { request, getApiUrl, isApiUrl } from './utils/request.js'
 import { Session } from './utils/Session.js'
 import { ViewRegistry } from './utils/ViewRegistry.js'
 import { AdminContext } from './utils/AdminContext.ts'
-import verbs from './verbs.js'
 
 export default class DitoAdmin {
   constructor(el, {
@@ -204,20 +203,15 @@ export default class DitoAdmin {
       // https://github.com/vuejs/vue/issues/7017#issuecomment-480906691
       provide: {
         admin,
-        // A default list of verbs are provided by $verbs() and can be
-        // overridden at any point in the component hierarchy.
-        $verbs: () => verbs,
         // Provide defaults so DitoMixin can inject them for all components:
-        $isPopulated: () => true,
         $parentComponent: () => null,
         $schemaComponent: () => null,
         $schemaParentComponent: () => null,
-        $dataComponent: () => null,
-        $sourceComponent: () => null,
-        $resourceComponent: () => null,
         $tabComponent: () => null,
         container: null,
         route: null,
+        source: null,
+        resource: null,
         $loadingTracker: () => admin.loadingTracker
       },
 

@@ -8,9 +8,10 @@
   )
     DitoSourceItem(
       :schema="schema"
+      :formSchema="getItemFormSchema(schema, objectData, context)"
+      :label="getSourceItemLabel(objectData)"
       :dataPath="dataPath"
       :data="objectData"
-      :meta="nestedMeta"
       :store="store"
       :disabled="disabled || isLoading"
       :collapsed="collapsed"
@@ -26,7 +27,6 @@
     :schema="schema"
     :dataPath="dataPath"
     :data="objectData"
-    :meta="meta"
     :store="store"
     :disabled="disabled || isLoading"
     :creatable="creatable"

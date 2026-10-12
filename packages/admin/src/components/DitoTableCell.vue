@@ -10,7 +10,6 @@ td(
     :schema="schema"
     :dataPath="dataPath"
     :data="data"
-    :meta="meta"
     :store="store"
     :nested="nested"
     :disabled="disabled"
@@ -41,7 +40,6 @@ export default DitoComponent.component('DitoTableCell', {
     // The data path and data of the item, see `renderCell()`.
     dataPath: { type: String, required: true },
     data: { type: Object, required: true },
-    meta: { type: Object, required: true },
     store: { type: Object, required: true },
     nested: { type: Boolean, default: true },
     disabled: { type: Boolean, default: false }

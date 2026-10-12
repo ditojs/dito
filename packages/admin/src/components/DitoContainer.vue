@@ -11,7 +11,6 @@
     DitoPanels(
       :panels="panelEntries"
       :data="data"
-      :meta="meta"
       :store="store"
       :disabled="disabled"
     )
@@ -30,7 +29,6 @@
     :schema="schema"
     :dataPath="dataPath"
     :data="data"
-    :meta="meta"
     :store="store"
     :width="width"
     :label="label"
@@ -79,7 +77,6 @@ export default DitoComponent.component('DitoContainer', {
     schema: { type: Object, required: true },
     dataPath: { type: String, default: '' },
     data: { type: [Object, Array], required: true },
-    meta: { type: Object, required: true },
     store: { type: Object, required: true },
     single: { type: Boolean, default: false },
     nested: { type: Boolean, default: true },

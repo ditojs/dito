@@ -47,7 +47,6 @@ export default DitoComponent.component('DitoCreateButton', {
     // on as `v-bind="contextAttributes"`.
     dataPath: { type: String, required: true },
     data: { type: [Object, Array], default: null },
-    meta: { type: Object, required: true },
     store: { type: Object, required: true },
     nested: { type: Boolean, default: false },
     path: { type: String, default: null },
@@ -98,7 +97,7 @@ export default DitoComponent.component('DitoCreateButton', {
     createItem(form, type = null) {
       if (!this.shouldDisableSchema(form)) {
         if (this.isInlined) {
-          this.sourceComponent.createItem(form, type, this.insertIndex)
+          this.source.createItem(form, type, this.insertIndex)
         } else {
           const { creatable } = this.schema
           const query = {

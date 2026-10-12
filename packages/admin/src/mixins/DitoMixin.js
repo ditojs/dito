@@ -7,6 +7,7 @@ import {
 } from '@ditojs/utils'
 import appState from '../appState.js'
 import DitoContext from '../DitoContext.js'
+import verbs from '../verbs.js'
 import EmitterMixin from './EmitterMixin.js'
 import { getSchemaEventEntries } from '../utils/schema/events.js'
 import { getSchemaValue, shouldRenderSchema } from '../utils/schema/data.js'
@@ -21,26 +22,22 @@ export default {
 
   inject: {
     admin: 'admin',
-    $verbs: '$verbs',
-    $isPopulated: '$isPopulated',
     $parentComponent: '$parentComponent',
     $schemaComponent: '$schemaComponent',
-    $dataComponent: '$dataComponent',
-    $sourceComponent: '$sourceComponent',
-    $resourceComponent: '$resourceComponent',
     $tabComponent: '$tabComponent',
     $loadingTracker: '$loadingTracker',
-    // The contexts that the closest owners of a data model and of a route
-    // provide, see `container` and `route`:
+    // The contexts that the closest owners of a data model, a route, a source
+    // and a resource provide, see `container`, `route`, `source` and
+    // `resource`:
     parentContainer: 'container',
-    parentRoute: 'route'
+    parentRoute: 'route',
+    parentSource: 'source',
+    parentResource: 'resource'
   },
 
   provide() {
-    const self = () => this
     return {
-      $parentComponent: self,
-      ...(this.providesData && { $dataComponent: self })
+      $parentComponent: () => this
     }
   },
 
@@ -50,10 +47,13 @@ export default {
       isMounted: false,
       overrides: null, // See accessor.js
       // The data model that the component owns, see `dataModel`, and the
-      // contexts that it provides, see `container` and `route`:
+      // contexts that it provides, see `container`, `route`, `source` and
+      // `resource`:
       ownDataModel: null,
       ownContainer: null,
-      ownRoute: null
+      ownRoute: null,
+      ownSource: null,
+      ownResource: null
     }
   },
 
@@ -71,28 +71,26 @@ export default {
       return this.ownRoute ?? this.parentRoute
     },
 
+    // The context of the list, object or tree that the component is, or that
+    // displays it. Forms don't continue the source of their parent, while
+    // views provide the one of their main component:
+    source() {
+      return this.ownSource ?? this.parentSource
+    },
+
+    // The context of the form or source that the component is, or that
+    // renders it, which submits its data and resolves its resources. Views
+    // provide the one of their main component:
+    resource() {
+      return this.ownResource ?? this.parentResource
+    },
+
     dataModel() {
       return this.ownDataModel ?? this.parentContainer?.model ?? null
     },
 
-    providesData() {
-      // NOTE: This is overridden in ResourceMixin, used by lists.
-      return false
-    },
-
-    sourceSchema() {
-      return this.meta?.schema
-    },
-
-    // $verbs and $isPopulated are defined as functions, to preserve
-    // reactiveness across provide/inject.
-    // See: https://github.com/vuejs/vue/issues/7017#issuecomment-480906691
     verbs() {
-      return this.$verbs()
-    },
-
-    isPopulated() {
-      return this.$isPopulated()
+      return this.resource?.verbs ?? verbs
     },
 
     context() {
@@ -130,21 +128,6 @@ export default {
       return this.$schemaComponent()
     },
 
-    // Returns the first route component in the chain of parents, including
-    // this current component, that is linked to a resource (and thus loads its
-    // own data and doesn't hold nested data).
-    dataComponent() {
-      return this.providesData ? this : this.$dataComponent()
-    },
-
-    sourceComponent() {
-      return this.$sourceComponent()
-    },
-
-    resourceComponent() {
-      return this.$resourceComponent()
-    },
-
     tabComponent() {
       return this.$tabComponent()
     },
@@ -153,19 +136,11 @@ export default {
       return getParentComponent(this, 'schemaComponent')
     },
 
-    parentResourceComponent() {
-      return getParentComponent(this, 'resourceComponent')
-    },
-
-    // Returns the data of the source with its own resource that the component
-    // is in, or else the root data of the route, e.g. the data of the view when
-    // it has no resource, or the draft root of a nested form, see
-    // `DitoView.rootData()` and `DitoForm.rootData()`.
+    // The data that the data paths of the route are relative to, e.g. the
+    // data of the view, or the draft root of a nested form, see
+    // `DitoView.rootData()` and `DitoForm.rootData()`:
     rootData() {
-      const { dataComponent } = this
-      return dataComponent && !dataComponent.ownRoute
-        ? dataComponent.data
-        : this.route?.container.rootData
+      return this.route?.container.rootData
     }
   },
 
@@ -260,18 +235,14 @@ export default {
     },
 
     getResourcePath(resource) {
-      const { dataComponent } = this
+      // Resources without a parent continue the one of the closest form or
+      // source with a resource:
+      const parent = this.resource?.closestWithResource
       resource = getResource(resource, {
-        // Resources without a parent inherit the one from `dataComponent`
-        // automatically, unless it's a view, which provides the data of its
-        // components with resources, but has no resource of its own.
-        parent:
-          dataComponent && !dataComponent.isView
-            ? (dataComponent.getResource({
-                method: resource?.method,
-                child: resource
-              }) ?? null)
-            : null
+        parent: parent?.getResource({
+          method: resource?.method,
+          child: resource
+        }) ?? null
       })
       return this.admin.api.resources.any(resource)
     },

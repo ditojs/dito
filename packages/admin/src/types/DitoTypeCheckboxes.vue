@@ -23,7 +23,6 @@ DitoOptionList.dito-checkboxes(
       :schema="schema"
       :dataPath="dataPath"
       :data="data"
-      :meta="meta"
       :store="store"
       :optionValue="getValueForOption(option)"
     )

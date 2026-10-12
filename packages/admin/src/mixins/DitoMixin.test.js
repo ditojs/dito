@@ -1,7 +1,7 @@
 import { vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import DitoContext from '../DitoContext.js'
-import { mountSchema, enterValue } from '../test/mount.js'
+import { mountForm, mountSchema, enterValue, settle } from '../test/mount.js'
 
 // `appState.loadCache` lives for the session, so each test requests its own
 // URLs, made unique by this counter.
@@ -375,6 +375,40 @@ describe('DitoMixin', () => {
     })
   })
 
+  // Data paths are relative to the root data of the route, also within sources
+  // that load their data through their own resource.
+  it('reads the root data of the route in sources with resources', async () => {
+    const { admin } = await mountForm({
+      schema: {
+        components: {
+          chapters: {
+            type: 'list',
+            form: {
+              type: 'form',
+              components: {
+                comments: {
+                  type: 'list',
+                  resource: { path: 'comments' },
+                  columns: { text: {} }
+                }
+              }
+            }
+          }
+        }
+      },
+      data: { chapters: [{ title: 'Arrakis' }] },
+      request: () => ({ data: [] })
+    })
+    await admin.navigate('/items/1/chapters/0')
+    const form = admin.getRouteComponent(component => component.isForm)
+    await settle(form)
+    const comments = form.mainSchemaComponent.getComponentByDataPath(
+      'chapters/0/comments'
+    )
+    expect(comments.rootData).toBe(form.rootData)
+    expect(comments.context.item).toBe(form.data)
+  })
+
   describe('getResourceUrl()', () => {
     it('returns null without a resource', async () => {
       const { schemaComponent } = await mountSchema({
@@ -386,7 +420,7 @@ describe('DitoMixin', () => {
     })
 
     it('resolves resources in views with resources', async () => {
-      const { routeComponent: view, getComponent } = await mountSchema({
+      const { getComponent } = await mountSchema({
         schema: {
           components: {
             authors: {
@@ -399,9 +433,9 @@ describe('DitoMixin', () => {
         },
         request: () => ({ data: [] })
       })
-      // The view provides the data, but has no resource to inherit:
+      // The view has no resource to inherit:
       const title = getComponent('title')
-      expect(title.dataComponent).toBe(view)
+      expect(title.resource).toBe(null)
       expect(title.getResourceUrl({ path: 'books' })).toBe('/books')
     })
   })

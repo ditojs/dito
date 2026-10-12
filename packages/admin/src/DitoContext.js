@@ -357,7 +357,7 @@ export default class DitoContext {
 
   // The query of the nearest list, e.g. its scope, page, order and filters:
   get listQuery() {
-    return getComponent(this).sourceComponent?.query ?? null
+    return getComponent(this).source?.query ?? null
   }
 
   // Helper Methods
@@ -388,7 +388,7 @@ export default class DitoContext {
   get getResourceUrl() {
     return resource => {
       const component = getComponent(this)
-      resource ??= component.resourceComponent?.resource
+      resource ??= component.resource?.getResource()
       if (!resource) {
         throw new Error(
           'Unable to get the resource URL: There is no form or list with a ' +
@@ -432,7 +432,7 @@ export default class DitoContext {
   get submit() {
     return options => {
       const component = getComponent(this)
-      if (!isButton(component.schema) || !component.resourceComponent) {
+      if (!isButton(component.schema) || !component.resource) {
         throw new Error(
           'Unable to submit: There is no button of a form or of a list with a ' +
           'resource.'

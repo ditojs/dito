@@ -4,9 +4,12 @@ import {
   FormNode,
   type MenuNode,
   type RouteState,
+  type SourceNode,
   type ViewNode
 } from './RouteTree.ts'
 import type { ContainerContext } from './ContainerContext.ts'
+import type { ResourceContext } from './ResourceContext.ts'
+import type { SourceContext } from './SourceContext.ts'
 
 // The view or form that renders a route.
 export interface RouteOwner {
@@ -18,6 +21,7 @@ export interface RouteOwner {
   readonly path: string
   readonly isLastRoute: boolean
   readonly mainSchemaComponent?: { selectedTab: string | null }
+  readonly ownResource?: ResourceContext | null
 }
 
 // The context of a view or form, provided to the components that it renders,
@@ -30,6 +34,8 @@ export class RouteContext {
   readonly loadCache: Record<string, Promise<unknown>> = {}
   readonly #owner: RouteOwner
   readonly #router: Router
+  // The sources that the route renders, while they're mounted:
+  readonly #sources = new Set<SourceContext>()
 
   constructor(
     owner: RouteOwner,
@@ -80,6 +86,12 @@ export class RouteContext {
     return this.#owner.mainSchemaComponent?.selectedTab ?? null
   }
 
+  // The resource of forms, which the resources of their components and
+  // nested forms continue. Views have none:
+  get resource(): ResourceContext | null {
+    return this.#owner.ownResource ?? null
+  }
+
   // Resolve the path of the deepest form that edits the data at `dataPath`,
   // along with the data path that remains within that form:
   getFormRoute(dataPath: string): { path: string; dataPath: string } | null {
@@ -88,6 +100,12 @@ export class RouteContext {
     return route
       ? { path: this.#router.resolve(route).path, dataPath: route.dataPath }
       : null
+  }
+
+  // Resolve the path of the form that edits the item at `dataPath`:
+  getFormPath(dataPath: string): string | null {
+    const route = this.getFormRoute(dataPath)
+    return route && !route.dataPath ? route.path : null
   }
 
   // Resolve the path of the form that creates an item of the source at
@@ -99,6 +117,24 @@ export class RouteContext {
       this.#dataNode.getCreateRoute(path, this.state)
     )
     return route ? this.#router.resolve(route).path : null
+  }
+
+  registerSource(source: SourceContext, add: boolean) {
+    if (add) {
+      this.#sources.add(source)
+    } else {
+      this.#sources.delete(source)
+    }
+  }
+
+  // Find the mounted source of `node`, e.g. to reload it:
+  findSource(node: SourceNode): SourceContext | null {
+    for (const source of this.#sources) {
+      if (source.node === node) {
+        return source
+      }
+    }
+    return null
   }
 
   // Only views and forms render data, menus don't:

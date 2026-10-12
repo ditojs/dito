@@ -2,7 +2,7 @@
 .dito-tree-list
   DitoScopes(
     v-if="scopes"
-    :query="query"
+    :listQuery="listQuery"
     :scopes="scopes"
   )
   .dito-tree-panel

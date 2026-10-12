@@ -20,7 +20,6 @@ export default {
     // the `item` in which the `value` is contained, under the key `name`.
     dataPath: { type: String, required: true },
     data: { type: [Object, Array], required: true },
-    meta: { type: Object, required: true },
     store: { type: Object, required: true },
     width: { type: [Number, String], default: null },
     label: { type: String, default: null },
