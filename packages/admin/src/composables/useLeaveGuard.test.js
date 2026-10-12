@@ -421,6 +421,30 @@ describe('useLeaveGuard()', () => {
         expect(routeComponent.data).toEqual({ id: 5, title: 'Emma' })
       })
 
+      it(`doesn't clean up another item after a late response`, async () => {
+        stubConfirm(true)
+        const { admin, wrapper, routeComponent, response } =
+          await mountSubmittingForm()
+        vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+        const navigation = admin.router.push('/items/5')
+        await flushPromises()
+        await vi.advanceTimersByTimeAsync(30_000)
+        vi.useRealTimers()
+        await navigation
+        await settle(routeComponent)
+        await enterValue(wrapper.find('input[name="title"]'), 'Emma Woodhouse')
+        const dataContext = routeComponent.ownDataContext
+        await dataContext.showValidationErrors({
+          title: [{ message: 'is taken' }]
+        })
+        response.resolve({ data: { id: 1, title: 'Dune' } })
+        await settle(routeComponent)
+        expect(dataContext.model.getErrors('title')).toEqual([
+          { message: 'is taken' }
+        ])
+        expect(routeComponent.ownRouteContext.isDirty).toBe(true)
+      })
+
       it('opens the created item after a guard threw', async () => {
         const { admin, routeComponent, response } = await mountSubmittingForm()
         admin.router.beforeEach(to => {
