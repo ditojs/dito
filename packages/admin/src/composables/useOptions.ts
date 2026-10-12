@@ -44,7 +44,7 @@ export function useOptions(
   props: FieldProps,
   { value, context, createContext, services, getSchemaValue }: Field,
   {
-    multiple = computed(() => getMultipleValue(props.schema)),
+    multiple = computed(() => getMultipleValue(props.schema, context)),
     addedOptions,
     searchedOptions
   }: OptionsOptions = {}

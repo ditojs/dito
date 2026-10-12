@@ -60,7 +60,7 @@ export function useSource(
 
   const hasInlinedItems = () => isInlined(props.schema)
   // Sources linked to views edit their items in the forms of the view:
-  const linksToView = () => !!getViewSchema(props.schema, context)
+  const linksToView = computed(() => !!getViewSchema(props.schema, context))
   const paginate = computed(() => getSchemaValue('paginate', { type: Number }))
 
   const requests = useResource({
@@ -68,7 +68,7 @@ export function useSource(
     parentRoute: route,
     getSchema: () => props.schema,
     isTransient: providesData => (
-      (!providesData && !linksToView()) || !!route?.state.isTransient
+      (!providesData && !linksToView.value) || !!route?.state.isTransient
     ),
     hasData: () => sourceData.hasData.value,
     clearData: () => sourceData.clearData(),

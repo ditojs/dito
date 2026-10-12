@@ -7,7 +7,7 @@ import type { ResourceContext } from '../utils/ResourceContext.ts'
 import type { RouteContext } from '../utils/RouteContext.ts'
 import type { SourceContext } from '../utils/SourceContext.ts'
 import type { Context } from '../utils/schema/types.ts'
-import { getRootData, type Services } from '../utils/services.ts'
+import type { Services } from '../utils/services.ts'
 import type { Data, Schema } from '../utils/types.ts'
 
 export interface SchemaContextProps {
@@ -84,10 +84,6 @@ export function useSchemaContext(
 
           get dataPath() {
             return props.dataPath
-          },
-
-          get rootData() {
-            return getRootData(services)
           }
         },
         {

@@ -3,22 +3,23 @@ component(
   :is="customComponent"
   :id="componentPath"
   ref="element"
+  v-bind="attributes"
   :schema="schema"
   :context="context"
   :modelValue="value"
+  :errorsElementId="errorsElementId"
   @update:modelValue="newValue => (value = newValue)"
-  @change="onChange"
 )
 </template>
 
 <script>
-// The `component` type renders any custom component through `schema.component`,
-// e.g. `component: import('./component')`. Custom components receive the
-// `schema`, its `context` and the value as `modelValue`, and emit
-// `update:modelValue` and `change`. Their root element gets the id that the
-// label points to.
+// Custom components receive the `schema`, its `context` and the value as
+// `modelValue`, and emit `update:modelValue` and `change`. They also receive
+// the field's attributes and its `focus`, `blur` and `input` listeners, which
+// fall through to their root element unless they emit these events.
 
 import { computed } from 'vue'
+import { isArray } from '@ditojs/utils'
 import { defineType } from '../utils/schema/types.ts'
 import { fieldProps, useField } from '../composables/useField.ts'
 import { resolveSchemaComponent } from '../utils/schema/setup.js'
@@ -29,12 +30,12 @@ const DitoTypeComponent = {
   props: fieldProps,
 
   setup(props) {
-    const { context, componentPath, value, onChange } = useField(props)
+    const { context, componentPath, value, attributes } = useField(props)
     return {
       context,
       componentPath,
       value,
-      onChange,
+      attributes,
       customComponent: computed(() => props.schema.component)
     }
   }
@@ -49,11 +50,13 @@ defineType({
 
   async processSchema(api, schema) {
     await resolveSchemaComponent(schema)
+    checkContract(schema.component)
   }
 })
 
 // Custom types render their component through the same contract:
 export function wrapCustomComponent(component) {
+  checkContract(component)
   return {
     ...DitoTypeComponent,
 
@@ -62,6 +65,27 @@ export function wrapCustomComponent(component) {
         ...DitoTypeComponent.setup(props, context),
         customComponent: component
       }
+    }
+  }
+}
+
+// Undeclared events fall through as native listeners, so a native `change`
+// would emit the schema's `change` event a second time:
+function checkContract(component) {
+  if (process.env.NODE_ENV !== 'production' && component) {
+    const getMissing = (declared, names) => {
+      const keys = isArray(declared) ? declared : Object.keys(declared ?? {})
+      return names.filter(name => !keys.includes(name))
+    }
+    const missing = [
+      ...getMissing(component.props, ['schema', 'context', 'modelValue']),
+      ...getMissing(component.emits, ['update:modelValue', 'change'])
+    ]
+    if (missing.length > 0) {
+      console.warn(
+        `Custom component '${component.name ?? 'anonymous'}' doesn't ` +
+        `declare the props and emits of its contract: ${missing.join(', ')}.`
+      )
     }
   }
 }

@@ -495,8 +495,12 @@ The components of `type: 'component'` schemas no longer get `DitoMixin` and
 the change is done, which emits the schema's `change` event. `context.item`
 follows the changes of the data. Components declare these props and events, so
 that they don't fall through to their root element, which gets the id that the
-label of the component points to. `CustomComponentProps` and
-`CustomComponentEmits` describe them.
+label of the component points to, and dito warns in development if they don't.
+`CustomComponentProps` and `CustomComponentEmits` describe them. The field's
+attributes, e.g. `aria-describedby` and `disabled`, the optional prop
+`errorsElementId`, and the `focus`, `blur` and `input` listeners fall through
+too, unless the component declares them: they emit the schema's events, and
+`blur` validates the value.
 
 - `value`: `modelValue`. `this.value = value`:
   `this.$emit('update:modelValue', value)`, which writes the value through

@@ -147,6 +147,41 @@ describe('useItemLabel()', () => {
     })
   })
 
+  describe('contexts of items', () => {
+    it('receive the root and parent items in `itemLabel()` and `render()`', async () => {
+      const contexts = []
+      const getLabel = context => {
+        contexts.push(context)
+        return context.item.title
+      }
+      const chapter = {
+        type: 'form',
+        components: { title: { type: 'text' } }
+      }
+      const { data } = await mountForm({
+        schema: {
+          components: {
+            title: { type: 'text' },
+            chapters: { type: 'list', itemLabel: getLabel, form: chapter },
+            notes: { type: 'list', render: getLabel, form: chapter }
+          }
+        },
+        data: {
+          title: 'Emma',
+          chapters: [{ title: 'One' }],
+          notes: [{ title: 'Two' }]
+        }
+      })
+      expect(contexts.map(({ item }) => item.title)).toEqual(
+        expect.arrayContaining(['One', 'Two'])
+      )
+      for (const { rootItem, parentItem } of contexts) {
+        expect(rootItem.title).toBe('Emma')
+        expect(parentItem).toBe(data)
+      }
+    })
+  })
+
   describe('getItemDataPath()', () => {
     it('appends the index, and the name of other source schemas', async () => {
       const { getComponent } = await mountSchema({
