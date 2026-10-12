@@ -1056,18 +1056,18 @@ describe('Service<Config> — typed config', () => {
     expectTypeOf(config.from).toBeString()
   })
 
-  it('setup accepts the typed config', () => {
+  it('configure accepts the typed config', () => {
     const mail = {} as MailService
-    mail.setup({
+    mail.configure({
       smtp: { host: 'localhost', port: 587 },
       from: 'noreply@example.com'
     })
   })
 
-  it('setup rejects wrong config shape', () => {
+  it('configure rejects wrong config shape', () => {
     const mail = {} as MailService
     // @ts-expect-error - missing required keys
-    mail.setup({ wrong: true })
+    mail.configure({ wrong: true })
   })
 
   it('unparameterized Service has generic config', () => {

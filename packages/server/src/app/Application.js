@@ -107,7 +107,6 @@ export class Application extends Koa {
     this.isRunning = false
     this.requestStorage = new AsyncLocalStorage()
 
-    // TODO: Rename setup to configure?
     this.setupLogger()
     this.setupKnex()
     this.setupMiddleware(middleware)
@@ -276,7 +275,9 @@ export class Application extends Koa {
           if (config === false) {
             delete this.services[name]
           } else {
-            service.setup(config)
+            service.configure(config)
+            this.on('before:start', () => service.start())
+            this.on('after:stop', () => service.stop())
             await service.initialize()
             service.initialized = true
           }
