@@ -1,3 +1,4 @@
+import { vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { DataContext, DialogContext } from './DataContext.ts'
 import {
@@ -22,13 +23,17 @@ describe('DataContext', () => {
   }
 
   it('is provided by views to the components of their data', async () => {
-    const { routeComponent: view, getComponent } = await mountSchema({
+    const {
+      admin,
+      routeComponent: view,
+      getComponent
+    } = await mountSchema({
       schema: { components: { title: { type: 'text' } } },
       data: { title: 'Emma' }
     })
     const dataContext = view.ownDataContext
     expect(dataContext).toBeInstanceOf(DataContext)
-    expect(view.$refs.schema.dataContext).toBe(dataContext)
+    expect(admin.getSchemaComponent(view)).not.toBe(null)
     expect(getComponent('title').context.isDirty).toBe(false)
     expect(dataContext.model).toBe(view.dataModel)
     expect(dataContext.isCreating).toBe(false)
@@ -59,7 +64,7 @@ describe('DataContext', () => {
     const dataContext = form.ownDataContext
     expect(dataContext).not.toBe(parent.ownDataContext)
     expect(dataContext.model).not.toBe(parent.ownDataContext.model)
-    expect(form.$refs.schema.dataContext).toBe(dataContext)
+    expect(admin.getSchemaComponent(form)).not.toBe(null)
   })
 
   it('holds the data of mutating forms in the model of the parent', async () => {
@@ -88,10 +93,10 @@ describe('DataContext', () => {
       buttons: { cancel: {} }
     })
     await flushPromises()
-    const dialog = admin.wrapper.findComponent({ name: 'DitoDialog' }).vm
-    const { dataContext } = dialog.$refs.schema
+    const dialog = admin.wrapper.findComponent({ name: 'DitoDialog' })
+    const { dataContext } = dialog.findComponent({ name: 'DitoSchema' }).vm
     expect(dataContext).toBeInstanceOf(DialogContext)
-    expect(dataContext.model.data).toBe(dialog.dialogData)
+    expect(dataContext.model.data).toBe(dialog.vm.dialogData)
     dataContext.close('closed')
     expect(await promise).toBe('closed')
   })
@@ -110,9 +115,121 @@ describe('DataContext', () => {
       },
       request: () => ({ data: { results: [], total: 0 } })
     })
-    const panel = wrapper.findComponent({ name: 'DitoPanel' }).vm
-    const { dataContext } = panel.$refs.schema
+    const panel = wrapper.findComponent({ name: 'DitoPanel' })
+    const { dataContext } = panel.findComponent({ name: 'DitoSchema' }).vm
     expect(dataContext).not.toBe(view.ownDataContext)
-    expect(dataContext.model.data).toBe(panel.panelData)
+    expect(dataContext.model.data).toBe(panel.vm.panelData)
+  })
+
+  describe('validate()', () => {
+    it('shows the errors until they are cleared', async () => {
+      const { routeComponent, getErrors, dataModel } = await mountSchema({
+        schema: { components: { title: { type: 'text', required: true } } },
+        data: { title: '' }
+      })
+      expect(routeComponent.ownDataContext.validate()).toBe(false)
+      await flushPromises()
+      expect(getErrors('title')).toEqual(['The title field is required.'])
+      expect(dataModel.getErrorDataPaths()).toEqual(['title'])
+      dataModel.clearErrors()
+      await flushPromises()
+      expect(getErrors('title')).toEqual([])
+    })
+
+    it('hides the errors of values that code changed', async () => {
+      const { routeComponent, getErrors, data, dataModel } = await mountSchema(
+        {
+          schema: { components: { title: { type: 'text', required: true } } },
+          data: { title: '' }
+        }
+      )
+      routeComponent.ownDataContext.validate()
+      await flushPromises()
+      expect(getErrors('title')).toEqual(['The title field is required.'])
+      data.title = 'Emma'
+      await flushPromises()
+      expect(getErrors('title')).toEqual([])
+      expect(routeComponent.ownDataContext.validate()).toBe(true)
+      expect(dataModel.getErrorDataPaths()).toEqual([])
+    })
+  })
+
+  describe('verify()', () => {
+    it('verifies matching data silently', async () => {
+      const { routeComponent, getErrors } = await mountSchema({
+        schema: {
+          components: {
+            title: { type: 'text', required: true },
+            author: { type: 'text', required: true }
+          }
+        },
+        data: { title: 'Emma', author: '' }
+      })
+      expect(routeComponent.ownDataContext.verify()).toBe(false)
+      expect(routeComponent.ownDataContext.verify('title')).toBe(true)
+      expect(routeComponent.ownDataContext.verify(/^author$/)).toBe(false)
+      // Unlike `validate()`, no errors are shown:
+      expect(getErrors('author')).toEqual([])
+      expect(routeComponent.ownDataContext.validate('author')).toBe(false)
+      await flushPromises()
+      expect(getErrors('author')).toEqual(['The author field is required.'])
+    })
+  })
+
+  describe('showValidationErrors()', () => {
+    it('replaces the errors, and notifies them once', async () => {
+      const { routeComponent, admin, getErrors } = await mountSchema({
+        schema: {
+          components: { title: { type: 'text' }, author: { type: 'text' } }
+        },
+        data: { title: 'Emma', author: 'Jane' }
+      })
+      const notify = vi.spyOn(admin.context, 'notify')
+      await routeComponent.ownDataContext.showValidationErrors({
+        title: [{ message: 'is taken' }]
+      })
+      await routeComponent.ownDataContext.showValidationErrors({
+        author: [{ message: 'is unknown' }]
+      })
+      await flushPromises()
+      expect(getErrors('title')).toEqual([])
+      expect(getErrors('author')).toEqual(['The author field is unknown.'])
+      expect(notify).toHaveBeenCalledTimes(2)
+      // Without errors, there's nothing to notify:
+      await routeComponent.ownDataContext.showValidationErrors({})
+      expect(notify).toHaveBeenCalledTimes(2)
+      vi.restoreAllMocks()
+    })
+  })
+
+  describe('errors inside values', () => {
+    it('shows them on the field of the value', async () => {
+      const { routeComponent, admin, getErrors } = await mountSchema({
+        schema: {
+          components: {
+            address: {
+              type: 'code',
+              format: ({ value }) => JSON.stringify(value),
+              parse: ({ value }) => JSON.parse(value)
+            }
+          }
+        },
+        data: { address: { city: 'Bath' } }
+      })
+      const notify = vi.spyOn(admin.context, 'notify')
+      await routeComponent.ownDataContext.showValidationErrors({
+        'address/street': [{ message: 'is required' }]
+      })
+      await flushPromises()
+      expect(getErrors('address')).toEqual([
+        `The address field's street is required.`
+      ])
+      expect(notify).toHaveBeenCalledWith(
+        expect.objectContaining({
+          text: 'Please correct the highlighted errors.'
+        })
+      )
+      vi.restoreAllMocks()
+    })
   })
 })

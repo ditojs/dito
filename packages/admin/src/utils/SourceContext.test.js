@@ -85,7 +85,7 @@ describe('SourceContext', () => {
     const title = admin.getComponent(form, 'pages/0/title')
     expect(title.context.sourceQuery).toBe(null)
     // Nor the callbacks of the form's schema:
-    expect(form.$refs.schema.context.sourceQuery).toBe(null)
+    expect(admin.getSchemaComponent(form).context.sourceQuery).toBe(null)
   })
 
   it('reloads the list of a saved item in the parent form', async () => {

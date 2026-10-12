@@ -146,11 +146,11 @@ describe('ResourceContext', () => {
     }
 
     it('continues the resource of the parent form', async () => {
-      const { form, routeComponent: parent } = await openNoteForm()
+      const { admin, form, routeComponent: parent } = await openNoteForm()
       expect(form.ownRouteContext.resourceContext).toBe(
         parent.ownRouteContext.resourceContext
       )
-      const { context } = form.$refs.schema
+      const { context } = admin.getSchemaComponent(form)
       expect(context.getResourceUrl()).toBe('/items/1')
     })
 

@@ -65,7 +65,9 @@ describe('services', () => {
       await admin.navigate('/')
       await admin.navigate('/test')
       const view = admin.getRouteComponent(isView)
-      await view.$refs.schema.context.request({ url, cache: 'local' })
+      await admin
+        .getSchemaComponent(view)
+        .context.request({ url, cache: 'local' })
       expect(request).toHaveBeenCalledTimes(2)
     })
 

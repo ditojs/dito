@@ -617,6 +617,12 @@ export function processSchemaData(schema, data, {
 // Walk the rendered components to the deepest one containing `dataPath`, e.g.
 // `main/chapters/1` for `chapters/1` in the tab `main`. Of several components
 // that display the same data, the first in schema order wins.
+/**
+ * @param {Schema} schema
+ * @param {Data | null} data
+ * @param {string} dataPath
+ * @param {Record<string, any>} [options]
+ */
 export function getComponentPathByDataPath(schema, data, dataPath, {
   dataPath: itemDataPath = '',
   componentPath = '',

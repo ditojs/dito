@@ -2342,8 +2342,8 @@ export interface DataContext {
   verify: SchemaContext['verify']
   /**
    * Shows the validation errors of the server for the data that was sent,
-   * keyed by data paths relative to `dataPath`, by default the root data, and
-   * reveals them.
+   * keyed by data paths relative to `dataPath`, by default the one of the
+   * data, and reveals them.
    */
   showValidationErrors(
     errors: Record<string, ValidationError[]>,

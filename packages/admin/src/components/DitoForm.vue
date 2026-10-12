@@ -22,7 +22,6 @@
       disabled
     )
     DitoSchema(
-      ref="schema"
       :schema="schema"
       :dataPath="dataPath"
       :data="data"
@@ -55,7 +54,6 @@ import {
   ref,
   shallowRef,
   toRaw,
-  useTemplateRef,
   watch
 } from 'vue'
 import { useRouter } from 'vue-router'
@@ -73,6 +71,7 @@ import {
   useSchemaContext
 } from '../composables/useSchemaContext.ts'
 import { useSchemaValue } from '../composables/useSchemaValue.ts'
+import { useSchemaEvents } from '../composables/useSchemaEvents.ts'
 import { useComponentPath } from '../composables/useComponentPath.ts'
 import { waitUntilDataModelSettled } from '../utils/services.ts'
 import { getResource, hasResource } from '../utils/resource.js'
@@ -106,7 +105,6 @@ export default {
     const router = useRouter()
     const adminContext = inject('adminContext')
     const parentRouteContext = inject('routeContext')
-    const schemaComponent = useTemplateRef('schema')
     const loadedData = ref(null)
     const createdData = ref(null)
     // The item of the parent that the form edits, and its draft:
@@ -324,12 +322,15 @@ export default {
         ),
         isTransient: computed(() => isTransient.value),
         loadingTracker: computed(() => requests.loadingTracker),
-        schemaComponent,
         setData,
         copyErrors,
 
         get dataModel() {
           return getDataModel()
+        },
+
+        get services() {
+          return services
         },
 
         get ownResourceContext() {
@@ -364,10 +365,23 @@ export default {
       sourceContext: null,
       ...(ownResourceContext && { resourceContext: ownResourceContext })
     })
-    const { context } = useSchemaContext(reactive({ schema, data, dataPath }), {
-      services
-    })
+    const { context, createContext } = useSchemaContext(
+      reactive({ schema, data, dataPath }),
+      { services }
+    )
     const { getLabel } = useSchemaValue(context)
+    // The events of the data, e.g. `load`, like the form's schema emits them:
+    const { emitEvent: emitSchemaEvent } = useSchemaEvents(() => schema.value, {
+      services,
+      createContext: values =>
+        createContext({
+          nested: true,
+          get formLabel() {
+            return getLabel(schema.value)
+          },
+          ...values
+        })
+    })
 
     const requests = useResource({
       services,
@@ -409,9 +423,6 @@ export default {
     const itemLabel = computed(() =>
       getItemLabel(sourceSchema.value, data.value, { extended: true })
     )
-
-    const emitSchemaEvent = (event, options) =>
-      schemaComponent.value?.emitEvent(event, options)
 
     const close = () => ownRouteContext.close()
 
@@ -534,7 +545,7 @@ export default {
           } else {
             parentModel.merge(list, sourceKey.value, item, sourceSchema.value)
           }
-          schemaComponent.value.onChange()
+          emitSchemaEvent('change')
         }
         onSuccess?.()
         await emitButtonEvent(button, 'success', { notify: notifySuccess })

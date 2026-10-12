@@ -243,7 +243,7 @@ describe('DitoTypeTreeList', () => {
     await admin.navigate('/items/1/pages/0/subpages/1')
     const form = admin.getRouteComponent(isForm)
     form.data.title = 'Story'
-    const { context } = form.$refs.schema
+    const { context } = admin.getSchemaComponent(form)
     expect(context.processedItem).toEqual({ title: 'Story' })
     // The root item is the one of the site form, with the draft in place of
     // the item, like `rootItem`:

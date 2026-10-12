@@ -197,6 +197,17 @@ export async function mountAdmin({ views, request = null, api = {} }) {
       return (
         admin.getContainer(routeComponent, dataPath)?.$refs.component ?? null
       )
+    },
+
+    // Returns the schema component that displays the data of `routeComponent`,
+    // the first one of its data context:
+    getSchemaComponent(routeComponent) {
+      return (
+        wrapper
+          .findAllComponents({ name: 'DitoSchema' })
+          .find(({ vm }) => vm.dataContext === routeComponent.ownDataContext)
+          ?.vm ?? null
+      )
     }
   }
   mountedAdmins.add(admin)
@@ -293,7 +304,7 @@ export async function enterValue(wrapper, value) {
 
 function createMountResult(admin, routeComponent) {
   const { wrapper } = admin
-  const schemaComponent = routeComponent.$refs.schema
+  const schemaComponent = admin.getSchemaComponent(routeComponent)
 
   // Returns the first type component of the route component's data that
   // displays the value at `dataPath`, e.g. `authors/0/name`. Unnested
