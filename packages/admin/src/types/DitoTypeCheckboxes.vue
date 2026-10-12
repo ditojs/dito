@@ -4,7 +4,7 @@ DitoOptionList.dito-checkboxes(
   role="group"
   :aria-label="label"
   :options="options"
-  :isGrouped="!!groupBy"
+  :isGrouped="isGrouped"
   :layout="schema.layout"
 )
   template(#option="{ option, isFirstOption }")

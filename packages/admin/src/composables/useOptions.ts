@@ -55,16 +55,28 @@ export function useOptions(
     })
   })
 
-  const groupBy = computed<string | null>(() =>
-    getSchemaValue('groupBy', { type: String, default: null })
+  const optionGroup = computed<string | ((context: Context) => any) | null>(
+    () =>
+      getSchemaValue(['options', 'group'], {
+        type: [String, Function],
+        default: null
+      })
   )
+  const isGrouped = computed(() => !!optionGroup.value)
 
   const loadedOptions = computed(() => {
     const options = optionsResolver.value.value ?? []
     if (!isArray(options)) {
       throw new Error(`Invalid options data, should be array: ${options}`)
     }
-    return groupBy.value ? groupOptions(options, groupBy.value) : options
+    const group = optionGroup.value
+    return group
+      ? groupOptions(options, option =>
+          isString(group)
+            ? option[group]
+            : group(createOptionsContext({ option }))
+        )
+      : options
   })
 
   // The callbacks of the options receive the options too:
@@ -82,7 +94,7 @@ export function useOptions(
       searchedOptions?.value || loadedOptions.value,
       {
         multiple: multiple.value,
-        groupBy: groupBy.value,
+        isGrouped: isGrouped.value,
         createContext: createOptionsContext
       }
     )
@@ -99,7 +111,7 @@ export function useOptions(
     const options = loadedOptions.value
     // Grouped options have no group to add options to:
     const added =
-      addedOptions && !groupBy.value
+      addedOptions && !isGrouped.value
         ? addedOptions.value.filter(option => !isOptionAmong(option, options))
         : []
     return added.length > 0 ? [...options, ...added] : options
@@ -154,7 +166,7 @@ export function useOptions(
         default: null
       }) ||
       // Options that are objects with a `label` hold their labels:
-      getOptionKey(activeOptions.value, groupBy.value, 'label') ||
+      getOptionKey(activeOptions.value, isGrouped.value, 'label') ||
       null
     )
   )
@@ -167,7 +179,7 @@ export function useOptions(
     hasOptions,
     multiple,
     relate: computed(() => !!props.schema.relate),
-    groupBy,
+    isGrouped,
     optionLabel,
     optionValue: computed(() => settings.value.optionValue),
 

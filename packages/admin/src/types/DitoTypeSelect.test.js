@@ -82,18 +82,24 @@ describe('DitoTypeSelect', () => {
       expect(data.authorId).toBe(2)
     })
 
-    it('groups the options with `groupBy`', async () => {
+    it('groups the options with `options.group`', async () => {
       const { findField, data } = await mountSchema({
         schema: {
           components: {
             book: {
               type: 'select',
-              groupBy: 'shelf',
-              options: [
-                { value: 'emma', label: 'Emma', shelf: 'Classics' },
-                { value: 'dune', label: 'Dune', shelf: 'Sci-Fi' },
-                { value: 'persuasion', label: 'Persuasion', shelf: 'Classics' }
-              ]
+              options: {
+                data: [
+                  { value: 'emma', label: 'Emma', shelf: 'Classics' },
+                  { value: 'dune', label: 'Dune', shelf: 'Sci-Fi' },
+                  {
+                    value: 'persuasion',
+                    label: 'Persuasion',
+                    shelf: 'Classics'
+                  }
+                ],
+                group: 'shelf'
+              }
             }
           }
         }
@@ -109,6 +115,37 @@ describe('DitoTypeSelect', () => {
       await findField('book').find('select').setValue('persuasion')
       // The `value` keys of the grouped options are used as their values:
       expect(data.book).toBe('persuasion')
+    })
+
+    it('groups the options by the result of an `options.group` callback', async () => {
+      const { findField } = await mountSchema({
+        schema: {
+          components: {
+            book: {
+              type: 'select',
+              options: {
+                data: [
+                  { value: 'emma', label: 'Emma', year: 1815 },
+                  { value: 'dune', label: 'Dune', year: 1965 },
+                  { value: 'persuasion', label: 'Persuasion', year: 1817 }
+                ],
+                group: ({ option }) =>
+                  option.year < 1900 ? 'Classic' : 'Modern'
+              }
+            }
+          }
+        }
+      })
+      const groups = findField('book').findAll('optgroup')
+      expect(
+        groups.map(group => [
+          group.attributes('label'),
+          group.findAll('option').map(option => option.text())
+        ])
+      ).toEqual([
+        ['Classic', ['Emma', 'Persuasion']],
+        ['Modern', ['Dune']]
+      ])
     })
 
     it('loads options through `request()` once per form with `cache`', async () => {

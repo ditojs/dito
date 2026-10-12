@@ -12,7 +12,7 @@ export interface OptionsSettings {
   // `null` for options that are their own values:
   optionValue: string | ((context: Context) => any) | null
   optionEquals: ((context: Context) => boolean) | null
-  groupBy: string | null
+  isGrouped: boolean
   createContext(values: Record<string, any>): Context
 }
 
@@ -21,9 +21,9 @@ export function getOptionsSettings(
   options: any[],
   {
     multiple,
-    groupBy,
+    isGrouped,
     createContext
-  }: Pick<OptionsSettings, 'multiple' | 'groupBy' | 'createContext'>
+  }: Pick<OptionsSettings, 'multiple' | 'isGrouped' | 'createContext'>
 ): OptionsSettings {
   const getValue = (key: string[], type: any) => (
     getSchemaValue(key, { type, schema, context: createContext({}) }) ?? null
@@ -37,10 +37,10 @@ export function getOptionsSettings(
     optionValue: (
       getValue(['options', 'value'], [String, Function]) ||
       relateKey ||
-      getOptionKey(options, groupBy, 'value')
+      getOptionKey(options, isGrouped, 'value')
     ),
     optionEquals: getValue(['options', 'equals'], Function),
-    groupBy,
+    isGrouped,
     createContext
   }
 }
@@ -51,11 +51,14 @@ export function getRelateKey(schema: Schema): string | null {
   return schema.relate === true ? 'id' : schema.relate || null
 }
 
-export function groupOptions(options: any[], groupBy: string) {
+export function groupOptions(
+  options: any[],
+  getGroup: (option: any) => string
+) {
   const groups: Record<string, { label: string; options: any[] }> = {}
   const results = []
   for (const option of options) {
-    const label = option[groupBy]
+    const label = getGroup(option)
     let group = groups[label]
     if (!group) {
       group = groups[label] = { label, options: [] }
@@ -69,11 +72,11 @@ export function groupOptions(options: any[], groupBy: string) {
 // Return `key` if the options are objects that hold it:
 export function getOptionKey(
   options: any[],
-  groupBy: string | null,
+  isGrouped: boolean,
   key: string
 ): string | null {
   const [firstEntry] = options
-  const option = groupBy ? firstEntry?.options?.[0] : firstEntry
+  const option = isGrouped ? firstEntry?.options?.[0] : firstEntry
   return isObject(option) && key in option ? key : null
 }
 
@@ -95,7 +98,7 @@ export function findOptionForValue(
   options: any[],
   value: any
 ): any {
-  const { optionEquals, groupBy, createContext } = settings
+  const { optionEquals, isGrouped, createContext } = settings
   const findOption = (options: any[], isGrouped: boolean): any => {
     for (const option of options) {
       if (isGrouped) {
@@ -112,7 +115,7 @@ export function findOptionForValue(
       }
     }
   }
-  return findOption(options, !!groupBy)
+  return findOption(options, isGrouped)
 }
 
 // Values without an option select `null`, unless there are no options yet:
