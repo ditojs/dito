@@ -852,12 +852,6 @@ export type SchemaOptions<$Item, $Option = any> =
        */
       value?: keyof $Option | ItemAccessor<$Item, { option: $Option }>
       /**
-       * @deprecated Not supported, the options are grouped by the `groupBy`
-       * setting of the component's schema, see
-       * {@link SelectionSettings.groupBy}.
-       */
-      groupBy?: keyof $Option
-      /**
        * Custom equality function for matching a value to an
        * option. Receives a context with `value` and `option`.
        */
@@ -1225,11 +1219,6 @@ export interface DateSchema<$Item = any>
       time?: TimeFormat
     }
   >
-  /**
-   * @deprecated Use `formats.date` instead. `dateFormat` is no longer read and
-   * has no effect.
-   */
-  dateFormat?: OrItemAccessor<$Item, {}, DateFormat>
 }
 
 export interface ButtonSchema<$Item = any>
@@ -2927,9 +2916,6 @@ export type HTTPMethod =
   | 'options'
   | 'trace'
   | 'connect'
-/** @deprecated Use `HTTPMethod` instead. */
-export type HTTPVerb = HTTPMethod
-
 export type SchemaByType<$Item = any> = {
   'button': ButtonSchema<$Item>
   'checkbox': CheckboxSchema<$Item>

@@ -556,6 +556,16 @@ contracts of types and custom components are exported. The contexts of data,
 routes, sources and resources, the data model, the UI registry and the loading
 tracker are internal.
 
+### Removed deprecations
+
+- `options.groupBy` is removed from the types, as it never grouped the
+  options: use `groupBy` on the schema.
+- `dateFormat` of date schemas is removed from the types, as it isn't read:
+  use `formats.date`.
+- The `HTTPVerb` type is removed: use `HTTPMethod`.
+- The `$pulldown-radius`, `$pulldown-padding-ver`, `$pulldown-padding-hor` and
+  `$pulldown-padding` SCSS variables are removed.
+
 ## UI
 
 ### Styles

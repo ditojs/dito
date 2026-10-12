@@ -143,7 +143,7 @@ tags: {
 }
 ```
 
-This component uses an API to fetch its data. It also has a placeholder which is displayed in the input field until data is entered. The API provides JSON with an array of dictionaries. `label` retrieves the label that is diplayed to the user. `value` the value of the options. Options with the same `groupBy` value can be merged into groups.
+This component uses an API to fetch its data. It also has a placeholder which is displayed in the input field until data is entered. The API provides JSON with an array of dictionaries. `label` retrieves the label that is diplayed to the user. `value` the value of the options. `groupBy` on the schema merges options with the same value of that property into groups.
 
 ```js
 country: {
@@ -152,6 +152,7 @@ country: {
   multiple: false,
   searchable: true,
   placeholder: 'Select or search country',
+  groupBy: 'sub-region',
   options: {
     data({ request }) {
       return request({
@@ -160,8 +161,7 @@ country: {
       })
     },
     label: 'name',
-    value: 'alpha-2',
-    groupBy: 'sub-region'
+    value: 'alpha-2'
   }
 }
 ```
