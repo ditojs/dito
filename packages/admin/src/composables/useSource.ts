@@ -376,6 +376,8 @@ export function useSource(
         return render.value
           ? render.value(
               new SchemaContext(services, {
+                schema,
+                name: schema.name,
                 data: item,
                 value: item,
                 dataPath: getItemDataPath(schema, index)

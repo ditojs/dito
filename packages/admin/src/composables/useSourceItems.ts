@@ -76,6 +76,8 @@ export function useSourceItems({
         evaluateItemLabel: () =>
           sourceSchema.itemLabel(
             new SchemaContext(services, {
+              schema: sourceSchema,
+              name: sourceSchema.name,
               nested: false,
               data: item,
               value: item,

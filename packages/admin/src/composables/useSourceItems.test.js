@@ -180,6 +180,26 @@ describe('useSourceItems()', () => {
         expect(parentItem).toBe(data)
       }
     })
+
+    it('receive the schema and name of their list', async () => {
+      const contexts = []
+      const getLabel = ({ schema, name, item }) => {
+        contexts.push({ schema, name })
+        return item.title
+      }
+      const chapter = {
+        type: 'form',
+        components: { title: { type: 'text' } }
+      }
+      const chapters = { type: 'list', itemLabel: getLabel, form: chapter }
+      const notes = { type: 'list', render: getLabel, form: chapter }
+      await mountSchema({
+        schema: { components: { chapters, notes } },
+        data: { chapters: [{ title: 'One' }], notes: [{ title: 'Two' }] }
+      })
+      expect(contexts).toContainEqual({ schema: chapters, name: 'chapters' })
+      expect(contexts).toContainEqual({ schema: notes, name: 'notes' })
+    })
   })
 
   describe('getItemDataPath()', () => {
