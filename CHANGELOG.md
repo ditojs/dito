@@ -3,6 +3,157 @@
 The changes of each release of Dito.js. For upgrading to a new major
 version, see the upgrade guides in `docs/`.
 
+## 4.0.0 (unreleased)
+
+Dito.js 4.0 rebuilds the admin around its data instead of its components. Routes, links and form items are generated from a route tree built once from the view schemas. Each view, form, dialog and panel with its own data has a data model that owns all of it: edits, dirty state and errors live there, also for fields that aren't rendered. Nested forms edit drafts of their items, and save responses are merged in place. Callbacks receive typed contexts instead of components, custom types are described by type descriptors through `defineType()`, and the admin's components are built with composables instead of mixins. The hooks that convert values share one vocabulary (`formatValue()`, `parseValue()`, `computeValue()`, `serializeValue()` and the new `deserializeValue()`). See [`docs/upgrading-to-4.0.md`](docs/upgrading-to-4.0.md) for the details of every change below.
+
+### Breaking changes
+
+#### Admin schemas and hooks
+
+- **admin:** The value hooks are named after what they convert: `format()` → `formatValue()`, `parse()` → `parseValue()`, `compute()` → `computeValue()`, `process()` → `serializeValue()`. The hooks of types run before the schema's hooks of the same names. Schemas that still define the 3.x names throw when they're set up, naming the replacement, except `format` of the date and color types, which is their setting: rename a 3.x `format()` there by hand.
+- **admin:** Schemas no longer define members of their components: `methods`, `computed`, `watch` and `data` are removed, and handlers, e.g. `onClick`, `itemLabel`, `render` and `clipboard.copy()`, are called with their context only, without the component as `this`. Use plain functions in the schema's module, read values from the context, replace `watch` on data with the `change` event, which receives the `dataPath` of the changed value, and keep state in module scope, e.g. a `WeakMap` keyed by the item. Panels keep `data` for their own data. Schemas that still define these keys throw when they're set up. In buttons, `this.submit()` is `context.submit()`.
+- **admin:** Event handlers are declared as top-level `onX` handlers, e.g. `onChange`. `events: {}` keeps working with a deprecation warning and will be removed in a later major version.
+- **admin:** Date values that code writes, e.g. defaults and computed values, are `Date` objects: the date types convert stored strings in `deserializeValue()`, and their components no longer convert strings. `formats` of the date types is `format`, and throws when it's still set.
+- **admin:** Date, datetime and time fields fire `change` when the picker closes, the field loses focus or Enter is pressed, not for each picked or typed value.
+- **admin:** Cells without `render()` and item labels show values as their types describe them, e.g. 'June 1, 2026' for `type: 'date'` instead of the stored string. Columns that format their values otherwise use `render()` with `context.format()`.
+- **admin:** Tree lists and objects take `collapsed` instead of `open`, inverted, like sources and sections, so it no longer reads like the `open` event. Trees that still define `open` throw when they're set up.
+- **admin:** `relate` takes `true`, to relate options by `id`, or the key to relate them by, e.g. `relate: 'code'`: `relateBy` is removed, and throws when it's still set.
+- **admin:** `groupBy` of selects, multiselects, radio buttons and checkboxes is `options.group`, next to `label`, `value`, `equals` and `data`: the key of the options' group, or a callback that returns it. The schema-level `groupBy` throws when it's still set, and `options.groupBy` is removed.
+- **admin:** Schema options that were typed but never read are removed from the types: `defaultSort`, `defaultScope` and `nested` of sources, the schema-level `omitSpacing`, and `dateFormat` (use `format.date`) and `locale` (use `api.locale`) of date schemas.
+
+#### Contexts and callbacks
+
+- **admin:** Contexts no longer expose components: `component`, `formComponent`, `schemaComponent`, `viewComponent`, `dialogComponent`, `panelComponent`, `resourceComponent` and `sourceComponent` are removed. Their state and actions are members of the context: `isDirty`, `isCreating`, `validate(match)`, `verify(match)`, `markEdited()` and `replaceItem(data)` for the data of the nearest form, view, dialog or panel with its own data, plus `closeForm()`, `closeDialog(value)`, `getRouteUrl(location)`, `selectedTab` and `submit()` in buttons. Where they don't apply, `validate()`, `verify()`, `markEdited()`, `replaceItem()`, `closeForm()`, `closeDialog()`, `submit()` and `getResourceUrl()` without arguments throw, `isDirty` and `isCreating` are `false`, and `selectedTab` and `sourceQuery` are `null`.
+- **admin:** The callbacks of a component see the item the component is in, those that decide about a panel (`if`, `visible`, `label`, `sticky`, `data()`) the data around the panel, and those of the panel's components the panel's data. Components without a schema of their own, e.g. tabs, scopes, the table head, label affixes and the clipboard, pass on the context of the component that renders them. The members that components provide, e.g. `sourceQuery`, `isRunning` and `submit()`, depend on which component evaluates the callback: the data model evaluates `if`, `default`, `computeValue()`, options `data()` and validations with the ones of the form, view, dialog or panel that holds the data, and rendering evaluates `if` again with the ones around the component, e.g. an inlined list. All other callbacks of a component's schema, also `visible`, `width`, `label`, `info` and `disabled` of its container, see the component's own, e.g. a button's `isRunning` or a select's `options`.
+- **admin:** `query` is `routeQuery`, and `sourceComponent.query` is `sourceQuery`, `null` outside lists, inside forms and in `itemLabel()`.
+- **admin:** `processedItem` and `processedRootItem` are `serializedItem` and `serializedRootItem`, built when read. Components no longer have `processedData`, `processedRootData`, `processedItem`, `processedRootItem`, `processData()` and `setData()`.
+- **admin:** The context's `index` is `valueIndex`, next to `itemIndex` and `parentItemIndex`.
+- **admin:** `showDialog({ components, buttons, data, settings })` is `showDialog({ components, buttons }, { data, settings })`, which resolves with the value the dialog is closed with: `dialogComponent.resolve(value)` is `closeDialog(value)`, and `dialogComponent.reject()` is removed.
+- **admin:** `getResourceUrl()` without arguments returns the URL of the nearest form or list with a resource, and throws without one instead of returning `null`. Views have no resource.
+- **admin:** `request({ cache: 'local' })` caches while the route of the form or view is shown, and not outside of routes, e.g. in dialogs.
+- **admin:** `itemLabel` and `itemLabelText` are set in the `success` and `error` events of the buttons of forms, but no longer in the form's own context, and are `null` in the `if` and `default` callbacks of form components.
+- **admin:** Option labels receive `isSelected` instead of reading `component.$refs.element.isOpen`.
+- **admin:** `DitoAdmin` holds its services in one `AdminContext`, `admin.context`, instead of the `api`, `session` and `viewRegistry` injects: `api`, `user`, `views`, `flattenedViews`, `notify()` and `showDialog()` are members of the contexts. `locale` is `context.api.locale`, `session` is `admin.context.session`. `closeNotifications()`, `rootComponent` and the deprecated `registerLoading()` are removed, and route records no longer have `meta.api` and `meta.schema`.
+
+#### Custom types and components
+
+- **admin:** Types are defined with `defineType(descriptor)`, exported by `@ditojs/admin`, instead of `admin.register(type, options)`. The descriptor names the component and holds what were static options of type components: `defaultValue`, `defaultNested`, `defaultVisible`, `defaultMultiple`, `defaultWidth`, `getChildSourceSchemas()`, and `processSchema()` and `processValue(context, graph)` as `setupSchema()` and `serializeValue(context)`. `getSourceType(type)` is `sourceType`, `getTypeValidations()` is `getValidations(schema, context)`, and `getFormSchemasForProcessing()` is removed.
+- **admin:** Type descriptors state what is special about a type instead of the admin checking type names: `hasLabel()`, `rendersLabel`, `resolvesValue`, `hasFormat`, `submitsData` and `hasNestedForms`. `submitsData` makes forms and sources count the type's buttons for their dirty state and whether they can save; submitting is up to the component. Options are only loaded for types with `getOptionsDataSchema()`; `optionsTraits`, `numberTraits` and `textTraits` share the behaviour of dito's own types, and custom types with `optionsTraits` receive their loaded options as `context.options`.
+- **admin:** The descriptor options taken over from type components are statements too: `excludeValue` → `defaultExclude`, `generateLabel` → `generatesLabel`, `ignoreMissingValue()` → `ignoresMissingValue()`, `treatNullAsMissing()` → `treatsNullAsMissing()`, `omitSpacing` → `omitsSpacing`.
+- **admin:** Custom components, of `type: 'component'` and of `defineType()`, no longer get `DitoMixin` and `TypeMixin` mixed in. They receive `schema`, `context` and the value as `modelValue`, and emit `update:modelValue` to change the value, which emits the schema's `input` event, and `change` once the change is done, which emits its `change` event. `getSchemaValue(schema, key, context)` is exported by `@ditojs/admin`, and `CustomComponentProps` and `CustomComponentEmits` type the contract. Dito warns in development about undeclared props and emits. The `component` of list items and columns receives the item or the cell's value the same way.
+- **admin:** All mixins are removed: `DitoMixin`, `EmitterMixin`, `TypeMixin`, `ValueMixin`, `ContextMixin`, `TextMixin`, `NumberMixin`, `OptionsMixin`, `DomMixin`, `SortableMixin`, `RouteMixin`, `SchemaParentMixin`, `SourceMixin`, `ResourceMixin`, `ItemMixin`, `ValidationMixin` and `ValidatorMixin`, along with `DitoComponent.component()`. The admin's components are no longer part of the API: their members, e.g. `request()`, `navigate()`, `download()`, `getResourceUrl()`, are members of the context, and `sendRequest()`, `getQueryLink()`, `getLabel()`, `getStore()`, `setStore()`, `removeStore()`, `getTypeComponent()`, `focus()`, `on()`, `off()`, `emit()`, `emitEvent()` and `emitChangeEvent()` are removed.
+- **admin:** The component lookups and injects are removed, e.g. `routeComponent`, `formComponent`, `parentFormComponent`, `sourceComponent`, `getComponent()`, `getComponentByName()`, `getPanel()`, `$routeComponent`, `$schemaComponent`, `$verbs` and the `meta` and `nestedMeta` props. `DitoScopes`, `DitoPagination` and `DitoTableHead` take the list's `ListQuery` as `listQuery`.
+- **admin:** `getPanelSchema(api, schema, dataPath, source)` receives the list's query as `source.listQuery` instead of the component.
+- **admin:** `change` events stop bubbling between schemas when a handler returns `false`.
+- **admin:** An `onClick()` of the submit or cancel button of forms, or of the cancel button of dialogs, replaces the default handler instead of running next to it: call `submit()`, `closeForm()` or `closeDialog()` from it. Grouped `events` replace the `on…` handler of the same event in the same schema.
+
+#### Routes and URLs
+
+- **admin:** The URLs of forms of lists in nested sections and inlined objects contain the name of their container, like the data paths of their items, e.g. `/books/1/contents/notes/2`.
+- **admin:** The items of tree lists with a resource are addressed by their id in URLs, like the items of other lists with a resource.
+- **admin:** Relative resources resolve against the nearest form or source with a resource of its own: the forms of tree items no longer resolve at `pages/pages/1`, and lists in the items of inlined lists resolve against the form instead of the API root.
+
+#### Dirty state and saving
+
+- **admin:** Direct writes to the data don't make it dirty: `formComponent.applyCleanChanges()` is removed, write the data directly instead. Code that edits data in place calls `context.markEdited()`; type components no longer have `markDirty()`, and type components, schemas and panels no longer have `isDirty`.
+- **admin:** `schemaComponent.filterData()` and `schemaComponent.resetData()` are removed: forms merge server data in place, and the filters panel clears its data with `replaceItem({})`.
+
+#### Errors and validation
+
+- **admin:** Errors live in the data model: type components no longer have `errors`, `hasErrors`, `isTouched`, `isValid`, `isValidated`, `verify()`, `markTouched()`, `clearValidation()`, `resetValidation()`, `addError()`, `getErrors()`, `clearErrors()`, `showValidationErrors()` and `validate()`, and forms, views, schemas and panels lose their validation members, e.g. `validateAll()` and `verifyAll()`. Use `context.validate(match)` and `context.verify(match)`.
+- **admin:** `navigateToComponent()` and `navigateToRouteComponent()` are removed: validating reveals the errors, opening nested forms, collapsed schemas and tabs, and focuses the first one.
+
+#### Types and public API
+
+- **admin:** The public types no longer carry the `Dito` prefix, except `DitoAdmin`: `DitoContext` is `SchemaContext`, `DitoUser` `AdminUser`, `DitoGlobal` `GlobalConfig`. `DitoDataModel`, `DitoListEntry` and `DitoValidationError` are removed.
+- **admin:** Only `SchemaContext`, `AdminContext`, `DitoAdmin`, the schema types and the contracts of types and custom components are exported. The internal contexts, the data model, the UI registry, the loading tracker and the types of component instances (`DitoComponentInstanceBase`, `DitoFormInstance`, `DitoViewInstance`, `DitoSchemaInstance`, `DitoSourceInstance`) are removed.
+- **admin:** The shared schema types are named after the settings they hold: `SchemaSourceMixin`, `SchemaOptionsMixin`, `SchemaNumberMixin`, `SchemaTextMixin`, `SchemaAffixMixin` and `SchemaDataMixin` are `SourceSettings`, `SelectionSettings`, `NumberSettings`, `TextSettings`, `AffixSettings` and `DataSettings`, `SchemaDitoMixin` and `SchemaTypeMixin` are part of `BaseSchema`, and the deprecated `SchemaSetupMixin` and `SchemaRouteMixin` are removed.
+- **admin:** The deprecated `HTTPVerb` type (use `HTTPMethod`) and the `$pulldown-radius`, `$pulldown-padding-ver`, `$pulldown-padding-hor` and `$pulldown-padding` SCSS variables are removed.
+
+#### Server
+
+- **server:** `Service.setup(config)` is `configure(config)`, which services override to read their configuration. The application starts and stops its services itself.
+- **server:** The array forms of `patchAndFetch()` and `updateAndFetch()` save each model by its id in one transaction, and throw for models without ids instead of inserting them: use `insertAndFetch()` for these. The collection actions `put` and `patch` still insert models without ids.
+- **server:** `type: 'color'` validates the color strings that the admin's color type stores: hex colors and color keywords. Other strings, e.g. `'rgb(0, 0, 0)'`, are rejected: use `type: 'string'` for them. The objects of the admin's `rgb`, `prgb`, `hsl` and `hsv` formats need properties of `type: 'object'`, which are stored as JSON. This replaces the 3.2.7 behaviour that 3.5.0 restored.
+- **server:** Outside PostgreSQL, arrays passed to `insert()` and `insertAndFetch()` are inserted in one transaction without their relations, as in PostgreSQL, instead of through `insertGraph()` with them: insert graphs with `insertDitoGraph()` or `insertGraph()`.
+- **server:** `AdminController.getPath(name)` is removed: use `resolveConfigPath(name)`. `returns` of handler definitions and `options.returns` are removed: use `response` and `options.response`. The `cyclic` option of the `*DitoGraph*()` methods, which has no effect since 3.3.1, is removed.
+- **server:** The admin's HMR is served through the app's server instead of a port of its own: remove `server.hmr.port` from the admin's Vite config; `port: 0` no longer picks a free port. `app.stop()` closes the Vite server before the app's server.
+
+#### UI
+
+- **ui:** `DitoDatePicker`, `DitoTimePicker` and `DitoDateTimePicker` emit `change` once the edit is done, when the popup closes, the input loses focus or Enter is pressed, instead of with each value. `update:modelValue` fires for each value.
+- **ui:** The modifiers of `DitoTrigger` and its popups follow BEM: `.dito-trigger-disabled` is `.dito-trigger--disabled`, and `.dito-popup-{placement}`, e.g. `.dito-popup-bottom-left`, is `.dito-popup--{placement}`.
+
+#### Build
+
+- **build:** `@ditojs/admin` and `@ditojs/ui` are only published as ES modules: their UMD builds and the `require` conditions of their exports are removed. `defineViteConfig()` of `@ditojs/build` only builds ES modules, and its `rollupOutput` option is removed.
+
+### Behaviour changes
+
+- **admin:** Forms are dirty once their data is edited, until it's saved, applied or loaded again, instead of when it differs from the data they started with: reverting an edit leaves them dirty, while writes that don't change a value aren't edits.
+- **admin:** Only what can save counts as dirty: forms, views, dialogs, panels with their own data and sources with their own resource are dirty only with a button of type `submit`. Without one, `context.isDirty` stays `false`, and views no longer ask about unsaved changes. Edits inside a source with its own resource, e.g. reordering, applied nested forms and inline fields, count for that source, are clean again once its button submitted them, and stay dirty when the form saves.
+- **admin:** Nested forms without `mutate: true` edit a draft of their item: OK merges the draft into the item in place and makes the parent dirty if it changed, Cancel leaves the parent untouched, also temporary ids of references. `serializeValue()` runs only when the parent is saved. In the draft, everything outside the item is read-only. `replaceItem()` and the responses of buttons with resources in nested forms write into the draft. Forms with `mutate: true` edit the parent's data directly, so the parent turns dirty right away, their `isDirty` is the parent's, and Cancel only closes them.
+- **admin:** Save responses, reloads and `replaceItem()` merge into the form's data in place: open nested forms keep their edits, items keep their uids, stores and the errors of unchanged values, and the data of sources with their own resource is kept. A response arriving after the form opened another item is dropped, and saving only cleans the edits it carried.
+- **admin:** Leaving a form while it saves waits for the save, up to 30 seconds, and only asks about unsaved changes if it failed. "Save & close" and opening a created item only navigate if the route is still within the form.
+- **admin:** Submitting waits for running uploads without a time limit, also through the buttons of sources with their own resource, which also wait for data schemas and options to load.
+- **admin:** Errors stay with the data that holds each value, so they survive collapsing sections, switching tabs and items moving. Any change of a value clears its errors for good, also writes through code and changes back to the rejected value. The errors of fields, e.g. of failed option loads, stay until their source removes them.
+- **admin:** Errors inside values that no deeper field displays show on the field of the value, with their path, e.g. for objects edited as code.
+- **admin:** Rows of lists and tree items whose items or children hold errors are marked with a red bar (`dito-table__row--error`, `dito-tree-item--error`), e.g. for errors in the forms of nested routes.
+- **admin:** Forms clear the errors of their data once submitted, also mutating forms, and the buttons of sources clear the errors of the source's data after submitting it.
+- **admin:** Tabs render once they're selected and stay rendered. Focusing components in nested tabs selects these tabs and replaces the hash of the route instead of adding a history entry.
+- **admin:** Open nested forms follow their item to its new index when it or a parent item moves, replacing the history entry. Forms of list items close once their item is removed instead of showing the next one.
+- **admin:** Pasting writes through the data model as new items: related items get new temporary ids each time, sources with their own resource are left out, and unchanged values don't make the data dirty. Copying the item of a nested form leaves out the ids of its items, and copied ids are marked `@7` for the id `7` and `@@7` for the temporary id `@7`.
+- **admin:** Values that the data model writes, e.g. defaults, computed and loaded values, don't fire `change`, unlike the watchers they replace.
+- **admin:** Components in panels with their own data, e.g. filters, get their defaults and computed values, and their edits don't make the view or form dirty. Their data is `item` inside the panel, while `rootItem` stays the page's root data. Dialogs are the containers of their data: `rootItem` inside them is their data.
+- **admin:** The data model replaces the values of components with options once the options are loaded, also while the component isn't rendered. Selects and multiselects keep values that their options lack instead of setting them to `null`.
+- **admin:** In single-component views, the view's own buttons and panels use the list's verbs, query and submits.
+- **admin:** Saving the forms of the children of tree items doesn't reload the tree.
+- **admin:** The schema values of a component's container, e.g. `visible`, `width`, `label`, `info` and `disabled`, see the members of the component, e.g. a button's `isRunning`, and are evaluated once for the container and the component. `disabled: ({ isRunning }) => isRunning` also disables the button's container.
+- **admin:** Dito's components and types are registered globally with `app.component()`, so custom components can render them by name.
+- **admin:** After applying the link dialog of `markup` fields, the focus returns to the editor instead of the toolbar button.
+- **server:** `upsert()` and `upsertAndFetch()` run in a transaction: a failure rolls back the patch, or the models saved before it.
+
+### New
+
+- **admin:** A route tree, built once from the view schemas, generates the routes, edit and create links, form items, menus and breadcrumb trail. The forms of lists in forms shared by several views or lists are routed in each of them, and `maxDepth` limits how often a list occurs inside itself in a route, also through shared forms.
+- **admin:** `deserializeValue()` converts stored values to edited ones: for loaded data, save responses, `replaceItem()`, pasted data and filters in the query. It's the counterpart of `serializeValue()`.
+- **admin:** `defineType()` with type descriptors, which describe how the admin handles the schemas and values of a type, also when they aren't rendered; `type` takes one type or an array sharing the descriptor.
+- **admin:** The `getValueText(context)` hook of type descriptors gives the text that cells and item labels show for a value.
+- **admin:** `getItemAdapter(schema)` wraps and unwraps the items of sources for their forms. Lists with `wrapPrimitives` support routed forms, which edit the wrapped value as their draft and write it back at its index.
+- **admin:** Typed contexts: `SchemaContext` with the new members `isDirty`, `isCreating`, `validate(match)`, `verify(match)`, `markEdited()`, `replaceItem()`, `closeForm()`, `closeDialog()`, `getRouteUrl()`, `routeQuery`, `sourceQuery`, `selectedTab`, `submit()` and `isSelected`, and `AdminContext` as `admin.context`.
+- **admin:** `serializedItem` and `serializedRootItem` are available in the callbacks of the data model too, e.g. `if` and `computeValue()`, and are the data being built inside `serializeValue()`.
+- **admin:** Dialogs can save through their submit buttons.
+- **docs:** `CHANGELOG.md` collects the notes of all releases since 3.3.0, and `docs/upgrading-to-4.0.md` describes the upgrade.
+
+### Fixes
+
+- **admin:** Applying a nested form no longer drops values the form doesn't cover, wipes `exclude` values, cuts related objects to `{ id }` or runs `serializeValue()` (before `process()`) twice.
+- **admin:** Nested forms read their draft instead of the parent's live data, e.g. in `dataPath` options, and Cancel no longer leaves temporary ids in the parent, which later saves sent as `#ref` without `#id`.
+- **admin:** Removing an item before an open nested form's item no longer switches the form to the next item and drops its unsaved edits.
+- **admin:** Selects no longer set values missing from their options to `null` as a clean change, which the next unrelated save sent.
+- **admin:** Copying the item of a nested form no longer carries other items' ids into pasted items, and the clipboard ids of real ids and temporary ids no longer collide.
+- **admin:** Forms with shared schemas get their nested routes in every place, not only in the first one set up.
+- **admin:** Lists with their own `path`, lists inside nested sections, and lists whose names don't survive normalizing their paths (e.g. `sourceURLs`) open their items' forms instead of empty ones, and lists with forms inside inlined content get their routes.
+- **admin:** Lists linked to multi-component views get correct edit links, and can create items there.
+- **admin:** The forms of tree items no longer resolve their resource at `pages/pages/1` instead of `pages/1`, and no longer see the tree's query as their `sourceQuery`.
+- **admin:** Views no longer stay dirty after their buttons submitted.
+- **admin:** Errors of fields in collapsed sections are no longer lost.
+- **admin:** `markup` edits that don't blur the editor, e.g. links applied through the dialog, are written right away, so saving immediately no longer submits the old value.
+- **admin:** Leaving or reloading right after a save started no longer asks about unsaved changes, and "Save & close" no longer overrides a navigation made while saving.
+- **admin:** Computed values of freshly set-up data are written when the data is set up, so edits made right after loading can no longer land before them.
+- **admin:** `rootItem` and `parentItem` are set in `itemLabel()` and `render()` callbacks.
+- **admin:** Failed loads of forms are notified.
+- **admin:** Single `taggable` multiselects keep values that no option has instead of setting them to `null` on load.
+- **admin:** Tree items with `null` children are sorted as an empty list, without a warning.
+- **admin:** The placeholder of multiselects resolves `searchable` and `taggable` callbacks.
+
+### Internal
+
+- The admin is written in TypeScript where it was rebuilt: the route tree, the data model, the contexts, the composables and the type descriptors.
+- No mixins are left: all components and types are built with `setup()` and composables.
+- The admin's source is smaller than 3.5.0's, despite the new route tree, data model, drafts and contexts.
+
 ## 3.5.0 (2026-10-11)
 
 ### Behaviour changes
