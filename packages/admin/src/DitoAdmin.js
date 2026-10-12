@@ -12,7 +12,6 @@ import * as components from './components/index.js'
 import * as types from './types/index.js'
 import DitoRoot from './components/DitoRoot.vue'
 import DitoView from './components/DitoView.vue'
-import DitoTypeComponent from './DitoTypeComponent.js'
 import ResizeDirective from './directives/resize.js'
 import { getResource } from './utils/resource.js'
 import { request, getApiUrl, isApiUrl } from './utils/request.js'
@@ -237,9 +236,5 @@ export default class DitoAdmin {
 
     el.classList.add('dito-app')
     app.mount(el)
-  }
-
-  register(type, options) {
-    return DitoTypeComponent.register(type, options)
   }
 }

@@ -1,7 +1,6 @@
 import { vi } from 'vitest'
 import DitoAdmin from './DitoAdmin.js'
 import appState from './appState.js'
-import DitoTypeComponent from './DitoTypeComponent.js'
 import { mountAdmin } from './test/mount.js'
 
 describe('DitoAdmin', () => {
@@ -119,14 +118,5 @@ describe('DitoAdmin', () => {
     const { api } = createAdmin()
     expect(api.normalizePath('bookAuthors')).toBe('bookAuthors')
     expect(api.denormalizePath('book-authors')).toBe('book-authors')
-  })
-
-  it('registers type components with `register()`', () => {
-    const admin = createAdmin()
-    const component = admin.register('rating', {
-      template: '<span>Rating</span>'
-    })
-    expect(DitoTypeComponent.get('rating')).toBe(component)
-    expect(component.name).toBe('DitoTypeRating')
   })
 })

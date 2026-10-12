@@ -1,5 +1,5 @@
 import { isObject, isString } from '@ditojs/utils'
-import { getTypeOptions, getSourceType } from './types.js'
+import { getTypeDescriptor, getSourceType } from './types.ts'
 
 export function iterateSchemaComponents(schemas, callback) {
   for (const schema of schemas) {
@@ -95,7 +95,7 @@ export function isTab(schema) {
 }
 
 export function isButton(schema) {
-  return isSchema(schema) && ['button', 'submit'].includes(schema.type)
+  return isSchema(schema) && !!getTypeDescriptor(schema)?.isButton
 }
 
 export function isPanel(schema) {
@@ -141,7 +141,7 @@ export function isInlined(schema) {
 // Whether the component stores its data under its own key in its parent's
 // data, see `schema.nested`:
 export function hasNestedData(schema) {
-  return !!(schema.nested || getTypeOptions(schema)?.defaultNested === true)
+  return !!(schema.nested || getTypeDescriptor(schema)?.defaultNested)
 }
 
 export function hasLabel(schema, generateLabels) {
@@ -149,13 +149,13 @@ export function hasLabel(schema, generateLabels) {
   return (
     label !== false && (
       !!label ||
-      generateLabels && getTypeOptions(schema)?.generateLabel
+      generateLabels && getTypeDescriptor(schema)?.generateLabel
     )
   )
 }
 
 export function omitSpacing(schema) {
-  return !!getTypeOptions(schema)?.omitSpacing
+  return !!getTypeDescriptor(schema)?.omitSpacing
 }
 
 export function getTabSchemas(schema) {

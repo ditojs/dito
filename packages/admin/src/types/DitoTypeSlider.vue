@@ -27,12 +27,14 @@
 
 <script>
 import DitoTypeComponent from '../DitoTypeComponent.js'
+import { defineType } from '../utils/schema/types.ts'
+import { numberDescriptor } from './descriptors.ts'
 import NumberMixin from '../mixins/NumberMixin.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
 import { DitoInput } from '@ditojs/ui/src'
 
 // @vue/component
-export default DitoTypeComponent.register('slider', {
+const DitoTypeSlider = DitoTypeComponent.component('DitoTypeSlider', {
   mixins: [NumberMixin],
   components: { DitoInput },
   nativeField: true,
@@ -49,6 +51,14 @@ export default DitoTypeComponent.register('slider', {
     }
   }
 })
+
+defineType({
+  types: ['slider'],
+  component: DitoTypeSlider,
+  ...numberDescriptor
+})
+
+export default DitoTypeSlider
 </script>
 
 <style lang="scss">

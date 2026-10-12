@@ -51,6 +51,7 @@ import { appendDataPath } from '../utils/data.js'
 import { trackRegistration } from '../utils/registration.js'
 import { hasLabel, hasNestedData } from '../utils/schema/structure.js'
 import { shouldRenderSchema } from '../utils/schema/data.js'
+import { getItemAdapter } from '../utils/schema/types.ts'
 
 // @vue/component
 export default DitoComponent.component('DitoPane', {
@@ -135,10 +136,11 @@ export default DitoComponent.component('DitoPane', {
       // and adds the key as the name to each component, used for labels, etc.
       // NOTE: schema can be null while multi-form lists load their data,
       // because only the available data will determine the type of form.
-      // When editing primitive values through a form, do not append 'name' to
-      // the component's dataPath so it can be mapped to from validation errors.
+      // When editing values wrapped by an item adapter through a form, do not
+      // append 'name' to the component's dataPath so it can be mapped to from
+      // validation errors, like `processSchemaData()` does.
       // NOTE: Not all schemas have a source schema, e.g. the ones of dialogs.
-      const wrapPrimitives = this.schemaComponent.sourceSchema?.wrapPrimitives
+      const itemAdapter = getItemAdapter(this.schemaComponent.sourceSchema)
       return Object.entries(this.schema?.components || {}).map(
         ([name, schema]) => {
           // Always add name to component schema, but clone it first to avoid
@@ -148,7 +150,7 @@ export default DitoComponent.component('DitoPane', {
           const nested = hasNestedData(schema)
           const nestedDataPath = appendDataPath(this.dataPath, name)
           const dataPath =
-            nested && !wrapPrimitives
+            nested && name !== itemAdapter?.name
               ? nestedDataPath
               : this.dataPath
           return {

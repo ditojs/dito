@@ -50,7 +50,7 @@ import ValueMixin from '../mixins/ValueMixin.js'
 import ContextMixin from '../mixins/ContextMixin.js'
 import DitoContext from '../DitoContext.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
-import { getTypeComponent } from '../utils/schema/types.js'
+import { getTypeComponent, getTypeDescriptor } from '../utils/schema/types.ts'
 import { hasLabel, omitSpacing } from '../utils/schema/structure.js'
 import { getAllPanelEntries } from '../utils/schema/lookup.js'
 import { parseFraction } from '../utils/math.js'
@@ -128,8 +128,12 @@ export default DitoComponent.component('DitoContainer', {
       return getTypeComponent(this.type)
     },
 
+    typeDescriptor() {
+      return getTypeDescriptor(this.type)
+    },
+
     isLabel() {
-      return this.type === 'label'
+      return !!this.typeDescriptor?.isLabel
     },
 
     hasLabel() {
@@ -145,7 +149,7 @@ export default DitoComponent.component('DitoContainer', {
       // header of their schema. They still receive it through `label`.
       return (
         this.hasLabel &&
-        !this.typeComponent?.rendersOwnLabel?.(this.context)
+        !this.typeDescriptor?.rendersOwnLabel?.(this.context)
       )
     },
 
@@ -184,7 +188,7 @@ export default DitoComponent.component('DitoContainer', {
     width: getSchemaAccessor('width', {
       type: [String, Number],
       default() {
-        return this.typeComponent?.defaultWidth
+        return this.typeDescriptor?.defaultWidth
       },
       get(width) {
         // Use 100% == 1.0 as default width when nothing is set:
@@ -208,7 +212,7 @@ export default DitoComponent.component('DitoContainer', {
     componentVisible: getSchemaAccessor('visible', {
       type: Boolean,
       default() {
-        return this.typeComponent?.defaultVisible
+        return this.typeDescriptor?.defaultVisible
       }
     }),
 
@@ -303,7 +307,7 @@ export default DitoComponent.component('DitoContainer', {
         // unnested components don't add their name to:
         this.nested ? this.componentPath : this.parentComponent.componentPath,
         this.componentPath,
-        this.$refs.component,
+        this.$refs.component?.ownSource ?? null,
         this.tabComponent?.panelTab ?? null
       )
     }

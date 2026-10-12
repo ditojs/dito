@@ -21,6 +21,8 @@ DitoInput.dito-text(
 
 <script>
 import DitoTypeComponent from '../DitoTypeComponent.js'
+import { defineType } from '../utils/schema/types.ts'
+import { textDescriptor } from './descriptors.ts'
 import TextMixin from '../mixins/TextMixin'
 import DitoInputAffixes from '../components/DitoInputAffixes.vue'
 import { getInputAffixesProps } from '../utils/affixes.js'
@@ -28,8 +30,49 @@ import { DitoInput } from '@ditojs/ui/src'
 
 const maskedPassword = '****************'
 
-export default DitoTypeComponent.register(
-  [
+// @vue/component
+const DitoTypeText = DitoTypeComponent.component('DitoTypeText', {
+  mixins: [TextMixin],
+  components: { DitoInput, DitoInputAffixes },
+  nativeField: true,
+  textField: true,
+
+  computed: {
+    inputAffixesProps() {
+      return getInputAffixesProps(this)
+    },
+
+    inputType() {
+      return (
+        {
+          creditcard: 'text',
+          hostname: 'text',
+          domain: 'text'
+        }[this.type] ||
+        this.type
+      )
+    },
+
+    inputValue: {
+      get() {
+        return (
+          this.type === 'password' &&
+          this.value === undefined &&
+          !this.focused
+        )
+          ? maskedPassword
+          : this.value
+      },
+
+      set(value) {
+        this.value = value
+      }
+    }
+  }
+})
+
+defineType({
+  types: [
     'text',
     'email',
     'url',
@@ -39,58 +82,22 @@ export default DitoTypeComponent.register(
     'password',
     'creditcard'
   ],
-  // @vue/component
-  {
-    mixins: [TextMixin],
-    components: { DitoInput, DitoInputAffixes },
-    nativeField: true,
-    textField: true,
-    ignoreMissingValue: ({ schema }) => schema.type === 'password',
+  component: DitoTypeText,
+  ...textDescriptor,
+  ignoreMissingValue: ({ schema }) => schema.type === 'password',
 
-    getTypeValidations(schema) {
-      const validationName = {
-        email: 'email',
-        url: 'url',
-        hostname: 'hostname',
-        domain: 'domain',
-        password: 'password',
-        creditcard: 'creditcard'
-      }[schema.type]
-      return validationName ? { [validationName]: true } : {}
-    },
-
-    computed: {
-      inputAffixesProps() {
-        return getInputAffixesProps(this)
-      },
-
-      inputType() {
-        return (
-          {
-            creditcard: 'text',
-            hostname: 'text',
-            domain: 'text'
-          }[this.type] ||
-          this.type
-        )
-      },
-
-      inputValue: {
-        get() {
-          return (
-            this.type === 'password' &&
-            this.value === undefined &&
-            !this.focused
-          )
-            ? maskedPassword
-            : this.value
-        },
-
-        set(value) {
-          this.value = value
-        }
-      }
-    }
+  getValidations(schema) {
+    const validationName = {
+      email: 'email',
+      url: 'url',
+      hostname: 'hostname',
+      domain: 'domain',
+      password: 'password',
+      creditcard: 'creditcard'
+    }[schema.type]
+    return validationName ? { [validationName]: true } : {}
   }
-)
+})
+
+export default DitoTypeText
 </script>

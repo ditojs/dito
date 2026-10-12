@@ -73,10 +73,6 @@ export const filterComponents = {
 
 export function createFiltersPanel(api, filters, dataPath, query) {
   const { sticky, ...filterSchemas } = filters
-  // The contexts of the filters don't reach the data of the panel, so we keep
-  // it here to apply it on changes:
-  let filtersData = null
-
   const applyFilters = data => {
     query.value = {
       ...query.value,
@@ -95,8 +91,7 @@ export function createFiltersPanel(api, filters, dataPath, query) {
         click({ replaceItem }) {
           // The data model sets up the new data with the defaults right away,
           // and the errors stay with the replaced data:
-          filtersData = replaceItem({})
-          applyFilters(filtersData)
+          applyFilters(replaceItem({}))
         }
       }
     },
@@ -123,8 +118,7 @@ export function createFiltersPanel(api, filters, dataPath, query) {
 
     // The panel's own data:
     data() {
-      filtersData = parseFiltersData(panel, query.value)
-      return filtersData
+      return parseFiltersData(panel, query.value)
     },
 
     components: createFiltersComponents(filterSchemas),
@@ -132,8 +126,10 @@ export function createFiltersPanel(api, filters, dataPath, query) {
     panelButtons: createButtons(true),
 
     events: {
-      change() {
-        applyFilters(filtersData)
+      // The panel is the container of the filters, so its data is the root
+      // item of their contexts:
+      change({ rootItem }) {
+        applyFilters(rootItem)
       }
     }
   }

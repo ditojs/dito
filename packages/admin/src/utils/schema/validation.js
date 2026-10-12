@@ -1,7 +1,7 @@
 import DitoContext from '../../DitoContext.js'
 import * as validators from '../../validators/index.js'
 import { isFunction, isRegExp, asArray, normalizeDataPath } from '@ditojs/utils'
-import { getTypeOptions } from './types.js'
+import { getTypeDescriptor } from './types.ts'
 import {
   getSchemaValue,
   shouldRenderSchema,
@@ -10,13 +10,13 @@ import {
 
 /**
  * Returns the validations of a component schema, without requiring a
- * component: the validations of the type's static `getTypeValidations()`
- * option, `required`, and finally the `schema.rules` overrides, where
- * `undefined` removes a validation. Schema values are evaluated with `context`.
+ * component: the validations of the type's `getValidations()`, `required`,
+ * and finally the `schema.rules` overrides, where `undefined` removes a
+ * validation. Schema values are evaluated with `context`.
  */
 export function getValidations(schema, context) {
   const validations = {
-    ...getTypeOptions(schema)?.getTypeValidations?.(schema, context)
+    ...getTypeDescriptor(schema)?.getValidations?.(schema, context)
   }
   if (getSchemaValue('required', { type: Boolean, schema, context })) {
     validations.required = true

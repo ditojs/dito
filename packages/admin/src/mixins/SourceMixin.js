@@ -13,7 +13,6 @@ import {
   isObjectSource,
   isListSource
 } from '../utils/schema/structure.js'
-import { setupForms } from '../utils/schema/setup.js'
 import {
   getNamedSchemas,
   getButtonSchemas,
@@ -22,6 +21,7 @@ import {
   getViewSchema
 } from '../utils/schema/lookup.js'
 import { updateOrder } from '../utils/schema/data.js'
+import { getItemAdapter } from '../utils/schema/types.ts'
 import { confirmAndRemove } from '../utils/dialogs.js'
 import {
   isObject,
@@ -37,10 +37,6 @@ import { appendDataPath, getRelativeDataPath } from '../utils/data.js'
 // @vue/component
 export default {
   mixins: [ItemMixin, ResourceMixin, SchemaParentMixin],
-
-  defaultValue: context => (isListSource(context.schema) ? [] : null),
-  // Exclude all sources that have their own resource handling the data.
-  excludeValue: context => !!context.schema.resource,
 
   provide() {
     return {
@@ -98,8 +94,8 @@ export default {
       return !!this.route && !this.route.isForm
     },
 
-    wrapPrimitives() {
-      return this.schema.wrapPrimitives
+    itemAdapter() {
+      return getItemAdapter(this.schema)
     },
 
     valueListData() {
@@ -113,20 +109,20 @@ export default {
     },
 
     primitiveValues() {
-      // The values of `wrapPrimitives` lists, copied so that changes of their
-      // entries are tracked too, see the `primitiveValues` watcher.
-      return this.wrapPrimitives ? [...this.valueListData] : null
+      // The values of lists with an item adapter, copied so that changes of
+      // their entries are tracked too, see the `primitiveValues` watcher.
+      return this.itemAdapter ? [...this.valueListData] : null
     },
 
     listData: {
       get() {
-        return this.wrapPrimitives
+        return this.itemAdapter
           ? this.wrappedPrimitives || []
           : this.valueListData
       },
 
       set(data) {
-        if (this.wrapPrimitives) {
+        if (this.itemAdapter) {
           this.wrappedPrimitives = data
         } else {
           this.value = this.isObjectSource
@@ -147,7 +143,7 @@ export default {
     objectData: {
       get() {
         // Always go through `listData` internally, which does all the
-        // processing of `wrapPrimitives`, etc.
+        // wrapping of the items, etc.
         return this.listData[0] || null
       },
 
@@ -376,10 +372,7 @@ export default {
         // Wrap the primitive values in objects for the list's forms to edit,
         // unless they're the values that were just unwrapped from them.
         if (values && !equals(values, this.unwrapPrimitives())) {
-          const { wrapPrimitives } = this
-          this.wrappedPrimitives = values.map(value => ({
-            [wrapPrimitives]: value
-          }))
+          this.wrappedPrimitives = values.map(this.itemAdapter.wrap)
         }
       }
     },
@@ -486,9 +479,9 @@ export default {
     },
 
     unwrapPrimitives() {
-      const { wrapPrimitives, wrappedPrimitives } = this
-      return wrapPrimitives && wrappedPrimitives
-        ? wrappedPrimitives.map(object => object[wrapPrimitives])
+      const { itemAdapter, wrappedPrimitives } = this
+      return itemAdapter && wrappedPrimitives
+        ? wrappedPrimitives.map(itemAdapter.unwrap)
         : null
     },
 
@@ -731,38 +724,5 @@ export default {
       )
       return route ? this.$router.resolve(route).path : null
     }
-  }, // end of `methods`
-
-  async processSchema(api, schema, name) {
-    schema.name ??= name
-    if (isInlined(schema) && schema.resource) {
-      throw new Error(
-        `Nested ${
-          isListSource(schema)
-            ? 'lists'
-            : isObjectSource(schema)
-              ? 'objects'
-              : 'schema'
-        } cannot load data from their own resources`
-      )
-    }
-    await setupForms(api, schema)
-  },
-
-  processValue({ schema, value, dataPath }, graph) {
-    graph.addSource(dataPath, schema)
-    // `SchemaGraph.process()` changes the ids of the items in the processed
-    // data. The items of sources with forms are processed into copies, but the
-    // ones of sources without forms are still the items of the data.
-    return hasFormSchema(schema) ? value : copyItems(value)
-  }
-}
-
-// Returns shallow copies of the items of a list, or of an object.
-function copyItems(value) {
-  return isArray(value)
-    ? value.map(item => (isObject(item) ? { ...item } : item))
-    : isObject(value)
-      ? { ...value }
-      : value
+  } // end of `methods`
 }

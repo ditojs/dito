@@ -1,6 +1,7 @@
 import { vi } from 'vitest'
 import DitoContext from '../../DitoContext.js'
-import { registerTypeComponent } from './types.js'
+import { defineType } from './types.ts'
+import { sourceDescriptor } from '../../types/descriptors.ts'
 import {
   processSchemaData,
   getComponentPathByDataPath,
@@ -18,25 +19,23 @@ import {
   updateOrder
 } from './data.js'
 
-// Register minimal type options, as the actual type components can't be
+// Define minimal types, as the actual type components can't be
 // imported without a Vue SFC compiler:
-registerTypeComponent('text', { defaultNested: true })
-registerTypeComponent('section', {
+defineType({ types: ['text'] })
+defineType({
+  types: ['section'],
   defaultNested: false,
   defaultValue: ({ schema }) => (schema.nested ? {} : undefined),
   treatNullAsMissing: ({ schema }) => !!schema.nested
 })
-registerTypeComponent('panel', { defaultNested: false })
-registerTypeComponent('reference', {
-  defaultNested: true,
+defineType({ types: ['panel'], defaultNested: false })
+defineType({
+  types: ['reference'],
   processValue: ({ value }) => value && { id: value.id }
 })
-registerTypeComponent('list', {
-  defaultNested: true,
-  getSourceType: () => 'list'
-})
-registerTypeComponent('tags', { defaultNested: true, defaultMultiple: true })
-registerTypeComponent('hidden', { defaultNested: true, excludeValue: true })
+defineType({ ...sourceDescriptor, types: ['list'], sourceType: 'list' })
+defineType({ types: ['tags'], defaultMultiple: true })
+defineType({ types: ['hidden'], excludeValue: true })
 
 const chapters = {
   type: 'list',
@@ -97,6 +96,51 @@ describe('processSchemaData()', () => {
       'book/layout/chapters/1/title': 'chapters/1/title',
       'book/info': '',
       'book/info/note': 'note'
+    })
+  })
+})
+
+describe('processSchemaData() with child sources', () => {
+  it('walks the child sources of items like components of their forms', () => {
+    // Like trees, whose items hold their children:
+    defineType({
+      types: ['outline'],
+      sourceType: 'list',
+      getChildSourceSchemas: schema => [schema.children]
+    })
+    const children = {
+      type: 'list',
+      name: 'sections',
+      form: { type: 'form', components: { heading: { type: 'text' } } }
+    }
+    const componentPaths = {}
+    processSchemaData(
+      {
+        type: 'form',
+        components: {
+          outline: {
+            type: 'outline',
+            form: { type: 'form', components: { title: { type: 'text' } } },
+            children
+          }
+        }
+      },
+      { outline: [{ title: 'Dune', sections: [{ heading: 'Arrakis' }] }] },
+      {
+        dataPath: '',
+        componentPath: 'book',
+        shouldProcess: ({ componentPath, dataPath }) => {
+          componentPaths[componentPath] = dataPath
+          return true
+        },
+        options: { services: null }
+      }
+    )
+    expect(componentPaths).toEqual({
+      'book/outline': 'outline',
+      'book/outline/0/title': 'outline/0/title',
+      'book/outline/0/sections': 'outline/0/sections',
+      'book/outline/0/sections/0/heading': 'outline/0/sections/0/heading'
     })
   })
 })

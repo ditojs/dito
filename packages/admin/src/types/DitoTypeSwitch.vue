@@ -10,13 +10,11 @@ DitoSwitch.dito-switch(
 
 <script>
 import DitoTypeComponent from '../DitoTypeComponent.js'
+import { defineType } from '../utils/schema/types.ts'
 import { DitoSwitch } from '@ditojs/ui/src'
 
 // @vue/component
-export default DitoTypeComponent.register('switch', {
-  defaultValue: false,
-  defaultWidth: 'auto',
-
+const DitoTypeSwitch = DitoTypeComponent.component('DitoTypeSwitch', {
   components: {
     DitoSwitch
   },
@@ -27,6 +25,15 @@ export default DitoTypeComponent.register('switch', {
     }
   }
 })
+
+defineType({
+  types: ['switch'],
+  component: DitoTypeSwitch,
+  defaultValue: false,
+  defaultWidth: 'auto'
+})
+
+export default DitoTypeSwitch
 </script>
 
 <style lang="scss">

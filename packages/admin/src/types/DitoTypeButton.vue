@@ -33,101 +33,109 @@ DitoButton(
 
 <script>
 import DitoTypeComponent from '../DitoTypeComponent.js'
+import { defineType } from '../utils/schema/types.ts'
 import DitoAffixes from '../components/DitoAffixes.vue'
 import { DitoButton } from '@ditojs/ui/src'
 import { getSchemaAccessor } from '../utils/accessor.js'
 import { hasResource } from '../utils/resource.js'
 import { asArray } from '@ditojs/utils'
 
-export default DitoTypeComponent.register(
-  ['button', 'submit'],
-  // @vue/component
-  {
-    components: { DitoAffixes, DitoButton },
-    defaultValue: () => undefined, // Callback to override `defaultValue: null`
-    excludeValue: true,
-    defaultWidth: 'auto',
-    generateLabel: false,
+// @vue/component
+const DitoTypeButton = DitoTypeComponent.component('DitoTypeButton', {
+  components: { DitoAffixes, DitoButton },
 
-    data() {
-      return {
-        isRunning: false
-      }
+  data() {
+    return {
+      isRunning: false
+    }
+  },
+
+  computed: {
+    verb() {
+      return this.verbs[this.name]
     },
 
-    computed: {
-      verb() {
-        return this.verbs[this.name]
-      },
+    text: getSchemaAccessor('text', {
+      type: String
+    }),
 
-      text: getSchemaAccessor('text', {
-        type: String
-      }),
-
-      prefixes() {
-        return asArray(this.schema.prefix)
-      },
-
-      suffixes() {
-        return asArray(this.schema.suffix)
-      },
-
-      closeForm: getSchemaAccessor('closeForm', {
-        type: Boolean,
-        default: false
-      })
+    prefixes() {
+      return asArray(this.schema.prefix)
     },
 
-    methods: {
-      // @override
-      getEvents() {
-        const { onFocus, onBlur, onClick } = this
-        return { onFocus, onBlur, onClick }
-      },
+    suffixes() {
+      return asArray(this.schema.suffix)
+    },
 
-      async submit(options) {
-        return this.resource?.submit(this, options)
-      },
+    closeForm: getSchemaAccessor('closeForm', {
+      type: Boolean,
+      default: false
+    })
+  },
 
-      async onClick() {
-        // Prevent running the action again while it's running, e.g. submits.
-        // The button isn't disabled meanwhile, as `disabled` reflects the
-        // state of the schema, e.g. of forms that can't be submitted when
-        // they're clean, which a running action doesn't change:
-        if (this.isRunning) return
-        this.isRunning = true
-        // Write the edits that are held back first, e.g. debounced markup
-        // edits, for the handlers to see them:
-        this.dataModel.writePendingValues()
-        try {
-          const res = await this.emitEvent('click', {
-            parent: this.schemaComponent
-          })
-          // Have buttons that define resources call `this.submit()` by default:
-          if (
-            res === undefined && // Meaning: don't prevent default.
-            hasResource(this.schema)
-          ) {
-            await this.submit()
-          }
-        } catch (error) {
-          const res = await this.emitEvent('error', { context: { error } })
-          if (res === undefined) {
-            if (error instanceof AggregateError) {
-              for (const err of error.errors) {
-                this.admin.notify({ type: 'error', text: err })
-              }
-            } else {
-              this.admin.notify({ type: 'error', text: error })
-            }
-          }
-        } finally {
-          this.isRunning = false
+  methods: {
+    // @override
+    getEvents() {
+      const { onFocus, onBlur, onClick } = this
+      return { onFocus, onBlur, onClick }
+    },
+
+    async submit(options) {
+      return this.resource?.submit(this, options)
+    },
+
+    async onClick() {
+      // Prevent running the action again while it's running, e.g. submits.
+      // The button isn't disabled meanwhile, as `disabled` reflects the
+      // state of the schema, e.g. of forms that can't be submitted when
+      // they're clean, which a running action doesn't change:
+      if (this.isRunning) return
+      this.isRunning = true
+      // Write the edits that are held back first, e.g. debounced markup
+      // edits, for the handlers to see them:
+      this.dataModel.writePendingValues()
+      try {
+        const res = await this.emitEvent('click', {
+          parent: this.schemaComponent
+        })
+        // Have buttons that define resources call `this.submit()` by default:
+        if (
+          res === undefined && // Meaning: don't prevent default.
+          hasResource(this.schema)
+        ) {
+          await this.submit()
         }
+      } catch (error) {
+        const res = await this.emitEvent('error', { context: { error } })
+        if (res === undefined) {
+          if (error instanceof AggregateError) {
+            for (const err of error.errors) {
+              this.admin.notify({ type: 'error', text: err })
+            }
+          } else {
+            this.admin.notify({ type: 'error', text: error })
+          }
+        }
+      } finally {
+        this.isRunning = false
       }
     }
   }
-)
+})
+
+const buttonDescriptor = {
+  component: DitoTypeButton,
+  defaultValue: () => undefined, // Callback to override `defaultValue: null`
+  excludeValue: true,
+  defaultWidth: 'auto',
+  generateLabel: false,
+  isButton: true
+}
+
+defineType({ ...buttonDescriptor, types: ['button'] })
+defineType({ ...buttonDescriptor, types: ['submit'], submitsData: true })
+
+export default DitoTypeButton
 </script>
 
 <style lang="scss">

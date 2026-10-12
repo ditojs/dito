@@ -15,10 +15,18 @@ component(
 // }
 
 import DitoTypeComponent from '../DitoTypeComponent.js'
+import { defineType } from '../utils/schema/types.ts'
 import { resolveSchemaComponent } from '../utils/schema/setup.js'
 
 // @vue/component
-export default DitoTypeComponent.register('component', {
+const DitoTypeCustomComponent = DitoTypeComponent.component(
+  'DitoTypeComponent',
+  {}
+)
+
+defineType({
+  types: ['component'],
+  component: DitoTypeCustomComponent,
   // Override the standard `defaultValue: null` to not set any data for custom
   // components, unless their schema provides a `default` value. This also
   // applies to `default: undefined`, which `getDefaultValue()` ignores.
@@ -29,4 +37,6 @@ export default DitoTypeComponent.register('component', {
     await resolveSchemaComponent(schema)
   }
 })
+
+export default DitoTypeCustomComponent
 </script>

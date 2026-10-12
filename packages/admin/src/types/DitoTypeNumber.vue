@@ -24,31 +24,38 @@ DitoInput.dito-number(
 
 <script>
 import DitoTypeComponent from '../DitoTypeComponent.js'
+import { defineType } from '../utils/schema/types.ts'
+import { numberDescriptor } from './descriptors.ts'
 import NumberMixin from '../mixins/NumberMixin.js'
 import DitoInputAffixes from '../components/DitoInputAffixes.vue'
 import { getInputAffixesProps } from '../utils/affixes.js'
 import { DitoInput } from '@ditojs/ui/src'
 
-export default DitoTypeComponent.register(
-  ['number', 'integer'],
-  // @vue/component
-  {
-    mixins: [NumberMixin],
-    components: { DitoInput, DitoInputAffixes },
-    nativeField: true,
-    textField: true,
+// @vue/component
+const DitoTypeNumber = DitoTypeComponent.component('DitoTypeNumber', {
+  mixins: [NumberMixin],
+  components: { DitoInput, DitoInputAffixes },
+  nativeField: true,
+  textField: true,
 
-    computed: {
-      inputAffixesProps() {
-        return getInputAffixesProps(this)
-      },
+  computed: {
+    inputAffixesProps() {
+      return getInputAffixesProps(this)
+    },
 
-      isInteger() {
-        return this.type === 'integer'
-      }
+    isInteger() {
+      return this.type === 'integer'
     }
   }
-)
+})
+
+defineType({
+  types: ['number', 'integer'],
+  component: DitoTypeNumber,
+  ...numberDescriptor
+})
+
+export default DitoTypeNumber
 </script>
 
 <style lang="scss">

@@ -1,21 +1,16 @@
 import { mergeData } from './mergeData.ts'
 import { getItemUid } from './schema/data.js'
 import { cloneWithUids } from './uid.js'
-import { registerTypeComponent } from './schema/types.js'
+import { defineType } from './schema/types.ts'
 
-// Register minimal type options, as the actual type components can't be
-// imported without a Vue SFC compiler:
-registerTypeComponent('text', { defaultNested: true })
-registerTypeComponent('tags', { defaultNested: true })
-registerTypeComponent('section', { defaultNested: false })
-registerTypeComponent('list', {
-  defaultNested: true,
-  getSourceType: () => 'list'
-})
-registerTypeComponent('object', {
-  defaultNested: true,
-  getSourceType: () => 'object'
-})
+// Define minimal types, as the actual type components can't be imported
+// without a Vue SFC compiler. Merging data never renders their components:
+const component = {}
+defineType({ types: ['text'], component })
+defineType({ types: ['tags'], component })
+defineType({ types: ['section'], component, defaultNested: false })
+defineType({ types: ['list'], component, sourceType: 'list' })
+defineType({ types: ['object'], component, sourceType: 'object' })
 
 const createForm = (components: Record<string, any> = {}) => ({
   type: 'form',

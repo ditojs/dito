@@ -62,16 +62,17 @@
 
 <script>
 import DitoTypeComponent from '../DitoTypeComponent.js'
+import { defineType } from '../utils/schema/types.ts'
+import { optionsDescriptor } from './descriptors.ts'
 import OptionsMixin from '../mixins/OptionsMixin.js'
 import DitoInputAffixes from '../components/DitoInputAffixes.vue'
 import { getInputAffixesProps } from '../utils/affixes.js'
 import DitoOptionsEditButtons from '../components/DitoOptionsEditButtons.vue'
 
 // @vue/component
-export default DitoTypeComponent.register('select', {
+const DitoTypeSelect = DitoTypeComponent.component('DitoTypeSelect', {
   mixins: [OptionsMixin],
   components: { DitoInputAffixes, DitoOptionsEditButtons },
-
   nativeField: true,
 
   data() {
@@ -105,6 +106,14 @@ export default DitoTypeComponent.register('select', {
     }
   }
 })
+
+defineType({
+  types: ['select'],
+  component: DitoTypeSelect,
+  ...optionsDescriptor
+})
+
+export default DitoTypeSelect
 </script>
 
 <style lang="scss">

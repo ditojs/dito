@@ -2,72 +2,48 @@ import { resolveMergedOptions, mergeOptions } from './options.js'
 
 describe('resolveMergedOptions()', () => {
   it('returns options without mixins and `extends` as they are', () => {
-    const options = { defaultValue: () => [] }
+    const options = { name: 'BookList' }
     expect(resolveMergedOptions(options)).toBe(options)
-  })
-
-  it('merges the Dito.js options of mixins and `extends`', () => {
-    const processValue = () => null
-    const getPanelSchema = () => null
-    const options = {
-      name: 'BookList',
-      extends: { defaultNested: false, omitSpacing: true },
-      mixins: [
-        { processValue, generateLabel: false },
-        { mixins: [{ getPanelSchema }] }
-      ],
-      generateLabel: true
-    }
-    const merged = resolveMergedOptions(options)
-    expect(merged).not.toBe(options)
-    expect(merged).toMatchObject({
-      name: 'BookList',
-      defaultNested: false,
-      omitSpacing: true,
-      processValue,
-      getPanelSchema,
-      // The component's own options override the ones of its mixins:
-      generateLabel: true
-    })
-  })
-
-  it('applies the options of later mixins over earlier ones', () => {
-    const merged = resolveMergedOptions({
-      mixins: [{ defaultVisible: false }, { defaultVisible: true }]
-    })
-    expect(merged.defaultVisible).toBe(true)
   })
 
   it('takes over route guards, which vue-router reads without mixins', () => {
     const beforeRouteLeave = () => true
-    const merged = resolveMergedOptions({ mixins: [{ beforeRouteLeave }] })
+    const beforeRouteUpdate = () => true
+    const merged = resolveMergedOptions({
+      name: 'BookForm',
+      extends: { beforeRouteUpdate },
+      mixins: [{ mixins: [{ beforeRouteLeave }] }]
+    })
+    expect(merged).toMatchObject({
+      name: 'BookForm',
+      beforeRouteUpdate,
+      beforeRouteLeave
+    })
+  })
+
+  it('applies the guards of later mixins over earlier ones', () => {
+    const beforeRouteLeave = () => true
+    const merged = resolveMergedOptions({
+      mixins: [{ beforeRouteLeave: () => false }, { beforeRouteLeave }]
+    })
     expect(merged.beforeRouteLeave).toBe(beforeRouteLeave)
   })
 
-  it('merges the multiple, width and source type defaults', () => {
-    const getSourceType = type => (type === 'shelf' ? 'list' : null)
+  it(`keeps the component's own guards over the ones of its mixins`, () => {
+    const beforeRouteLeave = () => true
     const merged = resolveMergedOptions({
-      extends: { defaultMultiple: true, defaultWidth: 'auto' },
-      mixins: [{ getSourceType }]
+      mixins: [{ beforeRouteLeave: () => false }],
+      beforeRouteLeave
     })
-    expect(merged).toMatchObject({
-      defaultMultiple: true,
-      defaultWidth: 'auto',
-      getSourceType
-    })
-  })
-
-  it('takes over whether the type renders its own label', () => {
-    const rendersOwnLabel = () => true
-    const merged = resolveMergedOptions({ extends: { rendersOwnLabel } })
-    expect(merged.rendersOwnLabel).toBe(rendersOwnLabel)
+    expect(merged.beforeRouteLeave).toBe(beforeRouteLeave)
   })
 })
 
 describe('mergeOptions()', () => {
-  it('only takes over the Dito.js options', () => {
+  it('only takes over the route guards', () => {
+    const beforeRouteUpdate = () => true
     const to = {}
-    mergeOptions(to, { data: () => ({}), excludeValue: true })
-    expect(to).toEqual({ excludeValue: true })
+    mergeOptions(to, { data: () => ({}), beforeRouteUpdate })
+    expect(to).toEqual({ beforeRouteUpdate })
   })
 })

@@ -4,12 +4,20 @@ DitoLabel.dito-label-component(:label="value")
 
 <script>
 import DitoTypeComponent from '../DitoTypeComponent.js'
+import { defineType } from '../utils/schema/types.ts'
 
 // @vue/component
-export default DitoTypeComponent.register('label', {
+const DitoTypeLabel = DitoTypeComponent.component('DitoTypeLabel', {})
+
+defineType({
+  types: ['label'],
+  component: DitoTypeLabel,
   excludeValue: true,
-  generateLabel: false
+  generateLabel: false,
+  isLabel: true
 })
+
+export default DitoTypeLabel
 </script>
 
 <style lang="scss">

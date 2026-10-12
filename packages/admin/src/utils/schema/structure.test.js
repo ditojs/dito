@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import { registerTypeComponent } from './types.js'
+import { defineType } from './types.ts'
 import {
   hasComponentNamed,
   iterateSchemaComponents,
@@ -29,20 +29,13 @@ import {
   isSourceWithResource
 } from './structure.js'
 
-// Register minimal type options, as the actual type components can't be
+// Define minimal types, as the actual type components can't be
 // imported without a Vue SFC compiler:
-registerTypeComponent('text', { defaultNested: true, generateLabel: true })
-registerTypeComponent('section', { defaultNested: false })
-registerTypeComponent('label', { omitSpacing: true })
-registerTypeComponent('list', {
-  defaultNested: true,
-  generateLabel: true,
-  getSourceType: () => 'list'
-})
-registerTypeComponent('object', {
-  defaultNested: true,
-  getSourceType: () => 'object'
-})
+defineType({ types: ['text'] })
+defineType({ types: ['section'], defaultNested: false, generateLabel: false })
+defineType({ types: ['label'], omitSpacing: true })
+defineType({ types: ['list'], sourceType: 'list' })
+defineType({ types: ['object'], sourceType: 'object' })
 
 describe('hasComponentNamed()', () => {
   const schema = {

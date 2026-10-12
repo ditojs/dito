@@ -3,7 +3,8 @@ import { reactive, isReactive } from 'vue'
 import { hyphenate } from '@ditojs/utils'
 import DitoMixin from '../../mixins/DitoMixin.js'
 import TypeMixin from '../../mixins/TypeMixin.js'
-import { registerTypeComponent } from './types.js'
+import { defineType } from './types.ts'
+import { sourceDescriptor } from '../../types/descriptors.ts'
 import {
   resolveSchema,
   resolveSchemas,
@@ -22,27 +23,23 @@ import {
   setupNestedSchemas
 } from './setup.js'
 
-// Register minimal type options, as the actual type components can't be
+// Define minimal types, as the actual type components can't be
 // imported without a Vue SFC compiler. Their `processSchema()` delegate to the
 // setup functions like the actual types do:
-registerTypeComponent('text', { defaultNested: true })
-registerTypeComponent('section', {
+defineType({ types: ['text'] })
+defineType({
+  types: ['section'],
   defaultNested: false,
   processSchema: (api, schema) => setupSchemaComponents(api, schema)
 })
-registerTypeComponent('panel', {
+defineType({
+  types: ['panel'],
   defaultNested: false,
   processSchema: (api, schema) => setupSchemaComponents(api, schema)
 })
-// Like `SourceMixin.processSchema()`:
-registerTypeComponent('list', {
-  defaultNested: true,
-  async processSchema(api, schema, name) {
-    schema.name ??= name
-    await setupForms(api, schema)
-  }
-})
-registerTypeComponent('component', {
+defineType({ ...sourceDescriptor, types: ['list'], sourceType: 'list' })
+defineType({
+  types: ['component'],
   processSchema: (api, schema) => resolveSchemaComponent(schema)
 })
 

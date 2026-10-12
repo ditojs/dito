@@ -39,27 +39,33 @@
 
 <script>
 import DitoTypeComponent from '../DitoTypeComponent.js'
+import { defineType } from '../utils/schema/types.ts'
+import { sourceDescriptor } from './descriptors.ts'
 import DitoSourceItem from '../components/DitoSourceItem.vue'
 import SourceMixin from '../mixins/SourceMixin.js'
 import { resolveSchemaComponent } from '../utils/schema/setup.js'
 
 // @vue/component
-export default DitoTypeComponent.register('object', {
+const DitoTypeObject = DitoTypeComponent.component('DitoTypeObject', {
   mixins: [SourceMixin],
-  components: { DitoSourceItem },
+  components: { DitoSourceItem }
+})
 
-  getSourceType(type) {
-    // No need for transformation here. See TypeTreeList for details.
-    return type
-  },
+defineType({
+  types: ['object'],
+  component: DitoTypeObject,
+  ...sourceDescriptor,
+  sourceType: 'object',
 
   async processSchema(api, schema, name) {
     await Promise.all([
       resolveSchemaComponent(schema),
-      SourceMixin.processSchema(api, schema, name)
+      sourceDescriptor.processSchema(api, schema, name)
     ])
   }
 })
+
+export default DitoTypeObject
 </script>
 
 <style lang="scss">

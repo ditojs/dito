@@ -129,11 +129,12 @@ export default {
       return getParentComponent(this, 'schemaComponent')
     },
 
-    // The data that the data paths of the route are relative to, e.g. the
-    // data of the view, or the draft root of a nested form, see
-    // `DitoView.rootData()` and `DitoForm.rootData()`:
+    // The data that the data paths of the container are relative to, e.g. the
+    // data of the view, the draft root of a nested form, see
+    // `DitoView.rootData()` and `DitoForm.rootData()`, or the own data of a
+    // dialog or panel:
     rootData() {
-      return this.route?.rootData
+      return this.dataModel?.rootData ?? this.route?.rootData
     }
   },
 

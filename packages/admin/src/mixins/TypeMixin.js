@@ -3,6 +3,7 @@ import ContextMixin from './ContextMixin.js'
 import { getSchemaEventEntries } from '../utils/schema/events.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
 import { trackRegistration } from '../utils/registration.js'
+import { getTypeDescriptor } from '../utils/schema/types.ts'
 import {
   getValidations,
   getValueValidationErrors
@@ -49,7 +50,7 @@ export default {
     visible: getSchemaAccessor('visible', {
       type: Boolean,
       default() {
-        return this.$options.defaultVisible
+        return getTypeDescriptor(this.schema)?.defaultVisible
       }
     }),
 

@@ -11,7 +11,7 @@ import {
   mapConcurrently
 } from '@ditojs/utils'
 import { markRaw } from 'vue'
-import { getTypeOptions } from './types.js'
+import { getTypeDescriptor } from './types.ts'
 import {
   iterateSchemaComponents,
   iterateNestedSchemaComponents,
@@ -197,8 +197,8 @@ export function setupSchemaComponent(api, schema, name) {
       getPanelSchemas(schema),
       panel => setupSchemaComponents(api, panel)
     ),
-    // Delegate schema processing to the actual type components.
-    getTypeOptions(schema)?.processSchema?.(api, schema, name)
+    // Delegate schema processing to the type descriptors.
+    getTypeDescriptor(schema)?.processSchema?.(api, schema, name)
   ])
 }
 

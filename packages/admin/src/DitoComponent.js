@@ -1,5 +1,4 @@
 import DitoMixin from './mixins/DitoMixin.js'
-import { getTypeComponent } from './utils/schema/types.js'
 import { resolveMergedOptions } from './utils/options.js'
 import { isPlainObject } from '@ditojs/utils'
 
@@ -26,9 +25,5 @@ export default {
       throw new Error(`Component "${name}" not registered`)
     }
     return components[name]
-  },
-
-  methods: {
-    getTypeComponent
   }
 }

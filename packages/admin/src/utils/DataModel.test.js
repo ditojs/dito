@@ -1,36 +1,35 @@
 import { vi } from 'vitest'
 import { reactive, ref, toRaw, nextTick } from 'vue'
 import { isPlainObject } from '@ditojs/utils'
-import { registerTypeComponent } from './schema/types.js'
+import { defineType } from './schema/types.ts'
+import { optionsDescriptor } from '../types/descriptors.ts'
 import { DataModel } from './DataModel.ts'
 import { cloneWithUids } from './uid.js'
 
 // `setupForm()` needs the admin's API, see `getFormSchemas()`:
 vi.mock('./schema/setup.js', () => ({ setupForm: async form => form }))
 
-// Register minimal type options, as the actual type components can't be
+// Define minimal types, as the actual type components can't be
 // imported without a Vue SFC compiler:
-registerTypeComponent('text', { defaultNested: true })
-registerTypeComponent('select', { defaultNested: true })
-registerTypeComponent('computed', {
-  defaultNested: true,
+defineType({ types: ['text'] })
+defineType({ ...optionsDescriptor, types: ['select'] })
+defineType({
+  types: ['computed'],
   defaultValue: () => undefined,
   valueFromDataSchema: true
 })
-registerTypeComponent('section', { defaultNested: false })
-registerTypeComponent('panel', { defaultNested: false })
-registerTypeComponent('list', {
-  defaultNested: true,
+defineType({ types: ['section'], defaultNested: false })
+defineType({ types: ['panel'], defaultNested: false })
+defineType({
+  types: ['list'],
   defaultValue: () => [],
-  getSourceType: () => 'list'
+  sourceType: 'list'
 })
-registerTypeComponent('object', {
-  defaultNested: true,
-  getSourceType: () => 'object'
-})
+defineType({ types: ['object'], sourceType: 'object' })
+defineType({ types: ['submit'], isButton: true, submitsData: true })
 // Like `DitoTypeUpload`, which leaves out files that aren't uploaded yet:
-registerTypeComponent('upload', {
-  defaultNested: true,
+defineType({
+  types: ['upload'],
   processValue: ({ value }) => (value?.isUploaded ? value.name : null)
 })
 
@@ -1831,10 +1830,7 @@ describe('DataModel', () => {
     it(`asks the type with the item's context whether values are missing`, async () => {
       // Like types whose values may be left out, decided per item:
       const ignoreMissingValue = vi.fn(({ item }) => !!item.isDraft)
-      registerTypeComponent('note', {
-        defaultNested: true,
-        ignoreMissingValue
-      })
+      defineType({ types: ['note'], ignoreMissingValue })
       const schema = {
         type: 'form',
         components: {

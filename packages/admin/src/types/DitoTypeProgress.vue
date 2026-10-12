@@ -10,11 +10,14 @@ progress.dito-progress(
 
 <script>
 import DitoTypeComponent from '../DitoTypeComponent.js'
+import { defineType } from '../utils/schema/types.ts'
+import { numberDescriptor } from './descriptors.ts'
 import NumberMixin from '../mixins/NumberMixin.js'
 
 // @vue/component
-export default DitoTypeComponent.register('progress', {
+const DitoTypeProgress = DitoTypeComponent.component('DitoTypeProgress', {
   mixins: [NumberMixin],
+
   computed: {
     progressValue() {
       let { value, range, step } = this
@@ -37,4 +40,12 @@ export default DitoTypeComponent.register('progress', {
     }
   }
 })
+
+defineType({
+  types: ['progress'],
+  component: DitoTypeProgress,
+  ...numberDescriptor
+})
+
+export default DitoTypeProgress
 </script>

@@ -49,6 +49,21 @@ describe('DitoContainer', () => {
     expect(fill).toMatchObject({ grow: '1', shrink: '0', basis: 'auto' })
   })
 
+  it('replaces labels with the label of their container', async () => {
+    const { wrapper } = await mountSchema({
+      schema: {
+        components: {
+          heading: { type: 'label', label: 'Contents' },
+          note: { type: 'label' }
+        }
+      },
+      data: { heading: 'Ignored', note: 'Draft' }
+    })
+    expect(
+      wrapper.findAll('.dito-container').map(container => container.text())
+    ).toEqual(['Contents', 'Draft'])
+  })
+
   it('adds the classes of the schema as a string or object', async () => {
     const [string] = await mountWidths([null], { class: 'featured' })
     expect(string.classes).toContain('featured')

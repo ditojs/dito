@@ -133,10 +133,10 @@ export default DitoComponent.component('DitoPanel', {
     },
 
     panelDataPath() {
-      // If the panel provides its own data, then it needs to prefix all
-      // components with its data-path, but if it shares data with the schema
-      // component, then it should share the data-path name space too.
-      return this.hasOwnData ? this.dataPath : this.schemaComponent.dataPath
+      // Panels with their own data are their own container, and the data paths
+      // of their components start at their data. Panels that share the data of
+      // their schema component share its data-path name space too.
+      return this.hasOwnData ? '' : this.schemaComponent.dataPath
     },
 
     visible: getSchemaAccessor('visible', {
@@ -158,8 +158,16 @@ export default DitoComponent.component('DitoPanel', {
     )
     const { data } = this.schema
     if (data) {
+      // Create the data in the context of the data around the panel, as the
+      // panel is the container of the data that it creates:
       this.ownData = isFunction(data)
-        ? data(this.context)
+        ? data(
+            new DitoContext(this.schemaComponent, {
+              nested: false,
+              data: this.data,
+              dataPath: this.schemaComponent.dataPath
+            })
+          )
         : data
       // Own data gets its own model, like in dialogs, so that its edits don't
       // make the displayed data dirty:
@@ -168,8 +176,6 @@ export default DitoComponent.component('DitoPanel', {
         new DataModel({
           schema: () => this.schema,
           data: () => this.ownData,
-          rootData: () => this.rootData,
-          dataPath: () => this.dataPath,
           sourceSchema: () => this.sourceSchema,
           parent: () => this.parentContainer?.model ?? null,
           services: {

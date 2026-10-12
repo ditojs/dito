@@ -1,4 +1,5 @@
 import type { SourceNode } from './RouteTree.ts'
+import type { ListQuery } from './ListQuery.js'
 import type { Schema } from './types.ts'
 
 // The list, object or tree that provides the context.
@@ -6,6 +7,7 @@ export interface SourceOwner {
   readonly schema: Schema
   readonly sourceNode: SourceNode | null
   readonly query: Record<string, any>
+  readonly listQuery: ListQuery
   readonly dataPath: string
   readonly componentPath: string
   readonly store: Record<string, any>
@@ -36,6 +38,10 @@ export class SourceContext {
   // The query of lists, e.g. their scope, page, order and filters:
   get query(): Record<string, any> {
     return this.#owner.query
+  }
+
+  get listQuery(): ListQuery {
+    return this.#owner.listQuery
   }
 
   get dataPath(): string {

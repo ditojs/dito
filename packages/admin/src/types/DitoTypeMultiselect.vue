@@ -69,6 +69,8 @@
 
 <script>
 import DitoTypeComponent from '../DitoTypeComponent.js'
+import { defineType } from '../utils/schema/types.ts'
+import { optionsDescriptor } from './descriptors.ts'
 import DitoContext from '../DitoContext.js'
 import TypeMixin from '../mixins/TypeMixin.js'
 import OptionsMixin from '../mixins/OptionsMixin.js'
@@ -80,7 +82,7 @@ import { getSchemaAccessor } from '../utils/accessor.js'
 import { isArray, isBoolean, isObject, isString } from '@ditojs/utils'
 
 // @vue/component
-export default DitoTypeComponent.register('multiselect', {
+const DitoTypeMultiselect = DitoTypeComponent.component('DitoTypeMultiselect', {
   mixins: [OptionsMixin],
   components: { DitoInputAffixes, DitoOptionsEditButtons, VueMultiselect },
 
@@ -353,6 +355,14 @@ export default DitoTypeComponent.register('multiselect', {
     }
   }
 })
+
+defineType({
+  types: ['multiselect'],
+  component: DitoTypeMultiselect,
+  ...optionsDescriptor
+})
+
+export default DitoTypeMultiselect
 </script>
 
 <style lang="scss">

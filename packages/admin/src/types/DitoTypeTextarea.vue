@@ -11,11 +11,13 @@ textarea.dito-textarea.dito-input(
 
 <script>
 import DitoTypeComponent from '../DitoTypeComponent.js'
+import { defineType } from '../utils/schema/types.ts'
+import { textDescriptor } from './descriptors.ts'
 import TextMixin from '../mixins/TextMixin'
 import { getSchemaAccessor } from '../utils/accessor.js'
 
 // @vue/component
-export default DitoTypeComponent.register('textarea', {
+const DitoTypeTextarea = DitoTypeComponent.component('DitoTypeTextarea', {
   mixins: [TextMixin],
   nativeField: true,
   textField: true,
@@ -31,6 +33,14 @@ export default DitoTypeComponent.register('textarea', {
     })
   }
 })
+
+defineType({
+  types: ['textarea'],
+  component: DitoTypeTextarea,
+  ...textDescriptor
+})
+
+export default DitoTypeTextarea
 </script>
 
 <style lang="scss">
