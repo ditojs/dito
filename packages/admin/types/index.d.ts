@@ -1982,7 +1982,10 @@ export type SchemaContext<$Item = any> = {
   /** The currently focused option in a select. */
   option: any
   /**
-   * All available options in a select. In `computeValue()`, they are
+   * The options of the field, in the callbacks of fields with options,
+   * e.g. selects: also in `formatValue()`, `parseValue()`, events and
+   * schema values, but not in its container's, e.g. `label`. In
+   * `computeValue()`, they are
    * loaded when first read, also when the field isn't rendered.
    * Reading them while they load ends the callback, which keeps
    * the current value and runs again once they are loaded, so
