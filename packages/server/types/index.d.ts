@@ -10,7 +10,6 @@ import { DateFormat } from '@ditojs/utils'
 import { Options as KoaCorsOptions } from '@koa/cors'
 import * as Ajv from 'ajv/dist/2020.js'
 import { AsyncLocalStorage } from 'async_hooks'
-import * as dbErrors from 'db-errors'
 import * as EventEmitter2 from 'eventemitter2'
 import helmet from 'helmet'
 import { Knex } from 'knex'
@@ -23,7 +22,6 @@ import { CreateSessionOptions as KoaSessionOptions } from 'koa-session'
 import multer from '@koa/multer'
 import multerS3 from 'multer-s3'
 import * as objection from 'objection'
-import { KnexSnakeCaseMappersFactory } from 'objection'
 import { Logger as PinoLogger, LoggerOptions as PinoLoggerOptions } from 'pino'
 import { PrettyOptions } from 'pino-pretty'
 import {
@@ -204,7 +202,9 @@ export interface ApplicationConfig {
     /** Knex connection config, or a custom adapter object (e.g. PGlite). */
     connection?: Knex.Config<any>['connection'] | Record<string, unknown>
     /** @defaultValue `false` */
-    normalizeDbNames?: boolean | Parameters<KnexSnakeCaseMappersFactory>
+    normalizeDbNames?:
+      | boolean
+      | Parameters<objection.KnexSnakeCaseMappersFactory>
     // See https://github.com/brianc/node-pg-types/blob/master/index.d.ts#L67
     typeParsers?: Record<number, <I extends string | Buffer>(value: I) => any>
   }
@@ -581,7 +581,7 @@ export class Application<$Models extends Models = Models> {
   }): ValidationError
 
   /** Creates a DatabaseError from a native DB error. */
-  createDatabaseError(error: dbErrors.DBError): DatabaseError
+  createDatabaseError(error: objection.DBError): DatabaseError
 
   /**
    * Wraps a database identifier through Knex's
@@ -3546,11 +3546,11 @@ export class AuthorizationError extends ResponseError {}
 export class DatabaseError extends ResponseError {
   constructor(
     error:
-      | dbErrors.CheckViolationError
-      | dbErrors.NotNullViolationError
-      | dbErrors.ConstraintViolationError
-      | dbErrors.DataError
-      | dbErrors.DBError,
+      | objection.CheckViolationError
+      | objection.NotNullViolationError
+      | objection.ConstraintViolationError
+      | objection.DataError
+      | objection.DBError,
     overrides?: Record<string, unknown>
   )
 }

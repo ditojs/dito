@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import objection from 'objection'
+import * as objection from 'objection'
 import { Application } from '../app/Application.js'
 import {
   GraphError,

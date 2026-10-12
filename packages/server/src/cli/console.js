@@ -2,7 +2,7 @@ import repl from 'repl'
 import path from 'path'
 import fs from 'fs/promises'
 import pico from 'picocolors'
-import objection from 'objection'
+import * as objection from 'objection'
 import { isFunction, deindent } from '@ditojs/utils'
 
 let started = false
