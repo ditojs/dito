@@ -50,6 +50,7 @@ export class DataModel {
   #untimedLoads = new Set()
   // The writes of values that components hold back, e.g. debounced edits:
   pendingWrites = new Set()
+  #pendingSubmits = new Set()
   // The owners of edits with their schemas: '' for the container, else the
   // data paths of sources with their own resource, which can't be inlined.
   #editedOwners = shallowReactive(new Map())
@@ -414,6 +415,7 @@ export class DataModel {
     this.pendingLoads.clear()
     this.#untimedLoads.clear()
     this.pendingWrites.clear()
+    this.#pendingSubmits.clear()
   }
 
   writePendingValues() {
@@ -467,6 +469,23 @@ export class DataModel {
       this.pendingLoads.delete(promise)
       this.#untimedLoads.delete(promise)
     })
+  }
+
+  // The data stays dirty until its submits succeed, which leaving the route
+  // waits for, see `RouteMixin.beforeRouteChange()`.
+  get hasPendingSubmits() {
+    return this.#pendingSubmits.size > 0
+  }
+
+  async waitUntilSubmitted() {
+    await Promise.allSettled(this.#pendingSubmits)
+  }
+
+  trackPendingSubmit(promise) {
+    this.#pendingSubmits.add(promise)
+    const remove = () => this.#pendingSubmits.delete(promise)
+    promise.then(remove, remove)
+    return promise
   }
 
   initializeData(schema, data) {

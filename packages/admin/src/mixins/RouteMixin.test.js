@@ -248,6 +248,58 @@ describe('RouteMixin', () => {
       expect(admin.getRouteComponent(it => it.isForm)).toBe(routeComponent)
     })
 
+    describe('leaving while submitting', () => {
+      // Mounts a create form whose submit request resolves or rejects once the
+      // test settles it through the returned `response`:
+      const mountSubmittingForm = async () => {
+        const response = Promise.withResolvers()
+        const result = await mountForm({
+          schema: {
+            components: { title: { type: 'text' } },
+            // Stay in the form, to be redirected to the created item:
+            buttons: { submit: { closeForm: false } }
+          },
+          request: ({ method }) => (method === 'post' ? response.promise : null)
+        })
+        const { wrapper, routeComponent } = result
+        await enterValue(wrapper.find('input[name="title"]'), 'Dune')
+        await settle(routeComponent)
+        await wrapper
+          .find('.dito-buttons--main button[type="submit"]')
+          .trigger('click')
+        await flushPromises()
+        expect(routeComponent.isDirty).toBe(true)
+        return { ...result, response }
+      }
+
+      it(`leaves without asking once the submit succeeded`, async () => {
+        const confirm = stubConfirm(false)
+        const { admin, response } = await mountSubmittingForm()
+        const navigation = admin.router.push('/items')
+        await flushPromises()
+        expect(admin.router.currentRoute.value.path).toBe('/items/create')
+        response.resolve({ data: { id: 1, title: 'Dune' } })
+        await navigation
+        await flushPromises()
+        expect(confirm).not.toHaveBeenCalled()
+        expect(admin.router.currentRoute.value.path).toBe('/items')
+      })
+
+      it('asks once the submit failed', async () => {
+        const confirm = stubConfirm(false)
+        const { admin, routeComponent, response } = await mountSubmittingForm()
+        const navigation = admin.router.push('/items')
+        await flushPromises()
+        expect(confirm).not.toHaveBeenCalled()
+        response.reject(new Error('Server unavailable'))
+        await navigation
+        await flushPromises()
+        expect(confirm).toHaveBeenCalledOnce()
+        expect(admin.router.currentRoute.value.path).toBe('/items/create')
+        expect(routeComponent.isDirty).toBe(true)
+      })
+    })
+
     it(`doesn't ask when opening nested forms`, async () => {
       const confirm = stubConfirm(false)
       const { admin, wrapper, routeComponent } = await mountForm({
