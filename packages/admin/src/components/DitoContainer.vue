@@ -31,7 +31,7 @@
     :dataPath="dataPath"
     :data="data"
     :store="store"
-    :label="label"
+    :field="field"
     :single="single"
     :nested="nested"
     :errorsElementId="errors ? errorsElementId : null"
@@ -52,15 +52,11 @@ import {
   unref
 } from 'vue'
 import { isString, isNumber } from '@ditojs/utils'
-import { useSchemaContext } from '../composables/useSchemaContext.ts'
-import { useSchemaValue } from '../composables/useSchemaValue.ts'
-import { useComponentPath } from '../composables/useComponentPath.ts'
-import { useValue } from '../composables/useValue.ts'
+import { useContainerField } from '../composables/useField.ts'
 import { getTypeComponent, getTypeDescriptor } from '../utils/schema/types.ts'
-import { hasLabel, omitsSpacing } from '../utils/schema/structure.js'
+import { omitsSpacing } from '../utils/schema/structure.js'
 import { getAllPanelEntries } from '../utils/schema/lookup.js'
 import { parseFraction } from '../utils/math.js'
-import { appendDataPath } from '../utils/data.js'
 import { accumulatedBasisKey, panelTabKey } from '../utils/keys.ts'
 
 export default {
@@ -80,17 +76,16 @@ export default {
   },
 
   setup(props) {
-    const schemaContext = useSchemaContext(props, {
-      getValue: () => value.value
-    })
-    const { context, services } = schemaContext
-    const { value } = useValue(props, schemaContext)
-    const { getSchemaValue, getLabel } = useSchemaValue(context)
-    // Add the name, also of unnested components:
-    const { componentPath, parentComponentPath } = useComponentPath(
-      () => props.dataPath,
-      parent => appendDataPath(parent.path, props.schema.name)
-    )
+    const field = useContainerField(props)
+    const {
+      context,
+      services,
+      componentPath,
+      parentComponentPath,
+      getSchemaValue,
+      label,
+      disabled
+    } = field
     // A fraction of the width of the closest non-inlined schema:
     const accumulatedBasis = inject(accumulatedBasisKey, 1)
     const panelTab = inject(panelTabKey, null)
@@ -100,12 +95,7 @@ export default {
     })
 
     const typeDescriptor = computed(() => getTypeDescriptor(props.schema.type))
-    const hasSchemaLabel = computed(() =>
-      hasLabel(props.schema, props.generateLabels)
-    )
-    const label = computed(() =>
-      hasSchemaLabel.value ? getLabel(props.schema) : null
-    )
+    const hasSchemaLabel = computed(() => label.value !== null)
 
     const width = computed(() => {
       const width = getSchemaValue('width', {
@@ -158,7 +148,7 @@ export default {
         const { dataPath } = props
         const fieldLabel = (
           label.value ||
-          getSchemaValue('placeholder', { type: String }) ||
+          field.placeholder.value ||
           props.schema.name
         )
         const errors = [
@@ -184,24 +174,16 @@ export default {
       () => hasSchemaLabel.value && !!typeDescriptor.value?.rendersLabel
     )
 
-    const componentDisabled = computed(
-      () => (
-        getSchemaValue('disabled', { type: Boolean, default: false }) ||
-        props.disabled
-      )
-    )
-
     return {
+      field,
       context,
       componentPath,
       isMounted,
       label,
+      info: field.info,
       errors,
       isReplacedWithLabel,
       typeComponent: computed(() => getTypeComponent(props.schema.type)),
-      info: computed(() =>
-        getSchemaValue('info', { type: String, default: null })
-      ),
       componentVisible: computed(() =>
         getSchemaValue('visible', {
           type: Boolean,
@@ -226,7 +208,7 @@ export default {
         const { class: classes } = props.schema
         const prefix = 'dito-container'
         return {
-          [`${prefix}--disabled`]: componentDisabled.value,
+          [`${prefix}--disabled`]: disabled.value || props.disabled,
           [`${prefix}--has-errors`]: !!errors.value,
           [`${prefix}--single`]: props.single,
           [`${prefix}--compact`]: props.compact,
@@ -266,10 +248,8 @@ export default {
           // The panel of the type is addressed relative to the data path:
           props.nested ? componentPath.value : parentComponentPath.value,
           componentPath.value,
-          // The source that the type component provides, e.g. for filters:
-          [...services.dataContext.sources].find(
-            source => source.componentPath === componentPath.value
-          ) ?? null,
+          // The source of lists, for their filters:
+          services.sourceContext,
           panelTab
         )
       )
