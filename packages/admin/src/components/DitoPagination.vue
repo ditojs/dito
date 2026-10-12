@@ -11,7 +11,6 @@ import { computed } from 'vue'
 import { DitoPagination as Pagination } from '@ditojs/ui/src'
 
 export default {
-  name: 'DitoPagination',
   components: { Pagination },
 
   props: {

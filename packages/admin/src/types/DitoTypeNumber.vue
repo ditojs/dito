@@ -32,7 +32,6 @@ import { DitoInput } from '@ditojs/ui/src'
 
 // @vue/component
 const DitoTypeNumber = {
-  name: 'DitoTypeNumber',
   components: { DitoInput, DitoInputAffixes },
   props: fieldProps,
 

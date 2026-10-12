@@ -50,7 +50,6 @@ import { createChangeOnceEdited } from '../utils/changeOnceEdited.js'
 
 // @vue/component
 const DitoTypeColor = {
-  name: 'DitoTypeColor',
   components: { DitoTrigger, DitoInput, DitoInputAffixes, SketchPicker },
   props: fieldProps,
 

@@ -14,8 +14,6 @@ form.dito-scroll-parent(
 
 <script>
 export default {
-  name: 'DitoFormInner',
-
   props: {
     nested: {
       type: Boolean,

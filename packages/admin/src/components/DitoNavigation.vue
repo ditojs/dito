@@ -10,8 +10,6 @@ import { inject } from 'vue'
 import { adminContextKey } from '../utils/keys.ts'
 
 export default {
-  name: 'DitoNavigation',
-
   setup() {
     return { adminContext: inject(adminContextKey) }
   }

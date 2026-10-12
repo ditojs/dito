@@ -15,7 +15,6 @@ import { fieldProps, useField } from '../composables/useField.ts'
 
 // @vue/component
 const DitoTypeCheckbox = {
-  name: 'DitoTypeCheckbox',
   props: fieldProps,
   setup: props => useField(props, { nativeField: true })
 }

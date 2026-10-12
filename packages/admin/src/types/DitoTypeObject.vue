@@ -48,7 +48,6 @@ import { getItemFormSchema } from '../utils/schema/lookup.js'
 
 // @vue/component
 const DitoTypeObject = {
-  name: 'DitoTypeObject',
   components: { DitoSourceItem },
   props: fieldProps,
   setup: props => ({ ...useSource(props), getItemFormSchema })

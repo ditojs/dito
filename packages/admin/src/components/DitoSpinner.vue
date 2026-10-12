@@ -12,8 +12,6 @@
 
 <script>
 export default {
-  name: 'DitoSpinner',
-
   props: {
     loading: { type: Boolean, default: true },
     color: { type: String, default: null },

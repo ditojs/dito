@@ -14,7 +14,6 @@
 import { startDragResize, resizeByArrowKey } from '../utils/dragResize.js'
 
 export default {
-  name: 'DitoResizeHandle',
   emits: ['resize'],
 
   props: {

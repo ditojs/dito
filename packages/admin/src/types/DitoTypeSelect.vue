@@ -62,7 +62,6 @@ import DitoOptionsEditButtons from '../components/DitoOptionsEditButtons.vue'
 
 // @vue/component
 const DitoTypeSelect = {
-  name: 'DitoTypeSelect',
   components: { DitoInputAffixes, DitoOptionsEditButtons },
   props: fieldProps,
 

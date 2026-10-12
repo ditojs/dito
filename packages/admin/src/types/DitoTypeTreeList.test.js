@@ -9,6 +9,7 @@ import {
   enterValue,
   isForm
 } from '../test/mount.js'
+import DitoDraggable from '../components/DitoDraggable.vue'
 
 const pageForm = {
   type: 'form',
@@ -609,7 +610,7 @@ describe('DitoTypeTreeList', () => {
       })
       // Drag the children into reverse order:
       admin.wrapper
-        .findComponent({ name: 'DitoDraggable' })
+        .findComponent(DitoDraggable)
         .vm.$emit('update:modelValue', [...data.site.pages].reverse())
       await flushPromises()
       expect(data.site).toEqual({

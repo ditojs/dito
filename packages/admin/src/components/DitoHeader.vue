@@ -13,8 +13,6 @@ nav.dito-header(:aria-busy="isLoading")
 
 <script>
 export default {
-  name: 'DitoHeader',
-
   props: {
     spinner: { type: Object, default: null },
     isLoading: { type: Boolean, default: false }

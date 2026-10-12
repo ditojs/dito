@@ -37,7 +37,6 @@ import DitoOptionsEditButtons from '../components/DitoOptionsEditButtons.vue'
 
 // @vue/component
 const DitoTypeRadio = {
-  name: 'DitoTypeRadio',
   components: { DitoOptionList, DitoOptionsEditButtons },
   props: fieldProps,
 

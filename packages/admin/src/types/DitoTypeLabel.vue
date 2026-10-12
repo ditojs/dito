@@ -12,7 +12,6 @@ import { fieldProps, useField } from '../composables/useField.ts'
 
 // @vue/component
 const DitoTypeLabel = {
-  name: 'DitoTypeLabel',
   props: fieldProps,
   setup: props => useField(props)
 }

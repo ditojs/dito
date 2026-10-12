@@ -32,8 +32,6 @@ import { isPathWithin } from '../utils/route.js'
 
 // `force` reloads the view of a link even if its route is the current one.
 export default {
-  name: 'DitoMenu',
-
   props: {
     nodes: { type: Array, required: true }
   },

@@ -80,7 +80,6 @@ import { isArray, isBoolean, isObject, isString } from '@ditojs/utils'
 
 // @vue/component
 const DitoTypeMultiselect = {
-  name: 'DitoTypeMultiselect',
   components: { DitoInputAffixes, DitoOptionsEditButtons, VueMultiselect },
   props: fieldProps,
 

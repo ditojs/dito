@@ -152,7 +152,6 @@ import { computed } from 'vue'
 
 // @vue/component
 const DitoTypeList = {
-  name: 'DitoTypeList',
   components: { DitoSourceItem },
   props: fieldProps,
 

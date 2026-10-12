@@ -38,7 +38,6 @@ import { getParentDataPath } from '../utils/data.js'
 
 // @vue/component
 const DitoTypeTreeList = {
-  name: 'DitoTypeTreeList',
   props: fieldProps,
 
   setup(props) {

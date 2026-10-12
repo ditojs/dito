@@ -60,8 +60,6 @@ import { parseFraction } from '../utils/math.js'
 import { accumulatedBasisKey, panelTabKey } from '../utils/keys.ts'
 
 export default {
-  name: 'DitoContainer',
-
   props: {
     schema: { type: Object, required: true },
     dataPath: { type: String, default: '' },

@@ -35,7 +35,6 @@ import { DitoInput } from '@ditojs/ui/src'
 
 // @vue/component
 const DitoTypeSlider = {
-  name: 'DitoTypeSlider',
   components: { DitoInput },
   props: fieldProps,
 

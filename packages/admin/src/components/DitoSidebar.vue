@@ -5,12 +5,6 @@ aside.dito-sidebar.dito-scroll-parent
   .dito-sidebar__teleport.dito-scroll
 </template>
 
-<script>
-export default {
-  name: 'DitoSidebar'
-}
-</script>
-
 <style lang="scss">
 @import '../styles/_imports';
 

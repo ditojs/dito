@@ -28,8 +28,6 @@ import { useRoute, useRouter } from 'vue-router'
 import { adminContextKey } from '../utils/keys.ts'
 
 export default {
-  name: 'DitoTrail',
-
   setup() {
     const adminContext = inject(adminContextKey)
     const currentRoute = useRoute()

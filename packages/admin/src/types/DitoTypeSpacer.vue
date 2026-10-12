@@ -6,7 +6,6 @@ import { fieldProps, useField } from '../composables/useField.ts'
 
 // @vue/component
 const DitoTypeSpacer = {
-  name: 'DitoTypeSpacer',
   props: fieldProps,
 
   setup(props) {

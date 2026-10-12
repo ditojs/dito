@@ -40,7 +40,6 @@ import { getMultipleValue } from '../utils/schema/data.js'
 
 // @vue/component
 const DitoTypeCheckboxes = {
-  name: 'DitoTypeCheckboxes',
   components: { DitoOptionList, DitoOptionsEditButtons },
   props: fieldProps,
 

@@ -12,6 +12,8 @@ import {
   settle,
   isForm
 } from '../test/mount.js'
+import DitoSchema from '../components/DitoSchema.vue'
+import DitoSchemaInlined from '../components/DitoSchemaInlined.vue'
 
 const ingredientForm = {
   type: 'form',
@@ -205,7 +207,7 @@ describe('DitoTypeList', () => {
       // their state:
       const getOpenedNames = () =>
         wrapper
-          .findAllComponents({ name: 'DitoSchema' })
+          .findAllComponents(DitoSchema)
           .map(({ vm }) => vm)
           .filter(schema => schema.inlined && schema.opened)
           .map(schema => schema.data.name)
@@ -756,7 +758,7 @@ describe('DitoTypeList', () => {
         data: { tags: ['classic', 'novel'] }
       })
       const stores = findField('tags')
-        .findAllComponents({ name: 'DitoSchemaInlined' })
+        .findAllComponents(DitoSchemaInlined)
         .map(schema => schema.props('store'))
       expect(stores).toHaveLength(2)
       expect(stores).not.toContain(null)

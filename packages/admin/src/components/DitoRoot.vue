@@ -61,7 +61,6 @@ import { FileDropTargets } from '../utils/FileDropTargets.js'
 import { adminContextKey, fileDropTargetsKey } from '../utils/keys.ts'
 
 export default {
-  name: 'DitoRoot',
   components: { DitoDialog },
 
   props: {

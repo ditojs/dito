@@ -34,7 +34,6 @@ import DitoAffix from './DitoAffix.vue'
 import { shouldRenderSchema } from '../utils/schema/data.js'
 
 export default {
-  name: 'DitoAffixes',
   components: { DitoAffix },
   emits: ['clear'],
 

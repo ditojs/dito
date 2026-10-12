@@ -19,7 +19,6 @@ import DitoEditButtons from './DitoEditButtons.vue'
 import { adminContextKey } from '../utils/keys.ts'
 
 export default {
-  name: 'DitoOptionsEditButtons',
   components: { DitoEditButtons },
 
   props: {

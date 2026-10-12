@@ -54,7 +54,6 @@ import { getVerbs } from '../utils/services.ts'
 import { isInlined } from '../utils/schema/structure.js'
 
 export default {
-  name: 'DitoEditButtons',
   components: { DitoButton, DitoDragHandle },
   emits: ['delete', 'move'],
 

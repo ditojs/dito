@@ -43,7 +43,6 @@ import { asArray } from '@ditojs/utils'
 
 // @vue/component
 const DitoTypeButton = {
-  name: 'DitoTypeButton',
   components: { DitoAffixes, DitoButton },
   props: fieldProps,
 

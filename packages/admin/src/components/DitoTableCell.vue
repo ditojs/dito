@@ -27,8 +27,6 @@ import { appendDataPath } from '../utils/data.js'
 import { getItemValueText } from '../utils/schema/data.js'
 
 export default {
-  name: 'DitoTableCell',
-
   props: {
     // A column or tree property, whose `name` is the key of its value:
     cell: { type: Object, required: true },

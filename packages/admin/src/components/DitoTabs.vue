@@ -20,7 +20,6 @@ import { useSchemaValue } from '../composables/useSchemaValue.ts'
 import { componentPathKey } from '../utils/keys.ts'
 
 export default {
-  name: 'DitoTabs',
   emits: ['update:modelValue'],
 
   props: {
