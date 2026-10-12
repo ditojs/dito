@@ -169,8 +169,8 @@ describe('DitoTypeSelect', () => {
       await findField('country').find('select').setValue('fr')
       await settle()
       expect(getOptions(findField('city'))).toEqual([['lyo', 'Lyon']])
-      // The city of the previous country isn't an option anymore:
-      expect(data.city).toBe(null)
+      // The city of the previous country isn't an option anymore, but stays:
+      expect(data.city).toBe('bsl')
       expect(loadCities).toHaveBeenCalledTimes(2)
     })
 
@@ -211,8 +211,7 @@ describe('DitoTypeSelect', () => {
       )
     })
 
-    // Known bug: values missing from options are saved as `null`
-    it.skip('keeps values missing from the options when saving other values', async () => {
+    it('keeps values missing from the options when saving other values', async () => {
       const { findField, data, routeComponent, settle, submit } =
         await mountForm({
           schema: {
@@ -342,8 +341,8 @@ describe('DitoTypeSelect', () => {
 
   describe('values', () => {
     it(
-      'replaces values without option with `null` once loaded, without ' +
-      'making the form dirty',
+      'keeps values without option once loaded, without making the form ' +
+      'dirty',
       async () => {
         const { data, routeComponent } = await mountForm({
           schema: {
@@ -356,33 +355,31 @@ describe('DitoTypeSelect', () => {
           },
           data: { genre: 'opera' }
         })
-        expect(data.genre).toBe(null)
+        expect(data.genre).toBe('opera')
         expect(routeComponent.routeContext.isDirty).toBe(false)
       }
     )
 
-    it('replaces the value that the component displays', async () => {
+    it('replaces the references that the component displays', async () => {
+      const authors = [
+        { id: 1, name: 'Mary Shelley' },
+        { id: 2, name: 'Bram Stoker' }
+      ]
       const { data } = await mountSchema({
         schema: {
           components: {
-            genre: {
+            author: {
               type: 'select',
-              options: { data: async () => genres },
-              formatValue: ({ value }) => value?.toLowerCase(),
-              parseValue: ({ value }) => value?.toUpperCase()
-            },
-            genres: {
-              type: 'multiselect',
-              options: { data: async () => genres },
-              // Evaluated like the component does, as a single value:
-              multiple: () => false
+              relate: true,
+              options: { data: async () => authors, label: 'name' },
+              formatValue: ({ value }) => value && { id: value },
+              parseValue: ({ value }) => value?.name
             }
           }
         },
-        data: { genre: 'POETRY', genres: ['fiction'] }
+        data: { author: 2 }
       })
-      expect(data.genre).toBe('POETRY')
-      expect(data.genres).toBe(null)
+      expect(data.author).toBe('Bram Stoker')
     })
 
     it('computes a default option from the loaded options', async () => {

@@ -374,17 +374,15 @@ test.describe('data model', () => {
     page,
     url
   }) => {
-    // `status` replaces the value without option with `null`, which its
-    // compute then replaces with the first option.
+    // `status` keeps the value without option, which its compute leaves as
+    // is, and selects no option:
     const article = await Article.query().insert({
       title: 'Old',
       status: 'archived'
     })
     await openArticle(page, url, article)
-    await expect(page.getByLabel('Status', { exact: true })).toHaveValue(
-      'draft'
-    )
     await waitForDelayedOptions(page)
+    await expect(page.getByLabel('Status', { exact: true })).toHaveValue('')
     await page.getByRole('button', { name: 'Cancel', exact: true }).click()
     await expect(page).toHaveURL(/\/articles$/)
     await expect(getConfirmDialog(page)).toHaveCount(0)

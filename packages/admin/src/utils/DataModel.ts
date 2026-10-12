@@ -990,7 +990,6 @@ export class DataModel {
             createContext: values => context.extend({ options, ...values })
           })
           const replaced = getReplacedValue(
-            schema,
             settings,
             options,
             formatValue ? formatValue(context) : data[name]
