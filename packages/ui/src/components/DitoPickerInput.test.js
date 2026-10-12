@@ -92,13 +92,39 @@ describe('DitoPickerInput', () => {
     expect(wrapper.emitted('update:modelValue')).toBeUndefined()
   })
 
-  it('emits `update:modelValue` and `change` for typed dates', async () => {
+  it('emits `update:modelValue` for typed dates, `change` on Enter', async () => {
     wrapper = mountPickerInput()
     await findInput(wrapper).setValue('April 1, 2024')
-    expect(wrapper.emitted('update:modelValue')).toEqual([
-      [new Date(2024, 3, 1)]
+    await findInput(wrapper).setValue('April 2, 2024')
+    expect(getEmittedDates(wrapper)).toEqual([
+      new Date(2024, 3, 1),
+      new Date(2024, 3, 2)
     ])
-    expect(wrapper.emitted('change')).toEqual([[new Date(2024, 3, 1)]])
+    expect(wrapper.emitted('change')).toBeUndefined()
+    await pressKey(wrapper, 'Enter', 1)
+    await pressKey(wrapper, 'Enter', 1)
+    expect(wrapper.emitted('change')).toEqual([[new Date(2024, 3, 2)]])
+  })
+
+  it('emits `change` once the popup closes or the input loses focus', async () => {
+    wrapper = mountPickerInput()
+    findInput(wrapper).element.focus()
+    await flushPromises()
+    expect(isPopupShown(wrapper)).toBe(true)
+    // Picked in the panel, which sets the value through the popup slot:
+    wrapper.vm.setValue(new Date(2024, 3, 1))
+    wrapper.vm.setValue(new Date(2024, 3, 2))
+    expect(wrapper.emitted('change')).toBeUndefined()
+    wrapper.vm.close()
+    await flushPromises()
+    expect(wrapper.emitted('change')).toEqual([[new Date(2024, 3, 2)]])
+    await findInput(wrapper).setValue('May 1, 2024')
+    findInput(wrapper).element.blur()
+    await flushPromises()
+    expect(wrapper.emitted('change')).toEqual([
+      [new Date(2024, 3, 2)],
+      [new Date(2024, 4, 1)]
+    ])
   })
 
   it(`doesn't emit typed dates that equal the model value`, async () => {

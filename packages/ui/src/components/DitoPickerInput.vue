@@ -101,6 +101,7 @@ export default {
       currentValue: this.modelValue,
       isPopupShown: this.show,
       isInputFocused: false,
+      isEdited: false,
       caretPartName: null
     }
   },
@@ -139,6 +140,9 @@ export default {
 
     isFocused(to, from) {
       if (to ^ from) {
+        if (!to) {
+          this.emitChangeIfEdited()
+        }
         this.$emit(to ? 'focus' : 'blur')
       }
     }
@@ -158,11 +162,20 @@ export default {
       if (+value !== +this.currentValue) {
         this.currentValue = value
         if (+value !== +this.modelValue) {
+          this.isEdited = true
           this.$emit('update:modelValue', value)
-          this.$emit('change', value)
         }
       }
       return true
+    },
+
+    // Emit `change` once the edit is done: when the popup closes, the input
+    // loses focus or Enter is pressed.
+    emitChangeIfEdited() {
+      if (this.isEdited) {
+        this.isEdited = false
+        this.$emit('change', this.currentValue)
+      }
     },
 
     open() {
@@ -199,6 +212,9 @@ export default {
     onUpdateShow(show) {
       // `DitoTrigger` owns the popup's state, this only mirrors it.
       this.isPopupShown = show
+      if (!show) {
+        this.emitChangeIfEdited()
+      }
       this.$emit('update:show', show)
     },
 
@@ -245,6 +261,10 @@ export default {
               )
             )
           })
+        }
+        if (enter) {
+          // Enter completes the edit, also after the panel handled it:
+          this.emitChangeIfEdited()
         }
       } else if (isTimePartName(part?.name)) {
         editTimeText(event, this.getInputElement(), this.currentText.length)
