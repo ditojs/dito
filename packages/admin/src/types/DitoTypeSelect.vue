@@ -12,38 +12,29 @@
       ref="element"
       v-model="selectedValue"
       v-bind="attributes"
-      @mousedown="populate = true"
-      @focus="populate = true"
     )
+      //- Plain values whose option disappeared are kept and shown as
+      //- unavailable, rather than cleared without the user noticing:
+      option(
+        v-if="shouldShowUnavailableValue"
+        :value="selectedValue"
+        disabled
+      ) {{ getLabelForOption(selectedValue) }} (unavailable)
       template(
-        v-if="populate"
+        v-for="option in options"
       )
-        //- Plain values whose option disappeared are kept and shown as
-        //- unavailable, rather than cleared without the user noticing:
-        option(
-          v-if="shouldShowUnavailableValue"
-          :value="selectedValue"
-          disabled
-        ) {{ getLabelForOption(selectedValue) }} (unavailable)
-        template(
-          v-for="option in options"
+        optgroup(
+          v-if="isGrouped"
+          :label="option.label"
         )
-          optgroup(
-            v-if="isGrouped"
-            :label="option.label"
-          )
-            option(
-              v-for="opt in option.options"
-              :value="getValueForOption(opt)"
-            ) {{ getLabelForOption(opt) }}
           option(
-            v-else
-            :value="getValueForOption(option)"
-          ) {{ getLabelForOption(option) }}
-      template(
-        v-else-if="selectedOption"
-      )
-        option(:value="selectedValue") {{ getLabelForOption(selectedOption) }}
+            v-for="opt in option.options"
+            :value="getValueForOption(opt)"
+          ) {{ getLabelForOption(opt) }}
+        option(
+          v-else
+          :value="getValueForOption(option)"
+        ) {{ getLabelForOption(option) }}
     DitoInputAffixes(
       position="suffix"
       v-bind="inputAffixesProps.suffix"
@@ -61,7 +52,7 @@
 </template>
 
 <script>
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { defineType } from '../utils/schema/types.ts'
 import { optionsTraits } from './traits.ts'
 import { fieldProps, useField } from '../composables/useField.ts'
@@ -91,9 +82,6 @@ const DitoTypeSelect = {
     return {
       ...field,
       ...optionsField,
-      // TODO: Re-enable lazy population with `false`, once e2e tests can
-      // choose options without focusing the select first.
-      populate: ref(true),
 
       // Only plain values stay when their option disappears, see
       // `getReplacedValue()`. The select matches objects by deep equality.
