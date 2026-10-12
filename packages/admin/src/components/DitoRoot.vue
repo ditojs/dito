@@ -55,7 +55,10 @@ import { delegate as tippyDelegate } from 'tippy.js'
 import appState from '../appState.js'
 import { useDomEvents } from '../composables/useDomEvents.ts'
 import DitoDialog from './DitoDialog.vue'
-import { setupSchemaComponents } from '../utils/schema/setup.js'
+import {
+  applySchemaDefaults,
+  setupSchemaComponents
+} from '../utils/schema/setup.js'
 import { RouteTree } from '../utils/RouteTree.ts'
 import { FileDropTargets } from '../utils/FileDropTargets.js'
 import { adminContextKey, fileDropTargetsKey } from '../utils/keys.ts'
@@ -82,8 +85,9 @@ export default {
     const showDialog = async ({ components, buttons }, options = {}) => {
       const { data, settings } = options
       // Resolve async schemas first, so that their errors reject:
-      const schema = { type: 'dialog', components }
+      const schema = { type: 'dialog', components, buttons }
       const { api } = adminContext
+      applySchemaDefaults(api, schema)
       await setupSchemaComponents(api, schema)
       if (new RouteTree({ dialog: schema }, api).hasRoutedForms()) {
         throw new Error('Dialogs do not support components that produce routes')

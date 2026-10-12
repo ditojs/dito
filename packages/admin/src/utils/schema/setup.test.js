@@ -289,6 +289,20 @@ describe('applySchemaDefaults()', () => {
     expect(schema.trim).toBe(true)
   })
 
+  it('applies the defaults of their type to buttons', () => {
+    const api = createApi({ submit: { closeForm: true } })
+    const schema = {
+      type: 'form',
+      buttons: { save: { type: 'submit' }, cancel: {}, back: 'Back' }
+    }
+    applySchemaDefaults(api, schema)
+    expect(schema.buttons).toEqual({
+      save: { type: 'submit', closeForm: true },
+      cancel: {},
+      back: 'Back'
+    })
+  })
+
   it('leaves schemas without defaults for their type alone', () => {
     const api = createApi({ text: () => null })
     const schema = { type: 'text' }
@@ -348,6 +362,58 @@ describe('the schema keys of 3.x', () => {
     expect(() => applySchemaDefaults(api, { type: 'text' }, 'title')).toThrow(
       `Unsupported schema key 'process' in 'title'`
     )
+  })
+
+  it.each([
+    [
+      'lists',
+      {
+        books: {
+          type: 'list',
+          form: createBookForm(),
+          buttons: { order: { type: 'button', data: {} } }
+        }
+      }
+    ],
+    [
+      'panels',
+      {
+        filters: {
+          type: 'panel',
+          components: {},
+          panelButtons: { order: { type: 'button', data: {} } }
+        }
+      }
+    ],
+    [
+      'the panels of components',
+      {
+        title: {
+          type: 'text',
+          panels: {
+            hints: {
+              type: 'panel',
+              components: {},
+              buttons: { order: { type: 'button', data: {} } }
+            }
+          }
+        }
+      }
+    ]
+  ])('rejects the keys of the buttons of %s', async (_, components) => {
+    await expect(setupBookView(components)).rejects.toThrow(
+      `Unsupported schema key 'data' in 'order'`
+    )
+  })
+
+  it('rejects the keys of the buttons of forms, also without a type', async () => {
+    await expect(
+      setupForm(createApi(), {
+        type: 'form',
+        components: {},
+        buttons: { submit: { data: {} } }
+      })
+    ).rejects.toThrow(`Unsupported schema key 'data' in 'submit'`)
   })
 
   it('keeps the format of types that read it', async () => {

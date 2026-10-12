@@ -32,6 +32,7 @@ import { fieldProps } from '../composables/useField.ts'
 import { useSource } from '../composables/useSource.ts'
 import {
   resolveSchemaComponents,
+  setupSchemaComponent,
   assertRemovedSchemaKeys
 } from '../utils/schema/setup.js'
 import { getParentDataPath } from '../utils/data.js'
@@ -99,7 +100,6 @@ const treeTraits = {
   },
 
   async setupSchema(api, schema, name) {
-    // Here, to also check the children, which get no defaults applied:
     assertRemovedSchemaKeys(schema, name, { open: `'collapsed: false'` })
     const { children } = schema
     if (children) {
@@ -110,7 +110,7 @@ const treeTraits = {
     await Promise.all([
       resolveSchemaComponents(schema.properties),
       sourceTraits.setupSchema(api, schema, name),
-      children && treeTraits.setupSchema(api, children, children.name)
+      children && setupSchemaComponent(api, children, children.name)
     ])
   }
 }

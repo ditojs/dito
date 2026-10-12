@@ -110,6 +110,16 @@ describe('DitoTypeTreeList', () => {
     )
   })
 
+  it('sets up the buttons of their children', async () => {
+    const schema = { type: 'view', ...createSiteSchema() }
+    schema.components.pages.children.buttons = {
+      order: { type: 'button', data: {} }
+    }
+    await expect(
+      setupView({ defaults: {}, normalizePath: hyphenate }, schema, 'site')
+    ).rejects.toThrow(`Unsupported schema key 'data' in 'order'`)
+  })
+
   it('renders the `properties` of the items', async () => {
     const schema = createSiteSchema()
     schema.components.pages.children.properties = {

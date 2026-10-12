@@ -178,6 +178,17 @@ describe('DitoRoot', () => {
       ).rejects.toThrow('Dialogs do not support components that produce routes')
       expect(admin.root.dialogs).toEqual({})
     })
+
+    it('rejects the keys of 3.x in buttons', async () => {
+      const admin = await mountAdmin({ views: {} })
+      await expect(
+        admin.context.showDialog({
+          components: {},
+          buttons: { confirm: { type: 'submit', data: {} } }
+        })
+      ).rejects.toThrow(`Unsupported schema key 'data' in 'confirm'`)
+      expect(admin.root.dialogs).toEqual({})
+    })
   })
 
   describe('session start', () => {

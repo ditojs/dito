@@ -171,9 +171,10 @@ export function setupSchemaComponents(api, schema) {
   }
 }
 
-function setupSchemaComponent(api, schema, name) {
+export async function setupSchemaComponent(api, schema, name) {
   applySchemaDefaults(api, schema, name)
-  return Promise.all([
+  await setupNestedSchemas(api, schema)
+  await Promise.all([
     mapConcurrently(
       getPanelSchemas(schema),
       panel => setupSchemaComponents(api, panel)
@@ -218,6 +219,15 @@ export function applySchemaDefaults(api, schema, name = schema.name) {
   }
   // Check after the defaults, which can change the type and add keys:
   assertSupportedSchemaKeys(schema, name)
+  // Buttons are schemas but no components. Those without a type only get it
+  // when rendered, merged with the default buttons:
+  for (const buttons of [schema.buttons, schema.panelButtons]) {
+    for (const [key, button] of Object.entries(buttons ?? {})) {
+      if (isObject(button)) {
+        applySchemaDefaults(api, button, button.name ?? key)
+      }
+    }
+  }
 }
 
 export function applyNestedSchemaDefaults(api, schema) {
