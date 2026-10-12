@@ -87,6 +87,9 @@ export function useSourceItems({
               nested: false,
               data: item,
               value: item,
+              // Item labels describe the item, also in its form, where no list
+              // shows, so they don't depend on the list's query:
+              sourceQuery: null,
 
               get dataPath() {
                 return getItemDataPath(sourceSchema, index)

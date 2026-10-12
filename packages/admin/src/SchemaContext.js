@@ -262,7 +262,11 @@ export default class SchemaContext {
   }
 
   get sourceQuery() {
-    return getServices(this).sourceContext?.listQuery.query ?? null
+    return get(
+      this,
+      'sourceQuery',
+      () => getServices(this).sourceContext?.listQuery.query ?? null
+    )
   }
 
   get request() {

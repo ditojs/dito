@@ -143,6 +143,19 @@ describe('DitoTypeList', () => {
       expect(label.text()).toContain('500 g')
     })
 
+    it(`doesn't pass the list's query to \`itemLabel()\``, async () => {
+      // Item labels describe the item, also in its form, where no list shows:
+      const itemLabel = vi.fn(({ item }) => item.name)
+      await mountSchema({
+        schema: createRecipeSchema({ itemLabel }),
+        data: { ingredients: [{ name: 'Flour' }] }
+      })
+      expect(itemLabel).toHaveBeenCalled()
+      for (const [context] of itemLabel.mock.calls) {
+        expect(context.sourceQuery).toBe(null)
+      }
+    })
+
     it('updates only the label of the edited item', async () => {
       const itemLabel = vi.fn(({ item }) => item.name)
       const { findField, settle } = await mountSchema({
