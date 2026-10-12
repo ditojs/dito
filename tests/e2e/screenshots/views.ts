@@ -183,7 +183,7 @@ export const projects = createWidgetView<Project>(
               type: 'tree-list',
               label: 'Phases',
               itemLabel: 'name',
-              open: true,
+              collapsed: false,
               editable: true,
               deletable: true,
               draggable: true,

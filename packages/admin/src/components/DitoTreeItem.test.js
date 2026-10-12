@@ -19,13 +19,13 @@ async function mountBookForm() {
           path: 'chapters',
           itemLabel: 'title',
           form: chapterForm,
-          open: true,
+          collapsed: false,
           children: {
             name: 'sections',
             path: 'sections',
             itemLabel: 'title',
             form: chapterForm,
-            open: true,
+            collapsed: false,
             deletable: true
           }
         }
