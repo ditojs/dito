@@ -22,16 +22,16 @@ import {
 // Define minimal types, as the actual type components can't be
 // imported without a Vue SFC compiler:
 defineType({
-  types: ['panel'],
+  type: 'panel',
   defaultNested: false,
   getPanelSchema: (api, schema) => schema
 })
 defineType({
-  types: ['list'],
+  type: 'list',
   getPanelSchema: () => ({ type: 'panel', name: '$filters' })
 })
-defineType({ types: ['section'], defaultNested: false })
-defineType({ types: ['text'] })
+defineType({ type: 'section', defaultNested: false })
+defineType({ type: 'text' })
 
 describe('getAllPanelEntries()', () => {
   const getPaths = entries =>

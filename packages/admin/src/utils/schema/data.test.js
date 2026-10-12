@@ -21,21 +21,21 @@ import {
 
 // Define minimal types, as the actual type components can't be
 // imported without a Vue SFC compiler:
-defineType({ types: ['text'] })
+defineType({ type: 'text' })
 defineType({
-  types: ['section'],
+  type: 'section',
   defaultNested: false,
   defaultValue: ({ schema }) => (schema.nested ? {} : undefined),
   treatNullAsMissing: ({ schema }) => !!schema.nested
 })
-defineType({ types: ['panel'], defaultNested: false })
+defineType({ type: 'panel', defaultNested: false })
 defineType({
-  types: ['reference'],
+  type: 'reference',
   processValue: ({ value }) => value && { id: value.id }
 })
-defineType({ ...sourceTraits, types: ['list'], sourceType: 'list' })
-defineType({ types: ['tags'], defaultMultiple: true })
-defineType({ types: ['hidden'], excludeValue: true })
+defineType({ ...sourceTraits, type: 'list', sourceType: 'list' })
+defineType({ type: 'tags', defaultMultiple: true })
+defineType({ type: 'hidden', excludeValue: true })
 
 const chapters = {
   type: 'list',
@@ -103,7 +103,7 @@ describe('processSchemaData()', () => {
 describe('processSchemaData() with child sources', () => {
   // Like trees, whose items hold their children:
   defineType({
-    types: ['outline'],
+    type: 'outline',
     sourceType: 'list',
     getChildSourceSchemas: schema => [schema.children]
   })

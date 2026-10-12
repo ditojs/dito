@@ -366,7 +366,7 @@ describe('DitoTypeButton', () => {
 
   it('submits through `submit()` of types that use its component', async () => {
     defineType({
-      types: ['save-button'],
+      type: 'save-button',
       component: DitoTypeButton,
       defaultValue: undefined,
       excludeValue: true

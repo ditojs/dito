@@ -234,7 +234,7 @@ const DitoTypeList = {
 }
 
 defineType({
-  types: ['list'],
+  type: 'list',
   component: DitoTypeList,
   ...sourceTraits,
   sourceType: 'list',

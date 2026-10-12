@@ -53,7 +53,7 @@ const DitoTypeObject = {
 }
 
 defineType({
-  types: ['object'],
+  type: 'object',
   component: DitoTypeObject,
   ...sourceTraits,
   sourceType: 'object',

@@ -48,7 +48,7 @@ const DitoTypeRadio = {
 }
 
 defineType({
-  types: ['radio'],
+  type: 'radio',
   component: DitoTypeRadio,
   ...optionsTraits,
   defaultWidth: 'auto'

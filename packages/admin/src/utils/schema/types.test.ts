@@ -9,7 +9,7 @@ import {
 
 const shelfComponent = { name: 'Shelf' }
 const shelf = defineType({
-  types: ['shelf', 'bookshelf'],
+  type: ['shelf', 'bookshelf'],
   component: shelfComponent,
   sourceType: 'list',
   defaultNested: false,
@@ -20,9 +20,13 @@ const shelf = defineType({
     unwrap: ({ title }) => title
   })
 })
-defineType({ types: ['plank'], component: { name: 'Plank' } })
+const plank = defineType({ type: 'plank', component: { name: 'Plank' } })
 
 describe('defineType()', () => {
+  it('registers the descriptor under its type', () => {
+    expect(getTypeDescriptor('plank')).toBe(plank)
+  })
+
   it('registers the descriptor under all its types', () => {
     expect(getTypeDescriptor('shelf')).toBe(shelf)
     expect(getTypeDescriptor('bookshelf')).toBe(shelf)

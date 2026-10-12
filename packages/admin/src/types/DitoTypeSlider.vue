@@ -54,7 +54,7 @@ const DitoTypeSlider = {
 }
 
 defineType({
-  types: ['slider'],
+  type: 'slider',
   component: DitoTypeSlider,
   ...numberTraits
 })

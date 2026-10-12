@@ -145,8 +145,8 @@ const buttonTraits = {
   generateLabel: false
 }
 
-defineType({ ...buttonTraits, types: ['button'] })
-defineType({ ...buttonTraits, types: ['submit'], submitData: true })
+defineType({ ...buttonTraits, type: 'button' })
+defineType({ ...buttonTraits, type: 'submit', submitData: true })
 
 export default DitoTypeButton
 </script>

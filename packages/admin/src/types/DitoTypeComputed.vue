@@ -22,7 +22,7 @@ const DitoTypeComputed = {
 }
 
 defineType({
-  types: ['computed', 'data', 'hidden'],
+  type: ['computed', 'data', 'hidden'],
   component: DitoTypeComputed,
   defaultValue: undefined,
   defaultVisible: false,

@@ -75,7 +75,7 @@ const DitoTypeCheckboxes = {
 }
 
 defineType({
-  types: ['checkboxes'],
+  type: 'checkboxes',
   component: DitoTypeCheckboxes,
   ...optionsTraits,
   defaultValue: ({ schema }) => (getMultipleValue(schema) ? [] : null),

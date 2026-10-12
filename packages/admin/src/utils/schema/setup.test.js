@@ -24,20 +24,20 @@ import {
 // Define minimal types, as the actual type components can't be
 // imported without a Vue SFC compiler. Their `processSchema()` delegate to the
 // setup functions like the actual types do:
-defineType({ types: ['text'] })
+defineType({ type: 'text' })
 defineType({
-  types: ['section'],
+  type: 'section',
   defaultNested: false,
   processSchema: (api, schema) => setupSchemaComponents(api, schema)
 })
 defineType({
-  types: ['panel'],
+  type: 'panel',
   defaultNested: false,
   processSchema: (api, schema) => setupSchemaComponents(api, schema)
 })
-defineType({ ...sourceTraits, types: ['list'], sourceType: 'list' })
+defineType({ ...sourceTraits, type: 'list', sourceType: 'list' })
 defineType({
-  types: ['component'],
+  type: 'component',
   processSchema: (api, schema) => resolveSchemaComponent(schema)
 })
 

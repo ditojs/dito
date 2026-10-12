@@ -31,7 +31,7 @@ describe('@ditojs/admin exports', () => {
         )
       }
     }
-    exports.defineType({ types: ['counter'], component: Counter })
+    exports.defineType({ type: 'counter', component: Counter })
     const { wrapper, data } = await mountSchema({
       schema: {
         components: {
@@ -50,7 +50,7 @@ describe('@ditojs/admin exports', () => {
 
   it('exports traits for custom types to share', () => {
     exports.defineType({
-      types: ['tags'],
+      type: 'tags',
       component: { render: () => null },
       ...exports.optionsTraits
     })

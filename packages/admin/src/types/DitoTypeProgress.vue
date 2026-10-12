@@ -51,7 +51,7 @@ const DitoTypeProgress = {
 }
 
 defineType({
-  types: ['progress'],
+  type: 'progress',
   component: DitoTypeProgress,
   ...numberTraits
 })

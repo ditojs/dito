@@ -1,4 +1,4 @@
-import { isString } from '@ditojs/utils'
+import { asArray, isString } from '@ditojs/utils'
 import type { Component } from 'vue'
 import type {
   ItemAdapter,
@@ -22,7 +22,7 @@ const unknownTypeReported: Record<string, boolean> = {}
 
 export function defineType(descriptor: TypeDescriptor): TypeDescriptor {
   const typeDescriptor = { ...typeDefaults, ...descriptor }
-  for (const type of descriptor.types) {
+  for (const type of asArray(descriptor.type)) {
     descriptorsByType[type] = typeDescriptor
   }
   return typeDescriptor

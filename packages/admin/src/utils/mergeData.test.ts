@@ -6,11 +6,11 @@ import { defineType } from './schema/types.ts'
 // Define minimal types, as the actual type components can't be imported
 // without a Vue SFC compiler. Merging data never renders their components:
 const component = {}
-defineType({ types: ['text'], component })
-defineType({ types: ['tags'], component })
-defineType({ types: ['section'], component, defaultNested: false })
-defineType({ types: ['list'], component, sourceType: 'list' })
-defineType({ types: ['object'], component, sourceType: 'object' })
+defineType({ type: 'text', component })
+defineType({ type: 'tags', component })
+defineType({ type: 'section', component, defaultNested: false })
+defineType({ type: 'list', component, sourceType: 'list' })
+defineType({ type: 'object', component, sourceType: 'object' })
 
 const createForm = (components: Record<string, any> = {}) => ({
   type: 'form',

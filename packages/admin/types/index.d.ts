@@ -3204,7 +3204,8 @@ export interface ItemAdapter {
  * phrases, and the defaults of schema settings start with `default`.
  */
 export interface TypeDescriptor {
-  readonly types: string[]
+  /** The type, or the types that share the descriptor. */
+  readonly type: string | string[]
   readonly component: VueComponent
   /**
    * The default of `default`, `null` if not set. Functions are called with
@@ -3276,7 +3277,7 @@ export interface TypeDescriptor {
 }
 
 /**
- * Defines a type of schema components, registered under its `types`. Its
+ * Defines a type of schema components, registered under its `type`. Its
  * component receives the props of {@link CustomComponentProps} and emits the
  * events of {@link CustomComponentEmits}, like the components of
  * `type: 'component'`.

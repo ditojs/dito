@@ -6,8 +6,8 @@ import { mountSchema } from './test/mount.js'
 
 // Define minimal types, as the actual type components can't be
 // imported without a Vue SFC compiler:
-defineType({ types: ['text'] })
-defineType({ types: ['section'], defaultNested: false })
+defineType({ type: 'text' })
+defineType({ type: 'section', defaultNested: false })
 
 describe('DitoContext', () => {
   describe('value', () => {

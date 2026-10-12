@@ -113,8 +113,8 @@ const treeTraits = {
   }
 }
 
-defineType({ ...treeTraits, types: ['tree-list'], sourceType: 'list' })
-defineType({ ...treeTraits, types: ['tree-object'], sourceType: 'object' })
+defineType({ ...treeTraits, type: 'tree-list', sourceType: 'list' })
+defineType({ ...treeTraits, type: 'tree-object', sourceType: 'object' })
 
 export default DitoTypeTreeList
 </script>

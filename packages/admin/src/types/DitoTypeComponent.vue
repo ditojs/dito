@@ -40,7 +40,7 @@ const DitoTypeComponent = {
 }
 
 defineType({
-  types: ['component'],
+  type: 'component',
   component: DitoTypeComponent,
   // Custom components get no data unless their schema has a `default`:
   defaultValue: undefined,

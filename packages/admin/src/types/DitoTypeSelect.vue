@@ -102,7 +102,7 @@ const DitoTypeSelect = {
 }
 
 defineType({
-  types: ['select'],
+  type: 'select',
   component: DitoTypeSelect,
   ...optionsTraits
 })
