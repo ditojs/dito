@@ -168,7 +168,7 @@ function isMissingValue(schema, data, name, context) {
 
 export function hasValueFromDataSchema(schema) {
   return (
-    !!getTypeDescriptor(schema)?.resolveValue &&
+    !!getTypeDescriptor(schema)?.resolvesValue &&
     !!(schema.data || schema.dataPath)
   )
 }

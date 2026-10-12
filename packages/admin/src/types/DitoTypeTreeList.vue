@@ -95,7 +95,7 @@ const treeTraits = {
   ...sourceTraits,
   component: DitoTypeTreeList,
   // The forms of their children are routed next to theirs:
-  nestForms: true,
+  hasNestedForms: true,
 
   getChildSourceSchemas(schema) {
     return schema.children ? [schema.children] : []

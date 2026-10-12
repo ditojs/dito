@@ -21,7 +21,7 @@ defineType({
   component: DitoTypeLabel,
   excludeValue: true,
   generateLabel: false,
-  replaceWithLabel: true
+  rendersLabel: true
 })
 
 export default DitoTypeLabel

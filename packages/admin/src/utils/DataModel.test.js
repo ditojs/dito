@@ -16,7 +16,7 @@ defineType({ ...optionsTraits, type: 'select' })
 defineType({
   type: 'computed',
   defaultValue: undefined,
-  resolveValue: true
+  resolvesValue: true
 })
 defineType({ type: 'section', defaultNested: false })
 defineType({ type: 'panel', defaultNested: false })
@@ -26,7 +26,7 @@ defineType({
   sourceType: 'list'
 })
 defineType({ type: 'object', sourceType: 'object' })
-defineType({ type: 'submit', submitData: true })
+defineType({ type: 'submit', submitsData: true })
 // Like `DitoTypeUpload`, which leaves out files that aren't uploaded yet:
 defineType({
   type: 'upload',

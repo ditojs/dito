@@ -470,14 +470,15 @@ rendered components by component path, and the contexts of the rendered routes.
   `getValidations(schema, context)`, and `getFormSchemasForProcessing()` is
   removed: the child sources of items are walked like components of their
   forms.
-- Options tell the admin what to do for the type, as verb phrases, instead of
-  checking type names: `omitLabel()` omits the label of the container, as the
-  component displays it, `replaceWithLabel` replaces the component with the
-  label of its container, `resolveValue` resolves the value from `schema.data`
-  or `schema.dataPath`, `submitData` makes buttons count for the dirty state
-  like `submit`, and `nestForms` renders the forms of the items inside the
-  form or view of their source. Buttons submit through `context.submit()`
-  because the button component provides it, not because of an option.
+- Flags state what is special about the type, instead of the admin checking
+  type names: `hasLabel()` returns `false` when the component displays the
+  label itself instead of its container, `rendersLabel` renders the component
+  as the label of its container, `resolvesValue` resolves the value from
+  `schema.data` or `schema.dataPath`, `submitsData` makes buttons submit and
+  count for the dirty state like `submit`, and `hasNestedForms` renders the
+  forms of the items inside the form or view of their source. Buttons submit
+  through `context.submit()` because the button component provides it, not
+  because of an option.
 - Only types with `getOptionsDataSchema(schema)` load options, which returns
   the data schema of the options that the data model loads. Custom types that
   load `schema.options` like `select` spread `optionsTraits` into their

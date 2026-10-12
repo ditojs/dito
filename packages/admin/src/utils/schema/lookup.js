@@ -170,10 +170,10 @@ export function getButtonSchemas(buttons) {
   return getNamedSchemas(buttons, { type: 'button' })
 }
 
-// Buttons with `submitData` save the data, whatever their name:
+// Buttons with `submitsData` save the data, whatever their name:
 export function hasSubmitButton(buttonSchemas) {
   return Object.values(buttonSchemas ?? {}).some(
-    button => !!getTypeDescriptor(button)?.submitData
+    button => !!getTypeDescriptor(button)?.submitsData
   )
 }
 
