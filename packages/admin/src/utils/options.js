@@ -1,7 +1,6 @@
 // A mini-replication of vue's internal `resolveMergedOptions()` but only
 // handling the route guards, which vue-router reads from the raw component
-// options, without their mixins, see `extractComponentsGuards()` in its
-// `navigationGuards.ts`.
+// options, without their mixins.
 
 export function resolveMergedOptions(options) {
   const { mixins } = options

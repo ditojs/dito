@@ -18,9 +18,7 @@ export default {
     },
 
     // @overridable
-    // The schema of the source whose item the schemas of the component
-    // display: Sources, views and forms tell their own, sections and panels
-    // the one of their schema component, dialogs have none.
+    // The schema of the source whose item the component displays:
     sourceSchema() {
       return this.schemaComponent?.sourceSchema ?? null
     }

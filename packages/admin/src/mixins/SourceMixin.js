@@ -110,8 +110,7 @@ export default {
     },
 
     primitiveValues() {
-      // The values of lists with an item adapter, copied so that changes of
-      // their entries are tracked too, see the `primitiveValues` watcher.
+      // Copied, so that changes of the values are tracked too:
       return this.itemAdapter ? [...this.valueListData] : null
     },
 

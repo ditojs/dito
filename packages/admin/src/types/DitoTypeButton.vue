@@ -48,8 +48,7 @@ const DitoTypeButton = DitoComponent.component('DitoTypeButton', {
   props: fieldProps,
 
   setup(props) {
-    // Forms and sources submit through the button's component, see
-    // `ResourceContext.submit()`:
+    // Forms and sources submit through the button's component:
     const component = getCurrentInstance().proxy
     const getSchemaComponent = inject('$schemaComponent')
     const isRunning = ref(false)
@@ -79,38 +78,36 @@ const DitoTypeButton = DitoComponent.component('DitoTypeButton', {
     const { getSchemaValue, emitEvent } = field
 
     async function onClick() {
-      // Prevent running the action again while it's running, e.g. submits.
-      // The button isn't disabled meanwhile, as `disabled` reflects the
-      // state of the schema, e.g. of forms that can't be submitted when
-      // they're clean, which a running action doesn't change:
-      if (isRunning.value) return
-      isRunning.value = true
-      // Write the edits that are held back first, e.g. debounced markup
-      // edits, for the handlers to see them:
-      services.container.model.writePendingValues()
-      try {
-        const res = await emitEvent('click', { parent: getSchemaComponent() })
-        // Have buttons that define resources submit by default:
-        if (
-          res === undefined && // Meaning: don't prevent default.
-          hasResource(props.schema)
-        ) {
-          await services.submit?.()
-        }
-      } catch (error) {
-        const res = await emitEvent('error', { context: { error } })
-        if (res === undefined) {
-          const { admin } = services
-          if (error instanceof AggregateError) {
-            for (const err of error.errors) {
-              admin.notify({ type: 'error', text: err })
-            }
-          } else {
-            admin.notify({ type: 'error', text: error })
+      // Run the action once at a time, e.g. submits. The button stays enabled,
+      // as `disabled` reflects the state of the schema:
+      if (!isRunning.value) {
+        isRunning.value = true
+        // Write the edits that are held back, for the handlers to see them:
+        services.container.model.writePendingValues()
+        try {
+          const res = await emitEvent('click', { parent: getSchemaComponent() })
+          // Have buttons that define resources submit by default:
+          if (
+            res === undefined && // Meaning: don't prevent default.
+            hasResource(props.schema)
+          ) {
+            await services.submit?.()
           }
+        } catch (error) {
+          const res = await emitEvent('error', { context: { error } })
+          if (res === undefined) {
+            const { admin } = services
+            if (error instanceof AggregateError) {
+              for (const err of error.errors) {
+                admin.notify({ type: 'error', text: err })
+              }
+            } else {
+              admin.notify({ type: 'error', text: error })
+            }
+          }
+        } finally {
+          isRunning.value = false
         }
-      } finally {
-        isRunning.value = false
       }
     }
 

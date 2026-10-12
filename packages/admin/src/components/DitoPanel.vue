@@ -142,9 +142,7 @@ export default DitoComponent.component('DitoPanel', {
     },
 
     panelDataPath() {
-      // Panels with their own data are their own container, and the data paths
-      // of their components start at their data. Panels that share the data of
-      // their schema component share its data-path name space too.
+      // Panels with their own data are their own container:
       return this.hasOwnData ? '' : this.schemaComponent.dataPath
     },
 
