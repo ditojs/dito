@@ -217,6 +217,8 @@ export default {
         !isPathWithin(to.path, this.path)
       )
       if (isClosing) {
+        // Write the edits that are held back, e.g. debounced markup edits:
+        this.dataModel.writePendingValues()
         if (this.isMutating) {
           // Directly mutating (nested) forms validate their data once, which
           // includes the fields that aren't mounted, e.g. in collapsed
