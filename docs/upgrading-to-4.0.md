@@ -213,15 +213,14 @@ Forms with `mutate: true` are the exception: they edit the item of their
 parent in the parent's data, so their `isDirty` reports the parent's state, as
 does their entry in the breadcrumb trail.
 
-A callback sees the context of the place where it is declared: the callbacks of
-a component, e.g. its `if`, `label` and `events`, see the item that the
-component is in, the callbacks that decide about a panel the data around the
-panel, and the ones of the panel's components the panel's data. Components
-without a schema or data of their own, e.g. tabs, scopes, the table head, label
-affixes and the clipboard, give their callbacks the context of the component
-that renders them. Events that bubble up from components, e.g. `change`, keep
-the context of the component that emitted them, with the `dataPath` of the
-changed value.
+The callbacks of a component, e.g. its `if`, `label` and `events`, see the
+item that the component is in, the callbacks that decide about a panel the data
+around the panel, and the ones of the panel's components the panel's data.
+Components without a schema or data of their own, e.g. tabs, scopes, the table
+head, label affixes and the clipboard, give their callbacks the context of the
+component that renders them. Events that bubble up from components, e.g.
+`change`, keep the context of the component that emitted them, with the
+`dataPath` of the changed value.
 
 - `formComponent.isDirty` and `formComponent.isCreating`: `isDirty` and
   `isCreating`, which is `false` outside of forms.
@@ -271,6 +270,22 @@ changed value.
   the draft in place of the item, instead of the parent's serialized data.
 - `validate(match)` and `verify(match)` validate only the values whose data
   paths match, e.g. a regular expression. `verify()` doesn't show the errors.
+
+The members that components provide, e.g. `sourceQuery`, `isRunning` and
+`submit()`, and the resource that `getResourceUrl()` and `request()` resolve
+against, depend on which component evaluates the callback:
+
+- The data model evaluates `if`, `default`, `computeValue()`, the `data()` of
+  options and the validations, also for components that aren't rendered, with
+  the members of the form, view, dialog or panel that holds the data.
+  Rendering evaluates `if` again with the members around the component, e.g.
+  of the inlined list that it is in.
+- The containers of components evaluate their schema values, e.g. `visible`,
+  `width`, `label` and `disabled`, with the members around the component, not
+  the ones that it provides itself: `disabled: ({ isRunning }) => isRunning`
+  disables a button, but not its container.
+- `itemLabel()` sees the list's `sourceQuery` in the list, and `null` in the
+  form of the item, e.g. in its title and notifications.
 
 `schemaComponent.resetData()` is removed: the filters panel clears its data
 with `replaceItem({})`.
@@ -520,9 +535,6 @@ context, see [Contexts](#contexts), the rest is internal:
 - The data model replaces the references of components with `relate` with
   their related options once the options are loaded, and shows the errors of
   failed loads, also while the component isn't rendered.
-- The schema values of the container of a component, e.g. `visible`, `width`,
-  `label` and `disabled`, see the contexts of the surrounding form or list,
-  not the ones that lists and buttons have of their own, e.g. `isRunning`.
 
 ### Custom components
 
