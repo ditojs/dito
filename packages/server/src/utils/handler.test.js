@@ -60,6 +60,18 @@ describe('parseHandlerDefinition()', () => {
     expect(Object.keys(handler)).toEqual([])
   })
 
+  it('rejects the former `returns` setting', () => {
+    const message = `Unsupported 'returns' in handler definition, use 'response' instead.`
+    const handler = () => {}
+    const returns = { type: 'string' }
+    expect(() => parseHandlerDefinition({ handler, returns })).toThrow(message)
+    expect(() =>
+      parseHandlerDefinition({ handler, options: { returns: {} } })
+    ).toThrow(message)
+    handler.returns = returns
+    expect(() => parseHandlerDefinition(handler)).toThrow(message)
+  })
+
   it('returns null for definitions without a handler function', () => {
     expect(parseHandlerDefinition({ parameters: {} })).toBe(null)
     expect(parseHandlerDefinition('handler')).toBe(null)

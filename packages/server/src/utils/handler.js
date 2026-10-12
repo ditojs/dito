@@ -32,6 +32,14 @@ export function parseHandlerDefinition(definition) {
     ...extra
   } = isFunctionDefinition ? { ...definition } : definition
 
+  // Leftovers of the former `returns` would otherwise be silently ignored,
+  // skipping the validation of the response:
+  if (extra.returns || options.returns) {
+    throw new Error(
+      `Unsupported 'returns' in handler definition, use 'response' instead.`
+    )
+  }
+
   // In the function form, `parameters` and `response` are always schemas,
   // with their validation options in `handler.options`. The object form also
   // supports `[schema, options]` arrays.
