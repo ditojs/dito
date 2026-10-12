@@ -5,7 +5,8 @@ import type { Schema } from './types.ts'
 
 type Callback = (context: Context) => any
 
-// `change` events bubble to the schemas above, unless handlers return `false`:
+// `input` and `change` events bubble to the schemas above, unless handlers
+// return `false`:
 export class SchemaEvents {
   readonly parent: SchemaEvents | null
   readonly #callbacks: Record<string, Callback[]> = {}
@@ -22,7 +23,7 @@ export class SchemaEvents {
     }
   }
 
-  has(event: string, { bubble = event === 'change' } = {}): boolean {
+  has(event: string, { bubble = isBubbling(event) } = {}): boolean {
     return !!this.#callbacks[event] || (bubble && !!this.parent?.has(event))
   }
 
@@ -32,7 +33,7 @@ export class SchemaEvents {
   async emit(
     event: string,
     context: Context,
-    { bubble = event === 'change' } = {}
+    { bubble = isBubbling(event) } = {}
   ): Promise<any> {
     let result
     const errors = []
@@ -57,4 +58,8 @@ export class SchemaEvents {
     }
     return result
   }
+}
+
+function isBubbling(event: string) {
+  return event === 'input' || event === 'change'
 }

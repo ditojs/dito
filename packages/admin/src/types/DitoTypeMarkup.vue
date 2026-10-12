@@ -354,10 +354,7 @@ const DitoTypeMarkup = {
         field.onBlur()
         changeOnceEdited.emitIfDone()
       },
-      onUpdate: () => {
-        updateValue()
-        field.onInput()
-      },
+      onUpdate: updateValue,
       extensions: getExtensions(),
       content: value.value || ''
     })

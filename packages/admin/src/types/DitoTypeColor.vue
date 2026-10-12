@@ -58,10 +58,9 @@ const DitoTypeColor = {
     const field = useField(props, {
       // Native change events don't tell when editing is done, as the picker
       // edits the value too. Swallow them, see `changeOnceEdited`:
-      getEvents: ({ onFocus, onInput }) => ({
+      getEvents: ({ onFocus }) => ({
         onFocus,
         onBlur,
-        onInput,
         onChange: () => {}
       })
     })
@@ -124,8 +123,6 @@ const DitoTypeColor = {
             color.toHex8String() !== tinycolor(value.value).toHex8String()
           ) {
             setEditedValue(toTinyColorFormat(color, format.value))
-            // The input emits its own input events, the picker doesn't:
-            field.onInput()
           }
         }
       }),
