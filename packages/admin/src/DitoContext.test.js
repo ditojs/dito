@@ -1,13 +1,13 @@
 import { vi } from 'vitest'
 import { reactive } from 'vue'
 import DitoContext from './DitoContext.js'
-import { registerTypeComponent } from './utils/schema/types.js'
+import { defineType } from './utils/schema/types.ts'
 import { mountSchema } from './test/mount.js'
 
-// Register minimal type options, as the actual type components can't be
+// Define minimal types, as the actual type components can't be
 // imported without a Vue SFC compiler:
-registerTypeComponent('text', { defaultNested: true })
-registerTypeComponent('section', { defaultNested: false })
+defineType({ types: ['text'] })
+defineType({ types: ['section'], defaultNested: false })
 
 describe('DitoContext', () => {
   describe('value', () => {

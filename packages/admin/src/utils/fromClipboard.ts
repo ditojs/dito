@@ -2,7 +2,7 @@ import { asArray, clone } from '@ditojs/utils'
 import { createTemporaryId, isTemporaryId } from './data.js'
 import { processSchemaData } from './schema/data.js'
 import type { SchemaDataEntry } from './schema/data.js'
-import { getSourceType } from './schema/types.js'
+import { getSourceType } from './schema/types.ts'
 import { isSourceWithResource } from './schema/structure.js'
 import type { Data, Schema } from './types.ts'
 

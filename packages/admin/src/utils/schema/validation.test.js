@@ -1,6 +1,9 @@
 import { vi } from 'vitest'
-import NumberMixin from '../../mixins/NumberMixin.js'
-import { registerTypeComponent } from './types.js'
+import {
+  numberDescriptor,
+  sourceDescriptor
+} from '../../types/descriptors.ts'
+import { defineType } from './types.ts'
 import {
   getValidations,
   getValueValidationErrors,
@@ -11,25 +14,16 @@ import {
 // `setupForm()` needs the admin's API, see `getFormSchemas()`:
 vi.mock('./setup.js', () => ({ setupForm: async form => form }))
 
-// Register minimal type options, as the actual type components can't be
+// Define minimal types, as the actual type components can't be
 // imported without a Vue SFC compiler:
-registerTypeComponent('text', { defaultNested: true })
-registerTypeComponent('password', {
-  defaultNested: true,
-  getTypeValidations: () => ({ password: true })
-})
-registerTypeComponent('number', { ...NumberMixin, defaultNested: true })
-registerTypeComponent('integer', { ...NumberMixin, defaultNested: true })
-registerTypeComponent('section', { defaultNested: false })
-registerTypeComponent('panel', { defaultNested: false })
-registerTypeComponent('list', {
-  defaultNested: true,
-  getSourceType: () => 'list'
-})
-registerTypeComponent('object', {
-  defaultNested: true,
-  getSourceType: () => 'object'
-})
+defineType({ types: ['text'] })
+defineType({ types: ['password'], getValidations: () => ({ password: true }) })
+defineType({ types: ['number'], ...numberDescriptor })
+defineType({ types: ['integer'], ...numberDescriptor })
+defineType({ types: ['section'], defaultNested: false })
+defineType({ types: ['panel'], defaultNested: false })
+defineType({ ...sourceDescriptor, types: ['list'], sourceType: 'list' })
+defineType({ types: ['object'], sourceType: 'object' })
 
 describe('getValidations()', () => {
   it('returns no validations for plain schemas', () => {

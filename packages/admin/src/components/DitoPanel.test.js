@@ -42,7 +42,7 @@ describe('DitoPanel', () => {
       data: { title: 'Dune' }
     })
     const [context] = createData.mock.calls[0]
-    // The panel's data path addresses a value in the item that it displays:
+    // The context is the one of the data around the panel:
     expect(context.processedItem).toEqual({ title: 'Dune' })
     expect(wrapper.find('.dito-panel input').element.value).toBe('Emma')
   })
@@ -73,6 +73,32 @@ describe('DitoPanel', () => {
     expect(click).toHaveBeenCalledOnce()
     const [{ item }] = click.mock.calls[0]
     expect(item).toMatchObject({ notes: 'Classic' })
+  })
+
+  it('is the root of the contexts in its own data', async () => {
+    const click = vi.fn()
+    const { wrapper } = await mountSchema({
+      schema: {
+        components: { title: { type: 'text' } },
+        panels: {
+          search: {
+            type: 'panel',
+            label: 'Search',
+            data: { query: 'Emma' },
+            components: {
+              query: { type: 'text' },
+              refresh: { type: 'button', events: { click } }
+            }
+          }
+        }
+      },
+      data: { title: 'Dune' }
+    })
+    await wrapper.find('.dito-panel button[id$="refresh"]').trigger('click')
+    const [{ item, rootItem, dataPath }] = click.mock.calls[0]
+    expect(rootItem).toEqual({ query: 'Emma' })
+    expect(item).toBe(rootItem)
+    expect(dataPath).toBe('refresh')
   })
 
   it('computes the values of its own data in its own data model', async () => {

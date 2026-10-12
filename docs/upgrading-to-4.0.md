@@ -62,6 +62,10 @@ which components write the data through, as `component.dataModel`.
   edits stay dirty.
 - Components in panels with their own data, e.g. filters, get their defaults
   and computed values, and their edits don't make the view or form dirty.
+- Panels with their own data, e.g. filters, and dialogs are the containers of
+  their data: `rootItem` in the contexts inside them is their data, and the
+  data paths of their components start at it. `data()` of panels receives the
+  context of the data around the panel.
 - Submitting waits for running uploads, without a time limit, so that the
   stored files are sent, also through the buttons of sources with their own
   resource, which also wait for the loads of data schemas and options now.
@@ -360,6 +364,41 @@ Views provide both contexts of their main component, e.g. to their panels.
 
 ### Custom types
 
+- Types are defined with `defineType(descriptor)`, exported by `@ditojs/admin`,
+  instead of `admin.register(type, options)`. The descriptor describes how the
+  admin handles the schemas and values of the type, also when they aren't
+  rendered, and names the component that renders it, which is used as it is:
+
+  ```js
+  import { defineType } from '@ditojs/admin'
+  import DitoRating from './DitoRating.vue'
+
+  defineType({
+    types: ['rating'],
+    component: DitoRating,
+    defaultValue: 0,
+    getValidations: schema => ({ range: [0, schema.max ?? 5] })
+  })
+  ```
+
+- The static options of type components move to the descriptor:
+  `defaultValue`, `defaultNested`, `defaultVisible`, `defaultMultiple`,
+  `defaultWidth`, `excludeValue`, `ignoreMissingValue()`,
+  `treatNullAsMissing()`, `valueFromDataSchema`, `generateLabel`,
+  `rendersOwnLabel()`, `omitSpacing`, `hasNestedForms`, `processSchema()`,
+  `processValue()` and `getChildSourceSchemas()`. `getSourceType(type)` becomes
+  `sourceType: 'list'` or `'object'`, `getTypeValidations()` becomes
+  `getValidations(schema, context)`, and `getFormSchemasForProcessing()` is
+  removed: the child sources of items are walked like components of their
+  forms.
+- Descriptors replace the checks of type names in the admin: `isButton` marks
+  buttons, `submitsData` the buttons that save the data of their form, like
+  `submit`, and `isLabel` the types that the label of their container replaces.
+  `getOptionsDataSchema(schema)` returns the data schema of the options that
+  the data model loads, `getItemAdapter(schema)` wraps the items of sources for
+  their forms and unwraps them again, e.g. the values of `wrapPrimitives`.
+- `getPanelSchema(api, schema, dataPath, source)` receives the source context
+  of the component instead of the component, with `source.listQuery`.
 - `processSchema(api, schema, name)` only sets up the schema, e.g. resolves the
   schemas that it contains. It no longer receives `routes` and `level`, and
   doesn't add routes.
@@ -367,3 +406,4 @@ Views provide both contexts of their main component, e.g. to their panels.
   `hasNestedForms: true`.
 - Types that route sources next to the forms of their items, like the children
   of tree items, return their schemas from `getChildSourceSchemas(schema)`.
+- Components no longer have `getTypeComponent()`.

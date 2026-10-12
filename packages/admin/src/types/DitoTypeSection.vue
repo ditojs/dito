@@ -17,6 +17,7 @@
 <script>
 import { normalizeDataPath, parseDataPath } from '@ditojs/utils'
 import DitoTypeComponent from '../DitoTypeComponent.js'
+import { defineType } from '../utils/schema/types.ts'
 import SchemaParentMixin from '../mixins/SchemaParentMixin.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
 import { setupSchemaComponents } from '../utils/schema/setup.js'
@@ -24,31 +25,10 @@ import { getItemFormSchema } from '../utils/schema/lookup.js'
 import { hasComponentNamed, isCompact } from '../utils/schema/structure.js'
 
 // @vue/component
-export default DitoTypeComponent.register('section', {
+const DitoTypeSection = DitoTypeComponent.component('DitoTypeSection', {
   // Register the section's schema with the section rather than the form, so
   // that the section can reveal its components, see `revealComponents()`.
   mixins: [SchemaParentMixin],
-  // Nested sections hold their data in an object, other sections don't have
-  // their own value, also with `default: undefined`, which `getDefaultValue()`
-  // ignores. The callback overrides the standard `defaultValue: null`.
-  defaultValue: ({ schema }) => (schema.nested ? {} : undefined),
-  ignoreMissingValue: ({ schema }) => !schema.nested && !('default' in schema),
-  // The object of nested sections can't be `null`, unlike the value of the
-  // `object` type, where `null` means that there's no object.
-  treatNullAsMissing: ({ schema }) => !!schema.nested,
-  defaultNested: false,
-  generateLabel: false,
-  // The header of the section's form displays the label, except in compact
-  // forms, which don't have labels in their header, see `DitoSchemaInlined`.
-  // The form can depend on the item, see `item`.
-  rendersOwnLabel: context =>
-    !isCompact(
-      getItemFormSchema(
-        context.schema,
-        context.nested ? context.value : context.item,
-        context
-      )
-    ),
 
   computed: {
     item() {
@@ -92,13 +72,42 @@ export default DitoTypeComponent.register('section', {
         ? mainSchemaComponent.revealComponents(dataPath)
         : []
     }
-  },
+  }
+})
+
+defineType({
+  types: ['section'],
+  component: DitoTypeSection,
+  // Nested sections hold their data in an object, other sections don't have
+  // their own value, also with `default: undefined`, which `getDefaultValue()`
+  // ignores. The callback overrides the standard `defaultValue: null`.
+  defaultValue: ({ schema }) => (schema.nested ? {} : undefined),
+  ignoreMissingValue: ({ schema }) => !schema.nested && !('default' in schema),
+  // The object of nested sections can't be `null`, unlike the value of the
+  // `object` type, where `null` means that there's no object.
+  treatNullAsMissing: ({ schema }) => !!schema.nested,
+  defaultNested: false,
+  generateLabel: false,
+
+  // The header of the section's form displays the label, except in compact
+  // forms, which don't have labels in their header, see `DitoSchemaInlined`.
+  // The form can depend on the item, see `item`.
+  rendersOwnLabel: context =>
+    !isCompact(
+      getItemFormSchema(
+        context.schema,
+        context.nested ? context.value : context.item,
+        context
+      )
+    ),
 
   async processSchema(api, schema) {
     // Process section components so their forms get resolved too.
     await setupSchemaComponents(api, schema)
   }
 })
+
+export default DitoTypeSection
 </script>
 
 <style lang="scss">

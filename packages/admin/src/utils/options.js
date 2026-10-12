@@ -1,6 +1,7 @@
 // A mini-replication of vue's internal `resolveMergedOptions()` but only
-// handling our own added options properties and merging them early instead
-// of lazily.
+// handling the route guards, which vue-router reads from the raw component
+// options, without their mixins, see `extractComponentsGuards()` in its
+// `navigationGuards.ts`.
 
 export function resolveMergedOptions(options) {
   const { mixins } = options
@@ -21,7 +22,7 @@ export function mergeOptions(to, from) {
       mergeOptions(to, mixin)
     }
   }
-  for (const key of ditoOptionKeys) {
+  for (const key of routeGuardKeys) {
     if (key in from) {
       to[key] = from[key]
     }
@@ -29,29 +30,4 @@ export function mergeOptions(to, from) {
   return to
 }
 
-const ditoOptionKeys = [
-  'defaultValue',
-  'defaultNested',
-  'defaultVisible',
-  'defaultMultiple',
-  'defaultWidth',
-  'getSourceType',
-  'generateLabel',
-  'rendersOwnLabel',
-  'excludeValue',
-  'ignoreMissingValue',
-  'treatNullAsMissing',
-  'valueFromDataSchema',
-  'omitSpacing',
-  'processValue',
-  'getTypeValidations',
-  'processSchema',
-  'hasNestedForms',
-  'getChildSourceSchemas',
-  'getPanelSchema',
-  'getFormSchemasForProcessing',
-  // vue-router reads route guards from the raw component options, without
-  // their mixins, see `extractComponentsGuards()` in its `navigationGuards.ts`.
-  'beforeRouteUpdate',
-  'beforeRouteLeave'
-]
+const routeGuardKeys = ['beforeRouteUpdate', 'beforeRouteLeave']

@@ -26,6 +26,7 @@
 
 <script>
 import DitoTypeComponent from '../DitoTypeComponent.js'
+import { defineType } from '../utils/schema/types.ts'
 import { getSchemaAccessor } from '../utils/accessor.js'
 import DitoInputAffixes from '../components/DitoInputAffixes.vue'
 import { getInputAffixesProps } from '../utils/affixes.js'
@@ -41,71 +42,75 @@ import {
   parsePlainDate
 } from '@ditojs/utils'
 
-export default DitoTypeComponent.register(
-  ['date', 'datetime', 'time'],
-  // @vue/component
-  {
-    components: { DitoInputAffixes },
-    // TODO: This is only here so we get placeholder added. Come up with a
-    // better way to support attributes per component (a list of actually
-    // supported attributes)
-    nativeField: true,
-    textField: true,
+// @vue/component
+const DitoTypeDate = DitoTypeComponent.component('DitoTypeDate', {
+  components: { DitoInputAffixes },
+  // TODO: This is only here so we get placeholder added. Come up with a
+  // better way to support attributes per component (a list of actually
+  // supported attributes)
+  nativeField: true,
+  textField: true,
 
-    computed: {
-      inputAffixesProps() {
-        return getInputAffixesProps(this)
-      },
-
-      dateValue: {
-        get() {
-          const { value } = this
-          return value ? parsePlainDate(value) ?? new Date(value) : value
-        },
-
-        set(value) {
-          this.value = value
-        }
-      },
-
-      // TODO: Rename to `format`, once `schema.format()` was removed to
-      // `formatValue()`.
-      formats: getSchemaAccessor('formats', {
-        type: Object,
-        default: null,
-        get(formats) {
-          const { date, time } = assignDeeply(
-            {},
-            this.admin.api.formats,
-            formats
-          )
-          return {
-            date: ['date', 'datetime'].includes(this.type) ? date : null,
-            time: ['time', 'datetime'].includes(this.type) ? time : null
-          }
-        }
-      })
+  computed: {
+    inputAffixesProps() {
+      return getInputAffixesProps(this)
     },
 
-    methods: {
-      getComponent(type) {
-        return {
-          date: DitoDatePicker,
-          time: DitoTimePicker,
-          datetime: DitoDateTimePicker
-        }[type]
+    dateValue: {
+      get() {
+        const { value } = this
+        return value ? parsePlainDate(value) ?? new Date(value) : value
+      },
+
+      set(value) {
+        this.value = value
       }
     },
 
-    processValue({ schema, value }) {
-      // Send dates as their plain date, so they can't shift to another day
-      // through time zones, and all other date types as ISO strings.
-      return isDate(value)
-        ? schema.type === 'date'
-          ? formatPlainDate(value)
-          : value.toISOString()
-        : value
+    // TODO: Rename to `format`, once `schema.format()` was removed to
+    // `formatValue()`.
+    formats: getSchemaAccessor('formats', {
+      type: Object,
+      default: null,
+      get(formats) {
+        const { date, time } = assignDeeply(
+          {},
+          this.admin.api.formats,
+          formats
+        )
+        return {
+          date: ['date', 'datetime'].includes(this.type) ? date : null,
+          time: ['time', 'datetime'].includes(this.type) ? time : null
+        }
+      }
+    })
+  },
+
+  methods: {
+    getComponent(type) {
+      return {
+        date: DitoDatePicker,
+        time: DitoTimePicker,
+        datetime: DitoDateTimePicker
+      }[type]
     }
   }
-)
+})
+
+defineType({
+  types: ['date', 'datetime', 'time'],
+  component: DitoTypeDate,
+
+  processValue({ schema, value }) {
+    // Send dates as their plain date, so they can't shift to another day
+    // through time zones, and all other date types as ISO strings.
+    return isDate(value)
+      ? schema.type === 'date'
+        ? formatPlainDate(value)
+        : value.toISOString()
+      : value
+  }
+})
+
+export default DitoTypeDate
 </script>

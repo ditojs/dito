@@ -7,7 +7,7 @@ import {
   camelize
 } from '@ditojs/utils'
 import { reactive, computed } from 'vue'
-import { getTypeOptions } from './types.js'
+import { getTypeDescriptor } from './types.ts'
 import {
   findNestedSchemaComponent,
   isSchema
@@ -202,11 +202,11 @@ export function getButtonSchemas(buttons) {
   )
 }
 
-// Returns whether the buttons can save the data, through a button of type
-// `submit`, whatever its name.
+// Returns whether the buttons can save the data, through a button that
+// submits it, e.g. of type `submit`, whatever its name.
 export function hasSubmitButton(buttonSchemas) {
   return Object.values(buttonSchemas ?? {}).some(
-    button => button.type === 'submit'
+    button => !!getTypeDescriptor(button)?.submitsData
   )
 }
 
@@ -256,21 +256,22 @@ export function getPanelEntries(
 // component path, `dataPathComponentPath`, while the panels in `schema.panels`
 // are addressed by their keys, see `getPanelEntries()`, continuing
 // `schemaComponentPath`, the component path of `schema` itself, which also
-// contains the names of unnested components.
+// contains the names of unnested components. `source` is the context of the
+// component if it's a source, e.g. for the filters panel of lists.
 export function getAllPanelEntries(
   api,
   schema,
   dataPath,
   dataPathComponentPath,
   schemaComponentPath,
-  component = null,
+  source = null,
   tab = null
 ) {
-  const panelSchema = getTypeOptions(schema)?.getPanelSchema?.(
+  const panelSchema = getTypeDescriptor(schema)?.getPanelSchema?.(
     api,
     schema,
     dataPath,
-    component
+    source
   )
   const panelEntries = panelSchema
     ? [

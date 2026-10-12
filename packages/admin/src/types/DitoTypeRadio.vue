@@ -29,18 +29,27 @@ DitoOptionList.dito-radio-buttons(
 
 <script>
 import DitoTypeComponent from '../DitoTypeComponent.js'
+import { defineType } from '../utils/schema/types.ts'
+import { optionsDescriptor } from './descriptors.ts'
 import OptionsMixin from '../mixins/OptionsMixin.js'
 import DitoOptionList from '../components/DitoOptionList.vue'
 import DitoOptionsEditButtons from '../components/DitoOptionsEditButtons.vue'
 
 // @vue/component
-export default DitoTypeComponent.register('radio', {
+const DitoTypeRadio = DitoTypeComponent.component('DitoTypeRadio', {
   mixins: [OptionsMixin],
   components: { DitoOptionList, DitoOptionsEditButtons },
+  nativeField: true
+})
 
-  nativeField: true,
+defineType({
+  types: ['radio'],
+  component: DitoTypeRadio,
+  ...optionsDescriptor,
   defaultWidth: 'auto'
 })
+
+export default DitoTypeRadio
 </script>
 
 <style lang="scss">

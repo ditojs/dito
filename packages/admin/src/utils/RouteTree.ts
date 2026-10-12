@@ -14,7 +14,11 @@ import {
   isSingleComponentView,
   iterateNestedSchemaComponents
 } from './schema/structure.js'
-import { getSourceType, getTypeOptions } from './schema/types.js'
+import {
+  getSourceType,
+  getTypeDescriptor,
+  getChildSourceSchemas
+} from './schema/types.ts'
 import { getItemId } from './schema/data.js'
 import { findItemIndexById } from './schema/item.js'
 import { appendDataPath, getRelativeDataPath } from './data.js'
@@ -442,7 +446,7 @@ export class RouteTree {
         const form = new FormNode(
           source,
           Object.values(getFormSchemas(schema)),
-          !!getTypeOptions(schema)?.hasNestedForms,
+          !!getTypeDescriptor(schema)?.hasNestedForms,
           isInlined(schema)
         )
         for (const formSchema of form.schemas) {
@@ -584,12 +588,6 @@ function forEachSource(
     forEachPanelSource(component)
   })
   forEachPanelSource(schema)
-}
-
-// The sources that types route next to the forms of their items, like the
-// children of tree items:
-function getChildSourceSchemas(schema: Schema): Schema[] {
-  return getTypeOptions(schema)?.getChildSourceSchemas?.(schema) ?? []
 }
 
 // Find the sources through which forms with routes can be reached: Collect the

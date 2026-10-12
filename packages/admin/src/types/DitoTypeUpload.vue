@@ -142,6 +142,7 @@
 
 <script>
 import DitoTypeComponent from '../DitoTypeComponent.js'
+import { defineType } from '../utils/schema/types.ts'
 import DitoContext from '../DitoContext.js'
 import DitoDragHandle from '../components/DitoDragHandle.vue'
 import { DitoButton } from '@ditojs/ui/src'
@@ -159,7 +160,7 @@ import { isArray, asArray, escapeHtml } from '@ditojs/utils'
 import VueUpload from 'vue-upload-component'
 
 // @vue/component
-export default DitoTypeComponent.register('upload', {
+const DitoTypeUpload = DitoTypeComponent.component('DitoTypeUpload', {
   mixins: [SortableMixin],
   components: { VueUpload, DitoButton, DitoDragHandle },
   inject: ['$fileDropTargets'],
@@ -569,7 +570,12 @@ export default DitoTypeComponent.register('upload', {
         new event.constructor(event.type, event)
       )
     }
-  },
+  }
+})
+
+defineType({
+  types: ['upload'],
+  component: DitoTypeUpload,
 
   processValue({ schema, value }) {
     // Filter out all newly added files that weren't actually uploaded.
@@ -579,6 +585,8 @@ export default DitoTypeComponent.register('upload', {
     return schema.multiple ? files : files[0] || null
   }
 })
+
+export default DitoTypeUpload
 
 function asFiles(value) {
   return value ? asArray(value) : []

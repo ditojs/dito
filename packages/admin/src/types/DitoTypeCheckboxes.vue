@@ -30,20 +30,18 @@ DitoOptionList.dito-checkboxes(
 
 <script>
 import DitoTypeComponent from '../DitoTypeComponent.js'
+import { defineType } from '../utils/schema/types.ts'
+import { optionsDescriptor } from './descriptors.ts'
 import OptionsMixin from '../mixins/OptionsMixin.js'
 import DitoOptionList from '../components/DitoOptionList.vue'
 import DitoOptionsEditButtons from '../components/DitoOptionsEditButtons.vue'
 import { getMultipleValue } from '../utils/schema/data.js'
 
 // @vue/component
-export default DitoTypeComponent.register('checkboxes', {
+const DitoTypeCheckboxes = DitoTypeComponent.component('DitoTypeCheckboxes', {
   mixins: [OptionsMixin],
   components: { DitoOptionList, DitoOptionsEditButtons },
-
   nativeField: true,
-  defaultValue: ({ schema }) => (getMultipleValue(schema) ? [] : null),
-  defaultWidth: 'auto',
-  defaultMultiple: true,
 
   computed: {
     // The values of the checked checkboxes, as an array for their `v-model`,
@@ -66,6 +64,17 @@ export default DitoTypeComponent.register('checkboxes', {
     }
   }
 })
+
+defineType({
+  types: ['checkboxes'],
+  component: DitoTypeCheckboxes,
+  ...optionsDescriptor,
+  defaultValue: ({ schema }) => (getMultipleValue(schema) ? [] : null),
+  defaultWidth: 'auto',
+  defaultMultiple: true
+})
+
+export default DitoTypeCheckboxes
 </script>
 
 <style lang="scss">

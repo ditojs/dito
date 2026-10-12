@@ -8,7 +8,7 @@ import {
   stubConfirm,
   unmountAdmin
 } from '../test/mount.js'
-import { getTypeOptions } from '../utils/schema/types.js'
+import { getTypeDescriptor } from '../utils/schema/types.ts'
 
 async function mountBookForm() {
   return mountForm({
@@ -437,7 +437,7 @@ describe('SourceMixin', () => {
       const schema = { type: 'object' }
       const graph = { addSource: vi.fn() }
       const value = { id: 1, name: 'Mary Shelley' }
-      const processed = getTypeOptions(schema).processValue(
+      const processed = getTypeDescriptor(schema).processValue(
         { schema, value, dataPath: 'author' },
         graph
       )
@@ -445,7 +445,7 @@ describe('SourceMixin', () => {
       expect(processed).not.toBe(value)
       expect(graph.addSource).toHaveBeenCalledWith('author', schema)
       expect(
-        getTypeOptions(schema).processValue(
+        getTypeDescriptor(schema).processValue(
           { schema, value: null, dataPath: 'author' },
           graph
         )
@@ -1144,7 +1144,7 @@ describe('SourceMixin', () => {
         form: { type: 'form', components: {} }
       }
       await expect(
-        getTypeOptions(schema).processSchema(api, schema, 'books')
+        getTypeDescriptor(schema).processSchema(api, schema, 'books')
       ).rejects.toThrow('Nested lists cannot load data from their own')
     })
 
@@ -1156,7 +1156,7 @@ describe('SourceMixin', () => {
         form: { type: 'form', components: {} }
       }
       await expect(
-        getTypeOptions(schema).processSchema(api, schema, 'publisher')
+        getTypeDescriptor(schema).processSchema(api, schema, 'publisher')
       ).rejects.toThrow('Nested objects cannot load data from their own')
     })
   })

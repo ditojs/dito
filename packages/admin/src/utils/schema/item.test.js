@@ -1,12 +1,12 @@
-import { registerTypeComponent } from './types.js'
+import { defineType } from './types.ts'
 import {
   getItemIdOrIndex,
   findItemIndexById,
   getItemLabel
 } from './item.js'
 
-registerTypeComponent('list', { getSourceType: () => 'list' })
-registerTypeComponent('object', { getSourceType: () => 'object' })
+defineType({ types: ['list'], sourceType: 'list' })
+defineType({ types: ['object'], sourceType: 'object' })
 
 const listSchema = { type: 'list', idKey: 'id' }
 const books = [{ id: 7, title: 'Emma' }, { id: 9, title: 'Persuasion' }]

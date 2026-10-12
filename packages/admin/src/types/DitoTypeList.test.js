@@ -590,6 +590,30 @@ describe('DitoTypeList', () => {
       expect(data.tags).toEqual(['classic', 'romance'])
     })
 
+    it('gives only the component of the value the data path of the item', async () => {
+      const { getComponent } = await mountSchema({
+        schema: {
+          components: {
+            tags: {
+              type: 'list',
+              inlined: true,
+              wrapPrimitives: 'tag',
+              form: {
+                type: 'form',
+                components: {
+                  tag: { type: 'text' },
+                  note: { type: 'text' }
+                }
+              }
+            }
+          }
+        },
+        data: { tags: ['classic'] }
+      })
+      expect(getComponent('tags/0').name).toBe('tag')
+      expect(getComponent('tags/0/note').name).toBe('note')
+    })
+
     it('keeps the errors of the other values when one is edited', async () => {
       const { findField, data, dataModel } = await mountSchema({
         schema: {
@@ -1226,6 +1250,25 @@ describe('DitoTypeList', () => {
       expect(JSON.stringify(request.mock.lastCall[0].query)).toContain(
         'title:\\"Soup\\"'
       )
+    })
+
+    it('shows the filters of the route query in the panel', async () => {
+      const admin = await mountAdmin({
+        views: {
+          recipes: {
+            type: 'view',
+            component: {
+              type: 'list',
+              resource: { path: 'recipes' },
+              filters: { title: { filter: 'text' } }
+            }
+          }
+        },
+        request: () => ({ data: { results: [], total: 0 } })
+      })
+      await admin.navigate('/recipes?filter=title:"Soup"')
+      const input = admin.wrapper.find('.dito-panel input[type="text"]')
+      expect(input.element.value).toBe('Soup')
     })
 
     it('clears the filters to their defaults and applies them', async () => {

@@ -13,13 +13,14 @@
 
 <script>
 import DitoTypeComponent from '../DitoTypeComponent.js'
+import { defineType } from '../utils/schema/types.ts'
 import { getSchemaAccessor } from '../utils/accessor.js'
 import { createChangeOnceEdited } from '../utils/changeOnceEdited.js'
 import DitoResizeHandle from '../components/DitoResizeHandle.vue'
 import CodeFlask from 'codeflask'
 
 // @vue/component
-export default DitoTypeComponent.register('code', {
+const DitoTypeCode = DitoTypeComponent.component('DitoTypeCode', {
   components: { DitoResizeHandle },
 
   data() {
@@ -141,6 +142,13 @@ export default DitoTypeComponent.register('code', {
     }
   }
 })
+
+defineType({
+  types: ['code'],
+  component: DitoTypeCode
+})
+
+export default DitoTypeCode
 </script>
 
 <style lang="scss">

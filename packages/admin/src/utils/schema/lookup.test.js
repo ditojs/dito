@@ -2,7 +2,7 @@ import { vi } from 'vitest'
 import { reactive } from 'vue'
 import { hyphenate } from '@ditojs/utils'
 import DitoContext from '../../DitoContext.js'
-import { registerTypeComponent } from './types.js'
+import { defineType } from './types.ts'
 import {
   getAllPanelEntries,
   getPanelEntries,
@@ -19,18 +19,19 @@ import {
   getButtonSchemas
 } from './lookup.js'
 
-// Register minimal type options, as the actual type components can't be
+// Define minimal types, as the actual type components can't be
 // imported without a Vue SFC compiler:
-registerTypeComponent('panel', {
+defineType({
+  types: ['panel'],
   defaultNested: false,
   getPanelSchema: (api, schema) => schema
 })
-registerTypeComponent('list', {
-  defaultNested: true,
+defineType({
+  types: ['list'],
   getPanelSchema: () => ({ type: 'panel', name: '$filters' })
 })
-registerTypeComponent('section', { defaultNested: false })
-registerTypeComponent('text', { defaultNested: true })
+defineType({ types: ['section'], defaultNested: false })
+defineType({ types: ['text'] })
 
 describe('getAllPanelEntries()', () => {
   const getPaths = entries =>

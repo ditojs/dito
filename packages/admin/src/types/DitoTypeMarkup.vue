@@ -29,6 +29,7 @@
 
 <script>
 import DitoTypeComponent from '../DitoTypeComponent.js'
+import { defineType } from '../utils/schema/types.ts'
 import { getSchemaAccessor } from '../utils/accessor.js'
 import { createChangeOnceEdited } from '../utils/changeOnceEdited.js'
 import DitoResizeHandle from '../components/DitoResizeHandle.vue'
@@ -65,7 +66,7 @@ import { DitoButton, DitoIcon } from '@ditojs/ui/src'
 import { isArray, isObject, hyphenate, debounce, camelize } from '@ditojs/utils'
 
 // @vue/component
-export default DitoTypeComponent.register('markup', {
+const DitoTypeMarkup = DitoTypeComponent.component('DitoTypeMarkup', {
   components: {
     EditorContent,
     DitoButton,
@@ -493,6 +494,13 @@ export default DitoTypeComponent.register('markup', {
     }
   }
 })
+
+defineType({
+  types: ['markup'],
+  component: DitoTypeMarkup
+})
+
+export default DitoTypeMarkup
 
 const headingLevels = [1, 2, 3, 4, 5, 6]
 

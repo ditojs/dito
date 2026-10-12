@@ -70,6 +70,7 @@ import { appendDataPath, getParentDataPath } from '../utils/data.js'
 import { resolvePath } from '../utils/path.js'
 import { getErrorMessage } from '../utils/request.js'
 import { cloneWithUids } from '../utils/uid.js'
+import { getChildSourceSchemas } from '../utils/schema/types.ts'
 import { mergeData } from '../utils/mergeData.ts'
 import { createDraftRoot } from '../utils/draftRoot.ts'
 import { DataModel } from '../utils/DataModel.ts'
@@ -457,12 +458,12 @@ export default DitoComponent.component('DitoForm', {
             if (!this.isMutating) {
               // Edit a draft of the item, with its uids and errors, e.g. of
               // the server for the parent's data, see `submitTransient()`.
-              // Tree items share their children with the tree, which edits
-              // them:
-              const children = item?.[this.sourceSchema.children?.name]
-              this.draft = item
-                ? cloneWithUids(item, { transferables: [children] })
-                : null
+              // Items share their child sources with their source, e.g. tree
+              // items their children with the tree, which edits them:
+              const transferables = getChildSourceSchemas(
+                this.sourceSchema
+              ).map(({ name }) => item?.[name])
+              this.draft = item ? cloneWithUids(item, { transferables }) : null
               this.copyErrors()
             }
           }

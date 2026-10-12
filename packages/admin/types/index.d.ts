@@ -2332,6 +2332,14 @@ export interface SourceContext {
   readonly schema: Component
   /** The query of lists, e.g. their scope, page, order and filters. */
   readonly query: Record<string, any>
+  /** Navigates lists to other queries. */
+  readonly listQuery: {
+    readonly query: Record<string, any>
+    update(
+      changes: Record<string, any>,
+      options?: { resetPage?: boolean }
+    ): Promise<unknown>
+  }
   readonly dataPath: string
   readonly componentPath: string
   readonly store: Record<string, any>
@@ -3787,15 +3795,94 @@ export class DitoAdmin<
       [key: string]: any
     }
   )
-
-  /**
-   * Registers a custom component type with the admin.
-   */
-  register(
-    type: OrArrayOf<string>,
-    options: Record<string, unknown>
-  ): VueComponent
 }
+
+/**
+ * Wraps the primitive values of a list in objects for the forms of its items
+ * to edit them, and unwraps them again.
+ */
+export interface ItemAdapter {
+  /**
+   * The name of the component that edits the value. It shares the data path
+   * of the item.
+   */
+  readonly name: string
+  wrap(value: any): Record<string, any>
+  unwrap(item: Record<string, any>): any
+}
+
+/**
+ * Describes a type of schema components: the component that renders it, and
+ * how the admin handles its schemas and values, also when they aren't
+ * rendered.
+ */
+export interface TypeDescriptor {
+  readonly types: string[]
+  readonly component: VueComponent
+  /** The default of `default`, `null` if not set. */
+  readonly defaultValue?: any
+  /** The default of `nested`, `true` if not set. */
+  readonly defaultNested?: boolean
+  /** The default of `visible`, `true` if not set. */
+  readonly defaultVisible?: boolean
+  /** The default of `multiple`. */
+  readonly defaultMultiple?: boolean
+  /** The default of `width`. */
+  readonly defaultWidth?: string | number
+  /** The default of `exclude`. */
+  readonly excludeValue?: boolean | ((context: DitoContext) => boolean)
+  /** Whether values that are missing don't get their defaults. */
+  readonly ignoreMissingValue?: (context: DitoContext) => boolean
+  /** Whether values that are `null` get their defaults. */
+  readonly treatNullAsMissing?: (context: DitoContext) => boolean
+  /** Whether the value is resolved from `schema.data` or `schema.dataPath`. */
+  readonly valueFromDataSchema?: boolean
+  /** Whether components without `label` get one from their name. */
+  readonly generateLabel?: boolean
+  /** Whether the component displays its label itself. */
+  readonly rendersOwnLabel?: (context: DitoContext) => boolean
+  readonly omitSpacing?: boolean
+  /** Whether the label of the container replaces the component. */
+  readonly isLabel?: boolean
+  readonly isButton?: boolean
+  /** Whether the button saves the data of its form, like `submit`. */
+  readonly submitsData?: boolean
+  /** Sources hold their items in a list or an object. */
+  readonly sourceType?: 'list' | 'object'
+  /**
+   * Whether the forms of the items render inside the form or view of their
+   * source, instead of in their own routes.
+   */
+  readonly hasNestedForms?: boolean
+  /** The sources routed next to the forms of the items, e.g. of trees. */
+  getChildSourceSchemas?(schema: Record<string, any>): Record<string, any>[]
+  getItemAdapter?(schema: Record<string, any>): ItemAdapter | null
+  /** The data schema of the options that the data model loads. */
+  getOptionsDataSchema?(schema: Record<string, any>): any
+  getPanelSchema?(
+    api: ApiConfig,
+    schema: Record<string, any>,
+    dataPath: string,
+    source: SourceContext | null
+  ): Record<string, any> | null | undefined
+  getValidations?(
+    schema: Record<string, any>,
+    context: DitoContext
+  ): Record<string, any>
+  /** Sets up the schema, e.g. resolves the schemas that it contains. */
+  processSchema?(
+    api: ApiConfig,
+    schema: Record<string, any>,
+    name: string
+  ): Promise<any> | void
+  /** Converts the value for storage. */
+  processValue?(context: DitoContext, graph: any): any
+}
+
+/**
+ * Defines a type of schema components, registered under its `types`.
+ */
+export function defineType(descriptor: TypeDescriptor): TypeDescriptor
 export type HTTPMethod =
   | 'get'
   | 'head'

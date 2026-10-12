@@ -10,7 +10,6 @@ import {
   isArray,
   isString,
   isFunction,
-  normalizeDataPath,
   labelize,
   debounceAsync
 } from '@ditojs/utils'
@@ -371,28 +370,6 @@ export default {
           ? optionLabel(new DitoContext(this, { option, isValueLabel }))
           : labelize(`${option}`)
     }
-  },
-
-  processValue({ schema, value, dataPath }, graph) {
-    if (schema.relate) {
-      // For internally relating data (`schema.options.dataPath`), we need to
-      // process both the options (for '#ref') and the value ('#id').
-      // See `DataSchemaResolver`:
-      const path = schema.options?.dataPath
-      const relatedDataPath = path
-        ? normalizeDataPath(`${dataPath}/${path}`)
-        : null
-      graph.addRelation(dataPath, relatedDataPath, schema)
-      // Convert relating objects to a shallow copy with only the id left.
-      // TODO: Convert to using `relateBy`:
-      const processRelate = value => (value ? { id: value.id } : value)
-      // Selected options can be both objects & arrays, e.g. 'checkboxes':
-      value =
-        getMultipleValue(schema) && isArray(value)
-          ? value.map(processRelate)
-          : processRelate(value)
-    }
-    return value
   }
 }
 

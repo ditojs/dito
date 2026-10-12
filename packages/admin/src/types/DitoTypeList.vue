@@ -131,6 +131,8 @@
 
 <script>
 import DitoTypeComponent from '../DitoTypeComponent.js'
+import { defineType } from '../utils/schema/types.ts'
+import { sourceDescriptor } from './descriptors.ts'
 import DitoSourceItem from '../components/DitoSourceItem.vue'
 import SourceMixin from '../mixins/SourceMixin.js'
 import SortableMixin from '../mixins/SortableMixin.js'
@@ -144,40 +146,9 @@ import { hyphenate } from '@ditojs/utils'
 import { computed } from 'vue'
 
 // @vue/component
-export default DitoTypeComponent.register('list', {
+const DitoTypeList = DitoTypeComponent.component('DitoTypeList', {
   mixins: [SourceMixin, SortableMixin],
   components: { DitoSourceItem },
-
-  getSourceType(type) {
-    // No need for transformation here. See TypeTreeList for details.
-    return type
-  },
-
-  getPanelSchema(api, schema, dataPath, component) {
-    const { filters } = schema
-    // See if this list component wants to display a filter panel, and if so,
-    // create the panel schema for it through `getFiltersPanel()`.
-    if (filters) {
-      return createFiltersPanel(
-        api,
-        filters,
-        dataPath,
-        // Pass a computed value to get / set the query, see
-        // `createFiltersPanel()`.
-        computed({
-          get() {
-            return component.query
-          },
-
-          // The panel clears the page, but it's only reset when the filters
-          // change the query, as the filtered list then has other pages.
-          set({ page, ...query }) {
-            component.listQuery.update(query, { resetPage: true })
-          }
-        })
-      )
-    }
-  },
 
   computed: {
     hasPagination() {
@@ -255,16 +226,51 @@ export default DitoTypeComponent.register('list', {
         return true
       }
     }
+  }
+})
+
+defineType({
+  types: ['list'],
+  component: DitoTypeList,
+  ...sourceDescriptor,
+  sourceType: 'list',
+
+  getPanelSchema(api, schema, dataPath, source) {
+    const { filters } = schema
+    // See if this list component wants to display a filter panel, and if so,
+    // create the panel schema for it through `getFiltersPanel()`.
+    if (filters) {
+      return createFiltersPanel(
+        api,
+        filters,
+        dataPath,
+        // Pass a computed value to get / set the query, see
+        // `createFiltersPanel()`.
+        computed({
+          get() {
+            return source.listQuery.query
+          },
+
+          // The panel clears the page, but it's only reset when the filters
+          // change the query, as the filtered list then has other pages.
+          set({ page, ...query }) {
+            source.listQuery.update(query, { resetPage: true })
+          }
+        })
+      )
+    }
   },
 
   async processSchema(api, schema, name) {
     await Promise.all([
       resolveSchemaComponent(schema),
       resolveSchemaComponents(schema.columns),
-      SourceMixin.processSchema(api, schema, name)
+      sourceDescriptor.processSchema(api, schema, name)
     ])
   }
 })
+
+export default DitoTypeList
 </script>
 
 <style lang="scss">

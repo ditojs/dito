@@ -11,7 +11,12 @@ import {
   clone,
   getValueAtDataPath
 } from '@ditojs/utils'
-import { getTypeOptions, getSourceType } from './types.js'
+import {
+  getTypeDescriptor,
+  getSourceType,
+  getChildSourceSchemas,
+  getItemAdapter
+} from './types.ts'
 import {
   someNestedSchemaComponent,
   hasNestedSchemaComponents,
@@ -128,11 +133,11 @@ export function getDefaultValue(schema, context) {
   // NOTE: At the time of creation, components may not be instantiated, (e.g. if
   // entries are created through nested forms, the parent form isn't mounted) so
   // we can't use `dataPath` to get to components, and the `defaultValue` from
-  // there. That's why `defaultValue` is defined statically in the components:
+  // there. That's why `defaultValue` is defined by the type descriptors:
   const defaultValue =
     schema.default !== undefined
       ? schema.default
-      : getTypeOptions(schema)?.defaultValue
+      : getTypeDescriptor(schema)?.defaultValue
   return isFunction(defaultValue)
     ? defaultValue(getContext(context))
     : clone(defaultValue)
@@ -153,14 +158,14 @@ export function shouldExcludeValue(schema, context) {
   const excludeValue =
     schema.exclude !== undefined
       ? schema.exclude
-      : getTypeOptions(schema)?.excludeValue
+      : getTypeDescriptor(schema)?.excludeValue
   return isFunction(excludeValue)
     ? excludeValue(getContext(context))
     : !!excludeValue
 }
 
 export function shouldIgnoreMissingValue(schema, context) {
-  return !!getTypeOptions(schema)?.ignoreMissingValue?.(getContext(context))
+  return !!getTypeDescriptor(schema)?.ignoreMissingValue?.(getContext(context))
 }
 
 // Returns whether the value of the component described by `schema` and `name`
@@ -171,7 +176,7 @@ export function isMissingValue(schema, data, name, context) {
   // walk of the data model's data, don't depend on all values.
   return (
     !(name in data) || (
-      !!getTypeOptions(schema)?.treatNullAsMissing?.(getContext(context)) &&
+      !!getTypeDescriptor(schema)?.treatNullAsMissing?.(getContext(context)) &&
       data[name] === null
     )
   )
@@ -185,13 +190,13 @@ export function isMissingValue(schema, data, name, context) {
  */
 export function hasValueFromDataSchema(schema) {
   return (
-    !!getTypeOptions(schema)?.valueFromDataSchema &&
+    !!getTypeDescriptor(schema)?.valueFromDataSchema &&
     !!(schema.data || schema.dataPath)
   )
 }
 
 export function getMultipleValue(schema) {
-  return schema.multiple ?? !!getTypeOptions(schema)?.defaultMultiple
+  return schema.multiple ?? !!getTypeDescriptor(schema)?.defaultMultiple
 }
 
 /**
@@ -391,7 +396,7 @@ export function processData(schema, sourceSchema, data, dataPath, {
   const graph = new SchemaGraph(dataPath)
 
   const before = ({ schema, data, name, dataPath, processedData }) => {
-    let value = getValueOrDefault(
+    const value = getValueOrDefault(
       schema,
       data,
       name,
@@ -404,24 +409,19 @@ export function processData(schema, sourceSchema, data, dataPath, {
           rootData: options.rootData
         })
     )
-    // The schema expects the `wrapPrimitives` transformations to be present on
-    // the data that it is applied on, so warp before and unwrap after.
-    if (isArray(value)) {
-      const { wrapPrimitives } = schema
-      if (wrapPrimitives) {
-        value = value.map(entry => ({
-          [wrapPrimitives]: entry
-        }))
-      } else {
-        // Always shallow-clone array values:
-        value = [...value]
-      }
-    }
-    processedData[name] = value
+    // The forms of the items expect them wrapped by the item adapter of the
+    // schema, so wrap before and unwrap after. Always shallow-clone arrays:
+    const itemAdapter = getItemAdapter(schema)
+    processedData[name] = isArray(value)
+      ? itemAdapter
+        ? value.map(itemAdapter.wrap)
+        : [...value]
+      : value
   }
 
   const after = ({ schema, data, name, dataPath, processedData }) => {
-    const { wrapPrimitives, process } = schema
+    const { process } = schema
+    const itemAdapter = getItemAdapter(schema)
     let value = processedData[name]
 
     // NOTE: We don't cache this context, since `value` is changing.
@@ -439,15 +439,15 @@ export function processData(schema, sourceSchema, data, dataPath, {
         processedRootData
       })
 
-    // First unwrap the wrapped primitives again, to bring the data back into
-    // its native form. See `before()` for more details.
-    if (wrapPrimitives && isArray(value)) {
-      value = value.map(object => object[wrapPrimitives])
+    // First unwrap the items again, to bring the data back into its native
+    // form, see `before()`.
+    if (itemAdapter && isArray(value)) {
+      value = value.map(itemAdapter.unwrap)
     }
 
-    // Each component type can provide its own static `processValue()` method
-    // to convert the data for storage.
-    const processValue = getTypeOptions(schema)?.processValue
+    // Each type descriptor can provide its own `processValue()` to convert the
+    // data for storage.
+    const processValue = getTypeDescriptor(schema)?.processValue
     if (processValue) {
       value = processValue(getContext(context), graph)
     }
@@ -478,8 +478,9 @@ export function processData(schema, sourceSchema, data, dataPath, {
 
 /**
  * Walks `data` along the components of `schema`, including nested forms of
- * list and object items, calling `before()` and `after()` for each nested
- * component, e.g. to process the data into `processedData`. `shouldProcess()`
+ * list and object items and the child sources of the items, e.g. the children
+ * of tree items, calling `before()` and `after()` for each nested component,
+ * e.g. to process the data into `processedData`. `shouldProcess()`
  * is called for all components, tabs and panels, and the ones for which it
  * returns `false` are skipped along with their content. The entries passed to
  * them contain the `componentPath` of the component, tab or panel, continuing
@@ -490,12 +491,13 @@ export function processData(schema, sourceSchema, data, dataPath, {
  * resource, but not their panels, which display the data that contains them,
  * see `DitoContainer.panelEntries`.
  *
- * The primitive values of lists with `wrapPrimitives` are walked wrapped in
- * objects under the `wrapPrimitives` key, like the admin edits them, see
- * `SourceMixin`. `wrappedPrimitiveName` is that key while walking such an
- * object, and its component keeps the data path of the item, where the admin
- * maps errors of the value to. Values written into the objects don't reach
- * the data, e.g. defaults, as the primitive values themselves are the data.
+ * The items of sources with an item adapter, e.g. the primitive values of
+ * lists with `wrapPrimitives`, are walked wrapped in objects, like the admin
+ * edits them, see `getItemAdapter()`. `wrappedValueName` is the name of the
+ * wrapped value while walking such an object, and its component keeps the data
+ * path of the item, where the admin maps errors of the value to. Values written
+ * into the objects don't reach the data, e.g. defaults, as the primitive values
+ * themselves are the data.
  *
  * @typedef {object} SchemaDataEntry
  * @property {Record<string, any>} schema
@@ -511,7 +513,8 @@ export function processData(schema, sourceSchema, data, dataPath, {
  * @param {string | null} [walk.dataPath]
  * @param {string} [walk.componentPath]
  * @param {Record<string, any> | null} [walk.processedData]
- * @param {string | null} [walk.wrappedPrimitiveName]
+ * @param {string | null} [walk.wrappedValueName]
+ * @param {Record<string, any>[]} [walk.childSourceSchemas]
  * @param {((entry: SchemaDataEntry) => void) | null} [walk.before]
  * @param {((entry: SchemaDataEntry) => void) | null} [walk.after]
  * @param {(
@@ -525,7 +528,8 @@ export function processSchemaData(schema, data, {
   dataPath = null,
   componentPath = '',
   processedData = null,
-  wrappedPrimitiveName = null,
+  wrappedValueName = null,
+  childSourceSchemas = [],
   before = null,
   after = null,
   shouldProcess = () => true,
@@ -548,9 +552,9 @@ export function processSchemaData(schema, data, {
     if (components) {
       for (const [name, componentSchema] of Object.entries(components)) {
         const isNestedComponent = hasNestedData(componentSchema)
-        const isWrappedPrimitive = name === wrappedPrimitiveName
+        const isWrappedValue = name === wrappedValueName
         const componentDataPath =
-          isNestedComponent && !isWrappedPrimitive
+          isNestedComponent && !isWrappedValue
             ? getDataPath(dataPath, name)
             : dataPath
         const entry = {
@@ -584,12 +588,12 @@ export function processSchemaData(schema, data, {
             processedData
           })
         } else {
-          const { wrapPrimitives } = componentSchema
+          const itemAdapter = getItemAdapter(componentSchema)
           const processItem = (item, index = null) => {
-            // Data that isn't processed holds the primitive values themselves,
-            // processed data holds them wrapped already, see `processData()`.
-            if (wrapPrimitives && !isObject(item)) {
-              item = { [wrapPrimitives]: item }
+            // Data that isn't processed holds the values themselves, processed
+            // data holds them wrapped already, see `processData()`.
+            if (itemAdapter && !isObject(item)) {
+              item = itemAdapter.wrap(item)
             }
             if (!isObject(item)) {
               // Values that aren't objects hold no data of the form's
@@ -611,12 +615,10 @@ export function processSchemaData(schema, data, {
               name,
               rootData: options.rootData
             })
-            const getForms = (
-              getTypeOptions(componentSchema)?.getFormSchemasForProcessing ||
-              getFormSchemas
+            const form = getItemFormSchemaFromForms(
+              getFormSchemas(componentSchema, context),
+              item
             )
-            const forms = getForms(componentSchema, context)
-            const form = getItemFormSchemaFromForms(forms, item)
             if (form) {
               const processedItem = processedData
                 ? cloneItem(componentSchema, item)
@@ -626,7 +628,8 @@ export function processSchemaData(schema, data, {
                 dataPath: itemDataPath,
                 componentPath: itemComponentPath,
                 processedData: processedItem,
-                wrappedPrimitiveName: wrapPrimitives ?? null
+                wrappedValueName: itemAdapter?.name ?? null,
+                childSourceSchemas: getChildSourceSchemas(componentSchema)
               })
             } else {
               // Items without a matching form, e.g. of an unknown type, are
@@ -700,6 +703,10 @@ export function processSchemaData(schema, data, {
       ).components
     : schema.components
   processComponents(components, componentPath)
+  processComponents(
+    Object.fromEntries(childSourceSchemas.map(child => [child.name, child])),
+    componentPath
+  )
   processTabOrPanelSchemas(schema.tabs, componentPath)
   processTabOrPanelSchemas(schema.panels, componentPath)
 
@@ -751,7 +758,7 @@ export function getItemId(sourceSchema, item) {
 // its `orderKey`, see `updateOrder()`. Lists of primitives have no items that
 // could hold an order key.
 export function hasItemsNumberedByOrderKey(schema) {
-  return !!schema.orderKey && !schema.wrapPrimitives
+  return !!schema.orderKey && !getItemAdapter(schema)
 }
 
 // Numbers the items of the list by the order key of `sourceSchema`, starting

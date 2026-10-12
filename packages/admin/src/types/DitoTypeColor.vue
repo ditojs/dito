@@ -44,6 +44,7 @@ DitoTrigger.dito-color(
 import { SketchPicker, tinycolor } from 'vue-color'
 import { DitoTrigger, DitoInput } from '@ditojs/ui/src'
 import DitoTypeComponent from '../DitoTypeComponent.js'
+import { defineType } from '../utils/schema/types.ts'
 import TypeMixin from '../mixins/TypeMixin.js'
 import DitoInputAffixes from '../components/DitoInputAffixes.vue'
 import { getInputAffixesProps } from '../utils/affixes.js'
@@ -51,7 +52,7 @@ import { getSchemaAccessor } from '../utils/accessor.js'
 import { createChangeOnceEdited } from '../utils/changeOnceEdited.js'
 
 // @vue/component
-export default DitoTypeComponent.register('color', {
+const DitoTypeColor = DitoTypeComponent.component('DitoTypeColor', {
   components: { DitoTrigger, DitoInput, DitoInputAffixes, SketchPicker },
 
   data() {
@@ -219,6 +220,13 @@ export default DitoTypeComponent.register('color', {
     }
   }
 })
+
+defineType({
+  types: ['color'],
+  component: DitoTypeColor
+})
+
+export default DitoTypeColor
 
 function convertColor(color, format) {
   return toTinyColorFormat(tinycolor(color), format)

@@ -31,6 +31,7 @@ import {
   hasSubmitButton
 } from './schema/lookup.js'
 import { isSourceWithResource } from './schema/structure.js'
+import { getTypeDescriptor } from './schema/types.ts'
 import {
   getSchemaValue,
   shouldSetDefaultValue,
@@ -642,7 +643,10 @@ export class DataModel {
         },
         shouldSkipSourcesWithResource: true,
         before: entry => {
-          if (hasComputedValueSource(entry.schema) || entry.schema.options) {
+          if (
+            hasComputedValueSource(entry.schema) ||
+            getOptionsDataSchema(entry.schema)
+          ) {
             recordedEntries.set(entry, entry)
           }
           if (this.#shouldSetDefaultValue(entry)) {
@@ -789,7 +793,7 @@ export class DataModel {
         () => record.dataPath.value,
         {
           ...this.#walkOptions,
-          getOptions: schema.options
+          getOptions: getOptionsDataSchema(schema)
             ? () => this.#getLoadedOptions(entry)
             : null
         }
@@ -815,7 +819,7 @@ export class DataModel {
   // Computes and components share the resolver, so they get the same options.
   getOptionsResolver(entry: SchemaDataEntry): DataSchemaResolver {
     const record = this.#getComponentRecord(entry)
-    const { options } = entry.schema
+    const options = getOptionsDataSchema(entry.schema)
     if (!record.optionsResolver || record.optionsSchema !== options) {
       record.optionsSchema = options
       record.optionsResolver = this.#createDataSchemaResolver(options, record)
@@ -1061,6 +1065,10 @@ class EntryMap<T> extends WeakEntryMap<T> {
 
 function hasComputedValueSource(schema: Schema): boolean {
   return !!schema.compute || hasValueFromDataSchema(schema)
+}
+
+function getOptionsDataSchema(schema: Schema): any {
+  return getTypeDescriptor(schema)?.getOptionsDataSchema?.(schema) ?? null
 }
 
 // Errors apply only to the value that they were set for, as values also
