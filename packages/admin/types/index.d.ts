@@ -686,8 +686,8 @@ export interface SchemaSourceMixin<$Item> {
   buttons?: Buttons<$Item>
   /**
    * The key under which primitive values are wrapped in objects, so that the
-   * source's forms can edit them, e.g. `'value'` for a list of strings. Lists
-   * with forms need `inlined: true` for it.
+   * source's forms can edit them, e.g. `'value'` for a list of strings. Routed
+   * forms can't `mutate` them.
    */
   wrapPrimitives?: string
   /**

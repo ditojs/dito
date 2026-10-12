@@ -1113,16 +1113,17 @@ describe('useSource()', () => {
       ).rejects.toThrow('Nested objects cannot load data from their own')
     })
 
-    it('refuses wrapped primitives in routed forms', async () => {
+    it('refuses wrapped primitives in mutating routed forms', async () => {
       const schema = {
         type: 'list',
         wrapPrimitives: 'tag',
+        mutate: true,
         form: { type: 'form', components: { tag: { type: 'text' } } }
       }
       await expect(
         getTypeDescriptor(schema).processSchema(api, schema, 'tags')
       ).rejects.toThrow(
-        `Unsupported 'wrapPrimitives' in lists with routed forms: 'tags'.`
+        `Unsupported 'mutate' in lists with 'wrapPrimitives': 'tags'.`
       )
     })
   })

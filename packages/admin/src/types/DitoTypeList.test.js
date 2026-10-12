@@ -1,6 +1,6 @@
 import { vi } from 'vitest'
 import { h } from 'vue'
-import { flushPromises } from '@vue/test-utils'
+import { DOMWrapper, flushPromises } from '@vue/test-utils'
 import Sortable from 'sortablejs'
 import { RequestError } from '../utils/request.js'
 import {
@@ -9,6 +9,7 @@ import {
   mountAdmin,
   enterValue,
   stubConfirm,
+  settle,
   isForm
 } from '../test/mount.js'
 
@@ -699,6 +700,80 @@ describe('DitoTypeList', () => {
       expect(warn).not.toHaveBeenCalled()
       error.mockRestore()
       warn.mockRestore()
+    })
+  })
+
+  describe('primitive values in routed forms', () => {
+    const tagsSchema = {
+      components: {
+        tags: {
+          type: 'list',
+          editable: true,
+          creatable: true,
+          wrapPrimitives: 'tag',
+          columns: { tag: {} },
+          form: {
+            type: 'form',
+            components: { tag: { type: 'text', required: true } }
+          }
+        }
+      }
+    }
+
+    // Opens the form at `path`, enters `tag` and applies it:
+    async function applyTagForm(admin, path, tag) {
+      await admin.navigate(path)
+      const form = admin.getRouteComponent(isForm)
+      await settle(form)
+      const element = new DOMWrapper(form.$el)
+      await enterValue(element.find('input[name$="tag"]'), tag)
+      await settle(form)
+      await element
+        .find('.dito-buttons--main button[type="submit"]')
+        .trigger('click')
+      await settle(form)
+      return form
+    }
+
+    it('edit the wrapped value and write it back at its index', async () => {
+      const { admin, data, routeComponent } = await mountForm({
+        schema: tagsSchema,
+        data: { tags: ['classic', 'novel'] }
+      })
+      const tags = data.tags
+      await admin.navigate('/items/1/tags/1')
+      const form = admin.getRouteComponent(isForm)
+      await settle(form)
+      expect(form.data).toEqual({ tag: 'novel' })
+      await applyTagForm(admin, '/items/1/tags/1', 'romance')
+      expect(data.tags).toBe(tags)
+      expect(data.tags).toEqual(['classic', 'romance'])
+      expect(routeComponent.ownRouteContext.isDirty).toBe(true)
+    })
+
+    it('create values unwrapped', async () => {
+      const { admin, data } = await mountForm({
+        schema: tagsSchema,
+        data: { tags: ['classic'] }
+      })
+      await applyTagForm(admin, '/items/1/tags/create', 'romance')
+      expect(data.tags).toEqual(['classic', 'romance'])
+    })
+
+    it('take over the errors of their value', async () => {
+      const { admin, dataModel } = await mountForm({
+        schema: tagsSchema,
+        data: { tags: ['classic'] }
+      })
+      const errors = [{ message: 'is unknown' }]
+      dataModel.replaceErrors({ 'tags/0': errors }, { server: true })
+      await admin.navigate('/items/1/tags/0')
+      const form = admin.getRouteComponent(isForm)
+      await settle(form)
+      expect(form.dataModel.getErrors('tags/0/tag')).toEqual(errors)
+      expect(new DOMWrapper(form.$el).find('.dito-errors').text()).toContain(
+        'is unknown'
+      )
     })
   })
 
