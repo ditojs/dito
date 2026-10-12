@@ -1,7 +1,7 @@
 import { vi } from 'vitest'
 import { computed } from 'vue'
 import { flushPromises } from '@vue/test-utils'
-import DitoContext from '../DitoContext.js'
+import SchemaContext from '../SchemaContext.js'
 import { mountAdmin, mountSchema, isView } from '../test/mount.js'
 
 describe('AdminContext', () => {
@@ -133,7 +133,7 @@ describe('AdminContext', () => {
       expect(notify).toHaveBeenCalledWith({ type: 'info', text: 'Saved' })
       expect(context.wasNotified).toBe(true)
       expect('wasNotified' in component).toBe(false)
-      expect(new DitoContext(component, {}).wasNotified).toBe(false)
+      expect(new SchemaContext(component, {}).wasNotified).toBe(false)
       await flushPromises()
       expect(admin.element.querySelector('.dito-notification')).not.toBe(null)
     })

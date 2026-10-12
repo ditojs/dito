@@ -1,6 +1,6 @@
 import { vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
-import DitoContext from '../DitoContext.js'
+import SchemaContext from '../SchemaContext.js'
 import appState from '../appState.js'
 import {
   mountAdmin,
@@ -217,7 +217,7 @@ describe('DitoSchema', () => {
         data: { title: 'Emma', rating: 5 }
       })
       expect(schemaComponent.selectedTab).toBe('reviews')
-      expect(defaultTab).toHaveBeenCalledWith(expect.any(DitoContext))
+      expect(defaultTab).toHaveBeenCalledWith(expect.any(SchemaContext))
     })
 
     // `defaultTab()` is first evaluated before the form's data is loaded, with

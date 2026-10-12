@@ -1,4 +1,4 @@
-import DitoContext from '../../DitoContext.js'
+import SchemaContext from '../../SchemaContext.js'
 import { getUid } from '../uid.js'
 import { SchemaGraph } from '../SchemaGraph.js'
 import { appendDataPath, getRelativeDataPath } from '../data.js'
@@ -215,7 +215,7 @@ export function initializeData(schema, data = {}, services, {
 
   const before = ({ schema, data, name, dataPath }) => {
     const context = () =>
-      new DitoContext(services, {
+      new SchemaContext(services, {
         schema,
         name,
         data,
@@ -262,12 +262,12 @@ export function computeValue(schema, data, name, dataPath, {
 } = {}) {
   const context = () =>
     // Pass a function, so the `options` getter isn't evaluated on creation:
-    new DitoContext(services, () => {
+    new SchemaContext(services, () => {
       const properties = {
         schema,
         // Override value to prevent endless recursion through `this.value` in
-        // `DitoContext`, and read it lazily, so `compute()` only depends on it
-        // if it reads it:
+        // `SchemaContext`, and read it lazily, so `compute()` only depends on
+        // it if it reads it:
         get value() {
           return data[name]
         },
@@ -347,7 +347,7 @@ export function processData(schema, sourceSchema, data, dataPath, {
       data,
       name,
       () =>
-        DitoContext.createForSchema(services, {
+        SchemaContext.createForSchema(services, {
           schema,
           name,
           data,
@@ -372,7 +372,7 @@ export function processData(schema, sourceSchema, data, dataPath, {
 
     // NOTE: We don't cache this context, since `value` is changing.
     const context = () =>
-      new DitoContext(services, {
+      new SchemaContext(services, {
         schema,
         value,
         name,
@@ -510,7 +510,7 @@ export function processSchemaData(schema, data, {
               index !== null
                 ? appendDataPath(entry.componentPath, index)
                 : entry.componentPath
-            const context = new DitoContext(options.services, {
+            const context = new SchemaContext(options.services, {
               schema: componentSchema,
               data,
               dataPath: componentDataPath,
@@ -590,7 +590,7 @@ export function processSchemaData(schema, data, {
       getItemFormSchema(
         schema,
         data,
-        new DitoContext(options.services, {
+        new SchemaContext(options.services, {
           schema,
           data,
           dataPath,
@@ -634,7 +634,7 @@ export function getComponentPathByDataPath(schema, data, dataPath, {
         getSchemaValue('if', {
           type: Boolean,
           schema: entry.schema,
-          context: DitoContext.createForSchema(services, {
+          context: SchemaContext.createForSchema(services, {
             ...entry,
             rootData
           }),

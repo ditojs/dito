@@ -1,4 +1,4 @@
-import DitoContext from '../../DitoContext.js'
+import SchemaContext from '../../SchemaContext.js'
 import * as validators from '../../validators/index.js'
 import { isFunction, isRegExp, asArray, normalizeDataPath } from '@ditojs/utils'
 import { getTypeDescriptor } from './types.ts'
@@ -71,7 +71,7 @@ export function getDataValidationErrors(schema, data, {
   let errors = null
 
   const createContext = ({ schema, data, name, dataPath }) =>
-    new DitoContext(services, {
+    new SchemaContext(services, {
       schema,
       value: name != null ? data[name] : undefined,
       name,

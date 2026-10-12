@@ -7,7 +7,7 @@ import type {
   Form,
   CustomComponentProps,
   CustomComponentEmits,
-  DitoContext
+  SchemaContext
 } from '@ditojs/admin'
 import type { Entry } from './fixtures.ts'
 
@@ -148,7 +148,7 @@ describe('ClipboardConfig', () => {
 describe('CustomComponentProps and CustomComponentEmits', () => {
   it('describe the props and events of custom components', () => {
     type Props = CustomComponentProps<Entry, number>
-    expectTypeOf<Props['context']>().toEqualTypeOf<DitoContext<Entry>>()
+    expectTypeOf<Props['context']>().toEqualTypeOf<SchemaContext<Entry>>()
     expectTypeOf<Props['context']['item']['title']>().toBeString()
     expectTypeOf<Props['modelValue']>().toBeNumber()
     expectTypeOf<Props['schema']['type']>().toEqualTypeOf<'component'>()
@@ -158,7 +158,7 @@ describe('CustomComponentProps and CustomComponentEmits', () => {
   })
 
   it('reads schema values with `getSchemaValue()`', () => {
-    const context = {} as DitoContext<Entry>
+    const context = {} as SchemaContext<Entry>
     expectTypeOf(getSchemaValue({ label: 'Rating' }, 'label', context))
       .toBeAny()
   })

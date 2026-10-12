@@ -2,7 +2,10 @@ import { computed, ref } from 'vue'
 import { camelize } from '@ditojs/utils'
 import { getSchemaEventEntries } from '../utils/schema/events.js'
 import { useSchemaEvents } from './useSchemaEvents.ts'
-import type { SchemaContext, SchemaContextProps } from './useSchemaContext.ts'
+import type {
+  SchemaContextSetup,
+  SchemaContextProps
+} from './useSchemaContext.ts'
 import type { Value } from './useValue.ts'
 
 type Handler = (...args: any[]) => any
@@ -30,7 +33,7 @@ export function useFieldEvents(
     parsedValue,
     getEvents,
     validate
-  }: Omit<SchemaContext, 'context'> & Value & FieldEventsOptions
+  }: Omit<SchemaContextSetup, 'context'> & Value & FieldEventsOptions
 ) {
   const { emitEvent } = useSchemaEvents(() => props.schema, {
     services,

@@ -1,6 +1,6 @@
 import { vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
-import DitoContext from '../DitoContext.js'
+import SchemaContext from '../SchemaContext.js'
 import { mountSchema, isForm } from '../test/mount.js'
 
 const blocksSchema = {
@@ -191,7 +191,7 @@ describe('DitoCreateButton', () => {
     const route = admin.router.currentRoute.value
     expect(route.path).toBe('/test/recipes/create')
     expect(route.query).toEqual({ type: 'cake', editor: 'tester' })
-    expect(query).toHaveBeenCalledWith(expect.any(DitoContext))
+    expect(query).toHaveBeenCalledWith(expect.any(SchemaContext))
     // The form creates an item of the type:
     const form = admin.getRouteComponent(isForm)
     expect(form.data.type).toBe('cake')

@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import DitoContext from '../../DitoContext.js'
+import SchemaContext from '../../SchemaContext.js'
 import { defineType } from './types.ts'
 import { sourceTraits } from '../../types/traits.ts'
 import {
@@ -548,8 +548,11 @@ describe('processData()', () => {
 
 describe('shouldRenderSchema()', () => {
   it(`doesn't evaluate the components of sources for their items`, () => {
-    // `DitoContext` needs a component to inherit from:
-    const context = new DitoContext({}, { data: { links: null }, dataPath: '' })
+    // `SchemaContext` needs a component to inherit from:
+    const context = new SchemaContext(
+      {},
+      { data: { links: null }, dataPath: '' }
+    )
     const condition = vi.fn(({ item }) => !!item.url)
     const links = {
       type: 'list',
@@ -560,7 +563,7 @@ describe('shouldRenderSchema()', () => {
   })
 
   it('hides sections whose components are all hidden', () => {
-    const context = new DitoContext({}, { data: {}, dataPath: '' })
+    const context = new SchemaContext({}, { data: {}, dataPath: '' })
     const section = {
       type: 'section',
       components: { url: { type: 'text', if: () => false } }
@@ -596,7 +599,7 @@ describe('initializeData()', () => {
       }
     }
     const data = { prices: [100, 200] }
-    // `DitoContext` needs a component to inherit from:
+    // `SchemaContext` needs a component to inherit from:
     initializeData({ type: 'form', components: { prices } }, data, {})
     expect(data).toEqual({ prices: [100, 200] })
   })
@@ -655,7 +658,7 @@ describe('initializeData()', () => {
     initializeData(
       { type: 'form', tabs: { main: { type: 'tab', components: { items } } } },
       data,
-      // `DitoContext` needs a component to inherit from:
+      // `SchemaContext` needs a component to inherit from:
       {}
     )
     expect(data.items.map(item => item.order)).toEqual([0, 1])
@@ -686,8 +689,8 @@ describe('initializeData()', () => {
 })
 
 describe('getCreatableForms()', () => {
-  // `DitoContext` needs a component to inherit from:
-  const createContext = data => new DitoContext({}, { data, dataPath: '' })
+  // `SchemaContext` needs a component to inherit from:
+  const createContext = data => new SchemaContext({}, { data, dataPath: '' })
   const createForm = settings => ({
     type: 'form',
     components: { title: { type: 'text' } },

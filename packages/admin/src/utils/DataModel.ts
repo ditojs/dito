@@ -21,7 +21,7 @@ import {
   parseDataPath,
   getValueAtDataPath
 } from '@ditojs/utils'
-import DitoContext from '../DitoContext.js'
+import SchemaContext from '../SchemaContext.js'
 import { DataSchemaResolver } from './DataSchemaResolver.js'
 import { getParentDataPath, getRelativeDataPath } from './data.js'
 import { mergeData } from './mergeData.ts'
@@ -1010,7 +1010,7 @@ export class DataModel {
     name,
     dataPath
   }: Omit<FieldEntry, 'name'> & Pick<ProcessedEntry, 'name'>) {
-    return DitoContext.createForSchema(this.#options.services, {
+    return SchemaContext.createForSchema(this.#options.services, {
       schema,
       name,
       data,

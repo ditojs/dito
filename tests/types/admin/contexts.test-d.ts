@@ -1,9 +1,10 @@
 import { expectTypeOf, describe, it } from 'vitest'
 import type {
   AdminContext,
+  AdminUser,
   DataContext,
-  DitoContext,
-  DitoDataModel,
+  SchemaContext,
+  DataModel,
   ResourceContext,
   RouteContext,
   SourceContext,
@@ -13,11 +14,12 @@ import type {
 
 describe('contexts', () => {
   it('provides the context of the admin', () => {
-    expectTypeOf<AdminContext['user']>().toEqualTypeOf<DitoContext['user']>()
+    expectTypeOf<AdminContext['user']>().toEqualTypeOf<SchemaContext['user']>()
+    expectTypeOf<SchemaContext['user']>().toEqualTypeOf<AdminUser | null>()
     expectTypeOf<AdminContext['notify']>()
-      .toEqualTypeOf<DitoContext['notify']>()
+      .toEqualTypeOf<SchemaContext['notify']>()
     expectTypeOf<AdminContext['showDialog']>()
-      .toEqualTypeOf<DitoContext['showDialog']>()
+      .toEqualTypeOf<SchemaContext['showDialog']>()
     expectTypeOf<AdminContext['loadingTracker']['isLoading']>().toBeBoolean()
     expectTypeOf<AdminContext['ui']>().toEqualTypeOf<UiRegistry>()
     expectTypeOf<AdminContext['ui']['routes']>()
@@ -25,12 +27,12 @@ describe('contexts', () => {
   })
 
   it('provides the contexts of data and routes', () => {
-    expectTypeOf<DataContext['model']>().toEqualTypeOf<DitoDataModel>()
+    expectTypeOf<DataContext['model']>().toEqualTypeOf<DataModel>()
     expectTypeOf<DataContext['isDirty']>().toBeBoolean()
     expectTypeOf<DataContext['revealErrors']>().returns.resolves.toBeVoid()
-    expectTypeOf<DitoDataModel['isEdited']>().toBeBoolean()
-    expectTypeOf<DitoDataModel['markEdited']>().returns.toBeVoid()
-    expectTypeOf<DitoDataModel['mergeFromServer']>()
+    expectTypeOf<DataModel['isEdited']>().toBeBoolean()
+    expectTypeOf<DataModel['markEdited']>().returns.toBeVoid()
+    expectTypeOf<DataModel['mergeFromServer']>()
       .returns.toEqualTypeOf<object>()
     expectTypeOf<RouteContext['parent']>().toEqualTypeOf<RouteContext | null>()
     expectTypeOf<RouteContext['dataContext']>()
@@ -55,7 +57,7 @@ describe('contexts', () => {
     expectTypeOf<ResourceContext['submit']>()
       .parameter(0)
       .toEqualTypeOf<SubmitButton>()
-    expectTypeOf<SubmitButton['context']>().toEqualTypeOf<DitoContext>()
+    expectTypeOf<SubmitButton['context']>().toEqualTypeOf<SchemaContext>()
     expectTypeOf<RouteContext['resourceContext']>()
       .toEqualTypeOf<ResourceContext | null>()
     expectTypeOf<RouteContext['submit']>()

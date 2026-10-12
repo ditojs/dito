@@ -1,15 +1,15 @@
 import { expectTypeOf, assertType, describe, it } from 'vitest'
 import type {
-  DitoContext,
+  SchemaContext,
   OrItemAccessor,
   PanelSchema,
   SchemaByType
 } from '@ditojs/admin'
 import type { Entry, ParentWithMarkers } from './fixtures.ts'
 
-describe('DitoContext', () => {
+describe('SchemaContext', () => {
   it('item strips never keys', () => {
-    type Ctx = DitoContext<ParentWithMarkers>
+    type Ctx = SchemaContext<ParentWithMarkers>
     expectTypeOf<Ctx['item']>().not.toBeAny()
     expectTypeOf<Ctx['item']>().toHaveProperty('id')
     expectTypeOf<Ctx['item']>().toHaveProperty('title')
@@ -19,7 +19,7 @@ describe('DitoContext', () => {
   })
 
   it('item preserves data keys', () => {
-    type Ctx = DitoContext<Entry>
+    type Ctx = SchemaContext<Entry>
     expectTypeOf<Ctx['item']>().not.toBeAny()
     expectTypeOf<Ctx['item']>().toEqualTypeOf<{
       id: number
@@ -28,18 +28,18 @@ describe('DitoContext', () => {
   })
 
   it('user is null when logged out', () => {
-    type Ctx = DitoContext<Entry>
+    type Ctx = SchemaContext<Entry>
     expectTypeOf<null>().toExtend<Ctx['user']>()
     expectTypeOf<NonNullable<Ctx['user']>['hasRole']>().returns.toBeBoolean()
   })
 
   it('parentItemDataPath is null for root items', () => {
-    type Ctx = DitoContext<Entry>
+    type Ctx = SchemaContext<Entry>
     expectTypeOf<Ctx['parentItemDataPath']>().toEqualTypeOf<string | null>()
   })
 
   it('offers the state of the data without components', () => {
-    type Ctx = DitoContext<Entry>
+    type Ctx = SchemaContext<Entry>
     expectTypeOf<Ctx['isDirty']>().toBeBoolean()
     expectTypeOf<Ctx['isCreating']>().toBeBoolean()
     expectTypeOf<Ctx['selectedTab']>().toEqualTypeOf<string | null>()
@@ -56,7 +56,7 @@ describe('DitoContext', () => {
   it('OrItemAccessor accepts value or callback', () => {
     assertType<OrItemAccessor<Entry, {}, string>>('hello')
     assertType<OrItemAccessor<Entry, {}, string>>(
-      (ctx: DitoContext<Entry>) => ctx.item.title
+      (ctx: SchemaContext<Entry>) => ctx.item.title
     )
   })
 })

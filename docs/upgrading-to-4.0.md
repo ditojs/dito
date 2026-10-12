@@ -587,3 +587,14 @@ are members of the context:
   `emit()` and `emitEvent()` are removed. `change` events bubble from the
   components to the schemas above them unless a handler returns `false`,
   which now also stops them between schemas.
+
+### Type names
+
+The public types no longer carry the `Dito` prefix, except `DitoAdmin`, and
+are named after what they are, like the classes they describe:
+
+- `DitoContext`: `SchemaContext`, the context that callbacks receive.
+- The type of `context.user`: `AdminUser`.
+- `DitoDataModel`, `DitoListEntry` and `DitoValidationError`: `DataModel`,
+  `ListEntry` and `ValidationError`.
+- `DitoGlobal`, the type of the global `dito` object: `GlobalConfig`.

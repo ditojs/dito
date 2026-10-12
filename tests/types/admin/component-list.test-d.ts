@@ -4,7 +4,7 @@ import type {
   Form,
   ListSchema,
   ColumnSchema,
-  DitoContext
+  SchemaContext
 } from '@ditojs/admin'
 import type { Entry, Parent } from './fixtures.ts'
 
@@ -73,7 +73,7 @@ describe('ListSchema', () => {
       type: 'list',
       creatable(ctx) {
         expectTypeOf(ctx).not.toBeAny()
-        expectTypeOf(ctx).toMatchTypeOf<DitoContext<Entry>>()
+        expectTypeOf(ctx).toMatchTypeOf<SchemaContext<Entry>>()
         expectTypeOf(ctx.item.title).toBeString()
         return true
       }
@@ -115,7 +115,7 @@ describe('ListSchema', () => {
       type: 'list',
       draggable(ctx) {
         expectTypeOf(ctx).not.toBeAny()
-        expectTypeOf(ctx).toMatchTypeOf<DitoContext<Entry>>()
+        expectTypeOf(ctx).toMatchTypeOf<SchemaContext<Entry>>()
         return true
       }
     })
