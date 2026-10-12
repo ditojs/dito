@@ -1011,7 +1011,7 @@ describe('DitoSchema', () => {
             forms: {
               heading: {
                 type: 'form',
-                events: { initialize },
+                onInitialize: initialize,
                 components: { text: { type: 'text' } }
               },
               image: {

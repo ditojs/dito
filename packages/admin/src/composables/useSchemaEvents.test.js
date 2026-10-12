@@ -17,7 +17,7 @@ describe('useSchemaEvents()', () => {
           title: {
             type: 'text',
             onMouseenter,
-            events: { dblclick: onDblclick }
+            onDblclick
           }
         }
       }
@@ -38,11 +38,9 @@ describe('useSchemaEvents()', () => {
         components: {
           title: {
             type: 'text',
-            events: {
-              change(ctx) {
-                receiver = this
-                context = ctx
-              }
+            onChange(ctx) {
+              receiver = this
+              context = ctx
             }
           }
         }
@@ -77,10 +75,8 @@ describe('useSchemaEvents()', () => {
             }
           }
         },
-        events: {
-          change({ dataPath }) {
-            dataPaths.push(dataPath)
-          }
+        onChange({ dataPath }) {
+          dataPaths.push(dataPath)
         }
       },
       data: {
@@ -102,13 +98,13 @@ describe('useSchemaEvents()', () => {
     const { findField } = await mountSchema({
       schema: {
         components: {
-          title: { type: 'text', events: { dblclick: 'not a function' } }
+          title: { type: 'text', onDblclick: 'not a function' }
         }
       }
     })
     await findField('title').find('input').trigger('dblclick')
     expect(error).toHaveBeenCalledWith(
-      'Invalid event definition: dblclick: not a function'
+      'Invalid event definition: onDblclick: not a function'
     )
   })
 

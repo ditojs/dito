@@ -109,7 +109,7 @@ describe('DitoTypeCode', () => {
     const blur = vi.fn()
     const { findField, focusField } = await mountSchema({
       schema: {
-        components: { snippet: { type: 'code', events: { focus, blur } } }
+        components: { snippet: { type: 'code', onFocus: focus, onBlur: blur } }
       }
     })
     const textarea = findField('snippet').find('textarea').element

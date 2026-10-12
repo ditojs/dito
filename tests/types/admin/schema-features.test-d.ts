@@ -25,7 +25,7 @@ describe('SchemaFields: no component members', () => {
     })
     assertType<Form<Entry>>({
       type: 'form',
-      // @ts-expect-error — use `events.change` instead
+      // @ts-expect-error — use `onChange` instead
       watch: {}
     })
     assertType<Form<Entry>>({
@@ -41,12 +41,10 @@ describe('SchemaFields: no component members', () => {
       components: {
         title: { type: 'text' }
       },
-      events: {
-        change({ dataPath, submit, verify }) {
-          expectTypeOf(dataPath).toBeString()
-          expectTypeOf(submit).returns.toEqualTypeOf<Promise<boolean>>()
-          expectTypeOf(verify(/^title/)).toBeBoolean()
-        }
+      onChange({ dataPath, submit, verify }) {
+        expectTypeOf(dataPath).toBeString()
+        expectTypeOf(submit).returns.toEqualTypeOf<Promise<boolean>>()
+        expectTypeOf(verify(/^title/)).toBeBoolean()
       }
     })
   })
@@ -237,11 +235,9 @@ describe('PanelSchema', () => {
       buttons: {
         save: {
           text: 'Save',
-          events: {
-            click({ item }) {
-              expectTypeOf(item).not.toBeAny()
-              expectTypeOf(item.title).toBeString()
-            }
+          onClick({ item }) {
+            expectTypeOf(item).not.toBeAny()
+            expectTypeOf(item.title).toBeString()
           }
         }
       },
@@ -302,11 +298,9 @@ describe('PanelSchema', () => {
           buttons: {
             save: {
               text: 'Save',
-              events: {
-                click({ item }) {
-                  expectTypeOf(item).not.toBeAny()
-                  expectTypeOf(item.id).toBeNumber()
-                }
+              onClick({ item }) {
+                expectTypeOf(item).not.toBeAny()
+                expectTypeOf(item.id).toBeNumber()
               }
             }
           }

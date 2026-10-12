@@ -87,10 +87,8 @@ describe('useResource()', () => {
           components: {
             publish: {
               ...bookSchema.components.publish,
-              events: {
-                success() {
-                  throw new Error('Publishing failed')
-                }
+              onSuccess() {
+                throw new Error('Publishing failed')
               }
             }
           }
@@ -212,12 +210,10 @@ describe('useResource()', () => {
           components: {
             publish: {
               ...bookSchema.components.publish,
-              events: {
-                success: () =>
-                  new Promise(resolve => {
-                    finishHandler = resolve
-                  })
-              }
+              onSuccess: () =>
+                new Promise(resolve => {
+                  finishHandler = resolve
+                })
             }
           }
         },

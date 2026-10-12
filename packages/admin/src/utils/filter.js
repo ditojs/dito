@@ -73,13 +73,11 @@ export function createFiltersPanel(api, filters, dataPath, query) {
       type: 'button',
       text: small ? null : 'Clear',
       disabled: ({ item }) => formatFiltersData(panel, item).length === 0,
-      events: {
-        click({ replaceItem }) {
-          // The data model sets up the new data with the defaults right away,
-          // and the errors stay with the replaced data:
-          filtersData = replaceItem({})
-          applyFilters(filtersData)
-        }
+      onClick({ replaceItem }) {
+        // The data model sets up the new data with the defaults right away,
+        // and the errors stay with the replaced data:
+        filtersData = replaceItem({})
+        applyFilters(filtersData)
       }
     },
 
@@ -87,10 +85,8 @@ export function createFiltersPanel(api, filters, dataPath, query) {
       type: 'submit',
       text: small ? null : 'Filter',
       visible: !small,
-      events: {
-        click({ item }) {
-          applyFilters(item)
-        }
+      onClick({ item }) {
+        applyFilters(item)
       }
     }
   })
@@ -112,10 +108,8 @@ export function createFiltersPanel(api, filters, dataPath, query) {
     buttons: createButtons(false),
     panelButtons: createButtons(true),
 
-    events: {
-      change() {
-        applyFilters(filtersData)
-      }
+    onChange() {
+      applyFilters(filtersData)
     }
   }
   applyNestedSchemaDefaults(api, panel)

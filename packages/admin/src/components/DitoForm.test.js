@@ -145,7 +145,7 @@ describe('DitoForm', () => {
             publish: {
               type: 'button',
               label: 'Publish',
-              events: { click: publish }
+              onClick: publish
             }
           }
         },
@@ -1401,7 +1401,7 @@ describe('DitoForm', () => {
                 buttons: {
                   apply: {
                     type: 'submit',
-                    events: { click: ({ submit }) => submit() }
+                    onClick: ({ submit }) => submit()
                   }
                 }
               }

@@ -592,6 +592,8 @@ export interface BaseSchema<$Item> extends SchemaFields<$Item> {
    *
    * @see {@link SchemaFields.onInitialize} and other `on`-
    * prefixed properties for per-event documentation.
+   *
+   * @deprecated Use the `on…` handlers, e.g. `onChange()`.
    */
   events?: BaseSchemaEvents<$Item>
 }
@@ -1215,6 +1217,7 @@ export interface ButtonSchema<$Item = any>
   onClick?: ItemEventHandler<$Item>
   onSuccess?: ItemEventHandler<$Item>
   onError?: ErrorEventHandler<$Item>
+  /** @deprecated Use the `on…` handlers, e.g. `onChange()`. */
   events?: BaseSchemaEvents<$Item> & {
     click?: ItemEventHandler<$Item>
     success?: ItemEventHandler<$Item>
@@ -1654,6 +1657,8 @@ export type SectionSchema<$Item = any, $Nested = $Item> = BaseSchema<$Item> &
     collapsed?: OrItemAccessor<$Item, {}, boolean>
     /**
      * Grouped event handlers.
+     *
+     * @deprecated Use the `on…` handlers, e.g. `onChange()`.
      */
     events?: {
       /**
@@ -1848,6 +1853,8 @@ export interface ListSchema<$Item = { [key: string]: any }>
   }
   /**
    * Grouped event handlers.
+   *
+   * @deprecated Use the `on…` handlers, e.g. `onChange()`.
    */
   events?: BaseSchemaEvents<$Item> & {
     /**
@@ -2316,6 +2323,8 @@ export interface ViewSchema<$Item = any> extends SchemaRoute<$Item> {
    * @see {@link SchemaFields.onInitialize} and
    * other `on`-prefixed properties for per-event
    * documentation.
+   *
+   * @deprecated Use the `on…` handlers, e.g. `onChange()`.
    */
   events?: SchemaEvents<$Item> & {
     /**
@@ -2364,6 +2373,8 @@ export interface ObjectSchema<$Item = { [key: string]: any }>
   type: 'object'
   /**
    * Grouped event handlers.
+   *
+   * @deprecated Use the `on…` handlers, e.g. `onChange()`.
    */
   events?: BaseSchemaEvents<$Item> & {
     /**
@@ -2676,6 +2687,8 @@ export interface Form<$Item = any> extends SchemaRoute<$Item> {
    * @see {@link SchemaFields.onInitialize} and
    * other `on`-prefixed properties for per-event
    * documentation.
+   *
+   * @deprecated Use the `on…` handlers, e.g. `onChange()`.
    */
   events?: SchemaEvents<$Item> & {
     /**

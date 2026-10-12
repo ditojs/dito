@@ -37,10 +37,8 @@ describe('DitoTypeButton', () => {
           title: { type: 'text' },
           uppercase: {
             type: 'button',
-            events: {
-              click({ item }) {
-                item.title = item.title.toUpperCase()
-              }
+            onClick({ item }) {
+              item.title = item.title.toUpperCase()
             }
           }
         }
@@ -325,10 +323,8 @@ describe('DitoTypeButton', () => {
         buttons: {
           submit: {
             closeForm: false,
-            events: {
-              async click({ submit }) {
-                isSubmitted = await submit()
-              }
+            async onClick({ submit }) {
+              isSubmitted = await submit()
             }
           }
         }
@@ -360,10 +356,8 @@ describe('DitoTypeButton', () => {
         buttons: {
           save: {
             type: 'save-button',
-            events: {
-              async click({ submit }) {
-                isSubmitted = await submit({ closeForm: false })
-              }
+            async onClick({ submit }) {
+              isSubmitted = await submit({ closeForm: false })
             }
           }
         }

@@ -10,37 +10,16 @@ describe('SchemaEvents', () => {
     await expect(events.emit('load', context)).resolves.toBe(undefined)
   })
 
-  it('calls the handlers of `events` and of `on[A-Z]` with the context', async () => {
-    const load = vi.fn()
+  it('calls the handlers with the context', async () => {
     const onLoad = vi.fn()
-    const events = new SchemaEvents({ events: { load }, onLoad })
+    const events = new SchemaEvents({ onLoad })
     await events.emit('load', context)
-    expect(load).toHaveBeenCalledWith(context)
     expect(onLoad).toHaveBeenCalledWith(context)
   })
 
-  it('resolves with the last result that is not undefined', async () => {
-    const events = new SchemaEvents({
-      events: { load: () => 'first' },
-      onLoad: () => undefined
-    })
-    expect(await events.emit('load', context)).toBe('first')
-  })
-
-  it('runs the handlers of one emit one after the other', async () => {
-    const calls: string[] = []
-    const events = new SchemaEvents({
-      events: {
-        async load() {
-          calls.push('start first')
-          await Promise.resolve()
-          calls.push('end first')
-        }
-      },
-      onLoad: () => calls.push('second')
-    })
-    await events.emit('load', context)
-    expect(calls).toEqual(['start first', 'end first', 'second'])
+  it('resolves with the result of the handler', async () => {
+    const events = new SchemaEvents({ onLoad: () => 'loaded' })
+    expect(await events.emit('load', context)).toBe('loaded')
   })
 
   it('runs separate emits concurrently', async () => {
@@ -60,23 +39,17 @@ describe('SchemaEvents', () => {
     expect(await first).toBe('first')
   })
 
-  it('calls all handlers and rejects with their errors', async () => {
+  it('rejects with the errors of the handler', async () => {
     const events = new SchemaEvents({
-      events: {
-        load() {
-          throw new Error('First')
-        }
-      },
       async onLoad() {
-        throw new Error('Second')
+        throw new Error('Unavailable')
       }
     })
     const error = await events.emit('load', context).catch(error => error)
     expect(error).toBeInstanceOf(AggregateError)
     expect(error.message).toBe(`Errors during event handler for 'load'`)
     expect(error.errors.map((error: Error) => error.message)).toEqual([
-      'First',
-      'Second'
+      'Unavailable'
     ])
   })
 

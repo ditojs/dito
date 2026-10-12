@@ -109,12 +109,10 @@ export const articles = createWidgetView<ArticleItem>(
               label: 'Category',
               options: { data: () => loadDelayed(categoryOptions) },
               computeValue: getValidOrFirstOption,
-              events: {
-                // Sees the topic that the data model derives from the
-                // category, once the options of the topic are loaded.
-                change: ({ item }) => {
-                  item.topicOnCategoryChange = item.topic
-                }
+              // Sees the topic that the data model derives from the
+              // category, once the options of the topic are loaded.
+              onChange: ({ item }) => {
+                item.topicOnCategoryChange = item.topic
               }
             },
             // The options come from data next to the select, which a button
@@ -134,10 +132,8 @@ export const articles = createWidgetView<ArticleItem>(
             resetChooser: {
               type: 'button',
               text: 'Reset Chooser',
-              events: {
-                click: ({ item }) => {
-                  item.chooser = {}
-                }
+              onClick: ({ item }) => {
+                item.chooser = {}
               }
             },
             // Like actions that the server saves: Writes the result directly,
@@ -145,10 +141,8 @@ export const articles = createWidgetView<ArticleItem>(
             applySavedTitle: {
               type: 'button',
               text: 'Apply Saved Title',
-              events: {
-                click: ({ item }) => {
-                  item.title = 'Saved'
-                }
+              onClick: ({ item }) => {
+                item.title = 'Saved'
               }
             },
             // Like actions that return the updated item: Replaces the form's
@@ -156,14 +150,12 @@ export const articles = createWidgetView<ArticleItem>(
             replaceData: {
               type: 'button',
               text: 'Replace Data',
-              events: {
-                click: ({ item, replaceItem }) => {
-                  const article = replaceItem({
-                    ...item,
-                    title: 'Replaced'
-                  })
-                  article.title = `${article.title} and Modified`
-                }
+              onClick: ({ item, replaceItem }) => {
+                const article = replaceItem({
+                  ...item,
+                  title: 'Replaced'
+                })
+                article.title = `${article.title} and Modified`
               }
             },
             // The computed value is derived from other data when it's missing,
@@ -260,10 +252,8 @@ export const articles = createWidgetView<ArticleItem>(
             resetPreview: {
               type: 'button',
               text: 'Reset Preview',
-              events: {
-                click: ({ item }) => {
-                  item.previewKey = null
-                }
+              onClick: ({ item }) => {
+                item.previewKey = null
               }
             },
             // Counts the changes of the markup, which are emitted once the
@@ -272,10 +262,8 @@ export const articles = createWidgetView<ArticleItem>(
               type: 'markup',
               label: 'Notes',
               exclude: true,
-              events: {
-                change: ({ item }) => {
-                  item.notesChanges = (item.notesChanges ?? 0) + 1
-                }
+              onChange: ({ item }) => {
+                item.notesChanges = (item.notesChanges ?? 0) + 1
               }
             },
             notesChanges: {

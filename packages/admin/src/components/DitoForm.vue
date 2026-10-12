@@ -281,18 +281,14 @@ export default {
           {
             cancel: {
               type: 'button',
-              events: {
-                click: () => close()
-              }
+              onClick: () => close()
             },
 
             submit: !isMutating.value && {
               type: 'submit',
               // Submit buttons close the form by default:
               closeForm: true,
-              events: {
-                click: ({ submit }) => submit()
-              }
+              onClick: ({ submit }) => submit()
             }
           },
           schema.value.buttons

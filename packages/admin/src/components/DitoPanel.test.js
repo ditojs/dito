@@ -96,7 +96,7 @@ describe('DitoPanel', () => {
               refresh: {
                 type: 'button',
                 text: 'Refresh',
-                events: { click }
+                onClick: click
               }
             }
           }
@@ -122,7 +122,7 @@ describe('DitoPanel', () => {
             data: { query: 'Emma' },
             components: {
               query: { type: 'text' },
-              refresh: { type: 'button', events: { click } }
+              refresh: { type: 'button', onClick: click }
             }
           }
         }
@@ -148,7 +148,7 @@ describe('DitoPanel', () => {
             data: { id: 7, query: 'Emma' },
             components: {
               query: { type: 'text' },
-              refresh: { type: 'button', events: { click } }
+              refresh: { type: 'button', onClick: click }
             }
           }
         }
@@ -238,7 +238,7 @@ describe('DitoPanel', () => {
             data: { query: '' },
             components: { query: { type: 'text', required: true } },
             buttons: {
-              check: { type: 'button', text: 'Check', events: { click } },
+              check: { type: 'button', text: 'Check', onClick: click },
               apply: { type: 'submit' }
             }
           }

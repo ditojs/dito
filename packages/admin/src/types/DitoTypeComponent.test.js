@@ -39,7 +39,7 @@ describe('DitoTypeComponent', () => {
           rating: {
             type: 'component',
             component: RatingStars,
-            events: { change }
+            onChange: change
           }
         }
       },
@@ -131,7 +131,8 @@ describe('DitoTypeComponent', () => {
             type: 'component',
             component: RatingStars,
             required: true,
-            events: { focus, blur }
+            onFocus: focus,
+            onBlur: blur
           }
         }
       },

@@ -89,16 +89,14 @@ describe('View tabs and events', () => {
   it('accepts events on a view', () => {
     const view: View<Entry> = {
       type: 'view',
-      events: {
-        open({ item, open }) {
-          expectTypeOf(item).not.toBeAny()
-          expectTypeOf(item.title).toBeString()
-          expectTypeOf(open).toBeBoolean()
-        },
-        change({ item }) {
-          expectTypeOf(item).not.toBeAny()
-          expectTypeOf(item.id).toBeNumber()
-        }
+      onOpen({ item, open }) {
+        expectTypeOf(item).not.toBeAny()
+        expectTypeOf(item.title).toBeString()
+        expectTypeOf(open).toBeBoolean()
+      },
+      onChange({ item }) {
+        expectTypeOf(item).not.toBeAny()
+        expectTypeOf(item.id).toBeNumber()
       }
     }
   })

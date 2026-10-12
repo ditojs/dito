@@ -101,9 +101,7 @@ export default {
           // Add the default click event of the cancel button:
           ([key, schema]) => [
             key,
-            key === 'cancel' && !schema.events
-              ? { ...schema, events: { click: cancel } }
-              : schema
+            key === 'cancel' ? { onClick: cancel, ...schema } : schema
           ]
         )
       )

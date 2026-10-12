@@ -1,15 +1,23 @@
-import { hyphenate } from '@ditojs/utils'
+import { deprecate, hyphenate } from '@ditojs/utils'
 
-// TODO: Deprecate either `events: { mouseenter }` or `onMouseenter`?
 export function getSchemaEventEntries(schema) {
-  const entries = []
-  for (const [key, callback] of Object.entries(schema.events || {})) {
-    entries.push({ key, event: hyphenate(key), callback })
+  const entriesByEvent = {}
+  if (schema.events) {
+    deprecate(
+      'Schema `events` are deprecated, use the `on…` handlers instead, ' +
+      'e.g. `onChange()` for `events: { change() }`.'
+    )
+    for (const [key, callback] of Object.entries(schema.events)) {
+      const event = hyphenate(key)
+      entriesByEvent[event] = { key, event, callback }
+    }
   }
   for (const [key, callback] of Object.entries(schema)) {
     if (/^on[A-Z]/.test(key)) {
-      entries.push({ key, event: hyphenate(key.slice(2)), callback })
+      const event = hyphenate(key.slice(2))
+      // `events` replace the handlers of their events, e.g. button defaults:
+      entriesByEvent[event] ??= { key, event, callback }
     }
   }
-  return entries
+  return Object.values(entriesByEvent)
 }

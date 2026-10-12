@@ -113,9 +113,7 @@ describe('DitoDialog', () => {
         keep: {
           type: 'button',
           text: 'Keep',
-          events: {
-            click: ({ closeDialog }) => closeDialog('kept')
-          }
+          onClick: ({ closeDialog }) => closeDialog('kept')
         }
       }
     })
@@ -132,7 +130,7 @@ describe('DitoDialog', () => {
         rating: { type: 'number', default: 3 }
       },
       buttons: {
-        check: { type: 'button', text: 'Check', events: { click } },
+        check: { type: 'button', text: 'Check', onClick: click },
         apply: { type: 'submit' }
       }
     })
