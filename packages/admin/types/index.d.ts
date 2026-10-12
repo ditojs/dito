@@ -2220,6 +2220,86 @@ export interface AdminContext {
   closeNotifications(): void
 }
 
+/**
+ * The context of a view, form, dialog or panel with its own data, provided
+ * to the components that display its data as `container`. Its members are
+ * reactive.
+ */
+export interface ContainerContext {
+  /**
+   * The data model that holds the data, which is the model of the parent
+   * for forms that mutate the item of their parent.
+   */
+  readonly model: DitoDataModel
+  /** The schema of the data. */
+  readonly schema: Component
+  /** The data path of the data, relative to `rootData`. */
+  readonly dataPath: string
+  /** The data that `dataPath` is relative to. */
+  readonly rootData: Record<string, any> | null
+  /** See {@link DitoDataModel.isDirty}. */
+  readonly isDirty: boolean
+  /** See {@link DitoDataModel.isEdited}. */
+  readonly isEdited: boolean
+  /** Whether the form creates a new item, `false` outside of forms. */
+  readonly isCreating: boolean
+  validate: DitoContext['validate']
+  verify: DitoContext['verify']
+  markEdited: DitoContext['markEdited']
+  replaceItem: DitoContext['replaceItem']
+}
+
+/** The context that dialogs provide as `container`. */
+export interface DialogContext extends ContainerContext {
+  /** Closes the dialog, and resolves `showDialog()` with `value`. */
+  close(value?: unknown): void
+}
+
+/**
+ * The context of a view or form, provided to the components that it renders
+ * as `route`. Its members are reactive.
+ */
+export interface RouteContext {
+  /** The context of the route of the parent form or view. */
+  readonly parent: RouteContext | null
+  /** The context of the data of the view or form. */
+  readonly container: ContainerContext
+  /** The depth of the route, starting at `0` for views. */
+  readonly level: number
+  readonly isForm: boolean
+  /**
+   * The state that the routes below depend on: the data, the parameters of
+   * the route, and whether its sources are transient, e.g. in forms that
+   * create their item.
+   */
+  readonly state: {
+    data: any
+    routeParams: Record<string, any>
+    isTransient: boolean
+  }
+  readonly path: string
+  /** Whether the route is the last one of the current route. */
+  readonly isLastRoute: boolean
+  /** The name of the selected tab, `null` without tabs. */
+  readonly selectedTab: string | null
+  /**
+   * Resolves the path of the deepest form that edits the data at
+   * `dataPath`, along with the data path that remains within that form,
+   * or `null`.
+   */
+  getFormRoute(dataPath: string): { path: string; dataPath: string } | null
+  /**
+   * Resolves the path of the form that creates an item of the source at
+   * `dataPath`, or `null`.
+   */
+  getCreatePath(dataPath: string): string | null
+  /**
+   * Closes the form, navigating to the route of its parent. Throws for
+   * views.
+   */
+  close(): Promise<unknown>
+}
+
 export interface DitoComponentInstanceBase<$Item = any>
   extends ComponentPublicInstance,
     EmitterMixin {
@@ -2319,23 +2399,21 @@ export interface DitoComponentInstanceBase<$Item = any>
   context: DitoContext<$Item>
   /** The nearest `DitoSchema` managing layout. */
   schemaComponent: DitoSchemaInstance
-  /** The nearest ancestor form component. */
-  formComponent: DitoFormInstance
-  /** The nearest ancestor view component. */
-  viewComponent: DitoViewInstance | null
-  /** The nearest ancestor dialog component. */
-  dialogComponent: DitoComponentInstanceBase | null
-  /** The nearest ancestor panel component. */
-  panelComponent: DitoComponentInstanceBase | null
+  /**
+   * The context of the view, form, dialog or panel with its own data that
+   * owns the component's data: the component itself, or its closest
+   * ancestor. Dialogs provide a {@link DialogContext}.
+   */
+  container: ContainerContext | null
+  /**
+   * The context of the view or form that renders the component, or that
+   * the component is, `null` in dialogs.
+   */
+  route: RouteContext | null
   /** The nearest ancestor resource component. */
   resourceComponent: DitoFormInstance | DitoSourceInstance
   /** The nearest ancestor source component. */
   sourceComponent: DitoSourceInstance
-  /**
-   * The nearest route component (form or view) in the
-   * ancestor chain.
-   */
-  routeComponent: DitoFormInstance | DitoViewInstance | null
   /**
    * The first parent route component that provides and
    * loads its own data from the API.
@@ -2343,15 +2421,8 @@ export interface DitoComponentInstanceBase<$Item = any>
   dataComponent: DitoFormInstance | DitoViewInstance | null
   /** The parent schema component. */
   parentSchemaComponent: DitoComponentInstanceBase | null
-  /** The parent form component. */
-  parentFormComponent: DitoComponentInstanceBase | null
   /** The nearest ancestor tab component. */
   tabComponent: DitoComponentInstanceBase | null
-  /** The parent route component. */
-  parentRouteComponent:
-    | DitoFormInstance
-    | DitoViewInstance
-    | null
   /** The parent resource component. */
   parentResourceComponent:
     | DitoFormInstance
@@ -2776,8 +2847,6 @@ export interface DitoFormInstance<$Item = any>
   isLastRoute: boolean
   /** Whether this route is nested inside another route. */
   isNestedRoute: boolean
-  /** Zero-based depth of this route in the hierarchy. */
-  routeLevel: number
 
   /**
    * The resolved API resource for this component,
@@ -2831,19 +2900,6 @@ export interface DitoFormInstance<$Item = any>
    * parent's data instead of working on a copy.
    */
   isMutating: boolean
-  /**
-   * Resolves the path of the deepest form that edits
-   * the data at `dataPath`, along with the data path
-   * that remains within that form, or `null`.
-   */
-  getFormRoute(
-    dataPath: string
-  ): { path: string; dataPath: string } | null
-  /**
-   * Resolves the path of the form that creates an
-   * item of the source at `dataPath`, or `null`.
-   */
-  getCreatePath(dataPath: string): string | null
 }
 
 /** The root component of the admin (DitoRoot). */
@@ -2881,8 +2937,6 @@ export interface DitoViewInstance<$Item = any>
   isLastRoute: boolean
   /** Whether this route is nested inside another route. */
   isNestedRoute: boolean
-  /** Zero-based depth of this route in the hierarchy. */
-  routeLevel: number
   /**
    * The route parameter value for this route
    * component (e.g. an item id or `'create'`).
@@ -2893,19 +2947,6 @@ export interface DitoViewInstance<$Item = any>
    * parent's data instead of working on a copy.
    */
   isMutating: boolean
-  /**
-   * Resolves the path of the deepest form that edits
-   * the data at `dataPath`, along with the data path
-   * that remains within that form, or `null`.
-   */
-  getFormRoute(
-    dataPath: string
-  ): { path: string; dataPath: string } | null
-  /**
-   * Resolves the path of the form that creates an
-   * item of the source at `dataPath`, or `null`.
-   */
-  getCreatePath(dataPath: string): string | null
 
   // -- Data & schema (DitoView) --
 

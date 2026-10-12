@@ -21,7 +21,7 @@
       v-if="isEditingItem"
     )
       //- Include a router-view for the optional DitoFormInlined
-      DitoRouterView(:routeLevel="routeComponent.routeLevel + 1")
+      DitoRouterView(:routeLevel="route.level + 1")
 </template>
 
 <script>
@@ -46,8 +46,10 @@ export default DitoTypeComponent.register(
       // component, if there is one:
       isEditingItem() {
         const { sourceNode } = this
-        const level = this.routeComponent?.routeLevel
-        let node = sourceNode && this.$route.matched[level + 1]?.meta.node
+        let node = (
+          sourceNode &&
+          this.$route.matched[this.route.level + 1]?.meta.node
+        )
         while (node && node !== sourceNode) {
           node = node.parent
         }

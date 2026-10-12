@@ -791,37 +791,6 @@ describe('SourceMixin', () => {
     })
   })
 
-  describe('getFormRoute() of the route component', () => {
-    const mountChapters = () =>
-      mountForm({
-        schema: {
-          components: {
-            chapters: {
-              type: 'list',
-              form: {
-                type: 'form',
-                components: { title: { type: 'text' } }
-              }
-            }
-          }
-        },
-        data: { chapters: [{ title: 'Arrakis' }] }
-      })
-
-    it('resolves the form of the item at the data path', async () => {
-      const { routeComponent } = await mountChapters()
-      expect(routeComponent.getFormRoute('chapters/0/title')).toEqual({
-        path: '/items/1/chapters/0',
-        dataPath: 'title'
-      })
-    })
-
-    it('resolves to null without a form for the data path', async () => {
-      const { routeComponent } = await mountChapters()
-      expect(routeComponent.getFormRoute('unknown/path')).toBe(null)
-    })
-  })
-
   describe('forms', () => {
     it('tells whether all forms are compact', async () => {
       const { getComponent } = await mountSchema({

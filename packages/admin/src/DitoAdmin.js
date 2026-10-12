@@ -208,19 +208,16 @@ export default class DitoAdmin {
         // overridden at any point in the component hierarchy.
         $verbs: () => verbs,
         // Provide defaults so DitoMixin can inject them for all components:
-        //   inject: [  '$isPopulated', '$schemaComponent', '$routeComponent' ]
         $isPopulated: () => true,
         $parentComponent: () => null,
         $schemaComponent: () => null,
         $schemaParentComponent: () => null,
-        $routeComponent: () => null,
         $dataComponent: () => null,
         $sourceComponent: () => null,
         $resourceComponent: () => null,
-        $dialogComponent: () => null,
-        $dataModelComponent: () => null,
-        $panelComponent: () => null,
         $tabComponent: () => null,
+        container: null,
+        route: null,
         $loadingTracker: () => admin.loadingTracker
       },
 

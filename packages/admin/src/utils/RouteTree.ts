@@ -469,7 +469,7 @@ export class RouteTree {
       path,
       name: node.routeName,
       component: viewComponent,
-      meta: { schema, node },
+      meta: { node },
       children:
         node instanceof MenuNode
           ? node.items.map(item =>
@@ -499,7 +499,6 @@ export class RouteTree {
 
   #createFormRecords(form: FormNode, sourcePath: string): RouteRecordRaw[] {
     const { source } = form
-    const { schema } = source
     return [
       {
         // Object forms take `create` as their optional parameter:
@@ -511,7 +510,7 @@ export class RouteTree {
         component: DitoComponent.component(
           form.isNestedForm ? 'DitoFormNested' : 'DitoForm'
         ),
-        meta: { schema, node: form },
+        meta: { node: form },
         children: this.#createSourceRecords(
           form.sources.filter(child => !child.isFlattened),
           ''
@@ -524,7 +523,7 @@ export class RouteTree {
       // Lead the paths of lists without an item back to their container:
       ...(
         source.isList && sourcePath
-          ? [{ path: sourcePath, redirect: '.', meta: { schema } }]
+          ? [{ path: sourcePath, redirect: '.' }]
           : []
       )
     ]

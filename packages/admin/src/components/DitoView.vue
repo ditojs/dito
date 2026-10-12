@@ -8,7 +8,7 @@ template(
   //- used to always render forms even when other nested forms are present.
   DitoRouterView(
     v-if="!isLastRoute"
-    :routeLevel="routeLevel + 1"
+    :routeLevel="route.level + 1"
   )
   .dito-view.dito-scroll-parent(
     v-else
@@ -69,8 +69,12 @@ export default DitoComponent.component('DitoView', {
 
   computed: {
     schema() {
-      // The routes of views always have a schema, see `setupView()`:
-      return this.meta.schema
+      return this.route.node.schema
+    },
+
+    // @override DitoMixin.sourceSchema()
+    sourceSchema() {
+      return this.schema
     },
 
     name() {

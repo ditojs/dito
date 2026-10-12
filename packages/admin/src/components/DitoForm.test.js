@@ -1065,7 +1065,7 @@ describe('DitoForm', () => {
       await admin.navigate('/test/recipes/0')
       const form = admin.getRouteComponent(component => component.isForm)
       await settle(form)
-      expect(form.parentRouteComponent.isView).toBe(true)
+      expect(form.route.parent.isForm).toBe(false)
       expect(form.dataPath).toBe('recipes/0')
       await submitChanges(form, 'Waffles')
       expect(data.recipes).toEqual([{ name: 'Waffles' }])
@@ -1318,7 +1318,7 @@ describe('DitoForm', () => {
       await settle(form)
       // The new item isn't in the data of the parent, so the form handles it
       // with its own model:
-      expect(form.dataModel).not.toBe(form.parentRouteComponent.dataModel)
+      expect(form.dataModel).not.toBe(form.route.parent.container.model)
       await enterValue(new DOMWrapper(form.$el).find('input'), 'Opening')
       await settle(form)
       expect(form.data).toMatchObject({ title: 'Opening', slug: 'opening' })

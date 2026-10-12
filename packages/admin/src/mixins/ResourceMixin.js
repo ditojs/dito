@@ -55,7 +55,7 @@ export default {
     // Whether the component is part of a form, e.g. a list that loads its own
     // data, unlike forms and the lists of views.
     isInsideForm() {
-      return !this.isForm && !!this.formComponent
+      return !this.isForm && !!this.route?.isForm
     },
 
     resourceComponent() {
@@ -85,19 +85,15 @@ export default {
 
     isTransient() {
       // Check the form that this component belongs to as well, since it may be
-      // in creation mode, which makes it transient.
+      // in creation mode, which makes it transient, see `RouteContext.state`.
       // NOTE: This does not loop endlessly because DitoForm redefines
       // `isTransient()` to only return `!this.providesData`.
-      const form = this.formComponent
       return (
         (
           !this.providesData &&
           !this.linksToView
         ) ||
-        form && (
-          form.isTransient ||
-          form.isCreating
-        )
+        !!this.route?.state.isTransient
       )
     },
 

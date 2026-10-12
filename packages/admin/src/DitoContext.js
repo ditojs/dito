@@ -12,6 +12,7 @@ import {
 } from './utils/data.js'
 import { hasNestedData, isButton } from './utils/schema/structure.js'
 import { getTextFromHtml } from './utils/html.js'
+import { DialogContext } from './utils/ContainerContext.ts'
 
 const { hasOwnProperty } = Object.prototype
 
@@ -336,20 +337,18 @@ export default class DitoContext {
   // The state of the data of the context's form, view, dialog or panel with
   // its own data. Nested forms that mutate their item share the parent's data:
   get isDirty() {
-    return !!getDataModelComponent(this)?.dataModel.isDirty
+    return !!getContainer(this)?.isDirty
   }
 
   // Only forms that create their item are creating:
   get isCreating() {
-    return !!getDataModelComponent(this)?.isCreating
+    return !!getContainer(this)?.isCreating
   }
 
   // The name of the selected tab of the nearest form, if it has tabs:
   get selectedTab() {
-    return (
-      getComponent(this).formComponent?.mainSchemaComponent?.selectedTab ??
-      null
-    )
+    const { route } = getComponent(this)
+    return route?.isForm ? route.selectedTab : null
   }
 
   get routeQuery() {
@@ -410,24 +409,22 @@ export default class DitoContext {
   // Validate the data, or only the values whose data paths match `match`, and
   // show their errors. Return whether they're valid:
   get validate() {
-    return match =>
-      getDataModelComponent(this).mainSchemaComponent.validateAll(match)
+    return match => getContainer(this).validate(match)
   }
 
   // Like `validate()`, but without showing the errors:
   get verify() {
-    return match =>
-      getDataModelComponent(this).mainSchemaComponent.verifyAll(match)
+    return match => getContainer(this).verify(match)
   }
 
   get markEdited() {
-    return () => getDataModelComponent(this).dataModel.markEdited()
+    return () => getContainer(this).markEdited()
   }
 
   // Forms merge `data` into their item, the others replace their data with it,
   // which their data model sets up with the defaults right away:
   get replaceItem() {
-    return data => getDataModelComponent(this).setData(data)
+    return data => getContainer(this).replaceItem(data)
   }
 
   // Submit the data through the button of the context, like buttons with a
@@ -447,11 +444,11 @@ export default class DitoContext {
 
   get closeForm() {
     return () => {
-      const { formComponent } = getComponent(this)
-      if (!formComponent) {
+      const { route } = getComponent(this)
+      if (!route?.isForm) {
         throw new Error('Unable to close the form: There is no form.')
       }
-      return formComponent.close()
+      return route.close()
     }
   }
 
@@ -463,11 +460,11 @@ export default class DitoContext {
 
   get closeDialog() {
     return value => {
-      const { dialogComponent } = getComponent(this)
-      if (!dialogComponent) {
+      const container = getContainer(this)
+      if (!(container instanceof DialogContext)) {
         throw new Error('Unable to close the dialog: There is no dialog.')
       }
-      dialogComponent.resolve(value)
+      container.close(value)
     }
   }
 }
@@ -486,8 +483,8 @@ function getAdminValue(context, key) {
   return get(context, key, () => getComponent(context)?.admin?.[key] ?? null)
 }
 
-function getDataModelComponent(context) {
-  return getComponent(context)?.dataModelComponent ?? null
+function getContainer(context) {
+  return getComponent(context)?.container ?? null
 }
 
 // Returns the item at `dataPath` in the data that the model holding it

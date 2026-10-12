@@ -280,6 +280,32 @@ reached them:
   `admin.loadingTracker.begin()` or `track()`.
 - Route records no longer have `meta.api`.
 
+### Container and route contexts
+
+Components reach the owner of their data and the view or form that renders
+them through two contexts, instead of components:
+
+- `container`, provided by views, forms, dialogs and panels with their own
+  data: the `model` that holds the data, `schema`, `dataPath`, `rootData`,
+  `isDirty`, `isEdited`, `isCreating`, `validate()`, `verify()`,
+  `markEdited()` and `replaceItem()`. Dialogs add `close(value)`.
+- `route`, provided by views and forms: its `parent` route, `container`,
+  `level`, `isForm`, `state`, `path`, `isLastRoute`, `selectedTab`,
+  `getFormRoute()`, `getCreatePath()`, and `close()` for forms.
+
+`routeComponent`, `formComponent`, `viewComponent`, `parentRouteComponent`,
+`parentFormComponent`, `dataModelComponent`, `dialogComponent` and
+`panelComponent` are removed, along with the `$routeComponent`,
+`$dataModelComponent`, `$dialogComponent` and `$panelComponent` injects:
+
+- `routeComponent.routeLevel`: `route.level`.
+- `routeComponent.getFormRoute()` and `getCreatePath()`: `route.getFormRoute()`
+  and `route.getCreatePath()`.
+- `parentRouteComponent.dataModel`: `route.parent.container.model`.
+- `dialogComponent.resolve(value)`: `container.close(value)`.
+- Route records no longer have `meta.schema`: views and forms take their
+  schemas from their node in the route tree.
+
 ### Custom types
 
 - `processSchema(api, schema, name)` only sets up the schema, e.g. resolves the

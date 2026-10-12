@@ -54,15 +54,15 @@ import { getButtonSchemas } from '../utils/schema/lookup.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
 import { trackRegistration } from '../utils/registration.js'
 import { DataModel } from '../utils/DataModel.js'
+import { ContainerContext } from '../utils/ContainerContext.ts'
 
 // @vue/component
 export default DitoComponent.component('DitoPanel', {
   mixins: [ContextMixin, SchemaParentMixin],
 
   provide() {
-    return {
-      $panelComponent: () => this
-    }
+    // Only panels with their own data own a data model:
+    return this.ownContainer ? { container: this.ownContainer } : {}
   },
 
   props: {
@@ -81,7 +81,10 @@ export default DitoComponent.component('DitoPanel', {
 
   data() {
     return {
-      ownData: null
+      ownData: null,
+      ownContainer: this.schema.data
+        ? markRaw(new ContainerContext(this))
+        : null
     }
   },
 
@@ -102,10 +105,6 @@ export default DitoComponent.component('DitoPanel', {
         data: this.panelData,
         dataPath: this.panelDataPath
       })
-    },
-
-    panelComponent() {
-      return this
     },
 
     componentPath() {

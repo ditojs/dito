@@ -39,6 +39,7 @@ import DitoComponent from '../DitoComponent.js'
 import SchemaParentMixin from '../mixins/SchemaParentMixin.js'
 import { getButtonSchemas } from '../utils/schema/lookup.js'
 import { DataModel } from '../utils/DataModel.js'
+import { DialogContext } from '../utils/ContainerContext.ts'
 import { UseFocusTrap } from '@vueuse/integrations/useFocusTrap/component'
 
 // @vue/component
@@ -49,7 +50,7 @@ export default DitoComponent.component('DitoDialog', {
 
   provide() {
     return {
-      $dialogComponent: () => this
+      container: this.ownContainer
     }
   },
 
@@ -76,15 +77,12 @@ export default DitoComponent.component('DitoDialog', {
       }
     }
     return {
-      dialogData
+      dialogData,
+      ownContainer: markRaw(new DialogContext(this))
     }
   },
 
   computed: {
-    dialogComponent() {
-      return this
-    },
-
     schema() {
       return {
         type: 'dialog',
