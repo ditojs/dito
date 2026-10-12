@@ -61,10 +61,18 @@ export class UiRegistry {
     }
     if (focus) {
       await nextTick()
-      const handle = this.getHandles(componentPath, dataContext).find(
-        handle => !!handle.focus
-      )
-      handle?.focus!()
+      // Paths inside values that no deeper component displays focus the
+      // component of the value:
+      for (let index = parts.length; index > 0; index--) {
+        const path = parts.slice(0, index).join('/')
+        const handle = this.getHandles(path, dataContext).find(
+          handle => !!handle.focus
+        )
+        if (handle) {
+          handle.focus!()
+          break
+        }
+      }
     }
   }
 }

@@ -100,6 +100,8 @@ interface EditedOwner {
 
 interface ValueError {
   message: string
+  // The path of the error inside the value, if no deeper field displays it:
+  path?: string
 }
 
 interface ValueErrors {
@@ -390,23 +392,46 @@ export class DataModel {
     }
   }
 
-  // Return the errors that no field displays, or `null`.
+  // Errors inside values that no deeper field displays go to the field of the
+  // value, with their path in it, e.g. of objects edited as code. Return the
+  // errors that no field displays, or `null`.
   replaceErrors(
     errors: Record<string, ValueError[]>,
     { dataPath = this.dataPath, server = false } = {}
   ): Record<string, ValueError[]> | null {
-    const unmatchedErrors = { ...errors }
-    this.#processFieldEntries(dataPath, entry => {
-      const fieldErrors = errors[entry.dataPath!] ?? null
+    const entries: SchemaDataEntry[] = []
+    this.#processFieldEntries(dataPath, entry => entries.push(entry))
+    const errorsByDataPath: Record<string, ValueError[]> = {}
+    const unmatchedErrors: Record<string, ValueError[]> = {}
+    for (const [errorDataPath, valueErrors] of Object.entries(errors)) {
+      // The deepest field that displays the value or contains it:
+      let field: { dataPath: string; path: string } | null = null
+      for (const { dataPath } of entries) {
+        const path = getRelativeDataPath(errorDataPath, dataPath)
+        if (
+          path !== null &&
+          dataPath!.length > (field?.dataPath.length ?? -1)
+        ) {
+          field = { dataPath: dataPath!, path }
+        }
+      }
+      if (field) {
+        const { dataPath, path } = field
+        errorsByDataPath[dataPath] = [
+          ...(errorsByDataPath[dataPath] ?? []),
+          ...valueErrors.map(error => (path ? { ...error, path } : error))
+        ]
+      } else {
+        unmatchedErrors[errorDataPath] = valueErrors
+      }
+    }
+    for (const entry of entries) {
       this.#setErrors(
         this.#getFieldKey(entry.dataPath!),
         server ? 'server' : 'validation',
-        fieldErrors
+        errorsByDataPath[entry.dataPath!] ?? null
       )
-      if (fieldErrors) {
-        delete unmatchedErrors[entry.dataPath!]
-      }
-    })
+    }
     return isEmpty(unmatchedErrors) ? null : unmatchedErrors
   }
 
