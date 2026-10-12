@@ -574,3 +574,10 @@ The modifiers of `DitoTrigger` follow BEM like the rest of the styles:
 `.dito-trigger-disabled` is `.dito-trigger--disabled`, and the placement
 classes of the popups, e.g. `.dito-popup-bottom-left`, are
 `.dito-popup--bottom-left`.
+
+## Builds
+
+`@ditojs/admin` and `@ditojs/ui` are only published as ES modules: their UMD
+builds and the `require` conditions of their exports are removed.
+`defineViteConfig()` of `@ditojs/build` only builds ES modules, and its
+`rollupOutput` option, which only served the UMD builds, is removed.

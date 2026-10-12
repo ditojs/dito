@@ -20,8 +20,6 @@ export function defineViteConfig({
     include = [],
     exclude = []
   } = {},
-  // Options merged into `build.rollupOptions.output`, e.g. `exports`:
-  rollupOutput = {},
   ...rest
 } = {}) {
   const externals = (
@@ -44,8 +42,7 @@ export function defineViteConfig({
           sourcemap,
           cssCodeSplit: false,
           lib: {
-            name,
-            format: ['es', 'umd'],
+            formats: ['es'],
             entry: './src/index.js',
             fileName: format => `${name}.${format}.js`,
             cssFileName: name
@@ -53,10 +50,7 @@ export function defineViteConfig({
           rollupOptions: {
             external: id => isRollupExternal(id, externals),
             output: {
-              manualChunks: undefined,
-              // Use the module identifiers as UMD globals, including subpaths:
-              globals: id => id,
-              ...rollupOutput
+              manualChunks: undefined
             }
           }
         }
