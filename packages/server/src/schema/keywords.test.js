@@ -521,9 +521,6 @@ describe('built-in types', () => {
   it('accepts the colors that the admin stores for the color type', () => {
     expect(Swatch.fromJson({ color: '#ff8800' }).color).toBe('#ff8800')
     expect(Swatch.fromJson({ color: 'orange' }).color).toBe('orange')
-    expect(Swatch.fromJson({ color: { r: 255, g: 136, b: 0 } }).color).toEqual(
-      { r: 255, g: 136, b: 0 }
-    )
   })
 
   it('rejects other color strings for the color type', () => {
@@ -533,8 +530,10 @@ describe('built-in types', () => {
   })
 
   it('rejects non-string values for the color type', () => {
-    const errors = getValidationErrors(() => Swatch.fromJson({ color: 255 }))
-    expect(Object.keys(errors)).toEqual(['color'])
+    for (const color of [255, { r: 255, g: 136, b: 0 }]) {
+      const errors = getValidationErrors(() => Swatch.fromJson({ color }))
+      expect(Object.keys(errors)).toEqual(['color'])
+    }
   })
 
   it('accepts complete asset objects and null for nullable assets', () => {

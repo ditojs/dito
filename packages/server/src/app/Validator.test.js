@@ -65,11 +65,7 @@ describe('color type', () => {
     '#ff8800',
     '#ff8800cc',
     'red',
-    'transparent',
-    { r: 255, g: 136, b: 0, a: 1 },
-    { r: '100%', g: '53%', b: '0%', a: 0.5 },
-    { h: 32, s: 1, l: 0.5, a: 1 },
-    { h: 32, s: 1, v: 1 }
+    'transparent'
   ])('accepts %j, as stored by the admin color type', color => {
     expect(validate({ color })).toBe(true)
   })
@@ -81,9 +77,8 @@ describe('color type', () => {
     'light red',
     'rgb(0, 0, 0)',
     '',
-    { r: 255, g: 136 },
-    { r: 255, g: 136, b: 0, x: 1 },
-    { h: '32', s: 1, l: 0.5 },
+    { r: 255, g: 136, b: 0, a: 1 },
+    { h: 32, s: 1, l: 0.5 },
     255
   ])('rejects %j', color => {
     expect(validate({ color })).toBe(false)
