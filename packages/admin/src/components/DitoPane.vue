@@ -59,7 +59,11 @@ import { useStore } from '../composables/useStore.ts'
 import { useComponentPath } from '../composables/useComponentPath.ts'
 import { getRootData } from '../utils/services.ts'
 import { appendDataPath } from '../utils/data.js'
-import { hasLabel, hasNestedData } from '../utils/schema/structure.js'
+import {
+  hasLabel,
+  hasNestedData,
+  isInlined
+} from '../utils/schema/structure.js'
 import { shouldRenderSchema } from '../utils/schema/data.js'
 import { getItemAdapter } from '../utils/schema/types.ts'
 
@@ -100,9 +104,12 @@ export default {
     const positions = ref([])
 
     // NOTE: The schema can be null while multi-form lists load their data. The
-    // value of an item adapter keeps the item's data path, for its errors:
+    // value of an item adapter keeps the item's data path in inlined items, as
+    // their list holds its errors. Routed forms edit a draft of the item:
     const componentSchemas = computed(() => {
-      const itemAdapter = getItemAdapter(unref(sourceSchema))
+      const source = unref(sourceSchema)
+      const itemAdapter =
+        source && isInlined(source) ? getItemAdapter(source) : null
       return Object.entries(props.schema?.components || {}).map(
         ([name, schema]) => {
           // The schema may be used elsewhere too:

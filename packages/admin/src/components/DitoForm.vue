@@ -90,7 +90,10 @@ import { appendDataPath, getParentDataPath } from '../utils/data.js'
 import { resolvePath } from '../utils/path.js'
 import { getErrorMessage } from '../utils/request.js'
 import { cloneWithUids } from '../utils/uid.js'
-import { getChildSourceSchemas } from '../utils/schema/types.ts'
+import {
+  getChildSourceSchemas,
+  getItemAdapter
+} from '../utils/schema/types.ts'
 import { mergeData } from '../utils/mergeData.ts'
 import { createDraftRoot } from '../utils/draftRoot.ts'
 import { transientNote } from '../utils/dialogs.js'
@@ -112,6 +115,7 @@ export default {
     const selectedTab = shallowRef(null)
 
     const sourceSchema = computed(() => ownRouteContext.node.source.schema)
+    const itemAdapter = computed(() => getItemAdapter(sourceSchema.value))
 
     // vue-router can't map several parameters of the same name to several
     // components, see https://github.com/vuejs/vue-router/issues/1345
@@ -278,10 +282,16 @@ export default {
     // Copy the errors of the item in the parent's model into the draft:
     const copyErrors = () => {
       if (draft.value) {
-        ownDataModel.copyErrors(
-          parentRouteContext.dataContext.model,
-          draft.value
-        )
+        const parentModel = parentRouteContext.dataContext.model
+        if (itemAdapter.value) {
+          // The list holds the errors of its primitives:
+          ownDataModel.copyValueErrors(parentModel, dataPath.value, {
+            data: draft.value,
+            name: itemAdapter.value.name
+          })
+        } else {
+          ownDataModel.copyErrors(parentModel, draft.value)
+        }
       }
     }
 
@@ -467,9 +477,13 @@ export default {
               const transferables = getChildSourceSchemas(
                 sourceSchema.value
               ).map(({ name }) => item?.[name])
-              draft.value = item
-                ? cloneWithUids(item, { transferables })
-                : null
+              // Primitives are edited wrapped by the item adapter of the list:
+              draft.value =
+                item == null
+                  ? null
+                  : itemAdapter.value
+                    ? itemAdapter.value.wrap(item)
+                    : cloneWithUids(item, { transferables })
               copyErrors()
             }
           }
@@ -486,14 +500,17 @@ export default {
     }
 
     // Merge a copy of the draft into the parent's data, which never shares
-    // the draft's objects:
+    // the draft's objects, or write back the unwrapped primitive:
     const submitTransient = async (
       button,
       { onSuccess, onError, notifySuccess, notifyError }
     ) => {
       const parentModel = parentRouteContext.dataContext.model
       const list = sourceData.value
-      const item = cloneWithUids(data.value)
+      const adapter = itemAdapter.value
+      const item = adapter
+        ? adapter.unwrap(data.value)
+        : cloneWithUids(data.value)
       const success = !!list
       if (success) {
         if (isCreating.value && !isObjectSource(sourceSchema.value)) {
@@ -508,8 +525,12 @@ export default {
             item
           )
         } else {
-          if (isCreating.value) {
+          if (isCreating.value || adapter) {
             parentModel.set(list, sourceKey.value, item)
+            // Primitives have no identity, so keep the draft of the new value:
+            if (adapter) {
+              original.value = item
+            }
           } else {
             parentModel.merge(list, sourceKey.value, item, sourceSchema.value)
           }

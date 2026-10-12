@@ -459,6 +459,16 @@ export class DataModel {
     copy(data)
   }
 
+  // Take over the errors of the value at `dataPath` in `model` as the ones of
+  // `key`, e.g. of a primitive that a draft wraps:
+  copyValueErrors(model: DataModel, dataPath: string, key: FieldKey) {
+    const errors = model.#errors.value.get(model.#getFieldKey(dataPath))
+    if (errors) {
+      const { validation, server } = errors
+      this.#setValueErrors(key, { validation, server })
+    }
+  }
+
   #setErrors(
     key: FieldKey,
     kind: 'validation' | 'server',
