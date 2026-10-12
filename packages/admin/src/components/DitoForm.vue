@@ -8,7 +8,7 @@
   DitoRouterView(
     v-if="!isLastUnnestedRoute && !isNestedRoute"
     v-show="!isActiveRoute"
-    :routeLevel="routeLevel + 1"
+    :routeLevel="route.level + 1"
   )
   //- NOTE: Nested form components are kept alive by using `v-show` instead of
   //- `v-if` here, so event handling and other things still work with nested
@@ -98,6 +98,11 @@ export default DitoComponent.component('DitoForm', {
       return true
     },
 
+    // @override DitoMixin.sourceSchema()
+    sourceSchema() {
+      return this.route.node.source.schema
+    },
+
     verbs() {
       // Add submit / submitted to the verbs returned by ResourceMixin
       // NOTE: These get passed on to children through:
@@ -183,7 +188,7 @@ export default DitoComponent.component('DitoForm', {
     // Forms that edit the item of their parent edit it through its model:
     dataModel() {
       return this.isEditingSourceItem
-        ? this.parentRouteComponent.dataModel
+        ? this.parentRoute.container.model
         : this.ownDataModel
     },
 
@@ -222,7 +227,7 @@ export default DitoComponent.component('DitoForm', {
       // Forms that load their own data start a new data path:
       return this.isTransient
         ? appendDataPath(
-            this.parentRouteComponent.dataPath,
+            this.parentRoute.container.dataPath,
             this.sourceLocation?.dataPath ?? ''
           )
         : ''
@@ -233,42 +238,42 @@ export default DitoComponent.component('DitoForm', {
     // their parent read the parent's root data, with their draft in place of
     // the item, and read-only elsewhere:
     rootData() {
-      const { data, parentRouteComponent } = this
+      const { data } = this
+      const { container } = this.parentRoute
       return this.isTransient
         ? this.isMutating || !this.sourceData
-          ? parentRouteComponent.rootData
-          : createDraftRoot(parentRouteComponent.rootData, this.dataPath, data)
+          ? container.rootData
+          : createDraftRoot(container.rootData, this.dataPath, data)
         : data
     },
 
     componentPath() {
       // Nested forms continue the component path of the source that displays
-      // their item in the parent route component, e.g. `main/chapters/1`.
-      // Forms that load their own data start a new one, like their data path.
-      const { parentRouteComponent } = this
-      return this.isTransient && parentRouteComponent
+      // their item in the parent route, e.g. `main/chapters/1`. Forms that
+      // load their own data start a new one, like their data path.
+      const { parentRoute } = this
+      const { container } = parentRoute
+      return this.isTransient
         ? getComponentPathByDataPath(
-            parentRouteComponent.isView
-              ? parentRouteComponent.viewSchema
-              : parentRouteComponent.schema,
-            parentRouteComponent.data,
+            container.schema,
+            parentRoute.state.data,
             this.sourceLocation?.dataPath ?? '',
             {
-              componentPath: parentRouteComponent.componentPath,
+              componentPath: container.componentPath,
               component: this,
-              rootData: parentRouteComponent.rootData
+              rootData: container.rootData
             }
           )
         : ''
     },
 
-    // The item of the form in the data of its parent route component, found
-    // through the parameters of the form's own route, also while it's left:
+    // The item of the form in the data of its parent route, found through the
+    // parameters of the form's own route, also while it's left:
     sourceLocation() {
-      const parent = this.parentRouteComponent
-      return parent?.data
-        ? parent.meta.node.findItem(this.meta.node, {
-            ...parent.routeState,
+      const { node, state } = this.parentRoute
+      return state.data
+        ? node.findItem(this.route.node, {
+            ...state,
             // The parameters of the form's own route include its item:
             routeParams: this.routeParams
           })
@@ -321,7 +326,7 @@ export default DitoComponent.component('DitoForm', {
       handler(to, from) {
         // Reload form data when navigating to a different entity in same form.
         // The create route sets up a new item instead, see `setupData()`.
-        const param = this.meta?.node.param
+        const { param } = this.route.node
         const toParam = to.params[param]
         const fromParam = from.params[param]
         // After submitting a new item, `setData()` merged the created one into
@@ -401,12 +406,12 @@ export default DitoComponent.component('DitoForm', {
         if (toRaw(item) !== toRaw(original)) {
           // Other items at the same path mean that the data changed:
           const hasDataChanged = !!original && path === previousPath
-          const parent = this.parentRouteComponent
+          const { node, state } = this.parentRoute
           const params = (
             hasDataChanged &&
-            parent.meta.node.findItemParams(
-              this.meta.node,
-              { ...parent.routeState, routeParams: this.routeParams },
+            node.findItemParams(
+              this.route.node,
+              { ...state, routeParams: this.routeParams },
               original
             )
           )
@@ -450,7 +455,7 @@ export default DitoComponent.component('DitoForm', {
     copyErrors() {
       if (this.draft) {
         this.ownDataModel.copyErrors(
-          this.parentRouteComponent.dataModel,
+          this.parentRoute.container.model,
           this.draft
         )
       }
@@ -484,9 +489,10 @@ export default DitoComponent.component('DitoForm', {
     // `null` if it isn't rendered, e.g. the list of a view, which renders the
     // form instead.
     getParentSourceComponent() {
-      const sourceNode = this.meta.node.source
+      const sourceNode = this.route.node.source
+      const parent = this.appState.routeComponents[this.parentRoute.level]
       return (
-        this.parentRouteComponent?.mainSchemaComponent?.components.find(
+        parent?.mainSchemaComponent?.components.find(
           component => (
             component.providesData &&
             component.sourceNode === sourceNode
@@ -530,7 +536,7 @@ export default DitoComponent.component('DitoForm', {
     },
 
     async close() {
-      return this.navigate(this.parentRouteComponent.path)
+      return this.route.close()
     },
 
     getSubmitVerb(present = true) {
@@ -663,7 +669,7 @@ export default DitoComponent.component('DitoForm', {
       // item. A copy is applied, so that the parent never shares the draft's
       // data, also while the form stays open:
       const { sourceData, sourceKey, sourceSchema } = this
-      const parentModel = this.parentRouteComponent.dataModel
+      const parentModel = this.parentRoute.container.model
       const item = cloneWithUids(this.data)
       const success = !!sourceData
       if (success) {

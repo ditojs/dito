@@ -1,8 +1,11 @@
 import { expectTypeOf, describe, it } from 'vitest'
 import type {
   AdminContext,
+  ContainerContext,
   DitoFormInstance,
-  DitoContext
+  DitoContext,
+  DitoDataModel,
+  RouteContext
 } from '@ditojs/admin'
 import type { Entry } from './fixtures.ts'
 
@@ -36,5 +39,21 @@ describe('DitoComponentInstanceBase and DitoFormInstance', () => {
     expectTypeOf<Admin['showDialog']>()
       .toEqualTypeOf<DitoContext['showDialog']>()
     expectTypeOf<Admin['loadingTracker']['isLoading']>().toBeBoolean()
+  })
+
+  it('provides the contexts of its container and route', () => {
+    type Instance = DitoFormInstance<Entry>
+    expectTypeOf<Instance['container']>()
+      .toEqualTypeOf<ContainerContext | null>()
+    expectTypeOf<Instance['route']>().toEqualTypeOf<RouteContext | null>()
+    expectTypeOf<ContainerContext['model']>().toEqualTypeOf<DitoDataModel>()
+    expectTypeOf<ContainerContext['isDirty']>().toBeBoolean()
+    expectTypeOf<RouteContext['parent']>().toEqualTypeOf<RouteContext | null>()
+    expectTypeOf<RouteContext['container']>()
+      .toEqualTypeOf<ContainerContext>()
+    expectTypeOf<RouteContext['getCreatePath']>()
+      .returns.toEqualTypeOf<string | null>()
+    expectTypeOf<Instance>().not.toHaveProperty('routeComponent')
+    expectTypeOf<Instance>().not.toHaveProperty('parentRouteComponent')
   })
 })

@@ -172,12 +172,6 @@ describe('DitoDialog', () => {
     expect(removeDialog).toHaveBeenCalledOnce()
   })
 
-  it('is its own dialog component', async () => {
-    const { admin } = await showDialog({ components, buttons: { cancel: {} } })
-    const { vm } = admin.wrapper.findComponent({ name: 'DitoDialog' })
-    expect(vm.dialogComponent).toBe(vm)
-  })
-
   it('submits with Enter in its inputs only', async () => {
     const result = await showDialog(
       { components, buttons: { cancel: {}, apply: { type: 'submit' } } },

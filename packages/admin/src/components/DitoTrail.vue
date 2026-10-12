@@ -44,7 +44,7 @@ export default DitoComponent.component('DitoTrail', {
       // also matches their default children, like the forms of objects:
       return {
         path: component.isView
-          ? this.$router.resolve({ name: component.meta.node.linkRouteName })
+          ? this.$router.resolve({ name: component.route.node.linkRouteName })
               .path
           : component.path,
         force: true

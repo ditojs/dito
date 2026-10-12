@@ -1,9 +1,10 @@
 import SchemaParentMixin from './SchemaParentMixin.js'
 import { markRaw } from 'vue'
 import { isPathWithin } from '../utils/route.js'
-import { getRelativeDataPath } from '../utils/data.js'
 import { getSchemaPath } from '../utils/schema/structure.js'
 import { confirm } from '../utils/dialogs.js'
+import { ContainerContext } from '../utils/ContainerContext.ts'
+import { RouteContext } from '../utils/RouteContext.ts'
 
 // @vue/component
 export default {
@@ -11,12 +12,22 @@ export default {
 
   provide() {
     return {
-      $routeComponent: () => this
+      container: this.ownContainer,
+      route: this.ownRoute
     }
   },
 
   data() {
+    const container = new ContainerContext(this)
     return {
+      ownContainer: markRaw(container),
+      ownRoute: markRaw(
+        new RouteContext(this, {
+          parent: this.parentRoute,
+          container,
+          router: this.$router
+        })
+      ),
       // The record of the route that this component renders, see the
       // `$route` watcher:
       routeRecord: null,
@@ -36,33 +47,16 @@ export default {
       // Each route-component defines a store that gets passed on to its
       // child components, so they can store values in them that live beyond
       // their life-cycle. See: DitoPane, SourceMixin
-      store: {},
-      // The responses of `request({ cache: 'local' })` of the components that
-      // the route component renders, released with it, see `DitoMixin`.
-      loadCache: {}
+      store: {}
     }
   },
 
   computed: {
-    routeComponent() {
-      // Override DitoMixin's routeComponent() which uses the injected value.
-      return this
-    },
-
-    routeLevel() {
-      let level = 0
-      let routeComponent = this
-      while ((routeComponent = routeComponent.parentRouteComponent)) {
-        level++
-      }
-      return level
-    },
-
     // The record that the current route matches at this component's level,
     // which is another record or `undefined` while the component is being left,
     // until it's unmounted, see `routeRecord`.
     matchedRouteRecord() {
-      return this.$route.matched[this.routeLevel]
+      return this.$route.matched[this.route.level]
     },
 
     // Whether the current route doesn't match the component's record anymore,
@@ -86,7 +80,7 @@ export default {
     },
 
     isNestedRoute() {
-      return !!this.meta.node.isNestedForm
+      return !!this.route.node.isNestedForm
     },
 
     isForm() {
@@ -97,18 +91,19 @@ export default {
       return false
     },
 
+    // Pass the source schema on to the components that the route renders:
     meta() {
-      return this.routeRecord?.meta
+      return { schema: this.sourceSchema }
     },
 
     path() {
       const { routeRecord } = this
       // The routes are replaced when the views are resolved again, e.g. after
       // logging in, while the components of the previous ones still exist:
-      return routeRecord && this.$router.hasRoute(routeRecord.name)
+      return this.$router.hasRoute(routeRecord.name)
         ? this.$router.resolve({
             name: routeRecord.name,
-            params: routeRecord.meta.node.getParams(this.routeParams)
+            params: this.route.node.getParams(this.routeParams)
           }).path
         : this.$route.path
     },
@@ -130,7 +125,7 @@ export default {
       // Workaround for vue-router not being able to map multiple url parameters
       // with the same name to multiple components, see:
       // https://github.com/vuejs/vue-router/issues/1345
-      return this.$route.params[this.meta?.node.param] || null
+      return this.$route.params[this.route.node.param] || null
     },
 
     // @overridable, see DitoForm
@@ -142,16 +137,6 @@ export default {
     schemaPath() {
       const { sourceSchema } = this
       return getSchemaPath(sourceSchema, sourceSchema.name, this.admin.api)
-    },
-
-    // The state that the routes below this component depend on, see
-    // `RouteTree`:
-    routeState() {
-      return {
-        data: this.data,
-        routeParams: this.routeParams,
-        isTransient: !!(this.isTransient || this.isCreating)
-      }
     },
 
     // Whether the component has changes that get lost when it's left, see
@@ -206,15 +191,16 @@ export default {
     // unfortunately, as instances aren't immediately ready, and `instances` is
     // not reactive. Components of new routes replace the ones of the previous
     // routes at their level, which are unmounted after, see `unmounted()`.
-    this.appState.routeComponents[this.routeLevel] = this
+    this.appState.routeComponents[this.route.level] = this
   },
 
   unmounted() {
     const { routeComponents } = this.appState
-    if (routeComponents[this.routeLevel] === this) {
+    const { level } = this.route
+    if (routeComponents[level] === this) {
       // Also drop the deeper levels, which aren't replaced by those of a new
       // route either, as their components are unmounted before their parents.
-      routeComponents.length = this.routeLevel
+      routeComponents.length = level
     }
   },
 
@@ -283,31 +269,6 @@ export default {
     // forms share with the data of their parent, see `DataModel.clearErrors()`.
     resetValidation() {
       this.dataModel.clearErrors(this.dataPath)
-    },
-
-    // Resolve the path of the deepest form that edits the data at
-    // `dataPath`, along with the data path that remains within that form:
-    getFormRoute(dataPath) {
-      const route = this.meta.node.getFormRoute(
-        getRelativeDataPath(dataPath, this.dataPath),
-        this.routeState
-      )
-      return (
-        route && {
-          path: this.$router.resolve(route).path,
-          dataPath: route.dataPath
-        }
-      )
-    },
-
-    // Resolve the path of the form that creates an item of the source at
-    // `dataPath`:
-    getCreatePath(dataPath) {
-      const route = this.meta.node.getCreateRoute(
-        getRelativeDataPath(dataPath, this.dataPath),
-        this.routeState
-      )
-      return route ? this.$router.resolve(route).path : null
     }
   }
 }

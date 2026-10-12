@@ -19,29 +19,28 @@ import { reactive } from 'vue'
 export default {
   mixins: [EmitterMixin],
 
-  inject: [
-    'admin',
-    '$verbs',
-    '$isPopulated',
-    '$parentComponent',
-    '$schemaComponent',
-    '$routeComponent',
-    '$dataComponent',
-    '$sourceComponent',
-    '$resourceComponent',
-    '$dialogComponent',
-    '$dataModelComponent',
-    '$panelComponent',
-    '$tabComponent',
-    '$loadingTracker'
-  ],
+  inject: {
+    admin: 'admin',
+    $verbs: '$verbs',
+    $isPopulated: '$isPopulated',
+    $parentComponent: '$parentComponent',
+    $schemaComponent: '$schemaComponent',
+    $dataComponent: '$dataComponent',
+    $sourceComponent: '$sourceComponent',
+    $resourceComponent: '$resourceComponent',
+    $tabComponent: '$tabComponent',
+    $loadingTracker: '$loadingTracker',
+    // The contexts that the closest owners of a data model and of a route
+    // provide, see `container` and `route`:
+    parentContainer: 'container',
+    parentRoute: 'route'
+  },
 
   provide() {
     const self = () => this
     return {
       $parentComponent: self,
-      ...(this.providesData && { $dataComponent: self }),
-      $dataModelComponent: () => this.dataModelComponent
+      ...(this.providesData && { $dataComponent: self })
     }
   },
 
@@ -50,21 +49,30 @@ export default {
       appState,
       isMounted: false,
       overrides: null, // See accessor.js
-      // The data model that the component owns, see `dataModel`.
-      ownDataModel: null
+      // The data model that the component owns, see `dataModel`, and the
+      // contexts that it provides, see `container` and `route`:
+      ownDataModel: null,
+      ownContainer: null,
+      ownRoute: null
     }
   },
 
   computed: {
-    // The component that owns the data model of the data: the component
+    // The context of the owner of the data model of the data: the component
     // itself, e.g. a form, view, dialog or panel with its own data, or else its
     // closest ancestor that owns one.
-    dataModelComponent() {
-      return this.ownDataModel ? this : this.$dataModelComponent()
+    container() {
+      return this.ownContainer ?? this.parentContainer
+    },
+
+    // The context of the view or form that renders the component, or that the
+    // component is:
+    route() {
+      return this.ownRoute ?? this.parentRoute
     },
 
     dataModel() {
-      return this.ownDataModel ?? this.$dataModelComponent()?.dataModel ?? null
+      return this.ownDataModel ?? this.parentContainer?.model ?? null
     },
 
     providesData() {
@@ -122,20 +130,6 @@ export default {
       return this.$schemaComponent()
     },
 
-    routeComponent() {
-      return this.$routeComponent()
-    },
-
-    formComponent() {
-      const component = this.routeComponent
-      return component?.isForm ? component : null
-    },
-
-    viewComponent() {
-      const component = this.routeComponent
-      return component?.isView ? component : null
-    },
-
     // Returns the first route component in the chain of parents, including
     // this current component, that is linked to a resource (and thus loads its
     // own data and doesn't hold nested data).
@@ -151,14 +145,6 @@ export default {
       return this.$resourceComponent()
     },
 
-    dialogComponent() {
-      return this.$dialogComponent()
-    },
-
-    panelComponent() {
-      return this.$panelComponent()
-    },
-
     tabComponent() {
       return this.$tabComponent()
     },
@@ -167,27 +153,19 @@ export default {
       return getParentComponent(this, 'schemaComponent')
     },
 
-    parentRouteComponent() {
-      return getParentComponent(this, 'routeComponent')
-    },
-
-    parentFormComponent() {
-      return getParentComponent(this, 'formComponent')
-    },
-
     parentResourceComponent() {
       return getParentComponent(this, 'resourceComponent')
     },
 
     // Returns the data of the source with its own resource that the component
-    // is in, or else the root data of the route component, e.g. the data of
-    // the view when it has no resource, or the draft root of a nested form,
-    // see `DitoView.rootData()` and `DitoForm.rootData()`.
+    // is in, or else the root data of the route, e.g. the data of the view when
+    // it has no resource, or the draft root of a nested form, see
+    // `DitoView.rootData()` and `DitoForm.rootData()`.
     rootData() {
       const { dataComponent } = this
-      return dataComponent && dataComponent !== dataComponent.routeComponent
+      return dataComponent && !dataComponent.ownRoute
         ? dataComponent.data
-        : this.routeComponent?.rootData
+        : this.route?.container.rootData
     }
   },
 
@@ -349,7 +327,7 @@ export default {
         cache === 'global'
           ? this.appState.loadCache
           : cache === 'local'
-            ? this.routeComponent?.loadCache
+            ? this.route?.loadCache
             : null
       // Requests to resources are told apart by the URLs that they resolve to:
       const { resource } = options

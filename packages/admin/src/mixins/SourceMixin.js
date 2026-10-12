@@ -96,7 +96,7 @@ export default {
     },
 
     isInView() {
-      return !!this.viewComponent
+      return !!this.route && !this.route.isForm
     },
 
     wrapPrimitives() {
@@ -321,7 +321,7 @@ export default {
       return this.creatable
         ? this.linksToView
           ? this.getViewItemPath('create')
-          : (this.routeComponent?.getCreatePath(this.dataPath) ?? null)
+          : (this.route?.getCreatePath(this.dataPath) ?? null)
         : null
     },
 
@@ -333,12 +333,12 @@ export default {
         : this.getFormPath(this.dataPath)
     },
 
-    // The node of the source in the route tree, if it has a route component:
+    // The node of the source in the route tree, if it has a route:
     sourceNode() {
-      const { routeComponent } = this
+      const { route } = this
       return (
-        routeComponent?.meta.node.findSource(
-          getRelativeDataPath(this.dataPath, routeComponent.dataPath)
+        route?.node.findSource(
+          getRelativeDataPath(this.dataPath, route.container.dataPath)
         ) ?? null
       )
     }
@@ -457,7 +457,7 @@ export default {
       } else if (isObject(data) && this.isInView) {
         // The controller is sending data for a full multi-component view,
         // including the nested list data.
-        return this.viewComponent.setData(data)
+        return this.route.container.replaceItem(data)
       }
       return this.value
     },
@@ -696,7 +696,7 @@ export default {
 
     // Resolve the path of the form that edits the item at `dataPath`:
     getFormPath(dataPath) {
-      const route = this.routeComponent?.getFormRoute(dataPath)
+      const route = this.route?.getFormRoute(dataPath)
       return route && !route.dataPath ? route.path : null
     }
   }, // end of `methods`

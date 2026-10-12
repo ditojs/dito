@@ -299,7 +299,7 @@ export default DitoComponent.component('DitoSchema', {
     // remain active while their items' forms are open as nested routes keep
     // their selected tab.
     shouldFollowRouteTab() {
-      return this.hasTopLevelTabs && this.routeComponent.isLastRoute
+      return this.hasTopLevelTabs && this.route.isLastRoute
     },
 
     hasMainPane() {
@@ -644,8 +644,8 @@ export default DitoComponent.component('DitoSchema', {
       // Only the data of route components is part of routes, unlike the data
       // of dialogs and panels with their own data:
       const route =
-        firstDataPath && this.dataModelComponent === this.routeComponent
-          ? this.routeComponent.getFormRoute(firstDataPath)
+        firstDataPath && this.container === this.route?.container
+          ? this.route.getFormRoute(firstDataPath)
           : null
       if (route) {
         // The form may be open already, e.g. a nested form, which displays in
