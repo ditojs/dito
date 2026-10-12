@@ -832,31 +832,43 @@ describe('QueryBuilder', () => {
       expect(recipe.id).toBeGreaterThan(1)
     })
 
-    it('updates existing rows with upsert()', async () => {
-      await insertRecipes()
-      const result = await Recipe.query()
-        .where('name', 'Apple pie')
-        .upsert({ servings: 10 })
+    it('updates existing rows by their ids with upsert()', async () => {
+      const [apple] = await insertRecipes()
+      const result = await Recipe.query().upsert({
+        id: apple.id,
+        name: 'Apple pie',
+        servings: 10
+      })
       expect(result).toBeInstanceOf(Recipe)
       expect(result.servings).toBe(10)
-      const recipe = await Recipe.query().findOne('name', 'Apple pie')
-      expect(recipe!.servings).toBe(10)
+      expect((await Recipe.query().findById(apple.id))!.servings).toBe(10)
+      expect(await Recipe.query().ignoreScope()).toHaveLength(4)
     })
 
-    it('inserts missing rows with upsert()', async () => {
-      const recipe = await Recipe.query()
-        .where('name', 'Apple pie')
-        .upsert({ name: 'Apple pie', servings: 6 }, { fetch: true })
-      expect(recipe).toBeInstanceOf(Recipe)
-      expect(await Recipe.query()).toHaveLength(1)
+    it('inserts rows without ids or with new ids with upsert()', async () => {
+      await Recipe.query().upsert({ name: 'Apple pie', servings: 6 })
+      await Recipe.query().upsert({ id: 100, name: 'Banana bread' })
+      expect(getNames(await Recipe.query())).toEqual([
+        'Apple pie',
+        'Banana bread'
+      ])
     })
 
-    it('validates full models when upserting with `update`', async () => {
-      await insertRecipes()
+    it('upserts atomically under the conflict of their ids', async () => {
+      // Two writes of the same new model, which can't both insert it:
+      await Promise.all([
+        Recipe.query().upsert({ id: 100, name: 'Apple pie' }),
+        Recipe.query().upsert({ id: 100, name: 'Apple tart' })
+      ])
+      const recipes = await Recipe.query()
+      expect(recipes).toHaveLength(1)
+      expect(recipes[0].id).toBe(100)
+    })
+
+    it('validates full models with upsert()', async () => {
+      const [apple] = await insertRecipes()
       await expect(
-        Recipe.query()
-          .where('name', 'Apple pie')
-          .upsert({ servings: 10 }, { update: true })
+        Recipe.query().upsert({ id: apple.id, servings: 10 })
       ).rejects.toThrow(/not valid/)
     })
 
@@ -947,31 +959,30 @@ describe('QueryBuilder', () => {
       expect(updated[0].name).toBe('Ada L.')
     })
 
-    it('inserts new root models in array patchAndFetch()', async () => {
+    it('rejects models without ids in array patchAndFetch() and updateAndFetch()', async () => {
       const [ada] = await insertCooks()
-      const patched = await Cook.query().patchAndFetch([
-        { id: ada.id, active: false },
-        { name: 'Edsger' }
-      ])
-      expect(patched.map((cook: Cook) => [cook.name, cook.active])).toEqual([
-        ['Ada', false],
-        ['Edsger', true]
-      ])
-      expect(patched[1].id).toEqual(expect.any(Number))
-      expect(await Cook.query()).toHaveLength(3)
+      const data = [{ id: ada.id, active: false }, { name: 'Edsger' }]
+      expect(() => Cook.query().patchAndFetch(data)).toThrow(
+        'Unable to patch models without ids.'
+      )
+      expect(() => Cook.query().updateAndFetch(data)).toThrow(
+        'Unable to update models without ids.'
+      )
+      const cooks = await Cook.query()
+      expect(cooks).toHaveLength(2)
+      expect(cooks.every(cook => cook.active)).toBe(true)
     })
 
-    it('inserts new root models in array updateAndFetch()', async () => {
-      const [ada] = await insertCooks()
-      const updated = await Cook.query().updateAndFetch([
-        { id: ada.id, name: 'Ada L.' },
-        { name: 'Edsger' }
-      ])
-      expect(updated.map((cook: Cook) => cook.name)).toEqual([
-        'Ada L.',
-        'Edsger'
-      ])
-      expect(await Cook.query()).toHaveLength(3)
+    it('saves arrays of models in one transaction', async () => {
+      const [apple, banana] = await insertRecipes()
+      // The second value is out of the range of the column:
+      await expect(
+        Recipe.query().patchAndFetch([
+          { id: apple.id, servings: 1 },
+          { id: banana.id, servings: 2 ** 40 }
+        ])
+      ).rejects.toThrow()
+      expect((await Recipe.query().findById(apple.id))!.servings).toBe(8)
     })
 
     it('leaves relations alone in array patchAndFetch() and updateAndFetch()', async () => {
@@ -992,17 +1003,12 @@ describe('QueryBuilder', () => {
               steps: [{ text: 'Peel apples' }]
             }
           ]
-        },
-        { name: 'Edsger', recipes: [{ name: 'Banana bread' }] }
+        }
       ]
       await Cook.query().patchAndFetch(data)
-      await Cook.query().updateAndFetch(data.slice(0, 1))
+      await Cook.query().updateAndFetch(data)
       const cooks = await Cook.query().orderBy('id')
-      expect(cooks.map((cook: Cook) => cook.name)).toEqual([
-        'Ada L.',
-        'Grace',
-        'Edsger'
-      ])
+      expect(cooks.map((cook: Cook) => cook.name)).toEqual(['Ada L.', 'Grace'])
       expect((await Recipe.query()).map(recipe => recipe.name)).toEqual([
         'Apple pie'
       ])
@@ -1019,12 +1025,14 @@ describe('QueryBuilder', () => {
       expect(updated.name).toBe('Apple tart')
     })
 
-    it('inserts roots but no relations in upsertAndFetch()', async () => {
+    it('inserts and updates roots but no relations in upsertAndFetch()', async () => {
       const [ada] = await insertCooks()
-      const result = await Cook.query().upsertAndFetch([
-        { id: ada.id, active: false },
+      // Client data, which the model types don't describe.
+      const data: any = [
+        { id: ada.id, name: 'Ada', active: false },
         { name: 'Edsger', recipes: [{ name: 'Apple pie' }] }
-      ])
+      ]
+      const result = await Cook.query().upsertAndFetch(data)
       expect(result.map((cook: Cook) => [cook.name, cook.active])).toEqual([
         ['Ada', false],
         ['Edsger', true]

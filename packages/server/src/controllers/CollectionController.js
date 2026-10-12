@@ -236,6 +236,28 @@ export class CollectionController extends Controller {
     )
   }
 
+  async saveCollectionAndFetch(action, ctx, modify) {
+    const { body } = ctx.request
+    validateCollectionUpdateBody(body, this.graph)
+    if (this.graph) {
+      return this.executeAndFetch(action, ctx, modify)
+    } else {
+      // Save the models with ids, and insert the others, in their order:
+      const idProperties = this.modelClass.getIdPropertyArray()
+      const isNew = model => idProperties.some(key => model[key] == null)
+      const saveAndFetch = (name, models) =>
+        models.length > 0
+          ? this.executeAndFetch(name, ctx, modify, models)
+          : []
+      const saved = await saveAndFetch(
+        action,
+        body.filter(model => !isNew(model))
+      )
+      const inserted = await saveAndFetch('insert', body.filter(isNew))
+      return body.map(model => (isNew(model) ? inserted : saved).shift())
+    }
+  }
+
   async executeAndFetchById(action, ctx, modify, body = ctx.request.body) {
     const name = `${action}${this.graph ? 'DitoGraph' : ''}AndFetchById`
     return this.execute(ctx, (query, trx) =>
@@ -305,13 +327,11 @@ export class CollectionController extends Controller {
     },
 
     async put(ctx, modify) {
-      validateCollectionUpdateBody(ctx.request.body, this.graph)
-      return this.executeAndFetch('update', ctx, modify)
+      return this.saveCollectionAndFetch('update', ctx, modify)
     },
 
     async patch(ctx, modify) {
-      validateCollectionUpdateBody(ctx.request.body, this.graph)
-      return this.executeAndFetch('patch', ctx, modify)
+      return this.saveCollectionAndFetch('patch', ctx, modify)
     }
   })
 
