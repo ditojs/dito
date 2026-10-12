@@ -2068,27 +2068,40 @@ export type SchemaContext<$Item = any> = {
 
   // Helper Methods
 
-  /** Performs an API request with optional caching. */
-  request<T>(options: {
-    /**
-     * Allows caching of loaded data on two levels:
-     * - 'global': cache globally, for the entire admin session
-     * - 'local': cache locally within the closest route
-     *   component that is associated with a resource and loads
-     *   its own data.
-     */
-    cache?: 'local' | 'global'
-    url: string
-    /**
-     * @default 'get'
-     */
-    method?: HTTPMethod
-    query?:
-      | Record<string, string | number | (string | number)[]>
-      | [string, string | number][]
-    data?: unknown
-    resource?: Resource
-  }): Promise<T>
+  /**
+   * Performs an API request to `url`, or else to `resource`, resolved
+   * relative to the nearest form or list with a resource, and resolves with
+   * the data of the response.
+   */
+  request<T>(
+    options: {
+      /**
+       * Caches the response:
+       * - 'global': for the admin session, until the user changes.
+       * - 'local': while the route of the form or view is shown. Outside of
+       *   routes, e.g. in dialogs, responses aren't cached.
+       */
+      cache?: 'local' | 'global'
+      /**
+       * @default 'get', or the `method` of `resource`
+       */
+      method?: HTTPMethod
+      query?:
+        | Record<string, string | number | (string | number)[]>
+        | [string, string | number][]
+      data?: unknown
+    } & (
+      | { url: string; resource?: Resource }
+      | { url?: string; resource: Resource }
+    )
+  ): Promise<T>
+  /**
+   * Returns a context that inherits from this one, with the members of
+   * `values` added or overridden, e.g. the `value` that a callback receives.
+   */
+  extend<$Values extends Record<string, any>>(
+    values: $Values
+  ): Merge<SchemaContext<$Item>, $Values>
   /** Formats values using locale-aware formatters. */
   format: typeof utilsFormat
   /** Navigates to a route programmatically. */
@@ -2121,14 +2134,16 @@ export type SchemaContext<$Item = any> = {
     (options: { url: string; filename: string }): void
   }
   /**
-   * Returns the full URL for a given resource, resolved
-   * relative to the nearest resource. Without one, returns
-   * the URL of the nearest form or list with a resource:
-   * of the item that the form edits, or of the collection
-   * that the list loads or the form creates its item in.
-   * Throws without such a form or list.
+   * Returns the URL of the nearest form or list with a resource: of the item
+   * that the form edits, or of the collection that the list loads or the
+   * form creates its item in. Throws without such a form or list.
    */
-  getResourceUrl(resource?: Resource): string
+  getResourceUrl(): string
+  /**
+   * Returns the URL of `resource`, resolved relative to the nearest form or
+   * list with a resource, or `null` if it resolves to no path.
+   */
+  getResourceUrl(resource: Resource): string | null
   /**
    * Validates the data of the form, view, dialog or panel
    * with its own data that the context belongs to, or only
@@ -2232,9 +2247,8 @@ export type SchemaContext<$Item = any> = {
 }
 
 /**
- * The context of the admin, provided once to all its components as
- * `adminContext`. `user`, `views` and `flattenedViews` change with each login,
- * and are reactive.
+ * The context of the admin, as `DitoAdmin.context`. `user`, `views` and
+ * `flattenedViews` change with each login, and are reactive.
  */
 export interface AdminContext {
   /** The admin API configuration. */
@@ -2261,434 +2275,8 @@ export interface AdminContext {
   readonly views: Record<string, View>
   /** All views flattened into a single record. */
   readonly flattenedViews: Record<string, ViewSchema>
-  /** Tracks the pending requests of the whole admin. */
-  readonly loadingTracker: LoadingTracker
-  /** The rendered routes and components, to reveal and focus them. */
-  readonly ui: UiRegistry
   showDialog: SchemaContext['showDialog']
   notify: SchemaContext['notify']
-  /** Closes all notification toasts. */
-  closeNotifications(): void
-}
-
-/** What a rendered component offers to reveal and focus it. */
-export interface UiHandle {
-  /** The context of the data that the component displays. */
-  readonly dataContext: DataContext | null
-  /**
-   * Renders what leads to the component at `componentPath` inside this one,
-   * e.g. opens a collapsed schema and renders its tab, which `focus` also
-   * selects.
-   */
-  reveal?(componentPath: string, options: { focus: boolean }): Promise<void>
-  /** Focuses the element of the component, once it's revealed. */
-  focus?(): void
-}
-
-/**
- * The handles of the rendered components by component path, and the contexts
- * of the rendered routes, as `admin.ui`.
- */
-export interface UiRegistry {
-  /** The contexts of the rendered routes by level. Reactive. */
-  readonly routes: readonly RouteContext[]
-  /**
-   * Registers `handle` under the component path, and again under the new one
-   * whenever it changes. Returns the function that unregisters it.
-   */
-  register(getComponentPath: () => string, handle: UiHandle): () => void
-  /**
-   * Returns the handles at `componentPath`, of all data contexts or of
-   * `dataContext`, the outer ones first.
-   */
-  getHandles(
-    componentPath: string,
-    dataContext?: DataContext | null
-  ): UiHandle[]
-  /**
-   * Reveals the component at `componentPath` in `dataContext`, by asking the
-   * components on the way from the outside in, and with `focus`, focuses it.
-   */
-  reveal(
-    dataContext: DataContext | null,
-    componentPath: string,
-    options?: { focus?: boolean }
-  ): Promise<void>
-}
-
-/**
- * The context of a view, form, dialog or panel with its own data, provided
- * to the components that display its data as `dataContext`. Its members are
- * reactive.
- */
-export interface DataContext {
-  /**
-   * The data model that holds the data, which is the model of the parent
-   * for forms that mutate the item of their parent.
-   */
-  readonly model: DataModel
-  /** See {@link DataModel.isDirty}. */
-  readonly isDirty: boolean
-  /** See {@link DataModel.isEdited}. */
-  readonly isEdited: boolean
-  /** Whether the form creates a new item, `false` outside of forms. */
-  readonly isCreating: boolean
-  /**
-   * Whether the data is there to display: forms load or create their item,
-   * the others always have their data.
-   */
-  readonly hasData: boolean
-  validate: SchemaContext['validate']
-  verify: SchemaContext['verify']
-  /**
-   * Shows the validation errors of the server for the data that was sent,
-   * keyed by data paths relative to `dataPath`, by default the one of the
-   * data, and reveals them.
-   */
-  showValidationErrors(
-    errors: Record<string, ValidationError[]>,
-    dataPath?: string
-  ): Promise<void>
-  /**
-   * Reveals the errors of the data, opening the forms, collapsed schemas and
-   * tabs that display them, and focuses the first one.
-   */
-  revealErrors(): Promise<void>
-  markEdited: SchemaContext['markEdited']
-  replaceItem: SchemaContext['replaceItem']
-}
-
-/** The context that dialogs provide as `dataContext`. */
-export interface DialogContext extends DataContext {
-  /** Closes the dialog, and resolves `showDialog()` with `value`. */
-  close(value?: unknown): void
-}
-
-/**
- * The context of a view or form, provided to the components that it renders
- * as `routeContext`. Its members are reactive.
- */
-export interface RouteContext {
-  /** The context of the route of the parent form or view. */
-  readonly parent: RouteContext | null
-  /** The context of the data of the view or form. */
-  readonly dataContext: DataContext
-  /** The schema of the data that the route renders. */
-  readonly schema: Component | null
-  /** The data path of the data, relative to `rootData`. */
-  readonly dataPath: string
-  /**
-   * The data that the data paths of the route are relative to, e.g. the
-   * draft root of nested forms.
-   */
-  readonly rootData: Record<string, any> | null
-  readonly componentPath: string
-  /**
-   * Tracks the requests of the view, along with the ones of the resources of
-   * its forms.
-   */
-  readonly loadingTracker: LoadingTracker
-  /** The depth of the route, starting at `0` for views. */
-  readonly level: number
-  readonly isForm: boolean
-  /**
-   * The state that the routes below depend on: the data, the parameters of
-   * the route, and whether its sources are transient, e.g. in forms that
-   * create their item.
-   */
-  readonly state: {
-    data: any
-    routeParams: Record<string, any>
-    isTransient: boolean
-  }
-  readonly path: string
-  /** Whether the route is the last one of the current route. */
-  readonly isLastRoute: boolean
-  /** Whether the route is being left, until its view or form is unmounted. */
-  readonly isLeaving: boolean
-  /**
-   * Whether leaving the route loses changes. Forms that edit the item of their
-   * parent leave their changes in the parent's data.
-   */
-  readonly isDirty: boolean
-  /** The text of the route in the breadcrumb trail. */
-  readonly breadcrumb: string
-  /** The name of the selected tab, `null` without tabs. */
-  readonly selectedTab: string | null
-  /**
-   * Action verb labels of the form, with the transient ones in nested data,
-   * e.g. `apply`.
-   */
-  readonly verbs: Record<string, string>
-  /**
-   * The resource of the form, or else of the nearest form above with a
-   * resource, which the resources of its components and nested forms
-   * continue, `null` in views.
-   */
-  readonly resourceContext: ResourceContext | null
-  /**
-   * Resolves the path of the form that edits the item at `dataPath`, or
-   * `null`.
-   */
-  getFormPath(dataPath: string): string | null
-  /**
-   * Resolves the path of the deepest form that edits the data at
-   * `dataPath`, along with the data path that remains within that form,
-   * or `null`.
-   */
-  getFormRoute(dataPath: string): { path: string; dataPath: string } | null
-  /**
-   * Resolves the path of the form that creates an item of the source at
-   * `dataPath`, or `null`.
-   */
-  getCreatePath(dataPath: string): string | null
-  /**
-   * Closes the form, navigating to the route of its parent. Throws for
-   * views.
-   */
-  close(): Promise<unknown>
-  /**
-   * Submits the data of the form through `button`: forms with a resource
-   * save it, the others apply it to their parent. Resolves with whether it
-   * succeeded. Throws for views.
-   */
-  submit(
-    button: SubmitButton,
-    options?: { validate?: boolean; closeForm?: boolean }
-  ): Promise<boolean>
-}
-
-/**
- * The context of a list, object or tree, provided to the components that
- * display it and its items as `sourceContext`. Its members are reactive.
- */
-export interface SourceContext {
-  readonly schema: Component
-  /** The query of lists, e.g. their scope, page, order and filters. */
-  readonly query: Record<string, any>
-  /** Navigates lists to other queries. */
-  readonly listQuery: {
-    readonly query: Record<string, any>
-    update(
-      changes: Record<string, any>,
-      options?: { resetPage?: boolean }
-    ): Promise<unknown>
-  }
-  readonly dataPath: string
-  readonly componentPath: string
-  readonly store: Record<string, any>
-  readonly isDisabled: boolean
-  /**
-   * Creates an item with the form `schema`, of `type` if the source has
-   * several forms, inserts it at `index`, or else at the end, and returns it.
-   */
-  createItem(schema: Form, type?: string | null, index?: number | null): any
-  /**
-   * The label of `item` as the source shows it: an object for inlined items,
-   * HTML for others, through `render()` if the source has it.
-   */
-  getSourceItemLabel(item: any, index?: number | null): any
-  /** Loads the data of the source again, e.g. after its item was saved. */
-  reload(): void
-  /**
-   * Submits the data of the source through `button`, to the resource of the
-   * button, continuing the one of the source. Resolves with whether it
-   * succeeded.
-   */
-  submit(button: SubmitButton): Promise<boolean>
-  /** Action verb labels, with the transient ones in nested data. */
-  readonly verbs: Record<string, string>
-  /**
-   * The resource of the source, `null` without a resource of its own, see
-   * {@link ResourceContext}.
-   */
-  readonly resourceContext: ResourceContext | null
-}
-
-/**
- * The context of a form or source with a resource of its own, provided to the
- * components that it renders as `resourceContext`. Components see the nearest
- * one, e.g. the one of the form in its inlined lists, which loads the data that
- * they display.
- */
-export interface ResourceContext {
-  /**
-   * Returns the resource of the form or source: of the item of forms, and the
-   * collection of sources.
-   */
-  getResource(options?: {
-    method?: HTTPMethod
-    child?: Resource | null
-  }): Resource | null
-  /** Submits the data through `button`, resolving with whether it succeeded. */
-  submit(
-    button: SubmitButton,
-    options?: { validate?: boolean; closeForm?: boolean }
-  ): Promise<boolean>
-}
-
-/**
- * The button that submits the data of a form or source, and receives the
- * `success` and `error` events of the submit.
- */
-export interface SubmitButton {
-  readonly schema: ButtonSchema<any>
-  readonly context: SchemaContext
-  /** Whether the form closes after the submit. */
-  readonly closeForm: boolean
-  createContext(values?: Record<string, any>): SchemaContext
-  getSchemaValue(keyOrDataPath: string | string[], options?: object): any
-  emitEvent(
-    event: string,
-    options?: { context?: Record<string, any> | SchemaContext }
-  ): Promise<any>
-}
-
-/**
- * Counts the pending operations of a scope, e.g. the
- * requests of a resource component, of all components
- * in a view, or of the whole admin, and forwards them
- * to the tracker of the enclosing scope.
- */
-export interface LoadingTracker {
-  /** The tracker of the enclosing scope, if any. */
-  readonly parent: LoadingTracker | null
-  /** The tracker of the outermost scope. */
-  readonly root: LoadingTracker
-  /** Whether any operation within the scope is pending. */
-  readonly isLoading: boolean
-  /**
-   * Begins an operation in this scope and its enclosing
-   * ones, and returns the function that ends it.
-   */
-  begin(): () => void
-  /**
-   * Tracks the operation that `callback()` performs until
-   * its returned promise settles, and returns its result.
-   */
-  track<T>(callback: () => T | Promise<T>): Promise<T>
-}
-
-/**
- * A list that the change API of `DataModel` changes, with the schema
- * that numbers its items by its `orderKey`, and its data path, which tells
- * the source with its own resource that the change belongs to, if any.
- */
-export interface ListEntry {
-  schema: Record<string, any>
-  list: any[]
-  dataPath: string
-}
-
-/**
- * The data model of a view, form, dialog or panel with its own data.
- * Components write the data through its change API, which marks the data
- * edited until it's replaced or saved, if the write changes the value.
- * Direct writes don't mark it.
- */
-export interface DataModel {
-  /**
-   * Whether the data has edits that can be saved: of the component if it
-   * has a button of type `submit`, and of the lists of sources with their
-   * own resource and such a button, which include the changes inside them.
-   */
-  readonly isDirty: boolean
-  /** Whether the data was edited, also where it can't be saved. */
-  readonly isEdited: boolean
-  /** Marks the data edited, e.g. after writing it directly. */
-  markEdited(): void
-  /**
-   * The number of the last edit. Saves read it when they start, to only
-   * clean the edits that they carried, see `markClean()`.
-   */
-  readonly editCount: number
-  /**
-   * Marks the data clean, e.g. once it's saved, or only the edits of the
-   * source with its own resource at `dataPath`, once the source saved them.
-   * With `editCount`, only the edits up to it are cleaned.
-   */
-  markClean(options?: { dataPath?: string | null; editCount?: number }): void
-  /**
-   * Merges `data` from the server, e.g. the response of a save,
-   * into the data in place, so that its objects keep their
-   * identity, along with their uids, item stores, open forms and
-   * errors. The data of sources with their own resource is kept.
-   * Values missing in `data` are removed. Returns the merged
-   * data, which isn't dirty, apart from the edits of sources with
-   * their own resource.
-   */
-  mergeFromServer(data: object): object
-  /**
-   * Sets `data[key]` to `value`, an edit if the value changes. Values equal
-   * to the current one are not written, so it keeps its identity.
-   */
-  set(data: object, key: string | number, value: any): void
-  /** Inserts `item` into the list of `entry` at `index`. */
-  insert(entry: ListEntry, index: number, item: any): void
-  /** Removes the item at `index` from the list of `entry`. */
-  remove(entry: ListEntry, index: number): void
-  /** Moves the item at `from` in the list of `entry` to `to`. */
-  move(entry: ListEntry, from: number, to: number): void
-  /** Replaces the items of the list of `entry` with `items`, in place. */
-  replaceItems(entry: ListEntry, items: any[]): void
-  /**
-   * Returns the errors of the value at `dataPath`, of validation and of
-   * the server, in the format of the server, or `null`. Errors are kept
-   * by the data that holds the value and its name, so they stay with
-   * items that move. They only apply while it's the value that they were
-   * set for.
-   */
-  getErrors(dataPath: string): ValidationError[] | null
-  /**
-   * Returns the error messages of the field itself at `dataPath`, e.g. of
-   * options that failed to load, or `null`.
-   */
-  getFieldErrors(dataPath: string): string[] | null
-  /**
-   * Replaces the validation errors of the value of the field at
-   * `dataPath`. The errors of the server stay while the value does.
-   */
-  setErrors(dataPath: string, errors: ValidationError[] | null): void
-  /**
-   * Adds an error message to the field rather than to its value,
-   * unless it has it already. It stays until it's removed.
-   */
-  addError(dataPath: string, message: string): void
-  /** Removes an error message from the field. */
-  removeError(dataPath: string, message: string): void
-  /**
-   * Replaces the validation errors, or with `server` the ones of
-   * the server, of the values within `dataPath` with `errors`,
-   * keyed by data path. Errors inside values that no deeper field
-   * displays go to the field of the value, with their `path` in it.
-   * Returns the errors that no field displays, or `null`.
-   */
-  replaceErrors(
-    errors: Record<string, ValidationError[]>,
-    options?: { dataPath?: string; server?: boolean }
-  ): Record<string, ValidationError[]> | null
-  /**
-   * Clears the errors of the values within `dataPath`, of
-   * validation and of the server. The errors of fields stay.
-   */
-  clearErrors(dataPath?: string): void
-  /** Returns the data paths of the fields within `dataPath` with errors. */
-  getErrorDataPaths(dataPath?: string): string[]
-  /**
-   * Whether `data` or the data nested in it holds values with
-   * errors, also where they aren't displayed.
-   */
-  hasErrorsWithin(data: object): boolean
-}
-
-/** A validation error, as validation and the server return them. */
-export interface ValidationError {
-  message: string
-  /**
-   * The path of the error inside the value of the field that displays it,
-   * if no deeper field displays the value, e.g. in objects edited as code.
-   */
-  path?: string
 }
 
 export interface MenuSchema<$Item = any> {
@@ -3178,7 +2766,7 @@ export class DitoAdmin<
   el: Element
   /** The resolved API configuration. */
   api: ApiConfig
-  /** The context of the admin, provided to all its components. */
+  /** The context of the admin. */
   context: AdminContext
   /** The Vue application instance. */
   app: import('vue').App
@@ -3290,7 +2878,16 @@ export interface TypeDescriptor {
     api: ApiConfig,
     schema: Record<string, any>,
     dataPath: string,
-    source: SourceContext | null
+    // The list that the component renders, e.g. for the panel of its filters:
+    source: {
+      readonly listQuery: {
+        readonly query: Record<string, any>
+        update(
+          changes: Record<string, any>,
+          options?: { resetPage?: boolean }
+        ): Promise<unknown>
+      }
+    } | null
   ): Record<string, any> | null | undefined
   getValidations?(
     schema: Record<string, any>,

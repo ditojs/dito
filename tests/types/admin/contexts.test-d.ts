@@ -2,65 +2,29 @@ import { expectTypeOf, describe, it } from 'vitest'
 import type {
   AdminContext,
   AdminUser,
-  DataContext,
-  SchemaContext,
-  DataModel,
-  ResourceContext,
-  RouteContext,
-  SourceContext,
-  SubmitButton,
-  UiRegistry
+  DitoAdmin,
+  SchemaContext
 } from '@ditojs/admin'
+// The contexts of data, routes, sources and resources are internal:
+// @ts-expect-error
+import type { DataContext } from '@ditojs/admin'
+// @ts-expect-error
+import type { RouteContext } from '@ditojs/admin'
+// @ts-expect-error
+import type { DataModel } from '@ditojs/admin'
 
 describe('contexts', () => {
   it('provides the context of the admin', () => {
+    expectTypeOf<DitoAdmin['context']>().toEqualTypeOf<AdminContext>()
     expectTypeOf<AdminContext['user']>().toEqualTypeOf<SchemaContext['user']>()
     expectTypeOf<SchemaContext['user']>().toEqualTypeOf<AdminUser | null>()
     expectTypeOf<AdminContext['notify']>()
       .toEqualTypeOf<SchemaContext['notify']>()
     expectTypeOf<AdminContext['showDialog']>()
       .toEqualTypeOf<SchemaContext['showDialog']>()
-    expectTypeOf<AdminContext['loadingTracker']['isLoading']>().toBeBoolean()
-    expectTypeOf<AdminContext['ui']>().toEqualTypeOf<UiRegistry>()
-    expectTypeOf<AdminContext['ui']['routes']>()
-      .toEqualTypeOf<readonly RouteContext[]>()
-  })
-
-  it('provides the contexts of data and routes', () => {
-    expectTypeOf<DataContext['model']>().toEqualTypeOf<DataModel>()
-    expectTypeOf<DataContext['isDirty']>().toBeBoolean()
-    expectTypeOf<DataContext['revealErrors']>().returns.resolves.toBeVoid()
-    expectTypeOf<DataModel['isEdited']>().toBeBoolean()
-    expectTypeOf<DataModel['markEdited']>().returns.toBeVoid()
-    expectTypeOf<DataModel['mergeFromServer']>()
-      .returns.toEqualTypeOf<object>()
-    expectTypeOf<RouteContext['parent']>().toEqualTypeOf<RouteContext | null>()
-    expectTypeOf<RouteContext['dataContext']>()
-      .toEqualTypeOf<DataContext>()
-    expectTypeOf<RouteContext['getCreatePath']>()
-      .returns.toEqualTypeOf<string | null>()
-    expectTypeOf<RouteContext['schema']>().toBeNullable()
-  })
-
-  it('provides the contexts of sources and resources', () => {
-    expectTypeOf<SourceContext['query']>()
-      .toEqualTypeOf<Record<string, any>>()
-    expectTypeOf<SourceContext['getSourceItemLabel']>()
-      .parameter(0)
-      .toBeAny()
-    expectTypeOf<SourceContext['resourceContext']>()
-      .toEqualTypeOf<ResourceContext | null>()
-    expectTypeOf<SourceContext['verbs']>()
-      .toEqualTypeOf<Record<string, string>>()
-    expectTypeOf<ResourceContext['submit']>()
-      .returns.toEqualTypeOf<Promise<boolean>>()
-    expectTypeOf<ResourceContext['submit']>()
-      .parameter(0)
-      .toEqualTypeOf<SubmitButton>()
-    expectTypeOf<SubmitButton['context']>().toEqualTypeOf<SchemaContext>()
-    expectTypeOf<RouteContext['resourceContext']>()
-      .toEqualTypeOf<ResourceContext | null>()
-    expectTypeOf<RouteContext['submit']>()
-      .returns.toEqualTypeOf<Promise<boolean>>()
+    expectTypeOf<AdminContext>().not.toHaveProperty('ui')
+    expectTypeOf<AdminContext>().not.toHaveProperty('loadingTracker')
   })
 })
+
+export type { DataContext, RouteContext, DataModel }
