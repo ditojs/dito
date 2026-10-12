@@ -942,6 +942,28 @@ describe('DitoForm', () => {
       ])
     })
 
+    it('applies items with computed values that hold the item', async () => {
+      const { form, data } = await openChapterForm(
+        {
+          title: { type: 'text' },
+          details: {
+            type: 'section',
+            nested: true,
+            components: {
+              chapter: {
+                type: 'computed',
+                exclude: true,
+                computeValue: ({ parentItem }) => parentItem
+              }
+            }
+          }
+        },
+        { id: 7, title: 'Prologue', details: {} }
+      )
+      await applyChapterForm(form, 'Opening')
+      expect(data.chapters[0]).toMatchObject({ id: 7, title: 'Opening' })
+    })
+
     it('calls `serializeValue()` only when the parent is saved', async () => {
       const { form, data, submit } = await openChapterForm(
         { title: { type: 'text', serializeValue: ({ value }) => `${value}!` } },

@@ -26,8 +26,13 @@ export function getUid(item, getItemId = null) {
 export function cloneWithUids(value, options) {
   const copy = clone(value, options)
   const link = (original, copy) => {
-    // Values that `options.transferables` share aren't copies:
-    if (copy !== original && (isPlainObject(copy) || isArray(copy))) {
+    if (
+      // Values that `options.transferables` share aren't copies...
+      copy !== original &&
+      (isPlainObject(copy) || isArray(copy)) &&
+      // ...and copies that hold their ancestors are linked already:
+      !originalsByCopy.has(copy)
+    ) {
       originalsByCopy.set(copy, toRaw(original))
       for (const [key, value] of Object.entries(copy)) {
         link(original[key], value)

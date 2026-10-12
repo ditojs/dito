@@ -1550,6 +1550,42 @@ describe('DataModel', () => {
       expect(dataModel.hasErrorsWithin(data)).toBe(false)
       dataModel.stop()
     })
+
+    it('finds and copies the errors within data that holds its ancestors', async () => {
+      const schema = {
+        type: 'form',
+        components: {
+          title: { type: 'text' },
+          details: {
+            type: 'section',
+            nested: true,
+            components: {
+              book: {
+                type: 'computed',
+                computeValue: ({ parentItem }) => parentItem
+              }
+            }
+          }
+        }
+      }
+      const { dataModel, data } = createDataModel(schema, {
+        title: 'Emma',
+        details: {}
+      })
+      await nextTick()
+      expect(toRaw(data.details.book)).toBe(toRaw(data))
+      expect(dataModel.hasErrorsWithin(data)).toBe(false)
+      dataModel.setErrors('title', tooShort)
+      expect(dataModel.hasErrorsWithin(data.details)).toBe(true)
+      const { dataModel: draftModel } = createDataModel(
+        schema,
+        cloneWithUids(dataModel.data)
+      )
+      draftModel.copyErrors(dataModel, draftModel.data)
+      expect(draftModel.getErrors('title')).toEqual(tooShort)
+      dataModel.stop()
+      draftModel.stop()
+    })
   })
 
   describe('list items that move or are removed', () => {

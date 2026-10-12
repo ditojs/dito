@@ -520,21 +520,29 @@ export class DataModel {
   // Return whether `data` or the data nested in it hold fields with errors,
   // also where they aren't displayed, e.g. in the items of nested forms.
   hasErrorsWithin(data: any): boolean {
-    if (isPlainObject(data) || isArray(data)) {
-      return (
-        this.#errors.value.hasEntriesOf(data) ||
-        this.#fieldErrors.value.hasEntriesOf(data) ||
-        Object.values(data).some(value => this.hasErrorsWithin(value))
-      )
+    // Computed values can hold their ancestors, e.g. `parentItem`:
+    const visited = new Set()
+    const hasErrors = (data: any): boolean => {
+      if ((isPlainObject(data) || isArray(data)) && !visited.has(data)) {
+        visited.add(data)
+        return (
+          this.#errors.value.hasEntriesOf(data) ||
+          this.#fieldErrors.value.hasEntriesOf(data) ||
+          Object.values(data).some(hasErrors)
+        )
+      }
+      return false
     }
-    return false
+    return hasErrors(data)
   }
 
   // Copy the errors of the originals of `data` and of the data nested in it,
   // e.g. from the parent's model to the draft of a nested form.
   copyErrors(model: DataModel, data: any) {
+    const visited = new Set()
     const copy = (data: any) => {
-      if (isPlainObject(data) || isArray(data)) {
+      if ((isPlainObject(data) || isArray(data)) && !visited.has(data)) {
+        visited.add(data)
         const original = getOriginal(data)
         for (const [name, errors] of model.#errors.value.entriesOf(original)) {
           const { validation, server } = errors
