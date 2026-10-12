@@ -71,8 +71,10 @@ which components write the data through, as `component.dataModel`.
   and computed values, and their edits don't make the view or form dirty.
 - Panels with their own data, e.g. filters, and dialogs are the containers of
   their data: `rootItem` in the contexts inside them is their data, and the
-  data paths of their components start at it. `data()` of panels receives the
-  context of the data around the panel.
+  data paths of their components start at it, so their components, buttons
+  and events no longer reach the item around them. The callbacks that decide
+  about a panel itself, `if`, `visible`, `label`, `sticky` and `data()`,
+  receive the context of the data around the panel, with the panel's schema.
 - Submitting waits for running uploads, without a time limit, so that the
   stored files are sent, also through the buttons of sources with their own
   resource, which also wait for the loads of data schemas and options now.

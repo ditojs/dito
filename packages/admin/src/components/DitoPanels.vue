@@ -2,7 +2,7 @@
 .dito-panels(
   v-if="panels.length > 0"
 )
-  template(
+  DitoPanel(
     v-for=`{
       schema,
       dataPath,
@@ -10,18 +10,15 @@
       tabName,
       isTabSelected
     } in panels`
+    :key="getPanelKey(dataPath, tabName)"
+    :schema="schema"
+    :dataPath="dataPath"
+    :panelComponentPath="componentPath"
+    :data="data"
+    :store="getChildStore(schema.name)"
+    :disabled="schema.disabled ?? disabled"
+    :isTabSelected="isTabSelected"
   )
-    DitoPanel(
-      v-if="shouldRenderSchema(schema)"
-      :key="getPanelKey(dataPath, tabName)"
-      :schema="schema"
-      :dataPath="dataPath"
-      :panelComponentPath="componentPath"
-      :data="data"
-      :store="getChildStore(schema.name)"
-      :disabled="schema.disabled ?? disabled"
-      :isTabSelected="isTabSelected"
-    )
 </template>
 
 <script>
