@@ -18,7 +18,7 @@ component(
 
 import { computed } from 'vue'
 import { isArray } from '@ditojs/utils'
-import { defineType } from '../utils/schema/types.ts'
+import { defineType, getOptionsDataSchema } from '../utils/schema/types.ts'
 import { fieldProps, useField } from '../composables/useField.ts'
 import { resolveSchemaComponent } from '../utils/schema/setup.js'
 
@@ -28,7 +28,26 @@ const DitoTypeComponent = {
   props: fieldProps,
 
   setup(props) {
-    const { context, componentPath, value, attributes } = useField(props)
+    // The contexts of custom types with options hold them, like selects:
+    const members = getOptionsDataSchema(props.schema)
+      ? {
+          get options() {
+            const { schema, data, dataPath } = props
+            return (
+              services.dataContext.model.getOptionsResolver({
+                schema,
+                data,
+                name: schema.name,
+                dataPath
+              }).value ?? []
+            )
+          }
+        }
+      : null
+    const { context, componentPath, value, attributes, services } = useField(
+      props,
+      { members }
+    )
     return {
       context,
       componentPath,
