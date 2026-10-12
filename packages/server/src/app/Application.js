@@ -250,6 +250,15 @@ export class Application extends Koa {
     if (!(service instanceof Service)) {
       throw new Error(`Invalid service: ${service}`)
     }
+    // `configure(config)` replaces the former `setup(config)` hook, so catch
+    // leftovers that would never be called:
+    if (service.setup) {
+      throw new Error(
+        `Unsupported setup() in service '${
+          service.name
+        }', use configure() instead.`
+      )
+    }
     this.services[service.name] = service
   }
 
