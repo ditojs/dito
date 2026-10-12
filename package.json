@@ -16,7 +16,7 @@
     "release": "lerna version",
     "test": "pnpm -r --parallel --include-workspace-root run /^test:/",
     "test:unit": "vitest --run",
-    "types": "tsc -p tsconfig.types.json",
+    "types": "tsc -p tsconfig.types.json && tsc -p packages/admin",
     "dist:check": "pnpm -C packages/ui run build && pnpm -C packages/admin run build && node scripts/check-dist.js",
     "eslint": "NODE_ENV=production eslint packages/*/src packages/*/types tests",
     "eslint:fix": "pnpm run eslint --fix",
@@ -30,7 +30,8 @@
     "update:sync": "pnpm update -r --depth 0 && pnpm run peers:sync",
     "peers:sync": "node scripts/sync-peers.js && pnpm install && (pnpm audit --fix update || true)",
     "peers:check": "node scripts/sync-peers.js --check",
-    "coverage": "vitest run --coverage"
+    "coverage": "vitest run --coverage",
+    "check": "concurrently --group pnpm:lint pnpm:types 'pnpm -C tests test:types'"
   },
   "lint-staged": {
     "packages/**/src/**/*.{js,ts}": [
