@@ -1,3 +1,4 @@
+import { onUnmounted } from 'vue'
 import {
   onBeforeRouteLeave,
   onBeforeRouteUpdate,
@@ -26,14 +27,15 @@ export function useLeaveGuard(
   let hasPreventedLeavingInvalidData = false
   // Shared by the navigations while its dialog is open, e.g. the back button:
   let discardConfirmation: Promise<boolean> | null = null
-  // The navigations that wait for the submits, which they may give up on at
-  // different times:
-  let waitingNavigationCount = 0
+  // The latest navigation from the form's route until it settled, as it
+  // cancels the earlier ones:
+  let pendingNavigation: RouteLocationNormalized | null = null
 
   const beforeRouteChange = async (
     to: RouteLocationNormalized,
     from: RouteLocationNormalized
   ) => {
+    pendingNavigation = to
     let ok = true
     const isClosing = (
       // Include the parents of closing nested forms. Tab changes and nested
@@ -54,9 +56,7 @@ export function useLeaveGuard(
       } else {
         // Data stays dirty while it's submitted, so wait for the submits:
         if (model.hasPendingSubmits) {
-          waitingNavigationCount++
           await model.waitUntilSubmitted()
-          waitingNavigationCount--
         }
         if (routeContext.isDirty) {
           discardConfirmation ??= confirm(
@@ -80,11 +80,19 @@ export function useLeaveGuard(
 
   onBeforeRouteLeave(beforeRouteChange)
   onBeforeRouteUpdate(beforeRouteChange)
+  onUnmounted(
+    router.afterEach(to => {
+      if (to === pendingNavigation) {
+        pendingNavigation = null
+      }
+    })
+  )
 
   // Navigate after a submit only while the route is within the form's `path`.
-  // If a navigation away waits for the submit, we decide once it settled:
+  // If a navigation is pending, e.g. one waiting for the submit, we decide
+  // once it settled:
   const navigateWithin = (path: string, navigate: () => unknown) => {
-    if (waitingNavigationCount > 0) {
+    if (pendingNavigation) {
       const removeHook = router.afterEach(() => {
         removeHook()
         navigateWithin(path, navigate)
