@@ -79,7 +79,7 @@
     v-show="opened"
     :options="getDraggableOptions(true)"
     :draggable="childrenDraggable"
-    :modelValue="childrenList"
+    :modelValue="childrenList || []"
     @update:modelValue="changeChildren"
   )
     DitoTreeItem(

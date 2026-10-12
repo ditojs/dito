@@ -192,6 +192,12 @@ describe('DitoTreeItem', () => {
       expect(outro.findAll('.dito-tree-item')).toHaveLength(0)
     })
 
+    it('passes `null` children to the sortable as an empty list', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      await mountChaptersForm([{ title: 'Outro', sections: null }])
+      expect(warn).not.toHaveBeenCalled()
+    })
+
     it('opens the items in the path of the edited child', async () => {
       const { admin, wrapper, settle } = await mountChaptersForm([
         { title: 'Intro', sections: [{ title: 'Welcome' }] }
