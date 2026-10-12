@@ -155,12 +155,10 @@ const DitoTypeColor = {
         }
       }),
 
-      // TODO: Rename to `showAlpha`?
       alpha: computed(() =>
         getSchemaValue('alpha', { type: Boolean, default: false })
       ),
 
-      // TODO: Rename to `showInputs`?
       inputs: computed(() =>
         getSchemaValue('inputs', { type: Boolean, default: true })
       ),

@@ -1743,7 +1743,8 @@ export interface ColorSchema<$Item = any>
    */
   format?: OrItemAccessor<$Item, {}, ColorFormat>
   /**
-   * Whether the color may contain an alpha component.
+   * Whether to show the alpha slider in the color picker, to edit the
+   * color's alpha component.
    *
    * @defaultValue `false`
    */

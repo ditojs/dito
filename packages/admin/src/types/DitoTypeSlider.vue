@@ -45,7 +45,6 @@ const DitoTypeSlider = {
       ...field,
       ...useNumber(props, field),
       labelize,
-      // TODO: Rename to `showInput`?
       input: computed(() =>
         field.getSchemaValue('input', { type: Boolean, default: true })
       )
