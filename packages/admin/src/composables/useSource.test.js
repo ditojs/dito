@@ -10,6 +10,7 @@ import {
   isView,
   isForm
 } from '../test/mount.js'
+import DitoTypeList from '../types/DitoTypeList.vue'
 import { getTypeDescriptor } from '../utils/schema/types.ts'
 
 async function mountBookForm() {
@@ -363,7 +364,7 @@ describe('useSource()', () => {
       })
       await admin.navigate('/books')
       const [source] = admin.wrapper
-        .findAllComponents({ name: 'DitoTypeList' })
+        .findAllComponents(DitoTypeList)
         .map(({ vm }) => vm)
       const getLoadQueries = () =>
         admin.request.mock.calls

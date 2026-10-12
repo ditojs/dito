@@ -1,6 +1,7 @@
 import { vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { mountSchema, mountAdmin } from '../test/mount.js'
+import DitoPane from './DitoPane.vue'
 
 describe('DitoPane', () => {
   // happy-dom doesn't lay out elements, so place all containers in one row,
@@ -20,7 +21,7 @@ describe('DitoPane', () => {
   }
 
   async function measureRows(wrapper) {
-    wrapper.findComponent({ name: 'DitoPane' }).vm.onResizePane()
+    wrapper.findComponent(DitoPane).vm.onResizePane()
     await flushPromises()
   }
 
@@ -109,7 +110,7 @@ describe('DitoPane', () => {
       data: { name: 'Rovers', captain: true }
     })
     await measureRows(wrapper)
-    const pane = wrapper.findComponent({ name: 'DitoPane' }).vm
+    const pane = wrapper.findComponent(DitoPane).vm
     expect(pane.positions).toEqual([null, null])
     expect(
       findContainer('captain').classes('dito-container--label-vertical')
@@ -134,7 +135,7 @@ describe('DitoPane', () => {
       data: { coach: { name: 'Alex' } }
     })
     const pane = wrapper
-      .findAllComponents({ name: 'DitoPane' })
+      .findAllComponents(DitoPane)
       .find(({ vm }) => vm.dataPath === 'coach').vm
     pane.onResizePane()
     await flushPromises()
@@ -165,7 +166,7 @@ describe('DitoPane', () => {
     })
     const getBlockPane = () =>
       wrapper
-        .findAllComponents({ name: 'DitoPane' })
+        .findAllComponents(DitoPane)
         .find(({ vm }) => vm.dataPath === 'blocks/0').vm
     const pane = getBlockPane()
     pane.positions.push({ top: 0, height: 3 }, { top: 0, height: 3 })
@@ -214,7 +215,7 @@ describe('DitoPane', () => {
       const admin = await mountTabs()
       await admin.navigate('/books#notes')
       const notes = admin.wrapper
-        .findAllComponents({ name: 'DitoPane' })
+        .findAllComponents(DitoPane)
         .find(({ vm }) => vm.tab === 'notes')
       expect(notes.vm.componentSchemas).toEqual([])
       expect(notes.find('.dito-pane').exists()).toBe(false)

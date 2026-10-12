@@ -38,7 +38,6 @@ const inputTypes = {
 
 // @vue/component
 const DitoTypeText = {
-  name: 'DitoTypeText',
   components: { DitoInput, DitoInputAffixes },
   props: fieldProps,
 

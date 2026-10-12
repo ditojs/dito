@@ -22,7 +22,6 @@ import CodeFlask from 'codeflask'
 
 // @vue/component
 const DitoTypeCode = {
-  name: 'DitoTypeCode',
   components: { DitoResizeHandle },
   props: fieldProps,
 

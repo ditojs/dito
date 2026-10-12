@@ -1,5 +1,6 @@
 import Sortable from 'sortablejs'
 import { mountForm } from '../test/mount.js'
+import DitoDraggable from './DitoDraggable.vue'
 
 const scan = {
   key: 'scan.pdf',
@@ -48,7 +49,7 @@ describe('DitoDraggable', () => {
       },
       data: { attachments: [scan, cover] }
     })
-    const { vm } = wrapper.findComponent({ name: 'DitoDraggable' })
+    const { vm } = wrapper.findComponent(DitoDraggable)
     const moveMouse = () =>
       document.dispatchEvent(new MouseEvent('mousemove', { bubbles: true }))
     // Ending twice must not leave the handlers of the first end behind:

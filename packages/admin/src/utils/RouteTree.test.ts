@@ -1,5 +1,6 @@
 import type { RouteTree } from './RouteTree.ts'
 import { mountAdmin } from '../test/mount.js'
+import { DitoView, DitoForm, DitoFormNested } from '../components/index.js'
 
 const createForm = (
   components: Record<string, any> = {}
@@ -28,7 +29,7 @@ async function getRouteComponents(views: Record<string, any>, path: string) {
   return matched[0]?.name === 'catch-all'
     ? null
     : matched.map(record =>
-        record.redirect ? 'redirect' : record.components?.default?.name
+        record.redirect ? 'redirect' : record.components?.default
       )
 }
 
@@ -36,7 +37,7 @@ describe('RouteTree', () => {
   it('routes the forms of the items of single-component views', async () => {
     expect(
       await getRouteComponents({ books: createListView('books') }, '/books/1')
-    ).toEqual(['DitoView', 'DitoForm'])
+    ).toEqual([DitoView, DitoForm])
   })
 
   it('routes the lists of multi-component views under their path', async () => {
@@ -47,11 +48,11 @@ describe('RouteTree', () => {
       }
     }
     expect(await getRouteComponents(views, '/shelf/books/1')).toEqual([
-      'DitoView',
-      'DitoForm'
+      DitoView,
+      DitoForm
     ])
     expect(await getRouteComponents(views, '/shelf/books')).toEqual([
-      'DitoView',
+      DitoView,
       'redirect'
     ])
   })
@@ -65,9 +66,9 @@ describe('RouteTree', () => {
       }
     }
     expect(await getRouteComponents(views, '/catalog/books/1')).toEqual([
-      'DitoView',
-      'DitoView',
-      'DitoForm'
+      DitoView,
+      DitoView,
+      DitoForm
     ])
   })
 
@@ -78,9 +79,9 @@ describe('RouteTree', () => {
       })
     }
     expect(await getRouteComponents(views, '/books/1/chapters/2')).toEqual([
-      'DitoView',
-      'DitoForm',
-      'DitoForm'
+      DitoView,
+      DitoForm,
+      DitoForm
     ])
   })
 
@@ -94,9 +95,9 @@ describe('RouteTree', () => {
     }
     for (const path of ['/books/1/cover', '/books/1/cover/create']) {
       expect(await getRouteComponents(views, path)).toEqual([
-        'DitoView',
-        'DitoForm',
-        'DitoForm'
+        DitoView,
+        DitoForm,
+        DitoForm
       ])
     }
   })
@@ -121,9 +122,9 @@ describe('RouteTree', () => {
       '/books/1/meta/sources/2'
     ]) {
       expect(await getRouteComponents(views, path)).toEqual([
-        'DitoView',
-        'DitoForm',
-        'DitoForm'
+        DitoView,
+        DitoForm,
+        DitoForm
       ])
     }
   })
@@ -135,9 +136,9 @@ describe('RouteTree', () => {
       })
     }
     expect(await getRouteComponents(views, '/books/1/extras/2')).toEqual([
-      'DitoView',
-      'DitoForm',
-      'DitoForm'
+      DitoView,
+      DitoForm,
+      DitoForm
     ])
     expect(await getRouteComponents(views, '/books/1/appendices/2')).toBe(null)
   })
@@ -150,9 +151,9 @@ describe('RouteTree', () => {
     }
     for (const path of ['/books/1/chapters/2', '/drafts/1/chapters/2']) {
       expect(await getRouteComponents(views, path)).toEqual([
-        'DitoView',
-        'DitoForm',
-        'DitoForm'
+        DitoView,
+        DitoForm,
+        DitoForm
       ])
     }
   })
@@ -244,7 +245,7 @@ describe('RouteTree', () => {
           views,
           '/articles/1/content/0/textContent/1/links/2'
         )
-      ).toEqual(['DitoView', 'DitoForm', 'DitoForm'])
+      ).toEqual([DitoView, DitoForm, DitoForm])
     })
   })
 
@@ -269,7 +270,7 @@ describe('RouteTree', () => {
     }
     expect(
       await getRouteComponents(views, '/pages/1/sections/2/paragraphs/3')
-    ).toEqual(['DitoView', 'DitoFormNested'])
+    ).toEqual([DitoView, DitoFormNested])
   })
 
   it('routes the forms of tree children next to the form of their item', async () => {
@@ -286,12 +287,12 @@ describe('RouteTree', () => {
       }
     }
     expect(await getRouteComponents(views, '/pages/1')).toEqual([
-      'DitoView',
-      'DitoFormNested'
+      DitoView,
+      DitoFormNested
     ])
     expect(await getRouteComponents(views, '/pages/1/subpages/2')).toEqual([
-      'DitoView',
-      'DitoFormNested'
+      DitoView,
+      DitoFormNested
     ])
   })
 
@@ -307,9 +308,9 @@ describe('RouteTree', () => {
       })
     }
     expect(await getRouteComponents(views, '/sites/1/site/pages/2')).toEqual([
-      'DitoView',
-      'DitoForm',
-      'DitoFormNested'
+      DitoView,
+      DitoForm,
+      DitoFormNested
     ])
   })
 

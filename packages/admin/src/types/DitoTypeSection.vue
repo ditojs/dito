@@ -27,7 +27,6 @@ import { isCompact } from '../utils/schema/structure.js'
 
 // @vue/component
 const DitoTypeSection = {
-  name: 'DitoTypeSection',
   props: fieldProps,
 
   setup(props) {

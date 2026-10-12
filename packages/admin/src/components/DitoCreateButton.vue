@@ -30,7 +30,6 @@ import { isInlined } from '../utils/schema/structure.js'
 import { getCreatableForms } from '../utils/schema/data.js'
 
 export default {
-  name: 'DitoCreateButton',
   components: { DitoButton, DitoMenuButton },
 
   props: {

@@ -24,7 +24,6 @@ import { resolveSchemaComponent } from '../utils/schema/setup.js'
 
 // @vue/component
 const DitoTypeComponent = {
-  name: 'DitoTypeComponent',
   props: fieldProps,
 
   setup(props) {

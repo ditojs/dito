@@ -7,6 +7,10 @@ import {
   settle,
   isForm
 } from '../test/mount.js'
+import DitoDialog from '../components/DitoDialog.vue'
+import DitoPanel from '../components/DitoPanel.vue'
+import DitoSchema from '../components/DitoSchema.vue'
+import DitoTypeText from '../types/DitoTypeText.vue'
 
 describe('DataContext', () => {
   const chaptersSchema = {
@@ -90,8 +94,8 @@ describe('DataContext', () => {
       buttons: { cancel: {} }
     })
     await flushPromises()
-    const dialog = admin.wrapper.findComponent({ name: 'DitoDialog' })
-    const { dataContext } = dialog.findComponent({ name: 'DitoSchema' }).vm
+    const dialog = admin.wrapper.findComponent(DitoDialog)
+    const { dataContext } = dialog.findComponent(DitoSchema).vm
     expect(dataContext.model.data).toBe(dialog.vm.dialogData)
     dataContext.closeDialog('closed')
     expect(await promise).toBe('closed')
@@ -114,7 +118,7 @@ describe('DataContext', () => {
     })
     await flushPromises()
     const mode = admin.wrapper
-      .findAllComponents({ name: 'DitoTypeText' })
+      .findAllComponents(DitoTypeText)
       .find(({ vm }) => vm.componentPath === 'speed/mode').vm
     mode.context.closeDialog(mode.context.item.mode)
     expect(await promise).toBe('fast')
@@ -134,8 +138,8 @@ describe('DataContext', () => {
       },
       request: () => ({ data: { results: [], total: 0 } })
     })
-    const panel = wrapper.findComponent({ name: 'DitoPanel' })
-    const { dataContext } = panel.findComponent({ name: 'DitoSchema' }).vm
+    const panel = wrapper.findComponent(DitoPanel)
+    const { dataContext } = panel.findComponent(DitoSchema).vm
     expect(dataContext).not.toBe(view.dataContext)
     expect(dataContext.model.data).toBe(panel.vm.panelData)
   })

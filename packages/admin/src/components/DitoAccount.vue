@@ -15,7 +15,6 @@ import { DitoMenuButton } from '@ditojs/ui/src'
 import { adminContextKey } from '../utils/keys.ts'
 
 export default {
-  name: 'DitoAccount',
   components: { DitoMenuButton },
 
   setup() {

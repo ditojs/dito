@@ -123,7 +123,6 @@ import { isPathWithin } from '../utils/route.js'
 
 // Items don't write the tree: They emit `changeChildren` for the tree list.
 export default {
-  name: 'DitoTreeItem',
   components: { DitoEditButtons },
   emits: ['delete', 'move', 'changeChildren'],
 

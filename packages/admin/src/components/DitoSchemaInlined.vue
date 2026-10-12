@@ -44,7 +44,6 @@ import { useServices } from '../composables/useSchemaContext.ts'
 import { isCompact } from '../utils/schema/structure.js'
 
 export default {
-  name: 'DitoSchemaInlined',
   emits: ['delete', 'move'],
 
   props: {

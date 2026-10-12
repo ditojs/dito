@@ -34,7 +34,6 @@ import { hyphenate } from '@ditojs/utils'
 import { useSchemaValue } from '../composables/useSchemaValue.ts'
 
 export default {
-  name: 'DitoTableHead',
   components: { DitoButton },
 
   props: {

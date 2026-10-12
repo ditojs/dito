@@ -51,7 +51,6 @@ const pickerComponents = {
 
 // @vue/component
 const DitoTypeDate = {
-  name: 'DitoTypeDate',
   components: { DitoInputAffixes },
   props: fieldProps,
 

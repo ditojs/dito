@@ -76,7 +76,6 @@ import {
 
 // @vue/component
 const DitoTypeMarkup = {
-  name: 'DitoTypeMarkup',
   components: {
     EditorContent,
     DitoButton,

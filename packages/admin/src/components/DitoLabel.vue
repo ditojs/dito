@@ -40,7 +40,6 @@ import { isObject, asArray } from '@ditojs/utils'
 import DitoAffixes from './DitoAffixes.vue'
 
 export default {
-  name: 'DitoLabel',
   components: { DitoAffixes },
   emits: ['open'],
 

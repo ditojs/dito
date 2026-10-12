@@ -25,8 +25,6 @@
 import { useStore } from '../composables/useStore.ts'
 
 export default {
-  name: 'DitoPanels',
-
   props: {
     panels: { type: Array, default: null },
     data: { type: Object, required: true },

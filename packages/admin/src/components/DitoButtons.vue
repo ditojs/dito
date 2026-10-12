@@ -39,8 +39,6 @@ import { appendDataPath } from '../utils/data.js'
 import { panelTabKey } from '../utils/keys.ts'
 
 export default {
-  name: 'DitoButtons',
-
   props: {
     buttons: { type: Object, default: null },
     dataPath: { type: String, default: '' },

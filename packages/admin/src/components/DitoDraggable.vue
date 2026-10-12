@@ -19,7 +19,6 @@ import Sortable from 'sortablejs'
 import { useDomEvents } from '../composables/useDomEvents.ts'
 
 export default {
-  name: 'DitoDraggable',
   components: { UseSortable },
   emits: ['update:modelValue'],
 

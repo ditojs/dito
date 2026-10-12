@@ -89,8 +89,6 @@ import { transientNote } from '../utils/dialogs.js'
 import { getTextFromHtml } from '../utils/html.js'
 
 export default {
-  name: 'DitoForm',
-
   setup() {
     const router = useRouter()
     const adminContext = inject(adminContextKey)

@@ -26,8 +26,6 @@ function isLikelyMarkup(paragraph) {
 }
 
 export default {
-  name: 'DitoNotifications',
-
   setup() {
     const adminContext = inject(adminContextKey)
     return {

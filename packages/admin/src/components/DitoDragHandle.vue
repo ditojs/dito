@@ -21,7 +21,6 @@ import { useServices } from '../composables/useSchemaContext.ts'
 import { getVerbs } from '../utils/services.ts'
 
 export default {
-  name: 'DitoDragHandle',
   components: { DitoButton },
   emits: ['move'],
 

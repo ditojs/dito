@@ -15,7 +15,6 @@ import { DitoButton } from '@ditojs/ui/src'
 import { useSchemaValue } from '../composables/useSchemaValue.ts'
 
 export default {
-  name: 'DitoScopes',
   components: { DitoButton },
 
   props: {

@@ -69,8 +69,6 @@ import { getItemAdapter } from '../utils/schema/types.ts'
 import { panelTabKey, sourceSchemaKey } from '../utils/keys.ts'
 
 export default {
-  name: 'DitoPane',
-
   props: {
     schema: { type: Object, required: true },
     dataPath: { type: String, default: '' },

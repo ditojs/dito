@@ -24,7 +24,6 @@ DitoAffixes(
 import DitoAffixes from './DitoAffixes.vue'
 
 export default {
-  name: 'DitoInputAffixes',
   components: { DitoAffixes },
   emits: ['clear'],
 

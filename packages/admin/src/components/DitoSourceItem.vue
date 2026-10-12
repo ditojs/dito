@@ -40,7 +40,6 @@ import { isInlined } from '../utils/schema/structure.js'
 import { sourceSchemaKey } from '../utils/keys.ts'
 
 export default {
-  name: 'DitoSourceItem',
   emits: ['delete', 'move'],
 
   props: {

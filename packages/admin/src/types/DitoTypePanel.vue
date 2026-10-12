@@ -5,7 +5,6 @@ import { setupSchemaComponents } from '../utils/schema/setup.js'
 
 // @vue/component
 const DitoTypePanel = {
-  name: 'DitoTypePanel',
   props: fieldProps,
 
   setup(props) {

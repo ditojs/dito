@@ -15,7 +15,6 @@ import { DitoSwitch } from '@ditojs/ui/src'
 
 // @vue/component
 const DitoTypeSwitch = {
-  name: 'DitoTypeSwitch',
   components: { DitoSwitch },
   props: fieldProps,
   setup: props => useField(props)

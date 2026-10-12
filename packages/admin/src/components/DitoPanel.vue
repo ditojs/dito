@@ -54,8 +54,6 @@ import { shouldRenderComponents } from '../utils/schema/data.js'
 import { getRootData } from '../utils/services.ts'
 
 export default {
-  name: 'DitoPanel',
-
   props: {
     schema: { type: Object, required: true },
     dataPath: { type: String, required: true },

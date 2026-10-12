@@ -29,7 +29,6 @@ import {
 import { adminContextKey } from '../utils/keys.ts'
 
 export default {
-  name: 'DitoClipboard',
   components: { DitoButton },
   emits: ['paste'],
 

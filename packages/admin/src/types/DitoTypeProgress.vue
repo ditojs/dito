@@ -17,7 +17,6 @@ import { useNumber } from '../composables/useNumber.ts'
 
 // @vue/component
 const DitoTypeProgress = {
-  name: 'DitoTypeProgress',
   props: fieldProps,
 
   setup(props) {

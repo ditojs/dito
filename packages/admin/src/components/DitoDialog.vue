@@ -40,7 +40,6 @@ import { getButtonSchemas, hasSubmitButton } from '../utils/schema/lookup.js'
 import { waitUntilDataModelSettled } from '../utils/services.ts'
 
 export default {
-  name: 'DitoDialog',
   components: { UseFocusTrap },
   emits: ['remove'],
 

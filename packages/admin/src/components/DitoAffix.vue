@@ -30,7 +30,6 @@ import DitoSpinner from './DitoSpinner.vue'
 import { DitoIcon } from '@ditojs/ui/src'
 
 export default {
-  name: 'DitoAffix',
   components: { DitoSpinner, DitoIcon },
 
   props: {

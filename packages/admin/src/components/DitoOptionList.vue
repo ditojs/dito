@@ -37,8 +37,6 @@ ul.dito-option-list(:class="layoutClass")
 import { computed } from 'vue'
 
 export default {
-  name: 'DitoOptionList',
-
   props: {
     // With `isGrouped`, the groups of options with `label` and `options`:
     options: { type: Array, required: true },

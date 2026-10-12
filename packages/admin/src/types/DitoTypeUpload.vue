@@ -170,7 +170,6 @@ import { fileDropTargetsKey } from '../utils/keys.ts'
 
 // @vue/component
 const DitoTypeUpload = {
-  name: 'DitoTypeUpload',
   components: { VueUpload, DitoButton, DitoDragHandle },
   props: fieldProps,
 

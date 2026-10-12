@@ -146,7 +146,6 @@ import {
 } from '../utils/keys.ts'
 
 export default {
-  name: 'DitoSchema',
   components: { TransitionHeight },
   inheritAttrs: false,
 

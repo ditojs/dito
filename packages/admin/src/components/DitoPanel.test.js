@@ -1,6 +1,8 @@
 import { vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { mountSchema, mountForm, enterValue } from '../test/mount.js'
+import DitoPanel from './DitoPanel.vue'
+import DitoSchema from './DitoSchema.vue'
 
 describe('DitoPanel', () => {
   it('edits its own data in its own form with object `data`', async () => {
@@ -183,14 +185,14 @@ describe('DitoPanel', () => {
       },
       data: { title: 'Mansfield Park' }
     })
-    const panel = wrapper.findComponent({ name: 'DitoPanel' })
+    const panel = wrapper.findComponent(DitoPanel)
     expect(panel.vm.panelData).toEqual({ words: 2, pages: 20 })
     // Edits of the panel's data don't make the view's data dirty:
     await enterValue(panel.find('input'), '3')
     await settle()
     expect(panel.vm.panelData).toEqual({ words: 3, pages: 30 })
     expect(
-      panel.findComponent({ name: 'DitoSchema' }).vm.dataContext.isDirty
+      panel.findComponent(DitoSchema).vm.dataContext.isDirty
     ).toBe(true)
     expect(dataModel.isDirty).toBe(false)
   })
@@ -219,7 +221,7 @@ describe('DitoPanel', () => {
       },
       data: { title: 'Emma' }
     })
-    const panel = wrapper.findComponent({ name: 'DitoPanel' })
+    const panel = wrapper.findComponent(DitoPanel)
     expect(panel.vm.panelData).toEqual({
       url: '/items/1',
       hasSourceQuery: false

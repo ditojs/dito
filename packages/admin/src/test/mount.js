@@ -8,6 +8,11 @@ import { nextTick } from 'vue'
 import { VueWrapper, DOMWrapper, flushPromises } from '@vue/test-utils'
 import { clone } from '@ditojs/utils'
 import DitoAdmin from '../DitoAdmin.js'
+import DitoView from '../components/DitoView.vue'
+import DitoForm from '../components/DitoForm.vue'
+import DitoFormNested from '../components/DitoFormNested.vue'
+import DitoContainer from '../components/DitoContainer.vue'
+import DitoSchema from '../components/DitoSchema.vue'
 import { appendDataPath } from '../utils/data.js'
 
 const mountedAdmins = new Set()
@@ -143,8 +148,9 @@ export async function mountAdmin({ views, request = null, api = {} }) {
 
     // Returns the route components by route level that match `filter()`.
     getRouteComponents(filter = () => true) {
-      const components = ['DitoView', 'DitoForm', 'DitoFormNested'].flatMap(
-        name => wrapper.findAllComponents({ name }).map(({ vm }) => vm.$.proxy)
+      const components = [DitoView, DitoForm, DitoFormNested].flatMap(
+        component =>
+          wrapper.findAllComponents(component).map(({ vm }) => vm.$.proxy)
       )
       return context.ui.routes
         .map(route =>
@@ -167,7 +173,7 @@ export async function mountAdmin({ views, request = null, api = {} }) {
       // The components in the data of the route component are registered in
       // the UI registry under its container:
       const containers = wrapper
-        .findAllComponents({ name: 'DitoContainer' })
+        .findAllComponents(DitoContainer)
         .map(({ vm }) => vm)
         .filter(
           ({ componentPath }) => (
@@ -203,7 +209,7 @@ export async function mountAdmin({ views, request = null, api = {} }) {
     getSchemaComponent(routeComponent) {
       return (
         wrapper
-          .findAllComponents({ name: 'DitoSchema' })
+          .findAllComponents(DitoSchema)
           .find(({ vm }) => vm.dataContext === routeComponent.dataContext)
           ?.vm ?? null
       )

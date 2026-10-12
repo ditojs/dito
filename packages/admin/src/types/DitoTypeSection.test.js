@@ -1,5 +1,6 @@
 import { flushPromises } from '@vue/test-utils'
 import { mountSchema, mountForm } from '../test/mount.js'
+import DitoTypeSection from './DitoTypeSection.vue'
 
 describe('DitoTypeSection', () => {
   it('renders its components with the data of the parent', async () => {
@@ -95,7 +96,7 @@ describe('DitoTypeSection', () => {
         }
       }
     })
-    const section = wrapper.findComponent({ name: 'DitoTypeSection' })
+    const section = wrapper.findComponent(DitoTypeSection)
     expect(section.vm.value).toBe(undefined)
     expect('details' in data).toBe(false)
   })

@@ -39,8 +39,6 @@ import { adminContextKey } from '../utils/keys.ts'
 import { isSingleComponentView } from '../utils/schema/structure.js'
 
 export default {
-  name: 'DitoView',
-
   setup() {
     const adminContext = inject(adminContextKey)
     const router = useRouter()

@@ -16,7 +16,6 @@ import { fieldProps, useField } from '../composables/useField.ts'
 
 // @vue/component
 const DitoTypeComputed = {
-  name: 'DitoTypeComputed',
   props: fieldProps,
   setup: props => useField(props)
 }

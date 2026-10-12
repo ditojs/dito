@@ -21,8 +21,6 @@
 import { computed, ref, watch } from 'vue'
 
 export default {
-  name: 'DitoUploadFile',
-
   props: {
     file: { type: Object, required: true },
     // The file object of the upload component while the file is being added:

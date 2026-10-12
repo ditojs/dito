@@ -17,7 +17,6 @@ import { fieldProps, useField } from '../composables/useField.ts'
 
 // @vue/component
 const DitoTypeTextarea = {
-  name: 'DitoTypeTextarea',
   props: fieldProps,
 
   setup(props) {

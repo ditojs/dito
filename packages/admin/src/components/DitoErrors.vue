@@ -13,8 +13,6 @@
 
 <script>
 export default {
-  name: 'DitoErrors',
-
   props: {
     id: { type: String, default: null },
     errors: { type: Array, default: null }

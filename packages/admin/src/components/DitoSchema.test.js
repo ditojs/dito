@@ -9,6 +9,7 @@ import {
   enterValue,
   isForm
 } from '../test/mount.js'
+import DitoSchema from './DitoSchema.vue'
 
 describe('DitoSchema', () => {
   it('shares the width of inlined schemas with their components', async () => {
@@ -573,7 +574,7 @@ describe('DitoSchema', () => {
         data: { title: 'Emma', notes: 'Classic' }
       })
       const section = result.wrapper
-        .findAllComponents({ name: 'DitoSchema' })
+        .findAllComponents(DitoSchema)
         .map(({ vm }) => vm)
         .find(vm => vm.$ !== result.schemaComponent.$)
       const reveal = componentPath =>
