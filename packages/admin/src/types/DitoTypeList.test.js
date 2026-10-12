@@ -131,8 +131,8 @@ describe('DitoTypeList', () => {
     it('displays item labels returned by `itemLabel()`', async () => {
       const { findField } = await mountSchema({
         schema: createRecipeSchema({
-          itemLabel: ({ item, index }) => ({
-            text: `${index + 1}. ${item.name}`,
+          itemLabel: ({ item, valueIndex }) => ({
+            text: `${valueIndex + 1}. ${item.name}`,
             suffix: `${item.amount} g`
           })
         }),
@@ -407,7 +407,7 @@ describe('DitoTypeList', () => {
 
     it('renders the items with `render()`', async () => {
       const texts = await getItemTexts({
-        render: ({ item, index }) => `${index + 1}: ${item.name}`
+        render: ({ item, valueIndex }) => `${valueIndex + 1}: ${item.name}`
       })
       expect(texts).toEqual(['1: Flour', '2: Salt'])
     })

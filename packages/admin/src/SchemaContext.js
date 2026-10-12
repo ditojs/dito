@@ -109,8 +109,8 @@ export default class SchemaContext {
     return get(this, 'name', () => getLastDataPathName(this.dataPath))
   }
 
-  get index() {
-    return get(this, 'index', () => getLastDataPathIndex(this.dataPath))
+  get valueIndex() {
+    return getLastDataPathIndex(this.dataPath)
   }
 
   get itemDataPath() {

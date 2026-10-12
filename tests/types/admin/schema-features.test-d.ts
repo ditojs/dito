@@ -41,8 +41,13 @@ describe('SchemaFields: no component members', () => {
       components: {
         title: { type: 'text' }
       },
-      onChange({ dataPath, submit, verify }) {
+      onChange(context) {
+        const { dataPath, submit, verify, valueIndex, itemIndex } = context
         expectTypeOf(dataPath).toBeString()
+        expectTypeOf(valueIndex).toEqualTypeOf<number | null>()
+        expectTypeOf(itemIndex).toEqualTypeOf<number | null>()
+        // @ts-expect-error `valueIndex` is the index of the value
+        expectTypeOf(context.index)
         expectTypeOf(submit).returns.toEqualTypeOf<Promise<boolean>>()
         expectTypeOf(verify(/^title/)).toBeBoolean()
       }

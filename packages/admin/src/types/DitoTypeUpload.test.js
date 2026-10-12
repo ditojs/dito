@@ -52,7 +52,8 @@ describe('DitoTypeUpload', () => {
           attachments: {
             type: 'upload',
             multiple: true,
-            render: ({ value, index }) => `${index + 1}: ${value.name}`
+            render: ({ value, valueIndex }) =>
+              `${valueIndex + 1}: ${value.name}`
           }
         }
       },

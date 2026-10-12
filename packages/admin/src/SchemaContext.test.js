@@ -146,7 +146,7 @@ describe('SchemaContext', () => {
       })
       expect(context.dataPath).toBe('authors/0/books/1/title')
       expect(context.name).toBe('title')
-      expect(context.index).toBe(null)
+      expect(context.valueIndex).toBe(null)
       expect(context.itemDataPath).toBe('authors/0/books/1')
       expect(context.itemIndex).toBe(1)
       expect(context.parentItemDataPath).toBe('authors/0')
@@ -159,19 +159,18 @@ describe('SchemaContext', () => {
         nested: false
       })
       expect(context.name).toBe(null)
-      expect(context.index).toBe(1)
+      expect(context.valueIndex).toBe(1)
       expect(context.itemIndex).toBe(1)
       expect(context.parentItemIndex).toBe(0)
     })
 
-    it('prefers the provided name and index', () => {
+    it('prefers the provided name', () => {
       const context = new SchemaContext(null, {
         dataPath: 'authors/0',
-        name: 'author',
-        index: 5
+        name: 'author'
       })
       expect(context.name).toBe('author')
-      expect(context.index).toBe(5)
+      expect(context.valueIndex).toBe(0)
     })
 
     it('defaults to an empty data path, nested and without a schema', () => {

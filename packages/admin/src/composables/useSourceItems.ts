@@ -79,7 +79,6 @@ export function useSourceItems({
               nested: false,
               data: item,
               value: item,
-              index,
 
               get dataPath() {
                 return getItemDataPath(sourceSchema, index)
