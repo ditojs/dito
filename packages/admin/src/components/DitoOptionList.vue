@@ -37,10 +37,11 @@ ul.dito-option-list(:class="layoutClass")
 </template>
 
 <script>
-import DitoComponent from '../DitoComponent.js'
+import { computed } from 'vue'
 
-// @vue/component
-export default DitoComponent.component('DitoOptionList', {
+export default {
+  name: 'DitoOptionList',
+
   props: {
     // The options, or with `isGrouped` their groups, each with `label` and
     // `options`, see `groupOptions()`.
@@ -49,17 +50,16 @@ export default DitoComponent.component('DitoOptionList', {
     layout: { type: String, default: null }
   },
 
-  computed: {
-    layoutClass() {
-      return `dito-layout--${this.layout || 'vertical'}`
-    },
-
-    firstOption() {
-      const [firstEntry] = this.options
-      return this.isGrouped ? firstEntry?.options[0] : firstEntry
+  setup(props) {
+    return {
+      layoutClass: computed(() => `dito-layout--${props.layout || 'vertical'}`),
+      firstOption: computed(() => {
+        const [firstEntry] = props.options
+        return props.isGrouped ? firstEntry?.options[0] : firstEntry
+      })
     }
   }
-})
+}
 </script>
 
 <style lang="scss">

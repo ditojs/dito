@@ -2,7 +2,8 @@ import {
   mountForm,
   mountSchema,
   settle,
-  enterValue
+  enterValue,
+  isForm
 } from '../test/mount.js'
 
 describe('SourceContext', () => {
@@ -13,7 +14,7 @@ describe('SourceContext', () => {
 
   const openForm = async (admin, path) => {
     await admin.navigate(path)
-    const form = admin.getRouteComponent(component => component.isForm)
+    const form = admin.getRouteComponent(isForm)
     await settle(form)
     return form
   }
@@ -33,12 +34,13 @@ describe('SourceContext', () => {
       data: { chapters: [{ title: 'Arrakis' }] }
     })
     const chapters = getComponent('chapters')
-    const { source } = chapters
-    expect(source).toBe(chapters.ownSource)
+    const source = chapters.ownSource
     expect(source.schema).toBe(chapters.schema)
     expect(source.dataPath).toBe('chapters')
-    expect(getComponent('chapters/0/title').source).toBe(source)
-    expect(getComponent('title').source).toBe(null)
+    expect(getComponent('chapters/0/title').context.listQuery).toBe(
+      source.query
+    )
+    expect(getComponent('title').context.listQuery).toBe(null)
   })
 
   it('provides the query of lists as `listQuery`', async () => {
@@ -57,9 +59,9 @@ describe('SourceContext', () => {
       request: () => ({ data: [] })
     })
     const books = getComponent('books')
-    expect(books.source.query).toEqual({ scope: 'all' })
+    expect(books.ownSource.query).toEqual({ scope: 'all' })
     expect(getComponent('books/export').context.listQuery).toBe(
-      books.source.query
+      books.ownSource.query
     )
   })
 
@@ -81,10 +83,9 @@ describe('SourceContext', () => {
     expect(getComponent('pages').context.listQuery).not.toBe(null)
     const form = await openForm(admin, '/items/1/pages/0')
     const title = admin.getComponent(form, 'pages/0/title')
-    expect(title.source).toBe(null)
     expect(title.context.listQuery).toBe(null)
-    // Nor the callbacks of the form itself:
-    expect(form.context.listQuery).toBe(null)
+    // Nor the callbacks of the form's schema:
+    expect(form.$refs.schema.context.listQuery).toBe(null)
   })
 
   it('reloads the list of a saved item in the parent form', async () => {

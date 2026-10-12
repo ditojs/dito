@@ -15,11 +15,12 @@ DitoEditButtons.dito-options-edit-buttons(
 </template>
 
 <script>
-import DitoComponent from '../DitoComponent.js'
+import { computed, inject } from 'vue'
+import { useRouter } from 'vue-router'
 import DitoEditButtons from './DitoEditButtons.vue'
 
-// @vue/component
-export default DitoComponent.component('DitoOptionsEditButtons', {
+export default {
+  name: 'DitoOptionsEditButtons',
   components: { DitoEditButtons },
 
   props: {
@@ -31,20 +32,21 @@ export default DitoComponent.component('DitoOptionsEditButtons', {
     optionValue: { type: null, default: null }
   },
 
-  computed: {
-    editPath() {
-      const { schema, optionValue } = this
-      const route = (
-        optionValue != null &&
-        this.admin.routeTree?.getViewItemRoute(
-          schema.view,
-          String(optionValue)
+  setup(props) {
+    const admin = inject('admin')
+    const router = useRouter()
+    return {
+      editPath: computed(() => {
+        const { schema, optionValue } = props
+        const route = (
+          optionValue != null &&
+          admin.routeTree?.getViewItemRoute(schema.view, String(optionValue))
         )
-      )
-      return route ? this.$router.resolve(route).path : null
+        return route ? router.resolve(route).path : null
+      })
     }
   }
-})
+}
 </script>
 
 <style lang="scss">

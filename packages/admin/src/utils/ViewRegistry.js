@@ -13,16 +13,16 @@ export class ViewRegistry {
   #api
   #router
   #unresolvedViews
-  #viewComponent
+  #routeComponents
   #views = shallowRef({})
   #routeTree = shallowRef(null)
   #removeRoutes = null
 
-  constructor({ api, router, unresolvedViews, viewComponent }) {
+  constructor({ api, router, unresolvedViews, routeComponents }) {
     this.#api = api
     this.#router = router
     this.#unresolvedViews = unresolvedViews
-    this.#viewComponent = viewComponent
+    this.#routeComponents = routeComponents
   }
 
   // The resolved views, or an empty object until they are resolved and once
@@ -59,7 +59,7 @@ export class ViewRegistry {
         path: '/',
         components: {}
       },
-      ...routeTree.createRouteRecords(this.#viewComponent)
+      ...routeTree.createRouteRecords(this.#routeComponents)
     ])
     // Only provide the views and their tree once their routes are added, as
     // `DitoMenu` links to them by their names.

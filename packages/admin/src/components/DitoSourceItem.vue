@@ -35,18 +35,13 @@ span(
 </template>
 
 <script>
-import { computed } from 'vue'
-import DitoComponent from '../DitoComponent.js'
+import { computed, provide } from 'vue'
+import { useSchemaContext } from '../composables/useSchemaContext.ts'
 import { isInlined } from '../utils/schema/structure.js'
 
-// @vue/component
-export default DitoComponent.component('DitoSourceItem', {
+export default {
+  name: 'DitoSourceItem',
   emits: ['delete', 'move'],
-
-  provide() {
-    // The form of the item displays an item of the source:
-    return { sourceSchema: computed(() => this.schema) }
-  },
 
   props: {
     // The schema of the list or object source that holds the item.
@@ -70,14 +65,25 @@ export default DitoComponent.component('DitoSourceItem', {
     insertIndex: { type: Number, default: null }
   },
 
-  computed: {
-    isInlined() {
-      return isInlined(this.schema)
-    },
-
-    label() {
-      return this.source.getSourceItemLabel(this.data, this.index)
+  setup(props) {
+    // The form of the item displays an item of the source:
+    provide(
+      'sourceSchema',
+      computed(() => props.schema)
+    )
+    const { createContext, services } = useSchemaContext(props)
+    return {
+      // The context of the custom components that render the items:
+      context: createContext({
+        get index() {
+          return props.index
+        }
+      }),
+      isInlined: computed(() => isInlined(props.schema)),
+      label: computed(() =>
+        services.source.getSourceItemLabel(props.data, props.index)
+      )
     }
   }
-})
+}
 </script>

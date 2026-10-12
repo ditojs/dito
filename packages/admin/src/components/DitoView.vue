@@ -28,47 +28,49 @@ template(
 </template>
 
 <script>
-import { computed, markRaw } from 'vue'
-import DitoComponent from '../DitoComponent.js'
+import {
+  computed,
+  inject,
+  markRaw,
+  onBeforeUnmount,
+  onMounted,
+  provide,
+  reactive,
+  ref,
+  useTemplateRef
+} from 'vue'
+import { useRouter } from 'vue-router'
 import { useRouteContainer } from '../composables/useRouteContainer.ts'
+import {
+  useServices,
+  useSchemaContext
+} from '../composables/useSchemaContext.ts'
+import { useSchemaValue } from '../composables/useSchemaValue.ts'
+import { useComponentPath } from '../composables/useComponentPath.ts'
+import { useStore } from '../composables/useStore.ts'
+import { getVerbs } from '../utils/services.ts'
 import { isSingleComponentView } from '../utils/schema/structure.js'
 import { DataModel } from '../utils/DataModel.ts'
 import { LoadingTracker } from '../utils/LoadingTracker.ts'
 
-// @vue/component
-export default DitoComponent.component('DitoView', {
-  provide() {
-    return {
-      sourceSchema: computed(() => this.sourceSchema),
-      source: computed(() => this.mainSource),
-      resource: computed(() => this.mainResource)
-    }
-  },
+export default {
+  name: 'DitoView',
 
   setup() {
-    return useRouteContainer()
-  },
-
-  data() {
-    return {
-      // Tracks the requests of all resource components in the view, which is
-      // disabled while any of them is pending, see `isLoading`:
-      loadingTracker: markRaw(
-        new LoadingTracker(
-          this.parentRoute?.loadingTracker ?? this.admin.loadingTracker
-        )
-      ),
-      // NOTE: Each view has its own data, as `DitoRouterView` renders each
-      // route record with its own component instance.
-      data: {}
-    }
-  },
-
-  computed: {
-    schema() {
-      const { component, ...schema } = this.sourceSchema
+    const admin = inject('admin')
+    const router = useRouter()
+    const parentRoute = inject('route', null)
+    // The data paths of the view's components start at its data:
+    useComponentPath(() => '')
+    // NOTE: Each view has its own data, as `DitoRouterView` renders each
+    // route record with its own component instance.
+    const data = ref({})
+    // The view displays its data as if it were an item of its source:
+    const sourceSchema = computed(() => routeContainer.ownRoute.node.schema)
+    const schema = computed(() => {
+      const { component, ...schema } = sourceSchema.value
       // Render single-component views as views with that component:
-      return this.isSingleComponentView
+      return isSingleComponentView(sourceSchema.value)
         ? {
             ...schema,
             components: {
@@ -80,102 +82,96 @@ export default DitoComponent.component('DitoView', {
             }
           }
         : schema
-    },
+    })
+    const name = computed(() => schema.value.name)
+    // The view provides the contexts of its main component to the others:
+    const mainSource = computed(() =>
+      routeContainer.ownRoute.findSourceByDataPath(name.value)
+    )
+    const mainResource = computed(() => mainSource.value?.resource ?? null)
+    // The view is disabled while the requests of its components are pending:
+    const loadingTracker = markRaw(
+      new LoadingTracker(parentRoute?.loadingTracker ?? admin.loadingTracker)
+    )
 
-    // The view's components display the view's data, as if it were an item of
-    // a source with the view's schema:
-    sourceSchema() {
-      return this.route.node.schema
-    },
+    const routeContainer = useRouteContainer(
+      reactive({
+        schema,
+        sourceSchema,
+        data,
+        dataPath: '',
+        rootData: data,
+        componentPath: '',
+        loadingTracker,
+        schemaComponent: useTemplateRef('schema'),
+        isDirty: computed(() => routeContainer.ownContainer.isDirty),
+        breadcrumb: computed(
+          () => schema.value.breadcrumb || getLabel(schema.value)
+        ),
+        verbs: computed(() => getVerbs(services)),
 
-    name() {
-      return this.schema.name
-    },
+        get dataModel() {
+          return dataModel
+        },
 
-    isView() {
-      return true
-    },
-
-    isLoading() {
-      return this.loadingTracker.isLoading
-    },
-
-    isDirty() {
-      return this.container.isDirty
-    },
-
-    breadcrumb() {
-      return this.schema.breadcrumb || this.getLabel(this.schema)
-    },
-
-    isSingleComponentView() {
-      return isSingleComponentView(this.sourceSchema)
-    },
-
-    // The contexts of the main component, which the view provides to its other
-    // components, e.g. its panels and buttons:
-    mainSource() {
-      return this.ownRoute.findSourceByDataPath(this.name)
-    },
-
-    mainResource() {
-      return this.mainSource?.resource ?? null
-    },
-
-    // The data paths of the view's components start at its data:
-    dataPath() {
-      return ''
-    },
-
-    // @override DitoMixin.rootData()
-    // The data paths of the view's components are relative to its data:
-    rootData() {
-      return this.data
-    }
-  },
-
-  created() {
-    // Writes defaults and computed values into the view's data and resolves
-    // options, see `DataModel`:
-    const view = this
-    this.ownDataModel = markRaw(
-      new DataModel({
-        schema: () => this.schema,
-        data: () => this.data,
-        sourceSchema: () => this.sourceSchema,
-        services: {
-          admin: this.admin,
-          container: this.ownContainer,
-          route: this.ownRoute,
-          get source() {
-            return view.mainSource
-          },
-          get resource() {
-            return view.mainResource
-          }
+        setData(value) {
+          data.value = value
+          return data.value
         }
       })
     )
-  },
+    const { ownContainer, ownRoute, store } = routeContainer
+    provide('sourceSchema', sourceSchema)
+    provide('source', mainSource)
+    provide('resource', mainResource)
+    const services = useServices({
+      container: ownContainer,
+      route: ownRoute,
 
-  mounted() {
-    // Prevent bypassing of if-condition by direct URL access.
-    if (!this.shouldRenderSchema(this.schema)) {
-      this.$router.replace({ path: '/' })
-    }
-  },
+      get source() {
+        return mainSource.value
+      },
 
-  beforeUnmount() {
-    // Stop the model before the component's own watchers are stopped, as the
-    // model's watchers aren't part of the component, see `DataModel`.
-    this.ownDataModel.stop()
-  },
+      get resource() {
+        return mainResource.value
+      }
+    })
+    const { context } = useSchemaContext(
+      reactive({ schema, data, dataPath: '' }),
+      { services }
+    )
+    const { getLabel, shouldRenderSchema } = useSchemaValue(context)
 
-  methods: {
-    setData(data) {
-      this.data = data
-      return this.data
+    const dataModel = markRaw(
+      new DataModel({
+        schema: () => schema.value,
+        data: () => data.value,
+        sourceSchema: () => sourceSchema.value,
+        services
+      })
+    )
+    // The model's watchers aren't the component's, see `DataModel`:
+    onBeforeUnmount(() => dataModel.stop())
+
+    onMounted(() => {
+      // Prevent bypassing of if-condition by direct URL access.
+      if (!shouldRenderSchema(schema.value)) {
+        router.replace({ path: '/' })
+      }
+    })
+
+    return {
+      ...routeContainer,
+      ...useStore({ store }),
+      admin,
+      route: ownRoute,
+      schema,
+      name,
+      data,
+      dataModel,
+      shouldRenderSchema,
+      isLoading: computed(() => loadingTracker.isLoading)
     }
   }
-})
+}
 </script>

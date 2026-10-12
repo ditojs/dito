@@ -26,25 +26,17 @@ component(
 </template>
 
 <script>
-import DitoComponent from '../DitoComponent.js'
 import DitoSpinner from './DitoSpinner.vue'
 import { DitoIcon } from '@ditojs/ui/src'
 
-export default DitoComponent.component('DitoAffix', {
+export default {
+  name: 'DitoAffix',
   components: { DitoSpinner, DitoIcon },
 
   props: {
-    item: { type: Object, required: true },
-    parentContext: { type: Object, required: true }
-  },
-
-  computed: {
-    // Override DitoMixin's context with the parent's context
-    context() {
-      return this.parentContext
-    }
+    item: { type: Object, required: true }
   }
-})
+}
 </script>
 
 <style lang="scss">

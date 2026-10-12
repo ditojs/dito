@@ -16,7 +16,6 @@
 
 <script>
 import { computed } from 'vue'
-import DitoComponent from '../DitoComponent.js'
 import { defineType } from '../utils/schema/types.ts'
 import { fieldProps, useField } from '../composables/useField.ts'
 import { setupSchemaComponents } from '../utils/schema/setup.js'
@@ -24,7 +23,8 @@ import { getItemFormSchema } from '../utils/schema/lookup.js'
 import { isCompact } from '../utils/schema/structure.js'
 
 // @vue/component
-const DitoTypeSection = DitoComponent.component('DitoTypeSection', {
+const DitoTypeSection = {
+  name: 'DitoTypeSection',
   props: fieldProps,
 
   setup(props) {
@@ -50,7 +50,7 @@ const DitoTypeSection = DitoComponent.component('DitoTypeSection', {
       )
     }
   }
-})
+}
 
 defineType({
   types: ['section'],

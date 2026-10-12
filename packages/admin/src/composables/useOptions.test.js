@@ -160,7 +160,7 @@ describe('useOptions()', () => {
         data: { genre: 'drama' }
       })
       expect(data.genre).toBe(null)
-      expect(routeComponent.isDirty).toBe(false)
+      expect(routeComponent.ownRoute.isDirty).toBe(false)
     })
 
     it('keeps the values of taggable multiselects without options', async () => {

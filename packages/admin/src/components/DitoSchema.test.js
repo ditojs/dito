@@ -7,7 +7,8 @@ import {
   mountForm,
   mountSchema,
   settle,
-  enterValue
+  enterValue,
+  isForm
 } from '../test/mount.js'
 
 describe('DitoSchema', () => {
@@ -67,11 +68,6 @@ describe('DitoSchema', () => {
     }
     expect(schemaComponent.selectedTab).toBe('details')
     expect(isPanelVisible()).toBe(true)
-    // The components of the panel belong to the tab of the panel's component:
-    const panel = wrapper.findComponent({ name: 'DitoPanel' })
-    expect(
-      panel.findComponent({ name: 'DitoContainer' }).vm.panelTab.tabName
-    ).toBe('details')
     schemaComponent.selectedTab = 'history'
     await flushPromises()
     expect(isPanelVisible()).toBe(false)
@@ -188,29 +184,6 @@ describe('DitoSchema', () => {
     expect(isPanelVisible()).toBe(false)
   })
 
-  it('is its own schema component, not the one of its parent', async () => {
-    const { wrapper, schemaComponent, getComponent } = await mountSchema({
-      schema: {
-        components: {
-          author: {
-            type: 'object',
-            inlined: true,
-            form: { type: 'form', components: { name: { type: 'text' } } }
-          }
-        }
-      },
-      data: { author: { name: 'Jane' } }
-    })
-    expect(schemaComponent.schemaComponent).toBe(schemaComponent)
-    const nested = wrapper
-      .findAllComponents({ name: 'DitoSchema' })
-      .map(({ vm }) => vm)
-      .find(vm => vm !== schemaComponent)
-    expect(nested.schemaComponent).toBe(nested)
-    expect(getComponent('author/name').schemaComponent).toBe(nested)
-    expect(getComponent('author').schemaComponent).toBe(schemaComponent)
-  })
-
   describe('tabs', () => {
     const createTabs = defaultTab => ({
       details: { type: 'tab', components: { title: { type: 'text' } } },
@@ -295,9 +268,10 @@ describe('DitoSchema', () => {
               : { data: [] }
         })
         await admin.navigate(path)
-        const form = admin.getRouteComponent(component => component.isForm)
+        const form = admin.getRouteComponent(isForm)
         return {
           admin,
+          routeComponent: form,
           schemaComponent: form.$refs.schema,
           async loadItem() {
             loadItem()
@@ -324,12 +298,10 @@ describe('DitoSchema', () => {
       })
 
       it('validates nothing before the item is loaded', async () => {
-        const { schemaComponent, loadItem } =
-          await mountLoadingForm(
-            '/items/1'
-          )
+        const { routeComponent, schemaComponent, loadItem } =
+          await mountLoadingForm('/items/1')
         expect(schemaComponent.hasData).toBe(false)
-        expect(schemaComponent.verifyAll()).toBe(true)
+        expect(routeComponent.ownContainer.verify()).toBe(true)
         await loadItem()
         expect(schemaComponent.hasData).toBe(true)
       })
@@ -406,10 +378,11 @@ describe('DitoSchema', () => {
       await flushPromises()
       expect(admin.router.currentRoute.value.path).toBe('/items/1/pages/0')
       expect(schemaComponent.selectedTab).toBe('planning')
-      const pageFormComponent = admin.getRouteComponent(
-        component => component.isForm
-      )
-      await pageFormComponent.close()
+      const pageFormComponent =
+        admin.getRouteComponent(
+          isForm
+        )
+      await pageFormComponent.ownRoute.close()
       await flushPromises()
       // The route is kept without hash, as before, but the tab stays selected:
       expect(admin.router.currentRoute.value.fullPath).toBe('/items/1')
@@ -453,7 +426,7 @@ describe('DitoSchema', () => {
       router.replace = to => (++replaceCount <= 10 ? replace(to) : undefined)
       await wrapper.find('.dito-button--edit').trigger('click')
       await flushPromises()
-      const [, pageForm] = admin.getRouteComponents(it => it.isForm)
+      const [, pageForm] = admin.getRouteComponents(isForm)
       return {
         admin,
         schemaComponent,
@@ -534,7 +507,7 @@ describe('DitoSchema', () => {
         }
       })
       await admin.navigate(path)
-      const getForms = () => admin.getRouteComponents(it => it.isForm)
+      const getForms = () => admin.getRouteComponents(isForm)
       await settle(getForms()[0])
       return { admin, getForms }
     }
@@ -544,7 +517,7 @@ describe('DitoSchema', () => {
       const [itemForm, pageForm] = getForms()
       const schemaComponent = itemForm.$refs.schema
       expect(pageForm.$refs.schema.selectedTab).toBe('text')
-      await pageForm.close()
+      await pageForm.ownRoute.close()
       await flushPromises()
       expect(admin.router.currentRoute.value.fullPath).toBe('/items/1')
       // The tab of the page form isn't one of the item form's tabs:
@@ -582,8 +555,8 @@ describe('DitoSchema', () => {
     expect(page().classList.contains('dito-page--wide')).toBe(false)
   })
 
-  it('verifies matching data silently with `verifyAll()`', async () => {
-    const { schemaComponent, getErrors } = await mountSchema({
+  it('verifies matching data silently with `verify()`', async () => {
+    const { routeComponent, getErrors } = await mountSchema({
       schema: {
         components: {
           title: { type: 'text', required: true },
@@ -592,12 +565,12 @@ describe('DitoSchema', () => {
       },
       data: { title: 'Emma', author: '' }
     })
-    expect(schemaComponent.verifyAll()).toBe(false)
-    expect(schemaComponent.verifyAll('title')).toBe(true)
-    expect(schemaComponent.verifyAll(/^author$/)).toBe(false)
-    // Unlike `validateAll()`, no errors are shown:
+    expect(routeComponent.ownContainer.verify()).toBe(false)
+    expect(routeComponent.ownContainer.verify('title')).toBe(true)
+    expect(routeComponent.ownContainer.verify(/^author$/)).toBe(false)
+    // Unlike `validate()`, no errors are shown:
     expect(getErrors('author')).toEqual([])
-    expect(schemaComponent.validateAll('author')).toBe(false)
+    expect(routeComponent.ownContainer.validate('author')).toBe(false)
     await flushPromises()
     expect(getErrors('author')).toEqual(['The author field is required.'])
   })
@@ -621,7 +594,7 @@ describe('DitoSchema', () => {
       const section = result.wrapper
         .findAllComponents({ name: 'DitoSchema' })
         .map(({ vm }) => vm)
-        .find(vm => vm !== result.schemaComponent)
+        .find(vm => vm.$ !== result.schemaComponent.$)
       const reveal = componentPath =>
         result.admin.context.ui.reveal(
           result.routeComponent.ownContainer,
@@ -734,7 +707,7 @@ describe('DitoSchema', () => {
       })
       schemaComponent.selectTab('details')
       await flushPromises()
-      routeComponent.container.validate()
+      routeComponent.ownContainer.validate()
       await flushPromises()
       expect(schemaComponent.selectedTab).toBe('summary')
       const [input] = wrapper.findAll('input[name="title"]')
@@ -748,7 +721,7 @@ describe('DitoSchema', () => {
         },
         data: { title: '', hasSummary: false }
       })
-      routeComponent.container.validate()
+      routeComponent.ownContainer.validate()
       await flushPromises()
       expect(schemaComponent.selectedTab).toBe('details')
       const inputs = wrapper.findAll('input[name="title"]')
@@ -930,7 +903,7 @@ describe('DitoSchema', () => {
       await submit()
       await flushPromises()
       expect(admin.router.currentRoute.value.path).toBe('/items/1/chapters/0')
-      const form = admin.getRouteComponent(component => component.isForm)
+      const form = admin.getRouteComponent(isForm)
       await settle(form)
       const container = name =>
         admin
@@ -1057,7 +1030,7 @@ describe('DitoSchema', () => {
     it('opens collapsed inlined schemas to focus their errors', async () => {
       const { routeComponent, findField } = await mountCollapsedAuthor()
       expect(findField('author/name').exists()).toBe(false)
-      routeComponent.container.validate()
+      routeComponent.ownContainer.validate()
       await flushPromises()
       const input = findField('author/name').find('input')
       expect(document.activeElement).toBe(input.element)
@@ -1136,7 +1109,7 @@ describe('DitoSchema', () => {
           : { data: [] }
     })
     await admin.navigate('/blocks/1')
-    const form = admin.getRouteComponent(component => component.isForm)
+    const form = admin.getRouteComponent(isForm)
     expect(initialize).not.toHaveBeenCalled()
     loadItem()
     await settle(form)

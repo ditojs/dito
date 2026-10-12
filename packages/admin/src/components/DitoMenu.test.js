@@ -1,5 +1,5 @@
 import { flushPromises } from '@vue/test-utils'
-import { mountAdmin } from '../test/mount.js'
+import { mountAdmin, isForm } from '../test/mount.js'
 
 describe('DitoMenu', () => {
   const views = {
@@ -77,7 +77,7 @@ describe('DitoMenu links', () => {
     await admin.navigate('/books')
     expect(await clickLink(admin, 'Generator')).toBe(true)
     expect(admin.router.currentRoute.value.path).toBe('/generator')
-    expect(admin.getRouteComponent(it => it.isForm)).toBeTruthy()
+    expect(admin.getRouteComponent(isForm)).toBeTruthy()
   })
 
   it('links menus to their first item', async () => {

@@ -1,11 +1,11 @@
 <script>
-import DitoComponent from '../DitoComponent.js'
 import { defineType } from '../utils/schema/types.ts'
 import { fieldProps, useField } from '../composables/useField.ts'
 import { setupSchemaComponents } from '../utils/schema/setup.js'
 
 // @vue/component
-const DitoTypePanel = DitoComponent.component('DitoTypePanel', {
+const DitoTypePanel = {
+  name: 'DitoTypePanel',
   props: fieldProps,
 
   setup(props) {
@@ -17,7 +17,7 @@ const DitoTypePanel = DitoComponent.component('DitoTypePanel', {
     // `DitoContainer.panelEntries`, not in place.
     return null
   }
-})
+}
 
 defineType({
   types: ['panel'],

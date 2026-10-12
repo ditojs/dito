@@ -13,10 +13,9 @@ form.dito-scroll-parent(
 </template>
 
 <script>
-import DitoComponent from '../DitoComponent.js'
+export default {
+  name: 'DitoFormInner',
 
-// @vue/component
-export default DitoComponent.component('DitoFormInner', {
   props: {
     nested: {
       type: Boolean,
@@ -27,5 +26,5 @@ export default DitoComponent.component('DitoFormInner', {
       default: null
     }
   }
-})
+}
 </script>

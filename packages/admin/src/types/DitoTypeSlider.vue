@@ -27,7 +27,7 @@
 
 <script>
 import { computed } from 'vue'
-import DitoComponent from '../DitoComponent.js'
+import { labelize } from '@ditojs/utils'
 import { defineType } from '../utils/schema/types.ts'
 import { numberTraits } from './traits.ts'
 import { fieldProps, useField } from '../composables/useField.ts'
@@ -35,23 +35,27 @@ import { useNumber } from '../composables/useNumber.ts'
 import { DitoInput } from '@ditojs/ui/src'
 
 // @vue/component
-const DitoTypeSlider = DitoComponent.component('DitoTypeSlider', {
+const DitoTypeSlider = {
+  name: 'DitoTypeSlider',
   components: { DitoInput },
   props: fieldProps,
 
   setup(props) {
     const field = useField(props, { nativeField: true })
-    const { attributes, getSchemaValue } = field
+    const { attributes, context, componentPath, getSchemaValue } = field
     return {
       ...useNumber(props, field),
       attributes,
+      context,
+      componentPath,
+      labelize,
       // TODO: Rename to `showInput`?
       input: computed(() =>
         getSchemaValue('input', { type: Boolean, default: true })
       )
     }
   }
-})
+}
 
 defineType({
   types: ['slider'],

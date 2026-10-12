@@ -13,15 +13,14 @@
 </template>
 
 <script>
-import DitoComponent from '../DitoComponent.js'
+export default {
+  name: 'DitoErrors',
 
-// @vue/component
-export default DitoComponent.component('DitoErrors', {
   props: {
     id: { type: String, default: null },
     errors: { type: Array, default: null }
   }
-})
+}
 </script>
 
 <style lang="scss">

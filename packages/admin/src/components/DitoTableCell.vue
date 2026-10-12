@@ -18,13 +18,14 @@ td(
 </template>
 
 <script>
-import DitoComponent from '../DitoComponent.js'
-import DitoContext from '../DitoContext.js'
-import { appendDataPath } from '../utils/data.js'
+import { computed } from 'vue'
 import { escapeHtml } from '@ditojs/utils'
+import { useSchemaContext } from '../composables/useSchemaContext.ts'
+import { appendDataPath } from '../utils/data.js'
 
-// @vue/component
-export default DitoComponent.component('DitoTableCell', {
+export default {
+  name: 'DitoTableCell',
+
   props: {
     // The schema of the cell, e.g. a column of a list or a property of a tree
     // item, whose `name` is the key of its value in `data`.
@@ -39,24 +40,30 @@ export default DitoComponent.component('DitoTableCell', {
     disabled: { type: Boolean, default: false }
   },
 
-  computed: {
-    cellContext() {
+  setup(props) {
+    const { createContext } = useSchemaContext(props)
+    const cellContext = computed(() => {
       const {
         cell: { name },
         data
-      } = this
-      return new DitoContext(this, {
+      } = props
+      return createContext({
         name,
         value: data[name],
-        data,
-        dataPath: appendDataPath(this.dataPath, name)
+        dataPath: appendDataPath(props.dataPath, name),
+        nested: true
       })
-    },
+    })
 
-    cellHtml() {
-      const { name, render } = this.cell
-      return render ? render(this.cellContext) : escapeHtml(this.data[name])
+    return {
+      cellContext,
+      cellHtml: computed(() => {
+        const { name, render } = props.cell
+        return render
+          ? render(cellContext.value)
+          : escapeHtml(props.data[name])
+      })
     }
   }
-})
+}
 </script>

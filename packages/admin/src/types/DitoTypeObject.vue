@@ -38,7 +38,6 @@
 </template>
 
 <script>
-import DitoComponent from '../DitoComponent.js'
 import { defineType } from '../utils/schema/types.ts'
 import { sourceTraits } from './traits.ts'
 import { fieldProps } from '../composables/useField.ts'
@@ -47,11 +46,12 @@ import DitoSourceItem from '../components/DitoSourceItem.vue'
 import { resolveSchemaComponent } from '../utils/schema/setup.js'
 
 // @vue/component
-const DitoTypeObject = DitoComponent.component('DitoTypeObject', {
+const DitoTypeObject = {
+  name: 'DitoTypeObject',
   components: { DitoSourceItem },
   props: fieldProps,
   setup: props => useSource(props)
-})
+}
 
 defineType({
   types: ['object'],

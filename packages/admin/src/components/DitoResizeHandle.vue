@@ -12,13 +12,12 @@
 </template>
 
 <script>
-import DitoComponent from '../DitoComponent.js'
 import { startDragResize, resizeByArrowKey } from '../utils/dragResize.js'
 
 // Emits `resize` with each new height of the element in pixels, which the
 // owner of the element applies.
-// @vue/component
-export default DitoComponent.component('DitoResizeHandle', {
+export default {
+  name: 'DitoResizeHandle',
   emits: ['resize'],
 
   props: {
@@ -27,21 +26,21 @@ export default DitoComponent.component('DitoResizeHandle', {
     getElement: { type: Function, required: true }
   },
 
-  methods: {
-    onPointerDown(event) {
-      startDragResize(event, this.getResizeOptions())
-    },
+  setup(props, { emit }) {
+    const getResizeOptions = () => ({
+      element: props.getElement(),
+      onResize: height => emit('resize', height)
+    })
 
-    onKeyDown(event) {
-      resizeByArrowKey(event, this.getResizeOptions())
-    },
+    return {
+      onPointerDown(event) {
+        startDragResize(event, getResizeOptions())
+      },
 
-    getResizeOptions() {
-      return {
-        element: this.getElement(),
-        onResize: height => this.$emit('resize', height)
+      onKeyDown(event) {
+        resizeByArrowKey(event, getResizeOptions())
       }
     }
   }
-})
+}
 </script>

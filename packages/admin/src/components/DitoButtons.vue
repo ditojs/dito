@@ -23,19 +23,23 @@
     .dito-container.dito-buttons__container(
       v-if="hasVNodeContent(vnode)"
     )
-      DitoVnode(:vnode="vnode")
+      DitoVNode(:vnode="vnode")
 </template>
 
 <script>
-import DitoComponent from '../DitoComponent.js'
-import { appendDataPath } from '../utils/data.js'
+import { computed, provide } from 'vue'
 import { hasSlotContent, hasVNodeContent } from '@ditojs/ui/src'
+import { useSchemaContext } from '../composables/useSchemaContext.ts'
+import { useSchemaValue } from '../composables/useSchemaValue.ts'
+import { useStore } from '../composables/useStore.ts'
+import {
+  continueComponentPath,
+  useComponentPath
+} from '../composables/useComponentPath.ts'
+import { appendDataPath } from '../utils/data.js'
 
-// @vue/component
-export default DitoComponent.component('DitoButtons', {
-  provide: {
-    panelTab: null
-  },
+export default {
+  name: 'DitoButtons',
 
   props: {
     buttons: { type: Object, default: null },
@@ -49,34 +53,42 @@ export default DitoComponent.component('DitoButtons', {
     buttonsName: { type: String, default: 'buttons' }
   },
 
-  computed: {
-    componentPath() {
-      // Add the name of the group, so that buttons don't share their component
-      // paths with components of the same name, e.g. a `publish` button with a
-      // `publish` field, as component paths are used for registries.
-      return appendDataPath(
-        this.continueParentComponentPath(),
-        `$${this.buttonsName}`
-      )
-    },
+  setup(props) {
+    // Buttons don't belong to the tab of a pane:
+    provide('panelTab', null)
+    // Add the name of the group, so that buttons don't share their component
+    // paths with components of the same name, e.g. a `publish` button with a
+    // `publish` field:
+    useComponentPath(
+      () => props.dataPath,
+      parent =>
+        appendDataPath(
+          continueComponentPath(parent, props.dataPath),
+          `$${props.buttonsName}`
+        )
+    )
+    const { context } = useSchemaContext(props)
+    return {
+      ...useStore(props),
+      ...useSchemaValue(context),
+      hasSlotContent,
+      hasVNodeContent,
 
-    buttonSchemas() {
-      // Compute a buttons list which has the dataPath baked into its keys.
-      const { dataPath, buttons } = this
-      return buttons
-        ? Object.values(buttons).reduce((schemas, button) => {
-            schemas[appendDataPath(dataPath, button.name)] = button
-            return schemas
-          }, {})
-        : null
+      // The buttons by their data paths:
+      buttonSchemas: computed(() => {
+        const { dataPath, buttons } = props
+        return buttons
+          ? Object.fromEntries(
+              Object.values(buttons).map(button => [
+                appendDataPath(dataPath, button.name),
+                button
+              ])
+            )
+          : null
+      })
     }
-  },
-
-  methods: {
-    hasSlotContent,
-    hasVNodeContent
   }
-})
+}
 </script>
 
 <style lang="scss">

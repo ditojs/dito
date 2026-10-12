@@ -1,12 +1,13 @@
 import { inject, unref, type MaybeRef } from 'vue'
 import DitoContext from '../DitoContext.js'
+import { getLastDataPathName } from '../utils/data.js'
 import type { AdminContext } from '../utils/AdminContext.ts'
 import type { ContainerContext } from '../utils/ContainerContext.ts'
 import type { ResourceContext } from '../utils/ResourceContext.ts'
 import type { RouteContext } from '../utils/RouteContext.ts'
 import type { SourceContext } from '../utils/SourceContext.ts'
 import type { Context } from '../utils/schema/types.ts'
-import type { Services } from '../utils/services.ts'
+import { getRootData, type Services } from '../utils/services.ts'
 import type { Data, Schema } from '../utils/types.ts'
 
 export interface SchemaContextProps {
@@ -14,6 +15,14 @@ export interface SchemaContextProps {
   readonly data: Data
   readonly dataPath: string
   readonly nested: boolean
+}
+
+// Components without a schema or data of their own, e.g. buttons, leave them
+// out, and the ones that don't tell are unnested:
+type ContextProps = Pick<SchemaContextProps, 'dataPath'> & {
+  readonly schema?: Schema | null
+  readonly data: Data | null
+  readonly nested?: boolean
 }
 
 // The contexts that the callbacks of the component see: the ones provided
@@ -45,7 +54,7 @@ export function useServices(ownServices: Partial<Services> = {}): Services {
 // `data`, built from its props and services. `getValue()` returns the value
 // that the component displays, e.g. after `format()`.
 export function useSchemaContext(
-  props: SchemaContextProps,
+  props: ContextProps,
   {
     services = useServices(),
     getValue = null
@@ -58,15 +67,15 @@ export function useSchemaContext(
       Object.defineProperties(
         {
           get schema() {
-            return props.schema
+            return props.schema ?? null
           },
 
           get name() {
-            return props.schema.name
+            return props.schema?.name ?? getLastDataPathName(props.dataPath)
           },
 
           get nested() {
-            return props.nested
+            return props.nested ?? false
           },
 
           get data() {
@@ -78,8 +87,7 @@ export function useSchemaContext(
           },
 
           get rootData() {
-            const { container, route } = services
-            return container?.model.rootData ?? route?.rootData ?? null
+            return getRootData(services)
           }
         },
         {

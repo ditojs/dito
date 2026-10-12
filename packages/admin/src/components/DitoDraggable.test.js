@@ -52,14 +52,14 @@ describe('DitoDraggable', () => {
     const moveMouse = () =>
       document.dispatchEvent(new MouseEvent('mousemove', { bubbles: true }))
     // Ending twice must not leave the handlers of the first end behind:
-    vm.onStart({})
-    vm.onEnd({})
-    vm.onEnd({})
+    vm.sortableOptions.onStart({})
+    vm.sortableOptions.onEnd({})
+    vm.sortableOptions.onEnd({})
     expect(vm.isDragging).toBe(true)
     moveMouse()
     expect(vm.isDragging).toBe(false)
     // No handler of the previous drags clears the next one:
-    vm.onStart({})
+    vm.sortableOptions.onStart({})
     moveMouse()
     expect(vm.isDragging).toBe(true)
   })

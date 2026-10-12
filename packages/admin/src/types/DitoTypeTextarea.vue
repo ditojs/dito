@@ -11,29 +11,29 @@ textarea.dito-textarea.dito-input(
 
 <script>
 import { computed } from 'vue'
-import DitoComponent from '../DitoComponent.js'
 import { defineType } from '../utils/schema/types.ts'
 import { textTraits } from './traits.ts'
 import { fieldProps, useField } from '../composables/useField.ts'
 
 // @vue/component
-const DitoTypeTextarea = DitoComponent.component('DitoTypeTextarea', {
+const DitoTypeTextarea = {
+  name: 'DitoTypeTextarea',
   props: fieldProps,
 
   setup(props) {
-    const { value, attributes, getSchemaValue } = useField(props, {
-      nativeField: true,
-      textField: true
-    })
+    const field = useField(props, { nativeField: true, textField: true })
+    const { value, attributes, context, componentPath, getSchemaValue } = field
     return {
       value,
       attributes,
+      context,
+      componentPath,
       resizable: computed(() =>
         getSchemaValue('resizable', { type: Boolean, default: false })
       )
     }
   }
-})
+}
 
 defineType({
   types: ['textarea'],

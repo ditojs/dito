@@ -15,52 +15,60 @@
 </template>
 
 <script>
-import DitoComponent from '../DitoComponent.js'
+import { inject } from 'vue'
+import { useSchemaValue } from '../composables/useSchemaValue.ts'
 
-// @vue/component
-export default DitoComponent.component('DitoTabs', {
+export default {
+  name: 'DitoTabs',
   emits: ['update:modelValue'],
+
   props: {
     tabs: { type: Object, default: null },
-    modelValue: { type: String, default: null }
+    modelValue: { type: String, default: null },
+    // The context of the schema, for the callbacks of the tabs:
+    context: { type: Object, required: true }
   },
 
-  methods: {
+  setup(props, { emit }) {
     // Tabs are identified through the component path of their schema, like in
-    // `DitoPane.tabId` and `tabPanelId`.
-    getTabId(key) {
-      return `${this.parentComponent.componentPath}-tab-${key}`
-    },
+    // `DitoPane`:
+    const schemaComponentPath = inject('componentPath')
+    const getTabId = key => `${schemaComponentPath.path}-tab-${key}`
 
-    getTabPanelId(key) {
-      return `${this.parentComponent.componentPath}-tabpanel-${key}`
-    },
+    return {
+      getTabId,
+      getLabel: useSchemaValue(props.context).getLabel,
 
-    // Supports the keyboard interaction of tabs with manual activation: The
-    // arrow keys, Home and End move the focus to other tabs, Enter and Space
-    // select the focused tab, so that moving through the tabs doesn't switch
-    // their panels and the route hash on each key press.
-    onKeyDown(event, key) {
-      const keys = Object.keys(this.tabs)
-      const index = keys.indexOf(key)
-      if (event.key === 'Enter' || event.key === ' ') {
-        event.preventDefault()
-        this.$emit('update:modelValue', key)
-        return
-      }
-      const focusIndex = {
-        ArrowLeft: (index - 1 + keys.length) % keys.length,
-        ArrowRight: (index + 1) % keys.length,
-        Home: 0,
-        End: keys.length - 1
-      }[event.key]
-      if (focusIndex !== undefined) {
-        event.preventDefault()
-        document.getElementById(this.getTabId(keys[focusIndex]))?.focus()
+      getTabPanelId(key) {
+        return `${schemaComponentPath.path}-tabpanel-${key}`
+      },
+
+      // Supports the keyboard interaction of tabs with manual activation: The
+      // arrow keys, Home and End move the focus to other tabs, Enter and Space
+      // select the focused tab, so that moving through the tabs doesn't switch
+      // their panels and the route hash on each key press.
+      onKeyDown(event, key) {
+        const keys = Object.keys(props.tabs)
+        const index = keys.indexOf(key)
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault()
+          emit('update:modelValue', key)
+        } else {
+          const focusIndex = {
+            ArrowLeft: (index - 1 + keys.length) % keys.length,
+            ArrowRight: (index + 1) % keys.length,
+            Home: 0,
+            End: keys.length - 1
+          }[event.key]
+          if (focusIndex !== undefined) {
+            event.preventDefault()
+            document.getElementById(getTabId(keys[focusIndex]))?.focus()
+          }
+        }
       }
     }
   }
-})
+}
 </script>
 
 <style lang="scss">

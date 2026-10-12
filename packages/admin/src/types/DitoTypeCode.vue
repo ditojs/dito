@@ -13,7 +13,6 @@
 
 <script>
 import { computed, onMounted, ref, useTemplateRef, watch } from 'vue'
-import DitoComponent from '../DitoComponent.js'
 import { defineType } from '../utils/schema/types.ts'
 import { fieldProps, useField } from '../composables/useField.ts'
 import { createChangeOnceEdited } from '../utils/changeOnceEdited.js'
@@ -21,7 +20,8 @@ import DitoResizeHandle from '../components/DitoResizeHandle.vue'
 import CodeFlask from 'codeflask'
 
 // @vue/component
-const DitoTypeCode = DitoComponent.component('DitoTypeCode', {
+const DitoTypeCode = {
+  name: 'DitoTypeCode',
   components: { DitoResizeHandle },
   props: fieldProps,
 
@@ -104,6 +104,8 @@ const DitoTypeCode = DitoComponent.component('DitoTypeCode', {
 
     return {
       height,
+      context: field.context,
+      componentPath: field.componentPath,
       resizable: computed(() =>
         getSchemaValue('resizable', { type: Boolean, default: false })
       ),
@@ -117,7 +119,7 @@ const DitoTypeCode = DitoComponent.component('DitoTypeCode', {
       )
     }
   }
-})
+}
 
 defineType({
   types: ['code'],

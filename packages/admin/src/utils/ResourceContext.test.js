@@ -1,5 +1,5 @@
 import { ResourceContext } from './ResourceContext.ts'
-import { mountForm, settle } from '../test/mount.js'
+import { mountForm, settle, isForm } from '../test/mount.js'
 
 describe('ResourceContext', () => {
   const chapterForm = {
@@ -30,27 +30,28 @@ describe('ResourceContext', () => {
 
   it('is provided by forms and sources to their components', async () => {
     const { routeComponent: form, getComponent } = await mountBook()
-    const { resource } = form
+    const { resource } = form.ownRoute
     expect(resource).toBeInstanceOf(ResourceContext)
-    expect(form.getResourceUrl(resource.getResource())).toBe('/items/1')
-    const chapters = getComponent('chapters')
-    expect(chapters.resource).not.toBe(resource)
-    expect(chapters.resource.parent).toBe(resource)
-    expect(form.getResourceUrl(chapters.resource.getResource())).toBe(
-      '/items/1/chapters'
-    )
-    expect(getComponent('notes/0/text').resource).toBe(
-      getComponent('notes').resource
+    const { getResourceUrl } = getComponent('chapters').context
+    expect(getResourceUrl(resource.getResource())).toBe('/items/1')
+    const chapters = getComponent('chapters').ownResource
+    expect(chapters).not.toBe(resource)
+    expect(chapters.parent).toBe(resource)
+    expect(getResourceUrl(chapters.getResource())).toBe('/items/1/chapters')
+    // The items of the notes see the resource of the notes, which continues
+    // the one of the form:
+    expect(getComponent('notes/0/text').context.getResourceUrl()).toBe(
+      '/items/1'
     )
   })
 
   it('resolves resources through the closest one with a resource', async () => {
     const { routeComponent: form, getComponent } = await mountBook()
-    const notes = getComponent('notes')
-    expect(notes.resource.getResource()).toBe(null)
-    expect(notes.resource.resourceOwner).toBe(form.resource)
-    expect(getComponent('notes/0/text').getResourceUrl({ path: 'notes' }))
-      .toBe('/items/1/notes')
+    const notes = getComponent('notes').ownResource
+    expect(notes.getResource()).toBe(null)
+    expect(notes.resourceOwner).toBe(form.ownRoute.resource)
+    const { getResourceUrl } = getComponent('notes/0/text').context
+    expect(getResourceUrl({ path: 'notes' })).toBe('/items/1/notes')
   })
 
   // Inlined lists have no resource, so lists in their items continue the
@@ -78,17 +79,14 @@ describe('ResourceContext', () => {
       data: { notes: [{}] },
       request: () => ({ data: [] })
     })
-    const links = getComponent('notes/0/links')
-    expect(links.getResourceUrl(links.resource.getResource())).toBe(
-      '/items/1/links'
-    )
+    const { context } = getComponent('notes/0/links')
+    expect(context.getResourceUrl()).toBe('/items/1/links')
   })
 
   it('names the verbs of transient sources', async () => {
     const { routeComponent: form, getComponent } = await mountBook()
-    expect(form.resource.verbs.delete).toBe('delete')
-    expect(getComponent('notes').resource.verbs.delete).toBe('remove')
-    expect(getComponent('notes/0/text').verbs.delete).toBe('remove')
+    expect(form.ownRoute.resource.verbs.delete).toBe('delete')
+    expect(getComponent('notes').ownResource.verbs.delete).toBe('remove')
   })
 
   // The forms of tree items render inside the tree, but continue the resource
@@ -118,9 +116,9 @@ describe('ResourceContext', () => {
             : null
     })
     await admin.navigate('/items/1/pages/3')
-    const form = admin.getRouteComponent(component => component.isForm)
+    const form = admin.getRouteComponent(isForm)
     await settle(form)
-    expect(form.resource.parent).toBe(parent.resource)
+    expect(form.ownRoute.resource.parent).toBe(parent.ownRoute.resource)
     expect(request).toHaveBeenCalledWith(
       expect.objectContaining({ url: '/items/1/pages/3' })
     )

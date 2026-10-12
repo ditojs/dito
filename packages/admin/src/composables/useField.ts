@@ -1,5 +1,4 @@
 import { computed, type PropType } from 'vue'
-import { getSchemaValue } from '../utils/schema/data.js'
 import {
   getValidations,
   getValueValidationErrors
@@ -10,6 +9,8 @@ import {
   type SchemaContextProps
 } from './useSchemaContext.ts'
 import { useValue } from './useValue.ts'
+import { useSchemaValue } from './useSchemaValue.ts'
+import { useComponentPath } from './useComponentPath.ts'
 import { useFocus, type FocusOptions } from './useFocus.ts'
 import { useFieldEvents, type FieldEventsOptions } from './useFieldEvents.ts'
 import type { Services } from '../utils/services.ts'
@@ -69,38 +70,28 @@ export function useField(
     getValue: () => value.value
   })
   const fieldValue = useValue(props, schemaContext)
-  const { context, createContext } = schemaContext
+  const { context } = schemaContext
   const { value } = fieldValue
-
-  // Read `keyOrDataPath` from the schema, resolving callbacks with the
-  // component's context, see `getSchemaValue()` in `utils/schema/data.js`:
-  const getFieldSchemaValue = (
-    keyOrDataPath: string | string[],
-    options = {}
-  ) =>
-    getSchemaValue(keyOrDataPath, {
-      ...options,
-      schema: props.schema,
-      context
-    })
+  const { getSchemaValue } = useSchemaValue(context)
+  const { componentPath } = useComponentPath(() => props.dataPath)
 
   const getBoolean = (key: string) =>
-    computed(() => getFieldSchemaValue(key, { type: Boolean, default: false }))
+    computed(() => getSchemaValue(key, { type: Boolean, default: false }))
 
   const readonly = getBoolean('readonly')
   const disabled = getBoolean('disabled')
   const autofocus = getBoolean('autofocus')
   const clearable = computed(
     () => (
-      getFieldSchemaValue('clearable', { type: Boolean, default: false }) &&
+      getSchemaValue('clearable', { type: Boolean, default: false }) &&
       !readonly.value
     )
   )
   const placeholder = computed(() =>
-    getFieldSchemaValue('placeholder', { type: String })
+    getSchemaValue('placeholder', { type: String })
   )
   const info = computed(() =>
-    getFieldSchemaValue('info', { type: String, default: null })
+    getSchemaValue('info', { type: String, default: null })
   )
 
   // Validate the value and replace the validation errors of the field, see
@@ -118,12 +109,15 @@ export function useField(
   }
 
   const { events, ...fieldEvents } = useFieldEvents(props, {
-    createContext,
+    ...schemaContext,
     ...fieldValue,
     getEvents,
     validate
   })
-  const focus = useFocus(schemaContext.services, { focusElement, blurElement })
+  const focus = useFocus(schemaContext.services, componentPath, {
+    focusElement,
+    blurElement
+  })
 
   // The attributes and event handlers of the element that edits the value:
   const attributes = computed(() => {
@@ -143,11 +137,11 @@ export function useField(
       attributes.readonly = readonly.value
       attributes.autofocus = autofocus.value
       if (textField) {
-        attributes.maxlength = getFieldSchemaValue('maxLength', {
+        attributes.maxlength = getSchemaValue('maxLength', {
           type: Number
         })
         attributes.placeholder = placeholder.value
-        attributes.autocomplete = getFieldSchemaValue('autocomplete', {
+        attributes.autocomplete = getSchemaValue('autocomplete', {
           type: String
         })
       }
@@ -181,7 +175,8 @@ export function useField(
     attributes,
     inputAffixesProps,
 
-    getSchemaValue: getFieldSchemaValue,
+    componentPath,
+    getSchemaValue,
     validate,
 
     clear() {

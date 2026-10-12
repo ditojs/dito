@@ -64,6 +64,7 @@
         DitoLabel(
           v-if="property.label !== false"
           :label="getLabel(property)"
+          :context="context"
         )
       DitoTableCell(
         :cell="property"
@@ -102,14 +103,15 @@
 </template>
 
 <script>
-import { getCurrentInstance } from 'vue'
-import DitoComponent from '../DitoComponent.js'
+import { computed, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import DitoEditButtons from './DitoEditButtons.vue'
 import { useSortable } from '../composables/useSortable.ts'
 import { useItemLabel } from '../composables/useItemLabel.ts'
-import { useServices } from '../composables/useSchemaContext.ts'
+import { useSchemaContext } from '../composables/useSchemaContext.ts'
+import { useSchemaValue } from '../composables/useSchemaValue.ts'
+import { useComponentPath } from '../composables/useComponentPath.ts'
 import { appendDataPath, getRelativeDataPath } from '../utils/data.js'
-import { getSchemaAccessor } from '../utils/accessor.js'
 import { getNamedSchemas, hasFormSchema } from '../utils/schema/lookup.js'
 import { getTextFromHtml } from '../utils/html.js'
 import { getListWithMovedItem } from '../utils/list.js'
@@ -119,8 +121,8 @@ import { isPathWithin } from '../utils/route.js'
 // Renders an item of a tree list or tree object, see `DitoTypeTreeList`, which
 // provides the item's `source`. Items don't write the tree: They emit the
 // changed children with `changeChildren`, which the tree list applies.
-// @vue/component
-export default DitoComponent.component('DitoTreeItem', {
+export default {
+  name: 'DitoTreeItem',
   components: { DitoEditButtons },
   emits: ['delete', 'move', 'changeChildren'],
 
@@ -137,198 +139,169 @@ export default DitoComponent.component('DitoTreeItem', {
     level: { type: Number, default: 0 }
   },
 
-  setup(props) {
-    // NOTE: Item labels read the context of the component:
-    const component = getCurrentInstance().proxy
-    // The tree list applies the reordered children and notifies of the change,
-    // see `changeChildren()`:
+  setup(props, { emit }) {
+    const currentRoute = useRoute()
+    const { context, services } = useSchemaContext(props)
+    const { source } = services
+    const { getSchemaValue, getLabel } = useSchemaValue(context)
+    // Continue the path of the tree list, whose name the data path of the root
+    // item doesn't contain:
+    const { componentPath } = useComponentPath(
+      () => props.dataPath,
+      () => {
+        const relativeDataPath = getRelativeDataPath(
+          props.dataPath,
+          source.dataPath
+        )
+        return relativeDataPath
+          ? appendDataPath(source.componentPath, relativeDataPath)
+          : source.componentPath
+      }
+    )
     const { isDragging, getDraggableOptions } = useSortable()
+    const itemLabel = useItemLabel({
+      services,
+      getContext: () => context,
+      getSchema: () => props.schema,
+      getDataPath: () => props.dataPath
+    })
+    const { getItemDataPath, getItemLabel } = itemLabel
+    const opened = ref(props.open || props.schema.open)
+
+    // Open the item also when it comes into the edit path later:
+    watch(
+      () => props.open,
+      open => {
+        if (open) {
+          opened.value = true
+        }
+      }
+    )
+
+    const childrenSchema = computed(() => props.schema.children)
+    const childrenList = computed(() => {
+      const name = childrenSchema.value?.name
+      return name && props.data[name]
+    })
+    const properties = computed(() => getNamedSchemas(props.schema.properties))
+    const numChildren = computed(() => childrenList.value?.length || 0)
+    const editable = computed(
+      () => (
+        getSchemaValue('editable', { type: Boolean, default: false }) &&
+        hasFormSchema(props.schema)
+      )
+    )
+    const deletable = computed(() =>
+      getSchemaValue('deletable', { type: Boolean, default: false })
+    )
+
+    const changeChildren = children => {
+      emit('changeChildren', {
+        // The children for the change API of the data model, see `ListEntry`:
+        entry: {
+          schema: childrenSchema.value,
+          list: childrenList.value,
+          dataPath: getItemDataPath(childrenSchema.value)
+        },
+        children
+      })
+    }
+
     return {
+      ...itemLabel,
+      context,
+      componentPath,
       isDragging,
       getDraggableOptions,
-      ...useItemLabel({
-        services: useServices(),
-        getContext: () => component.context,
-        getSchema: () => props.schema,
-        getDataPath: () => props.dataPath
-      })
-    }
-  },
+      getLabel,
+      opened,
+      properties,
+      childrenSchema,
+      childrenList,
+      editable,
+      deletable,
+      changeChildren,
+      store: computed(() => source.store),
+      disabled: computed(() => source.isDisabled),
+      hasErrors: computed(() =>
+        services.container.model.hasErrorsWithin(props.data)
+      ),
+      numEntries: computed(
+        () => (properties.value?.length || 0) + numChildren.value
+      ),
+      ariaLabel: computed(() =>
+        props.label ? getTextFromHtml(props.label) : null
+      ),
+      details: computed(() => {
+        const count = numChildren.value
+        return count && `${count} ${count === 1 ? 'item' : 'items'}`
+      }),
+      hasEditButtons: computed(
+        () => props.draggable || editable.value || deletable.value
+      ),
+      editPath: computed(() => (editable.value ? props.path : null)),
 
-  data() {
-    return {
-      opened: this.open || this.schema.open
-    }
-  },
+      childrenDraggable: computed(
+        () => (
+          childrenList.value?.length > 1 &&
+          getSchemaValue('draggable', {
+            type: Boolean,
+            default: false,
+            schema: childrenSchema.value
+          })
+        )
+      ),
 
-  computed: {
-    componentPath() {
-      // Continue the path of the tree list with the item indices and children
-      // names of the data path. The root item's data path doesn't contain the
-      // list's name, see `DitoTypeTreeList.treeDataPath`.
-      const { componentPath, dataPath } = this.source
-      const relativeDataPath = getRelativeDataPath(this.dataPath, dataPath)
-      return relativeDataPath
-        ? appendDataPath(componentPath, relativeDataPath)
-        : componentPath
-    },
-
-    store() {
-      return this.source.store
-    },
-
-    disabled() {
-      return this.source.isDisabled
-    },
-
-    properties() {
-      return getNamedSchemas(this.schema.properties)
-    },
-
-    childrenSchema() {
-      return this.schema.children
-    },
-
-    childrenList() {
-      const name = this.childrenSchema?.name
-      return name && this.data[name]
-    },
-
-    // The children for the change API of the data model, see `ListEntry`:
-    childrenEntry() {
-      return {
-        schema: this.childrenSchema,
-        list: this.childrenList,
-        dataPath: this.getItemDataPath(this.childrenSchema)
-      }
-    },
-
-    childrenDraggable() {
-      return (
-        this.childrenList?.length > 1 &&
-        this.getSchemaValue('draggable', {
-          type: Boolean,
-          default: false,
-          schema: this.childrenSchema
-        })
-      )
-    },
-
-    hasErrors() {
-      return this.dataModel.hasErrorsWithin(this.data)
-    },
-
-    numChildren() {
-      return this.childrenList?.length || 0
-    },
-
-    numProperties() {
-      return this.properties?.length || 0
-    },
-
-    numEntries() {
-      return this.numProperties + this.numChildren
-    },
-
-    childrenItems() {
-      const { childrenSchema, childrenList } = this
-      if (childrenSchema && childrenList) {
-        const routePath = this.$route.path
-        // `open` only reflects the route, so that items closed by the user
-        // reopen when they come into it. `schema.open` is applied in `data()`.
-        return childrenList.map((data, index) => {
-          const path = this.route?.getFormPath(
-            this.getItemDataPath(childrenSchema, index)
-          )
-          const active = !!path && routePath === path
-          const open = !!path && !active && isPathWithin(routePath, path)
-          return { data, path, open, active }
-        })
-      }
-      return []
-    },
-
-    ariaLabel() {
-      return this.label ? getTextFromHtml(this.label) : null
-    },
-
-    details() {
-      const { numChildren } = this
-      return (
-        numChildren &&
-        `${numChildren} ${
-          numChildren === 1 ? 'item' : 'items'
-        }`
-      )
-    },
-
-    hasEditButtons() {
-      return this.draggable || this.editable || this.deletable
-    },
-
-    editPath() {
-      return this.editable ? this.path : null
-    },
-
-    editable: getSchemaAccessor('editable', {
-      type: Boolean,
-      default: false,
-      get(editable) {
-        return editable && hasFormSchema(this.schema)
-      }
-    }),
-
-    deletable: getSchemaAccessor('deletable', {
-      type: Boolean,
-      default: false
-    })
-  },
-
-  watch: {
-    open(open) {
-      // Open the item also when it comes into the edit path later, e.g. when
-      // navigating to the form of one of its children.
-      if (open) {
-        this.opened = true
-      }
-    }
-  },
-
-  methods: {
-    changeChildren(children) {
-      this.$emit('changeChildren', { entry: this.childrenEntry, children })
-    },
-
-    // Moves the child by `delta` positions, see `DitoDragHandle`.
-    moveChild(child, delta) {
-      const children = getListWithMovedItem(this.childrenList, child, delta)
-      if (children) {
-        this.changeChildren(children)
-      }
-    },
-
-    // Removes the child after confirming it, like inlined lists do. The removal
-    // is transient, as the tree is part of its form's data.
-    async deleteChild(child) {
-      await confirmAndRemove(this, {
-        label: this.getItemLabel(this.childrenSchema, child, {
-          index: this.childrenList.indexOf(child),
-          extended: true
-        }),
-        isTransient: true,
-        remove: () => {
-          // Look up the child by identity once confirmed, as the children may
-          // have changed while the dialog was open.
-          const children = this.childrenList.filter(it => it !== child)
-          if (children.length === this.childrenList.length) {
-            return false
-          }
-          this.changeChildren(children)
+      childrenItems: computed(() => {
+        const schema = childrenSchema.value
+        const list = childrenList.value
+        if (schema && list) {
+          const routePath = currentRoute.path
+          // `open` reflects the route, so that items closed by the user reopen
+          // when they come into it:
+          return list.map((data, index) => {
+            const path = services.route?.getFormPath(
+              getItemDataPath(schema, index)
+            )
+            const active = !!path && routePath === path
+            const open = !!path && !active && isPathWithin(routePath, path)
+            return { data, path, open, active }
+          })
         }
-      })
+        return []
+      }),
+
+      // Moves the child by `delta` positions, see `DitoDragHandle`.
+      moveChild(child, delta) {
+        const children = getListWithMovedItem(childrenList.value, child, delta)
+        if (children) {
+          changeChildren(children)
+        }
+      },
+
+      // Removes the child after confirming it. The removal is transient, as the
+      // tree is part of its form's data:
+      async deleteChild(child) {
+        await confirmAndRemove(services, {
+          label: getItemLabel(childrenSchema.value, child, {
+            index: childrenList.value.indexOf(child),
+            extended: true
+          }),
+          isTransient: true,
+          remove: () => {
+            // The children may have changed while the dialog was open:
+            const list = childrenList.value
+            const children = list.filter(it => it !== child)
+            if (children.length === list.length) {
+              return false
+            }
+            changeChildren(children)
+          }
+        })
+      }
     }
   }
-})
+}
 </script>
 
 <style lang="scss">

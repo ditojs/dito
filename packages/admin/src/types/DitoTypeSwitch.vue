@@ -9,21 +9,21 @@ DitoSwitch.dito-switch(
 </template>
 
 <script>
-import DitoComponent from '../DitoComponent.js'
 import { defineType } from '../utils/schema/types.ts'
 import { fieldProps, useField } from '../composables/useField.ts'
 import { DitoSwitch } from '@ditojs/ui/src'
 
 // @vue/component
-const DitoTypeSwitch = DitoComponent.component('DitoTypeSwitch', {
+const DitoTypeSwitch = {
+  name: 'DitoTypeSwitch',
   components: { DitoSwitch },
   props: fieldProps,
 
   setup(props) {
-    const { value, attributes } = useField(props)
-    return { value, attributes }
+    const { value, attributes, context, componentPath } = useField(props)
+    return { value, attributes, context, componentPath }
   }
-})
+}
 
 defineType({
   types: ['switch'],

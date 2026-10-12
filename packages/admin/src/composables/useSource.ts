@@ -1,6 +1,5 @@
 import {
   computed,
-  getCurrentInstance,
   inject,
   markRaw,
   onUnmounted,
@@ -16,6 +15,7 @@ import {
   type SubmitButton
 } from '../utils/ResourceContext.ts'
 import type { SourceContext } from '../utils/SourceContext.ts'
+import { waitUntilDataModelSettled } from '../utils/services.ts'
 import type { FormNode, ViewNode } from '../utils/RouteTree.ts'
 import { getButtonSchemas, getViewSchema } from '../utils/schema/lookup.js'
 import { isInlined } from '../utils/schema/structure.js'
@@ -27,6 +27,7 @@ import { useListQuery } from './useListQuery.ts'
 import { useSourceData } from './useSourceData.ts'
 import { useSourceActions } from './useSourceActions.ts'
 import { useItemLabel } from './useItemLabel.ts'
+import type { SchemaEventsEmitter } from './useSchemaEvents.ts'
 
 const unauthorizedError = `You don't have permission to load this data.`
 
@@ -40,10 +41,8 @@ export function useSource(
     onFilterErrors
   }: { onFilterErrors?: (errors: Record<string, any>) => boolean } = {}
 ) {
-  // NOTE: The component path and the waiting for the data model are still
-  // members of the component:
-  const component = getCurrentInstance()!.proxy as any
-  const getSchemaComponent = inject<() => any>('$schemaComponent')!
+  // Sources emit their `load` event through the schema that renders them:
+  const schemaEvents = inject<SchemaEventsEmitter>('schemaEvents')!
   const services = useServices({
     get source() {
       return source
@@ -55,7 +54,8 @@ export function useSource(
   })
   const { admin, route } = services
   const field = useField(props, { services })
-  const { value, context, disabled, onChange, getSchemaValue } = field
+  const { value, context, disabled, onChange, getSchemaValue, componentPath } =
+    field
   const getModel = () => services.container!.model
 
   const hasInlinedItems = () => isInlined(props.schema)
@@ -84,15 +84,14 @@ export function useSource(
       if (data?.type === 'FilterValidation' && onFilterErrors?.(data.errors)) {
         return true
       } else if (status === 401 && route?.isForm) {
-        // The user is logged in, but may not access the resource of a source
-        // in a form. Show it on the source, as several sources of the form
-        // may be affected:
+        // The user may not access the resource of a source in a form, which
+        // shows on the source:
         getModel().addError(props.dataPath, unauthorizedError)
         return true
       }
       return false
     },
-    emitLoad: () => getSchemaComponent().emitEvent('load')
+    emitLoad: () => schemaEvents.emitEvent('load')
   })
 
   const listQuery = useListQuery(props, {
@@ -139,7 +138,7 @@ export function useSource(
   // Submit the data of the source to the resource of the button:
   const submit = async (button: SubmitButton) => {
     // Wait for the data that's still loading, e.g. uploads, like forms do:
-    await component.waitUntilDataModelSettled()
+    await waitUntilDataModelSettled(services)
     const model = getModel()
     const { editCount } = model
     const buttonResource = button.schema.resource
@@ -158,8 +157,7 @@ export function useSource(
         getPayloadData(button, method)
       )
       if (isSuccessful) {
-        // The source saved its own changes, e.g. the order of its items, which
-        // clears their errors, like saving forms does:
+        // Saving the source's own changes clears their errors, as in forms:
         model.markClean({ dataPath: props.dataPath, editCount })
         model.clearErrors(props.dataPath)
       }
@@ -203,9 +201,8 @@ export function useSource(
   })
 
   // Lists with routed forms don't render where the recursion of forms that
-  // contain themselves stops, see `maxDepth`. Sources without data and without
-  // resource render too, as they may get their data elsewhere, e.g. through
-  // `compute()`:
+  // contain themselves stops. Sources without data and resource render, e.g.
+  // for `compute()`:
   const isReady = computed(
     () => (
       (hasInlinedItems() || !sourceNode.value?.isBeyondMaxDepth) &&
@@ -231,7 +228,7 @@ export function useSource(
     query: listQuery.query,
     listQuery: listQuery.listQuery,
     dataPath: toRef(props, 'dataPath'),
-    componentPath: computed(() => component.componentPath),
+    componentPath,
     store: toRef(props, 'store'),
     isDisabled: disabled,
     createItem: actions.createItem,
@@ -253,6 +250,7 @@ export function useSource(
   return {
     value,
     context,
+    componentPath,
     disabled,
     onChange,
     services,

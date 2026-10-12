@@ -11,27 +11,30 @@
 </template>
 
 <script>
-import DitoComponent from '../DitoComponent.js'
 import { DitoButton } from '@ditojs/ui/src'
+import { useSchemaValue } from '../composables/useSchemaValue.ts'
 
-// @vue/component
-export default DitoComponent.component('DitoScopes', {
+export default {
+  name: 'DitoScopes',
   components: { DitoButton },
 
   props: {
     listQuery: { type: Object, required: true },
-    scopes: { type: Object, required: true }
+    scopes: { type: Object, required: true },
+    // The context of the list, for the callbacks of the scopes:
+    context: { type: Object, required: true }
   },
 
-  methods: {
-    selectScope(scope) {
-      this.listQuery.update(
-        { scope: scope.name },
-        { resetPage: true }
-      )
+  setup(props) {
+    return {
+      getLabel: useSchemaValue(props.context).getLabel,
+
+      selectScope(scope) {
+        props.listQuery.update({ scope: scope.name }, { resetPage: true })
+      }
     }
   }
-})
+}
 </script>
 
 <style lang="scss">

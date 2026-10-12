@@ -1,5 +1,7 @@
+import { nextTick } from 'vue'
 import { equals, format as formatValue, isString } from '@ditojs/utils'
 import appState from '../appState.js'
+import defaultVerbs from '../verbs.js'
 import { getResource, getMemberResource } from './resource.js'
 import { getRequestCacheKey } from './request.js'
 import type { AdminContext } from './AdminContext.ts'
@@ -38,6 +40,34 @@ export interface DownloadOptions {
   url: string
   filename?: string
   query?: Record<string, any>
+}
+
+// The data that the data paths of the components are relative to, e.g. the
+// data of the view or the item of the form:
+export function getRootData({ container, route }: Services) {
+  return container?.model.rootData ?? route?.rootData ?? null
+}
+
+// The verbs of the closest form or source, e.g. `apply` rather than `save` in
+// nested data:
+export function getVerbs({ resource }: Services): Record<string, string> {
+  return resource?.verbs ?? defaultVerbs
+}
+
+// Wait until the data model wrote the values that it derives from the data and
+// finished its loads, e.g. before submitting, showing the spinner of the header
+// but without disabling the view, as the user may still be editing.
+export async function waitUntilDataModelSettled({
+  admin,
+  container
+}: Services) {
+  // The values derived from the ones that components hold back follow them:
+  container?.model.writePendingValues()
+  await nextTick()
+  const model = container?.model
+  if (model?.hasPendingLoads) {
+    await admin.loadingTracker.track(() => model.waitUntilSettled())
+  }
 }
 
 export function getResourceUrl(

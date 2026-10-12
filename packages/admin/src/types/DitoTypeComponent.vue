@@ -18,27 +18,27 @@ component(
 // `update:modelValue` and `change`. Their root element gets the id that the
 // label points to.
 
-import DitoComponent from '../DitoComponent.js'
+import { computed } from 'vue'
 import { defineType } from '../utils/schema/types.ts'
 import { fieldProps, useField } from '../composables/useField.ts'
 import { resolveSchemaComponent } from '../utils/schema/setup.js'
 
 // @vue/component
-const DitoTypeComponent = DitoComponent.component('DitoTypeComponent', {
+const DitoTypeComponent = {
+  name: 'DitoTypeComponent',
   props: fieldProps,
 
   setup(props) {
-    const { context, value, onChange } = useField(props)
-    return { context, value, onChange }
-  },
-
-  computed: {
-    // @overridable
-    customComponent() {
-      return this.schema.component
+    const { context, componentPath, value, onChange } = useField(props)
+    return {
+      context,
+      componentPath,
+      value,
+      onChange,
+      customComponent: computed(() => props.schema.component)
     }
   }
-})
+}
 
 defineType({
   types: ['component'],
@@ -56,10 +56,12 @@ defineType({
 export function wrapCustomComponent(component) {
   return {
     ...DitoTypeComponent,
-    computed: {
-      ...DitoTypeComponent.computed,
-      // @override
-      customComponent: () => component
+
+    setup(props, context) {
+      return {
+        ...DitoTypeComponent.setup(props, context),
+        customComponent: component
+      }
     }
   }
 }

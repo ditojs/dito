@@ -10,14 +10,14 @@ progress.dito-progress(
 
 <script>
 import { computed } from 'vue'
-import DitoComponent from '../DitoComponent.js'
 import { defineType } from '../utils/schema/types.ts'
 import { numberTraits } from './traits.ts'
 import { fieldProps, useField } from '../composables/useField.ts'
 import { useNumber } from '../composables/useNumber.ts'
 
 // @vue/component
-const DitoTypeProgress = DitoComponent.component('DitoTypeProgress', {
+const DitoTypeProgress = {
+  name: 'DitoTypeProgress',
   props: fieldProps,
 
   setup(props) {
@@ -25,6 +25,8 @@ const DitoTypeProgress = DitoComponent.component('DitoTypeProgress', {
     const { settings } = useNumber(props, field)
     return {
       attributes: field.attributes,
+      context: field.context,
+      componentPath: field.componentPath,
 
       progressValue: computed(() => {
         let value = field.value.value
@@ -48,7 +50,7 @@ const DitoTypeProgress = DitoComponent.component('DitoTypeProgress', {
       })
     }
   }
-})
+}
 
 defineType({
   types: ['progress'],

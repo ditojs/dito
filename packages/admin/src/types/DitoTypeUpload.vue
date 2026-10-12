@@ -151,7 +151,6 @@ import {
   useTemplateRef,
   watch
 } from 'vue'
-import DitoComponent from '../DitoComponent.js'
 import { defineType } from '../utils/schema/types.ts'
 import { fieldProps, useField } from '../composables/useField.ts'
 import { useSortable } from '../composables/useSortable.ts'
@@ -159,7 +158,7 @@ import DitoDragHandle from '../components/DitoDragHandle.vue'
 import { DitoButton } from '@ditojs/ui/src'
 import { formatFileSize, parseFileSize } from '../utils/units.js'
 import { appendDataPath } from '../utils/data.js'
-import { download, getResourceUrl } from '../utils/services.ts'
+import { download, getResourceUrl, getVerbs } from '../utils/services.ts'
 import {
   fetchBlob,
   getUploadOptions,
@@ -170,7 +169,8 @@ import { isArray, asArray, escapeHtml } from '@ditojs/utils'
 import VueUpload from 'vue-upload-component'
 
 // @vue/component
-const DitoTypeUpload = DitoComponent.component('DitoTypeUpload', {
+const DitoTypeUpload = {
+  name: 'DitoTypeUpload',
   components: { VueUpload, DitoButton, DitoDragHandle },
   props: fieldProps,
 
@@ -180,7 +180,7 @@ const DitoTypeUpload = DitoComponent.component('DitoTypeUpload', {
       field
     const { admin } = services
     const getModel = () => services.container.model
-    const getFileDropTargets = inject('$fileDropTargets')
+    const fileDropTargets = inject('fileDropTargets')
     const dropTarget = useTemplateRef('dropTarget')
     const upload = useTemplateRef('upload')
     const uploads = ref([])
@@ -323,7 +323,7 @@ const DitoTypeUpload = DitoComponent.component('DitoTypeUpload', {
       removeDropTarget?.()
       removeDropTarget = disabled.value
         ? null
-        : getFileDropTargets().add(dropTarget.value)
+        : fileDropTargets.add(dropTarget.value)
     }
 
     watch(disabled, updateDropTarget)
@@ -348,6 +348,7 @@ const DitoTypeUpload = DitoComponent.component('DitoTypeUpload', {
 
     return {
       ...sortable,
+      verbs: computed(() => getVerbs(services)),
       disabled,
       uploads,
       multiple,
@@ -363,7 +364,7 @@ const DitoTypeUpload = DitoComponent.component('DitoTypeUpload', {
       // files' types can't be read before the drop, so `accept` isn't checked
       // here.
       isDropTarget: computed(
-        () => getFileDropTargets().isDraggingFiles && !disabled.value
+        () => fileDropTargets.isDraggingFiles && !disabled.value
       ),
 
       uploadTitle: computed(() =>
@@ -567,7 +568,7 @@ const DitoTypeUpload = DitoComponent.component('DitoTypeUpload', {
       }
     }
   }
-})
+}
 
 defineType({
   types: ['upload'],

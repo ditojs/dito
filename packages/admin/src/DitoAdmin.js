@@ -12,6 +12,8 @@ import * as components from './components/index.js'
 import * as types from './types/index.js'
 import DitoRoot from './components/DitoRoot.vue'
 import DitoView from './components/DitoView.vue'
+import DitoForm from './components/DitoForm.vue'
+import DitoFormNested from './components/DitoFormNested.vue'
 import ResizeDirective from './directives/resize.js'
 import { getResource } from './utils/resource.js'
 import { request, getApiUrl, isApiUrl } from './utils/request.js'
@@ -169,7 +171,11 @@ export default class DitoAdmin {
       api,
       router,
       unresolvedViews: views,
-      viewComponent: DitoView
+      routeComponents: {
+        view: DitoView,
+        form: DitoForm,
+        nestedForm: DitoFormNested
+      }
     })
 
     const session = new Session({
@@ -186,30 +192,7 @@ export default class DitoAdmin {
     }))
 
     const app = (this.app = createApp({
-      components: {
-        DitoRoot,
-        VueNotifications,
-        // Registered globally too, so that the custom components of apps can
-        // use them in their templates: Unlike the admin's own components, they
-        // don't extend `DitoComponent`, which shares its registry. This also
-        // keeps the modules from being tree-shaken.
-        ...components,
-        ...types
-      },
-
-      // Most injects are defined as functions, to preserve reactiveness across
-      // provide/inject, see:
-      // https://github.com/vuejs/vue/issues/7017#issuecomment-480906691
-      provide: {
-        admin,
-        // Provide defaults so DitoMixin can inject them for all components:
-        $parentComponent: () => null,
-        $schemaComponent: () => null,
-        container: null,
-        route: null,
-        source: null,
-        resource: null
-      },
+      provide: { admin },
 
       render: () =>
         createElement(DitoRoot, {
@@ -229,6 +212,16 @@ export default class DitoAdmin {
     })
 
     app.directive('resize', ResizeDirective)
+
+    // The admin's components use each other through their global names, as do
+    // the custom components of apps in their templates. This also keeps the
+    // modules from being tree-shaken.
+    for (const [name, component] of Object.entries({
+      ...components,
+      ...types
+    })) {
+      app.component(name, component)
+    }
 
     app.use(router)
 

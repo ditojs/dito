@@ -42,22 +42,33 @@ component.dito-panel(
 </template>
 
 <script>
-import { markRaw } from 'vue'
+import {
+  computed,
+  inject,
+  markRaw,
+  onBeforeUnmount,
+  provide,
+  reactive,
+  ref,
+  toRefs,
+  useTemplateRef
+} from 'vue'
 import { isFunction } from '@ditojs/utils'
-import DitoComponent from '../DitoComponent.js'
 import DitoContext from '../DitoContext.js'
+import {
+  useServices,
+  useSchemaContext
+} from '../composables/useSchemaContext.ts'
+import { useSchemaValue } from '../composables/useSchemaValue.ts'
+import { useComponentPath } from '../composables/useComponentPath.ts'
+import { getRootData } from '../utils/services.ts'
 import { getButtonSchemas } from '../utils/schema/lookup.js'
 import { shouldRenderComponents } from '../utils/schema/data.js'
-import { getSchemaAccessor } from '../utils/accessor.js'
 import { DataModel } from '../utils/DataModel.ts'
 import { ContainerContext } from '../utils/ContainerContext.ts'
 
-// @vue/component
-export default DitoComponent.component('DitoPanel', {
-  provide() {
-    // Only panels with their own data own a data model:
-    return this.ownContainer ? { container: this.ownContainer } : {}
-  },
+export default {
+  name: 'DitoPanel',
 
   props: {
     schema: { type: Object, required: true },
@@ -72,128 +83,107 @@ export default DitoComponent.component('DitoPanel', {
     panelComponentPath: { type: String, required: true }
   },
 
-  data() {
-    return {
-      ownData: null,
-      ownContainer: this.schema.data
-        ? markRaw(new ContainerContext(this))
-        : null
-    }
-  },
-
-  computed: {
-    // @override
+  setup(props) {
+    useComponentPath(
+      () => props.dataPath,
+      () => props.panelComponentPath
+    )
     // The panel decides about itself in the data around it, e.g. in `if` and
     // `data()`, while its components and buttons see the data it displays:
-    context() {
-      const { schemaComponent } = this
-      return new DitoContext(schemaComponent, {
-        schema: this.schema,
-        nested: false,
-        data: this.data,
-        dataPath: schemaComponent.dataPath
+    const schemaContext = inject('schemaContext')
+    const { context, services } = useSchemaContext(
+      reactive({
+        ...toRefs(props),
+        dataPath: computed(() => schemaContext.dataPath)
       })
-    },
+    )
+    const { getSchemaValue, getLabel } = useSchemaValue(context)
+    const schemaComponent = useTemplateRef('schema')
+    const ownData = ref(null)
+    const hasOwnData = computed(() => !!ownData.value)
+    const panelData = computed(() => ownData.value || props.data)
+    // Panels with their own data are their own container:
+    const panelDataPath = computed(() =>
+      hasOwnData.value ? '' : schemaContext.dataPath
+    )
 
-    shouldRenderPanel() {
-      return (
-        this.getSchemaValue('if', { type: Boolean, default: true }) &&
-        shouldRenderComponents(
-          this.schema,
-          new DitoContext(this, {
-            nested: false,
-            data: this.panelData,
-            dataPath: this.panelDataPath
-          })
-        )
-      )
-    },
-
-    componentPath() {
-      return this.panelComponentPath
-    },
-
-    buttonSchemas() {
-      return getButtonSchemas(this.schema.buttons)
-    },
-
-    panelButtonSchemas() {
-      return getButtonSchemas(this.schema.panelButtons)
-    },
-
-    hasOwnData() {
-      return !!this.ownData
-    },
-
-    panelData() {
-      return this.ownData || this.data
-    },
-
-    panelTag() {
-      // Panels that provide their own data need their own form.
-      return this.hasOwnData ? 'form' : 'div'
-    },
-
-    panelDataSchema() {
-      return this.hasOwnData ? this.schema : this.schemaComponent.schema
-    },
-
-    panelDataPath() {
-      // Panels with their own data are their own container:
-      return this.hasOwnData ? '' : this.schemaComponent.dataPath
-    },
-
-    visible: getSchemaAccessor('visible', {
-      type: Boolean,
-      default: true
-    }),
-
-    sticky: getSchemaAccessor('sticky', {
-      type: Boolean,
-      default: false
-    })
-  },
-
-  created() {
-    const { data } = this.schema
-    if (data) {
-      this.ownData = isFunction(data) ? data(this.context) : data
-      // Own data gets its own model, like in dialogs, so that its edits don't
-      // make the displayed data dirty:
-      const panel = this
-      this.ownDataModel = markRaw(
-        new DataModel({
-          schema: () => this.schema,
-          data: () => this.ownData,
-          services: {
-            admin: this.admin,
-            container: this.ownContainer,
-            route: this.route,
-            get source() {
-              return panel.source
-            },
-            get resource() {
-              return panel.resource
-            }
+    // Own data gets its own data model, so that its edits don't make the data
+    // around the panel dirty:
+    let panelServices = services
+    if (props.schema.data) {
+      const { data } = props.schema
+      ownData.value = isFunction(data) ? data(context) : data
+      const container = markRaw(
+        new ContainerContext({
+          get dataModel() {
+            return dataModel
+          },
+          get schemaComponent() {
+            return schemaComponent.value
+          },
+          setData(data) {
+            ownData.value = data
+            return ownData.value
           }
         })
       )
+      provide('container', container)
+      panelServices = useServices({ container })
+      const dataModel = markRaw(
+        new DataModel({
+          schema: () => props.schema,
+          data: () => ownData.value,
+          services: panelServices
+        })
+      )
+      // The model's watchers aren't the component's, see `DataModel`:
+      onBeforeUnmount(() => dataModel.stop())
     }
-  },
 
-  beforeUnmount() {
-    // Stop the model before the component's own watchers are stopped, as the
-    // model's watchers aren't part of the component, see `DataModel`.
-    this.ownDataModel?.stop()
-  },
+    return {
+      getLabel,
+      hasOwnData,
+      panelData,
+      panelDataPath,
 
-  methods: {
-    setData(data) {
-      this.ownData = data
-      return this.ownData
+      shouldRenderPanel: computed(
+        () => (
+          getSchemaValue('if', { type: Boolean, default: true }) &&
+          shouldRenderComponents(
+            props.schema,
+            new DitoContext(panelServices, {
+              nested: false,
+              data: panelData.value,
+              dataPath: panelDataPath.value,
+              rootData: getRootData(panelServices)
+            })
+          )
+        )
+      ),
+
+      // Panels that provide their own data need their own form.
+      panelTag: computed(() => (hasOwnData.value ? 'form' : 'div')),
+
+      panelDataSchema: computed(() =>
+        hasOwnData.value ? props.schema : schemaContext.schema
+      ),
+
+      buttonSchemas: computed(() => getButtonSchemas(props.schema.buttons)),
+
+      panelButtonSchemas: computed(() =>
+        getButtonSchemas(props.schema.panelButtons)
+      ),
+
+      visible: computed(() =>
+        getSchemaValue('visible', { type: Boolean, default: true })
+      ),
+
+      sticky: computed(() =>
+        getSchemaValue('sticky', { type: Boolean, default: false })
+      )
     }
   }
-})
+}
 </script>
 
 <style lang="scss">

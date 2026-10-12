@@ -1,6 +1,12 @@
 import { flushPromises } from '@vue/test-utils'
 import { ContainerContext, DialogContext } from './ContainerContext.ts'
-import { mountAdmin, mountForm, mountSchema, settle } from '../test/mount.js'
+import {
+  mountAdmin,
+  mountForm,
+  mountSchema,
+  settle,
+  isForm
+} from '../test/mount.js'
 
 describe('ContainerContext', () => {
   const chaptersSchema = {
@@ -20,9 +26,10 @@ describe('ContainerContext', () => {
       schema: { components: { title: { type: 'text' } } },
       data: { title: 'Emma' }
     })
-    const { container } = view
+    const container = view.ownContainer
     expect(container).toBeInstanceOf(ContainerContext)
-    expect(getComponent('title').container).toBe(container)
+    expect(view.$refs.schema.container).toBe(container)
+    expect(getComponent('title').context.isDirty).toBe(false)
     expect(container.model).toBe(view.dataModel)
     expect(container.isCreating).toBe(false)
   })
@@ -32,7 +39,7 @@ describe('ContainerContext', () => {
       schema: { components: { title: { type: 'text' } } },
       data: { title: 'Emma' }
     })
-    const { container } = form
+    const container = form.ownContainer
     expect(container.isDirty).toBe(false)
     expect(container.isEdited).toBe(false)
     wrapper.find('input[name="title"]').setValue('Persuasion')
@@ -47,14 +54,12 @@ describe('ContainerContext', () => {
       data: { chapters: [{ title: 'Arrakis' }] }
     })
     await admin.navigate('/items/1/chapters/0')
-    const form = admin.getRouteComponent(component => component.isForm)
+    const form = admin.getRouteComponent(isForm)
     await settle(form)
-    const { container } = form
-    expect(container).not.toBe(parent.container)
-    expect(container.model).not.toBe(parent.container.model)
-    expect(
-      admin.getComponent(form, 'chapters/0/title').container
-    ).toBe(container)
+    const container = form.ownContainer
+    expect(container).not.toBe(parent.ownContainer)
+    expect(container.model).not.toBe(parent.ownContainer.model)
+    expect(form.$refs.schema.container).toBe(container)
   })
 
   it('holds the data of mutating forms in the model of the parent', async () => {
@@ -70,10 +75,10 @@ describe('ContainerContext', () => {
       data: { chapters: [{ title: 'Arrakis' }] }
     })
     await admin.navigate('/items/1/chapters/0')
-    const form = admin.getRouteComponent(component => component.isForm)
+    const form = admin.getRouteComponent(isForm)
     await settle(form)
-    expect(form.container).not.toBe(parent.container)
-    expect(form.container.model).toBe(parent.container.model)
+    expect(form.ownContainer).not.toBe(parent.ownContainer)
+    expect(form.ownContainer.model).toBe(parent.ownContainer.model)
   })
 
   it('is provided by dialogs, which it closes', async () => {
@@ -84,10 +89,8 @@ describe('ContainerContext', () => {
     })
     await flushPromises()
     const dialog = admin.wrapper.findComponent({ name: 'DitoDialog' }).vm
-    const { container } = dialog
+    const { container } = dialog.$refs.schema
     expect(container).toBeInstanceOf(DialogContext)
-    expect(admin.getComponent(dialog, 'title').container)
-      .toBe(container)
     expect(container.model.data).toBe(dialog.dialogData)
     container.close('closed')
     expect(await promise).toBe('closed')
@@ -108,9 +111,8 @@ describe('ContainerContext', () => {
       request: () => ({ data: { results: [], total: 0 } })
     })
     const panel = wrapper.findComponent({ name: 'DitoPanel' }).vm
-    const { container } = panel
-    expect(container).not.toBe(view.container)
-    expect(container.model).toBe(panel.dataModel)
-    expect(panel.$refs.schema.container).toBe(container)
+    const { container } = panel.$refs.schema
+    expect(container).not.toBe(view.ownContainer)
+    expect(container.model.data).toBe(panel.panelData)
   })
 })

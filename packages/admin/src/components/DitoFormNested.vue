@@ -1,13 +1,12 @@
 <script>
-import DitoComponent from '../DitoComponent.js'
 import DitoForm from './DitoForm.vue'
 
-// @vue/component
-export default DitoComponent.component('DitoFormNested', {
+export default {
+  name: 'DitoFormNested',
   extends: DitoForm,
   // Vue doesn't inherit `setup()` through `extends`:
   setup: DitoForm.setup
-})
+}
 </script>
 
 <style lang="scss">

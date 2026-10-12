@@ -1,6 +1,6 @@
 import { vi } from 'vitest'
 import { DOMWrapper, flushPromises } from '@vue/test-utils'
-import { mountForm, mountSchema, enterValue } from '../test/mount.js'
+import { mountForm, mountSchema, enterValue, isForm } from '../test/mount.js'
 
 describe('useSchemaContext()', () => {
   const mountLibrary = (titleSchema = {}) =>
@@ -235,7 +235,7 @@ describe('useSchemaContext()', () => {
       })
       const openChapterForm = async path => {
         await admin.navigate(path)
-        return admin.getRouteComponent(component => component.isForm)
+        return admin.getRouteComponent(isForm)
       }
       const getTitleContext = form =>
         admin.getComponent(form, `${form.dataPath}/title`).context

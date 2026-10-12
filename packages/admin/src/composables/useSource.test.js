@@ -6,7 +6,9 @@ import {
   mountSchema,
   settle,
   stubConfirm,
-  unmountAdmin
+  unmountAdmin,
+  isView,
+  isForm
 } from '../test/mount.js'
 import { getTypeDescriptor } from '../utils/schema/types.ts'
 
@@ -147,7 +149,7 @@ describe('useSource()', () => {
       await flushPromises()
       expect(requests).toContain('delete /items/1/reviews/7')
       expect(onChange).toHaveBeenCalledOnce()
-      expect(routeComponent.isDirty).toBe(false)
+      expect(routeComponent.ownRoute.isDirty).toBe(false)
     })
 
     it('numbers the items left after deleting one through the resource', async () => {
@@ -213,7 +215,7 @@ describe('useSource()', () => {
       await findField('review').find('.dito-button--delete').trigger('click')
       await flushPromises()
       expect(data.review).toBe(null)
-      expect(routeComponent.isDirty).toBe(false)
+      expect(routeComponent.ownRoute.isDirty).toBe(false)
     })
   })
 
@@ -239,7 +241,7 @@ describe('useSource()', () => {
         method === 'get' ? { data: [{ id: 1, title: 'Dune' }] } : { data }
     })
     await admin.navigate('/books')
-    const view = admin.getRouteComponent(it => it.isView)
+    const view = admin.getRouteComponent(isView)
     // E.g. a running upload, which can't time out:
     const upload = Promise.withResolvers()
     view.dataModel.trackPendingLoad(upload.promise, { canTimeOut: false })
@@ -280,7 +282,7 @@ describe('useSource()', () => {
       })
       await flushPromises()
       expect(admin.router.currentRoute.value.path).toBe('/items/1/chapters/1')
-      const chapterForm = admin.getRouteComponent(component => component.isForm)
+      const chapterForm = admin.getRouteComponent(isForm)
       expect(chapterForm).not.toBe(routeComponent)
       expect(chapterForm.data).toEqual({ title: 'Caladan' })
       expect(chapterForm.dataModel.getErrors('chapters/1/title')).toEqual([
@@ -468,7 +470,7 @@ describe('useSource()', () => {
         request
       })
       await admin.navigate('/test')
-      const view = admin.getRouteComponent(component => component.isView)
+      const view = admin.getRouteComponent(isView)
       await settle(view)
       return {
         data: view.data,
@@ -580,7 +582,7 @@ describe('useSource()', () => {
         }
       })
       await admin.navigate('/items/1/reviews/7')
-      const form = admin.getRouteComponent(component => component.isForm)
+      const form = admin.getRouteComponent(isForm)
       await settle(form)
       requests.length = 0
       form.$el.querySelector('.dito-buttons--main [type="submit"]').click()
@@ -800,8 +802,8 @@ describe('useSource()', () => {
         ...options
       })
       await admin.navigate('/test')
-      const view = admin.getRouteComponent(it => it.isView)
-      view.setData(data)
+      const view = admin.getRouteComponent(isView)
+      view.ownContainer.replaceItem(data)
       await settle(view)
       return { admin, view }
     }
@@ -810,7 +812,7 @@ describe('useSource()', () => {
     // or `undefined` without a form.
     async function getFormData(admin, path) {
       await admin.navigate(path)
-      const form = admin.getRouteComponent(it => it.isForm)
+      const form = admin.getRouteComponent(isForm)
       if (form) await settle(form)
       return form?.data
     }
@@ -856,7 +858,7 @@ describe('useSource()', () => {
         '/items/1/meta/reviews/9'
       )
       const form = admin.getRouteComponent(
-        it => it.isForm && it.path.endsWith('/9')
+        it => isForm(it) && it.path.endsWith('/9')
       )
       expect(form.data).toEqual({ id: 9, title: 'Late' })
     })
@@ -896,7 +898,7 @@ describe('useSource()', () => {
       })
       const getFormLists = async path => {
         await admin.navigate(path)
-        const form = admin.getRouteComponent(it => it.isForm)
+        const form = admin.getRouteComponent(isForm)
         await settle(form)
         return form.$el.querySelectorAll('.dito-list').length
       }

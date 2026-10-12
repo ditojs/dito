@@ -23,35 +23,39 @@ nav.dito-trail(aria-label="Breadcrumb")
 </template>
 
 <script>
-import DitoComponent from '../DitoComponent.js'
+import { computed, inject } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
-// @vue/component
-export default DitoComponent.component('DitoTrail', {
-  computed: {
-    trail() {
+export default {
+  name: 'DitoTrail',
+
+  setup() {
+    const admin = inject('admin')
+    const currentRoute = useRoute()
+    const router = useRouter()
+    return {
       // Leave out the routes that are being left, until they're unmounted.
-      return this.admin.ui.routes.filter(route => !route.isLeaving)
-    }
-  },
+      trail: computed(() => admin.ui.routes.filter(route => !route.isLeaving)),
 
-  methods: {
-    getRouteLocation(route) {
-      // `force` reloads the view even if it is already the current route.
-      // Views are reached through the path of their route, so that the router
-      // also matches their default children, like the forms of objects:
-      return {
-        path: route.isForm
-          ? route.path
-          : this.$router.resolve({ name: route.node.linkRouteName }).path,
-        force: true
+      getRouteLocation(route) {
+        // `force` reloads the view even if it is already the current route.
+        // Views are reached through the path of their route, so that the
+        // router also matches their default children, like the forms of
+        // objects:
+        return {
+          path: route.isForm
+            ? route.path
+            : router.resolve({ name: route.node.linkRouteName }).path,
+          force: true
+        }
+      },
+
+      isCurrentRoute(route) {
+        return route.path === currentRoute.path
       }
-    },
-
-    isCurrentRoute(route) {
-      return route.path === this.$route.path
     }
   }
-})
+}
 </script>
 
 <style lang="scss">

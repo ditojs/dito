@@ -35,7 +35,6 @@ import {
   ref,
   watch
 } from 'vue'
-import DitoComponent from '../DitoComponent.js'
 import { defineType } from '../utils/schema/types.ts'
 import { fieldProps, useField } from '../composables/useField.ts'
 import { createChangeOnceEdited } from '../utils/changeOnceEdited.js'
@@ -80,7 +79,8 @@ import {
 } from '@ditojs/utils'
 
 // @vue/component
-const DitoTypeMarkup = DitoComponent.component('DitoTypeMarkup', {
+const DitoTypeMarkup = {
+  name: 'DitoTypeMarkup',
   components: {
     EditorContent,
     DitoButton,
@@ -406,6 +406,8 @@ const DitoTypeMarkup = DitoComponent.component('DitoTypeMarkup', {
     return {
       editor,
       height,
+      context: field.context,
+      componentPath: field.componentPath,
       resizable: computed(() =>
         getSchemaValue('resizable', { type: Boolean, default: false })
       ),
@@ -458,7 +460,7 @@ const DitoTypeMarkup = DitoComponent.component('DitoTypeMarkup', {
       )
     }
   }
-})
+}
 
 defineType({
   types: ['markup'],

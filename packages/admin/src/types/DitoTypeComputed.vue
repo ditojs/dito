@@ -11,19 +11,19 @@ input.dito-text.dito-input(
 </template>
 
 <script>
-import DitoComponent from '../DitoComponent.js'
 import { defineType } from '../utils/schema/types.ts'
 import { fieldProps, useField } from '../composables/useField.ts'
 
 // @vue/component
-const DitoTypeComputed = DitoComponent.component('DitoTypeComputed', {
+const DitoTypeComputed = {
+  name: 'DitoTypeComputed',
   props: fieldProps,
 
   setup(props) {
-    const { value, disabled } = useField(props)
-    return { value, disabled }
+    const { value, disabled, context, componentPath } = useField(props)
+    return { value, disabled, context, componentPath }
   }
-})
+}
 
 defineType({
   types: ['computed', 'data', 'hidden'],

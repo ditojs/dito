@@ -1,6 +1,5 @@
 import {
   computed,
-  getCurrentInstance,
   inject,
   onUnmounted,
   provide,
@@ -10,25 +9,64 @@ import {
 } from 'vue'
 import { useRouter, type RouteRecordNormalized } from 'vue-router'
 import { getSchemaPath } from '../utils/schema/structure.js'
-import { ContainerContext } from '../utils/ContainerContext.ts'
-import { RouteContext } from '../utils/RouteContext.ts'
+import {
+  ContainerContext,
+  type ContainerOwner
+} from '../utils/ContainerContext.ts'
+import { RouteContext, type RouteOwner } from '../utils/RouteContext.ts'
 import { useLeaveGuard } from './useLeaveGuard.ts'
 import type { AdminContext } from '../utils/AdminContext.ts'
+import type { Schema } from '../utils/types.ts'
+
+// The view or form, apart from the state of its route:
+export type RouteContainerOwner = ContainerOwner &
+  Omit<
+    RouteOwner,
+    'routeRecord' | 'routeParams' | 'path' | 'isLastRoute' | 'isLeavingRoute'
+  > & {
+    readonly sourceSchema: Schema
+    readonly isMutating?: boolean
+    readonly verbs: Record<string, string>
+  }
 
 // The container and route contexts of a view or form, which it provides to its
 // components, and the state of its route.
-export function useRouteContainer() {
-  // NOTE: The schema and data of views and forms are still members of their
-  // components, which the contexts read:
-  const owner = getCurrentInstance()!.proxy as any
+export function useRouteContainer(owner: RouteContainerOwner) {
   const admin = inject<AdminContext>('admin')!
   const router = useRouter()
   const container = new ContainerContext(owner)
-  const route = new RouteContext(owner, {
-    parent: inject<RouteContext | null>('route', null),
-    container,
-    router
-  })
+  // The route context reads the state of the route along with the owner:
+  const route = new RouteContext(
+    Object.setPrototypeOf(
+      {
+        get routeRecord() {
+          return routeRecord.value
+        },
+
+        get routeParams() {
+          return routeParams.value
+        },
+
+        get path() {
+          return path.value
+        },
+
+        get isLastRoute() {
+          return isLastRoute.value
+        },
+
+        get isLeavingRoute() {
+          return isLeavingRoute.value
+        }
+      },
+      owner
+    ),
+    {
+      parent: inject<RouteContext | null>('route', null),
+      container,
+      router
+    }
+  )
   const { level } = route
   provide('container', container)
   provide('route', route)
@@ -78,33 +116,38 @@ export function useRouteContainer() {
 
   const getMatched = () => router.currentRoute.value.matched
 
+  const isLeavingRoute = computed(
+    () => getMatched()[level]?.path !== routeRecord.value?.path
+  )
+
+  const isLastRoute = computed(
+    () => routeRecord.value === getMatched().at(-1)
+  )
+
+  const path = computed(() => {
+    const { name } = routeRecord.value!
+    // The routes are replaced when the views are resolved again, e.g. after
+    // logging in, while the components of the previous ones still exist:
+    return router.hasRoute(name!)
+      ? router.resolve({
+          name,
+          params: route.node.getParams(routeParams.value)
+        }).path
+      : router.currentRoute.value.path
+  })
+
   return {
     ownContainer: container,
     ownRoute: route,
     routeRecord,
     routeParams,
+    isLeavingRoute,
+    isLastRoute,
+    path,
     // Each view and form has a store that it passes on to its components, for
-    // the state that outlives them, e.g. the query of lists, see `getStore()`:
+    // the state that outlives them, e.g. the query of lists, see `useStore()`:
     store: reactive({}),
     navigateWithin,
-
-    isLeavingRoute: computed(
-      () => getMatched()[level]?.path !== routeRecord.value?.path
-    ),
-
-    isLastRoute: computed(() => routeRecord.value === getMatched().at(-1)),
-
-    path: computed(() => {
-      const { name } = routeRecord.value!
-      // The routes are replaced when the views are resolved again, e.g. after
-      // logging in, while the components of the previous ones still exist:
-      return router.hasRoute(name!)
-        ? router.resolve({
-            name,
-            params: route.node.getParams(routeParams.value)
-          }).path
-        : router.currentRoute.value.path
-    }),
 
     // The path of the view or source, e.g. for selectors of its styles:
     schemaPath: computed(() => {
