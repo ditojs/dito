@@ -165,7 +165,9 @@ export function defineScenario({
           await teardownTestApp(app)
         }
       },
-      { scope: 'worker' }
+      // Starting the app and compiling its admin takes as long as it takes,
+      // e.g. while the other workers compile theirs:
+      { scope: 'worker', timeout: 0 }
     ],
 
     url: async ({ workerUrl }, use) => {

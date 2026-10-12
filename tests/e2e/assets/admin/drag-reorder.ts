@@ -20,7 +20,7 @@ test.describe('drag reorder', () => {
       `${url}/admin/assets/${widgetId}`
     )
     const upload = new DitoUploadField(page, 'files')
-    await upload.waitUntilVisible({ timeout: 15_000 })
+    await upload.waitUntilVisible()
 
     // Upload one file — no drag handle
     await upload.upload(
@@ -45,7 +45,7 @@ test.describe('drag reorder', () => {
       `${url}/admin/assets/${widgetId}`
     )
     const upload = new DitoUploadField(page, 'files')
-    await upload.waitUntilVisible({ timeout: 15_000 })
+    await upload.waitUntilVisible()
 
     await upload.upload(
       path.resolve(fixturesDir, 'tiny.png')
