@@ -224,7 +224,7 @@ describe('DitoContext', () => {
       expect(context.itemLabelText).toBe(null)
       expect(context.option).toBe(undefined)
       expect(context.options).toBe(undefined)
-      expect(context.isValueLabel).toBe(false)
+      expect(context.isSelected).toBe(false)
       expect(context.open).toBe(undefined)
       expect(context.searchTerm).toBe(undefined)
       expect(context.error).toBe(undefined)
@@ -244,14 +244,14 @@ describe('DitoContext', () => {
         {
           option,
           options: [option],
-          isValueLabel: true,
+          isSelected: true,
           searchTerm: 'nov',
           open: true
         }
       )
       expect(context.option).toBe(option)
       expect(context.options).toEqual([option])
-      expect(context.isValueLabel).toBe(true)
+      expect(context.isSelected).toBe(true)
       expect(context.searchTerm).toBe('nov')
       expect(context.open).toBe(true)
     })

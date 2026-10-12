@@ -215,9 +215,9 @@ panel with its own data, e.g. the filters panel, a nested form being its own.
   tabs of their fields.
 - `viewComponent.resetValidation()` after submits: the buttons of sources clear
   the errors of the source's data once they submitted it, like forms do.
-- `component.$refs.element.isOpen` in `options.label()`: `isValueLabel`, which
-  tells whether the label is for the selected value, e.g. of a closed
-  multiselect or its tags, rather than an option in the list.
+- `component.$refs.element.isOpen` in `options.label()`: `isSelected`, which
+  tells whether the labelled option is selected, both as the shown value, e.g.
+  of a closed multiselect or its tags, and as an entry in the open list.
 - In nested forms, `processedRootItem` is the projection of `rootItem`, with
   the draft in place of the item, instead of the parent's processed data.
 - `validate(match)` and `verify(match)` validate only the values whose data

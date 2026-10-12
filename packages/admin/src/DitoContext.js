@@ -244,8 +244,8 @@ export default class DitoContext {
     return get(this, 'options', undefined)
   }
 
-  get isValueLabel() {
-    return get(this, 'isValueLabel', false)
+  get isSelected() {
+    return get(this, 'isSelected', false)
   }
 
   get open() {

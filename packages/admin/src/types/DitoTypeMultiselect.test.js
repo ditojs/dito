@@ -57,7 +57,7 @@ describe('DitoTypeMultiselect', () => {
       )
     })
 
-    it('tells option labels whether they label the value', async () => {
+    it('tells option labels whether their option is selected', async () => {
       const { findField } = await mountSchema({
         schema: {
           components: {
@@ -65,8 +65,8 @@ describe('DitoTypeMultiselect', () => {
               type: 'multiselect',
               options: {
                 data: genres,
-                label: ({ option, isValueLabel }) =>
-                  isValueLabel ? `${option.label} (Genre)` : option.label
+                label: ({ option, isSelected }) =>
+                  isSelected ? `${option.label} (Genre)` : option.label
               }
             },
             genres: {
@@ -74,8 +74,8 @@ describe('DitoTypeMultiselect', () => {
               multiple: true,
               options: {
                 data: genres,
-                label: ({ option, isValueLabel }) =>
-                  isValueLabel ? `${option.label} (Genre)` : option.label
+                label: ({ option, isSelected }) =>
+                  isSelected ? `${option.label} (Genre)` : option.label
               }
             }
           }
@@ -85,8 +85,19 @@ describe('DitoTypeMultiselect', () => {
       const field = findField('genre')
       expect(field.find('.multiselect__single').text()).toBe('Poetry (Genre)')
       await open(field)
-      expect(getOptionLabels(field)).toEqual(['Fiction', 'Poetry', 'Drama'])
-      expect(getTagLabels(findField('genres'))).toEqual(['Drama (Genre)'])
+      expect(getOptionLabels(field)).toEqual([
+        'Fiction',
+        'Poetry (Genre)',
+        'Drama'
+      ])
+      const multipleField = findField('genres')
+      expect(getTagLabels(multipleField)).toEqual(['Drama (Genre)'])
+      await open(multipleField)
+      expect(getOptionLabels(multipleField)).toEqual([
+        'Fiction',
+        'Poetry',
+        'Drama (Genre)'
+      ])
     })
 
     it('only renders the options once opened', async () => {
