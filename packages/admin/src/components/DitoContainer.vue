@@ -114,7 +114,7 @@ export default {
         default: () => typeDescriptor.value?.defaultWidth
       })
       return width === undefined
-        ? 1.0
+        ? 1.0 // Full width by default.
         : isString(width)
           ? width.match(/^\s*[<>]?\s*(.*)$/)[1] // Remove width operator
           : width

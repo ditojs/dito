@@ -133,6 +133,7 @@ export default {
                 text: 'Login'
               },
 
+              // `DitoDialog` adds the click event of the cancel button:
               cancel: {
                 type: 'button',
                 text: 'Cancel'

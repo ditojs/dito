@@ -320,6 +320,7 @@ const DitoTypeUpload = {
 
     watch(disabled, updateDropTarget)
 
+    // Upload added files right away:
     watch(isUploadReady, ready => {
       if (ready) {
         nextTick(() => {

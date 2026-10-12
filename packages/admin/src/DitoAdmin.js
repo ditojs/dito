@@ -30,7 +30,8 @@ export default class DitoAdmin {
     ...options
   } = {}) {
     this.el = el
-    // Merge the `api` settings of `config.admin` with the passed ones:
+    // Merge the `api` settings of `config.admin` with the passed ones.
+    // NOTE: `AdminController` provides `dito.api.base`:
     this.api = api = assignDeeply({ base: '/' }, ditoObject.api, api)
     this.options = options
 
@@ -39,10 +40,14 @@ export default class DitoAdmin {
     api.request ||= options => request(api, options)
     api.getApiUrl ||= options => getApiUrl(api, options)
     api.isApiUrl ||= url => isApiUrl(api, url)
+    // `api.normalizePaths` (plural) sets both directions:
     api.normalizePath ||= api.normalizePaths ? hyphenate : val => val
     api.denormalizePath ||= api.normalizePaths ? camelize : val => val
+    // Defaults for the schemas of component types, nested per type, as objects
+    // or functions that return them or modify the schema directly:
     api.defaults ||= {}
 
+    // Allow configuring the auth resources, e.g. `api.users.path = '/admins'`:
     const users = getResource(api.users, { type: 'collection' }) || {}
     const methods = { login: 'post', logout: 'post', session: 'get' }
     for (const [name, method] of Object.entries(methods)) {

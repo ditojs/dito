@@ -24,6 +24,7 @@ export function useFocus(
 
   const getElement = () => asArray(element.value)[0] ?? null
 
+  // Components without the element, e.g. sources, focus their root element:
   const getFocusElement = () => {
     const target = getElement() ?? component
     return target.$el ?? target

@@ -139,7 +139,8 @@ export default {
         immediate: true,
         fallbackFocus: () => dialog.value,
         // Only dialogs with a cancel button or without buttons can be
-        // cancelled, see `onKeyDown()`:
+        // cancelled, see `onKeyDown()`. The trap is also deactivated on
+        // unmount, e.g. after submitting, so it can't cancel then:
         escapeDeactivates: false
       },
 
