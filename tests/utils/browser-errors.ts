@@ -11,11 +11,7 @@ export const test = base.extend<{ shouldFailOnBrowserErrors: void }>({
     async ({ page }, use) => {
       const browserErrors: string[] = []
       page.on('pageerror', error => {
-        // Vite's client rejects when its websocket closes before it opened,
-        // e.g. on busy machines. It's tooling of the test server, not admin:
-        if (!error.stack?.includes('/@vite/client:')) {
-          browserErrors.push(error.stack ?? error.message)
-        }
+        browserErrors.push(error.stack ?? error.message)
       })
       await page.exposeFunction(
         'reportBrowserError',
