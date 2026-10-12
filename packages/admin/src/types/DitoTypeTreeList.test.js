@@ -81,10 +81,10 @@ describe('DitoTypeTreeList', () => {
     ])
   })
 
-  it('opens all items with `open`', async () => {
+  it('opens all items with `collapsed: false`', async () => {
     const schema = createSiteSchema()
-    schema.components.pages.open = true
-    schema.components.pages.children.open = true
+    schema.components.pages.collapsed = false
+    schema.components.pages.children.collapsed = false
     const { findField } = await mountForm({ schema, data: site })
     expect(getLabels(findField('pages'))).toEqual([
       'About',
@@ -102,7 +102,7 @@ describe('DitoTypeTreeList', () => {
         render: ({ item }) => item.title.toLowerCase()
       }
     }
-    schema.components.pages.children.open = true
+    schema.components.pages.children.collapsed = false
     const { findField } = await mountForm({ schema, data: site })
     const properties = findField('pages')
       .findAll('.dito-properties')
@@ -199,7 +199,7 @@ describe('DitoTypeTreeList', () => {
 
   it('marks the items with errors within them', async () => {
     const schema = createSiteSchema()
-    schema.components.pages.open = true
+    schema.components.pages.collapsed = false
     const { findField, dataModel, data } = await mountForm({
       schema,
       data: site
@@ -255,8 +255,8 @@ describe('DitoTypeTreeList', () => {
     })
   })
 
-  it('reopens closed items of `open` trees that come into the edit path', async () => {
-    const schema = createSiteSchema({ open: true })
+  it('reopens closed items of expanded trees that come into the edit path', async () => {
+    const schema = createSiteSchema({ collapsed: false })
     schema.components.pages.children.editable = true
     const { admin, findField } = await mountForm({ schema, data: site })
     const about = findField('pages').findAll('.dito-tree-branch')[0]
@@ -268,15 +268,15 @@ describe('DitoTypeTreeList', () => {
     expect(about.attributes('aria-expanded')).toBe('true')
   })
 
-  it('opens the items of `open` trees without edit routes', async () => {
+  it('opens the items of expanded trees without edit routes', async () => {
     const { findField } = await mountForm({
       schema: {
         components: {
           pages: {
             type: 'tree-list',
             itemLabel: 'title',
-            open: true,
-            children: { name: 'subpages', itemLabel: 'title', open: true }
+            collapsed: false,
+            children: { name: 'subpages', itemLabel: 'title', collapsed: false }
           }
         }
       },
@@ -333,7 +333,7 @@ describe('DitoTypeTreeList', () => {
     schema.components.pages.children.properties = {
       slug: { render: ({ dataPath }) => dataPath }
     }
-    schema.components.pages.children.open = true
+    schema.components.pages.children.collapsed = false
     const { findField } = await mountForm({ schema, data: site })
     expect(
       findField('pages')
@@ -348,7 +348,7 @@ describe('DitoTypeTreeList', () => {
       deletable: true,
       draggable: true
     })
-    schema.components.pages.open = true
+    schema.components.pages.collapsed = false
     const { findField } = await mountForm({ schema, data: site })
     const field = findField('pages')
     const removeButtons = field.findAll('.dito-button--remove')
@@ -372,7 +372,7 @@ describe('DitoTypeTreeList', () => {
         deletable: true,
         draggable: true
       })
-      schema.components.pages.open = true
+      schema.components.pages.collapsed = false
       return schema
     }
 
@@ -719,16 +719,16 @@ describe('DitoTypeTreeList', () => {
       }
     )
 
-    it('opens the grandchildren of tree objects with `open`', async () => {
+    it('opens the grandchildren of tree objects with `collapsed: false`', async () => {
       const schema = structuredClone(siteSchema)
-      schema.components.site.children.open = true
+      schema.components.site.children.collapsed = false
       const { findField } = await mountForm({ schema, data: siteData })
       expect(getLabels(findField('site'))).toEqual(['About', 'Team', 'Contact'])
     })
 
     it('reopens the children of tree objects in the edit path', async () => {
       const schema = structuredClone(siteSchema)
-      schema.components.site.children.open = true
+      schema.components.site.children.collapsed = false
       const { admin, findField, settle } = await mountForm({
         schema,
         data: siteData

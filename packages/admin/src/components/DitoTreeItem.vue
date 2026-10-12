@@ -167,7 +167,7 @@ export default {
       getSchema: () => props.schema,
       getDataPath: () => props.dataPath
     })
-    const opened = ref(props.open || props.schema.open)
+    const opened = ref(props.open || props.schema.collapsed === false)
 
     // Open the item also when it comes into the edit path later:
     watch(

@@ -2422,9 +2422,11 @@ interface TreeSchema<$Item, $Type extends 'tree-list' | 'tree-object'>
    */
   properties?: Columns<$Item>
   /**
-   * Whether child nodes are expanded by default.
+   * Whether child nodes are collapsed initially.
+   *
+   * @defaultValue `true`
    */
-  open?: boolean
+  collapsed?: boolean
 }
 
 export type TreeListSchema<$Item = any> = TreeSchema<$Item, 'tree-list'>

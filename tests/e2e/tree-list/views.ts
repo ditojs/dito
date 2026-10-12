@@ -11,7 +11,7 @@ export const libraries = createWidgetView<Library>('name', 'libraries', {
     itemLabel: 'name',
     orderKey: 'order',
     mutate: true,
-    open: false,
+    collapsed: true,
     editable: true,
     draggable: true,
     form: {
