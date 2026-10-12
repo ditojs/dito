@@ -568,9 +568,9 @@ them: they emit the schema's events, and `blur` validates the value.
   `parseValue()`, and `onChange()`: `this.$emit('change')`.
 - `item`, `parentItem` and `rootItem`: `context.item`, `context.parentItem` and
   `context.rootItem`. `api`: `context.api`.
-- `getSchemaValue(key)`: `getSchemaValue(schema, key, context)`, exported by
-  `@ditojs/admin`, which calls schema values that are functions with the
-  context.
+- `getSchemaValue(key)`: `context.getSchemaValue(key)` (since 4.1.0), which
+  calls schema values that are functions with the context. In 4.0.x, use
+  `getSchemaValue(schema, key, context)`, exported by `@ditojs/admin`.
 - The `component` of lists and objects, which renders their items, receives
   the item as `modelValue`, and the `component` of columns the value of the
   cell, with the column as `schema`.
@@ -592,8 +592,6 @@ export default {
 }
 
 // After:
-import { getSchemaValue } from '@ditojs/admin'
-
 export default {
   emits: ['update:modelValue', 'change'],
   props: {
@@ -603,7 +601,7 @@ export default {
   },
   computed: {
     max() {
-      return getSchemaValue(this.schema, 'max', this.context)
+      return this.context.getSchemaValue('max')
     }
   },
   methods: {

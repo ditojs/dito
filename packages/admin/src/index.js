@@ -1,3 +1,4 @@
+import { deprecate } from '@ditojs/utils'
 import DitoAdmin from './DitoAdmin.js'
 import { getSchemaValue as getValue } from './utils/schema/data.js'
 import { defineType as defineTypeDescriptor } from './utils/schema/types.ts'
@@ -17,5 +18,9 @@ export function defineType({ component, ...descriptor }) {
 }
 
 export function getSchemaValue(schema, key, context) {
+  deprecate(
+    '`getSchemaValue(schema, key, context)` is deprecated, use ' +
+    '`context.getSchemaValue(key)` instead.'
+  )
   return getValue(key, { schema, context })
 }

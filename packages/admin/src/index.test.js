@@ -1,3 +1,4 @@
+import { vi } from 'vitest'
 import { h } from 'vue'
 import DefaultExport, * as exports from './index.js'
 import DitoAdmin from './DitoAdmin.js'
@@ -60,7 +61,8 @@ describe('@ditojs/admin exports', () => {
     ).toEqual(['a'])
   })
 
-  it('exports `getSchemaValue()` for custom components', () => {
+  it('exports the deprecated `getSchemaValue()`', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const context = { item: { title: 'Emma' } }
     const schema = {
       label: 'Rating',
@@ -69,5 +71,11 @@ describe('@ditojs/admin exports', () => {
     expect(exports.getSchemaValue(schema, 'label', context)).toBe('Rating')
     expect(exports.getSchemaValue(schema, 'title', context)).toBe('Rate Emma')
     expect(exports.getSchemaValue(schema, 'max', context)).toBe(undefined)
+    expect(warn).toHaveBeenCalledOnce()
+    expect(warn).toHaveBeenCalledWith(
+      '`getSchemaValue(schema, key, context)` is deprecated, use ' +
+      '`context.getSchemaValue(key)` instead.'
+    )
+    warn.mockRestore()
   })
 })

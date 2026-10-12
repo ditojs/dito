@@ -1112,7 +1112,10 @@ export interface ComponentSchema<$Item = any> extends BaseSchema<$Item> {
  * root element gets the id that the label of the component points to.
  */
 export interface CustomComponentProps<$Item = any, $Value = any> {
-  /** The schema of the component, see {@link getSchemaValue}. */
+  /**
+   * The schema of the component, whose values `context.getSchemaValue()`
+   * reads.
+   */
   schema: ComponentSchema<$Item>
   /** The context of the component, which follows the changes of its data. */
   context: SchemaContext<$Item>
@@ -1139,6 +1142,7 @@ export interface CustomComponentEmits<$Value = any> {
 /**
  * Returns the value of `key` in the schema of a custom component, calling it
  * with the component's `context` if it's a function.
+ * @deprecated Use `context.getSchemaValue(key)`.
  */
 export function getSchemaValue<$Item = any>(
   schema: Record<string, any>,
@@ -2049,6 +2053,25 @@ export type SchemaContext<$Item = any> = {
 
   // Helper Methods
 
+  /**
+   * Returns the value of `key` in the context's `schema`, calling it with the
+   * context if it's a function.
+   */
+  getSchemaValue<T = any>(
+    key: string,
+    options?: {
+      /**
+       * The types of the value, e.g. `Number` or `[String, Object]`: values
+       * of other types are converted to the first type that they convert to.
+       */
+      type?: Function | Function[]
+      /**
+       * The value when the schema doesn't define `key`, called with the
+       * context if it's a function and `type` doesn't include `Function`.
+       */
+      default?: T | ((context: SchemaContext<$Item>) => T)
+    }
+  ): T
   /**
    * Performs an API request to `url`, or else to `resource`, resolved
    * relative to the nearest form or list with a resource, and resolves with

@@ -1,6 +1,6 @@
 import { vi } from 'vitest'
 import { h } from 'vue'
-import { defineType, getSchemaValue, optionsTraits } from '../index.js'
+import { defineType, optionsTraits } from '../index.js'
 import { mountSchema } from '../test/mount.js'
 
 // A custom component, which displays and changes its value through
@@ -19,7 +19,7 @@ const RatingStars = {
       'button',
       {
         class: 'rating-stars',
-        title: getSchemaValue(this.schema, 'title', this.context),
+        title: this.context.getSchemaValue('title'),
         onClick: () => {
           this.$emit('update:modelValue', (this.modelValue ?? 0) + 1)
           this.$emit('change')

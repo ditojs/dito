@@ -10,6 +10,7 @@ import {
   getLastDataPathIndex,
   getRelativeDataPath
 } from './utils/data.js'
+import { getSchemaValue } from './utils/schema/data.js'
 import { hasNestedData } from './utils/schema/structure.js'
 import { getTextFromHtml } from './utils/html.js'
 import {
@@ -267,6 +268,11 @@ export default class SchemaContext {
       'sourceQuery',
       () => getServices(this).sourceContext?.listQuery.query ?? null
     )
+  }
+
+  get getSchemaValue() {
+    return (key, options) =>
+      getSchemaValue(key, { ...options, schema: this.schema, context: this })
   }
 
   get request() {

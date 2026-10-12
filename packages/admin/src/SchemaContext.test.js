@@ -351,6 +351,48 @@ describe('SchemaContext', () => {
     })
   })
 
+  describe('getSchemaValue()', () => {
+    const schema = {
+      label: 'Rating',
+      max: '5',
+      title: ({ item }) => `Rate ${item.title}`
+    }
+
+    it('returns the values of its schema', () => {
+      const context = new SchemaContext(null, { schema })
+      expect(context.getSchemaValue('label')).toBe('Rating')
+      expect(context.getSchemaValue('min')).toBe(undefined)
+    })
+
+    it('calls the callbacks of its schema with itself', () => {
+      const context = new SchemaContext(null, {
+        schema,
+        rootData: { title: 'Emma', rating: 3 },
+        dataPath: 'rating'
+      })
+      const { getSchemaValue } = context
+      expect(getSchemaValue('title')).toBe('Rate Emma')
+      const extended = context.extend({ item: { title: 'Persuasion' } })
+      expect(extended.getSchemaValue('title')).toBe('Rate Persuasion')
+    })
+
+    it('converts the values to `type`', () => {
+      const context = new SchemaContext(null, { schema })
+      expect(context.getSchemaValue('max', { type: Number })).toBe(5)
+    })
+
+    it('returns `default` for missing values, calling it with itself', () => {
+      const context = new SchemaContext(null, { schema })
+      expect(context.getSchemaValue('min', { default: 1 })).toBe(1)
+      expect(context.getSchemaValue('label', { default: 'Stars' })).toBe(
+        'Rating'
+      )
+      const getDefault = vi.fn(() => 0)
+      expect(context.getSchemaValue('min', { default: getDefault })).toBe(0)
+      expect(getDefault).toHaveBeenCalledWith(context)
+    })
+  })
+
   describe('createForSchema()', () => {
     it('creates the context of a component before it is rendered', () => {
       const rootData = createLibrary()

@@ -174,7 +174,23 @@ describe('CustomComponentProps and CustomComponentEmits', () => {
     expectTypeOf<CustomComponentEmits>().not.toHaveProperty('input')
   })
 
-  it('reads schema values with `getSchemaValue()`', () => {
+  it('reads schema values with `context.getSchemaValue()`', () => {
+    const context = {} as SchemaContext<Entry>
+    expectTypeOf(context.getSchemaValue('label')).toBeAny()
+    expectTypeOf(
+      context.getSchemaValue('max', { type: Number, default: 5 })
+    ).toBeNumber()
+    expectTypeOf(context.getSchemaValue<string>('label')).toBeString()
+    context.getSchemaValue('label', {
+      type: [String, Object],
+      default: context => {
+        expectTypeOf(context.item.title).toBeString()
+        return 'Rating'
+      }
+    })
+  })
+
+  it('reads schema values with the deprecated `getSchemaValue()`', () => {
     const context = {} as SchemaContext<Entry>
     expectTypeOf(getSchemaValue({ label: 'Rating' }, 'label', context))
       .toBeAny()
