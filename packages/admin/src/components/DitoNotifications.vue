@@ -74,7 +74,7 @@ export default DitoComponent.component('DitoNotifications', {
           ...(type === 'error' && error ? [error] : [])
         ]
       )
-      const { notifications = true } = this.api
+      const { notifications = true } = this.admin.api
       if (notifications) {
         // Calculate display-duration for the notification based on its content
         // and the setting of the `durationFactor` configuration. It defines the

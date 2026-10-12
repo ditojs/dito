@@ -1,5 +1,9 @@
 import { expectTypeOf, describe, it } from 'vitest'
-import type { DitoFormInstance, DitoContext } from '@ditojs/admin'
+import type {
+  AdminContext,
+  DitoFormInstance,
+  DitoContext
+} from '@ditojs/admin'
 import type { Entry } from './fixtures.ts'
 
 describe('DitoComponentInstanceBase and DitoFormInstance', () => {
@@ -22,5 +26,15 @@ describe('DitoComponentInstanceBase and DitoFormInstance', () => {
     expectTypeOf<Instance['context']>().not.toBeAny()
     expectTypeOf<Instance['context']>()
       .toEqualTypeOf<DitoContext<Entry>>()
+  })
+
+  it('provides the context of the admin as `admin`', () => {
+    type Admin = DitoFormInstance<Entry>['admin']
+    expectTypeOf<Admin>().toEqualTypeOf<AdminContext>()
+    expectTypeOf<Admin['user']>().toEqualTypeOf<DitoContext['user']>()
+    expectTypeOf<Admin['notify']>().toEqualTypeOf<DitoContext['notify']>()
+    expectTypeOf<Admin['showDialog']>()
+      .toEqualTypeOf<DitoContext['showDialog']>()
+    expectTypeOf<Admin['loadingTracker']['isLoading']>().toBeBoolean()
   })
 })

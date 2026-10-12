@@ -115,7 +115,7 @@ describe('DitoTypeUpload', () => {
       },
       data: { file: { ...scan, name: 'Tom & Jerry.pdf' } }
     })
-    const notify = vi.spyOn(admin.root, 'notify')
+    const notify = vi.spyOn(admin.context, 'notify')
     await findField('file').find('.dito-button--delete').trigger('click')
     await flushPromises()
     expect(notify).toHaveBeenCalledWith({

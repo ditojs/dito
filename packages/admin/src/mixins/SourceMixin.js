@@ -687,7 +687,7 @@ export default {
 
     // Lists linked to views edit their items in the form of the view:
     getViewItemPath(key) {
-      const route = this.viewRegistry.routeTree?.getViewItemRoute(
+      const route = this.admin.routeTree?.getViewItemRoute(
         this.schema.view,
         key
       )

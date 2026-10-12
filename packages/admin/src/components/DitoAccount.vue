@@ -6,7 +6,7 @@
     offset
     @select="onSelectMenuItem"
   )
-    span {{ user.username }}
+    span {{ admin.user.username }}
 </template>
 
 <script>
@@ -30,7 +30,7 @@ export default DitoComponent.component('DitoAccount', {
     onSelectMenuItem({ value }) {
       switch (value) {
         case 'logout':
-          this.session.logout()
+          this.admin.session.logout()
           break
         case 'settings':
           console.info('TODO: Implement Settings')

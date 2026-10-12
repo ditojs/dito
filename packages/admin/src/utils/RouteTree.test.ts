@@ -218,16 +218,14 @@ describe('RouteTree', () => {
 
     async function countNodes(views: Record<string, any>) {
       const admin = await mountAdmin({ views })
-      // `mountAdmin()` is JavaScript, so type the registry of its root:
-      const { viewRegistry } = admin.root as {
-        viewRegistry: { routeTree: RouteTree }
-      }
+      // `mountAdmin()` waits for the views, so they have their route tree:
+      const routeTree = admin.context.routeTree!
       let count = 0
       const countNode = (node: { children: any[] }) => {
         count++
         node.children.forEach(countNode)
       }
-      viewRegistry.routeTree.nodes.forEach(countNode)
+      routeTree.nodes.forEach(countNode)
       return count
     }
 

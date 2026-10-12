@@ -36,7 +36,7 @@ async function mountBookForm() {
     }
   })
   // Tree items notify through the root component, see `DitoMixin.notify()`:
-  const notify = vi.spyOn(result.admin.root, 'notify')
+  const notify = vi.spyOn(result.admin.context, 'notify')
   return { ...result, notify }
 }
 
@@ -255,7 +255,7 @@ describe('DitoTreeItem', () => {
       const { wrapper, data, admin } = await mountChaptersForm([
         { title: 'Intro', sections: [{ title: 'Welcome' }] }
       ])
-      const notify = vi.spyOn(admin.root, 'notify')
+      const notify = vi.spyOn(admin.context, 'notify')
       // The child is removed while the dialog is open:
       confirm.mockImplementation(() => {
         data.chapters[0].sections = []

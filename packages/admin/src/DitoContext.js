@@ -248,19 +248,19 @@ export default class DitoContext {
   }
 
   get user() {
-    return get(this, 'user', null)
+    return getAdminValue(this, 'user')
   }
 
   get api() {
-    return get(this, 'api', null)
+    return getAdminValue(this, 'api')
   }
 
   get views() {
-    return get(this, 'views', null)
+    return getAdminValue(this, 'views')
   }
 
   get flattenedViews() {
-    return get(this, 'flattenedViews', null)
+    return getAdminValue(this, 'flattenedViews')
   }
 
   // The label of the item as HTML, with escaped item values, see
@@ -353,7 +353,7 @@ export default class DitoContext {
   }
 
   get routeQuery() {
-    return getComponent(this).$route.query
+    return getAdmin(this).router.currentRoute.value.query
   }
 
   // The query of the nearest list, e.g. its scope, page, order and filters:
@@ -372,11 +372,11 @@ export default class DitoContext {
   }
 
   get navigate() {
-    return location => getComponent(this).navigate(location)
+    return location => getAdmin(this).router.push(location)
   }
 
   get getRouteUrl() {
-    return location => getComponent(this).$router.resolve(location).href
+    return location => getAdmin(this).router.resolve(location).href
   }
 
   get download() {
@@ -402,7 +402,7 @@ export default class DitoContext {
 
   get notify() {
     return options => {
-      getComponent(this).notify(options)
+      getAdmin(this).notify(options)
       set(this, 'wasNotified', true)
     }
   }
@@ -458,7 +458,7 @@ export default class DitoContext {
   // Resolves with the value that the dialog is closed with, see `closeDialog()`
   // in the contexts of the dialog's components.
   get showDialog() {
-    return (schema, options) => getComponent(this).showDialog(schema, options)
+    return (schema, options) => getAdmin(this).showDialog(schema, options)
   }
 
   get closeDialog() {
@@ -474,6 +474,16 @@ export default class DitoContext {
 
 function getComponent(context) {
   return toObject(context).component
+}
+
+function getAdmin(context) {
+  return getComponent(context).admin
+}
+
+// Read the members of the admin's context, unless the context overrides them,
+// or `null` for contexts without components:
+function getAdminValue(context, key) {
+  return get(context, key, () => getComponent(context)?.admin?.[key] ?? null)
 }
 
 function getDataModelComponent(context) {

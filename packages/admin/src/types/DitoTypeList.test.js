@@ -476,7 +476,7 @@ describe('DitoTypeList', () => {
           })
         }
       })
-      const notify = vi.spyOn(admin.root, 'notify')
+      const notify = vi.spyOn(admin.context, 'notify')
       await findField('chapters')
         .find('.dito-buttons button[type="submit"]')
         .trigger('click')

@@ -18,6 +18,7 @@ import { getResource } from './utils/resource.js'
 import { request, getApiUrl, isApiUrl } from './utils/request.js'
 import { Session } from './utils/Session.js'
 import { ViewRegistry } from './utils/ViewRegistry.js'
+import { AdminContext } from './utils/AdminContext.ts'
 import verbs from './verbs.js'
 
 export default class DitoAdmin {
@@ -179,6 +180,13 @@ export default class DitoAdmin {
       redirectAfterLogin: options.login?.redirectAfterLogin
     })
 
+    const admin = (this.context = new AdminContext({
+      api,
+      router,
+      session,
+      viewRegistry
+    }))
+
     const app = (this.app = createApp({
       components: {
         DitoRoot,
@@ -195,9 +203,7 @@ export default class DitoAdmin {
       // provide/inject, see:
       // https://github.com/vuejs/vue/issues/7017#issuecomment-480906691
       provide: {
-        api,
-        session,
-        viewRegistry,
+        admin,
         // A default list of verbs are provided by $verbs() and can be
         // overridden at any point in the component hierarchy.
         $verbs: () => verbs,
@@ -215,7 +221,7 @@ export default class DitoAdmin {
         $dataModelComponent: () => null,
         $panelComponent: () => null,
         $tabComponent: () => null,
-        $loadingTracker: () => null
+        $loadingTracker: () => admin.loadingTracker
       },
 
       render: () =>

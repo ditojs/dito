@@ -8,7 +8,6 @@ import {
 import appState from '../appState.js'
 import DitoContext from '../DitoContext.js'
 import EmitterMixin from './EmitterMixin.js'
-import { flattenViews } from '../utils/schema/setup.js'
 import { getSchemaEventEntries } from '../utils/schema/events.js'
 import { getSchemaValue, shouldRenderSchema } from '../utils/schema/data.js'
 import { getResource, getMemberResource } from '../utils/resource.js'
@@ -21,9 +20,7 @@ export default {
   mixins: [EmitterMixin],
 
   inject: [
-    'api',
-    'session',
-    'viewRegistry',
+    'admin',
     '$verbs',
     '$isPopulated',
     '$parentComponent',
@@ -79,10 +76,6 @@ export default {
       return this.meta?.schema
     },
 
-    user() {
-      return this.session.user
-    },
-
     // $verbs and $isPopulated are defined as functions, to preserve
     // reactiveness across provide/inject.
     // See: https://github.com/vuejs/vue/issues/7017#issuecomment-480906691
@@ -90,28 +83,12 @@ export default {
       return this.$verbs()
     },
 
-    views() {
-      return this.viewRegistry.views
-    },
-
-    flattenedViews() {
-      return flattenViews(this.views)
-    },
-
     isPopulated() {
       return this.$isPopulated()
     },
 
-    locale() {
-      return this.api.locale
-    },
-
     context() {
       return new DitoContext(this, { nested: false })
-    },
-
-    rootComponent() {
-      return this.$root.$refs.root
     },
 
     // The path of component names through views, tabs, panels and forms, with
@@ -318,12 +295,14 @@ export default {
               }) ?? null)
             : null
       })
-      return this.api.resources.any(resource)
+      return this.admin.api.resources.any(resource)
     },
 
     getResourceUrl(resource) {
       const url = this.getResourcePath(resource)
-      return url ? this.api.getApiUrl({ url, query: resource.query }) : null
+      return url
+        ? this.admin.api.getApiUrl({ url, query: resource.query })
+        : null
     },
 
     async sendRequest({
@@ -335,13 +314,14 @@ export default {
       signal,
       internal
     }) {
+      const { api, session } = this.admin
       url ||= this.getResourceUrl(resource)
       method ||= resource?.method
-      const checkUser = !internal && this.api.isApiUrl(url)
+      const checkUser = !internal && api.isApiUrl(url)
       if (checkUser) {
-        await this.session.ensureUser()
+        await session.ensureUser()
       }
-      const response = await this.api.request({
+      const response = await api.request({
         method,
         url,
         query,
@@ -352,15 +332,11 @@ export default {
       if (
         checkUser &&
         method === 'patch' &&
-        equals(resource, getMemberResource(this.user.id, this.api.users))
+        equals(resource, getMemberResource(session.user.id, api.users))
       ) {
-        await this.session.fetchUser()
+        await session.fetchUser()
       }
       return response
-    },
-
-    showDialog(schema, options) {
-      return this.rootComponent.showDialog(schema, options)
     },
 
     request({ cache, ...options }) {
@@ -411,8 +387,8 @@ export default {
     },
 
     format(value, {
-      locale = this.api.locale,
-      defaults = this.api.formats,
+      locale = this.admin.api.locale,
+      defaults = this.admin.api.formats,
       ...options
     } = {}) {
       return format(value, {
@@ -434,7 +410,7 @@ export default {
       const a = document.createElement('a')
       a.href = options.url?.startsWith('blob:')
         ? options.url
-        : this.api.getApiUrl(options)
+        : this.admin.api.getApiUrl(options)
       a.download = options.filename ?? null
       const { body } = document
       body.appendChild(a)
@@ -455,14 +431,6 @@ export default {
       return relativeDataPath
         ? appendDataPath(parentComponentPath, relativeDataPath)
         : parentComponentPath
-    },
-
-    notify(options) {
-      this.rootComponent.notify(options)
-    },
-
-    closeNotifications() {
-      this.rootComponent.closeNotifications()
     },
 
     setupEvents() {
@@ -529,7 +497,7 @@ export default {
       await this.$nextTick()
       const { dataModel } = this
       if (dataModel?.hasPendingLoads) {
-        await this.$loadingTracker().root.track(() =>
+        await this.admin.loadingTracker.track(() =>
           dataModel.waitUntilSettled()
         )
       }

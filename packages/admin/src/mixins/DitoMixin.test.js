@@ -431,7 +431,7 @@ describe('DitoMixin', () => {
 
     it('fetches the own user again after patching it', async () => {
       const { schemaComponent, getSessionRequestCount } = await mountWithUsers()
-      expect(schemaComponent.user.username).toBe('reader')
+      expect(schemaComponent.admin.user.username).toBe('reader')
       const count = getSessionRequestCount()
       await schemaComponent.sendRequest({
         method: 'patch',
@@ -440,7 +440,7 @@ describe('DitoMixin', () => {
       })
       // Once to ensure the user before the request, and once after it:
       expect(getSessionRequestCount()).toBe(count + 2)
-      expect(schemaComponent.user.username).toBe('editor')
+      expect(schemaComponent.admin.user.username).toBe('editor')
     })
 
     it(`doesn't fetch the user again after patching others`, async () => {
@@ -452,7 +452,7 @@ describe('DitoMixin', () => {
         data: { username: 'editor' }
       })
       expect(getSessionRequestCount()).toBe(count + 1)
-      expect(schemaComponent.user.username).toBe('reader')
+      expect(schemaComponent.admin.user.username).toBe('reader')
     })
 
     it(`doesn't check the user for internal requests`, async () => {
@@ -464,18 +464,6 @@ describe('DitoMixin', () => {
       expect(request).toHaveBeenLastCalledWith(
         expect.objectContaining({ url: '/books' })
       )
-    })
-  })
-
-  describe('notifications', () => {
-    it('closes all notifications', async () => {
-      const { schemaComponent } = await mountSchema({
-        schema: { components: { title: { type: 'text' } } }
-      })
-      const notifications = schemaComponent.rootComponent.notifications
-      const destroyAll = vi.spyOn(notifications, 'destroyAll')
-      schemaComponent.closeNotifications()
-      expect(destroyAll).toHaveBeenCalledOnce()
     })
   })
 

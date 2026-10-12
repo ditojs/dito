@@ -5,7 +5,7 @@
     :id="componentPath"
     ref="element"
     v-model="dateValue"
-    :locale="locale"
+    :locale="admin.api.locale"
     :format="formats"
     v-bind="attributes"
   )
@@ -74,7 +74,11 @@ export default DitoTypeComponent.register(
         type: Object,
         default: null,
         get(formats) {
-          const { date, time } = assignDeeply({}, this.api.formats, formats)
+          const { date, time } = assignDeeply(
+            {},
+            this.admin.api.formats,
+            formats
+          )
           return {
             date: ['date', 'datetime'].includes(this.type) ? date : null,
             time: ['time', 'datetime'].includes(this.type) ? time : null

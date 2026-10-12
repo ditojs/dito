@@ -311,7 +311,7 @@ export default DitoTypeComponent.register('markup', {
     },
 
     async onClickLink(editor) {
-      const attributes = await this.showDialog(
+      const attributes = await this.admin.showDialog(
         {
           components: {
             href: {

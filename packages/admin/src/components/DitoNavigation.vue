@@ -2,7 +2,7 @@
 nav.dito-navigation.dito-scroll-parent(aria-label="Main navigation")
   h1
     RouterLink.dito-link(to="/") {{ appState.title }}
-  DitoMenu.dito-scroll(:nodes="viewRegistry.routeTree?.nodes ?? []")
+  DitoMenu.dito-scroll(:nodes="admin.routeTree?.nodes ?? []")
 </template>
 
 <script>

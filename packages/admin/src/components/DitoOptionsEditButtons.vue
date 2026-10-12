@@ -38,7 +38,7 @@ export default DitoComponent.component('DitoOptionsEditButtons', {
       const { schema, optionValue } = this
       const route = (
         optionValue != null &&
-        this.viewRegistry.routeTree?.getViewItemRoute(
+        this.admin.routeTree?.getViewItemRoute(
           schema.view,
           String(optionValue)
         )

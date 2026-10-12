@@ -1,6 +1,6 @@
 // Confirmations, built on the promise-based and focus-trapped dialogs of
 // `DitoRoot.showDialog()`. `component` is the Dito component that asks, for
-// its `showDialog()`, `notify()` and `verbs`, see `DitoMixin`.
+// its `admin` and `verbs`, see `DitoMixin`.
 import { labelize } from '@ditojs/utils'
 import DitoConfirmMessage from '../components/DitoConfirmMessage.vue'
 import { getTextFromHtml } from './html.js'
@@ -13,7 +13,7 @@ export const transientNote = (
 // Asks the user to confirm the HTML `message` with a button for `verb`, and
 // resolves to whether they did. Cancel comes first, to be focused first.
 export async function confirm(component, { message, verb }) {
-  const result = await component.showDialog(
+  const result = await component.admin.showDialog(
     {
       components: {
         message: {
@@ -54,7 +54,7 @@ export async function confirmAndRemove(
     verb
   })
   if (isConfirmed && (await remove()) !== false) {
-    component.notify({
+    component.admin.notify({
       type: isTransient ? 'info' : 'success',
       title: 'Successfully Removed',
       html: [`${label} was ${pastVerb}.`, isTransient && transientNote]

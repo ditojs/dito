@@ -299,7 +299,7 @@ export default DitoComponent.component('DitoContainer', {
 
     panelEntries() {
       return getAllPanelEntries(
-        this.api,
+        this.admin.api,
         this.schema,
         this.dataPath,
         // The panel of the type is addressed relative to the data path, which
