@@ -1,5 +1,7 @@
 import { vi } from 'vitest'
+import fs from 'fs/promises'
 import os from 'os'
+import path from 'path'
 import { createServer } from 'vite'
 import { Application } from '../app/Application.js'
 import { AdminController } from './AdminController.js'
@@ -108,6 +110,31 @@ describe('AdminController', () => {
         hmr: { overlay: false }
       }
     })
+  })
+
+  it('stops while an HMR client is connected', async () => {
+    const { createServer: createViteServer } = await vi.importActual('vite')
+    createServer.mockImplementation(createViteServer)
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'dito-admin-'))
+    const app = createApp({ admin: { mode: 'development', root } })
+    vi.spyOn(app, 'loadAdminViteConfig').mockResolvedValue({
+      root,
+      base: '/admin/',
+      configFile: false,
+      logLevel: 'silent'
+    })
+    try {
+      await app.start()
+      const { port } = app.server.address()
+      const socket = new WebSocket(`ws://127.0.0.1:${port}/admin/`, 'vite-hmr')
+      await new Promise((resolve, reject) => {
+        socket.onopen = resolve
+        socket.onerror = reject
+      })
+      await app.stop(2000)
+    } finally {
+      await fs.rm(root, { recursive: true })
+    }
   })
 
   it(`serves HMR through the app's server`, async () => {

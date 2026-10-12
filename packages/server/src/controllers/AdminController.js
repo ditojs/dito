@@ -135,7 +135,9 @@ export class AdminController extends Controller {
 
     this.closed = false
 
-    this.app.once('after:stop', () => {
+    // Close before the app's server, which waits for the upgraded sockets of
+    // the HMR clients to end:
+    this.app.once('before:stop', () => {
       // For good timing it seems crucial to not add more ticks with async
       // signature, so we directly return the `server.close()` promise instead.
       if (!this.closed) {
