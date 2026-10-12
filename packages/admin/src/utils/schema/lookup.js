@@ -12,8 +12,6 @@ import {
   findNestedSchemaComponent,
   isSchema
 } from './structure.js'
-// TODO: Setting up the forms of `components()` callbacks causes the only
-// circular import between these modules.
 import { setupForm } from './setup.js'
 
 const emptySchema = {}
