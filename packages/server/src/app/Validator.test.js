@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import objection from 'objection'
+import * as objection from 'objection'
 import { Validator } from './Validator.js'
 
 describe('Validator.getKeyword()', () => {
