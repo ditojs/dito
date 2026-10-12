@@ -361,8 +361,7 @@ export default class SchemaContext {
       const { submit } = getServices(this)
       if (!submit) {
         throw new Error(
-          'Unable to submit: There is no button of a form or of a list with a ' +
-          'resource.'
+          'Unable to submit: There is no button of a form or source.'
         )
       }
       return submit(options)

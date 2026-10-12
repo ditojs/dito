@@ -2095,10 +2095,11 @@ export type SchemaContext<$Item = any> = {
   getRouteUrl(location: Parameters<VueRouter['resolve']>[0]): string
   /**
    * Submits the data through the button that the context
-   * belongs to, to the resource of its form or list, like
-   * buttons with a resource do when clicked. Resolves with
-   * whether it succeeded. Throws outside of buttons of
-   * forms or lists with a resource.
+   * belongs to, like buttons with a resource do when
+   * clicked: through its list or other source, or else to
+   * its form, which saves its data or applies it to its
+   * parent. Resolves with whether it succeeded. Throws
+   * outside of buttons of sources and forms.
    */
   submit(options?: {
     validate?: boolean
