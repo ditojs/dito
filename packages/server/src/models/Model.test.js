@@ -863,7 +863,22 @@ describe('Model.getPropertyOrRelationAtDataPath(): relations', () => {
       Author.getPropertyOrRelationAtDataPath('books/*/title')
     ).toMatchObject({
       name: 'title',
-      dataPath: 'books/*/title'
+      dataPath: 'books/*/title',
+      expression: 'books(#title)'
+    })
+    expect(
+      Author.getPropertyOrRelationAtDataPath('books.*.author').expression
+    ).toBe('books.author')
+  })
+
+  it('loads only the relations named in data paths with wildcards', () => {
+    const { books } = Author.query()
+      .loadDataPath('books.*.title')
+      .graphExpressionObject()
+    expect(books).toMatchObject({
+      $modify: ['#title'],
+      $allRecursive: false,
+      $childNames: []
     })
   })
 

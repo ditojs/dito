@@ -757,10 +757,12 @@ export class Model extends objection.Model {
         ? normalizeDataPath(parsedDataPath.slice(next))
         : null
       // Only a relation found at the end of the data-path includes its own
-      // token. A property's token is excluded from the path to its relation.
+      // token. A property's token is excluded from the path to its relation,
+      // and so are array wildcards, as objection reads them as all relations.
       const expression = found
         ? parsedDataPath
             .slice(0, relation && !property ? next : index)
+            .filter(token => token !== '*')
             .join('.') +
           (property ? `(#${name})` : '')
         : null
