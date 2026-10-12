@@ -36,7 +36,9 @@ const removedSchemaKeys = {
   methods: 'plain functions in the module of the schema',
   computed: `the values of the context, or 'computeValue()'`,
   watch: `'onChange()'`,
-  data: 'state in the module of the schema'
+  data: 'state in the module of the schema',
+  relateBy: `'relate: <key>'`,
+  groupBy: `'options.group'`
 }
 
 export async function resolveSchema(value, unwrapModule = false) {
@@ -284,11 +286,20 @@ export async function setupNestedSchemas(api, schema) {
 
 function assertSupportedSchemaKeys(schema, name) {
   const descriptor = getTypeDescriptor(schema)
-  const supportedKeys = {
+  assertRemovedSchemaKeys(schema, name, removedSchemaKeys, {
     format: !!descriptor?.hasFormat,
     data: isPanel(schema) || !!descriptor?.resolvesValue
-  }
-  for (const [key, replacement] of Object.entries(removedSchemaKeys)) {
+  })
+}
+
+// Types also check the keys of 3.x that only they removed:
+export function assertRemovedSchemaKeys(
+  schema,
+  name,
+  removedKeys,
+  supportedKeys = {}
+) {
+  for (const [key, replacement] of Object.entries(removedKeys)) {
     if (schema[key] !== undefined && !supportedKeys[key]) {
       throw new Error(
         `Unsupported schema key '${key}' in '${

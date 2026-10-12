@@ -30,7 +30,10 @@ import { defineType } from '../utils/schema/types.ts'
 import { sourceTraits } from './traits.ts'
 import { fieldProps } from '../composables/useField.ts'
 import { useSource } from '../composables/useSource.ts'
-import { resolveSchemaComponents } from '../utils/schema/setup.js'
+import {
+  resolveSchemaComponents,
+  assertRemovedSchemaKeys
+} from '../utils/schema/setup.js'
 import { getParentDataPath } from '../utils/data.js'
 
 // @vue/component
@@ -97,6 +100,8 @@ const treeTraits = {
   },
 
   async setupSchema(api, schema, name) {
+    // Here, to also check the children, which get no defaults applied:
+    assertRemovedSchemaKeys(schema, name, { open: `'collapsed: false'` })
     const { children } = schema
     if (children) {
       // Change the schema in place, as the route tree, uids and data model are
