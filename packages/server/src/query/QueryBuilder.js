@@ -56,11 +56,12 @@ export class QueryBuilder extends objection.QueryBuilder {
       })
     }
     this.#applyScopes()
+    // Execute a clone in the transaction, so that the query itself isn't bound
+    // to it and can be executed again:
     return this.#isTransacted && !this.knex().isTransaction
-      ? this.modelClass().transaction(trx => {
-          this.transacting(trx)
-          return super.execute()
-        })
+      ? this.modelClass().transaction(trx =>
+          this.clone().transacting(trx).execute()
+        )
       : super.execute()
   }
 

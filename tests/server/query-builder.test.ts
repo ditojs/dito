@@ -1079,6 +1079,25 @@ describe('QueryBuilder', () => {
       expect((await Recipe.query().findById(apple.id))!.servings).toBe(8)
     })
 
+    it('runs queries that wrap themselves in transactions more than once', async () => {
+      const [ada, grace] = await insertCooks()
+      const patch = Cook.query().patchAndFetch([
+        { id: ada.id, active: false },
+        { id: grace.id, active: false }
+      ])
+      expect(await patch).toHaveLength(2)
+      expect(await patch).toHaveLength(2)
+      const upsert = Cook.query()
+        .where('name', 'Ada')
+        .upsert({ name: 'Ada', active: true })
+      await upsert
+      await Cook.query().where('name', 'Ada').delete()
+      // The same query now inserts the missing row:
+      await upsert
+      const cooks = await Cook.query().where('name', 'Ada')
+      expect(cooks.map(cook => cook.active)).toEqual([true])
+    })
+
     it('leaves relations alone in array patchAndFetch() and updateAndFetch()', async () => {
       const [ada] = await insertCooks()
       const apple = await Recipe.query().insert({
