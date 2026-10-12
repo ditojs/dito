@@ -7,7 +7,7 @@ import {
 } from '@ditojs/utils'
 import { nanoid } from 'nanoid'
 
-// Collect the sources and relations of data to process their ids for the
+// Collect the sources and relations of data to serialize their ids for the
 // targets 'server' and 'clipboard':
 // | --------------------------------------------| --------- | --------- |
 // | data                                        | server    | clipboard |
@@ -92,7 +92,7 @@ export class SchemaGraph {
     return flatten(this.graph)
   }
 
-  process(sourceSchema, data, { target }) {
+  serialize(sourceSchema, data, { target }) {
     const clipboard = target === 'clipboard'
     if (clipboard) {
       delete data[sourceSchema.idKey || 'id']

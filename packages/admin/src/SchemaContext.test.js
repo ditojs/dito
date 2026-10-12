@@ -125,15 +125,15 @@ describe('SchemaContext', () => {
       expect(context.parentItem).toBe(null)
     })
 
-    it('provides the processed and clipboard items when given', () => {
-      const processedData = { title: 'Processed' }
+    it('provides the serialized and clipboard items when given', () => {
+      const serializedData = { title: 'Serialized' }
       const clipboardData = { title: 'Copied' }
-      const context = new SchemaContext(null, { processedData, clipboardData })
-      expect(context.processedItem).toBe(processedData)
+      const context = new SchemaContext(null, { serializedData, clipboardData })
+      expect(context.serializedItem).toBe(serializedData)
       expect(context.clipboardItem).toBe(clipboardData)
       const empty = new SchemaContext(null, {})
-      expect(empty.processedItem).toBe(null)
-      expect(empty.processedRootItem).toBe(null)
+      expect(empty.serializedItem).toBe(null)
+      expect(empty.serializedRootItem).toBe(null)
       expect(empty.clipboardItem).toBe(null)
     })
   })

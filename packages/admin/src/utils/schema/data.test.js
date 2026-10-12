@@ -3,10 +3,10 @@ import SchemaContext from '../../SchemaContext.js'
 import { defineType } from './types.ts'
 import { sourceTraits } from '../../types/traits.ts'
 import {
-  processSchemaData,
+  walkSchemaData,
   getComponentPathByDataPath,
-  computeValue,
-  processData,
+  getComputedValue,
+  serializeData,
   initializeData,
   shouldRenderSchema,
   getCreatableForms,
@@ -70,13 +70,13 @@ const data = {
   chapters: [{ title: 'One' }, { title: 'Two' }]
 }
 
-describe('processSchemaData()', () => {
+describe('walkSchemaData()', () => {
   it('passes the component paths of components, tabs and panels', () => {
     const componentPaths = {}
-    processSchemaData(schema, data, {
+    walkSchemaData(schema, data, {
       dataPath: '',
       componentPath: 'book',
-      shouldProcess: ({ componentPath, dataPath }) => {
+      shouldWalk: ({ componentPath, dataPath }) => {
         componentPaths[componentPath] = dataPath
         return true
       },
@@ -100,7 +100,7 @@ describe('processSchemaData()', () => {
   })
 })
 
-describe('processSchemaData() with child sources', () => {
+describe('walkSchemaData() with child sources', () => {
   // Like trees, whose items hold their children:
   defineType({
     type: 'outline',
@@ -115,7 +115,7 @@ describe('processSchemaData() with child sources', () => {
       form: { type: 'form', components: { heading: { type: 'text' } } }
     }
     const componentPaths = {}
-    processSchemaData(
+    walkSchemaData(
       {
         type: 'form',
         components: {
@@ -130,7 +130,7 @@ describe('processSchemaData() with child sources', () => {
       {
         dataPath: '',
         componentPath: 'book',
-        shouldProcess: ({ componentPath, dataPath }) => {
+        shouldWalk: ({ componentPath, dataPath }) => {
           componentPaths[componentPath] = dataPath
           return true
         },
@@ -152,7 +152,7 @@ describe('processSchemaData() with child sources', () => {
       form: { type: 'form', components: { heading: { type: 'text' } } }
     }
     const before = vi.fn()
-    processSchemaData(
+    walkSchemaData(
       {
         type: 'form',
         components: {
@@ -171,10 +171,10 @@ describe('processSchemaData() with child sources', () => {
   })
 })
 
-describe('processSchemaData() with panel components', () => {
+describe('walkSchemaData() with panel components', () => {
   it('walks the components of panel components with their data', () => {
     const componentPaths = {}
-    processSchemaData(
+    walkSchemaData(
       {
         type: 'form',
         components: {
@@ -188,7 +188,7 @@ describe('processSchemaData() with panel components', () => {
       {
         dataPath: '',
         componentPath: 'book',
-        shouldProcess: ({ componentPath, dataPath }) => {
+        shouldWalk: ({ componentPath, dataPath }) => {
           componentPaths[componentPath] = dataPath
           return true
         },
@@ -202,10 +202,10 @@ describe('processSchemaData() with panel components', () => {
   })
 })
 
-describe('processSchemaData() with panels of nested components', () => {
+describe('walkSchemaData() with panels of nested components', () => {
   it('walks their components with the data around the components', () => {
     const componentPaths = {}
-    processSchemaData(
+    walkSchemaData(
       {
         type: 'form',
         components: {
@@ -224,7 +224,7 @@ describe('processSchemaData() with panels of nested components', () => {
       {
         dataPath: '',
         componentPath: 'book',
-        shouldProcess: ({ componentPath, dataPath }) => {
+        shouldWalk: ({ componentPath, dataPath }) => {
           componentPaths[componentPath] = dataPath
           return true
         },
@@ -239,10 +239,10 @@ describe('processSchemaData() with panels of nested components', () => {
   })
 })
 
-describe('processSchemaData() with panels that have their own data', () => {
+describe('walkSchemaData() with panels that have their own data', () => {
   it(`doesn't walk their components with the data of the schema`, () => {
     const componentPaths = []
-    processSchemaData(
+    walkSchemaData(
       {
         type: 'form',
         components: {
@@ -264,7 +264,7 @@ describe('processSchemaData() with panels that have their own data', () => {
       {
         dataPath: '',
         componentPath: '',
-        shouldProcess: ({ componentPath }) => {
+        shouldWalk: ({ componentPath }) => {
           componentPaths.push(componentPath)
           return true
         },
@@ -313,7 +313,7 @@ describe('getComponentPathByDataPath()', () => {
   })
 })
 
-describe('computeValue()', () => {
+describe('getComputedValue()', () => {
   const schema = {
     type: 'text',
     compute: ({ item }) => item.title?.toUpperCase()
@@ -321,26 +321,26 @@ describe('computeValue()', () => {
 
   it('returns the computed value without writing it into the data', () => {
     const data = { title: 'Book' }
-    expect(computeValue(schema, data, 'upper', 'upper')).toBe('BOOK')
+    expect(getComputedValue(schema, data, 'upper', 'upper')).toBe('BOOK')
     expect(data).toEqual({ title: 'Book' })
   })
 
   it('returns the value if `compute()` returns `undefined`', () => {
     const data = { upper: 'Kept' }
-    expect(computeValue(schema, data, 'upper', 'upper')).toBe('Kept')
+    expect(getComputedValue(schema, data, 'upper', 'upper')).toBe('Kept')
   })
 
   it('returns the default of missing values without writing it', () => {
     const data = {}
     const schema = { type: 'text', default: 'Untitled' }
-    expect(computeValue(schema, data, 'title', 'title')).toBe('Untitled')
+    expect(getComputedValue(schema, data, 'title', 'title')).toBe('Untitled')
     expect(data).toEqual({})
   })
 
   it('returns the defaults of nested sections that are `null`', () => {
     const chooser = { type: 'section', nested: true, components: {} }
     expect(
-      computeValue(chooser, { chooser: null }, 'chooser', 'chooser')
+      getComputedValue(chooser, { chooser: null }, 'chooser', 'chooser')
     ).toEqual(
       {}
     )
@@ -348,7 +348,7 @@ describe('computeValue()', () => {
 
   it('provides the data path to `compute()`', () => {
     const schema = { type: 'text', compute: ({ dataPath }) => dataPath }
-    expect(computeValue(schema, {}, 'path', 'chapters/0/path')).toBe(
+    expect(getComputedValue(schema, {}, 'path', 'chapters/0/path')).toBe(
       'chapters/0/path'
     )
   })
@@ -357,11 +357,11 @@ describe('computeValue()', () => {
     const getDataPath = vi.fn(() => 'chapters/1/path')
     const readsDataPath = { type: 'text', compute: ({ dataPath }) => dataPath }
     const ignoresDataPath = { type: 'text', compute: () => 'Fixed' }
-    expect(computeValue(ignoresDataPath, {}, 'path', getDataPath)).toBe(
+    expect(getComputedValue(ignoresDataPath, {}, 'path', getDataPath)).toBe(
       'Fixed'
     )
     expect(getDataPath).not.toHaveBeenCalled()
-    expect(computeValue(readsDataPath, {}, 'path', getDataPath)).toBe(
+    expect(getComputedValue(readsDataPath, {}, 'path', getDataPath)).toBe(
       'chapters/1/path'
     )
     expect(getDataPath).toHaveBeenCalledOnce()
@@ -375,18 +375,20 @@ describe('computeValue()', () => {
       compute: context => context.value ?? context.options[0]
     }
     expect(
-      computeValue(schema, { size: 'Large' }, 'size', 'size', { getOptions })
+      getComputedValue(schema, { size: 'Large' }, 'size', 'size', {
+        getOptions
+      })
     ).toBe('Large')
     expect(getOptions).not.toHaveBeenCalled()
-    expect(computeValue(schema, {}, 'size', 'size', { getOptions })).toBe(
+    expect(getComputedValue(schema, {}, 'size', 'size', { getOptions })).toBe(
       'Small'
     )
     expect(getOptions).toHaveBeenCalledTimes(1)
   })
 })
 
-describe('processData()', () => {
-  it('processes the values in the data without calling `compute()`', () => {
+describe('serializeData()', () => {
+  it('serializes the values in the data without calling `compute()`', () => {
     // `DataModel` writes the computed values into the data.
     const compute = vi.fn(({ item }) => item.title.toUpperCase())
     const schema = {
@@ -399,7 +401,7 @@ describe('processData()', () => {
     }
     const data = { title: 'Book', upper: 'BOOK' }
     expect(
-      processData(schema, { type: 'list' }, data, '', { target: 'server' })
+      serializeData(schema, { type: 'list' }, data, '', { target: 'server' })
     ).toEqual({ title: 'Book', upper: 'BOOK', subtitle: 'None' })
     expect(data).toEqual({ title: 'Book', upper: 'BOOK' })
     expect(compute).not.toHaveBeenCalled()
@@ -425,7 +427,7 @@ describe('processData()', () => {
     }
     const data = { sizes: [5, { value: 10, units: '%' }] }
     expect(
-      processData(schema, { type: 'list' }, data, '', {
+      serializeData(schema, { type: 'list' }, data, '', {
         services: {},
         rootData: data,
         target: 'server'
@@ -452,7 +454,7 @@ describe('processData()', () => {
     }
     const data = { items: [{}] }
     expect(
-      processData(schema, { type: 'list' }, data, '', {
+      serializeData(schema, { type: 'list' }, data, '', {
         services: {},
         rootData: data,
         target: 'server'
@@ -460,7 +462,7 @@ describe('processData()', () => {
     ).toEqual({ items: [{ status: 'New' }] })
   })
 
-  it('processes the primitive values of lists with `wrapPrimitives`', () => {
+  it('serializes the primitive values of lists with `wrapPrimitives`', () => {
     const dataPaths = []
     const prices = {
       type: 'list',
@@ -479,7 +481,7 @@ describe('processData()', () => {
       }
     }
     expect(
-      processData(
+      serializeData(
         { type: 'form', components: { prices } },
         { type: 'list' },
         { prices: [100, 200] },
@@ -487,7 +489,7 @@ describe('processData()', () => {
         { services: {}, target: 'server' }
       )
     ).toEqual({ prices: [200, 400] })
-    // The values are processed at the data paths of the items:
+    // The values are serialized at the data paths of the items:
     expect(dataPaths).toEqual(['prices/0', 'prices/1'])
   })
 
@@ -508,13 +510,13 @@ describe('processData()', () => {
       }
     }
     const data = { works: [essay] }
-    const processed = processData(schema, { type: 'list' }, data, '', {
+    const serialized = serializeData(schema, { type: 'list' }, data, '', {
       services: {},
       rootData: data,
       target: 'server'
     })
-    expect(processed.works[0]).toEqual(essay)
-    expect(processed.works[0]).not.toBe(essay)
+    expect(serialized.works[0]).toEqual(essay)
+    expect(serialized.works[0]).not.toBe(essay)
   })
 
   describe('of items', () => {
@@ -527,7 +529,7 @@ describe('processData()', () => {
 
     it('only keeps the id and the values of the components', () => {
       expect(
-        processData(schema, { type: 'list', form: schema }, data, '', options)
+        serializeData(schema, { type: 'list', form: schema }, data, '', options)
       ).toEqual({ id: 1, title: 'Emma' })
     })
 
@@ -537,7 +539,7 @@ describe('processData()', () => {
         type: 'list',
         forms: { novel: schema, poem: schema }
       }
-      expect(processData(schema, sourceSchema, data, '', options)).toEqual({
+      expect(serializeData(schema, sourceSchema, data, '', options)).toEqual({
         id: 1,
         type: 'novel',
         title: 'Emma'
@@ -572,18 +574,18 @@ describe('shouldRenderSchema()', () => {
   })
 })
 
-describe('computeValue() with if', () => {
+describe('getComputedValue() with if', () => {
   it(`doesn't compute values of components whose if is false`, () => {
     const schema = {
       type: 'text',
       if: ({ item }) => !!item.preview,
       compute: ({ item }) => item.preview.name
     }
-    expect(computeValue(schema, { name: 'Stored' }, 'name', 'name')).toBe(
+    expect(getComputedValue(schema, { name: 'Stored' }, 'name', 'name')).toBe(
       'Stored'
     )
     expect(
-      computeValue(schema, { preview: { name: 'Preview' } }, 'name', 'name')
+      getComputedValue(schema, { preview: { name: 'Preview' } }, 'name', 'name')
     ).toBe('Preview')
   })
 })
@@ -616,7 +618,7 @@ describe('initializeData()', () => {
     expect(data.chooser).toEqual({ topic: 'news' })
   })
 
-  it('can leave the defaults of computed values to `computeValue()`', () => {
+  it('can leave the defaults of computed values to `getComputedValue()`', () => {
     const pricing = {
       type: 'text',
       default: 'auto',
@@ -632,8 +634,8 @@ describe('initializeData()', () => {
     expect(data).toEqual({ customFactor: 10 })
     // New data starts with all defaults:
     expect(initializeData(schema, {})).toEqual({ pricing: 'auto' })
-    expect(computeValue(pricing, data, 'pricing', 'pricing')).toBe('factor')
-    expect(computeValue(pricing, {}, 'pricing', 'pricing')).toBe('auto')
+    expect(getComputedValue(pricing, data, 'pricing', 'pricing')).toBe('factor')
+    expect(getComputedValue(pricing, {}, 'pricing', 'pricing')).toBe('auto')
   })
 
   it('numbers the items of lists with `orderKey`, also nested ones', () => {

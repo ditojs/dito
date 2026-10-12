@@ -146,11 +146,11 @@ export function setupSchemaComponents(api, schema) {
   if (schema && !setUpSchemas.has(schema)) {
     setUpSchemas.add(schema)
     const promises = []
-    const process = (component, name) => {
+    const setupComponent = (component, name) => {
       promises.push(setupSchemaComponent(api, component, name))
     }
-    iterateNestedSchemaComponents(schema, process)
-    iterateSchemaComponents(getPanelSchemas(schema), process)
+    iterateNestedSchemaComponents(schema, setupComponent)
+    iterateSchemaComponents(getPanelSchemas(schema), setupComponent)
     return Promise.all(promises)
   }
 }

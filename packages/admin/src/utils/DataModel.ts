@@ -39,10 +39,10 @@ import {
   shouldSetDefaultValue,
   setDefaultValue,
   initializeData,
-  computeValue,
+  getComputedValue,
   hasValueFromDataSchema,
-  processSchemaData,
-  processData,
+  walkSchemaData,
+  serializeData,
   hasItemsNumberedByOrderKey,
   updateOrder,
   getMultipleValue
@@ -53,7 +53,7 @@ import type {
   Data,
   Schema,
   SchemaDataEntry,
-  ProcessedEntry
+  WalkedEntry
 } from './types.ts'
 
 type Key = string | number
@@ -66,9 +66,9 @@ export interface DataModelOptions {
   // with the draft in place of the item, in nested forms:
   rootData?: (data: Data | null) => Data | null
   dataPath?: () => string
-  // The schema of the source of the data's item, for its processed data:
+  // The schema of the source of the data's item, for its serialized data:
   sourceSchema?: () => Schema | null
-  // The model of the parent's data, which processes the root data of nested
+  // The model of the parent's data, which serializes the root data of nested
   // forms:
   parent?: () => DataModel | null
   // Edits are unsaved only where they can be saved, by default through a
@@ -134,7 +134,7 @@ interface DataEntries {
   recordedEntries: EntryMap<SchemaDataEntry>
   entriesWithMissingValues: SchemaDataEntry[]
   // Not walked, but they save the changes of the lists that they hold:
-  sourceEntriesWithResource: ProcessedEntry[]
+  sourceEntriesWithResource: WalkedEntry[]
 }
 
 // The state of the data that a form, view, dialog or panel edits, derived from
@@ -159,8 +159,8 @@ export class DataModel {
   #errorScope!: EffectScope
   #dataEntries!: ComputedRef<DataEntries>
   #rootData!: ComputedRef<Data | null>
-  processedData!: ComputedRef<Data | null>
-  processedRootData!: ComputedRef<Data | null>
+  serializedData!: ComputedRef<Data | null>
+  serializedRootData!: ComputedRef<Data | null>
 
   constructor({ data = null, ...options }: DataModelOptions) {
     // Deeply reactive, as components and callbacks write it directly too:
@@ -179,10 +179,10 @@ export class DataModel {
       this.#rootData = computed(() => this.#options.rootData(this.data))
       // Computed, so watchers can check synchronously if records are current:
       this.#dataEntries = computed(() => this.#getDataEntries())
-      // Built only when read, e.g. by `context.processedItem`:
-      this.processedData = computed(() => this.#getProcessedData())
-      this.processedRootData = computed(() =>
-        this.#getProcessedRootData(this.rootData)
+      // Built only when read, e.g. by `context.serializedItem`:
+      this.serializedData = computed(() => this.#getSerializedData())
+      this.serializedRootData = computed(() =>
+        this.#getSerializedRootData(this.rootData)
       )
       // Set up data right away, so that edits never land before its computed
       // values, whose watchers run after rendering:
@@ -435,7 +435,7 @@ export class DataModel {
     { dataPath = this.dataPath, server = false } = {}
   ): Record<string, ValueError[]> | null {
     const entries: SchemaDataEntry[] = []
-    this.#processFieldEntries(dataPath, entry => entries.push(entry))
+    this.#walkFieldEntries(dataPath, entry => entries.push(entry))
     const errorsByDataPath: Record<string, ValueError[]> = {}
     const unmatchedErrors: Record<string, ValueError[]> = {}
     for (const [errorDataPath, valueErrors] of Object.entries(errors)) {
@@ -472,14 +472,14 @@ export class DataModel {
 
   // The errors of the fields stay until their sources remove them.
   clearErrors(dataPath = this.dataPath) {
-    this.#processFieldEntries(dataPath, entry => {
+    this.#walkFieldEntries(dataPath, entry => {
       this.#setValueErrors(this.#getFieldKey(entry.dataPath!), null)
     })
   }
 
   getErrorDataPaths(dataPath = this.dataPath): string[] {
     const dataPaths: string[] = []
-    this.#processFieldEntries(dataPath, entry => {
+    this.#walkFieldEntries(dataPath, entry => {
       if (
         this.getErrors(entry.dataPath!) ||
         this.getFieldErrors(entry.dataPath!)
@@ -570,19 +570,19 @@ export class DataModel {
     triggerRef(this.#errors)
   }
 
-  #processFieldEntries(
+  #walkFieldEntries(
     dataPath: string,
     handleEntry: (entry: SchemaDataEntry) => void
   ) {
     const { schema, data } = this
-    const isWithin = (entry: ProcessedEntry) => (
+    const isWithin = (entry: WalkedEntry) => (
       getRelativeDataPath(entry.dataPath, dataPath) !== null
     )
     if (data && !isEmptySchema(schema)) {
-      processSchemaData(schema!, data, {
+      walkSchemaData(schema!, data, {
         dataPath: this.dataPath,
         // Walk the components within `dataPath`, and the ones that contain it:
-        shouldProcess: entry => (
+        shouldWalk: entry => (
           (
             isWithin(entry) ||
             getRelativeDataPath(dataPath, entry.dataPath) !== null
@@ -682,38 +682,44 @@ export class DataModel {
     }
   }
 
-  #getProcessedData(data = this.data, rootData = this.rootData): Data | null {
+  #getSerializedData(data = this.data, rootData = this.rootData): Data | null {
     const { schema } = this
     return data && !isEmptySchema(schema)
-      ? processData(schema, this.#options.sourceSchema(), data, this.dataPath, {
-          services: this.#options.services,
-          rootData,
-          target: 'server'
-        })
+      ? serializeData(
+          schema,
+          this.#options.sourceSchema(),
+          data,
+          this.dataPath,
+          {
+            services: this.#options.services,
+            rootData,
+            target: 'server'
+          }
+        )
       : null
   }
 
   // Process `rootData` in the model that holds the root: its own cached root
   // data, or the root of a nested form with the draft in place of the item, see
   // `createDraftRoot()`.
-  #getProcessedRootData(rootData: Data | null): Data | null {
+  #getSerializedRootData(rootData: Data | null): Data | null {
     const parent = this.dataPath ? this.parent : null
     return parent
-      ? parent.#getProcessedRootData(rootData)
+      ? parent.#getSerializedRootData(rootData)
       : rootData === this.rootData
-        ? this.processedData.value
-        : this.#getProcessedData(rootData, rootData)
+        ? this.serializedData.value
+        : this.#getSerializedData(rootData, rootData)
   }
 
   #getDataEntries(): DataEntries {
     const { schema, data } = this
     const recordedEntries = new EntryMap<SchemaDataEntry>()
     const entriesWithMissingValues: SchemaDataEntry[] = []
-    const sourceEntriesWithResource: ProcessedEntry[] = []
+    const sourceEntriesWithResource: WalkedEntry[] = []
     if (data && !isEmptySchema(schema)) {
-      processSchemaData(schema!, data, {
+      walkSchemaData(schema!, data, {
         dataPath: this.dataPath,
-        shouldProcess: entry => {
+        shouldWalk: entry => {
           const shouldRender = this.#shouldRenderEntry(entry)
           if (shouldRender && isSourceWithResource(entry.schema)) {
             sourceEntriesWithResource.push(entry)
@@ -743,7 +749,7 @@ export class DataModel {
   }
 
   // An `if` that fails only affects its own component, which counts as shown.
-  #shouldRenderEntry(entry: ProcessedEntry): boolean {
+  #shouldRenderEntry(entry: WalkedEntry): boolean {
     if (entry.schema.if === undefined) {
       return true
     }
@@ -867,7 +873,7 @@ export class DataModel {
     const { entry } = record
     const { schema, data, name } = entry
     try {
-      const value = computeValue(
+      const value = getComputedValue(
         schema,
         data,
         name,
@@ -996,7 +1002,7 @@ export class DataModel {
       return value
     }
     const dataWithMissingValues = new Set<object>()
-    this.#processNestedEntries(entry, value, nestedEntry => {
+    this.#walkNestedEntries(entry, value, nestedEntry => {
       if (this.#shouldSetDefaultValue(nestedEntry)) {
         dataWithMissingValues.add(nestedEntry.data)
       }
@@ -1010,7 +1016,7 @@ export class DataModel {
     )
     // Defaults may hold values with defaults of their own, which the walk
     // visits after setting them:
-    this.#processNestedEntries(entry, valueWithDefaults, nestedEntry => {
+    this.#walkNestedEntries(entry, valueWithDefaults, nestedEntry => {
       if (this.#shouldSetDefaultValue(nestedEntry)) {
         setDefaultValue(
           nestedEntry.schema,
@@ -1023,16 +1029,16 @@ export class DataModel {
     return valueWithDefaults
   }
 
-  #processNestedEntries(
+  #walkNestedEntries(
     entry: FieldEntry,
     value: any,
     handleNestedEntry: (entry: SchemaDataEntry) => void
   ) {
     const { schema, data, name, dataPath } = entry
     const valueData = { ...data, [name]: value }
-    processSchemaData({ components: { [name]: schema } }, valueData, {
+    walkSchemaData({ components: { [name]: schema } }, valueData, {
       dataPath: getParentDataPath(dataPath),
-      shouldProcess: nestedEntry => this.#shouldRenderEntry(nestedEntry),
+      shouldWalk: nestedEntry => this.#shouldRenderEntry(nestedEntry),
       shouldSkipSourcesWithResource: true,
       before: nestedEntry => {
         if (nestedEntry.data !== valueData) {
@@ -1070,7 +1076,7 @@ export class DataModel {
     data,
     name,
     dataPath
-  }: Omit<FieldEntry, 'name'> & Pick<ProcessedEntry, 'name'>) {
+  }: Omit<FieldEntry, 'name'> & Pick<WalkedEntry, 'name'>) {
     return SchemaContext.createForSchema(this.#options.services, {
       schema,
       name,

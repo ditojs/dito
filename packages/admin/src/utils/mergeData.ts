@@ -1,6 +1,6 @@
 import { isArray, isObject } from '@ditojs/utils'
 import { isTemporaryId } from './data.js'
-import { getItemId, getItemUid, processSchemaData } from './schema/data.js'
+import { getItemId, getItemUid, walkSchemaData } from './schema/data.js'
 import { hasFormSchema, hasMultipleFormSchemas } from './schema/lookup.js'
 import { isSourceWithResource } from './schema/structure.js'
 import type { Data, Schema, SchemaDataEntry } from './types.ts'
@@ -60,7 +60,7 @@ export function mergeData(
       }
     }
   }
-  processSchemaData(schema, source, {
+  walkSchemaData(schema, source, {
     before,
     options: { services, rootData: source }
   })

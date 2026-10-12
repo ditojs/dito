@@ -234,7 +234,7 @@ export function useResource({
       return (
         ['post', 'put', 'patch'].includes(method) && (
           button.getSchemaValue(['resource', 'data']) ||
-          button.context.processedItem
+          button.context.serializedItem
         )
       )
     },

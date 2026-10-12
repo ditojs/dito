@@ -201,8 +201,8 @@ export const articles = createWidgetView<ArticleItem>(
               label: 'Tags',
               exclude: true,
               compute: ({ value, item }) => value ?? item.tags?.join(',') ?? '',
-              process: ({ value, processedItem }) => {
-                processedItem.tags = value ? value.split(',') : null
+              process: ({ value, serializedItem }) => {
+                serializedItem.tags = value ? value.split(',') : null
               }
             },
             // The stored array is edited as text, which the inputs of rendered

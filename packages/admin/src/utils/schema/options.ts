@@ -27,7 +27,7 @@ export function getOptionsSettings(
   const getValue = (key: string[], type: any) => (
     getSchemaValue(key, { type, schema, context: createContext({}) }) ?? null
   )
-  // Without callbacks, as values are processed without contexts:
+  // Without callbacks, as values are serialized without contexts:
   const relate = !!schema.relate
   return {
     relate,

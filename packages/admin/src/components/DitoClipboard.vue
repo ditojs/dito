@@ -37,7 +37,7 @@ export default {
     clipboard: { type: [Boolean, Object], required: true },
     schema: { type: Object, required: true },
     hasData: { type: Boolean, required: true },
-    // A function, to only process the data when copying:
+    // A function, to only serialize the data when copying:
     getData: { type: Function, required: true },
     // For the `copy()` and `paste()` callbacks of `clipboard`:
     createContext: { type: Function, required: true }

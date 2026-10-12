@@ -232,7 +232,7 @@ describe('DitoTypeText', () => {
     })
   })
 
-  describe('processing', () => {
+  describe('serializing', () => {
     it('trims values with `trim` and sends empty values as defaults', async () => {
       const { findField, submit } = await mountForm({
         schema: {

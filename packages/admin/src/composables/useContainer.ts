@@ -34,7 +34,7 @@ export interface ContainerOptions {
   componentPath?: () => string
   isCreating?: () => boolean
   canSave?: () => boolean
-  // The model of the parent's data, which processes the root data of nested
+  // The model of the parent's data, which serializes the root data of nested
   // forms, and holds the item of forms that edit it in place:
   parentModel?: () => DataModel | null
   getParentItem?: () => Data | null

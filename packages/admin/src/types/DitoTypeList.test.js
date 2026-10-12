@@ -1164,7 +1164,7 @@ describe('DitoTypeList', () => {
     })
   })
 
-  describe('processing', () => {
+  describe('serializing', () => {
     it('sends empty lists as `null` with `process()`', async () => {
       const { findField, submit } = await mountForm({
         schema: createRecipeSchema({
