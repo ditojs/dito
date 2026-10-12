@@ -1,6 +1,7 @@
 import { vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
-import { mountSchema } from '../test/mount.js'
+import DitoContext from '../DitoContext.js'
+import { mountSchema, enterValue } from '../test/mount.js'
 
 // `appState.loadCache` lives for the session, so each test requests its own
 // URLs, made unique by this counter.
@@ -101,56 +102,6 @@ describe('DitoMixin', () => {
     })
   })
 
-  describe('schema members', () => {
-    it('warns when schema methods override members', async () => {
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-      const { getComponent } = await mountSchema({
-        schema: {
-          components: {
-            title: {
-              type: 'text',
-              methods: {
-                focus() {},
-                shuffle() {}
-              }
-            }
-          }
-        }
-      })
-      expect(getComponent('title').shuffle).toBeTypeOf('function')
-      const messages = warn.mock.calls.map(([message]) => message)
-      expect(messages).toContain(
-        `The schema method 'focus' overrides a member of the component.`
-      )
-      expect(messages.join()).not.toContain(`'shuffle'`)
-    })
-
-    it('warns when schema computed properties override members', async () => {
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-      const { getComponent } = await mountSchema({
-        schema: {
-          components: {
-            title: {
-              type: 'text',
-              computed: {
-                disabled: () => true,
-                shout: () => 'ORLANDO'
-              }
-            }
-          }
-        },
-        data: { title: 'Orlando' }
-      })
-      expect(getComponent('title').shout).toBe('ORLANDO')
-      const messages = warn.mock.calls.map(([message]) => message)
-      expect(messages).toContain(
-        `The schema computed property 'disabled' overrides a member of the ` +
-        `component.`
-      )
-      expect(messages.join()).not.toContain(`'shout'`)
-    })
-  })
-
   describe('events', () => {
     it('calls `on[A-Z]` handlers of native events', async () => {
       const onMouseenter = vi.fn()
@@ -172,6 +123,73 @@ describe('DitoMixin', () => {
       await flushPromises()
       expect(onMouseenter).toHaveBeenCalledOnce()
       expect(onDblclick).toHaveBeenCalledOnce()
+    })
+
+    it('calls the handlers with their context only', async () => {
+      let receiver = null
+      let context = null
+      const { findField } = await mountSchema({
+        schema: {
+          components: {
+            title: {
+              type: 'text',
+              events: {
+                change(ctx) {
+                  receiver = this
+                  context = ctx
+                }
+              }
+            }
+          }
+        }
+      })
+      await enterValue(findField('title').find('input'), 'Emma')
+      expect(receiver).toBe(undefined)
+      expect(context).toBeInstanceOf(DitoContext)
+      expect(context.value).toBe('Emma')
+    })
+
+    it('passes changes of nested data with their data paths', async () => {
+      const dataPaths = []
+      const { findField, data, settle } = await mountSchema({
+        schema: {
+          components: {
+            title: { type: 'text' },
+            author: {
+              type: 'object',
+              inlined: true,
+              form: {
+                type: 'form',
+                components: { name: { type: 'text' } }
+              }
+            },
+            chapters: {
+              type: 'list',
+              inlined: true,
+              form: {
+                type: 'form',
+                components: { heading: { type: 'text' } }
+              }
+            }
+          },
+          events: {
+            change({ dataPath }) {
+              dataPaths.push(dataPath)
+            }
+          }
+        },
+        data: {
+          title: 'Emma',
+          author: { name: 'Austen' },
+          chapters: [{ heading: 'One' }]
+        }
+      })
+      await enterValue(findField('author/name').find('input'), 'Jane Austen')
+      await enterValue(findField('chapters/0/heading').find('input'), 'I')
+      // Writes that aren't edits don't emit `change`:
+      data.title = 'Persuasion'
+      await settle()
+      expect(dataPaths).toEqual(['author/name', 'chapters/0/heading'])
     })
 
     it('warns about event options other than `context` and `parent`', async () => {
@@ -274,79 +292,6 @@ describe('DitoMixin', () => {
       const url = 'blob:http://localhost/7c2b6f1e'
       schemaComponent.download({ url, filename: 'recipes.json' })
       expect(anchors).toMatchObject([{ href: url, download: 'recipes.json' }])
-    })
-  })
-
-  describe('schema `watch`', () => {
-    it('watches the data of components by their names', async () => {
-      const changes = []
-      const { getComponent, settle } = await mountSchema({
-        schema: {
-          components: {
-            title: {
-              type: 'text',
-              watch: {
-                // `subtitle` is a component declared after `title`, the
-                // handlers are installed once all components exist:
-                subtitle(value, oldValue) {
-                  changes.push(['subtitle', value, oldValue, this.name])
-                },
-                // Other keys are watched as expressions of the component:
-                value(value) {
-                  changes.push(['value', value])
-                }
-              }
-            },
-            subtitle: { type: 'text' }
-          }
-        },
-        data: { title: 'Emma', subtitle: 'A Novel' }
-      })
-      // Setting the view's data after mounting already triggered them:
-      expect(changes).toEqual([
-        ['value', 'Emma'],
-        ['subtitle', 'A Novel', null, 'title']
-      ])
-      changes.length = 0
-      getComponent('subtitle').value = 'A Comedy'
-      getComponent('title').value = 'Persuasion'
-      await settle()
-      expect(changes).toEqual([
-        ['subtitle', 'A Comedy', 'A Novel', 'title'],
-        ['value', 'Persuasion']
-      ])
-    })
-
-    it('ignores functions that return no handlers', async () => {
-      const watch = vi.fn(() => null)
-      const { getComponent } = await mountSchema({
-        schema: { components: { title: { type: 'text', watch } } },
-        data: { title: 'Emma' }
-      })
-      expect(watch).toHaveBeenCalledOnce()
-      expect(getComponent('title').value).toBe('Emma')
-    })
-
-    it('supports a function returning the handlers', async () => {
-      const onChange = vi.fn()
-      const watch = vi.fn(function () {
-        return { [`${this.name}Count`]: onChange }
-      })
-      const { getComponent, settle } = await mountSchema({
-        schema: {
-          components: {
-            ingredients: { type: 'text', watch },
-            ingredientsCount: { type: 'number' }
-          }
-        },
-        data: { ingredients: 'Flour', ingredientsCount: 1 }
-      })
-      expect(watch).toHaveBeenCalledOnce()
-      onChange.mockClear()
-      getComponent('ingredientsCount').value = 2
-      await settle()
-      expect(onChange).toHaveBeenCalledOnce()
-      expect(onChange.mock.calls[0].slice(0, 2)).toEqual([2, 1])
     })
   })
 
@@ -534,74 +479,20 @@ describe('DitoMixin', () => {
     })
   })
 
-  describe('invalid schema members', () => {
-    it('logs errors for invalid methods, computed and events', async () => {
+  describe('invalid schema events', () => {
+    it('logs errors for events that are no functions', async () => {
       const error = vi.spyOn(console, 'error').mockImplementation(() => {})
       const { getComponent } = await mountSchema({
         schema: {
           components: {
-            title: {
-              type: 'text',
-              methods: { shuffle: 'not a function' },
-              computed: { shout: 'not a function', echo: { set() {} } },
-              events: { dblclick: 'not a function' }
-            }
+            title: { type: 'text', events: { dblclick: 'not a function' } }
           }
         }
       })
-      const component = getComponent('title')
-      expect(component.shuffle).toBe(undefined)
-      expect(component.shout).toBe(undefined)
-      expect(component.hasListeners('dblclick')).toBe(false)
-      const messages = error.mock.calls.map(([message]) => message)
-      expect(messages).toEqual(
-        expect.arrayContaining([
-          'Invalid method definition: shuffle: not a function',
-          'Invalid computed property definition: shout: not a function',
-          'Invalid computed property definition: echo: [object Object]',
-          'Invalid event definition: dblclick: not a function'
-        ])
+      expect(getComponent('title').hasListeners('dblclick')).toBe(false)
+      expect(error).toHaveBeenCalledWith(
+        'Invalid event definition: dblclick: not a function'
       )
-    })
-  })
-
-  describe('schema `computed`', () => {
-    it('supports computed properties with getters and setters', async () => {
-      const { getComponent, data } = await mountSchema({
-        schema: {
-          components: {
-            title: {
-              type: 'text',
-              computed: {
-                upperTitle: {
-                  get() {
-                    return this.value?.toUpperCase()
-                  },
-                  set(value) {
-                    this.value = value.toLowerCase()
-                  }
-                },
-                titleLength: {
-                  get() {
-                    return this.value?.length ?? 0
-                  }
-                }
-              }
-            }
-          }
-        },
-        data: { title: 'emma' }
-      })
-      const component = getComponent('title')
-      expect(component.upperTitle).toBe('EMMA')
-      component.upperTitle = 'PERSUASION'
-      expect(data.title).toBe('persuasion')
-      expect(component.upperTitle).toBe('PERSUASION')
-      expect(component.titleLength).toBe(10)
-      // Computed properties without setters are read-only:
-      expect(() => {
-        component.titleLength = 3
-      }).toThrow()
     })
   })
 })

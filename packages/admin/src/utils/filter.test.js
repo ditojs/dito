@@ -342,8 +342,9 @@ describe('createFiltersPanel()', () => {
 
     it('applies the filters when the panel data changes', () => {
       const { panel, query } = createPanel()
-      // `this` is the panel's schema component:
-      panel.events.change.call({ data: { $author: { text: 'Woolf' } } })
+      const data = panel.data()
+      data.$author.text = 'Woolf'
+      panel.events.change()
       expect(query.value.filter).toEqual(['author:"Woolf"'])
     })
   })

@@ -1255,6 +1255,10 @@ describe('DitoTypeList', () => {
       expect(recipes.query.filter).toEqual(['course:"Main"'])
       expect(input.element.value).toBe('Main')
       expect(panel.findAll('.dito-errors li').length).toBe(0)
+      // Changes apply the cleared data:
+      await enterValue(input, 'Dessert')
+      await flushPromises()
+      expect(recipes.query.filter).toEqual(['course:"Dessert"'])
     })
 
     it('notifies filter errors of lists without filters panel', async () => {

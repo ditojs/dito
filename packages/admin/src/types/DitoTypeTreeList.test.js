@@ -244,10 +244,11 @@ describe('DitoTypeTreeList', () => {
     form.data.title = 'Story'
     const { context } = form.mainSchemaComponent
     expect(context.processedItem).toEqual({ title: 'Story' })
-    // The root item is the one of the site form, without the draft:
+    // The root item is the one of the site form, with the draft in place of
+    // the item, like `rootItem`:
     expect(context.processedRootItem).toMatchObject({
       pages: [
-        { title: 'About', subpages: [{ title: 'Team' }, { title: 'History' }] },
+        { title: 'About', subpages: [{ title: 'Team' }, { title: 'Story' }] },
         { title: 'Contact', subpages: [] }
       ]
     })

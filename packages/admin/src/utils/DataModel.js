@@ -69,6 +69,9 @@ export class DataModel {
       // Built only when read, e.g. by `context.processedItem`, and cached until
       // the data that it read changes:
       this.processedData = computed(() => this.getProcessedData())
+      this.processedRootData = computed(() =>
+        this.getProcessedRootData(this.rootData)
+      )
       // Set up data right away, so that edits never land before its computed
       // values, whose watchers run after rendering:
       watch(
@@ -470,16 +473,29 @@ export class DataModel {
     }
   }
 
-  getProcessedData() {
+  getProcessedData(data = this.getData(), rootData = this.rootData) {
     const schema = this.getSchema()
-    const data = this.getData()
     return data && !isEmptySchema(schema)
       ? processData(schema, this.component.sourceSchema, data, this.dataPath, {
           component: this.component.mainSchemaComponent ?? this.component,
-          rootData: this.rootData,
+          rootData,
           target: 'server'
         })
       : null
+  }
+
+  // Process `rootData` in the model that holds the root: its own cached root
+  // data, or the root of a nested form with the draft in place of the item, see
+  // `createDraftRoot()`.
+  getProcessedRootData(rootData) {
+    const parentModel = this.dataPath
+      ? this.component.parentComponent?.dataModel
+      : null
+    return parentModel
+      ? parentModel.getProcessedRootData(rootData)
+      : rootData === this.rootData
+        ? this.processedData.value
+        : this.getProcessedData(rootData, rootData)
   }
 
   getDataEntries() {

@@ -621,10 +621,11 @@ describe('DitoForm', () => {
       form.data.title = 'Opening'
       const { context } = form.mainSchemaComponent
       expect(context.processedItem).toEqual({ title: 'Opening' })
-      // The root item is the one of the book form, without the draft:
+      // The root item is the one of the book form, with the draft in place of
+      // the item, like `rootItem`:
       expect(context.processedRootItem).toMatchObject({
         title: 'Emma',
-        chapters: [{ title: 'Prologue' }]
+        chapters: [{ title: 'Opening' }]
       })
     })
 

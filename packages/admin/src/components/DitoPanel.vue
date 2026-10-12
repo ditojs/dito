@@ -1,7 +1,7 @@
 <template lang="pug">
 //- Only show panels in tabs when the tabs are also visible.
 component.dito-panel(
-  v-if="shouldRenderSchema(panelSchema)"
+  v-if="shouldRenderSchema(schema)"
   v-show="visible && (!isTabSelected || isTabSelected())"
   :is="panelTag"
   role="region"
@@ -9,7 +9,7 @@ component.dito-panel(
   @submit.prevent
 )
   DitoSchema.dito-panel__schema(
-    :schema="panelSchema"
+    :schema="schema"
     :dataSchema="panelDataSchema"
     :dataPath="panelDataPath"
     :data="panelData"
@@ -128,17 +128,6 @@ export default DitoComponent.component('DitoPanel', {
       return this.ownData || this.data
     },
 
-    panelSchema() {
-      if (this.hasOwnData) {
-        return this.schema
-      } else {
-        // Remove `data` from the schema, so that DitoSchema isn't using it to
-        // produce its own data. See $filters panel for more details on data.
-        const { data, ...schema } = this.schema
-        return schema
-      }
-    },
-
     panelTag() {
       // Panels that provide their own data need their own form.
       return this.hasOwnData ? 'form' : 'div'
@@ -172,8 +161,6 @@ export default DitoComponent.component('DitoPanel', {
     this._unregister = trackRegistration(this, (add, componentPath) =>
       this.schemaComponent._registerPanel(this, add, componentPath)
     )
-    // NOTE: This is not the same as `schema.data` handling in DitoSchema,
-    // where the data is added to the actual component.
     const { data } = this.schema
     if (data) {
       this.ownData = isFunction(data)

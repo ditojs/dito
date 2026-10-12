@@ -52,8 +52,7 @@ export default DitoComponent.component('DitoTableCell', {
       const { name, render } = this.cell
       const value = item[name]
       return render
-        ? render.call(
-            this,
+        ? render(
             new DitoContext(this, {
               name,
               value,

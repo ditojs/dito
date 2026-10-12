@@ -269,6 +269,27 @@ describe('ContextMixin', () => {
       expect(context.validate()).toBe(true)
     })
 
+    it('validate or verify only the values that match', async () => {
+      const { getComponent, getErrors } = await mountForm({
+        schema: {
+          components: {
+            title: { type: 'text', required: true },
+            author: { type: 'text', required: true }
+          }
+        },
+        data: { title: 'Emma', author: '' }
+      })
+      const { context } = getComponent('title')
+      expect(context.verify(/^title/)).toBe(true)
+      expect(context.verify(/^author/)).toBe(false)
+      await flushPromises()
+      // Verifying doesn't show the errors, validating does:
+      expect(getErrors('author')).toEqual([])
+      expect(context.validate('author')).toBe(false)
+      await flushPromises()
+      expect(getErrors('author')).toEqual(['The Author field is required.'])
+    })
+
     it('replace the item with data merged into it', async () => {
       const { getComponent, data } = await mountForm({
         schema: titleSchema,
