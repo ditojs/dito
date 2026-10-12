@@ -275,19 +275,19 @@ component that renders them. Events that bubble up from components, e.g.
 - `validate(match)` and `verify(match)` validate only the values whose data
   paths match, e.g. a regular expression. `verify()` doesn't show the errors.
 
-The members that components provide, e.g. `sourceQuery`, `isRunning` and
-`submit()`, and the resource that `getResourceUrl()` and `request()` resolve
-against, depend on which component evaluates the callback:
+The members that components provide, e.g. `sourceQuery`, `isRunning`,
+`options` and `submit()`, and the resource that `getResourceUrl()` and
+`request()` resolve against, are the component's own in the callbacks of its
+schema, also in the ones that its container evaluates, e.g. `visible`, `width`,
+`label`, `info` and `disabled`: `disabled: ({ isRunning }) => isRunning`
+disables a button and its container. Callbacks that other components evaluate
+see the members of those:
 
 - The data model evaluates `if`, `default`, `computeValue()`, the `data()` of
   options and the validations, also for components that aren't rendered, with
   the members of the form, view, dialog or panel that holds the data.
   Rendering evaluates `if` again with the members around the component, e.g.
   of the inlined list that it is in.
-- The containers of components evaluate their schema values, e.g. `visible`,
-  `width`, `label` and `disabled`, with the members around the component, not
-  the ones that it provides itself: `disabled: ({ isRunning }) => isRunning`
-  disables a button, but not its container.
 
 `schemaComponent.resetData()` is removed: the filters panel clears its data
 with `replaceItem({})`.
