@@ -442,13 +442,6 @@ export interface BaseSchema<$Item> extends SchemaFields<$Item> {
    */
   class?: string | Record<string, boolean>
   /**
-   * Whether the component type omits surrounding spacing.
-   *
-   * @internal Set as a static option on component type
-   * definitions, not configured in schemas.
-   */
-  omitSpacing?: boolean
-  /**
    * Forces a layout line break before, after, or on
    * both sides of the component.
    */
@@ -795,16 +788,6 @@ export interface SourceSettings<$Item> {
   collapsible?: OrItemAccessor<$Item, {}, boolean | null>
   /** Whether the inlined form is collapsed. */
   collapsed?: OrItemAccessor<$Item, {}, boolean>
-  /**
-   * Default sort configuration.
-   */
-  defaultSort?:
-    | string
-    | { key: string; order: 'asc' | 'desc' }
-  /**
-   * Default scope name as defined on the model.
-   */
-  defaultScope?: string
   /**
    * Resource configuration for loading data from the
    * API.
