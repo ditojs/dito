@@ -465,6 +465,31 @@ describe('DitoForm', () => {
       })
     }
 
+    it('stays dirty with edits made while saving', async () => {
+      const response = Promise.withResolvers()
+      const { wrapper, routeComponent } = await mountForm({
+        schema: {
+          components: { title: { type: 'text' } },
+          buttons: { submit: { closeForm: false } }
+        },
+        data: { title: 'Emma' },
+        request: ({ method = 'get' }) =>
+          method === 'patch' ? response.promise : null
+      })
+      await enterValue(wrapper.find('input[name="title"]'), 'Persuasion')
+      await wrapper
+        .find('.dito-buttons--main button[type="submit"]')
+        .trigger('click')
+      await flushPromises()
+      const { dataModel, data } = routeComponent
+      dataModel.set(data, 'title', 'Sanditon')
+      // A response without data, which leaves the edit in place:
+      response.resolve({})
+      await settle(routeComponent)
+      expect(data.title).toBe('Sanditon')
+      expect(routeComponent.isDirty).toBe(true)
+    })
+
     it('keeps the identity of the item and its lists and items', async () => {
       const { wrapper, routeComponent, submit } = await mountBookForm()
       const { data } = routeComponent
@@ -1089,7 +1114,7 @@ describe('DitoForm', () => {
       await admin.navigate('/test/recipes/0')
       const form = admin.getRouteComponent(component => component.isForm)
       await settle(form)
-      expect(form.resource.closestWithResource).toBe(null)
+      expect(form.resource.resourceOwner).toBe(null)
       expect(form.dataPath).toBe('recipes/0')
       expect(new DOMWrapper(form.$el).find('input').element.value).toBe(
         'Pancakes'

@@ -96,6 +96,9 @@ export default DitoTypeComponent.register(
         // they're clean, which a running action doesn't change:
         if (this.isRunning) return
         this.isRunning = true
+        // Write the edits that are held back first, e.g. debounced markup
+        // edits, for the handlers to see them:
+        this.dataModel.writePendingValues()
         try {
           const res = await this.emitEvent('click', {
             parent: this.schemaComponent

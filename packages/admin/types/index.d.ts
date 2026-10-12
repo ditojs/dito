@@ -2352,7 +2352,7 @@ export interface ResourceContext {
    * The context itself if it has a resource, or else the closest one above
    * with a resource, which loads the data that its components display.
    */
-  readonly closestWithResource: ResourceContext | null
+  readonly resourceOwner: ResourceContext | null
   /** Action verb labels, with the transient ones in nested data. */
   readonly verbs: Record<string, string>
   /**
@@ -2745,10 +2745,16 @@ export interface DitoDataModel {
   /** Marks the data edited, e.g. after writing it directly. */
   markEdited(): void
   /**
+   * The number of the last edit. Saves read it when they start, to only
+   * clean the edits that they carried, see `markClean()`.
+   */
+  readonly editCount: number
+  /**
    * Marks the data clean, e.g. once it's saved, or only the edits of the
    * source with its own resource at `dataPath`, once the source saved them.
+   * With `editCount`, only the edits up to it are cleaned.
    */
-  markClean(dataPath?: string): void
+  markClean(options?: { dataPath?: string | null; editCount?: number }): void
   /**
    * Merges `data` from the server, e.g. the response of a save,
    * into the data in place, so that its objects keep their

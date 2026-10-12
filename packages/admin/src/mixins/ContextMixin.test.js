@@ -368,6 +368,25 @@ describe('ContextMixin', () => {
       expect(getComponent('title').context.listQuery).toBe(null)
     })
 
+    it('return the URL of the form in lists without a resource', async () => {
+      const { getComponent } = await mountForm({
+        schema: {
+          components: {
+            notes: {
+              type: 'list',
+              inlined: true,
+              form: { type: 'form', components: { text: { type: 'text' } } }
+            }
+          }
+        },
+        data: { notes: [{ text: 'Reread' }] }
+      })
+      expect(getComponent('notes').context.getResourceUrl()).toBe('/items/1')
+      expect(getComponent('notes/0/text').context.getResourceUrl()).toBe(
+        '/items/1'
+      )
+    })
+
     it('return the URL of the collection in creating forms', async () => {
       const { getComponent } = await mountForm({ schema: titleSchema })
       expect(getComponent('title').context.getResourceUrl()).toBe('/items')

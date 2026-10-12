@@ -12,6 +12,7 @@ export interface SourceOwner {
   readonly store: Record<string, any>
   readonly disabled: boolean
   createItem(schema: Schema, type?: string | null, index?: number | null): any
+  getSourceItemLabel(item: any, index: number | null): any
   reloadData(): void
 }
 
@@ -58,6 +59,12 @@ export class SourceContext {
   // several forms, and insert it at `index`, or else at the end:
   createItem(schema: Schema, type?: string | null, index?: number | null) {
     return this.#owner.createItem(schema, type, index)
+  }
+
+  // The label of `item`, an object for inlined items and HTML for others. Each
+  // item reads its own, so that edits only update the label of their item:
+  getItemLabel(item: any, index: number | null = null) {
+    return this.#owner.getSourceItemLabel(item, index)
   }
 
   // Load the data of the source again, e.g. after its item was saved:

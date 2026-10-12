@@ -564,6 +564,8 @@ export default DitoComponent.component('DitoForm', {
       if (validate && !this.validateAll()) {
         return false
       }
+      // The edits that the submit carries, see `markClean()` below:
+      const { editCount } = this.ownDataModel
 
       const getVerb = present => this.verbs[this.getSubmitVerb(present)]
       // NOTE: The notifications pass `html`, as `itemLabel` is HTML with
@@ -645,25 +647,24 @@ export default DitoComponent.component('DitoForm', {
       if (success) {
         this.resetValidation()
         // The saved or applied data isn't dirty, also without a response with
-        // data, and before the closing below. Drafts hold the responses of
-        // buttons with resources like edits, see `setData()`:
+        // data, and before the closing below, but edits made meanwhile are.
+        // Drafts hold the responses of buttons with resources like edits, see
+        // `setData()`:
         if (!this.isTransient || !buttonResource) {
-          this.ownDataModel.markClean()
+          this.ownDataModel.markClean({ editCount })
         }
-        // Navigating while the form is being left would cancel the navigation
-        // that waits for this submit, see `beforeRouteChange()`:
-        if (!this.isLeavingAfterSubmits) {
-          if (closeForm || button.closeForm) {
-            this.close()
-          } else if (this.isCreating) {
-            // Redirect to the form editing the newly created item:
-            const id = this.getItemId(this.schema, this.data)
+        if (closeForm || button.closeForm) {
+          this.navigateAfterSubmits(() => this.close())
+        } else if (this.isCreating) {
+          // Redirect to the form editing the newly created item:
+          const id = this.getItemId(this.schema, this.data)
+          this.navigateAfterSubmits(() =>
             this.$router.replace({
               path: resolvePath(`${this.path}/../${id}`),
               // Preserve hash for tabs:
               hash: this.$route.hash
             })
-          }
+          )
         }
       }
       return success

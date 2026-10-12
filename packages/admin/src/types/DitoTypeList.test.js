@@ -141,6 +141,26 @@ describe('DitoTypeList', () => {
       expect(label.text()).toContain('500 g')
     })
 
+    it('updates only the label of the edited item', async () => {
+      const itemLabel = vi.fn(({ item }) => item.name)
+      const { findField, settle } = await mountSchema({
+        schema: createRecipeSchema({ itemLabel }),
+        data: { ingredients: [{ name: 'Flour' }, { name: 'Salt' }] }
+      })
+      itemLabel.mockClear()
+      await enterValue(
+        findField('ingredients').find('input[name$="0/name"]'),
+        'Rye'
+      )
+      await settle()
+      expect(itemLabel.mock.calls.map(([{ item }]) => item.name)).toEqual([
+        'Rye'
+      ])
+      expect(findField('ingredients').find('.dito-label').text()).toContain(
+        'Rye'
+      )
+    })
+
     it('collapses the items with `collapsed` and opens them on click', async () => {
       const { findField } = await mountSchema({
         schema: createRecipeSchema({ collapsible: true, collapsed: true }),

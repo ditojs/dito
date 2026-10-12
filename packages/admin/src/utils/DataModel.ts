@@ -84,6 +84,13 @@ export interface ListEntry {
   dataPath: string
 }
 
+interface EditedOwner {
+  // The schema of sources with their own resource, `null` for the container:
+  sourceSchema: Schema | null
+  // The number of its last edit:
+  editCount: number
+}
+
 export interface ValueError {
   message: string
 }
@@ -122,13 +129,15 @@ interface DataEntries {
 export class DataModel {
   componentRecords = new EntryMap<ComponentRecord>()
   // The writes of values that components hold back, e.g. debounced edits:
-  readonly pendingWrites = new Set<() => void>()
+  readonly #pendingWrites = new Set<() => void>()
   readonly #pendingLoads = new Set<Promise<unknown>>()
   readonly #untimedLoads = new Set<Promise<unknown>>()
   readonly #pendingSubmits = new Set<Promise<unknown>>()
-  // The owners of edits with their schemas: '' for the container, else the
-  // data paths of sources with their own resource, which can't be inlined.
-  readonly #editedOwners = shallowReactive(new Map<string, Schema | null>())
+  // The owners of edits by data path: '' for the container, else the data
+  // paths of sources with their own resource, which can't be inlined.
+  readonly #editedOwners = shallowReactive(new Map<string, EditedOwner>())
+  // Edits are numbered, so that saves only clean the edits that they carried:
+  #editCount = 0
   readonly #errors = shallowRef(new WeakEntryMap<ValueErrors>())
   readonly #fieldErrors = shallowRef(new WeakEntryMap<string[]>())
   #computedValueWriteCounts: Map<string | null, number> | null = null
@@ -206,7 +215,7 @@ export class DataModel {
   }
 
   get isDirty(): boolean {
-    return [...this.#editedOwners.values()].some(sourceSchema =>
+    return [...this.#editedOwners.values()].some(({ sourceSchema }) =>
       sourceSchema
         ? hasSubmitButton(getButtonSchemas(sourceSchema.buttons))
         : this.#options.canSave()
@@ -217,15 +226,34 @@ export class DataModel {
     return this.#editedOwners.size > 0
   }
 
-  markEdited() {
-    this.#editedOwners.set('', null)
+  get editCount(): number {
+    return this.#editCount
   }
 
-  markClean(dataPath: string | null = null) {
-    if (dataPath) {
-      this.#editedOwners.delete(dataPath)
-    } else {
-      this.#editedOwners.clear()
+  markEdited() {
+    this.#markEdited('', null)
+  }
+
+  #markEdited(dataPath: string, sourceSchema: Schema | null) {
+    this.#editedOwners.set(dataPath, {
+      sourceSchema,
+      editCount: ++this.#editCount
+    })
+  }
+
+  // Clean the edits of the source at `dataPath`, or of all owners, up to
+  // `editCount`, e.g. the edits that a save carried:
+  markClean({
+    dataPath = null,
+    editCount = this.#editCount
+  }: { dataPath?: string | null; editCount?: number } = {}) {
+    for (const [key, owner] of this.#editedOwners) {
+      if (
+        (dataPath === null || key === dataPath) &&
+        owner.editCount <= editCount
+      ) {
+        this.#editedOwners.delete(key)
+      }
     }
   }
 
@@ -303,7 +331,7 @@ export class DataModel {
       updateOrder(schema, list, offset)
     }
     if (sourceEntry) {
-      this.#editedOwners.set(sourceEntry.dataPath!, sourceEntry.schema)
+      this.#markEdited(sourceEntry.dataPath!, sourceEntry.schema)
     } else {
       this.markEdited()
     }
@@ -486,12 +514,18 @@ export class DataModel {
     this.componentRecords.clear()
     this.#pendingLoads.clear()
     this.#untimedLoads.clear()
-    this.pendingWrites.clear()
+    this.#pendingWrites.clear()
     this.#pendingSubmits.clear()
   }
 
+  trackPendingWrite(write: () => void) {
+    this.#pendingWrites.add(write)
+  }
+
   writePendingValues() {
-    for (const write of this.pendingWrites) {
+    const writes = [...this.#pendingWrites]
+    this.#pendingWrites.clear()
+    for (const write of writes) {
       write()
     }
   }
@@ -507,28 +541,18 @@ export class DataModel {
     while (this.#untimedLoads.size > 0) {
       await Promise.all(this.#untimedLoads)
     }
-    let timeoutId: ReturnType<typeof setTimeout> | undefined
-    const timedOut = new Promise<boolean>(resolve => {
-      timeoutId = setTimeout(() => resolve(true), timeout)
-    })
-    const settled = (async () => {
+    const isSettled = await settleWithin(timeout, async () => {
       while (this.hasPendingLoads) {
         await Promise.all(this.#pendingLoads)
         await nextTick()
       }
-      return false
-    })()
-    try {
-      const hasTimedOut = await Promise.race([settled, timedOut])
-      if (hasTimedOut) {
-        console.warn(
-          `The data model didn't settle within ${timeout}ms, as ` +
-          `${this.#pendingLoads.size} loads of data schemas or options are ` +
-          `still pending. Continuing without them.`
-        )
-      }
-    } finally {
-      clearTimeout(timeoutId)
+    })
+    if (!isSettled) {
+      console.warn(
+        `The data model didn't settle within ${timeout}ms, as ` +
+        `${this.#pendingLoads.size} loads of data schemas or options are ` +
+        `still pending. Continuing without them.`
+      )
     }
   }
 
@@ -549,8 +573,10 @@ export class DataModel {
     return this.#pendingSubmits.size > 0
   }
 
-  async waitUntilSubmitted() {
-    await Promise.allSettled(this.#pendingSubmits)
+  // Submits that never finish would block leaving forever, so we stop waiting
+  // after `timeout`:
+  async waitUntilSubmitted({ timeout = settleTimeout } = {}) {
+    await settleWithin(timeout, () => Promise.allSettled(this.#pendingSubmits))
   }
 
   trackPendingSubmit<T>(promise: Promise<T>): Promise<T> {
@@ -950,6 +976,22 @@ const optionsNotLoaded = Symbol('optionsNotLoaded')
 const maxComputedValueWrites = 10
 
 const settleTimeout = 30_000
+
+// Resolve with whether `settle()` resolved within `timeout`:
+async function settleWithin(
+  timeout: number,
+  settle: () => Promise<unknown>
+): Promise<boolean> {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined
+  const timedOut = new Promise<boolean>(resolve => {
+    timeoutId = setTimeout(() => resolve(false), timeout)
+  })
+  try {
+    return await Promise.race([settle().then(() => true), timedOut])
+  } finally {
+    clearTimeout(timeoutId)
+  }
+}
 
 function createComponentRecord(entry: SchemaDataEntry): ComponentRecord {
   return {

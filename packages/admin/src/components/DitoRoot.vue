@@ -123,6 +123,11 @@ export default DitoComponent.component('DitoRoot', {
     // changes within the admin are guarded by `RouteMixin` instead.
     this.domOn(window, {
       beforeunload: event => {
+        // Write the edits that are held back first, e.g. debounced markup
+        // edits:
+        for (const routeComponent of this.appState.routeComponents) {
+          routeComponent.dataModel.writePendingValues()
+        }
         if (this.hasUnsavedChanges()) {
           event.preventDefault()
           // Required by older browsers to show the warning:
@@ -148,16 +153,12 @@ export default DitoComponent.component('DitoRoot', {
       this.notifications.destroyAll()
     },
 
-    // Returns true if any of the route components has unsaved changes. Used by
-    // `beforeunload`, which can't wait for pending submits, so data that is
-    // being submitted still counts as unsaved.
+    // Data that is being submitted still counts as unsaved, as `beforeunload`
+    // can't wait for the submits:
     hasUnsavedChanges() {
-      const { routeComponents } = this.appState
-      // Write the edits that are held back, e.g. debounced markup edits:
-      for (const routeComponent of routeComponents) {
-        routeComponent.dataModel.writePendingValues()
-      }
-      return routeComponents.some(routeComponent => routeComponent.isDirty)
+      return this.appState.routeComponents.some(
+        routeComponent => routeComponent.isDirty
+      )
     },
 
     // Shows a dialog with the `components` and `buttons` of `schema`, and

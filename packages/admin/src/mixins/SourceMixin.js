@@ -516,12 +516,13 @@ export default {
     // loading isn't an edit, and replaces the source's changes.
     setLoadedValue(value) {
       this.data[this.name] = value
-      this.dataModel.markClean(this.dataPath)
+      this.dataModel.markClean({ dataPath: this.dataPath })
     },
 
     async submit(button) {
       // Wait for the data that's still loading, e.g. uploads, like forms do:
       await this.waitUntilDataModelSettled()
+      const { editCount } = this.dataModel
       let { resource } = button.schema
       resource = getResource(resource, {
         parent: this.getResource({
@@ -541,7 +542,7 @@ export default {
         if (isSuccessful) {
           // The source saved its own changes, e.g. the order of its items,
           // which clears their errors, like saving forms does:
-          this.dataModel.markClean(this.dataPath)
+          this.dataModel.markClean({ dataPath: this.dataPath, editCount })
           this.dataModel.clearErrors(this.dataPath)
         }
         return isSuccessful
@@ -590,7 +591,7 @@ export default {
         } else {
           this.dataModel.remove(this.listEntry, index)
           if (!this.isTransient) {
-            this.dataModel.markClean(this.dataPath)
+            this.dataModel.markClean({ dataPath: this.dataPath })
           }
         }
         this.onChange()
@@ -700,26 +701,27 @@ export default {
         : (this.route?.getFormPath(dataPath) ?? null)
     },
 
-    // The label that `DitoSourceItem` shows for `item`: Inlined items show it
-    // in their schema, but only in lists and collapsible objects. The others
-    // show it as HTML, rendered through `render()` if the source has it.
+    // The label that `DitoSourceItem` shows for `item`, see
+    // `SourceContext.getItemLabel()`:
     getSourceItemLabel(item, index = null) {
-      return this.isInlined
-        ? this.isListSource || this.collapsible
+      if (this.isInlined) {
+        // Inlined items show the label in their schema, but only in lists and
+        // collapsible objects:
+        return this.isListSource || this.collapsible
           ? this.getItemLabel(this.schema, item, { index, asObject: true })
           : null
-        : this.schema.component
-          ? null
-          : this.render
-            ? this.render(
-                new DitoContext(this, {
-                  data: item,
-                  value: item,
-                  index,
-                  dataPath: this.getItemDataPath(this.schema, index)
-                })
-              )
-            : this.getItemLabel(this.schema, item, { index })
+      } else {
+        return this.render
+          ? this.render(
+              new DitoContext(this, {
+                data: item,
+                value: item,
+                index,
+                dataPath: this.getItemDataPath(this.schema, index)
+              })
+            )
+          : this.getItemLabel(this.schema, item, { index })
+      }
     },
 
     // Lists linked to views edit their items in the form of the view:

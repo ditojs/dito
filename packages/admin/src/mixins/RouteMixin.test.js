@@ -314,6 +314,66 @@ describe('RouteMixin', () => {
         expect(admin.router.currentRoute.value.path).toBe('/items/create')
         expect(routeComponent.isDirty).toBe(true)
       })
+
+      it('opens the created item when the navigation is aborted', async () => {
+        const { admin, routeComponent, response } = await mountSubmittingForm()
+        admin.router.beforeEach(to => to.path !== '/items')
+        const navigation = admin.router.push('/items')
+        await flushPromises()
+        response.resolve({ data: { id: 1, title: 'Dune' } })
+        await navigation
+        await flushPromises()
+        expect(admin.router.currentRoute.value.path).toBe('/items/1')
+        expect(routeComponent.isCreating).toBe(false)
+      })
+
+      it('opens the created item when the navigation is superseded', async () => {
+        const { admin, routeComponent, response } = await mountSubmittingForm()
+        const navigation = admin.router.push('/items')
+        await flushPromises()
+        // A navigation that stays in the form, e.g. to a tab:
+        await admin.router.push('/items/create#details')
+        response.resolve({ data: { id: 1, title: 'Dune' } })
+        await navigation
+        await flushPromises()
+        expect(admin.router.currentRoute.value.fullPath).toBe(
+          '/items/1#details'
+        )
+        expect(routeComponent.isCreating).toBe(false)
+      })
+
+      it('opens the created item when the navigation is redirected', async () => {
+        const { admin, response } = await mountSubmittingForm()
+        // Redirect to a location that stays in the form, e.g. a tab:
+        admin.router.beforeEach(to =>
+          to.path === '/items'
+            ? { path: '/items/create', hash: '#notes' }
+            : true
+        )
+        const navigation = admin.router.push('/items')
+        await flushPromises()
+        response.resolve({ data: { id: 1, title: 'Dune' } })
+        await navigation
+        await flushPromises()
+        expect(admin.router.currentRoute.value.fullPath).toBe('/items/1#notes')
+      })
+
+      // A hanging save mustn't block leaving: after a while, the guard asks.
+      it('asks once the submit takes too long', async () => {
+        const confirm = stubConfirm(false)
+        const { admin, response } = await mountSubmittingForm()
+        vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+        const navigation = admin.router.push('/items')
+        await flushPromises()
+        expect(confirm).not.toHaveBeenCalled()
+        await vi.advanceTimersByTimeAsync(30_000)
+        vi.useRealTimers()
+        await navigation
+        await flushPromises()
+        expect(confirm).toHaveBeenCalledOnce()
+        expect(admin.router.currentRoute.value.path).toBe('/items/create')
+        response.reject(new Error('Server unavailable'))
+      })
     })
 
     it(`doesn't ask when opening nested forms`, async () => {

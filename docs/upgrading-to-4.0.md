@@ -318,7 +318,7 @@ contexts:
   Forms don't continue the source of their parent, e.g. the forms of tree
   items, whose `listQuery` was the tree's query.
 - `resource`, provided by forms and sources, also without a resource of their
-  own: its `parent`, `closestWithResource`, `verbs`, `getResource()` and
+  own: its `parent`, `resourceOwner`, `verbs`, `getResource()` and
   `submit(button)`. Resources continue the one of the form that renders the
   source, or of the parent form of forms. The forms of tree items no longer
   continue the resource of the tree, which resolved their item at
@@ -334,7 +334,7 @@ Views provide both contexts of their main component, e.g. to their panels.
 - `resourceComponent.resource`, the `resource` of forms and sources:
   `resource.getResource()`. `resourceComponent.submit(button)`:
   `resource.submit(button)`.
-- `dataComponent`: `resource.closestWithResource`. The components in sources
+- `dataComponent`: `resource.resourceOwner`. The components in sources
   with a resource read the root data of their route, like all others.
 - `isPopulated`: `container.hasData`.
 - `sourceSchema` is only defined by the components that render schemas:

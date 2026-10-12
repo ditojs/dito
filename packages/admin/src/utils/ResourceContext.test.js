@@ -48,7 +48,7 @@ describe('ResourceContext', () => {
     const { routeComponent: form, getComponent } = await mountBook()
     const notes = getComponent('notes')
     expect(notes.resource.getResource()).toBe(null)
-    expect(notes.resource.closestWithResource).toBe(form.resource)
+    expect(notes.resource.resourceOwner).toBe(form.resource)
     expect(getComponent('notes/0/text').getResourceUrl({ path: 'notes' }))
       .toBe('/items/1/notes')
   })

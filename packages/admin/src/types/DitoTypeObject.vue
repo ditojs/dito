@@ -9,7 +9,6 @@
     DitoSourceItem(
       :schema="schema"
       :formSchema="getItemFormSchema(schema, objectData, context)"
-      :label="getSourceItemLabel(objectData)"
       :dataPath="dataPath"
       :data="objectData"
       :store="store"
