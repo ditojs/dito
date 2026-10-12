@@ -3275,14 +3275,13 @@ export class QueryBuilder<
     options?: objection.WithGraphOptions
   ): this
 
-  /** Patches or updates the matched model, or inserts it if none matched. */
-  upsert(
-    data: PartialModelObject<M>,
-    options?: {
-      update?: boolean
-      fetch?: boolean
-    }
-  ): objection.SingleQueryBuilder<this>
+  /**
+   * Inserts the models, or updates the ones whose ids exist already,
+   * atomically through `insert().onConflict(idColumns).merge()`. The models
+   * are validated as full models, like in `insert()`.
+   */
+  upsert(data: PartialModelObject<M>[]): objection.ArrayQueryBuilder<this>
+  upsert(data: PartialModelObject<M>): objection.SingleQueryBuilder<this>
 
   /**
    * Applies query parameters through the handlers registered in
@@ -3298,28 +3297,31 @@ export class QueryBuilder<
         }
   ): this
 
-  /** Also supports arrays of models, not only single instances. */
+  /**
+   * Also supports arrays of models, each patched by its id in one
+   * transaction. Models without ids are rejected.
+   */
   patchAndFetch(
     data: objection.PartialModelObject<M>[]
   ): objection.ArrayQueryBuilder<this>
 
   patchAndFetch(
-    data: objection.PartialModelObject<M>
-  ): objection.SingleQueryBuilder<this>
-
-  /** Also supports arrays of models, not only single instances. */
-  updateAndFetch(
-    data: objection.PartialModelObject<M>[]
-  ): objection.ArrayQueryBuilder<this>
-
-  updateAndFetch(
     data: objection.PartialModelObject<M>
   ): objection.SingleQueryBuilder<this>
 
   /**
-   * Upserts the models, inserting missing ones only at the root and leaving
-   * their relations untouched.
+   * Also supports arrays of models, each updated by its id in one
+   * transaction. Models without ids are rejected.
    */
+  updateAndFetch(
+    data: objection.PartialModelObject<M>[]
+  ): objection.ArrayQueryBuilder<this>
+
+  updateAndFetch(
+    data: objection.PartialModelObject<M>
+  ): objection.SingleQueryBuilder<this>
+
+  /** Like `upsert()`, and fetches the models, as `insertAndFetch()` does. */
   upsertAndFetch(
     data: objection.PartialModelGraph<M>[]
   ): objection.ArrayQueryBuilder<this>

@@ -36,12 +36,12 @@ describe('QueryBuilder', () => {
     query.applyFilter(123)
   })
 
-  it('upsert options are individually optional', () => {
+  it('upserts single models and arrays', () => {
     const query = {} as QB
-    assertType<SingleQB>(query.upsert({} as any, { update: true }))
-    assertType<SingleQB>(query.upsert({} as any, { fetch: true }))
-    assertType<SingleQB>(query.upsert({} as any, {}))
-    assertType<SingleQB>(query.upsert({} as any))
+    assertType<SingleQB>(query.upsert({}))
+    assertType<QB>(query.upsert([{}]))
+    // @ts-expect-error - upsert() takes no options
+    query.upsert({}, { update: true })
   })
 
   it('scope methods return this for chaining', () => {

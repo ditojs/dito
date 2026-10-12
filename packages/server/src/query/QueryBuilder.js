@@ -29,6 +29,7 @@ export class QueryBuilder extends objection.QueryBuilder {
   #appliedScopes = {}
   #allowFilters = null
   #omits = []
+  #isTransacted = false
 
   // @override
   clone() {
@@ -41,6 +42,7 @@ export class QueryBuilder extends objection.QueryBuilder {
     copy.#scopes = { ...this.#scopes }
     copy.#allowScopes = this.#allowScopes ? { ...this.#allowScopes } : null
     copy.#ignoreScopes = { ...this.#ignoreScopes }
+    copy.#isTransacted = this.#isTransacted
     return copy
   }
 
@@ -55,7 +57,12 @@ export class QueryBuilder extends objection.QueryBuilder {
       })
     }
     this.#applyScopes()
-    return super.execute()
+    return this.#isTransacted && !this.knex().isTransaction
+      ? this.modelClass().transaction(trx => {
+          this.transacting(trx)
+          return super.execute()
+        })
+      : super.execute()
   }
 
   hasNormalSelects() {
@@ -455,32 +462,21 @@ export class QueryBuilder extends objection.QueryBuilder {
     return super.insert(data)
   }
 
-  // https://github.com/Vincit/objection.js/issues/101#issuecomment-200363667
-  upsert(data, options = {}) {
-    let mainQuery
-    return this.runBefore((result, builder) => {
-      if (!builder.context().isMainQuery) {
-        // At this point the builder should only contain a bunch of `where*`
-        // operations. Store this query for later use in runAfter(). Also mark
-        // the query with `isMainQuery: true` so we can skip all this when
-        // this function is called for the `mainQuery`.
-        mainQuery = builder.clone().context({ isMainQuery: true })
-        // Call update() on the original query, turning it into an update.
-        builder[options.update ? 'update' : 'patch'](data)
-      }
-      return result
-    }).runAfter((result, builder) => {
-      if (!builder.context().isMainQuery) {
-        return result === 0
-          ? mainQuery[options.fetch ? 'insertAndFetch' : 'insert'](data)
-          : // We can use the `mainQuery` we saved in runBefore() to fetch the
-            // inserted results. It is noteworthy that this query will return
-            // the wrong results if the update changed any of the columns the
-            // where operates with. This also returns all updated models.
-            mainQuery.first()
-      }
-      return result
-    })
+  // Insert the models, or update the ones whose ids exist already, atomically:
+  upsert(data) {
+    rejectGraphControlProps(this.modelClass(), data)
+    return super
+      .insert(data)
+      .onConflict(this.modelClass().getIdColumnArray())
+      .merge()
+  }
+
+  upsertAndFetch(data) {
+    rejectGraphControlProps(this.modelClass(), data)
+    return super
+      .insertAndFetch(data)
+      .onConflict(this.modelClass().getIdColumnArray())
+      .merge()
   }
 
   find(query, allowParam) {
@@ -534,34 +530,37 @@ export class QueryBuilder extends objection.QueryBuilder {
   }
 
   // Extend Objection's `patchAndFetch()` and `updateAndFetch()` to also support
-  // arrays of models, not only single instances.
+  // arrays of models, each saved by its id, in one transaction.
   // See: https://gitter.im/Vincit/objection.js?at=5f994a5900a0f3369d366d6f
 
   patchAndFetch(data) {
     return isArray(data)
-      ? this.#upsertAndFetch(data)
+      ? this.#saveAndFetch(data, 'patch')
       : super.patchAndFetch(data)
   }
 
   updateAndFetch(data) {
     return isArray(data)
-      ? this.#upsertAndFetch(data, { update: true })
+      ? this.#saveAndFetch(data, 'update')
       : super.updateAndFetch(data)
   }
 
-  upsertAndFetch(data) {
-    // Also insert the models with ids that don't exist yet.
-    return this.#upsertAndFetch(data, { insertMissing: true })
-  }
-
-  #upsertAndFetch(data, options) {
-    rejectGraphControlProps(this.modelClass(), data)
+  #saveAndFetch(data, action) {
+    const modelClass = this.modelClass()
+    rejectGraphControlProps(modelClass, data)
+    const idProperties = modelClass.getIdPropertyArray()
+    if (data.some(model => idProperties.some(key => model[key] == null))) {
+      throw new QueryBuilderError(`Unable to ${action} models without ids.`)
+    }
+    this.#isTransacted = true
     // Like `patch()` and `update()` of single models, only save the models
     // themselves, not their relations: Writing graphs is the job of the
-    // `*DitoGraph*()` methods. Models without ids are inserted.
-    return this.upsertGraphAndFetch(omitRelations(this.modelClass(), data), {
+    // `*DitoGraph*()` methods.
+    return this.upsertGraphAndFetch(omitRelations(modelClass, data), {
       fetchStrategy: 'OnlyNeeded',
-      ...options
+      noInsert: true,
+      noDelete: true,
+      update: action === 'update'
     })
   }
 
@@ -789,7 +788,7 @@ for (const key of [
   }
 }
 
-// Returns the models without their relations, see `#upsertAndFetch()`.
+// Returns the models without their relations, see `#saveAndFetch()`.
 function omitRelations(modelClass, data) {
   const relations = modelClass.getRelations()
   const omit = model =>
