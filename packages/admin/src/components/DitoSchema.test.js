@@ -1006,6 +1006,37 @@ describe('DitoSchema', () => {
     })
   })
 
+  describe('errors inside values', () => {
+    it('shows them on the field of the value', async () => {
+      const { schemaComponent, admin, getErrors } = await mountSchema({
+        schema: {
+          components: {
+            address: {
+              type: 'code',
+              format: ({ value }) => JSON.stringify(value),
+              parse: ({ value }) => JSON.parse(value)
+            }
+          }
+        },
+        data: { address: { city: 'Bath' } }
+      })
+      const notify = vi.spyOn(admin.context, 'notify')
+      await schemaComponent.showValidationErrors({
+        'address/street': [{ message: 'is required' }]
+      })
+      await flushPromises()
+      expect(getErrors('address')).toEqual([
+        `The address field's street is required.`
+      ])
+      expect(notify).toHaveBeenCalledWith(
+        expect.objectContaining({
+          text: 'Please correct the highlighted errors.'
+        })
+      )
+      vi.restoreAllMocks()
+    })
+  })
+
   describe('revealing components of inlined schemas', () => {
     async function mountCollapsedAuthor() {
       return mountSchema({

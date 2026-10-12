@@ -2659,8 +2659,9 @@ export interface DataModel {
   /**
    * Replaces the validation errors, or with `server` the ones of
    * the server, of the values within `dataPath` with `errors`,
-   * keyed by data path, and returns the ones of fields that aren't
-   * displayed, or `null`.
+   * keyed by data path. Errors inside values that no deeper field
+   * displays go to the field of the value, with their `path` in it.
+   * Returns the errors that no field displays, or `null`.
    */
   replaceErrors(
     errors: Record<string, ValidationError[]>,
@@ -2683,6 +2684,11 @@ export interface DataModel {
 /** A validation error, as validation and the server return them. */
 export interface ValidationError {
   message: string
+  /**
+   * The path of the error inside the value of the field that displays it,
+   * if no deeper field displays the value, e.g. in objects edited as code.
+   */
+  path?: string
 }
 
 export interface MenuSchema<$Item = any> {

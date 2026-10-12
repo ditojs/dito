@@ -68,6 +68,14 @@ describe('UiRegistry', () => {
     expect(focus).toHaveBeenCalledOnce()
   })
 
+  it('focuses the component of the value of paths inside it', async () => {
+    const registry = new UiRegistry()
+    const focus = vi.fn()
+    registry.register(() => 'address', { dataContext, focus })
+    await registry.reveal(dataContext, 'address/street', { focus: true })
+    expect(focus).toHaveBeenCalledOnce()
+  })
+
   it(`doesn't focus components when only revealing them`, async () => {
     const registry = new UiRegistry()
     const focus = vi.fn()

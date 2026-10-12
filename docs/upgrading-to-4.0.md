@@ -149,6 +149,10 @@ which components write the data through.
   are added with `addError()` and stay until their source removes them with
   `removeError()`. `getFieldErrors()` returns their messages, `getErrors()`
   only the errors of the value.
+- Errors inside values that no deeper field displays show on the field of the
+  value, with their `path` in it, e.g. "The address field's street is
+  required." for an object edited as code, instead of only in the
+  notification. Revealing them focuses that field.
 - Nested forms take over the errors of their item when they open, and when
   their parent reveals errors while they're open.
 - The rows of lists and the items of trees whose items or children hold

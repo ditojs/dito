@@ -1439,11 +1439,11 @@ describe('DataModel', () => {
       const unmatchedErrors = dataModel.replaceErrors(
         {
           'chapters/1/title': tooShort,
-          'chapters/1/isbn': tooShort
+          'title': tooShort
         },
         { dataPath: 'chapters' }
       )
-      expect(unmatchedErrors).toEqual({ 'chapters/1/isbn': tooShort })
+      expect(unmatchedErrors).toEqual({ title: tooShort })
       expect(dataModel.getErrors('chapters/0/title')).toBe(null)
       expect(dataModel.getErrors('chapters/1/title')).toEqual(tooShort)
       // Errors outside of the data path are kept:
@@ -1456,6 +1456,35 @@ describe('DataModel', () => {
         null
       )
       expect(dataModel.getErrorDataPaths()).toEqual(['details/subtitle'])
+      dataModel.stop()
+    })
+
+    it('gives the errors inside values to the deepest field', () => {
+      // E.g. of objects that a code field edits as JSON:
+      const { dataModel } = createBook()
+      const isRequired = [{ message: 'is required' }]
+      const unmatchedErrors = dataModel.replaceErrors(
+        {
+          'details/subtitle': tooShort,
+          'details/author/name': isRequired,
+          'chapters/1/isbn': isRequired,
+          'publisher': isRequired
+        },
+        { server: true }
+      )
+      expect(unmatchedErrors).toEqual({ publisher: isRequired })
+      expect(dataModel.getErrors('details/subtitle')).toEqual(tooShort)
+      expect(dataModel.getErrors('details')).toEqual([
+        { message: 'is required', path: 'author/name' }
+      ])
+      expect(dataModel.getErrors('chapters')).toEqual([
+        { message: 'is required', path: '1/isbn' }
+      ])
+      expect(dataModel.getErrorDataPaths()).toEqual([
+        'details',
+        'details/subtitle',
+        'chapters'
+      ])
       dataModel.stop()
     })
 
