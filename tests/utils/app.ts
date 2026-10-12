@@ -24,6 +24,11 @@ interface TestAppOptions {
 
 const adminRoot = path.resolve(import.meta.dirname, 'admin-app')
 
+// Listen on a loopback address and reach the app through it, as other processes
+// can bind the port of a server that listens on all addresses to a specific
+// address, and then receive its connections.
+const host = '127.0.0.1'
+
 export function createTestApp(
   options: TestAppOptions = {}
 ): TestApp {
@@ -39,7 +44,7 @@ export function createTestApp(
       },
       log: { silent: true },
       env: 'development',
-      server: { port: 0 },
+      server: { host, port: 0 },
       knex,
       ...options.config,
       ...(options.admin && {
@@ -67,13 +72,13 @@ export function createTestApp(
       '../../packages'
     )
 
-    // After setup() registers controllers but before the vite dev server
-    // starts, build a vite config with our source aliases and make
-    // loadAdminViteConfig() return it so setupViteServer() uses it directly.
-    app.once('before:start', () => {
-      const viteConfig = app.defineAdminViteConfig({
+    // Build the vite config with our source aliases when the started app sets
+    // up its vite dev server.
+    app.loadAdminViteConfig = async () =>
+      app.defineAdminViteConfig({
         server: {
-          hmr: { port: 0 }
+          // Serve HMR through the app's server, for the same reason as above.
+          hmr: { server: app.server! }
         },
         resolve: {
           alias: [
@@ -140,8 +145,6 @@ export function createTestApp(
           process.env.TEST_PARALLEL_INDEX ?? '0'
         )
       })
-      app.loadAdminViteConfig = async () => viteConfig
-    })
   }
 
   return app
@@ -163,7 +166,7 @@ export function stubSession(app: TestApp) {
 export function getAppUrl(app: TestApp): string {
   const address = app.server?.address?.()
   if (address && typeof address === 'object') {
-    return `http://localhost:${address.port}`
+    return `http://${host}:${address.port}`
   }
   throw new Error('Server not listening')
 }
