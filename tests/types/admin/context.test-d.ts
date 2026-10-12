@@ -47,7 +47,7 @@ describe('SchemaContext', () => {
     expectTypeOf<Ctx['replaceItem']>().returns.toEqualTypeOf<Entry>()
     expectTypeOf<Ctx['getResourceUrl']>().toBeCallableWith()
     expectTypeOf<Ctx['getResourceUrl']>().returns.toBeString()
-    expectTypeOf<Ctx['listQuery']>().toExtend<Record<string, any> | null>()
+    expectTypeOf<Ctx['sourceQuery']>().toExtend<Record<string, any> | null>()
     expectTypeOf<Ctx>().not.toHaveProperty('formComponent')
     expectTypeOf<Ctx>().not.toHaveProperty('component')
     expectTypeOf<Ctx>().not.toHaveProperty('query')

@@ -37,13 +37,13 @@ describe('SourceContext', () => {
     const source = chapters.ownSourceContext
     expect(source.schema).toBe(chapters.schema)
     expect(source.dataPath).toBe('chapters')
-    expect(getComponent('chapters/0/title').context.listQuery).toBe(
+    expect(getComponent('chapters/0/title').context.sourceQuery).toBe(
       source.query
     )
-    expect(getComponent('title').context.listQuery).toBe(null)
+    expect(getComponent('title').context.sourceQuery).toBe(null)
   })
 
-  it('provides the query of lists as `listQuery`', async () => {
+  it('provides the query of lists as `sourceQuery`', async () => {
     const { getComponent } = await mountSchema({
       schema: {
         components: {
@@ -60,7 +60,7 @@ describe('SourceContext', () => {
     })
     const books = getComponent('books')
     expect(books.ownSourceContext.query).toEqual({ scope: 'all' })
-    expect(getComponent('books/export').context.listQuery).toBe(
+    expect(getComponent('books/export').context.sourceQuery).toBe(
       books.ownSourceContext.query
     )
   })
@@ -80,12 +80,12 @@ describe('SourceContext', () => {
       },
       data: { pages: [{ title: 'About' }] }
     })
-    expect(getComponent('pages').context.listQuery).not.toBe(null)
+    expect(getComponent('pages').context.sourceQuery).not.toBe(null)
     const form = await openForm(admin, '/items/1/pages/0')
     const title = admin.getComponent(form, 'pages/0/title')
-    expect(title.context.listQuery).toBe(null)
+    expect(title.context.sourceQuery).toBe(null)
     // Nor the callbacks of the form's schema:
-    expect(form.$refs.schema.context.listQuery).toBe(null)
+    expect(form.$refs.schema.context.sourceQuery).toBe(null)
   })
 
   it('reloads the list of a saved item in the parent form', async () => {

@@ -207,9 +207,9 @@ describe('DitoPanel', () => {
                 compute: ({ getResourceUrl }) => getResourceUrl()
               },
               // Forms don't continue the source of their parent:
-              hasListQuery: {
+              hasSourceQuery: {
                 type: 'checkbox',
-                compute: ({ listQuery }) => !!listQuery
+                compute: ({ sourceQuery }) => !!sourceQuery
               }
             }
           }
@@ -218,7 +218,10 @@ describe('DitoPanel', () => {
       data: { title: 'Emma' }
     })
     const panel = wrapper.findComponent({ name: 'DitoPanel' })
-    expect(panel.vm.panelData).toEqual({ url: '/items/1', hasListQuery: false })
+    expect(panel.vm.panelData).toEqual({
+      url: '/items/1',
+      hasSourceQuery: false
+    })
   })
 
   it('validates and edits its own data through contexts', async () => {

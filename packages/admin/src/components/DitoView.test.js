@@ -102,7 +102,7 @@ describe('DitoView', () => {
       // Components of the view outside of the list, e.g. its schema, use the
       // contexts of the list, but display the view's data:
       const { context } = view.$refs.schema
-      expect(context.listQuery).toBe(list.ownSourceContext.query)
+      expect(context.sourceQuery).toBe(list.ownSourceContext.query)
       expect(context.getResourceUrl()).toBe('/books')
       expect(list.ownSourceContext.schema).toBe(list.schema)
     })
@@ -119,7 +119,7 @@ describe('DitoView', () => {
       await admin.navigate('/library')
       const view = admin.getRouteComponent(isView)
       const { context } = view.$refs.schema
-      expect(context.listQuery).toBe(null)
+      expect(context.sourceQuery).toBe(null)
       expect(() => context.getResourceUrl()).toThrow(
         'There is no form or list with a resource.'
       )

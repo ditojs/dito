@@ -212,7 +212,8 @@ changed value.
   throws outside of forms, as `closeDialog()` does outside of dialogs.
 - `component.$router.resolve(location).href`: `getRouteUrl(location)`.
 - `query`, the query of the route: `routeQuery`. `sourceComponent.query`:
-  `listQuery`, the query of the nearest list, e.g. its scope and filters.
+  `sourceQuery`, the query of the nearest list, e.g. its scope and filters,
+  `null` inside forms.
 - `getResourceUrl(resourceComponent.resource)`: `getResourceUrl()`, the URL of
   the nearest form or list with a resource: of the item that the form edits, or
   of the collection that the list loads or the form creates its item in. It
@@ -357,7 +358,7 @@ contexts:
   display them and their items: `schema`, `query`, `dataPath`,
   `componentPath`, `store`, `isDisabled`, `verbs`, `createItem()`, `reload()`,
   `submit(button)` and their `resourceContext`. Forms don't continue the
-  source of their parent, e.g. the forms of tree items, whose `listQuery` was
+  source of their parent, e.g. the forms of tree items, whose `sourceQuery` was
   the tree's query.
 - `resourceContext`, provided only by forms and sources with a resource of
   their own: `getResource()` and `submit(button)`. Components see the nearest
