@@ -44,22 +44,6 @@ describe('useLeaveGuard()', () => {
       expect(admin.router.currentRoute.value.path).toBe('/items')
     })
 
-    // Edits that don't blur the editor are written debounced, which leaving
-    // right away mustn't miss.
-    it('asks before leaving with pending edits', async () => {
-      const confirm = stubConfirm(false)
-      const { admin, getComponent } = await mountForm({
-        schema: { components: { body: { type: 'markup' } } },
-        data: { body: '<p>Emma</p>' }
-      })
-      getComponent('body').editor.commands.setContent('<p>Emma!</p>', {
-        emitUpdate: true
-      })
-      await admin.navigate('/items')
-      expect(confirm).toHaveBeenCalledOnce()
-      expect(admin.router.currentRoute.value.path).toBe('/items/1')
-    })
-
     it('asks only once for navigations while the dialog is open', async () => {
       const { admin, wrapper, routeComponent } = await mountForm({
         schema: { components: { title: { type: 'text' } } },

@@ -30,25 +30,6 @@ describe('DitoTypeButton', () => {
     expect(onClick.mock.calls[0][0].item.title).toBe('Emma')
   })
 
-  it('writes pending edits before calling the click handler', async () => {
-    const onClick = vi.fn(({ item }) => item.body)
-    const { findField, getComponent } = await mountSchema({
-      schema: {
-        components: {
-          body: { type: 'markup' },
-          publish: { type: 'button', onClick }
-        }
-      },
-      data: { body: '<p>Emma</p>' }
-    })
-    // Edits that don't blur the editor are written debounced:
-    getComponent('body').editor.commands.setContent('<p>Emma!</p>', {
-      emitUpdate: true
-    })
-    await findField('publish').trigger('click')
-    expect(onClick).toHaveReturnedWith('<p>Emma!</p>')
-  })
-
   it('lets click handlers change the data', async () => {
     const { findField, data } = await mountSchema({
       schema: {

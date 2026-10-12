@@ -137,8 +137,6 @@ interface DataEntries {
 // its schema and data independently of what is rendered.
 export class DataModel {
   componentRecords = new EntryMap<ComponentRecord>()
-  // The writes of values that components hold back, e.g. debounced edits:
-  readonly #pendingWrites = new Set<() => void>()
   readonly #pendingLoads = new Set<Promise<unknown>>()
   readonly #untimedLoads = new Set<Promise<unknown>>()
   readonly #pendingSubmits = new Set<Promise<unknown>>()
@@ -537,20 +535,7 @@ export class DataModel {
     this.componentRecords.clear()
     this.#pendingLoads.clear()
     this.#untimedLoads.clear()
-    this.#pendingWrites.clear()
     this.#pendingSubmits.clear()
-  }
-
-  trackPendingWrite(write: () => void) {
-    this.#pendingWrites.add(write)
-  }
-
-  writePendingValues() {
-    const writes = [...this.#pendingWrites]
-    this.#pendingWrites.clear()
-    for (const write of writes) {
-      write()
-    }
   }
 
   get hasPendingLoads(): boolean {

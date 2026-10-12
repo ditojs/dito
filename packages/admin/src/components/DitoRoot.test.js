@@ -36,17 +36,6 @@ describe('DitoRoot', () => {
       expect(isUnloadPrevented()).toBe(true)
     })
 
-    it('prevents unloading with pending edits', async () => {
-      const { getComponent } = await mountForm({
-        schema: { components: { body: { type: 'markup' } } },
-        data: { body: '<p>Emma</p>' }
-      })
-      getComponent('body').editor.commands.setContent('<p>Emma!</p>', {
-        emitUpdate: true
-      })
-      expect(isUnloadPrevented()).toBe(true)
-    })
-
     const editViewTitle = async buttons => {
       const admin = await mountAdmin({
         views: {
