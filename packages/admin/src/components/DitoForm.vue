@@ -570,6 +570,14 @@ export default {
         return false
       }
       const { editCount } = ownDataModel
+      // Allow buttons to override both method and resource path to submit to:
+      let method = isCreating.value ? 'post' : 'patch'
+      let resource = requests.getResource({ method })
+      const buttonResource = getResource(button.schema.resource, {
+        parent: resource
+      })
+      resource = buttonResource || resource
+      method = resource?.method || method
 
       const getVerb = present => verbs.value[getSubmitVerb(present)]
       // NOTE: `itemLabel` is HTML, the other values need to be escaped:
@@ -584,19 +592,24 @@ export default {
             : `Unable to ${verb} ${itemLabel.value}.`
         })
       }
+      // Clean up only the data that was submitted, as the form may show other
+      // data once the submit succeeds:
+      const isSubmittedData = () => data.value === submittedData
       const callbacks = {
-        onSuccess: () => emitSchemaEvent(getSubmitVerb()),
+        onSuccess: () => {
+          if (isSubmittedData()) {
+            getDataModel().clearErrors(dataPath.value)
+            // Edits made while saving stay dirty, and so do the responses of
+            // buttons with resources in drafts:
+            if (!isTransient.value || !buttonResource) {
+              ownDataModel.markClean({ dataPath: '', editCount })
+            }
+            emitSchemaEvent(getSubmitVerb())
+          }
+        },
         onError: error => emitSchemaEvent('error', { context: { error } })
       }
 
-      // Allow buttons to override both method and resource path to submit to:
-      let method = isCreating.value ? 'post' : 'patch'
-      let resource = requests.getResource({ method })
-      const buttonResource = getResource(button.schema.resource, {
-        parent: resource
-      })
-      resource = buttonResource || resource
-      method = resource?.method || method
       let success
       if (!buttonResource && isTransient.value) {
         success = await submitTransient(button, {
@@ -623,8 +636,7 @@ export default {
         success = await submitResource(button, resource, method, payload, {
           ...callbacks,
           onSuccess: response => {
-            // Merge the response only into the data that was submitted:
-            if (response && data.value === submittedData) {
+            if (response && isSubmittedData()) {
               setData(response)
             }
             callbacks.onSuccess()
@@ -646,12 +658,6 @@ export default {
         }
       }
       if (success) {
-        getDataModel().clearErrors(dataPath.value)
-        // Edits made while saving stay dirty, and so do the responses of
-        // buttons with resources in drafts:
-        if (!isTransient.value || !buttonResource) {
-          ownDataModel.markClean({ dataPath: '', editCount })
-        }
         if (closeForm || button.closeForm) {
           navigateWithin(submittedPath, close)
         } else if (isCreating.value) {
