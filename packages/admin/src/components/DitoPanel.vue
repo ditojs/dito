@@ -61,7 +61,6 @@ import {
 } from '../composables/useSchemaContext.ts'
 import { useSchemaValue } from '../composables/useSchemaValue.ts'
 import { useComponentPath } from '../composables/useComponentPath.ts'
-import { getRootData } from '../utils/services.ts'
 import { getButtonSchemas } from '../utils/schema/lookup.js'
 import { shouldRenderComponents } from '../utils/schema/data.js'
 import { DataModel } from '../utils/DataModel.ts'
@@ -154,8 +153,7 @@ export default {
             new DitoContext(panelServices, {
               nested: false,
               data: panelData.value,
-              dataPath: panelDataPath.value,
-              rootData: getRootData(panelServices)
+              dataPath: panelDataPath.value
             })
           )
         )

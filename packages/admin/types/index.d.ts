@@ -1149,6 +1149,8 @@ export interface CustomComponentProps<$Item = any, $Value = any> {
   context: DitoContext<$Item>
   /** The value of the component, after `format()`. */
   modelValue: $Value
+  /** The id of the element that displays the errors, while there are any. */
+  errorsElementId?: string | null
 }
 
 /** The events of the custom components of `type: 'component'` schemas. */
@@ -1157,6 +1159,10 @@ export interface CustomComponentEmits<$Value = any> {
   'update:modelValue': (value: $Value) => void
   /** Ends the change of the value, which emits the schema's `change` event. */
   'change': () => void
+  /** Emit the schema's events, and `blur` validates the value. */
+  'focus'?: () => void
+  'blur'?: () => void
+  'input'?: () => void
 }
 
 /**

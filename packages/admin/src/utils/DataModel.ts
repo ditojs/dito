@@ -14,6 +14,7 @@ import {
 } from 'vue'
 import {
   isArray,
+  isFunction,
   isPlainObject,
   isEmpty,
   equals,
@@ -887,20 +888,23 @@ export class DataModel {
         if (isArray(options)) {
           const { entry } = record
           const { schema, data, name } = entry
+          const context = this.#createEntryContext(entry)
+          // Replace the value that the component displays, like it would:
+          const { format, parse } = schema
           const settings = getOptionsSettings(schema, options, {
-            multiple: getMultipleValue(schema),
+            multiple: getMultipleValue(schema, context),
             groupBy: null,
-            createContext: values =>
-              this.#createEntryContext(entry).extend({ options, ...values })
+            createContext: values => context.extend({ options, ...values })
           })
           const replaced = getReplacedValue(
             schema,
             settings,
             options,
-            data[name]
+            isFunction(format) ? format(context) : data[name]
           )
           if (replaced) {
-            data[name] = replaced.value
+            const { value } = replaced
+            data[name] = parse ? parse(context.extend({ value })) : value
           }
         }
       }, modelWatchOptions)

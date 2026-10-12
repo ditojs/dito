@@ -747,7 +747,7 @@ describe('DitoTypeList', () => {
     })
 
     it('keep the form of an item open when removing an earlier one', async () => {
-      const { admin, getComponent, data, settle } = await mountForm({
+      const { admin, findField, settle } = await mountForm({
         schema: {
           components: {
             chapters: {
@@ -776,7 +776,8 @@ describe('DitoTypeList', () => {
         'Departure'
       )
       await settle()
-      getComponent('chapters').removeItem(data.chapters[0], 0)
+      stubConfirm(true)
+      await findField('chapters').find('.dito-button--remove').trigger('click')
       await settle()
       // The form keeps editing its item, and follows it to its new index:
       expect(chapterForm.data.title).toBe('Departure')
@@ -784,7 +785,7 @@ describe('DitoTypeList', () => {
     })
 
     it('close the form of an item when removing it', async () => {
-      const { admin, getComponent, data, settle } = await mountForm({
+      const { admin, findField, settle } = await mountForm({
         schema: {
           components: {
             chapters: {
@@ -801,7 +802,8 @@ describe('DitoTypeList', () => {
       })
       await admin.navigate('/items/1/chapters/0')
       await settle()
-      getComponent('chapters').removeItem(data.chapters[0], 0)
+      stubConfirm(true)
+      await findField('chapters').find('.dito-button--remove').trigger('click')
       await settle()
       expect(admin.router.currentRoute.value.path).toBe('/items/1')
     })

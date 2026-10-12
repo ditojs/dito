@@ -361,6 +361,30 @@ describe('DitoTypeSelect', () => {
       }
     )
 
+    it('replaces the value that the component displays', async () => {
+      const { data } = await mountSchema({
+        schema: {
+          components: {
+            genre: {
+              type: 'select',
+              options: { data: async () => genres },
+              format: ({ value }) => value?.toLowerCase(),
+              parse: ({ value }) => value?.toUpperCase()
+            },
+            genres: {
+              type: 'multiselect',
+              options: { data: async () => genres },
+              // Evaluated like the component does, as a single value:
+              multiple: () => false
+            }
+          }
+        },
+        data: { genre: 'POETRY', genres: ['fiction'] }
+      })
+      expect(data.genre).toBe('POETRY')
+      expect(data.genres).toBe(null)
+    })
+
     it('computes a default option from the loaded options', async () => {
       const { data } = await mountSchema({
         schema: {

@@ -120,6 +120,58 @@ describe('DitoTypeComponent', () => {
     })
     expect('rating' in data).toBe(false)
   })
+
+  it('passes the events and attributes of the field through', async () => {
+    const focus = vi.fn()
+    const blur = vi.fn()
+    const { findField, getErrors, settle } = await mountSchema({
+      schema: {
+        components: {
+          rating: {
+            type: 'component',
+            component: RatingStars,
+            required: true,
+            events: { focus, blur }
+          }
+        }
+      },
+      data: { rating: null }
+    })
+    const button = findField('rating')
+    // The button doesn't emit them, so they fall through as native events:
+    await button.trigger('focus')
+    await button.trigger('blur')
+    expect(focus).toHaveBeenCalledOnce()
+    expect(blur).toHaveBeenCalledOnce()
+    // Blur validates the value, and the errors are linked to the component:
+    expect(getErrors('rating')).toEqual(['The rating field is required.'])
+    await settle()
+    expect(findField('rating').attributes('aria-invalid')).toBe('true')
+    expect(findField('rating').attributes('aria-describedby')).toBe(
+      'rating-errors'
+    )
+  })
+
+  it('warns about components that miss props or emits of the contract', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const { emits, ...UndeclaredStars } = RatingStars
+    await mountSchema({
+      schema: {
+        components: {
+          rating: {
+            type: 'component',
+            component: { ...UndeclaredStars, name: 'UndeclaredStars' }
+          }
+        }
+      },
+      data: { rating: 1 }
+    })
+    expect(warn).toHaveBeenCalledWith(
+      `Custom component 'UndeclaredStars' doesn't declare the props and ` +
+      `emits of its contract: update:modelValue, change.`
+    )
+    warn.mockRestore()
+  })
 })
 
 describe('DitoTypePanel', () => {

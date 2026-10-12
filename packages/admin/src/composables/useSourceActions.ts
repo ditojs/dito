@@ -1,4 +1,4 @@
-import { computed } from 'vue'
+import { computed, type Ref } from 'vue'
 import { ItemStores } from '../utils/ItemStores.js'
 import { appendDataPath } from '../utils/data.js'
 import { confirmAndRemove } from '../utils/dialogs.js'
@@ -37,7 +37,7 @@ export function useSourceActions(
     resource: ResourceRequests
     itemLabel: ReturnType<typeof useItemLabel>
     isInlined: () => boolean
-    linksToView: () => boolean
+    linksToView: Readonly<Ref<boolean>>
     getSchemaValue: (key: string, options: object) => any
     onChange: () => void
   }
@@ -57,7 +57,7 @@ export function useSourceActions(
   const creatable = computed(
     () => (
       getBoolean('creatable') &&
-      (hasFormSchema(props.schema) || linksToView()) &&
+      (hasFormSchema(props.schema) || linksToView.value) &&
       (isListSource.value || !objectData.value)
     )
   )
@@ -86,24 +86,6 @@ export function useSourceActions(
   const getItemStore = (item: Data) =>
     itemStores.getStore(getItemUid(props.schema, item))
 
-  const removeItem = (item: Data, index: number | null) => {
-    itemStores.removeStore(getItemUid(props.schema, item))
-    // Sources with a resource delete the item through it, not as an edit:
-    if (isObjectSource.value) {
-      if (resource.isTransient.value) {
-        objectData.value = null
-      } else {
-        props.data[props.schema.name] = null
-      }
-    } else {
-      getModel().remove(sourceData.listEntry.value, index!)
-      if (!resource.isTransient.value) {
-        getModel().markClean({ dataPath: props.dataPath })
-      }
-    }
-    onChange()
-  }
-
   return {
     creatable,
     editable,
@@ -115,7 +97,7 @@ export function useSourceActions(
 
     createPath: computed(() =>
       creatable.value
-        ? linksToView()
+        ? linksToView.value
           ? getViewItemPath('create')
           : (services.route?.getCreatePath(props.dataPath) ?? null)
         : null
@@ -123,14 +105,14 @@ export function useSourceActions(
 
     // The path of the form of object sources, which are their own item:
     objectPath: computed(() =>
-      linksToView()
+      linksToView.value
         ? objectData.value &&
           getViewItemPath(itemLabel.getItemId(props.schema, objectData.value))
         : (services.route?.getFormPath(props.dataPath) ?? null)
     ),
 
     getItemPath(index: number) {
-      return linksToView()
+      return linksToView.value
         ? getViewItemPath(
             itemLabel.getItemId(props.schema, listData.value[index], index)
           )
@@ -160,8 +142,6 @@ export function useSourceActions(
       return item
     },
 
-    removeItem,
-
     async deleteItem(item: Data | null, index: number | null = null) {
       if (item) {
         const isTransient = resource.isTransient.value
@@ -179,7 +159,22 @@ export function useSourceActions(
           const currentIndex = getCurrentIndex()
           const isPresent = currentIndex !== -1
           if (isPresent) {
-            removeItem(item, currentIndex)
+            itemStores.removeStore(getItemUid(props.schema, item))
+            // Sources with a resource delete the item through it, not as an
+            // edit:
+            if (currentIndex === null) {
+              if (isTransient) {
+                objectData.value = null
+              } else {
+                props.data[props.schema.name] = null
+              }
+            } else {
+              getModel().remove(sourceData.listEntry.value, currentIndex)
+              if (!isTransient) {
+                getModel().markClean({ dataPath: props.dataPath })
+              }
+            }
+            onChange()
           }
           return isPresent
         }

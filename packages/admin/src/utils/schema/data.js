@@ -195,8 +195,15 @@ export function hasValueFromDataSchema(schema) {
   )
 }
 
-export function getMultipleValue(schema) {
-  return schema.multiple ?? !!getTypeDescriptor(schema)?.defaultMultiple
+// Values are processed without contexts, see `optionsTraits.processValue()`:
+export function getMultipleValue(schema, context) {
+  return getSchemaValue('multiple', {
+    type: Boolean,
+    schema,
+    context,
+    callback: !!context,
+    default: !!getTypeDescriptor(schema)?.defaultMultiple
+  })
 }
 
 /**

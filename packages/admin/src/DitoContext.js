@@ -14,6 +14,7 @@ import { hasNestedData } from './utils/schema/structure.js'
 import { getTextFromHtml } from './utils/html.js'
 import { DialogContext } from './utils/ContainerContext.ts'
 import {
+  getRootData,
   getResourceUrl,
   request,
   format,
@@ -231,8 +232,12 @@ export default class DitoContext {
     return item !== this.item ? item : null
   }
 
+  // Contexts that don't set their root data read their services':
   get rootItem() {
-    return get(this, 'rootData', null)
+    return get(this, 'rootData', () => {
+      const services = getServices(this)
+      return services ? getRootData(services) : null
+    })
   }
 
   // The processed items are built for the server when they're read, except
