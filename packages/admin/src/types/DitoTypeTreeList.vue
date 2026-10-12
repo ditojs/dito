@@ -27,7 +27,7 @@
 <script>
 import DitoComponent from '../DitoComponent.js'
 import { defineType } from '../utils/schema/types.ts'
-import { sourceDescriptor } from './descriptors.ts'
+import { sourceTraits } from './traits.ts'
 import { fieldProps, useField } from '../composables/useField.ts'
 import SourceMixin, { useSourceServices } from '../mixins/SourceMixin.js'
 import { resolveSchemaComponents } from '../utils/schema/setup.js'
@@ -105,12 +105,12 @@ const DitoTypeTreeList = DitoComponent.component('DitoTypeTreeList', {
   }
 })
 
-const treeDescriptor = {
-  ...sourceDescriptor,
+const treeTraits = {
+  ...sourceTraits,
   component: DitoTypeTreeList,
   // The forms of tree items render inside the form or view of the tree,
   // and the forms of their children next to theirs:
-  hasNestedForms: true,
+  nestForms: true,
 
   getChildSourceSchemas(schema) {
     return schema.children ? [schema.children] : []
@@ -124,14 +124,14 @@ const treeDescriptor = {
     }
     await Promise.all([
       resolveSchemaComponents(schema.properties),
-      sourceDescriptor.processSchema(api, schema, name),
-      children && treeDescriptor.processSchema(api, children, children.name)
+      sourceTraits.processSchema(api, schema, name),
+      children && treeTraits.processSchema(api, children, children.name)
     ])
   }
 }
 
-defineType({ ...treeDescriptor, types: ['tree-list'], sourceType: 'list' })
-defineType({ ...treeDescriptor, types: ['tree-object'], sourceType: 'object' })
+defineType({ ...treeTraits, types: ['tree-list'], sourceType: 'list' })
+defineType({ ...treeTraits, types: ['tree-object'], sourceType: 'object' })
 
 export default DitoTypeTreeList
 </script>

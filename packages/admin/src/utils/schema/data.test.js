@@ -1,7 +1,7 @@
 import { vi } from 'vitest'
 import DitoContext from '../../DitoContext.js'
 import { defineType } from './types.ts'
-import { sourceDescriptor } from '../../types/descriptors.ts'
+import { sourceTraits } from '../../types/traits.ts'
 import {
   processSchemaData,
   getComponentPathByDataPath,
@@ -33,7 +33,7 @@ defineType({
   types: ['reference'],
   processValue: ({ value }) => value && { id: value.id }
 })
-defineType({ ...sourceDescriptor, types: ['list'], sourceType: 'list' })
+defineType({ ...sourceTraits, types: ['list'], sourceType: 'list' })
 defineType({ types: ['tags'], defaultMultiple: true })
 defineType({ types: ['hidden'], excludeValue: true })
 

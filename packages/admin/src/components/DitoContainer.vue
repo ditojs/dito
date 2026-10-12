@@ -22,7 +22,7 @@
     :info="info"
   )
   component.dito-component(
-    v-if="!(hasLabel && isLabel)"
+    v-if="!isReplacedWithLabel"
     :is="typeComponent"
     ref="component"
     :class="componentClasses"
@@ -114,12 +114,12 @@ export default DitoComponent.component('DitoContainer', {
       return getTypeDescriptor(this.type)
     },
 
-    isLabel() {
-      return !!this.typeDescriptor?.isLabel
-    },
-
     hasLabel() {
       return hasLabel(this.schema, this.generateLabels)
+    },
+
+    isReplacedWithLabel() {
+      return this.hasLabel && !!this.typeDescriptor?.replaceWithLabel
     },
 
     label() {
@@ -131,7 +131,7 @@ export default DitoComponent.component('DitoContainer', {
       // header of their schema. They still receive it through `label`.
       return (
         this.hasLabel &&
-        !this.typeDescriptor?.rendersOwnLabel?.(this.context)
+        !this.typeDescriptor?.omitLabel?.(this.context)
       )
     },
 
@@ -279,7 +279,7 @@ export default DitoComponent.component('DitoContainer', {
 
     labelClasses() {
       return {
-        'dito-label--visible': this.isLabel,
+        'dito-label--visible': this.isReplacedWithLabel,
         ...this.getLayoutClasses('dito-label')
       }
     },

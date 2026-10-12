@@ -13,7 +13,7 @@ textarea.dito-textarea.dito-input(
 import { computed } from 'vue'
 import DitoComponent from '../DitoComponent.js'
 import { defineType } from '../utils/schema/types.ts'
-import { textDescriptor } from './descriptors.ts'
+import { textTraits } from './traits.ts'
 import { fieldProps, useField } from '../composables/useField.ts'
 
 // @vue/component
@@ -39,7 +39,7 @@ const DitoTypeTextarea = DitoComponent.component('DitoTypeTextarea', {
 defineType({
   types: ['textarea'],
   component: DitoTypeTextarea,
-  ...textDescriptor
+  ...textTraits
 })
 
 export default DitoTypeTextarea

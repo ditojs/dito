@@ -1,6 +1,8 @@
 import { vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { mountSchema, mountForm } from '../test/mount.js'
+import { defineType } from '../utils/schema/types.ts'
+import DitoTypeButton from './DitoTypeButton.vue'
 
 function getNotificationTexts() {
   return [...document.querySelectorAll('.dito-notification')].map(
@@ -360,6 +362,37 @@ describe('DitoTypeButton', () => {
       url: '/items/1',
       data: { title: 'Emma' }
     })
+  })
+
+  it('submits through `submit()` of types that use its component', async () => {
+    defineType({
+      types: ['save-button'],
+      component: DitoTypeButton,
+      defaultValue: undefined,
+      excludeValue: true
+    })
+    const request = vi.fn(({ data }) => ({ data }))
+    let isSubmitted = null
+    const { findField } = await mountForm({
+      schema: {
+        components: { title: { type: 'text' } },
+        buttons: {
+          save: {
+            type: 'save-button',
+            events: {
+              async click({ submit }) {
+                isSubmitted = await submit({ closeForm: false })
+              }
+            }
+          }
+        }
+      },
+      data: { title: 'Emma' },
+      request
+    })
+    await findField('save').trigger('click')
+    await vi.waitFor(() => expect(isSubmitted).toBe(true))
+    expect(request.mock.calls[0][0]).toMatchObject({ url: '/items/1' })
   })
 
   it(`throws from \`submit()\` without a form or list to submit`, async () => {

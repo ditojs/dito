@@ -2,7 +2,7 @@ import { vi } from 'vitest'
 import { reactive, ref, toRaw, nextTick } from 'vue'
 import { isPlainObject } from '@ditojs/utils'
 import { defineType } from './schema/types.ts'
-import { optionsDescriptor } from '../types/descriptors.ts'
+import { optionsTraits } from '../types/traits.ts'
 import { DataModel } from './DataModel.ts'
 import { cloneWithUids } from './uid.js'
 
@@ -12,11 +12,11 @@ vi.mock('./schema/setup.js', () => ({ setupForm: async form => form }))
 // Define minimal types, as the actual type components can't be
 // imported without a Vue SFC compiler:
 defineType({ types: ['text'] })
-defineType({ ...optionsDescriptor, types: ['select'] })
+defineType({ ...optionsTraits, types: ['select'] })
 defineType({
   types: ['computed'],
-  defaultValue: () => undefined,
-  valueFromDataSchema: true
+  defaultValue: undefined,
+  resolveValue: true
 })
 defineType({ types: ['section'], defaultNested: false })
 defineType({ types: ['panel'], defaultNested: false })
@@ -26,7 +26,7 @@ defineType({
   sourceType: 'list'
 })
 defineType({ types: ['object'], sourceType: 'object' })
-defineType({ types: ['submit'], isButton: true, submitsData: true })
+defineType({ types: ['submit'], submitData: true })
 // Like `DitoTypeUpload`, which leaves out files that aren't uploaded yet:
 defineType({
   types: ['upload'],

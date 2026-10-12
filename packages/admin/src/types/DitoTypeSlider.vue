@@ -29,7 +29,7 @@
 import { computed } from 'vue'
 import DitoComponent from '../DitoComponent.js'
 import { defineType } from '../utils/schema/types.ts'
-import { numberDescriptor } from './descriptors.ts'
+import { numberTraits } from './traits.ts'
 import { fieldProps, useField } from '../composables/useField.ts'
 import { useNumber } from '../composables/useNumber.ts'
 import { DitoInput } from '@ditojs/ui/src'
@@ -57,7 +57,7 @@ const DitoTypeSlider = DitoComponent.component('DitoTypeSlider', {
 defineType({
   types: ['slider'],
   component: DitoTypeSlider,
-  ...numberDescriptor
+  ...numberTraits
 })
 
 export default DitoTypeSlider

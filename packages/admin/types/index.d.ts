@@ -3797,12 +3797,16 @@ export interface ItemAdapter {
 /**
  * Describes a type of schema components: the component that renders it, and
  * how the admin handles its schemas and values, also when they aren't
- * rendered.
+ * rendered. Its options tell the admin what to do for the type, as verb
+ * phrases, and the defaults of schema settings start with `default`.
  */
 export interface TypeDescriptor {
   readonly types: string[]
   readonly component: VueComponent
-  /** The default of `default`, `null` if not set. */
+  /**
+   * The default of `default`, `null` if not set. Functions are called with
+   * the context of the component and return the default.
+   */
   readonly defaultValue?: any
   /** The default of `nested`, `true` if not set. */
   readonly defaultNested?: boolean
@@ -3814,33 +3818,39 @@ export interface TypeDescriptor {
   readonly defaultWidth?: string | number
   /** The default of `exclude`. */
   readonly excludeValue?: boolean | ((context: DitoContext) => boolean)
-  /** Whether values that are missing don't get their defaults. */
+  /** Don't give values that are missing their defaults, e.g. passwords. */
   readonly ignoreMissingValue?: (context: DitoContext) => boolean
-  /** Whether values that are `null` get their defaults. */
+  /** Give values that are `null` their defaults, e.g. nested sections. */
   readonly treatNullAsMissing?: (context: DitoContext) => boolean
-  /** Whether the value is resolved from `schema.data` or `schema.dataPath`. */
-  readonly valueFromDataSchema?: boolean
-  /** Whether components without `label` get one from their name. */
+  /** Resolve the value from `schema.data` or `schema.dataPath`. */
+  readonly resolveValue?: boolean
+  /** Generate a label from the name for components without `label`. */
   readonly generateLabel?: boolean
-  /** Whether the component displays its label itself. */
-  readonly rendersOwnLabel?: (context: DitoContext) => boolean
+  /** Omit the label of the container, as the component displays it. */
+  readonly omitLabel?: (context: DitoContext) => boolean
+  /** Omit the spacing around the component. */
   readonly omitSpacing?: boolean
-  /** Whether the label of the container replaces the component. */
-  readonly isLabel?: boolean
-  readonly isButton?: boolean
-  /** Whether the button saves the data of its form, like `submit`. */
-  readonly submitsData?: boolean
+  /** Replace the component with the label of its container, if it has one. */
+  readonly replaceWithLabel?: boolean
+  /**
+   * Submit the data of the form, like `submit`, which makes buttons of the
+   * type count for the dirty state of forms and sources.
+   */
+  readonly submitData?: boolean
   /** Sources hold their items in a list or an object. */
   readonly sourceType?: 'list' | 'object'
   /**
-   * Whether the forms of the items render inside the form or view of their
-   * source, instead of in their own routes.
+   * Render the forms of the items inside the form or view of their source,
+   * instead of in their own routes.
    */
-  readonly hasNestedForms?: boolean
+  readonly nestForms?: boolean
   /** The sources routed next to the forms of the items, e.g. of trees. */
   getChildSourceSchemas?(schema: Record<string, any>): Record<string, any>[]
   getItemAdapter?(schema: Record<string, any>): ItemAdapter | null
-  /** The data schema of the options that the data model loads. */
+  /**
+   * The data schema of the options that the data model loads. Only types with
+   * it load options, e.g. through `optionsTraits`.
+   */
   getOptionsDataSchema?(schema: Record<string, any>): any
   getPanelSchema?(
     api: ApiConfig,
@@ -3863,9 +3873,19 @@ export interface TypeDescriptor {
 }
 
 /**
- * Defines a type of schema components, registered under its `types`.
+ * Defines a type of schema components, registered under its `types`. Its
+ * component receives the props of {@link CustomComponentProps} and emits the
+ * events of {@link CustomComponentEmits}, like the components of
+ * `type: 'component'`.
  */
 export function defineType(descriptor: TypeDescriptor): TypeDescriptor
+
+/** Loads `schema.options` and relates values to them, like `select`. */
+export const optionsTraits: Partial<TypeDescriptor>
+/** The validations of `min`, `max`, `range`, `step` and `decimals`. */
+export const numberTraits: Partial<TypeDescriptor>
+/** Trims text values if `trim` is set, and turns empty ones into defaults. */
+export const textTraits: Partial<TypeDescriptor>
 export type HTTPMethod =
   | 'get'
   | 'head'

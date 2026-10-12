@@ -10,7 +10,7 @@ import {
   getLastDataPathIndex,
   getRelativeDataPath
 } from './utils/data.js'
-import { hasNestedData, isButton } from './utils/schema/structure.js'
+import { hasNestedData } from './utils/schema/structure.js'
 import { getTextFromHtml } from './utils/html.js'
 import { DialogContext } from './utils/ContainerContext.ts'
 import {
@@ -436,11 +436,12 @@ export default class DitoContext {
   }
 
   // Submit the data through the button of the context, like buttons with a
-  // resource do when clicked, and resolve with whether it succeeded:
+  // resource do when clicked, and resolve with whether it succeeded. Only
+  // buttons of forms and of lists with a resource provide `submit()`:
   get submit() {
     return options => {
       const { submit } = getServices(this)
-      if (!isButton(this.schema) || !submit) {
+      if (!submit) {
         throw new Error(
           'Unable to submit: There is no button of a form or of a list with a ' +
           'resource.'

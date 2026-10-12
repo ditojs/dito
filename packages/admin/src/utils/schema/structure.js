@@ -94,10 +94,6 @@ export function isTab(schema) {
   return isSchema(schema) && schema.type === 'tab'
 }
 
-export function isButton(schema) {
-  return isSchema(schema) && !!getTypeDescriptor(schema)?.isButton
-}
-
 export function isPanel(schema) {
   return isSchema(schema) && schema.type === 'panel'
 }

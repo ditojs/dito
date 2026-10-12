@@ -132,17 +132,16 @@ const DitoTypeButton = DitoComponent.component('DitoTypeButton', {
   }
 })
 
-const buttonDescriptor = {
+const buttonTraits = {
   component: DitoTypeButton,
-  defaultValue: () => undefined, // Callback to override `defaultValue: null`
+  defaultValue: undefined,
   excludeValue: true,
   defaultWidth: 'auto',
-  generateLabel: false,
-  isButton: true
+  generateLabel: false
 }
 
-defineType({ ...buttonDescriptor, types: ['button'] })
-defineType({ ...buttonDescriptor, types: ['submit'], submitsData: true })
+defineType({ ...buttonTraits, types: ['button'] })
+defineType({ ...buttonTraits, types: ['submit'], submitData: true })
 
 export default DitoTypeButton
 </script>

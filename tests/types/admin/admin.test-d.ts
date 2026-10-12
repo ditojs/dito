@@ -4,7 +4,11 @@ import type {
   TypeDescriptor,
   View
 } from '@ditojs/admin'
-import { DitoAdmin as NamedDitoAdmin, defineType } from '@ditojs/admin'
+import {
+  DitoAdmin as NamedDitoAdmin,
+  defineType,
+  optionsTraits
+} from '@ditojs/admin'
 import type { Entry } from './fixtures.ts'
 
 describe('DitoAdmin', () => {
@@ -52,6 +56,10 @@ describe('defineType()', () => {
   it('requires the types and the component', () => {
     // @ts-expect-error - `component` is missing.
     defineType({ types: ['rating'] })
+  })
+
+  it('accepts shared traits', () => {
+    defineType({ types: ['tags'], component: {}, ...optionsTraits })
   })
 
   it('refuses unknown source types', () => {

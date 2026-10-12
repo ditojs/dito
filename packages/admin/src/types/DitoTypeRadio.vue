@@ -30,7 +30,7 @@ DitoOptionList.dito-radio-buttons(
 <script>
 import DitoComponent from '../DitoComponent.js'
 import { defineType } from '../utils/schema/types.ts'
-import { optionsDescriptor } from './descriptors.ts'
+import { optionsTraits } from './traits.ts'
 import { fieldProps, useField } from '../composables/useField.ts'
 import { useOptions } from '../composables/useOptions.ts'
 import DitoOptionList from '../components/DitoOptionList.vue'
@@ -67,7 +67,7 @@ const DitoTypeRadio = DitoComponent.component('DitoTypeRadio', {
 defineType({
   types: ['radio'],
   component: DitoTypeRadio,
-  ...optionsDescriptor,
+  ...optionsTraits,
   defaultWidth: 'auto'
 })
 

@@ -28,11 +28,9 @@ const DitoTypeComputed = DitoComponent.component('DitoTypeComputed', {
 defineType({
   types: ['computed', 'data', 'hidden'],
   component: DitoTypeComputed,
-  defaultValue: () => undefined, // Callback to override `defaultValue: null`
+  defaultValue: undefined,
   defaultVisible: false,
-  // The value is resolved from `schema.data` or `schema.dataPath` by
-  // `DataModel`, see `hasValueFromDataSchema()`:
-  valueFromDataSchema: true
+  resolveValue: true
 })
 
 export default DitoTypeComputed

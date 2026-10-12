@@ -23,7 +23,7 @@ DitoInput.dito-text(
 import { computed } from 'vue'
 import DitoComponent from '../DitoComponent.js'
 import { defineType } from '../utils/schema/types.ts'
-import { textDescriptor } from './descriptors.ts'
+import { textTraits } from './traits.ts'
 import { fieldProps, useField } from '../composables/useField.ts'
 import DitoInputAffixes from '../components/DitoInputAffixes.vue'
 import { DitoInput } from '@ditojs/ui/src'
@@ -82,7 +82,7 @@ defineType({
     'creditcard'
   ],
   component: DitoTypeText,
-  ...textDescriptor,
+  ...textTraits,
   ignoreMissingValue: ({ schema }) => schema.type === 'password',
 
   getValidations(schema) {

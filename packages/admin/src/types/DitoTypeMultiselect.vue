@@ -71,7 +71,7 @@
 import { computed, onMounted, ref, shallowRef } from 'vue'
 import DitoComponent from '../DitoComponent.js'
 import { defineType } from '../utils/schema/types.ts'
-import { optionsDescriptor } from './descriptors.ts'
+import { optionsTraits } from './traits.ts'
 import { fieldProps, useField } from '../composables/useField.ts'
 import { useOptions } from '../composables/useOptions.ts'
 import DitoInputAffixes from '../components/DitoInputAffixes.vue'
@@ -340,7 +340,7 @@ const DitoTypeMultiselect = DitoComponent.component('DitoTypeMultiselect', {
 defineType({
   types: ['multiselect'],
   component: DitoTypeMultiselect,
-  ...optionsDescriptor
+  ...optionsTraits
 })
 
 export default DitoTypeMultiselect
