@@ -449,13 +449,25 @@ export class QueryBuilder extends objection.QueryBuilder {
 
   // @override
   insert(data) {
+    return this.#insert(data, 'insert', 'insertGraph')
+  }
+
+  // @override
+  insertAndFetch(data) {
+    return this.#insert(data, 'insertAndFetch', 'insertGraphAndFetch')
+  }
+
+  #insert(data, method, graphMethod) {
     // Only PostgreSQL is able to insert multiple entries at once it seems,
-    // all others have to fall back on insertGraph() to do so for now:
+    // all others have to fall back on insertGraph() to do so, in one
+    // transaction and without the relations, like PostgreSQL's insert():
     if (!this.isPostgreSQL() && isArray(data) && data.length > 1) {
-      rejectGraphControlProps(this.modelClass(), data)
-      return this.insertGraph(data)
+      const modelClass = this.modelClass()
+      rejectGraphControlProps(modelClass, data)
+      this.#isTransacted = true
+      return this[graphMethod](omitRelations(modelClass, data))
     }
-    return super.insert(data)
+    return super[method](data)
   }
 
   // Insert the models, or update the ones whose ids exist already, atomically:

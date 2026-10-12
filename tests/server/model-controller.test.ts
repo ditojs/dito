@@ -722,6 +722,19 @@ describe('ModelController', () => {
       expect(await Book.query().resultSize()).toBe(4)
     })
 
+    it('saves and inserts the models of collection patches atomically', async () => {
+      const [atlas] = await insertBooks()
+      const response = await request('/books', {
+        method: 'PATCH',
+        // The page count passes validation but exceeds the integer column:
+        body: [{ id: atlas.id, pages: 121 }, { title: 'Codex', pages: 2 ** 31 }]
+      })
+      expect(response.status).toBe(400)
+      expect(response.data.type).toBe('DataError')
+      expect((await Book.query().findById(atlas.id))?.pages).toBe(120)
+      expect(await Book.query().resultSize()).toBe(3)
+    })
+
     // Single objects would otherwise reach Objection's instance-only
     // `patchAndFetch()` and fail with a 500 server error.
     test('rejects single objects for collection patches', async () => {

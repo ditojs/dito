@@ -38,13 +38,15 @@ export default class ControllerAction {
     this.transacted = !!(
       transacted ??
       controller.transacted ??
-      // Core graph and assets operations are always transacted, unless the
+      // Core graph and assets operations, and collection saves that insert
+      // the models without ids separately, are always transacted, unless the
       // method is 'get':
       (
         core &&
         method !== 'get' && (
           controller.graph ||
-          controller.assets
+          controller.assets ||
+          type === 'collection' && (method === 'put' || method === 'patch')
         )
       )
     )
