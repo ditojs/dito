@@ -2,7 +2,7 @@ import { vi } from 'vitest'
 import { computed } from 'vue'
 import { flushPromises } from '@vue/test-utils'
 import DitoContext from '../DitoContext.js'
-import { mountAdmin, mountSchema } from '../test/mount.js'
+import { mountAdmin, mountSchema, isView } from '../test/mount.js'
 
 describe('AdminContext', () => {
   afterEach(() => {
@@ -48,7 +48,7 @@ describe('AdminContext', () => {
     })
     expect(admin.root.admin).toBe(admin.context)
     expect(routeComponent.admin).toBe(admin.context)
-    expect(getComponent('title').admin).toBe(admin.context)
+    expect(getComponent('title').context.api).toBe(admin.context.api)
   })
 
   it('provides the user reactively', async () => {
@@ -111,8 +111,8 @@ describe('AdminContext', () => {
     it('navigates through the router of the admin', async () => {
       const admin = await mountAdmin({ views })
       await admin.navigate('/library/books?page=2')
-      const view = admin.getRouteComponent(component => component.isView)
-      const { context } = view
+      const view = admin.getRouteComponent(isView)
+      const { context } = view.$refs.schema
       expect(context.routeQuery).toEqual({ page: '2' })
       expect(context.getRouteUrl({ path: '/library/books' })).toBe(
         '/library/books'

@@ -26,7 +26,6 @@
 
 <script>
 import { computed } from 'vue'
-import DitoComponent from '../DitoComponent.js'
 import { defineType } from '../utils/schema/types.ts'
 import { fieldProps, useField } from '../composables/useField.ts'
 import DitoInputAffixes from '../components/DitoInputAffixes.vue'
@@ -49,7 +48,8 @@ const pickerComponents = {
 }
 
 // @vue/component
-const DitoTypeDate = DitoComponent.component('DitoTypeDate', {
+const DitoTypeDate = {
+  name: 'DitoTypeDate',
   components: { DitoInputAffixes },
   props: fieldProps,
 
@@ -57,6 +57,8 @@ const DitoTypeDate = DitoComponent.component('DitoTypeDate', {
     const {
       value,
       services,
+      context,
+      componentPath,
       attributes,
       inputAffixesProps,
       clear,
@@ -69,6 +71,9 @@ const DitoTypeDate = DitoComponent.component('DitoTypeDate', {
       textField: true
     })
     return {
+      admin: services.admin,
+      context,
+      componentPath,
       pickerComponents,
       attributes,
       inputAffixesProps,
@@ -101,7 +106,7 @@ const DitoTypeDate = DitoComponent.component('DitoTypeDate', {
       })
     }
   }
-})
+}
 
 defineType({
   types: ['date', 'datetime', 'time'],

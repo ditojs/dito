@@ -1,8 +1,8 @@
 import { markRaw, reactive } from 'vue'
 
-// The stores of the items of a source, see `DitoMixin.getStore()`, keyed by
-// the uids of the items, see `getItemUid()`, so that each item keeps its store
-// when items are inserted, moved or removed. They are kept in the store of the
+// The stores of the items of a source, see `useStore()`, keyed by the uids of
+// the items, see `getItemUid()`, so that each item keeps its store when items
+// are inserted, moved or removed. They are kept in the store of the
 // source, so that they live as long as it.
 export class ItemStores {
   #storesByUid = new Map()

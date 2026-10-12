@@ -20,7 +20,8 @@ export interface ContainerOwner {
   readonly dataModel: DataModel
   readonly isCreating?: boolean
   readonly hasData?: boolean
-  readonly $refs: { schema?: SchemaComponent }
+  // The schema that renders the data:
+  readonly schemaComponent: SchemaComponent | null
   setData(data: any): any
   // Take over the errors of the item in the parent's data, in forms:
   copyErrors?(): void
@@ -44,7 +45,7 @@ export class ContainerContext {
   }
 
   get #schema(): SchemaComponent {
-    return this.#owner.$refs.schema!
+    return this.#owner.schemaComponent!
   }
 
   get isDirty(): boolean {

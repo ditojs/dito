@@ -4,6 +4,7 @@
     v-if="scopes"
     :listQuery="listQuery"
     :scopes="scopes"
+    :context="context"
   )
   .dito-tree-panel
     //- Objects that are `null` have no tree, as tree items can't create them.
@@ -25,7 +26,8 @@
 </template>
 
 <script>
-import DitoComponent from '../DitoComponent.js'
+import { computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { defineType } from '../utils/schema/types.ts'
 import { sourceTraits } from './traits.ts'
 import { fieldProps } from '../composables/useField.ts'
@@ -34,71 +36,63 @@ import { resolveSchemaComponents } from '../utils/schema/setup.js'
 import { getParentDataPath } from '../utils/data.js'
 
 // @vue/component
-const DitoTypeTreeList = DitoComponent.component('DitoTypeTreeList', {
+const DitoTypeTreeList = {
+  name: 'DitoTypeTreeList',
   props: fieldProps,
 
   setup(props) {
+    const router = useRouter()
     const source = useSource(props)
-    const { services, onChange } = source
+    const { services, value, isListSource, onChange } = source
     return {
       ...source,
+      route: computed(() => services.route),
+
+      // The forms of the items of the tree are routed right after its route
+      // component, if there is one:
+      isEditingItem: computed(() => {
+        const node = source.sourceNode.value
+        let routeNode = (
+          node &&
+          router.currentRoute.value.matched[services.route.level + 1]?.meta.node
+        )
+        while (routeNode && routeNode !== node) {
+          routeNode = routeNode.parent
+        }
+        return !!routeNode
+      }),
+
+      treeData: computed(() =>
+        isListSource.value ? { [props.schema.name]: value.value } : value.value
+      ),
+
+      // Remove `name` from `dataPath`, as it is added to `treeData` and
+      // `treeSchema`:
+      treeDataPath: computed(() =>
+        isListSource.value ? getParentDataPath(props.dataPath) : props.dataPath
+      ),
+
+      // Tree objects are edited in the form of their root item:
+      rootPath: computed(() =>
+        source.isObjectSource.value ? source.objectPath.value : null
+      ),
+
+      treeSchema: computed(() =>
+        isListSource.value
+          ? { children: { name: props.schema.name, ...props.schema } }
+          : props.schema
+      ),
 
       // Replaces the children of the tree item, as the only writer of the
-      // tree, see `DitoTreeItem.changeChildren()`. Open forms follow their
-      // items, see `DitoForm.setupSourceItem()`.
+      // tree, see `DitoTreeItem`. Open forms follow their items, see
+      // `DitoForm`.
       changeChildren({ entry, children }) {
         services.container.model.replaceItems(entry, children)
         onChange()
       }
     }
-  },
-
-  computed: {
-    // The forms of the items of the tree are routed right after its route
-    // component, if there is one:
-    isEditingItem() {
-      const { sourceNode } = this
-      let node = (
-        sourceNode &&
-        this.$route.matched[this.route.level + 1]?.meta.node
-      )
-      while (node && node !== sourceNode) {
-        node = node.parent
-      }
-      return !!node
-    },
-
-    treeData() {
-      return this.isListSource
-        ? { [this.schema.name]: this.value }
-        : this.value
-    },
-
-    treeDataPath() {
-      // Remove `name` from `dataPath`, as it is added
-      // to `treeData` and `treeSchema`
-      return this.isListSource
-        ? getParentDataPath(this.dataPath)
-        : this.dataPath
-    },
-
-    // Tree objects are edited in the form of their root item:
-    rootPath() {
-      return this.isObjectSource ? this.objectPath : null
-    },
-
-    treeSchema() {
-      return this.isListSource
-        ? {
-            children: {
-              name: this.schema.name,
-              ...this.schema
-            }
-          }
-        : this.schema
-    }
   }
-})
+}
 
 const treeTraits = {
   ...sourceTraits,

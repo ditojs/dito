@@ -44,23 +44,28 @@
 </template>
 
 <script>
-import DitoComponent from '../DitoComponent.js'
+import {
+  computed,
+  inject,
+  nextTick,
+  provide,
+  ref,
+  unref,
+  useTemplateRef,
+  watch
+} from 'vue'
 import DitoContext from '../DitoContext.js'
+import { useServices } from '../composables/useSchemaContext.ts'
+import { useStore } from '../composables/useStore.ts'
+import { useComponentPath } from '../composables/useComponentPath.ts'
+import { getRootData } from '../utils/services.ts'
 import { appendDataPath } from '../utils/data.js'
 import { hasLabel, hasNestedData } from '../utils/schema/structure.js'
 import { shouldRenderSchema } from '../utils/schema/data.js'
 import { getItemAdapter } from '../utils/schema/types.ts'
 
-// @vue/component
-export default DitoComponent.component('DitoPane', {
-  provide() {
-    // Tab panes tell their components about their tab, for their panels:
-    return this.tab ? { panelTab: this.panelTab } : {}
-  },
-
-  inject: {
-    sourceSchema: { default: null }
-  },
+export default {
+  name: 'DitoPane',
 
   props: {
     schema: { type: Object, required: true },
@@ -68,6 +73,8 @@ export default DitoComponent.component('DitoPane', {
     data: { type: Object, default: null },
     store: { type: Object, required: true },
     tab: { type: String, default: null },
+    // Whether the tab of the pane is selected:
+    selected: { type: Boolean, default: false },
     single: { type: Boolean, default: false },
     padding: { type: String, default: null },
     disabled: { type: Boolean, default: false },
@@ -75,122 +82,101 @@ export default DitoComponent.component('DitoPane', {
     generateLabels: { type: Boolean, default: false }
   },
 
-  data() {
-    return {
-      positions: []
+  setup(props) {
+    const services = useServices()
+    const { getChildStore } = useStore(props)
+    const sourceSchema = inject('sourceSchema', null)
+    // Tabs add their name, as they don't appear in data paths:
+    const { parentComponentPath } = useComponentPath(
+      () => props.dataPath,
+      parent =>
+        props.tab ? appendDataPath(parent.path, props.tab) : parent.path
+    )
+    if (props.tab) {
+      // Tab panes tell their components about their tab, for their panels:
+      provide('panelTab', {
+        tabName: props.tab,
+        isTabSelected: () => props.selected
+      })
     }
-  },
+    const containers = useTemplateRef('containers')
+    const positions = ref([])
 
-  computed: {
-    classes() {
-      const prefix = 'dito-pane'
-      return {
-        [`${prefix}--single`]: this.isSingleComponent,
-        [`${prefix}--padding-${this.padding}`]: !!this.padding
-      }
-    },
-
-    // Describes the tab of tab panes for the entries of the panels of their
-    // components, see `getAllPanelEntries()`:
-    panelTab() {
-      const { tab, parentComponent } = this
-      return tab
-        ? {
-            tabName: tab,
-            isTabSelected: () => parentComponent.isTabSelected(tab)
-          }
-        : null
-    },
-
-    componentPath() {
-      // Tabs add their name, as they don't appear in data paths.
-      const { componentPath } = this.parentComponent
-      return this.tab ? appendDataPath(componentPath, this.tab) : componentPath
-    },
-
-    // See `DitoTabs.getTabId()` and `getTabPanelId()`:
-    tabId() {
-      const { componentPath } = this.parentComponent
-      return this.tab ? `${componentPath}-tab-${this.tab}` : null
-    },
-
-    tabPanelId() {
-      const { componentPath } = this.parentComponent
-      return this.tab ? `${componentPath}-tabpanel-${this.tab}` : null
-    },
-
-    componentSchemas() {
-      // Compute a components list which has the dataPath baked into its keys
-      // and adds the key as the name to each component, used for labels, etc.
-      // NOTE: schema can be null while multi-form lists load their data,
-      // because only the available data will determine the type of form.
-      // The component of a value wrapped by an item adapter keeps the data
-      // path of the item, which the errors of the value map to.
-      const itemAdapter = getItemAdapter(this.sourceSchema)
-      return Object.entries(this.schema?.components || {}).map(
+    // NOTE: The schema can be null while multi-form lists load their data. The
+    // component of a value wrapped by an item adapter keeps the data path of
+    // the item, which the errors of the value map to.
+    const componentSchemas = computed(() => {
+      const itemAdapter = getItemAdapter(unref(sourceSchema))
+      return Object.entries(props.schema?.components || {}).map(
         ([name, schema]) => {
-          // Always add name to component schema, but clone it first to avoid
-          // mutating the original schema potentially used in multiple places.
+          // Clone the schema to add its name, as it may be used elsewhere too:
           schema = { ...schema, name }
           // Share dataPath and store with parent if not nested:
           const nested = hasNestedData(schema)
-          const nestedDataPath = appendDataPath(this.dataPath, name)
+          const nestedDataPath = appendDataPath(props.dataPath, name)
           const dataPath =
             nested && name !== itemAdapter?.name
               ? nestedDataPath
-              : this.dataPath
+              : props.dataPath
           return {
             schema,
             dataPath,
             nestedDataPath,
             nested,
-            store: this.getChildStore(name),
-            // The same as `DitoContainer.hasLabel`, also for type components
-            // that render their own label, e.g. sections.
-            hasLabel: hasLabel(schema, this.generateLabels)
+            store: getChildStore(name),
+            // Also of type components that render their own label:
+            hasLabel: hasLabel(schema, props.generateLabels)
           }
         }
       )
-    },
+    })
 
-    isSingleComponent() {
-      return this.single && this.componentSchemas.length === 1
-    },
+    const isSingleComponent = computed(
+      () => props.single && componentSchemas.value.length === 1
+    )
 
-    shouldRenderComponentByIndex() {
-      return this.componentSchemas.map(({ schema, nested, dataPath }) =>
-        this.shouldRenderComponent(schema, nested, dataPath)
-      )
-    },
-
-    renderedPositions() {
-      // Ignore the positions of containers that aren't rendered anymore, as
-      // their removal doesn't necessarily resize the pane, see `onResizePane()`
-      return this.positions.map((position, index) =>
-        this.shouldRenderComponentByIndex[index] ? position : null
-      )
-    },
-
-    verticalLabelsByIndices() {
-      const positions = this.renderedPositions
-
-      const isLastInRow = index => (
-        positions[index] && (
-          index === positions.length - 1 ||
-          findNextPosition(index).top > positions[index].top
+    // Evaluate the `if` of the components with their own context before
+    // they're rendered:
+    const shouldRenderComponentByIndex = computed(() =>
+      componentSchemas.value.map(({ schema, nested, dataPath }) =>
+        shouldRenderSchema(
+          schema,
+          DitoContext.createForSchema(services, {
+            schema,
+            name: schema.name,
+            nested,
+            data: props.data,
+            dataPath,
+            rootData: getRootData(services)
+          })
         )
+      )
+    )
+
+    const verticalLabelsByIndices = computed(() => {
+      // Ignore the positions of containers that aren't rendered anymore, as
+      // their removal doesn't necessarily resize the pane:
+      const renderedPositions = positions.value.map((position, index) =>
+        shouldRenderComponentByIndex.value[index] ? position : null
       )
 
       const findNextPosition = index => {
-        for (let i = index + 1; i < positions.length; i++) {
-          if (positions[i]) return positions[i]
+        for (let i = index + 1; i < renderedPositions.length; i++) {
+          if (renderedPositions[i]) return renderedPositions[i]
         }
         return 0
       }
 
+      const isLastInRow = index => (
+        renderedPositions[index] && (
+          index === renderedPositions.length - 1 ||
+          findNextPosition(index).top > renderedPositions[index].top
+        )
+      )
+
       const rows = []
       let row = []
-      for (let index = 0; index < positions.length; index++) {
+      for (let index = 0; index < renderedPositions.length; index++) {
         row.push(index)
         if (isLastInRow(index)) {
           rows.push(row)
@@ -202,82 +188,79 @@ export default DitoComponent.component('DitoPane', {
       }
 
       const verticalLabelsByIndices = []
-
       for (const row of rows) {
-        let hasLabelsInRow = false
-        for (const index of row) {
-          // Labels in compact schemas are displayed next to their components,
-          // so only count labels of containers that are higher than one line.
-          // TODO: Handle nested schemas, e.g. 'section' or 'object' and
-          // detect labels there too.
-          if (
-            positions[index]?.height > 2 &&
-            this.componentSchemas[index].hasLabel
-          ) {
-            hasLabelsInRow = true
-            break
-          }
-        }
+        // Labels in compact schemas are displayed next to their components, so
+        // only count labels of containers that are higher than one line.
+        // TODO: Handle nested schemas, e.g. 'section' or 'object' and detect
+        // labels there too.
+        const hasLabelsInRow = row.some(
+          index => (
+            renderedPositions[index]?.height > 2 &&
+            componentSchemas.value[index].hasLabel
+          )
+        )
         for (const index of row) {
           verticalLabelsByIndices[index] = hasLabelsInRow
         }
       }
-
       return verticalLabelsByIndices
-    }
-  },
+    })
 
-  watch: {
-    'componentSchemas.length'(length) {
-      this.positions.length = length
-    }
-  },
+    watch(
+      () => componentSchemas.value.length,
+      length => {
+        positions.value.length = length
+      }
+    )
 
-  methods: {
-    shouldRenderComponent(schema, nested, dataPath) {
-      // Evaluate the component's `if` before it is rendered, with its own
-      // context, the same as once it is rendered, not with the pane's.
-      return shouldRenderSchema(
-        schema,
-        DitoContext.createForSchema(this, {
-          schema,
-          name: schema.name,
-          nested,
-          data: this.data,
-          dataPath,
-          rootData: this.rootData
-        })
-      )
-    },
+    return {
+      container: services.container,
+      positions,
+      componentSchemas,
+      isSingleComponent,
+      shouldRenderComponentByIndex,
 
-    onResizePane() {
-      this.$nextTick(() => {
-        // The containers aren't rendered anymore if the pane was emptied or
-        // unmounted in the meantime.
-        for (const container of this.$refs.containers ?? []) {
-          const node = container.$el
-          const index = +node.dataset.index
-          const bounds = node.getBoundingClientRect()
-          const style = getComputedStyle(node)
-          const padding = parseFloat(style.padding)
-          const fontSize = parseFloat(style.fontSize)
-          const height = bounds.height - 2 * padding
-          this.positions[index] =
-            height <= 0
-              ? null
-              : {
-                  top: bounds.y,
-                  height: height / fontSize
-                }
+      // See `DitoTabs.getTabId()` and `getTabPanelId()`:
+      tabId: computed(() =>
+        props.tab ? `${parentComponentPath.value}-tab-${props.tab}` : null
+      ),
+
+      tabPanelId: computed(() =>
+        props.tab ? `${parentComponentPath.value}-tabpanel-${props.tab}` : null
+      ),
+
+      classes: computed(() => {
+        const prefix = 'dito-pane'
+        return {
+          [`${prefix}--single`]: isSingleComponent.value,
+          [`${prefix}--padding-${props.padding}`]: !!props.padding
         }
-      })
-    },
+      }),
 
-    isInLabeledRow(index) {
-      return !!this.verticalLabelsByIndices[index]
+      isInLabeledRow(index) {
+        return !!verticalLabelsByIndices.value[index]
+      },
+
+      onResizePane() {
+        nextTick(() => {
+          // The containers aren't rendered anymore if the pane was emptied or
+          // unmounted in the meantime.
+          for (const container of containers.value ?? []) {
+            const node = container.$el
+            const index = +node.dataset.index
+            const bounds = node.getBoundingClientRect()
+            const style = getComputedStyle(node)
+            const padding = parseFloat(style.padding)
+            const fontSize = parseFloat(style.fontSize)
+            const height = bounds.height - 2 * padding
+            positions.value[index] =
+              height <= 0 ? null : { top: bounds.y, height: height / fontSize }
+          }
+        })
+      }
     }
   }
-})
+}
 </script>
 
 <style lang="scss">

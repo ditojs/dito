@@ -1,5 +1,11 @@
 import { RouteContext } from './RouteContext.ts'
-import { mountForm, mountSchema, settle } from '../test/mount.js'
+import {
+  mountForm,
+  mountSchema,
+  settle,
+  isView,
+  isForm
+} from '../test/mount.js'
 
 describe('RouteContext', () => {
   const mountChapters = () =>
@@ -21,23 +27,26 @@ describe('RouteContext', () => {
 
   const openChapterForm = async (admin, path) => {
     await admin.navigate(path)
-    const form = admin.getRouteComponent(component => component.isForm)
+    const form = admin.getRouteComponent(isForm)
     await settle(form)
     return form
   }
 
   it('is provided by views and forms to their components', async () => {
     const { admin, routeComponent: form, getComponent } = await mountChapters()
-    const view = admin.getRouteComponent(component => component.isView)
+    const view = admin.getRouteComponent(isView)
     const { route } = form
     expect(route).toBeInstanceOf(RouteContext)
-    expect(getComponent('chapters').route).toBe(route)
+    // The sources of the form register with its route:
+    expect(route.findSourceByDataPath('chapters')).toBe(
+      getComponent('chapters').ownSource
+    )
     expect(route.parent).toBe(view.route)
     expect(view.route.parent).toBe(null)
     expect(route.level).toBe(1)
     expect(route.isForm).toBe(true)
     expect(view.route.isForm).toBe(false)
-    expect(route.container).toBe(form.container)
+    expect(route.container).toBe(form.ownContainer)
     expect(route.path).toBe('/items/1')
     expect(route.isLastRoute).toBe(true)
     expect(view.route.isLastRoute).toBe(false)
@@ -45,7 +54,7 @@ describe('RouteContext', () => {
 
   it('describes the data that the route renders', async () => {
     const { admin, routeComponent: form } = await mountChapters()
-    const view = admin.getRouteComponent(component => component.isView)
+    const view = admin.getRouteComponent(isView)
     expect(view.route.schema).toBe(view.schema)
     expect(view.route.rootData).toBe(view.data)
     const chapterForm = await openChapterForm(admin, '/items/1/chapters/0')
@@ -55,8 +64,8 @@ describe('RouteContext', () => {
     expect(route.componentPath).toBe('chapters/0')
     expect(route.rootData.chapters[0]).toBe(chapterForm.data)
     // Forms track their requests along with the ones of their view:
-    expect(route.loadingTracker).toBe(view.loadingTracker)
-    expect(form.route.loadingTracker).toBe(view.loadingTracker)
+    expect(route.loadingTracker).toBe(view.route.loadingTracker)
+    expect(form.route.loadingTracker).toBe(view.route.loadingTracker)
   })
 
   it('tells the state that the routes below it depend on', async () => {

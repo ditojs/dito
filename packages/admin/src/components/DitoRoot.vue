@@ -1,5 +1,6 @@
 <template lang="pug">
 .dito-root(
+  ref="root"
   :data-agent-browser="appState.agent.browser"
   :data-agent-platform="appState.agent.platform"
   :data-agent-version="appState.agent.versionNumber"
@@ -40,139 +41,58 @@
 </template>
 
 <script>
-import { markRaw } from 'vue'
+import {
+  inject,
+  markRaw,
+  onMounted,
+  onUnmounted,
+  provide,
+  reactive,
+  ref,
+  useTemplateRef
+} from 'vue'
 import { delegate as tippyDelegate } from 'tippy.js'
-import DitoComponent from '../DitoComponent.js'
+import appState from '../appState.js'
 import { useDomEvents } from '../composables/useDomEvents.ts'
 import DitoDialog from './DitoDialog.vue'
 import { setupSchemaComponents } from '../utils/schema/setup.js'
 import { RouteTree } from '../utils/RouteTree.ts'
 import { FileDropTargets } from '../utils/FileDropTargets.js'
 
-// @vue/component
-export default DitoComponent.component('DitoRoot', {
+export default {
+  name: 'DitoRoot',
   components: { DitoDialog },
-
-  provide() {
-    return {
-      $fileDropTargets: () => this.fileDropTargets
-    }
-  },
 
   props: {
     options: { type: Object, default: () => ({}) }
   },
 
-  setup() {
-    return useDomEvents()
-  },
+  setup(props) {
+    const admin = inject('admin')
+    const { domOn } = useDomEvents()
+    const root = useTemplateRef('root')
+    const notifications = useTemplateRef('notifications')
+    const dialogs = reactive({})
+    // The files dragged over the admin, for the uploads to drop them on:
+    const fileDropTargets = markRaw(new FileDropTargets())
+    provide('fileDropTargets', fileDropTargets)
+    // The login link shows without a user once the session started:
+    const hasSessionStarted = ref(false)
 
-  data() {
-    return {
-      dialogs: {},
-      // Tracks the files dragged over the admin, for the uploads to drop them
-      // on, see `DitoTypeUpload`:
-      fileDropTargets: markRaw(new FileDropTargets()),
-      // Whether `session.start()` finished, after which the login link is
-      // shown without a user, e.g. once the login dialog was canceled:
-      hasSessionStarted: false,
-      // Detaches the login dialog and notifications from the session:
-      detachSessionUserInterface: null
-    }
-  },
-
-  computed: {
-    notifications() {
-      return this.isMounted && this.$refs.notifications
-    }
-  },
-
-  created() {
-    this.appState.title = document.title || 'Dito.js Admin'
-    this.admin.attachDialogsAndNotifications({
-      showDialog: (schema, options) => this.showDialog(schema, options),
-      notify: options => this.notify(options),
-      closeNotifications: () => this.closeNotifications()
-    })
-    this.detachSessionUserInterface = this.admin.session.attachUserInterface({
-      requestLoginData: () => this.showLoginDialog(),
-      notify: options => this.notify(options)
-    })
-  },
-
-  unmounted() {
-    this.detachSessionUserInterface()
-  },
-
-  async mounted() {
-    // Only the overlay is rendered here, the uploads handle the dropped files.
-    this.domOn(document, this.fileDropTargets.getDocumentEventHandlers())
-
-    tippyDelegate(this.$el, {
-      target: '.dito-info',
-      theme: 'info',
-      animation: 'shift-away-subtle',
-      interactive: true,
-      delay: 250,
-      zIndex: 1,
-      appendTo: node => node.closest('.dito-pane'),
-      onShow: instance => instance.setContent(instance.reference.dataset.info)
-    })
-
-    // Warn before the page is reloaded or closed with unsaved changes. Route
-    // changes within the admin are guarded by `useLeaveGuard()` instead.
-    this.domOn(window, {
-      beforeunload: event => {
-        // Write the edits that are held back first, e.g. debounced markup
-        // edits:
-        for (const route of this.admin.ui.routes) {
-          route.container.model.writePendingValues()
-        }
-        if (this.hasUnsavedChanges()) {
-          event.preventDefault()
-          // Required by older browsers to show the warning:
-          event.returnValue = ''
-        }
-      }
-    })
-
-    try {
-      await this.admin.session.start()
-    } catch (error) {
-      console.error(error)
-    }
-    this.hasSessionStarted = true
-  },
-
-  methods: {
-    notify(options) {
-      this.notifications.notify(options)
-    },
-
-    closeNotifications() {
-      this.notifications.destroyAll()
-    },
-
-    // Data that is being submitted still counts as unsaved, as `beforeunload`
-    // can't wait for the submits:
-    hasUnsavedChanges() {
-      return this.admin.ui.routes.some(route => route.isDirty)
-    },
-
-    // Show a dialog with the `components` and `buttons` of `schema`, and
-    // resolve with the value that it's closed with:
-    async showDialog({ components, buttons }, { data, settings } = {}) {
-      // Process components to resolve async schemas first, so that errors
-      // reject the returned promise.
+    // Shows a dialog with the `components` and `buttons` of `schema`, and
+    // resolves with the value that it's closed with:
+    const showDialog = async ({ components, buttons }, options = {}) => {
+      const { data, settings } = options
+      // Resolve async schemas first, so that their errors reject:
       const schema = { type: 'dialog', components }
-      const { api } = this.admin
+      const { api } = admin
       await setupSchemaComponents(api, schema)
       if (new RouteTree({ dialog: schema }, api).hasRoutedForms()) {
         throw new Error('Dialogs do not support components that produce routes')
       }
       return new Promise(resolve => {
         const key = `dialog-${++dialogId}`
-        this.dialogs[key] = {
+        dialogs[key] = {
           components,
           buttons,
           data,
@@ -180,46 +100,105 @@ export default DitoComponent.component('DitoRoot', {
           promise: { resolve }
         }
       })
-    },
+    }
 
-    removeDialog(key) {
-      delete this.dialogs[key]
-    },
+    const notify = options => notifications.value.notify(options)
 
-    // Shows the login dialog for `Session.login()`, and returns the entered
-    // credentials, or `null` if the user cancels.
-    showLoginDialog() {
-      const { additionalComponents } = this.options.login || {}
-      return this.showDialog({
-        components: {
-          username: {
-            type: 'text',
-            autofocus: true
+    appState.title = document.title || 'Dito.js Admin'
+    admin.attachDialogsAndNotifications({
+      showDialog,
+      notify,
+      closeNotifications: () => notifications.value.destroyAll()
+    })
+    // Detaches the login dialog and notifications from the session:
+    const detachSessionUserInterface = admin.session.attachUserInterface({
+      notify,
+      // Return the entered credentials, or `null` if the user cancels:
+      requestLoginData() {
+        const { additionalComponents } = props.options.login || {}
+        return showDialog({
+          components: {
+            username: {
+              type: 'text',
+              autofocus: true
+            },
+            password: {
+              type: 'password'
+            },
+            ...additionalComponents
           },
-          password: {
-            type: 'password'
-          },
-          ...additionalComponents
-        },
-        // NOTE: Login must come before cancel in DOM order so that password
-        // managers (e.g. 1Password) target the submit button instead of cancel.
-        // DitoDialog uses CSS order to visually place cancel first.
-        buttons: {
-          login: {
-            type: 'submit',
-            text: 'Login'
-          },
+          // NOTE: Login must come before cancel in DOM order so that password
+          // managers (e.g. 1Password) target the submit button instead of
+          // cancel. DitoDialog uses CSS order to visually place cancel first.
+          buttons: {
+            login: {
+              type: 'submit',
+              text: 'Login'
+            },
 
-          cancel: {
-            type: 'button',
-            text: 'Cancel'
-            // NOTE: The click event is added in DitoDialog.buttonSchemas()
+            cancel: {
+              type: 'button',
+              text: 'Cancel'
+              // NOTE: The click event is added in DitoDialog.buttonSchemas()
+            }
+          }
+        })
+      }
+    })
+    onUnmounted(detachSessionUserInterface)
+
+    onMounted(async () => {
+      // The uploads handle the dropped files, the root only the overlay:
+      domOn(document, fileDropTargets.getDocumentEventHandlers())
+
+      tippyDelegate(root.value, {
+        target: '.dito-info',
+        theme: 'info',
+        animation: 'shift-away-subtle',
+        interactive: true,
+        delay: 250,
+        zIndex: 1,
+        appendTo: node => node.closest('.dito-pane'),
+        onShow: instance => instance.setContent(instance.reference.dataset.info)
+      })
+
+      // Warn before the page is reloaded or closed with unsaved changes, also
+      // the ones being submitted, as `beforeunload` can't wait for them:
+      domOn(window, {
+        beforeunload: event => {
+          // Write the edits that are held back first:
+          for (const route of admin.ui.routes) {
+            route.container.model.writePendingValues()
+          }
+          if (admin.ui.routes.some(route => route.isDirty)) {
+            event.preventDefault()
+            // Required by older browsers to show the warning:
+            event.returnValue = ''
           }
         }
       })
+
+      try {
+        await admin.session.start()
+      } catch (error) {
+        console.error(error)
+      }
+      hasSessionStarted.value = true
+    })
+
+    return {
+      admin,
+      appState,
+      dialogs,
+      fileDropTargets,
+      hasSessionStarted,
+
+      removeDialog(key) {
+        delete dialogs[key]
+      }
     }
   }
-})
+}
 
 let dialogId = 0
 </script>

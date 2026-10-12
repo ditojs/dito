@@ -22,10 +22,11 @@
 </template>
 
 <script>
-import DitoComponent from '../DitoComponent.js'
+import { useStore } from '../composables/useStore.ts'
 
-// @vue/component
-export default DitoComponent.component('DitoPanels', {
+export default {
+  name: 'DitoPanels',
+
   props: {
     panels: { type: Array, default: null },
     data: { type: Object, required: true },
@@ -33,14 +34,18 @@ export default DitoComponent.component('DitoPanels', {
     disabled: { type: Boolean, required: true }
   },
 
-  methods: {
-    getPanelKey(dataPath, tabName) {
-      // Allow separate tabs to use panels of the same name, by
-      // prefixing their key with the tab name.
-      return tabName ? `${tabName}_${dataPath}` : dataPath
+  setup(props) {
+    return {
+      ...useStore(props),
+
+      // Allow separate tabs to use panels of the same name, by prefixing their
+      // key with the tab name.
+      getPanelKey(dataPath, tabName) {
+        return tabName ? `${tabName}_${dataPath}` : dataPath
+      }
     }
   }
-})
+}
 </script>
 
 <style lang="scss">

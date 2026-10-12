@@ -28,7 +28,6 @@ DitoOptionList.dito-radio-buttons(
 </template>
 
 <script>
-import DitoComponent from '../DitoComponent.js'
 import { defineType } from '../utils/schema/types.ts'
 import { optionsTraits } from './traits.ts'
 import { fieldProps, useField } from '../composables/useField.ts'
@@ -37,7 +36,8 @@ import DitoOptionList from '../components/DitoOptionList.vue'
 import DitoOptionsEditButtons from '../components/DitoOptionsEditButtons.vue'
 
 // @vue/component
-const DitoTypeRadio = DitoComponent.component('DitoTypeRadio', {
+const DitoTypeRadio = {
+  name: 'DitoTypeRadio',
   components: { DitoOptionList, DitoOptionsEditButtons },
   props: fieldProps,
 
@@ -53,6 +53,8 @@ const DitoTypeRadio = DitoComponent.component('DitoTypeRadio', {
     } = useOptions(props, field)
     return {
       attributes: field.attributes,
+      context: field.context,
+      componentPath: field.componentPath,
       options,
       groupBy,
       editable,
@@ -61,7 +63,7 @@ const DitoTypeRadio = DitoComponent.component('DitoTypeRadio', {
       getLabelForOption
     }
   }
-})
+}
 
 defineType({
   types: ['radio'],

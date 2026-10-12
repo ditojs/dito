@@ -23,11 +23,10 @@ DitoAffixes(
 </template>
 
 <script>
-import DitoComponent from '../DitoComponent.js'
 import DitoAffixes from './DitoAffixes.vue'
 
-// @vue/component
-export default DitoComponent.component('DitoInputAffixes', {
+export default {
+  name: 'DitoInputAffixes',
   components: { DitoAffixes },
   emits: ['clear'],
 
@@ -46,5 +45,5 @@ export default DitoComponent.component('DitoInputAffixes', {
     // The context of the type component, for the callbacks of the items.
     parentContext: { type: Object, required: true }
   }
-})
+}
 </script>

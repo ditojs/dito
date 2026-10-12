@@ -24,38 +24,51 @@ ul.dito-menu
 </template>
 
 <script>
-import DitoComponent from '../DitoComponent.js'
+import { useRoute, useRouter } from 'vue-router'
+import DitoContext from '../DitoContext.js'
+import { useServices } from '../composables/useSchemaContext.ts'
+import { useSchemaValue } from '../composables/useSchemaValue.ts'
 import { isPathWithin } from '../utils/route.js'
 
 // The menu of the views and menus of the route tree. `force` reloads the view
 // of a link even if it is already the current route.
-// @vue/component
-export default DitoComponent.component('DitoMenu', {
+export default {
+  name: 'DitoMenu',
+
   props: {
     nodes: { type: Array, required: true }
   },
 
-  methods: {
-    shouldShowNode(node) {
-      return (
-        this.shouldRenderSchema(node.schema) && (
-          !node.items ||
-          node.items.some(item => this.shouldRenderSchema(item.schema))
-        )
-      )
-    },
-
-    isActiveNode(node) {
-      return isPathWithin(this.$route.path, this.getPath(node.routeName))
-    },
+  setup() {
+    const route = useRoute()
+    const router = useRouter()
+    const { getLabel, shouldRenderSchema } = useSchemaValue(
+      new DitoContext(useServices(), { nested: false })
+    )
 
     // Navigate to the paths of the routes rather than their names, so that the
     // router also matches their default children, like the forms of objects:
-    getPath(routeName) {
-      return this.$router.resolve({ name: routeName }).path
+    const getPath = routeName => router.resolve({ name: routeName }).path
+
+    return {
+      getLabel,
+      getPath,
+
+      shouldShowNode(node) {
+        return (
+          shouldRenderSchema(node.schema) && (
+            !node.items ||
+            node.items.some(item => shouldRenderSchema(item.schema))
+          )
+        )
+      },
+
+      isActiveNode(node) {
+        return isPathWithin(route.path, getPath(node.routeName))
+      }
     }
   }
-})
+}
 </script>
 
 <style lang="scss">

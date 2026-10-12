@@ -64,12 +64,12 @@ test.describe('route-refetch-race', () => {
     // Access route: the Vue 3 app instance hangs off `el.__vue_app__`, and
     // Vue exposes the active component for each DOM node on
     // `__vueParentComponent`. Walk up from the form's root DOM until we hit
-    // a node whose `isForm === true` — that's the DitoForm.
+    // the DitoForm.
     await page.evaluate(() => {
       const root = document.querySelector('.dito-form')
       if (!root) throw new Error('No .dito-form in the DOM')
       let node = (root as any).__vueParentComponent
-      while (node && !node.ctx?.isForm) node = node.parent
+      while (node && node.type?.name !== 'DitoForm') node = node.parent
       if (!node) throw new Error('Could not locate DitoForm component')
       node.ctx.reloadData()
     })

@@ -12,10 +12,9 @@ nav.dito-header(:aria-busy="isLoading")
 </template>
 
 <script>
-import DitoComponent from '../DitoComponent.js'
+export default {
+  name: 'DitoHeader',
 
-// @vue/component
-export default DitoComponent.component('DitoHeader', {
   props: {
     spinner: {
       type: Object,
@@ -26,7 +25,7 @@ export default DitoComponent.component('DitoHeader', {
       default: false
     }
   }
-})
+}
 </script>
 
 <style lang="scss">

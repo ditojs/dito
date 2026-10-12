@@ -45,8 +45,8 @@ export async function mountSchema({
     ...options
   })
   await admin.navigate(`/${name}`)
-  const view = admin.getRouteComponent(component => component.isView)
-  view.setData(clone(data))
+  const view = admin.getRouteComponent(isView)
+  view.ownContainer.replaceItem(clone(data))
   await settle(view)
   return createMountResult(admin, view)
 }
@@ -87,7 +87,7 @@ export async function mountForm({
     ...options
   })
   await admin.navigate(data ? `/items/${id}` : '/items/create')
-  const form = admin.getRouteComponent(component => component.isForm)
+  const form = admin.getRouteComponent(isForm)
   await settle(form)
   return createMountResult(admin, form)
 }
@@ -158,30 +158,42 @@ export async function mountAdmin({ views, request = null, api = {} }) {
       return admin.getRouteComponents(filter).at(-1) ?? null
     },
 
-    // Returns the first type component in the data of `routeComponent` that
-    // displays the value at `dataPath`, e.g. `authors/0/name`. Unnested
-    // components, e.g. sections, are found by the data path of their parent
-    // and their name, e.g. `authors/0/details`.
-    getComponent(routeComponent, dataPath) {
-      const components = wrapper
+    // Returns the container of the first type component in the data of
+    // `routeComponent` that displays the value at `dataPath`, e.g.
+    // `authors/0/name`. Unnested components, e.g. sections, are found by the
+    // data path of their parent and their name, e.g. `authors/0/details`.
+    getContainer(routeComponent, dataPath) {
+      // The components in the data of the route component are registered in
+      // the UI registry under its container:
+      const containers = wrapper
         .findAllComponents({ name: 'DitoContainer' })
-        .map(({ vm }) => vm.$refs.component)
+        .map(({ vm }) => vm)
         .filter(
-          component => component?.container === routeComponent.ownContainer
+          ({ componentPath }) => (
+            context.ui.getHandles(componentPath, routeComponent.ownContainer)
+              .length > 0
+          )
         )
       return (
-        components.find(
-          component => component.nested && component.dataPath === dataPath
+        containers.find(
+          container => container.nested && container.dataPath === dataPath
         ) ??
-        components.find(
-          component => (
-            !component.nested && (
-              appendDataPath(component.dataPath, component.schema.name) ===
+        containers.find(
+          container => (
+            !container.nested && (
+              appendDataPath(container.dataPath, container.schema.name) ===
               dataPath
             )
           )
         ) ??
         null
+      )
+    },
+
+    // Returns the type component of the container, see `getContainer()`.
+    getComponent(routeComponent, dataPath) {
+      return (
+        admin.getContainer(routeComponent, dataPath)?.$refs.component ?? null
       )
     }
   }
@@ -208,8 +220,8 @@ export async function mountAdminWithGenresView({ components, data = {} }) {
     }
   })
   await admin.navigate('/test')
-  const view = admin.getRouteComponent(component => component.isView)
-  view.setData(data)
+  const view = admin.getRouteComponent(isView)
+  view.ownContainer.replaceItem(data)
   await settle(view)
   return { admin, view }
 }
@@ -220,6 +232,16 @@ export function unmountAdmin(admin) {
   admin.element.remove()
   // `DitoRoot` sets the user, which outlives the app in the shared app state:
   appState.user = null
+}
+
+// Tell the route components of views and forms apart, e.g. in
+// `admin.getRouteComponent(isForm)`:
+export function isView(component) {
+  return !component.ownRoute.isForm
+}
+
+export function isForm(component) {
+  return component.ownRoute.isForm
 }
 
 // Waits until rendering, events and requests are done, and the data model of
@@ -279,10 +301,12 @@ function createMountResult(admin, routeComponent) {
 
   // Focuses the component at `dataPath`, revealing it first, as showing its
   // errors does.
-  const focusField = dataPath => {
-    const { container, componentPath } = getComponent(dataPath)
-    return admin.context.ui.reveal(container, componentPath, { focus: true })
-  }
+  const focusField = dataPath =>
+    admin.context.ui.reveal(
+      routeComponent.ownContainer,
+      admin.getContainer(routeComponent, dataPath).componentPath,
+      { focus: true }
+    )
 
   // Returns a wrapper of `element`, or an empty one that doesn't exist:
   const wrapElement = element =>

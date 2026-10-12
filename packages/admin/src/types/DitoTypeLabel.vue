@@ -1,21 +1,24 @@
 <template lang="pug">
-DitoLabel.dito-label-component(:label="value")
+DitoLabel.dito-label-component(
+  :label="value"
+  :context="context"
+)
 </template>
 
 <script>
-import DitoComponent from '../DitoComponent.js'
 import { defineType } from '../utils/schema/types.ts'
 import { fieldProps, useField } from '../composables/useField.ts'
 
 // @vue/component
-const DitoTypeLabel = DitoComponent.component('DitoTypeLabel', {
+const DitoTypeLabel = {
+  name: 'DitoTypeLabel',
   props: fieldProps,
 
   setup(props) {
-    const { value } = useField(props)
-    return { value }
+    const { value, context } = useField(props)
+    return { value, context }
   }
-})
+}
 
 defineType({
   types: ['label'],

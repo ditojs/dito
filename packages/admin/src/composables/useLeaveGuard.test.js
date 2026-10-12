@@ -4,7 +4,9 @@ import {
   mountForm,
   settle,
   enterValue,
-  stubConfirm
+  stubConfirm,
+  isView,
+  isForm
 } from '../test/mount.js'
 import { flushPromises } from '@vue/test-utils'
 
@@ -20,7 +22,7 @@ describe('useLeaveGuard()', () => {
       })
       await enterValue(wrapper.find('input[name="title"]'), 'Dune Messiah')
       await settle(routeComponent)
-      expect(routeComponent.isDirty).toBe(true)
+      expect(routeComponent.ownRoute.isDirty).toBe(true)
       await admin.navigate('/items/12')
       expect(confirm).toHaveBeenCalledOnce()
       expect(admin.router.currentRoute.value.path).toBe('/items/1')
@@ -92,9 +94,9 @@ describe('useLeaveGuard()', () => {
         }
       })
       await admin.navigate('/books')
-      const view = admin.getRouteComponent(it => it.isView)
+      const view = admin.getRouteComponent(isView)
       await enterValue(admin.wrapper.find('input[name="title"]'), 'Emma')
-      expect(view.isDirty).toBe(true)
+      expect(view.ownRoute.isDirty).toBe(true)
       await admin.navigate('/books-archive')
       expect(confirm).toHaveBeenCalledOnce()
       expect(admin.router.currentRoute.value.path).toBe('/books')
@@ -138,9 +140,9 @@ describe('useLeaveGuard()', () => {
       await flushPromises()
       expect(confirm).toHaveBeenCalledOnce()
       expect(books).toHaveLength(1)
-      const view = admin.getRouteComponent(it => it.isView)
+      const view = admin.getRouteComponent(isView)
       // The deletion is persisted, so the view has no changes to save:
-      expect(view.isDirty).toBe(false)
+      expect(view.ownRoute.isDirty).toBe(false)
       await admin.navigate('/authors')
       expect(confirm).toHaveBeenCalledOnce()
       expect(admin.router.currentRoute.value.path).toBe('/authors')
@@ -182,18 +184,18 @@ describe('useLeaveGuard()', () => {
             : { data }
       })
       await admin.navigate('/books')
-      const view = admin.getRouteComponent(it => it.isView)
+      const view = admin.getRouteComponent(isView)
       await admin.wrapper
         .findAll('.dito-button--drag')[0]
         .trigger('keydown', { key: 'ArrowDown', altKey: true })
       await settle(view)
-      expect(view.isDirty).toBe(true)
+      expect(view.ownRoute.isDirty).toBe(true)
       await admin.wrapper.find('button[id$="saveOrder"]').trigger('click')
       await settle(view)
       expect(admin.request).toHaveBeenCalledWith(
         expect.objectContaining({ method: 'post', url: '/books/order' })
       )
-      expect(view.isDirty).toBe(false)
+      expect(view.ownRoute.isDirty).toBe(false)
       await admin.navigate('/authors')
       expect(confirm).not.toHaveBeenCalled()
       expect(admin.router.currentRoute.value.path).toBe('/authors')
@@ -229,13 +231,13 @@ describe('useLeaveGuard()', () => {
         })
       })
       await admin.navigate('/books')
-      const view = admin.getRouteComponent(it => it.isView)
+      const view = admin.getRouteComponent(isView)
       await admin.wrapper
         .findAll('.dito-button--drag')[0]
         .trigger('keydown', { key: 'ArrowDown', altKey: true })
       await settle(view)
       expect(onChange).toHaveBeenCalledOnce()
-      expect(view.isDirty).toBe(false)
+      expect(view.ownRoute.isDirty).toBe(false)
       await admin.navigate('/authors')
       expect(confirm).not.toHaveBeenCalled()
       expect(admin.router.currentRoute.value.path).toBe('/authors')
@@ -259,7 +261,7 @@ describe('useLeaveGuard()', () => {
       await settle(routeComponent)
       expect(confirm).not.toHaveBeenCalled()
       expect(admin.router.currentRoute.value.path).toBe('/items/1234567')
-      expect(admin.getRouteComponent(it => it.isForm)).toBe(routeComponent)
+      expect(admin.getRouteComponent(isForm)).toBe(routeComponent)
     })
 
     describe('leaving while submitting', () => {
@@ -287,7 +289,7 @@ describe('useLeaveGuard()', () => {
           .find('.dito-buttons--main button[type="submit"]')
           .trigger('click')
         await flushPromises()
-        expect(routeComponent.isDirty).toBe(true)
+        expect(routeComponent.ownRoute.isDirty).toBe(true)
         return { ...result, response }
       }
 
@@ -315,7 +317,7 @@ describe('useLeaveGuard()', () => {
         await flushPromises()
         expect(confirm).toHaveBeenCalledOnce()
         expect(admin.router.currentRoute.value.path).toBe('/items/create')
-        expect(routeComponent.isDirty).toBe(true)
+        expect(routeComponent.ownRoute.isDirty).toBe(true)
       })
 
       it('opens the created item when the navigation is aborted', async () => {
@@ -327,7 +329,7 @@ describe('useLeaveGuard()', () => {
         await navigation
         await flushPromises()
         expect(admin.router.currentRoute.value.path).toBe('/items/1')
-        expect(routeComponent.isCreating).toBe(false)
+        expect(routeComponent.ownContainer.isCreating).toBe(false)
       })
 
       it('opens the created item when the navigation is superseded', async () => {
@@ -342,7 +344,7 @@ describe('useLeaveGuard()', () => {
         expect(admin.router.currentRoute.value.fullPath).toBe(
           '/items/1#details'
         )
-        expect(routeComponent.isCreating).toBe(false)
+        expect(routeComponent.ownContainer.isCreating).toBe(false)
       })
 
       it('opens the created item when the navigation is redirected', async () => {
@@ -448,7 +450,7 @@ describe('useLeaveGuard()', () => {
         // The next navigation that stays in the form opens the created item:
         await admin.navigate('/items/create#notes')
         expect(admin.router.currentRoute.value.fullPath).toBe('/items/1#notes')
-        expect(routeComponent.isCreating).toBe(false)
+        expect(routeComponent.ownContainer.isCreating).toBe(false)
       })
 
       it('opens the created item after endless redirects', async () => {
@@ -463,7 +465,7 @@ describe('useLeaveGuard()', () => {
         )
         await admin.navigate('/items/create#notes')
         expect(admin.router.currentRoute.value.fullPath).toBe('/items/1#notes')
-        expect(routeComponent.isCreating).toBe(false)
+        expect(routeComponent.ownContainer.isCreating).toBe(false)
       })
     })
 
@@ -487,7 +489,7 @@ describe('useLeaveGuard()', () => {
       })
       await enterValue(wrapper.find('input[name="title"]'), 'Dune Messiah')
       await settle(routeComponent)
-      expect(routeComponent.isDirty).toBe(true)
+      expect(routeComponent.ownRoute.isDirty).toBe(true)
       await admin.navigate('/items/1/chapters/0')
       expect(confirm).not.toHaveBeenCalled()
       expect(admin.router.currentRoute.value.path).toBe('/items/1/chapters/0')
@@ -524,7 +526,7 @@ describe('useLeaveGuard()', () => {
         data: { chapters: [{ title: 'Prologue', summary: '' }] }
       })
       await admin.navigate('/items/1/chapters/0')
-      const chapterForm = admin.getRouteComponent(it => it.isForm)
+      const chapterForm = admin.getRouteComponent(isForm)
       await settle(chapterForm)
       // The mounted fields are valid when they're left, unlike the field in
       // the collapsed section:

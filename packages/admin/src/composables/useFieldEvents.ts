@@ -1,7 +1,7 @@
-import { computed, getCurrentInstance, inject, onBeforeMount, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { camelize } from '@ditojs/utils'
-import DitoContext from '../DitoContext.js'
 import { getSchemaEventEntries } from '../utils/schema/events.js'
+import { useSchemaEvents } from './useSchemaEvents.ts'
 import type { SchemaContext, SchemaContextProps } from './useSchemaContext.ts'
 import type { Value } from './useValue.ts'
 
@@ -27,35 +27,19 @@ export interface FieldEventsOptions {
 export function useFieldEvents(
   props: SchemaContextProps,
   {
+    services,
     createContext,
     value,
     parsedValue,
     getEvents,
     validate
-  }: Pick<SchemaContext, 'createContext'> & Value & FieldEventsOptions
+  }: Omit<SchemaContext, 'context'> & Value & FieldEventsOptions
 ) {
-  // The component's emitter calls the handlers of the schema's events, see
-  // `DitoMixin.emitEvent()`:
-  const component = getCurrentInstance()!.proxy as any
-  const getSchemaComponent = inject<() => any>('$schemaComponent')!
+  const { emitEvent } = useSchemaEvents(() => props.schema, {
+    services,
+    createContext
+  })
   const focused = ref(false)
-
-  onBeforeMount(() => component.setupEvents())
-
-  const emitEvent = (
-    event: string,
-    {
-      context = {},
-      parent = null
-    }: { context?: Record<string, any>; parent?: any } = {}
-  ) =>
-    component.emitEvent(event, {
-      // Contexts created by `createContext()` are emitted as they are, e.g. to
-      // read `wasNotified` after:
-      context:
-        context instanceof DitoContext ? context : createContext(context),
-      parent
-    })
 
   const handlers: FieldEventHandlers = {
     onFocus() {
@@ -79,20 +63,15 @@ export function useFieldEvents(
           // Prevent endless parse recursion:
           value:
             parsedValue.value !== undefined ? parsedValue.value : value.value
-        },
-        // Pass the schema component as parent, so change events propagate up:
-        parent: getSchemaComponent()
+        }
       })
     }
   }
 
-  // The handlers to bind to the element of the component, with the ones of the
-  // events that the schema handles and the component doesn't:
+  // The handlers to bind to the element, with the ones of the events that the
+  // schema handles and the component doesn't, which are native events:
   const events = computed(() => {
     const events = getEvents ? getEvents(handlers) : { ...handlers }
-    // Assume that the events that the schema handles and the component doesn't
-    // are native events, in both forms, `events: { mouseenter }` and
-    // `onMouseenter`:
     for (const { event } of getSchemaEventEntries(props.schema)) {
       events[`on${camelize(event, true)}`] ??= () => emitEvent(event)
     }

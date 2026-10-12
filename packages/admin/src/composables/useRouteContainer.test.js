@@ -1,4 +1,4 @@
-import { mountAdmin, mountForm } from '../test/mount.js'
+import { mountAdmin, mountForm, isView, isForm } from '../test/mount.js'
 
 describe('useRouteContainer()', () => {
   it('keeps the routes of the new route by level', async () => {
@@ -7,14 +7,14 @@ describe('useRouteContainer()', () => {
       data: { title: 'Dune' }
     })
     const { routes } = admin.context.ui
-    const view = admin.getRouteComponent(it => it.isView)
-    const form = admin.getRouteComponent(it => it.isForm)
+    const view = admin.getRouteComponent(isView)
+    const form = admin.getRouteComponent(isForm)
     expect(routes).toEqual([view.ownRoute, form.ownRoute])
     await admin.navigate('/items')
     expect(form.$.isUnmounted).toBe(true)
     expect(routes).toEqual([view.ownRoute])
     await admin.navigate('/items/1')
-    const newForm = admin.getRouteComponent(it => it.isForm)
+    const newForm = admin.getRouteComponent(isForm)
     expect(newForm).not.toBe(form)
     expect(routes).toEqual([view.ownRoute, newForm.ownRoute])
   })
@@ -27,10 +27,10 @@ describe('useRouteContainer()', () => {
       }
     })
     await admin.navigate('/books')
-    const view = admin.getRouteComponent(it => it.isView)
+    const view = admin.getRouteComponent(isView)
     await admin.navigate('/authors')
     expect(view.$.isUnmounted).toBe(true)
-    const authorsView = admin.getRouteComponent(it => it.isView)
+    const authorsView = admin.getRouteComponent(isView)
     expect(authorsView.name).toBe('authors')
     expect(admin.context.ui.routes).toEqual([authorsView.ownRoute])
   })

@@ -12,6 +12,7 @@
       v-if="scopes"
       :listQuery="listQuery"
       :scopes="scopes"
+      :context="context"
     )
     //- When there's only pagination without scopes, we need a good ol' spacer
     //- div, for the layout not to break...
@@ -37,6 +38,7 @@
       :listQuery="listQuery"
       :columns="columns"
       :hasEditButtons="hasEditButtons"
+      :context="context"
     )
     DitoDraggable(
       as="tbody"
@@ -130,12 +132,12 @@
 </template>
 
 <script>
-import DitoComponent from '../DitoComponent.js'
 import { defineType } from '../utils/schema/types.ts'
 import { sourceTraits } from './traits.ts'
 import { fieldProps } from '../composables/useField.ts'
 import { useSource } from '../composables/useSource.ts'
 import { useSortable } from '../composables/useSortable.ts'
+import { useSchemaValue } from '../composables/useSchemaValue.ts'
 import DitoSourceItem from '../components/DitoSourceItem.vue'
 import {
   resolveSchemaComponent,
@@ -143,11 +145,12 @@ import {
 } from '../utils/schema/setup.js'
 import { createFiltersPanel, getFiltersDataErrors } from '../utils/filter.js'
 import { appendDataPath } from '../utils/data.js'
-import { hyphenate } from '@ditojs/utils'
+import { hyphenate, labelize } from '@ditojs/utils'
 import { computed } from 'vue'
 
 // @vue/component
-const DitoTypeList = DitoComponent.component('DitoTypeList', {
+const DitoTypeList = {
+  name: 'DitoTypeList',
   components: { DitoSourceItem },
   props: fieldProps,
 
@@ -156,7 +159,7 @@ const DitoTypeList = DitoComponent.component('DitoTypeList', {
       onFilterErrors(errors) {
         // The filters panel is its own container:
         const [panel] = source.services.admin.ui.getHandles(
-          appendDataPath(source.ownSource.componentPath, '$filters')
+          appendDataPath(source.componentPath.value, '$filters')
         )
         panel?.container.showValidationErrors(getFiltersDataErrors(errors))
         return !!panel
@@ -166,76 +169,70 @@ const DitoTypeList = DitoComponent.component('DitoTypeList', {
       getListEntry: () => source.listEntry.value,
       onChange: source.onChange
     })
-    return { ...source, getDraggableOptions, moveItem }
-  },
+    const { listData, editable, deletable, draggable, creatable } = source
+    const hasListButtons = computed(
+      () => !!(source.buttonSchemas.value || creatable.value)
+    )
+    const hasEditButtons = computed(
+      () => (
+        listData.value.length > 0 &&
+        (editable.value || deletable.value || draggable.value)
+      )
+    )
+    const hasCellEditButtons = computed(
+      () => !source.isInlined.value && hasEditButtons.value
+    )
 
-  computed: {
-    hasPagination() {
-      return !!this.paginate
-    },
+    return {
+      ...source,
+      shouldRenderSchema: useSchemaValue(source.context).shouldRenderSchema,
+      labelize,
+      getDraggableOptions,
+      moveItem,
+      hasListButtons,
+      hasEditButtons,
+      hasCellEditButtons,
+      dataModel: computed(() => source.services.container.model),
+      hasPagination: computed(() => !!source.paginate.value),
+      hasEvenCount: computed(() => !(listData.value.length % 2)),
 
-    hasListButtons() {
-      return !!(this.buttonSchemas || this.creatable)
-    },
-
-    listButtonsAttributes() {
-      return {
-        buttons: this.buttonSchemas,
-        schema: this.schema,
-        dataPath: this.dataPath,
-        store: this.store,
-        nested: this.nested,
-        disabled: this.disabled || this.isLoading,
-        creatable: this.creatable,
-        createPath: this.createPath
-      }
-    },
-
-    hasEditButtons() {
-      const { listData } = this
-      return (
-        listData.length > 0 && (
-          this.editable ||
-          this.deletable ||
-          this.draggable
+      numColumns: computed(() => {
+        const columns = source.columns.value
+        return (
+          (columns ? Object.keys(columns).length : 1) +
+          (hasCellEditButtons.value ? 1 : 0)
         )
-      )
-    },
+      }),
 
-    hasCellEditButtons() {
-      return !this.isInlined && this.hasEditButtons
-    },
+      listButtonsAttributes: computed(() => ({
+        buttons: source.buttonSchemas.value,
+        schema: props.schema,
+        dataPath: props.dataPath,
+        store: props.store,
+        nested: props.nested,
+        disabled: source.disabled.value || source.isLoading.value,
+        creatable: creatable.value,
+        createPath: source.createPath.value
+      })),
 
-    hasEvenCount() {
-      return !(this.listData.length % 2)
-    },
+      getDataPath(index) {
+        return appendDataPath(props.dataPath, index)
+      },
 
-    numColumns() {
-      return (
-        (this.columns ? Object.keys(this.columns).length : 1) +
-        (this.hasCellEditButtons ? 1 : 0)
-      )
-    }
-  },
+      getComponentPath(index) {
+        return appendDataPath(source.componentPath.value, index)
+      },
 
-  methods: {
-    getDataPath(index) {
-      return appendDataPath(this.dataPath, index)
-    },
+      getEditPath(index) {
+        return editable.value ? source.getItemPath(index) : null
+      },
 
-    getComponentPath(index) {
-      return appendDataPath(this.componentPath, index)
-    },
-
-    getEditPath(index) {
-      return this.editable ? this.getItemPath(index) : null
-    },
-
-    getCellClass(column) {
-      return `dito-cell--${hyphenate(column.name)}`
+      getCellClass(column) {
+        return `dito-cell--${hyphenate(column.name)}`
+      }
     }
   }
-})
+}
 
 defineType({
   types: ['list'],

@@ -1,7 +1,6 @@
 import { toRaw, type Component } from 'vue'
 import type { RouteRecordRaw } from 'vue-router'
 import { getValueAtDataPath, parseDataPath } from '@ditojs/utils'
-import DitoComponent from '../DitoComponent.js'
 import { getFormSchemas, hasFormSchema } from './schema/lookup.js'
 import {
   getPanelSchemas,
@@ -23,6 +22,13 @@ import { getItemId } from './schema/data.js'
 import { findItemIndexById } from './schema/item.js'
 import { appendDataPath, getRelativeDataPath } from './data.js'
 import type { Api, Schema } from './types.ts'
+
+// The components that render the routes of views, forms and nested forms:
+export interface RouteComponents {
+  readonly view: Component
+  readonly form: Component
+  readonly nestedForm: Component
+}
 
 // The records that the route tree creates carry their node:
 declare module 'vue-router' {
@@ -396,8 +402,8 @@ export class RouteTree {
     return form ? { name: form.routeName, params: { [form.param]: key } } : null
   }
 
-  createRouteRecords(viewComponent: Component): RouteRecordRaw[] {
-    return this.nodes.map(node => this.#createViewRecord(node, viewComponent))
+  createRouteRecords(components: RouteComponents): RouteRecordRaw[] {
+    return this.nodes.map(node => this.#createViewRecord(node, components))
   }
 
   #createViewNode(
@@ -470,7 +476,7 @@ export class RouteTree {
 
   #createViewRecord(
     node: MenuNode | ViewNode,
-    viewComponent: Component,
+    components: RouteComponents,
     basePath = ''
   ): RouteRecordRaw {
     const { schema, name } = node
@@ -478,14 +484,14 @@ export class RouteTree {
     return {
       path,
       name: node.routeName,
-      component: viewComponent,
+      component: components.view,
       meta: { node },
       children:
         node instanceof MenuNode
           ? node.items.map(item =>
-              this.#createViewRecord(item, viewComponent, path)
+              this.#createViewRecord(item, components, path)
             )
-          : this.#createSourceRecords(node.sources, '')
+          : this.#createSourceRecords(node.sources, '', components)
     }
   }
 
@@ -493,21 +499,27 @@ export class RouteTree {
   // prefixed with `basePath`.
   #createSourceRecords(
     sources: SourceNode[],
-    basePath: string
+    basePath: string,
+    components: RouteComponents
   ): RouteRecordRaw[] {
     return sources.flatMap(source => {
       const sourcePath = joinPaths(basePath, this.#getSourcePath(source))
       const { form } = source
       return form && !form.isInlined
-        ? this.#createFormRecords(form, sourcePath)
+        ? this.#createFormRecords(form, sourcePath, components)
         : this.#createSourceRecords(
             form?.sources ?? source.sources,
-            getItemPathPattern(source, sourcePath)
+            getItemPathPattern(source, sourcePath),
+            components
           )
     })
   }
 
-  #createFormRecords(form: FormNode, sourcePath: string): RouteRecordRaw[] {
+  #createFormRecords(
+    form: FormNode,
+    sourcePath: string,
+    components: RouteComponents
+  ): RouteRecordRaw[] {
     const { source } = form
     return [
       {
@@ -517,18 +529,18 @@ export class RouteTree {
           `:${form.param}${source.isList ? '' : '?'}`
         ),
         name: form.routeName,
-        component: DitoComponent.component(
-          form.isNestedForm ? 'DitoFormNested' : 'DitoForm'
-        ),
+        component: form.isNestedForm ? components.nestedForm : components.form,
         meta: { node: form },
         children: this.#createSourceRecords(
           form.sources.filter(child => !child.isFlattened),
-          ''
+          '',
+          components
         )
       },
       ...this.#createSourceRecords(
         form.sources.filter(child => child.isFlattened),
-        getItemPathPattern(source, sourcePath)
+        getItemPathPattern(source, sourcePath),
+        components
       ),
       // Lead the paths of lists without an item back to their container:
       ...(

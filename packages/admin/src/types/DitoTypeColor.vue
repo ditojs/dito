@@ -44,14 +44,14 @@ DitoTrigger.dito-color(
 import { SketchPicker, tinycolor } from 'vue-color'
 import { DitoTrigger, DitoInput } from '@ditojs/ui/src'
 import { computed, ref, watch } from 'vue'
-import DitoComponent from '../DitoComponent.js'
 import { defineType } from '../utils/schema/types.ts'
 import { fieldProps, useField } from '../composables/useField.ts'
 import DitoInputAffixes from '../components/DitoInputAffixes.vue'
 import { createChangeOnceEdited } from '../utils/changeOnceEdited.js'
 
 // @vue/component
-const DitoTypeColor = DitoComponent.component('DitoTypeColor', {
+const DitoTypeColor = {
+  name: 'DitoTypeColor',
   components: { DitoTrigger, DitoInput, DitoInputAffixes, SketchPicker },
   props: fieldProps,
 
@@ -117,6 +117,8 @@ const DitoTypeColor = DitoComponent.component('DitoTypeColor', {
       value,
       showPopup,
       attributes: field.attributes,
+      context: field.context,
+      componentPath: field.componentPath,
       inputAffixesProps: field.inputAffixesProps,
 
       colorValue: computed({
@@ -188,7 +190,7 @@ const DitoTypeColor = DitoComponent.component('DitoTypeColor', {
       }
     }
   }
-})
+}
 
 defineType({
   types: ['color'],

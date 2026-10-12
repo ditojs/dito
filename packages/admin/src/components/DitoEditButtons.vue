@@ -44,14 +44,17 @@ DitoButtons.dito-edit-buttons(
 </template>
 
 <script>
-import DitoComponent from '../DitoComponent.js'
-import DitoDragHandle from './DitoDragHandle.vue'
+import { computed } from 'vue'
 import { DitoButton } from '@ditojs/ui/src'
 import { capitalize } from '@ditojs/utils'
+import DitoDragHandle from './DitoDragHandle.vue'
+import { useSchemaContext } from '../composables/useSchemaContext.ts'
+import { useSchemaValue } from '../composables/useSchemaValue.ts'
+import { getVerbs } from '../utils/services.ts'
 import { isInlined } from '../utils/schema/structure.js'
 
-// @vue/component
-export default DitoComponent.component('DitoEditButtons', {
+export default {
+  name: 'DitoEditButtons',
   components: { DitoButton, DitoDragHandle },
   emits: ['delete', 'move'],
 
@@ -83,70 +86,67 @@ export default DitoComponent.component('DitoEditButtons', {
     round: { type: Boolean, default: true }
   },
 
-  computed: {
-    formLabel() {
-      return this.getLabel(this.schema.form)
-    },
+  setup(props) {
+    const { context, services } = useSchemaContext(props)
+    const { getSchemaValue, getLabel } = useSchemaValue(context)
+    const verbs = computed(() => getVerbs(services))
 
-    editRoute() {
-      const { editPath, editQuery } = this
-      return editPath ? { path: editPath, query: editQuery ?? undefined } : {}
-    },
+    // All options can be disabled on a per-form basis by setting
+    // `formSchema[name]` to `false` or a callback returning `false`.
+    const hasFormOption = name => (
+      !props.formSchema ||
+      getSchemaValue(name, {
+        schema: props.formSchema,
+        type: Boolean,
+        default: true
+      })
+    )
 
-    isDraggableDisabled() {
-      return this.disabled || !this.hasFormOption('draggable')
-    },
+    return {
+      verbs,
 
-    isDeletableDisabled() {
-      return this.disabled || !this.hasFormOption('deletable')
-    },
+      editRoute: computed(() => {
+        const { editPath, editQuery } = props
+        return editPath
+          ? { path: editPath, query: editQuery ?? undefined }
+          : {}
+      }),
 
-    isEditableDisabled() {
-      return (
-        this.disabled ||
-        !this.editPath ||
-        !this.hasFormOption('editable')
-      )
-    },
+      isDraggableDisabled: computed(
+        () => props.disabled || !hasFormOption('draggable')
+      ),
 
-    isCreatableDisabled() {
-      return (
-        this.disabled ||
-        // Inlined sources create their items in place, without a route:
-        !this.createPath && !isInlined(this.schema) ||
-        !this.hasFormOption('creatable')
-      )
-    },
+      isDeletableDisabled: computed(
+        () => props.disabled || !hasFormOption('deletable')
+      ),
 
-    createButtonText() {
-      return (
-        // Allow schema to override create button through creatable object:
-        this.schema.creatable?.label || (
+      isEditableDisabled: computed(
+        () => props.disabled || !props.editPath || !hasFormOption('editable')
+      ),
+
+      isCreatableDisabled: computed(
+        () => (
+          props.disabled ||
+          // Inlined sources create their items in place, without a route:
+          !props.createPath && !isInlined(props.schema) ||
+          !hasFormOption('creatable')
+        )
+      ),
+
+      createButtonText: computed(() => {
+        const formLabel = getLabel(props.schema.form)
+        return (
+          // Allow schema to override create button through creatable object:
+          props.schema.creatable?.label ||
           // Auto-generate create button labels from from labels for list
           // sources with only one form:
-          this.formLabel &&
-          `${capitalize(this.verbs.create)} ${this.formLabel}`
-        ) ||
-        null
-      )
-    }
-  },
-
-  methods: {
-    hasFormOption(name) {
-      // All options can be disabled on a per-form basis by setting
-      // `formSchema[name]` to `false` or a callback returning `false`.
-      return (
-        !this.formSchema ||
-        this.getSchemaValue(name, {
-          schema: this.formSchema,
-          type: Boolean,
-          default: true
-        })
-      )
+          (formLabel && `${capitalize(verbs.value.create)} ${formLabel}`) ||
+          null
+        )
+      })
     }
   }
-})
+}
 </script>
 
 <style lang="scss">

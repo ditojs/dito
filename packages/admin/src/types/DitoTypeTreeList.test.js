@@ -5,7 +5,8 @@ import {
   mountForm,
   mountSchema,
   stubConfirm,
-  enterValue
+  enterValue,
+  isForm
 } from '../test/mount.js'
 
 const pageForm = {
@@ -147,7 +148,7 @@ describe('DitoTypeTreeList', () => {
     expect(admin.router.currentRoute.value.path).toBe(
       '/items/1/pages/0/subpages/1'
     )
-    const form = admin.getRouteComponent(component => component.isForm)
+    const form = admin.getRouteComponent(isForm)
     expect(form.data.title).toBe('History')
     expect(form.$el.querySelector('.dito-errors').textContent).toBe(
       'The Title field is taken.'
@@ -178,7 +179,7 @@ describe('DitoTypeTreeList', () => {
       }
     })
     await admin.navigate('/items/1/pages/0/subpages/1')
-    const form = admin.getRouteComponent(component => component.isForm)
+    const form = admin.getRouteComponent(isForm)
     expect(form.isNestedRoute).toBe(true)
     // The form of the tree item displays inside its parent, which saves:
     await wrapper
@@ -240,7 +241,7 @@ describe('DitoTypeTreeList', () => {
     schema.components.pages.children.editable = true
     const { admin } = await mountForm({ schema, data: site })
     await admin.navigate('/items/1/pages/0/subpages/1')
-    const form = admin.getRouteComponent(component => component.isForm)
+    const form = admin.getRouteComponent(isForm)
     form.data.title = 'Story'
     const { context } = form.$refs.schema
     expect(context.processedItem).toEqual({ title: 'Story' })
@@ -384,7 +385,7 @@ describe('DitoTypeTreeList', () => {
         schema: createDraggableSiteSchema(),
         data: site
       })
-      expect(routeComponent.isDirty).toBe(false)
+      expect(routeComponent.ownRoute.isDirty).toBe(false)
       await findHandle(findField('pages'), 'Team').trigger('keydown', {
         key: 'ArrowDown',
         altKey: true
@@ -394,7 +395,7 @@ describe('DitoTypeTreeList', () => {
         { title: 'History' },
         { title: 'Team' }
       ])
-      expect(routeComponent.isDirty).toBe(true)
+      expect(routeComponent.ownRoute.isDirty).toBe(true)
       await findHandle(findField('pages'), 'Contact').trigger('keydown', {
         key: 'ArrowUp',
         altKey: true
@@ -574,7 +575,7 @@ describe('DitoTypeTreeList', () => {
         title: 'Home',
         pages: [{ title: 'Contact' }, { title: 'About' }]
       })
-      expect(routeComponent.isDirty).toBe(true)
+      expect(routeComponent.ownRoute.isDirty).toBe(true)
       await findHandle(findField('site'), 'Contact').trigger('keydown', {
         key: 'ArrowDown',
         altKey: true
@@ -645,7 +646,7 @@ describe('DitoTypeTreeList', () => {
         expect(admin.router.currentRoute.value.path).toBe(
           `/items/1/${pagesPath}/1`
         )
-        const pageFormComponent = admin.getRouteComponent(it => it.isForm)
+        const pageFormComponent = admin.getRouteComponent(isForm)
         expect(pageFormComponent.data.title).toBe('Contact')
         await enterValue(
           admin.wrapper.find(`input[name="${pagesPath}/1/title"]`),
@@ -772,7 +773,7 @@ describe('DitoTypeTreeList', () => {
       expect(getActiveLabels(findField('site'))).toEqual([])
       await admin.navigate('/items/1/site/pages/0/subpages/0')
       await settle()
-      const pageFormComponent = admin.getRouteComponent(it => it.isForm)
+      const pageFormComponent = admin.getRouteComponent(isForm)
       expect(pageFormComponent.data.title).toBe('Team')
       // The items in the edit path open, and only the edited one is active:
       expect(getLabels(findField('site'))).toEqual(['About', 'Team', 'Contact'])
@@ -802,11 +803,11 @@ describe('DitoTypeTreeList', () => {
           .trigger('click')
         await settle()
         expect(admin.router.currentRoute.value.path).toBe(`${path}/pages/1`)
-        let pageFormComponent = admin.getRouteComponent(it => it.isForm)
+        let pageFormComponent = admin.getRouteComponent(isForm)
         expect(pageFormComponent.data.title).toBe('Contact')
         await admin.navigate(`${path}/pages/0/subpages/0`)
         await settle()
-        pageFormComponent = admin.getRouteComponent(it => it.isForm)
+        pageFormComponent = admin.getRouteComponent(isForm)
         expect(pageFormComponent.data.title).toBe('Team')
       }
     )
@@ -824,7 +825,7 @@ describe('DitoTypeTreeList', () => {
         })
         await admin.navigate('/test/pages/1')
         await settle()
-        const pageFormComponent = admin.getRouteComponent(it => it.isForm)
+        const pageFormComponent = admin.getRouteComponent(isForm)
         expect(pageFormComponent?.data.title).toBe('Contact')
       })
 
@@ -852,11 +853,11 @@ describe('DitoTypeTreeList', () => {
         .trigger('click')
       await settle()
       expect(admin.router.currentRoute.value.path).toBe('/test/1')
-      let pageFormComponent = admin.getRouteComponent(it => it.isForm)
+      let pageFormComponent = admin.getRouteComponent(isForm)
       expect(pageFormComponent.data.title).toBe('Contact')
       await admin.navigate('/test/0/subpages/1')
       await settle()
-      pageFormComponent = admin.getRouteComponent(it => it.isForm)
+      pageFormComponent = admin.getRouteComponent(isForm)
       expect(pageFormComponent.data.title).toBe('History')
     })
   })

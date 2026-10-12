@@ -69,7 +69,6 @@
 
 <script>
 import { computed, onMounted, ref, shallowRef } from 'vue'
-import DitoComponent from '../DitoComponent.js'
 import { defineType } from '../utils/schema/types.ts'
 import { optionsTraits } from './traits.ts'
 import { fieldProps, useField } from '../composables/useField.ts'
@@ -80,7 +79,8 @@ import VueMultiselect from 'vue-multiselect'
 import { isArray, isBoolean, isObject, isString } from '@ditojs/utils'
 
 // @vue/component
-const DitoTypeMultiselect = DitoComponent.component('DitoTypeMultiselect', {
+const DitoTypeMultiselect = {
+  name: 'DitoTypeMultiselect',
   components: { DitoInputAffixes, DitoOptionsEditButtons, VueMultiselect },
   props: fieldProps,
 
@@ -215,6 +215,7 @@ const DitoTypeMultiselect = DitoComponent.component('DitoTypeMultiselect', {
     return {
       ...optionsField,
       attributes: field.attributes,
+      componentPath: field.componentPath,
       inputAffixesProps: field.inputAffixesProps,
       clear: field.clear,
       selectedOptions,
@@ -334,7 +335,7 @@ const DitoTypeMultiselect = DitoComponent.component('DitoTypeMultiselect', {
       }
     }
   }
-})
+}
 
 defineType({
   types: ['multiselect'],

@@ -6,10 +6,9 @@ aside.dito-sidebar.dito-scroll-parent
 </template>
 
 <script>
-import DitoComponent from '../DitoComponent.js'
-
-// @vue/component
-export default DitoComponent.component('DitoSidebar', {})
+export default {
+  name: 'DitoSidebar'
+}
 </script>
 
 <style lang="scss">

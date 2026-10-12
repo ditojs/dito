@@ -1,7 +1,7 @@
 import { vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import DitoContext from '../DitoContext.js'
-import { mountSchema } from '../test/mount.js'
+import { mountSchema, isForm } from '../test/mount.js'
 
 const blocksSchema = {
   components: {
@@ -192,7 +192,8 @@ describe('DitoCreateButton', () => {
     expect(route.path).toBe('/test/recipes/create')
     expect(route.query).toEqual({ type: 'cake', editor: 'tester' })
     expect(query).toHaveBeenCalledWith(expect.any(DitoContext))
-    const form = admin.getRouteComponent(component => component.isForm)
-    expect(form.creationType).toBe('cake')
+    // The form creates an item of the type:
+    const form = admin.getRouteComponent(isForm)
+    expect(form.data.type).toBe('cake')
   })
 })

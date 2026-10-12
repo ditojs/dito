@@ -40,10 +40,12 @@ DitoSchema.dito-schema-inlined(
 </template>
 
 <script>
-import DitoComponent from '../DitoComponent.js'
+import { computed } from 'vue'
+import { useServices } from '../composables/useSchemaContext.ts'
 import { isCompact } from '../utils/schema/structure.js'
-// @vue/component
-export default DitoComponent.component('DitoSchemaInlined', {
+
+export default {
+  name: 'DitoSchemaInlined',
   emits: ['delete', 'move'],
 
   props: {
@@ -65,12 +67,14 @@ export default DitoComponent.component('DitoSchemaInlined', {
     insertIndex: { type: Number, default: null }
   },
 
-  computed: {
-    isCompact() {
-      return isCompact(this.schema)
+  setup(props) {
+    const services = useServices()
+    return {
+      source: computed(() => services.source),
+      isCompact: computed(() => isCompact(props.schema))
     }
   }
-})
+}
 </script>
 
 <style lang="scss">

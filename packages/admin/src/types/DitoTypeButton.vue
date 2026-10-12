@@ -32,23 +32,23 @@ DitoButton(
 </template>
 
 <script>
-import { computed, inject, ref } from 'vue'
-import DitoComponent from '../DitoComponent.js'
+import { computed, ref } from 'vue'
 import { defineType } from '../utils/schema/types.ts'
 import { fieldProps, useField } from '../composables/useField.ts'
 import { useServices } from '../composables/useSchemaContext.ts'
+import { getVerbs } from '../utils/services.ts'
 import DitoAffixes from '../components/DitoAffixes.vue'
 import { DitoButton } from '@ditojs/ui/src'
 import { hasResource } from '../utils/resource.js'
 import { asArray } from '@ditojs/utils'
 
 // @vue/component
-const DitoTypeButton = DitoComponent.component('DitoTypeButton', {
+const DitoTypeButton = {
+  name: 'DitoTypeButton',
   components: { DitoAffixes, DitoButton },
   props: fieldProps,
 
   setup(props) {
-    const getSchemaComponent = inject('$schemaComponent')
     const isRunning = ref(false)
     const services = useServices({
       // Whether the action of the button is running, which handlers can end
@@ -101,7 +101,8 @@ const DitoTypeButton = DitoComponent.component('DitoTypeButton', {
         // Write the edits that are held back, for the handlers to see them:
         services.container.model.writePendingValues()
         try {
-          const res = await emitEvent('click', { parent: getSchemaComponent() })
+          // Clicks bubble to the handlers of the schema:
+          const res = await emitEvent('click', { bubble: true })
           // Have buttons that define resources submit by default:
           if (
             res === undefined && // Meaning: don't prevent default.
@@ -129,6 +130,8 @@ const DitoTypeButton = DitoComponent.component('DitoTypeButton', {
 
     return {
       context: field.context,
+      componentPath: field.componentPath,
+      verbs: computed(() => getVerbs(services)),
       isRunning,
       info: field.info,
       disabled: field.disabled,
@@ -138,7 +141,7 @@ const DitoTypeButton = DitoComponent.component('DitoTypeButton', {
       suffixes: computed(() => asArray(props.schema.suffix))
     }
   }
-})
+}
 
 const buttonTraits = {
   component: DitoTypeButton,

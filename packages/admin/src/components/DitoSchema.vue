@@ -26,6 +26,7 @@ slot(name="prepend")
       DitoLabel(
         v-if="hasLabel"
         :label="label"
+        :context="context"
         :info="info"
         :collapsible="collapsible"
         :collapsed="!opened"
@@ -39,6 +40,7 @@ slot(name="prepend")
           v-if="opened"
           :modelValue="selectedTab"
           :tabs="renderedTabs"
+          :context="context"
           @update:modelValue="selectTab"
         )
       DitoClipboard(
@@ -47,6 +49,7 @@ slot(name="prepend")
         :schema="schema"
         :hasData="hasData"
         :getData="() => processData('clipboard')"
+        :createContext="createContext"
         @paste="pasteData"
       )
       slot(name="edit-buttons")
@@ -66,8 +69,8 @@ slot(name="prepend")
           DitoPane.dito-pane__tab(
             v-if="shouldRenderTab(tab)"
             v-show="isTabSelected(tab)"
-            ref="tabs"
             :tab="tab"
+            :selected="isTabSelected(tab)"
             :schema="tabSchema"
             :dataPath="dataPath"
             :data="data"
@@ -80,7 +83,6 @@ slot(name="prepend")
           )
       DitoPane.dito-pane__main(
         v-if="hasMainPane"
-        ref="components"
         :schema="schema"
         :dataPath="dataPath"
         :data="data"
@@ -104,6 +106,20 @@ slot(name="append")
 
 <script>
 import {
+  computed,
+  inject,
+  nextTick,
+  onMounted,
+  onUnmounted,
+  provide,
+  reactive,
+  ref,
+  unref,
+  useTemplateRef,
+  watch
+} from 'vue'
+import { useRouter } from 'vue-router'
+import {
   isFunction,
   isEmpty,
   parseDataPath,
@@ -111,7 +127,12 @@ import {
   labelize
 } from '@ditojs/utils'
 import { TransitionHeight } from '@ditojs/ui/src'
-import DitoComponent from '../DitoComponent.js'
+import appState from '../appState.js'
+import { useSchemaContext } from '../composables/useSchemaContext.ts'
+import { useSchemaValue } from '../composables/useSchemaValue.ts'
+import { useSchemaEvents } from '../composables/useSchemaEvents.ts'
+import { useComponentPath } from '../composables/useComponentPath.ts'
+import { useStore } from '../composables/useStore.ts'
 import { appendDataPath, getRelativeDataPath } from '../utils/data.js'
 import { isPanel } from '../utils/schema/structure.js'
 import {
@@ -129,31 +150,12 @@ import {
   getDataValidationErrors,
   getMatchingValidationErrors
 } from '../utils/schema/validation.js'
-import { getSchemaAccessor, getStoreAccessor } from '../utils/accessor.js'
 
-// @vue/component
-export default DitoComponent.component('DitoSchema', {
+export default {
+  name: 'DitoSchema',
   components: { TransitionHeight },
   inheritAttrs: false,
   emits: ['update:selectedTab'],
-
-  provide() {
-    return {
-      $schemaComponent: () => this,
-      // Inlined schemas share the width of their container, see
-      // `DitoContainer.combinedBasis`, while all others take the full width,
-      // e.g. panels in the sidebar.
-      ...(!this.inlined && { $accumulatedBasis: () => 1 })
-    }
-  },
-
-  inject: {
-    // The schema of the source whose item the schema displays, provided by the
-    // view, form or source item that renders it:
-    sourceSchema: { default: null },
-    // The tab of the pane that the schema is in, see `DitoPane.panelTab`:
-    panelTab: { default: null }
-  },
 
   props: {
     schema: { type: Object, required: true },
@@ -178,360 +180,259 @@ export default DitoComponent.component('DitoSchema', {
     generateLabels: { type: Boolean, default: false }
   },
 
-  data() {
-    return {
-      selectedTab: null,
-      // The tabs that were selected or rendered to reveal their components,
-      // which stay rendered, see `shouldRenderTab()`:
-      mountedTabs: {},
-      // Whether the selected tab still follows `defaultTab`, until the route
-      // or the user select a tab, or until the data that `defaultTab()` and
-      // the tabs' `if` are evaluated with is there, see `selectDefaultTab()`.
-      shouldFollowDefaultTab: true,
-      scrollPositions: {}
+  setup(props, { emit }) {
+    const router = useRouter()
+    // The schema of the source whose item the schema displays:
+    const sourceSchema = inject('sourceSchema', null)
+    // The tab of the pane that the schema is in, see `DitoPane`:
+    const panelTab = inject('panelTab', null)
+    const { componentPath } = useComponentPath(() => props.dataPath)
+    const schemaContext = useSchemaContext(props)
+    const { services } = schemaContext
+    const { admin } = services
+    const getModel = () => services.container.model
+
+    // The contexts of the schema hold the label of its form:
+    const createContext = (values = {}) =>
+      schemaContext.createContext({
+        get formLabel() {
+          return formLabel.value
+        },
+        ...values
+      })
+    const context = createContext()
+    const { getSchemaValue, getLabel, shouldRenderSchema } =
+      useSchemaValue(context)
+    const formLabel = computed(() =>
+      getLabel(getItemFormSchema(unref(sourceSchema), props.data, context))
+    )
+
+    // The events of the components bubble to the schema, and on to the schema
+    // above, unless it has its own data:
+    const schemaEvents = useSchemaEvents(() => props.schema, {
+      services,
+      createContext: values => createContext({ nested: true, ...values }),
+      isolated: () => props.hasOwnData
+    })
+    const { emitEvent } = schemaEvents
+    provide('schemaEvents', schemaEvents)
+    // Panels read the data around them through the context of their schema:
+    provide('schemaContext', context)
+    if (!props.inlined) {
+      // Inlined schemas share the width of their container, all others take
+      // the full width, e.g. panels in the sidebar:
+      provide('accumulatedBasis', 1)
     }
-  },
 
-  computed: {
-    schemaComponent() {
-      // Override DitoMixin's schemaComponent() which uses the injected value.
-      return this
-    },
+    const content = useTemplateRef('content')
+    const selectedTab = ref(null)
+    // The tabs that were selected or revealed, which stay rendered:
+    const mountedTabs = reactive({})
+    // Whether the selected tab follows `defaultTab`, until a tab is selected or
+    // the data that it's evaluated with is there:
+    let shouldFollowDefaultTab = true
+    const scrollPositions = {}
 
-    parentSchemaComponent() {
-      // Don't return the actual parent schema is this schema handles its own
-      // data. This prevents delegating events to the parent, and registering
-      // components with the parent.
-      return this.hasOwnData ? null : this.parentComponent.schemaComponent
-    },
+    const opened = useStore(props).getStoreRef('opened', () => !props.collapsed)
 
-    panelEntries() {
-      // Panels of schemas inlined in tabs are only shown with their tab, as
-      // the panels of components in tabs, see `DitoContainer.panelEntries`.
-      return getPanelEntries(
-        this.schema.panels,
-        this.dataPath,
-        this.componentPath,
-        this.panelTab
-      )
-    },
+    const tabs = computed(() => getNamedSchemas(props.schema.tabs))
+    const hasTabs = computed(() => !!tabs.value)
+    const hasData = computed(() => !!props.data)
+    const hasLabel = computed(() => !!props.label || props.collapsible)
 
-    tabs() {
-      return getNamedSchemas(this.schema.tabs)
-    },
-
-    renderedTabs() {
-      // Evaluate the tabs' `if` with the schema's context, and only once there
-      // is data to evaluate it with, as their components do too.
-      return this.tabs && this.data
+    // Evaluate the tabs' `if` with the schema's context, and only once there
+    // is data to evaluate it with, as their components do too.
+    const renderedTabs = computed(() =>
+      tabs.value && props.data
         ? Object.fromEntries(
-            Object.entries(this.tabs).filter(([, tab]) =>
-              this.shouldRenderSchema(tab)
+            Object.entries(tabs.value).filter(([, tab]) =>
+              shouldRenderSchema(tab)
             )
           )
-        : this.tabs
-    },
+        : tabs.value
+    )
 
-    defaultTab() {
+    const defaultTab = computed(() => {
       let first = null
-      if (this.renderedTabs) {
-        const tabs = Object.values(this.renderedTabs)
-        for (const { name, defaultTab } of tabs) {
-          if (isFunction(defaultTab) ? defaultTab(this.context) : defaultTab) {
+      if (renderedTabs.value) {
+        for (const { name, defaultTab } of Object.values(renderedTabs.value)) {
+          if (isFunction(defaultTab) ? defaultTab(context) : defaultTab) {
             return name
           }
           first ??= name
         }
       }
       return first
-    },
+    })
 
-    routeTab() {
-      return this.$route.hash?.slice(1) || null
-    },
+    const routeTab = computed(
+      () => router.currentRoute.value.hash?.slice(1) || null
+    )
 
-    clipboard() {
-      return this.schema?.clipboard ?? null
-    },
+    // Panels are displayed in the sidebar, inlined schemas in their parents.
+    const isTopLevelSchema = computed(
+      () => !isPanel(props.schema) && !props.inlined
+    )
 
-    hasHeader() {
-      return this.hasLabel || this.hasTabs || !!this.clipboard
-    },
-
-    formLabel() {
-      return this.getLabel(
-        getItemFormSchema(this.sourceSchema, this.data, this.context)
+    // The route's hash belongs to the tabs of the last route only, so forms
+    // keep their tab while the forms of their items are open:
+    const shouldFollowRouteTab = computed(
+      () => (
+        hasTabs.value &&
+        isTopLevelSchema.value &&
+        !!services.route?.isLastRoute
       )
-    },
+    )
 
-    hasData() {
-      return !!this.data
-    },
-
-    hasLabel() {
-      return !!this.label || this.collapsible
-    },
-
-    hasTabs() {
-      return !!this.tabs
-    },
-
-    isTopLevelSchema() {
-      // Panels are displayed in the sidebar, inlined schemas in their parents.
-      return !isPanel(this.schema) && !this.inlined
-    },
-
-    hasTopLevelTabs() {
-      return this.hasTabs && this.isTopLevelSchema
-    },
-
-    // The route's hash belongs to the tabs of the last route only. Forms that
-    // remain active while their items' forms are open as nested routes keep
-    // their selected tab.
-    shouldFollowRouteTab() {
-      return this.hasTopLevelTabs && this.route.isLastRoute
-    },
-
-    hasMainPane() {
-      const { components } = this.schema
-      return !!components && Object.keys(components).length > 0
-    },
-
-    opened: getStoreAccessor('opened', {
-      default() {
-        return !this.collapsed
-      }
-    }),
-
-    wide: getSchemaAccessor('wide', {
-      type: Boolean,
-      default: false
-    })
-  },
-
-  watch: {
-    schema: {
-      immediate: true,
-      handler(schema) {
-        // For forms with type depending on loaded data, we need to wait for the
-        // actual schema to become ready before setting up schema related things
-        if (!isEmptySchema(schema)) {
-          this.setupSchema()
-        }
-      }
-    },
-
-    routeTab: {
-      immediate: true,
-      // https://github.com/vuejs/vue-router/issues/3393#issuecomment-1158470149
-      flush: 'post',
-      handler() {
-        this.followRouteTab()
-      }
-    },
-
-    shouldFollowRouteTab(shouldFollowRouteTab) {
-      // Returning from a nested form, e.g. through the browser's history, the
-      // route may carry a different tab.
-      if (shouldFollowRouteTab) {
-        this.followRouteTab()
-      }
-    },
-
-    hasData(hasData) {
-      // `defaultTab()` and the tabs' `if` may depend on data that is only
-      // available after mounting, e.g. the item of a form once it's loaded.
-      if (hasData && this.shouldFollowDefaultTab) {
-        this.selectDefaultTab()
-      }
-    },
-
-    selectedTab(newTab, oldTab) {
-      if (newTab) {
-        this.mountedTabs[newTab] = true
-      }
-      if (this.scrollable) {
-        const { content } = this.$refs
-        this.scrollPositions[oldTab] = content.scrollTop
-        this.$nextTick(() => {
-          content.scrollTop = this.scrollPositions[newTab] ?? 0
-        })
-      }
-      // The route of a nested form doesn't belong to this schema.
-      if (this.shouldFollowRouteTab) {
-        this.replaceRouteTab(newTab)
-      }
-    }
-  },
-
-  created() {
-    // Reveal the components inside the schema, e.g. to show their errors, by
-    // opening it and rendering the tab that leads to them, which focusing them
-    // also selects:
-    this.unregisterUi = this.admin.ui.register(() => this.componentPath, {
-      container: this.container,
-      reveal: async (componentPath, { focus }) => {
-        const [tab] = parseDataPath(
-          getRelativeDataPath(componentPath, this.componentPath)
-        )
-        if (this.renderedTabs?.[tab]) {
-          this.mountedTabs[tab] = true
-          if (focus) {
-            this.selectTab(tab)
-          }
-        }
-        this.opened = true
-        await this.$nextTick()
-      }
-    })
-    if (this.scrollable && this.wide) {
-      this.appState.pageClass = 'dito-page--wide'
-    }
-  },
-
-  mounted() {
-    // A schema mounted for a nested route, e.g. when reloading the form of an
-    // item of a list in a tab, doesn't follow the route's tab, as it belongs to
-    // the nested form, so it may not be one of this schema's tabs.
-    const { routeTab, renderedTabs } = this
-    if (this.shouldFollowRouteTab && routeTab && routeTab in renderedTabs) {
-      this.selectTab(routeTab)
-    } else {
-      this.selectDefaultTab()
-    }
-  },
-
-  unmounted() {
-    this.emitEvent('destroy')
-    this.unregisterUi()
-    if (this.scrollable && this.wide) {
-      this.appState.pageClass = null
-    }
-  },
-
-  methods: {
-    setupSchema() {
-      this.setupEvents()
-      // Delegate change events through to parent schema:
-      this.delegate('change', this.parentSchemaComponent)
-      this.emitEvent('initialize') // Not `'create'`, since that's for data.
-    },
-
-    // Selects the tab of the route's hash. The forms of nested routes, e.g. of
-    // the items of lists in tabs, have their own hash for their own tabs, so
-    // the tab is only followed while this schema's route is the last one, and
-    // a route without a hash, e.g. after closing such a form, keeps the
-    // selected tab.
-    followRouteTab() {
-      const { routeTab, selectedTab } = this
-      if (this.shouldFollowRouteTab && routeTab && routeTab !== selectedTab) {
-        // Changes of the hash to the selected tab are the route following the
-        // selection, see `selectedTab()`, not a selection by the route.
-        this.selectTab(routeTab)
-      }
-    },
-
-    // Puts the tab into the route's hash. Without a tab, the route is kept
-    // without hash. Falls back to the default tab only for tabs that aren't
-    // rendered.
-    replaceRouteTab(tab) {
-      const routeTab = !tab || tab in this.renderedTabs ? tab : this.defaultTab
-      if (routeTab !== this.routeTab) {
-        this.$router.replace({
-          query: this.$route.query,
-          hash: routeTab ? `#${routeTab}` : null
-        })
-      }
-    },
+    const isTabSelected = tab => selectedTab.value === tab
 
     // Selects the tab chosen by the route or the user, and tells the form,
     // e.g. for `context.selectedTab`:
-    selectTab(tab) {
-      this.selectedTab = tab
-      this.shouldFollowDefaultTab = false
-      this.$emit('update:selectedTab', tab)
-    },
+    const selectTab = tab => {
+      selectedTab.value = tab
+      shouldFollowDefaultTab = false
+      emit('update:selectedTab', tab)
+    }
 
     // Selects `defaultTab`, and keeps following it until there is data, but
     // not after that, so that editing the data doesn't switch the tab.
-    selectDefaultTab() {
-      this.selectedTab = this.defaultTab
-      this.shouldFollowDefaultTab = !this.hasData
-      this.$emit('update:selectedTab', this.selectedTab)
-    },
+    const selectDefaultTab = () => {
+      selectedTab.value = defaultTab.value
+      shouldFollowDefaultTab = !hasData.value
+      emit('update:selectedTab', selectedTab.value)
+    }
 
-    isTabSelected(tab) {
-      return this.selectedTab === tab
-    },
-
-    // Tabs render once they're selected, and stay rendered:
-    shouldRenderTab(tab) {
-      return this.isTabSelected(tab) || !!this.mountedTabs[tab]
-    },
-
-    onOpen(open) {
-      this.emitEvent('open', { context: { open } })
-      this.opened = open
-    },
-
-    onChange() {
-      this.emitEvent('change')
-    },
-
-    validateAll(match, notify = true) {
-      // Validate the data, not the mounted components, so that fields in
-      // collapsed schemas and closed nested forms are validated too.
-      const dataValidationErrors = this.hasData
-        ? getDataValidationErrors(this.schema, this.data, {
-            dataPath: this.dataPath,
-            services: this,
-            rootData: this.rootData
-          })
-        : null
-      const errors = match
-        ? getMatchingValidationErrors(dataValidationErrors, match)
-        : dataValidationErrors
-      if (notify) {
-        this.showErrors(errors ?? {}).catch(console.error)
+    // Selects the tab of the route's hash. A route without a hash, e.g. after
+    // closing the form of an item, keeps the selected tab.
+    const followRouteTab = () => {
+      if (
+        shouldFollowRouteTab.value &&
+        routeTab.value &&
+        routeTab.value !== selectedTab.value
+      ) {
+        selectTab(routeTab.value)
       }
-      return !errors
-    },
+    }
 
-    verifyAll(match) {
-      return this.validateAll(match, false)
-    },
+    // Puts the tab into the route's hash, falling back to the default tab for
+    // tabs that aren't rendered:
+    const replaceRouteTab = tab => {
+      const tabInRoute =
+        !tab || tab in renderedTabs.value ? tab : defaultTab.value
+      if (tabInRoute !== routeTab.value) {
+        router.replace({
+          query: router.currentRoute.value.query,
+          hash: tabInRoute ? `#${tabInRoute}` : null
+        })
+      }
+    }
 
-    // Shows the errors of the server for the data that was sent, at `dataPath`:
-    // the root data, the schema's own data, or e.g. the data of a list with its
-    // own resource.
-    showValidationErrors(
+    // The schemas of forms can depend on the data that they load:
+    watch(
+      () => props.schema,
+      schema => {
+        if (!isEmptySchema(schema)) {
+          emitEvent('initialize') // Not `'create'`, since that's for data.
+        }
+      },
+      { immediate: true }
+    )
+
+    watch(routeTab, followRouteTab, {
+      immediate: true,
+      // https://github.com/vuejs/vue-router/issues/3393#issuecomment-1158470149
+      flush: 'post'
+    })
+
+    // Returning from a nested form, e.g. through the browser's history, the
+    // route may carry a different tab.
+    watch(shouldFollowRouteTab, shouldFollow => {
+      if (shouldFollow) {
+        followRouteTab()
+      }
+    })
+
+    // `defaultTab()` and the tabs' `if` may depend on data that is only
+    // available after mounting, e.g. the item of a form once it's loaded.
+    watch(hasData, hasData => {
+      if (hasData && shouldFollowDefaultTab) {
+        selectDefaultTab()
+      }
+    })
+
+    watch(selectedTab, (newTab, oldTab) => {
+      if (newTab) {
+        mountedTabs[newTab] = true
+      }
+      if (props.scrollable) {
+        const element = content.value
+        scrollPositions[oldTab] = element.scrollTop
+        nextTick(() => {
+          element.scrollTop = scrollPositions[newTab] ?? 0
+        })
+      }
+      // The route of a nested form doesn't belong to this schema.
+      if (shouldFollowRouteTab.value) {
+        replaceRouteTab(newTab)
+      }
+    })
+
+    // Reveal the components of the schema by opening it and rendering the tab
+    // that leads to them, which focusing them also selects:
+    const unregisterUi = admin.ui.register(() => componentPath.value, {
+      container: services.container,
+      async reveal(path, { focus }) {
+        const [tab] = parseDataPath(
+          getRelativeDataPath(path, componentPath.value)
+        )
+        if (renderedTabs.value?.[tab]) {
+          mountedTabs[tab] = true
+          if (focus) {
+            selectTab(tab)
+          }
+        }
+        opened.value = true
+        await nextTick()
+      }
+    })
+    const isWidePage = (
+      props.scrollable &&
+      getSchemaValue('wide', { type: Boolean, default: false })
+    )
+    if (isWidePage) {
+      appState.pageClass = 'dito-page--wide'
+    }
+
+    onMounted(() => {
+      // The tab of a nested route, e.g. after reloading the form of an item of
+      // a list in a tab, belongs to the nested form:
+      const tab = routeTab.value
+      if (shouldFollowRouteTab.value && tab && tab in renderedTabs.value) {
+        selectTab(tab)
+      } else {
+        selectDefaultTab()
+      }
+    })
+
+    onUnmounted(() => {
+      emitEvent('destroy')
+      unregisterUi()
+      if (isWidePage) {
+        appState.pageClass = null
+      }
+    })
+
+    // Replaces the errors of validation, or of the `server`, within `dataPath`,
+    // reveals them, and notifies them with the ones that no field displays:
+    const showErrors = async (
       errors,
-      dataPath = this.hasOwnData ? this.dataPath : ''
-    ) {
-      // Convert the data paths from JavaScript property access notation to
-      // our own form of relative JSON pointers, prefixed with the data path of
-      // the sent data, which the server validates unprefixed.
-      const errorsByFullDataPath = Object.fromEntries(
-        Object.entries(errors).map(([path, errs]) => [
-          normalizeDataPath(appendDataPath(dataPath, path)),
-          errs
-        ])
-      )
-      return this.showErrors(errorsByFullDataPath, { dataPath, server: true })
-    },
-
-    // Replaces the errors of validation, or of the `server`, within `dataPath`
-    // with `errors`, keyed by full data paths, reveals them, and notifies them,
-    // with the ones that no field displays.
-    async showErrors(errors, {
-      dataPath = this.dataPath,
-      server = false
-    } = {}) {
-      const unmatchedErrors = this.dataModel.replaceErrors(errors, {
+      { dataPath = props.dataPath, server = false } = {}
+    ) => {
+      const unmatchedErrors = getModel().replaceErrors(errors, {
         dataPath,
         server
       })
-      await this.revealErrors(
+      await revealErrors(
         Object.keys(errors).filter(dataPath => !unmatchedErrors?.[dataPath])
       )
       if (!isEmpty(errors)) {
@@ -540,98 +441,185 @@ export default DitoComponent.component('DitoSchema', {
             const field = labelize(parseDataPath(dataPath).pop())
             const prefix = field
               ? `The field ${field}`
-              : `The ${this.formLabel}`
+              : `The ${formLabel.value}`
             return errs.map(({ message }) => `${prefix} ${message}`)
           }
         )
-        this.admin.notify({
+        admin.notify({
           type: 'error',
           title: 'Validation Errors',
           text: messages.join('\n') || 'Please correct the highlighted errors.'
         })
       }
-    },
+    }
 
-    // Reveals the fields with errors at `dataPaths`, opening collapsed schemas
-    // on the way, and focuses the first one. If it's in the form of a nested
-    // route, that form opens and reveals its own errors instead, which it takes
-    // over from its item, see `ContainerContext.revealErrors()`.
-    async revealErrors(
-      dataPaths = this.dataModel.getErrorDataPaths(this.dataPath)
-    ) {
+    // Reveals the fields with errors at `dataPaths` and focuses the first one.
+    // If it's in the form of a nested route, that form opens and reveals the
+    // errors that it takes over from its item instead.
+    const revealErrors = async (
+      dataPaths = getModel().getErrorDataPaths(props.dataPath)
+    ) => {
+      const { container, route } = services
       const [firstDataPath] = dataPaths
       // Only the data of route components is part of routes, unlike the data
       // of dialogs and panels with their own data:
-      const route =
-        firstDataPath && this.container === this.route?.container
-          ? this.route.getFormRoute(firstDataPath)
+      const formRoute =
+        firstDataPath && container === route?.container
+          ? route.getFormRoute(firstDataPath)
           : null
-      if (route) {
+      if (formRoute) {
         // The form may be open already, e.g. a nested form, which displays in
         // the form of its parent:
         const failure =
-          this.$route.path !== route.path
-            ? await this.$router.push({ path: route.path })
+          router.currentRoute.value.path !== formRoute.path
+            ? await router.push({ path: formRoute.path })
             : null
         if (!failure) {
-          await this.$nextTick()
-          const level = this.$route.matched.length - 1
-          await this.admin.ui.routes[level].container.revealErrors()
+          await nextTick()
+          const level = router.currentRoute.value.matched.length - 1
+          await admin.ui.routes[level].container.revealErrors()
         }
       } else {
         for (const dataPath of dataPaths) {
-          const componentPath = getComponentPathByDataPath(
-            this.schema,
-            this.data,
+          const path = getComponentPathByDataPath(
+            props.schema,
+            props.data,
             dataPath,
             {
-              dataPath: this.dataPath,
-              componentPath: this.componentPath,
-              services: this,
-              rootData: this.rootData
+              dataPath: props.dataPath,
+              componentPath: componentPath.value,
+              services,
+              rootData: context.rootItem
             }
           )
-          await this.admin.ui.reveal(this.container, componentPath, {
+          await admin.ui.reveal(container, path, {
             focus: dataPath === firstDataPath
           })
         }
       }
-    },
+    }
 
-    // Writes the data pasted through `DitoClipboard` into the schema's data,
-    // as new items:
-    pasteData(clipboardData) {
-      const data = fromClipboard(this.dataSchema, clipboardData, {
-        dataPath: this.dataPath,
-        services: this,
-        rootData: this.rootData
-      })
-      for (const [name, value] of Object.entries(data)) {
-        if (name in this.data) {
-          this.dataModel.set(this.data, name, value)
-        }
+    // Validates the data, not the mounted components, so that fields in
+    // collapsed schemas and closed nested forms are validated too.
+    const validateAll = (match, notify = true) => {
+      const dataValidationErrors = hasData.value
+        ? getDataValidationErrors(props.schema, props.data, {
+            dataPath: props.dataPath,
+            services,
+            rootData: context.rootItem
+          })
+        : null
+      const errors = match
+        ? getMatchingValidationErrors(dataValidationErrors, match)
+        : dataValidationErrors
+      if (notify) {
+        showErrors(errors ?? {}).catch(console.error)
       }
-    },
+      return !errors
+    }
 
-    // Processes the schema's data for `target`, the 'server' or the
-    // 'clipboard', see `SchemaGraph`.
-    processData(target) {
-      return processData(
-        this.dataSchema,
-        this.sourceSchema,
-        this.data,
-        this.dataPath,
-        {
-          // Needed for DitoContext handling inside `processData` and
-          // `processSchemaData()`:
-          rootData: this.rootData,
-          services: this,
-          target
+    return {
+      context,
+      createContext,
+      emitEvent,
+      container: services.container,
+      opened,
+      tabs,
+      hasTabs,
+      hasData,
+      hasLabel,
+      renderedTabs,
+      selectedTab,
+      selectTab,
+      isTopLevelSchema,
+      isTabSelected,
+      validateAll,
+      revealErrors,
+
+      panelEntries: computed(() =>
+        // Panels of schemas inlined in tabs are only shown with their tab, as
+        // the panels of components in tabs, see `DitoContainer`.
+        getPanelEntries(
+          props.schema.panels,
+          props.dataPath,
+          componentPath.value,
+          panelTab
+        )
+      ),
+
+      clipboard: computed(() => props.schema?.clipboard ?? null),
+
+      hasHeader: computed(
+        () => hasLabel.value || hasTabs.value || !!props.schema?.clipboard
+      ),
+
+      hasMainPane: computed(() => {
+        const { components } = props.schema
+        return !!components && Object.keys(components).length > 0
+      }),
+
+      // Tabs render once they're selected, and stay rendered:
+      shouldRenderTab(tab) {
+        return isTabSelected(tab) || !!mountedTabs[tab]
+      },
+
+      onOpen(open) {
+        emitEvent('open', { context: { open } })
+        opened.value = open
+      },
+
+      onChange() {
+        emitEvent('change')
+      },
+
+      // Shows the errors of the server for the data that was sent, at
+      // `dataPath`: the root data, the schema's own data, or e.g. the data of a
+      // list with its own resource.
+      showValidationErrors(
+        errors,
+        dataPath = props.hasOwnData ? props.dataPath : ''
+      ) {
+        // Convert the data paths from JavaScript property access notation to
+        // our own form of relative JSON pointers, prefixed with the data path
+        // of the sent data, which the server validates unprefixed.
+        const errorsByFullDataPath = Object.fromEntries(
+          Object.entries(errors).map(([path, errs]) => [
+            normalizeDataPath(appendDataPath(dataPath, path)),
+            errs
+          ])
+        )
+        return showErrors(errorsByFullDataPath, { dataPath, server: true })
+      },
+
+      // Writes the data pasted through `DitoClipboard` into the schema's data,
+      // as new items:
+      pasteData(clipboardData) {
+        const data = fromClipboard(props.dataSchema, clipboardData, {
+          dataPath: props.dataPath,
+          services,
+          rootData: context.rootItem
+        })
+        for (const [name, value] of Object.entries(data)) {
+          if (name in props.data) {
+            getModel().set(props.data, name, value)
+          }
         }
-      )
+      },
+
+      // Processes the schema's data for `target`, the 'server' or the
+      // 'clipboard', see `SchemaGraph`.
+      processData(target) {
+        return processData(
+          props.dataSchema,
+          unref(sourceSchema),
+          props.data,
+          props.dataPath,
+          { rootData: context.rootItem, services, target }
+        )
+      }
     }
   }
-})
+}
 </script>
 
 <style lang="scss">

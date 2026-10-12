@@ -21,7 +21,6 @@ DitoInput.dito-text(
 
 <script>
 import { computed } from 'vue'
-import DitoComponent from '../DitoComponent.js'
 import { defineType } from '../utils/schema/types.ts'
 import { textTraits } from './traits.ts'
 import { fieldProps, useField } from '../composables/useField.ts'
@@ -38,7 +37,8 @@ const inputTypes = {
 }
 
 // @vue/component
-const DitoTypeText = DitoComponent.component('DitoTypeText', {
+const DitoTypeText = {
+  name: 'DitoTypeText',
   components: { DitoInput, DitoInputAffixes },
   props: fieldProps,
 
@@ -63,11 +63,13 @@ const DitoTypeText = DitoComponent.component('DitoTypeText', {
       }),
       inputTypes,
       attributes,
+      context: field.context,
+      componentPath: field.componentPath,
       inputAffixesProps,
       clear
     }
   }
-})
+}
 
 defineType({
   types: [

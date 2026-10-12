@@ -3,10 +3,9 @@ import { flushPromises } from '@vue/test-utils'
 import { mountAdmin } from '../test/mount.js'
 
 // Shows a dialog through `DitoRoot.showDialog()`, and returns its promise, the
-// dialog element, and whether the promise settled.
+// dialog element, whether it's still shown, and whether the promise settled.
 async function showDialog(schema, options) {
   const admin = await mountAdmin({ views: {} })
-  const removeDialog = vi.spyOn(admin.root, 'removeDialog')
   let isSettled = false
   const promise = admin.context.showDialog(schema, options).finally(() => {
     isSettled = true
@@ -17,7 +16,7 @@ async function showDialog(schema, options) {
     admin,
     promise,
     dialog,
-    removeDialog,
+    isShown: () => Object.keys(admin.root.dialogs).length > 0,
     get isSettled() {
       return isSettled
     }
@@ -83,15 +82,15 @@ describe('DitoDialog', () => {
     expect(await withCancel.promise).toBe(undefined)
   })
 
-  it('resolves with the data on submit and removes itself once', async () => {
-    const { dialog, promise, removeDialog } = await showDialog(
+  it('resolves with the data on submit and removes itself', async () => {
+    const { dialog, promise, isShown } = await showDialog(
       { components, buttons: { cancel: {}, apply: { type: 'submit' } } },
       { data: { title: 'Emma' } }
     )
     await dialog.find('form').trigger('submit')
     expect(await promise).toEqual({ title: 'Emma' })
     await flushPromises()
-    expect(removeDialog).toHaveBeenCalledOnce()
+    expect(isShown()).toBe(false)
   })
 
   it(`doesn't cancel with Escape keys that its components handled`, async () => {
@@ -108,7 +107,7 @@ describe('DitoDialog', () => {
   })
 
   it('resolves with the value of `closeDialog()` of its buttons', async () => {
-    const { dialog, promise, removeDialog } = await showDialog({
+    const { dialog, promise, isShown } = await showDialog({
       components,
       buttons: {
         keep: {
@@ -122,7 +121,7 @@ describe('DitoDialog', () => {
     })
     await dialog.find('button[id="$buttons/keep"]').trigger('click')
     expect(await promise).toBe('kept')
-    expect(removeDialog).toHaveBeenCalledOnce()
+    expect(isShown()).toBe(false)
   })
 
   it('validates, edits and replaces its data through contexts', async () => {
@@ -163,13 +162,13 @@ describe('DitoDialog', () => {
   })
 
   it('resolves as `undefined` with its cancel button', async () => {
-    const { dialog, promise, removeDialog } = await showDialog(
+    const { dialog, promise, isShown } = await showDialog(
       { components, buttons: { cancel: {} } },
       { data: { title: 'Emma' } }
     )
     await dialog.find('button.dito-button--cancel').trigger('click')
     expect(await promise).toBe(undefined)
-    expect(removeDialog).toHaveBeenCalledOnce()
+    expect(isShown()).toBe(false)
   })
 
   it('submits with Enter in its inputs only', async () => {

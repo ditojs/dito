@@ -2,7 +2,7 @@ import { vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import appState from '../appState.js'
 import { copyClipboardData, getClipboardData } from '../utils/clipboard.js'
-import { mountForm, settle } from '../test/mount.js'
+import { mountForm, settle, isForm } from '../test/mount.js'
 
 function getNotificationTexts() {
   return [...document.querySelectorAll('.dito-notification')].map(
@@ -181,7 +181,7 @@ describe('DitoClipboard', () => {
       }
     })
     await admin.navigate('/items/1/chapters/0')
-    const form = admin.getRouteComponent(it => it.isForm)
+    const form = admin.getRouteComponent(isForm)
     await settle(form)
     await admin.wrapper
       .find('.dito-clipboard .dito-button--copy')

@@ -171,7 +171,7 @@ describe('DitoPane', () => {
     pane.positions.push({ top: 0, height: 3 }, { top: 0, height: 3 })
     data.blocks[0].type = 'heading'
     await settle()
-    expect(getBlockPane()).toBe(pane)
+    expect(getBlockPane().$).toBe(pane.$)
     expect(pane.componentSchemas.map(({ schema }) => schema.name)).toEqual([
       'text'
     ])

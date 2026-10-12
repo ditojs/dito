@@ -8,7 +8,8 @@ import {
   mountForm,
   mountAdmin,
   enterValue,
-  stubConfirm
+  stubConfirm,
+  isForm
 } from '../test/mount.js'
 
 const ingredientForm = {
@@ -731,7 +732,7 @@ describe('DitoTypeList', () => {
       await field.findAll('a.dito-button--edit')[1].trigger('click')
       await settle()
       expect(admin.router.currentRoute.value.path).toBe('/items/1/chapters/1')
-      const chapterForm = admin.getRouteComponent(it => it.isForm)
+      const chapterForm = admin.getRouteComponent(isForm)
       expect(chapterForm.isTransient).toBe(true)
       const input = admin.wrapper.find('input[name="chapters/1/title"]')
       await enterValue(input, 'Departure')
@@ -769,7 +770,7 @@ describe('DitoTypeList', () => {
       })
       await admin.navigate('/items/1/chapters/1')
       await settle()
-      const chapterForm = admin.getRouteComponent(it => it.isForm)
+      const chapterForm = admin.getRouteComponent(isForm)
       await enterValue(
         admin.wrapper.find('input[name="chapters/1/title"]'),
         'Departure'
@@ -1124,7 +1125,7 @@ describe('DitoTypeList', () => {
           .findAll('tbody > tr')
           .map(row => row.classes('dito-table__row--error'))
       expect(getMarkedRows()).toEqual([false, false])
-      expect(routeComponent.container.validate()).toBe(false)
+      expect(routeComponent.ownContainer.validate()).toBe(false)
       await flushPromises()
       expect(getMarkedRows()).toEqual([false, true])
       data.chapters[1].title = 'Two'

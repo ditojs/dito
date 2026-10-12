@@ -7,11 +7,11 @@ Pagination(
 </template>
 
 <script>
+import { computed } from 'vue'
 import { DitoPagination as Pagination } from '@ditojs/ui/src'
-import DitoComponent from '../DitoComponent.js'
 
-// @vue/component
-export default DitoComponent.component('DitoPagination', {
+export default {
+  name: 'DitoPagination',
   components: { Pagination },
 
   props: {
@@ -20,16 +20,18 @@ export default DitoComponent.component('DitoPagination', {
     total: { type: Number, required: true }
   },
 
-  computed: {
-    page: {
-      get() {
-        return (+this.listQuery.query.page || 0) + 1
-      },
+  setup(props) {
+    return {
+      page: computed({
+        get() {
+          return (+props.listQuery.query.page || 0) + 1
+        },
 
-      set(page) {
-        this.listQuery.update({ page: page - 1 })
-      }
+        set(page) {
+          props.listQuery.update({ page: page - 1 })
+        }
+      })
     }
   }
-})
+}
 </script>

@@ -11,10 +11,9 @@
 </template>
 
 <script>
-import DitoComponent from '../DitoComponent.js'
+export default {
+  name: 'DitoSpinner',
 
-// @vue/component
-export default DitoComponent.component('DitoSpinner', {
   props: {
     loading: {
       type: Boolean,
@@ -33,7 +32,7 @@ export default DitoComponent.component('DitoSpinner', {
       default: null
     }
   }
-})
+}
 </script>
 
 <style lang="scss">

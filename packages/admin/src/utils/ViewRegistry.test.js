@@ -1,8 +1,10 @@
 import { vi } from 'vitest'
 import { watch } from 'vue'
-import { mountAdmin } from '../test/mount.js'
+import { mountAdmin, isForm } from '../test/mount.js'
 import { ViewRegistry } from './ViewRegistry.js'
 import DitoView from '../components/DitoView.vue'
+import DitoForm from '../components/DitoForm.vue'
+import DitoFormNested from '../components/DitoFormNested.vue'
 
 describe('ViewRegistry', () => {
   afterEach(() => {
@@ -18,7 +20,11 @@ describe('ViewRegistry', () => {
       api,
       router,
       unresolvedViews: views,
-      viewComponent: DitoView
+      routeComponents: {
+        view: DitoView,
+        form: DitoForm,
+        nestedForm: DitoFormNested
+      }
     })
     return { admin, viewRegistry }
   }
@@ -131,7 +137,7 @@ describe('ViewRegistry across sessions', () => {
     expect(session.user).toBe(null)
     expect(await session.login()).toEqual({ id: 1, username: 'tester' })
     await admin.navigate('/books/1')
-    const form = admin.getRouteComponent(component => component.isForm)
+    const form = admin.getRouteComponent(isForm)
     expect(form?.data).toEqual({ id: 1, title: 'Dune' })
   })
 })

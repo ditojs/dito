@@ -10,35 +10,35 @@
 </template>
 
 <script>
+import { inject } from 'vue'
 import { DitoMenuButton } from '@ditojs/ui/src'
-import DitoComponent from '../DitoComponent.js'
 
-// @vue/component
-export default DitoComponent.component('DitoAccount', {
+export default {
+  name: 'DitoAccount',
   components: { DitoMenuButton },
 
-  data() {
+  setup() {
+    const admin = inject('admin')
     return {
+      admin,
       items: [
         { value: 'settings', label: 'Settings' },
         { value: 'logout', label: 'Logout' }
-      ]
-    }
-  },
+      ],
 
-  methods: {
-    onSelectMenuItem({ value }) {
-      switch (value) {
-        case 'logout':
-          this.admin.session.logout()
-          break
-        case 'settings':
-          console.info('TODO: Implement Settings')
-          break
+      onSelectMenuItem({ value }) {
+        switch (value) {
+          case 'logout':
+            admin.session.logout()
+            break
+          case 'settings':
+            console.info('TODO: Implement Settings')
+            break
+        }
       }
     }
   }
-})
+}
 </script>
 
 <style lang="scss">

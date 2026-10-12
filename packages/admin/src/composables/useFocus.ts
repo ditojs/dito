@@ -2,7 +2,8 @@ import {
   getCurrentInstance,
   onBeforeMount,
   onUnmounted,
-  useTemplateRef
+  useTemplateRef,
+  type Ref
 } from 'vue'
 import { asArray } from '@ditojs/utils'
 import type { Services } from '../utils/services.ts'
@@ -18,10 +19,11 @@ export interface FocusOptions {
 // that isn't selected, through its handle in the UI registry.
 export function useFocus(
   { admin, container }: Services,
+  componentPath: Ref<string>,
   { focusElement, blurElement }: FocusOptions = {}
 ) {
-  // NOTE: The component path is still a member of the component:
-  const component = getCurrentInstance()!.proxy as any
+  // Components without the element, e.g. sources, focus their root element:
+  const component = getCurrentInstance()!.proxy!
   const element = useTemplateRef<any>('element')
 
   const getElement = () => asArray(element.value)[0] ?? null
@@ -43,7 +45,7 @@ export function useFocus(
 
   let unregister: () => void
   onBeforeMount(() => {
-    unregister = admin.ui.register(() => component.componentPath, {
+    unregister = admin.ui.register(() => componentPath.value, {
       container,
       focus() {
         getFocusElement()?.scrollIntoView?.({
@@ -61,7 +63,7 @@ export function useFocus(
     element,
 
     focus() {
-      return admin.ui.reveal(container, component.componentPath, {
+      return admin.ui.reveal(container, componentPath.value, {
         focus: true
       })
     },

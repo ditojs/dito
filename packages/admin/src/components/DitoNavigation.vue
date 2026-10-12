@@ -6,10 +6,16 @@ nav.dito-navigation.dito-scroll-parent(aria-label="Main navigation")
 </template>
 
 <script>
-import DitoComponent from '../DitoComponent.js'
+import { inject } from 'vue'
+import appState from '../appState.js'
 
-// @vue/component
-export default DitoComponent.component('DitoNavigation', {})
+export default {
+  name: 'DitoNavigation',
+
+  setup() {
+    return { admin: inject('admin'), appState }
+  }
+}
 </script>
 
 <style lang="scss">

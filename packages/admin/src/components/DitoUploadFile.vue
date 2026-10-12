@@ -18,10 +18,11 @@
 </template>
 
 <script>
-import DitoComponent from '../DitoComponent.js'
+import { computed, ref, watch } from 'vue'
 
-// @vue/component
-export default DitoComponent.component('DitoUploadFile', {
+export default {
+  name: 'DitoUploadFile',
+
   props: {
     file: { type: Object, required: true },
     // The file object of the upload component while the file is added through
@@ -31,44 +32,38 @@ export default DitoComponent.component('DitoUploadFile', {
     thumbnailUrl: { type: String, default: null }
   },
 
-  data() {
-    return {
-      uploadUrl: null
-    }
-  },
+  setup(props) {
+    const uploadUrl = ref(null)
 
-  computed: {
-    type() {
-      return (
-        TYPES[this.file.type] ||
-        this.file.name.split('.').pop().toUpperCase()
-      )
-    },
-
-    imageUrl() {
-      return this.uploadUrl || this.thumbnailUrl
-    }
-  },
-
-  watch: {
-    'upload.file': {
-      immediate: true,
-      handler(file) {
-        if (this.thumbnail && file?.type.startsWith('image/')) {
+    watch(
+      () => props.upload?.file,
+      file => {
+        if (props.thumbnail && file?.type.startsWith('image/')) {
           const reader = new FileReader()
           reader.onload = () => {
-            this.uploadUrl = reader.result
+            uploadUrl.value = reader.result
           }
           reader.readAsDataURL(file)
         } else {
-          this.uploadUrl = null
+          uploadUrl.value = null
         }
-      }
+      },
+      { immediate: true }
+    )
+
+    return {
+      type: computed(
+        () => (
+          types[props.file.type] ||
+          props.file.name.split('.').pop().toUpperCase()
+        )
+      ),
+      imageUrl: computed(() => uploadUrl.value || props.thumbnailUrl)
     }
   }
-})
+}
 
-const TYPES = {
+const types = {
   'text/plain': 'TXT',
   'text/html': 'HTML',
   'text/css': 'CSS',
