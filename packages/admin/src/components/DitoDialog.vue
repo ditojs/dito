@@ -45,7 +45,7 @@ import {
 import { clone } from '@ditojs/utils'
 import { UseFocusTrap } from '@vueuse/integrations/useFocusTrap/component'
 import { useServices } from '../composables/useSchemaContext.ts'
-import { getButtonSchemas } from '../utils/schema/lookup.js'
+import { getButtonSchemas, hasSubmitButton } from '../utils/schema/lookup.js'
 import { DataModel } from '../utils/DataModel.ts'
 import { DialogContext } from '../utils/ContainerContext.ts'
 import { waitUntilDataModelSettled } from '../utils/services.ts'
@@ -112,6 +112,7 @@ export default {
       new DataModel({
         schema: () => schema.value,
         data: () => dialogData.value,
+        canSave: () => hasSubmitButton(buttonSchemas.value),
         services
       })
     )

@@ -17,7 +17,6 @@ import {
   isPlainObject,
   isEmpty,
   equals,
-  clone,
   parseDataPath,
   getValueAtDataPath
 } from '@ditojs/utils'
@@ -65,6 +64,8 @@ export interface DataModelOptions {
   // The model of the parent's data, which processes the root data of nested
   // forms:
   parent?: () => DataModel | null
+  // Edits are unsaved only where they can be saved, by default through a
+  // submit button of the schema:
   canSave?: () => boolean
   // The services of the contexts that the model creates for callbacks, as the
   // components of its container see them:
@@ -98,11 +99,11 @@ export interface ValueError {
   message: string
 }
 
-// The validation and server errors of a value, with the value they're for:
 interface ValueErrors {
-  value: any
   validation: ValueError[]
   server: ValueError[]
+  // Any change of the value clears its errors for good:
+  stopWatching?: () => void
 }
 
 // The records of components with computed values or options:
@@ -164,7 +165,7 @@ export class DataModel {
       dataPath: () => '',
       sourceSchema: () => null,
       parent: () => null,
-      canSave: () => true,
+      canSave: () => hasSubmitButton(getButtonSchemas(this.schema?.buttons)),
       services: null,
       ...options
     }
@@ -358,7 +359,7 @@ export class DataModel {
   getErrors(dataPath: string): ValueError[] | null {
     const { data, name } = this.#getFieldKey(dataPath)
     const errors = this.#errors.value.get({ data, name })
-    return errors ? getCurrentErrors(errors, data[name]) : null
+    return errors ? [...errors.validation, ...errors.server] : null
   }
 
   // The errors of the field itself, e.g. of options that failed to load:
@@ -418,9 +419,7 @@ export class DataModel {
   // The errors of the fields stay until their sources remove them.
   clearErrors(dataPath = this.dataPath) {
     this.#processFieldEntries(dataPath, entry => {
-      if (this.#errors.value.delete(this.#getFieldKey(entry.dataPath!))) {
-        triggerRef(this.#errors)
-      }
+      this.#setValueErrors(this.#getFieldKey(entry.dataPath!), null)
     })
   }
 
@@ -441,15 +440,11 @@ export class DataModel {
   // also where they aren't displayed, e.g. in the items of nested forms.
   hasErrorsWithin(data: any): boolean {
     if (isPlainObject(data) || isArray(data)) {
-      for (const [name, errors] of this.#errors.value.entriesOf(data)) {
-        if (getCurrentErrors(errors, (data as Data)[name])) {
-          return true
-        }
-      }
-      if (this.#fieldErrors.value.hasEntriesOf(data)) {
-        return true
-      }
-      return Object.values(data).some(value => this.hasErrorsWithin(value))
+      return (
+        this.#errors.value.hasEntriesOf(data) ||
+        this.#fieldErrors.value.hasEntriesOf(data) ||
+        Object.values(data).some(value => this.hasErrorsWithin(value))
+      )
     }
     return false
   }
@@ -461,34 +456,54 @@ export class DataModel {
       if (isPlainObject(data) || isArray(data)) {
         const original = getOriginal(data)
         for (const [name, errors] of model.#errors.value.entriesOf(original)) {
-          this.#errors.value.set({ data, name }, errors)
+          const { validation, server } = errors
+          this.#setValueErrors({ data, name }, { validation, server })
         }
         Object.values(data).forEach(copy)
       }
     }
     copy(data)
-    triggerRef(this.#errors)
   }
 
-  // The errors of a value replace the ones of other values.
   #setErrors(
     key: FieldKey,
     kind: 'validation' | 'server',
     errors: ValueError[] | null
   ) {
+    const valueErrors = {
+      ...(this.#errors.value.get(key) ?? { validation: [], server: [] }),
+      [kind]: errors ?? []
+    }
+    this.#setValueErrors(
+      key,
+      valueErrors.validation.length > 0 || valueErrors.server.length > 0
+        ? valueErrors
+        : null
+    )
+  }
+
+  #setValueErrors(key: FieldKey, errors: ValueErrors | null) {
     const { data, name } = key
-    let valueErrors = this.#errors.value.get(key)
-    if (!valueErrors || !equals(data[name], valueErrors.value)) {
-      // Copy the value, as lists and objects also change in place:
-      valueErrors = { value: clone(data[name]), validation: [], server: [] }
+    const currentErrors = this.#errors.value.get(key)
+    if (errors) {
+      // Watch synchronously and deeply, as values also change in place and
+      // through direct writes, e.g. of `change` handlers:
+      errors.stopWatching = (
+        currentErrors?.stopWatching ??
+        this.#scope.run(() =>
+          watch(
+            () => data[name],
+            () => this.#setValueErrors(key, null),
+            { deep: true, flush: 'sync' }
+          )
+        )
+      )
+      this.#errors.value.set(key, errors)
+    } else if (currentErrors) {
+      currentErrors.stopWatching?.()
+      this.#errors.value.delete(key)
     }
-    valueErrors = { ...valueErrors, [kind]: errors ?? [] }
-    if (valueErrors.validation.length > 0 || valueErrors.server.length > 0) {
-      this.#errors.value.set(key, valueErrors)
-      triggerRef(this.#errors)
-    } else if (this.#errors.value.delete(key)) {
-      triggerRef(this.#errors)
-    }
+    triggerRef(this.#errors)
   }
 
   #processFieldEntries(
@@ -1141,15 +1156,4 @@ function hasComputedValueSource(schema: Schema): boolean {
 
 function getErrorMessage(error: any): string {
   return error.message || error
-}
-
-// Errors apply only to the value that they were set for, as values also
-// change through direct writes, e.g. of `change` handlers.
-function getCurrentErrors(
-  errors: ValueErrors,
-  value: any
-): ValueError[] | null {
-  return equals(value, errors.value)
-    ? [...errors.validation, ...errors.server]
-    : null
 }

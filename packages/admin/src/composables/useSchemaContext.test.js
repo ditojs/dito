@@ -216,16 +216,22 @@ describe('useSchemaContext()', () => {
       expect(getComponent('title').context.isCreating).toBe(true)
     })
 
-    it('tell whether the view is dirty', async () => {
-      const { wrapper, getComponent } = await mountSchema({
-        schema: titleSchema,
-        data: { title: 'Emma' }
-      })
-      const { context } = getComponent('title')
-      expect(context.isDirty).toBe(false)
-      expect(context.isCreating).toBe(false)
-      await enterValue(wrapper.find('input[name="title"]'), 'Persuasion')
-      expect(context.isDirty).toBe(true)
+    it('tell whether the view is dirty, if it can save', async () => {
+      const editTitle = async buttons => {
+        const { wrapper, getComponent } = await mountSchema({
+          schema: { ...titleSchema, buttons },
+          data: { title: 'Emma' }
+        })
+        const { context } = getComponent('title')
+        expect(context.isDirty).toBe(false)
+        expect(context.isCreating).toBe(false)
+        await enterValue(wrapper.find('input[name="title"]'), 'Persuasion')
+        return context
+      }
+      expect((await editTitle({ save: { type: 'submit' } })).isDirty).toBe(true)
+      expect((await editTitle({ apply: { type: 'button' } })).isDirty).toBe(
+        false
+      )
     })
 
     it('belong to nested forms in their components', async () => {

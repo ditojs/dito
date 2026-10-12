@@ -47,19 +47,29 @@ describe('DitoRoot', () => {
       expect(isUnloadPrevented()).toBe(true)
     })
 
-    it('prevents unloading with unsaved changes in a view', async () => {
+    const editViewTitle = async buttons => {
       const admin = await mountAdmin({
         views: {
           books: {
             type: 'view',
-            components: { title: { type: 'text' } }
+            components: { title: { type: 'text' } },
+            buttons
           }
         }
       })
       await admin.navigate('/books')
       await enterValue(admin.wrapper.find('input[name="title"]'), 'Emma')
       await flushPromises()
+    }
+
+    it('prevents unloading with unsaved changes in a view', async () => {
+      await editViewTitle({ save: { type: 'submit' } })
       expect(isUnloadPrevented()).toBe(true)
+    })
+
+    it(`doesn't prevent unloading with edits that a view can't save`, async () => {
+      await editViewTitle({ apply: { type: 'button' } })
+      expect(isUnloadPrevented()).toBe(false)
     })
 
     it(`doesn't prevent unloading after saving`, async () => {

@@ -93,7 +93,7 @@ describe('DitoTypeList', () => {
         .trigger('click')
       await flushPromises()
       expect(data.ingredients).toEqual([{ name: null, amount: 1 }])
-      expect(dataModel.isDirty).toBe(true)
+      expect(dataModel.isEdited).toBe(true)
     })
 
     it('labels the create button with `creatable.label`', async () => {
@@ -245,13 +245,13 @@ describe('DitoTypeList', () => {
       sortable.option('onEnd')({ oldIndex: 0, newIndex: 0 })
       await settle()
       expect(onChange).not.toHaveBeenCalled()
-      expect(dataModel.isDirty).toBe(false)
+      expect(dataModel.isEdited).toBe(false)
       // Sortable restores its moved element, and the list moves the item:
       sortable.option('onStart')({ oldIndex: 0 })
       sortable.option('onEnd')({ oldIndex: 0, newIndex: 1 })
       await settle()
       expect(onChange).toHaveBeenCalledOnce()
-      expect(dataModel.isDirty).toBe(true)
+      expect(dataModel.isEdited).toBe(true)
       expect(getItemNames(findField('ingredients'))).toEqual(['Salt', 'Flour'])
     })
   })
@@ -667,7 +667,7 @@ describe('DitoTypeList', () => {
       await flushPromises()
       await enterValue(findField('tags').find('input'), 'classic')
       expect(data.tags).toEqual(['classic'])
-      expect(dataModel.isDirty).toBe(true)
+      expect(dataModel.isEdited).toBe(true)
     })
 
     it('renders wrapped primitive values of loaded data with stores', async () => {

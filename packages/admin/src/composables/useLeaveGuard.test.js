@@ -85,7 +85,8 @@ describe('useLeaveGuard()', () => {
         views: {
           'books': {
             type: 'view',
-            components: { title: { type: 'text' } }
+            components: { title: { type: 'text' } },
+            buttons: { save: { type: 'submit' } }
           },
           'books-archive': {
             type: 'view',
