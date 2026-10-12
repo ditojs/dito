@@ -239,7 +239,7 @@ component that renders them. Events that bubble up from components, e.g.
 - `component.$router.resolve(location).href`: `getRouteUrl(location)`.
 - `query`, the query of the route: `routeQuery`. `sourceComponent.query`:
   `sourceQuery`, the query of the nearest list, e.g. its scope and filters,
-  `null` inside forms.
+  `null` inside forms and in `itemLabel()`.
 - `getResourceUrl(resourceComponent.resource)`: `getResourceUrl()`, the URL of
   the nearest form or list with a resource: of the item that the form edits, or
   of the collection that the list loads or the form creates its item in. It
@@ -288,8 +288,6 @@ against, depend on which component evaluates the callback:
   `width`, `label` and `disabled`, with the members around the component, not
   the ones that it provides itself: `disabled: ({ isRunning }) => isRunning`
   disables a button, but not its container.
-- `itemLabel()` sees the list's `sourceQuery` in the list, and `null` in the
-  form of the item, e.g. in its title and notifications.
 
 `schemaComponent.resetData()` is removed: the filters panel clears its data
 with `replaceItem({})`.

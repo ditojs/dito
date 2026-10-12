@@ -2037,8 +2037,8 @@ export type SchemaContext<$Item = any> = {
   routeQuery: Record<string, string | (string | null)[]>
   /**
    * The query of the nearest list, e.g. its scope, page,
-   * order and filters, or `null` outside of lists and
-   * inside forms.
+   * order and filters, or `null` outside of lists, inside
+   * forms and in `itemLabel()`.
    */
   sourceQuery: Record<string, any> | null
   /**
