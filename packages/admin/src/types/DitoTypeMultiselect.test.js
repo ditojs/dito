@@ -439,6 +439,25 @@ describe('DitoTypeMultiselect', () => {
     expect(getPlaceholder('mood')).toBe(undefined)
   })
 
+  it('resolves `searchable` and `taggable` for the default placeholder', async () => {
+    const { findField } = await mountForm({
+      schema: {
+        components: {
+          genre: {
+            type: 'multiselect',
+            searchable: () => true,
+            taggable: () => false,
+            options: genres
+          }
+        }
+      },
+      data: { genre: null }
+    })
+    expect(
+      findField('genre').find('.multiselect__input').attributes('placeholder')
+    ).toBe('Select or search Genre')
+  })
+
   describe('search', () => {
     const authors = [
       { id: 1, name: 'Jane Austen' },
