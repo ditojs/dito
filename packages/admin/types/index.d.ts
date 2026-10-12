@@ -905,21 +905,11 @@ export interface SelectionSettings<$Item, $Option = any> {
   /** The available options for selection. */
   options?: SchemaOptions<$Item, $Option>
   /**
-   * When true, treats options as related objects. The
-   * full object is used during editing, but only the
-   * `id` reference is stored on save.
+   * Treats options as related objects: the full object is used during
+   * editing, but only its id is sent on save. `true` relates by `id`, a
+   * string by the key of the id that it names, e.g. `relate: 'code'`.
    */
-  relate?: boolean
-  /**
-   * The property key used as the identifier when
-   * relating options. Only relevant when `relate` is
-   * `true`.
-   *
-   * @defaultValue `'id'`
-   *
-   * Note: Only `'id'` is currently supported.
-   */
-  relateBy?: string
+  relate?: boolean | string
   /**
    * The key of the option property which should be used to
    * group the options. Selects and multiselects show the groups

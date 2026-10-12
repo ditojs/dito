@@ -1,4 +1,5 @@
 import { getRelativeDataPath, isTemporaryId } from './data.js'
+import { getRelateKey } from './schema/options.ts'
 import {
   isInteger,
   asArray,
@@ -103,7 +104,7 @@ export class SchemaGraph {
       const relation = type === 'relation'
       if (source || relation && internal) {
         const values = getValueAtDataPath(data, dataPath, () => null)
-        const idKey = (source ? schema.idKey : schema.relateBy) || 'id'
+        const idKey = source ? schema.idKey || 'id' : getRelateKey(schema)
         for (const value of asArray(values).flat()) {
           const id = value?.[idKey]
           if (id != null) {

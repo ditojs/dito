@@ -222,7 +222,7 @@ describe('fromClipboard()', () => {
     })
   })
 
-  it('uses `idKey` of sources and `relateBy` of relations', () => {
+  it('uses `idKey` of sources and the key in `relate` of relations', () => {
     const schema = createForm({
       authors: {
         type: 'list',
@@ -231,7 +231,7 @@ describe('fromClipboard()', () => {
       },
       books: {
         type: 'list',
-        form: createForm({ author: relateAuthors({ relateBy: 'key' }) })
+        form: createForm({ author: relateAuthors({ relate: 'key' }) })
       }
     })
     // As `SchemaGraph` copies them, see its tests:

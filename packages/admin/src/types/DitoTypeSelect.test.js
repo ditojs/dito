@@ -520,6 +520,30 @@ describe('DitoTypeSelect', () => {
         { '#id': reference, 'name': 'Grace' }
       ])
     })
+
+    it('relates by the key given in `relate`', async () => {
+      const { findField, data, submit } = await mountForm({
+        schema: {
+          components: {
+            ...teamSchema.components,
+            captain: { ...teamSchema.components.captain, relate: 'code' }
+          }
+        },
+        data: {
+          members: [
+            { code: 'ada', name: 'Ada' },
+            { code: 'grace', name: 'Grace' }
+          ],
+          captain: { code: 'ada' }
+        },
+        request: ({ data }) => ({ data })
+      })
+      expect(data.captain).toBe(data.members[0])
+      await findField('captain').find('select').setValue('grace')
+      expect(data.captain).toBe(data.members[1])
+      const payload = await submit()
+      expect(payload.captain).toEqual({ code: 'grace' })
+    })
   })
 
   describe('editable', () => {

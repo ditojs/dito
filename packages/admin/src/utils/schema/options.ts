@@ -6,7 +6,8 @@ import type { Context } from './types.ts'
 import type { Schema } from '../types.ts'
 
 export interface OptionsSettings {
-  relate: boolean
+  // The key of the ids of related options, `null` without `relate`:
+  relateKey: string | null
   multiple: boolean
   // `null` for options that are their own values:
   optionValue: string | ((context: Context) => any) | null
@@ -27,22 +28,27 @@ export function getOptionsSettings(
   const getValue = (key: string[], type: any) => (
     getSchemaValue(key, { type, schema, context: createContext({}) }) ?? null
   )
-  // Without callbacks, as values are serialized without contexts:
-  const relate = !!schema.relate
+  const relateKey = getRelateKey(schema)
   return {
-    relate,
+    relateKey,
     multiple,
     // Without `options.value`, options that are objects with a `value` hold
     // their values:
     optionValue: (
       getValue(['options', 'value'], [String, Function]) ||
-      relate && 'id' ||
+      relateKey ||
       getOptionKey(options, groupBy, 'value')
     ),
     optionEquals: getValue(['options', 'equals'], Function),
     groupBy,
     createContext
   }
+}
+
+// Read without callbacks, as values are serialized without contexts.
+// `relate: true` relates by `id`, a string by the key that it names:
+export function getRelateKey(schema: Schema): string | null {
+  return schema.relate === true ? 'id' : schema.relate || null
 }
 
 export function groupOptions(options: any[], groupBy: string) {
@@ -115,9 +121,9 @@ export function getSelectedValue(
   value: any,
   { hasOptions, findOption }: SelectedValueOptions
 ) {
-  const { relate, optionValue } = settings
+  const { relateKey, optionValue } = settings
   const convertValue = (value: any) => {
-    const val = relate ? getValueForOption(settings, value) : value
+    const val = relateKey ? getValueForOption(settings, value) : value
     return hasOptions
       ? (optionValue ? findOption(val) : val)
         ? val
@@ -135,8 +141,9 @@ export function getValueForSelectedValue(
   value: any,
   { findOption }: Pick<SelectedValueOptions, 'findOption'>
 ) {
+  const { relateKey } = settings
   const convertValue = (selected: any) => {
-    if (!settings.relate) {
+    if (!relateKey) {
       return selected
     }
     // Keep related objects without options, held in `value`:
@@ -149,7 +156,7 @@ export function getValueForSelectedValue(
     if (shouldSetTemporaryId(settings, option)) {
       // New items get temporary ids for the relation to reference on save.
       // Set it on the option itself, as a copy wouldn't propagate:
-      option.id = createTemporaryId()
+      option[relateKey] = createTemporaryId()
     }
     return option
   }
@@ -175,7 +182,7 @@ export function getReplacedValue(
   return (
     options.length > 0 && (
       selectedValue === null && value !== null && !schema.taggable ||
-      isReference(value)
+      isReference(value, settings.relateKey || 'id')
     )
   )
     ? {
@@ -192,5 +199,6 @@ interface SelectedValueOptions {
 }
 
 function shouldSetTemporaryId(settings: OptionsSettings, option: any) {
-  return settings.relate && isObject(option) && option.id == null
+  const { relateKey } = settings
+  return !!relateKey && isObject(option) && option[relateKey] == null
 }
