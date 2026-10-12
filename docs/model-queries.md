@@ -89,7 +89,6 @@ cycles, e.g. a `belongsTo` relation that refers to a model created in a
 inserting the owner without the foreign key and patching it in afterwards,
 which requires the foreign key column to be nullable (or its constraint to be
 deferrable). Cycles that can't be resolved this way are rejected with an error.
-The former `cyclic` option is deprecated and has no effect anymore.
 
 Objection.js' other graph control properties are rejected with a
 `GraphError` (400), as graphs often come from clients: `'#dbRef'` would relate

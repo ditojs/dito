@@ -9,8 +9,7 @@ import {
   clone,
   mapKeys,
   pickBy,
-  parseDataPath,
-  deprecate
+  parseDataPath
 } from '@ditojs/utils'
 import { QueryParameters } from './QueryParameters.js'
 import { KnexHelper } from '../lib/index.js'
@@ -95,11 +94,8 @@ export class QueryBuilder extends objection.QueryBuilder {
 
   // @override
   toFindQuery() {
-    // Objection's `asFindQuery()` in static hooks clears the `runAfter()`
-    // callbacks of the original query itself now (objection#2093), but its
-    // `toFindQuery()` keeps them. Dito's `toFindQuery()` has always cleared
-    // them, so keep doing so in 3.x.
-    // TODO: Remove in 4.0, leaving `toFindQuery()` to Objection.
+    // Clear the `runAfter()` callbacks of the original query, like
+    // Objection's `asFindQuery()` does, but not its `toFindQuery()`:
     return super.toFindQuery().clear('runAfter')
   }
 
@@ -670,20 +666,13 @@ export class QueryBuilder extends objection.QueryBuilder {
   }
 
   #handleDitoGraph(method, data, options, defaultOptions) {
-    const { cyclic, ...graphOptions } = options ?? {}
-    if (cyclic !== undefined) {
-      deprecate(
-        'The `cyclic` graph option is deprecated and has no effect anymore. ' +
-        'Objection.js resolves cyclic `#ref` references on its own now.'
-      )
-    }
     rejectGraphControlProps(this.modelClass(), data)
     const graphProcessor = new DitoGraphProcessor(
       this.modelClass(),
       data,
       {
         ...defaultOptions,
-        ...graphOptions
+        ...options
       },
       {
         processOverrides: true,

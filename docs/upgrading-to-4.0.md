@@ -699,6 +699,8 @@ builds and the `require` conditions of their exports are removed.
 - `AdminController.getPath(name)`: `resolveConfigPath(name)`.
 - `returns` of handler definitions, and `options.returns`: `response` and
   `options.response`.
+- The `cyclic` option of the `*DitoGraph*()` methods, which has no effect
+  since 3.3.1.
 
 ### Validation
 
