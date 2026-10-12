@@ -70,12 +70,14 @@ which components write the data through.
   the user went in the meantime.
 - Components in panels with their own data, e.g. filters, get their defaults
   and computed values, and their edits don't make the view or form dirty.
-- Panels with their own data, e.g. filters, and dialogs are the containers of
-  their data: `rootItem` in the contexts inside them is their data, and the
-  data paths of their components start at it, so their components, buttons
-  and events no longer reach the item around them. The callbacks that decide
-  about a panel itself, `if`, `visible`, `label`, `sticky` and `data()`,
-  receive the context of the data around the panel, with the panel's schema.
+- Dialogs are the containers of their data: `rootItem` in the contexts inside
+  them is their data, and the data paths of their components start at it.
+- Panels with their own data, e.g. filters, have their own data model, but
+  stay within the data around them: their data is `item` in the contexts
+  inside them, `rootItem` stays the root data of the page, and the data paths
+  of their components continue the panel's. The callbacks that decide about a
+  panel itself, `if`, `visible`, `label`, `sticky` and `data()`, receive the
+  context of the data around the panel, with the panel's schema.
 - Submitting waits for running uploads, without a time limit, so that the
   stored files are sent, also through the buttons of sources with their own
   resource, which also wait for the loads of data schemas and options now.
