@@ -691,8 +691,9 @@ export interface SourceSettings<$Item> {
   wrapPrimitives?: string
   /**
    * Whether the forms of the source's items directly mutate the source's data
-   * instead of editing a copy that is applied when submitting. Forms that
-   * mutate data are never dirty.
+   * instead of editing a copy that is applied when submitting. Their edits
+   * make the data of the parent dirty right away, and their `isDirty` is the
+   * parent's.
    *
    * @defaultValue `false`
    */
@@ -2015,7 +2016,10 @@ export type SchemaContext<$Item = any> = {
    * Whether the data has unsaved changes: the data of the
    * form, view, dialog or panel with its own data that the
    * context belongs to. Nested forms tell their own,
-   * unless they mutate the item of their parent.
+   * unless they mutate the item of their parent, which
+   * tells the parent's. Only data with a button of type
+   * `submit`, or of a type with `submitsData`, can be
+   * dirty: without one, `isDirty` stays `false`.
    */
   isDirty: boolean
   /**
