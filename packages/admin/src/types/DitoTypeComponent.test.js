@@ -1,6 +1,6 @@
 import { vi } from 'vitest'
 import { h } from 'vue'
-import { getSchemaValue } from '../index.js'
+import { defineType, getSchemaValue, optionsTraits } from '../index.js'
 import { mountSchema } from '../test/mount.js'
 
 // A custom component, which displays and changes its value through
@@ -172,6 +172,49 @@ describe('DitoTypeComponent', () => {
       `emits of its contract: update:modelValue, change.`
     )
     warn.mockRestore()
+  })
+})
+
+describe('defineType()', () => {
+  // A custom type with options, which it reads from its context:
+  defineType({
+    ...optionsTraits,
+    type: 'genre-chips',
+    component: {
+      emits: ['update:modelValue', 'change'],
+      props: {
+        schema: { type: Object, required: true },
+        context: { type: Object, required: true },
+        modelValue: { type: String, default: null }
+      },
+
+      render() {
+        return h(
+          'ul',
+          { class: 'genre-chips' },
+          this.context.options.map(option => h('li', option.label))
+        )
+      }
+    }
+  })
+
+  it('passes the options of custom types in their context', async () => {
+    const { findField } = await mountSchema({
+      schema: {
+        components: {
+          genre: {
+            type: 'genre-chips',
+            options: [
+              { value: 'drama', label: 'Drama' },
+              { value: 'poetry', label: 'Poetry' }
+            ]
+          }
+        }
+      },
+      data: { genre: 'drama' }
+    })
+    const items = findField('genre').findAll('li')
+    expect(items.map(item => item.text())).toEqual(['Drama', 'Poetry'])
   })
 })
 
