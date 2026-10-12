@@ -28,12 +28,11 @@ template(
 
 <script>
 import { computed, markRaw } from 'vue'
-import { deprecate } from '@ditojs/utils'
 import DitoComponent from '../DitoComponent.js'
 import RouteMixin from '../mixins/RouteMixin.js'
 import { isSingleComponentView } from '../utils/schema/structure.js'
 import { DataModel } from '../utils/DataModel.ts'
-import { LoadingTracker, LoadingSwitch } from '../utils/LoadingTracker.js'
+import { LoadingTracker } from '../utils/LoadingTracker.ts'
 
 // @vue/component
 export default DitoComponent.component('DitoView', {
@@ -47,15 +46,14 @@ export default DitoComponent.component('DitoView', {
   },
 
   data() {
-    // Tracks the requests of all resource components in the view, which is
-    // disabled while any of them is pending, see `isLoading`:
-    const loadingTracker = new LoadingTracker(
-      this.parentRoute?.loadingTracker ?? this.admin.loadingTracker
-    )
     return {
-      loadingTracker: markRaw(loadingTracker),
-      // The loading operation of the deprecated `setLoading()`.
-      setLoadingSwitch: markRaw(new LoadingSwitch(loadingTracker)),
+      // Tracks the requests of all resource components in the view, which is
+      // disabled while any of them is pending, see `isLoading`:
+      loadingTracker: markRaw(
+        new LoadingTracker(
+          this.parentRoute?.loadingTracker ?? this.admin.loadingTracker
+        )
+      ),
       // NOTE: Each view has its own data, as `DitoRouterView` renders each
       // route record with its own component instance.
       data: {}
@@ -164,25 +162,9 @@ export default DitoComponent.component('DitoView', {
     // Stop the model before the component's own watchers are stopped, as the
     // model's watchers aren't part of the component, see `DataModel`.
     this.ownDataModel.stop()
-    // Don't leave the root loading after the view is gone, see the deprecated
-    // `setLoading()`.
-    this.setLoadingSwitch.set(false)
   },
 
   methods: {
-    /**
-     * @deprecated `isLoading` is tracked by `loadingTracker` now. Use
-     * `loadingTracker.begin()` and call the function that it returns, or
-     * `loadingTracker.track(callback)` instead.
-     */
-    setLoading(isLoading) {
-      deprecate(
-        'DitoView.setLoading() is deprecated, use ' +
-        '`loadingTracker.begin()` or `loadingTracker.track()` instead.'
-      )
-      this.setLoadingSwitch.set(isLoading)
-    },
-
     setData(data) {
       this.data = data
       return this.data

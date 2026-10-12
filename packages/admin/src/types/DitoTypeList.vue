@@ -133,10 +133,11 @@
 import DitoComponent from '../DitoComponent.js'
 import { defineType } from '../utils/schema/types.ts'
 import { sourceTraits } from './traits.ts'
-import { fieldProps, useField } from '../composables/useField.ts'
+import { fieldProps } from '../composables/useField.ts'
+import { useSource } from '../composables/useSource.ts'
 import { useSortable } from '../composables/useSortable.ts'
 import DitoSourceItem from '../components/DitoSourceItem.vue'
-import SourceMixin, { useSourceServices } from '../mixins/SourceMixin.js'
+import SchemaParentMixin from '../mixins/SchemaParentMixin.js'
 import {
   resolveSchemaComponent,
   resolveSchemaComponents
@@ -144,33 +145,32 @@ import {
 import { createFiltersPanel, getFiltersDataErrors } from '../utils/filter.js'
 import { appendDataPath } from '../utils/data.js'
 import { hyphenate } from '@ditojs/utils'
-import { computed, getCurrentInstance } from 'vue'
+import { computed, inject } from 'vue'
 
 // @vue/component
 const DitoTypeList = DitoComponent.component('DitoTypeList', {
-  mixins: [SourceMixin],
+  mixins: [SchemaParentMixin],
   components: { DitoSourceItem },
   props: fieldProps,
 
   setup(props) {
-    const { value, context, disabled, onChange, focus } = useField(props, {
-      services: useSourceServices()
+    const getSchemaComponent = inject('$schemaComponent')
+    const source = useSource(props, {
+      onFilterErrors(errors) {
+        const panel = getSchemaComponent().getPanelByDataPath(
+          appendDataPath(props.dataPath, '$filters')
+        )
+        panel?.mainSchemaComponent.showValidationErrors(
+          getFiltersDataErrors(errors)
+        )
+        return !!panel
+      }
     })
-    // `SourceMixin` holds the list of the items:
-    const component = getCurrentInstance().proxy
     const { getDraggableOptions, moveItem } = useSortable({
-      getListEntry: () => component.listEntry,
-      onChange
+      getListEntry: () => source.listEntry.value,
+      onChange: source.onChange
     })
-    return {
-      value,
-      context,
-      disabled,
-      onChange,
-      focus,
-      getDraggableOptions,
-      moveItem
-    }
+    return { ...source, getDraggableOptions, moveItem }
   },
 
   computed: {
@@ -237,17 +237,6 @@ const DitoTypeList = DitoComponent.component('DitoTypeList', {
 
     getCellClass(column) {
       return `dito-cell--${hyphenate(column.name)}`
-    },
-
-    onFilterErrors(errors) {
-      const filtersDataPath = appendDataPath(this.dataPath, '$filters')
-      const panel = this.schemaComponent.getPanelByDataPath(filtersDataPath)
-      if (panel) {
-        panel.mainSchemaComponent.showValidationErrors(
-          getFiltersDataErrors(errors)
-        )
-        return true
-      }
     }
   }
 })

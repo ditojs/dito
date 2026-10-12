@@ -1,5 +1,6 @@
 import { computed, getCurrentInstance, inject, onBeforeMount, ref } from 'vue'
 import { camelize } from '@ditojs/utils'
+import DitoContext from '../DitoContext.js'
 import { getSchemaEventEntries } from '../utils/schema/events.js'
 import type { SchemaContext, SchemaContextProps } from './useSchemaContext.ts'
 import type { Value } from './useValue.ts'
@@ -47,7 +48,14 @@ export function useFieldEvents(
       context = {},
       parent = null
     }: { context?: Record<string, any>; parent?: any } = {}
-  ) => component.emitEvent(event, { context: createContext(context), parent })
+  ) =>
+    component.emitEvent(event, {
+      // Contexts created by `createContext()` are emitted as they are, e.g. to
+      // read `wasNotified` after:
+      context:
+        context instanceof DitoContext ? context : createContext(context),
+      parent
+    })
 
   const handlers: FieldEventHandlers = {
     onFocus() {

@@ -316,7 +316,7 @@ export default class DitoContext {
   }
 
   // The error field is only populated in the context of buttons that send
-  // requests, see `ResourceMixin.emitButtonEvent()`:
+  // requests, see `useResourceSubmit()`:
   get error() {
     return get(this, 'error', undefined)
   }

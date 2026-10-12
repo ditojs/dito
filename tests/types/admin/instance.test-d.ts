@@ -3,11 +3,14 @@ import type {
   AdminContext,
   ContainerContext,
   DitoFormInstance,
+  DitoSourceInstance,
+  DitoViewInstance,
   DitoContext,
   DitoDataModel,
   ResourceContext,
   RouteContext,
-  SourceContext
+  SourceContext,
+  SubmitButton
 } from '@ditojs/admin'
 import type { Entry } from './fixtures.ts'
 
@@ -74,10 +77,24 @@ describe('DitoComponentInstanceBase and DitoFormInstance', () => {
       .toEqualTypeOf<ResourceContext | null>()
     expectTypeOf<ResourceContext['submit']>()
       .returns.toEqualTypeOf<Promise<boolean>>()
+    expectTypeOf<ResourceContext['submit']>()
+      .parameter(0)
+      .toEqualTypeOf<SubmitButton>()
+    expectTypeOf<SubmitButton['context']>().toEqualTypeOf<DitoContext>()
     expectTypeOf<RouteContext['resource']>()
       .toEqualTypeOf<ResourceContext | null>()
     expectTypeOf<Instance>().not.toHaveProperty('sourceComponent')
     expectTypeOf<Instance>().not.toHaveProperty('resourceComponent')
     expectTypeOf<Instance>().not.toHaveProperty('dataComponent')
+  })
+
+  it('has no deprecated or dead members', () => {
+    expectTypeOf<DitoFormInstance>().not.toHaveProperty('setLoading')
+    expectTypeOf<DitoFormInstance>().not.toHaveProperty('createData')
+    expectTypeOf<DitoViewInstance>().not.toHaveProperty('setLoading')
+    expectTypeOf<DitoSourceInstance>().not.toHaveProperty('setLoading')
+    expectTypeOf<DitoSourceInstance>().not.toHaveProperty('forms')
+    expectTypeOf<DitoSourceInstance>().not.toHaveProperty('isCompact')
+    expectTypeOf<DitoSourceInstance['setData']>().returns.toBeVoid()
   })
 })

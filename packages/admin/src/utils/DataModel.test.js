@@ -888,7 +888,7 @@ describe('DataModel', () => {
 
     it('keeps the offset of the order of lists loaded from later pages', () => {
       // E.g. the second page of a list with its own resource, which the model
-      // doesn't walk otherwise, see `SourceMixin.setLoadedListItems()`:
+      // doesn't walk otherwise, see `useSourceData()`:
       const { dataModel, data, getListEntry } = createDataModel(
         {
           type: 'form',
@@ -1326,7 +1326,7 @@ describe('DataModel', () => {
       dataModel.insert(getListEntry('tags'), 1, 'novel')
       dataModel.setErrors('tags/0', tooShort)
       dataModel.setErrors('tags/1', tooShort)
-      // Edits of the values write into their lists, see `SourceMixin`:
+      // Edits of the values write into their lists, see `useSourceData()`:
       dataModel.set(data.tags, 1, 'romance')
       expect(dataModel.getErrors('tags/0')).toEqual(tooShort)
       expect(dataModel.getErrors('tags/1')).toBe(null)

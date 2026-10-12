@@ -370,6 +370,13 @@ Views provide both contexts of their main component, e.g. to their panels.
 - `DitoScopes`, `DitoPagination` and `DitoTableHead` take the `ListQuery` of
   their list as `listQuery` instead of `query`. `DitoSourceItem` takes the
   `formSchema` and `label` of the item from its source.
+- `resource.submit(button)` takes the `SubmitButton` that buttons pass, not
+  the button's component. Handlers keep using `context.submit()`.
+- `SourceMixin`, `ResourceMixin` and `ItemMixin` are removed: sources and
+  forms are built from composables. The deprecated `setLoading()` of views,
+  forms and sources is removed, use `loadingTracker.begin()` or `track()`.
+  `createData()`, `forms`, `isCompact` and `linksToView` of sources and forms
+  are removed, and `setData()` of sources returns nothing.
 
 ### Custom types
 

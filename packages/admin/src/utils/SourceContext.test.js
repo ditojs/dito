@@ -1,4 +1,3 @@
-import { SourceContext } from './SourceContext.ts'
 import {
   mountForm,
   mountSchema,
@@ -35,7 +34,7 @@ describe('SourceContext', () => {
     })
     const chapters = getComponent('chapters')
     const { source } = chapters
-    expect(source).toBeInstanceOf(SourceContext)
+    expect(source).toBe(chapters.ownSource)
     expect(source.schema).toBe(chapters.schema)
     expect(source.dataPath).toBe('chapters')
     expect(getComponent('chapters/0/title').source).toBe(source)

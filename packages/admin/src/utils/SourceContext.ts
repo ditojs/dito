@@ -2,78 +2,25 @@ import type { SourceNode } from './RouteTree.ts'
 import type { ListQuery } from './ListQuery.js'
 import type { Schema } from './types.ts'
 
-// The list, object or tree that provides the context.
-export interface SourceOwner {
+// The context of a list, object or tree, provided to the components that
+// display it and its items, see `useSource()`.
+export interface SourceContext {
   readonly schema: Schema
-  readonly sourceNode: SourceNode | null
+  // The node of the source in the route tree, if it has routed forms:
+  readonly node: SourceNode | null
+  // The query of lists, e.g. their scope, page, order and filters:
   readonly query: Record<string, any>
   readonly listQuery: ListQuery
   readonly dataPath: string
   readonly componentPath: string
   readonly store: Record<string, any>
-  readonly disabled: boolean
-  createItem(schema: Schema, type?: string | null, index?: number | null): any
-  getSourceItemLabel(item: any, index: number | null): any
-  reloadData(): void
-}
-
-// The context of a list, object or tree, provided to the components that
-// display it and its items.
-export class SourceContext {
-  readonly #owner: SourceOwner
-
-  constructor(owner: SourceOwner) {
-    this.#owner = owner
-  }
-
-  get schema(): Schema {
-    return this.#owner.schema
-  }
-
-  // The node of the source in the route tree, if it has routed forms:
-  get node(): SourceNode | null {
-    return this.#owner.sourceNode
-  }
-
-  // The query of lists, e.g. their scope, page, order and filters:
-  get query(): Record<string, any> {
-    return this.#owner.query
-  }
-
-  get listQuery(): ListQuery {
-    return this.#owner.listQuery
-  }
-
-  get dataPath(): string {
-    return this.#owner.dataPath
-  }
-
-  get componentPath(): string {
-    return this.#owner.componentPath
-  }
-
-  get store(): Record<string, any> {
-    return this.#owner.store
-  }
-
-  get isDisabled(): boolean {
-    return this.#owner.disabled
-  }
-
+  readonly isDisabled: boolean
   // Create an item with the form `schema`, of `type` if the source has
   // several forms, and insert it at `index`, or else at the end:
-  createItem(schema: Schema, type?: string | null, index?: number | null) {
-    return this.#owner.createItem(schema, type, index)
-  }
-
+  createItem(schema: Schema, type?: string | null, index?: number | null): any
   // The label of `item`, an object for inlined items and HTML for others. Each
   // item reads its own, so that edits only update the label of their item:
-  getSourceItemLabel(item: any, index: number | null = null) {
-    return this.#owner.getSourceItemLabel(item, index)
-  }
-
+  getSourceItemLabel(item: any, index?: number | null): any
   // Load the data of the source again, e.g. after its item was saved:
-  reload() {
-    this.#owner.reloadData()
-  }
+  reload(): void
 }

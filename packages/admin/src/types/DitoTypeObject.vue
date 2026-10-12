@@ -41,23 +41,18 @@
 import DitoComponent from '../DitoComponent.js'
 import { defineType } from '../utils/schema/types.ts'
 import { sourceTraits } from './traits.ts'
-import { fieldProps, useField } from '../composables/useField.ts'
+import { fieldProps } from '../composables/useField.ts'
+import { useSource } from '../composables/useSource.ts'
 import DitoSourceItem from '../components/DitoSourceItem.vue'
-import SourceMixin, { useSourceServices } from '../mixins/SourceMixin.js'
+import SchemaParentMixin from '../mixins/SchemaParentMixin.js'
 import { resolveSchemaComponent } from '../utils/schema/setup.js'
 
 // @vue/component
 const DitoTypeObject = DitoComponent.component('DitoTypeObject', {
-  mixins: [SourceMixin],
+  mixins: [SchemaParentMixin],
   components: { DitoSourceItem },
   props: fieldProps,
-
-  setup(props) {
-    const { value, context, disabled, onChange, focus } = useField(props, {
-      services: useSourceServices()
-    })
-    return { value, context, disabled, onChange, focus }
-  }
+  setup: props => useSource(props)
 })
 
 defineType({

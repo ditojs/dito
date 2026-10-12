@@ -930,7 +930,8 @@ describe('DitoForm', () => {
         const { form } = await openChapterForm(chapterComponents, chapter)
         const featured = form.mainSchemaComponent.getComponentByName('featured')
         const sections = form.mainSchemaComponent.getComponentByName('sections')
-        sections.createItem(sections.forms[0])
+        sections.$el.querySelector('.dito-create-button button').click()
+        await settle(form)
         form.data.sections[1].name = 'Ending'
         await settle(form)
         expect(featured.options).toHaveLength(2)
@@ -1510,7 +1511,7 @@ describe('DitoForm', () => {
   })
 
   it('submits without validation with `validate: false`', async () => {
-    const { wrapper, routeComponent, request, settle } = await mountForm({
+    const { wrapper, request, settle } = await mountForm({
       schema: {
         components: { title: { type: 'text', required: true } },
         buttons: { submit: { closeForm: false } }
@@ -1518,13 +1519,11 @@ describe('DitoForm', () => {
       data: { title: '' },
       request: ({ data }) => ({ data })
     })
-    const button = wrapper
+    const { submit } = wrapper
       .findAllComponents({ name: 'DitoTypeButton' })
-      .find(({ vm }) => vm.schema.type === 'submit').vm
-    expect(await routeComponent.submit(button)).toBe(false)
-    expect(await routeComponent.submit(button, { validate: false })).toBe(
-      true
-    )
+      .find(({ vm }) => vm.schema.type === 'submit').vm.context
+    expect(await submit()).toBe(false)
+    expect(await submit({ validate: false })).toBe(true)
     await settle()
     expect(
       request.mock.calls.filter(([{ method }]) => method === 'patch')

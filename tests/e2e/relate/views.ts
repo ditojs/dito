@@ -85,7 +85,7 @@ const tracks = createWidgetView<Track & { initial?: string | null }>(
   },
   {
     // Loaded items are numbered by their order key, with the offset of the
-    // loaded page, see `SourceMixin.setLoadedListItems()`.
+    // loaded page, see `useSourceData()`.
     orderKey: 'order',
     paginate: 2,
     columns: { title: { label: 'Title' }, order: { label: 'Order' } }

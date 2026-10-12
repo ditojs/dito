@@ -4,7 +4,9 @@ import DitoForm from './DitoForm.vue'
 
 // @vue/component
 export default DitoComponent.component('DitoFormNested', {
-  extends: DitoForm
+  extends: DitoForm,
+  // Vue doesn't inherit `setup()` through `extends`:
+  setup: DitoForm.setup
 })
 </script>
 

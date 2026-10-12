@@ -14,9 +14,9 @@ import { getItemId } from './data.js'
 export function getItemIdOrIndex(
   sourceSchema,
   item,
-  { index = null, isTransient }
+  { index, isTransient }
 ) {
-  return isTransient && index !== null
+  return isTransient && index != null
     ? String(index)
     : getItemId(sourceSchema, item)
 }
@@ -43,7 +43,7 @@ export function getItemLabel(
   sourceSchema,
   item,
   {
-    index = null,
+    index,
     extended = false,
     asObject = false,
     evaluateItemLabel,
@@ -96,7 +96,7 @@ export function getItemLabel(
   if (text == null) {
     // Always use extended style when auto-generating labels from index/id:
     extended = true
-    text = isListSource(sourceSchema) && index !== null ? `${index + 1}` : ''
+    text = isListSource(sourceSchema) && index != null ? `${index + 1}` : ''
   }
   if (extended) {
     const formLabel = getFormLabel()
