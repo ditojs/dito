@@ -542,14 +542,14 @@ are named after what they are, like the classes they describe:
 - `DitoDataModel`, `DitoListEntry` and `DitoValidationError` are removed, as
   the data model is internal.
 - `DitoGlobal`, the type of the global `dito` object: `GlobalConfig`.
-- The schema options named after the removed mixins are named after the
-  schemas that share them: `SchemaDitoMixin` and `SchemaTypeMixin` are part of
+- The schema types named after the removed mixins describe the settings that
+  schemas share: `SchemaDitoMixin` and `SchemaTypeMixin` are part of
   `BaseSchema`, and `SchemaSourceMixin`, `SchemaOptionsMixin`,
   `SchemaNumberMixin`, `SchemaTextMixin`, `SchemaAffixMixin` and
-  `SchemaDataMixin` become `SchemaSource`, `SchemaSelection`, `SchemaNumber`,
-  `SchemaText`, `SchemaAffixes` and `SchemaData`. The deprecated
-  `SchemaSetupMixin` and `SchemaRouteMixin` are removed: use `SchemaFields` and
-  `SchemaRoute`.
+  `SchemaDataMixin` become `SourceSettings`, `SelectionSettings`,
+  `NumberSettings`, `TextSettings`, `AffixSettings` and `DataSettings`. The
+  deprecated `SchemaSetupMixin` and `SchemaRouteMixin` are removed: use
+  `SchemaFields` and `SchemaRoute`.
 
 Only `SchemaContext`, `AdminContext`, `DitoAdmin`, the schema types and the
 contracts of types and custom components are exported. The contexts of data,
