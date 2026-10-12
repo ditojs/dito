@@ -15,10 +15,11 @@ DitoSchema.dito-schema-inlined(
   :generateLabels="!isCompact"
 )
   //- The edit buttons take the schema of the list or object that holds the
-  //- item, while `schema` is the item's form:
-  template(#edit-buttons)
+  //- item, while `schema` is the item's form. The schema passes their class:
+  template(#edit-buttons="{ class: buttonsClass }")
     DitoEditButtons(
       v-if="deletable || draggable || editable || insertIndex != null"
+      :class="buttonsClass"
       :schema="sourceContext.schema"
       :formSchema="schema"
       :dataPath="dataPath"

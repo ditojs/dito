@@ -36,7 +36,7 @@
       .dito-tree-label(
         v-html="label"
       )
-    DitoEditButtons.dito-buttons--small(
+    DitoEditButtons.dito-buttons--small.dito-tree-item__buttons(
       v-if="hasEditButtons"
       :round="false"
       :schema="schema"
@@ -308,6 +308,8 @@ export default {
 @import '../styles/_imports';
 
 .dito-tree-item {
+  $self: &;
+
   --chevron-indent: #{$chevron-indent};
 
   overflow: hidden;
@@ -375,8 +377,7 @@ export default {
     color: rgba($color-black, 0.2);
   }
 
-  // TODO: BEM: Style an element class of this block, e.g. `&__buttons`.
-  .dito-buttons {
+  &__buttons {
     // Leave the width to the branch, so its focus ring spans the row:
     flex: none;
     display: flex;
@@ -390,7 +391,7 @@ export default {
 
   .dito-tree-header:hover,
   .dito-tree-header:focus-within {
-    > .dito-buttons {
+    > #{$self}__buttons {
       opacity: 1;
     }
   }
@@ -398,7 +399,7 @@ export default {
   // Hide buttons during dragging
   &--dragging {
     .dito-tree-header {
-      > .dito-buttons {
+      > #{$self}__buttons {
         visibility: hidden;
       }
     }
