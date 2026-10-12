@@ -4,14 +4,11 @@ import { addEvents } from '@ditojs/ui/src'
 
 type Handler = (event: any) => void
 
-// Add DOM event handlers that are removed when the component is unmounted, if
-// they're still added then.
+// Remove the handlers that are still added when the component is unmounted:
 export function useDomEvents() {
   const controller = new AbortController()
   onUnmounted(() => controller.abort())
   return {
-    // Add the event handlers to `element`, and return an object with a
-    // `remove()` method that removes them again:
     domOn(
       element: EventTarget | EventTarget[],
       type: string | Record<string, Handler>,

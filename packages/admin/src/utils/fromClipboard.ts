@@ -1,17 +1,13 @@
 import { asArray, clone } from '@ditojs/utils'
 import { createTemporaryId, isTemporaryId } from './data.js'
 import { processSchemaData } from './schema/data.js'
-import type { SchemaDataEntry } from './schema/data.js'
 import { getSourceType } from './schema/types.ts'
 import { isSourceWithResource } from './schema/structure.js'
-import type { Data, Schema } from './types.ts'
+import type { Data, Schema, SchemaDataEntry } from './types.ts'
 
-// Turns data that `processData()` copied for the clipboard back into data of
-// new items for `schema`. Copied items have no ids, except the related ones,
-// which `SchemaGraph` marked as temporary for their relations. We replace these
-// with new ones, so pasting twice doesn't repeat them. Converted values, e.g.
-// dates and related objects, keep their copied shape, the one of loaded data.
-// Sources with their own resource are left out, as they save their own items.
+// Copied items have no ids, except the related ones, which `SchemaGraph` marked
+// as temporary. We replace these with new ones, so pasting twice doesn't repeat
+// them. Sources with their own resource are left out, as they save their items.
 export function fromClipboard(
   schema: Schema,
   clipboardData: Data,

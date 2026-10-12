@@ -147,8 +147,7 @@ const DitoTypeMarkup = {
                 null,
                 getInlineContentAsLine(slice.content, schema)
               )
-              // Insert the paragraph as an open slice, so that its inline
-              // content merges into the paragraph of the line.
+              // Insert as an open slice, to merge into the line's paragraph:
               view.dispatch(
                 view.state.tr.replaceSelection(
                   new Slice(Fragment.from(paragraph), 1, 1)
@@ -162,7 +161,6 @@ const DitoTypeMarkup = {
 
     let ignoreWatch = false
 
-    // Emits the change of the value once the editor isn't focused anymore.
     const changeOnceEdited = createChangeOnceEdited({
       isEditing: () => focused.value,
       emitChange: () => field.onChange()
@@ -175,8 +173,7 @@ const DitoTypeMarkup = {
         : content
       if (html !== value.value) {
         changeOnceEdited.markEdited()
-        // The value comes from the editor, so don't set it back as content,
-        // which would re-parse it and e.g. collapse trailing whitespace.
+        // Don't set it back as content, re-parsing collapses whitespace:
         ignoreWatch = true
         value.value = html
       }
@@ -184,9 +181,8 @@ const DitoTypeMarkup = {
     }
 
     const setValueDebounced = debounce(() => updateValue(), 100)
-    // Write the pending edits when the data model needs them, e.g. before
-    // submitting, and before unmounting, as the destroyed editor can't be read
-    // anymore:
+    // Write pending edits when the data model needs them, and before
+    // unmounting, as the destroyed editor can't be read anymore:
     const writePendingValue = () => {
       if (setValueDebounced.cancel()) {
         updateValue()
@@ -224,8 +220,7 @@ const DitoTypeMarkup = {
       if (attributes) {
         let { href, title } = attributes
         if (href) {
-          // See if `href` can be parsed as a URL, and if not,
-          // prefix it with a default protocol.
+          // Prefix unparsable URLs with a default protocol:
           try {
             new URL(href)
           } catch {
@@ -368,8 +363,7 @@ const DitoTypeMarkup = {
       ...editorOptions.value,
       onFocus: () => field.onFocus(),
       onBlur: () => {
-        // Write the value first, so that validating on blur validates it, and
-        // emit the change once the editor isn't focused anymore.
+        // Write the value first, for validation on blur to see it:
         updateValue()
         field.onBlur()
         changeOnceEdited.emitIfDone()
@@ -404,10 +398,9 @@ const DitoTypeMarkup = {
     onUnmounted(() => editor.destroy())
 
     return {
+      ...field,
       editor,
       height,
-      context: field.context,
-      componentPath: field.componentPath,
       resizable: computed(() =>
         getSchemaValue('resizable', { type: Boolean, default: false })
       ),
@@ -471,15 +464,12 @@ export default DitoTypeMarkup
 
 const headingLevels = [1, 2, 3, 4, 5, 6]
 
-// Returns the heading levels for the `nodes.heading` setting, with `true`
-// enabling all levels.
 function getHeadingLevels(setting) {
   return setting === true ? headingLevels : setting
 }
 
-// Returns the inline content of all textblocks in the fragment as one line,
-// with hard breaks between the textblocks, dropping the block nodes around
-// them (e.g. lists and blockquotes), as a line can only hold inline content.
+// A line can only hold inline content: join the textblocks with hard breaks,
+// dropping the block nodes around them.
 function getInlineContentAsLine(fragment, schema) {
   const nodes = []
   let hasTextblock = false
@@ -492,7 +482,7 @@ function getInlineContentAsLine(fragment, schema) {
       node.content.forEach(child => nodes.push(child))
       return false
     } else if (node.isInline) {
-      // Inline nodes at the top level of the slice, e.g. from inline HTML.
+      // Top-level inline nodes, like from inline HTML:
       nodes.push(node)
       return false
     }

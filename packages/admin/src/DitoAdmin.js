@@ -23,92 +23,34 @@ import { AdminContext } from './utils/AdminContext.ts'
 
 export default class DitoAdmin {
   constructor(el, {
-    // `dito` contains the base, api and settings passed from `AdminController`
-    // as `window.dito`, which is also the default:
+    // The base, api and settings passed from `AdminController`:
     dito: ditoObject = globalThis.dito ?? {},
     api,
     views = {},
     ...options
   } = {}) {
     this.el = el
-    // Merge in `api` settings as passed from `config.admin` and through the
-    // `AdminController` with `api` values from from 'admin/index.js'
-    // NOTE: `AdminController` provides `dito.api.base`
+    // Merge the `api` settings of `config.admin` with the passed ones:
     this.api = api = assignDeeply({ base: '/' }, ditoObject.api, api)
     this.options = options
 
-    // Setup default api settings:
     api.locale ||= 'en-US'
     api.formats = assignDeeply({}, defaultFormats, api.formats)
     api.request ||= options => request(api, options)
     api.getApiUrl ||= options => getApiUrl(api, options)
     api.isApiUrl ||= url => isApiUrl(api, url)
-    // Setting `api.normalizePaths = true (plural) sets both:
-    // `api.normalizePath = hyphenate` and `api.denormalizePath = camelize`
     api.normalizePath ||= api.normalizePaths ? hyphenate : val => val
     api.denormalizePath ||= api.normalizePaths ? camelize : val => val
-
-    // Allow definition of defaults for admin component types, nested per type:
-    // api.defaults = {
-    //   'multiselect': {
-    //     selectable: true
-    //   },
-    //   'fake-type': schema => {
-    //     // Return defaults, or directly modify the schema:
-    //     Object.assign(schema, {
-    //       type: 'real-type',
-    //       format: ({ value }) => `Formatted ${value}`,
-    //       process: ({ value }) => `Processed ${value}`
-    //     })
-    //   }
-    // }
-
     api.defaults ||= {}
 
-    // Allow the configuration of all auth resources, like so:
-    // api.users = {
-    //   path: '/admins',
-    //   // These are the defaults:
-    //   login: {
-    //     path: 'login',
-    //     method: 'post'
-    //   },
-    //   logout: {
-    //     path: 'logout',
-    //     method: 'post'
-    //   },
-    //   session: {
-    //     path: 'session',
-    //     method: 'get'
-    //   }
-    // }
-    const users = getResource(api.users, {
-      type: 'collection'
-    }) || {}
-    users.login = getResource(users.login || 'login', {
-      method: 'post',
-      parent: users
-    })
-    users.logout = getResource(users.logout || 'logout', {
-      method: 'post',
-      parent: users
-    })
-    users.session = getResource(users.session || 'session', {
-      method: 'get',
-      parent: users
-    })
+    const users = getResource(api.users, { type: 'collection' }) || {}
+    const methods = { login: 'post', logout: 'post', session: 'get' }
+    for (const [name, method] of Object.entries(methods)) {
+      users[name] = getResource(users[name] || name, { method, parent: users })
+    }
     api.users = users
 
-    // Allow overriding of resource path handlers:
-    // api.resources = {
-    //   collection(resource) {
-    //     return resource.parent
-    //       ? `${resource.path}?${resource.parent.path}_id=${
-    //          resource.parent.id}`
-    //       : resource.path
-    //   }
-    // }
-
+    // Apps may override the handlers of resource paths:
     api.resources = {
       any(resource) {
         const handler = this[resource?.type] || this.default
@@ -138,10 +80,6 @@ export default class DitoAdmin {
       ...api.resources
     }
 
-    // Allow overriding / extending of headers:
-    // api.headers = {
-    //   'Content-Type': 'application/json'
-    // }
     api.headers = {
       'Content-Type': 'application/json',
       ...api.headers
@@ -152,9 +90,7 @@ export default class DitoAdmin {
     }
 
     const router = createRouter({
-      // Start with a catch-all route, to be replaced by the actual routes once
-      // the schemas are loaded, to prevent vue-router from complaining, see
-      // `ViewRegistry.resolve()` for the actual route setup.
+      // Keep vue-router from complaining until `ViewRegistry` sets up routes:
       routes: [
         {
           name: 'catch-all',
@@ -202,8 +138,7 @@ export default class DitoAdmin {
         })
     }))
 
-    // Prevent endless loops of error messages during render functions by
-    // setting a custom error handler.
+    // Prevent endless loops of error messages during render functions:
     app.config.errorHandler = console.error
 
     app.use(VueNotifications, {
@@ -213,9 +148,8 @@ export default class DitoAdmin {
 
     app.directive('resize', ResizeDirective)
 
-    // The admin's components use each other through their global names, as do
-    // the custom components of apps in their templates. This also keeps the
-    // modules from being tree-shaken.
+    // Components use each other through their global names, as do the custom
+    // components of apps, which also keeps them from being tree-shaken:
     for (const [name, component] of Object.entries({
       ...components,
       ...types

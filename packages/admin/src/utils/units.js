@@ -1,10 +1,7 @@
-// Unit prefixes in order of their exponent, shared by parsing and formatting.
+// Unit prefixes in order of their exponent:
 const prefixes = ['', 'k', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y']
 
-/**
- * Formats a number of bytes like `'1.5 MB'`, using base 10 (1 kB = 1000 bytes)
- * unless specified. Base 2 uses IEC units (1 KiB = 1024 bytes).
- */
+// Base 10 by default (1 kB = 1000 bytes), base 2 uses IEC units (1 KiB):
 export function formatFileSize(size, { base = 10 } = {}) {
   const multiplier = getMultiplier(base)
   const absolute = Math.abs(size)
@@ -26,12 +23,8 @@ export function formatFileSize(size, { base = 10 } = {}) {
   return `${size < 0 ? '-' : ''}${amount} ${unit}`
 }
 
-/**
- * Parses file sizes like `'10 MB'`, `'1.5G'`, `'512kb'` or `'100 bytes'` into
- * a number of bytes, using base 10 (1 kB = 1000 bytes) unless specified.
- * IEC units like `'10 MiB'` always use base 2 (1 KiB = 1024 bytes).
- * Bit units are case-sensitive (`Kb` = kilobit), the byte units aren't.
- */
+// IEC units like `'10 MiB'` always use base 2. Bit units are case-sensitive
+// (`Kb` = kilobit), the byte units aren't.
 export function parseFileSize(input, { base = 10 } = {}) {
   const [, amountString, unit] = (
     String(input).match(/^([\d.,]*)\s*(\D*)$/) || []
@@ -66,7 +59,6 @@ function getMultiplier(base) {
 }
 
 function roundFileSize(size, multiplier, exponent) {
-  // Round bytes to integers, larger units to two decimals.
   const factor = exponent > 0 ? 100 : 1
   return Math.round(size / multiplier ** exponent * factor) / factor
 }

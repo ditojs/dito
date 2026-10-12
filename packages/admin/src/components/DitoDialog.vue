@@ -13,8 +13,7 @@
       @submit.prevent="submit"
       @keydown.enter="onEnter"
     )
-      // Add an invisible button that prevents the clearable buttons from being
-      // pressed when the user presses the Enter key:
+      // Keep Enter from pressing the clearable buttons:
       button(
         v-show="false"
       )
@@ -34,19 +33,11 @@
 </template>
 
 <script>
-import {
-  computed,
-  markRaw,
-  onBeforeUnmount,
-  provide,
-  ref,
-  useTemplateRef
-} from 'vue'
+import { computed, markRaw, reactive, ref, useTemplateRef } from 'vue'
 import { clone } from '@ditojs/utils'
 import { UseFocusTrap } from '@vueuse/integrations/useFocusTrap/component'
-import { useServices } from '../composables/useSchemaContext.ts'
+import { useContainer } from '../composables/useSchemaContext.ts'
 import { getButtonSchemas, hasSubmitButton } from '../utils/schema/lookup.js'
-import { DataModel } from '../utils/DataModel.ts'
 import { DialogContext } from '../utils/ContainerContext.ts'
 import { waitUntilDataModelSettled } from '../utils/services.ts'
 
@@ -82,7 +73,6 @@ export default {
       type: 'dialog',
       components: props.components
     }))
-    const schemaComponent = useTemplateRef('schema')
     const dialog = useTemplateRef('dialog')
 
     const resolve = value => {
@@ -91,33 +81,27 @@ export default {
     }
 
     const container = markRaw(
-      new DialogContext({
-        get dataModel() {
-          return dataModel
-        },
-        get schemaComponent() {
-          return schemaComponent.value
-        },
-        setData(data) {
-          dialogData.value = data
-          return dialogData.value
-        },
-        resolve
-      })
+      new DialogContext(
+        reactive({
+          schemaComponent: useTemplateRef('schema'),
+          get dataModel() {
+            return dataModel
+          },
+          setData(data) {
+            dialogData.value = data
+            return dialogData.value
+          },
+          resolve
+        })
+      )
     )
-    provide('container', container)
     // Dialogs render in the root, outside of routes and sources:
-    const services = useServices({ container })
-    const dataModel = markRaw(
-      new DataModel({
-        schema: () => schema.value,
-        data: () => dialogData.value,
-        canSave: () => hasSubmitButton(buttonSchemas.value),
-        services
-      })
-    )
-    // The model's watchers aren't the component's, see `DataModel`:
-    onBeforeUnmount(() => dataModel.stop())
+    const { services, createDataModel } = useContainer({ container })
+    const dataModel = createDataModel({
+      schema: () => schema.value,
+      data: () => dialogData.value,
+      canSave: () => hasSubmitButton(buttonSchemas.value)
+    })
 
     // Cancelled dialogs resolve with `undefined`, as `null` can be a value:
     const cancel = () => resolve(undefined)
@@ -154,9 +138,8 @@ export default {
       focusTrapOptions: {
         immediate: true,
         fallbackFocus: () => dialog.value,
-        // Escape is handled in `onKeyDown()`, as only dialogs with a cancel
-        // button or without buttons can be cancelled. The trap is also
-        // deactivated on unmount, e.g. after submitting, so it can't cancel.
+        // Only dialogs with a cancel button or without buttons can be
+        // cancelled, see `onKeyDown()`:
         escapeDeactivates: false
       },
 
@@ -175,8 +158,7 @@ export default {
       },
 
       onKeyDown(event) {
-        // Escape keys that the dialog's components handled, e.g. to close their
-        // menus, don't cancel the dialog.
+        // Escape keys that the dialog's components handled don't cancel it:
         if (
           event.key === 'Escape' &&
           !event.defaultPrevented &&

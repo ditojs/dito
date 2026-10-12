@@ -49,7 +49,6 @@ const DitoTypeCode = {
       let ignoreWatch = false
       let ignoreUpdate = false
 
-      // Emits the change of the value once the editor isn't focused anymore.
       const changeOnceEdited = createChangeOnceEdited({
         isEditing: () => focused.value,
         emitChange: () => field.onChange()
@@ -103,15 +102,13 @@ const DitoTypeCode = {
     })
 
     return {
+      ...field,
       height,
-      context: field.context,
-      componentPath: field.componentPath,
       resizable: computed(() =>
         getSchemaValue('resizable', { type: Boolean, default: false })
       ),
 
-      // The height of the lines is set through `--lines` and the styles, which
-      // add the padding, unless the editor was resized to a height of its own.
+      // The styles add the padding to `--lines`, unless the editor was resized:
       style: computed(() =>
         height.value
           ? { height: height.value }

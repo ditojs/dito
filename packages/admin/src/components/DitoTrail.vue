@@ -38,10 +38,8 @@ export default {
       trail: computed(() => admin.ui.routes.filter(route => !route.isLeaving)),
 
       getRouteLocation(route) {
-        // `force` reloads the view even if it is already the current route.
-        // Views are reached through the path of their route, so that the
-        // router also matches their default children, like the forms of
-        // objects:
+        // `force` reloads the current route too. Use paths over names, so the
+        // router also matches default children, like the forms of objects:
         return {
           path: route.isForm
             ? route.path

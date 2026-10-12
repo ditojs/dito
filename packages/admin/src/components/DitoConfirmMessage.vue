@@ -5,8 +5,7 @@ p.dito-confirm-message(
 </template>
 
 <script>
-// Displays the HTML message of the dialogs that `confirm()` shows, see
-// `utils/dialogs.js`, as a `{ type: 'component' }` schema.
+// The HTML message of `confirm()` dialogs, as a `{ type: 'component' }` schema.
 export default {
   // The message is the only prop of custom components that it needs:
   inheritAttrs: false,

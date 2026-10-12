@@ -18,14 +18,10 @@ import { setupForm } from './setup.js'
 
 const emptySchema = {}
 
-// The forms with the components that `components()` callbacks create, by
-// callback and by the data that they create them for, see
-// `getFormWithCreatedComponents()`.
+// The forms that `components()` callbacks create, by callback and by data:
 const formsByComponentsCallback = new WeakMap()
 
 export function hasFormSchema(schema) {
-  // Support both single form and multiple forms notation, as well as inlined
-  // components, also created by `components()` callbacks.
   return (
     isSchema(schema) && (
       isObject(schema.form || schema.forms || schema.components) ||
@@ -45,8 +41,7 @@ export function getViewFormSchema(schema, context) {
   const { view } = schema
   const viewSchema = view && context.flattenedViews[view]
   return viewSchema
-    ? // NOTE: Views can have tabs, in which case the view component is nested
-      // in one of the tabs, go find it.
+    ? // NOTE: Views can nest the view component in one of their tabs:
       findNestedSchemaComponent(viewSchema, hasFormSchema) || null
     : null
 }
@@ -73,18 +68,15 @@ export function getFormSchemas(schema, context, modifyForm) {
   if (!form && !forms) {
     const { name, compact, clipboard, tabs, components } = schema
     if (components || tabs) {
-      // Convert inlined forms to stand-alone forms, supporting `name`,
-      // `compact`, `clipboard`, `tabs` and `components` settings.
+      // Convert inlined forms to stand-alone forms:
       form = { type: 'form', name, compact, clipboard, tabs, components }
     } else {
-      // No `forms`, `form` or `components`, return and empty `forms` object.
       return {}
     }
   }
   forms ||= { default: form }
   return Object.fromEntries(
     Object.entries(forms).map(([type, form]) => {
-      // Support `schema.components` callbacks to create components on the fly.
       if (context && isFunction(form.components)) {
         form = getFormWithCreatedComponents(form, context)
       }
@@ -93,12 +85,9 @@ export function getFormSchemas(schema, context, modifyForm) {
   )
 }
 
-// Returns the form with the components that its `components()` callback
-// creates for the data of `context`. The forms are cached per data, and the
-// callback only creates new components when the data that it reads changes,
-// so that rendering and the walks of the data model, see `DataModel`, share
-// the same component schemas. `components()` callbacks therefore derive the
-// components from the data of their context, not from its components.
+// Cache the forms per data, and only create new components when the data that
+// the callback reads changes, so rendering and the walks of the data model
+// share the same component schemas.
 function getFormWithCreatedComponents(form, context) {
   const { item } = context
   if (!isObject(item)) {
@@ -117,21 +106,18 @@ function getFormWithCreatedComponents(form, context) {
     )
     formsByItem.set(item, entry)
   }
-  // Recreate the components with the latest context rather than the one of
-  // the first caller, whose component may have been unmounted since. Changes
-  // of the context alone don't recreate them, see above.
+  // Recreate with the latest context, as the first caller's component may have
+  // been unmounted since:
   entry.context = context
   return entry.formWithCreatedComponents.value
 }
 
 function createFormWithComponents(form, context) {
-  // Make the form schema reactive since `setupForm()` is async, so that the
-  // setting of defaults will be picked up by downstream code.
+  // Make the form reactive, as `setupForm()` sets the defaults asynchronously:
   const formWithComponents = reactive({
     ...form,
     components: form.components(context)
   })
-  // Process the form again, now that it has its components.
   setupForm(context.api, formWithComponents).catch(console.error)
   return formWithComponents
 }
@@ -143,7 +129,6 @@ export function getItemFormSchemaFromForms(forms, item) {
 export function getItemFormSchema(schema, item, context) {
   return (
     getItemFormSchemaFromForms(getFormSchemas(schema, context), item) ||
-    // Always return a schema object so we don't need to check for it.
     emptySchema
   )
 }
@@ -153,68 +138,47 @@ export function isEmptySchema(schema) {
 }
 
 export function getNamedSchemas(schemas, defaults) {
-  const toObject = (array, toSchema) => {
-    return array.length > 0
+  const toObject = (array, toSchema) =>
+    array.length > 0
       ? array.reduce((object, value) => {
           const schema = toSchema(value)
           if (schema) {
-            object[schema.name] =
-              schema && defaults
-                ? { ...defaults, ...schema }
-                : schema
+            object[schema.name] = defaults ? { ...defaults, ...schema } : schema
           }
           return object
         }, {})
       : null
-  }
 
   return isArray(schemas)
     ? toObject(schemas, value =>
-        isObject(value)
-          ? value
-          : {
-              name: camelize(value, false)
-            }
+        isObject(value) ? value : { name: camelize(value, false) }
       )
     : isObject(schemas)
       ? toObject(
           Object.entries(schemas),
           ([name, value]) =>
             isObject(value)
-              ? {
-                  name,
-                  ...value
-                }
+              ? { name, ...value }
               : isString(value)
-                ? {
-                    name,
-                    label: value
-                  }
+                ? { name, label: value }
                 : null
         )
       : null
 }
 
 export function getButtonSchemas(buttons) {
-  return getNamedSchemas(
-    buttons,
-    { type: 'button' } // Defaults
-  )
+  return getNamedSchemas(buttons, { type: 'button' })
 }
 
-// Whether the buttons can save the data, through a button with `submitData`,
-// whatever its name:
+// Buttons with `submitData` save the data, whatever their name:
 export function hasSubmitButton(buttonSchemas) {
   return Object.values(buttonSchemas ?? {}).some(
     button => !!getTypeDescriptor(button)?.submitData
   )
 }
 
-// Returns the entry of the panel described by `schema`, which `DitoPanels`
-// displays at `dataPath` and `componentPath`. Panels of components in tabs are
-// only displayed while their tab is selected: `tab` describes that tab as
-// `{ tabName, isTabSelected }`, where `isTabSelected()` tells if it currently
-// is, see `DitoPane.panelTab`.
+// Panels of components in tabs are only displayed while their tab is selected,
+// which `tab.isTabSelected()` tells:
 function getPanelEntry(schema, dataPath, componentPath, tab) {
   return schema
     ? {
@@ -250,14 +214,9 @@ export function getPanelEntries(
   return panelEntries
 }
 
-// Returns the entries of the panel that the type of the component described by
-// `schema` provides, and of the panels in `schema.panels`. The type's panel is
-// addressed by its name, e.g. `$filters`, relative to `dataPath` and its
-// component path, `dataPathComponentPath`, while the panels in `schema.panels`
-// are addressed by their keys, see `getPanelEntries()`, continuing
-// `schemaComponentPath`, the component path of `schema` itself, which also
-// contains the names of unnested components. `source` is the context of the
-// component if it's a source, e.g. for the filters panel of lists.
+// The type's panel, e.g. `$filters`, is addressed relative to `dataPath`, while
+// the panels in `schema.panels` continue the component path of `schema`, which
+// also contains the names of unnested components.
 export function getAllPanelEntries(
   api,
   schema,
@@ -283,8 +242,6 @@ export function getAllPanelEntries(
         )
       ]
     : []
-  // Allow each component to provide its own set of panels, in
-  // addition to the default one (e.g. getFiltersPanel(), $filters):
   getPanelEntries(
     schema?.panels,
     dataPath,

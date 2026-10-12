@@ -12,9 +12,6 @@ import type { SourceContext } from './SourceContext.ts'
 import type { HTTPMethod } from '../../types/index.d.ts'
 import type { Resource } from './types.ts'
 
-// The contexts that the callbacks of a component read, as the component sees
-// them. Components provide them, and data models for the contexts that they
-// create, as the components of their container see them.
 export interface Services {
   readonly admin: AdminContext
   readonly container: ContainerContext | null
@@ -31,8 +28,7 @@ export interface RequestOptions {
   data?: any
   signal?: AbortSignal
   internal?: boolean
-  // Cache the response for the entire admin session, or for as long as the
-  // route that renders the component is shown:
+  // Cache for the admin session, or while the component's route is shown:
   cache?: 'global' | 'local'
 }
 
@@ -42,21 +38,17 @@ export interface DownloadOptions {
   query?: Record<string, any>
 }
 
-// The data that the data paths of the components are relative to, e.g. the
-// data of the view or the item of the form:
 export function getRootData({ container, route }: Services) {
   return container?.model.rootData ?? route?.rootData ?? null
 }
 
-// The verbs of the closest form or source, e.g. `apply` rather than `save` in
-// nested data:
+// Forms and sources have their own verbs, e.g. `apply` in nested data:
 export function getVerbs({ resource }: Services): Record<string, string> {
   return resource?.verbs ?? defaultVerbs
 }
 
-// Wait until the data model wrote the values that it derives from the data and
-// finished its loads, e.g. before submitting, showing the spinner of the header
-// but without disabling the view, as the user may still be editing.
+// Wait until the data model wrote its derived values and finished its loads,
+// with the header's spinner but without disabling the view:
 export async function waitUntilDataModelSettled({
   admin,
   container
@@ -74,8 +66,7 @@ export function getResourceUrl(
   { admin, resource: resourceContext }: Services,
   resource: Resource
 ): string | null {
-  // Resources without a parent continue the one of the closest form or source
-  // with a resource:
+  // Resources without a parent continue the closest form's or source's:
   const parent = resourceContext?.resourceOwner
   const url = admin.api.resources.any(
     getResource(resource, {
@@ -103,7 +94,7 @@ export async function sendRequest(
     await session.ensureUser()
   }
   const response = await api.request({ method, url, query, data, signal })
-  // Detect change of the own user, and fetch it again if it was changed.
+  // Fetch the own user again when it changed:
   if (
     checkUser &&
     method === 'patch' &&
@@ -139,8 +130,7 @@ export function request(
   if (loadCache && cacheKey in loadCache) {
     return loadCache[cacheKey]
   }
-  // NOTE: No await here, res is a promise that we can easily cache.
-  // That's fine because promises can be resolved over and over again.
+  // NOTE: Cache the promise, not its result:
   const res = sendRequest(services, options)
     .then(response => response.data)
     .catch(error => {
@@ -148,8 +138,7 @@ export function request(
       if (loadCache?.[cacheKey] === res) {
         delete loadCache[cacheKey]
       }
-      // Convert errors of responses with data, e.g. Dito.js errors, to
-      // errors with the message and properties of that data:
+      // Convert the data of error responses, e.g. Dito.js errors, to errors:
       const data = error.response?.data
       throw data ? Object.assign(new Error(data.message), data) : error
     })

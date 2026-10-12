@@ -5,21 +5,16 @@ import { createTemporaryId, isReference } from '../data.js'
 import type { Context } from './types.ts'
 import type { Schema } from '../types.ts'
 
-// How the values of a component with options map to its options, which the
-// component and the data model share.
 export interface OptionsSettings {
   relate: boolean
   multiple: boolean
-  // The key or function of the option's value, `null` for options that are
-  // their own values:
+  // `null` for options that are their own values:
   optionValue: string | ((context: Context) => any) | null
   optionEquals: ((context: Context) => boolean) | null
   groupBy: string | null
   createContext(values: Record<string, any>): Context
 }
 
-// The settings of `schema` for `options`, which are grouped if `groupBy` is
-// set, see `groupOptions()`.
 export function getOptionsSettings(
   schema: Schema,
   options: any[],
@@ -32,8 +27,7 @@ export function getOptionsSettings(
   const getValue = (key: string[], type: any) => (
     getSchemaValue(key, { type, schema, context: createContext({}) }) ?? null
   )
-  // `relate` is read without callbacks, as values are processed without
-  // contexts, see `optionsTraits.processValue()`:
+  // Without callbacks, as values are processed without contexts:
   const relate = !!schema.relate
   return {
     relate,
@@ -51,8 +45,6 @@ export function getOptionsSettings(
   }
 }
 
-// Group the options by the value of their `groupBy` key, as
-// `{ label, options }` objects.
 export function groupOptions(options: any[], groupBy: string) {
   const groups: Record<string, { label: string; options: any[] }> = {}
   const results = []
@@ -68,8 +60,7 @@ export function groupOptions(options: any[], groupBy: string) {
   return results
 }
 
-// `key` if the options are objects that hold it, looked up in the first group
-// of grouped options.
+// Return `key` if the options are objects that hold it:
 export function getOptionKey(
   options: any[],
   groupBy: string | null,
@@ -82,8 +73,7 @@ export function getOptionKey(
 
 export function getValueForOption(settings: OptionsSettings, option: any) {
   if (shouldSetTemporaryId(settings, option)) {
-    // Until they're selected and get temporary ids, options without ids are
-    // their own values, compared by identity, see `getValueForSelectedValue()`.
+    // Until selected and given temporary ids, they're their own values:
     return toRaw(option)
   }
   const { optionValue, createContext } = settings
@@ -94,8 +84,6 @@ export function getValueForOption(settings: OptionsSettings, option: any) {
       : option
 }
 
-// Find the option with the given value in `options`, matched through
-// `optionEquals` if provided, also in grouped options.
 export function findOptionForValue(
   settings: OptionsSettings,
   options: any[],
@@ -121,9 +109,7 @@ export function findOptionForValue(
   return findOption(options, !!groupBy)
 }
 
-// The value that the options select for `value`: the value of its
-// option with `relate`, and `null` for values without an option, unless there
-// are no options. `findOption()` finds the option of a value.
+// Values without an option select `null`, unless there are no options yet:
 export function getSelectedValue(
   settings: OptionsSettings,
   value: any,
@@ -143,8 +129,6 @@ export function getSelectedValue(
     : convertValue(value)
 }
 
-// Convert the selected value to the value, e.g. an option to its related
-// object with `relate`. `value` holds the related objects without options.
 export function getValueForSelectedValue(
   settings: OptionsSettings,
   selectedValue: any,
@@ -155,8 +139,7 @@ export function getValueForSelectedValue(
     if (!settings.relate) {
       return selected
     }
-    // Keep related objects without options, see `getFallbackOption()` in
-    // `DitoTypeMultiselect`:
+    // Keep related objects without options, held in `value`:
     const option = (
       findOption(selected) ??
       asArray(value).find(
@@ -164,10 +147,8 @@ export function getValueForSelectedValue(
       )
     )
     if (shouldSetTemporaryId(settings, option)) {
-      // Options without ids, e.g. new items of the edited data, get temporary
-      // ids when selected, so that the relation can reference them when
-      // saving, see `SchemaGraph`. The option itself needs the id, as a copy
-      // wouldn't propagate.
+      // New items get temporary ids for the relation to reference on save.
+      // Set it on the option itself, as a copy wouldn't propagate:
       option.id = createTemporaryId()
     }
     return option
@@ -177,11 +158,8 @@ export function getValueForSelectedValue(
     : convertValue(selectedValue)
 }
 
-// The value that replaces `value` once the options are there, wrapped
-// in an object, or `null` if it stays: Values whose option disappeared become
-// `null`, unless the schema is `taggable`, which holds values without options,
-// and references become the objects of their options, so that they hold the
-// actual data, not just an id.
+// Values whose option disappeared become `null` unless `taggable`, and
+// references become their options' objects. Return `null` if `value` stays:
 export function getReplacedValue(
   schema: Schema,
   settings: OptionsSettings,
@@ -213,8 +191,6 @@ interface SelectedValueOptions {
   findOption(value: any): any
 }
 
-// Whether the option needs a temporary id to be related to, as it has no id
-// yet, e.g. a new item of the edited data.
 function shouldSetTemporaryId(settings: OptionsSettings, option: any) {
   return settings.relate && isObject(option) && option.id == null
 }

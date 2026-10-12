@@ -32,23 +32,18 @@ import {
   getItemFormSchemaFromForms
 } from './lookup.js'
 
+/** @import { Schema, Data, SchemaDataWalk } from '../types.ts' */
+
 /**
  * @param {string | string[]} keyOrDataPath
- * @param {{
- *   type?: any,
- *   schema?: Record<string, any> | null,
- *   callback?: boolean,
- *   default?: any,
- *   context?: any
- * }} [options]
+ * @param {Record<string, any>} [options]
  */
 export function getSchemaValue(
   keyOrDataPath,
   { type, schema, callback = true, default: def, context } = {}
 ) {
   const types = type && asArray(type)
-  // For performance reasons, data-paths in `keyOrDataPath` can only be
-  // provided in in array format here:
+  // For performance reasons, data paths are only supported as arrays:
   let value = schema
     ? isArray(keyOrDataPath)
       ? getValueAtDataPath(schema, keyOrDataPath, () => undefined)
@@ -66,12 +61,11 @@ export function getSchemaValue(
   if (isMatchingType(types, value)) {
     return value
   }
-  // Any schema value handled through `getSchemaValue()` can provide
-  // a function that's resolved when the value is evaluated:
+  // Any schema value can be a function, resolved when the value is evaluated:
   if (callback && isFunction(value)) {
     value = value(context)
   }
-  // Now finally see if we can convert to the expect types.
+  // See if we can convert to the expected types:
   if (types && value != null && !isMatchingType(types, value)) {
     for (const type of types) {
       const converted = convertType(type, value)
@@ -95,13 +89,10 @@ export function shouldRenderSchema(schema, context) {
   )
 }
 
-// Returns whether `schema` renders any of its nested components, if it has
-// any, which `context` holds the data of:
 export function shouldRenderComponents(schema, context) {
   return (
     !hasNestedSchemaComponents(schema) ||
-    // The components of sources, e.g. lists with inlined components, are
-    // rendered for each item, with the item's own context:
+    // Sources render their components for each item, with its own context:
     !!getSourceType(schema) ||
     // Evaluate the components with their own contexts, like when rendered:
     someNestedSchemaComponent(schema, (component, name) =>
@@ -110,8 +101,6 @@ export function shouldRenderComponents(schema, context) {
   )
 }
 
-// Returns the forms of `schema` for which items can be created, by type. Forms
-// are excluded by `if: false` or `creatable: false`.
 export function getCreatableForms(schema, context) {
   return Object.fromEntries(
     Object.entries(getFormSchemas(schema, context)).filter(
@@ -133,11 +122,8 @@ function getContext(context) {
 }
 
 export function getDefaultValue(schema, context) {
-  // Support default values both on schema and on component level.
-  // NOTE: At the time of creation, components may not be instantiated, (e.g. if
-  // entries are created through nested forms, the parent form isn't mounted) so
-  // we can't use `dataPath` to get to components, and the `defaultValue` from
-  // there. That's why `defaultValue` is defined by the type descriptors:
+  // NOTE: Components may not be instantiated when items are created, e.g. in
+  // nested forms, so the type descriptors define `defaultValue`:
   const defaultValue =
     schema.default !== undefined
       ? schema.default
@@ -147,10 +133,8 @@ export function getDefaultValue(schema, context) {
     : clone(defaultValue)
 }
 
-// Sets the value of the component described by `schema` and `name` in `data`
-// to its default. Types without values, e.g. buttons, have no default, and
-// don't get a key in the data, which would make the data differ from data
-// without it, e.g. from items that `compute()` returns.
+// Types without values, e.g. buttons, get no key, like in the data of items
+// that `compute()` returns:
 export function setDefaultValue(schema, data, name, context) {
   const value = getDefaultValue(schema, context)
   if (value !== undefined) {
@@ -168,16 +152,12 @@ export function shouldExcludeValue(schema, context) {
     : !!excludeValue
 }
 
-export function shouldIgnoreMissingValue(schema, context) {
+function shouldIgnoreMissingValue(schema, context) {
   return !!getTypeDescriptor(schema)?.ignoreMissingValue?.(getContext(context))
 }
 
-// Returns whether the value of the component described by `schema` and `name`
-// is missing in `data`: if there's no value, or if the value is `null` and
-// the type treats that as missing, e.g. nested sections.
-export function isMissingValue(schema, data, name, context) {
-  // Only read the value if needed, so that callers that are tracked, e.g. the
-  // walk of the data model's data, don't depend on all values.
+function isMissingValue(schema, data, name, context) {
+  // Read the value only if needed, or tracked walks would depend on all values:
   return (
     !(name in data) || (
       !!getTypeDescriptor(schema)?.treatNullAsMissing?.(getContext(context)) &&
@@ -186,8 +166,6 @@ export function isMissingValue(schema, data, name, context) {
   )
 }
 
-// Returns whether the data model resolves the value of the component from
-// `schema.data` or `schema.dataPath`, for types with `resolveValue`:
 export function hasValueFromDataSchema(schema) {
   return (
     !!getTypeDescriptor(schema)?.resolveValue &&
@@ -195,7 +173,7 @@ export function hasValueFromDataSchema(schema) {
   )
 }
 
-// Values are processed without contexts, see `optionsTraits.processValue()`:
+// `optionsTraits.processValue()` calls this without a context:
 export function getMultipleValue(schema, context) {
   return getSchemaValue('multiple', {
     type: Boolean,
@@ -206,12 +184,6 @@ export function getMultipleValue(schema, context) {
   })
 }
 
-/**
- * Returns whether the value of the component described by `schema` and `name`
- * is missing in `data` and needs its default, see `initializeData()`.
- * `shouldSetDefaultsOfComponentsWithCompute` decides for components with
- * `compute()`, which may derive their missing values instead.
- */
 export function shouldSetDefaultValue(schema, data, name, context, {
   shouldSetDefaultsOfComponentsWithCompute = true
 } = {}) {
@@ -222,32 +194,21 @@ export function shouldSetDefaultValue(schema, data, name, context, {
   )
 }
 
+// Set missing values to their defaults to watch them for changes, and number
+// list items by their order key to store their order even if it never changes.
 /**
- * Initializes `data` for the components of `schema`: Sets missing values to
- * their defaults, so they can be correctly watched for changes, and numbers
- * the items of lists by their order key, see `updateOrder()`, so that their
- * order is stored even if it never changes.
- *
- * @param {Record<string, any>} schema
- * @param {Record<string, any>} [data]
+ * @param {Schema} schema
+ * @param {Data} [data]
  * @param {object | null} [services]
- * @param {{
- *   dataPath?: string | null,
- *   rootData?: Record<string, any> | null,
- *   shouldProcess?: (entry: any) => boolean,
- *   shouldSkipSourcesWithResource?: boolean,
- *   shouldSetDefaultsOfComponentsWithCompute?: boolean
- * }} [options]
+ * @param {Record<string, any>} [options]
  */
 export function initializeData(schema, data = {}, services, {
   dataPath = null,
   rootData = data,
   shouldProcess,
   shouldSkipSourcesWithResource = false,
-  // Whether to also set the defaults of components with `compute()`. New data
-  // starts with all defaults, which `compute()` can rely on. In data that was
-  // loaded, `compute()` may derive missing values instead, and they fall back
-  // to their defaults only if it doesn't return a value, see `computeValue()`.
+  // New data starts with all defaults for `compute()` to rely on, but in loaded
+  // data, `compute()` may derive missing values instead:
   shouldSetDefaultsOfComponentsWithCompute = true
 } = {}) {
   const options = { services, rootData }
@@ -285,27 +246,14 @@ export function initializeData(schema, data = {}, services, {
   })
 }
 
+// Never write into `data`, as `DataModel` writes the computed values. Functions
+// in `dataPath` are only called by computes that read it, e.g. through `index`.
 /**
- * Returns the value of the component described by `schema` and `name` in
- * `data`: the result of `schema.compute()` if it returns a value, else the
- * value in `data`, or its default if it's missing. Never writes into `data`:
- * `DataModel` is the only caller and writes the computed values, including the
- * defaults of components with `compute()`. Other defaults are written when the
- * data is set up, see `initializeData()`, or when they go missing later. If
- * provided, `getOptions()` returns the options for `context.options`, called
- * only when they're read. `dataPath` can also be a function that returns it,
- * called only when `compute()` reads the data path or values derived from it,
- * e.g. `index` or `parentItem`, so that only these computes depend on it.
- *
- * @param {Record<string, any>} schema
- * @param {Record<string, any>} data
+ * @param {Schema} schema
+ * @param {Data} data
  * @param {string} name
  * @param {string | (() => string)} dataPath
- * @param {{
- *   services?: object | null,
- *   rootData?: Record<string, any> | null,
- *   getOptions?: (() => any) | null
- * }} [options]
+ * @param {Record<string, any>} [options]
  */
 export function computeValue(schema, data, name, dataPath, {
   services = null,
@@ -313,15 +261,13 @@ export function computeValue(schema, data, name, dataPath, {
   getOptions = null
 } = {}) {
   const context = () =>
-    // Pass a function, so that the `options` getter isn't evaluated when the
-    // context is created.
+    // Pass a function, so the `options` getter isn't evaluated on creation:
     new DitoContext(services, () => {
       const properties = {
         schema,
-        // Override value to prevent endless recursion through calling the
-        // getter for `this.value` in `DitoContext`. Read it only when it's
-        // used, so that `compute()` only depends on its own value if it reads
-        // it, and writing the computed value doesn't call it again.
+        // Override value to prevent endless recursion through `this.value` in
+        // `DitoContext`, and read it lazily, so `compute()` only depends on it
+        // if it reads it:
         get value() {
           return data[name]
         },
@@ -341,10 +287,8 @@ export function computeValue(schema, data, name, dataPath, {
       return properties
     })
   const { compute } = schema
-  // Like the data model, only compute values of components that are shown
-  // through their `if`, as `compute()` may rely on the same conditions, e.g.
-  // `if: ({ item }) => item.preview` with `compute: ({ item }) =>
-  // item.preview.name`.
+  // Like the data model, only compute values of shown components, as
+  // `compute()` may rely on the conditions of `if`:
   if (
     compute &&
     getSchemaValue('if', {
@@ -362,10 +306,6 @@ export function computeValue(schema, data, name, dataPath, {
   return getValueOrDefault(schema, data, name, context)
 }
 
-// Returns the value in `data`, or its default if it's missing. `context` can be
-// a function that creates the context, called only when it's needed. Computed
-// values are in `data` already, as `DataModel` writes them, see
-// `computeValue()`.
 export function getValueOrDefault(schema, data, name, context) {
   const shouldUseDefault = (
     isMissingValue(schema, data, name, context) &&
@@ -374,8 +314,7 @@ export function getValueOrDefault(schema, data, name, context) {
   return shouldUseDefault ? getDefaultValue(schema, context) : data[name]
 }
 
-// Copies what identifies the item, its id, type and order, for the processed
-// values of its components to be added to.
+// Copy what identifies the item, for its processed values to be added to:
 function cloneItem(sourceSchema, item) {
   const copy = {}
   const { idKey = 'id', orderKey } = sourceSchema
@@ -383,7 +322,6 @@ function cloneItem(sourceSchema, item) {
   if (id !== undefined) {
     copy[idKey] = id
   }
-  // Copy over type in case there are multiple forms to choose from.
   if (hasMultipleFormSchemas(sourceSchema)) {
     copy.type = item.type
   }
@@ -441,8 +379,7 @@ export function processData(schema, sourceSchema, data, dataPath, {
         data,
         dataPath,
         rootData: options.rootData,
-        // Pass the data being processed to `process()`, so it can read and
-        // modify it through `processedItem` and `processedRootItem`:
+        // For `processedItem` and `processedRootItem` in `process()`:
         processedData,
         processedRootData
       })
@@ -458,8 +395,7 @@ export function processData(schema, sourceSchema, data, dataPath, {
       value = processValue(getContext(context), graph)
     }
 
-    // Handle the user's `process()` callback next, if one is provided, so that
-    // it can modify data in `processedData` even if it provides `exclude: true`
+    // Call `process()` before `exclude`, so it can modify `processedData`:
     if (process) {
       value = process(getContext(context))
     }
@@ -482,38 +418,14 @@ export function processData(schema, sourceSchema, data, dataPath, {
   return graph.process(sourceSchema, processedRootData, options)
 }
 
-// Walk `data` along the components of `schema`, including the forms of items
-// and their child sources, e.g. the children of tree items, and call `before()`
-// and `after()` for each nested component. Components, tabs and panels for
-// which `shouldProcess()` returns `false` are skipped with their content.
-// Sources with an item adapter, e.g. `wrapPrimitives`, are walked with their
-// items wrapped, and the component of the wrapped value keeps the data path of
-// the item. Values written into the wrapped items don't reach the data.
+// Walk `data` along the components of `schema`, the forms of items and their
+// child sources, and call `before()` and `after()` for each nested component.
+// NOTE: Items with an item adapter are walked wrapped, and the wrapped value
+// keeps the item's data path. Writes into them don't reach the data.
 /**
- * @typedef {object} SchemaDataEntry
- * @property {Record<string, any>} schema
- * @property {Record<string, any>} data
- * @property {string} name
- * @property {string | null} dataPath
- * @property {string} componentPath
- * @property {Record<string, any> | null} processedData
- *
- * @param {Record<string, any>} schema
- * @param {Record<string, any>} data
- * @param {object} walk
- * @param {string | null} [walk.dataPath]
- * @param {string} [walk.componentPath]
- * @param {Record<string, any> | null} [walk.processedData]
- * @param {string | null} [walk.wrappedValueName]
- * @param {Record<string, any>[]} [walk.childSourceSchemas]
- * @param {((entry: SchemaDataEntry) => void) | null} [walk.before]
- * @param {((entry: SchemaDataEntry) => void) | null} [walk.after]
- * @param {(
- *   entry: SchemaDataEntry | Omit<SchemaDataEntry, 'name'> & { name: null }
- * ) => boolean} [walk.shouldProcess] Tabs and panels have no name.
- * @param {boolean} [walk.shouldSkipSourcesWithResource]
- * @param {{ services: object | null, rootData: Record<string, any> | null }}
- *   walk.options
+ * @param {Schema} schema
+ * @param {Data} data
+ * @param {SchemaDataWalk} walk
  */
 export function processSchemaData(schema, data, {
   dataPath = null,
@@ -572,7 +484,6 @@ export function processSchemaData(schema, data, {
           continue
         }
         if (!isNestedComponent) {
-          // Recursively process data on unnested components.
           processSchemaData(componentSchema, data, {
             ...walkOptions,
             dataPath,
@@ -587,8 +498,8 @@ export function processSchemaData(schema, data, {
               item = itemAdapter.wrap(item)
             }
             if (!isObject(item)) {
-              // Values that aren't objects hold no data of the form's
-              // components, e.g. ones that `compute()` converts to objects.
+              // Values that aren't objects hold no data of the form, e.g. ones
+              // that `compute()` converts to objects:
               return item
             }
             const itemDataPath =
@@ -623,21 +534,18 @@ export function processSchemaData(schema, data, {
                 childSourceSchemas: getChildSourceSchemas(componentSchema)
               })
             } else {
-              // Items without a matching form, e.g. of an unknown type, are
-              // passed through as shallow clones.
+              // Pass through items without a matching form, e.g. unknown types:
               return { ...item }
             }
           }
 
           before?.(entry)
 
-          // Only read the values of sources with forms, so that callers that
-          // are tracked, e.g. the walk of the data model's data, don't depend
-          // on all values.
+          // Only read the values of sources with forms, or tracked walks would
+          // depend on all values:
           if (hasFormSchema(componentSchema)) {
             let value = processedData ? processedData[name] : data[name]
             if (value != null) {
-              // Recursively process data on nested form items.
               if (isArray(value)) {
                 // Optimization: No need to collect values if not cloning!
                 value = processedData
@@ -653,9 +561,7 @@ export function processSchemaData(schema, data, {
           }
 
           after?.(entry)
-          // The panels of nested components display the data that contains
-          // the components, like the ones of unnested components, see
-          // `DitoContainer.panelEntries`.
+          // Their panels display the data that contains them, as above:
           processTabOrPanelSchemas(componentSchema.panels, entry.componentPath)
         }
       }
@@ -673,7 +579,6 @@ export function processSchemaData(schema, data, {
         componentPath: appendDataPath(parentComponentPath, name),
         processedData
       }
-      // The components of panels with their own data don't edit `data`.
       if (shouldProcess(entry) && !isPanelWithOwnData(tabOrPanelSchema)) {
         processComponents(tabOrPanelSchema.components, entry.componentPath)
       }
@@ -709,15 +614,9 @@ export function processSchemaData(schema, data, {
   return processedData || data
 }
 
-/**
- * Returns the component path of the value at `dataPath` in `data`, by walking
- * `data` along the rendered components of `schema` to the deepest component
- * that contains the value, e.g. `main/chapters/1` for `chapters/1`, with the
- * list `chapters` in the tab `main`. The part of `dataPath` inside that
- * component, e.g. item indices, is appended to its component path. Of several
- * components that display the same data, the first in schema order is used.
- * `options.dataPath` is the data path of `data`, which `dataPath` contains.
- */
+// Walk the rendered components to the deepest one containing `dataPath`, e.g.
+// `main/chapters/1` for `chapters/1` in the tab `main`. Of several components
+// that display the same data, the first in schema order wins.
 export function getComponentPathByDataPath(schema, data, dataPath, {
   dataPath: itemDataPath = '',
   componentPath = '',
@@ -761,15 +660,11 @@ export function getItemId(sourceSchema, item) {
   return id != null ? String(id) : undefined
 }
 
-// Returns whether the items of the list described by `schema` are numbered by
-// its `orderKey`, see `updateOrder()`. Lists of primitives have no items that
-// could hold an order key.
+// Lists of primitives have no items that could hold an order key:
 export function hasItemsNumberedByOrderKey(schema) {
   return !!schema.orderKey && !getItemAdapter(schema)
 }
 
-// Numbers the items of the list by the order key of `sourceSchema`, starting
-// at `offset`, e.g. of the loaded page.
 export function updateOrder(sourceSchema, list, offset = 0) {
   const { orderKey } = sourceSchema
   if (orderKey) {
@@ -781,9 +676,7 @@ export function updateOrder(sourceSchema, list, offset = 0) {
 }
 
 export function getItemUid(sourceSchema, item) {
-  // Try to use the item id as the uid, falling back on auto-generated ids, but
-  // either way, pass through `getUid()` so that the ids are associated with the
-  // item through a weak map, as the ids can be filtered out in `processData()`
-  // while the components that use the uids as key are still visible.
+  // Pass ids through `getUid()` too, to associate them with the item in a weak
+  // map, as `processData()` can filter out ids still used as component keys.
   return getUid(item, item => getItemId(sourceSchema, item))
 }

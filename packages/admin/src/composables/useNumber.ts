@@ -2,7 +2,6 @@ import { computed } from 'vue'
 import { getNumberSettings } from '../types/traits.ts'
 import type { Field, FieldProps } from './useField.ts'
 
-// The settings and the input value of number types, see `getNumberSettings()`.
 export function useNumber(
   props: FieldProps,
   { value, context }: Pick<Field, 'value' | 'context'>
@@ -12,13 +11,12 @@ export function useNumber(
   return {
     settings,
 
-    // The `step` attribute of inputs, `'any'` for numbers without steps:
+    // Numbers without steps accept any value:
     stepValue: computed(() => {
       const { step } = settings.value
       return step == null && !isInteger.value ? 'any' : step
     }),
 
-    // The value of inputs, which are empty for `null`:
     inputValue: computed<number | ''>({
       get() {
         return value.value !== null ? value.value : ''

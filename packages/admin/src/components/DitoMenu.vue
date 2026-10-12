@@ -30,8 +30,7 @@ import { useServices } from '../composables/useSchemaContext.ts'
 import { useSchemaValue } from '../composables/useSchemaValue.ts'
 import { isPathWithin } from '../utils/route.js'
 
-// The menu of the views and menus of the route tree. `force` reloads the view
-// of a link even if it is already the current route.
+// `force` reloads the view of a link even if its route is the current one.
 export default {
   name: 'DitoMenu',
 

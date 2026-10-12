@@ -1,13 +1,10 @@
-import { computed, type PropType } from 'vue'
+import { computed, type ExtractPropTypes, type PropType } from 'vue'
 import {
   getValidations,
   getValueValidationErrors
 } from '../utils/schema/validation.js'
 import { getInputAffixesProps } from '../utils/affixes.js'
-import {
-  useSchemaContext,
-  type SchemaContextProps
-} from './useSchemaContext.ts'
+import { useSchemaContext } from './useSchemaContext.ts'
 import { useValue } from './useValue.ts'
 import { useSchemaValue } from './useSchemaValue.ts'
 import { useComponentPath } from './useComponentPath.ts'
@@ -27,17 +24,11 @@ export const fieldProps = {
   label: { type: String, default: null },
   single: { type: Boolean, default: false },
   nested: { type: Boolean, default: true },
-  // The id of the element that displays the errors, while there are errors,
-  // see `DitoContainer`:
+  // The id of the element that displays the errors, while there are errors:
   errorsElementId: { type: String, default: null }
 } as const
 
-export interface FieldProps extends SchemaContextProps {
-  readonly store: Record<string, any>
-  readonly label: string | null
-  readonly single: boolean
-  readonly errorsElementId: string | null
-}
+export type FieldProps = Readonly<ExtractPropTypes<typeof fieldProps>>
 
 export interface FieldOptions
   extends FocusOptions,
@@ -51,8 +42,6 @@ export interface FieldOptions
   textField?: boolean
 }
 
-// The value of a type component and the behaviour of its field: its settings,
-// attributes, events and focus, and its validation.
 export function useField(
   props: FieldProps,
   {
@@ -94,8 +83,7 @@ export function useField(
     getSchemaValue('info', { type: String, default: null })
   )
 
-  // Validate the value and replace the validation errors of the field, see
-  // `DataModel.setErrors()`. Return whether the value is valid:
+  // Replace the validation errors of the field:
   const validate = () => {
     const errors = getValueValidationErrors(
       value.value,

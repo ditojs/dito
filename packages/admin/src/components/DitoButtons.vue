@@ -18,8 +18,7 @@
   template(
     v-for="vnode of $slots.default?.()"
   )
-    //- Render each node in the default slot through `dito-vnode`,
-    //- so it can be wrapped in a `.dito-container` class.
+    //- Wrap each node of the default slot in a `.dito-container`:
     .dito-container.dito-buttons__container(
       v-if="hasVNodeContent(vnode)"
     )
@@ -48,17 +47,14 @@ export default {
     store: { type: Object, default: () => ({}) },
     nested: { type: Boolean, default: true },
     disabled: { type: Boolean, default: false },
-    // The name of the group of buttons, e.g. `panelButtons`, see
-    // `componentPath`.
     buttonsName: { type: String, default: 'buttons' }
   },
 
   setup(props) {
     // Buttons don't belong to the tab of a pane:
     provide('panelTab', null)
-    // Add the name of the group, so that buttons don't share their component
-    // paths with components of the same name, e.g. a `publish` button with a
-    // `publish` field:
+    // Add the group name, so buttons don't share their component paths with
+    // components of the same name, like a `publish` button and field:
     useComponentPath(
       () => props.dataPath,
       parent =>

@@ -46,9 +46,8 @@ export default {
 
   props: {
     label: { type: [String, Object], default: null },
-    // The context of the labelled component, for the callbacks of the affixes:
+    // For the callbacks of the affixes:
     context: { type: Object, required: true },
-    // The DOM id of the labelled element, see `DitoContainer.labelHtmlFor`.
     htmlFor: { type: String, default: null },
     collapsed: { type: Boolean, default: false },
     collapsible: { type: Boolean, default: false },

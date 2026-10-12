@@ -43,13 +43,12 @@ export default {
     mode: { type: String, default: null },
     position: { type: String, default: null },
     absolute: { type: Boolean, default: false },
-    // Whether the value can be cleared, and whether there's one to clear: The
-    // clear button only shows when both are true.
+    // The clear button only shows when both are true:
     clearable: { type: Boolean, default: false },
     hasValue: { type: Boolean, default: false },
     disabled: { type: Boolean, default: false },
     inlineInfo: { type: String, default: null },
-    // The context of the component, for the callbacks of the items:
+    // For the callbacks of the items:
     parentContext: { type: Object, required: true }
   },
 

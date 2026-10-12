@@ -79,8 +79,6 @@ export default {
     // The login link shows without a user once the session started:
     const hasSessionStarted = ref(false)
 
-    // Shows a dialog with the `components` and `buttons` of `schema`, and
-    // resolves with the value that it's closed with:
     const showDialog = async ({ components, buttons }, options = {}) => {
       const { data, settings } = options
       // Resolve async schemas first, so that their errors reject:
@@ -110,7 +108,6 @@ export default {
       notify,
       closeNotifications: () => notifications.value.destroyAll()
     })
-    // Detaches the login dialog and notifications from the session:
     const detachSessionUserInterface = admin.session.attachUserInterface({
       notify,
       // Return the entered credentials, or `null` if the user cancels:
@@ -127,9 +124,8 @@ export default {
             },
             ...additionalComponents
           },
-          // NOTE: Login must come before cancel in DOM order so that password
-          // managers (e.g. 1Password) target the submit button instead of
-          // cancel. DitoDialog uses CSS order to visually place cancel first.
+          // NOTE: Login comes first in DOM order for password managers, CSS
+          // places cancel first:
           buttons: {
             login: {
               type: 'submit',
@@ -139,7 +135,6 @@ export default {
             cancel: {
               type: 'button',
               text: 'Cancel'
-              // NOTE: The click event is added in DitoDialog.buttonSchemas()
             }
           }
         })
@@ -162,11 +157,10 @@ export default {
         onShow: instance => instance.setContent(instance.reference.dataset.info)
       })
 
-      // Warn before the page is reloaded or closed with unsaved changes, also
-      // the ones being submitted, as `beforeunload` can't wait for them:
+      // Warn about unsaved changes, also the ones being submitted, as
+      // `beforeunload` can't wait for them:
       domOn(window, {
         beforeunload: event => {
-          // Write the edits that are held back first:
           for (const route of admin.ui.routes) {
             route.container.model.writePendingValues()
           }

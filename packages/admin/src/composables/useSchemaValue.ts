@@ -13,9 +13,8 @@ export interface SchemaValueOptions {
   callback?: boolean
 }
 
-// Read the values of the component's schema, or of other schemas that it
-// renders, resolving their callbacks with the component's `context`, see
-// `getSchemaValue()` in `utils/schema/data.js`.
+// Resolve the callbacks of the schemas that the component renders with its
+// `context`:
 export function useSchemaValue(context: Context) {
   const getSchemaValue = (
     keyOrDataPath: string | string[],
@@ -25,8 +24,7 @@ export function useSchemaValue(context: Context) {
   return {
     getSchemaValue,
 
-    // The label of the schema, which can be an object with affixes, or else
-    // its name, labelized:
+    // Labels can be objects with affixes:
     getLabel(schema: Schema | null, name?: string): string | object {
       return schema
         ? getSchemaValue('label', { schema, type: [String, Object] }) ||

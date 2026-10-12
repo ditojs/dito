@@ -1,7 +1,6 @@
 <template lang="pug">
-//- Renders an item of a list or object source: Inlined items render their
-//- form, others the source's `component`, or the label that the source renders
-//- for them.
+//- Inlined items render their form, others the source's `component`, or the
+//- label that the source renders for them.
 DitoSchemaInlined(
   v-if="isInlined"
   :label="label"
@@ -44,17 +43,17 @@ export default {
   emits: ['delete', 'move'],
 
   props: {
-    // The schema of the list or object source that holds the item.
+    // The list or object source that holds the item:
     schema: { type: Object, required: true },
     // The form of the item, which inlined items render:
     formSchema: { type: Object, required: true },
     dataPath: { type: String, required: true },
     data: { type: Object, required: true },
-    // The index of the item in a list source, `null` in object sources.
+    // `null` in object sources:
     index: { type: Number, default: null },
     store: { type: Object, required: true },
     disabled: { type: Boolean, required: true },
-    // The remaining props only apply to inlined items, see `DitoSchemaInlined`:
+    // The remaining props only apply to inlined items:
     collapsed: { type: Boolean, default: false },
     collapsible: { type: Boolean, default: false },
     draggable: { type: Boolean, default: false },
@@ -73,7 +72,7 @@ export default {
     )
     const { createContext, services } = useSchemaContext(props)
     return {
-      // The context of the custom components that render the items:
+      // For the custom components that render the items:
       context: createContext({
         get index() {
           return props.index

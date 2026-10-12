@@ -2,10 +2,7 @@
 template(
   v-if="admin.user && shouldRenderSchema(schema)"
 )
-  //- Only render DitoView when it is active, otherwise a normal router-view
-  //- instead, to nest further route components.
-  //- NOTE: This is different from the handling in DitoForm, where `v-show` is
-  //- used to always render forms even when other nested forms are present.
+  //- NOTE: Unlike forms, views don't render while their nested routes show.
   DitoRouterView(
     v-if="!isLastRoute"
     :routeLevel="route.level + 1"
@@ -32,7 +29,6 @@ import {
   computed,
   inject,
   markRaw,
-  onBeforeUnmount,
   onMounted,
   provide,
   reactive,
@@ -42,7 +38,7 @@ import {
 import { useRouter } from 'vue-router'
 import { useRouteContainer } from '../composables/useRouteContainer.ts'
 import {
-  useServices,
+  useContainer,
   useSchemaContext
 } from '../composables/useSchemaContext.ts'
 import { useSchemaValue } from '../composables/useSchemaValue.ts'
@@ -50,7 +46,6 @@ import { useComponentPath } from '../composables/useComponentPath.ts'
 import { useStore } from '../composables/useStore.ts'
 import { getVerbs } from '../utils/services.ts'
 import { isSingleComponentView } from '../utils/schema/structure.js'
-import { DataModel } from '../utils/DataModel.ts'
 import { LoadingTracker } from '../utils/LoadingTracker.ts'
 
 export default {
@@ -60,10 +55,7 @@ export default {
     const admin = inject('admin')
     const router = useRouter()
     const parentRoute = inject('route', null)
-    // The data paths of the view's components start at its data:
     useComponentPath(() => '')
-    // NOTE: Each view has its own data, as `DitoRouterView` renders each
-    // route record with its own component instance.
     const data = ref({})
     // The view displays its data as if it were an item of its source:
     const sourceSchema = computed(() => routeContainer.ownRoute.node.schema)
@@ -124,7 +116,7 @@ export default {
     provide('sourceSchema', sourceSchema)
     provide('source', mainSource)
     provide('resource', mainResource)
-    const services = useServices({
+    const { services, createDataModel } = useContainer({
       container: ownContainer,
       route: ownRoute,
 
@@ -142,19 +134,14 @@ export default {
     )
     const { getLabel, shouldRenderSchema } = useSchemaValue(context)
 
-    const dataModel = markRaw(
-      new DataModel({
-        schema: () => schema.value,
-        data: () => data.value,
-        sourceSchema: () => sourceSchema.value,
-        services
-      })
-    )
-    // The model's watchers aren't the component's, see `DataModel`:
-    onBeforeUnmount(() => dataModel.stop())
+    const dataModel = createDataModel({
+      schema: () => schema.value,
+      data: () => data.value,
+      sourceSchema: () => sourceSchema.value
+    })
 
     onMounted(() => {
-      // Prevent bypassing of if-condition by direct URL access.
+      // Prevent bypassing of `if` by direct URL access:
       if (!shouldRenderSchema(schema.value)) {
         router.replace({ path: '/' })
       }

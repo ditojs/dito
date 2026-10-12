@@ -77,41 +77,17 @@ const DitoTypeSelect = {
 
   setup(props) {
     const field = useField(props, { nativeField: true })
-    const {
-      options,
-      hasOptions,
-      groupBy,
-      editable,
-      selectedValue,
-      selectedOption,
-      getValueForOption,
-      getLabelForOption,
-      findOptionForValue
-    } = useOptions(props, field)
+    const optionsField = useOptions(props, field)
+    const { hasOptions, selectedValue, findOptionForValue } = optionsField
     return {
-      attributes: field.attributes,
-      context: field.context,
-      componentPath: field.componentPath,
-      inputAffixesProps: field.inputAffixesProps,
-      clear: field.clear,
-      options,
-      groupBy,
-      editable,
-      selectedValue,
-      selectedOption,
-      getValueForOption,
-      getLabelForOption,
-      // Lazy population of the options, on focus or mousedown, is disabled
-      // since 2019, as lineto's e2e tests chose options without focusing the
-      // select first, and found none.
-      // TODO: Re-enable it with `false` once e2e tests can handle it.
+      ...field,
+      ...optionsField,
+      // TODO: Re-enable lazy population with `false`, once e2e tests can
+      // choose options without focusing the select first.
       populate: ref(true),
 
-      // Whether the value is set but none of the loaded options has it. Values
-      // of option objects are replaced with `null` when their option
-      // disappears, see `getReplacedValue()`, but plain values match any value,
-      // so they stay. Object values without `optionValue` are left to the
-      // select, which matches them to their options by deep equality.
+      // Only plain values stay when their option disappears, see
+      // `getReplacedValue()`. The select matches objects by deep equality.
       shouldShowUnavailableValue: computed(() => {
         const selected = selectedValue.value
         return (

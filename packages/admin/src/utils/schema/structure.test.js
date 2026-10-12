@@ -1,12 +1,10 @@
 import { vi } from 'vitest'
 import { defineType } from './types.ts'
 import {
-  hasComponentNamed,
   iterateSchemaComponents,
   iterateNestedSchemaComponents,
   findNestedSchemaComponent,
   someNestedSchemaComponent,
-  everyNestedSchemaComponent,
   hasNestedSchemaComponents,
   isSchema,
   isForm,
@@ -36,56 +34,6 @@ defineType({ types: ['section'], defaultNested: false, generateLabel: false })
 defineType({ types: ['label'], omitSpacing: true })
 defineType({ types: ['list'], sourceType: 'list' })
 defineType({ types: ['object'], sourceType: 'object' })
-
-describe('hasComponentNamed()', () => {
-  const schema = {
-    type: 'form',
-    components: {
-      title: { type: 'text' },
-      unnested: {
-        type: 'section',
-        components: {
-          note: { type: 'text' },
-          inner: {
-            type: 'section',
-            components: { remark: { type: 'text' } }
-          }
-        }
-      },
-      nested: {
-        type: 'section',
-        nested: true,
-        components: { subtitle: { type: 'text' } }
-      }
-    },
-    tabs: {
-      tab: {
-        type: 'tab',
-        components: { edition: { type: 'text' } }
-      }
-    }
-  }
-
-  it('finds components and components in tabs', () => {
-    expect(hasComponentNamed(schema, 'title')).toBe(true)
-    expect(hasComponentNamed(schema, 'edition')).toBe(true)
-  })
-
-  it('finds components of unnested components', () => {
-    expect(hasComponentNamed(schema, 'note')).toBe(true)
-    expect(hasComponentNamed(schema, 'remark')).toBe(true)
-  })
-
-  it('finds nested components, but not their components', () => {
-    expect(hasComponentNamed(schema, 'nested')).toBe(true)
-    expect(hasComponentNamed(schema, 'subtitle')).toBe(false)
-  })
-
-  it('ignores the names of unnested components', () => {
-    expect(hasComponentNamed(schema, 'unnested')).toBe(false)
-    expect(hasComponentNamed(schema, 'unknown')).toBe(false)
-  })
-})
 
 describe('iterateSchemaComponents()', () => {
   it('passes the components with their names and relative levels', () => {
@@ -165,14 +113,12 @@ describe('nested schema component lookups', () => {
     expect(findNestedSchemaComponent(schema, isObjectSource)).toBe(null)
   })
 
-  it('tell whether some or every component matches', () => {
+  it('tell whether some component matches', () => {
     expect(someNestedSchemaComponent(schema, isListSource)).toBe(true)
     expect(someNestedSchemaComponent(schema, isObjectSource)).toBe(false)
     expect(
       someNestedSchemaComponent(schema, (component, name) => name === 'title')
     ).toBe(true)
-    expect(everyNestedSchemaComponent(schema, hasNestedData)).toBe(true)
-    expect(everyNestedSchemaComponent(schema, isListSource)).toBe(false)
   })
 
   it('tell whether there are any components', () => {

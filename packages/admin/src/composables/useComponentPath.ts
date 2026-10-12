@@ -7,11 +7,9 @@ export interface ComponentPath {
   readonly dataPath: string | null
 }
 
-// The path of component names through views, tabs, panels and forms, with the
-// item indices of the data path, e.g. `main/chapters/0/title`, which tells
-// apart components that display the same data, for the UI registry and DOM
-// ids. Components continue the path of their parent with the item indices that
-// their data path adds, unless `getPath()` builds their own.
+// The names of components through views, tabs, panels and forms, with the item
+// indices of the data path, e.g. `main/chapters/0/title`, tell apart the
+// components that display the same data:
 export function useComponentPath(
   getDataPath: () => string,
   getPath: (parent: ComponentPath) => string = parent =>

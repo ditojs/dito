@@ -80,7 +80,6 @@ export default {
   },
 
   setup(props) {
-    // The context of the container's schema values, e.g. `visible`:
     const schemaContext = useSchemaContext(props, {
       getValue: () => value.value
     })
@@ -92,10 +91,8 @@ export default {
       () => props.dataPath,
       parent => appendDataPath(parent.path, props.schema.name)
     )
-    // The basis of the closest container above, as a fraction of the width of
-    // the closest non-inlined schema:
+    // A fraction of the width of the closest non-inlined schema:
     const accumulatedBasis = inject('accumulatedBasis', 1)
-    // The tab of the pane that the container is in, see `DitoPane`:
     const panelTab = inject('panelTab', null)
     const component = useTemplateRef('component')
     const isMounted = ref(false)
@@ -116,7 +113,6 @@ export default {
         type: [String, Number],
         default: () => typeDescriptor.value?.defaultWidth
       })
-      // Use 100% == 1.0 as default width when nothing is set:
       return width === undefined
         ? 1.0
         : isString(width)
@@ -129,17 +125,15 @@ export default {
       return isString(width) ? width.match(/^\s*([<>]?)/)[1] || null : null
     })
 
-    // Interpret '>50%' as '50%, flex-grow: 1`
+    // Interpret '>50%' as '50%, flex-grow: 1`, and '<' as flex-shrink:
     const flexGrow = computed(
       () => widthOperator.value === '>' || width.value === 'fill'
     )
 
-    // Interpret '<50%' as '50%, flex-shrink: 1`
     const flexShrink = computed(() => widthOperator.value === '<')
 
     const flexBasis = computed(() => {
       const value = width.value
-      // 'auto' = no fitting:
       return [null, 'auto', 'fill'].includes(value)
         ? 'auto'
         : /%$/.test(value)

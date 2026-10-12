@@ -18,9 +18,8 @@
       :deletable="deletable"
       @delete="deleteItem(objectData)"
     )
-  //- NOTE: For inlined objects, `DitoEditButtons` here only handle the create
-  //- button outside of the schema, the other edit buttons inside are handled by
-  //- `DitoSchemaInlined`.
+  //- NOTE: Inlined objects only get the create button here, the other edit
+  //- buttons are in `DitoSchemaInlined`.
   DitoEditButtons(
     :buttons="buttonSchemas"
     :schema="schema"

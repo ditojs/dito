@@ -22,22 +22,20 @@ export interface NotifyOptions {
   duration?: number
 }
 
-// The dialogs and notifications that `DitoRoot` renders:
+// Rendered by `DitoRoot`:
 export interface DialogsAndNotifications {
   showDialog(schema: Schema, options?: DialogOptions): Promise<unknown>
   notify(options: NotifyOptions): void
   closeNotifications(): void
 }
 
-// The context of the admin, provided once to all its components. The user and
-// the views change with each login, and are read reactively.
+// The user and the views change with each login, and are read reactively:
 export class AdminContext {
   readonly api: Api
   readonly router: Router
   readonly session: Session
   // The pending requests of the admin, for the header's spinner:
   readonly loadingTracker = new LoadingTracker()
-  // The rendered routes and components, to reveal and focus them:
   readonly ui = new UiRegistry()
   readonly #viewRegistry: ViewRegistry
   readonly #flattenedViews = computed(() => flattenViews(this.views))
@@ -64,7 +62,6 @@ export class AdminContext {
     return this.session.user
   }
 
-  // The route tree of the resolved views, `null` until they're resolved.
   get routeTree(): RouteTree | null {
     return this.#viewRegistry.routeTree
   }
@@ -83,7 +80,6 @@ export class AdminContext {
     this.#dialogsAndNotifications = dialogsAndNotifications
   }
 
-  // Resolve with the value that the dialog is closed with:
   showDialog(schema: Schema, options?: DialogOptions) {
     return this.#dialogsAndNotifications!.showDialog(schema, options)
   }

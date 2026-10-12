@@ -9,20 +9,16 @@ import { asArray } from '@ditojs/utils'
 import type { Services } from '../utils/services.ts'
 
 export interface FocusOptions {
-  // Focus and blur the element that edits the value, by default the one with
-  // the template ref `element`, or else the root element:
+  // By default, the element with the template ref `element`, or the root:
   focusElement?: () => void
   blurElement?: () => void
 }
 
-// Focus the component, revealing it first, e.g. in a collapsed schema or a tab
-// that isn't selected, through its handle in the UI registry.
 export function useFocus(
   { admin, container }: Services,
   componentPath: Ref<string>,
   { focusElement, blurElement }: FocusOptions = {}
 ) {
-  // Components without the element, e.g. sources, focus their root element:
   const component = getCurrentInstance()!.proxy!
   const element = useTemplateRef<any>('element')
 
@@ -33,8 +29,7 @@ export function useFocus(
     return target.$el ?? target
   }
 
-  // Prefer the `focus()` and `blur()` of components, e.g. `DitoInput` focuses
-  // its input rather than its root element that `getFocusElement()` returns:
+  // Prefer the methods of components, like `DitoInput` focusing its input:
   const getFocusTarget = (method: 'focus' | 'blur') => {
     const target = getElement()
     return target?.[method] ? target : getFocusElement()
@@ -59,7 +54,7 @@ export function useFocus(
   onUnmounted(() => unregister())
 
   return {
-    // The template ref `element`, which can only be used once per component:
+    // NOTE: The template ref `element` can only be used once per component.
     element,
 
     focus() {

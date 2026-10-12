@@ -23,14 +23,12 @@ import { findItemIndexById } from './schema/item.js'
 import { appendDataPath, getRelativeDataPath } from './data.js'
 import type { Api, Schema } from './types.ts'
 
-// The components that render the routes of views, forms and nested forms:
 export interface RouteComponents {
   readonly view: Component
   readonly form: Component
   readonly nestedForm: Component
 }
 
-// The records that the route tree creates carry their node:
 declare module 'vue-router' {
   interface RouteMeta {
     node?: MenuNode | ViewNode | FormNode
@@ -39,32 +37,25 @@ declare module 'vue-router' {
 
 type Params = Record<string, string>
 
-// The route of a form, which the router resolves by its name:
 export interface Route {
   name: symbol
   params: Params
 }
 
-// The route of the deepest form that edits the data at a data path:
 export interface FormRoute extends Route {
   // The data path that remains within the form:
   dataPath: string
 }
 
-// The state of a route component that its routes depend on: its data, the
-// parameters of its route, and whether its sources are transient, e.g. in
-// forms that create their item:
 export interface RouteState {
   data: any
   routeParams: Record<string, any>
   isTransient: boolean
 }
 
-// The item that a form edits, in the data of its parent route component:
 export interface ItemLocation {
   dataPath: string
-  // The data that holds the item at `key`, which is `null` for new items of
-  // lists:
+  // `key` is `null` for new items of lists:
   data: any
   key: string | number | null
 }
@@ -74,7 +65,6 @@ abstract class RouteNode {
 
   abstract get children(): RouteNode[]
 
-  // Pick the parameters of the forms on the route to this node:
   getParams(routeParams: Record<string, any>): Params {
     const params: Params = {}
     for (let node: RouteNode | null = this; node; node = node.parent) {
@@ -110,8 +100,7 @@ export class MenuNode extends RouteNode {
   }
 }
 
-// Views and forms are containers, which hold one object of data, and the
-// sources in it. Containers and sources alternate in every route.
+// Containers and sources alternate in every route:
 abstract class ContainerNode extends RouteNode {
   readonly sources: SourceNode[] = []
 
@@ -120,15 +109,8 @@ abstract class ContainerNode extends RouteNode {
   }
 
   findSource(dataPath: string): SourceNode | null {
-    let node: ContainerNode | SourceNode = this
-    for (
-      let step = stepIntoSource(node, dataPath);
-      step;
-      step = stepIntoSource(node, step.path)
-    ) {
-      const { source, key, path } = step
+    for (const { source, key, path } of walkSources(this, dataPath)) {
       if (key === undefined && !path) return source
-      node = source.form ?? source
     }
     return null
   }
@@ -145,14 +127,11 @@ abstract class ContainerNode extends RouteNode {
       : null
   }
 
-  // Find the item of `form` below this container, through the parameters of
-  // its route:
   findItem(form: FormNode, state: RouteState): ItemLocation | null {
     return this.#findItem(form, state, null)?.location ?? null
   }
 
-  // Find the parameters of the route of `form` that lead to `item`, by its
-  // identity, e.g. after it or the item of a parent form moved:
+  // Find `item` by its identity, e.g. after it or the item of a parent moved:
   findItemParams(
     form: FormNode,
     state: RouteState,
@@ -161,8 +140,6 @@ abstract class ContainerNode extends RouteNode {
     return this.#findItem(form, state, item)?.params ?? null
   }
 
-  // Descend to the item of `form` through the parameters of its route, or
-  // search the items of lists with index keys for `item`, if it's given.
   #findItem(
     form: FormNode,
     { data, routeParams, isTransient }: RouteState,
@@ -170,8 +147,7 @@ abstract class ContainerNode extends RouteNode {
   ) {
     const nodes: RouteNode[] = []
     for (let node: RouteNode | null = form; node !== this; node = node.parent) {
-      // The form isn't below this container, e.g. after the views were
-      // resolved again:
+      // The form isn't below this container after the views were resolved:
       if (!node) return null
       nodes.unshift(node)
     }
@@ -239,23 +215,14 @@ abstract class ContainerNode extends RouteNode {
     return location && { location, params }
   }
 
-  // Walk the data path through the sources below this container, to the
-  // deepest form with a route and to the source that the path ends at,
-  // collecting the parameters of the forms on the way: the ids of the items of
-  // sources with a resource, and the indices of transient ones.
+  // Walk to the deepest form with a route and to the source that the path ends
+  // at, collecting the ids or indices of the items on the way:
   #walk(dataPath: string, { data, routeParams, isTransient }: RouteState) {
     let route: FormRoute | null = null
     let source: SourceNode | null = null
     let params = this.getParams(routeParams)
-    let node: ContainerNode | SourceNode = this
-    for (
-      let step = stepIntoSource(node, dataPath);
-      step;
-      step = stepIntoSource(node, step.path)
-    ) {
-      const { source: child, key, path } = step
+    for (const { source: child, key, path } of walkSources(this, dataPath)) {
       data = getValueAtDataPath(data, child.dataPath, () => null)
-      // The source that the path ends at, if any:
       source = key === undefined && !path ? child : null
       const { form } = child
       if (form) {
@@ -276,8 +243,6 @@ abstract class ContainerNode extends RouteNode {
           route = { name: form.routeName, params, dataPath: path }
         }
       }
-      // Object sources without forms continue with their sources:
-      node = form ?? child
     }
     return { route, source, params }
   }
@@ -303,16 +268,14 @@ export class ViewNode extends ContainerNode {
 
 export class FormNode extends ContainerNode {
   readonly routeName: symbol
-  // The route parameter that holds the item of list forms, and `create` in
-  // object forms, numbered along the route so they don't clash:
+  // The item of list forms, or `create` in object forms, numbered by depth:
   readonly param: string
 
   constructor(
     readonly source: SourceNode,
     readonly schemas: Schema[],
-    // Forms that render inside the form or view of their parent route:
     readonly isNestedForm: boolean,
-    // Forms of inlined sources, which render without a route:
+    // Forms of inlined sources render without a route:
     readonly isInlined: boolean
   ) {
     super(source)
@@ -328,21 +291,17 @@ export class FormNode extends ContainerNode {
 
 export class SourceNode extends RouteNode {
   form: FormNode | null = null
-  // The sources of object sources without forms, like the children of tree
-  // objects:
+  // The sources of object sources without forms, like tree objects:
   readonly sources: SourceNode[] = []
 
   constructor(
     readonly schema: Schema,
     parent: ContainerNode | SourceNode,
-    // The data path relative to the container, e.g. `contents/notes` for a
-    // list in a nested section:
+    // Relative to the container, e.g. `contents/notes` in a nested section:
     readonly dataPath: string,
-    // Sources routed next to the form of their parent item instead of inside
-    // it, like the children of tree items:
+    // Routed next to the form of their parent item, like tree children:
     readonly isFlattened: boolean,
-    // Sources where the recursion of forms that contain themselves stops after
-    // `maxDepth` repetitions, without forms or routes of their own:
+    // Recursive forms stop after `maxDepth` repetitions, without routes:
     readonly isBeyondMaxDepth: boolean
   ) {
     super(parent)
@@ -357,21 +316,13 @@ export class SourceNode extends RouteNode {
     return isListSource(this.schema)
   }
 
-  get hasResource(): boolean {
-    return !!this.schema.resource
-  }
-
   // Lists address their items by index in transient data, and in sources
-  // without a resource, which edit their items in the data of their parent,
-  // so the sources below their routed forms are transient too:
+  // without a resource, whose forms edit transient data too:
   usesIndexKeys(isTransient: boolean): boolean {
-    return isTransient || !this.hasResource
+    return isTransient || !this.schema.resource
   }
 }
 
-// RouteTree describes the routes of the views, built from their set-up
-// schemas, see `setupView()`. Router records are generated from it, carrying
-// their node in `meta.node`, and links resolve through the names of its routes.
 export class RouteTree {
   readonly nodes: (MenuNode | ViewNode)[]
   readonly #api: Pick<Api, 'normalizePath'>
@@ -389,13 +340,11 @@ export class RouteTree {
     )
   }
 
-  // Dialogs don't support forms with routes.
   hasRoutedForms(): boolean {
     return this.nodes.some(node => !!findRoutedForm(node))
   }
 
-  // Lists and options linked to views edit their items in the form of the
-  // view.
+  // Lists and options linked to views edit their items in the view's form:
   getViewItemRoute(name: string, key: string): Route | null {
     const view = this.#viewsByName.get(name)
     const form = view && findRoutedForm(view)
@@ -461,8 +410,7 @@ export class RouteTree {
         this.#addChildSources(form, schema)
       } else if (isObjectSource(schema)) {
         // Object sources without forms, like tree objects, route the forms of
-        // their children under their own path. List sources can't, as their
-        // items need the parameter of the form route.
+        // their children. Lists can't, as their items need a form parameter:
         this.#addChildSources(source, schema)
       }
     }
@@ -495,8 +443,6 @@ export class RouteTree {
     }
   }
 
-  // The paths of the records are relative to the record of their container,
-  // prefixed with `basePath`.
   #createSourceRecords(
     sources: SourceNode[],
     basePath: string,
@@ -551,9 +497,8 @@ export class RouteTree {
     ]
   }
 
-  // The component of single-component views uses the path of its view, all
-  // other sources replace the last segment of their data path with their own
-  // `path`.
+  // Single-component views use the path of their view, all other sources
+  // replace the last segment of their data path with their own `path`:
   #getSourcePath(source: SourceNode): string {
     const { parent, schema, dataPath } = source
     if (
@@ -573,8 +518,7 @@ export class RouteTree {
   }
 }
 
-// Call `callback` with the sources in the components of a view or form, also in
-// its tabs, panels and sections, with their data paths relative to it.
+// Also find the sources in tabs, panels and sections:
 function forEachSource(
   schema: Schema,
   callback: (source: Schema, dataPath: string) => void,
@@ -602,10 +546,8 @@ function forEachSource(
   forEachPanelSource(schema)
 }
 
-// Find the sources through which forms with routes can be reached: Collect the
-// graph of all sources once, then follow it back from the sources with routed
-// forms. This takes linear time, while expanding all inlined sources along
-// every route grows with their combinations, e.g. with nested content.
+// Collect the graph of all sources once, then follow it back from the sources
+// with routed forms, in linear time, unlike expanding all inlined sources:
 function findSourcesWithRoutes(views: Record<string, Schema>): Set<Schema> {
   const parentsBySource = new Map<Schema, Set<Schema>>()
   const routedSources: Schema[] = []
@@ -650,8 +592,6 @@ function findSourcesWithRoutes(views: Record<string, Schema>): Set<Schema> {
   return sourcesWithRoutes
 }
 
-// The items of lists are addressed by the parameter of their form, objects
-// are their own item.
 function getItemPathPattern(source: SourceNode, sourcePath: string): string {
   return source.form && source.isList
     ? joinPaths(sourcePath, `:${source.form.param}`)
@@ -677,29 +617,35 @@ function isBeyondMaxDepth(
   return depth > (schema.maxDepth ?? 1)
 }
 
-// The forms of sources, which setup keeps, unlike the `forms` objects that hold
-// them. Inlined sources use the object of their components as their form:
+// Setup keeps the forms, unlike the `forms` objects. Inlined sources use their
+// components as their form:
 function getForms(schema: Schema): Schema[] {
   return schema.forms
     ? Object.values(schema.forms)
     : [schema.form ?? schema.components].filter(Boolean)
 }
 
-// Step from `node` into the source that `dataPath` leads to, with the key of
-// the item in lists with forms, and the path that remains below them:
-function stepIntoSource(node: ContainerNode | SourceNode, dataPath: string) {
+// Step through the sources that `dataPath` leads to, with the key of the item
+// in lists with forms, and the path that remains below them. Object sources
+// without forms continue with their own sources:
+function* walkSources(
+  node: ContainerNode | SourceNode,
+  dataPath: string
+): Generator<{ source: SourceNode; key?: string; path: string }> {
   for (const source of node.sources) {
-    const path = getRelativeDataPath(dataPath, source.dataPath)
+    let path = getRelativeDataPath(dataPath, source.dataPath)
     if (path !== null) {
+      let key: string | undefined
       if (source.form && source.isList) {
-        const [key, ...rest] = parseDataPath(path)
-        return { source, key, path: rest.join('/') }
-      } else {
-        return { source, key: undefined, path }
+        const [first, ...rest] = parseDataPath(path)
+        key = first
+        path = rest.join('/')
       }
+      yield { source, key, path }
+      yield* walkSources(source.form ?? source, path)
+      break
     }
   }
-  return null
 }
 
 function findRoutedForm(node: RouteNode): FormNode | null {

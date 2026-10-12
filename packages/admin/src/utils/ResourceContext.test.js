@@ -34,7 +34,7 @@ describe('ResourceContext', () => {
     expect(resource).toBeInstanceOf(ResourceContext)
     const { getResourceUrl } = getComponent('chapters').context
     expect(getResourceUrl(resource.getResource())).toBe('/items/1')
-    const chapters = getComponent('chapters').ownResource
+    const chapters = getComponent('chapters').ownSource.resource
     expect(chapters).not.toBe(resource)
     expect(chapters.parent).toBe(resource)
     expect(getResourceUrl(chapters.getResource())).toBe('/items/1/chapters')
@@ -47,7 +47,7 @@ describe('ResourceContext', () => {
 
   it('resolves resources through the closest one with a resource', async () => {
     const { routeComponent: form, getComponent } = await mountBook()
-    const notes = getComponent('notes').ownResource
+    const notes = getComponent('notes').ownSource.resource
     expect(notes.getResource()).toBe(null)
     expect(notes.resourceOwner).toBe(form.ownRoute.resource)
     const { getResourceUrl } = getComponent('notes/0/text').context
@@ -86,7 +86,7 @@ describe('ResourceContext', () => {
   it('names the verbs of transient sources', async () => {
     const { routeComponent: form, getComponent } = await mountBook()
     expect(form.ownRoute.resource.verbs.delete).toBe('delete')
-    expect(getComponent('notes').ownResource.verbs.delete).toBe('remove')
+    expect(getComponent('notes').ownSource.resource.verbs.delete).toBe('remove')
   })
 
   // The forms of tree items render inside the tree, but continue the resource

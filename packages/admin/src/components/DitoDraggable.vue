@@ -24,28 +24,16 @@ export default {
   emits: ['update:modelValue'],
 
   props: {
-    modelValue: {
-      type: Array,
-      required: true
-    },
-    as: {
-      type: String,
-      default: 'div'
-    },
-    options: {
-      type: Object,
-      required: true
-    },
-    draggable: {
-      type: Boolean,
-      default: true
-    }
+    modelValue: { type: Array, required: true },
+    as: { type: String, default: 'div' },
+    options: { type: Object, required: true },
+    draggable: { type: Boolean, default: true }
   },
 
   setup(props) {
     const { domOn } = useDomEvents()
     const isDragging = ref(false)
-    // The document handlers that clear `isDragging`, see `onEnd()`:
+    // The document handlers that clear `isDragging` after dragging:
     let dragEndHandlers = null
 
     const removeDragEndHandlers = () => {
@@ -58,9 +46,8 @@ export default {
       removeDragEndHandlers()
     }
 
-    // `UseSortable` reads its options only once when it's mounted, so they're
-    // built once here. The handlers call the handlers of the current
-    // `options`, and `draggable` toggles the `disabled` option, see below.
+    // `UseSortable` reads its options only once when it's mounted: Delegate to
+    // the current `options`, and toggle `disabled` in the watcher below.
     const sortableOptions = {
       ...props.options,
       disabled: !props.draggable,

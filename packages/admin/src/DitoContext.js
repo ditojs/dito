@@ -23,32 +23,21 @@ import {
 
 const { hasOwnProperty } = Object.prototype
 
-// `DitoContext` instances are a thin wrapper around raw `context` objects,
-// which themselves inherit from their `services`: the services of the type
-// component or data model that creates the context, see `Services`, or else
-// the component. They only need to provide the values that differ from these.
-// In order to not expose all fields of the component, the wrapper is
-// introduced.
-
-// Use WeakMap for the raw `context` objects, so we don't have to pollute the
-// actual `DitoContext` instance with it.
+// The raw context objects of the instances, which inherit from their services:
 const contexts = new WeakMap()
 
 function toObject(context) {
   const rawStart = toRaw(context)
   let raw = rawStart
   let object
-  // In case `DitoContext.extend()` was used, we need to find the actual context
-  // object from the object's the inheritance chain:
+  // Find the context object of extended contexts in their prototype chain:
   do {
     object = contexts.get(raw)
     if (object) break
     raw = Object.getPrototypeOf(raw)
   } while (raw)
   if (object && raw !== rawStart) {
-    // Assign the passed context with the original object as well, so we don't
-    // have to search for it again:
-    contexts.set(raw, object)
+    contexts.set(rawStart, object) // Don't search for it again.
   }
   return object
 }
@@ -56,7 +45,6 @@ function toObject(context) {
 function get(context, key, defaultValue) {
   const object = toObject(context)
   const value = key in object ? object[key] : undefined
-  // If `object` explicitly sets the key to `undefined`, return it.
   return value !== undefined || hasOwnProperty.call(object, key)
     ? value
     : isFunction(defaultValue)
@@ -65,9 +53,7 @@ function get(context, key, defaultValue) {
 }
 
 function set(context, key, value) {
-  // Define the value on the context object itself: An assignment would be
-  // passed on to the services that the object inherits from, see the
-  // `DitoContext` constructor, and change their state for all their contexts.
+  // An assignment would change the services that the object inherits from:
   Object.defineProperty(toObject(context), key, {
     value,
     writable: true,
@@ -78,35 +64,18 @@ function set(context, key, value) {
 
 export default class DitoContext {
   constructor(services, context) {
-    // Use the provided params object / function, or create a new one:
     context = context
       ? isFunction(context)
         ? context()
         : { ...context }
       : {}
-    // If not explicitly set (to false), default to true so we don't fall back
-    // to `services` for its value.
     context.nested ??= true
     context.services = services
-    // Have `object` inherit from `services`, so it can override their values
-    // and still retrieve from them, and associate it with `this` through the
-    // `contexts` map:
-    const object = Object.setPrototypeOf(context, services)
-    // No need for `toRaw(this)` here as it's always raw inside the constructor.
-    contexts.set(this, object)
+    // `this` is always raw inside the constructor:
+    contexts.set(this, Object.setPrototypeOf(context, services))
   }
 
-  static get(services, context) {
-    return context instanceof DitoContext
-      ? context
-      : new DitoContext(services, context)
-  }
-
-  // Creates the context of the component described by `schema` and `name` in
-  // `data`, e.g. to evaluate its `if` before it's rendered, the same way as
-  // once it's rendered. Its `value` is read from `data` only when it's used,
-  // so that watchers only depend on it if it's used, and missing values don't
-  // need to be resolved through the data path.
+  // Create the context of a component before it's rendered, e.g. for its `if`.
   static createForSchema(services, {
     schema,
     name,
@@ -115,8 +84,7 @@ export default class DitoContext {
     dataPath,
     rootData
   }) {
-    // Pass a function, so that the `value` getter isn't evaluated when the
-    // context is created.
+    // Read `value` only when it's used, so watchers only depend on it then:
     return new DitoContext(services, () => ({
       schema,
       name,
@@ -130,21 +98,15 @@ export default class DitoContext {
     }))
   }
 
-  // Creates the context of a component of this context's schema, e.g. of a
-  // section, the same way as when that component is rendered: Its data is the
-  // value of this context's component if that is nested, or else the same
-  // data. The data path adds `name` if the child component is nested.
   createChildContext(schema, name) {
     const nested = hasNestedData(schema)
-    // Contexts without a schema don't hold a value either, e.g. the ones of
-    // `DitoMenu` and `DitoPanels`, evaluating views and panels.
+    // Contexts without a schema don't hold a value, e.g. of `DitoMenu`:
     const holdsOwnValue = !!this.schema && hasNestedData(this.schema)
     return DitoContext.createForSchema(getServices(this), {
       schema,
       name,
       nested,
-      // Read the value from the item that holds it rather than through the data
-      // path, as items that are being created aren't part of the root data.
+      // Items that are being created aren't part of the root data:
       data: holdsOwnValue ? this.item?.[this.name] : this.item,
       dataPath: nested ? appendDataPath(this.dataPath, name) : this.dataPath,
       rootData: this.rootItem
@@ -152,13 +114,9 @@ export default class DitoContext {
   }
 
   extend(object) {
-    // Create a copy of this context that inherits from the real one, but
-    // overrides some properties with the ones from the passed `object`.
     return Object.setPrototypeOf(object, this)
   }
 
-  // `nested` is `true` when the data-path points a value inside an item, and
-  // `false` when it points to the item itself.
   get nested() {
     return get(this, 'nested', true)
   }
@@ -170,9 +128,7 @@ export default class DitoContext {
   get value() {
     const object = toObject(this)
     // Type components hold their value, also while it's `undefined`, e.g. a
-    // computed value that the data model hasn't written yet. Other components
-    // don't hold a value, but if they're nested, we can get it from the root,
-    // or `undefined` if it's missing there.
+    // computed value that isn't written yet. Others read it from the root:
     return 'value' in object
       ? object.value
       : this.nested
@@ -208,23 +164,17 @@ export default class DitoContext {
     return getLastDataPathIndex(this.parentItemDataPath)
   }
 
-  // NOTE: While internally, we speak of `data`, in the API surface the
-  // term `item` is used for the data that relates to editing objects:
+  // NOTE: Internally we speak of `data`, the API of `item`:
   get item() {
     return get(
       this,
       'data',
-      // If `data` isn't provided, we can determine it from rootData & dataPath:
       () => getItem(this.rootItem, this.dataPath, this.nested) || null
     )
   }
 
-  // NOTE: `parentItem` isn't the closest data parent to `item`, it's the
-  // closest parent that isn't an array, e.g. for relations or nested JSON data.
-  // This is why the term `item` was chosen over `data`, e.g. VS the use of
-  // `parentData` in server-sided validation, which is the closest parent. If
-  // needed, we could expose this data here too, as we can do all sorts of data
-  // processing with `rootData` and `dataPath`.
+  // NOTE: `parentItem` is the closest parent that isn't an array, unlike
+  // `parentData` in the server's validation, which is the closest parent.
   get parentItem() {
     const item = (
       getParentItem(this.rootItem, this.dataPath, this.nested) || null
@@ -232,7 +182,6 @@ export default class DitoContext {
     return item !== this.item ? item : null
   }
 
-  // Contexts that don't set their root data read their services':
   get rootItem() {
     return get(this, 'rootData', () => {
       const services = getServices(this)
@@ -240,8 +189,7 @@ export default class DitoContext {
     })
   }
 
-  // The processed items are built for the server when they're read, except
-  // in `process()`, which receives the ones being built:
+  // `process()` receives the processed items being built:
   get processedItem() {
     return get(this, 'processedData', () =>
       getProcessedData(this, this.dataPath, this.nested)
@@ -276,14 +224,10 @@ export default class DitoContext {
     return getAdminValue(this, 'flattenedViews')
   }
 
-  // The label of the item as HTML, with escaped item values, see
-  // `getItemLabel()`.
   get itemLabel() {
     return get(this, 'itemLabel', null)
   }
 
-  // The text of `itemLabel`, with its escaped item values unescaped, e.g. for
-  // places that don't display HTML.
   get itemLabelText() {
     return getTextFromHtml(this.itemLabel)
   }
@@ -292,9 +236,6 @@ export default class DitoContext {
     return get(this, 'formLabel', null)
   }
 
-  // In the callbacks of options, `schema.options.value()`,
-  // `schema.options.label()`, `schema.options.equals()` and
-  // `schema.search.filter()`:
   get option() {
     return get(this, 'option', undefined)
   }
@@ -303,25 +244,18 @@ export default class DitoContext {
     return get(this, 'options', undefined)
   }
 
-  // Whether `schema.options.label()` renders the label of the selected value,
-  // e.g. of a closed multiselect or its tags, rather than of an option in the
-  // list of options:
   get isValueLabel() {
     return get(this, 'isValueLabel', false)
   }
 
-  // Whether a collapsible schema opens, in its `open` event:
   get open() {
     return get(this, 'open', undefined)
   }
 
-  // For search term in selects:
   get searchTerm() {
     return get(this, 'searchTerm', undefined)
   }
 
-  // The error field is only populated in the context of buttons that send
-  // requests, see `useResourceSubmit()`:
   get error() {
     return get(this, 'error', undefined)
   }
@@ -330,15 +264,12 @@ export default class DitoContext {
     return get(this, 'wasNotified', false)
   }
 
-  // Whether the action of the component is running, e.g. the click handler of
-  // a button, which disables it. Handlers can set it to `false` to end it
-  // early, e.g. before opening a dialog. This changes the state of the
-  // component, which resets it when the action ends.
   get isRunning() {
     return get(this, 'isRunning', false)
   }
 
   set isRunning(value) {
+    // Set the state of components that run actions, e.g. buttons:
     const services = getServices(this)
     if (services && 'isRunning' in services) {
       services.isRunning = value
@@ -347,18 +278,14 @@ export default class DitoContext {
     }
   }
 
-  // The state of the data of the context's form, view, dialog or panel with
-  // its own data. Nested forms that mutate their item share the parent's data:
   get isDirty() {
     return !!getContainer(this)?.isDirty
   }
 
-  // Only forms that create their item are creating:
   get isCreating() {
     return !!getContainer(this)?.isCreating
   }
 
-  // The name of the selected tab of the nearest form, if it has tabs:
   get selectedTab() {
     const { route } = getServices(this)
     return route?.isForm ? route.selectedTab : null
@@ -368,12 +295,9 @@ export default class DitoContext {
     return getAdmin(this).router.currentRoute.value.query
   }
 
-  // The query of the nearest list, e.g. its scope, page, order and filters:
   get listQuery() {
     return getServices(this).source?.query ?? null
   }
-
-  // Helper Methods
 
   get request() {
     return options => request(getServices(this), options)
@@ -395,9 +319,6 @@ export default class DitoContext {
     return options => download(getServices(this), options)
   }
 
-  // Without `resource`, return the URL of the nearest form or list with a
-  // resource: of the item that the form edits, or of the collection that the
-  // list loads or the form creates its item in.
   get getResourceUrl() {
     return resource => {
       const services = getServices(this)
@@ -419,13 +340,10 @@ export default class DitoContext {
     }
   }
 
-  // Validate the data, or only the values whose data paths match `match`, and
-  // show their errors. Return whether they're valid:
   get validate() {
     return match => getContainer(this).validate(match)
   }
 
-  // Like `validate()`, but without showing the errors:
   get verify() {
     return match => getContainer(this).verify(match)
   }
@@ -434,15 +352,10 @@ export default class DitoContext {
     return () => getContainer(this).markEdited()
   }
 
-  // Forms merge `data` into their item, the others replace their data with it,
-  // which their data model sets up with the defaults right away:
   get replaceItem() {
     return data => getContainer(this).replaceItem(data)
   }
 
-  // Submit the data through the button of the context, like buttons with a
-  // resource do when clicked, and resolve with whether it succeeded. Only
-  // buttons of forms and of lists with a resource provide `submit()`:
   get submit() {
     return options => {
       const { submit } = getServices(this)
@@ -466,8 +379,6 @@ export default class DitoContext {
     }
   }
 
-  // Resolve with the value that the dialog is closed with, see `closeDialog()`
-  // in the contexts of the dialog's components:
   get showDialog() {
     return (schema, options) => getAdmin(this).showDialog(schema, options)
   }
@@ -491,8 +402,7 @@ function getAdmin(context) {
   return getServices(context).admin
 }
 
-// Read the members of the admin's context, unless the context overrides them,
-// or `null` for contexts without services:
+// Contexts may override the admin's members, and lack services:
 function getAdminValue(context, key) {
   return get(context, key, () => getServices(context)?.admin?.[key] ?? null)
 }
@@ -501,8 +411,7 @@ function getContainer(context) {
   return getServices(context)?.container ?? null
 }
 
-// Returns the item at `dataPath` in the data that the model holding it
-// processed for the server.
+// Find the model that holds `dataPath`, in its own data or its parent's:
 function getProcessedData(context, dataPath, nested) {
   let dataModel = getContainer(context)?.model
   let path = null

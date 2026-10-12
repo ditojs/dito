@@ -16,8 +16,7 @@ import { inject } from 'vue'
 import { notify as showNotification } from '@kyvg/vue3-notification'
 import { asArray, isString, escapeHtml, stripHtml } from '@ditojs/utils'
 
-// Detects opening tags like `<a href="…">` or `<b>`, which callers that still
-// pass formatted text through the escaped `text` option would include:
+// Detect opening tags of formatted text passed through the escaped `text`:
 function isLikelyMarkup(paragraph) {
   return (
     isString(paragraph) &&
@@ -31,9 +30,8 @@ export default {
   setup() {
     const admin = inject('admin')
     return {
-      // Shows a notification with the paragraphs of `text`, which are escaped,
-      // or else of `html`, which is rendered as it is, so it must only contain
-      // HTML from trusted sources, and escape all values that it includes.
+      // `text` is escaped, `html` is rendered as is: Only pass trusted HTML to
+      // it, and escape all values that it includes.
       notify({ type = 'info', title, text, html, error, duration } = {}) {
         title ||= (
           {
@@ -45,7 +43,7 @@ export default {
           'Notification'
         )
         const isHtml = html != null
-        // Skip empty paragraphs, e.g. `transientNote` when it's `false`:
+        // Skip empty paragraphs, like `transientNote` when it's `false`:
         const paragraphs = asArray(isHtml ? html : text).filter(
           paragraph => paragraph != null && paragraph !== false
         )
@@ -80,9 +78,7 @@ export default {
         )
         const { notifications = true } = admin.api
         if (notifications) {
-          // Calculate the display duration of the notification from its content
-          // and the `durationFactor` setting: the milliseconds per character
-          // displayed in the notification, plus 40 (40 + title + message):
+          // `durationFactor` is in milliseconds per character, plus 40 more:
           const { durationFactor = 20 } = notifications
           duration ??= (40 + content.length + title.length) * durationFactor
           showNotification({

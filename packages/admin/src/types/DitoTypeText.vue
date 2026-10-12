@@ -44,8 +44,9 @@ const DitoTypeText = {
 
   setup(props) {
     const field = useField(props, { nativeField: true, textField: true })
-    const { value, focused, attributes, inputAffixesProps, clear } = field
+    const { value, focused } = field
     return {
+      ...field,
       inputValue: computed({
         get() {
           return (
@@ -61,12 +62,7 @@ const DitoTypeText = {
           value.value = inputValue
         }
       }),
-      inputTypes,
-      attributes,
-      context: field.context,
-      componentPath: field.componentPath,
-      inputAffixesProps,
-      clear
+      inputTypes
     }
   }
 }

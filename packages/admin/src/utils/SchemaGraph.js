@@ -7,10 +7,8 @@ import {
 } from '@ditojs/utils'
 import { nanoid } from 'nanoid'
 
-// SchemaGraph is a class to collect schema graph meta information in order to
-// process sources and relations for the given targets 'server' and 'clipboard',
-// according to the following table:
-//
+// Collect the sources and relations of data to process their ids for the
+// targets 'server' and 'clipboard':
 // | --------------------------------------------| --------- | --------- |
 // | data                                        | server    | clipboard |
 // | --------------------------------------------| --------- | --------- |
@@ -22,10 +20,7 @@ import { nanoid } from 'nanoid'
 // | type: 'source', related: true               | keep id   | @id       |
 // | type: 'source', related: true, temporary    | ref, #id  | @@id      |
 // | --------------------------------------------| --------- | --------- |
-//
-// The data paths passed to the graph are absolute, and the graph handles them
-// relative to `dataPath`, the one of the processed data. Relations to data
-// outside of it are external.
+// Data paths are absolute. Relations outside of `dataPath` are external.
 
 export class SchemaGraph {
   graph = {}
@@ -43,15 +38,14 @@ export class SchemaGraph {
       subGraph = subGraph[key] ??= {}
     }
     subGraph.$settings = {
-      ...defaults, // See `addSource(dataPath)`
+      ...defaults,
       ...subGraph.$settings,
       ...settings
     }
   }
 
   addSource(dataPath, schema) {
-    // Only set `related: false` through the defaults, as `setSourceRelated()`
-    // may be called before `addSource()`, depending on the graph structure.
+    // Default to `related: false`, as `setSourceRelated()` may come first:
     this.set(dataPath, { type: 'source', schema }, { related: false })
   }
 
@@ -115,8 +109,7 @@ export class SchemaGraph {
           if (id != null) {
             if (clipboard) {
               if (source && !related) {
-                // Unrelated sources don't need their ids on the clipboard, not
-                // even temporary ones, since nothing references them.
+                // Nothing references the ids of unrelated sources:
                 delete value[idKey]
               } else {
                 // Mark all related ids as temporary, and keep the temporary
@@ -124,9 +117,8 @@ export class SchemaGraph {
                 value[idKey] = `@${id}`
               }
             } else if (isTemporaryId(id)) {
-              // Server wants Objection-style '#id' / '#ref' pairs, with the ids
-              // unique per reference group, since they reference across the
-              // full graph. Temporary ids without a related are preserved.
+              // The server wants Objection-style '#id' / '#ref' pairs, unique
+              // per reference group, as they reference across the full graph:
               const temporaryId = id.slice(1)
               value[source ? '#id' : '#ref'] = reference
                 ? `${reference}-${temporaryId}`

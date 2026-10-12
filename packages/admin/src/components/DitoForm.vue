@@ -3,24 +3,19 @@
   :class="{ 'dito-form-nested': isNestedRoute }"
   :data-resource="schemaPath"
 )
-  //- Only render a router-view here if this isn't the last data route and not a
-  //- nested form route, which will appear elsewhere in its own view.
+  //- Nested form routes render in the view of their parent instead:
   DitoRouterView(
     v-if="!isLastUnnestedRoute && !isNestedRoute"
     v-show="!isActiveRoute"
     :routeLevel="route.level + 1"
   )
-  //- NOTE: Nested form components are kept alive by using `v-show` instead of
-  //- `v-if` here, so event handling and other things still work with nested
-  //- editing.
+  //- NOTE: `v-show` keeps forms alive while nested forms edit their data.
   DitoFormInner(
     v-show="isActiveRoute"
     :nested="isNestedRoute"
     :label="itemLabelText"
   )
-    //- Prevent implicit submission of the form, for example when typing enter
-    //- in an input field.
-    //- https://stackoverflow.com/a/51507806
+    //- Prevent implicit submission: https://stackoverflow.com/a/51507806
     button(
       v-show="false"
       type="submit"
@@ -55,7 +50,6 @@ import {
   computed,
   inject,
   markRaw,
-  onBeforeUnmount,
   provide,
   reactive,
   ref,
@@ -73,10 +67,9 @@ import {
 } from '@ditojs/utils'
 import { useRouteContainer } from '../composables/useRouteContainer.ts'
 import { useResource } from '../composables/useResource.ts'
-import { useResourceSubmit } from '../composables/useResourceSubmit.ts'
 import { useItemLabel } from '../composables/useItemLabel.ts'
 import {
-  useServices,
+  useContainer,
   useSchemaContext
 } from '../composables/useSchemaContext.ts'
 import { useSchemaValue } from '../composables/useSchemaValue.ts'
@@ -100,7 +93,6 @@ import { cloneWithUids } from '../utils/uid.js'
 import { getChildSourceSchemas } from '../utils/schema/types.ts'
 import { mergeData } from '../utils/mergeData.ts'
 import { createDraftRoot } from '../utils/draftRoot.ts'
-import { DataModel } from '../utils/DataModel.ts'
 import { transientNote } from '../utils/dialogs.js'
 import { getTextFromHtml } from '../utils/html.js'
 
@@ -132,8 +124,7 @@ export default {
     const itemId = computed(() => (isCreating.value ? null : param.value))
     const isNestedRoute = computed(() => ownRoute.node.isNestedForm)
 
-    // The item of the form in the data of its parent route, also while it's
-    // left:
+    // The item of the form in the data of its parent route:
     const sourceLocation = computed(() => {
       const { node, state } = parentRoute
       return state.data
@@ -186,7 +177,7 @@ export default {
         : data.value
     )
     // Forms of items in the data of their parent continue the component path
-    // of the source that displays the item, e.g. `main/chapters/1`:
+    // of their source, e.g. `main/chapters/1`:
     const { componentPath } = useComponentPath(
       () => dataPath.value,
       () =>
@@ -261,8 +252,7 @@ export default {
 
     const setData = value => {
       if (isTransient.value) {
-        // Forms of items in the data of their parent merge the data into the
-        // item like an edit:
+        // Merge the data into the item of the parent like an edit:
         if (!equals(data.value, value)) {
           mergeData(schema.value, data.value, value, {
             services,
@@ -271,8 +261,7 @@ export default {
           getDataModel().markEdited()
         }
       } else {
-        // Data from the server is merged, so that its objects keep their
-        // identity:
+        // Merge data from the server, to keep the identity of its objects:
         loadedData.value =
           data.value && value ? getDataModel().mergeFromServer(value) : value
         createdData.value = null
@@ -333,7 +322,7 @@ export default {
       routeContainer
     // The components of the form don't see the source of its parent, e.g. of
     // a tree that renders the forms of its items:
-    const services = useServices({
+    const { services, createDataModel } = useContainer({
       container: ownContainer,
       route: ownRoute,
       source: null,
@@ -362,9 +351,20 @@ export default {
           setData(value)
         }
       },
-      emitLoad: () => emitSchemaEvent('load')
+      emitLoad: () => emitSchemaEvent('load'),
+      getData: () => data.value,
+      getItemLabel: () => itemLabel.value,
+      showValidationErrors: errors => ownContainer.showValidationErrors(errors)
     })
-    const { isTransient, providesData, loadData, ensureData } = requests
+    const {
+      isTransient,
+      providesData,
+      loadData,
+      ensureData,
+      submitResource,
+      getPayloadData,
+      emitButtonEvent
+    } = requests
     const { getItemId, getItemLabel, getItemFormSchema } = useItemLabel({
       services,
       getContext: () => context,
@@ -375,15 +375,6 @@ export default {
     const itemLabel = computed(() =>
       getItemLabel(sourceSchema.value, data.value, { extended: true })
     )
-    const { submitResource, getPayloadData, emitButtonEvent } =
-      useResourceSubmit({
-        admin,
-        handleRequest: requests.handleRequest,
-        getData: () => data.value,
-        getItemLabel: () => itemLabel.value,
-        showValidationErrors: errors =>
-          ownContainer.showValidationErrors(errors)
-      })
 
     const emitSchemaEvent = (event, options) =>
       schemaComponent.value?.emitEvent(event, options)
@@ -401,8 +392,7 @@ export default {
 
     const setupData = () => {
       if (isCreating.value) {
-        // Drop the item that the form loaded before, e.g. from `/items/1`, and
-        // its pending load, which would replace the new item:
+        // Drop the item that the form loaded before, and its pending load:
         requests.loadAbortController.value?.abort()
         loadedData.value = null
         const type = creationType.value
@@ -434,8 +424,7 @@ export default {
             )
           )
           if (params) {
-            // Change the parameters first, so that the form isn't left on the
-            // way, see `beforeRouteChange()`:
+            // Change the parameters first, to not leave the form on the way:
             const {
               name,
               query,
@@ -449,9 +438,8 @@ export default {
           } else {
             original.value = item ?? null
             if (!isMutating.value) {
-              // Edit a draft of the item, with its uids and errors. Items share
-              // their child sources with their source, e.g. tree items their
-              // children with the tree, which edits them:
+              // Items share their child sources with their source, e.g. tree
+              // items their children with the tree, which edits them:
               const transferables = getChildSourceSchemas(
                 sourceSchema.value
               ).map(({ name }) => item?.[name])
@@ -473,8 +461,8 @@ export default {
       }
     }
 
-    // Merge a copy of the draft into its item in the parent's data, or add it
-    // as a new item, so that the parent never shares the draft's data:
+    // Merge a copy of the draft into the parent's data, which never shares
+    // the draft's objects:
     const submitTransient = async (
       button,
       { onSuccess, onError, notifySuccess, notifyError }
@@ -520,12 +508,11 @@ export default {
       // The form may open another item or be left while the submit is pending:
       const submittedPath = path.value
       const submittedData = data.value
-      // Wait for computed values that depend on pending loads, e.g. options.
+      // Wait for computed values that depend on pending loads:
       await waitUntilDataModelSettled(services)
       if (validate && !ownContainer.validate()) {
         return false
       }
-      // The edits that the submit carries:
       const { editCount } = ownDataModel
 
       const getVerb = present => verbs.value[getSubmitVerb(present)]
@@ -604,8 +591,8 @@ export default {
       }
       if (success) {
         getDataModel().clearErrors(dataPath.value)
-        // Edits made while saving stay dirty. Drafts hold the responses of
-        // buttons with resources like edits, see `setData()`:
+        // Edits made while saving stay dirty, and so do the responses of
+        // buttons with resources in drafts:
         if (!isTransient.value || !buttonResource) {
           ownDataModel.markClean({ dataPath: '', editCount })
         }
@@ -617,8 +604,7 @@ export default {
           navigateWithin(submittedPath, () =>
             router.replace({
               path: resolvePath(`${submittedPath}/../${id}`),
-              // Preserve hash for tabs:
-              hash: router.currentRoute.value.hash
+              hash: router.currentRoute.value.hash // Keep the tab.
             })
           )
         }
@@ -649,22 +635,17 @@ export default {
       setupData()
     }
     // The item of the parent is handled by the parent's model:
-    const ownDataModel = markRaw(
-      new DataModel({
-        schema: () => schema.value,
-        data: () => (isEditingSourceItem.value ? null : data.value),
-        rootData: () => rootData.value,
-        dataPath: () => dataPath.value,
-        sourceSchema: () => sourceSchema.value,
-        parent: () => parentRoute.container.model,
-        canSave: () => hasSubmitButton(buttonSchemas.value),
-        services
-      })
-    )
-    // The model's watchers aren't the component's, see `DataModel`:
-    onBeforeUnmount(() => ownDataModel.stop())
-    // Watch the item once the model exists, as the draft takes over its errors,
-    // and the path, to tell changes of the data from changes of the route:
+    const ownDataModel = createDataModel({
+      schema: () => schema.value,
+      data: () => (isEditingSourceItem.value ? null : data.value),
+      rootData: () => rootData.value,
+      dataPath: () => dataPath.value,
+      sourceSchema: () => sourceSchema.value,
+      parent: () => parentRoute.container.model,
+      canSave: () => hasSubmitButton(buttonSchemas.value)
+    })
+    // Watch once the model exists, as the draft takes over its errors. The path
+    // tells changes of the data from changes of the route:
     watch(() => [sourceItem.value, path.value], setupSourceItem, {
       immediate: true
     })
@@ -672,7 +653,7 @@ export default {
     watch(
       router.currentRoute,
       (to, from) => {
-        // Load the data of another item when navigating to it in the same form:
+        // Load the data of other items that the form navigates to:
         const { param } = ownRoute.node
         const toParam = to.params[param]
         const fromParam = from.params[param]
@@ -696,7 +677,6 @@ export default {
       { flush: 'post' }
     )
 
-    // Set up the item to create when the route changes to the create route:
     watch(isCreating, isCreating => {
       if (isCreating) {
         setupData()

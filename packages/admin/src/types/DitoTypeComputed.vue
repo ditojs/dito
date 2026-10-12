@@ -18,11 +18,7 @@ import { fieldProps, useField } from '../composables/useField.ts'
 const DitoTypeComputed = {
   name: 'DitoTypeComputed',
   props: fieldProps,
-
-  setup(props) {
-    const { value, disabled, context, componentPath } = useField(props)
-    return { value, disabled, context, componentPath }
-  }
+  setup: props => useField(props)
 }
 
 defineType({

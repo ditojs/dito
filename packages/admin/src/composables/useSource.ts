@@ -5,11 +5,16 @@ import {
   onUnmounted,
   provide,
   reactive,
-  toRef
+  toRef,
+  watch
 } from 'vue'
+import { isString } from '@ditojs/utils'
 import DitoContext from '../DitoContext.js'
-import { getRelativeDataPath } from '../utils/data.js'
-import { getResource } from '../utils/resource.js'
+import { ItemStores } from '../utils/ItemStores.js'
+import { ListQuery } from '../utils/ListQuery.js'
+import { appendDataPath, getRelativeDataPath } from '../utils/data.js'
+import { confirmAndRemove } from '../utils/dialogs.js'
+import { getResource, getMemberResource } from '../utils/resource.js'
 import {
   ResourceContext,
   type SubmitButton
@@ -17,15 +22,19 @@ import {
 import type { SourceContext } from '../utils/SourceContext.ts'
 import { waitUntilDataModelSettled } from '../utils/services.ts'
 import type { FormNode, ViewNode } from '../utils/RouteTree.ts'
-import { getButtonSchemas, getViewSchema } from '../utils/schema/lookup.js'
-import { isInlined } from '../utils/schema/structure.js'
+import { initializeData, getItemUid } from '../utils/schema/data.js'
+import {
+  getButtonSchemas,
+  getNamedSchemas,
+  getViewSchema,
+  hasFormSchema
+} from '../utils/schema/lookup.js'
+import { isInlined, isListSource } from '../utils/schema/structure.js'
+import type { Data, Schema } from '../utils/types.ts'
 import { useField, type FieldProps } from './useField.ts'
 import { useServices } from './useSchemaContext.ts'
 import { useResource } from './useResource.ts'
-import { useResourceSubmit } from './useResourceSubmit.ts'
-import { useListQuery } from './useListQuery.ts'
 import { useSourceData } from './useSourceData.ts'
-import { useSourceActions } from './useSourceActions.ts'
 import { useItemLabel } from './useItemLabel.ts'
 import type { SchemaEventsEmitter } from './useSchemaEvents.ts'
 
@@ -53,15 +62,85 @@ export function useSource(
     }
   })
   const { admin, route } = services
-  const field = useField(props, { services })
+  const { router } = admin
   const { value, context, disabled, onChange, getSchemaValue, componentPath } =
-    field
+    useField(props, { services })
   const getModel = () => services.container!.model
+  const getBoolean = (key: string) =>
+    getSchemaValue(key, { type: Boolean, default: false })
 
   const hasInlinedItems = () => isInlined(props.schema)
+  const isList = () => isListSource(props.schema)
   // Sources linked to views edit their items in the forms of the view:
   const linksToView = computed(() => !!getViewSchema(props.schema, context))
   const paginate = computed(() => getSchemaValue('paginate', { type: Number }))
+
+  // The list query, held by the route and remembered in the store:
+  const columns = computed(
+    () => getNamedSchemas(props.schema.columns) as Record<string, Schema> | null
+  )
+  const scopes = computed(
+    () => getNamedSchemas(props.schema.scopes) as Record<string, Schema> | null
+  )
+
+  const defaultScope = computed(() => {
+    const values = Object.values(scopes.value ?? {})
+    return values.find(scope => scope.defaultScope) ?? values[0] ?? null
+  })
+
+  const defaultOrder = computed(() => {
+    for (const column of Object.values(columns.value ?? {})) {
+      const { defaultSort } = column
+      if (defaultSort) {
+        const direction = isString(defaultSort) ? defaultSort : 'asc'
+        return `${column.name} ${direction}`
+      }
+    }
+    return null
+  })
+
+  const listQuery = markRaw(
+    new ListQuery({
+      router,
+      getRoute: () => router.currentRoute.value,
+      getSourceStore: () => props.store,
+      getDefaultQuery: () => ({
+        scope: defaultScope.value?.name,
+        page: props.schema.page,
+        order: defaultOrder.value
+      })
+    })
+  )
+
+  // Setting the query navigates to it, and the stored query only changes once
+  // the route did, when the route watcher below loads the list:
+  const query = computed({
+    get: () => listQuery.query,
+    set: query => listQuery.update(query)
+  })
+
+  const total = computed({
+    get: () => props.store.total,
+    set: total => (props.store.total = total)
+  })
+
+  const paginationRange = computed(() => {
+    const amount = isList() ? paginate.value : null
+    if (amount) {
+      const { page = 0 } = query.value
+      const start = page * amount
+      return [start, start + amount - 1]
+    }
+    return null
+  })
+
+  const sourceData = useSourceData(props, {
+    services,
+    value,
+    total,
+    getPageOffset: () => paginationRange.value?.[0]
+  })
+  const { isObjectSource, listData, objectData, listEntry } = sourceData
 
   const requests = useResource({
     services,
@@ -78,62 +157,193 @@ export function useSource(
       }
       sourceData.setData(data)
     },
-    getQuery: () => listQuery.getQueryParams(),
-    whenQueryNavigated: () => listQuery.listQuery.whenNavigated(),
+    // Pass the pagination as range, so that the server counts the results:
+    getQuery() {
+      const range = paginationRange.value
+      const { page, ...params } = query.value
+      return { ...params, ...(range && { range: range.join(',') }) }
+    },
+    whenQueryNavigated: () => listQuery.whenNavigated(),
     handleLoadError({ data, status }) {
       if (data?.type === 'FilterValidation' && onFilterErrors?.(data.errors)) {
         return true
       } else if (status === 401 && route?.isForm) {
-        // The user may not access the resource of a source in a form, which
-        // shows on the source:
+        // Sources in forms show that the user may not access their resource:
         getModel().addError(props.dataPath, unauthorizedError)
         return true
       }
       return false
     },
-    emitLoad: () => schemaEvents.emitEvent('load')
-  })
-
-  const listQuery = useListQuery(props, {
-    admin,
-    paginate: () => paginate.value,
-    providesData: () => requests.providesData.value,
-    reloadData: requests.reloadData
-  })
-
-  const sourceData = useSourceData(props, {
-    services,
-    value,
-    total: listQuery.total,
-    getPageOffset: () => listQuery.paginationRange.value?.[0]
-  })
-
-  const itemLabel = useItemLabel({
-    services,
-    getContext: () => context,
-    getSchema: () => props.schema,
-    getDataPath: () => props.dataPath,
-    isTransient: () => requests.isTransient.value
-  })
-
-  const actions = useSourceActions(props, {
-    services,
-    sourceData,
-    resource: requests,
-    itemLabel,
-    isInlined: hasInlinedItems,
-    linksToView,
-    getSchemaValue,
-    onChange
-  })
-
-  const { getPayloadData, submitResource } = useResourceSubmit({
-    admin,
-    handleRequest: requests.handleRequest,
+    emitLoad: () => schemaEvents.emitEvent('load'),
     getData: () => props.data,
     showValidationErrors: errors =>
       services.container!.showValidationErrors(errors, props.dataPath)
   })
+  const { isTransient, providesData, reloadData } = requests
+
+  watch(
+    () => router.currentRoute.value,
+    (to, from) => {
+      if (
+        providesData.value &&
+        // Only the query changed:
+        from.path === to.path &&
+        from.hash === to.hash &&
+        listQuery.setFromRoute(to.query)
+      ) {
+        reloadData()
+      }
+    },
+    // https://github.com/vuejs/vue-router/issues/3393#issuecomment-1158470149
+    { flush: 'post' }
+  )
+
+  const { getItemId, getItemLabel, getItemDataPath, getItemFormSchema } =
+    useItemLabel({
+      services,
+      getContext: () => context,
+      getSchema: () => props.schema,
+      getDataPath: () => props.dataPath,
+      isTransient: () => isTransient.value
+    })
+
+  // The actions on the items, and the paths of their forms:
+  const itemStores = ItemStores.getFromStore(props.store)
+  // Object sources only have an item to edit or delete once they're set:
+  const hasItems = () => isList() || !!objectData.value
+
+  // Lists linked to views create their items in the form of the view:
+  const creatable = computed(
+    () => (
+      getBoolean('creatable') &&
+      (hasFormSchema(props.schema) || linksToView.value) &&
+      (isList() || !objectData.value)
+    )
+  )
+  const editable = computed(
+    () => getBoolean('editable') && !hasInlinedItems() && hasItems()
+  )
+  const deletable = computed(() => getBoolean('deletable') && hasItems())
+  const draggable = computed(
+    () => isList() && getBoolean('draggable')
+  )
+  const collapsible = computed(
+    () => getBoolean('collapsible') && hasInlinedItems()
+  )
+  const collapsed = computed(
+    () => getBoolean('collapsed') && collapsible.value
+  )
+
+  // The form of the view addresses the items by their ids:
+  const getViewItemPath = (key: string | undefined) => {
+    const route = (
+      key != null &&
+      admin.routeTree?.getViewItemRoute(props.schema.view, key)
+    )
+    return route ? admin.router.resolve(route).path : null
+  }
+
+  const getItemStore = (item: Data) =>
+    itemStores.getStore(getItemUid(props.schema, item))
+
+  // Create an item with the form `schema`, of `type` if the source has several
+  // forms, and insert it at `index`, or else at the end:
+  const createItem = (
+    schema: Schema,
+    type?: string | null,
+    index?: number | null
+  ) => {
+    const item = initializeData(schema, type ? { type } : {}, services)
+    if (isObjectSource.value) {
+      objectData.value = item
+    } else if (sourceData.hasData.value) {
+      getModel().insert(
+        listEntry.value,
+        index ?? listEntry.value.list.length,
+        item
+      )
+    } else {
+      // Lists that are `null` have no array to insert into yet:
+      listData.value = [item]
+    }
+    if (collapsible.value) {
+      // Open the new item, which its inlined schema reads from its store:
+      const store = isObjectSource.value ? props.store : getItemStore(item)
+      store.opened = true
+    }
+    onChange()
+    return item
+  }
+
+  const deleteItem = async (item: Data | null, index: number | null = null) => {
+    if (item) {
+      const isTransientItem = isTransient.value
+      // Look up the item by identity whenever it's removed, as the data may
+      // have changed while the dialog was open or the request was pending.
+      // Object sources have no index:
+      const getCurrentIndex = () =>
+        isObjectSource.value
+          ? objectData.value === item
+            ? null
+            : -1
+          : listData.value.indexOf(item)
+
+      const removeIfPresent = () => {
+        const currentIndex = getCurrentIndex()
+        const isPresent = currentIndex !== -1
+        if (isPresent) {
+          itemStores.removeStore(getItemUid(props.schema, item))
+          // Sources with a resource delete the item through it, not as edit:
+          if (currentIndex === null) {
+            if (isTransientItem) {
+              objectData.value = null
+            } else {
+              props.data[props.schema.name] = null
+            }
+          } else {
+            getModel().remove(listEntry.value, currentIndex)
+            if (!isTransientItem) {
+              getModel().markClean({ dataPath: props.dataPath })
+            }
+          }
+          onChange()
+        }
+        return isPresent
+      }
+
+      const deleteThroughResource = async () => {
+        const currentIndex = getCurrentIndex()
+        const method = 'delete'
+        const memberResource = (
+          currentIndex !== -1 &&
+          getMemberResource(
+            getItemId(props.schema, item, currentIndex),
+            requests.getResource({ method })
+          )
+        )
+        let isDeleted = false
+        if (memberResource) {
+          await requests.handleRequest(
+            { method, resource: memberResource },
+            err => {
+              if (!err) {
+                removeIfPresent()
+                isDeleted = true
+              }
+              reloadData()
+            }
+          )
+        }
+        return isDeleted
+      }
+
+      await confirmAndRemove(services, {
+        label: getItemLabel(props.schema, item, { index, extended: true }),
+        isTransient: isTransientItem,
+        remove: isTransientItem ? removeIfPresent : deleteThroughResource
+      })
+    }
+  }
 
   // Submit the data of the source to the resource of the button:
   const submit = async (button: SubmitButton) => {
@@ -150,11 +360,11 @@ export function useSource(
     })
     if (submitted) {
       const { method } = submitted
-      const isSuccessful = await submitResource(
+      const isSuccessful = await requests.submitResource(
         button,
         submitted,
         method,
-        getPayloadData(button, method)
+        requests.getPayloadData(button, method)
       )
       if (isSuccessful) {
         // Saving the source's own changes clears their errors, as in forms:
@@ -175,8 +385,8 @@ export function useSource(
     if (hasInlinedItems()) {
       // Inlined items show the label in their schema, but only in lists and
       // collapsible objects:
-      return sourceData.isListSource.value || actions.collapsible.value
-        ? itemLabel.getItemLabel(schema, item, { index, asObject: true })
+      return isList() || collapsible.value
+        ? getItemLabel(schema, item, { index, asObject: true })
         : null
     } else {
       return render.value
@@ -185,14 +395,13 @@ export function useSource(
               data: item,
               value: item,
               index,
-              dataPath: itemLabel.getItemDataPath(schema, index)
+              dataPath: getItemDataPath(schema, index)
             })
           )
-        : itemLabel.getItemLabel(schema, item, { index })
+        : getItemLabel(schema, item, { index })
     }
   }
 
-  // The node of the source in the route tree, if it has a route:
   const sourceNode = computed(() => {
     const path = route && getRelativeDataPath(props.dataPath, route.dataPath)
     return route && path !== null
@@ -206,7 +415,7 @@ export function useSource(
   const isReady = computed(
     () => (
       (hasInlinedItems() || !sourceNode.value?.isBeyondMaxDepth) &&
-      (sourceData.hasData.value || !requests.providesData.value)
+      (sourceData.hasData.value || !providesData.value)
     )
   )
 
@@ -225,15 +434,15 @@ export function useSource(
   const source: SourceContext = reactive({
     schema: toRef(props, 'schema'),
     node: sourceNode,
-    query: listQuery.query,
-    listQuery: listQuery.listQuery,
+    query,
+    listQuery,
     dataPath: toRef(props, 'dataPath'),
     componentPath,
     store: toRef(props, 'store'),
     isDisabled: disabled,
-    createItem: actions.createItem,
+    createItem,
     getSourceItemLabel,
-    reload: requests.reloadData,
+    reload: reloadData,
     resource
   })
 
@@ -242,8 +451,8 @@ export function useSource(
   route?.registerSource(source, true)
   onUnmounted(() => route?.registerSource(source, false))
 
-  if (requests.providesData.value) {
-    listQuery.listQuery.syncWithRoute()
+  if (providesData.value) {
+    listQuery.syncWithRoute()
     requests.ensureData()
   }
 
@@ -254,17 +463,60 @@ export function useSource(
     disabled,
     onChange,
     services,
-    ...requests,
-    ...listQuery,
-    ...sourceData,
-    ...actions,
-    ...itemLabel,
+    isLoading: requests.isLoading,
+    loadData: requests.loadData,
+    reloadData,
+    listQuery,
+    query,
+    total,
+    columns,
+    scopes,
+    defaultScope,
+    paginate,
+    isListSource: sourceData.isListSource,
+    isObjectSource,
+    listData,
+    objectData,
+    listEntry,
+    getItemUid,
+    getItemFormSchema,
+    getItemDataPath,
+    creatable,
+    editable,
+    deletable,
+    draggable,
+    collapsible,
+    collapsed,
+    getItemStore,
+    createItem,
+    deleteItem,
+
+    createPath: computed(() =>
+      creatable.value
+        ? linksToView.value
+          ? getViewItemPath('create')
+          : (route?.getCreatePath(props.dataPath) ?? null)
+        : null
+    ),
+
+    // Object sources are their own item:
+    objectPath: computed(() =>
+      linksToView.value
+        ? objectData.value &&
+          getViewItemPath(getItemId(props.schema, objectData.value))
+        : (route?.getFormPath(props.dataPath) ?? null)
+    ),
+
+    getItemPath(index: number) {
+      return linksToView.value
+        ? getViewItemPath(getItemId(props.schema, listData.value[index], index))
+        : (route?.getFormPath(appendDataPath(props.dataPath, index)) ?? null)
+    },
+
     ownSource: source,
-    ownResource: resource,
     sourceNode,
     isReady,
     isInlined: computed(hasInlinedItems),
-    paginate,
     buttonSchemas: computed(() => getButtonSchemas(props.schema.buttons))
   }
 }

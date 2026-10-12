@@ -34,8 +34,7 @@ export default {
   components: { DitoButton, DitoMenuButton },
 
   props: {
-    // The schema of the list or object source that creates the item, also
-    // when inserting at `insertIndex` from the buttons of an item.
+    // The source that creates the item, also when inserting at `insertIndex`:
     schema: { type: Object, required: true },
     // The next four props are there for the `context` of the callbacks:
     dataPath: { type: String, required: true },

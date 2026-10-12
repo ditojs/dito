@@ -1,14 +1,8 @@
 import appState from '../appState.js'
 import DitoUser from '../DitoUser.js'
 
-// Session holds the logged in user of the admin, see `user`, and logs users in
-// and out through the `api.users` resources. The views depend on the user, so
-// the session resolves them for each login and clears them once the user is
-// logged out, see `ViewRegistry`.
-//
-// Logging in asks for the credentials through the user interface that the
-// admin's root component attaches, see `attachUserInterface()`, which also
-// notifies of authentication errors.
+// The views depend on the user, so we resolve them for each login and clear
+// them once the user is logged out.
 
 export class Session {
   #api
@@ -22,16 +16,12 @@ export class Session {
     this.#redirectAfterLogin = redirectAfterLogin
   }
 
-  // The logged in user, or `null`. Reactive, as it's kept in the app state.
+  // Reactive, as it's kept in the app state:
   get user() {
     return appState.user
   }
 
-  // Attaches the user interface of the session:
-  // - `requestLoginData()` asks for the credentials, and returns them, or
-  //   `null` if the user cancels.
-  // - `notify(options)` shows a notification.
-  // Returns the function that detaches it again.
+  // `requestLoginData()` returns the credentials, or `null` when cancelled.
   attachUserInterface({ requestLoginData, notify }) {
     const userInterface = { requestLoginData, notify }
     this.#userInterface = userInterface
@@ -42,8 +32,6 @@ export class Session {
     }
   }
 
-  // Starts the session with the user of the server's session if there is one,
-  // or else asks to log in.
   async start() {
     if (await this.fetchUser()) {
       await this.#resolveViews()
@@ -52,8 +40,7 @@ export class Session {
     }
   }
 
-  // Asks for the credentials and logs in with them, again after each failure,
-  // until it succeeds or the user cancels. Returns the user, or `null`.
+  // Ask again after each failure, until it succeeds or the user cancels:
   async login() {
     const loginData = await this.#userInterface?.requestLoginData()
     if (!loginData) {
@@ -87,8 +74,6 @@ export class Session {
     }
   }
 
-  // Fetches the user of the server's session, and returns it, or `null` if
-  // there is none, e.g. as the session expired.
   async fetchUser() {
     let user = null
     try {
@@ -101,8 +86,6 @@ export class Session {
     return user
   }
 
-  // Makes sure that a user is logged in before requesting the API, and asks to
-  // log in if the session expired.
   async ensureUser() {
     if (!(await this.fetchUser())) {
       await this.login()
@@ -111,8 +94,7 @@ export class Session {
 
   #setUser(user) {
     // Responses loaded with `cache: 'global'` belong to the user that loaded
-    // them, so they are dropped when the user logs out or another one logs in,
-    // but kept when the same user is fetched again, see `ensureUser()`:
+    // them, and are kept only while the same user is fetched again:
     if (!user || user.id !== appState.user?.id) {
       appState.loadCache = {}
     }
@@ -122,8 +104,8 @@ export class Session {
     }
   }
 
-  // Resolves the views for the logged in user, and asks to log in again if
-  // they can't be resolved, e.g. as the API refuses the user.
+  // Log in again if the views can't be resolved, e.g. as the API refuses the
+  // user:
   async #resolveViews() {
     if (!(await this.#viewRegistry.resolve())) {
       await this.login()

@@ -29,17 +29,12 @@ import type { Field, FieldProps } from './useField.ts'
 
 export interface OptionsOptions {
   multiple?: Readonly<Ref<boolean>>
-  // Options to add to the loaded options unless they're among them already,
-  // e.g. the tags that were added to a multiselect:
+  // Options to add unless they're loaded already, like added tags:
   addedOptions?: Readonly<Ref<any[]>>
-  // The options that a search returned, which are the active options while
-  // they're set:
+  // The options of a search, active while set:
   searchedOptions?: Readonly<Ref<any[] | null>>
 }
 
-// The options of a type component, which the data model loads, and the values
-// of the component that they select. The data model also replaces the value
-// once the options are loaded, see `getReplacedValue()`.
 export function useOptions(
   props: FieldProps,
   { value, context, createContext, services, getSchemaValue }: Field,
@@ -49,8 +44,7 @@ export function useOptions(
     searchedOptions
   }: OptionsOptions = {}
 ) {
-  // The resolver of the options in the data model, which loads them and
-  // shares them with the computes of the form:
+  // The data model loads the options and shares them with the form:
   const optionsResolver = computed<DataSchemaResolver>(() => {
     const { schema, data, dataPath } = props
     return services.container!.model.getOptionsResolver({
@@ -94,7 +88,6 @@ export function useOptions(
     )
   )
 
-  // Whether `options` contain an option with the value of `option`:
   const isOptionAmong = (option: any, options: any[]) => {
     const value = getValueForOption(settings.value, option)
     return options.some(
@@ -115,8 +108,7 @@ export function useOptions(
   const activeOptions = computed(() => searchedOptions?.value || options.value)
   const hasOptions = computed(() => activeOptions.value.length > 0)
 
-  // Options filtered out of the active options, e.g. by a search, are still
-  // options of the value:
+  // Options filtered out by a search are still options of the value:
   const findOption = (value: any) => (
     findOptionForValue(settings.value, activeOptions.value, value) ?? (
       activeOptions.value !== options.value
@@ -171,7 +163,6 @@ export function useOptions(
     optionLabel,
     optionValue: computed(() => settings.value.optionValue),
 
-    // Search the options for the search term, if the schema defines `search`:
     searchFilter: computed(() => {
       const search = getSchemaValue('search', {
         type: [Object, Function],

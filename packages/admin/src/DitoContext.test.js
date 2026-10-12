@@ -323,14 +323,6 @@ describe('DitoContext', () => {
       expect(object).toEqual({ dataPath: 'name' })
     })
 
-    it('returns existing contexts with `DitoContext.get()`', () => {
-      const context = new DitoContext(null, {})
-      expect(DitoContext.get(null, context)).toBe(context)
-      const created = DitoContext.get(null, { dataPath: 'name' })
-      expect(created).toBeInstanceOf(DitoContext)
-      expect(created.dataPath).toBe('name')
-    })
-
     it('works through reactive proxies', () => {
       const context = reactive(new DitoContext(null, { dataPath: 'name' }))
       expect(context.dataPath).toBe('name')

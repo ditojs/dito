@@ -13,10 +13,8 @@ component(
 </template>
 
 <script>
-// Custom components receive the `schema`, its `context` and the value as
-// `modelValue`, and emit `update:modelValue` and `change`. They also receive
-// the field's attributes and its `focus`, `blur` and `input` listeners, which
-// fall through to their root element unless they emit these events.
+// The field's attributes and listeners fall through to the custom component's
+// root element, unless it emits these events.
 
 import { computed } from 'vue'
 import { isArray } from '@ditojs/utils'
