@@ -175,6 +175,15 @@ export default DitoComponent.component('DitoTreeItem', {
       return name && this.data[name]
     },
 
+    // The children for the change API of the data model, see `ListEntry`:
+    childrenEntry() {
+      return {
+        schema: this.childrenSchema,
+        list: this.childrenList,
+        dataPath: this.getItemDataPath(this.childrenSchema)
+      }
+    },
+
     childrenDraggable() {
       return (
         this.childrenList?.length > 1 &&
@@ -268,11 +277,7 @@ export default DitoComponent.component('DitoTreeItem', {
 
   methods: {
     changeChildren(children) {
-      this.$emit('changeChildren', {
-        data: this.data,
-        childrenSchema: this.childrenSchema,
-        children
-      })
+      this.$emit('changeChildren', { entry: this.childrenEntry, children })
     },
 
     // Moves the child by `delta` positions, see `DitoDragHandle`.

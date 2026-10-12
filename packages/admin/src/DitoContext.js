@@ -13,14 +13,20 @@ import {
 import { hasNestedData, isButton } from './utils/schema/structure.js'
 import { getTextFromHtml } from './utils/html.js'
 import { DialogContext } from './utils/ContainerContext.ts'
+import {
+  getResourceUrl,
+  request,
+  format,
+  download
+} from './utils/services.ts'
 
 const { hasOwnProperty } = Object.prototype
 
 // See also `ContextMixin`: `DitoContext` instances are a thin wrapper around
-// raw `context` objects, which themselves actually inherit from the linked
-// `component` instance, so that they only need to provide the values that
-// should be different than in the underlying component. In order to not expose
-// all fields from the component, the wrapper is introduced.
+// raw `context` objects, which themselves inherit from their `services`: the
+// component, or the services of the data model that creates the context, see
+// `Services`. They only need to provide the values that differ from these. In
+// order to not expose all fields of the component, the wrapper is introduced.
 
 // Use WeakMap for the raw `context` objects, so we don't have to pollute the
 // actual `DitoContext` instance with it.
@@ -58,8 +64,8 @@ function get(context, key, defaultValue) {
 
 function set(context, key, value) {
   // Define the value on the context object itself: An assignment would be
-  // passed on to the component that the object inherits from, see
-  // `DitoContext` constructor, and change its state for all its contexts.
+  // passed on to the services that the object inherits from, see the
+  // `DitoContext` constructor, and change their state for all their contexts.
   Object.defineProperty(toObject(context), key, {
     value,
     writable: true,
@@ -69,7 +75,7 @@ function set(context, key, value) {
 }
 
 export default class DitoContext {
-  constructor(component, context) {
+  constructor(services, context) {
     // Use the provided params object / function, or create a new one:
     context = context
       ? isFunction(context)
@@ -77,21 +83,21 @@ export default class DitoContext {
         : { ...context }
       : {}
     // If not explicitly set (to false), default to true so we don't fall back
-    // to `component` for its value.
+    // to `services` for its value.
     context.nested ??= true
-    context.component = component
-    // Have `object` inherit from the `component` instance, so it can override
-    // its values and still retrieve from it, and associate it with `this`
-    // through `contexts` map:
-    const object = Object.setPrototypeOf(context, component)
+    context.services = services
+    // Have `object` inherit from `services`, so it can override their values
+    // and still retrieve from them, and associate it with `this` through the
+    // `contexts` map:
+    const object = Object.setPrototypeOf(context, services)
     // No need for `toRaw(this)` here as it's always raw inside the constructor.
     contexts.set(this, object)
   }
 
-  static get(component, context) {
+  static get(services, context) {
     return context instanceof DitoContext
       ? context
-      : new DitoContext(component, context)
+      : new DitoContext(services, context)
   }
 
   // Creates the context of the component described by `schema` and `name` in
@@ -99,7 +105,7 @@ export default class DitoContext {
   // once it's rendered. Its `value` is read from `data` only when it's used,
   // so that watchers only depend on it if it's used, and missing values don't
   // need to be resolved through the data path.
-  static createForSchema(component, {
+  static createForSchema(services, {
     schema,
     name,
     nested = hasNestedData(schema),
@@ -109,7 +115,7 @@ export default class DitoContext {
   }) {
     // Pass a function, so that the `value` getter isn't evaluated when the
     // context is created.
-    return new DitoContext(component, () => ({
+    return new DitoContext(services, () => ({
       schema,
       name,
       nested,
@@ -131,7 +137,7 @@ export default class DitoContext {
     // Contexts without a schema don't hold a value either, e.g. the ones of
     // `DitoMenu` and `DitoPanels`, evaluating views and panels.
     const holdsOwnValue = !!this.schema && hasNestedData(this.schema)
-    return DitoContext.createForSchema(getComponent(this), {
+    return DitoContext.createForSchema(getServices(this), {
       schema,
       name,
       nested,
@@ -240,7 +246,7 @@ export default class DitoContext {
     return get(
       this,
       'processedRootData',
-      () => getComponent(this)?.dataModel?.processedRootData.value ?? null
+      () => getContainer(this)?.model.processedRootData.value ?? null
     )
   }
 
@@ -326,9 +332,9 @@ export default class DitoContext {
   }
 
   set isRunning(value) {
-    const component = getComponent(this)
-    if (component && 'isRunning' in component) {
-      component.isRunning = value
+    const services = getServices(this)
+    if (services && 'isRunning' in services) {
+      services.isRunning = value
     } else {
       set(this, 'isRunning', value)
     }
@@ -347,7 +353,7 @@ export default class DitoContext {
 
   // The name of the selected tab of the nearest form, if it has tabs:
   get selectedTab() {
-    const { route } = getComponent(this)
+    const { route } = getServices(this)
     return route?.isForm ? route.selectedTab : null
   }
 
@@ -357,17 +363,17 @@ export default class DitoContext {
 
   // The query of the nearest list, e.g. its scope, page, order and filters:
   get listQuery() {
-    return getComponent(this).source?.query ?? null
+    return getServices(this).source?.query ?? null
   }
 
   // Helper Methods
 
   get request() {
-    return options => getComponent(this).request(options)
+    return options => request(getServices(this), options)
   }
 
   get format() {
-    return (value, options) => getComponent(this).format(value, options)
+    return (value, options) => format(getServices(this), value, options)
   }
 
   get navigate() {
@@ -379,7 +385,7 @@ export default class DitoContext {
   }
 
   get download() {
-    return options => getComponent(this).download(options)
+    return options => download(getServices(this), options)
   }
 
   // Without `resource`, return the URL of the nearest form or list with a
@@ -387,15 +393,15 @@ export default class DitoContext {
   // list loads or the form creates its item in.
   get getResourceUrl() {
     return resource => {
-      const component = getComponent(this)
-      resource ??= component.resource?.getResource()
+      const services = getServices(this)
+      resource ??= services.resource?.getResource()
       if (!resource) {
         throw new Error(
           'Unable to get the resource URL: There is no form or list with a ' +
           'resource.'
         )
       }
-      return component.getResourceUrl(resource)
+      return getResourceUrl(services, resource)
     }
   }
 
@@ -431,20 +437,20 @@ export default class DitoContext {
   // resource do when clicked, and resolve with whether it succeeded:
   get submit() {
     return options => {
-      const component = getComponent(this)
-      if (!isButton(component.schema) || !component.resource) {
+      const button = getServices(this)
+      if (!isButton(button.schema) || !button.resource) {
         throw new Error(
           'Unable to submit: There is no button of a form or of a list with a ' +
           'resource.'
         )
       }
-      return component.submit(options)
+      return button.submit(options)
     }
   }
 
   get closeForm() {
     return () => {
-      const { route } = getComponent(this)
+      const { route } = getServices(this)
       if (!route?.isForm) {
         throw new Error('Unable to close the form: There is no form.')
       }
@@ -469,33 +475,33 @@ export default class DitoContext {
   }
 }
 
-function getComponent(context) {
-  return toObject(context).component
+function getServices(context) {
+  return toObject(context).services
 }
 
 function getAdmin(context) {
-  return getComponent(context).admin
+  return getServices(context).admin
 }
 
 // Read the members of the admin's context, unless the context overrides them,
-// or `null` for contexts without components:
+// or `null` for contexts without services:
 function getAdminValue(context, key) {
-  return get(context, key, () => getComponent(context)?.admin?.[key] ?? null)
+  return get(context, key, () => getServices(context)?.admin?.[key] ?? null)
 }
 
 function getContainer(context) {
-  return getComponent(context)?.container ?? null
+  return getServices(context)?.container ?? null
 }
 
 // Returns the item at `dataPath` in the data that the model holding it
 // processed for the server.
 function getProcessedData(context, dataPath, nested) {
-  let dataModel = getComponent(context)?.dataModel
+  let dataModel = getContainer(context)?.model
   let path = null
   while (dataModel) {
     path = getRelativeDataPath(dataPath, dataModel.dataPath)
     if (path !== null) break
-    dataModel = dataModel.component.parentComponent?.dataModel
+    dataModel = dataModel.parent
   }
   return dataModel
     ? getItem(dataModel.processedData.value, path, nested) || null

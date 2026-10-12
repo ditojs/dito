@@ -1,4 +1,4 @@
-import type { DataModel } from './DataModel.js'
+import type { DataModel } from './DataModel.ts'
 
 type Schema = Record<string, any>
 type Match = string | string[] | RegExp | ((dataPath: string) => boolean)
@@ -10,6 +10,7 @@ export interface ContainerOwner {
   // parent's for forms that edit the item of their parent:
   readonly ownDataModel: DataModel
   readonly dataModel: DataModel
+  readonly componentPath: string
   readonly isCreating?: boolean
   readonly hasData?: boolean
   readonly mainSchemaComponent: {
@@ -35,8 +36,8 @@ export class ContainerContext {
     return this.#owner.dataModel
   }
 
-  get schema(): Schema {
-    return this.#owner.ownDataModel.getSchema()
+  get schema(): Schema | null {
+    return this.#owner.ownDataModel.schema
   }
 
   get dataPath(): string {
@@ -44,11 +45,11 @@ export class ContainerContext {
   }
 
   get componentPath(): string {
-    return this.#owner.ownDataModel.componentPath
+    return this.#owner.componentPath
   }
 
   get rootData(): Record<string, any> | null {
-    return this.#owner.ownDataModel.rootData ?? null
+    return this.#owner.ownDataModel.rootData
   }
 
   get isDirty(): boolean {

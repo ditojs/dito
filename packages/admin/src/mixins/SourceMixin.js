@@ -138,6 +138,12 @@ export default {
       }
     },
 
+    // The list for the change API of the data model, see `ListEntry`:
+    listEntry() {
+      const { schema, listData: list, dataPath } = this
+      return { schema, list, dataPath }
+    },
+
     objectData: {
       get() {
         // Always go through `listData` internally, which does all the
@@ -393,7 +399,10 @@ export default {
                 this.dataModel.set(list, index, value)
               })
             } else {
-              this.dataModel.replaceChildren(list, values)
+              this.dataModel.replaceChildren(
+                { schema: this.schema, list, dataPath: this.dataPath },
+                values
+              )
             }
           } else {
             this.value = values
@@ -551,8 +560,12 @@ export default {
       if (this.isObjectSource) {
         this.objectData = item
       } else if (this.value) {
-        const { listData } = this
-        this.dataModel.insert(listData, index ?? listData.length, item)
+        const { listEntry } = this
+        this.dataModel.insert(
+          listEntry,
+          index ?? listEntry.list.length,
+          item
+        )
       } else {
         // Lists that are `null` have no array to insert into yet:
         this.listData = [item]
@@ -575,7 +588,7 @@ export default {
             this.data[this.name] = null
           }
         } else {
-          this.dataModel.remove(this.listData, index)
+          this.dataModel.remove(this.listEntry, index)
           if (!this.isTransient) {
             this.dataModel.markClean(this.dataPath)
           }

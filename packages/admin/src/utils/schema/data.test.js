@@ -81,7 +81,7 @@ describe('processSchemaData()', () => {
         componentPaths[componentPath] = dataPath
         return true
       },
-      options: { component: null }
+      options: { services: null }
     })
     expect(componentPaths).toEqual({
       'book/title': 'title',
@@ -122,7 +122,7 @@ describe('processSchemaData() with panel components', () => {
           componentPaths[componentPath] = dataPath
           return true
         },
-        options: { component: null }
+        options: { services: null }
       }
     )
     expect(componentPaths).toEqual({
@@ -158,7 +158,7 @@ describe('processSchemaData() with panels of nested components', () => {
           componentPaths[componentPath] = dataPath
           return true
         },
-        options: { component: null }
+        options: { services: null }
       }
     )
     expect(componentPaths).toEqual({
@@ -198,7 +198,7 @@ describe('processSchemaData() with panels that have their own data', () => {
           componentPaths.push(componentPath)
           return true
         },
-        options: { component: null }
+        options: { services: null }
       }
     )
     expect(componentPaths).toEqual(['search', 'filters'])
@@ -356,7 +356,7 @@ describe('processData()', () => {
     const data = { sizes: [5, { value: 10, units: '%' }] }
     expect(
       processData(schema, { type: 'list' }, data, '', {
-        component: {},
+        services: {},
         rootData: data,
         target: 'server'
       })
@@ -383,7 +383,7 @@ describe('processData()', () => {
     const data = { items: [{}] }
     expect(
       processData(schema, { type: 'list' }, data, '', {
-        component: {},
+        services: {},
         rootData: data,
         target: 'server'
       })
@@ -414,7 +414,7 @@ describe('processData()', () => {
         { type: 'list' },
         { prices: [100, 200] },
         '',
-        { component: {}, target: 'server' }
+        { services: {}, target: 'server' }
       )
     ).toEqual({ prices: [200, 400] })
     // The values are processed at the data paths of the items:
@@ -439,7 +439,7 @@ describe('processData()', () => {
     }
     const data = { works: [essay] }
     const processed = processData(schema, { type: 'list' }, data, '', {
-      component: {},
+      services: {},
       rootData: data,
       target: 'server'
     })
@@ -448,7 +448,7 @@ describe('processData()', () => {
   })
 
   describe('of items', () => {
-    const options = { component: {}, target: 'server' }
+    const options = { services: {}, target: 'server' }
     const schema = {
       type: 'form',
       components: { title: { type: 'text' } }

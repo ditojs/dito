@@ -1,18 +1,17 @@
-import {
-  isString,
-  isFunction,
-  equals,
-  labelize,
-  format
-} from '@ditojs/utils'
+import { isFunction, labelize } from '@ditojs/utils'
 import appState from '../appState.js'
 import DitoContext from '../DitoContext.js'
 import verbs from '../verbs.js'
 import EmitterMixin from './EmitterMixin.js'
 import { getSchemaEventEntries } from '../utils/schema/events.js'
 import { getSchemaValue, shouldRenderSchema } from '../utils/schema/data.js'
-import { getResource, getMemberResource } from '../utils/resource.js'
-import { getRequestCacheKey } from '../utils/request.js'
+import {
+  getResourceUrl,
+  sendRequest,
+  request,
+  format,
+  download
+} from '../utils/services.ts'
 import { appendDataPath, getRelativeDataPath } from '../utils/data.js'
 import { reactive } from 'vue'
 
@@ -234,137 +233,28 @@ export default {
       })
     },
 
-    getResourcePath(resource) {
-      // Resources without a parent continue the one of the closest form or
-      // source with a resource:
-      const parent = this.resource?.closestWithResource
-      resource = getResource(resource, {
-        parent: parent?.getResource({
-          method: resource?.method,
-          child: resource
-        }) ?? null
-      })
-      return this.admin.api.resources.any(resource)
-    },
-
     getResourceUrl(resource) {
-      const url = this.getResourcePath(resource)
-      return url
-        ? this.admin.api.getApiUrl({ url, query: resource.query })
-        : null
+      return getResourceUrl(this, resource)
     },
 
-    async sendRequest({
-      method,
-      url,
-      resource,
-      query,
-      data,
-      signal,
-      internal
-    }) {
-      const { api, session } = this.admin
-      url ||= this.getResourceUrl(resource)
-      method ||= resource?.method
-      const checkUser = !internal && api.isApiUrl(url)
-      if (checkUser) {
-        await session.ensureUser()
-      }
-      const response = await api.request({
-        method,
-        url,
-        query,
-        data,
-        signal
-      })
-      // Detect change of the own user, and fetch it again if it was changed.
-      if (
-        checkUser &&
-        method === 'patch' &&
-        equals(resource, getMemberResource(session.user.id, api.users))
-      ) {
-        await session.fetchUser()
-      }
-      return response
+    sendRequest(options) {
+      return sendRequest(this, options)
     },
 
-    request({ cache, ...options }) {
-      // Allow caching of loaded data on two levels:
-      // - 'global': cache globally, for the entire admin session
-      // - 'local': cache locally within the closest route component, i.e. the
-      //   form or view, for as long as it is shown. Components outside of
-      //   route components, e.g. in dialogs, don't cache locally.
-      const loadCache =
-        cache === 'global'
-          ? this.appState.loadCache
-          : cache === 'local'
-            ? this.route?.loadCache
-            : null
-      // Requests to resources are told apart by the URLs that they resolve to:
-      const { resource } = options
-      const cacheKey = (
-        loadCache &&
-        getRequestCacheKey({
-          ...options,
-          method: options.method || resource?.method,
-          url: options.url || (resource ? this.getResourceUrl(resource) : null)
-        })
-      )
-      if (loadCache && (cacheKey in loadCache)) {
-        return loadCache[cacheKey]
-      }
-      // NOTE: No await here, res is a promise that we can easily cache.
-      // That's fine because promises can be resolved over and over again.
-      const res = this.sendRequest(options)
-        .then(response => response.data)
-        .catch(error => {
-          // Failed requests aren't cached, so they can be retried:
-          if (loadCache?.[cacheKey] === res) {
-            delete loadCache[cacheKey]
-          }
-          // Convert errors of responses with data, e.g. Dito.js errors, to
-          // errors with the message and properties of that data:
-          const data = error.response?.data
-          throw data
-            ? Object.assign(new Error(data.message), data)
-            : error
-        })
-      if (loadCache) {
-        loadCache[cacheKey] = res
-      }
-      return res
+    request(options) {
+      return request(this, options)
     },
 
-    format(value, {
-      locale = this.admin.api.locale,
-      defaults = this.admin.api.formats,
-      ...options
-    } = {}) {
-      return format(value, {
-        locale,
-        defaults,
-        ...options
-      })
+    format(value, options) {
+      return format(this, value, options)
     },
 
     async navigate(location) {
       return this.$router.push(location)
     },
 
-    download(options = {}) {
-      if (isString(options)) {
-        options = { url: options }
-      }
-      // See: https://stackoverflow.com/a/49917066/1163708
-      const a = document.createElement('a')
-      a.href = options.url?.startsWith('blob:')
-        ? options.url
-        : this.admin.api.getApiUrl(options)
-      a.download = options.filename ?? null
-      const { body } = document
-      body.appendChild(a)
-      a.click()
-      body.removeChild(a)
+    download(options) {
+      download(this, options)
     },
 
     // Returns the component path of the parent, continued with the item

@@ -2717,6 +2717,17 @@ export interface DitoResourceInstance {
 }
 
 /**
+ * A list that the change API of `DitoDataModel` changes, with the schema
+ * that numbers its items by its `orderKey`, and its data path, which tells
+ * the source with its own resource that the change belongs to, if any.
+ */
+export interface DitoListEntry {
+  schema: Record<string, any>
+  list: any[]
+  dataPath: string
+}
+
+/**
  * The data model of a view, form, dialog or panel with its own data.
  * Components write the data through its change API, which marks the data
  * edited until it's replaced or saved, if the write changes the value.
@@ -2752,14 +2763,14 @@ export interface DitoDataModel {
    * to the current one are not written, so it keeps its identity.
    */
   set(data: object, key: string | number, value: any): void
-  /** Inserts `item` into `list` at `index`. */
-  insert(list: any[], index: number, item: any): void
-  /** Removes the item at `index` from `list`. */
-  remove(list: any[], index: number): void
-  /** Moves the item at `from` in `list` to `to`. */
-  move(list: any[], from: number, to: number): void
-  /** Replaces the items of `list` with `items`, in place. */
-  replaceChildren(list: any[], items: any[]): void
+  /** Inserts `item` into the list of `entry` at `index`. */
+  insert(entry: DitoListEntry, index: number, item: any): void
+  /** Removes the item at `index` from the list of `entry`. */
+  remove(entry: DitoListEntry, index: number): void
+  /** Moves the item at `from` in the list of `entry` to `to`. */
+  move(entry: DitoListEntry, from: number, to: number): void
+  /** Replaces the items of the list of `entry` with `items`, in place. */
+  replaceChildren(entry: DitoListEntry, items: any[]): void
   /**
    * Returns the errors of the value at `dataPath`, of validation and of
    * the server, in the format of the server, or `null`. Errors are kept

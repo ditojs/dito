@@ -259,13 +259,7 @@ export default {
             if (this.isInsideForm) {
               this.dataModel.removeError(this.dataPath, unauthorizedError)
             }
-            // Skip applying response data on an edited form: `setData` would
-            // overwrite any local edits the user made while the GET was in
-            // flight, also in forms that can't save them. The `'load'` event
-            // still fires, as the GET did complete.
-            if (!(this.isForm && this.dataModel.isEdited)) {
-              this.setData(response.data)
-            }
+            this.setLoadedData(response.data)
             // Await the handlers, so that their errors are notified below.
             await this.emitSchemaEvent('load')
           }
@@ -280,6 +274,11 @@ export default {
           this.notifyRequestError(err)
         }
       })
+    },
+
+    // @overridable
+    setLoadedData(data) {
+      this.setData(data)
     },
 
     isValidationError(response) {

@@ -66,13 +66,13 @@ import {
   hasSubmitButton
 } from '../utils/schema/lookup.js'
 import { getComponentPathByDataPath } from '../utils/schema/data.js'
-import { appendDataPath } from '../utils/data.js'
+import { appendDataPath, getParentDataPath } from '../utils/data.js'
 import { resolvePath } from '../utils/path.js'
 import { getErrorMessage } from '../utils/request.js'
 import { cloneWithUids } from '../utils/uid.js'
 import { mergeData } from '../utils/mergeData.ts'
 import { createDraftRoot } from '../utils/draftRoot.ts'
-import { DataModel } from '../utils/DataModel.js'
+import { DataModel } from '../utils/DataModel.ts'
 import { transientNote } from '../utils/dialogs.js'
 import { getTextFromHtml } from '../utils/html.js'
 
@@ -266,7 +266,7 @@ export default DitoComponent.component('DitoForm', {
             this.sourceLocation?.dataPath ?? '',
             {
               componentPath: container.componentPath,
-              component: this,
+              services: this,
               rootData: container.rootData
             }
           )
@@ -368,10 +368,21 @@ export default DitoComponent.component('DitoForm', {
     // of the parent is handled by the parent's model, see `dataModel`:
     this.ownDataModel = markRaw(
       new DataModel({
-        component: this,
-        getSchema: () => this.schema,
-        getData: () => (this.isEditingSourceItem ? null : this.data),
-        canSave: () => hasSubmitButton(this.buttonSchemas)
+        schema: () => this.schema,
+        data: () => (this.isEditingSourceItem ? null : this.data),
+        rootData: () => this.rootData,
+        dataPath: () => this.dataPath,
+        sourceSchema: () => this.sourceSchema,
+        parent: () => this.parentRoute.container.model,
+        canSave: () => hasSubmitButton(this.buttonSchemas),
+        // The components of the form don't see the source of its parent:
+        services: {
+          admin: this.admin,
+          container: this.ownContainer,
+          route: this.ownRoute,
+          source: null,
+          resource: this.ownResource
+        }
       })
     )
     // Watch the item after the model is created, as the draft takes over the
@@ -490,6 +501,15 @@ export default DitoComponent.component('DitoForm', {
       }
     },
 
+    // @override ResourceMixin.setLoadedData()
+    // Keep the edits made while the data loaded, also in forms that can't save
+    // them. The `load` event still fires, as the data did load.
+    setLoadedData(data) {
+      if (!this.dataModel.isEdited) {
+        this.setData(data)
+      }
+    },
+
     // Required by ResourceMixin, see its contract.
     clearData() {
       this.setData(null)
@@ -503,7 +523,7 @@ export default DitoComponent.component('DitoForm', {
         // applied, or right away if they mutate the item:
         if (!equals(this.data, data)) {
           mergeData(this.schema, this.data, data, {
-            component: this,
+            services: this,
             shouldKeepSourcesWithResource: true
           })
           this.dataModel.markEdited()
@@ -664,7 +684,13 @@ export default DitoComponent.component('DitoForm', {
       const success = !!sourceData
       if (success) {
         if (this.isCreating && !isObjectSource(sourceSchema)) {
-          parentModel.insert(sourceData, sourceData.length, item)
+          // The data path of new items ends with `create` in their list:
+          const dataPath = getParentDataPath(this.dataPath)
+          parentModel.insert(
+            { schema: sourceSchema, list: sourceData, dataPath },
+            sourceData.length,
+            item
+          )
         } else {
           if (this.isCreating) {
             parentModel.set(sourceData, sourceKey, item)

@@ -1,4 +1,4 @@
-import type { DataModel } from './DataModel.js'
+import type { DataModel } from './DataModel.ts'
 import type { RouteContext } from './RouteContext.ts'
 
 type Resource = Record<string, any>

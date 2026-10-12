@@ -495,7 +495,15 @@ describe('DitoForm', () => {
       }))
       const { chapters } = routeComponent.data
       const chapter = { title: 'Three' }
-      routeComponent.dataModel.insert(chapters, 2, chapter)
+      routeComponent.dataModel.insert(
+        {
+          schema: routeComponent.schema.components.chapters,
+          list: chapters,
+          dataPath: 'chapters'
+        },
+        2,
+        chapter
+      )
       await submit()
       expect(routeComponent.data.chapters[2]).toBe(chapters[2])
       expect(chapters[2]).toEqual({ id: 3, title: 'Three' })

@@ -50,8 +50,17 @@ export async function request(api, {
   return response
 }
 
-// Returns the key under which the `request()` method of components, see
-// `DitoMixin`, caches the response of a request.
+/**
+ * Returns the key under which `request()`, see `services.ts`, caches the
+ * response of a request.
+ *
+ * @param {{
+ *   method?: string,
+ *   url?: string | null,
+ *   query?: any,
+ *   data?: any
+ * }} options
+ */
 export function getRequestCacheKey({ method, url, query, data }) {
   return [
     method || 'get',

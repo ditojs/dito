@@ -50,7 +50,7 @@ import SchemaParentMixin from '../mixins/SchemaParentMixin.js'
 import { getButtonSchemas } from '../utils/schema/lookup.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
 import { trackRegistration } from '../utils/registration.js'
-import { DataModel } from '../utils/DataModel.js'
+import { DataModel } from '../utils/DataModel.ts'
 import { ContainerContext } from '../utils/ContainerContext.ts'
 
 // @vue/component
@@ -169,11 +169,26 @@ export default DitoComponent.component('DitoPanel', {
         : data
       // Own data gets its own model, like in dialogs, so that its edits don't
       // make the displayed data dirty:
+      const panel = this
       this.ownDataModel = markRaw(
         new DataModel({
-          component: this,
-          getSchema: () => this.schema,
-          getData: () => this.ownData
+          schema: () => this.schema,
+          data: () => this.ownData,
+          rootData: () => this.rootData,
+          dataPath: () => this.dataPath,
+          sourceSchema: () => this.sourceSchema,
+          parent: () => this.parentContainer?.model ?? null,
+          services: {
+            admin: this.admin,
+            container: this.ownContainer,
+            route: this.route,
+            get source() {
+              return panel.source
+            },
+            get resource() {
+              return panel.resource
+            }
+          }
         })
       )
     }

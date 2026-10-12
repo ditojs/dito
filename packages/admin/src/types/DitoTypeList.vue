@@ -180,10 +180,6 @@ export default DitoTypeComponent.register('list', {
   },
 
   computed: {
-    sortableList() {
-      return this.listData
-    },
-
     hasPagination() {
       return !!this.paginate
     },

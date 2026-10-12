@@ -91,8 +91,8 @@ export default DitoTypeComponent.register(
       // Replaces the children of the tree item, as the only writer of the tree,
       // see `DitoTreeItem.changeChildren()`. Open forms follow their items,
       // see `DitoForm.setupSourceItem()`.
-      changeChildren({ data, childrenSchema, children }) {
-        this.dataModel.replaceChildren(data[childrenSchema.name], children)
+      changeChildren({ entry, children }) {
+        this.dataModel.replaceChildren(entry, children)
         this.onChange()
       }
     },

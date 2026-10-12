@@ -2,7 +2,7 @@ import { vi } from 'vitest'
 import { reactive, ref, toRaw, nextTick } from 'vue'
 import { isPlainObject } from '@ditojs/utils'
 import { registerTypeComponent } from './schema/types.js'
-import { DataModel } from './DataModel.js'
+import { DataModel } from './DataModel.ts'
 import { cloneWithUids } from './uid.js'
 
 // `setupForm()` needs the admin's API, see `getFormSchemas()`:
@@ -37,12 +37,17 @@ registerTypeComponent('upload', {
 function createDataModel(schema, data, options) {
   const dataRef = ref(reactive(data))
   const dataModel = new DataModel({
-    component: { dataPath: '', componentPath: '' },
-    getSchema: () => schema,
-    getData: () => dataRef.value,
+    schema: () => schema,
+    data: () => dataRef.value,
     ...options
   })
-  return { dataModel, dataRef, data: dataRef.value }
+  // The entry of the list at `name` for the change API:
+  const getListEntry = name => ({
+    schema: schema.components[name],
+    list: dataRef.value[name],
+    dataPath: name
+  })
+  return { dataModel, dataRef, data: dataRef.value, getListEntry }
 }
 
 const slug = {
@@ -835,8 +840,8 @@ describe('DataModel', () => {
     })
 
     it('inserts items and numbers the list by its order key', async () => {
-      const { dataModel, data } = createBookModel()
-      dataModel.insert(data.chapters, 1, { title: 'Prologue' })
+      const { dataModel, data, getListEntry } = createBookModel()
+      dataModel.insert(getListEntry('chapters'), 1, { title: 'Prologue' })
       expect(getTitles(data.chapters)).toEqual([
         'One',
         'Prologue',
@@ -852,8 +857,8 @@ describe('DataModel', () => {
     })
 
     it('removes items and numbers the list by its order key', () => {
-      const { dataModel, data } = createBookModel()
-      dataModel.remove(data.chapters, 0)
+      const { dataModel, data, getListEntry } = createBookModel()
+      dataModel.remove(getListEntry('chapters'), 0)
       expect(getTitles(data.chapters)).toEqual(['Two', 'Three'])
       expect(getPositions(data.chapters)).toEqual([0, 1])
       expect(dataModel.isDirty).toBe(true)
@@ -861,9 +866,9 @@ describe('DataModel', () => {
     })
 
     it('moves items and numbers the list by its order key', () => {
-      const { dataModel, data } = createBookModel()
+      const { dataModel, data, getListEntry } = createBookModel()
       const list = data.chapters
-      dataModel.move(list, 0, 2)
+      dataModel.move(getListEntry('chapters'), 0, 2)
       expect(data.chapters).toBe(list)
       expect(getTitles(list)).toEqual(['Two', 'Three', 'One'])
       expect(getPositions(list)).toEqual([0, 1, 2])
@@ -872,9 +877,9 @@ describe('DataModel', () => {
     })
 
     it('replaces the children of lists in place', () => {
-      const { dataModel, data } = createBookModel()
+      const { dataModel, data, getListEntry } = createBookModel()
       const list = data.chapters
-      dataModel.replaceChildren(list, [list[2], list[0]])
+      dataModel.replaceChildren(getListEntry('chapters'), [list[2], list[0]])
       expect(data.chapters).toBe(list)
       expect(getTitles(list)).toEqual(['Three', 'One'])
       expect(getPositions(list)).toEqual([0, 1])
@@ -885,7 +890,7 @@ describe('DataModel', () => {
     it('keeps the offset of the order of lists loaded from later pages', () => {
       // E.g. the second page of a list with its own resource, which the model
       // doesn't walk otherwise, see `SourceMixin.setLoadedListItems()`:
-      const { dataModel, data } = createDataModel(
+      const { dataModel, data, getListEntry } = createDataModel(
         {
           type: 'form',
           components: {
@@ -904,7 +909,7 @@ describe('DataModel', () => {
           ]
         }
       )
-      dataModel.move(data.books, 1, 0)
+      dataModel.move(getListEntry('books'), 1, 0)
       expect(data.books).toEqual([
         { title: 'Persuasion', position: 10 },
         { title: 'Emma', position: 11 }
@@ -913,7 +918,7 @@ describe('DataModel', () => {
     })
 
     it('marks the lists of sources with their own resource dirty per source', () => {
-      const { dataModel, data } = createDataModel(
+      const { dataModel, data, getListEntry } = createDataModel(
         {
           type: 'form',
           components: {
@@ -930,21 +935,21 @@ describe('DataModel', () => {
         { title: 'Emma', books: [{ title: 'A' }, { title: 'B' }] }
       )
       dataModel.set(data, 'title', 'Persuasion')
-      dataModel.move(data.books, 1, 0)
+      dataModel.move(getListEntry('books'), 1, 0)
       // The source saves its list, which leaves the other changes dirty:
       dataModel.markClean('books')
       expect(dataModel.isDirty).toBe(true)
-      dataModel.move(data.books, 1, 0)
+      dataModel.move(getListEntry('books'), 1, 0)
       dataModel.markClean()
       expect(dataModel.isDirty).toBe(false)
-      dataModel.move(data.books, 1, 0)
+      dataModel.move(getListEntry('books'), 1, 0)
       expect(dataModel.isDirty).toBe(true)
       dataModel.stop()
     })
 
     it(`marks the lists of sources that can't save edited only`, () => {
       // E.g. lists whose order the app saves in `onChange()`:
-      const { dataModel, data } = createDataModel(
+      const { dataModel, data, getListEntry } = createDataModel(
         {
           type: 'form',
           components: {
@@ -957,7 +962,7 @@ describe('DataModel', () => {
         },
         { books: [{ title: 'A' }, { title: 'B' }] }
       )
-      dataModel.move(data.books, 1, 0)
+      dataModel.move(getListEntry('books'), 1, 0)
       expect(getTitles(data.books)).toEqual(['B', 'A'])
       expect(dataModel.isEdited).toBe(true)
       expect(dataModel.isDirty).toBe(false)
@@ -968,6 +973,7 @@ describe('DataModel', () => {
 
     it('marks changes inside sources with their own resource for them', () => {
       // E.g. the children of the items of a tree with a resource:
+      const chapters = { type: 'list', form: { type: 'form', components: {} } }
       const { dataModel, data } = createDataModel(
         {
           type: 'form',
@@ -976,21 +982,18 @@ describe('DataModel', () => {
               type: 'list',
               resource: { path: 'books' },
               buttons: { submit: { type: 'submit' } },
-              form: {
-                type: 'form',
-                components: {
-                  chapters: {
-                    type: 'list',
-                    form: { type: 'form', components: {} }
-                  }
-                }
-              }
+              form: { type: 'form', components: { chapters } }
             }
           }
         },
         { books: [{ chapters: [{ title: 'A' }, { title: 'B' }] }] }
       )
-      dataModel.move(data.books[0].chapters, 1, 0)
+      const [book] = data.books
+      dataModel.move(
+        { schema: chapters, list: book.chapters, dataPath: 'books/0/chapters' },
+        1,
+        0
+      )
       expect(dataModel.isDirty).toBe(true)
       dataModel.markClean('books')
       expect(dataModel.isEdited).toBe(false)
@@ -1247,10 +1250,10 @@ describe('DataModel', () => {
     it('copies the errors of the originals of copies', () => {
       const { dataModel } = createBook()
       dataModel.setErrors('chapters/1/title', tooShort)
-      const draft = cloneWithUids(dataModel.getData())
+      const draft = cloneWithUids(dataModel.data)
       draft.chapters.reverse()
       const { dataModel: draftModel } = createDataModel(schema, draft)
-      draftModel.copyErrors(dataModel, draftModel.getData())
+      draftModel.copyErrors(dataModel, draftModel.data)
       expect(draftModel.getErrors('chapters/0/title')).toEqual(tooShort)
       expect(draftModel.getErrors('chapters/1/title')).toBe(null)
       dataModel.stop()
@@ -1258,12 +1261,12 @@ describe('DataModel', () => {
     })
 
     it('keeps the errors of list items when they move', () => {
-      const { dataModel, data } = createBook()
+      const { dataModel, getListEntry } = createBook()
       dataModel.setErrors('chapters/1/title', tooShort)
-      dataModel.insert(data.chapters, 0, { title: 'Zero' })
+      dataModel.insert(getListEntry('chapters'), 0, { title: 'Zero' })
       expect(dataModel.getErrors('chapters/1/title')).toBe(null)
       expect(dataModel.getErrors('chapters/2/title')).toEqual(tooShort)
-      dataModel.move(data.chapters, 2, 0)
+      dataModel.move(getListEntry('chapters'), 2, 0)
       expect(dataModel.getErrors('chapters/0/title')).toEqual(tooShort)
       dataModel.stop()
     })
@@ -1291,9 +1294,9 @@ describe('DataModel', () => {
     })
 
     it('hides the errors of lists once they change in place', () => {
-      const { dataModel, data } = createBook()
+      const { dataModel, getListEntry } = createBook()
       dataModel.setErrors('chapters', tooShort)
-      dataModel.insert(data.chapters, 2, { title: 'Three' })
+      dataModel.insert(getListEntry('chapters'), 2, { title: 'Three' })
       expect(dataModel.getErrors('chapters')).toBe(null)
       dataModel.stop()
     })
@@ -1308,8 +1311,8 @@ describe('DataModel', () => {
     })
 
     it('keys the values of lists of primitives by their lists', () => {
-      const { dataModel, data } = createBook()
-      dataModel.insert(data.tags, 1, 'novel')
+      const { dataModel, data, getListEntry } = createBook()
+      dataModel.insert(getListEntry('tags'), 1, 'novel')
       dataModel.setErrors('tags/0', tooShort)
       dataModel.setErrors('tags/1', tooShort)
       // Edits of the values write into their lists, see `SourceMixin`:
@@ -1746,9 +1749,8 @@ describe('DataModel', () => {
       }
       const data = reactive({ title: 'Hello World' })
       const dataModel = new DataModel({
-        component: {},
-        getSchema: () => schema,
-        getData: () => data
+        schema: () => schema,
+        data: () => data
       })
       expect(data.slug).toBe('hello-world')
       dataModel.stop()
@@ -1757,14 +1759,18 @@ describe('DataModel', () => {
     it('handles missing data and empty schemas', async () => {
       const dataRef = ref(null)
       const dataModel = new DataModel({
-        component: {},
-        getSchema: () => ({ type: 'form' }),
-        getData: () => dataRef.value
+        schema: () => ({ type: 'form' }),
+        data: () => dataRef.value
       })
       await nextTick()
       expect(dataModel.isDirty).toBe(false)
       dataRef.value = reactive({ items: [{ id: 1 }, { id: 2 }] })
-      dataModel.move(dataRef.value.items, 0, 1)
+      const { items } = dataRef.value
+      dataModel.move(
+        { schema: { type: 'list' }, list: items, dataPath: 'items' },
+        0,
+        1
+      )
       expect(dataRef.value.items).toEqual([{ id: 2 }, { id: 1 }])
       expect(dataModel.isDirty).toBe(true)
       dataModel.stop()
@@ -1874,9 +1880,8 @@ describe('DataModel', () => {
       const schemaRef = ref(createSchema(lower))
       const data = reactive({ title: 'Emma' })
       const dataModel = new DataModel({
-        component: {},
-        getSchema: () => schemaRef.value,
-        getData: () => data
+        schema: () => schemaRef.value,
+        data: () => data
       })
       expect(data.label).toBe('emma')
       schemaRef.value = createSchema(upper)
@@ -1988,14 +1993,14 @@ describe('DataModel', () => {
           }
         }
       }
-      const { dataModel, data } = createDataModel(schema, {
+      const { dataModel, data, getListEntry } = createDataModel(schema, {
         books: [{ title: 'One' }, { title: 'Two' }]
       })
       await nextTick()
       // The user removes the second book and adds a third one, while the
       // summaries are still loading:
-      dataModel.remove(data.books, 1)
-      dataModel.insert(data.books, 1, { title: 'Three' })
+      dataModel.remove(getListEntry('books'), 1)
+      dataModel.insert(getListEntry('books'), 1, { title: 'Three' })
       await nextTick()
       while (loads.length > 0) {
         loads.shift()('Summary')
