@@ -61,7 +61,7 @@ import { useSchemaValue } from '../composables/useSchemaValue.ts'
 import { useComponentPath } from '../composables/useComponentPath.ts'
 import { getButtonSchemas } from '../utils/schema/lookup.js'
 import { shouldRenderComponents } from '../utils/schema/data.js'
-import { ContainerContext } from '../utils/ContainerContext.ts'
+import { DataContext } from '../utils/DataContext.ts'
 
 export default {
   name: 'DitoPanel',
@@ -105,8 +105,8 @@ export default {
     if (props.schema.data) {
       const { data } = props.schema
       ownData.value = isFunction(data) ? data(context) : data
-      const container = markRaw(
-        new ContainerContext(
+      const dataContext = markRaw(
+        new DataContext(
           reactive({
             schemaComponent: useTemplateRef('schema'),
             get dataModel() {
@@ -120,7 +120,7 @@ export default {
         )
       )
       const { services: ownServices, createDataModel } = useContainer({
-        container
+        dataContext
       })
       panelServices = ownServices
       const dataModel = createDataModel({

@@ -80,7 +80,7 @@ export default {
       }),
       isInlined: computed(() => isInlined(props.schema)),
       label: computed(() =>
-        services.source.getSourceItemLabel(props.data, props.index)
+        services.sourceContext.getSourceItemLabel(props.data, props.index)
       )
     }
   }

@@ -8,7 +8,7 @@ import {
   type SourceNode,
   type ViewNode
 } from './RouteTree.ts'
-import type { ContainerContext } from './ContainerContext.ts'
+import type { DataContext } from './DataContext.ts'
 import type { LoadingTracker } from './LoadingTracker.ts'
 import type { ResourceContext } from './ResourceContext.ts'
 import type { SourceContext } from './SourceContext.ts'
@@ -31,12 +31,12 @@ export interface RouteOwner {
   readonly isDirty: boolean
   readonly breadcrumb: string
   readonly selectedTab?: string | null
-  readonly ownResource?: ResourceContext | null
+  readonly ownResourceContext?: ResourceContext | null
 }
 
 export class RouteContext {
   readonly parent: RouteContext | null
-  readonly container: ContainerContext
+  readonly dataContext: DataContext
   // The responses of `request({ cache: 'local' })`, released with the route:
   readonly loadCache: Record<string, Promise<unknown>> = {}
   readonly #owner: RouteOwner
@@ -47,17 +47,17 @@ export class RouteContext {
     owner: RouteOwner,
     {
       parent,
-      container,
+      dataContext,
       router
     }: {
       parent: RouteContext | null
-      container: ContainerContext
+      dataContext: DataContext
       router: Router
     }
   ) {
     this.#owner = owner
     this.parent = parent
-    this.container = container
+    this.dataContext = dataContext
     this.#router = router
   }
 
@@ -126,8 +126,8 @@ export class RouteContext {
     return this.#owner.selectedTab ?? null
   }
 
-  get resource(): ResourceContext | null {
-    return this.#owner.ownResource ?? null
+  get resourceContext(): ResourceContext | null {
+    return this.#owner.ownResourceContext ?? null
   }
 
   getFormRoute(dataPath: string): { path: string; dataPath: string } | null {

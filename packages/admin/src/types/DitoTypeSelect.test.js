@@ -232,7 +232,7 @@ describe('DitoTypeSelect', () => {
           request: ({ data }) => ({ data })
         })
       expect(data.author).toBe(2)
-      expect(routeComponent.ownRoute.isDirty).toBe(false)
+      expect(routeComponent.ownRouteContext.isDirty).toBe(false)
       await findField('title').find('input').setValue('Persuasion')
       await settle()
       expect(await submit()).toEqual({
@@ -333,7 +333,7 @@ describe('DitoTypeSelect', () => {
             }
           }
         })
-        routeComponent.ownContainer.replaceItem({ genre: null })
+        routeComponent.ownDataContext.replaceItem({ genre: null })
         await settle()
         expect(getErrors('genre')).toEqual(['Genres are unavailable'])
       }
@@ -357,7 +357,7 @@ describe('DitoTypeSelect', () => {
           data: { genre: 'opera' }
         })
         expect(data.genre).toBe(null)
-        expect(routeComponent.ownRoute.isDirty).toBe(false)
+        expect(routeComponent.ownRouteContext.isDirty).toBe(false)
       }
     )
 

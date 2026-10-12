@@ -47,7 +47,7 @@ export function useOptions(
   // The data model loads the options and shares them with the form:
   const optionsResolver = computed<DataSchemaResolver>(() => {
     const { schema, data, dataPath } = props
-    return services.container!.model.getOptionsResolver({
+    return services.dataContext!.model.getOptionsResolver({
       schema,
       data,
       name: schema.name,

@@ -96,7 +96,7 @@ describe('DitoTypeComputed', () => {
       data: { title: 'Dune', initials: null }
     })
     expect(routeComponent.data.initials).toBe('D')
-    expect(routeComponent.ownRoute.isDirty).toBe(false)
+    expect(routeComponent.ownRouteContext.isDirty).toBe(false)
   })
 
   it('reports computes that keep changing their value', async () => {

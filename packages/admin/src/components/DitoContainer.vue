@@ -155,7 +155,7 @@ export default {
     // errors don't belong to:
     const errors = computed(() => {
       if (props.nested) {
-        const { model } = services.container
+        const { model } = services.dataContext
         const { dataPath } = props
         const fieldLabel = (
           label.value ||
@@ -259,13 +259,13 @@ export default {
 
       panelEntries: computed(() =>
         getAllPanelEntries(
-          services.admin.api,
+          services.adminContext.api,
           props.schema,
           props.dataPath,
           // The panel of the type is addressed relative to the data path:
           props.nested ? componentPath.value : parentComponentPath.value,
           componentPath.value,
-          component.value?.ownSource ?? null,
+          component.value?.ownSourceContext ?? null,
           panelTab
         )
       )

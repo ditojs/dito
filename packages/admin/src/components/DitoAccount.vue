@@ -6,7 +6,7 @@
     offset
     @select="onSelectMenuItem"
   )
-    span {{ admin.user.username }}
+    span {{ adminContext.user.username }}
 </template>
 
 <script>
@@ -18,9 +18,9 @@ export default {
   components: { DitoMenuButton },
 
   setup() {
-    const admin = inject('admin')
+    const adminContext = inject('adminContext')
     return {
-      admin,
+      adminContext,
       items: [
         { value: 'settings', label: 'Settings' },
         { value: 'logout', label: 'Logout' }
@@ -29,7 +29,7 @@ export default {
       onSelectMenuItem({ value }) {
         switch (value) {
           case 'logout':
-            admin.session.logout()
+            adminContext.session.logout()
             break
           case 'settings':
             console.info('TODO: Implement Settings')

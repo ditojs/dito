@@ -11,7 +11,7 @@ describe('DitoView', () => {
     })
     await admin.navigate('/books')
     const booksView = admin.getRouteComponent(isView)
-    booksView.ownContainer.replaceItem({ title: 'Emma' })
+    booksView.ownDataContext.replaceItem({ title: 'Emma' })
     await admin.navigate('/authors')
     const authorsView = admin.getRouteComponent(isView)
     expect(authorsView).not.toBe(booksView)
@@ -102,9 +102,9 @@ describe('DitoView', () => {
       // Components of the view outside of the list, e.g. its schema, use the
       // contexts of the list, but display the view's data:
       const { context } = view.$refs.schema
-      expect(context.listQuery).toBe(list.ownSource.query)
+      expect(context.listQuery).toBe(list.ownSourceContext.query)
       expect(context.getResourceUrl()).toBe('/books')
-      expect(list.ownSource.schema).toBe(list.schema)
+      expect(list.ownSourceContext.schema).toBe(list.schema)
     })
 
     it('are missing in views with multiple components', async () => {
@@ -258,10 +258,10 @@ describe('DitoView', () => {
         data: { strict: true, address: { city: null, note: 'Note' } }
       })
       expect(data.address.label).toBe('Strict: true')
-      expect(routeComponent.ownContainer.verify('address/city')).toBe(false)
+      expect(routeComponent.ownDataContext.verify('address/city')).toBe(false)
       expect(schemaComponent.processData().address).not.toHaveProperty('note')
       data.strict = false
-      expect(routeComponent.ownContainer.verify('address/city')).toBe(true)
+      expect(routeComponent.ownDataContext.verify('address/city')).toBe(true)
       expect(schemaComponent.processData().address.note).toBe('Note false')
     })
   })

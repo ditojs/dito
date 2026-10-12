@@ -43,7 +43,7 @@ export default {
   },
 
   setup(props, { emit }) {
-    const admin = inject('admin')
+    const adminContext = inject('adminContext')
     const { domOn } = useDomEvents()
 
     const updateClipboardData = () => {
@@ -55,7 +55,12 @@ export default {
 
     // Notifications log their error too:
     const notifyClipboardError = (error, text = error.message) => {
-      admin.notify({ type: 'error', error, title: 'Clipboard Error', text })
+      adminContext.notify({
+        type: 'error',
+        error,
+        title: 'Clipboard Error',
+        text
+      })
     }
 
     const clipboardOptions = computed(() =>

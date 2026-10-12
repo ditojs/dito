@@ -89,7 +89,7 @@ export function useField(
       value.value,
       getValidations(props.schema, context)
     )
-    schemaContext.services.container!.model.setErrors(
+    schemaContext.services.dataContext!.model.setErrors(
       props.dataPath,
       errors.length > 0 ? errors : null
     )

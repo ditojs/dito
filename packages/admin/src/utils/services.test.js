@@ -225,7 +225,7 @@ describe('services', () => {
         },
         data: { isbn: 'old' }
       })
-      const { dataModel, ownContainer: container } = routeComponent
+      const { dataModel, ownDataContext: dataContext } = routeComponent
       expect(data.cover).toBe('cover-old')
       dataModel.set(data, 'isbn', 'new')
       await flushPromises()
@@ -233,8 +233,8 @@ describe('services', () => {
       const tracker = admin.context.loadingTracker
       let isSettled = false
       const settled = waitUntilDataModelSettled({
-        admin: admin.context,
-        container
+        adminContext: admin.context,
+        dataContext
       }).then(() => (isSettled = true))
       await flushPromises()
       expect(tracker.isLoading).toBe(true)
@@ -275,7 +275,7 @@ describe('services', () => {
     const form = admin.getRouteComponent(isForm)
     await settle(form)
     const comments = admin.getComponent(form, 'chapters/0/comments')
-    expect(comments.context.rootItem).toBe(form.ownRoute.rootData)
+    expect(comments.context.rootItem).toBe(form.ownRouteContext.rootData)
     expect(comments.context.item).toBe(form.data)
   })
 
@@ -284,7 +284,7 @@ describe('services', () => {
       const { admin } = await mountSchema({
         schema: { components: { title: { type: 'text' } } }
       })
-      const services = { admin: admin.context, resource: null }
+      const services = { adminContext: admin.context, resourceContext: null }
       expect(getResourceUrl(services, null)).toBe(null)
       expect(getResourceUrl(services, { path: 'books', query: { a: 1 } }))
         .toBe('/books?a=1')
@@ -338,7 +338,7 @@ describe('services', () => {
       expect(admin.context.user.username).toBe('reader')
       const count = getSessionRequestCount()
       await sendRequest(
-        { admin: admin.context },
+        { adminContext: admin.context },
         {
           method: 'patch',
           resource: { type: 'member', path: 'users', id: '1' },
@@ -354,7 +354,7 @@ describe('services', () => {
       const { admin, getSessionRequestCount } = await mountWithUsers()
       const count = getSessionRequestCount()
       await sendRequest(
-        { admin: admin.context },
+        { adminContext: admin.context },
         {
           method: 'patch',
           resource: { type: 'member', path: 'users', id: '2' },
@@ -369,7 +369,7 @@ describe('services', () => {
       const { admin, request, getSessionRequestCount } = await mountWithUsers()
       const count = getSessionRequestCount()
       await sendRequest(
-        { admin: admin.context },
+        { adminContext: admin.context },
         { url: '/books', internal: true }
       )
       expect(getSessionRequestCount()).toBe(count)

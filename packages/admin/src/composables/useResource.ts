@@ -31,7 +31,7 @@ export interface SubmitResourceOptions {
 export interface UseResourceOptions {
   services: Services
   // The route of sources, and the parent route of forms:
-  parentRoute: RouteContext | null
+  parentRouteContext: RouteContext | null
   getSchema(): Schema
   getItemId?: () => string | null
   isTransient(providesData: boolean): boolean
@@ -54,7 +54,7 @@ export interface UseResourceOptions {
 // the requests in the loading state of the component and its view.
 export function useResource({
   services,
-  parentRoute,
+  parentRouteContext,
   getSchema,
   getItemId,
   isTransient: getIsTransient,
@@ -69,9 +69,11 @@ export function useResource({
   getItemLabel = () => null,
   showValidationErrors
 }: UseResourceOptions) {
-  const { admin } = services
+  const { adminContext } = services
   const loadingTracker = markRaw(
-    new LoadingTracker(parentRoute?.loadingTracker ?? admin.loadingTracker)
+    new LoadingTracker(
+      parentRouteContext?.loadingTracker ?? adminContext.loadingTracker
+    )
   )
   const loadAbortController = shallowRef<AbortController | null>(null)
 
@@ -80,9 +82,10 @@ export function useResource({
     const collection = getResource(resource, {
       type: 'collection',
       method,
-      parent: (
-        parentRoute?.resource?.getResource({ method, child: resource }) ?? null
-      ),
+      parent: parentRouteContext?.resourceContext?.getResource({
+        method,
+        child: resource
+      }) ?? null,
       child
     })
     return getMemberResource(getItemId?.(), collection) || collection
@@ -95,7 +98,10 @@ export function useResource({
 
   // Continue the verbs of the parent, with the transient ones in nested data:
   const verbs = computed(() => {
-    const parentVerbs = parentRoute?.resource?.verbs ?? defaultVerbs
+    const parentVerbs = (
+      parentRouteContext?.resourceContext?.verbs ??
+      defaultVerbs
+    )
     return isTransient.value
       ? {
           ...parentVerbs,
@@ -114,7 +120,7 @@ export function useResource({
     const data = error?.response?.data
     const title = isString(data?.type) ? labelize(data.type) : 'Error'
     const text = data?.message ?? error
-    admin.notify({ type: 'error', error, title, text })
+    adminContext.notify({ type: 'error', error, title, text })
   }
 
   // Errors are notified unless `callback()` returns `true`. Aborted requests
@@ -274,14 +280,14 @@ export function useResource({
         onSuccess,
         onError,
         notifySuccess = () =>
-          admin.notify({
+          adminContext.notify({
             type: 'success',
             title: 'Request Successful',
             text: 'Request was successfully sent.'
           }),
         notifyError = error => {
           const message = getErrorMessage(error)
-          admin.notify({
+          adminContext.notify({
             type: 'error',
             error,
             title: 'Request Error',

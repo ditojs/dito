@@ -5,7 +5,7 @@
     :id="componentPath"
     ref="element"
     v-model="dateValue"
-    :locale="admin.api.locale"
+    :locale="adminContext.api.locale"
     :format="formats"
     v-bind="attributes"
   )
@@ -62,7 +62,7 @@ const DitoTypeDate = {
     const { value, services, getSchemaValue } = field
     return {
       ...field,
-      admin: services.admin,
+      adminContext: services.adminContext,
       pickerComponents,
 
       dateValue: computed({
@@ -82,7 +82,7 @@ const DitoTypeDate = {
         const { type } = props.schema
         const { date, time } = assignDeeply(
           {},
-          services.admin.api.formats,
+          services.adminContext.api.formats,
           getSchemaValue('formats', { type: Object, default: null })
         )
         return {

@@ -18,5 +18,5 @@ export interface SourceContext {
   getSourceItemLabel(item: any, index?: number | null): any
   reload(): void
   // Views provide the resource of their main source:
-  readonly resource: ResourceContext
+  readonly resourceContext: ResourceContext
 }

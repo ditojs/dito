@@ -301,7 +301,7 @@ describe('DitoSchema', () => {
         const { routeComponent, schemaComponent, loadItem } =
           await mountLoadingForm('/items/1')
         expect(schemaComponent.hasData).toBe(false)
-        expect(routeComponent.ownContainer.verify()).toBe(true)
+        expect(routeComponent.ownDataContext.verify()).toBe(true)
         await loadItem()
         expect(schemaComponent.hasData).toBe(true)
       })
@@ -382,7 +382,7 @@ describe('DitoSchema', () => {
         admin.getRouteComponent(
           isForm
         )
-      await pageFormComponent.ownRoute.close()
+      await pageFormComponent.ownRouteContext.close()
       await flushPromises()
       // The route is kept without hash, as before, but the tab stays selected:
       expect(admin.router.currentRoute.value.fullPath).toBe('/items/1')
@@ -517,7 +517,7 @@ describe('DitoSchema', () => {
       const [itemForm, pageForm] = getForms()
       const schemaComponent = itemForm.$refs.schema
       expect(pageForm.$refs.schema.selectedTab).toBe('text')
-      await pageForm.ownRoute.close()
+      await pageForm.ownRouteContext.close()
       await flushPromises()
       expect(admin.router.currentRoute.value.fullPath).toBe('/items/1')
       // The tab of the page form isn't one of the item form's tabs:
@@ -565,12 +565,12 @@ describe('DitoSchema', () => {
       },
       data: { title: 'Emma', author: '' }
     })
-    expect(routeComponent.ownContainer.verify()).toBe(false)
-    expect(routeComponent.ownContainer.verify('title')).toBe(true)
-    expect(routeComponent.ownContainer.verify(/^author$/)).toBe(false)
+    expect(routeComponent.ownDataContext.verify()).toBe(false)
+    expect(routeComponent.ownDataContext.verify('title')).toBe(true)
+    expect(routeComponent.ownDataContext.verify(/^author$/)).toBe(false)
     // Unlike `validate()`, no errors are shown:
     expect(getErrors('author')).toEqual([])
-    expect(routeComponent.ownContainer.validate('author')).toBe(false)
+    expect(routeComponent.ownDataContext.validate('author')).toBe(false)
     await flushPromises()
     expect(getErrors('author')).toEqual(['The author field is required.'])
   })
@@ -597,7 +597,7 @@ describe('DitoSchema', () => {
         .find(vm => vm.$ !== result.schemaComponent.$)
       const reveal = componentPath =>
         result.admin.context.ui.reveal(
-          result.routeComponent.ownContainer,
+          result.routeComponent.ownDataContext,
           componentPath,
           { focus: true }
         )
@@ -707,7 +707,7 @@ describe('DitoSchema', () => {
       })
       schemaComponent.selectTab('details')
       await flushPromises()
-      routeComponent.ownContainer.validate()
+      routeComponent.ownDataContext.validate()
       await flushPromises()
       expect(schemaComponent.selectedTab).toBe('summary')
       const [input] = wrapper.findAll('input[name="title"]')
@@ -721,7 +721,7 @@ describe('DitoSchema', () => {
         },
         data: { title: '', hasSummary: false }
       })
-      routeComponent.ownContainer.validate()
+      routeComponent.ownDataContext.validate()
       await flushPromises()
       expect(schemaComponent.selectedTab).toBe('details')
       const inputs = wrapper.findAll('input[name="title"]')
@@ -1030,7 +1030,7 @@ describe('DitoSchema', () => {
     it('opens collapsed inlined schemas to focus their errors', async () => {
       const { routeComponent, findField } = await mountCollapsedAuthor()
       expect(findField('author/name').exists()).toBe(false)
-      routeComponent.ownContainer.validate()
+      routeComponent.ownDataContext.validate()
       await flushPromises()
       const input = findField('author/name').find('input')
       expect(document.activeElement).toBe(input.element)

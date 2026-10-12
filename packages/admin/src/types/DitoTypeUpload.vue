@@ -176,8 +176,8 @@ const DitoTypeUpload = {
     const field = useField(props)
     const { value, context, createContext, services, disabled, onChange } =
       field
-    const { admin } = services
-    const getModel = () => services.container.model
+    const { adminContext } = services
+    const getModel = () => services.dataContext.model
     const fileDropTargets = inject('fileDropTargets')
     const dropTarget = useTemplateRef('dropTarget')
     const upload = useTemplateRef('upload')
@@ -227,17 +227,19 @@ const DitoTypeUpload = {
 
     // Views without resource can't upload, see `api.resources.upload()`:
     const uploadPath = computed(() =>
-      services.resource?.resourceOwner
+      services.resourceContext?.resourceOwner
         ? getResourceUrl(services, {
             type: 'upload',
             method: 'post',
-            path: admin.api.normalizePath(props.dataPath)
+            path: adminContext.api.normalizePath(props.dataPath)
           })
         : null
     )
 
     const uploadOptions = computed(() =>
-      uploadPath.value ? getUploadOptions(admin.api, uploadPath.value) : null
+      uploadPath.value
+        ? getUploadOptions(adminContext.api, uploadPath.value)
+        : null
     )
 
     const getFileContext = (file, index) =>
@@ -265,7 +267,7 @@ const DitoTypeUpload = {
       // Resolve like `fetchBlob()`, for links and clicks to match:
       files.value.map((file, index) => {
         const url = getDownloadUrl(file, index)
-        return url ? resolveDownloadUrl(admin.api, url) : null
+        return url ? resolveDownloadUrl(adminContext.api, url) : null
       })
     )
 
@@ -491,7 +493,7 @@ const DitoTypeUpload = {
               }[error] ||
               `Unknown File Upload Error: '${error}'`
             )
-            admin.notify({
+            adminContext.notify({
               type: 'error',
               error,
               title: 'File Upload Error',
@@ -519,7 +521,10 @@ const DitoTypeUpload = {
 
       async onClickDownload(file, index) {
         try {
-          const blob = await fetchBlob(admin.api, downloadUrls.value[index])
+          const blob = await fetchBlob(
+            adminContext.api,
+            downloadUrls.value[index]
+          )
           const url = URL.createObjectURL(blob)
           try {
             download(services, { filename: file.name, url })
@@ -528,7 +533,7 @@ const DitoTypeUpload = {
             setTimeout(() => URL.revokeObjectURL(url), 1000)
           }
         } catch (error) {
-          admin.notify({
+          adminContext.notify({
             type: 'error',
             error,
             title: 'File Download Error',

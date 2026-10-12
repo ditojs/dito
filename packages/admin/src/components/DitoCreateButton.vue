@@ -72,7 +72,7 @@ export default {
       if (isDisabled(form)) {
         throw new Error('Not allowed to create item for given form')
       } else if (isInlinedSource.value) {
-        services.source.createItem(form, type, props.insertIndex)
+        services.sourceContext.createItem(form, type, props.insertIndex)
       } else {
         const { creatable } = props.schema
         const query = {

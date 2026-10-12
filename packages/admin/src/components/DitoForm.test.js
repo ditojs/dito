@@ -168,7 +168,7 @@ describe('DitoForm', () => {
       expect(result.findField('status').find('input').element.value).toBe(
         'published'
       )
-      expect(result.routeComponent.ownRoute.isDirty).toBe(false)
+      expect(result.routeComponent.ownRouteContext.isDirty).toBe(false)
     })
 
     it('make the form dirty with `context.markEdited()`', async () => {
@@ -178,7 +178,7 @@ describe('DitoForm', () => {
       })
       await clickPublish(result)
       expect(result.data.status).toBe('published')
-      expect(result.routeComponent.ownRoute.isDirty).toBe(true)
+      expect(result.routeComponent.ownRouteContext.isDirty).toBe(true)
     })
   })
 
@@ -194,7 +194,7 @@ describe('DitoForm', () => {
       await enterValue(input, 'Persuasion')
       await enterValue(input, 'Emma')
       await settle()
-      expect(routeComponent.ownRoute.isDirty).toBe(true)
+      expect(routeComponent.ownRouteContext.isDirty).toBe(true)
     })
 
     it('is clean once the changes are saved', async () => {
@@ -208,9 +208,9 @@ describe('DitoForm', () => {
       })
       await enterValue(wrapper.find('input[name="title"]'), 'Persuasion')
       await settle()
-      expect(routeComponent.ownRoute.isDirty).toBe(true)
+      expect(routeComponent.ownRouteContext.isDirty).toBe(true)
       expect(await submit()).toEqual({ id: 1, title: 'Persuasion' })
-      expect(routeComponent.ownRoute.isDirty).toBe(false)
+      expect(routeComponent.ownRouteContext.isDirty).toBe(false)
     })
 
     it('is never dirty without a submit button', async () => {
@@ -221,7 +221,7 @@ describe('DitoForm', () => {
       })
       await enterValue(wrapper.find('input[name="title"]'), 'Persuasion')
       await settle()
-      expect(routeComponent.ownRoute.isDirty).toBe(false)
+      expect(routeComponent.ownRouteContext.isDirty).toBe(false)
       await admin.navigate('/items')
       expect(confirm).not.toHaveBeenCalled()
       expect(admin.router.currentRoute.value.path).toBe('/items')
@@ -237,7 +237,7 @@ describe('DitoForm', () => {
       })
       await enterValue(wrapper.find('input[name="title"]'), 'Persuasion')
       await settle()
-      expect(routeComponent.ownRoute.isDirty).toBe(true)
+      expect(routeComponent.ownRouteContext.isDirty).toBe(true)
     })
 
     it('stays clean when a component writes the value that it has', async () => {
@@ -257,13 +257,13 @@ describe('DitoForm', () => {
       write('title', 'Emma')
       write('tags', ['novel'])
       await form.settle()
-      expect(form.routeComponent.ownRoute.isDirty).toBe(false)
+      expect(form.routeComponent.ownRouteContext.isDirty).toBe(false)
       write('title', 'Persuasion')
       await form.submit()
       // E.g. components that write their value again after the save:
       write('title', 'Persuasion')
       await form.settle()
-      expect(form.routeComponent.ownRoute.isDirty).toBe(false)
+      expect(form.routeComponent.ownRouteContext.isDirty).toBe(false)
     })
 
     it('keeps the edits of forms without a submit button when loading', async () => {
@@ -318,7 +318,7 @@ describe('DitoForm', () => {
       it('keep the edits of the form dirty once the list saved its order', async () => {
         const { wrapper, routeComponent, request, settle } =
           await mountChaptersForm()
-        expect(routeComponent.ownRoute.isDirty).toBe(true)
+        expect(routeComponent.ownRouteContext.isDirty).toBe(true)
         await wrapper.find('button[id$="saveOrder"]').trigger('click')
         await settle()
         expect(request).toHaveBeenCalledWith(
@@ -327,7 +327,7 @@ describe('DitoForm', () => {
             url: '/items/1/chapters/order'
           })
         )
-        expect(routeComponent.ownRoute.isDirty).toBe(true)
+        expect(routeComponent.ownRouteContext.isDirty).toBe(true)
       })
 
       it('stay dirty once the form is saved, until they save', async () => {
@@ -335,10 +335,10 @@ describe('DitoForm', () => {
           await mountChaptersForm()
         // The form's save doesn't carry the order of the list:
         expect(await submit()).toMatchObject({ title: 'Persuasion' })
-        expect(routeComponent.ownRoute.isDirty).toBe(true)
+        expect(routeComponent.ownRouteContext.isDirty).toBe(true)
         await wrapper.find('button[id$="saveOrder"]').trigger('click')
         await settle()
-        expect(routeComponent.ownRoute.isDirty).toBe(false)
+        expect(routeComponent.ownRouteContext.isDirty).toBe(false)
       })
     })
 
@@ -362,10 +362,10 @@ describe('DitoForm', () => {
       const { dataModel } = routeComponent
       const field = findField('chapters')
       const expectDirtyAfter = async (selector, event = 'click', options) => {
-        expect(routeComponent.ownRoute.isDirty).toBe(false)
+        expect(routeComponent.ownRouteContext.isDirty).toBe(false)
         await field.findAll(selector)[0].trigger(event, options)
         await settle()
-        expect(routeComponent.ownRoute.isDirty).toBe(true)
+        expect(routeComponent.ownRouteContext.isDirty).toBe(true)
         dataModel.markClean()
       }
       const getTitles = () => data.chapters.map(chapter => chapter.title)
@@ -496,7 +496,7 @@ describe('DitoForm', () => {
       response.resolve({})
       await settle(routeComponent)
       expect(data.title).toBe('Sanditon')
-      expect(routeComponent.ownRoute.isDirty).toBe(true)
+      expect(routeComponent.ownRouteContext.isDirty).toBe(true)
     })
 
     it('keeps the identity of the item and its lists and items', async () => {
@@ -515,7 +515,7 @@ describe('DitoForm', () => {
       expect(data.reviews).toBe(reviews)
       expect(data.reviews).toEqual([{ id: 1, text: 'Witty' }])
       expect(data.title).toBe('Persuasion')
-      expect(routeComponent.ownRoute.isDirty).toBe(false)
+      expect(routeComponent.ownRouteContext.isDirty).toBe(false)
     })
 
     it('gives new items their ids from the response in place', async () => {
@@ -583,7 +583,7 @@ describe('DitoForm', () => {
       const { routeComponent } = await mountBookForm()
       const { data } = routeComponent
       const [first] = data.chapters
-      const mergedData = routeComponent.ownContainer.replaceItem({
+      const mergedData = routeComponent.ownDataContext.replaceItem({
         ...data,
         title: 'Persuasion',
         chapters: [{ id: 1, title: 'First' }]
@@ -682,7 +682,7 @@ describe('DitoForm', () => {
       expect(data.chapters).toEqual([{ title: 'Opening' }])
       expect(admin.router.currentRoute.value.path).toBe('/items/1')
       // The applied changes make the book form dirty, not saved:
-      expect(routeComponent.ownRoute.isDirty).toBe(true)
+      expect(routeComponent.ownRouteContext.isDirty).toBe(true)
       expect(notify).toHaveBeenCalledWith(
         expect.objectContaining({
           type: 'info',
@@ -732,7 +732,7 @@ describe('DitoForm', () => {
       expect(admin.router.currentRoute.value.path).toBe('/items/1/chapters/0')
       expect(form.data).toEqual({ title: 'PROLOGUE' })
       expect(data.chapters).toEqual([{ title: 'prologue' }])
-      expect(form.ownRoute.isDirty).toBe(true)
+      expect(form.ownRouteContext.isDirty).toBe(true)
       await new DOMWrapper(form.$el)
         .find('.dito-buttons--main button[type="submit"]')
         .trigger('click')
@@ -745,7 +745,7 @@ describe('DitoForm', () => {
         chapters: [{ title: 'Prologue' }]
       })
       const form = await openNestedForm(admin, '/items/1/chapters/create')
-      expect(form.ownContainer.isCreating).toBe(true)
+      expect(form.ownDataContext.isCreating).toBe(true)
       await submitNestedForm(form, 'Epilogue')
       expect(data.chapters).toEqual([
         { title: 'Prologue' },
@@ -786,7 +786,7 @@ describe('DitoForm', () => {
       expect(admin.router.currentRoute.value.path).toBe(
         '/items/1/author/create'
       )
-      expect(form.ownContainer.isCreating).toBe(true)
+      expect(form.ownDataContext.isCreating).toBe(true)
       expect(form.data).toEqual({ name: null })
       await submitNestedForm(form, 'Jane Austen')
       expect(data.author).toEqual({ name: 'Jane Austen' })
@@ -798,7 +798,7 @@ describe('DitoForm', () => {
         author: { name: 'Jane' }
       })
       const form = await openNestedForm(admin, '/items/1/author')
-      expect(form.ownContainer.isCreating).toBe(false)
+      expect(form.ownDataContext.isCreating).toBe(false)
       expect(form.data).toEqual({ name: 'Jane' })
       await submitNestedForm(form, 'Jane Austen')
       expect(data.author).toEqual({ name: 'Jane Austen' })
@@ -952,7 +952,7 @@ describe('DitoForm', () => {
         featured.selectedValue = featured.getValueForOption(featured.options[0])
         await settle(form)
         expect(form.data.featured).not.toBe(data.chapters[0].sections[0])
-        form.ownRoute.close()
+        form.ownRouteContext.close()
         await settle(form)
         expect(data.chapters[0].sections).toEqual([{ name: 'Opening' }])
       })
@@ -1038,7 +1038,7 @@ describe('DitoForm', () => {
         request: ({ method, data }) =>
           method === 'post' ? { data: { id: 7, ...data } } : null
       })
-      expect(routeComponent.ownContainer.isCreating).toBe(true)
+      expect(routeComponent.ownDataContext.isCreating).toBe(true)
       await enterValue(admin.wrapper.find('input[name="title"]'), 'Emma')
       expect(await submit()).toEqual({ title: 'Emma' })
       await flushPromises()
@@ -1063,7 +1063,7 @@ describe('DitoForm', () => {
       expect(admin.getRouteComponent(isForm)).toBe(
         routeComponent
       )
-      expect(routeComponent.ownContainer.isCreating).toBe(false)
+      expect(routeComponent.ownDataContext.isCreating).toBe(false)
       expect(routeComponent.data).toEqual({ id: 7, title: 'Emma' })
       const itemRequests = request.mock.calls
         .map(([{ method = 'get', url }]) => [method, url])
@@ -1147,7 +1147,7 @@ describe('DitoForm', () => {
       await admin.navigate('/test/recipes/0')
       const form = admin.getRouteComponent(isForm)
       await settle(form)
-      expect(form.route.parent.isForm).toBe(false)
+      expect(form.routeContext.parent.isForm).toBe(false)
       expect(form.dataPath).toBe('recipes/0')
       await submitChanges(form, 'Waffles')
       expect(data.recipes).toEqual([{ name: 'Waffles' }])
@@ -1163,7 +1163,7 @@ describe('DitoForm', () => {
       await admin.navigate('/test/recipes/0')
       const form = admin.getRouteComponent(isForm)
       await settle(form)
-      expect(form.ownRoute.resource.resourceOwner).toBe(null)
+      expect(form.ownRouteContext.resourceContext.resourceOwner).toBe(null)
       expect(form.dataPath).toBe('recipes/0')
       expect(new DOMWrapper(form.$el).find('input').element.value).toBe(
         'Pancakes'
@@ -1186,7 +1186,7 @@ describe('DitoForm', () => {
       })
       await admin.navigate('/cookbook')
       const view = admin.getRouteComponent(isView)
-      view.ownContainer.replaceItem({ recipes: [{ name: 'Pancakes' }] })
+      view.ownDataContext.replaceItem({ recipes: [{ name: 'Pancakes' }] })
       await settle(view)
       await admin.navigate('/cookbook/0')
       const form = admin.getRouteComponent(isForm)
@@ -1217,7 +1217,7 @@ describe('DitoForm', () => {
       const view = admin.getRouteComponent(
         component => isView(component) && component.name === 'cookbook'
       )
-      view.ownContainer.replaceItem({ recipes: [{ name: 'Pancakes' }] })
+      view.ownDataContext.replaceItem({ recipes: [{ name: 'Pancakes' }] })
       await settle(view)
       await admin.navigate('/kitchen/cookbook/recipes/0')
       const form = admin.getRouteComponent(isForm)
@@ -1248,7 +1248,7 @@ describe('DitoForm', () => {
       function expectItemsOfComponents(admin, form, view) {
         const recipe = view.data.recipes[0]
         const name = admin.getComponent(form, 'recipes/0/name')
-        const { rootData } = form.ownRoute
+        const { rootData } = form.ownRouteContext
         expect(rootData.venue).toBe('Bakery')
         expect(rootData.recipes[0]).toBe(form.data)
         expect(name.context.rootItem).toBe(rootData)
@@ -1285,7 +1285,7 @@ describe('DitoForm', () => {
         })
         await admin.navigate('/cookbook')
         const view = admin.getRouteComponent(isView)
-        view.ownContainer.replaceItem({
+        view.ownDataContext.replaceItem({
           venue: 'Bakery',
           recipes: [{ name: 'Pancakes' }]
         })
@@ -1327,8 +1327,8 @@ describe('DitoForm', () => {
       await settle(form)
       expect(data.chapters).toEqual([{ title: 'Opening' }])
       // The changes make the form that owns the data dirty:
-      expect(form.ownRoute.isDirty).toBe(false)
-      expect(routeComponent.ownRoute.isDirty).toBe(true)
+      expect(form.ownRouteContext.isDirty).toBe(false)
+      expect(routeComponent.ownRouteContext.isDirty).toBe(true)
       // Mutating forms don't have a submit button, only the cancel button:
       expect(
         new DOMWrapper(form.$el)
@@ -1404,12 +1404,14 @@ describe('DitoForm', () => {
       })
       await admin.navigate('/items/1/chapters/create')
       const form = admin.getRouteComponent(
-        component => component.ownContainer.isCreating
+        component => component.ownDataContext.isCreating
       )
       await settle(form)
       // The new item isn't in the data of the parent, so the form handles it
       // with its own model:
-      expect(form.dataModel).not.toBe(form.route.parent.container.model)
+      expect(form.dataModel).not.toBe(
+        form.routeContext.parent.dataContext.model
+      )
       await enterValue(new DOMWrapper(form.$el).find('input'), 'Opening')
       await settle(form)
       expect(form.data).toMatchObject({ title: 'Opening', slug: 'opening' })
@@ -1453,8 +1455,8 @@ describe('DitoForm', () => {
     await settle(form)
     // The same form stays open and creates the new item:
     expect(form).toBe(routeComponent)
-    expect(form.ownContainer.isCreating).toBe(true)
-    expect(form.ownRoute.isDirty).toBe(false)
+    expect(form.ownDataContext.isCreating).toBe(true)
+    expect(form.ownRouteContext.isDirty).toBe(false)
     expect(form.data).toEqual({ title: null })
   })
 
@@ -1474,7 +1476,7 @@ describe('DitoForm', () => {
     await admin.navigate('/items/create')
     pendingLoad.resolve({ data: { id: 2, title: 'Persuasion' } })
     await settle(routeComponent)
-    expect(routeComponent.ownContainer.isCreating).toBe(true)
+    expect(routeComponent.ownDataContext.isCreating).toBe(true)
     expect(routeComponent.data).toEqual({ title: null })
   })
 
@@ -1488,11 +1490,11 @@ describe('DitoForm', () => {
         throw new Error(`Unexpected request: ${method} ${url}`)
       }
     })
-    expect(routeComponent.ownContainer.isCreating).toBe(true)
+    expect(routeComponent.ownDataContext.isCreating).toBe(true)
     await admin.navigate('/items/1')
     const form = admin.getRouteComponent(isForm)
     await settle(form)
-    expect(form.ownContainer.isCreating).toBe(false)
+    expect(form.ownDataContext.isCreating).toBe(false)
     expect(form.data).toEqual({ id: 1, title: 'Emma' })
   })
 

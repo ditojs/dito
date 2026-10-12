@@ -30,14 +30,17 @@ export default {
   },
 
   setup(props) {
-    const admin = inject('admin')
+    const adminContext = inject('adminContext')
     const router = useRouter()
     return {
       editPath: computed(() => {
         const { schema, optionValue } = props
         const route = (
           optionValue != null &&
-          admin.routeTree?.getViewItemRoute(schema.view, String(optionValue))
+          adminContext.routeTree?.getViewItemRoute(
+            schema.view,
+            String(optionValue)
+          )
         )
         return route ? router.resolve(route).path : null
       })

@@ -189,7 +189,7 @@ describe('DitoPanel', () => {
     await enterValue(panel.find('input'), '3')
     await settle()
     expect(panel.vm.panelData).toEqual({ words: 3, pages: 30 })
-    expect(panel.vm.$refs.schema.container.isDirty).toBe(true)
+    expect(panel.vm.$refs.schema.dataContext.isDirty).toBe(true)
     expect(dataModel.isDirty).toBe(false)
   })
 

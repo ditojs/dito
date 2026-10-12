@@ -12,7 +12,7 @@ import {
 } from './utils/data.js'
 import { hasNestedData } from './utils/schema/structure.js'
 import { getTextFromHtml } from './utils/html.js'
-import { DialogContext } from './utils/ContainerContext.ts'
+import { DialogContext } from './utils/DataContext.ts'
 import {
   getRootData,
   getResourceUrl,
@@ -200,7 +200,7 @@ export default class DitoContext {
     return get(
       this,
       'processedRootData',
-      () => getContainer(this)?.model.processedRootData.value ?? null
+      () => getDataContext(this)?.model.processedRootData.value ?? null
     )
   }
 
@@ -279,24 +279,24 @@ export default class DitoContext {
   }
 
   get isDirty() {
-    return !!getContainer(this)?.isDirty
+    return !!getDataContext(this)?.isDirty
   }
 
   get isCreating() {
-    return !!getContainer(this)?.isCreating
+    return !!getDataContext(this)?.isCreating
   }
 
   get selectedTab() {
-    const { route } = getServices(this)
-    return route?.isForm ? route.selectedTab : null
+    const { routeContext } = getServices(this)
+    return routeContext?.isForm ? routeContext.selectedTab : null
   }
 
   get routeQuery() {
-    return getAdmin(this).router.currentRoute.value.query
+    return getAdminContext(this).router.currentRoute.value.query
   }
 
   get listQuery() {
-    return getServices(this).source?.query ?? null
+    return getServices(this).sourceContext?.query ?? null
   }
 
   get request() {
@@ -308,11 +308,11 @@ export default class DitoContext {
   }
 
   get navigate() {
-    return location => getAdmin(this).router.push(location)
+    return location => getAdminContext(this).router.push(location)
   }
 
   get getRouteUrl() {
-    return location => getAdmin(this).router.resolve(location).href
+    return location => getAdminContext(this).router.resolve(location).href
   }
 
   get download() {
@@ -322,7 +322,7 @@ export default class DitoContext {
   get getResourceUrl() {
     return resource => {
       const services = getServices(this)
-      resource ??= services.resource?.resourceOwner?.getResource()
+      resource ??= services.resourceContext?.resourceOwner?.getResource()
       if (!resource) {
         throw new Error(
           'Unable to get the resource URL: There is no form or list with a ' +
@@ -335,25 +335,25 @@ export default class DitoContext {
 
   get notify() {
     return options => {
-      getAdmin(this).notify(options)
+      getAdminContext(this).notify(options)
       set(this, 'wasNotified', true)
     }
   }
 
   get validate() {
-    return match => getContainer(this).validate(match)
+    return match => getDataContext(this).validate(match)
   }
 
   get verify() {
-    return match => getContainer(this).verify(match)
+    return match => getDataContext(this).verify(match)
   }
 
   get markEdited() {
-    return () => getContainer(this).markEdited()
+    return () => getDataContext(this).markEdited()
   }
 
   get replaceItem() {
-    return data => getContainer(this).replaceItem(data)
+    return data => getDataContext(this).replaceItem(data)
   }
 
   get submit() {
@@ -371,25 +371,26 @@ export default class DitoContext {
 
   get closeForm() {
     return () => {
-      const { route } = getServices(this)
-      if (!route?.isForm) {
+      const { routeContext } = getServices(this)
+      if (!routeContext?.isForm) {
         throw new Error('Unable to close the form: There is no form.')
       }
-      return route.close()
+      return routeContext.close()
     }
   }
 
   get showDialog() {
-    return (schema, options) => getAdmin(this).showDialog(schema, options)
+    return (schema, options) =>
+      getAdminContext(this).showDialog(schema, options)
   }
 
   get closeDialog() {
     return value => {
-      const container = getContainer(this)
-      if (!(container instanceof DialogContext)) {
+      const dataContext = getDataContext(this)
+      if (!(dataContext instanceof DialogContext)) {
         throw new Error('Unable to close the dialog: There is no dialog.')
       }
-      container.close(value)
+      dataContext.close(value)
     }
   }
 }
@@ -398,22 +399,26 @@ function getServices(context) {
   return toObject(context).services
 }
 
-function getAdmin(context) {
-  return getServices(context).admin
+function getAdminContext(context) {
+  return getServices(context).adminContext
 }
 
 // Contexts may override the admin's members, and lack services:
 function getAdminValue(context, key) {
-  return get(context, key, () => getServices(context)?.admin?.[key] ?? null)
+  return get(
+    context,
+    key,
+    () => getServices(context)?.adminContext?.[key] ?? null
+  )
 }
 
-function getContainer(context) {
-  return getServices(context)?.container ?? null
+function getDataContext(context) {
+  return getServices(context)?.dataContext ?? null
 }
 
 // Find the model that holds `dataPath`, in its own data or its parent's:
 function getProcessedData(context, dataPath, nested) {
-  let dataModel = getContainer(context)?.model
+  let dataModel = getDataContext(context)?.model
   let path = null
   while (dataModel) {
     path = getRelativeDataPath(dataPath, dataModel.dataPath)

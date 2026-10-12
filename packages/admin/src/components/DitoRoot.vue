@@ -24,17 +24,17 @@
   main.dito-page.dito-scroll-parent(:class="appState.pageClass")
     DitoHeader(
       :spinner="options.spinner"
-      :isLoading="admin.loadingTracker.isLoading"
+      :isLoading="adminContext.loadingTracker.isLoading"
     )
     DitoRouterView(:routeLevel="0")
   DitoSidebar
     DitoAccount(
-      v-if="admin.user"
+      v-if="adminContext.user"
     )
     button.dito-login(
       v-else-if="hasSessionStarted"
       type="button"
-      @click="admin.session.login()"
+      @click="adminContext.session.login()"
     )
       span Login
   DitoNotifications(ref="notifications")
@@ -68,7 +68,7 @@ export default {
   },
 
   setup(props) {
-    const admin = inject('admin')
+    const adminContext = inject('adminContext')
     const { domOn } = useDomEvents()
     const root = useTemplateRef('root')
     const notifications = useTemplateRef('notifications')
@@ -83,7 +83,7 @@ export default {
       const { data, settings } = options
       // Resolve async schemas first, so that their errors reject:
       const schema = { type: 'dialog', components }
-      const { api } = admin
+      const { api } = adminContext
       await setupSchemaComponents(api, schema)
       if (new RouteTree({ dialog: schema }, api).hasRoutedForms()) {
         throw new Error('Dialogs do not support components that produce routes')
@@ -103,43 +103,45 @@ export default {
     const notify = options => notifications.value.notify(options)
 
     appState.title = document.title || 'Dito.js Admin'
-    admin.attachDialogsAndNotifications({
+    adminContext.attachDialogsAndNotifications({
       showDialog,
       notify,
       closeNotifications: () => notifications.value.destroyAll()
     })
-    const detachSessionUserInterface = admin.session.attachUserInterface({
-      notify,
-      // Return the entered credentials, or `null` if the user cancels:
-      requestLoginData() {
-        const { additionalComponents } = props.options.login || {}
-        return showDialog({
-          components: {
-            username: {
-              type: 'text',
-              autofocus: true
+    const detachSessionUserInterface = adminContext.session.attachUserInterface(
+      {
+        notify,
+        // Return the entered credentials, or `null` if the user cancels:
+        requestLoginData() {
+          const { additionalComponents } = props.options.login || {}
+          return showDialog({
+            components: {
+              username: {
+                type: 'text',
+                autofocus: true
+              },
+              password: {
+                type: 'password'
+              },
+              ...additionalComponents
             },
-            password: {
-              type: 'password'
-            },
-            ...additionalComponents
-          },
-          // NOTE: Login comes first in DOM order for password managers, CSS
-          // places cancel first:
-          buttons: {
-            login: {
-              type: 'submit',
-              text: 'Login'
-            },
+            // NOTE: Login comes first in DOM order for password managers, CSS
+            // places cancel first:
+            buttons: {
+              login: {
+                type: 'submit',
+                text: 'Login'
+              },
 
-            cancel: {
-              type: 'button',
-              text: 'Cancel'
+              cancel: {
+                type: 'button',
+                text: 'Cancel'
+              }
             }
-          }
-        })
+          })
+        }
       }
-    })
+    )
     onUnmounted(detachSessionUserInterface)
 
     onMounted(async () => {
@@ -161,7 +163,7 @@ export default {
       // `beforeunload` can't wait for them:
       domOn(window, {
         beforeunload: event => {
-          if (admin.ui.routes.some(route => route.isDirty)) {
+          if (adminContext.ui.routes.some(route => route.isDirty)) {
             event.preventDefault()
             // Required by older browsers to show the warning:
             event.returnValue = ''
@@ -170,7 +172,7 @@ export default {
       })
 
       try {
-        await admin.session.start()
+        await adminContext.session.start()
       } catch (error) {
         console.error(error)
       }
@@ -178,7 +180,7 @@ export default {
     })
 
     return {
-      admin,
+      adminContext,
       appState,
       dialogs,
       fileDropTargets,

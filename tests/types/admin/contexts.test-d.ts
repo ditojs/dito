@@ -1,7 +1,7 @@
 import { expectTypeOf, describe, it } from 'vitest'
 import type {
   AdminContext,
-  ContainerContext,
+  DataContext,
   DitoContext,
   DitoDataModel,
   ResourceContext,
@@ -24,17 +24,17 @@ describe('contexts', () => {
       .toEqualTypeOf<readonly RouteContext[]>()
   })
 
-  it('provides the contexts of containers and routes', () => {
-    expectTypeOf<ContainerContext['model']>().toEqualTypeOf<DitoDataModel>()
-    expectTypeOf<ContainerContext['isDirty']>().toBeBoolean()
-    expectTypeOf<ContainerContext['revealErrors']>().returns.resolves.toBeVoid()
+  it('provides the contexts of data and routes', () => {
+    expectTypeOf<DataContext['model']>().toEqualTypeOf<DitoDataModel>()
+    expectTypeOf<DataContext['isDirty']>().toBeBoolean()
+    expectTypeOf<DataContext['revealErrors']>().returns.resolves.toBeVoid()
     expectTypeOf<DitoDataModel['isEdited']>().toBeBoolean()
     expectTypeOf<DitoDataModel['markEdited']>().returns.toBeVoid()
     expectTypeOf<DitoDataModel['mergeFromServer']>()
       .returns.toEqualTypeOf<object>()
     expectTypeOf<RouteContext['parent']>().toEqualTypeOf<RouteContext | null>()
-    expectTypeOf<RouteContext['container']>()
-      .toEqualTypeOf<ContainerContext>()
+    expectTypeOf<RouteContext['dataContext']>()
+      .toEqualTypeOf<DataContext>()
     expectTypeOf<RouteContext['getCreatePath']>()
       .returns.toEqualTypeOf<string | null>()
     expectTypeOf<RouteContext['schema']>().toBeNullable()
@@ -54,7 +54,7 @@ describe('contexts', () => {
       .parameter(0)
       .toEqualTypeOf<SubmitButton>()
     expectTypeOf<SubmitButton['context']>().toEqualTypeOf<DitoContext>()
-    expectTypeOf<RouteContext['resource']>()
+    expectTypeOf<RouteContext['resourceContext']>()
       .toEqualTypeOf<ResourceContext | null>()
   })
 })

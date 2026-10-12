@@ -174,7 +174,7 @@ const DitoTypeMarkup = {
     }
 
     const onClickLink = async editor => {
-      const attributes = await services.admin.showDialog(
+      const attributes = await services.adminContext.showDialog(
         {
           components: {
             href: {

@@ -10,13 +10,13 @@ import type { AdminContext } from '../utils/AdminContext.ts'
 import type { RouteContext } from '../utils/RouteContext.ts'
 
 export function useLeaveGuard(
-  route: RouteContext,
+  routeContext: RouteContext,
   {
-    admin,
+    adminContext,
     isMutating,
     getCancelVerb
   }: {
-    admin: AdminContext
+    adminContext: AdminContext
     isMutating: () => boolean
     getCancelVerb: () => string
   }
@@ -36,15 +36,18 @@ export function useLeaveGuard(
     const isClosing = (
       // Include the parents of closing nested forms. Tab changes and nested
       // forms that open stay within the path, other items leave it:
-      isPathWithin(from.path, route.path) &&
-      !isPathWithin(to.path, route.path)
+      isPathWithin(from.path, routeContext.path) &&
+      !isPathWithin(to.path, routeContext.path)
     )
     if (isClosing) {
-      const { model } = route.container
+      const { model } = routeContext.dataContext
       if (isMutating()) {
         // Mutating forms validate their data once, also the fields that
         // aren't mounted. Leaving again leaves the invalid data:
-        ok = hasPreventedLeavingInvalidData || route.container.validate()
+        ok = (
+          hasPreventedLeavingInvalidData ||
+          routeContext.dataContext.validate()
+        )
         hasPreventedLeavingInvalidData = !ok
       } else {
         // Data stays dirty while it's submitted, so wait for the submits:
@@ -53,9 +56,9 @@ export function useLeaveGuard(
           await model.waitUntilSubmitted()
           isWaitingToLeave = false
         }
-        if (route.isDirty) {
+        if (routeContext.isDirty) {
           discardConfirmation ??= confirm(
-            { admin },
+            { adminContext },
             {
               message: (
                 'You have unsaved changes. ' +

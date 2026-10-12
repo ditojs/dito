@@ -19,7 +19,7 @@ DitoSchema.dito-schema-inlined(
   template(#edit-buttons)
     DitoEditButtons(
       v-if="deletable || draggable || editable || insertIndex != null"
-      :schema="source.schema"
+      :schema="sourceContext.schema"
       :formSchema="schema"
       :dataPath="dataPath"
       :data="data"
@@ -68,7 +68,7 @@ export default {
   setup(props) {
     const services = useServices()
     return {
-      source: computed(() => services.source),
+      sourceContext: computed(() => services.sourceContext),
       isCompact: computed(() => isCompact(props.schema))
     }
   }

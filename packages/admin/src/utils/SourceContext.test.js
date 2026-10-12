@@ -34,7 +34,7 @@ describe('SourceContext', () => {
       data: { chapters: [{ title: 'Arrakis' }] }
     })
     const chapters = getComponent('chapters')
-    const source = chapters.ownSource
+    const source = chapters.ownSourceContext
     expect(source.schema).toBe(chapters.schema)
     expect(source.dataPath).toBe('chapters')
     expect(getComponent('chapters/0/title').context.listQuery).toBe(
@@ -59,9 +59,9 @@ describe('SourceContext', () => {
       request: () => ({ data: [] })
     })
     const books = getComponent('books')
-    expect(books.ownSource.query).toEqual({ scope: 'all' })
+    expect(books.ownSourceContext.query).toEqual({ scope: 'all' })
     expect(getComponent('books/export').context.listQuery).toBe(
-      books.ownSource.query
+      books.ownSourceContext.query
     )
   })
 

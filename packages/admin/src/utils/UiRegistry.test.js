@@ -3,11 +3,11 @@ import { nextTick, ref } from 'vue'
 import { UiRegistry } from './UiRegistry.ts'
 
 describe('UiRegistry', () => {
-  const container = {}
+  const dataContext = {}
 
   it('registers handles under their component path', () => {
     const registry = new UiRegistry()
-    const handle = { container }
+    const handle = { dataContext }
     const unregister = registry.register(() => 'chapters/0', handle)
     expect(registry.getHandles('chapters/0')).toEqual([handle])
     unregister()
@@ -16,7 +16,7 @@ describe('UiRegistry', () => {
 
   it('registers handles again when their component path changes', async () => {
     const registry = new UiRegistry()
-    const handle = { container }
+    const handle = { dataContext }
     const componentPath = ref('chapters/0')
     const unregister = registry.register(() => componentPath.value, handle)
     componentPath.value = 'chapters/1'
@@ -29,27 +29,27 @@ describe('UiRegistry', () => {
 
   it('keeps the handles of the same path, e.g. of an object and its schema', () => {
     const registry = new UiRegistry()
-    const field = { container }
-    const schema = { container }
+    const field = { dataContext }
+    const schema = { dataContext }
     registry.register(() => 'author', field)
     const unregister = registry.register(() => 'author', schema)
     unregister()
     expect(registry.getHandles('author')).toEqual([field])
   })
 
-  it('returns the handles of one container', () => {
+  it('returns the handles of one data context', () => {
     const registry = new UiRegistry()
-    const handle = { container }
+    const handle = { dataContext }
     registry.register(() => 'title', handle)
-    registry.register(() => 'title', { container: {} })
-    expect(registry.getHandles('title', container)).toEqual([handle])
+    registry.register(() => 'title', { dataContext: {} })
+    expect(registry.getHandles('title', dataContext)).toEqual([handle])
   })
 
   it('reveals components from the outside in, and focuses them', async () => {
     const registry = new UiRegistry()
     const calls = []
     const createSchema = name => ({
-      container,
+      dataContext,
       reveal: async (componentPath, { focus }) => {
         calls.push([name, componentPath, focus])
       }
@@ -57,10 +57,10 @@ describe('UiRegistry', () => {
     registry.register(() => 'main/chapters/0', createSchema('item'))
     registry.register(() => '', createSchema('root'))
     // Handles of other containers aren't asked:
-    registry.register(() => 'main', { container: {}, reveal: vi.fn() })
+    registry.register(() => 'main', { dataContext: {}, reveal: vi.fn() })
     const focus = vi.fn()
-    registry.register(() => 'main/chapters/0/title', { container, focus })
-    await registry.reveal(container, 'main/chapters/0/title', { focus: true })
+    registry.register(() => 'main/chapters/0/title', { dataContext, focus })
+    await registry.reveal(dataContext, 'main/chapters/0/title', { focus: true })
     expect(calls).toEqual([
       ['root', 'main/chapters/0/title', true],
       ['item', 'main/chapters/0/title', true]
@@ -71,8 +71,8 @@ describe('UiRegistry', () => {
   it(`doesn't focus components when only revealing them`, async () => {
     const registry = new UiRegistry()
     const focus = vi.fn()
-    registry.register(() => 'title', { container, focus })
-    await registry.reveal(container, 'title')
+    registry.register(() => 'title', { dataContext, focus })
+    await registry.reveal(dataContext, 'title')
     expect(focus).not.toHaveBeenCalled()
   })
 })

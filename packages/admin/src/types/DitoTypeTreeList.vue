@@ -21,7 +21,7 @@
     .dito-tree-form-container(
       v-if="isEditingItem"
     )
-      DitoRouterView(:routeLevel="route.level + 1")
+      DitoRouterView(:routeLevel="routeContext.level + 1")
 </template>
 
 <script>
@@ -45,14 +45,15 @@ const DitoTypeTreeList = {
     const { services, value, isListSource, onChange } = source
     return {
       ...source,
-      route: computed(() => services.route),
+      routeContext: computed(() => services.routeContext),
 
       // The forms of the tree's items are routed right after its route:
       isEditingItem: computed(() => {
         const node = source.sourceNode.value
         let routeNode = (
           node &&
-          router.currentRoute.value.matched[services.route.level + 1]?.meta.node
+          router.currentRoute.value.matched[services.routeContext.level + 1]
+            ?.meta.node
         )
         while (routeNode && routeNode !== node) {
           routeNode = routeNode.parent
@@ -83,7 +84,7 @@ const DitoTypeTreeList = {
 
       // The only writer of the tree, see `DitoTreeItem`:
       changeChildren({ entry, children }) {
-        services.container.model.replaceItems(entry, children)
+        services.dataContext.model.replaceItems(entry, children)
         onChange()
       }
     }

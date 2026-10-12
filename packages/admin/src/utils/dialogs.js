@@ -9,8 +9,8 @@ export const transientNote = (
 )
 
 // Cancel comes first, to be focused first:
-export async function confirm({ admin }, { message, verb }) {
-  const result = await admin.showDialog(
+export async function confirm({ adminContext }, { message, verb }) {
+  const result = await adminContext.showDialog(
     {
       components: {
         message: {
@@ -39,7 +39,7 @@ export async function confirmAndRemove(
   services,
   { label, isTransient, remove }
 ) {
-  const verbs = services.resource?.verbs ?? defaultVerbs
+  const verbs = services.resourceContext?.verbs ?? defaultVerbs
   const [verb, pastVerb] = isTransient
     ? [verbs.remove, verbs.removed]
     : [verbs.delete, verbs.deleted]
@@ -48,7 +48,7 @@ export async function confirmAndRemove(
     verb
   })
   if (isConfirmed && (await remove()) !== false) {
-    services.admin.notify({
+    services.adminContext.notify({
       type: isTransient ? 'info' : 'success',
       title: 'Successfully Removed',
       html: [`${label} was ${pastVerb}.`, isTransient && transientNote]

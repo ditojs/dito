@@ -28,7 +28,7 @@ export default {
   name: 'DitoNotifications',
 
   setup() {
-    const admin = inject('admin')
+    const adminContext = inject('adminContext')
     return {
       // `text` is escaped, `html` is rendered as is: Only pass trusted HTML to
       // it, and escape all values that it includes.
@@ -76,7 +76,7 @@ export default {
             ...(type === 'error' && error ? [error] : [])
           ]
         )
-        const { notifications = true } = admin.api
+        const { notifications = true } = adminContext.api
         if (notifications) {
           // `durationFactor` is in milliseconds per character, plus 40 more:
           const { durationFactor = 20 } = notifications

@@ -11,7 +11,7 @@ interface SchemaComponent {
   revealErrors(): Promise<void>
 }
 
-export interface ContainerOwner {
+export interface DataOwner {
   // The parent's model, in forms that edit the item of their parent:
   readonly dataModel: DataModel
   readonly isCreating?: boolean
@@ -22,10 +22,10 @@ export interface ContainerOwner {
   copyErrors?(): void
 }
 
-export class ContainerContext {
-  readonly #owner: ContainerOwner
+export class DataContext {
+  readonly #owner: DataOwner
 
-  constructor(owner: ContainerOwner) {
+  constructor(owner: DataOwner) {
     this.#owner = owner
   }
 
@@ -84,10 +84,10 @@ export class ContainerContext {
   }
 }
 
-export class DialogContext extends ContainerContext {
+export class DialogContext extends DataContext {
   readonly #resolve: (value: unknown) => void
 
-  constructor(owner: ContainerOwner & { resolve(value: unknown): void }) {
+  constructor(owner: DataOwner & { resolve(value: unknown): void }) {
     super(owner)
     this.#resolve = owner.resolve
   }

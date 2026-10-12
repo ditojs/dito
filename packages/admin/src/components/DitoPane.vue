@@ -1,7 +1,7 @@
 <!-- eslint-disable vue/no-template-shadow -->
 <template lang="pug">
 .dito-pane(
-  v-if="container.hasData && componentSchemas.length > 0"
+  v-if="dataContext.hasData && componentSchemas.length > 0"
   :id="tabPanelId"
   v-resize="onResizePane"
   :role="tab ? 'tabpanel' : null"
@@ -206,7 +206,7 @@ export default {
     )
 
     return {
-      container: services.container,
+      dataContext: services.dataContext,
       positions,
       componentSchemas,
       isSingleComponent,

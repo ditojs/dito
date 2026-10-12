@@ -5,7 +5,7 @@ import defaultVerbs from '../verbs.js'
 import { getResource, getMemberResource } from './resource.js'
 import { getRequestCacheKey } from './request.js'
 import type { AdminContext } from './AdminContext.ts'
-import type { ContainerContext } from './ContainerContext.ts'
+import type { DataContext } from './DataContext.ts'
 import type { ResourceContext } from './ResourceContext.ts'
 import type { RouteContext } from './RouteContext.ts'
 import type { SourceContext } from './SourceContext.ts'
@@ -13,11 +13,11 @@ import type { HTTPMethod } from '../../types/index.d.ts'
 import type { Resource } from './types.ts'
 
 export interface Services {
-  readonly admin: AdminContext
-  readonly container: ContainerContext | null
-  readonly route: RouteContext | null
-  readonly source: SourceContext | null
-  readonly resource: ResourceContext | null
+  readonly adminContext: AdminContext
+  readonly dataContext: DataContext | null
+  readonly routeContext: RouteContext | null
+  readonly sourceContext: SourceContext | null
+  readonly resourceContext: ResourceContext | null
 }
 
 export interface RequestOptions {
@@ -38,35 +38,37 @@ export interface DownloadOptions {
   query?: Record<string, any>
 }
 
-export function getRootData({ container, route }: Services) {
-  return container?.model.rootData ?? route?.rootData ?? null
+export function getRootData({ dataContext, routeContext }: Services) {
+  return dataContext?.model.rootData ?? routeContext?.rootData ?? null
 }
 
 // Forms and sources have their own verbs, e.g. `apply` in nested data:
-export function getVerbs({ resource }: Services): Record<string, string> {
-  return resource?.verbs ?? defaultVerbs
+export function getVerbs({
+  resourceContext
+}: Services): Record<string, string> {
+  return resourceContext?.verbs ?? defaultVerbs
 }
 
 // Wait until the data model wrote its derived values and finished its loads,
 // with the header's spinner but without disabling the view:
 export async function waitUntilDataModelSettled({
-  admin,
-  container
+  adminContext,
+  dataContext
 }: Services) {
   await nextTick()
-  const model = container?.model
+  const model = dataContext?.model
   if (model?.hasPendingLoads) {
-    await admin.loadingTracker.track(() => model.waitUntilSettled())
+    await adminContext.loadingTracker.track(() => model.waitUntilSettled())
   }
 }
 
 export function getResourceUrl(
-  { admin, resource: resourceContext }: Services,
+  { adminContext, resourceContext }: Services,
   resource: Resource
 ): string | null {
   // Resources without a parent continue the closest form's or source's:
   const parent = resourceContext?.resourceOwner
-  const url = admin.api.resources.any(
+  const url = adminContext.api.resources.any(
     getResource(resource, {
       parent: (
         parent?.getResource({ method: resource.method, child: resource }) ??
@@ -74,14 +76,16 @@ export function getResourceUrl(
       )
     })
   )
-  return url ? admin.api.getApiUrl({ url, query: resource.query }) : null
+  return url
+    ? adminContext.api.getApiUrl({ url, query: resource.query })
+    : null
 }
 
 export async function sendRequest(
   services: Services,
   { method, url, resource, query, data, signal, internal }: RequestOptions
 ) {
-  const { api, session } = services.admin
+  const { api, session } = services.adminContext
   url ||= (resource && getResourceUrl(services, resource)) || undefined
   if (!url) {
     throw new Error('Unable to send request: There is no URL or resource.')
@@ -112,7 +116,7 @@ export function request(
     cache === 'global'
       ? appState.loadCache
       : cache === 'local'
-        ? (services.route?.loadCache ?? null)
+        ? (services.routeContext?.loadCache ?? null)
         : null
   // Requests to resources are told apart by the URLs that they resolve to:
   const { resource } = options
@@ -147,11 +151,11 @@ export function request(
 }
 
 export function format(
-  { admin }: Services,
+  { adminContext }: Services,
   value: any,
   {
-    locale = admin.api.locale,
-    defaults = admin.api.formats,
+    locale = adminContext.api.locale,
+    defaults = adminContext.api.formats,
     ...options
   }: Record<string, any> = {}
 ) {
@@ -159,7 +163,7 @@ export function format(
 }
 
 export function download(
-  { admin }: Services,
+  { adminContext }: Services,
   options: string | DownloadOptions
 ) {
   if (isString(options)) {
@@ -169,7 +173,7 @@ export function download(
   const a = document.createElement('a')
   a.href = options.url?.startsWith('blob:')
     ? options.url
-    : admin.api.getApiUrl(options)
+    : adminContext.api.getApiUrl(options)
   a.download = options.filename ?? ''
   const { body } = document
   body.appendChild(a)

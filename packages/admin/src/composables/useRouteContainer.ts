@@ -10,16 +10,16 @@ import {
 import { useRouter, type RouteRecordNormalized } from 'vue-router'
 import { getSchemaPath } from '../utils/schema/structure.js'
 import {
-  ContainerContext,
-  type ContainerOwner
-} from '../utils/ContainerContext.ts'
+  DataContext,
+  type DataOwner
+} from '../utils/DataContext.ts'
 import { RouteContext, type RouteOwner } from '../utils/RouteContext.ts'
 import { useLeaveGuard } from './useLeaveGuard.ts'
 import type { AdminContext } from '../utils/AdminContext.ts'
 import type { Schema } from '../utils/types.ts'
 
 // The view or form, without the state of its route:
-type RouteContainerOwner = ContainerOwner &
+type RouteContainerOwner = DataOwner &
   Omit<
     RouteOwner,
     'routeRecord' | 'routeParams' | 'path' | 'isLastRoute' | 'isLeavingRoute'
@@ -30,10 +30,10 @@ type RouteContainerOwner = ContainerOwner &
   }
 
 export function useRouteContainer(owner: RouteContainerOwner) {
-  const admin = inject<AdminContext>('admin')!
+  const adminContext = inject<AdminContext>('adminContext')!
   const router = useRouter()
-  const container = new ContainerContext(owner)
-  const route = new RouteContext(
+  const dataContext = new DataContext(owner)
+  const routeContext = new RouteContext(
     Object.setPrototypeOf(
       {
         get routeRecord() {
@@ -59,13 +59,13 @@ export function useRouteContainer(owner: RouteContainerOwner) {
       owner
     ),
     {
-      parent: inject<RouteContext | null>('route', null),
-      container,
+      parent: inject<RouteContext | null>('routeContext', null),
+      dataContext,
       router
     }
   )
-  const { level } = route
-  provide('route', route)
+  const { level } = routeContext
+  provide('routeContext', routeContext)
 
   const routeRecord = shallowRef<RouteRecordNormalized | null>(null)
   const routeParams = shallowRef<Record<string, any>>({})
@@ -90,16 +90,16 @@ export function useRouteContainer(owner: RouteContainerOwner) {
 
   // Components of new routes replace the ones of the previous routes at their
   // level, which are unmounted after:
-  admin.ui.routes[level] = route
+  adminContext.ui.routes[level] = routeContext
   onUnmounted(() => {
-    if (admin.ui.routes[level] === route) {
+    if (adminContext.ui.routes[level] === routeContext) {
       // Drop the deeper levels too, as their components unmount first:
-      admin.ui.routes.length = level
+      adminContext.ui.routes.length = level
     }
   })
 
-  const { navigateWithin } = useLeaveGuard(route, {
-    admin,
+  const { navigateWithin } = useLeaveGuard(routeContext, {
+    adminContext,
     isMutating: () => !!owner.isMutating,
     getCancelVerb: () => owner.verbs.cancel
   })
@@ -121,14 +121,14 @@ export function useRouteContainer(owner: RouteContainerOwner) {
     return router.hasRoute(name!)
       ? router.resolve({
           name,
-          params: route.node.getParams(routeParams.value)
+          params: routeContext.node.getParams(routeParams.value)
         }).path
       : router.currentRoute.value.path
   })
 
   return {
-    ownContainer: container,
-    ownRoute: route,
+    ownDataContext: dataContext,
+    ownRouteContext: routeContext,
     routeRecord,
     routeParams,
     isLeavingRoute,
@@ -139,7 +139,7 @@ export function useRouteContainer(owner: RouteContainerOwner) {
 
     schemaPath: computed(() => {
       const { sourceSchema } = owner
-      return getSchemaPath(sourceSchema, sourceSchema.name, admin.api)
+      return getSchemaPath(sourceSchema, sourceSchema.name, adminContext.api)
     })
   }
 }
