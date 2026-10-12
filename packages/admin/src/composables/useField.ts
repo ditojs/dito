@@ -128,7 +128,7 @@ export function useField(
     onChange() {
       emitEvent('change', {
         context: {
-          // Prevent endless parse recursion:
+          // Prevent endless `parseValue()` recursion:
           value:
             fieldValue.parsedValue.value !== undefined
               ? fieldValue.parsedValue.value

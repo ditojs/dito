@@ -75,9 +75,7 @@ const DitoTypeColor = {
       emitChange: () => field.onChange()
     })
 
-    // TODO: `format` clashes with `schema.format()`, which shall be renamed
-    // soon to `formatValue()`. Rename `colorFormat` back to `format` after.
-    const colorFormat = computed(() =>
+    const format = computed(() =>
       getSchemaValue('format', { type: String, default: 'hex' })
     )
 
@@ -125,7 +123,7 @@ const DitoTypeColor = {
             !value.value ||
             color.toHex8String() !== tinycolor(value.value).toHex8String()
           ) {
-            setEditedValue(toTinyColorFormat(color, colorFormat.value))
+            setEditedValue(toTinyColorFormat(color, format.value))
             // The input emits its own input events, the picker doesn't:
             field.onInput()
           }
@@ -146,7 +144,7 @@ const DitoTypeColor = {
         set(hex) {
           const color = tinycolor(hex)
           if (color.isValid()) {
-            const converted = convertColor(hex, colorFormat.value)
+            const converted = convertColor(hex, format.value)
             if (canUpdateValue.value) {
               setEditedValue(converted)
             } else {

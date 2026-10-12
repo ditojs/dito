@@ -228,8 +228,8 @@ describe('DataContext', () => {
           components: {
             address: {
               type: 'code',
-              format: ({ value }) => JSON.stringify(value),
-              parse: ({ value }) => JSON.parse(value)
+              formatValue: ({ value }) => JSON.stringify(value),
+              parseValue: ({ value }) => JSON.parse(value)
             }
           }
         },

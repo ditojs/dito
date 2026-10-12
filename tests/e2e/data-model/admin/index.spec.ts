@@ -209,7 +209,7 @@ test.describe('data model', () => {
     await cancel.click()
     await dismissConfirmDialog(page, 'You have unsaved changes')
   })
-  test('saves excluded values that `process()` stores elsewhere', async ({
+  test('saves excluded values that `serializeValue()` stores elsewhere', async ({
     page,
     url
   }) => {

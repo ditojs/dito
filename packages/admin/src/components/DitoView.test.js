@@ -246,12 +246,12 @@ describe('DitoView', () => {
                 },
                 label: {
                   type: 'text',
-                  compute: ({ rootItem }) => `Strict: ${rootItem.strict}`
+                  computeValue: ({ rootItem }) => `Strict: ${rootItem.strict}`
                 },
                 note: {
                   type: 'text',
                   exclude: ({ rootItem }) => rootItem.strict,
-                  process: ({ value, rootItem }) =>
+                  serializeValue: ({ value, rootItem }) =>
                     `${value} ${rootItem.strict}`
                 }
               }

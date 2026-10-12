@@ -16,7 +16,6 @@ import {
 } from 'vue'
 import {
   isArray,
-  isFunction,
   isPlainObject,
   isEmpty,
   equals,
@@ -43,6 +42,7 @@ import {
   hasValueFromDataSchema,
   walkSchemaData,
   serializeData,
+  deserializeData,
   hasItemsNumberedByOrderKey,
   updateOrder,
   getMultipleValue
@@ -152,6 +152,8 @@ export class DataModel {
   readonly #errors = shallowRef(new WeakEntryMap<ValueErrors>())
   readonly #fieldErrors = shallowRef(new WeakEntryMap<string[]>())
   #computedValueWriteCounts: Map<string | null, number> | null = null
+  // Data from the server, whose values are deserialized when it is set up:
+  readonly #dataToDeserialize = new WeakSet<Data>()
   readonly #data: Ref<Data | null>
   readonly #options: Required<Omit<DataModelOptions, 'data'>>
   readonly #scope = effectScope(true)
@@ -189,6 +191,9 @@ export class DataModel {
       watch(
         [() => this.schema, () => this.data],
         ([schema, data], previousValues) => {
+          if (data && this.#dataToDeserialize.delete(toRaw(data))) {
+            this.#deserializeData(schema, data)
+          }
           this.#initializeData(schema, data)
           this.#writeComputedValues()
           // Data that is replaced, e.g. loaded or applied, isn't edited, and
@@ -285,10 +290,20 @@ export class DataModel {
     this.#data.value = data
   }
 
+  // Replace the data with data from the server, e.g. loaded data, once its
+  // schema can be resolved from it:
+  replaceFromServer(data: Data | null) {
+    if (data) {
+      this.#dataToDeserialize.add(toRaw(data))
+    }
+    this.replace(data)
+  }
+
   // Merge data from the server into the data, to keep the identity of its
   // objects. Sources with their own resource keep their data and their edits:
   mergeFromServer(data: Data | null): Data | null {
     if (this.data && data) {
+      this.#deserializeData(this.schema, data)
       mergeData(this.schema!, this.data, data, {
         services: this.#options.services,
         shouldKeepSourcesWithResource: true
@@ -296,7 +311,7 @@ export class DataModel {
       this.#writeComputedValues()
       this.markClean({ dataPath: '' })
     } else {
-      this.replace(data)
+      this.replaceFromServer(data)
     }
     return this.data
   }
@@ -304,10 +319,22 @@ export class DataModel {
   // Set the value that a source loaded or deleted through its own resource,
   // which replaces the source's edits:
   setLoaded(
-    { data, name, dataPath }: FieldKey & { dataPath: string },
+    {
+      schema,
+      data,
+      name,
+      dataPath
+    }: FieldKey & {
+      schema: Schema
+      dataPath: string
+    },
     value: any
   ) {
-    data[name] = value
+    data[name] = deserializeData(
+      { components: { [name]: schema } },
+      { [name]: value },
+      { ...this.#walkOptions, dataPath: getParentDataPath(dataPath) }
+    )[name]
     this.markClean({ dataPath })
   }
 
@@ -675,9 +702,18 @@ export class DataModel {
         dataPath: this.dataPath,
         rootData: this.rootData,
         shouldSkipSourcesWithResource: true,
-        // The model writes the values of components with `compute()`,
+        // The model writes the values of components with `computeValue()`,
         // including their defaults:
         shouldSetDefaultsOfComponentsWithCompute: false
+      })
+    }
+  }
+
+  #deserializeData(schema: Schema | null, data: Data) {
+    if (!isEmptySchema(schema)) {
+      deserializeData(schema!, data, {
+        ...this.#walkOptions,
+        dataPath: this.dataPath
       })
     }
   }
@@ -834,7 +870,7 @@ export class DataModel {
       const isRecordCurrent = computed(() =>
         this.#isRecordCurrent(record, schema)
       )
-      const dataSchemaResolver = schema.compute
+      const dataSchemaResolver = schema.computeValue
         ? null
         : this.#createDataSchemaResolver(schema, record)
       // Return a new object each time, so that the value is also written when
@@ -842,7 +878,7 @@ export class DataModel {
       const currentResult = computed(() =>
         !isRecordCurrent.value
           ? null
-          : schema.compute
+          : schema.computeValue
             ? this.#getComputedValueResult(record)
             : dataSchemaResolver!.isLoading
               ? null
@@ -867,8 +903,8 @@ export class DataModel {
     return currentEntry?.schema === schema
   }
 
-  // Return `null` while `compute()` reads options that aren't loaded yet, to
-  // keep the current value until they are.
+  // Return `null` while `computeValue()` reads options that aren't loaded yet,
+  // to keep the current value until they are.
   #getComputedValueResult(record: ComponentRecord): { value: any } | null {
     const { entry } = record
     const { schema, data, name } = entry
@@ -947,7 +983,7 @@ export class DataModel {
           const { schema, data, name } = entry
           const context = this.#createEntryContext(entry)
           // Replace the value that the component displays, like it would:
-          const { format, parse } = schema
+          const { formatValue, parseValue } = schema
           const settings = getOptionsSettings(schema, options, {
             multiple: getMultipleValue(schema, context),
             groupBy: null,
@@ -957,11 +993,13 @@ export class DataModel {
             schema,
             settings,
             options,
-            isFunction(format) ? format(context) : data[name]
+            formatValue ? formatValue(context) : data[name]
           )
           if (replaced) {
             const { value } = replaced
-            data[name] = parse ? parse(context.extend({ value })) : value
+            data[name] = parseValue
+              ? parseValue(context.extend({ value }))
+              : value
           }
         }
       }, modelWatchOptions)
@@ -984,7 +1022,7 @@ export class DataModel {
     const value = this.#getValueWithNestedDefaultValues(entry, computedValue)
     const dataPath = getRelativeDataPath(entry.dataPath, this.dataPath)
     if (!equals(value, data[name]) && !this.#isWriteLoop(dataPath)) {
-      // Write `data[name]` directly, without calling `parse()`:
+      // Write `data[name]` directly, without calling `parseValue()`:
       data[name] = value
     }
   }
@@ -1212,7 +1250,7 @@ class EntryMap<T> extends WeakEntryMap<T> {
 }
 
 function hasComputedValueSource(schema: Schema): boolean {
-  return !!schema.compute || hasValueFromDataSchema(schema)
+  return !!schema.computeValue || hasValueFromDataSchema(schema)
 }
 
 function getErrorMessage(error: any): string {

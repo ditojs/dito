@@ -404,8 +404,8 @@ describe('DitoTypeButton', () => {
         components: {
           title: {
             type: 'text',
-            process() {
-              throw new Error('Title cannot be processed')
+            serializeValue() {
+              throw new Error('Title cannot be serialized')
             }
           },
           publish: {
@@ -421,7 +421,7 @@ describe('DitoTypeButton', () => {
     await flushPromises()
     expect(request).not.toHaveBeenCalled()
     expect(getNotificationTexts().join()).toContain(
-      'Title cannot be processed'
+      'Title cannot be serialized'
     )
     expect(findField('publish').attributes('aria-busy')).toBe('false')
   })

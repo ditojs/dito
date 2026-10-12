@@ -9,7 +9,7 @@ describe('DitoTypeComputed', () => {
           title: { type: 'text' },
           slug: {
             type: 'computed',
-            compute: ({ item }) => (
+            computeValue: ({ item }) => (
               item.title?.toLowerCase().replaceAll(' ', '-') ?? null
             )
           }
@@ -26,8 +26,12 @@ describe('DitoTypeComputed', () => {
     const { findField } = await mountSchema({
       schema: {
         components: {
-          hidden: { type: 'computed', compute: () => 'secret' },
-          shown: { type: 'computed', visible: true, compute: () => 'shown' }
+          hidden: { type: 'computed', computeValue: () => 'secret' },
+          shown: {
+            type: 'computed',
+            visible: true,
+            computeValue: () => 'shown'
+          }
         }
       }
     })
@@ -65,12 +69,12 @@ describe('DitoTypeComputed', () => {
           pages: { type: 'number' },
           sheets: {
             type: 'computed',
-            compute: ({ item }) => Math.ceil(item.pages / 2)
+            computeValue: ({ item }) => Math.ceil(item.pages / 2)
           },
           isLong: {
             type: 'computed',
             exclude: true,
-            compute: ({ item }) => item.pages > 500
+            computeValue: ({ item }) => item.pages > 500
           }
         }
       },
@@ -89,7 +93,7 @@ describe('DitoTypeComputed', () => {
           title: { type: 'text' },
           initials: {
             type: 'computed',
-            compute: ({ item }) => item.title?.[0] ?? null
+            computeValue: ({ item }) => item.title?.[0] ?? null
           }
         }
       },
@@ -106,7 +110,7 @@ describe('DitoTypeComputed', () => {
         components: {
           counter: {
             type: 'computed',
-            compute: ({ value }) => (value ?? 0) + 1
+            computeValue: ({ value }) => (value ?? 0) + 1
           }
         }
       }

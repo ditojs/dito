@@ -175,7 +175,7 @@ describe('DitoPanel', () => {
               words: { type: 'number' },
               pages: {
                 type: 'number',
-                compute: ({ item }) => item.words * 10
+                computeValue: ({ item }) => item.words * 10
               }
             }
           }
@@ -206,12 +206,12 @@ describe('DitoPanel', () => {
             components: {
               url: {
                 type: 'text',
-                compute: ({ getResourceUrl }) => getResourceUrl()
+                computeValue: ({ getResourceUrl }) => getResourceUrl()
               },
               // Forms don't continue the source of their parent:
               hasSourceQuery: {
                 type: 'checkbox',
-                compute: ({ sourceQuery }) => !!sourceQuery
+                computeValue: ({ sourceQuery }) => !!sourceQuery
               }
             }
           }

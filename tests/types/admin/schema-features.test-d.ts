@@ -98,12 +98,12 @@ describe('SchemaFields: lifecycle callbacks', () => {
   })
 })
 
-describe('SchemaTypeMixin: parse and process callbacks', () => {
-  it('parse callback receives typed item', () => {
+describe('SchemaTypeMixin: parseValue and serializeValue callbacks', () => {
+  it('parseValue callback receives typed item', () => {
     assertType<Components<Parent>>({
       title: {
         type: 'text',
-        parse({ item }) {
+        parseValue({ item }) {
           expectTypeOf(item).not.toBeAny()
           expectTypeOf(item.title).toBeString()
           expectTypeOf(item.entries).toEqualTypeOf<Entry[]>()
@@ -112,11 +112,11 @@ describe('SchemaTypeMixin: parse and process callbacks', () => {
     })
   })
 
-  it('process callback receives typed item', () => {
+  it('serializeValue callback receives typed item', () => {
     assertType<Components<Parent>>({
       title: {
         type: 'text',
-        process({ item }) {
+        serializeValue({ item }) {
           expectTypeOf(item).not.toBeAny()
           expectTypeOf(item.title).toBeString()
           return item.title.trim()
@@ -268,7 +268,7 @@ describe('PanelSchema', () => {
       components: {
         title: {
           type: 'text',
-          format({ item }) {
+          formatValue({ item }) {
             expectTypeOf(item).not.toBeAny()
             expectTypeOf(item.title).toBeString()
             expectTypeOf(item.entries)
@@ -292,7 +292,7 @@ describe('PanelSchema', () => {
           components: {
             title: {
               type: 'text',
-              format({ item }) {
+              formatValue({ item }) {
                 expectTypeOf(item).not.toBeAny()
                 expectTypeOf(item.title).toBeString()
                 return ''

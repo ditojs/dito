@@ -1,4 +1,4 @@
-// Register the actual type components, for their `processValue()`:
+// Register the actual type components, for their `serializeValue()`:
 import '../types/index.js'
 import { fromClipboard } from './fromClipboard.ts'
 import { serializeData } from './schema/data.js'
@@ -13,7 +13,7 @@ const createForm = (components: Record<string, any>) => ({
 const relateAuthors = (options: Record<string, any> = {}) => ({
   type: 'select',
   relate: true,
-  // From the items of the books list, see `optionsTraits.processValue()`:
+  // From the items of the books list, see `optionsTraits.serializeValue()`:
   options: { dataPath: '../../../authors', label: 'name' },
   ...options
 })
@@ -194,9 +194,8 @@ describe('fromClipboard()', () => {
     expect(data.authors).not.toBe(clipboardData.authors)
   })
 
-  it('keeps values in the shape of the clipboard data', () => {
-    // These conversions of the clipboard data can't be inverted, and are also
-    // the shape of loaded data:
+  it('deserializes the values of the clipboard data like loaded data', () => {
+    // The conversions that serializing can't invert stay, like in loaded data:
     const schema = createForm({
       name: { type: 'text', trim: true },
       notes: { type: 'text', exclude: true },
@@ -217,7 +216,7 @@ describe('fromClipboard()', () => {
     })
     expect(fromClipboard(schema, clipboardData)).toEqual({
       name: 'Bloomsbury',
-      openedOn: '1925-05-14',
+      openedOn: new Date(1925, 4, 14),
       publisher: { id: 30 },
       editor: null
     })

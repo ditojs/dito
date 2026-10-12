@@ -1,3 +1,4 @@
+import { clone } from '@ditojs/utils'
 import { mountSchema, mountForm, enterValue } from '../test/mount.js'
 
 describe('DitoTypeDate', () => {
@@ -29,13 +30,13 @@ describe('DitoTypeDate', () => {
     expect(getText('opensAt')).toMatch(/^09:15/)
   })
 
-  it('uses the date and time formats of `formats`', async () => {
+  it('uses the date and time formats of `format`', async () => {
     const { findField } = await mountSchema({
       schema: {
         components: {
           publishedOn: {
             type: 'date',
-            formats: { date: { month: 'short' } }
+            format: { date: { month: 'short' } }
           }
         }
       },
@@ -67,7 +68,8 @@ describe('DitoTypeDate', () => {
         }
       },
       data: { publishedOn: null, createdAt: null },
-      request: ({ data }) => ({ data })
+      // Respond with a copy, like a server:
+      request: ({ data }) => ({ data: clone(data) })
     })
     await enterValue(findField('publishedOn').find('input'), 'May 14, 2026')
     dataModel.set(data, 'createdAt', createdAt)
@@ -75,6 +77,9 @@ describe('DitoTypeDate', () => {
       publishedOn: '2026-05-14',
       createdAt: createdAt.toISOString()
     })
+    // The response is deserialized again:
+    expect(data.publishedOn).toBeInstanceOf(Date)
+    expect(data.createdAt).toEqual(createdAt)
   })
 
   it('positions `prefix` and `suffix` over the picker', async () => {

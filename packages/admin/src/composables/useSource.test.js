@@ -446,21 +446,12 @@ describe('useSource()', () => {
 
     it('serializes objects without forms as copies', () => {
       const schema = { type: 'object' }
-      const graph = { addSource: vi.fn() }
+      const { serializeValue } = getTypeDescriptor(schema)
       const value = { id: 1, name: 'Mary Shelley' }
-      const serialized = getTypeDescriptor(schema).processValue(
-        { schema, value, dataPath: 'author' },
-        graph
-      )
+      const serialized = serializeValue({ schema, value })
       expect(serialized).toEqual(value)
       expect(serialized).not.toBe(value)
-      expect(graph.addSource).toHaveBeenCalledWith('author', schema)
-      expect(
-        getTypeDescriptor(schema).processValue(
-          { schema, value: null, dataPath: 'author' },
-          graph
-        )
-      ).toBe(null)
+      expect(serializeValue({ schema, value: null })).toBe(null)
     })
   })
   describe('loading data', () => {
@@ -497,6 +488,34 @@ describe('useSource()', () => {
       )
       expect(data.books).toEqual([{ id: 1, title: 'Emma' }])
       expect(data.note).toBe('Classics')
+    })
+
+    describe('deserializing', () => {
+      // Stored as a list, edited as text:
+      const tags = {
+        type: 'text',
+        deserializeValue: ({ value }) => value.join(', ')
+      }
+      const books = {
+        type: 'list',
+        resource: { path: 'books' },
+        form: { type: 'form', components: { tags } }
+      }
+
+      it('deserializes the items that it loads', async () => {
+        const { data } = await mountView({ books }, () => ({
+          data: [{ id: 1, tags: ['novel'] }]
+        }))
+        expect(data.books).toEqual([{ id: 1, tags: 'novel' }])
+      })
+
+      it('deserializes the data of the view that it loads', async () => {
+        const { data } = await mountView({ books, tags }, () => ({
+          data: { books: [{ id: 1, tags: ['novel'] }], tags: ['classics'] }
+        }))
+        expect(data.books).toEqual([{ id: 1, tags: 'novel' }])
+        expect(data.tags).toBe('classics')
+      })
     })
 
     it('ignores objects that lists in forms load', async () => {
@@ -1060,7 +1079,7 @@ describe('useSource()', () => {
     })
   })
 
-  describe('processSchema()', () => {
+  describe('setupSchema()', () => {
     const api = { normalizePath: path => path }
 
     it('refuses resources of inlined lists', async () => {
@@ -1071,7 +1090,7 @@ describe('useSource()', () => {
         form: { type: 'form', components: {} }
       }
       await expect(
-        getTypeDescriptor(schema).processSchema(api, schema, 'books')
+        getTypeDescriptor(schema).setupSchema(api, schema, 'books')
       ).rejects.toThrow('Nested lists cannot load data from their own')
     })
 
@@ -1083,7 +1102,7 @@ describe('useSource()', () => {
         form: { type: 'form', components: {} }
       }
       await expect(
-        getTypeDescriptor(schema).processSchema(api, schema, 'publisher')
+        getTypeDescriptor(schema).setupSchema(api, schema, 'publisher')
       ).rejects.toThrow('Nested objects cannot load data from their own')
     })
 
@@ -1095,7 +1114,7 @@ describe('useSource()', () => {
         form: { type: 'form', components: { tag: { type: 'text' } } }
       }
       await expect(
-        getTypeDescriptor(schema).processSchema(api, schema, 'tags')
+        getTypeDescriptor(schema).setupSchema(api, schema, 'tags')
       ).rejects.toThrow(
         `Unsupported 'mutate' in lists with 'wrapPrimitives': 'tags'.`
       )

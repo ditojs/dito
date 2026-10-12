@@ -252,7 +252,10 @@ export function useSource(
               objectData.value = null
             } else {
               const { data, schema, dataPath } = props
-              getModel().setLoaded({ data, name: schema.name, dataPath }, null)
+              getModel().setLoaded(
+                { schema, data, name: schema.name, dataPath },
+                null
+              )
             }
           } else {
             getModel().remove(listEntry.value, currentIndex)
@@ -457,7 +460,7 @@ export function useSource(
     deleteItem,
     // Lists with routed forms don't render where the recursion of forms that
     // contain themselves stops. Sources without data and resource render, e.g.
-    // for `compute()`:
+    // for `computeValue()`:
     isReady: computed(
       () => (
         (hasInlinedItems() || !sourceNode.value?.isBeyondMaxDepth) &&

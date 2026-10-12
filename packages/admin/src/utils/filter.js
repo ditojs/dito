@@ -8,6 +8,7 @@ import {
 } from '@ditojs/utils'
 import { getNamedSchemas } from './schema/lookup.js'
 import { applyNestedSchemaDefaults } from './schema/setup.js'
+import { deserializeData } from './schema/data.js'
 
 export const filterComponents = {
   'text'(filter) {
@@ -42,7 +43,7 @@ export const filterComponents = {
     const datetime = {
       type: 'datetime',
       width: '1/2',
-      formats: {
+      format: {
         // Use shorter date format in date-range filters:
         date: { day: '2-digit', month: '2-digit', year: 'numeric' }
       },
@@ -102,7 +103,8 @@ export function createFiltersPanel(api, filters, dataPath, query) {
     sticky,
 
     data() {
-      filtersData = parseFiltersData(panel, query.value)
+      // The query holds the values serialized, e.g. dates as strings:
+      filtersData = deserializeData(panel, parseFiltersData(panel, query.value))
       return filtersData
     },
 

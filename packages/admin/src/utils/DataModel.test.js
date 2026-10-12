@@ -30,7 +30,7 @@ defineType({ type: 'submit', submitsData: true })
 // Like `DitoTypeUpload`, which leaves out files that aren't uploaded yet:
 defineType({
   type: 'upload',
-  processValue: ({ value }) => (value?.isUploaded ? value.name : null)
+  serializeValue: ({ value }) => (value?.isUploaded ? value.name : null)
 })
 
 function createDataModel(schema, data, options) {
@@ -52,7 +52,7 @@ function createDataModel(schema, data, options) {
 
 const slug = {
   type: 'computed',
-  compute: ({ item }) => item.title?.toLowerCase().replaceAll(' ', '-')
+  computeValue: ({ item }) => item.title?.toLowerCase().replaceAll(' ', '-')
 }
 
 describe('DataModel', () => {
@@ -138,7 +138,7 @@ describe('DataModel', () => {
         price: { type: 'text' },
         orderedPrice: {
           type: 'computed',
-          compute: ({ item }) => item.orderedPrice ?? item.price
+          computeValue: ({ item }) => item.orderedPrice ?? item.price
         }
       }
     }
@@ -172,7 +172,7 @@ describe('DataModel', () => {
     const schema = {
       type: 'form',
       components: {
-        tags: { type: 'text', compute: ({ value }) => value ?? [] }
+        tags: { type: 'text', computeValue: ({ value }) => value ?? [] }
       }
     }
     const { dataModel, data } = createDataModel(schema, { tags: null })
@@ -183,10 +183,10 @@ describe('DataModel', () => {
     dataModel.stop()
   })
 
-  it('keeps values that `compute()` returns `undefined` for', async () => {
+  it('keeps values that `computeValue()` returns `undefined` for', async () => {
     const schema = {
       type: 'form',
-      components: { title: { type: 'text', compute: () => undefined } }
+      components: { title: { type: 'text', computeValue: () => undefined } }
     }
     const { dataModel, data } = createDataModel(schema, { title: 'Hello' })
     data.title = 'Changed'
@@ -196,12 +196,12 @@ describe('DataModel', () => {
   })
 
   it('writes computed values that are new objects only once', async () => {
-    const compute = vi.fn(({ value }) =>
+    const computeValue = vi.fn(({ value }) =>
       value.map(entry => ({ ...entry, upper: entry.name.toUpperCase() }))
     )
     const schema = {
       type: 'form',
-      components: { entries: { type: 'text', compute } }
+      components: { entries: { type: 'text', computeValue } }
     }
     const { dataModel, data } = createDataModel(schema, {
       entries: [{ name: 'One' }]
@@ -209,7 +209,7 @@ describe('DataModel', () => {
     await nextTick()
     // Once initially, and once more after writing the new array, which is
     // equal and therefore not written again.
-    expect(compute).toHaveBeenCalledTimes(2)
+    expect(computeValue).toHaveBeenCalledTimes(2)
     expect(data.entries).toEqual([{ name: 'One', upper: 'ONE' }])
     dataModel.stop()
   })
@@ -221,7 +221,7 @@ describe('DataModel', () => {
       components: {
         padding: {
           type: 'object',
-          compute: ({ value }) =>
+          computeValue: ({ value }) =>
             typeof value === 'number' ? { value, units: 'rem' } : value,
           form: {
             type: 'form',
@@ -239,9 +239,9 @@ describe('DataModel', () => {
   })
 
   it('writes computed items with the defaults of their forms', async () => {
-    // The defaults of the computed items don't make `compute()` disagree with
-    // them, which would replace them in an endless loop.
-    const compute = ({ value, item }) =>
+    // The defaults of the computed items don't make `computeValue()` disagree
+    // with them, which would replace them in an endless loop.
+    const computeValue = ({ value, item }) =>
       item.sounds.map(name => ({
         name,
         steps: value?.find(track => track.name === name)?.steps ?? []
@@ -251,7 +251,7 @@ describe('DataModel', () => {
       components: {
         tracks: {
           type: 'list',
-          compute,
+          computeValue,
           form: {
             type: 'form',
             components: {
@@ -278,8 +278,14 @@ describe('DataModel', () => {
     const schema = {
       type: 'form',
       components: {
-        count: { type: 'text', compute: ({ item }) => (item.other ?? 0) + 1 },
-        other: { type: 'text', compute: ({ item }) => (item.count ?? 0) + 1 }
+        count: {
+          type: 'text',
+          computeValue: ({ item }) => (item.other ?? 0) + 1
+        },
+        other: {
+          type: 'text',
+          computeValue: ({ item }) => (item.count ?? 0) + 1
+        }
       }
     }
     const { dataModel } = createDataModel(schema, {})
@@ -296,7 +302,7 @@ describe('DataModel', () => {
     dataModel.stop()
   })
 
-  it("doesn't recompute values whose `compute()` doesn't read them", async () => {
+  it("doesn't recompute values whose `computeValue()` doesn't read them", async () => {
     // E.g. access tokens, which are random for each call.
     let callCount = 0
     const schema = {
@@ -305,7 +311,7 @@ describe('DataModel', () => {
         title: { type: 'text' },
         token: {
           type: 'text',
-          compute: ({ item }) => `${item.title}-${++callCount}`
+          computeValue: ({ item }) => `${item.title}-${++callCount}`
         }
       }
     }
@@ -479,7 +485,10 @@ describe('DataModel', () => {
 
     it('writes their computed values', async () => {
       const schema = getSchema(({ item }) => ({
-        upper: { type: 'computed', compute: () => item.title.toUpperCase() }
+        upper: {
+          type: 'computed',
+          computeValue: () => item.title.toUpperCase()
+        }
       }))
       schema.components.title = { type: 'text' }
       const { dataModel, data } = createDataModel(schema, {
@@ -576,8 +585,8 @@ describe('DataModel', () => {
   })
 
   describe('options', () => {
-    // Keeps valid values, and selects the first option otherwise. `compute()`
-    // only runs once the options that it reads are loaded.
+    // Keeps valid values, and selects the first option otherwise.
+    // `computeValue()` only runs once the options that it reads are loaded.
     const getValidOrFirstOption = ({ value, options }) =>
       options.some(option => option.value === value)
         ? value
@@ -596,7 +605,7 @@ describe('DataModel', () => {
           options: {
             data: async () => [{ value: 'news' }, { value: 'sports' }]
           },
-          compute: getValidOrFirstOption
+          computeValue: getValidOrFirstOption
         },
         topic: {
           type: 'select',
@@ -608,12 +617,12 @@ describe('DataModel', () => {
               return async () => loadTopics(category)
             }
           },
-          compute: getValidOrFirstOption
+          computeValue: getValidOrFirstOption
         }
       }
     })
 
-    it('keeps values until the options that `compute()` reads load', async () => {
+    it('keeps values until the options that `computeValue()` reads load', async () => {
       const schema = createTopicSchema(category => topicsByCategory[category])
       const { dataModel, data } = createDataModel(schema, {
         category: 'archive',
@@ -647,7 +656,7 @@ describe('DataModel', () => {
           size: {
             type: 'select',
             options: { data: async () => [{ id: 1 }, { id: 2 }] },
-            compute: ({ value, options }) => value ?? options?.[0]
+            computeValue: ({ value, options }) => value ?? options?.[0]
           }
         }
       }
@@ -679,7 +688,7 @@ describe('DataModel', () => {
       dataModel.stop()
     })
 
-    // `compute()` sees options that fail to load as `undefined`:
+    // `computeValue()` sees options that fail to load as `undefined`:
     it('computes values when options fail to load', async () => {
       const error = vi.spyOn(console, 'error').mockImplementation(() => {})
       const schema = {
@@ -692,7 +701,9 @@ describe('DataModel', () => {
                 throw new Error('Unavailable')
               }
             },
-            compute: ({ value, options }) => value ?? options?.[0] ?? 'none'
+            computeValue: ({ value, options }) => (
+              value ?? options?.[0] ?? 'none'
+            )
           }
         }
       }
@@ -711,7 +722,9 @@ describe('DataModel', () => {
           genre: {
             type: 'select',
             options: { dataPath: '../genres' },
-            compute: ({ value, options }) => value ?? options?.[0] ?? 'none'
+            computeValue: ({ value, options }) => (
+              value ?? options?.[0] ?? 'none'
+            )
           }
         }
       }
@@ -731,7 +744,7 @@ describe('DataModel', () => {
           genre: {
             type: 'select',
             options: { dataPath: '../genres' },
-            compute: ({ value, options }) =>
+            computeValue: ({ value, options }) =>
               options.includes(value) ? value : options[0]
           }
         }
@@ -1079,7 +1092,7 @@ describe('DataModel', () => {
                     resolveOptions = resolve
                   })
               },
-              compute: ({ value, options }) => value ?? options?.[0].id
+              computeValue: ({ value, options }) => value ?? options?.[0].id
             }
           }
         },
@@ -1159,7 +1172,7 @@ describe('DataModel', () => {
             width: {
               type: 'section',
               nested: true,
-              compute: ({ value }) =>
+              computeValue: ({ value }) =>
                 isPlainObject(value) ? value : { value, units: 'rem' },
               components: { value: { type: 'text' } }
             }
@@ -1542,7 +1555,7 @@ describe('DataModel', () => {
   describe('list items that move or are removed', () => {
     // Books whose genre is selected from options loaded per book, with a
     // compute that keeps valid genres and selects the first one otherwise:
-    const createShelfSchema = ({ loadGenres, compute }) => ({
+    const createShelfSchema = ({ loadGenres, computeValue }) => ({
       type: 'form',
       components: {
         books: {
@@ -1559,7 +1572,7 @@ describe('DataModel', () => {
                     return async () => loadGenres(title)
                   }
                 },
-                compute
+                computeValue
               }
             }
           }
@@ -1582,7 +1595,7 @@ describe('DataModel', () => {
     it('keeps computing the values of items that moved', async () => {
       const loadGenres = vi.fn(title => [`${title} genre`])
       const { dataModel, data } = createShelf(
-        createShelfSchema({ loadGenres, compute: getValidOrFirstGenre })
+        createShelfSchema({ loadGenres, computeValue: getValidOrFirstGenre })
       )
       await dataModel.waitUntilSettled()
       data.books.reverse()
@@ -1601,7 +1614,7 @@ describe('DataModel', () => {
     it(`doesn't load the options of items that moved again`, async () => {
       const loadGenres = vi.fn(title => [`${title} genre`])
       const { dataModel, data } = createShelf(
-        createShelfSchema({ loadGenres, compute: getValidOrFirstGenre })
+        createShelfSchema({ loadGenres, computeValue: getValidOrFirstGenre })
       )
       await dataModel.waitUntilSettled()
       expect(loadGenres).toHaveBeenCalledTimes(3)
@@ -1613,22 +1626,22 @@ describe('DataModel', () => {
     })
 
     it(`doesn't recompute the values of items that moved`, async () => {
-      const compute = vi.fn(getValidOrFirstGenre)
+      const computeValue = vi.fn(getValidOrFirstGenre)
       const { dataModel, data } = createShelf(
-        createShelfSchema({ loadGenres: title => [title], compute })
+        createShelfSchema({ loadGenres: title => [title], computeValue })
       )
       await dataModel.waitUntilSettled()
       await nextTick()
-      compute.mockClear()
+      computeValue.mockClear()
       data.books.reverse()
       await nextTick()
       await dataModel.waitUntilSettled()
-      expect(compute).toHaveBeenCalledTimes(0)
+      expect(computeValue).toHaveBeenCalledTimes(0)
       dataModel.stop()
     })
 
     it('recomputes the values of items that moved if they read their position', async () => {
-      const compute = vi.fn(({ itemIndex }) => itemIndex + 1)
+      const computeValue = vi.fn(({ itemIndex }) => itemIndex + 1)
       const { dataModel, data } = createDataModel(
         {
           type: 'form',
@@ -1639,8 +1652,11 @@ describe('DataModel', () => {
                 type: 'form',
                 components: {
                   title: { type: 'text' },
-                  position: { type: 'text', compute },
-                  path: { type: 'text', compute: ({ dataPath }) => dataPath }
+                  position: { type: 'text', computeValue },
+                  path: {
+                    type: 'text',
+                    computeValue: ({ dataPath }) => dataPath
+                  }
                 }
               }
             }
@@ -1649,7 +1665,7 @@ describe('DataModel', () => {
         { books: [{ title: 'One' }, { title: 'Two' }, { title: 'Three' }] }
       )
       await dataModel.waitUntilSettled()
-      compute.mockClear()
+      computeValue.mockClear()
       data.books.reverse()
       await nextTick()
       await dataModel.waitUntilSettled()
@@ -1661,7 +1677,7 @@ describe('DataModel', () => {
         ['One', 3, 'books/2/path']
       ])
       // 'Two' stays in its place, so only the other two are computed again.
-      expect(compute).toHaveBeenCalledTimes(2)
+      expect(computeValue).toHaveBeenCalledTimes(2)
       dataModel.stop()
     })
 
@@ -1669,7 +1685,7 @@ describe('DataModel', () => {
       const { dataModel, data } = createShelf(
         createShelfSchema({
           loadGenres: title => [title],
-          compute: getValidOrFirstGenre
+          computeValue: getValidOrFirstGenre
         })
       )
       await dataModel.waitUntilSettled()
@@ -1683,14 +1699,14 @@ describe('DataModel', () => {
   })
 
   describe('computed values with nested defaults', () => {
-    it("doesn't modify the values that `compute()` returns", async () => {
+    it("doesn't modify the values that `computeValue()` returns", async () => {
       const emptyAddress = { street: '' }
       const schema = {
         type: 'form',
         components: {
           address: {
             type: 'object',
-            compute: ({ value }) => value ?? emptyAddress,
+            computeValue: ({ value }) => value ?? emptyAddress,
             form: {
               type: 'form',
               components: {
@@ -1717,7 +1733,7 @@ describe('DataModel', () => {
         components: {
           chapters: {
             type: 'list',
-            compute: ({ value }) => value ?? chapters,
+            computeValue: ({ value }) => value ?? chapters,
             form: {
               type: 'form',
               components: {
@@ -1747,7 +1763,7 @@ describe('DataModel', () => {
         components: {
           chapters: {
             type: 'list',
-            compute: ({ value }) => value ?? [emptyChapter, emptyChapter],
+            computeValue: ({ value }) => value ?? [emptyChapter, emptyChapter],
             form: {
               type: 'form',
               components: {
@@ -1963,11 +1979,11 @@ describe('DataModel', () => {
     it('replaces the computes of components whose schema changed', async () => {
       const lower = vi.fn(({ item }) => item.title.toLowerCase())
       const upper = vi.fn(({ item }) => item.title.toUpperCase())
-      const createSchema = compute => ({
+      const createSchema = computeValue => ({
         type: 'form',
         components: {
           title: { type: 'text' },
-          label: { type: 'text', compute }
+          label: { type: 'text', computeValue }
         }
       })
       const schemaRef = ref(createSchema(lower))
@@ -2025,12 +2041,12 @@ describe('DataModel', () => {
           title: { type: 'text' },
           isShort: {
             type: 'text',
-            compute: ({ item }) => item.title.length < 5
+            computeValue: ({ item }) => item.title.length < 5
           },
           summary: {
             type: 'text',
             if: ({ item }) => !item.isShort,
-            compute: summary
+            computeValue: summary
           }
         }
       }
@@ -2047,21 +2063,21 @@ describe('DataModel', () => {
       dataModel.stop()
     })
 
-    it('throws errors of `compute()` other than unloaded options', () => {
+    it('throws errors of `computeValue()` other than unloaded options', () => {
       // Unlike failing `if` conditions, failing computes aren't caught:
       const schema = {
         type: 'form',
         components: {
           title: {
             type: 'text',
-            compute: () => {
-              throw new Error('Broken compute')
+            computeValue: () => {
+              throw new Error('Broken computeValue')
             }
           }
         }
       }
       expect(() => createDataModel(schema, { title: 'Emma' })).toThrow(
-        'Broken compute'
+        'Broken computeValue'
       )
     })
 

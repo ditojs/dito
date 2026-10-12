@@ -1,4 +1,4 @@
-import { isArray, isObject, isString, normalizeDataPath } from '@ditojs/utils'
+import { isArray, isObject, isString } from '@ditojs/utils'
 import type { Context, TypeDescriptor } from '../utils/schema/types.ts'
 import type { Schema } from '../utils/types.ts'
 import {
@@ -30,7 +30,7 @@ export const sourceTraits = {
       : null
   },
 
-  async processSchema(api, schema, name) {
+  async setupSchema(api, schema, name) {
     schema.name ??= name
     // Mutating forms edit the items in place, which primitives can't be:
     if (
@@ -59,8 +59,7 @@ export const sourceTraits = {
     await setupForms(api, schema)
   },
 
-  processValue({ schema, value, dataPath }, graph) {
-    graph.addSource(dataPath, schema)
+  serializeValue({ schema, value }: Context) {
     // `SchemaGraph.serialize()` changes item ids, and only the items of sources
     // with forms are copies already:
     return hasFormSchema(schema) ? value : copyItems(value)
@@ -70,25 +69,18 @@ export const sourceTraits = {
 export const optionsTraits = {
   getOptionsDataSchema: schema => schema.options,
 
-  processValue({ schema, value, dataPath }: Context, graph) {
+  serializeValue({ schema, value }: Context) {
     if (schema.relate) {
-      // Internally related data (`options.dataPath`) needs both the options
-      // (for '#ref') and the value ('#id') processed:
-      const path = schema.options?.dataPath
-      const relatedDataPath = path
-        ? normalizeDataPath(`${dataPath}/${path}`)
-        : null
-      graph.addRelation(dataPath, relatedDataPath, schema)
       // Convert relating objects to a shallow copy with only the id left.
       // TODO: Convert to using `relateBy`:
-      const processRelate = (value: any) => (value ? { id: value.id } : value)
+      const toRelate = (value: any) => (value ? { id: value.id } : value)
       // Selected options can be both objects & arrays, e.g. 'checkboxes':
-      value =
-        getMultipleValue(schema) && isArray(value)
-          ? value.map(processRelate)
-          : processRelate(value)
+      return getMultipleValue(schema) && isArray(value)
+        ? value.map(toRelate)
+        : toRelate(value)
+    } else {
+      return value
     }
-    return value
   }
 } satisfies Partial<TypeDescriptor>
 
@@ -156,11 +148,11 @@ export function getNumberSettings(
 }
 
 export const textTraits = {
-  processValue(context: Context) {
+  serializeValue(context: Context) {
     let { schema, value } = context
     if (schema.trim && value != null && isString(value)) {
-      // Text fields don't necessarily have a `String` value when `format()`
-      // without `parse()` is used.
+      // Text fields don't necessarily have a `String` value when
+      // `formatValue()` without `parseValue()` is used.
       value = value.trim()
     }
     if (value === '') {

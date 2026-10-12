@@ -14,7 +14,7 @@ export const pages = createWidgetView<Page>('name', 'pages', {
     draggable: true,
     resource: { path: 'child-pages' },
     exclude: false,
-    process: ({ value }) =>
+    serializeValue: ({ value }) =>
       (value as Page[]).map(({ id, order }) => ({ id, order }))
   }
 })

@@ -4,9 +4,9 @@
     :is="pickerComponents[schema.type]"
     :id="componentPath"
     ref="element"
-    v-model="dateValue"
+    v-model="value"
     :locale="adminContext.api.locale"
-    :format="formats"
+    :format="format"
     v-bind="attributes"
   )
     template(#prefix)
@@ -36,6 +36,7 @@ import {
 } from '@ditojs/ui/src'
 import {
   isDate,
+  isString,
   assignDeeply,
   formatPlainDate,
   parsePlainDate
@@ -59,31 +60,18 @@ const DitoTypeDate = {
       nativeField: true,
       textField: true
     })
-    const { value, services, getSchemaValue } = field
+    const { services, getSchemaValue } = field
     return {
       ...field,
       adminContext: services.adminContext,
       pickerComponents,
 
-      dateValue: computed({
-        get() {
-          const date = value.value
-          return date ? (parsePlainDate(date) ?? new Date(date)) : date
-        },
-
-        set(date) {
-          value.value = date
-        }
-      }),
-
-      // TODO: Rename to `format`, once `schema.format()` was removed to
-      // `formatValue()`.
-      formats: computed(() => {
+      format: computed(() => {
         const { type } = props.schema
         const { date, time } = assignDeeply(
           {},
           services.adminContext.api.formats,
-          getSchemaValue('formats', { type: Object, default: null })
+          getSchemaValue('format', { type: Object, default: null })
         )
         return {
           date: ['date', 'datetime'].includes(type) ? date : null,
@@ -98,7 +86,12 @@ defineType({
   type: ['date', 'datetime', 'time'],
   component: DitoTypeDate,
 
-  processValue({ schema, value }) {
+  // Edit dates as `Date` objects, plain dates in the local time zone:
+  deserializeValue({ value }) {
+    return isString(value) ? (parsePlainDate(value) ?? new Date(value)) : value
+  },
+
+  serializeValue({ schema, value }) {
     // Send plain dates, so they can't shift to another day through time zones:
     return isDate(value)
       ? schema.type === 'date'

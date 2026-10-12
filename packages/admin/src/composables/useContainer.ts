@@ -119,7 +119,7 @@ export function useContainer({
     replaceItem: (
       replaceItem ??
       (data => {
-        model.replace(data)
+        model.replaceFromServer(data)
         return model.data
       })
     ),

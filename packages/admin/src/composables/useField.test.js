@@ -104,8 +104,8 @@ describe('useField()', () => {
           components: {
             title: {
               type: 'text',
-              format: ({ value }) => value?.toUpperCase(),
-              parse: ({ value }) => value.toLowerCase(),
+              formatValue: ({ value }) => value?.toUpperCase(),
+              parseValue: ({ value }) => value.toLowerCase(),
               events: { change }
             }
           }

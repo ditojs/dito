@@ -366,7 +366,7 @@ describe('DitoTypeMultiselect', () => {
       ).toBe('0')
     })
 
-    it('sends the values processed by `process()`', async () => {
+    it('sends the values serialized by `serializeValue()`', async () => {
       const { findField, submit } = await mountForm({
         schema: {
           components: {
@@ -375,7 +375,7 @@ describe('DitoTypeMultiselect', () => {
               multiple: true,
               options: genres,
               // Empty lists are sent as `null`:
-              process: ({ value }) => (value?.length > 0 ? value : null)
+              serializeValue: ({ value }) => (value?.length > 0 ? value : null)
             }
           }
         },

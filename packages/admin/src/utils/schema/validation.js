@@ -93,9 +93,9 @@ export function getDataValidationErrors(schema, data, {
     const context = createContext(entry)
     let value = data[name]
     // Validate the value as displayed, like the components do:
-    const { format } = schema
-    if (isFunction(format)) {
-      value = format(context)
+    const { formatValue } = schema
+    if (formatValue) {
+      value = formatValue(context)
     }
     const validations = getValidations(schema, context)
     const valueErrors = getValueValidationErrors(value, validations)

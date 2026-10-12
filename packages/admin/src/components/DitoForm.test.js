@@ -942,9 +942,9 @@ describe('DitoForm', () => {
       ])
     })
 
-    it('calls `process()` only when the parent is saved', async () => {
+    it('calls `serializeValue()` only when the parent is saved', async () => {
       const { form, data, submit } = await openChapterForm(
-        { title: { type: 'text', process: ({ value }) => `${value}!` } },
+        { title: { type: 'text', serializeValue: ({ value }) => `${value}!` } },
         { id: 7, title: 'Prologue' }
       )
       await applyChapterForm(form, 'Opening')
@@ -1287,7 +1287,7 @@ describe('DitoForm', () => {
             ...recipesSchema.form.components,
             kitchen: {
               type: 'text',
-              compute: ({ rootItem }) => rootItem?.venue ?? null
+              computeValue: ({ rootItem }) => rootItem?.venue ?? null
             }
           }
         }
@@ -1432,7 +1432,7 @@ describe('DitoForm', () => {
         title: { type: 'text' },
         slug: {
           type: 'text',
-          compute: ({ item }) => item.title?.toLowerCase() ?? null
+          computeValue: ({ item }) => item.title?.toLowerCase() ?? null
         }
       }
     }
@@ -1612,5 +1612,54 @@ describe('DitoForm', () => {
         html: `Unable to save Book '${escapedName}'.`
       })
     )
+  })
+})
+
+describe('deserializing', () => {
+  // Stored as a list, edited as text:
+  const tags = {
+    type: 'text',
+    deserializeValue: ({ value }) => value.join(', '),
+    serializeValue: ({ value }) => value.split(', ')
+  }
+
+  it('deserializes the item that it loads', async () => {
+    const { data } = await mountForm({
+      schema: { components: { tags } },
+      data: { tags: ['novel', 'classic'] }
+    })
+    expect(data.tags).toBe('novel, classic')
+  })
+
+  it('deserializes the item that a save responds with', async () => {
+    const { data, wrapper, submit } = await mountForm({
+      schema: { components: { tags } },
+      data: { tags: ['novel'] },
+      request: () => ({ data: { id: 1, tags: ['novel', 'classic'] } })
+    })
+    await enterValue(wrapper.find('input[name="tags"]'), 'novel, classic')
+    expect(await submit()).toEqual({ id: 1, tags: ['novel', 'classic'] })
+    expect(data.tags).toBe('novel, classic')
+  })
+
+  it('deserializes the data that nested forms replace their item with', async () => {
+    const { admin, data } = await mountForm({
+      schema: {
+        components: {
+          chapters: {
+            type: 'list',
+            editable: true,
+            form: { type: 'form', components: { tags } }
+          }
+        }
+      },
+      data: { chapters: [{ tags: ['opening'] }] }
+    })
+    await admin.navigate('/items/1/chapters/0')
+    const form = admin.getRouteComponent(isForm)
+    await settle(form)
+    form.dataContext.replaceItem({ tags: ['opening', 'short'] })
+    expect(form.data.tags).toBe('opening, short')
+    expect(data.chapters[0].tags).toBe('opening')
   })
 })

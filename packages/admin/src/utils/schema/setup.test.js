@@ -22,23 +22,23 @@ import {
 } from './setup.js'
 
 // Define minimal types, as the actual type components can't be
-// imported without a Vue SFC compiler. Their `processSchema()` delegate to the
+// imported without a Vue SFC compiler. Their `setupSchema()` delegate to the
 // setup functions like the actual types do:
 defineType({ type: 'text' })
 defineType({
   type: 'section',
   defaultNested: false,
-  processSchema: (api, schema) => setupSchemaComponents(api, schema)
+  setupSchema: (api, schema) => setupSchemaComponents(api, schema)
 })
 defineType({
   type: 'panel',
   defaultNested: false,
-  processSchema: (api, schema) => setupSchemaComponents(api, schema)
+  setupSchema: (api, schema) => setupSchemaComponents(api, schema)
 })
 defineType({ ...sourceTraits, type: 'list', sourceType: 'list' })
 defineType({
   type: 'component',
-  processSchema: (api, schema) => resolveSchemaComponent(schema)
+  setupSchema: (api, schema) => resolveSchemaComponent(schema)
 })
 
 function createApi(defaults = {}) {

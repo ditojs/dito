@@ -154,10 +154,10 @@ export default class SchemaContext {
     })
   }
 
-  // `process()` receives the processed items being built:
+  // `serializeValue()` receives the serialized items being built:
   get serializedItem() {
     return get(this, 'serializedData', () =>
-      getProcessedData(this, this.dataPath, this.nested)
+      getSerializedData(this, this.dataPath, this.nested)
     )
   }
 
@@ -392,7 +392,7 @@ function getDataContextFor(context, action) {
 }
 
 // Find the model that holds `dataPath`, in its own data or its parent's:
-function getProcessedData(context, dataPath, nested) {
+function getSerializedData(context, dataPath, nested) {
   let dataModel = getDataContext(context)?.model
   let path = null
   while (dataModel) {

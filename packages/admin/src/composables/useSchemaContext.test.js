@@ -121,8 +121,11 @@ describe('useSchemaContext()', () => {
       }
     })
 
-    it('is the serialized item of the component in `compute()`', async () => {
-      const serializedItems = await getSerializedItems('compute', undefined)
+    it('is the serialized item of the component in `computeValue()`', async () => {
+      const serializedItems = await getSerializedItems(
+        'computeValue',
+        undefined
+      )
       expect(serializedItems.length).toBeGreaterThan(0)
       for (const serializedItem of serializedItems) {
         expect(serializedItem).toEqual({ id: 1, title: 'Emma' })
@@ -133,21 +136,21 @@ describe('useSchemaContext()', () => {
       // Callbacks may read the serialized items reactively, e.g. for prices, so
       // the serializing must not run again on every read. It serializes the
       // titles of both books each time:
-      const process = vi.fn(({ value }) => value)
-      const { getComponent, data } = await mountLibrary({ process })
+      const serializeValue = vi.fn(({ value }) => value)
+      const { getComponent, data } = await mountLibrary({ serializeValue })
       const { context } = getComponent('authors/0/books/1/title')
       expect(context.serializedItem).toEqual({ id: 2, title: 'Persuasion' })
       expect(context.serializedItem).toEqual({ id: 2, title: 'Persuasion' })
-      expect(process).toHaveBeenCalledTimes(2)
+      expect(serializeValue).toHaveBeenCalledTimes(2)
       data.authors[0].books[1].title = 'Sanditon'
       expect(context.serializedItem).toEqual({ id: 2, title: 'Sanditon' })
-      expect(process).toHaveBeenCalledTimes(4)
+      expect(serializeValue).toHaveBeenCalledTimes(4)
     })
 
-    it('is the data being processed in `process()`', async () => {
+    it('is the data being serialized in `serializeValue()`', async () => {
       const serialized = []
       const { getComponent } = await mountLibrary({
-        process: ({ value, serializedItem, serializedRootItem }) => {
+        serializeValue: ({ value, serializedItem, serializedRootItem }) => {
           serialized.push({ serializedItem, serializedRootItem })
           return value
         }

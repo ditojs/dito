@@ -54,7 +54,7 @@ const playlists = createWidgetView<PlaylistItem>(
             label: 'Next Track Title',
             disabled: true,
             exclude: true,
-            compute: ({ item }) => item.nextTrack?.title ?? null
+            computeValue: ({ item }) => item.nextTrack?.title ?? null
           }
         }
       }
@@ -80,7 +80,7 @@ const tracks = createWidgetView<Track & { initial?: string | null }>(
       if: ({ item }) => item.title.length > 0,
       disabled: true,
       exclude: true,
-      compute: ({ item }) => item.title.charAt(0)
+      computeValue: ({ item }) => item.title.charAt(0)
     }
   },
   {

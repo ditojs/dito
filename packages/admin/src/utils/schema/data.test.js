@@ -7,6 +7,7 @@ import {
   getComponentPathByDataPath,
   getComputedValue,
   serializeData,
+  deserializeData,
   initializeData,
   shouldRenderSchema,
   getCreatableForms,
@@ -31,10 +32,16 @@ defineType({
 defineType({ type: 'panel', defaultNested: false })
 defineType({
   type: 'reference',
-  processValue: ({ value }) => value && { id: value.id }
+  serializeValue: ({ value }) => value && { id: value.id }
 })
 defineType({ ...sourceTraits, type: 'list', sourceType: 'list' })
 defineType({ type: 'tags', defaultMultiple: true })
+// Amounts are stored in cents, and edited in units:
+defineType({
+  type: 'amount',
+  deserializeValue: ({ value }) => value / 100,
+  serializeValue: ({ value }) => Math.round(value * 100)
+})
 defineType({ type: 'hidden', excludeValue: true })
 
 const chapters = {
@@ -316,7 +323,7 @@ describe('getComponentPathByDataPath()', () => {
 describe('getComputedValue()', () => {
   const schema = {
     type: 'text',
-    compute: ({ item }) => item.title?.toUpperCase()
+    computeValue: ({ item }) => item.title?.toUpperCase()
   }
 
   it('returns the computed value without writing it into the data', () => {
@@ -325,7 +332,7 @@ describe('getComputedValue()', () => {
     expect(data).toEqual({ title: 'Book' })
   })
 
-  it('returns the value if `compute()` returns `undefined`', () => {
+  it('returns the value if `computeValue()` returns `undefined`', () => {
     const data = { upper: 'Kept' }
     expect(getComputedValue(schema, data, 'upper', 'upper')).toBe('Kept')
   })
@@ -346,17 +353,20 @@ describe('getComputedValue()', () => {
     )
   })
 
-  it('provides the data path to `compute()`', () => {
-    const schema = { type: 'text', compute: ({ dataPath }) => dataPath }
+  it('provides the data path to `computeValue()`', () => {
+    const schema = { type: 'text', computeValue: ({ dataPath }) => dataPath }
     expect(getComputedValue(schema, {}, 'path', 'chapters/0/path')).toBe(
       'chapters/0/path'
     )
   })
 
-  it('calls data path functions only when `compute()` reads them', () => {
+  it('calls data path functions only when `computeValue()` reads them', () => {
     const getDataPath = vi.fn(() => 'chapters/1/path')
-    const readsDataPath = { type: 'text', compute: ({ dataPath }) => dataPath }
-    const ignoresDataPath = { type: 'text', compute: () => 'Fixed' }
+    const readsDataPath = {
+      type: 'text',
+      computeValue: ({ dataPath }) => dataPath
+    }
+    const ignoresDataPath = { type: 'text', computeValue: () => 'Fixed' }
     expect(getComputedValue(ignoresDataPath, {}, 'path', getDataPath)).toBe(
       'Fixed'
     )
@@ -372,7 +382,7 @@ describe('getComputedValue()', () => {
     const getOptions = vi.fn(() => options)
     const schema = {
       type: 'text',
-      compute: context => context.value ?? context.options[0]
+      computeValue: context => context.value ?? context.options[0]
     }
     expect(
       getComputedValue(schema, { size: 'Large' }, 'size', 'size', {
@@ -388,14 +398,14 @@ describe('getComputedValue()', () => {
 })
 
 describe('serializeData()', () => {
-  it('serializes the values in the data without calling `compute()`', () => {
+  it('serializes the values in the data without calling `computeValue()`', () => {
     // `DataModel` writes the computed values into the data.
-    const compute = vi.fn(({ item }) => item.title.toUpperCase())
+    const computeValue = vi.fn(({ item }) => item.title.toUpperCase())
     const schema = {
       type: 'form',
       components: {
         title: { type: 'text' },
-        upper: { type: 'text', compute },
+        upper: { type: 'text', computeValue },
         subtitle: { type: 'text', default: 'None' }
       }
     }
@@ -404,12 +414,12 @@ describe('serializeData()', () => {
       serializeData(schema, { type: 'list' }, data, '', { target: 'server' })
     ).toEqual({ title: 'Book', upper: 'BOOK', subtitle: 'None' })
     expect(data).toEqual({ title: 'Book', upper: 'BOOK' })
-    expect(compute).not.toHaveBeenCalled()
+    expect(computeValue).not.toHaveBeenCalled()
   })
 
   it('keeps values that are no objects as they are', () => {
-    // E.g. sizes that are stored as numbers, before `compute()` converts them
-    // to the objects that their forms edit.
+    // E.g. sizes that are stored as numbers, before `computeValue()` converts
+    // them to the objects that their forms edit.
     const schema = {
       type: 'form',
       components: {
@@ -472,7 +482,7 @@ describe('serializeData()', () => {
         components: {
           price: {
             type: 'text',
-            process: ({ value, dataPath }) => {
+            serializeValue: ({ value, dataPath }) => {
               dataPaths.push(dataPath)
               return value * 2
             }
@@ -491,6 +501,21 @@ describe('serializeData()', () => {
     ).toEqual({ prices: [200, 400] })
     // The values are serialized at the data paths of the items:
     expect(dataPaths).toEqual(['prices/0', 'prices/1'])
+  })
+
+  it('converts values with the hook of their type, then of the schema', () => {
+    const schema = {
+      type: 'form',
+      components: {
+        price: { type: 'amount', serializeValue: ({ value }) => `${value}` }
+      }
+    }
+    expect(
+      serializeData(schema, null, { price: 12.5 }, '', {
+        services: {},
+        target: 'server'
+      })
+    ).toEqual({ price: '1250' })
   })
 
   it('passes items without a matching form through as shallow clones', () => {
@@ -548,6 +573,68 @@ describe('serializeData()', () => {
   })
 })
 
+describe('deserializeData()', () => {
+  const createPricesSchema = price => ({
+    type: 'form',
+    components: {
+      prices: {
+        type: 'list',
+        wrapPrimitives: 'price',
+        form: { type: 'form', components: { price } }
+      }
+    }
+  })
+
+  it('converts values with the hook of their type, then of the schema', () => {
+    const schema = {
+      type: 'form',
+      components: {
+        price: { type: 'amount', deserializeValue: ({ value }) => `${value}` }
+      }
+    }
+    const data = { price: 1250 }
+    expect(deserializeData(schema, data)).toBe(data)
+    expect(data).toEqual({ price: '12.5' })
+  })
+
+  it('converts the values of sources before the values of their items', () => {
+    const schema = {
+      type: 'form',
+      components: {
+        items: {
+          type: 'list',
+          // Stored as an object keyed by id:
+          deserializeValue: ({ value }) => Object.values(value),
+          form: { type: 'form', components: { price: { type: 'amount' } } }
+        }
+      }
+    }
+    const data = { items: { a: { id: 'a', price: 100 } } }
+    deserializeData(schema, data)
+    expect(data).toEqual({ items: [{ id: 'a', price: 1 }] })
+  })
+
+  it('writes the converted primitives of `wrapPrimitives` lists back', () => {
+    const data = { prices: [100, 250] }
+    deserializeData(createPricesSchema({ type: 'amount' }), data)
+    expect(data).toEqual({ prices: [1, 2.5] })
+  })
+
+  it('leaves missing values to their defaults', () => {
+    const deserializeValue = vi.fn()
+    const data = {}
+    deserializeData(
+      {
+        type: 'form',
+        components: { title: { type: 'text', deserializeValue } }
+      },
+      data
+    )
+    expect(data).toEqual({})
+    expect(deserializeValue).not.toHaveBeenCalled()
+  })
+})
+
 describe('shouldRenderSchema()', () => {
   it(`doesn't evaluate the components of sources for their items`, () => {
     // `SchemaContext` needs a component to inherit from:
@@ -579,7 +666,7 @@ describe('getComputedValue() with if', () => {
     const schema = {
       type: 'text',
       if: ({ item }) => !!item.preview,
-      compute: ({ item }) => item.preview.name
+      computeValue: ({ item }) => item.preview.name
     }
     expect(getComputedValue(schema, { name: 'Stored' }, 'name', 'name')).toBe(
       'Stored'
@@ -622,7 +709,7 @@ describe('initializeData()', () => {
     const pricing = {
       type: 'text',
       default: 'auto',
-      compute: ({ value, item }) => (
+      computeValue: ({ value, item }) => (
         value ?? (item.customFactor != null ? 'factor' : undefined)
       )
     }
@@ -647,8 +734,8 @@ describe('initializeData()', () => {
     const items = {
       type: 'list',
       orderKey: 'order',
-      // Lists with `compute()` are numbered too.
-      compute: ({ value }) => value,
+      // Lists with `computeValue()` are numbered too.
+      computeValue: ({ value }) => value,
       form: { type: 'form', components: { parts } }
     }
     const data = {

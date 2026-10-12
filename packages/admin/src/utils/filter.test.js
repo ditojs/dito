@@ -1,4 +1,6 @@
 import { vi } from 'vitest'
+// Register the actual type components, for their `deserializeValue()`:
+import '../types/index.js'
 import { ref } from 'vue'
 import {
   createFiltersPanel,
@@ -216,7 +218,7 @@ describe('createFiltersPanel()', () => {
       expect(panel.data()).toEqual({
         $title: { operator: 'starts-with', text: 'The' },
         $author: {},
-        $published: { from: '2020-01-01T00:00:00.000Z', to: null },
+        $published: { from: new Date('2020-01-01T00:00:00.000Z'), to: null },
         $genres: { genres: ['poetry', 'essay'] },
         $available: { available: false }
       })

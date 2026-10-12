@@ -368,8 +368,8 @@ describe('DitoTypeSelect', () => {
             genre: {
               type: 'select',
               options: { data: async () => genres },
-              format: ({ value }) => value?.toLowerCase(),
-              parse: ({ value }) => value?.toUpperCase()
+              formatValue: ({ value }) => value?.toLowerCase(),
+              parseValue: ({ value }) => value?.toUpperCase()
             },
             genres: {
               type: 'multiselect',
@@ -392,7 +392,7 @@ describe('DitoTypeSelect', () => {
             genre: {
               type: 'select',
               options: { data: async () => genres },
-              compute: ({ value, options }) => value ?? options[0].value
+              computeValue: ({ value, options }) => value ?? options[0].value
             }
           }
         }

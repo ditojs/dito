@@ -96,7 +96,7 @@ const treeTraits = {
     return schema.children ? [schema.children] : []
   },
 
-  async processSchema(api, schema, name) {
+  async setupSchema(api, schema, name) {
     const { children } = schema
     if (children) {
       // Change the schema in place, as the route tree, uids and data model are
@@ -105,8 +105,8 @@ const treeTraits = {
     }
     await Promise.all([
       resolveSchemaComponents(schema.properties),
-      sourceTraits.processSchema(api, schema, name),
-      children && treeTraits.processSchema(api, children, children.name)
+      sourceTraits.setupSchema(api, schema, name),
+      children && treeTraits.setupSchema(api, children, children.name)
     ])
   }
 }

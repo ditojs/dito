@@ -97,7 +97,7 @@ export function useSourceData(
   // Loading isn't an edit, and replaces the source's changes:
   const setLoadedValue = (value: any) => {
     const { data, schema, dataPath } = props
-    getModel().setLoaded({ data, name: schema.name, dataPath }, value)
+    getModel().setLoaded({ schema, data, name: schema.name, dataPath }, value)
   }
 
   // Number the loaded items from the offset of the page, so that buttons can

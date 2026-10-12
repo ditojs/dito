@@ -32,11 +32,11 @@ export const books = createWidgetView<Book>(
         label: 'Chapter',
         components: {
           title: { type: 'text', label: 'Chapter Title' },
-          // Stored with its prefix, which `process()` adds when saving.
+          // Stored with its prefix, which `serializeValue()` adds when saving.
           code: {
             type: 'text',
             label: 'Code',
-            process: ({ value }) => (value ? `ch-${value}` : value)
+            serializeValue: ({ value }) => (value ? `ch-${value}` : value)
           },
           // Edited in the form, but not stored on the server.
           note: { type: 'text', label: 'Note', exclude: true },
