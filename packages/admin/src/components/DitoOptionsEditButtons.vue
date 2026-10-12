@@ -7,7 +7,6 @@ DitoEditButtons.dito-options-edit-buttons(
   :schema="schema"
   :dataPath="dataPath"
   :data="data"
-  :meta="meta"
   :store="store"
   :disabled="false"
   editable
@@ -27,7 +26,6 @@ export default DitoComponent.component('DitoOptionsEditButtons', {
     schema: { type: Object, required: true },
     dataPath: { type: String, required: true },
     data: { type: [Object, Array], default: null },
-    meta: { type: Object, required: true },
     store: { type: Object, required: true },
     // The value of the option to edit, e.g. its id.
     optionValue: { type: null, default: null }

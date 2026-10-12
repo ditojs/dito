@@ -2243,6 +2243,11 @@ export interface ContainerContext {
   readonly isEdited: boolean
   /** Whether the form creates a new item, `false` outside of forms. */
   readonly isCreating: boolean
+  /**
+   * Whether the data is there to display: forms load or create their item,
+   * the others always have their data.
+   */
+  readonly hasData: boolean
   validate: DitoContext['validate']
   verify: DitoContext['verify']
   markEdited: DitoContext['markEdited']
@@ -2283,6 +2288,16 @@ export interface RouteContext {
   /** The name of the selected tab, `null` without tabs. */
   readonly selectedTab: string | null
   /**
+   * The resource of forms, which the resources of their components and
+   * nested forms continue, `null` in views.
+   */
+  readonly resource: ResourceContext | null
+  /**
+   * Resolves the path of the form that edits the item at `dataPath`, or
+   * `null`.
+   */
+  getFormPath(dataPath: string): string | null
+  /**
    * Resolves the path of the deepest form that edits the data at
    * `dataPath`, along with the data path that remains within that form,
    * or `null`.
@@ -2298,6 +2313,61 @@ export interface RouteContext {
    * views.
    */
   close(): Promise<unknown>
+}
+
+/**
+ * The context of a list, object or tree, provided to the components that
+ * display it and its items as `source`. Its members are reactive.
+ */
+export interface SourceContext {
+  readonly schema: Component
+  /** The query of lists, e.g. their scope, page, order and filters. */
+  readonly query: Record<string, any>
+  readonly dataPath: string
+  readonly componentPath: string
+  readonly store: Record<string, any>
+  readonly isDisabled: boolean
+  /**
+   * Creates an item with the form `schema`, of `type` if the source has
+   * several forms, inserts it at `index`, or else at the end, and returns it.
+   */
+  createItem(schema: Form, type?: string | null, index?: number | null): any
+  /** Loads the data of the source again, e.g. after its item was saved. */
+  reload(): void
+}
+
+/**
+ * The context of a form or source, provided to the components that it
+ * renders as `resource`, also when it has no resource of its own, e.g. in
+ * nested data. Its members are reactive.
+ */
+export interface ResourceContext {
+  /**
+   * The context that the resource continues: the one of the form that
+   * renders the form or source, or of the parent form of forms, `null` in
+   * views.
+   */
+  readonly parent: ResourceContext | null
+  /**
+   * The context itself if it has a resource, or else the closest one above
+   * with a resource, which loads the data that its components display.
+   */
+  readonly closestWithResource: ResourceContext | null
+  /** Action verb labels, with the transient ones in nested data. */
+  readonly verbs: Record<string, string>
+  /**
+   * Returns the resource of the form or source, `null` if it has none: of
+   * the item of forms, and the collection of sources.
+   */
+  getResource(options?: {
+    method?: HTTPMethod
+    child?: Resource | null
+  }): Resource | null
+  /** Submits the data through `button`, resolving with whether it succeeded. */
+  submit(
+    button: DitoComponentInstanceBase,
+    options?: { validate?: boolean; closeForm?: boolean }
+  ): Promise<boolean>
 }
 
 export interface DitoComponentInstanceBase<$Item = any>
@@ -2356,16 +2426,10 @@ export interface DitoComponentInstanceBase<$Item = any>
   isTransient: boolean
   /** Whether the component is mounted. */
   isMounted: boolean
-  /** Whether the component tree is populated. */
-  isPopulated: boolean
   /**
-   * Whether this component loads its own data from
-   * a resource.
+   * Action verb labels (create, save, delete, etc.), of the nearest form or
+   * source, see {@link ResourceContext.verbs}.
    */
-  providesData: boolean
-  /** The schema of the source component. */
-  sourceSchema: Component | null
-  /** Action verb labels (create, save, delete, etc.). */
   verbs: Record<string, string>
 
   // -- Resolved schema accessors (TypeMixin) --
@@ -2410,30 +2474,28 @@ export interface DitoComponentInstanceBase<$Item = any>
    * the component is, `null` in dialogs.
    */
   route: RouteContext | null
-  /** The nearest ancestor resource component. */
-  resourceComponent: DitoFormInstance | DitoSourceInstance
-  /** The nearest ancestor source component. */
-  sourceComponent: DitoSourceInstance
   /**
-   * The first parent route component that provides and
-   * loads its own data from the API.
+   * The context of the list, object or tree that the component is, or that
+   * displays it, `null` outside of sources. Forms don't continue the source
+   * of their parent, while views provide the one of their main component.
    */
-  dataComponent: DitoFormInstance | DitoViewInstance | null
+  source: SourceContext | null
+  /**
+   * The context of the form or source that the component is, or that renders
+   * it, which submits its data and resolves its resources. Views provide the
+   * one of their main component.
+   */
+  resource: ResourceContext | null
   /** The parent schema component. */
   parentSchemaComponent: DitoComponentInstanceBase | null
   /** The nearest ancestor tab component. */
   tabComponent: DitoComponentInstanceBase | null
-  /** The parent resource component. */
-  parentResourceComponent:
-    | DitoFormInstance
-    | DitoSourceInstance
-    | null
 
   // -- Environment (DitoMixin) --
 
   /** The context of the admin. */
   admin: AdminContext
-  /** Data from the first parent route that loads data. */
+  /** The data that the data paths of the route are relative to. */
   rootData: any
 
   // -- Actions (DitoMixin) --
@@ -2629,6 +2691,8 @@ export interface LoadingTracker {
  * sources.
  */
 export interface DitoResourceInstance {
+  /** Whether the component loads its own data from a resource. */
+  providesData: boolean
   /**
    * Whether any request or other operation within this
    * component's scope is pending, as tracked by its
@@ -2849,11 +2913,6 @@ export interface DitoFormInstance<$Item = any>
   isNestedRoute: boolean
 
   /**
-   * The resolved API resource for this component,
-   * or `null` if none is configured.
-   */
-  resource: Resource | null
-  /**
    * Whether loaded data is available on this
    * component.
    */
@@ -2959,11 +3018,6 @@ export interface DitoViewInstance<$Item = any>
    * source component (renders without a table header).
    */
   isSingleComponentView: boolean
-  /**
-   * Whether this view loads its own data from
-   * a resource.
-   */
-  providesData: boolean
   /**
    * Sets the view's data directly, and returns it
    * as the view's reactive data.
@@ -3100,11 +3154,6 @@ export interface DitoSourceInstance<$Item = any>
    * list item at `index`, or `null`.
    */
   getItemPath(index: number): string | null
-  /**
-   * Resolves the path of the form that edits the
-   * item at `dataPath`, or `null`.
-   */
-  getFormPath(dataPath: string): string | null
 
   // -- Resolved schema accessors (SourceMixin) --
 
@@ -3162,11 +3211,6 @@ export interface DitoSourceInstance<$Item = any>
 
   // -- Resource (ResourceMixin) --
 
-  /**
-   * The resolved API resource for this component,
-   * or `null` if none is configured.
-   */
-  resource: Resource | null
   /**
    * Whether loaded data is available on this
    * component.

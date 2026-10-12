@@ -4,7 +4,6 @@
     :schema="getItemFormSchema(schema, item, context)"
     :dataPath="dataPath"
     :data="item"
-    :meta="meta"
     :store="store"
     :label="label"
     :info="info"
@@ -58,6 +57,12 @@ export default DitoTypeComponent.register('section', {
 
     hasLabel() {
       return !!this.schema.label
+    },
+
+    // Sections display the item of their schema component, see
+    // `DitoSchema.sourceSchema`:
+    sourceSchema() {
+      return this.schemaComponent.sourceSchema
     },
 
     collapsible: getSchemaAccessor('collapsible', {

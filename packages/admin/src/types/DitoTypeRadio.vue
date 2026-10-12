@@ -22,7 +22,6 @@ DitoOptionList.dito-radio-buttons(
       :schema="schema"
       :dataPath="dataPath"
       :data="data"
-      :meta="meta"
       :store="store"
       :optionValue="getValueForOption(option)"
     )

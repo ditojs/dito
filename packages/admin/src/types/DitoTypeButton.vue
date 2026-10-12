@@ -86,12 +86,7 @@ export default DitoTypeComponent.register(
       },
 
       async submit(options) {
-        const { resourceComponent } = this
-        if (resourceComponent) {
-          return resourceComponent.dataModel.trackPendingSubmit(
-            resourceComponent.submit(this, options)
-          )
-        }
+        return this.resource?.submit(this, options)
       },
 
       async onClick() {

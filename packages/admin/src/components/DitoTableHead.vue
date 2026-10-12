@@ -37,14 +37,14 @@ export default DitoComponent.component('DitoTableHead', {
   components: { DitoButton },
 
   props: {
-    query: { type: Object, required: true },
+    listQuery: { type: Object, required: true },
     columns: { type: Object, required: true },
     hasEditButtons: { type: Boolean, required: true }
   },
 
   computed: {
     sort() {
-      const order = (this.query.order || '').split(/\s+/)
+      const order = (this.listQuery.query.order || '').split(/\s+/)
       return {
         name: order[0],
         order: order[1]
@@ -78,7 +78,7 @@ export default DitoComponent.component('DitoTableHead', {
           ? 'desc'
           : 'asc'
       // Sorting resets the page, as the sorted list has other pages.
-      this.sourceComponent.listQuery.update(
+      this.listQuery.update(
         { order: `${column.name} ${order}` },
         { resetPage: true }
       )

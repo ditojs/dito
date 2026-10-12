@@ -18,7 +18,6 @@
       :dataPath="dataPath"
       :panelComponentPath="componentPath"
       :data="data"
-      :meta="meta"
       :store="getChildStore(schema.name)"
       :disabled="schema.disabled ?? disabled"
       :isTabSelected="isTabSelected"
@@ -36,7 +35,6 @@ export default DitoComponent.component('DitoPanels', {
   props: {
     panels: { type: Array, default: null },
     data: { type: Object, required: true },
-    meta: { type: Object, required: true },
     store: { type: Object, required: true },
     disabled: { type: Boolean, required: true }
   },

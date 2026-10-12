@@ -43,7 +43,6 @@
       :formSchema="getItemFormSchema(schema, data, context)"
       :dataPath="dataPath"
       :data="data"
-      :meta="nestedMeta"
       :store="store"
       :disabled="disabled"
       :draggable="draggable"
@@ -71,7 +70,6 @@
         :schema="schema"
         :dataPath="dataPath"
         :data="data"
-        :meta="nestedMeta"
         :store="store"
         :disabled="disabled"
       )
@@ -117,7 +115,7 @@ import { confirmAndRemove } from '../utils/dialogs.js'
 import { isPathWithin } from '../utils/route.js'
 
 // Renders an item of a tree list or tree object, see `DitoTypeTreeList`, which
-// is the item's `sourceComponent`. Items don't write the tree: They emit the
+// provides the item's `source`. Items don't write the tree: They emit the
 // changed children with `changeChildren`, which the tree list applies.
 // @vue/component
 export default DitoComponent.component('DitoTreeItem', {
@@ -149,30 +147,19 @@ export default DitoComponent.component('DitoTreeItem', {
       // Continue the path of the tree list with the item indices and children
       // names of the data path. The root item's data path doesn't contain the
       // list's name, see `DitoTypeTreeList.treeDataPath`.
-      const { componentPath, dataPath } = this.sourceComponent
+      const { componentPath, dataPath } = this.source
       const relativeDataPath = getRelativeDataPath(this.dataPath, dataPath)
       return relativeDataPath
         ? appendDataPath(componentPath, relativeDataPath)
         : componentPath
     },
 
-    meta() {
-      return this.sourceComponent.meta
-    },
-
     store() {
-      return this.sourceComponent.store
+      return this.source.store
     },
 
     disabled() {
-      return this.sourceComponent.disabled
-    },
-
-    nestedMeta() {
-      return {
-        ...this.meta,
-        schema: this.schema
-      }
+      return this.source.isDisabled
     },
 
     properties() {
@@ -222,7 +209,7 @@ export default DitoComponent.component('DitoTreeItem', {
         // `open` only reflects the route, so that items closed by the user
         // reopen when they come into it. `schema.open` is applied in `data()`.
         return childrenList.map((data, index) => {
-          const path = this.sourceComponent.getFormPath(
+          const path = this.route?.getFormPath(
             this.getItemDataPath(childrenSchema, index)
           )
           const active = !!path && routePath === path

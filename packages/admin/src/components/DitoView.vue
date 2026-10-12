@@ -18,7 +18,6 @@ template(
       :key="name"
       :schema="viewSchema"
       :data="data"
-      :meta="meta"
       :store="getChildStore(name)"
       padding="root"
       :disabled="isLoading"
@@ -28,15 +27,11 @@ template(
 </template>
 
 <script>
-import { markRaw } from 'vue'
+import { computed, markRaw } from 'vue'
 import { deprecate } from '@ditojs/utils'
 import DitoComponent from '../DitoComponent.js'
 import RouteMixin from '../mixins/RouteMixin.js'
-import {
-  isSingleComponentView,
-  someNestedSchemaComponent
-} from '../utils/schema/structure.js'
-import { hasResource } from '../utils/resource.js'
+import { isSingleComponentView } from '../utils/schema/structure.js'
 import { DataModel } from '../utils/DataModel.js'
 import { LoadingTracker, LoadingSwitch } from '../utils/LoadingTracker.js'
 
@@ -46,9 +41,10 @@ export default DitoComponent.component('DitoView', {
 
   provide() {
     return {
-      // Redirect $sourceComponent and $resourceComponent to the main component:
-      $sourceComponent: () => this.mainComponent?.sourceComponent || null,
-      $resourceComponent: () => this.mainComponent?.resourceComponent || null,
+      // Provide the contexts of the main component to the other components of
+      // the view, e.g. its panels and buttons:
+      source: computed(() => this.mainComponent?.ownSource ?? null),
+      resource: computed(() => this.mainComponent?.ownResource ?? null),
       $loadingTracker: () => this.loadingTracker
     }
   },
@@ -72,7 +68,8 @@ export default DitoComponent.component('DitoView', {
       return this.route.node.schema
     },
 
-    // @override DitoMixin.sourceSchema()
+    // The view's components display the view's data, as if it were an item of
+    // a source with the view's schema, see `DitoSchema.sourceSchema`:
     sourceSchema() {
       return this.schema
     },
@@ -115,18 +112,13 @@ export default DitoComponent.component('DitoView', {
         : schema
     },
 
-    providesData() {
-      return someNestedSchemaComponent(this.viewSchema, hasResource)
-    },
-
     // The data paths of the view's components start at its data:
     dataPath() {
       return ''
     },
 
     // @override DitoMixin.rootData()
-    // The data paths of the view's components are relative to its data, also
-    // when the view has no resource and thus isn't a data component.
+    // The data paths of the view's components are relative to its data:
     rootData() {
       return this.data
     }

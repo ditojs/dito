@@ -30,7 +30,6 @@
       :schema="schema"
       :dataPath="dataPath"
       :data="data"
-      :meta="meta"
       :store="store"
       :padding="isNestedRoute ? 'nested' : 'root'"
       :active="isActiveRoute"
@@ -44,7 +43,6 @@
           :buttons="buttonSchemas"
           :dataPath="dataPath"
           :data="data"
-          :meta="meta"
           :store="store"
           :disabled="isLoading"
         )
@@ -82,6 +80,14 @@ import { getTextFromHtml } from '../utils/html.js'
 export default DitoComponent.component('DitoForm', {
   mixins: [RouteMixin, ResourceMixin],
 
+  provide() {
+    // The components of the form don't continue the source of its parent,
+    // e.g. of a tree that renders the forms of its items:
+    return {
+      source: null
+    }
+  },
+
   data() {
     return {
       createdData: null,
@@ -98,15 +104,15 @@ export default DitoComponent.component('DitoForm', {
       return true
     },
 
-    // @override DitoMixin.sourceSchema()
+    // The schema of the source of the form's item, see
+    // `DitoSchema.sourceSchema`:
     sourceSchema() {
       return this.route.node.source.schema
     },
 
     verbs() {
-      // Add submit / submitted to the verbs returned by ResourceMixin
-      // NOTE: These get passed on to children through:
-      // `provide() ... { $verbs: () => this.verbs }` in ResourceMixin
+      // Add submit / submitted to the verbs returned by ResourceMixin, which
+      // the form's components read through its `ResourceContext`:
       const verbs = this.getVerbs()
       const { isCreating, providesData } = this
       return {
@@ -484,23 +490,6 @@ export default DitoComponent.component('DitoForm', {
       }
     },
 
-    // Returns the source component that loads the form's item through its
-    // resource in the parent route component, e.g. a list in a parent form, or
-    // `null` if it isn't rendered, e.g. the list of a view, which renders the
-    // form instead.
-    getParentSourceComponent() {
-      const sourceNode = this.route.node.source
-      const parent = this.appState.routeComponents[this.parentRoute.level]
-      return (
-        parent?.mainSchemaComponent?.components.find(
-          component => (
-            component.providesData &&
-            component.sourceNode === sourceNode
-          )
-        ) ?? null
-      )
-    },
-
     // Required by ResourceMixin, see its contract.
     clearData() {
       this.setData(null)
@@ -628,8 +617,9 @@ export default DitoComponent.component('DitoForm', {
         })
         if (success) {
           // The item changed on the server, so the source that lists it needs
-          // to load it again.
-          this.getParentSourceComponent()?.reloadData()
+          // to load it again, if the parent route renders it, unlike views,
+          // which render the form instead:
+          this.parentRoute.findSource(this.route.node.source)?.reload()
         }
       }
       if (success) {

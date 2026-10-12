@@ -119,7 +119,7 @@ describe('DitoView', () => {
     expect(admin.wrapper.find('.dito-view').exists()).toBe(false)
   })
 
-  describe('source components', () => {
+  describe('source and resource contexts', () => {
     it('are the main component of single-component views', async () => {
       const admin = await mountAdmin({
         views: {
@@ -138,13 +138,12 @@ describe('DitoView', () => {
       const view = admin.getRouteComponent(it => it.isView)
       expect(view.mainComponent.name).toBe('books')
       // Components of the view outside of the list, e.g. its schema, use the
-      // list as their source:
-      expect(view.mainSchemaComponent.sourceComponent).toBe(
-        view.mainComponent
-      )
-      expect(view.mainSchemaComponent.resourceComponent).toBe(
-        view.mainComponent
-      )
+      // contexts of the list, but display the view's data:
+      const { mainSchemaComponent: schema, mainComponent: list } = view
+      expect(schema.source).toBe(list.source)
+      expect(schema.resource).toBe(list.resource)
+      expect(list.source.schema).toBe(list.schema)
+      expect(schema.sourceSchema).toBe(view.schema)
     })
 
     it('are missing in views with multiple components', async () => {
@@ -159,7 +158,8 @@ describe('DitoView', () => {
       await admin.navigate('/library')
       const view = admin.getRouteComponent(it => it.isView)
       expect(view.mainComponent).toBe(null)
-      expect(view.mainSchemaComponent.sourceComponent).toBe(null)
+      expect(view.mainSchemaComponent.source).toBe(null)
+      expect(view.mainSchemaComponent.resource).toBe(null)
     })
   })
 
@@ -232,7 +232,6 @@ describe('DitoView', () => {
         data,
         request: () => ({ data: [] })
       })
-      expect(view.providesData).toBe(true)
       expectRootItems(view, getComponent)
     })
 

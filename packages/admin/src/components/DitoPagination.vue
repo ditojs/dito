@@ -15,7 +15,7 @@ export default DitoComponent.component('DitoPagination', {
   components: { Pagination },
 
   props: {
-    query: { type: Object, required: true },
+    listQuery: { type: Object, required: true },
     limit: { type: Number, required: true },
     total: { type: Number, required: true }
   },
@@ -23,11 +23,11 @@ export default DitoComponent.component('DitoPagination', {
   computed: {
     page: {
       get() {
-        return (+this.query.page || 0) + 1
+        return (+this.listQuery.query.page || 0) + 1
       },
 
       set(page) {
-        this.sourceComponent.listQuery.update({ page: page - 1 })
+        this.listQuery.update({ page: page - 1 })
       }
     }
   }

@@ -1071,8 +1071,8 @@ describe('DitoForm', () => {
       expect(data.recipes).toEqual([{ name: 'Waffles' }])
     })
 
-    // Without a resource in the view, the nested form has no data component,
-    // and its data path is relative to the data of the view.
+    // Without a resource in the view, the nested form has no resource to
+    // continue, and its data path is relative to the data of the view.
     it('open in views without resources', async () => {
       const { admin, data } = await mountSchema({
         schema: { components: { recipes: recipesSchema } },
@@ -1081,7 +1081,7 @@ describe('DitoForm', () => {
       await admin.navigate('/test/recipes/0')
       const form = admin.getRouteComponent(component => component.isForm)
       await settle(form)
-      expect(form.dataComponent).toBe(null)
+      expect(form.resource.closestWithResource).toBe(null)
       expect(form.dataPath).toBe('recipes/0')
       expect(new DOMWrapper(form.$el).find('input').element.value).toBe(
         'Pancakes'

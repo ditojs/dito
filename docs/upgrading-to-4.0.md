@@ -287,11 +287,12 @@ them through two contexts, instead of components:
 
 - `container`, provided by views, forms, dialogs and panels with their own
   data: the `model` that holds the data, `schema`, `dataPath`, `rootData`,
-  `isDirty`, `isEdited`, `isCreating`, `validate()`, `verify()`,
+  `isDirty`, `isEdited`, `isCreating`, `hasData`, `validate()`, `verify()`,
   `markEdited()` and `replaceItem()`. Dialogs add `close(value)`.
 - `route`, provided by views and forms: its `parent` route, `container`,
-  `level`, `isForm`, `state`, `path`, `isLastRoute`, `selectedTab`,
-  `getFormRoute()`, `getCreatePath()`, and `close()` for forms.
+  `level`, `isForm`, `state`, `path`, `isLastRoute`, `selectedTab`, the
+  `resource` of forms, `getFormRoute()`, `getFormPath()`, `getCreatePath()`,
+  and `close()` for forms.
 
 `routeComponent`, `formComponent`, `viewComponent`, `parentRouteComponent`,
 `parentFormComponent`, `dataModelComponent`, `dialogComponent` and
@@ -305,6 +306,49 @@ them through two contexts, instead of components:
 - `dialogComponent.resolve(value)`: `container.close(value)`.
 - Route records no longer have `meta.schema`: views and forms take their
   schemas from their node in the route tree.
+
+### Source and resource contexts
+
+Lists, objects and trees, and the forms that edit items, provide two more
+contexts:
+
+- `source`, provided by lists, objects and trees to the components that
+  display them and their items: `schema`, `query`, `dataPath`,
+  `componentPath`, `store`, `isDisabled`, `createItem()` and `reload()`.
+  Forms don't continue the source of their parent, e.g. the forms of tree
+  items, whose `listQuery` was the tree's query.
+- `resource`, provided by forms and sources, also without a resource of their
+  own: its `parent`, `closestWithResource`, `verbs`, `getResource()` and
+  `submit(button)`. Resources continue the one of the form that renders the
+  source, or of the parent form of forms. The forms of tree items no longer
+  continue the resource of the tree, which resolved their item at
+  `pages/pages/1` instead of `pages/1`.
+
+Views provide both contexts of their main component, e.g. to their panels.
+`sourceComponent`, `resourceComponent`, `dataComponent` and
+`parentResourceComponent` are removed, along with the `$sourceComponent`,
+`$resourceComponent`, `$dataComponent`, `$verbs` and `$isPopulated` injects:
+
+- `sourceComponent.query`: `source.query`. `sourceComponent.createItem()`:
+  `source.createItem()`.
+- `resourceComponent.resource`, the `resource` of forms and sources:
+  `resource.getResource()`. `resourceComponent.submit(button)`:
+  `resource.submit(button)`.
+- `dataComponent`: `resource.closestWithResource`. The components in sources
+  with a resource read the root data of their route, like all others.
+- `isPopulated`: `container.hasData`.
+- `sourceSchema` is only defined by the components that render schemas:
+  sources, views, forms, panels, sections and `DitoSchema`. In views, the
+  components outside of the main component keep the view's schema.
+- `getFormPath()` of sources: `route.getFormPath()`.
+- The `meta` prop of the components and types is removed, along with
+  `nestedMeta`.
+- The verbs and the relative resources of the components of single-component
+  views outside of their list, e.g. view buttons, are the list's, like their
+  submits.
+- `DitoScopes`, `DitoPagination` and `DitoTableHead` take the `ListQuery` of
+  their list as `listQuery` instead of `query`. `DitoSourceItem` takes the
+  `formSchema` and `label` of the item from its source.
 
 ### Custom types
 

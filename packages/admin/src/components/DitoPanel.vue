@@ -13,7 +13,6 @@ component.dito-panel(
     :dataSchema="panelDataSchema"
     :dataPath="panelDataPath"
     :data="panelData"
-    :meta="meta"
     :store="store"
     padding="nested"
     :disabled="disabled"
@@ -28,7 +27,6 @@ component.dito-panel(
           buttonsName="panelButtons"
           :dataPath="panelDataPath"
           :data="panelData"
-          :meta="meta"
           :store="store"
           :disabled="disabled"
         )
@@ -37,7 +35,6 @@ component.dito-panel(
         :buttons="buttonSchemas"
         :dataPath="panelDataPath"
         :data="panelData"
-        :meta="meta"
         :store="store"
         :disabled="disabled"
       )
@@ -69,7 +66,6 @@ export default DitoComponent.component('DitoPanel', {
     schema: { type: Object, required: true },
     dataPath: { type: String, required: true },
     data: { type: Object, required: true },
-    meta: { type: Object, required: true },
     store: { type: Object, required: true },
     disabled: { type: Boolean, required: true },
     // Tells if the tab of the panel's component is selected, for panels of
@@ -109,6 +105,12 @@ export default DitoComponent.component('DitoPanel', {
 
     componentPath() {
       return this.panelComponentPath
+    },
+
+    // Panels display the item of their schema component, or their own data
+    // next to it, see `DitoSchema.sourceSchema`:
+    sourceSchema() {
+      return this.schemaComponent.sourceSchema
     },
 
     buttonSchemas() {

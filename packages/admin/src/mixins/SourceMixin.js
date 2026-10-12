@@ -5,6 +5,8 @@ import { getSchemaAccessor, getStoreAccessor } from '../utils/accessor.js'
 import { getResource, getMemberResource } from '../utils/resource.js'
 import { ListQuery } from '../utils/ListQuery.js'
 import { ItemStores } from '../utils/ItemStores.js'
+import { SourceContext } from '../utils/SourceContext.ts'
+import DitoContext from '../DitoContext.js'
 import {
   isCompact,
   isInlined,
@@ -42,7 +44,7 @@ export default {
 
   provide() {
     return {
-      $sourceComponent: () => this
+      source: this.ownSource
     }
   },
 
@@ -57,15 +59,12 @@ export default {
           getDefaultQuery: () => this.defaultQuery
         })
       ),
-      itemStores: ItemStores.getFromStore(this.store)
+      itemStores: ItemStores.getFromStore(this.store),
+      ownSource: markRaw(new SourceContext(this))
     }
   },
 
   computed: {
-    sourceComponent() {
-      return this
-    },
-
     isObjectSource() {
       return isObjectSource(this.type)
     },
@@ -151,8 +150,9 @@ export default {
       }
     },
 
+    // The schema of the source whose items the schemas of the component
+    // display, see `DitoSchema.sourceSchema`:
     sourceSchema() {
-      // The sourceSchema of a list is the list's schema itself.
       return this.schema
     },
 
@@ -215,13 +215,6 @@ export default {
         }
       }
       return null
-    },
-
-    nestedMeta() {
-      return {
-        ...this.meta,
-        schema: this.schema
-      }
     },
 
     forms() {
@@ -330,7 +323,7 @@ export default {
       return this.linksToView
         ? this.value &&
           this.getViewItemPath(this.getItemId(this.schema, this.value))
-        : this.getFormPath(this.dataPath)
+        : (this.route?.getFormPath(this.dataPath) ?? null)
     },
 
     // The node of the source in the route tree, if it has a route:
@@ -408,6 +401,14 @@ export default {
         }
       }
     }
+  },
+
+  created() {
+    this.route?.registerSource(this.ownSource, true)
+  },
+
+  unmounted() {
+    this.route?.registerSource(this.ownSource, false)
   },
 
   methods: {
@@ -678,11 +679,34 @@ export default {
     },
 
     getItemPath(index) {
+      const dataPath = appendDataPath(this.dataPath, index)
       return this.linksToView
         ? this.getViewItemPath(
             this.getItemId(this.schema, this.listData[index], index)
           )
-        : this.getFormPath(appendDataPath(this.dataPath, index))
+        : (this.route?.getFormPath(dataPath) ?? null)
+    },
+
+    // The label that `DitoSourceItem` shows for `item`: Inlined items show it
+    // in their schema, but only in lists and collapsible objects. The others
+    // show it as HTML, rendered through `render()` if the source has it.
+    getSourceItemLabel(item, index = null) {
+      return this.isInlined
+        ? this.isListSource || this.collapsible
+          ? this.getItemLabel(this.schema, item, { index, asObject: true })
+          : null
+        : this.schema.component
+          ? null
+          : this.render
+            ? this.render(
+                new DitoContext(this, {
+                  data: item,
+                  value: item,
+                  index,
+                  dataPath: this.getItemDataPath(this.schema, index)
+                })
+              )
+            : this.getItemLabel(this.schema, item, { index })
     },
 
     // Lists linked to views edit their items in the form of the view:
@@ -692,12 +716,6 @@ export default {
         key
       )
       return route ? this.$router.resolve(route).path : null
-    },
-
-    // Resolve the path of the form that edits the item at `dataPath`:
-    getFormPath(dataPath) {
-      const route = this.route?.getFormRoute(dataPath)
-      return route && !route.dataPath ? route.path : null
     }
   }, // end of `methods`
 

@@ -3,7 +3,6 @@ DitoSchema.dito-schema-inlined(
   :schema="schema"
   :dataPath="dataPath"
   :data="data"
-  :meta="meta"
   :store="store"
   :label="isCompact ? null : label"
   :info="info"
@@ -17,16 +16,15 @@ DitoSchema.dito-schema-inlined(
 )
   //- Render dito-edit-buttons for inlined schemas separately from all
   //- others in `TypeList` as a scope, for better handling of layout.
-  //- `sourceSchema` is the schema of the list or object that holds the item,
-  //- passed through `meta.schema`, while `schema` is the item's form.
+  //- The edit buttons take the schema of the list or object that holds the
+  //- item, while `schema` is the item's form.
   template(#edit-buttons)
     DitoEditButtons(
       v-if="deletable || draggable || editable || insertIndex != null"
-      :schema="sourceSchema"
+      :schema="source.schema"
       :formSchema="schema"
       :dataPath="dataPath"
       :data="data"
-      :meta="meta"
       :store="store"
       :disabled="disabled"
       :deletable="deletable"
@@ -52,7 +50,6 @@ export default DitoComponent.component('DitoSchemaInlined', {
     schema: { type: Object, required: true },
     dataPath: { type: String, required: true },
     data: { type: Object, required: true },
-    meta: { type: Object, required: true },
     store: { type: Object, required: true },
     label: { type: [String, Object], default: null },
     info: { type: String, default: null },

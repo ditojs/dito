@@ -5,7 +5,6 @@ DitoButtons.dito-edit-buttons(
   :buttons="buttons"
   :dataPath="dataPath"
   :data="data"
-  :meta="meta"
   :store="store"
   :nested="nested"
   :disabled="disabled"
@@ -28,7 +27,6 @@ DitoButtons.dito-edit-buttons(
     :schema="schema"
     :dataPath="dataPath"
     :data="data"
-    :meta="meta"
     :store="store"
     :nested="nested"
     :path="createPath"
@@ -70,7 +68,6 @@ export default DitoComponent.component('DitoEditButtons', {
     formSchema: { type: Object, default: null },
     dataPath: { type: String, required: true },
     data: { type: [Object, Array], default: null },
-    meta: { type: Object, required: true },
     store: { type: Object, required: true },
     nested: { type: Boolean, default: false },
     disabled: { type: Boolean, required: true },
