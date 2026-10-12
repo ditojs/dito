@@ -60,10 +60,10 @@ describe('DitoDateTimePicker', () => {
     await clickAt(wrapper, 1)
     expect(getShownPanel(wrapper)).toBe('date')
     const popup = wrapper.find('.dito-popup')
-    expect(popup.classes()).toContain('dito-popup-bottom-left')
+    expect(popup.classes()).toContain('dito-popup--bottom-left')
     await clickAt(wrapper, text.indexOf('30'))
     expect(getShownPanel(wrapper)).toBe('time')
-    expect(popup.classes()).toContain('dito-popup-bottom-right')
+    expect(popup.classes()).toContain('dito-popup--bottom-right')
   })
 
   it('reopens for the other panel only', async () => {

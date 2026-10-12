@@ -96,7 +96,7 @@ describe('DitoMenuButton keyboard edge cases', () => {
     await findButton(wrapper).trigger('click')
     await flushPromises()
     expect(wrapper.find('.dito-popup').classes()).toContain(
-      'dito-popup-bottom-right'
+      'dito-popup--bottom-right'
     )
     expect(wrapper.classes()).toContain('dito-menu-button--open')
   })
