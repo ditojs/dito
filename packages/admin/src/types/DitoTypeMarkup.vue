@@ -243,12 +243,14 @@ export default DitoTypeComponent.register('markup', {
 
     const onUpdate = () => {
       setValueDebounced()
+      this.dataModel.pendingWrites.add(this.writePendingValue)
       this.onInput()
     }
 
     const setValueDebounced = debounce(() => updateValue(), 100)
-    // Writes the pending edits before unmounting, as the destroyed editor
-    // can't be read anymore, see `beforeUnmount()`:
+    // Writes the pending edits when the data model needs them, e.g. before
+    // submitting, and before unmounting, as the destroyed editor can't be read
+    // anymore, see `beforeUnmount()`:
     this.writePendingValue = () => {
       if (setValueDebounced.cancel()) {
         updateValue()
@@ -256,6 +258,7 @@ export default DitoTypeComponent.register('markup', {
     }
 
     const updateValue = () => {
+      this.dataModel.pendingWrites.delete(this.writePendingValue)
       const content = this.editor.getHTML()
       const value = this.hardBreak
         ? content.replace(/^<p>(.*?)<\/p>$/s, '$1')

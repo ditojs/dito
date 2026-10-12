@@ -176,6 +176,20 @@ describe('DitoTypeMarkup', () => {
     expect(data.body).toBe('<p>Emma!</p>')
   })
 
+  // Edits that don't blur the editor, e.g. links applied through the dialog,
+  // are written debounced, which saving right away mustn't miss.
+  it('submits pending edits', async () => {
+    const { getComponent, submit } = await mountForm({
+      schema: { components: { body: { type: 'markup' } } },
+      data: { body: '<p>Emma</p>' },
+      request: ({ data }) => ({ data })
+    })
+    getComponent('body').editor.commands.setContent('<p>Emma!</p>', {
+      emitUpdate: true
+    })
+    expect(await submit()).toMatchObject({ body: '<p>Emma!</p>' })
+  })
+
   it('applies subscript with `marks.subscript`', async () => {
     const { findField, getComponent, data } = await mountSchema({
       schema: {
