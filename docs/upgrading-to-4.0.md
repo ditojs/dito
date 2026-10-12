@@ -227,7 +227,8 @@ Components without a schema or data of their own, e.g. tabs, scopes, the table
 head, label affixes and the clipboard, give their callbacks the context of the
 component that renders them. Events that bubble up from components, e.g.
 `change`, keep the context of the component that emitted them, with the
-`dataPath` of the changed value.
+`dataPath` of the changed value. Since 4.1, `handlerDataPath` holds the data
+path of the schema whose handler runs, e.g. of the form in its `onChange()`.
 
 - `formComponent.isDirty` and `formComponent.isCreating`: `isDirty` and
   `isCreating`, which is `false` outside of forms.
@@ -389,7 +390,8 @@ once the edit is done:
   field loses focus or Enter is pressed, not for each picked or typed value.
 - `input` bubbles to the schemas above like `change`, with the `dataPath` of
   the edited value, so the `onInput()` of a form sees every edit. Returning
-  `false` from a handler stops it.
+  `false` from a handler stops it. Since 4.1, `handlerDataPath` holds the data
+  path of the schema whose handler runs.
 
 ### Admin context
 

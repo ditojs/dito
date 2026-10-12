@@ -1901,8 +1901,18 @@ export type SchemaContext<$Item = any> = {
   nested: boolean
   /** The current value of the component. */
   value: any
-  /** Full dot-separated path to the current data. */
+  /**
+   * Full dot-separated path to the current data. In event handlers, the path
+   * of the component that emitted the event, e.g. of the changed field in the
+   * `onChange()` of a form.
+   */
   dataPath: string
+  /**
+   * In event handlers, the data path of the schema that declares the handler,
+   * e.g. of the form in its `onChange()`, also when the event bubbled up from
+   * one of its fields. Elsewhere the same as `dataPath`.
+   */
+  handlerDataPath: string
   /** The property name of the current component. */
   name: string
   /**

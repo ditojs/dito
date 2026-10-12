@@ -105,6 +105,12 @@ export default class SchemaContext {
     return get(this, 'dataPath', '')
   }
 
+  // Event handlers see the data path of the schema that declares them, while
+  // `dataPath` is the one of the component that emitted the event:
+  get handlerDataPath() {
+    return get(this, 'handlerDataPath', () => this.dataPath)
+  }
+
   get name() {
     return get(this, 'name', () => getLastDataPathName(this.dataPath))
   }

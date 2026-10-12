@@ -93,6 +93,36 @@ describe('useSchemaEvents()', () => {
     expect(dataPaths).toEqual(['author/name', 'chapters/0/heading'])
   })
 
+  it('passes bubbled changes with the data path of the handler', async () => {
+    const dataPaths = []
+    const onChange = ({ dataPath, handlerDataPath }) => {
+      dataPaths.push([dataPath, handlerDataPath])
+    }
+    const { findField } = await mountSchema({
+      schema: {
+        components: {
+          chapters: {
+            type: 'list',
+            inlined: true,
+            form: {
+              type: 'form',
+              components: { heading: { type: 'text', onChange } },
+              onChange
+            }
+          }
+        },
+        onChange
+      },
+      data: { chapters: [{ heading: 'One' }] }
+    })
+    await enterValue(findField('chapters/0/heading').find('input'), 'I')
+    expect(dataPaths).toEqual([
+      ['chapters/0/heading', 'chapters/0/heading'],
+      ['chapters/0/heading', 'chapters/0'],
+      ['chapters/0/heading', '']
+    ])
+  })
+
   it('logs errors for events that are no functions', async () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     const { findField } = await mountSchema({

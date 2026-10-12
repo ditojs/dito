@@ -35,7 +35,12 @@ export function useSchemaEvents(
 ): SchemaEventsEmitter {
   const parent = inject(schemaEventsKey, null)
   const events = computed(
-    () => new SchemaEvents(getSchema(), isolated() ? null : parent?.events)
+    () =>
+      new SchemaEvents(
+        getSchema(),
+        createContext().dataPath,
+        isolated() ? null : parent?.events
+      )
   )
   return {
     get events() {

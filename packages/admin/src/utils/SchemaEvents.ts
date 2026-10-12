@@ -8,10 +8,16 @@ type Callback = (context: Context) => any
 // `input` and `change` events bubble to the schemas above, unless handlers
 // return `false`:
 export class SchemaEvents {
+  readonly dataPath: string
   readonly parent: SchemaEvents | null
   readonly #callbacks: Record<string, Callback[]> = {}
 
-  constructor(schema: Schema, parent: SchemaEvents | null = null) {
+  constructor(
+    schema: Schema,
+    dataPath: string,
+    parent: SchemaEvents | null = null
+  ) {
+    this.dataPath = dataPath
     this.parent = parent
     for (const { key, event, callback } of getSchemaEventEntries(schema)) {
       if (isFunction(callback)) {
@@ -37,9 +43,11 @@ export class SchemaEvents {
   ): Promise<any> {
     let result
     const errors = []
+    // Handlers of bubbled events also need the data path of their own schema:
+    const handlerContext = context.extend({ handlerDataPath: this.dataPath })
     for (const callback of this.#callbacks[event] ?? []) {
       try {
-        const callbackResult = await callback(context)
+        const callbackResult = await callback(handlerContext)
         if (callbackResult !== undefined) {
           result = callbackResult
         }
