@@ -1,6 +1,7 @@
 <template lang="pug">
 .dito-code(
   :id="componentPath"
+  ref="element"
   :style="style"
 )
   .dito-code__editor(ref="editor")

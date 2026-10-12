@@ -4,7 +4,7 @@ import { LoadingTracker } from './LoadingTracker.ts'
 import { UiRegistry } from './UiRegistry.ts'
 import { flattenViews } from './schema/setup.js'
 import type { RouteTree } from './RouteTree.ts'
-import type { Session } from './Session.js'
+import type { Session } from './Session.ts'
 import type { ViewRegistry } from './ViewRegistry.js'
 import type { Api, Schema } from './types.ts'
 

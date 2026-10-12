@@ -2,6 +2,7 @@
 .dito-list(
   v-if="isReady"
   :id="componentPath"
+  ref="element"
   role="region"
   :aria-label="label || labelize(schema.name)"
 )

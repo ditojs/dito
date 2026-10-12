@@ -1,15 +1,9 @@
-import {
-  getCurrentInstance,
-  onBeforeMount,
-  onUnmounted,
-  useTemplateRef,
-  type Ref
-} from 'vue'
+import { onBeforeMount, onUnmounted, useTemplateRef, type Ref } from 'vue'
 import { asArray } from '@ditojs/utils'
 import type { Services } from '../utils/services.ts'
 
 export interface FocusOptions {
-  // By default, the element with the template ref `element`, or the root:
+  // By default, the element with the template ref `element` is focused:
   focusElement?: () => void
   blurElement?: () => void
 }
@@ -19,32 +13,23 @@ export function useFocus(
   componentPath: Ref<string>,
   { focusElement, blurElement }: FocusOptions = {}
 ) {
-  const component = getCurrentInstance()!.proxy!
+  // The element, or a component that focuses its own, like `DitoInput`:
   const element = useTemplateRef<any>('element')
-
-  const getElement = () => asArray(element.value)[0] ?? null
-
-  // Components without the element, e.g. sources, focus their root element:
-  const getFocusElement = () => {
-    const target = getElement() ?? component
-    return target.$el ?? target
+  const getTarget = () => asArray(element.value)[0] ?? null
+  const getElement = () => {
+    const target = getTarget()
+    return target?.$el ?? target
   }
 
-  // Prefer the methods of components, like `DitoInput` focusing its input:
-  const getFocusTarget = (method: 'focus' | 'blur') => {
-    const target = getElement()
-    return target?.[method] ? target : getFocusElement()
-  }
-
-  focusElement ??= () => getFocusTarget('focus')?.focus?.()
-  blurElement ??= () => getFocusTarget('blur')?.blur?.()
+  focusElement ??= () => getTarget()?.focus?.()
+  blurElement ??= () => getTarget()?.blur?.()
 
   let unregister: () => void
   onBeforeMount(() => {
     unregister = adminContext.ui.register(() => componentPath.value, {
       dataContext,
       focus() {
-        getFocusElement()?.scrollIntoView?.({
+        getElement()?.scrollIntoView?.({
           behavior: 'smooth',
           block: 'center'
         })

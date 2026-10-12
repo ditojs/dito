@@ -32,12 +32,6 @@ import {
   getItemFormSchemaFromForms
 } from './lookup.js'
 
-/** @import { Schema, Data, SchemaDataWalk } from '../types.ts' */
-
-/**
- * @param {string | string[]} keyOrDataPath
- * @param {Record<string, any>} [options]
- */
 export function getSchemaValue(
   keyOrDataPath,
   { type, schema, callback = true, default: def, context } = {}
@@ -196,12 +190,6 @@ export function shouldSetDefaultValue(schema, data, name, context, {
 
 // Set missing values to their defaults to watch them for changes, and number
 // list items by their order key to store their order even if it never changes.
-/**
- * @param {Schema} schema
- * @param {Data} [data]
- * @param {object | null} [services]
- * @param {Record<string, any>} [options]
- */
 export function initializeData(schema, data = {}, services, {
   dataPath = null,
   rootData = data,
@@ -248,13 +236,6 @@ export function initializeData(schema, data = {}, services, {
 
 // Never write into `data`, as `DataModel` writes the computed values. Functions
 // in `dataPath` are only called by computes that read it, e.g. through `index`.
-/**
- * @param {Schema} schema
- * @param {Data} data
- * @param {string} name
- * @param {string | (() => string)} dataPath
- * @param {Record<string, any>} [options]
- */
 export function computeValue(schema, data, name, dataPath, {
   services = null,
   rootData = null,
@@ -422,11 +403,6 @@ export function processData(schema, sourceSchema, data, dataPath, {
 // child sources, and call `before()` and `after()` for each nested component.
 // NOTE: Items with an item adapter are walked wrapped, and the wrapped value
 // keeps the item's data path. Writes into them don't reach the data.
-/**
- * @param {Schema} schema
- * @param {Data} data
- * @param {SchemaDataWalk} walk
- */
 export function processSchemaData(schema, data, {
   dataPath = null,
   componentPath = '',
@@ -617,12 +593,6 @@ export function processSchemaData(schema, data, {
 // Walk the rendered components to the deepest one containing `dataPath`, e.g.
 // `main/chapters/1` for `chapters/1` in the tab `main`. Of several components
 // that display the same data, the first in schema order wins.
-/**
- * @param {Schema} schema
- * @param {Data | null} data
- * @param {string} dataPath
- * @param {Record<string, any>} [options]
- */
 export function getComponentPathByDataPath(schema, data, dataPath, {
   dataPath: itemDataPath = '',
   componentPath = '',

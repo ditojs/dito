@@ -1,32 +1,48 @@
 import { shallowRef } from 'vue'
 import AdminUser from '../AdminUser.js'
+import type { ViewRegistry } from './ViewRegistry.js'
+import type { NotifyOptions } from './AdminContext.ts'
+import type { Api } from './types.ts'
+
+type User = Record<string, any>
+
+interface UserInterface {
+  requestLoginData(): Promise<Record<string, any> | null>
+  notify(options: NotifyOptions): void
+}
 
 // The views depend on the user, so we resolve them for each login and clear
 // them once the user is logged out.
 
 export class Session {
-  #api
-  #viewRegistry
-  #redirectAfterLogin
-  #userInterface = null
-  /** @type {import('vue').ShallowRef<Record<string, any> | null>} */
-  #user = shallowRef(null)
+  readonly #api: Api
+  readonly #viewRegistry: ViewRegistry
+  readonly #redirectAfterLogin: string | null
+  #userInterface: UserInterface | null = null
+  readonly #user = shallowRef<User | null>(null)
   // The responses of `request({ cache: 'global' })`, kept for the same user:
-  /** @type {Record<string, Promise<any>>} */
-  loadCache = {}
+  loadCache: Record<string, Promise<any>> = {}
 
-  constructor({ api, viewRegistry, redirectAfterLogin = null }) {
+  constructor({
+    api,
+    viewRegistry,
+    redirectAfterLogin = null
+  }: {
+    api: Api
+    viewRegistry: ViewRegistry
+    redirectAfterLogin?: string | null
+  }) {
     this.#api = api
     this.#viewRegistry = viewRegistry
     this.#redirectAfterLogin = redirectAfterLogin
   }
 
-  get user() {
+  get user(): User | null {
     return this.#user.value
   }
 
   // `requestLoginData()` returns the credentials, or `null` when cancelled.
-  attachUserInterface({ requestLoginData, notify }) {
+  attachUserInterface({ requestLoginData, notify }: UserInterface) {
     const userInterface = { requestLoginData, notify }
     this.#userInterface = userInterface
     return () => {
@@ -45,7 +61,7 @@ export class Session {
   }
 
   // Ask again after each failure, until it succeeds or the user cancels:
-  async login() {
+  async login(): Promise<User | null> {
     const loginData = await this.#userInterface?.requestLoginData()
     if (!loginData) {
       return null
@@ -79,7 +95,7 @@ export class Session {
   }
 
   async fetchUser() {
-    let user = null
+    let user: User | null = null
     try {
       const response = await this.#request(this.#api.users.session)
       user = response.data.user || null
@@ -96,7 +112,7 @@ export class Session {
     }
   }
 
-  #setUser(user) {
+  #setUser(user: User | null) {
     if (!user || user.id !== this.user?.id) {
       this.loadCache = {}
     }
@@ -114,12 +130,12 @@ export class Session {
     }
   }
 
-  #request(resource, data = null) {
+  #request(resource: any, data: any = null) {
     const url = this.#api.getApiUrl({ url: this.#api.resources.any(resource) })
-    return this.#api.request({ method: resource.method, url, data })
+    return this.#api.request<any>({ method: resource.method, url, data })
   }
 
-  #notifyError(error) {
+  #notifyError(error: any) {
     const responseError = error.response?.data?.error || error
     if (this.#userInterface) {
       this.#userInterface.notify({

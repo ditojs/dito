@@ -1,5 +1,6 @@
 <template lang="pug">
 DitoLabel.dito-label-component(
+  ref="element"
   :label="value"
   :context="context"
 )
