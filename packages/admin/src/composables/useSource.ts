@@ -14,7 +14,11 @@ import { ItemStores } from '../utils/ItemStores.js'
 import { ListQuery } from '../utils/ListQuery.js'
 import { appendDataPath, getRelativeDataPath } from '../utils/data.js'
 import { confirmAndRemove } from '../utils/dialogs.js'
-import { getResource, getMemberResource } from '../utils/resource.js'
+import {
+  getResource,
+  getMemberResource,
+  hasResource
+} from '../utils/resource.js'
 import {
   ResourceContext,
   type SubmitButton
@@ -52,14 +56,21 @@ export function useSource(
 ) {
   // Sources emit their `load` event through the schema that renders them:
   const schemaEvents = inject<SchemaEventsEmitter>('schemaEvents')!
+  // Sources without a resource continue the one around them:
+  const resourceContext = hasResource(props.schema)
+    ? markRaw(
+        new ResourceContext({
+          getResource: options => requests.getResource(options),
+          submit: button => submit(button)
+        })
+      )
+    : null
   const services = useServices({
     get sourceContext() {
       return sourceContext
     },
 
-    get resourceContext() {
-      return resourceContext
-    }
+    ...(resourceContext && { resourceContext })
   })
   const { adminContext, routeContext } = services
   const { router } = adminContext
@@ -346,7 +357,7 @@ export function useSource(
   }
 
   // Submit the data of the source to the resource of the button:
-  const submit = async (button: SubmitButton) => {
+  const submitData = async (button: SubmitButton) => {
     // Wait for the data that's still loading, e.g. uploads, like forms do:
     await waitUntilDataModelSettled(services)
     const model = getModel()
@@ -375,6 +386,10 @@ export function useSource(
     }
     return false
   }
+
+  // Leaving the route waits for pending submits:
+  const submit = (button: SubmitButton) =>
+    getModel().trackPendingSubmit(submitData(button))
 
   const render = computed(() =>
     getSchemaValue('render', { type: Function, default: null })
@@ -422,18 +437,6 @@ export function useSource(
     )
   )
 
-  const resourceContext = markRaw(
-    new ResourceContext(
-      reactive({
-        verbs: requests.verbs,
-        dataModel: computed(getModel),
-        getResource: requests.getResource,
-        submit
-      }),
-      { routeContext }
-    )
-  )
-
   const sourceContext: SourceContext = reactive({
     schema: toRef(props, 'schema'),
     node: sourceNode,
@@ -446,11 +449,15 @@ export function useSource(
     createItem,
     getSourceItemLabel,
     reload: reloadData,
+    submit,
+    verbs: requests.verbs,
     resourceContext
   })
 
   provide('sourceContext', sourceContext)
-  provide('resourceContext', resourceContext)
+  if (resourceContext) {
+    provide('resourceContext', resourceContext)
+  }
   routeContext?.registerSource(sourceContext, true)
   onUnmounted(() => routeContext?.registerSource(sourceContext, false))
 

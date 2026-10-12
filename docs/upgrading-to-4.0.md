@@ -308,11 +308,12 @@ them through two contexts, instead of components:
   `revealErrors()`, `markEdited()` and `replaceItem()`. Dialogs add
   `close(value)`.
 - `routeContext`, provided by views and forms: its `parent` route,
-  `dataContext`, the
-  `schema`, `dataPath`, `rootData` and `componentPath` of the data that it
-  renders, `loadingTracker`, `level`, `isForm`, `state`, `path`,
-  `isLastRoute`, `selectedTab`, the `resourceContext` of forms, `getFormRoute()`,
-  `getFormPath()`, `getCreatePath()`, and `close()` for forms.
+  `dataContext`, the `schema`, `dataPath`, `rootData` and `componentPath` of
+  the data that it renders, `loadingTracker`, `level`, `isForm`, `state`,
+  `path`, `isLastRoute`, `selectedTab`, `verbs`, the `resourceContext` of
+  forms, `getFormRoute()`, `getFormPath()`, `getCreatePath()`, and `close()`
+  and `submit(button)` for forms, which save their data through their
+  resource or apply it to their parent.
 
 `routeComponent`, `formComponent`, `viewComponent`, `parentRouteComponent`,
 `parentFormComponent`, `dataModelComponent`, `dialogComponent` and
@@ -320,13 +321,13 @@ them through two contexts, instead of components:
 `$dataModelComponent`, `$dialogComponent` and `$panelComponent` injects:
 
 - `routeComponent.routeLevel`: `routeContext.level`.
-- `routeComponent.getFormRoute()` and `getCreatePath()`: `routeContext.getFormRoute()`
-  and `routeContext.getCreatePath()`.
+- `routeComponent.getFormRoute()` and `getCreatePath()`:
+  `routeContext.getFormRoute()` and `routeContext.getCreatePath()`.
 - `parentRouteComponent.dataModel`: `routeContext.parent.dataContext.model`.
 - `viewComponent.viewSchema`: `viewComponent.schema`, the schema that the view
   renders. The view's own schema is its `sourceSchema`.
-- The `$loadingTracker` inject is removed: `routeContext.loadingTracker`, the tracker
-  of the view, or `adminContext.loadingTracker` outside of views.
+- The `$loadingTracker` inject is removed: `routeContext.loadingTracker`, the
+  tracker of the view, or `adminContext.loadingTracker` outside of views.
 - `dialogComponent.resolve(value)`: `dataContext.close(value)`.
 - Route records no longer have `meta.schema`: views and forms take their
   schemas from their node in the route tree.
@@ -338,36 +339,43 @@ contexts:
 
 - `sourceContext`, provided by lists, objects and trees to the components that
   display them and their items: `schema`, `query`, `dataPath`,
-  `componentPath`, `store`, `isDisabled`, `createItem()` and `reload()`.
-  Forms don't continue the source of their parent, e.g. the forms of tree
-  items, whose `listQuery` was the tree's query.
-- `resource`, provided by forms and sources, also without a resource of their
-  own: its `parent`, `resourceOwner`, `verbs`, `getResource()` and
-  `submit(button)`. Resources continue the one of the form that renders the
-  source, or of the parent form of forms. The forms of tree items no longer
-  continue the resource of the tree, which resolved their item at
-  `pages/pages/1` instead of `pages/1`. Lists in the items of inlined lists
-  resolve their relative resources against the form too, like the lists next
-  to them, instead of against the API root.
+  `componentPath`, `store`, `isDisabled`, `verbs`, `createItem()`, `reload()`,
+  `submit(button)` and their `resourceContext`. Forms don't continue the
+  source of their parent, e.g. the forms of tree items, whose `listQuery` was
+  the tree's query.
+- `resourceContext`, provided only by forms and sources with a resource of
+  their own: `getResource()` and `submit(button)`. Components see the nearest
+  one, e.g. in an inlined list of a form the form's, and resolve their
+  relative resources against it. The resources of sources continue the one of
+  their route, of forms the one of their parent route: forms without a
+  resource continue the one of the nearest form above with a resource. The
+  forms of tree items no longer continue the resource of the tree, which
+  resolved their item at `pages/pages/1` instead of `pages/1`. Lists in the
+  items of inlined lists resolve their relative resources against the form
+  too, like the lists next to them, instead of against the API root.
+- Buttons submit through their source, or else to their form, which saves
+  its data through its resource or applies it to its parent. The verbs of
+  forms and sources, e.g. `apply` and `remove` in nested data, belong to
+  them, not to resources.
 
 Views provide both contexts of their main component, e.g. to their panels.
 `sourceComponent`, `resourceComponent`, `dataComponent` and
 `parentResourceComponent` are removed, along with the `$sourceComponent`,
 `$resourceComponent`, `$dataComponent`, `$verbs` and `$isPopulated` injects:
 
-- `sourceComponent.query`: `sourceContext.query`. `sourceComponent.createItem()`:
-  `sourceContext.createItem()`.
+- `sourceComponent.query`: `sourceContext.query`.
+  `sourceComponent.createItem()`: `sourceContext.createItem()`.
 - `resourceComponent.resource`, the `resource` of forms and sources:
-  `resource.getResource()`. `resourceComponent.submit(button)`:
-  `resource.submit(button)`.
-- `dataComponent`: `resource.resourceOwner`. The components in sources
-  with a resource read the root data of their route, like all others.
+  `resourceContext.getResource()`. `resourceComponent.submit(button)`:
+  `routeContext.submit(button)` in forms and `sourceContext.submit(button)` in
+  sources.
+- `dataComponent`: `resourceContext`. The components in sources with a
+  resource read the root data of their route, like all others.
 - `isPopulated`: `dataContext.hasData`.
 - `sourceSchema` is only defined by views, forms and `DitoSchema`, which
   injects it from the view, form or source item that renders it. In views,
   the components outside of the main component keep the view's schema. Forms
-  don't see a `source` in their own callbacks either. `source.resource` is
-  the resource of the source.
+  don't see a `sourceContext` in their own callbacks either.
 - `getFormPath()` of sources: `routeContext.getFormPath()`.
 - The `meta` prop of the components and types is removed, along with
   `nestedMeta`.
@@ -377,8 +385,8 @@ Views provide both contexts of their main component, e.g. to their panels.
 - `DitoScopes`, `DitoPagination` and `DitoTableHead` take the `ListQuery` of
   their list as `listQuery` instead of `query`. `DitoSourceItem` takes the
   `formSchema` and `label` of the item from its source.
-- `resource.submit(button)` takes the `SubmitButton` that buttons pass, not
-  the button's component. Handlers keep using `context.submit()`.
+- `submit(button)` takes the `SubmitButton` that buttons pass, not the
+  button's component. Handlers keep using `context.submit()`.
 - `SourceMixin`, `ResourceMixin` and `ItemMixin` are removed: sources and
   forms are built from composables. The deprecated `setLoading()` of views,
   forms and sources is removed, use `loadingTracker.begin()` or `track()`.

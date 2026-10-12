@@ -44,9 +44,10 @@ export function getRootData({ dataContext, routeContext }: Services) {
 
 // Forms and sources have their own verbs, e.g. `apply` in nested data:
 export function getVerbs({
-  resourceContext
+  sourceContext,
+  routeContext
 }: Services): Record<string, string> {
-  return resourceContext?.verbs ?? defaultVerbs
+  return (sourceContext ?? routeContext)?.verbs ?? defaultVerbs
 }
 
 // Wait until the data model wrote its derived values and finished its loads,
@@ -66,14 +67,13 @@ export function getResourceUrl(
   { adminContext, resourceContext }: Services,
   resource: Resource
 ): string | null {
-  // Resources without a parent continue the closest form's or source's:
-  const parent = resourceContext?.resourceOwner
+  // Resources without a parent continue the nearest form's or source's:
   const url = adminContext.api.resources.any(
     getResource(resource, {
-      parent: (
-        parent?.getResource({ method: resource.method, child: resource }) ??
-        null
-      )
+      parent: resourceContext?.getResource({
+        method: resource.method,
+        child: resource
+      }) ?? null
     })
   )
   return url

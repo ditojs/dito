@@ -75,7 +75,7 @@ import {
 import { useSchemaValue } from '../composables/useSchemaValue.ts'
 import { useComponentPath } from '../composables/useComponentPath.ts'
 import { waitUntilDataModelSettled } from '../utils/services.ts'
-import { getResource } from '../utils/resource.js'
+import { getResource, hasResource } from '../utils/resource.js'
 import { ResourceContext } from '../utils/ResourceContext.ts'
 import { isListSource, isObjectSource } from '../utils/schema/structure.js'
 import {
@@ -324,7 +324,9 @@ export default {
 
         get ownResourceContext() {
           return ownResourceContext
-        }
+        },
+
+        submit: (button, options) => submit(button, options)
       })
     )
     const {
@@ -334,16 +336,23 @@ export default {
       routeParams,
       navigateWithin
     } = routeContainer
+    // Forms without a resource of their own continue the one around them, and
+    // apply their data to their parent:
+    const ownResourceContext = hasResource(sourceSchema.value)
+      ? markRaw(
+          new ResourceContext({
+            getResource: options => requests.getResource(options),
+            submit: (button, options) => submit(button, options)
+          })
+        )
+      : null
     // The components of the form don't see the source of its parent, e.g. of
     // a tree that renders the forms of its items:
     const { services, createDataModel } = useContainer({
       dataContext: ownDataContext,
       routeContext: ownRouteContext,
       sourceContext: null,
-
-      get resourceContext() {
-        return ownResourceContext
-      }
+      ...(ownResourceContext && { resourceContext: ownResourceContext })
     })
     const { context } = useSchemaContext(reactive({ schema, data, dataPath }), {
       services
@@ -516,7 +525,7 @@ export default {
       return success
     }
 
-    const submit = async (button, {
+    const submitData = async (button, {
       validate = true,
       closeForm = false
     } = {}) => {
@@ -627,23 +636,15 @@ export default {
       return success
     }
 
-    const ownResourceContext = markRaw(
-      new ResourceContext(
-        reactive({
-          verbs,
-          getResource: requests.getResource,
-          submit,
+    // Leaving the route waits for pending submits:
+    const submit = (button, options) =>
+      getDataModel().trackPendingSubmit(submitData(button, options))
 
-          get dataModel() {
-            return getDataModel()
-          }
-        }),
-        { routeContext: parentRouteContext }
-      )
-    )
     provide('sourceSchema', sourceSchema)
     provide('sourceContext', null)
-    provide('resourceContext', ownResourceContext)
+    if (ownResourceContext) {
+      provide('resourceContext', ownResourceContext)
+    }
 
     // Set up the data before the model, which writes into it:
     if (providesData.value || isCreating.value) {

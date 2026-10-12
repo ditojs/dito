@@ -227,7 +227,7 @@ const DitoTypeUpload = {
 
     // Views without resource can't upload, see `api.resources.upload()`:
     const uploadPath = computed(() =>
-      services.resourceContext?.resourceOwner
+      services.resourceContext
         ? getResourceUrl(services, {
             type: 'upload',
             method: 'post',

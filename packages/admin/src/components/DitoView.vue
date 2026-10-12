@@ -44,7 +44,7 @@ import {
 import { useSchemaValue } from '../composables/useSchemaValue.ts'
 import { useComponentPath } from '../composables/useComponentPath.ts'
 import { useStore } from '../composables/useStore.ts'
-import { getVerbs } from '../utils/services.ts'
+import defaultVerbs from '../verbs.js'
 import { isSingleComponentView } from '../utils/schema/structure.js'
 import { LoadingTracker } from '../utils/LoadingTracker.ts'
 
@@ -106,7 +106,7 @@ export default {
         breadcrumb: computed(
           () => schema.value.breadcrumb || getLabel(schema.value)
         ),
-        verbs: computed(() => getVerbs(services)),
+        verbs: defaultVerbs,
 
         get dataModel() {
           return dataModel

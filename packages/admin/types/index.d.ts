@@ -2410,8 +2410,14 @@ export interface RouteContext {
   /** The name of the selected tab, `null` without tabs. */
   readonly selectedTab: string | null
   /**
-   * The resource of forms, which the resources of their components and
-   * nested forms continue, `null` in views.
+   * Action verb labels of the form, with the transient ones in nested data,
+   * e.g. `apply`.
+   */
+  readonly verbs: Record<string, string>
+  /**
+   * The resource of the form, or else of the nearest form above with a
+   * resource, which the resources of its components and nested forms
+   * continue, `null` in views.
    */
   readonly resourceContext: ResourceContext | null
   /**
@@ -2435,6 +2441,15 @@ export interface RouteContext {
    * views.
    */
   close(): Promise<unknown>
+  /**
+   * Submits the data of the form through `button`: forms with a resource
+   * save it, the others apply it to their parent. Resolves with whether it
+   * succeeded. Throws for views.
+   */
+  submit(
+    button: SubmitButton,
+    options?: { validate?: boolean; closeForm?: boolean }
+  ): Promise<boolean>
 }
 
 /**
@@ -2469,32 +2484,31 @@ export interface SourceContext {
   getSourceItemLabel(item: any, index?: number | null): any
   /** Loads the data of the source again, e.g. after its item was saved. */
   reload(): void
-  /** The resource of the source, see {@link ResourceContext}. */
-  readonly resourceContext: ResourceContext
-}
-
-/**
- * The context of a form or source, provided to the components that it
- * renders as `resourceContext`, also when it has no resource of its own, e.g.
- * in nested data. Its members are reactive.
- */
-export interface ResourceContext {
   /**
-   * The context that the resource continues: the one of the form that
-   * renders the form or source, or of the parent form of forms, `null` in
-   * views.
+   * Submits the data of the source through `button`, to the resource of the
+   * button, continuing the one of the source. Resolves with whether it
+   * succeeded.
    */
-  readonly parent: ResourceContext | null
-  /**
-   * The context itself if it has a resource, or else the closest one above
-   * with a resource, which loads the data that its components display.
-   */
-  readonly resourceOwner: ResourceContext | null
+  submit(button: SubmitButton): Promise<boolean>
   /** Action verb labels, with the transient ones in nested data. */
   readonly verbs: Record<string, string>
   /**
-   * Returns the resource of the form or source, `null` if it has none: of
-   * the item of forms, and the collection of sources.
+   * The resource of the source, `null` without a resource of its own, see
+   * {@link ResourceContext}.
+   */
+  readonly resourceContext: ResourceContext | null
+}
+
+/**
+ * The context of a form or source with a resource of its own, provided to the
+ * components that it renders as `resourceContext`. Components see the nearest
+ * one, e.g. the one of the form in its inlined lists, which loads the data that
+ * they display.
+ */
+export interface ResourceContext {
+  /**
+   * Returns the resource of the form or source: of the item of forms, and the
+   * collection of sources.
    */
   getResource(options?: {
     method?: HTTPMethod

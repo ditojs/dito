@@ -1,5 +1,5 @@
 import type { SourceNode } from './RouteTree.ts'
-import type { ResourceContext } from './ResourceContext.ts'
+import type { ResourceContext, SubmitButton } from './ResourceContext.ts'
 import type { ListQuery } from './ListQuery.js'
 import type { Schema } from './types.ts'
 
@@ -17,6 +17,10 @@ export interface SourceContext {
   // Each item reads its own label, so that edits only update theirs:
   getSourceItemLabel(item: any, index?: number | null): any
   reload(): void
-  // Views provide the resource of their main source:
-  readonly resourceContext: ResourceContext
+  // Through the resource of the source or of the button:
+  submit(button: SubmitButton): Promise<boolean>
+  // The transient verbs of sources in nested data, e.g. `remove`:
+  readonly verbs: Record<string, string>
+  // Only sources with a resource of their own have it:
+  readonly resourceContext: ResourceContext | null
 }

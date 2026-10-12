@@ -10,7 +10,11 @@ import {
 } from './RouteTree.ts'
 import type { DataContext } from './DataContext.ts'
 import type { LoadingTracker } from './LoadingTracker.ts'
-import type { ResourceContext } from './ResourceContext.ts'
+import type {
+  ResourceContext,
+  SubmitButton,
+  SubmitOptions
+} from './ResourceContext.ts'
 import type { SourceContext } from './SourceContext.ts'
 import type { Schema } from './types.ts'
 
@@ -31,7 +35,10 @@ export interface RouteOwner {
   readonly isDirty: boolean
   readonly breadcrumb: string
   readonly selectedTab?: string | null
+  readonly verbs: Record<string, string>
+  // Forms with a resource of their own:
   readonly ownResourceContext?: ResourceContext | null
+  submit?(button: SubmitButton, options?: SubmitOptions): Promise<boolean>
 }
 
 export class RouteContext {
@@ -126,8 +133,17 @@ export class RouteContext {
     return this.#owner.selectedTab ?? null
   }
 
+  get verbs(): Record<string, string> {
+    return this.#owner.verbs
+  }
+
+  // Forms without a resource of their own continue the one of their parent:
   get resourceContext(): ResourceContext | null {
-    return this.#owner.ownResourceContext ?? null
+    return (
+      this.#owner.ownResourceContext ??
+      this.parent?.resourceContext ??
+      null
+    )
   }
 
   getFormRoute(dataPath: string): { path: string; dataPath: string } | null {
@@ -175,5 +191,13 @@ export class RouteContext {
       throw new Error('Unable to close the route: Views cannot be closed.')
     }
     return this.#router.push(this.parent.path)
+  }
+
+  // Forms apply their data to their parent, or save it through their resource:
+  submit(button: SubmitButton, options?: SubmitOptions): Promise<boolean> {
+    if (!this.#owner.submit) {
+      throw new Error('Unable to submit the route: Views cannot be submitted.')
+    }
+    return this.#owner.submit(button, options)
   }
 }
