@@ -59,7 +59,7 @@ describe('DitoTypeDate', () => {
 
   it('sends dates as plain dates and date-times as ISO strings', async () => {
     const createdAt = new Date(2026, 4, 14, 8, 0)
-    const { findField, getComponent, submit } = await mountForm({
+    const { findField, dataModel, data, submit } = await mountForm({
       schema: {
         components: {
           publishedOn: { type: 'date' },
@@ -70,7 +70,7 @@ describe('DitoTypeDate', () => {
       request: ({ data }) => ({ data })
     })
     await enterValue(findField('publishedOn').find('input'), 'May 14, 2026')
-    getComponent('createdAt').value = createdAt
+    dataModel.set(data, 'createdAt', createdAt)
     expect(await submit()).toMatchObject({
       publishedOn: '2026-05-14',
       createdAt: createdAt.toISOString()

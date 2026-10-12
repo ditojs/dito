@@ -26,24 +26,14 @@
 
 <script>
 import DitoComponent from '../DitoComponent.js'
-import ContextMixin from '../mixins/ContextMixin.js'
 
 // @vue/component
 export default DitoComponent.component('DitoPanels', {
-  mixins: [ContextMixin],
-
   props: {
     panels: { type: Array, default: null },
     data: { type: Object, required: true },
     store: { type: Object, required: true },
     disabled: { type: Boolean, required: true }
-  },
-
-  computed: {
-    nested() {
-      // For `ContextMixin`:
-      return false
-    }
   },
 
   methods: {

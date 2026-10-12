@@ -26,6 +26,24 @@ async function mountWidths(widths, schema = {}) {
 }
 
 describe('DitoContainer', () => {
+  it('evaluates its schema values with the value that the type displays', async () => {
+    const { findContainer } = await mountSchema({
+      schema: {
+        components: {
+          title: {
+            type: 'text',
+            format: ({ value }) => value.toUpperCase(),
+            label: ({ value, name, item }) => `${name} of ${item.id}: ${value}`
+          }
+        }
+      },
+      data: { id: 1, title: 'emma' }
+    })
+    expect(findContainer('title').find('.dito-label').text()).toBe(
+      'title of 1: EMMA'
+    )
+  })
+
   it('sizes containers by numbers, percentages and fractions', async () => {
     const [number, percentage, fraction] = await mountWidths([
       0.5,

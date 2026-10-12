@@ -107,7 +107,7 @@ export function getDataValidationErrors(schema, data, {
     const context = createContext(entry)
     let value = data[name]
     // Validate the value as displayed, like the components do, see
-    // `ValueMixin.value`:
+    // `useValue()`:
     const { format } = schema
     if (isFunction(format)) {
       value = format(context)

@@ -1,0 +1,101 @@
+import { inject, unref, type MaybeRef } from 'vue'
+import DitoContext from '../DitoContext.js'
+import type { AdminContext } from '../utils/AdminContext.ts'
+import type { ContainerContext } from '../utils/ContainerContext.ts'
+import type { ResourceContext } from '../utils/ResourceContext.ts'
+import type { RouteContext } from '../utils/RouteContext.ts'
+import type { SourceContext } from '../utils/SourceContext.ts'
+import type { Context } from '../utils/schema/types.ts'
+import type { Services } from '../utils/services.ts'
+import type { Data, Schema } from '../utils/types.ts'
+
+export interface SchemaContextProps {
+  readonly schema: Schema
+  readonly data: Data
+  readonly dataPath: string
+  readonly nested: boolean
+}
+
+// The contexts that the callbacks of the component see: the ones provided
+// above, unless the component owns them, e.g. sources their own source.
+export function useServices(ownServices: Partial<Services> = {}): Services {
+  // Views provide the source and resource of their main component as computed
+  // refs, see `DitoView`:
+  const source = inject<MaybeRef<SourceContext | null>>('source', null)
+  const resource = inject<MaybeRef<ResourceContext | null>>('resource', null)
+  return Object.defineProperties(
+    {
+      admin: inject<AdminContext>('admin')!,
+      container: inject<ContainerContext | null>('container', null),
+      route: inject<RouteContext | null>('route', null),
+
+      get source() {
+        return unref(source)
+      },
+
+      get resource() {
+        return unref(resource)
+      }
+    },
+    Object.getOwnPropertyDescriptors(ownServices)
+  )
+}
+
+// The context of a component that displays the value at `schema.name` in
+// `data`, built from its props and services. `getValue()` returns the value
+// that the component displays, e.g. after `format()`.
+export function useSchemaContext(
+  props: SchemaContextProps,
+  {
+    services = useServices(),
+    getValue = null
+  }: { services?: Services; getValue?: (() => any) | null } = {}
+) {
+  // Create a context with `values` that add to or override the component's,
+  // e.g. the `value` of an event. It reads the props when they're used:
+  const createContext = (values: Record<string, any> = {}): Context =>
+    new DitoContext(services, () =>
+      Object.defineProperties(
+        {
+          get schema() {
+            return props.schema
+          },
+
+          get name() {
+            return props.schema.name
+          },
+
+          get nested() {
+            return props.nested
+          },
+
+          get data() {
+            return props.data
+          },
+
+          get dataPath() {
+            return props.dataPath
+          },
+
+          get rootData() {
+            const { container, route } = services
+            return container?.model.rootData ?? route?.rootData ?? null
+          }
+        },
+        {
+          ...(getValue && {
+            value: { get: getValue, enumerable: true, configurable: true }
+          }),
+          ...Object.getOwnPropertyDescriptors(values)
+        }
+      )
+    )
+
+  return {
+    context: createContext(),
+    createContext,
+    services
+  }
+}
+
+export type SchemaContext = ReturnType<typeof useSchemaContext>

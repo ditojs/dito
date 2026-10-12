@@ -1,6 +1,6 @@
 <template lang="pug">
 //- The input of the container refers to the errors by `id` through
-//- `aria-describedby`, see `TypeMixin.attributes`.
+//- `aria-describedby`, see `useField()`.
 .dito-errors(
   v-if="errors"
   :id="id"

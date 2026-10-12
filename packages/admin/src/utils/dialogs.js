@@ -1,9 +1,10 @@
 // Confirmations, built on the promise-based and focus-trapped dialogs of
-// `DitoRoot.showDialog()`. `component` is the Dito component that asks, for
-// its `admin` and `verbs`, see `DitoMixin`.
+// `DitoRoot.showDialog()`. `services` are the ones of the component that asks,
+// for the `admin` and the verbs of the `resource`, see `Services`.
 import { labelize } from '@ditojs/utils'
 import DitoConfirmMessage from '../components/DitoConfirmMessage.vue'
 import { getTextFromHtml } from './html.js'
+import defaultVerbs from '../verbs.js'
 
 export const transientNote = (
   '<b>Note</b>: the parent still needs to be saved ' +
@@ -12,8 +13,8 @@ export const transientNote = (
 
 // Asks the user to confirm the HTML `message` with a button for `verb`, and
 // resolves to whether they did. Cancel comes first, to be focused first.
-export async function confirm(component, { message, verb }) {
-  const result = await component.admin.showDialog(
+export async function confirm({ admin }, { message, verb }) {
+  const result = await admin.showDialog(
     {
       components: {
         message: {
@@ -42,19 +43,19 @@ export async function confirm(component, { message, verb }) {
 // removal. Transient removals still need the parent to be saved, so they are
 // confirmed with the verbs for removing instead of deleting, and note that.
 export async function confirmAndRemove(
-  component,
+  services,
   { label, isTransient, remove }
 ) {
-  const { verbs } = component
+  const verbs = services.resource?.verbs ?? defaultVerbs
   const [verb, pastVerb] = isTransient
     ? [verbs.remove, verbs.removed]
     : [verbs.delete, verbs.deleted]
-  const isConfirmed = await confirm(component, {
+  const isConfirmed = await confirm(services, {
     message: `Do you really want to ${verb} ${label}?`,
     verb
   })
   if (isConfirmed && (await remove()) !== false) {
-    component.admin.notify({
+    services.admin.notify({
       type: isTransient ? 'info' : 'success',
       title: 'Successfully Removed',
       html: [`${label} was ${pastVerb}.`, isTransient && transientNote]

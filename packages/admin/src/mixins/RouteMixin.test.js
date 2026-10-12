@@ -435,11 +435,13 @@ describe('RouteMixin', () => {
       await admin.navigate('/items/1/chapters/0')
       const chapterForm = admin.getRouteComponent(it => it.isForm)
       await settle(chapterForm)
-      // The mounted components are valid, as on blur, unlike the field in the
-      // collapsed section:
-      for (const component of chapterForm.mainSchemaComponent.components) {
-        expect(component.validate()).toBe(true)
+      // The mounted fields are valid when they're left, unlike the field in
+      // the collapsed section:
+      for (const input of chapterForm.$el.querySelectorAll('input')) {
+        input.dispatchEvent(new Event('blur'))
       }
+      await settle(chapterForm)
+      expect(chapterForm.$el.querySelector('.dito-errors li')).toBe(null)
       await settleForm()
       await admin.navigate('/items/1')
       await settleForm()

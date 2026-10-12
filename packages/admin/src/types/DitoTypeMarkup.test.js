@@ -545,18 +545,22 @@ describe('DitoTypeMarkup', () => {
     expect(getComponent('body').editor.getHTML()).toBe('<p></p>')
   })
 
-  it('focuses and blurs the editor', async () => {
+  it('focuses the editor', async () => {
+    const focus = vi.fn()
+    const blur = vi.fn()
     const { getComponent } = await mountSchema({
-      schema: { components: { body: { type: 'markup' } } }
+      schema: {
+        components: { body: { type: 'markup', events: { focus, blur } } }
+      }
     })
     const component = getComponent('body')
     await component.focus()
-    await vi.waitFor(() => expect(component.focused).toBe(true))
+    await vi.waitFor(() => expect(focus).toHaveBeenCalledOnce())
     expect(component.editor.isFocused).toBe(true)
-    component.blur()
+    component.editor.commands.blur()
     await flushPromises()
     expect(component.editor.isFocused).toBe(false)
-    expect(component.focused).toBe(false)
+    expect(blur).toHaveBeenCalledOnce()
   })
 
   describe('hard breaks', () => {

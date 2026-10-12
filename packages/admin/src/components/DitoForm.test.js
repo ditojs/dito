@@ -239,7 +239,7 @@ describe('DitoForm', () => {
     })
 
     it('stays clean when a component writes the value that it has', async () => {
-      const { getComponent, routeComponent, settle, submit } = await mountForm({
+      const form = await mountForm({
         schema: {
           components: {
             title: { type: 'text' },
@@ -250,16 +250,18 @@ describe('DitoForm', () => {
         data: { title: 'Emma', tags: ['novel'] },
         request: ({ data }) => ({ data: { id: 1, ...data } })
       })
-      getComponent('title').value = 'Emma'
-      getComponent('tags').value = ['novel']
-      await settle()
-      expect(routeComponent.isDirty).toBe(false)
-      getComponent('title').value = 'Persuasion'
-      await submit()
+      // Components write their values through the data model:
+      const write = (name, value) => form.dataModel.set(form.data, name, value)
+      write('title', 'Emma')
+      write('tags', ['novel'])
+      await form.settle()
+      expect(form.routeComponent.isDirty).toBe(false)
+      write('title', 'Persuasion')
+      await form.submit()
       // E.g. components that write their value again after the save:
-      getComponent('title').value = 'Persuasion'
-      await settle()
-      expect(routeComponent.isDirty).toBe(false)
+      write('title', 'Persuasion')
+      await form.settle()
+      expect(form.routeComponent.isDirty).toBe(false)
     })
 
     it('keeps the edits of forms without a submit button when loading', async () => {
@@ -1205,7 +1207,6 @@ describe('DitoForm', () => {
         const { rootData } = form
         expect(rootData.venue).toBe('Bakery')
         expect(rootData.recipes[0]).toBe(form.data)
-        expect(name.rootItem).toBe(rootData)
         expect(name.context.rootItem).toBe(rootData)
         expect(name.context.parentItem).toBe(rootData)
         expect(name.context.item).toBe(form.data)

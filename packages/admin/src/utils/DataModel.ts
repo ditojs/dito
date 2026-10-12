@@ -2,6 +2,7 @@ import {
   effectScope,
   computed,
   watch,
+  watchEffect,
   nextTick,
   shallowRef,
   shallowReactive,
@@ -43,8 +44,10 @@ import {
   processData,
   hasItemsNumberedByOrderKey,
   updateOrder,
+  getMultipleValue,
   type SchemaDataEntry
 } from './schema/data.js'
+import { getOptionsSettings, getReplacedValue } from './schema/options.ts'
 import type { Services } from './services.ts'
 import type { Data, Schema } from './types.ts'
 
@@ -104,18 +107,26 @@ interface ValueErrors {
 
 // The records of components with computed values or options:
 interface ComponentRecord {
-  entry: SchemaDataEntry
+  entry: FieldEntry
   // Reactive, as items that move keep their records:
   dataPath: ShallowRef<string>
   computedValueScope: EffectScope | null
   writeComputedValue: (() => void) | null
   optionsResolver: DataSchemaResolver | null
   optionsSchema: Schema | null
+  optionsScope: EffectScope | null
 }
 
 // The entries that the walk passes to `shouldProcess()`, where tabs and panels
 // have no name:
 type ProcessedEntry = Omit<SchemaDataEntry, 'name'> & { name: string | null }
+
+// The entries of the components that records are kept for, which the
+// components look up themselves too:
+export type FieldEntry = Pick<
+  SchemaDataEntry,
+  'schema' | 'data' | 'name' | 'dataPath'
+>
 
 interface DataEntries {
   recordedEntries: EntryMap<SchemaDataEntry>
@@ -722,12 +733,16 @@ export class DataModel {
         record.computedValueScope ??= this.#createComputedValueScope(record)
       }
     }
-    for (const { computedValueScope } of previousRecords.values()) {
+    for (const {
+      computedValueScope,
+      optionsScope
+    } of previousRecords.values()) {
       computedValueScope?.stop()
+      optionsScope?.stop()
     }
   }
 
-  #getComponentRecord(entry: SchemaDataEntry): ComponentRecord {
+  #getComponentRecord(entry: FieldEntry): ComponentRecord {
     let record = this.componentRecords.get(entry)
     if (!record) {
       record = createComponentRecord(entry)
@@ -808,7 +823,7 @@ export class DataModel {
   }
 
   // Options that resolve to `undefined` aren't loading, e.g. failed loads.
-  #getLoadedOptions(entry: SchemaDataEntry) {
+  #getLoadedOptions(entry: FieldEntry) {
     const resolver = this.getOptionsResolver(entry)
     if (resolver.isLoading) {
       throw optionsNotLoaded
@@ -817,14 +832,64 @@ export class DataModel {
   }
 
   // Computes and components share the resolver, so they get the same options.
-  getOptionsResolver(entry: SchemaDataEntry): DataSchemaResolver {
+  getOptionsResolver(entry: FieldEntry): DataSchemaResolver {
     const record = this.#getComponentRecord(entry)
     const options = getOptionsDataSchema(entry.schema)
     if (!record.optionsResolver || record.optionsSchema !== options) {
+      record.optionsScope?.stop()
       record.optionsSchema = options
       record.optionsResolver = this.#createDataSchemaResolver(options, record)
+      record.optionsScope = this.#createOptionsScope(record)
     }
     return record.optionsResolver
+  }
+
+  // Show the errors of the loads of the options, and replace the value once
+  // they're loaded, see `getReplacedValue()`. The replaced value is derived
+  // from the options, not an edit, so it's written directly.
+  #createOptionsScope(record: ComponentRecord): EffectScope {
+    const resolver = record.optionsResolver!
+    const scope = this.#scope.run(() => effectScope())!
+    scope.run(() => {
+      // The error of the last load replaces the one of the previous load, e.g.
+      // when the options load again after the data is replaced:
+      watch(
+        () => resolver.lastLoadError,
+        (error, previousError) => {
+          const dataPath = record.dataPath.value
+          if (previousError) {
+            this.removeError(dataPath, getErrorMessage(previousError))
+          }
+          if (error) {
+            this.addError(dataPath, getErrorMessage(error))
+          }
+        }
+      )
+      // The options are requested while rendering, so write after it:
+      watchEffect(() => {
+        const options = resolver.value
+        if (isArray(options)) {
+          const { entry } = record
+          const { schema, data, name } = entry
+          const settings = getOptionsSettings(schema, options, {
+            multiple: getMultipleValue(schema),
+            groupBy: null,
+            createContext: values =>
+              this.#createEntryContext(entry).extend({ options, ...values })
+          })
+          const replaced = getReplacedValue(
+            schema,
+            settings,
+            options,
+            data[name]
+          )
+          if (replaced) {
+            data[name] = replaced.value
+          }
+        }
+      }, modelWatchOptions)
+    })
+    return scope
   }
 
   #createDataSchemaResolver(
@@ -837,7 +902,7 @@ export class DataModel {
     })
   }
 
-  #writeComputedValue(entry: SchemaDataEntry, computedValue: any) {
+  #writeComputedValue(entry: FieldEntry, computedValue: any) {
     const { data, name } = entry
     const value = this.#getValueWithNestedDefaultValues(entry, computedValue)
     const dataPath = getRelativeDataPath(entry.dataPath, this.dataPath)
@@ -850,7 +915,7 @@ export class DataModel {
   // Add the defaults that `setDefaultValues()` would add once it's written, or
   // the two keep replacing each other's writes. We copy only what holds missing
   // values, as the value may be shared, e.g. a constant.
-  #getValueWithNestedDefaultValues(entry: SchemaDataEntry, value: any) {
+  #getValueWithNestedDefaultValues(entry: FieldEntry, value: any) {
     const { data, name } = entry
     if (
       !isPlainObject(value) && !isArray(value) ||
@@ -888,7 +953,7 @@ export class DataModel {
   }
 
   #processNestedEntries(
-    entry: SchemaDataEntry,
+    entry: FieldEntry,
     value: any,
     handleNestedEntry: (entry: SchemaDataEntry) => void
   ) {
@@ -929,7 +994,12 @@ export class DataModel {
     return count > maxComputedValueWrites
   }
 
-  #createEntryContext({ schema, data, name, dataPath }: ProcessedEntry) {
+  #createEntryContext({
+    schema,
+    data,
+    name,
+    dataPath
+  }: Omit<FieldEntry, 'name'> & Pick<ProcessedEntry, 'name'>) {
     return DitoContext.createForSchema(this.#options.services, {
       schema,
       name,
@@ -996,14 +1066,15 @@ async function settleWithin(
   }
 }
 
-function createComponentRecord(entry: SchemaDataEntry): ComponentRecord {
+function createComponentRecord(entry: FieldEntry): ComponentRecord {
   return {
     entry,
     dataPath: shallowRef(entry.dataPath!),
     computedValueScope: null,
     writeComputedValue: null,
     optionsResolver: null,
-    optionsSchema: null
+    optionsSchema: null,
+    optionsScope: null
   }
 }
 
@@ -1065,6 +1136,10 @@ class EntryMap<T> extends WeakEntryMap<T> {
 
 function hasComputedValueSource(schema: Schema): boolean {
   return !!schema.compute || hasValueFromDataSchema(schema)
+}
+
+function getErrorMessage(error: any): string {
+  return error.message || error
 }
 
 function getOptionsDataSchema(schema: Schema): any {

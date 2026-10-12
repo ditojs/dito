@@ -2,7 +2,7 @@ import { vi } from 'vitest'
 import { DOMWrapper, flushPromises } from '@vue/test-utils'
 import { mountForm, mountSchema, enterValue } from '../test/mount.js'
 
-describe('ContextMixin', () => {
+describe('useSchemaContext()', () => {
   const mountLibrary = (titleSchema = {}) =>
     // Forms provide the root data, as they load it through their resource:
     mountForm({
@@ -48,25 +48,21 @@ describe('ContextMixin', () => {
 
   it('provides the item and parent item of components', async () => {
     const { getComponent, data } = await mountLibrary()
-    const title = getComponent('authors/0/books/1/title')
+    const { context } = getComponent('authors/0/books/1/title')
     const author = data.authors[0]
-    expect(title.item).toBe(author.books[1])
-    expect(title.item).toBe(title.data)
+    expect(context.item).toBe(author.books[1])
     // The parent item skips the arrays that hold the items:
-    expect(title.parentItem).toBe(author)
-    expect(title.parentData).toBe(author)
-    expect(title.rootItem).toBe(data)
-    // Matches the item and parent item of the component's context:
-    expect(title.context.item).toBe(title.item)
-    expect(title.context.parentItem).toBe(title.parentItem)
+    expect(context.parentItem).toBe(author)
+    expect(context.rootItem).toBe(data)
+    expect(context.name).toBe('title')
+    expect(context.value).toBe('Persuasion')
   })
 
   it('has no parent item at the root', async () => {
     const { getComponent, data } = await mountLibrary()
-    const name = getComponent('name')
-    expect(name.item).toBe(data)
-    expect(name.parentItem).toBe(null)
-    expect(name.parentData).toBe(null)
+    const { context } = getComponent('name')
+    expect(context.item).toBe(data)
+    expect(context.parentItem).toBe(null)
   })
 
   it('provides the processed item and root item of components', async () => {

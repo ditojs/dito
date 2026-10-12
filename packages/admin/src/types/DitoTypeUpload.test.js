@@ -439,7 +439,7 @@ describe('DitoTypeUpload', () => {
       data: { attachments: [] }
     })
     const upload = getComponent('attachments')
-    const remove = vi.spyOn(upload.upload, 'remove')
+    const remove = vi.spyOn(upload.$refs.upload, 'remove')
     const uploadFile = createUploadFile(cover)
     upload.onInputFile(uploadFile, null)
     upload.onInputFile(
@@ -704,9 +704,13 @@ describe('DitoTypeUpload', () => {
         data: { file: scan },
         api
       })
-      const download = vi
-        .spyOn(result.getComponent('file'), 'download')
-        .mockImplementation(() => {})
+      // The download clicks a link with the file's name and URL:
+      const download = vi.fn()
+      vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(
+        function () {
+          download({ filename: this.download, url: this.href })
+        }
+      )
       return { ...result, fetch, download, revokeObjectURL }
     }
 

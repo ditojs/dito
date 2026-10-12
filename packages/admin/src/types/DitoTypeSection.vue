@@ -1,13 +1,13 @@
 <template lang="pug">
-.dito-section(:class="{ 'dito-section--labelled': hasLabel }")
+.dito-section(:class="{ 'dito-section--labelled': !!schema.label }")
   DitoSchemaInlined.dito-section__schema(
-    :schema="getItemFormSchema(schema, item, context)"
+    :schema="formSchema"
     :dataPath="dataPath"
     :data="item"
     :store="store"
     :label="label"
     :info="info"
-    :padding="hasLabel ? 'nested' : 'inlined'"
+    :padding="schema.label ? 'nested' : 'inlined'"
     :disabled="disabled"
     :collapsed="collapsed"
     :collapsible="collapsible"
@@ -16,46 +16,49 @@
 
 <script>
 import { normalizeDataPath, parseDataPath } from '@ditojs/utils'
-import DitoTypeComponent from '../DitoTypeComponent.js'
+import { computed } from 'vue'
+import DitoComponent from '../DitoComponent.js'
 import { defineType } from '../utils/schema/types.ts'
+import { fieldProps, useField } from '../composables/useField.ts'
 import SchemaParentMixin from '../mixins/SchemaParentMixin.js'
-import { getSchemaAccessor } from '../utils/accessor.js'
 import { setupSchemaComponents } from '../utils/schema/setup.js'
 import { getItemFormSchema } from '../utils/schema/lookup.js'
 import { hasComponentNamed, isCompact } from '../utils/schema/structure.js'
 
 // @vue/component
-const DitoTypeSection = DitoTypeComponent.component('DitoTypeSection', {
+const DitoTypeSection = DitoComponent.component('DitoTypeSection', {
   // Register the section's schema with the section rather than the form, so
   // that the section can reveal its components, see `revealComponents()`.
   mixins: [SchemaParentMixin],
+  props: fieldProps,
 
-  computed: {
-    item() {
-      return this.nested ? this.value : this.data
-    },
-
-    hasLabel() {
-      return !!this.schema.label
-    },
-
-    collapsible: getSchemaAccessor('collapsible', {
-      type: Boolean,
-      default: false
-    }),
-
-    collapsed: getSchemaAccessor('collapsed', {
-      type: Boolean,
-      default: false,
-      get(collapsed) {
-        return collapsed && this.collapsible
-      }
-    })
+  setup(props) {
+    const { value, context, info, disabled, focus, getSchemaValue } =
+      useField(props)
+    // Nested sections hold their item in their value:
+    const item = computed(() => (props.nested ? value.value : props.data))
+    const collapsible = computed(() =>
+      getSchemaValue('collapsible', { type: Boolean, default: false })
+    )
+    return {
+      item,
+      info,
+      disabled,
+      focus,
+      collapsible,
+      collapsed: computed(
+        () => (
+          getSchemaValue('collapsed', { type: Boolean, default: false }) &&
+          collapsible.value
+        )
+      ),
+      formSchema: computed(() =>
+        getItemFormSchema(props.schema, item.value, context)
+      )
+    }
   },
 
   methods: {
-    getItemFormSchema,
-
     async revealComponents(dataPath) {
       // Unnested sections share the data path of their parent schema, so
       // decide by schema whether the section displays the value at `dataPath`:

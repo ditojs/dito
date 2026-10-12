@@ -9,34 +9,44 @@ progress.dito-progress(
 </template>
 
 <script>
-import DitoTypeComponent from '../DitoTypeComponent.js'
+import { computed } from 'vue'
+import DitoComponent from '../DitoComponent.js'
 import { defineType } from '../utils/schema/types.ts'
 import { numberDescriptor } from './descriptors.ts'
-import NumberMixin from '../mixins/NumberMixin.js'
+import { fieldProps, useField } from '../composables/useField.ts'
+import { useNumber } from '../composables/useNumber.ts'
 
 // @vue/component
-const DitoTypeProgress = DitoTypeComponent.component('DitoTypeProgress', {
-  mixins: [NumberMixin],
+const DitoTypeProgress = DitoComponent.component('DitoTypeProgress', {
+  props: fieldProps,
 
-  computed: {
-    progressValue() {
-      let { value, range, step } = this
-      if (value !== null) {
-        if (range) {
-          value -= range[0]
-        }
-        if (step) {
-          value = Math.round(value / step) * step
-        }
-      } else {
-        value = ''
-      }
-      return value
-    },
+  setup(props) {
+    const field = useField(props)
+    const { settings } = useNumber(props, field)
+    return {
+      attributes: field.attributes,
+      focus: field.focus,
 
-    progressMax() {
-      const { range } = this
-      return range ? range[1] - range[0] : null
+      progressValue: computed(() => {
+        let value = field.value.value
+        const { range, step } = settings.value
+        if (value !== null) {
+          if (range) {
+            value -= range[0]
+          }
+          if (step) {
+            value = Math.round(value / step) * step
+          }
+        } else {
+          value = ''
+        }
+        return value
+      }),
+
+      progressMax: computed(() => {
+        const { range } = settings.value
+        return range ? range[1] - range[0] : null
+      })
     }
   }
 })

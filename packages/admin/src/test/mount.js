@@ -245,7 +245,7 @@ function createMountResult(admin, routeComponent) {
       .flatMap(({ vm }) => vm.unnestedComponents)
       .find(
         component => (
-          appendDataPath(component.dataPath, component.name) === dataPath
+          appendDataPath(component.dataPath, component.schema.name) === dataPath
         )
       ) ??
     null

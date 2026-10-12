@@ -136,7 +136,7 @@ describe('DitoView', () => {
       })
       await admin.navigate('/books')
       const view = admin.getRouteComponent(it => it.isView)
-      expect(view.mainComponent.name).toBe('books')
+      expect(view.mainComponent.schema.name).toBe('books')
       // Components of the view outside of the list, e.g. its schema, use the
       // contexts of the list, but display the view's data:
       const { mainSchemaComponent: schema, mainComponent: list } = view
@@ -187,7 +187,6 @@ describe('DitoView', () => {
     function expectRootItems(view, getComponent) {
       const venue = getComponent('venue')
       expect(venue.rootData).toBe(view.data)
-      expect(venue.rootItem).toBe(view.data)
       expect(venue.context.rootItem).toBe(view.data)
       expect(venue.context.item).toBe(view.data)
       // The `if` of components sees the root item before they are rendered:
@@ -196,7 +195,6 @@ describe('DitoView', () => {
       expect(city.context.rootItem).toBe(view.data)
       expect(city.context.item).toBe(view.data.address)
       expect(city.context.parentItem).toBe(view.data)
-      expect(city.parentData).toBe(view.data)
     }
 
     it('are the data of multi-component views without resources', async () => {
@@ -240,9 +238,7 @@ describe('DitoView', () => {
         schema: { components },
         data
       })
-      const venue = getComponent('venue')
-      expect(venue.rootItem).toBe(form.data)
-      expect(venue.context.rootItem).toBe(form.data)
+      expect(getComponent('venue').context.rootItem).toBe(form.data)
       expect(getComponent('address/city').context.parentItem).toBe(form.data)
     })
 

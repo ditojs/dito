@@ -610,8 +610,8 @@ describe('DitoTypeList', () => {
         },
         data: { tags: ['classic'] }
       })
-      expect(getComponent('tags/0').name).toBe('tag')
-      expect(getComponent('tags/0/note').name).toBe('note')
+      expect(getComponent('tags/0').schema.name).toBe('tag')
+      expect(getComponent('tags/0/note').schema.name).toBe('note')
     })
 
     it('keeps the errors of the other values when one is edited', async () => {

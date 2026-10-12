@@ -4,33 +4,35 @@ textarea.dito-textarea.dito-input(
   ref="element"
   v-model="value"
   v-bind="attributes"
-  :rows="lines"
+  :rows="schema.lines || 4"
   :class="{ 'dito-textarea--resizable': resizable }"
 )
 </template>
 
 <script>
-import DitoTypeComponent from '../DitoTypeComponent.js'
+import { computed } from 'vue'
+import DitoComponent from '../DitoComponent.js'
 import { defineType } from '../utils/schema/types.ts'
 import { textDescriptor } from './descriptors.ts'
-import TextMixin from '../mixins/TextMixin'
-import { getSchemaAccessor } from '../utils/accessor.js'
+import { fieldProps, useField } from '../composables/useField.ts'
 
 // @vue/component
-const DitoTypeTextarea = DitoTypeComponent.component('DitoTypeTextarea', {
-  mixins: [TextMixin],
-  nativeField: true,
-  textField: true,
+const DitoTypeTextarea = DitoComponent.component('DitoTypeTextarea', {
+  props: fieldProps,
 
-  computed: {
-    lines() {
-      return this.schema.lines || 4
-    },
-
-    resizable: getSchemaAccessor('resizable', {
-      type: Boolean,
-      default: false
+  setup(props) {
+    const { value, attributes, focus, getSchemaValue } = useField(props, {
+      nativeField: true,
+      textField: true
     })
+    return {
+      value,
+      attributes,
+      focus,
+      resizable: computed(() =>
+        getSchemaValue('resizable', { type: Boolean, default: false })
+      )
+    }
   }
 })
 

@@ -18,7 +18,7 @@
 import { isObject, clone } from '@ditojs/utils'
 import { DitoButton } from '@ditojs/ui/src'
 import DitoComponent from '../DitoComponent.js'
-import DomMixin from '../mixins/DomMixin.js'
+import { useDomEvents } from '../composables/useDomEvents.ts'
 import DitoContext from '../DitoContext.js'
 import {
   getClipboardData,
@@ -29,7 +29,6 @@ import {
 
 // @vue/component
 export default DitoComponent.component('DitoClipboard', {
-  mixins: [DomMixin],
   components: { DitoButton },
 
   emits: ['paste'],
@@ -41,6 +40,10 @@ export default DitoComponent.component('DitoClipboard', {
     // Returns the data to copy. A function rather than the data itself, so
     // that it's only processed when copying.
     getData: { type: Function, required: true }
+  },
+
+  setup() {
+    return useDomEvents()
   },
 
   computed: {

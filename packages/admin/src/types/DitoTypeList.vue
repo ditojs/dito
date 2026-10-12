@@ -130,12 +130,13 @@
 </template>
 
 <script>
-import DitoTypeComponent from '../DitoTypeComponent.js'
+import DitoComponent from '../DitoComponent.js'
 import { defineType } from '../utils/schema/types.ts'
 import { sourceDescriptor } from './descriptors.ts'
+import { fieldProps, useField } from '../composables/useField.ts'
+import { useSortable } from '../composables/useSortable.ts'
 import DitoSourceItem from '../components/DitoSourceItem.vue'
-import SourceMixin from '../mixins/SourceMixin.js'
-import SortableMixin from '../mixins/SortableMixin.js'
+import SourceMixin, { useSourceServices } from '../mixins/SourceMixin.js'
 import {
   resolveSchemaComponent,
   resolveSchemaComponents
@@ -143,12 +144,34 @@ import {
 import { createFiltersPanel, getFiltersDataErrors } from '../utils/filter.js'
 import { appendDataPath } from '../utils/data.js'
 import { hyphenate } from '@ditojs/utils'
-import { computed } from 'vue'
+import { computed, getCurrentInstance } from 'vue'
 
 // @vue/component
-const DitoTypeList = DitoTypeComponent.component('DitoTypeList', {
-  mixins: [SourceMixin, SortableMixin],
+const DitoTypeList = DitoComponent.component('DitoTypeList', {
+  mixins: [SourceMixin],
   components: { DitoSourceItem },
+  props: fieldProps,
+
+  setup(props) {
+    const { value, context, disabled, onChange, focus } = useField(props, {
+      services: useSourceServices()
+    })
+    // `SourceMixin` holds the list of the items:
+    const component = getCurrentInstance().proxy
+    const { getDraggableOptions, moveItem } = useSortable({
+      getListEntry: () => component.listEntry,
+      onChange
+    })
+    return {
+      value,
+      context,
+      disabled,
+      onChange,
+      focus,
+      getDraggableOptions,
+      moveItem
+    }
+  },
 
   computed: {
     hasPagination() {

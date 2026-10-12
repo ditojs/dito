@@ -28,14 +28,11 @@
 
 <script>
 import DitoComponent from '../DitoComponent.js'
-import ContextMixin from '../mixins/ContextMixin.js'
 import { appendDataPath } from '../utils/data.js'
 import { hasSlotContent, hasVNodeContent } from '@ditojs/ui/src'
 
 // @vue/component
 export default DitoComponent.component('DitoButtons', {
-  mixins: [ContextMixin],
-
   provide: {
     $tabComponent: () => null
   },

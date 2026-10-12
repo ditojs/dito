@@ -1,5 +1,6 @@
 import { isArray, isObject, isString, normalizeDataPath } from '@ditojs/utils'
 import type { Context, TypeDescriptor } from '../utils/schema/types.ts'
+import type { Schema } from '../utils/types.ts'
 import {
   isInlined,
   isListSource,
@@ -85,27 +86,7 @@ export const optionsDescriptor = {
 
 export const numberDescriptor = {
   getValidations(schema, context) {
-    // Mirrors the `min`, `max`, `range`, `step` and `decimals` accessors of
-    // `NumberMixin`, but based on the schema alone, so they can be used
-    // without a component.
-    const isInteger = schema.type === 'integer'
-    const getNumberSchemaValue = (key: string) =>
-      getSchemaValue(key, { type: Number, schema, context })
-    const roundIfInteger = (
-      value: number | undefined,
-      roundFunction: (value: number) => number
-    ) => (isInteger && value != null ? roundFunction(value) : value)
-    const range = getSchemaValue('range', { type: Array, schema, context })
-    const min = roundIfInteger(
-      getNumberSchemaValue('min') ?? range?.[0],
-      Math.floor
-    )
-    const max = roundIfInteger(
-      getNumberSchemaValue('max') ?? range?.[1],
-      Math.ceil
-    )
-    const step = roundIfInteger(getNumberSchemaValue('step'), Math.ceil)
-    const decimals = getNumberSchemaValue('decimals')
+    const { min, max, step, decimals } = getNumberSettings(schema, context)
     const validations: Record<string, any> = {}
     if (min != null && max != null) {
       validations.range = [min, max]
@@ -127,12 +108,46 @@ export const numberDescriptor = {
         validations.integer = true
       }
     }
-    if (isInteger) {
+    if (schema.type === 'integer') {
       validations.integer = true
     }
     return validations
   }
 } satisfies Partial<TypeDescriptor>
+
+export interface NumberSettings {
+  min: number | undefined
+  max: number | undefined
+  step: number | undefined
+  decimals: number | undefined
+  range: [number, number] | undefined
+}
+
+// Returns the settings of number types, which their components and validations
+// share: `min` and `max` default to `range`, and integers round them and their
+// `step` outwards.
+export function getNumberSettings(
+  schema: Schema,
+  context: Context
+): NumberSettings {
+  const isInteger = schema.type === 'integer'
+  const getNumber = (key: string) =>
+    getSchemaValue(key, { type: Number, schema, context })
+  const round = (
+    value: number | undefined,
+    roundFunction: (value: number) => number
+  ) => (isInteger && value != null ? roundFunction(value) : value)
+  const range = getSchemaValue('range', { type: Array, schema, context })
+  const min = round(getNumber('min') ?? range?.[0], Math.floor)
+  const max = round(getNumber('max') ?? range?.[1], Math.ceil)
+  return {
+    min,
+    max,
+    step: round(getNumber('step'), Math.ceil),
+    decimals: getNumber('decimals'),
+    range: min != null && max != null ? [min, max] : undefined
+  }
+}
 
 export const textDescriptor = {
   processValue(context) {

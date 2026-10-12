@@ -573,21 +573,24 @@ describe('DitoTypeMultiselect', () => {
     const { findField, getComponent, getErrors } = await mountSchema({
       schema: {
         components: {
-          genre: { type: 'multiselect', required: true, options: genres }
+          genre: {
+            type: 'multiselect',
+            required: true,
+            searchable: true,
+            options: genres
+          }
         }
       }
     })
-    const genre = getComponent('genre')
-    await open(findField('genre'))
-    genre.onFocus()
-    genre.onBlur()
+    const field = findField('genre')
+    await open(field)
+    // Searchable multiselects stay open when they lose the focus:
+    await field.find('.multiselect').trigger('blur')
     await flushPromises()
-    expect(genre.focused).toBe(true)
     expect(getErrors('genre')).toEqual([])
-    genre.blur()
+    getComponent('genre').$refs.element.deactivate()
     await flushPromises()
-    expect(genre.$refs.element.isOpen).toBe(false)
-    expect(genre.focused).toBe(false)
+    expect(field.find('.multiselect--active').exists()).toBe(false)
     expect(getErrors('genre')).toEqual(['The genre field is required.'])
   })
 

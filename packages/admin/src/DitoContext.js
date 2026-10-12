@@ -22,11 +22,12 @@ import {
 
 const { hasOwnProperty } = Object.prototype
 
-// See also `ContextMixin`: `DitoContext` instances are a thin wrapper around
-// raw `context` objects, which themselves inherit from their `services`: the
-// component, or the services of the data model that creates the context, see
-// `Services`. They only need to provide the values that differ from these. In
-// order to not expose all fields of the component, the wrapper is introduced.
+// `DitoContext` instances are a thin wrapper around raw `context` objects,
+// which themselves inherit from their `services`: the services of the type
+// component or data model that creates the context, see `Services`, or else
+// the component. They only need to provide the values that differ from these.
+// In order to not expose all fields of the component, the wrapper is
+// introduced.
 
 // Use WeakMap for the raw `context` objects, so we don't have to pollute the
 // actual `DitoContext` instance with it.
@@ -286,8 +287,9 @@ export default class DitoContext {
     return get(this, 'formLabel', null)
   }
 
-  // When used in OptionsMixin for `schema.options.value()`,
-  // `schema.options.label()` and  `schema.search.filter()` callbacks:
+  // In the callbacks of options, `schema.options.value()`,
+  // `schema.options.label()`, `schema.options.equals()` and
+  // `schema.search.filter()`:
   get option() {
     return get(this, 'option', undefined)
   }
@@ -437,14 +439,14 @@ export default class DitoContext {
   // resource do when clicked, and resolve with whether it succeeded:
   get submit() {
     return options => {
-      const button = getServices(this)
-      if (!isButton(button.schema) || !button.resource) {
+      const { submit } = getServices(this)
+      if (!isButton(this.schema) || !submit) {
         throw new Error(
           'Unable to submit: There is no button of a form or of a list with a ' +
           'resource.'
         )
       }
-      return button.submit(options)
+      return submit(options)
     }
   }
 

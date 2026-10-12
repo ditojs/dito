@@ -43,7 +43,7 @@
 import { markRaw } from 'vue'
 import { delegate as tippyDelegate } from 'tippy.js'
 import DitoComponent from '../DitoComponent.js'
-import DomMixin from '../mixins/DomMixin.js'
+import { useDomEvents } from '../composables/useDomEvents.ts'
 import DitoDialog from './DitoDialog.vue'
 import { setupSchemaComponents } from '../utils/schema/setup.js'
 import { RouteTree } from '../utils/RouteTree.ts'
@@ -51,7 +51,6 @@ import { FileDropTargets } from '../utils/FileDropTargets.js'
 
 // @vue/component
 export default DitoComponent.component('DitoRoot', {
-  mixins: [DomMixin],
   components: { DitoDialog },
 
   provide() {
@@ -62,6 +61,10 @@ export default DitoComponent.component('DitoRoot', {
 
   props: {
     options: { type: Object, default: () => ({}) }
+  },
+
+  setup() {
+    return useDomEvents()
   },
 
   data() {

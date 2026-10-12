@@ -6,8 +6,8 @@
     v-model="inputValue"
     type="range"
     v-bind="attributes"
-    :min="min"
-    :max="max"
+    :min="settings.min"
+    :max="settings.max"
     :step="stepValue"
   )
   //- The range input holds the name and the label of the field, the number
@@ -18,36 +18,38 @@
     type="number"
     v-bind="attributes"
     :name="null"
-    :aria-label="numberInputLabel"
-    :min="min"
-    :max="max"
+    :aria-label="`${label || labelize(schema.name)} Value`"
+    :min="settings.min"
+    :max="settings.max"
     :step="stepValue"
   )
 </template>
 
 <script>
-import DitoTypeComponent from '../DitoTypeComponent.js'
+import { computed } from 'vue'
+import DitoComponent from '../DitoComponent.js'
 import { defineType } from '../utils/schema/types.ts'
 import { numberDescriptor } from './descriptors.ts'
-import NumberMixin from '../mixins/NumberMixin.js'
-import { getSchemaAccessor } from '../utils/accessor.js'
+import { fieldProps, useField } from '../composables/useField.ts'
+import { useNumber } from '../composables/useNumber.ts'
 import { DitoInput } from '@ditojs/ui/src'
 
 // @vue/component
-const DitoTypeSlider = DitoTypeComponent.component('DitoTypeSlider', {
-  mixins: [NumberMixin],
+const DitoTypeSlider = DitoComponent.component('DitoTypeSlider', {
   components: { DitoInput },
-  nativeField: true,
+  props: fieldProps,
 
-  computed: {
-    // TODO: Rename to `showInput`?
-    input: getSchemaAccessor('input', {
-      type: Boolean,
-      default: true
-    }),
-
-    numberInputLabel() {
-      return `${this.label || this.labelize(this.name)} Value`
+  setup(props) {
+    const field = useField(props, { nativeField: true })
+    const { attributes, focus, getSchemaValue } = field
+    return {
+      ...useNumber(props, field),
+      attributes,
+      focus,
+      // TODO: Rename to `showInput`?
+      input: computed(() =>
+        getSchemaValue('input', { type: Boolean, default: true })
+      )
     }
   }
 })

@@ -30,10 +30,10 @@
         )
           optgroup(
             v-if="groupBy"
-            :label="option[groupByLabel]"
+            :label="option.label"
           )
             option(
-              v-for="opt in option[groupByOptions]"
+              v-for="opt in option.options"
               :value="getValueForOption(opt)"
             ) {{ getLabelForOption(opt) }}
           option(
@@ -61,48 +61,65 @@
 </template>
 
 <script>
-import DitoTypeComponent from '../DitoTypeComponent.js'
+import { computed, ref } from 'vue'
+import DitoComponent from '../DitoComponent.js'
 import { defineType } from '../utils/schema/types.ts'
 import { optionsDescriptor } from './descriptors.ts'
-import OptionsMixin from '../mixins/OptionsMixin.js'
+import { fieldProps, useField } from '../composables/useField.ts'
+import { useOptions } from '../composables/useOptions.ts'
 import DitoInputAffixes from '../components/DitoInputAffixes.vue'
-import { getInputAffixesProps } from '../utils/affixes.js'
 import DitoOptionsEditButtons from '../components/DitoOptionsEditButtons.vue'
 
 // @vue/component
-const DitoTypeSelect = DitoTypeComponent.component('DitoTypeSelect', {
-  mixins: [OptionsMixin],
+const DitoTypeSelect = DitoComponent.component('DitoTypeSelect', {
   components: { DitoInputAffixes, DitoOptionsEditButtons },
-  nativeField: true,
+  props: fieldProps,
 
-  data() {
+  setup(props) {
+    const field = useField(props, { nativeField: true })
+    const {
+      options,
+      hasOptions,
+      groupBy,
+      editable,
+      selectedValue,
+      selectedOption,
+      getValueForOption,
+      getLabelForOption,
+      findOptionForValue
+    } = useOptions(props, field)
     return {
+      attributes: field.attributes,
+      inputAffixesProps: field.inputAffixesProps,
+      focus: field.focus,
+      clear: field.clear,
+      options,
+      groupBy,
+      editable,
+      selectedValue,
+      selectedOption,
+      getValueForOption,
+      getLabelForOption,
       // Lazy population of the options, on focus or mousedown, is disabled
       // since 2019, as lineto's e2e tests chose options without focusing the
       // select first, and found none.
       // TODO: Re-enable it with `false` once e2e tests can handle it.
-      populate: true
-    }
-  },
+      populate: ref(true),
 
-  computed: {
-    inputAffixesProps() {
-      return getInputAffixesProps(this)
-    },
-
-    // Whether the value is set but none of the loaded options has it. Values
-    // of option objects are replaced with `null` when their option disappears,
-    // see `OptionsMixin`, but plain values match any value, so they stay.
-    // Object values without `optionValue` are left to the select, which
-    // matches them to their options by deep equality.
-    shouldShowUnavailableValue() {
-      const { selectedValue } = this
-      return (
-        selectedValue != null &&
-        typeof selectedValue !== 'object' &&
-        this.hasOptions &&
-        !this.findOptionForValue(selectedValue)
-      )
+      // Whether the value is set but none of the loaded options has it. Values
+      // of option objects are replaced with `null` when their option
+      // disappears, see `getReplacedValue()`, but plain values match any value,
+      // so they stay. Object values without `optionValue` are left to the
+      // select, which matches them to their options by deep equality.
+      shouldShowUnavailableValue: computed(() => {
+        const selected = selectedValue.value
+        return (
+          selected != null &&
+          typeof selected !== 'object' &&
+          hasOptions.value &&
+          !findOptionForValue(selected)
+        )
+      })
     }
   }
 })

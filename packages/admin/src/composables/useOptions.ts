@@ -1,0 +1,217 @@
+import {
+  computed,
+  type ComputedRef,
+  type Ref,
+  type WritableComputedRef
+} from 'vue'
+import {
+  debounceAsync,
+  isArray,
+  isFunction,
+  isString,
+  labelize
+} from '@ditojs/utils'
+import { getMultipleValue } from '../utils/schema/data.js'
+import { hasViewSchema } from '../utils/schema/lookup.js'
+import {
+  findOptionForValue,
+  getOptionKey,
+  getOptionsSettings,
+  getSelectedValue,
+  getValueForOption,
+  getValueForSelectedValue,
+  groupOptions,
+  type OptionsSettings
+} from '../utils/schema/options.ts'
+import type { DataSchemaResolver } from '../utils/DataSchemaResolver.js'
+import type { Context } from '../utils/schema/types.ts'
+import type { Field, FieldProps } from './useField.ts'
+
+export interface OptionsOptions {
+  multiple?: Readonly<Ref<boolean>>
+  // Options to add to the loaded options unless they're among them already,
+  // e.g. the tags that were added to a multiselect:
+  addedOptions?: Readonly<Ref<any[]>>
+  // The options that a search returned, which are the active options while
+  // they're set:
+  searchedOptions?: Readonly<Ref<any[] | null>>
+}
+
+// The options of a type component, which the data model loads, and the values
+// of the component that they select. The data model also replaces the value
+// once the options are loaded, see `getReplacedValue()`.
+export function useOptions(
+  props: FieldProps,
+  { value, context, createContext, services, getSchemaValue }: Field,
+  {
+    multiple = computed(() => getMultipleValue(props.schema)),
+    addedOptions,
+    searchedOptions
+  }: OptionsOptions = {}
+) {
+  // The resolver of the options in the data model, which loads them and
+  // shares them with the computes of the form:
+  const optionsResolver = computed<DataSchemaResolver>(() => {
+    const { schema, data, dataPath } = props
+    return services.container!.model.getOptionsResolver({
+      schema,
+      data,
+      name: schema.name,
+      dataPath
+    })
+  })
+
+  const groupBy = computed<string | null>(() =>
+    getSchemaValue('groupBy', { type: String, default: null })
+  )
+
+  const loadedOptions = computed(() => {
+    const options = optionsResolver.value.value ?? []
+    if (!isArray(options)) {
+      throw new Error(`Invalid options data, should be array: ${options}`)
+    }
+    return groupBy.value ? groupOptions(options, groupBy.value) : options
+  })
+
+  // The callbacks of the options receive the options too:
+  const createOptionsContext = (values: Record<string, any>): Context =>
+    createContext({
+      get options() {
+        return options.value
+      },
+      ...values
+    })
+
+  const settings = computed<OptionsSettings>(() =>
+    getOptionsSettings(
+      props.schema,
+      searchedOptions?.value || loadedOptions.value,
+      {
+        multiple: multiple.value,
+        groupBy: groupBy.value,
+        createContext: createOptionsContext
+      }
+    )
+  )
+
+  // Whether `options` contain an option with the value of `option`:
+  const isOptionAmong = (option: any, options: any[]) => {
+    const value = getValueForOption(settings.value, option)
+    return options.some(
+      other => getValueForOption(settings.value, other) === value
+    )
+  }
+
+  const options = computed<any[]>(() => {
+    const options = loadedOptions.value
+    // Grouped options have no group to add options to:
+    const added =
+      addedOptions && !groupBy.value
+        ? addedOptions.value.filter(option => !isOptionAmong(option, options))
+        : []
+    return added.length > 0 ? [...options, ...added] : options
+  })
+
+  const activeOptions = computed(() => searchedOptions?.value || options.value)
+  const hasOptions = computed(() => activeOptions.value.length > 0)
+
+  // Options filtered out of the active options, e.g. by a search, are still
+  // options of the value:
+  const findOption = (value: any) => (
+    findOptionForValue(settings.value, activeOptions.value, value) ?? (
+      activeOptions.value !== options.value
+        ? findOptionForValue(settings.value, options.value, value)
+        : undefined
+    )
+  )
+
+  // Plain value options are their own values:
+  const getOptionForValue = (value: any) =>
+    settings.value.optionValue ? findOption(value) : value
+
+  const selectedValue = computed({
+    get() {
+      return getSelectedValue(settings.value, value.value, {
+        hasOptions: hasOptions.value,
+        findOption
+      })
+    },
+
+    set(selectedValue) {
+      value.value = getValueForSelectedValue(
+        settings.value,
+        selectedValue,
+        value.value,
+        { findOption }
+      )
+    }
+  })
+
+  const optionLabel = computed<string | ((context: Context) => any) | null>(
+    () => (
+      getSchemaValue(['options', 'label'], {
+        type: [String, Function],
+        default: null
+      }) ||
+      // Options that are objects with a `label` hold their labels:
+      getOptionKey(activeOptions.value, groupBy.value, 'label') ||
+      null
+    )
+  )
+
+  return {
+    optionsResolver,
+    isLoadingOptions: computed(() => optionsResolver.value.isLoading),
+    options,
+    activeOptions,
+    hasOptions,
+    multiple,
+    relate: computed(() => !!props.schema.relate),
+    groupBy,
+    optionLabel,
+    optionValue: computed(() => settings.value.optionValue),
+
+    // Search the options for the search term, if the schema defines `search`:
+    searchFilter: computed(() => {
+      const search = getSchemaValue('search', {
+        type: [Object, Function],
+        default: null
+      })
+      if (search) {
+        const { filter, debounce } = isFunction(search)
+          ? { filter: search }
+          : search
+        const searchFilter = debounce ? debounceAsync(filter, debounce) : filter
+        return (searchTerm: string) =>
+          searchFilter(createOptionsContext({ searchTerm }))
+      }
+      return null
+    }),
+
+    editable: computed(
+      () => (
+        getSchemaValue('editable', { type: Boolean, default: false }) &&
+        hasViewSchema(props.schema, context)
+      )
+    ),
+
+    selectedValue,
+    selectedOption: computed(() => getOptionForValue(selectedValue.value)),
+
+    getValueForOption(option: any) {
+      return getValueForOption(settings.value, option)
+    },
+
+    getOptionForValue,
+    findOptionForValue: findOption,
+
+    getLabelForOption(option: any, { isValueLabel = false } = {}) {
+      const label = optionLabel.value
+      return isString(label)
+        ? option?.[label as string]
+        : isFunction(label)
+          ? label(createOptionsContext({ option, isValueLabel }))
+          : labelize(`${option}`)
+    }
+  }
+}

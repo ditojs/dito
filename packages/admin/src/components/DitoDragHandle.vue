@@ -17,7 +17,7 @@ DitoButton(
 import { DitoButton } from '@ditojs/ui/src'
 import DitoComponent from '../DitoComponent.js'
 
-// The handle that items are dragged by, see `SortableMixin`. With the keyboard,
+// The handle that items are dragged by, see `useSortable()`. With the keyboard,
 // Alt+ArrowUp and Alt+ArrowDown move the item by emitting `move` with the
 // delta of its index, which the owner of the list applies.
 // @vue/component

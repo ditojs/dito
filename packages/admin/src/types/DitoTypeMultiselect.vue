@@ -18,8 +18,8 @@
       :options="populate && activeOptions || []"
       :customLabel="option => getLabelForOption(option)"
       :trackBy="optionValue"
-      :groupLabel="groupByLabel"
-      :groupValues="groupByOptions"
+      :groupLabel="groupBy ? 'label' : null"
+      :groupValues="groupBy ? 'options' : null"
       :multiple="multiple"
       :taggable="taggable"
       :searchable="searchable"
@@ -68,288 +68,269 @@
 </template>
 
 <script>
-import DitoTypeComponent from '../DitoTypeComponent.js'
+import { computed, onMounted, ref, shallowRef } from 'vue'
+import DitoComponent from '../DitoComponent.js'
 import { defineType } from '../utils/schema/types.ts'
 import { optionsDescriptor } from './descriptors.ts'
-import DitoContext from '../DitoContext.js'
-import TypeMixin from '../mixins/TypeMixin.js'
-import OptionsMixin from '../mixins/OptionsMixin.js'
+import { fieldProps, useField } from '../composables/useField.ts'
+import { useOptions } from '../composables/useOptions.ts'
 import DitoInputAffixes from '../components/DitoInputAffixes.vue'
-import { getInputAffixesProps } from '../utils/affixes.js'
 import DitoOptionsEditButtons from '../components/DitoOptionsEditButtons.vue'
 import VueMultiselect from 'vue-multiselect'
-import { getSchemaAccessor } from '../utils/accessor.js'
 import { isArray, isBoolean, isObject, isString } from '@ditojs/utils'
 
 // @vue/component
-const DitoTypeMultiselect = DitoTypeComponent.component('DitoTypeMultiselect', {
-  mixins: [OptionsMixin],
+const DitoTypeMultiselect = DitoComponent.component('DitoTypeMultiselect', {
   components: { DitoInputAffixes, DitoOptionsEditButtons, VueMultiselect },
+  props: fieldProps,
 
-  data() {
-    return {
-      searchedOptions: null,
-      isLoadingSearchedOptions: false,
-      // The term of the current search, see `onSearchChange()`:
-      currentSearchTerm: null,
-      // The error of the last search, see `loadSearchedOptions()`:
-      searchError: null,
-      // The options of the tags that were added, see `onAddTag()`:
-      addedTagOptions: [],
-      populate: false
+  setup(props) {
+    const field = useField(props, {
+      // Don't emit blur events while the multiselect is open, but once it
+      // closes, see `onClose()`:
+      getEvents: handlers => ({ ...handlers, onBlur }),
+      focusElement: () => element.value.activate(),
+      blurElement: () => element.value.deactivate()
+    })
+    const { element, value, focused, autofocus, services, getSchemaValue } =
+      field
+    const isMounted = ref(false)
+    const populate = ref(false)
+    const searchedOptions = shallowRef(null)
+    const isLoadingSearchedOptions = ref(false)
+    // The term of the current search, see `onSearchChange()`:
+    let currentSearchTerm = null
+    // The error of the last search, see `loadSearchedOptions()`:
+    let searchError = null
+    // The options of the tags that were added, see `onAddTag()`:
+    const addedTagOptions = ref([])
+
+    const getBoolean = key =>
+      computed(() => getSchemaValue(key, { type: Boolean, default: false }))
+    const multiple = getBoolean('multiple')
+    const searchable = getBoolean('searchable')
+    const taggable = getBoolean('taggable')
+
+    const optionsField = useOptions(props, field, {
+      multiple,
+      addedOptions: addedTagOptions,
+      searchedOptions
+    })
+    const {
+      options,
+      hasOptions,
+      isLoadingOptions,
+      optionsResolver,
+      relate,
+      optionLabel,
+      optionValue,
+      searchFilter,
+      selectedValue,
+      selectedOption,
+      getValueForOption,
+      getOptionForValue
+    } = optionsField
+
+    function onBlur() {
+      if (!element.value.isOpen) {
+        field.onBlur()
+      }
     }
-  },
 
-  computed: {
-    inputAffixesProps() {
-      return getInputAffixesProps(this)
-    },
+    // Returns an option for a value without one, e.g. of options that only
+    // hold the results of searches: Related objects are their own options,
+    // other values get an option that holds them as value and label.
+    const getFallbackOption = value =>
+      isObject(value) || !isString(optionValue.value)
+        ? value
+        : {
+            [optionValue.value]: value,
+            ...(isString(optionLabel.value) && {
+              [optionLabel.value]: `${value}`
+            })
+          }
 
-    selectedOptions: {
+    const selectedOptions = computed({
       get() {
         // Values without options stay visible once the options are loaded,
         // and are kept when the selection changes, see `getFallbackOption()`.
         // Taggable multiselects may have no options besides their values.
-        return this.multiple
+        const values = value.value
+        return multiple.value
           ? (
-              isArray(this.value) && (
-                this.hasOptions ||
-                this.taggable && !this.isLoadingOptions
+              isArray(values) && (
+                hasOptions.value ||
+                taggable.value && !isLoadingOptions.value
               )
             )
-            ? this.value.map(value => {
-                const selectedValue = this.relate
-                  ? this.getValueForOption(value)
-                  : value
-                return (
-                  this.getOptionForValue(selectedValue) ||
-                  this.getFallbackOption(value)
+            ? values.map(
+                value => (
+                  getOptionForValue(
+                    relate.value ? getValueForOption(value) : value
+                  ) || getFallbackOption(value)
                 )
-              })
+              )
             : []
-          : this.selectedOption
+          : selectedOption.value
       },
 
       set(option) {
         // Convert value to options object, since vue-multiselect can't map that
         // itself unfortunately. `track-by` is used for :key mapping it seems.
-        this.selectedValue = this.multiple
-          ? (option || []).map(value => this.getValueForOption(value))
-          : this.getValueForOption(option)
-        this.onChange()
+        selectedValue.value = multiple.value
+          ? (option || []).map(value => getValueForOption(value))
+          : getValueForOption(option)
+        field.onChange()
       }
-    },
-
-    // @override
-    options() {
-      const options = OptionsMixin.computed.options.call(this)
-      // Add the options of the added tags that the options don't contain yet,
-      // without modifying the options of the data model. Grouped options have
-      // no group to add them to.
-      const addedTagOptions = this.groupBy
-        ? []
-        : this.addedTagOptions.filter(
-            option => !this.isOptionAmong(option, options)
-          )
-      return addedTagOptions.length > 0
-        ? [...options, ...addedTagOptions]
-        : options
-    },
-
-    activeOptions() {
-      return this.searchedOptions || this.options
-    },
-
-    // @override
-    multiple: getSchemaAccessor('multiple', {
-      type: Boolean,
-      default: false
-    }),
-
-    searchable: getSchemaAccessor('searchable', {
-      type: Boolean,
-      default: false
-    }),
-
-    taggable: getSchemaAccessor('taggable', {
-      type: Boolean,
-      default: false
-    }),
-
-    stayOpen: getSchemaAccessor('stayOpen', {
-      type: Boolean,
-      default: false
-    }),
-
-    multiselectClasses() {
-      const prefix = 'multiselect'
-      return {
-        [`${prefix}--multiple`]: this.multiple,
-        [`${prefix}--loading`]: (
-          this.isLoadingOptions || this.isLoadingSearchedOptions
-        ),
-        [`${prefix}--highlight`]: this.showHighlight
-      }
-    },
-
-    placeholder() {
-      let { placeholder, searchable, taggable } = this.schema
-      if (isBoolean(placeholder)) {
-        placeholder = placeholder ? undefined : null
-      }
-      const { label } = this
-      return placeholder === undefined
-        ? searchable && taggable
-          ? label
-            ? `Search or add a ${label}`
-            : 'Search or add'
-          : searchable
-            ? label
-              ? `Select or search ${label}`
-              : 'Select or search'
-            : undefined
-        : placeholder
-    },
-
-    showHighlight() {
-      return this.isMounted && this.$refs.element.pointerDirty
-    }
-  },
-
-  mounted() {
-    if (this.autofocus) {
-      // vue-multiselect doesn't support the autofocus attribute. We need to
-      // handle it here.
-      this.focus()
-    }
-  },
-
-  methods: {
-    createTagOption(tag) {
-      const { optionLabel, optionValue } = this
-      return optionLabel && optionValue
-        ? {
-            [optionLabel]: tag,
-            // TODO: Define a simple schema option to convert the tag value
-            // to something else, e.g. `toTag: tag => underscore(tag)`
-            [optionValue]: tag
-          }
-        : tag
-    },
-
-    // Returns whether `options` contain an option with the value of `option`.
-    isOptionAmong(option, options) {
-      const value = this.getValueForOption(option)
-      return options.some(
-        otherOption => this.getValueForOption(otherOption) === value
-      )
-    },
-
-    // Returns whether the option is a fallback option for a value without
-    // one, see `getFallbackOption()`. Plain options are their own values.
-    // Taggable multiselects can hold any value.
-    isUnavailableOption(option) {
-      return (
-        !this.taggable && (
-          this.optionValue
-            ? !this.getOptionForValue(this.getValueForOption(option))
-            : !this.options.includes(option)
-        )
-      )
-    },
-
-    // Returns an option for a value without one, e.g. of options that only
-    // hold the results of searches: Related objects are their own options,
-    // other values get an option that holds them as value and label.
-    getFallbackOption(value) {
-      const { optionValue, optionLabel } = this
-      return isObject(value) || !isString(optionValue)
-        ? value
-        : {
-            [optionValue]: value,
-            ...(isString(optionLabel) && { [optionLabel]: `${value}` })
-          }
-    },
-
-    focusElement() {
-      this.$refs.element.activate()
-    },
-
-    blurElement() {
-      this.$refs.element.deactivate()
-    },
-
-    onOpen() {
-      this.populate = true
-    },
-
-    onClose() {
-      // Since we don't fire blur events while the multiselect is open (see
-      // below), we need to do it here, when it's actually closed.
-      if (this.focused) {
-        this.onBlur()
-      }
-    },
-
-    onBlur() {
-      if (!this.$refs.element.isOpen) {
-        TypeMixin.methods.onBlur.call(this)
-      }
-    },
-
-    onAddTag(tag) {
-      if (this.taggable) {
-        const option = this.createTagOption(tag)
-        this.addedTagOptions.push(option)
-        // Select the option through `selectedOptions`, which emits the change:
-        this.selectedOptions = this.multiple
-          ? [...this.selectedOptions, option]
-          : option
-      }
-    },
+    })
 
     // Returns the options that `searchFilter()` returns for the search term,
     // or `null` if it fails. Waits for the options, as the filter receives
     // them, e.g. to search them when the search term is entered while they are
     // still loading.
-    async loadSearchedOptions(searchTerm) {
+    const loadSearchedOptions = async searchTerm => {
       // The error of a search replaces the one of the previous search:
-      this.dataModel.removeError(this.dataPath, this.searchError)
-      this.searchError = null
+      const { model } = services.container
+      model.removeError(props.dataPath, searchError)
+      searchError = null
       try {
-        await this.optionsResolver.waitForValue()
-        return await this.searchFilter(new DitoContext(this, { searchTerm }))
+        await optionsResolver.value.waitForValue()
+        return await searchFilter.value(searchTerm)
       } catch (error) {
-        this.searchError = error.message || error
-        this.dataModel.addError(this.dataPath, this.searchError)
+        searchError = error.message || error
+        model.addError(props.dataPath, searchError)
         return null
       }
-    },
+    }
 
-    async onSearchChange(searchTerm) {
-      if (this.searchFilter) {
-        this.currentSearchTerm = searchTerm
-        if (searchTerm) {
-          // Set `searchedOptions` to an empty array, before it will be
-          // populated asynchronously with the actual results.
-          this.searchedOptions = []
-          // Use a timeout to allow already resolved promises to return options
-          // without showing a loading indicator.
-          const timer = setTimeout(() => {
-            this.isLoadingSearchedOptions = true
-          }, 0)
-          const options = await this.loadSearchedOptions(searchTerm)
-          clearTimeout(timer)
-          // Searches that were replaced by newer ones in the meantime neither
-          // show their options nor end the loading state.
-          if (searchTerm === this.currentSearchTerm) {
-            this.searchedOptions = options
-            this.isLoadingSearchedOptions = false
+    onMounted(() => {
+      isMounted.value = true
+      if (autofocus.value) {
+        // vue-multiselect doesn't support the autofocus attribute. We need to
+        // handle it here.
+        field.focus()
+      }
+    })
+
+    return {
+      ...optionsField,
+      attributes: field.attributes,
+      inputAffixesProps: field.inputAffixesProps,
+      focus: field.focus,
+      clear: field.clear,
+      selectedOptions,
+      populate,
+      searchable,
+      taggable,
+      isLoadingSearchedOptions,
+
+      stayOpen: getBoolean('stayOpen'),
+
+      multiselectClasses: computed(() => {
+        const prefix = 'multiselect'
+        return {
+          [`${prefix}--multiple`]: multiple.value,
+          [`${prefix}--loading`]: (
+            isLoadingOptions.value || isLoadingSearchedOptions.value
+          ),
+          [`${prefix}--highlight`]: (
+            isMounted.value && element.value.pointerDirty
+          )
+        }
+      }),
+
+      placeholder: computed(() => {
+        let { placeholder, searchable, taggable } = props.schema
+        if (isBoolean(placeholder)) {
+          placeholder = placeholder ? undefined : null
+        }
+        const { label } = props
+        return placeholder === undefined
+          ? searchable && taggable
+            ? label
+              ? `Search or add a ${label}`
+              : 'Search or add'
+            : searchable
+              ? label
+                ? `Select or search ${label}`
+                : 'Select or search'
+              : undefined
+          : placeholder
+      }),
+
+      // Returns whether the option is a fallback option for a value without
+      // one, see `getFallbackOption()`. Plain options are their own values.
+      // Taggable multiselects can hold any value.
+      isUnavailableOption(option) {
+        return (
+          !taggable.value && (
+            optionValue.value
+              ? !getOptionForValue(getValueForOption(option))
+              : !options.value.includes(option)
+          )
+        )
+      },
+
+      onOpen() {
+        populate.value = true
+      },
+
+      onClose() {
+        // Since we don't fire blur events while the multiselect is open (see
+        // `onBlur()`), we need to do it here, when it's actually closed.
+        if (focused.value) {
+          onBlur()
+        }
+      },
+
+      onAddTag(tag) {
+        if (taggable.value) {
+          const label = optionLabel.value
+          const key = optionValue.value
+          const option =
+            label && key
+              ? {
+                  [label]: tag,
+                  // TODO: Define a simple schema option to convert the tag
+                  // value to something else, e.g.
+                  // `toTag: tag => underscore(tag)`
+                  [key]: tag
+                }
+              : tag
+          addedTagOptions.value.push(option)
+          // Select the option through `selectedOptions`, which emits the
+          // change:
+          selectedOptions.value = multiple.value
+            ? [...selectedOptions.value, option]
+            : option
+        }
+      },
+
+      async onSearchChange(searchTerm) {
+        if (searchFilter.value) {
+          currentSearchTerm = searchTerm
+          if (searchTerm) {
+            // Set `searchedOptions` to an empty array, before it will be
+            // populated asynchronously with the actual results.
+            searchedOptions.value = []
+            // Use a timeout to allow already resolved promises to return
+            // options without showing a loading indicator.
+            const timer = setTimeout(() => {
+              isLoadingSearchedOptions.value = true
+            }, 0)
+            const options = await loadSearchedOptions(searchTerm)
+            clearTimeout(timer)
+            // Searches that were replaced by newer ones in the meantime
+            // neither show their options nor end the loading state.
+            if (searchTerm === currentSearchTerm) {
+              searchedOptions.value = options
+              isLoadingSearchedOptions.value = false
+            }
+          } else {
+            // Clear `searchedOptions` when the query is cleared.
+            searchedOptions.value = null
+            isLoadingSearchedOptions.value = false
           }
-        } else {
-          // Clear `searchedOptions` when the query is cleared.
-          this.searchedOptions = null
-          this.isLoadingSearchedOptions = false
         }
       }
     }

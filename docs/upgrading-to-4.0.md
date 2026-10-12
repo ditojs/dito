@@ -407,3 +407,17 @@ Views provide both contexts of their main component, e.g. to their panels.
 - Types that route sources next to the forms of their items, like the children
   of tree items, return their schemas from `getChildSourceSchemas(schema)`.
 - Components no longer have `getTypeComponent()`.
+- The components of dito's types are built with composables instead of
+  `TypeMixin`, `ValueMixin`, `ContextMixin`, `TextMixin`, `NumberMixin`,
+  `OptionsMixin`, `DomMixin` and `SortableMixin`, which are removed. Their
+  instances no longer have `value`, `item`, `parentItem`, `rootItem`,
+  `focused`, `validate()` or the resolved schema values, e.g. `readonly`, and
+  their contexts are built from their props and services instead of the
+  instance. Their schema component reveals them through `focus()`.
+- The data model replaces the values of components with options once the
+  options are loaded, e.g. references with their related objects, and shows
+  the errors of failed loads, also while the component isn't rendered. Values
+  of `taggable` multiselects that no option has are kept, also single ones.
+- The schema values of the container of a component, e.g. `visible`, `width`,
+  `label` and `disabled`, see the contexts of the surrounding form or list,
+  not the ones that lists and buttons have of their own, e.g. `isRunning`.

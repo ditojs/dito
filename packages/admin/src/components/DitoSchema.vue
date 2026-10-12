@@ -112,7 +112,6 @@ import {
 } from '@ditojs/utils'
 import { TransitionHeight } from '@ditojs/ui/src'
 import DitoComponent from '../DitoComponent.js'
-import ContextMixin from '../mixins/ContextMixin.js'
 import { appendDataPath, getRelativeDataPath } from '../utils/data.js'
 import { isPanel } from '../utils/schema/structure.js'
 import {
@@ -134,7 +133,6 @@ import { getSchemaAccessor, getStoreAccessor } from '../utils/accessor.js'
 
 // @vue/component
 export default DitoComponent.component('DitoSchema', {
-  mixins: [ContextMixin],
   components: { TransitionHeight },
   inheritAttrs: false,
 
@@ -194,11 +192,6 @@ export default DitoComponent.component('DitoSchema', {
   },
 
   computed: {
-    nested() {
-      // For `ContextMixin`:
-      return false
-    },
-
     schemaComponent() {
       // Override DitoMixin's schemaComponent() which uses the injected value.
       return this

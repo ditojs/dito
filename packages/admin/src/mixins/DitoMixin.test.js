@@ -320,7 +320,7 @@ describe('DitoMixin', () => {
       })
       const component = getComponent('isbn')
       expect(component.data.cover).toBe('cover-old')
-      component.value = 'new'
+      component.dataModel.set(component.data, 'isbn', 'new')
       await flushPromises()
       expect(component.dataModel.hasPendingLoads).toBe(true)
       const tracker = component.admin.loadingTracker

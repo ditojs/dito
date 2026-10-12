@@ -43,180 +43,150 @@ DitoTrigger.dito-color(
 // `v-model:tinyColor` binding.
 import { SketchPicker, tinycolor } from 'vue-color'
 import { DitoTrigger, DitoInput } from '@ditojs/ui/src'
-import DitoTypeComponent from '../DitoTypeComponent.js'
+import { computed, ref, watch } from 'vue'
+import DitoComponent from '../DitoComponent.js'
 import { defineType } from '../utils/schema/types.ts'
-import TypeMixin from '../mixins/TypeMixin.js'
+import { fieldProps, useField } from '../composables/useField.ts'
 import DitoInputAffixes from '../components/DitoInputAffixes.vue'
-import { getInputAffixesProps } from '../utils/affixes.js'
-import { getSchemaAccessor } from '../utils/accessor.js'
 import { createChangeOnceEdited } from '../utils/changeOnceEdited.js'
 
 // @vue/component
-const DitoTypeColor = DitoTypeComponent.component('DitoTypeColor', {
+const DitoTypeColor = DitoComponent.component('DitoTypeColor', {
   components: { DitoTrigger, DitoInput, DitoInputAffixes, SketchPicker },
+  props: fieldProps,
 
-  data() {
-    return {
-      showPopup: false,
-      convertedValue: null
-    }
-  },
-
-  computed: {
-    inputAffixesProps() {
-      return getInputAffixesProps(this)
-    },
-
-    canUpdateValue() {
-      return !this.focused || this.readonly
-    },
-
-    colorValue: {
-      get() {
-        return tinycolor(this.convertedValue || this.value || '#000000')
-      },
-
-      set(color) {
-        // Picker changes take precedence over values typed into the input.
-        this.convertedValue = null
-        // Skip unchanged colors, as converting formats like `hsl` back and
-        // forth isn't lossless and would cause endless updates.
-        const { value } = this
-        if (
-          !value ||
-          color.toHex8String() !== tinycolor(value).toHex8String()
-        ) {
-          this.setEditedValue(toTinyColorFormat(color, this.colorFormat))
-          // The input emits its own input events, the picker doesn't:
-          this.onInput()
-        }
-      }
-    },
-
-    hexValue: {
-      get() {
-        const color = tinycolor(this.value)
-        return color.isValid()
-          ? color
-              .toString(color.getAlpha() < 1 ? 'hex8' : 'hex6')
-              .slice(1)
-              .toLowerCase()
-          : null
-      },
-
-      set(value) {
-        const color = tinycolor(value)
-        if (color.isValid()) {
-          const convertedValue = convertColor(value, this.colorFormat)
-          if (this.canUpdateValue) {
-            this.setEditedValue(convertedValue)
-          } else {
-            // Store to change later, once `canUpdateValue` is true again.
-            // See `watch` below.
-            this.convertedValue = convertedValue
-          }
-        }
-      }
-    },
-
-    // TODO: `format` clashes with TypeMixin.format()`, which shall be renamed
-    // soon to `formatValue()`. Rename `colorFormat` back to `format` after.
-    colorFormat: getSchemaAccessor('format', {
-      type: String,
-      default: 'hex'
-    }),
-
-    // TODO: Rename to `showAlpha`?
-    alpha: getSchemaAccessor('alpha', {
-      type: Boolean,
-      default: false
-    }),
-
-    // TODO: Rename to `showInputs`?
-    inputs: getSchemaAccessor('inputs', {
-      type: Boolean,
-      default: true
-    }),
-
-    presets: getSchemaAccessor('presets', {
-      type: Array,
-      default: [
-        '#ffffff',
-        '#c3c3c3',
-        '#7f7f7f',
-        '#000000',
-        '#880015',
-        '#ed1c24',
-        '#ff7f27',
-        '#fff200',
-
-        '#22b14c',
-        '#00a2e8',
-        '#3f48cc',
-        '#a349a4',
-        '#b97a57',
-        '#ffaec9',
-        '#ffc90e',
-        '#00000000'
-      ]
+  setup(props) {
+    const field = useField(props, {
+      // The input's native change events don't tell when the editing is done,
+      // as the picker edits the value too, see `changeOnceEdited`. They are
+      // handled to keep them from emitting the schema's change events.
+      getEvents: ({ onFocus, onInput }) => ({
+        onFocus,
+        onBlur,
+        onInput,
+        onChange: () => {}
+      })
     })
-  },
+    const { value, focused, readonly, getSchemaValue } = field
+    const showPopup = ref(false)
+    // The value of the input while it can't be written, see `hexValue`:
+    const convertedValue = ref(null)
 
-  watch: {
-    canUpdateValue(canUpdateValue) {
-      if (canUpdateValue && this.convertedValue !== null) {
-        this.setEditedValue(this.convertedValue)
-        this.convertedValue = null
-      }
-    },
-
-    showPopup(showPopup) {
-      if (!showPopup) {
-        this.changeOnceEdited.emitIfDone()
-      }
-    }
-  },
-
-  created() {
     // Emits the change of the value once the editing is done, i.e. once
     // neither the input is focused nor the picker is open.
-    this.changeOnceEdited = createChangeOnceEdited({
-      isEditing: () => this.focused || this.showPopup,
-      emitChange: () => this.onChange()
+    const changeOnceEdited = createChangeOnceEdited({
+      isEditing: () => focused.value || showPopup.value,
+      emitChange: () => field.onChange()
     })
-  },
 
-  methods: {
-    // @override
-    getEvents() {
-      // The input's native change events don't tell when the editing is done,
-      // as the picker edits the value too, see `changeOnceEdited`. They
-      // are handled to keep them from emitting the schema's change events.
-      const { onFocus, onBlur, onInput } = this
-      return { onFocus, onBlur, onInput, onChange: () => {} }
-    },
+    // TODO: `format` clashes with `schema.format()`, which shall be renamed
+    // soon to `formatValue()`. Rename `colorFormat` back to `format` after.
+    const colorFormat = computed(() =>
+      getSchemaValue('format', { type: String, default: 'hex' })
+    )
 
-    // @override
-    onBlur() {
-      TypeMixin.methods.onBlur.call(this)
-      this.changeOnceEdited.emitIfDone()
-    },
-
-    // @override
-    clear() {
-      // Clearing replaces the edits that are pending, see `hexValue` and
-      // `changeOnceEdited`, and emits its own change event.
-      this.convertedValue = null
-      this.changeOnceEdited.reset()
-      TypeMixin.methods.clear.call(this)
-    },
+    const canUpdateValue = computed(() => !focused.value || readonly.value)
 
     // Sets a value that the user edited, through the input or the picker.
     // Values changed by code don't emit change events.
-    setEditedValue(value) {
-      this.value = value
-      this.changeOnceEdited.markEdited()
-      this.changeOnceEdited.emitIfDone()
+    const setEditedValue = editedValue => {
+      value.value = editedValue
+      changeOnceEdited.markEdited()
+      changeOnceEdited.emitIfDone()
+    }
+
+    function onBlur() {
+      field.onBlur()
+      changeOnceEdited.emitIfDone()
+    }
+
+    watch(canUpdateValue, canUpdateValue => {
+      if (canUpdateValue && convertedValue.value !== null) {
+        setEditedValue(convertedValue.value)
+        convertedValue.value = null
+      }
+    })
+
+    watch(showPopup, showPopup => {
+      if (!showPopup) {
+        changeOnceEdited.emitIfDone()
+      }
+    })
+
+    return {
+      value,
+      showPopup,
+      attributes: field.attributes,
+      inputAffixesProps: field.inputAffixesProps,
+      focus: field.focus,
+
+      colorValue: computed({
+        get() {
+          return tinycolor(convertedValue.value || value.value || '#000000')
+        },
+
+        set(color) {
+          // Picker changes take precedence over values typed into the input.
+          convertedValue.value = null
+          // Skip unchanged colors, as converting formats like `hsl` back and
+          // forth isn't lossless and would cause endless updates.
+          if (
+            !value.value ||
+            color.toHex8String() !== tinycolor(value.value).toHex8String()
+          ) {
+            setEditedValue(toTinyColorFormat(color, colorFormat.value))
+            // The input emits its own input events, the picker doesn't:
+            field.onInput()
+          }
+        }
+      }),
+
+      hexValue: computed({
+        get() {
+          const color = tinycolor(value.value)
+          return color.isValid()
+            ? color
+                .toString(color.getAlpha() < 1 ? 'hex8' : 'hex6')
+                .slice(1)
+                .toLowerCase()
+            : null
+        },
+
+        set(hex) {
+          const color = tinycolor(hex)
+          if (color.isValid()) {
+            const converted = convertColor(hex, colorFormat.value)
+            if (canUpdateValue.value) {
+              setEditedValue(converted)
+            } else {
+              // Store to change later, once `canUpdateValue` is true again.
+              convertedValue.value = converted
+            }
+          }
+        }
+      }),
+
+      // TODO: Rename to `showAlpha`?
+      alpha: computed(() =>
+        getSchemaValue('alpha', { type: Boolean, default: false })
+      ),
+
+      // TODO: Rename to `showInputs`?
+      inputs: computed(() =>
+        getSchemaValue('inputs', { type: Boolean, default: true })
+      ),
+
+      presets: computed(() =>
+        getSchemaValue('presets', { type: Array, default: defaultPresets })
+      ),
+
+      clear() {
+        // Clearing replaces the edits that are pending, see `hexValue` and
+        // `changeOnceEdited`, and emits its own change event.
+        convertedValue.value = null
+        changeOnceEdited.reset()
+        field.clear()
+      }
     }
   }
 })
@@ -227,6 +197,26 @@ defineType({
 })
 
 export default DitoTypeColor
+
+const defaultPresets = [
+  '#ffffff',
+  '#c3c3c3',
+  '#7f7f7f',
+  '#000000',
+  '#880015',
+  '#ed1c24',
+  '#ff7f27',
+  '#fff200',
+
+  '#22b14c',
+  '#00a2e8',
+  '#3f48cc',
+  '#a349a4',
+  '#b97a57',
+  '#ffaec9',
+  '#ffc90e',
+  '#00000000'
+]
 
 function convertColor(color, format) {
   return toTinyColorFormat(tinycolor(color), format)

@@ -47,7 +47,7 @@ describe('DitoTypeRadio', () => {
     const { getComponent, findField } = await mountSchema({
       schema: { components: { genre: { type: 'radio', options: genres } } }
     })
-    getComponent('genre').focusElement()
+    await getComponent('genre').focus()
     expect(document.activeElement).toBe(
       getRadioButtons(findField('genre'))[0].element
     )
