@@ -40,6 +40,8 @@ defineType({
   type: 'component',
   setupSchema: (api, schema) => resolveSchemaComponent(schema)
 })
+defineType({ type: 'computed', resolvesValue: true })
+defineType({ type: 'color', hasFormat: true })
 
 function createApi(defaults = {}) {
   return { defaults, normalizePath: path => hyphenate(path) }
@@ -272,10 +274,10 @@ describe('applySchemaDefaults()', () => {
   })
 
   it('merges defaults deeply into existing objects', () => {
-    const api = createApi({ text: { format: { trim: true } } })
-    const schema = { type: 'text', format: { case: 'lower' } }
+    const api = createApi({ text: { options: { value: 'id' } } })
+    const schema = { type: 'text', options: { label: 'name' } }
     applySchemaDefaults(api, schema)
-    expect(schema.format).toEqual({ case: 'lower', trim: true })
+    expect(schema.options).toEqual({ label: 'name', value: 'id' })
   })
 
   it('overrides existing values with the values of the defaults', () => {
@@ -293,6 +295,63 @@ describe('applySchemaDefaults()', () => {
     applySchemaDefaults(api, schema)
     applySchemaDefaults(createApi(), { type: 'section' })
     expect(schema).toEqual({ type: 'text' })
+  })
+})
+
+describe('the schema keys of 3.x', () => {
+  const setupBookView = components =>
+    setupView(createApi(), { type: 'view', components }, 'books')
+
+  it.each([
+    ['format', 'formatValue()'],
+    ['parse', 'parseValue()'],
+    ['compute', 'computeValue()'],
+    ['process', 'serializeValue()']
+  ])('rejects the value hook %s() with its replacement', async (key, hook) => {
+    await expect(
+      setupBookView({ title: { type: 'text', [key]: ({ value }) => value } })
+    ).rejects.toThrow(
+      `Unsupported schema key '${key}' in 'title': Use '${hook}' instead.`
+    )
+  })
+
+  it.each(['methods', 'computed', 'watch', 'data'])(
+    'rejects the component member definitions in %s',
+    async key => {
+      await expect(
+        setupForm(createApi(), { type: 'form', [key]: {}, components: {} })
+      ).rejects.toThrow(`Unsupported schema key '${key}' in 'form'`)
+    }
+  )
+
+  it('rejects the formats of dates', async () => {
+    await expect(
+      setupBookView({ published: { type: 'date', formats: {} } })
+    ).rejects.toThrow(
+      `Unsupported schema key 'formats' in 'published': Use 'format' instead.`
+    )
+  })
+
+  it('rejects keys that the defaults of the type add', () => {
+    const api = createApi({ text: { process: ({ value }) => value } })
+    expect(() => applySchemaDefaults(api, { type: 'text' }, 'title')).toThrow(
+      `Unsupported schema key 'process' in 'title'`
+    )
+  })
+
+  it('keeps the format of types that read it', async () => {
+    await expect(
+      setupBookView({ cover: { type: 'color', format: 'rgb' } })
+    ).resolves.toBe(undefined)
+  })
+
+  it('keeps the data of panels and of types that resolve their value', async () => {
+    await expect(
+      setupBookView({
+        count: { type: 'computed', data: () => ({}) },
+        filters: { type: 'panel', data: () => ({}), components: {} }
+      })
+    ).resolves.toBe(undefined)
   })
 })
 

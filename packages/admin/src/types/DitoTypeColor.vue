@@ -176,7 +176,8 @@ const DitoTypeColor = {
 
 defineType({
   type: 'color',
-  component: DitoTypeColor
+  component: DitoTypeColor,
+  hasFormat: true
 })
 
 export default DitoTypeColor

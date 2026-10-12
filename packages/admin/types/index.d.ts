@@ -2831,6 +2831,11 @@ export interface TypeDescriptor {
   readonly treatsNullAsMissing?: (context: SchemaContext) => boolean
   /** The value resolves from `schema.data` or `schema.dataPath`. */
   readonly resolvesValue?: boolean
+  /**
+   * The type reads `format` from its schema, e.g. the formats of dates.
+   * Other types reject it, as the `format()` of 3.x is `formatValue()`.
+   */
+  readonly hasFormat?: boolean
   /** Generate a label from the name for components without `label`. */
   readonly generatesLabel?: boolean
   /**

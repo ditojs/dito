@@ -25,6 +25,20 @@ import { getFormSchemas } from './lookup.js'
 
 const resolvedSchemas = new WeakMap()
 
+// The schema keys of 3.x that 4.0 renamed or removed, which would otherwise be
+// ignored silently:
+const removedSchemaKeys = {
+  format: `'formatValue()'`,
+  parse: `'parseValue()'`,
+  compute: `'computeValue()'`,
+  process: `'serializeValue()'`,
+  formats: `'format'`,
+  methods: 'plain functions in the module of the schema',
+  computed: `the values of the context, or 'computeValue()'`,
+  watch: `'onChange()'`,
+  data: 'state in the module of the schema'
+}
+
 export async function resolveSchema(value, unwrapModule = false) {
   if (resolvedSchemas.has(value)) {
     return resolvedSchemas.get(value)
@@ -156,7 +170,7 @@ export function setupSchemaComponents(api, schema) {
 }
 
 function setupSchemaComponent(api, schema, name) {
-  applySchemaDefaults(api, schema)
+  applySchemaDefaults(api, schema, name)
   return Promise.all([
     mapConcurrently(
       getPanelSchemas(schema),
@@ -167,7 +181,7 @@ function setupSchemaComponent(api, schema, name) {
 }
 
 export async function setupView(api, schema, name) {
-  applySchemaDefaults(api, schema)
+  applySchemaDefaults(api, schema, name)
   schema.name ??= name
   if (isView(schema)) {
     await setupNestedSchemas(api, schema)
@@ -181,7 +195,7 @@ export async function setupView(api, schema, name) {
   }
 }
 
-export function applySchemaDefaults(api, schema) {
+export function applySchemaDefaults(api, schema, name = schema.name) {
   let defaults = (
     api.defaults[schema.type] ||
     api.defaults[camelize(schema.type)]
@@ -200,12 +214,14 @@ export function applySchemaDefaults(api, schema) {
       }
     }
   }
+  // Check after the defaults, which can change the type and add keys:
+  assertSupportedSchemaKeys(schema, name)
 }
 
 export function applyNestedSchemaDefaults(api, schema) {
   // A sync version of the defaults of `setupSchemaComponents()`, for filters:
-  iterateNestedSchemaComponents(schema, component => {
-    applySchemaDefaults(api, component)
+  iterateNestedSchemaComponents(schema, (component, name) => {
+    applySchemaDefaults(api, component, name)
     const forms = getFormSchemas(component)
     for (const form of Object.values(forms)) {
       applyNestedSchemaDefaults(api, form)
@@ -263,5 +279,22 @@ export async function setupNestedSchemas(api, schema) {
     schema.panels = await resolveSchemas(panels, panel =>
       setupPanel(api, panel)
     )
+  }
+}
+
+function assertSupportedSchemaKeys(schema, name) {
+  const descriptor = getTypeDescriptor(schema)
+  const supportedKeys = {
+    format: !!descriptor?.hasFormat,
+    data: isPanel(schema) || !!descriptor?.resolvesValue
+  }
+  for (const [key, replacement] of Object.entries(removedSchemaKeys)) {
+    if (schema[key] !== undefined && !supportedKeys[key]) {
+      throw new Error(
+        `Unsupported schema key '${key}' in '${
+          name ?? schema.type
+        }': Use ${replacement} instead.`
+      )
+    }
   }
 }
