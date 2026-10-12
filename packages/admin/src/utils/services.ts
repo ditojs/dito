@@ -1,6 +1,5 @@
 import { nextTick } from 'vue'
 import { equals, format as formatValue, isString } from '@ditojs/utils'
-import appState from '../appState.js'
 import defaultVerbs from '../verbs.js'
 import { getResource, getMemberResource } from './resource.js'
 import { getRequestCacheKey } from './request.js'
@@ -20,6 +19,9 @@ export interface Services {
   readonly resourceContext: ResourceContext | null
 }
 
+// Requests only need the admin, and the resource that relative ones continue:
+export type RequestServices = Pick<Services, 'adminContext' | 'resourceContext'>
+
 export interface RequestOptions {
   method?: HTTPMethod
   url?: string
@@ -38,8 +40,8 @@ export interface DownloadOptions {
   query?: Record<string, any>
 }
 
-export function getRootData({ dataContext, routeContext }: Services) {
-  return dataContext?.model.rootData ?? routeContext?.rootData ?? null
+export function getRootData({ dataContext }: Services) {
+  return dataContext?.model.rootData ?? null
 }
 
 // Forms and sources have their own verbs, e.g. `apply` in nested data:
@@ -64,7 +66,7 @@ export async function waitUntilDataModelSettled({
 }
 
 export function getResourceUrl(
-  { adminContext, resourceContext }: Services,
+  { adminContext, resourceContext }: RequestServices,
   resource: Resource
 ): string | null {
   // Resources without a parent continue the nearest form's or source's:
@@ -82,7 +84,7 @@ export function getResourceUrl(
 }
 
 export async function sendRequest(
-  services: Services,
+  services: RequestServices,
   { method, url, resource, query, data, signal, internal }: RequestOptions
 ) {
   const { api, session } = services.adminContext
@@ -114,7 +116,7 @@ export function request(
   // Components outside of routes, e.g. in dialogs, don't cache locally:
   const loadCache: Record<string, Promise<any>> | null =
     cache === 'global'
-      ? appState.loadCache
+      ? services.adminContext.session.loadCache
       : cache === 'local'
         ? (services.routeContext?.loadCache ?? null)
         : null

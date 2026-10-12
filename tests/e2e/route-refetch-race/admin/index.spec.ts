@@ -1,15 +1,16 @@
 import { test, expect } from '../fixtures.js'
 import { Widget } from '../models/Widget.js'
-import { DitoListView, DitoForm } from '../../../utils/pages.js'
+import {
+  DitoListView,
+  DitoForm,
+  DitoNestedList
+} from '../../../utils/pages.js'
 
 test.describe('route-refetch-race', () => {
-  test('dirty form drops in-flight reload response so local edits survive', async ({
+  test('dirty form keeps its edits when its list reloads after a save', async ({
     page,
     url
   }) => {
-    // Seed: a single widget. The items relation is wired up in the view but
-    // unused here — the bug is framework-level (ResourceMixin.requestData)
-    // and lives on the `DitoForm` itself, not on the items list.
     const widget = await Widget.query().insertGraph({
       name: 'before',
       items: [{ label: 'item-one' }]
@@ -17,77 +18,47 @@ test.describe('route-refetch-race', () => {
 
     const list = new DitoListView(page, url, 'Widget')
     const form = new DitoForm(page)
+    const items = new DitoNestedList(page, 'Items')
 
     await list.navigate('/widgets')
-    // Wait for the form's initial GET (fired by ResourceMixin's `created`
-    // hook → `setupData` → `ensureData` → `loadData(true)`) to settle. It can
-    // still be in flight when `edit()` returns, and would otherwise be held
-    // below instead of the reload.
-    const initialGet = page.waitForResponse(
-      response => (
-        /\/api\/widgets\/\d+(\?|$)/.test(response.url()) &&
-        response.request().method() === 'GET'
-      )
-    )
     await list.list.edit('before')
-    await initialGet
+    await items.edit(0)
+    await form.fill('Label', 'item-two')
 
-    // Hold the *next* member GET on `/api/widgets/<id>`, i.e. the reload
-    // below.
-    let releaseGet!: () => void
-    const editPerformed = new Promise<void>(resolve => {
-      releaseGet = resolve
+    // Hold the reload of the items that saving the item triggers, until the
+    // widget is edited:
+    let releaseReload!: () => void
+    const isEdited = new Promise<void>(resolve => {
+      releaseReload = resolve
     })
-    let pendingGet = false
-    await page.route(/\/api\/widgets\/\d+(\?|$)/, async (route, req) => {
-      // `\d+(\?|$)` boundary already excludes `/api/widgets/<id>/items[...]`,
-      // but assert it explicitly to avoid surprises.
-      if (/\/items/.test(req.url())) {
-        await route.continue()
-        return
-      }
-      if (req.method() === 'GET' && !pendingGet) {
-        pendingGet = true
-        await editPerformed
+    let isReloadHeld = false
+    await page.route(/\/api\/widgets\/\d+\/items(\?|$)/, async (route, req) => {
+      if (req.method() === 'GET' && !isReloadHeld) {
+        isReloadHeld = true
+        await isEdited
       }
       await route.continue()
     })
 
-    // Drive `reloadData()` on the widget form directly. The bug we're fixing
-    // is in `ResourceMixin.requestData`'s success branch — it unconditionally
-    // calls `setData(response.data)`, clobbering any local edits made while
-    // the GET was in flight. We don't need to reproduce the exact user-level
-    // trigger (a cancel-back from a `mutate: true` tree-list sub-form)
-    // — exercising `reloadData()` directly tests the framework boundary that
-    // the dirty-guard fix lives on.
-    //
-    // Access route: the Vue 3 app instance hangs off `el.__vue_app__`, and
-    // Vue exposes the active component for each DOM node on
-    // `__vueParentComponent`. Walk up from the form's root DOM until we hit
-    // the DitoForm.
-    await page.evaluate(() => {
-      const root = document.querySelector('.dito-form')
-      if (!root) throw new Error('No .dito-form in the DOM')
-      let node = (root as any).__vueParentComponent
-      while (node && node.type?.name !== 'DitoForm') node = node.parent
-      if (!node) throw new Error('Could not locate DitoForm component')
-      node.ctx.reloadData()
-    })
-
-    // Make a local edit while the held GET response sits in the request
-    // pipeline. Without the fix, the response will land on top of this and
-    // overwrite `loadedData.name` back to 'before'. With the fix, the form's
-    // data is edited (`dataModel.isEdited`), so `requestData()` discards the
-    // response.
-    await form.fill('Name', 'after')
-
-    releaseGet()
-
-    // Save: the PATCH body carries whatever is currently in `loadedData`.
-    // With the bug: 'before'. With the fix: 'after'.
+    // The item form closes once saved, back to the widget form:
     await form.save()
+    await expect(form.getField('Name')).toBeVisible()
+    await form.fill('Name', 'after')
+    const reloaded = page.waitForResponse(
+      response => (
+        /\/api\/widgets\/\d+\/items(\?|$)/.test(response.url()) &&
+        response.request().method() === 'GET'
+      )
+    )
+    releaseReload()
+    await reloaded
+    await expect(form.getField('Name')).toHaveValue('after')
 
-    const saved = await Widget.query().findById(widget.$id() as number)
+    await form.save()
+    const saved = await Widget.query()
+      .findById(widget.$id() as number)
+      .withGraphFetched('items')
     expect(saved?.name).toBe('after')
+    expect(saved?.items?.map(item => item.label)).toEqual(['item-two'])
   })
 })

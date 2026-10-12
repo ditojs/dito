@@ -25,12 +25,13 @@ nav.dito-trail(aria-label="Breadcrumb")
 <script>
 import { computed, inject } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { adminContextKey } from '../utils/keys.ts'
 
 export default {
   name: 'DitoTrail',
 
   setup() {
-    const adminContext = inject('adminContext')
+    const adminContext = inject(adminContextKey)
     const currentRoute = useRoute()
     const router = useRouter()
     return {

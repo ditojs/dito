@@ -41,26 +41,16 @@ component.dito-panel(
 </template>
 
 <script>
-import {
-  computed,
-  inject,
-  markRaw,
-  reactive,
-  ref,
-  toRef,
-  toRefs
-} from 'vue'
+import { computed, inject, reactive, toRefs } from 'vue'
 import { isFunction } from '@ditojs/utils'
 import SchemaContext from '../SchemaContext.js'
-import {
-  useContainer,
-  useSchemaContext
-} from '../composables/useSchemaContext.ts'
+import { useContainer } from '../composables/useContainer.ts'
+import { useSchemaContext } from '../composables/useSchemaContext.ts'
 import { useSchemaValue } from '../composables/useSchemaValue.ts'
 import { useComponentPath } from '../composables/useComponentPath.ts'
+import { schemaContextKey } from '../utils/keys.ts'
 import { getButtonSchemas } from '../utils/schema/lookup.js'
 import { shouldRenderComponents } from '../utils/schema/data.js'
-import { DataContext } from '../utils/DataContext.ts'
 import { getRootData } from '../utils/services.ts'
 
 export default {
@@ -84,7 +74,7 @@ export default {
     )
     // The panel decides about itself in the data around it, e.g. in `if` and
     // `data()`, while its components and buttons see the data it displays:
-    const schemaContext = inject('schemaContext')
+    const schemaContext = inject(schemaContextKey)
     const { context, services } = useSchemaContext(
       reactive({
         ...toRefs(props),
@@ -92,53 +82,26 @@ export default {
       })
     )
     const { getSchemaValue, getLabel } = useSchemaValue(context)
-    const ownData = ref(null)
-    const hasOwnData = computed(() => !!ownData.value)
-    const panelData = computed(() => ownData.value || props.data)
-    // Own data is addressed by the panel's data path, within the root data
-    // around it:
-    const panelDataPath = computed(() =>
-      hasOwnData.value ? props.dataPath : schemaContext.dataPath
-    )
-
     // Own data gets its own container, so that its edits don't make the data
-    // around the panel dirty:
-    let panelServices = services
-    if (props.schema.data) {
-      const { data } = props.schema
-      ownData.value = isFunction(data) ? data(context) : data
-      const dataContext = markRaw(
-        new DataContext(
-          reactive({
-            schema: toRef(props, 'schema'),
-            data: ownData,
-            dataPath: toRef(props, 'dataPath'),
-            componentPath: toRef(props, 'panelComponentPath'),
-            get dataModel() {
-              return dataModel
-            },
-            get services() {
-              return ownServices
-            },
-            setData(data) {
-              ownData.value = data
-              return ownData.value
-            }
-          })
-        )
-      )
-      const { services: ownServices, createDataModel } = useContainer({
-        dataContext
-      })
-      panelServices = ownServices
-      const dataModel = createDataModel({
-        schema: () => props.schema,
-        data: () => ownData.value,
-        rootData: () => getRootData(services),
-        dataPath: () => props.dataPath,
-        parent: () => services.dataContext?.model ?? null
-      })
-    }
+    // around the panel dirty. It's addressed by the panel's data path, within
+    // the root data around it:
+    const { data } = props.schema
+    const container = data
+      ? useContainer({
+          schema: () => props.schema,
+          data: isFunction(data) ? data(context) : data,
+          dataPath: () => props.dataPath,
+          rootData: () => getRootData(services),
+          componentPath: () => props.panelComponentPath,
+          parentModel: () => services.dataContext?.model ?? null
+        })
+      : null
+    const hasOwnData = !!container
+    const panelData = computed(() => container?.dataContext.data ?? props.data)
+    const panelDataPath = computed(() =>
+      hasOwnData ? props.dataPath : schemaContext.dataPath
+    )
+    const panelServices = container?.services ?? services
 
     return {
       getLabel,
@@ -161,10 +124,9 @@ export default {
       ),
 
       // Panels that provide their own data need their own form.
-      panelTag: computed(() => (hasOwnData.value ? 'form' : 'div')),
-
+      panelTag: hasOwnData ? 'form' : 'div',
       panelDataSchema: computed(() =>
-        hasOwnData.value ? props.schema : schemaContext.schema
+        hasOwnData ? props.schema : schemaContext.schema
       ),
 
       buttonSchemas: computed(() => getButtonSchemas(props.schema.buttons)),

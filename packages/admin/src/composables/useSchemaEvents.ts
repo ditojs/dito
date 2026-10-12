@@ -7,6 +7,7 @@ import {
 } from '../utils/services.ts'
 import type { Context } from '../utils/schema/types.ts'
 import type { Schema } from '../utils/types.ts'
+import { schemaEventsKey } from '../utils/keys.ts'
 
 export interface EmitOptions {
   // The context of the event, or the values that it adds to the component's:
@@ -32,7 +33,7 @@ export function useSchemaEvents(
     isolated?: () => boolean
   }
 ): SchemaEventsEmitter {
-  const parent = inject<SchemaEventsEmitter | null>('schemaEvents', null)
+  const parent = inject(schemaEventsKey, null)
   const events = computed(
     () => new SchemaEvents(getSchema(), isolated() ? null : parent?.events)
   )

@@ -1,4 +1,4 @@
-import { computed } from 'vue'
+import { computed, shallowRef } from 'vue'
 import type { Router } from 'vue-router'
 import { LoadingTracker } from './LoadingTracker.ts'
 import { UiRegistry } from './UiRegistry.ts'
@@ -26,7 +26,6 @@ export interface NotifyOptions {
 export interface DialogsAndNotifications {
   showDialog(schema: Schema, options?: DialogOptions): Promise<unknown>
   notify(options: NotifyOptions): void
-  closeNotifications(): void
 }
 
 // The user and the views change with each login, and are read reactively:
@@ -34,11 +33,14 @@ export class AdminContext {
   readonly api: Api
   readonly router: Router
   readonly session: Session
+  readonly title = document.title || 'Dito.js Admin'
   // The pending requests of the admin, for the header's spinner:
   readonly loadingTracker = new LoadingTracker()
   readonly ui = new UiRegistry()
   readonly #viewRegistry: ViewRegistry
   readonly #flattenedViews = computed(() => flattenViews(this.views))
+  // Set by the schemas of wide views and forms:
+  readonly #pageClass = shallowRef<string | null>(null)
   #dialogsAndNotifications: DialogsAndNotifications | null = null
 
   constructor({
@@ -60,6 +62,14 @@ export class AdminContext {
 
   get user() {
     return this.session.user
+  }
+
+  get pageClass(): string | null {
+    return this.#pageClass.value
+  }
+
+  set pageClass(pageClass: string | null) {
+    this.#pageClass.value = pageClass
   }
 
   get routeTree(): RouteTree | null {
@@ -86,9 +96,5 @@ export class AdminContext {
 
   notify(options: NotifyOptions) {
     this.#dialogsAndNotifications!.notify(options)
-  }
-
-  closeNotifications() {
-    this.#dialogsAndNotifications!.closeNotifications()
   }
 }

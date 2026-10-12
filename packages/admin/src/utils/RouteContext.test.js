@@ -1,4 +1,3 @@
-import { RouteContext } from './RouteContext.ts'
 import {
   mountForm,
   mountSchema,
@@ -36,33 +35,30 @@ describe('RouteContext', () => {
     const { admin, routeComponent: form, getComponent } = await mountChapters()
     const view = admin.getRouteComponent(isView)
     const { routeContext } = form
-    expect(routeContext).toBeInstanceOf(RouteContext)
-    // The sources of the form register with its route:
-    expect(routeContext.findSourceByDataPath('chapters')).toBe(
-      getComponent('chapters').ownSourceContext
-    )
+    expect(getComponent('chapters').services.routeContext).toBe(routeContext)
     expect(routeContext.parent).toBe(view.routeContext)
     expect(view.routeContext.parent).toBe(null)
     expect(routeContext.level).toBe(1)
     expect(routeContext.isForm).toBe(true)
     expect(view.routeContext.isForm).toBe(false)
-    expect(routeContext.dataContext).toBe(form.ownDataContext)
+    expect(routeContext.dataContext).toBe(form.dataContext)
     expect(routeContext.path).toBe('/items/1')
     expect(routeContext.isLastRoute).toBe(true)
     expect(view.routeContext.isLastRoute).toBe(false)
   })
 
-  it('describes the data that the routeContext renders', async () => {
+  it('holds the data that the route renders in its data context', async () => {
     const { admin, routeComponent: form } = await mountChapters()
     const view = admin.getRouteComponent(isView)
-    expect(view.routeContext.schema).toBe(view.schema)
-    expect(view.routeContext.rootData).toBe(view.data)
+    expect(view.routeContext.dataContext.schema).toBe(view.schema)
+    expect(view.routeContext.dataContext.data).toBe(view.data)
     const chapterForm = await openChapterForm(admin, '/items/1/chapters/0')
     const { routeContext } = chapterForm
-    expect(routeContext.schema).toBe(chapterForm.schema)
-    expect(routeContext.dataPath).toBe('chapters/0')
-    expect(routeContext.componentPath).toBe('chapters/0')
-    expect(routeContext.rootData.chapters[0]).toBe(chapterForm.data)
+    const { dataContext } = routeContext
+    expect(dataContext.schema).toBe(chapterForm.schema)
+    expect(dataContext.dataPath).toBe('chapters/0')
+    expect(dataContext.componentPath).toBe('chapters/0')
+    expect(dataContext.model.rootData.chapters[0]).toBe(chapterForm.data)
     // Forms track their requests along with the ones of their view:
     expect(routeContext.loadingTracker).toBe(view.routeContext.loadingTracker)
     expect(form.routeContext.loadingTracker).toBe(

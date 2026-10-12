@@ -48,7 +48,7 @@ slot(name="prepend")
         :clipboard="clipboard"
         :schema="schema"
         :hasData="hasData"
-        :getData="() => processData('clipboard')"
+        :getData="getClipboardData"
         :createContext="createContext"
         @paste="pasteData"
       )
@@ -114,6 +114,7 @@ import {
   provide,
   reactive,
   ref,
+  toRef,
   unref,
   useTemplateRef,
   watch
@@ -121,7 +122,6 @@ import {
 import { useRouter } from 'vue-router'
 import { isFunction, parseDataPath } from '@ditojs/utils'
 import { TransitionHeight } from '@ditojs/ui/src'
-import appState from '../appState.js'
 import { useSchemaContext } from '../composables/useSchemaContext.ts'
 import { useSchemaValue } from '../composables/useSchemaValue.ts'
 import { useSchemaEvents } from '../composables/useSchemaEvents.ts'
@@ -137,12 +137,18 @@ import {
 } from '../utils/schema/lookup.js'
 import { processData } from '../utils/schema/data.js'
 import { fromClipboard } from '../utils/fromClipboard.ts'
+import {
+  accumulatedBasisKey,
+  panelTabKey,
+  schemaContextKey,
+  schemaEventsKey,
+  sourceSchemaKey
+} from '../utils/keys.ts'
 
 export default {
   name: 'DitoSchema',
   components: { TransitionHeight },
   inheritAttrs: false,
-  emits: ['update:selectedTab'],
 
   props: {
     schema: { type: Object, required: true },
@@ -166,10 +172,10 @@ export default {
     generateLabels: { type: Boolean, default: false }
   },
 
-  setup(props, { emit }) {
+  setup(props) {
     const router = useRouter()
-    const sourceSchema = inject('sourceSchema', null)
-    const panelTab = inject('panelTab', null)
+    const sourceSchema = inject(sourceSchemaKey, null)
+    const panelTab = inject(panelTabKey, null)
     const { componentPath } = useComponentPath(() => props.dataPath)
     const schemaContext = useSchemaContext(props)
     const { services } = schemaContext
@@ -196,16 +202,24 @@ export default {
       isolated: () => props.hasOwnData
     })
     const { emitEvent } = schemaEvents
-    provide('schemaEvents', schemaEvents)
+    provide(schemaEventsKey, schemaEvents)
     // Panels read the data around them through the context of their schema:
-    provide('schemaContext', context)
+    provide(schemaContextKey, context)
     if (!props.inlined) {
       // Inlined schemas share the width of their container:
-      provide('accumulatedBasis', 1)
+      provide(accumulatedBasisKey, 1)
     }
 
     const content = useTemplateRef('content')
-    const selectedTab = ref(null)
+    const isTopLevelSchema = computed(
+      () => !isPanel(props.schema) && !props.inlined
+    )
+    // The tab of the schema of a view or form is the one of its route:
+    const { routeContext } = services
+    const selectedTab =
+      isTopLevelSchema.value && routeContext
+        ? toRef(routeContext, 'selectedTab')
+        : ref(null)
     // Selected or revealed tabs stay rendered:
     const mountedTabs = reactive({})
     // Follow `defaultTab` until a tab is selected or there is data:
@@ -247,17 +261,13 @@ export default {
       () => router.currentRoute.value.hash?.slice(1) || null
     )
 
-    const isTopLevelSchema = computed(
-      () => !isPanel(props.schema) && !props.inlined
-    )
-
     // The route's hash belongs to the tabs of the last route only, so forms
     // keep their tab while the forms of their items are open:
     const shouldFollowRouteTab = computed(
       () => (
         hasTabs.value &&
         isTopLevelSchema.value &&
-        !!services.routeContext?.isLastRoute
+        !!routeContext?.isLastRoute
       )
     )
 
@@ -266,14 +276,12 @@ export default {
     const selectTab = tab => {
       selectedTab.value = tab
       shouldFollowDefaultTab = false
-      emit('update:selectedTab', tab)
     }
 
     // Editing the data doesn't switch the tab:
     const selectDefaultTab = () => {
       selectedTab.value = defaultTab.value
       shouldFollowDefaultTab = !hasData.value
-      emit('update:selectedTab', selectedTab.value)
     }
 
     // Routes without a hash, e.g. after closing a form, keep the tab:
@@ -368,7 +376,7 @@ export default {
       getSchemaValue('wide', { type: Boolean, default: false })
     )
     if (isWidePage) {
-      appState.pageClass = 'dito-page--wide'
+      adminContext.pageClass = 'dito-page--wide'
     }
 
     onMounted(() => {
@@ -385,7 +393,7 @@ export default {
       emitEvent('destroy')
       unregisterUi()
       if (isWidePage) {
-        appState.pageClass = null
+        adminContext.pageClass = null
       }
     })
 
@@ -447,14 +455,13 @@ export default {
         }
       },
 
-      // `target` is 'server' or 'clipboard':
-      processData(target) {
+      getClipboardData() {
         return processData(
           props.dataSchema,
           unref(sourceSchema),
           props.data,
           props.dataPath,
-          { rootData: context.rootItem, services, target }
+          { rootData: context.rootItem, services, target: 'clipboard' }
         )
       }
     }

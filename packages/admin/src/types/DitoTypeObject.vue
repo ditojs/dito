@@ -28,9 +28,9 @@
     :store="store"
     :disabled="disabled || isLoading"
     :creatable="creatable"
-    :createPath="createPath"
+    :createPath="sourceContext.createPath"
     :editable="editable"
-    :editPath="objectPath"
+    :editPath="sourceContext.objectPath"
     :deletable="!isInlined && deletable"
     @delete="deleteItem(objectData)"
   )
@@ -43,13 +43,14 @@ import { fieldProps } from '../composables/useField.ts'
 import { useSource } from '../composables/useSource.ts'
 import DitoSourceItem from '../components/DitoSourceItem.vue'
 import { resolveSchemaComponent } from '../utils/schema/setup.js'
+import { getItemFormSchema } from '../utils/schema/lookup.js'
 
 // @vue/component
 const DitoTypeObject = {
   name: 'DitoTypeObject',
   components: { DitoSourceItem },
   props: fieldProps,
-  setup: props => useSource(props)
+  setup: props => ({ ...useSource(props), getItemFormSchema })
 }
 
 defineType({

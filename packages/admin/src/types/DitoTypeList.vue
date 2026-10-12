@@ -87,10 +87,10 @@
               :draggable="draggable && listData.length > 1"
               :editable="editable"
               :editPath="getEditPath(index)"
-              :createPath="createPath"
+              :createPath="sourceContext.createPath"
               :insertIndex="creatable && draggable ? index : null"
               @delete="deleteItem(item, index)"
-              @move="delta => moveItem(item, delta)"
+              @move="delta => moveItem(index, delta)"
             )
         td.dito-table__buttons(
           v-if="hasCellEditButtons"
@@ -108,7 +108,7 @@
             :editable="editable"
             :editPath="getEditPath(index)"
             @delete="deleteItem(item, index)"
-            @move="delta => moveItem(item, delta)"
+            @move="delta => moveItem(index, delta)"
           )
     //- Render the list buttons inside the table when not in a single
     //- component view, with the item that holds the list as their data:
@@ -144,6 +144,8 @@ import {
 } from '../utils/schema/setup.js'
 import { createFiltersPanel, getFiltersDataErrors } from '../utils/filter.js'
 import { appendDataPath } from '../utils/data.js'
+import { getItemUid } from '../utils/schema/data.js'
+import { getItemFormSchema } from '../utils/schema/lookup.js'
 import { hyphenate, labelize } from '@ditojs/utils'
 import { computed } from 'vue'
 
@@ -186,6 +188,8 @@ const DitoTypeList = {
       ...source,
       shouldRenderSchema: useSchemaValue(source.context).shouldRenderSchema,
       labelize,
+      getItemUid,
+      getItemFormSchema,
       getDraggableOptions,
       moveItem,
       hasListButtons,
@@ -211,7 +215,7 @@ const DitoTypeList = {
         nested: props.nested,
         disabled: source.disabled.value || source.isLoading.value,
         creatable: creatable.value,
-        createPath: source.createPath.value
+        createPath: source.sourceContext.createPath
       })),
 
       getDataPath(index) {
@@ -223,7 +227,7 @@ const DitoTypeList = {
       },
 
       getEditPath(index) {
-        return editable.value ? source.getItemPath(index) : null
+        return editable.value ? source.sourceContext.getItemPath(index) : null
       },
 
       getCellClass(column) {

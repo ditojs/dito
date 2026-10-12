@@ -12,13 +12,14 @@
 <script>
 import { inject } from 'vue'
 import { DitoMenuButton } from '@ditojs/ui/src'
+import { adminContextKey } from '../utils/keys.ts'
 
 export default {
   name: 'DitoAccount',
   components: { DitoMenuButton },
 
   setup() {
-    const adminContext = inject('adminContext')
+    const adminContext = inject(adminContextKey)
     return {
       adminContext,
       items: [

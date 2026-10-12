@@ -17,6 +17,7 @@
 <script>
 import { inject } from 'vue'
 import { useSchemaValue } from '../composables/useSchemaValue.ts'
+import { componentPathKey } from '../utils/keys.ts'
 
 export default {
   name: 'DitoTabs',
@@ -31,7 +32,7 @@ export default {
 
   setup(props, { emit }) {
     // Identify tabs through the component path of their schema, like panes:
-    const schemaComponentPath = inject('componentPath')
+    const schemaComponentPath = inject(componentPathKey)
     const getTabId = key => `${schemaComponentPath.path}-tab-${key}`
 
     return {

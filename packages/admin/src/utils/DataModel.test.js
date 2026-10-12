@@ -34,10 +34,9 @@ defineType({
 })
 
 function createDataModel(schema, data, options) {
-  const dataRef = ref(reactive(data))
   const dataModel = new DataModel({
     schema: () => schema,
-    data: () => dataRef.value,
+    data: reactive(data),
     // Most tests are about edits, which only count where they can be saved:
     canSave: () => true,
     ...options
@@ -45,10 +44,10 @@ function createDataModel(schema, data, options) {
   // The entry of the list at `name` for the change API:
   const getListEntry = name => ({
     schema: schema.components[name],
-    list: dataRef.value[name],
+    list: dataModel.data[name],
     dataPath: name
   })
-  return { dataModel, dataRef, data: dataRef.value, getListEntry }
+  return { dataModel, data: dataModel.data, getListEntry }
 }
 
 const slug = {
@@ -65,13 +64,13 @@ describe('DataModel', () => {
         tags: { type: 'list', form: { type: 'form', components: {} } }
       }
     }
-    const { dataModel, dataRef, data } = createDataModel(schema, {
+    const { dataModel, data } = createDataModel(schema, {
       tags: null
     })
     expect(data).toEqual({ title: 'Untitled', tags: null })
     dataModel.stop()
-    dataRef.value = reactive({})
-    expect(dataRef.value).toEqual({})
+    dataModel.replace(reactive({}))
+    expect(dataModel.data).toEqual({})
   })
 
   it('sets the defaults of values that go missing later', async () => {
@@ -106,10 +105,10 @@ describe('DataModel', () => {
       type: 'form',
       components: { title: { type: 'text', default: 'Untitled' } }
     }
-    const { dataModel, dataRef } = createDataModel(schema, {})
-    dataRef.value = reactive({})
+    const { dataModel } = createDataModel(schema, {})
+    dataModel.replace(reactive({}))
     await nextTick()
-    expect(dataRef.value).toEqual({ title: 'Untitled' })
+    expect(dataModel.data).toEqual({ title: 'Untitled' })
     dataModel.stop()
   })
 
@@ -143,11 +142,11 @@ describe('DataModel', () => {
         }
       }
     }
-    const { dataModel, dataRef } = createDataModel(schema, {})
-    dataRef.value = reactive({ price: 10 })
-    dataRef.value.price = 20
+    const { dataModel } = createDataModel(schema, {})
+    dataModel.replace(reactive({ price: 10 }))
+    dataModel.data.price = 20
     await nextTick()
-    expect(dataRef.value).toEqual({ price: 20, orderedPrice: 10 })
+    expect(dataModel.data).toEqual({ price: 20, orderedPrice: 10 })
     dataModel.stop()
   })
 
@@ -836,7 +835,7 @@ describe('DataModel', () => {
       const createModel = buttons =>
         new DataModel({
           schema: () => ({ ...schema, buttons }),
-          data: () => reactive({ title: 'Emma', chapters: [] })
+          data: reactive({ title: 'Emma', chapters: [] })
         })
       const [unsavable, savable] = [
         createModel({ apply: { type: 'button' } }),
@@ -1053,12 +1052,12 @@ describe('DataModel', () => {
     })
 
     it(`isn't dirty once the data is replaced`, async () => {
-      const { dataModel, dataRef, data } = createBookModel()
+      const { dataModel, data } = createBookModel()
       dataModel.set(data, 'title', 'Persuasion')
-      dataRef.value = reactive({ title: 'Saved', chapters: [] })
+      dataModel.replace(reactive({ title: 'Saved', chapters: [] }))
       expect(dataModel.isDirty).toBe(false)
       await nextTick()
-      expect(dataRef.value.slug).toBe('saved')
+      expect(dataModel.data.slug).toBe('saved')
       expect(dataModel.isDirty).toBe(false)
       dataModel.stop()
     })
@@ -1829,28 +1828,26 @@ describe('DataModel', () => {
       const data = reactive({ title: 'Hello World' })
       const dataModel = new DataModel({
         schema: () => schema,
-        data: () => data
+        data
       })
       expect(data.slug).toBe('hello-world')
       dataModel.stop()
     })
 
     it('handles missing data and empty schemas', async () => {
-      const dataRef = ref(null)
       const dataModel = new DataModel({
-        schema: () => ({ type: 'form' }),
-        data: () => dataRef.value
+        schema: () => ({ type: 'form' })
       })
       await nextTick()
       expect(dataModel.isDirty).toBe(false)
-      dataRef.value = reactive({ items: [{ id: 1 }, { id: 2 }] })
-      const { items } = dataRef.value
+      dataModel.replace(reactive({ items: [{ id: 1 }, { id: 2 }] }))
+      const { items } = dataModel.data
       dataModel.move(
         { schema: { type: 'list' }, list: items, dataPath: 'items' },
         0,
         1
       )
-      expect(dataRef.value.items).toEqual([{ id: 2 }, { id: 1 }])
+      expect(dataModel.data.items).toEqual([{ id: 2 }, { id: 1 }])
       expect(dataModel.isEdited).toBe(true)
       dataModel.stop()
     })
@@ -1957,7 +1954,7 @@ describe('DataModel', () => {
       const data = reactive({ title: 'Emma' })
       const dataModel = new DataModel({
         schema: () => schemaRef.value,
-        data: () => data
+        data
       })
       expect(data.label).toBe('emma')
       schemaRef.value = createSchema(upper)

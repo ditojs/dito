@@ -11,7 +11,7 @@ describe('DitoView', () => {
     })
     await admin.navigate('/books')
     const booksView = admin.getRouteComponent(isView)
-    booksView.ownDataContext.replaceItem({ title: 'Emma' })
+    booksView.dataContext.replaceItem({ title: 'Emma' })
     await admin.navigate('/authors')
     const authorsView = admin.getRouteComponent(isView)
     expect(authorsView).not.toBe(booksView)
@@ -82,7 +82,7 @@ describe('DitoView', () => {
   })
 
   describe('source and resource contexts', () => {
-    it('are the main component of single-component views', async () => {
+    it('are the main source of single-component views', async () => {
       const admin = await mountAdmin({
         views: {
           books: {
@@ -100,11 +100,14 @@ describe('DitoView', () => {
       const view = admin.getRouteComponent(isView)
       const list = admin.getComponent(view, 'books')
       // Components of the view outside of the list, e.g. its schema, use the
-      // contexts of the list, but display the view's data:
+      // source of the list, but not its resource, which no route continues:
       const { context } = admin.getSchemaComponent(view)
-      expect(context.sourceQuery).toBe(list.ownSourceContext.query)
-      expect(context.getResourceUrl()).toBe('/books')
-      expect(list.ownSourceContext.schema).toBe(list.schema)
+      expect(context.sourceQuery).toEqual(list.sourceContext.listQuery.query)
+      expect(() => context.getResourceUrl()).toThrow(
+        'There is no form or list with a resource.'
+      )
+      expect(list.context.getResourceUrl()).toBe('/books')
+      expect(list.sourceContext.schema).toBe(list.schema)
     })
 
     it('are missing in views with multiple components', async () => {
@@ -229,7 +232,7 @@ describe('DitoView', () => {
     })
 
     it('are passed to callbacks in views without resources', async () => {
-      const { data, routeComponent, schemaComponent } = await mountSchema({
+      const { data, routeComponent, dataModel } = await mountSchema({
         schema: {
           components: {
             strict: { type: 'checkbox' },
@@ -258,11 +261,11 @@ describe('DitoView', () => {
         data: { strict: true, address: { city: null, note: 'Note' } }
       })
       expect(data.address.label).toBe('Strict: true')
-      expect(routeComponent.ownDataContext.verify('address/city')).toBe(false)
-      expect(schemaComponent.processData().address).not.toHaveProperty('note')
+      expect(routeComponent.dataContext.verify('address/city')).toBe(false)
+      expect(dataModel.processedData.value.address).not.toHaveProperty('note')
       data.strict = false
-      expect(routeComponent.ownDataContext.verify('address/city')).toBe(true)
-      expect(schemaComponent.processData().address.note).toBe('Note false')
+      expect(routeComponent.dataContext.verify('address/city')).toBe(true)
+      expect(dataModel.processedData.value.address.note).toBe('Note false')
     })
   })
 })

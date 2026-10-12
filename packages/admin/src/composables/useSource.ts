@@ -1,46 +1,41 @@
 import {
   computed,
   inject,
-  markRaw,
   onUnmounted,
   provide,
   reactive,
-  toRef,
-  watch
+  toRef
 } from 'vue'
-import { isString } from '@ditojs/utils'
 import SchemaContext from '../SchemaContext.js'
 import { ItemStores } from '../utils/ItemStores.js'
-import { ListQuery } from '../utils/ListQuery.js'
 import { appendDataPath, getRelativeDataPath } from '../utils/data.js'
 import { confirmAndRemove } from '../utils/dialogs.js'
 import {
-  getResource,
-  getMemberResource,
-  hasResource
-} from '../utils/resource.js'
-import {
-  ResourceContext,
-  type SubmitButton
-} from '../utils/ResourceContext.ts'
-import type { SourceContext } from '../utils/SourceContext.ts'
+  adminContextKey,
+  resourceContextKey,
+  routeContextKey,
+  schemaEventsKey,
+  sourceContextKey
+} from '../utils/keys.ts'
+import { getResource, getMemberResource } from '../utils/resource.js'
 import { waitUntilDataModelSettled } from '../utils/services.ts'
-import type { FormNode, ViewNode } from '../utils/RouteTree.ts'
 import { initializeData, getItemUid } from '../utils/schema/data.js'
 import {
   getButtonSchemas,
-  getNamedSchemas,
   getViewSchema,
   hasFormSchema
 } from '../utils/schema/lookup.js'
 import { isInlined, isListSource } from '../utils/schema/structure.js'
-import type { Data, Schema } from '../utils/types.ts'
 import { useField, type FieldProps } from './useField.ts'
 import { useServices } from './useSchemaContext.ts'
 import { useResource } from './useResource.ts'
+import { useListQuery } from './useListQuery.ts'
 import { useSourceData } from './useSourceData.ts'
-import { useItemLabel } from './useItemLabel.ts'
-import type { SchemaEventsEmitter } from './useSchemaEvents.ts'
+import { useSourceItems } from './useSourceItems.ts'
+import type { FormNode, ViewNode } from '../utils/RouteTree.ts'
+import type { SubmitButton } from '../utils/ResourceContext.ts'
+import type { SourceContext } from '../utils/SourceContext.ts'
+import type { Data, Schema } from '../utils/types.ts'
 
 const unauthorizedError = `You don't have permission to load this data.`
 
@@ -54,17 +49,23 @@ export function useSource(
     onFilterErrors
   }: { onFilterErrors?: (errors: Record<string, any>) => boolean } = {}
 ) {
+  const adminContext = inject(adminContextKey)!
+  const routeContext = inject(routeContextKey, null)
   // Sources emit their `load` event through the schema that renders them:
-  const schemaEvents = inject<SchemaEventsEmitter>('schemaEvents')!
-  // Sources without a resource continue the one around them:
-  const resourceContext = hasResource(props.schema)
-    ? markRaw(
-        new ResourceContext({
-          getResource: options => requests.getResource(options),
-          submit: button => submit(button)
-        })
-      )
-    : null
+  const schemaEvents = inject(schemaEventsKey)!
+  // Sources link to views or load their data through their resource, the
+  // others are part of the data around them:
+  const linksToView = computed(() => !!getViewSchema(props.schema, context))
+  const requests = useResource({
+    adminContext,
+    parentResourceContext: inject(resourceContextKey, null),
+    parentRouteContext: routeContext,
+    getSchema: () => props.schema,
+    isTransient: providesData => (
+      (!providesData && !linksToView.value) || !!routeContext?.state.isTransient
+    )
+  })
+  const { resourceContext, isTransient, providesData } = requests
   const services = useServices({
     get sourceContext() {
       return sourceContext
@@ -72,8 +73,6 @@ export function useSource(
 
     ...(resourceContext && { resourceContext })
   })
-  const { adminContext, routeContext } = services
-  const { router } = adminContext
   const { value, context, disabled, onChange, getSchemaValue, componentPath } =
     useField(props, { services })
   const getModel = () => services.dataContext!.model
@@ -82,67 +81,23 @@ export function useSource(
 
   const hasInlinedItems = () => isInlined(props.schema)
   const isList = () => isListSource(props.schema)
-  // Sources linked to views edit their items in the forms of the view:
-  const linksToView = computed(() => !!getViewSchema(props.schema, context))
   const paginate = computed(() => getSchemaValue('paginate', { type: Number }))
 
-  // The list query, held by the route and remembered in the store:
-  const columns = computed(
-    () => getNamedSchemas(props.schema.columns) as Record<string, Schema> | null
-  )
-  const scopes = computed(
-    () => getNamedSchemas(props.schema.scopes) as Record<string, Schema> | null
-  )
-
-  const defaultScope = computed(() => {
-    const values = Object.values(scopes.value ?? {})
-    return values.find(scope => scope.defaultScope) ?? values[0] ?? null
-  })
-
-  const defaultOrder = computed(() => {
-    for (const column of Object.values(columns.value ?? {})) {
-      const { defaultSort } = column
-      if (defaultSort) {
-        const direction = isString(defaultSort) ? defaultSort : 'asc'
-        return `${column.name} ${direction}`
-      }
-    }
-    return null
-  })
-
-  const listQuery = markRaw(
-    new ListQuery({
-      router,
-      getRoute: () => router.currentRoute.value,
-      getSourceStore: () => props.store,
-      getDefaultQuery: () => ({
-        scope: defaultScope.value?.name,
-        page: props.schema.page,
-        order: defaultOrder.value
-      })
-    })
-  )
-
-  // Setting the query navigates to it, and the stored query only changes once
-  // the route did, when the route watcher below loads the list:
-  const query = computed({
-    get: () => listQuery.query,
-    set: query => listQuery.update(query)
+  const {
+    listQuery,
+    columns,
+    scopes,
+    paginationRange,
+    getRequestQuery
+  } = useListQuery(props, {
+    getPaginate: () => paginate.value,
+    isRouted: () => providesData.value,
+    onChange: () => loadData()
   })
 
   const total = computed({
     get: () => props.store.total,
     set: total => (props.store.total = total)
-  })
-
-  const paginationRange = computed(() => {
-    const amount = isList() ? paginate.value : null
-    if (amount) {
-      const { page = 0 } = query.value
-      const start = page * amount
-      return [start, start + amount - 1]
-    }
-    return null
   })
 
   const sourceData = useSourceData(props, {
@@ -153,70 +108,60 @@ export function useSource(
   })
   const { isObjectSource, listData, objectData, listEntry } = sourceData
 
-  const requests = useResource({
-    services,
-    parentRouteContext: routeContext,
-    getSchema: () => props.schema,
-    isTransient: providesData => (
-      (!providesData && !linksToView.value) || !!routeContext?.state.isTransient
-    ),
-    hasData: () => sourceData.hasData.value,
-    clearData: () => sourceData.clearData(),
-    setLoadedData(data) {
-      if (routeContext?.isForm) {
-        getModel().removeError(props.dataPath, unauthorizedError)
-      }
-      sourceData.setData(data)
-    },
-    // Pass the pagination as range, so that the server counts the results:
-    getQuery() {
-      const range = paginationRange.value
-      const { page, ...params } = query.value
-      return { ...params, ...(range && { range: range.join(',') }) }
-    },
-    whenQueryNavigated: () => listQuery.whenNavigated(),
-    handleLoadError({ data, status }) {
-      if (data?.type === 'FilterValidation' && onFilterErrors?.(data.errors)) {
-        return true
-      } else if (status === 401 && routeContext?.isForm) {
-        // Sources in forms show that the user may not access their resource:
-        getModel().addError(props.dataPath, unauthorizedError)
-        return true
-      }
-      return false
-    },
-    emitLoad: () => schemaEvents.emitEvent('load'),
-    getData: () => props.data,
-    showValidationErrors: errors =>
-      services.dataContext!.showValidationErrors(errors, props.dataPath)
+  // While navigating to a changed query, the list loads once the route did.
+  // Only load here if the navigation failed or was superseded:
+  let isUnmounted = false
+  onUnmounted(() => {
+    isUnmounted = true
   })
-  const { isTransient, providesData, reloadData } = requests
+  const requestData = (): Promise<void> | undefined => {
+    const navigated = listQuery.whenNavigated()
+    return navigated
+      ? navigated.then((hasNavigated: boolean) => {
+          if (!hasNavigated && !isUnmounted) {
+            return requestData()
+          }
+        })
+      : requests.loadData({
+          query: getRequestQuery(),
+          async onLoad(data) {
+            if (routeContext?.isForm) {
+              getModel().removeError(props.dataPath, unauthorizedError)
+            }
+            sourceData.setData(data)
+            await schemaEvents.emitEvent('load')
+          },
+          onError({ data, status }) {
+            if (
+              data?.type === 'FilterValidation' &&
+              onFilterErrors?.(data.errors)
+            ) {
+              return true
+            } else if (status === 401 && routeContext?.isForm) {
+              // Sources in forms show that the user may not access their
+              // resource:
+              getModel().addError(props.dataPath, unauthorizedError)
+              return true
+            }
+            return false
+          }
+        })
+  }
+  // Sources in data that isn't stored yet, e.g. of forms that create their
+  // item, have nothing to load:
+  const loadData = () => {
+    if (!isTransient.value) {
+      requestData()
+    }
+  }
 
-  watch(
-    () => router.currentRoute.value,
-    (to, from) => {
-      if (
-        providesData.value &&
-        // Only the query changed:
-        from.path === to.path &&
-        from.hash === to.hash &&
-        listQuery.setFromRoute(to.query)
-      ) {
-        reloadData()
-      }
-    },
-    // https://github.com/vuejs/vue-router/issues/3393#issuecomment-1158470149
-    { flush: 'post' }
-  )
-
-  const { getItemId, getItemLabel, getItemDataPath, getItemFormSchema } =
-    useItemLabel({
-      services,
-      getContext: () => context,
-      getSchema: () => props.schema,
-      getDataPath: () => props.dataPath,
-      isTransient: () => isTransient.value
-    })
+  const { getItemId, getItemLabel, getItemDataPath } = useSourceItems({
+    services,
+    getContext: () => context,
+    getSchema: () => props.schema,
+    getDataPath: () => props.dataPath,
+    isTransient: () => isTransient.value
+  })
 
   // The actions on the items, and the paths of their forms:
   const itemStores = ItemStores.getFromStore(props.store)
@@ -264,18 +209,15 @@ export function useSource(
     type?: string | null,
     index?: number | null
   ) => {
-    const item = initializeData(schema, type ? { type } : {}, services)
+    let item = initializeData(schema, type ? { type } : {}, services)
     if (isObjectSource.value) {
       objectData.value = item
     } else if (sourceData.hasData.value) {
-      getModel().insert(
-        listEntry.value,
-        index ?? listEntry.value.list.length,
-        item
-      )
+      item = sourceData.insertItem(index ?? listData.value.length, item)
     } else {
       // Lists that are `null` have no array to insert into yet:
       listData.value = [item]
+      item = listData.value[0]
     }
     if (collapsible.value) {
       // Open the new item, which its inlined schema reads from its store:
@@ -309,7 +251,8 @@ export function useSource(
             if (isTransientItem) {
               objectData.value = null
             } else {
-              props.data[props.schema.name] = null
+              const { data, schema, dataPath } = props
+              getModel().setLoaded({ data, name: schema.name, dataPath }, null)
             }
           } else {
             getModel().remove(listEntry.value, currentIndex)
@@ -334,14 +277,14 @@ export function useSource(
         )
         let isDeleted = false
         if (memberResource) {
-          await requests.handleRequest(
+          await requests.request(
             { method, resource: memberResource },
             err => {
               if (!err) {
                 removeIfPresent()
                 isDeleted = true
               }
-              reloadData()
+              loadData()
             }
           )
         }
@@ -375,7 +318,12 @@ export function useSource(
         button,
         submitted,
         method,
-        requests.getPayloadData(button, method)
+        requests.getPayloadData(button, method),
+        {
+          data: props.data,
+          showValidationErrors: errors =>
+            services.dataContext!.showValidationErrors(errors, props.dataPath)
+        }
       )
       if (isSuccessful) {
         // Saving the source's own changes clears their errors, as in forms:
@@ -387,119 +335,60 @@ export function useSource(
     return false
   }
 
-  // Leaving the route waits for pending submits:
-  const submit = (button: SubmitButton) =>
-    getModel().trackPendingSubmit(submitData(button))
-
   const render = computed(() =>
     getSchemaValue('render', { type: Function, default: null })
   )
 
-  const getSourceItemLabel = (item: any, index: number | null = null) => {
-    const { schema } = props
-    if (hasInlinedItems()) {
-      // Inlined items show the label in their schema, but only in lists and
-      // collapsible objects:
-      return isList() || collapsible.value
-        ? getItemLabel(schema, item, { index, asObject: true })
-        : null
-    } else {
-      return render.value
-        ? render.value(
-            new SchemaContext(services, {
-              data: item,
-              value: item,
-              index,
-              dataPath: getItemDataPath(schema, index)
-            })
-          )
-        : getItemLabel(schema, item, { index })
-    }
-  }
-
   const sourceNode = computed(() => {
     const path = (
       routeContext &&
-      getRelativeDataPath(props.dataPath, routeContext.dataPath)
+      getRelativeDataPath(props.dataPath, routeContext.dataContext.dataPath)
     )
     return routeContext && path !== null
       ? (routeContext.node as ViewNode | FormNode).findSource(path)
       : null
   })
 
-  // Lists with routed forms don't render where the recursion of forms that
-  // contain themselves stops. Sources without data and resource render, e.g.
-  // for `compute()`:
-  const isReady = computed(
-    () => (
-      (hasInlinedItems() || !sourceNode.value?.isBeyondMaxDepth) &&
-      (sourceData.hasData.value || !providesData.value)
-    )
-  )
-
   const sourceContext: SourceContext = reactive({
     schema: toRef(props, 'schema'),
     node: sourceNode,
-    query,
     listQuery,
     dataPath: toRef(props, 'dataPath'),
     componentPath,
     store: toRef(props, 'store'),
     isDisabled: disabled,
-    createItem,
-    getSourceItemLabel,
-    reload: reloadData,
-    submit,
     verbs: requests.verbs,
-    resourceContext
-  })
-
-  provide('sourceContext', sourceContext)
-  if (resourceContext) {
-    provide('resourceContext', resourceContext)
-  }
-  routeContext?.registerSource(sourceContext, true)
-  onUnmounted(() => routeContext?.registerSource(sourceContext, false))
-
-  if (providesData.value) {
-    listQuery.syncWithRoute()
-    requests.ensureData()
-  }
-
-  return {
-    value,
-    context,
-    componentPath,
-    disabled,
-    onChange,
-    services,
-    isLoading: requests.isLoading,
-    loadData: requests.loadData,
-    reloadData,
-    listQuery,
-    query,
-    total,
-    columns,
-    scopes,
-    defaultScope,
-    paginate,
-    isListSource: sourceData.isListSource,
-    isObjectSource,
-    listData,
-    objectData,
-    listEntry,
-    getItemUid,
-    getItemFormSchema,
-    getItemDataPath,
-    creatable,
-    editable,
-    deletable,
-    draggable,
-    collapsible,
-    collapsed,
-    getItemStore,
     createItem,
-    deleteItem,
+
+    // Each item reads its own label, so that edits only update theirs:
+    getSourceItemLabel(item: any, index: number | null = null) {
+      const { schema } = props
+      if (hasInlinedItems()) {
+        // Inlined items show the label in their schema, but only in lists and
+        // collapsible objects:
+        return isList() || collapsible.value
+          ? getItemLabel(schema, item, { index, asObject: true })
+          : null
+      } else {
+        return render.value
+          ? render.value(
+              new SchemaContext(services, {
+                data: item,
+                value: item,
+                index,
+                dataPath: getItemDataPath(schema, index)
+              })
+            )
+          : getItemLabel(schema, item, { index })
+      }
+    },
+
+    reload: loadData,
+
+    // Leaving the route waits for pending submits:
+    submit(button: SubmitButton) {
+      return getModel().trackPendingSubmit(submitData(button))
+    },
 
     createPath: computed(() =>
       creatable.value
@@ -520,14 +409,61 @@ export function useSource(
     getItemPath(index: number) {
       return linksToView.value
         ? getViewItemPath(getItemId(props.schema, listData.value[index], index))
-        : (routeContext?.getFormPath(
-            appendDataPath(props.dataPath, index)
-          ) ?? null)
-    },
+        : (routeContext?.getFormPath(appendDataPath(props.dataPath, index)) ??
+          null)
+    }
+  })
 
-    ownSourceContext: sourceContext,
+  provide(sourceContextKey, sourceContext)
+  if (resourceContext) {
+    provide(resourceContextKey, resourceContext)
+  }
+  const { sources } = services.dataContext!
+  sources.add(sourceContext)
+  onUnmounted(() => sources.delete(sourceContext))
+
+  if (providesData.value) {
+    loadData()
+  }
+
+  return {
+    value,
+    context,
+    componentPath,
+    disabled,
+    onChange,
+    services,
+    sourceContext,
     sourceNode,
-    isReady,
+    listQuery,
+    columns,
+    scopes,
+    total,
+    paginate,
+    isLoading: requests.isLoading,
+    isListSource: sourceData.isListSource,
+    isObjectSource,
+    listData,
+    objectData,
+    listEntry,
+    getItemDataPath,
+    creatable,
+    editable,
+    deletable,
+    draggable,
+    collapsible,
+    collapsed,
+    getItemStore,
+    deleteItem,
+    // Lists with routed forms don't render where the recursion of forms that
+    // contain themselves stops. Sources without data and resource render, e.g.
+    // for `compute()`:
+    isReady: computed(
+      () => (
+        (hasInlinedItems() || !sourceNode.value?.isBeyondMaxDepth) &&
+        (sourceData.hasData.value || !providesData.value)
+      )
+    ),
     isInlined: computed(hasInlinedItems),
     buttonSchemas: computed(() => getButtonSchemas(props.schema.buttons))
   }

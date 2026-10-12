@@ -12,7 +12,6 @@ import {
 } from './utils/data.js'
 import { hasNestedData } from './utils/schema/structure.js'
 import { getTextFromHtml } from './utils/html.js'
-import { DialogContext } from './utils/DataContext.ts'
 import {
   getRootData,
   getResourceUrl,
@@ -25,43 +24,6 @@ const { hasOwnProperty } = Object.prototype
 
 // The raw context objects of the instances, which inherit from their services:
 const contexts = new WeakMap()
-
-function toObject(context) {
-  const rawStart = toRaw(context)
-  let raw = rawStart
-  let object
-  // Find the context object of extended contexts in their prototype chain:
-  do {
-    object = contexts.get(raw)
-    if (object) break
-    raw = Object.getPrototypeOf(raw)
-  } while (raw)
-  if (object && raw !== rawStart) {
-    contexts.set(rawStart, object) // Don't search for it again.
-  }
-  return object
-}
-
-function get(context, key, defaultValue) {
-  const object = toObject(context)
-  const value = key in object ? object[key] : undefined
-  // Keys explicitly set to `undefined` return it, instead of the default:
-  return value !== undefined || hasOwnProperty.call(object, key)
-    ? value
-    : isFunction(defaultValue)
-      ? defaultValue()
-      : defaultValue
-}
-
-function set(context, key, value) {
-  // An assignment would change the services that the object inherits from:
-  Object.defineProperty(toObject(context), key, {
-    value,
-    writable: true,
-    enumerable: true,
-    configurable: true
-  })
-}
 
 export default class SchemaContext {
   constructor(services, context) {
@@ -300,7 +262,7 @@ export default class SchemaContext {
   }
 
   get sourceQuery() {
-    return getServices(this).sourceContext?.query ?? null
+    return getServices(this).sourceContext?.listQuery.query ?? null
   }
 
   get request() {
@@ -345,19 +307,19 @@ export default class SchemaContext {
   }
 
   get validate() {
-    return match => getDataContext(this).validate(match)
+    return match => getDataContextFor(this, 'validate').validate(match)
   }
 
   get verify() {
-    return match => getDataContext(this).verify(match)
+    return match => getDataContextFor(this, 'verify').verify(match)
   }
 
   get markEdited() {
-    return () => getDataContext(this).markEdited()
+    return () => getDataContextFor(this, 'mark the data edited').markEdited()
   }
 
   get replaceItem() {
-    return data => getDataContext(this).replaceItem(data)
+    return data => getDataContextFor(this, 'replace the item').replaceItem(data)
   }
 
   get submit() {
@@ -389,11 +351,11 @@ export default class SchemaContext {
 
   get closeDialog() {
     return value => {
-      const dataContext = getDataContext(this)
-      if (!(dataContext instanceof DialogContext)) {
+      const closeDialog = getDataContext(this)?.closeDialog
+      if (!closeDialog) {
         throw new Error('Unable to close the dialog: There is no dialog.')
       }
-      dataContext.close(value)
+      closeDialog(value)
     }
   }
 }
@@ -419,6 +381,16 @@ function getDataContext(context) {
   return getServices(context)?.dataContext ?? null
 }
 
+// Components outside of views, forms, dialogs and panels, e.g. menus, have no
+// data to act on:
+function getDataContextFor(context, action) {
+  const dataContext = getDataContext(context)
+  if (!dataContext) {
+    throw new Error(`Unable to ${action}: There is no data.`)
+  }
+  return dataContext
+}
+
 // Find the model that holds `dataPath`, in its own data or its parent's:
 function getProcessedData(context, dataPath, nested) {
   let dataModel = getDataContext(context)?.model
@@ -431,4 +403,41 @@ function getProcessedData(context, dataPath, nested) {
   return dataModel
     ? getItem(dataModel.processedData.value, path, nested) || null
     : null
+}
+
+function toObject(context) {
+  const rawStart = toRaw(context)
+  let raw = rawStart
+  let object
+  // Find the context object of extended contexts in their prototype chain:
+  do {
+    object = contexts.get(raw)
+    if (object) break
+    raw = Object.getPrototypeOf(raw)
+  } while (raw)
+  if (object && raw !== rawStart) {
+    contexts.set(rawStart, object) // Don't search for it again.
+  }
+  return object
+}
+
+function get(context, key, defaultValue) {
+  const object = toObject(context)
+  const value = key in object ? object[key] : undefined
+  // Keys explicitly set to `undefined` return it, instead of the default:
+  return value !== undefined || hasOwnProperty.call(object, key)
+    ? value
+    : isFunction(defaultValue)
+      ? defaultValue()
+      : defaultValue
+}
+
+function set(context, key, value) {
+  // An assignment would change the services that the object inherits from:
+  Object.defineProperty(toObject(context), key, {
+    value,
+    writable: true,
+    enumerable: true,
+    configurable: true
+  })
 }

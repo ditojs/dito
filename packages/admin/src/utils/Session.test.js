@@ -1,7 +1,6 @@
 import { vi } from 'vitest'
 import { Session } from './Session.js'
 import AdminUser from '../AdminUser.js'
-import appState from '../appState.js'
 
 const user = { id: 1, username: 'tester' }
 
@@ -43,8 +42,6 @@ function createSession({
 
 describe('Session', () => {
   afterEach(() => {
-    appState.user = null
-    appState.loadCache = {}
     vi.unstubAllGlobals()
   })
 
@@ -236,9 +233,9 @@ describe('Session', () => {
         }
       })
       await session.start()
-      appState.loadCache.books = cachedResponse
+      session.loadCache.books = cachedResponse
       await session.logout()
-      expect(appState.loadCache).toEqual({})
+      expect(session.loadCache).toEqual({})
     })
 
     it('clears it when another user logs in', async () => {
@@ -247,10 +244,10 @@ describe('Session', () => {
         responses: { 'get /session': () => ({ user: { ...sessionUser } }) }
       })
       await session.start()
-      appState.loadCache.books = cachedResponse
+      session.loadCache.books = cachedResponse
       sessionUser = { id: 2, username: 'other' }
       await session.ensureUser()
-      expect(appState.loadCache).toEqual({})
+      expect(session.loadCache).toEqual({})
     })
 
     it('keeps it when the same user is fetched again', async () => {
@@ -258,9 +255,9 @@ describe('Session', () => {
         responses: { 'get /session': () => ({ user: { ...user } }) }
       })
       await session.start()
-      appState.loadCache.books = cachedResponse
+      session.loadCache.books = cachedResponse
       await session.ensureUser()
-      expect(appState.loadCache).toEqual({ books: cachedResponse })
+      expect(session.loadCache).toEqual({ books: cachedResponse })
     })
   })
 

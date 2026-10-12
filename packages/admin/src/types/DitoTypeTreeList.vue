@@ -26,7 +26,6 @@
 
 <script>
 import { computed } from 'vue'
-import { useRouter } from 'vue-router'
 import { defineType } from '../utils/schema/types.ts'
 import { sourceTraits } from './traits.ts'
 import { fieldProps } from '../composables/useField.ts'
@@ -40,21 +39,17 @@ const DitoTypeTreeList = {
   props: fieldProps,
 
   setup(props) {
-    const router = useRouter()
     const source = useSource(props)
     const { services, value, isListSource, onChange } = source
+    const { routeContext } = services
     return {
       ...source,
-      routeContext: computed(() => services.routeContext),
+      routeContext,
 
       // The forms of the tree's items are routed right after its route:
       isEditingItem: computed(() => {
         const node = source.sourceNode.value
-        let routeNode = (
-          node &&
-          router.currentRoute.value.matched[services.routeContext.level + 1]
-            ?.meta.node
-        )
+        let routeNode = node && routeContext.childNode
         while (routeNode && routeNode !== node) {
           routeNode = routeNode.parent
         }
@@ -73,7 +68,7 @@ const DitoTypeTreeList = {
 
       // Tree objects are edited in the form of their root item:
       rootPath: computed(() =>
-        source.isObjectSource.value ? source.objectPath.value : null
+        source.isObjectSource.value ? source.sourceContext.objectPath : null
       ),
 
       treeSchema: computed(() =>

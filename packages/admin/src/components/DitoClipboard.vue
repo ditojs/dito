@@ -26,6 +26,7 @@ import {
   copyClipboardData,
   readClipboardData
 } from '../utils/clipboard.js'
+import { adminContextKey } from '../utils/keys.ts'
 
 export default {
   name: 'DitoClipboard',
@@ -43,7 +44,7 @@ export default {
   },
 
   setup(props, { emit }) {
-    const adminContext = inject('adminContext')
+    const adminContext = inject(adminContextKey)
     const { domOn } = useDomEvents()
 
     const updateClipboardData = () => {

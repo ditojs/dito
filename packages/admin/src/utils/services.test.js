@@ -13,11 +13,6 @@ import {
   isForm
 } from '../test/mount.js'
 
-// `appState.loadCache` lives for the session, so each test requests its own
-// URLs, made unique by this counter.
-let requestCount = 0
-const getUniqueUrl = name => `${name}-${++requestCount}`
-
 describe('services', () => {
   afterEach(() => {
     vi.restoreAllMocks()
@@ -30,7 +25,7 @@ describe('services', () => {
         schema: { components: { title: { type: 'text' } } },
         request
       })
-      const url = getUniqueUrl('books')
+      const url = 'books'
       const first = await schemaComponent.context.request({
         url,
         cache: 'global'
@@ -50,7 +45,7 @@ describe('services', () => {
         schema: { components: { title: { type: 'text' } } },
         request
       })
-      const url = getUniqueUrl('books')
+      const url = 'books'
       const first = await schemaComponent.context.request({
         url,
         cache: 'local'
@@ -80,7 +75,7 @@ describe('services', () => {
         schema: { components: { title: { type: 'text' } } },
         request
       })
-      const url = getUniqueUrl('books')
+      const url = 'books'
       await expect(
         schemaComponent.context.request({ url, cache: 'global' })
       ).rejects.toThrow('Network down')
@@ -96,8 +91,8 @@ describe('services', () => {
         schema: { components: { title: { type: 'text' } } },
         request
       })
-      const books = getUniqueUrl('books')
-      const authors = getUniqueUrl('authors')
+      const books = 'books'
+      const authors = 'authors'
       expect(
         await schemaComponent.context.request({
           resource: { path: books },
@@ -121,7 +116,7 @@ describe('services', () => {
         request: () => Promise.reject(error)
       })
       await expect(
-        schemaComponent.context.request({ url: getUniqueUrl('books') })
+        schemaComponent.context.request({ url: 'books' })
       ).rejects.toMatchObject({ message: 'Not found', type: 'NotFound' })
     })
   })
@@ -227,7 +222,8 @@ describe('services', () => {
         },
         data: { isbn: 'old' }
       })
-      const { dataModel, ownDataContext: dataContext } = routeComponent
+      const { dataContext } = routeComponent
+      const { model: dataModel } = dataContext
       expect(data.cover).toBe('cover-old')
       dataModel.set(data, 'isbn', 'new')
       await flushPromises()
@@ -277,7 +273,7 @@ describe('services', () => {
     const form = admin.getRouteComponent(isForm)
     await settle(form)
     const comments = admin.getComponent(form, 'chapters/0/comments')
-    expect(comments.context.rootItem).toBe(form.ownRouteContext.rootData)
+    expect(comments.context.rootItem).toBe(form.dataContext.model.rootData)
     expect(comments.context.item).toBe(form.data)
   })
 

@@ -1,5 +1,6 @@
 import { computed, inject, provide, reactive } from 'vue'
 import { appendDataPath, getRelativeDataPath } from '../utils/data.js'
+import { componentPathKey } from '../utils/keys.ts'
 
 export interface ComponentPath {
   readonly path: string
@@ -15,13 +16,13 @@ export function useComponentPath(
   getPath: (parent: ComponentPath) => string = parent =>
     continueComponentPath(parent, getDataPath())
 ) {
-  const parent = inject<ComponentPath>('componentPath', {
+  const parent = inject(componentPathKey, {
     path: '',
     dataPath: null
   })
   const componentPath = computed(() => getPath(parent))
   provide(
-    'componentPath',
+    componentPathKey,
     reactive({ path: componentPath, dataPath: computed(getDataPath) })
   )
   return { componentPath, parentComponentPath: computed(() => parent.path) }

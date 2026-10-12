@@ -66,6 +66,7 @@ import {
 } from '../utils/schema/structure.js'
 import { shouldRenderSchema } from '../utils/schema/data.js'
 import { getItemAdapter } from '../utils/schema/types.ts'
+import { panelTabKey, sourceSchemaKey } from '../utils/keys.ts'
 
 export default {
   name: 'DitoPane',
@@ -87,7 +88,7 @@ export default {
   setup(props) {
     const services = useServices()
     const { getChildStore } = useStore(props)
-    const sourceSchema = inject('sourceSchema', null)
+    const sourceSchema = inject(sourceSchemaKey, null)
     // Tabs add their name, as they don't appear in data paths:
     const { parentComponentPath } = useComponentPath(
       () => props.dataPath,
@@ -95,7 +96,7 @@ export default {
         props.tab ? appendDataPath(parent.path, props.tab) : parent.path
     )
     if (props.tab) {
-      provide('panelTab', {
+      provide(panelTabKey, {
         tabName: props.tab,
         isTabSelected: () => props.selected
       })

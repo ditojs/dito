@@ -1,7 +1,6 @@
 import { vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import SchemaContext from '../SchemaContext.js'
-import appState from '../appState.js'
 import {
   mountAdmin,
   mountForm,
@@ -301,7 +300,7 @@ describe('DitoSchema', () => {
         const { routeComponent, schemaComponent, loadItem } =
           await mountLoadingForm('/items/1')
         expect(schemaComponent.hasData).toBe(false)
-        expect(routeComponent.ownDataContext.verify()).toBe(true)
+        expect(routeComponent.dataContext.verify()).toBe(true)
         await loadItem()
         expect(schemaComponent.hasData).toBe(true)
       })
@@ -382,7 +381,7 @@ describe('DitoSchema', () => {
         admin.getRouteComponent(
           isForm
         )
-      await pageFormComponent.ownRouteContext.close()
+      await pageFormComponent.routeContext.close()
       await flushPromises()
       // The route is kept without hash, as before, but the tab stays selected:
       expect(admin.router.currentRoute.value.fullPath).toBe('/items/1')
@@ -517,7 +516,7 @@ describe('DitoSchema', () => {
       const [itemForm, pageForm] = getForms()
       const schemaComponent = admin.getSchemaComponent(itemForm)
       expect(admin.getSchemaComponent(pageForm).selectedTab).toBe('text')
-      await pageForm.ownRouteContext.close()
+      await pageForm.routeContext.close()
       await flushPromises()
       expect(admin.router.currentRoute.value.fullPath).toBe('/items/1')
       // The tab of the page form isn't one of the item form's tabs:
@@ -550,10 +549,10 @@ describe('DitoSchema', () => {
     })
     const page = () => admin.element.querySelector('main.dito-page')
     await admin.navigate('/books')
-    expect(appState.pageClass).toBe('dito-page--wide')
+    expect(admin.context.pageClass).toBe('dito-page--wide')
     expect(page().classList.contains('dito-page--wide')).toBe(true)
     await admin.navigate('/authors')
-    expect(appState.pageClass).toBe(null)
+    expect(admin.context.pageClass).toBe(null)
     expect(page().classList.contains('dito-page--wide')).toBe(false)
   })
 
@@ -579,7 +578,7 @@ describe('DitoSchema', () => {
         .find(vm => vm.$ !== result.schemaComponent.$)
       const reveal = componentPath =>
         result.admin.context.ui.reveal(
-          result.routeComponent.ownDataContext,
+          result.routeComponent.dataContext,
           componentPath,
           { focus: true }
         )
@@ -689,7 +688,7 @@ describe('DitoSchema', () => {
       })
       schemaComponent.selectTab('details')
       await flushPromises()
-      routeComponent.ownDataContext.validate()
+      routeComponent.dataContext.validate()
       await flushPromises()
       expect(schemaComponent.selectedTab).toBe('summary')
       const [input] = wrapper.findAll('input[name="title"]')
@@ -703,7 +702,7 @@ describe('DitoSchema', () => {
         },
         data: { title: '', hasSummary: false }
       })
-      routeComponent.ownDataContext.validate()
+      routeComponent.dataContext.validate()
       await flushPromises()
       expect(schemaComponent.selectedTab).toBe('details')
       const inputs = wrapper.findAll('input[name="title"]')
@@ -953,7 +952,7 @@ describe('DitoSchema', () => {
     it('opens collapsed inlined schemas to focus their errors', async () => {
       const { routeComponent, findField } = await mountCollapsedAuthor()
       expect(findField('author/name').exists()).toBe(false)
-      routeComponent.ownDataContext.validate()
+      routeComponent.dataContext.validate()
       await flushPromises()
       const input = findField('author/name').find('input')
       expect(document.activeElement).toBe(input.element)

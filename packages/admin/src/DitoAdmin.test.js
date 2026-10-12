@@ -1,6 +1,5 @@
 import { vi } from 'vitest'
 import DitoAdmin from './DitoAdmin.js'
-import appState from './appState.js'
 import { mountAdmin } from './test/mount.js'
 
 describe('DitoAdmin', () => {
@@ -12,7 +11,6 @@ describe('DitoAdmin', () => {
       admin.app._container?.remove()
     }
     delete window.dito
-    appState.user = null
   })
 
   function createAdmin({ el, ...options } = {}) {
@@ -67,13 +65,12 @@ describe('DitoAdmin', () => {
     expect(admin.context.views).toEqual({})
   })
 
-  it('declares the page class in the app state', async () => {
-    expect(appState).toHaveProperty('pageClass', null)
+  it('renders the page class of the admin context', async () => {
     const admin = await mountAdmin({ views: {} })
-    appState.pageClass = 'dito-page--wide'
+    expect(admin.context.pageClass).toBe(null)
+    admin.context.pageClass = 'dito-page--wide'
     await admin.navigate('/')
     expect(admin.wrapper.find('.dito-page--wide').exists()).toBe(true)
-    appState.pageClass = null
   })
 
   it('requests the API with `fetch()` by default', async () => {

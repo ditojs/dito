@@ -31,7 +31,6 @@
       :disabled="isLoading"
       :scrollable="!isNestedRoute"
       generateLabels
-      @update:selected-tab="tab => (selectedTab = tab)"
     )
       template(#buttons)
         DitoButtons.dito-buttons--round.dito-buttons--large.dito-buttons--main(
@@ -45,17 +44,7 @@
 </template>
 
 <script>
-import {
-  computed,
-  inject,
-  markRaw,
-  provide,
-  reactive,
-  ref,
-  shallowRef,
-  toRaw,
-  watch
-} from 'vue'
+import { computed, inject, reactive, ref, toRaw, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   capitalize,
@@ -63,22 +52,23 @@ import {
   equals,
   escapeHtml
 } from '@ditojs/utils'
-import { useRouteContainer } from '../composables/useRouteContainer.ts'
-import { useResource } from '../composables/useResource.ts'
-import { useItemLabel } from '../composables/useItemLabel.ts'
 import {
-  useContainer,
-  useSchemaContext
-} from '../composables/useSchemaContext.ts'
+  useRouteContainer,
+  useRouteRecord
+} from '../composables/useRouteContainer.ts'
+import { useResource } from '../composables/useResource.ts'
+import { useSourceItems } from '../composables/useSourceItems.ts'
+import { useSchemaContext } from '../composables/useSchemaContext.ts'
 import { useSchemaValue } from '../composables/useSchemaValue.ts'
 import { useSchemaEvents } from '../composables/useSchemaEvents.ts'
 import { useComponentPath } from '../composables/useComponentPath.ts'
 import { waitUntilDataModelSettled } from '../utils/services.ts'
-import { getResource, hasResource } from '../utils/resource.js'
-import { ResourceContext } from '../utils/ResourceContext.ts'
+import { adminContextKey } from '../utils/keys.ts'
+import { getResource } from '../utils/resource.js'
 import { isListSource, isObjectSource } from '../utils/schema/structure.js'
 import {
   getButtonSchemas,
+  getItemFormSchema,
   hasSubmitButton
 } from '../utils/schema/lookup.js'
 import {
@@ -86,7 +76,6 @@ import {
   initializeData
 } from '../utils/schema/data.js'
 import { appendDataPath, getParentDataPath } from '../utils/data.js'
-import { resolvePath } from '../utils/path.js'
 import { getErrorMessage } from '../utils/request.js'
 import { cloneWithUids } from '../utils/uid.js'
 import {
@@ -103,36 +92,61 @@ export default {
 
   setup() {
     const router = useRouter()
-    const adminContext = inject('adminContext')
-    const parentRouteContext = inject('routeContext')
-    const loadedData = ref(null)
-    const createdData = ref(null)
-    // The item of the parent that the form edits, and its draft:
-    const original = ref(null)
-    const draft = ref(null)
-    const selectedTab = shallowRef(null)
+    const adminContext = inject(adminContextKey)
+    const route = useRouteRecord()
+    const { node, parent: parentRouteContext } = route
+    const parentDataContext = parentRouteContext.dataContext
 
-    const sourceSchema = computed(() => ownRouteContext.node.source.schema)
+    // The source of the item, and what the route says about it:
+    const sourceSchema = computed(() => node.value.source.schema)
     const itemAdapter = computed(() => getItemAdapter(sourceSchema.value))
-
     // vue-router can't map several parameters of the same name to several
     // components, see https://github.com/vuejs/vue-router/issues/1345
     const param = computed(
-      () => router.currentRoute.value.params[ownRouteContext.node.param] ?? null
+      () => router.currentRoute.value.params[node.value.param] ?? null
     )
     const isCreating = computed(() => param.value === 'create')
     const isMutating = computed(() => !!sourceSchema.value.mutate)
     const creationType = computed(() => router.currentRoute.value.query.type)
     const itemId = computed(() => (isCreating.value ? null : param.value))
-    const isNestedRoute = computed(() => ownRouteContext.node.isNestedForm)
+    const isNestedRoute = computed(() => node.value.isNestedForm)
+
+    // Forms without a resource of their own edit an item of their parent:
+    const requests = useResource({
+      adminContext,
+      parentResourceContext: parentRouteContext.resourceContext,
+      parentRouteContext,
+      getSchema: () => sourceSchema.value,
+      getItemId: () => itemId.value,
+      isTransient: providesData => !providesData
+    })
+    const { isTransient, providesData } = requests
+    // Mutating forms edit the item in place, the others a draft of it:
+    const isEditingParentItem = computed(
+      () => isTransient.value && isMutating.value && !isCreating.value
+    )
+    const hasDraft = computed(
+      () => isTransient.value && !isMutating.value && !isCreating.value
+    )
+
+    const verbs = computed(() => {
+      const verbs = requests.verbs.value
+      return {
+        ...verbs,
+        submit: isCreating.value ? verbs.create : verbs.save,
+        submitted: isCreating.value ? verbs.created : verbs.saved,
+        cancel: providesData.value ? verbs.cancel : verbs.close,
+        cancelled: providesData.value ? verbs.cancelled : verbs.closed
+      }
+    })
 
     // The item of the form in the data of its parent route:
     const sourceLocation = computed(() => {
-      const { node, state } = parentRouteContext
+      const { node: parentNode, state } = parentRouteContext
       return state.data
-        ? node.findItem(ownRouteContext.node, {
+        ? parentNode.findItem(node.value, {
             ...state,
-            routeParams: routeParams.value
+            routeParams: route.params.value
           })
         : null
     })
@@ -143,44 +157,14 @@ export default {
         ? sourceData.value[sourceKey.value]
         : undefined
     )
-    // Mutating forms edit the item of their parent, the others a draft of it:
-    const inheritedData = computed(() =>
-      isTransient.value
-        ? isMutating.value
-          ? sourceItem.value
-          : draft.value
-        : undefined
-    )
-    // A new item, the item that the form loaded, or the one of its parent:
-    const data = computed(
-      () => createdData.value || loadedData.value || inheritedData.value || null
-    )
-    const hasData = computed(() => !!data.value)
-    // Mutating forms that create or load their item don't edit their parent's:
-    const isEditingSourceItem = computed(
-      () => isMutating.value && data.value === inheritedData.value
-    )
     // Forms that load their own data start a new data path:
     const dataPath = computed(() =>
       isTransient.value
         ? appendDataPath(
-            parentRouteContext.dataPath,
+            parentDataContext.dataPath,
             sourceLocation.value?.dataPath ?? ''
           )
         : ''
-    )
-    // Forms of items in the data of their parent read the parent's root data,
-    // with their draft in place of the item, and read-only elsewhere:
-    const rootData = computed(() =>
-      isTransient.value
-        ? isMutating.value || !sourceData.value
-          ? parentRouteContext.rootData
-          : createDraftRoot(
-              parentRouteContext.rootData,
-              dataPath.value,
-              data.value
-            )
-        : data.value
     )
     // Forms of items in the data of their parent continue the component path
     // of their source, e.g. `main/chapters/1`:
@@ -189,31 +173,106 @@ export default {
       () =>
         isTransient.value
           ? getComponentPathByDataPath(
-              parentRouteContext.schema,
-              parentRouteContext.state.data,
+              parentDataContext.schema,
+              parentDataContext.data,
               dataPath.value,
               {
-                dataPath: parentRouteContext.dataPath,
-                componentPath: parentRouteContext.componentPath,
-                services,
-                rootData: parentRouteContext.rootData
+                dataPath: parentDataContext.dataPath,
+                componentPath: parentDataContext.componentPath,
+                services: parentDataContext.services,
+                rootData: parentDataContext.model.rootData
               }
             )
           : ''
     )
 
+    const {
+      routeContext,
+      dataContext,
+      model,
+      services,
+      store,
+      schemaPath,
+      navigateWithin
+    } = useRouteContainer({
+      route,
+      schema: () => schema.value,
+      sourceSchema: () => sourceSchema.value,
+      dataPath: () => dataPath.value,
+      // Forms of items in the data of their parent read the parent's root
+      // data, with their draft in place of the item, and read-only elsewhere:
+      rootData: data => {
+        const rootData = parentDataContext.model.rootData
+        return isTransient.value
+          ? !isMutating.value && sourceData.value
+            ? createDraftRoot(rootData, dataPath.value, data)
+            : rootData
+          : data
+      },
+      componentPath: () => componentPath.value,
+      isCreating: () => isCreating.value,
+      isTransient: () => isTransient.value,
+      isMutating: () => isMutating.value,
+      parentModel: () => parentDataContext.model,
+      isEditingParentItem: () => isEditingParentItem.value,
+      getParentItem: () => sourceItem.value,
+      canSave: () => hasSubmitButton(buttonSchemas.value),
+      replaceItem: data => setData(data),
+      copyErrors: () => copyErrors(),
+      breadcrumb: () => (
+        schema.value.breadcrumb ||
+        `${
+          capitalize(isCreating.value ? verbs.value.create : verbs.value.edit)
+        } ${getLabel(schema.value)}`
+      ),
+      verbs: () => verbs.value,
+      resourceContext: requests.resourceContext,
+      // The components of the form don't see the source of its parent, e.g.
+      // of a tree that renders the forms of its items:
+      sourceContext: null,
+      submit: (button, options) => submit(button, options)
+    })
+
+    // The data, and the schema that the type of the item or of the item to
+    // create determines:
+    const data = computed(() => dataContext.data)
     const schema = computed(() =>
       getItemFormSchema(
         sourceSchema.value,
-        data.value || (
-          creationType.value
-            ? // The type of the item to create determines its form too:
-              { type: creationType.value }
-            : null
-        ),
+        data.value ||
+        (creationType.value ? { type: creationType.value } : null),
         context
       )
     )
+    const { context, createContext } = useSchemaContext(
+      reactive({ schema, data, dataPath }),
+      { services }
+    )
+    const { getLabel } = useSchemaValue(context)
+    // The events of the data, e.g. `load`, like the form's schema emits them:
+    const { emitEvent: emitSchemaEvent } = useSchemaEvents(() => schema.value, {
+      services,
+      createContext: values =>
+        createContext({
+          nested: true,
+          get formLabel() {
+            return getLabel(schema.value)
+          },
+          ...values
+        })
+    })
+    const { getItemId, getItemLabel } = useSourceItems({
+      services,
+      getContext: () => context,
+      getSchema: () => sourceSchema.value,
+      getDataPath: () => dataPath.value,
+      isTransient: () => isTransient.value
+    })
+    const itemLabel = computed(() =>
+      getItemLabel(sourceSchema.value, data.value, { extended: true })
+    )
+
+    const close = () => routeContext.close()
 
     const buttonSchemas = computed(() =>
       getButtonSchemas(
@@ -240,231 +299,74 @@ export default {
       )
     )
 
-    const verbs = computed(() => {
-      const verbs = requests.verbs.value
-      const { providesData } = requests
-      return {
-        ...verbs,
-        submit: isCreating.value ? verbs.create : verbs.save,
-        submitted: isCreating.value ? verbs.created : verbs.saved,
-        cancel: providesData.value ? verbs.cancel : verbs.close,
-        cancelled: providesData.value ? verbs.cancelled : verbs.closed
-      }
-    })
-
-    // Forms that edit the item of their parent edit it through its model:
-    const getDataModel = () =>
-      isEditingSourceItem.value
-        ? parentRouteContext.dataContext.model
-        : ownDataModel
-
+    // Forms of items in the data of their parent merge the data into the item
+    // like an edit, the others merge the data from the server, to keep the
+    // identity of its objects:
     const setData = value => {
       if (isTransient.value) {
-        // Merge the data into the item of the parent like an edit:
         if (!equals(data.value, value)) {
           mergeData(schema.value, data.value, value, {
             services,
             shouldKeepSourcesWithResource: true
           })
-          getDataModel().markEdited()
+          dataContext.markEdited()
         }
       } else {
-        // Merge data from the server, to keep the identity of its objects:
-        loadedData.value =
-          data.value && value ? getDataModel().mergeFromServer(value) : value
-        createdData.value = null
+        model.mergeFromServer(value)
       }
       return data.value
     }
 
     // Copy the errors of the item in the parent's model into the draft:
     const copyErrors = () => {
-      if (draft.value) {
-        const parentModel = parentRouteContext.dataContext.model
+      const draft = hasDraft.value ? model.data : null
+      if (draft) {
         if (itemAdapter.value) {
           // The list holds the errors of its primitives:
-          ownDataModel.copyValueErrors(parentModel, dataPath.value, {
-            data: draft.value,
+          model.copyValueErrors(parentDataContext.model, dataPath.value, {
+            data: draft,
             name: itemAdapter.value.name
           })
         } else {
-          ownDataModel.copyErrors(parentModel, draft.value)
+          model.copyErrors(parentDataContext.model, draft)
         }
       }
     }
 
-    const routeContainer = useRouteContainer(
-      reactive({
-        sourceSchema,
-        schema,
-        data,
-        dataPath,
-        rootData,
-        componentPath,
-        hasData,
-        isCreating,
-        isMutating,
-        verbs,
-        selectedTab,
-        breadcrumb: computed(
-          () => (
-            schema.value.breadcrumb ||
-            `${
-              capitalize(
-                isCreating.value ? verbs.value.create : verbs.value.edit
-              )
-            } ${getLabel(schema.value)}`
-          )
-        ),
-        // Forms that edit the item of their parent leave their changes there:
-        isDirty: computed(
-          () => !isEditingSourceItem.value && ownDataContext.isDirty
-        ),
-        isTransient: computed(() => isTransient.value),
-        loadingTracker: computed(() => requests.loadingTracker),
-        setData,
-        copyErrors,
-
-        get dataModel() {
-          return getDataModel()
-        },
-
-        get services() {
-          return services
-        },
-
-        get ownResourceContext() {
-          return ownResourceContext
-        },
-
-        submit: (button, options) => submit(button, options)
+    // Forms load their item without data, e.g. when they open another one:
+    const loadData = () => {
+      model.replace(null)
+      return requests.loadData({
+        onLoad: async data => {
+          model.replace(data)
+          await emitSchemaEvent('load')
+        }
       })
-    )
-    const {
-      ownDataContext,
-      ownRouteContext,
-      path,
-      routeParams,
-      navigateWithin
-    } = routeContainer
-    // Forms without a resource of their own continue the one around them, and
-    // apply their data to their parent:
-    const ownResourceContext = hasResource(sourceSchema.value)
-      ? markRaw(
-          new ResourceContext({
-            getResource: options => requests.getResource(options),
-            submit: (button, options) => submit(button, options)
-          })
-        )
-      : null
-    // The components of the form don't see the source of its parent, e.g. of
-    // a tree that renders the forms of its items:
-    const { services, createDataModel } = useContainer({
-      dataContext: ownDataContext,
-      routeContext: ownRouteContext,
-      sourceContext: null,
-      ...(ownResourceContext && { resourceContext: ownResourceContext })
-    })
-    const { context, createContext } = useSchemaContext(
-      reactive({ schema, data, dataPath }),
-      { services }
-    )
-    const { getLabel } = useSchemaValue(context)
-    // The events of the data, e.g. `load`, like the form's schema emits them:
-    const { emitEvent: emitSchemaEvent } = useSchemaEvents(() => schema.value, {
-      services,
-      createContext: values =>
-        createContext({
-          nested: true,
-          get formLabel() {
-            return getLabel(schema.value)
-          },
-          ...values
-        })
-    })
-
-    const requests = useResource({
-      services,
-      parentRouteContext,
-      getSchema: () => sourceSchema.value,
-      getItemId: () => itemId.value,
-      isTransient: providesData => !providesData,
-      hasData: () => hasData.value,
-      clearData: () => setData(null),
-      // Keep the edits made while the data loaded, also in forms that can't
-      // save them. The `load` event still fires, as the data did load:
-      setLoadedData(value) {
-        if (!getDataModel().isEdited) {
-          setData(value)
-        }
-      },
-      emitLoad: () => emitSchemaEvent('load'),
-      getData: () => data.value,
-      getItemLabel: () => itemLabel.value,
-      showValidationErrors: errors =>
-        ownDataContext.showValidationErrors(errors)
-    })
-    const {
-      isTransient,
-      providesData,
-      loadData,
-      ensureData,
-      submitResource,
-      getPayloadData,
-      emitButtonEvent
-    } = requests
-    const { getItemId, getItemLabel, getItemFormSchema } = useItemLabel({
-      services,
-      getContext: () => context,
-      getSchema: () => sourceSchema.value,
-      getDataPath: () => dataPath.value,
-      isTransient: () => isTransient.value
-    })
-    const itemLabel = computed(() =>
-      getItemLabel(sourceSchema.value, data.value, { extended: true })
-    )
-
-    const close = () => ownRouteContext.close()
-
-    const getSubmitVerb = (present = true) =>
-      isCreating.value
-        ? present
-          ? 'create'
-          : 'created'
-        : present
-          ? 'submit'
-          : 'submitted'
-
-    const setupData = () => {
-      if (isCreating.value) {
-        // Drop the item that the form loaded before, and its pending load:
-        requests.loadAbortController.value?.abort()
-        loadedData.value = null
-        const type = creationType.value
-        createdData.value ||= initializeData(
-          schema.value,
-          type ? { type } : {},
-          services
-        )
-      } else {
-        ensureData()
-      }
     }
 
-    // Hold the item by its identity, in a draft unless the form mutates it.
-    // When the item moves, the form follows it to its new route. Forms of list
-    // items close once their item is gone.
+    // Drop the item that the form loaded before, and its pending load:
+    const createData = () => {
+      requests.abortLoad()
+      const type = creationType.value
+      model.replace(
+        initializeData(schema.value, type ? { type } : {}, services)
+      )
+    }
+
+    // Hold the item by its identity, in a draft unless the form edits it in
+    // place. When the item moves, the form follows it to its new route. Forms
+    // of list items close once their item is gone.
+    const original = ref(null)
     const setupSourceItem = ([item, path], [, previousPath] = []) => {
       if (isTransient.value) {
         if (toRaw(item) !== toRaw(original.value)) {
           // Other items at the same path mean that the data changed:
           const hasDataChanged = !!original.value && path === previousPath
-          const { node, state } = parentRouteContext
           const params = (
             hasDataChanged &&
-            node.findItemParams(
-              ownRouteContext.node,
-              { ...state, routeParams: routeParams.value },
+            parentRouteContext.node.findItemParams(
+              node.value,
+              { ...parentRouteContext.state, routeParams: route.params.value },
               original.value
             )
           )
@@ -476,25 +378,26 @@ export default {
               hash,
               params: currentParams
             } = router.currentRoute.value
-            routeParams.value = { ...currentParams, ...params }
-            router.replace({ name, params: routeParams.value, query, hash })
+            route.params.value = { ...currentParams, ...params }
+            router.replace({ name, params: route.params.value, query, hash })
           } else if (hasDataChanged && isListSource(sourceSchema.value)) {
             close()
           } else {
             original.value = item ?? null
-            if (!isMutating.value) {
+            if (hasDraft.value) {
               // Items share their child sources with their source, e.g. tree
               // items their children with the tree, which edits them:
               const transferables = getChildSourceSchemas(
                 sourceSchema.value
               ).map(({ name }) => item?.[name])
               // Primitives are edited wrapped by the item adapter of the list:
-              draft.value =
+              model.replace(
                 item == null
                   ? null
                   : itemAdapter.value
                     ? itemAdapter.value.wrap(item)
                     : cloneWithUids(item, { transferables })
+              )
               copyErrors()
             }
           }
@@ -512,17 +415,19 @@ export default {
 
     // Merge a copy of the draft into the parent's data, which never shares
     // the draft's objects, or write back the unwrapped primitive:
-    const submitTransient = async (
-      button,
-      { onSuccess, onError, notifySuccess, notifyError }
-    ) => {
-      const parentModel = parentRouteContext.dataContext.model
+    const submitTransient = async (button, options) => {
+      const { onSuccess, onError, notifySuccess, notifyError } = options
+      const parentModel = parentDataContext.model
       const list = sourceData.value
       const adapter = itemAdapter.value
       const item = adapter
         ? adapter.unwrap(data.value)
         : cloneWithUids(data.value)
       const success = !!list
+      const eventOptions = {
+        data: data.value,
+        getItemLabel: () => itemLabel.value
+      }
       if (success) {
         if (isCreating.value && !isObjectSource(sourceSchema.value)) {
           // The data path of new items ends with `create` in their list:
@@ -547,29 +452,45 @@ export default {
           }
           emitSchemaEvent('change')
         }
-        onSuccess?.()
-        await emitButtonEvent(button, 'success', { notify: notifySuccess })
+        onSuccess()
+        await requests.emitButtonEvent(button, 'success', {
+          ...eventOptions,
+          notify: notifySuccess
+        })
       } else {
         const error = 'Could not submit transient item'
-        onError?.(error)
-        await emitButtonEvent(button, 'error', { notify: notifyError, error })
+        onError(error)
+        await requests.emitButtonEvent(button, 'error', {
+          ...eventOptions,
+          notify: notifyError,
+          error
+        })
       }
       return success
     }
+
+    const getSubmitVerb = (present = true) =>
+      isCreating.value
+        ? present
+          ? 'create'
+          : 'created'
+        : present
+          ? 'submit'
+          : 'submitted'
 
     const submitData = async (button, {
       validate = true,
       closeForm = false
     } = {}) => {
       // The form may open another item or be left while the submit is pending:
-      const submittedPath = path.value
+      const submittedPath = routeContext.path
       const submittedData = data.value
       // Wait for computed values that depend on pending loads:
       await waitUntilDataModelSettled(services)
-      if (validate && !ownDataContext.validate()) {
+      if (validate && !dataContext.validate()) {
         return false
       }
-      const { editCount } = ownDataModel
+      const { editCount } = model
       // Allow buttons to override both method and resource path to submit to:
       let method = isCreating.value ? 'post' : 'patch'
       let resource = requests.getResource({ method })
@@ -598,11 +519,11 @@ export default {
       const callbacks = {
         onSuccess: () => {
           if (isSubmittedData()) {
-            getDataModel().clearErrors(dataPath.value)
+            dataContext.model.clearErrors(dataPath.value)
             // Edits made while saving stay dirty, and so do the responses of
             // buttons with resources in drafts:
             if (!isTransient.value || !buttonResource) {
-              ownDataModel.markClean({ dataPath: '', editCount })
+              model.markClean({ dataPath: '', editCount })
             }
             emitSchemaEvent(getSubmitVerb())
           }
@@ -610,8 +531,9 @@ export default {
         onError: error => emitSchemaEvent('error', { context: { error } })
       }
 
+      const isTransientSubmit = !buttonResource && isTransient.value
       let success
-      if (!buttonResource && isTransient.value) {
+      if (isTransientSubmit) {
         success = await submitTransient(button, {
           ...callbacks,
           notifySuccess: () => {
@@ -632,43 +554,65 @@ export default {
           notifyError: error => notifySubmitError(error)
         })
       } else {
-        const payload = getPayloadData(button, method)
-        success = await submitResource(button, resource, method, payload, {
-          ...callbacks,
-          onSuccess: response => {
-            if (response && isSubmittedData()) {
-              setData(response)
-            }
-            callbacks.onSuccess()
-          },
-          notifySuccess: () => {
-            const verb = getVerb(false)
-            adminContext.notify({
-              type: 'success',
-              title: `Successfully ${capitalize(verb)}`,
-              html: `${itemLabel.value} was ${verb}.`
-            })
-          },
-          // Errors without a message are notified without details:
-          notifyError: error => notifySubmitError(error, getErrorMessage(error))
-        })
+        const payload = requests.getPayloadData(button, method)
+        success = await requests.submitResource(
+          button,
+          resource,
+          method,
+          payload,
+          {
+            data: submittedData,
+            getItemLabel: () => itemLabel.value,
+            onSuccess: response => {
+              if (response && isSubmittedData()) {
+                setData(response)
+              }
+              callbacks.onSuccess()
+            },
+            onError: callbacks.onError,
+            notifySuccess: () => {
+              const verb = getVerb(false)
+              adminContext.notify({
+                type: 'success',
+                title: `Successfully ${capitalize(verb)}`,
+                html: `${itemLabel.value} was ${verb}.`
+              })
+            },
+            // Errors without a message are notified without details:
+            notifyError: error =>
+              notifySubmitError(error, getErrorMessage(error)),
+            showValidationErrors: errors =>
+              dataContext.showValidationErrors(errors)
+          }
+        )
         if (success) {
           // The source that lists the item loads it again:
-          parentRouteContext.findSource(ownRouteContext.node.source)?.reload()
+          const source = [...parentDataContext.sources].find(
+            source => source.node === node.value.source
+          )
+          source?.reload()
         }
       }
       if (success) {
         if (closeForm || button.closeForm) {
           navigateWithin(submittedPath, close)
         } else if (isCreating.value) {
-          // Redirect to the form editing the newly created item:
-          const id = getItemId(sourceSchema.value, submittedData)
-          navigateWithin(submittedPath, () =>
+          // Redirect to the form editing the newly created item. Items in the
+          // data of the parent are addressed by their index, objects by the
+          // form without parameter:
+          const id = !isTransientSubmit
+            ? getItemId(sourceSchema.value, submittedData)
+            : isObjectSource(sourceSchema.value)
+              ? null
+              : sourceData.value.length - 1
+          navigateWithin(submittedPath, () => {
+            const { params, hash } = router.currentRoute.value
             router.replace({
-              path: resolvePath(`${submittedPath}/../${id}`),
-              hash: router.currentRoute.value.hash // Keep the tab.
+              name: route.record.value.name,
+              params: { ...params, [node.value.param]: id },
+              hash // Keep the tab.
             })
-          )
+          })
         }
       }
       return success
@@ -676,31 +620,22 @@ export default {
 
     // Leaving the route waits for pending submits:
     const submit = (button, options) =>
-      getDataModel().trackPendingSubmit(submitData(button, options))
+      dataContext.model.trackPendingSubmit(submitData(button, options))
 
-    provide('sourceSchema', sourceSchema)
-    provide('sourceContext', null)
-    if (ownResourceContext) {
-      provide('resourceContext', ownResourceContext)
+    if (isCreating.value) {
+      createData()
+    } else if (providesData.value) {
+      loadData()
     }
 
-    // Set up the data before the model, which writes into it:
-    if (providesData.value || isCreating.value) {
-      setupData()
-    }
-    // The item of the parent is handled by the parent's model:
-    const ownDataModel = createDataModel({
-      schema: () => schema.value,
-      data: () => (isEditingSourceItem.value ? null : data.value),
-      rootData: () => rootData.value,
-      dataPath: () => dataPath.value,
-      sourceSchema: () => sourceSchema.value,
-      parent: () => parentRouteContext.dataContext.model,
-      canSave: () => hasSubmitButton(buttonSchemas.value)
+    watch(isCreating, isCreating => {
+      if (isCreating) {
+        createData()
+      }
     })
-    // Watch once the model exists, as the draft takes over its errors. The path
-    // tells changes of the data from changes of the route:
-    watch(() => [sourceItem.value, path.value], setupSourceItem, {
+
+    // The path tells changes of the data from changes of the route:
+    watch(() => [sourceItem.value, routeContext.path], setupSourceItem, {
       immediate: true
     })
 
@@ -708,13 +643,12 @@ export default {
       router.currentRoute,
       (to, from) => {
         // Load the data of other items that the form navigates to:
-        const { param } = ownRouteContext.node
+        const { param } = node.value
         const toParam = to.params[param]
         const fromParam = from.params[param]
         // Created items are merged into the form, which opens them as they are:
         const isOpeningCreatedItem = (
           fromParam === 'create' &&
-          !createdData.value &&
           getItemId(sourceSchema.value, data.value) === toParam
         )
         if (
@@ -724,44 +658,37 @@ export default {
           toParam !== fromParam &&
           !isOpeningCreatedItem
         ) {
-          loadData(true)
+          loadData()
         }
       },
       // https://github.com/vuejs/vue-router/issues/3393#issuecomment-1158470149
       { flush: 'post' }
     )
 
-    watch(isCreating, isCreating => {
-      if (isCreating) {
-        setupData()
-      }
-    })
-
     // Whether the route is the last one that needs its own router-view:
     const isLastUnnestedRoute = computed(() => {
       const record = router.currentRoute.value.matched.findLast(
         record => !record.meta.node?.isNestedForm
       )
-      return routeContainer.routeRecord.value === record
+      return route.record.value === record
     })
 
     return {
-      ...routeContainer,
-      ...requests,
-      routeContext: ownRouteContext,
+      routeContext,
+      dataContext,
       schema,
       data,
       dataPath,
-      dataModel: computed(getDataModel),
-      selectedTab,
+      store,
+      schemaPath,
       buttonSchemas,
       isNestedRoute,
       isLastUnnestedRoute,
+      isLoading: requests.isLoading,
       isActiveRoute: computed(
-        () => routeContainer.isLastRoute.value || isLastUnnestedRoute.value
+        () => routeContext.isLastRoute || isLastUnnestedRoute.value
       ),
-      itemLabelText: computed(() => getTextFromHtml(itemLabel.value)),
-      setData
+      itemLabelText: computed(() => getTextFromHtml(itemLabel.value))
     }
   }
 }

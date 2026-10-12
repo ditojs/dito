@@ -32,12 +32,11 @@
 </template>
 
 <script>
-import { computed, markRaw, reactive, ref, useTemplateRef } from 'vue'
+import { computed, useTemplateRef } from 'vue'
 import { clone } from '@ditojs/utils'
 import { UseFocusTrap } from '@vueuse/integrations/useFocusTrap/component'
-import { useContainer } from '../composables/useSchemaContext.ts'
+import { useContainer } from '../composables/useContainer.ts'
 import { getButtonSchemas, hasSubmitButton } from '../utils/schema/lookup.js'
-import { DialogContext } from '../utils/DataContext.ts'
 import { waitUntilDataModelSettled } from '../utils/services.ts'
 
 export default {
@@ -67,7 +66,6 @@ export default {
         initialData[key] = null
       }
     }
-    const dialogData = ref(initialData)
     const schema = computed(() => ({
       type: 'dialog',
       components: props.components
@@ -79,34 +77,14 @@ export default {
       emit('remove')
     }
 
-    const dataContext = markRaw(
-      new DialogContext(
-        reactive({
-          schema,
-          data: dialogData,
-          dataPath: '',
-          componentPath: '',
-          get dataModel() {
-            return dataModel
-          },
-          get services() {
-            return services
-          },
-          setData(data) {
-            dialogData.value = data
-            return dialogData.value
-          },
-          resolve
-        })
-      )
-    )
     // Dialogs render in the root, outside of routes and sources:
-    const { services, createDataModel } = useContainer({ dataContext })
-    const dataModel = createDataModel({
+    const { dataContext, services } = useContainer({
       schema: () => schema.value,
-      data: () => dialogData.value,
-      canSave: () => hasSubmitButton(buttonSchemas.value)
+      data: initialData,
+      canSave: () => hasSubmitButton(buttonSchemas.value),
+      closeDialog: resolve
     })
+    const dialogData = computed(() => dataContext.data)
 
     // Cancelled dialogs resolve with `undefined`, as `null` can be a value:
     const cancel = () => resolve(undefined)

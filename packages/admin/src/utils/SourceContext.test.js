@@ -34,11 +34,11 @@ describe('SourceContext', () => {
       data: { chapters: [{ title: 'Arrakis' }] }
     })
     const chapters = getComponent('chapters')
-    const source = chapters.ownSourceContext
+    const source = chapters.sourceContext
     expect(source.schema).toBe(chapters.schema)
     expect(source.dataPath).toBe('chapters')
-    expect(getComponent('chapters/0/title').context.sourceQuery).toBe(
-      source.query
+    expect(getComponent('chapters/0/title').context.sourceQuery).toEqual(
+      source.listQuery.query
     )
     expect(getComponent('title').context.sourceQuery).toBe(null)
   })
@@ -59,10 +59,10 @@ describe('SourceContext', () => {
       request: () => ({ data: [] })
     })
     const books = getComponent('books')
-    expect(books.ownSourceContext.query).toEqual({ scope: 'all' })
-    expect(getComponent('books/export').context.sourceQuery).toBe(
-      books.ownSourceContext.query
-    )
+    expect(books.sourceContext.listQuery.query).toEqual({ scope: 'all' })
+    expect(getComponent('books/export').context.sourceQuery).toEqual({
+      scope: 'all'
+    })
   })
 
   // The forms of tree items render inside the tree, but their components
