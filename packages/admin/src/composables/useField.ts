@@ -1,4 +1,11 @@
-import { computed, ref, type ExtractPropTypes, type PropType } from 'vue'
+import {
+  computed,
+  onBeforeUnmount,
+  ref,
+  shallowReactive,
+  type ExtractPropTypes,
+  type PropType
+} from 'vue'
 import { camelize } from '@ditojs/utils'
 import {
   getValidations,
@@ -6,7 +13,13 @@ import {
 } from '../utils/schema/validation.js'
 import { getInputAffixesProps } from '../utils/affixes.js'
 import { getSchemaEventEntries } from '../utils/schema/events.js'
-import { useSchemaContext } from './useSchemaContext.ts'
+import { hasLabel } from '../utils/schema/structure.js'
+import { appendDataPath } from '../utils/data.js'
+import {
+  useSchemaContext,
+  useServices,
+  type SchemaContextProps
+} from './useSchemaContext.ts'
 import { useValue } from './useValue.ts'
 import { useSchemaValue } from './useSchemaValue.ts'
 import { useComponentPath } from './useComponentPath.ts'
@@ -23,7 +36,7 @@ export const fieldProps = {
   dataPath: { type: String, required: true },
   data: { type: [Object, Array] as PropType<Data>, required: true },
   store: { type: Object as PropType<Record<string, any>>, required: true },
-  label: { type: String, default: null },
+  field: { type: Object as PropType<ContainerField>, required: true },
   single: { type: Boolean, default: false },
   nested: { type: Boolean, default: true },
   // The id of the element that displays the errors, while there are errors:
@@ -43,8 +56,9 @@ export interface FieldOptions extends FocusOptions {
   getEvents?: (
     handlers: FieldEventHandlers
   ) => Record<string, (...args: any[]) => any>
-  // The services of components that own some, e.g. sources and buttons:
-  services?: Services
+  // The members that the component adds to the contexts of its field, e.g. the
+  // `options` of selects:
+  members?: object
   // Fields that render native inputs get their `name`, `title`, `readonly` and
   // `autofocus` attributes, text fields also `maxlength`, `placeholder` and
   // `autocomplete`. All others are disabled while they're `readonly`.
@@ -52,10 +66,70 @@ export interface FieldOptions extends FocusOptions {
   textField?: boolean
 }
 
+// The field of a container: the value of its type component and the schema
+// values that both show, evaluated once with the members of the component:
+export function useContainerField(
+  props: SchemaContextProps & { readonly generateLabels: boolean }
+) {
+  // The members that the type component adds, see `useField()`. They override
+  // the services that the contexts inherit from:
+  const members = shallowReactive(new Set<object>())
+  const getOwner = (target: Services, key: PropertyKey) => (
+    [...members].find(owner => key in owner) ?? target
+  )
+  const services = new Proxy(useServices(), {
+    has: (target, key) => key in getOwner(target, key),
+    get: (target, key) => Reflect.get(getOwner(target, key), key),
+    set: (target, key, value) => Reflect.set(getOwner(target, key), key, value)
+  })
+  const schemaContext = useSchemaContext(props, {
+    services,
+    // The context holds the value that the component displays:
+    getValue: () => value.value
+  })
+  const { context } = schemaContext
+  const { value, parsedValue } = useValue(props, schemaContext)
+  const { getSchemaValue, getLabel } = useSchemaValue(context)
+  // Add the name, also of unnested components:
+  const { componentPath, parentComponentPath } = useComponentPath(
+    () => props.dataPath,
+    parent => appendDataPath(parent.path, props.schema.name)
+  )
+
+  const getBoolean = (key: string) =>
+    computed(() => getSchemaValue(key, { type: Boolean, default: false }))
+
+  return {
+    ...schemaContext,
+    members,
+    value,
+    parsedValue,
+    componentPath,
+    parentComponentPath,
+    getSchemaValue,
+    label: computed(() =>
+      hasLabel(props.schema, props.generateLabels)
+        ? getLabel(props.schema)
+        : null
+    ),
+    info: computed(() =>
+      getSchemaValue('info', { type: String, default: null })
+    ),
+    placeholder: computed(() =>
+      getSchemaValue('placeholder', { type: String })
+    ),
+    readonly: getBoolean('readonly'),
+    disabled: getBoolean('disabled')
+  }
+}
+
+export type ContainerField = ReturnType<typeof useContainerField>
+
+// Edit the field of the container in the element of the type component:
 export function useField(
   props: FieldProps,
   {
-    services,
+    members,
     nativeField = false,
     textField = false,
     getEvents,
@@ -63,33 +137,32 @@ export function useField(
     blurElement
   }: FieldOptions = {}
 ) {
-  const schemaContext = useSchemaContext(props, {
+  const { field } = props
+  if (members) {
+    field.members.add(members)
+    onBeforeUnmount(() => field.members.delete(members))
+  }
+  const {
+    context,
     services,
-    // The context holds the value that the component displays:
-    getValue: () => value.value
-  })
-  const { value: dataValue, parsedValue } = useValue(props, schemaContext)
-  const { context } = schemaContext
-  const { getSchemaValue } = useSchemaValue(context)
-  const { componentPath } = useComponentPath(() => props.dataPath)
+    componentPath,
+    getSchemaValue,
+    label,
+    info,
+    placeholder,
+    readonly,
+    disabled,
+    parsedValue
+  } = field
 
-  const getBoolean = (key: string) =>
-    computed(() => getSchemaValue(key, { type: Boolean, default: false }))
-
-  const readonly = getBoolean('readonly')
-  const disabled = getBoolean('disabled')
-  const autofocus = getBoolean('autofocus')
+  const autofocus = computed(() =>
+    getSchemaValue('autofocus', { type: Boolean, default: false })
+  )
   const clearable = computed(
     () => (
       getSchemaValue('clearable', { type: Boolean, default: false }) &&
       !readonly.value
     )
-  )
-  const placeholder = computed(() =>
-    getSchemaValue('placeholder', { type: String })
-  )
-  const info = computed(() =>
-    getSchemaValue('info', { type: String, default: null })
   )
 
   // Replace the validation errors of the field:
@@ -98,23 +171,23 @@ export function useField(
       value.value,
       getValidations(props.schema, context)
     )
-    schemaContext.services.dataContext!.model.setErrors(
+    services.dataContext!.model.setErrors(
       props.dataPath,
       errors.length > 0 ? errors : null
     )
     return errors.length === 0
   }
 
-  const { emitEvent } = useSchemaEvents(() => props.schema, schemaContext)
+  const { emitEvent } = useSchemaEvents(() => props.schema, field)
   const focused = ref(false)
 
   // Edits emit `input` when they change the value, and `change` when they're
   // done. Edits that don't write the value, e.g. of lists, emit both at once:
   let hasEmittedInput = false
   const value = computed({
-    get: () => dataValue.value,
+    get: () => field.value.value,
     set(newValue) {
-      dataValue.value = newValue
+      field.value.value = newValue
       hasEmittedInput = true
       emitEvent('input')
     }
@@ -158,7 +231,7 @@ export function useField(
     }
     return events
   })
-  const focus = useFocus(schemaContext.services, componentPath, {
+  const focus = useFocus(services, componentPath, {
     focusElement,
     blurElement
   })
@@ -175,8 +248,8 @@ export function useField(
     }
     if (nativeField) {
       attributes.name = props.dataPath
-      if (props.label) {
-        attributes.title = props.label
+      if (label.value) {
+        attributes.title = label.value
       }
       attributes.readonly = readonly.value
       attributes.autofocus = autofocus.value
@@ -199,14 +272,16 @@ export function useField(
       disabled: disabled.value,
       clearable: clearable.value,
       value: value.value,
-      label: props.label,
+      label: label.value,
       info: info.value,
       context
     })
   )
 
   return {
-    ...schemaContext,
+    context,
+    createContext: field.createContext,
+    services,
     value,
     ...handlers,
     ...focus,
@@ -217,6 +292,7 @@ export function useField(
     autofocus,
     clearable,
     placeholder,
+    label,
     info,
     attributes,
     inputAffixesProps,

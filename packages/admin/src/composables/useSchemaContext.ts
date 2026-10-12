@@ -11,12 +11,13 @@ import {
 import type { Context } from '../utils/schema/types.ts'
 import type { Services } from '../utils/services.ts'
 import type { Data, Schema } from '../utils/types.ts'
-import type { FieldProps } from './useField.ts'
 
-export type SchemaContextProps = Pick<
-  FieldProps,
-  'schema' | 'data' | 'dataPath' | 'nested'
->
+export interface SchemaContextProps {
+  readonly schema: Schema
+  readonly data: Data
+  readonly dataPath: string
+  readonly nested: boolean
+}
 
 // Components without a schema or data of their own, e.g. buttons, leave them
 // out, and the ones that don't tell are unnested:

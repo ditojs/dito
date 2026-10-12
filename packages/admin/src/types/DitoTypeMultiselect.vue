@@ -73,7 +73,6 @@ import { defineType } from '../utils/schema/types.ts'
 import { optionsTraits } from './traits.ts'
 import { fieldProps, useField } from '../composables/useField.ts'
 import { useOptions } from '../composables/useOptions.ts'
-import { useServices } from '../composables/useSchemaContext.ts'
 import DitoInputAffixes from '../components/DitoInputAffixes.vue'
 import DitoOptionsEditButtons from '../components/DitoOptionsEditButtons.vue'
 import VueMultiselect from 'vue-multiselect'
@@ -93,11 +92,11 @@ const DitoTypeMultiselect = {
       focusElement: () => element.value.activate(),
       blurElement: () => element.value.deactivate(),
       // The contexts of the field hold its options:
-      services: useServices({
+      members: {
         get options() {
           return optionsField.options.value
         }
-      })
+      }
     })
     const { element, value, focused, autofocus, services, getSchemaValue } =
       field
@@ -239,7 +238,7 @@ const DitoTypeMultiselect = {
         if (isBoolean(placeholder)) {
           placeholder = placeholder ? undefined : null
         }
-        const { label } = props
+        const label = field.label.value
         return placeholder === undefined
           ? searchable && taggable
             ? label

@@ -35,7 +35,6 @@ DitoButton(
 import { computed, ref } from 'vue'
 import { defineType } from '../utils/schema/types.ts'
 import { fieldProps, useField } from '../composables/useField.ts'
-import { useServices } from '../composables/useSchemaContext.ts'
 import { getVerbs } from '../utils/services.ts'
 import DitoAffixes from '../components/DitoAffixes.vue'
 import { DitoButton } from '@ditojs/ui/src'
@@ -50,29 +49,28 @@ const DitoTypeButton = {
 
   setup(props) {
     const isRunning = ref(false)
-    const services = useServices({
-      // Handlers can end it early, like before opening a dialog:
-      get isRunning() {
-        return isRunning.value
-      },
-
-      set isRunning(value) {
-        isRunning.value = value
-      },
-
-      // Buttons of sources submit through them, the others to their form, which
-      // applies or saves its data:
-      get submit() {
-        const { sourceContext, routeContext } = services
-        const target = sourceContext ?? (routeContext?.isForm && routeContext)
-        return target ? options => target.submit(button, options) : null
-      }
-    })
     const field = useField(props, {
-      services,
+      members: {
+        // Handlers can end it early, like before opening a dialog:
+        get isRunning() {
+          return isRunning.value
+        },
+
+        set isRunning(value) {
+          isRunning.value = value
+        },
+
+        // Buttons of sources submit through them, the others to their form,
+        // which applies or saves its data:
+        get submit() {
+          const { sourceContext, routeContext } = services
+          const target = sourceContext ?? (routeContext?.isForm && routeContext)
+          return target ? options => target.submit(button, options) : null
+        }
+      },
       getEvents: ({ onFocus, onBlur }) => ({ onFocus, onBlur, onClick })
     })
-    const { getSchemaValue, emitEvent } = field
+    const { services, getSchemaValue, emitEvent } = field
     const closeForm = computed(() =>
       getSchemaValue('closeForm', { type: Boolean, default: false })
     )

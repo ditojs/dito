@@ -27,7 +27,6 @@ import {
 } from '../utils/schema/lookup.js'
 import { isInlined, isListSource } from '../utils/schema/structure.js'
 import { useField, type FieldProps } from './useField.ts'
-import { useServices } from './useSchemaContext.ts'
 import { useResource } from './useResource.ts'
 import { useListQuery } from './useListQuery.ts'
 import { useSourceData } from './useSourceData.ts'
@@ -66,15 +65,24 @@ export function useSource(
     )
   })
   const { resourceContext, isTransient, providesData } = requests
-  const services = useServices({
-    get sourceContext() {
-      return sourceContext
-    },
+  const {
+    value,
+    context,
+    services,
+    label,
+    disabled,
+    onChange,
+    getSchemaValue,
+    componentPath
+  } = useField(props, {
+    members: {
+      get sourceContext() {
+        return sourceContext
+      },
 
-    ...(resourceContext && { resourceContext })
+      ...(resourceContext && { resourceContext })
+    }
   })
-  const { value, context, disabled, onChange, getSchemaValue, componentPath } =
-    useField(props, { services })
   const getModel = () => services.dataContext!.model
   const getBoolean = (key: string) =>
     getSchemaValue(key, { type: Boolean, default: false })
@@ -434,6 +442,7 @@ export function useSource(
     value,
     context,
     componentPath,
+    label,
     disabled,
     onChange,
     services,
