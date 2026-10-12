@@ -230,12 +230,12 @@ describe('SchemaGraph', () => {
   })
 
   describe('serialize() with custom id keys', () => {
-    it('uses `idKey` of sources and `relateBy` of relations', () => {
+    it('uses `idKey` of sources and the key in `relate` of relations', () => {
       const graph = new SchemaGraph()
       graph.addSource('authors', { type: 'list', idKey: 'key' })
       graph.addRelation('books/0/author', 'authors', {
         type: 'select',
-        relateBy: 'key'
+        relate: 'key'
       })
       const data = graph.serialize(
         { type: 'form', idKey: 'key' },

@@ -13,6 +13,7 @@ import {
   getMultipleValue,
   getSchemaValue
 } from '../utils/schema/data.js'
+import { getRelateKey } from '../utils/schema/options.ts'
 
 export const sourceTraits = {
   defaultValue: ({ schema }: Context) => (isListSource(schema) ? [] : null),
@@ -70,10 +71,11 @@ export const optionsTraits = {
   getOptionsDataSchema: schema => schema.options,
 
   serializeValue({ schema, value }: Context) {
-    if (schema.relate) {
-      // Convert relating objects to a shallow copy with only the id left.
-      // TODO: Convert to using `relateBy`:
-      const toRelate = (value: any) => (value ? { id: value.id } : value)
+    const relateKey = getRelateKey(schema)
+    if (relateKey) {
+      // Convert relating objects to a shallow copy with only the id left:
+      const toRelate = (value: any) =>
+        value ? { [relateKey]: value[relateKey] } : value
       // Selected options can be both objects & arrays, e.g. 'checkboxes':
       return getMultipleValue(schema) && isArray(value)
         ? value.map(toRelate)

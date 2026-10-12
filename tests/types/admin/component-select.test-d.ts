@@ -38,10 +38,12 @@ describe('SelectSchema', () => {
     })
   })
 
-  it('accepts relate and relateBy', () => {
+  it('accepts relate by id or by a key', () => {
+    assertType<SelectSchema<Entry>>({ type: 'select', relate: true })
+    assertType<SelectSchema<Entry>>({ type: 'select', relate: 'code' })
     assertType<SelectSchema<Entry>>({
       type: 'select',
-      relate: true,
+      // @ts-expect-error `relate` takes the key
       relateBy: 'id'
     })
   })

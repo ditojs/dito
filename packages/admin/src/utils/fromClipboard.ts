@@ -2,6 +2,7 @@ import { asArray, clone } from '@ditojs/utils'
 import { createTemporaryId, isTemporaryId } from './data.js'
 import { walkSchemaData, deserializeData } from './schema/data.js'
 import { getSourceType } from './schema/types.ts'
+import { getRelateKey } from './schema/options.ts'
 import { isSourceWithResource } from './schema/structure.js'
 import type { Data, Schema, SchemaDataEntry } from './types.ts'
 
@@ -39,7 +40,7 @@ export function fromClipboard(
     } else if (getSourceType(schema)) {
       replaceTemporaryIds(data[name], schema.idKey || 'id')
     } else if (schema.relate) {
-      replaceTemporaryIds(data[name], schema.relateBy || 'id')
+      replaceTemporaryIds(data[name], getRelateKey(schema)!)
     }
   }
   const options = { services, rootData: rootData ?? data }
