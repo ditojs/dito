@@ -275,7 +275,12 @@ describe('RouteMixin', () => {
             // Stay in the form, to be redirected to the created item:
             buttons: { submit: { closeForm: false } }
           },
-          request: ({ method }) => (method === 'post' ? response.promise : null)
+          request: ({ method = 'get', url }) =>
+            method === 'post'
+              ? response.promise
+              : url === '/items/5'
+                ? { data: { id: 5, title: 'Emma' } }
+                : null
         })
         const { wrapper, routeComponent } = result
         await enterValue(wrapper.find('input[name="title"]'), 'Dune')
@@ -373,6 +378,94 @@ describe('RouteMixin', () => {
         expect(confirm).toHaveBeenCalledOnce()
         expect(admin.router.currentRoute.value.path).toBe('/items/create')
         response.reject(new Error('Server unavailable'))
+      })
+
+      it(`doesn't open the created item after opening another one`, async () => {
+        const { admin, routeComponent, response } = await mountSubmittingForm()
+        const navigation = admin.router.push('/items/5')
+        await flushPromises()
+        response.resolve({ data: { id: 1, title: 'Dune' } })
+        await navigation
+        await flushPromises()
+        expect(admin.router.currentRoute.value.path).toBe('/items/5')
+        expect(routeComponent.data.title).toBe('Emma')
+      })
+
+      it(`doesn't close the form after opening another item`, async () => {
+        const response = Promise.withResolvers()
+        const { admin, wrapper, routeComponent } = await mountForm({
+          schema: { components: { title: { type: 'text' } } },
+          data: { title: 'Dune' },
+          request: ({ method = 'get', url }) =>
+            method === 'patch'
+              ? response.promise
+              : url === '/items/2'
+                ? { data: { id: 2, title: 'Emma' } }
+                : null
+        })
+        await enterValue(wrapper.find('input[name="title"]'), 'Dune Messiah')
+        // Save & close:
+        await wrapper
+          .find('.dito-buttons--main button[type="submit"]')
+          .trigger('click')
+        await flushPromises()
+        const navigation = admin.router.push('/items/2')
+        await flushPromises()
+        response.resolve({ data: { id: 1, title: 'Dune Messiah' } })
+        await navigation
+        await settle(routeComponent)
+        expect(admin.router.currentRoute.value.path).toBe('/items/2')
+        expect(routeComponent.data.title).toBe('Emma')
+      })
+
+      it(`doesn't merge a late response into another item`, async () => {
+        stubConfirm(true)
+        const { admin, routeComponent, response } = await mountSubmittingForm()
+        vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+        const navigation = admin.router.push('/items/5')
+        await flushPromises()
+        // Give up waiting for the submit, and discard it:
+        await vi.advanceTimersByTimeAsync(30_000)
+        vi.useRealTimers()
+        await navigation
+        await settle(routeComponent)
+        expect(routeComponent.data.title).toBe('Emma')
+        response.resolve({ data: { id: 1, title: 'Dune' } })
+        await settle(routeComponent)
+        expect(admin.router.currentRoute.value.path).toBe('/items/5')
+        expect(routeComponent.data).toEqual({ id: 5, title: 'Emma' })
+      })
+
+      it('opens the created item after a guard threw', async () => {
+        const { admin, routeComponent, response } = await mountSubmittingForm()
+        admin.router.beforeEach(to => {
+          if (to.path === '/items') {
+            throw new Error('Unable to leave')
+          }
+        })
+        const navigation = admin.router.push('/items').catch(error => error)
+        await flushPromises()
+        response.resolve({ data: { id: 1, title: 'Dune' } })
+        expect(await navigation).toEqual(new Error('Unable to leave'))
+        // The next navigation that stays in the form opens the created item:
+        await admin.navigate('/items/create#notes')
+        expect(admin.router.currentRoute.value.fullPath).toBe('/items/1#notes')
+        expect(routeComponent.isCreating).toBe(false)
+      })
+
+      it('opens the created item after endless redirects', async () => {
+        const { admin, routeComponent, response } = await mountSubmittingForm()
+        vi.spyOn(console, 'warn').mockImplementation(() => {})
+        admin.router.beforeEach(to => (to.path === '/items' ? '/items' : true))
+        const navigation = admin.router.push('/items').catch(error => error)
+        await flushPromises()
+        response.resolve({ data: { id: 1, title: 'Dune' } })
+        expect(await navigation).toEqual(
+          new Error('Infinite redirect in navigation guard')
+        )
+        await admin.navigate('/items/create#notes')
+        expect(admin.router.currentRoute.value.fullPath).toBe('/items/1#notes')
+        expect(routeComponent.isCreating).toBe(false)
       })
     })
 

@@ -328,9 +328,14 @@ describe('DitoForm', () => {
         expect(routeComponent.isDirty).toBe(true)
       })
 
-      it('are clean once the form is saved', async () => {
-        const { routeComponent, submit } = await mountChaptersForm()
+      it('stay dirty once the form is saved, until they save', async () => {
+        const { wrapper, routeComponent, submit, settle } =
+          await mountChaptersForm()
+        // The form's save doesn't carry the order of the list:
         expect(await submit()).toMatchObject({ title: 'Persuasion' })
+        expect(routeComponent.isDirty).toBe(true)
+        await wrapper.find('button[id$="saveOrder"]').trigger('click')
+        await settle()
         expect(routeComponent.isDirty).toBe(false)
       })
     })
@@ -1055,6 +1060,39 @@ describe('DitoForm', () => {
         .map(([{ method = 'get', url }]) => [method, url])
         .filter(([, url]) => url.startsWith('/items'))
       expect(itemRequests).toEqual([['post', '/items']])
+    })
+
+    it('opens the created item by the id key of its list', async () => {
+      const admin = await mountAdmin({
+        views: {
+          items: {
+            type: 'view',
+            component: {
+              type: 'list',
+              resource: { path: 'items' },
+              idKey: 'code',
+              form: {
+                type: 'form',
+                components: { title: { type: 'text' } },
+                buttons: { submit: { closeForm: false } }
+              }
+            }
+          }
+        },
+        request: ({ method = 'get', data }) =>
+          method === 'post'
+            ? { data: { code: 'emma', ...data } }
+            : { data: [] }
+      })
+      await admin.navigate('/items/create')
+      const form = admin.getRouteComponent(component => component.isForm)
+      await enterValue(admin.wrapper.find('input[name="title"]'), 'Emma')
+      await admin.wrapper
+        .find('.dito-buttons--main button[type="submit"]')
+        .trigger('click')
+      await settle(form)
+      expect(admin.router.currentRoute.value.path).toBe('/items/emma')
+      expect(form.data).toEqual({ code: 'emma', title: 'Emma' })
     })
   })
 

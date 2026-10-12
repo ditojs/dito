@@ -370,7 +370,6 @@ export default {
     },
 
     async submitResource(button, resource, method, data, {
-      setData = false,
       onSuccess,
       onError,
       notifySuccess = () =>
@@ -413,12 +412,9 @@ export default {
             }
             return true // The error was handled.
           } else {
-            // Update the underlying data before calling `notify()` or
-            // `this.itemLabel`, so id is set after creating new items.
-            if (setData && data) {
-              this.setData(data)
-            }
-            onSuccess?.()
+            // Call `onSuccess()` with the response data before `notify()` reads
+            // `this.itemLabel`, so forms can merge the id of created items:
+            onSuccess?.(data)
             await this.emitButtonEvent(button, 'success', {
               notify: notifySuccess
             })
