@@ -2227,7 +2227,7 @@ export type DitoContext<$Item = any> = {
 
 /**
  * The context of the admin, provided once to all its components as
- * `admin`. `user`, `views` and `flattenedViews` change with each login,
+ * `adminContext`. `user`, `views` and `flattenedViews` change with each login,
  * and are reactive.
  */
 export interface AdminContext {
@@ -2268,7 +2268,7 @@ export interface AdminContext {
 /** What a rendered component offers to reveal and focus it. */
 export interface UiHandle {
   /** The context of the data that the component displays. */
-  readonly container: ContainerContext | null
+  readonly dataContext: DataContext | null
   /**
    * Renders what leads to the component at `componentPath` inside this one,
    * e.g. opens a collapsed schema and renders its tab, which `focus` also
@@ -2292,19 +2292,19 @@ export interface UiRegistry {
    */
   register(getComponentPath: () => string, handle: UiHandle): () => void
   /**
-   * Returns the handles at `componentPath`, of all containers or of
-   * `container`, the outer ones first.
+   * Returns the handles at `componentPath`, of all data contexts or of
+   * `dataContext`, the outer ones first.
    */
   getHandles(
     componentPath: string,
-    container?: ContainerContext | null
+    dataContext?: DataContext | null
   ): UiHandle[]
   /**
-   * Reveals the component at `componentPath` in `container`, by asking the
+   * Reveals the component at `componentPath` in `dataContext`, by asking the
    * components on the way from the outside in, and with `focus`, focuses it.
    */
   reveal(
-    container: ContainerContext | null,
+    dataContext: DataContext | null,
     componentPath: string,
     options?: { focus?: boolean }
   ): Promise<void>
@@ -2312,10 +2312,10 @@ export interface UiRegistry {
 
 /**
  * The context of a view, form, dialog or panel with its own data, provided
- * to the components that display its data as `container`. Its members are
+ * to the components that display its data as `dataContext`. Its members are
  * reactive.
  */
-export interface ContainerContext {
+export interface DataContext {
   /**
    * The data model that holds the data, which is the model of the parent
    * for forms that mutate the item of their parent.
@@ -2352,21 +2352,21 @@ export interface ContainerContext {
   replaceItem: DitoContext['replaceItem']
 }
 
-/** The context that dialogs provide as `container`. */
-export interface DialogContext extends ContainerContext {
+/** The context that dialogs provide as `dataContext`. */
+export interface DialogContext extends DataContext {
   /** Closes the dialog, and resolves `showDialog()` with `value`. */
   close(value?: unknown): void
 }
 
 /**
  * The context of a view or form, provided to the components that it renders
- * as `route`. Its members are reactive.
+ * as `routeContext`. Its members are reactive.
  */
 export interface RouteContext {
   /** The context of the route of the parent form or view. */
   readonly parent: RouteContext | null
   /** The context of the data of the view or form. */
-  readonly container: ContainerContext
+  readonly dataContext: DataContext
   /** The schema of the data that the route renders. */
   readonly schema: Component | null
   /** The data path of the data, relative to `rootData`. */
@@ -2413,7 +2413,7 @@ export interface RouteContext {
    * The resource of forms, which the resources of their components and
    * nested forms continue, `null` in views.
    */
-  readonly resource: ResourceContext | null
+  readonly resourceContext: ResourceContext | null
   /**
    * Resolves the path of the form that edits the item at `dataPath`, or
    * `null`.
@@ -2439,7 +2439,7 @@ export interface RouteContext {
 
 /**
  * The context of a list, object or tree, provided to the components that
- * display it and its items as `source`. Its members are reactive.
+ * display it and its items as `sourceContext`. Its members are reactive.
  */
 export interface SourceContext {
   readonly schema: Component
@@ -2470,13 +2470,13 @@ export interface SourceContext {
   /** Loads the data of the source again, e.g. after its item was saved. */
   reload(): void
   /** The resource of the source, see {@link ResourceContext}. */
-  readonly resource: ResourceContext
+  readonly resourceContext: ResourceContext
 }
 
 /**
  * The context of a form or source, provided to the components that it
- * renders as `resource`, also when it has no resource of its own, e.g. in
- * nested data. Its members are reactive.
+ * renders as `resourceContext`, also when it has no resource of its own, e.g.
+ * in nested data. Its members are reactive.
  */
 export interface ResourceContext {
   /**

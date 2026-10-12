@@ -38,7 +38,7 @@ import { clone } from '@ditojs/utils'
 import { UseFocusTrap } from '@vueuse/integrations/useFocusTrap/component'
 import { useContainer } from '../composables/useSchemaContext.ts'
 import { getButtonSchemas, hasSubmitButton } from '../utils/schema/lookup.js'
-import { DialogContext } from '../utils/ContainerContext.ts'
+import { DialogContext } from '../utils/DataContext.ts'
 import { waitUntilDataModelSettled } from '../utils/services.ts'
 
 export default {
@@ -80,7 +80,7 @@ export default {
       emit('remove')
     }
 
-    const container = markRaw(
+    const dataContext = markRaw(
       new DialogContext(
         reactive({
           schemaComponent: useTemplateRef('schema'),
@@ -96,7 +96,7 @@ export default {
       )
     )
     // Dialogs render in the root, outside of routes and sources:
-    const { services, createDataModel } = useContainer({ container })
+    const { services, createDataModel } = useContainer({ dataContext })
     const dataModel = createDataModel({
       schema: () => schema.value,
       data: () => dialogData.value,

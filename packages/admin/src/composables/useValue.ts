@@ -27,7 +27,7 @@ export function useValue(
         value = parse(createContext({ value }))
       }
       parsedValue.value = value
-      services.container!.model.set(data, schema.name, value)
+      services.dataContext!.model.set(data, schema.name, value)
     }
   })
   return { value, parsedValue }

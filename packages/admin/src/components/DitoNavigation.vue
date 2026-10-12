@@ -2,7 +2,7 @@
 nav.dito-navigation.dito-scroll-parent(aria-label="Main navigation")
   h1
     RouterLink.dito-link(to="/") {{ appState.title }}
-  DitoMenu.dito-scroll(:nodes="admin.routeTree?.nodes ?? []")
+  DitoMenu.dito-scroll(:nodes="adminContext.routeTree?.nodes ?? []")
 </template>
 
 <script>
@@ -13,7 +13,7 @@ export default {
   name: 'DitoNavigation',
 
   setup() {
-    return { admin: inject('admin'), appState }
+    return { adminContext: inject('adminContext'), appState }
   }
 }
 </script>

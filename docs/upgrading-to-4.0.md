@@ -162,18 +162,18 @@ which components write the data through.
 - Forms, views and schemas no longer have `errors`, `hasErrors`, `isTouched`,
   `isValid`, `isValidated`, `clearErrors()` and `resetValidation()`, forms
   and views no longer `validateAll()`, `verifyAll()` and
-  `showValidationErrors()`. Their `container` validates with `validate()` and
+  `showValidationErrors()`. Their `dataContext` validates with `validate()` and
   `verify()`, and shows the errors of the server with
   `showValidationErrors(errors, dataPath)`. Forms clear the errors of their
   data once they're submitted, also mutating forms, which share the data
   model of their parent.
 - Panels no longer have `errors`, `isTouched`, `isValid`, `isValidated`,
   `validateAll()`, `verifyAll()`, `resetValidation()` and `clearErrors()`.
-  The `container` of panels with their own data validates and shows errors.
+  The `dataContext` of panels with their own data validates and shows errors.
 - `navigateToComponent()` and `navigateToRouteComponent()` are removed.
-  `container.revealErrors()` reveals the errors of the data: it opens the
+  `dataContext.revealErrors()` reveals the errors of the data: it opens the
   forms of nested routes through the route tree, and opens collapsed schemas
-  and inlined items and renders tabs through `admin.ui`, see
+  and inlined items and renders tabs through `adminContext.ui`, see
   [Routes and the UI registry](#routes-and-the-ui-registry).
 
 ### Contexts
@@ -207,7 +207,7 @@ panel with its own data, e.g. the filters panel, a nested form being its own.
   `showDialog({ components, buttons }, { data, settings })`, which resolves
   with the value that the dialog is closed with. In the dialog,
   `dialogComponent.resolve(value)` is `closeDialog(value)`.
-  `dialogComponent.reject()` is removed. `admin.showDialog()` takes the same
+  `dialogComponent.reject()` is removed. `adminContext.showDialog()` takes the same
   arguments.
 - `formComponent.selectedTab`: `selectedTab`, the selected tab of the nearest
   form. Tabs render once they're selected and stay rendered, so their
@@ -281,36 +281,37 @@ function copyAddress(order) {
 ### Admin context
 
 `DitoAdmin` provides the services of the admin to all components as one object,
-`component.admin`, which it keeps as its `context` too. It replaces the `api`,
+the `adminContext` inject, which it keeps as its `context` too. It replaces the `api`,
 `session` and `viewRegistry` injects, and the members of components that
 reached them:
 
-- `api`, `user`, `views` and `flattenedViews`: `admin.api`, `admin.user`,
-  `admin.views` and `admin.flattenedViews`, which are reactive. `locale`:
-  `admin.api.locale`. `session`: `admin.session`.
-- `notify()`, `showDialog()` and `closeNotifications()`: `admin.notify()`,
-  `admin.showDialog()` and `admin.closeNotifications()`. Contexts keep
+- `api`, `user`, `views` and `flattenedViews`: `adminContext.api`, `adminContext.user`,
+  `adminContext.views` and `adminContext.flattenedViews`, which are reactive. `locale`:
+  `adminContext.api.locale`. `session`: `adminContext.session`.
+- `notify()`, `showDialog()` and `closeNotifications()`: `adminContext.notify()`,
+  `adminContext.showDialog()` and `adminContext.closeNotifications()`. Contexts keep
   `notify()` and `showDialog()`.
 - `rootComponent` is removed. `rootComponent.isLoading`:
-  `admin.loadingTracker.isLoading`. The deprecated
+  `adminContext.loadingTracker.isLoading`. The deprecated
   `rootComponent.registerLoading()` is removed: use
-  `admin.loadingTracker.begin()` or `track()`.
+  `adminContext.loadingTracker.begin()` or `track()`.
 - Route records no longer have `meta.api`.
 
-### Container and route contexts
+### Data and route contexts
 
 Components reach the owner of their data and the view or form that renders
 them through two contexts, instead of components:
 
-- `container`, provided by views, forms, dialogs and panels with their own
+- `dataContext`, provided by views, forms, dialogs and panels with their own
   data: the `model` that holds the data, `isDirty`, `isEdited`, `isCreating`,
   `hasData`, `validate()`, `verify()`, `showValidationErrors()`,
   `revealErrors()`, `markEdited()` and `replaceItem()`. Dialogs add
   `close(value)`.
-- `route`, provided by views and forms: its `parent` route, `container`, the
+- `routeContext`, provided by views and forms: its `parent` route,
+  `dataContext`, the
   `schema`, `dataPath`, `rootData` and `componentPath` of the data that it
   renders, `loadingTracker`, `level`, `isForm`, `state`, `path`,
-  `isLastRoute`, `selectedTab`, the `resource` of forms, `getFormRoute()`,
+  `isLastRoute`, `selectedTab`, the `resourceContext` of forms, `getFormRoute()`,
   `getFormPath()`, `getCreatePath()`, and `close()` for forms.
 
 `routeComponent`, `formComponent`, `viewComponent`, `parentRouteComponent`,
@@ -318,15 +319,15 @@ them through two contexts, instead of components:
 `panelComponent` are removed, along with the `$routeComponent`,
 `$dataModelComponent`, `$dialogComponent` and `$panelComponent` injects:
 
-- `routeComponent.routeLevel`: `route.level`.
-- `routeComponent.getFormRoute()` and `getCreatePath()`: `route.getFormRoute()`
-  and `route.getCreatePath()`.
-- `parentRouteComponent.dataModel`: `route.parent.container.model`.
+- `routeComponent.routeLevel`: `routeContext.level`.
+- `routeComponent.getFormRoute()` and `getCreatePath()`: `routeContext.getFormRoute()`
+  and `routeContext.getCreatePath()`.
+- `parentRouteComponent.dataModel`: `routeContext.parent.dataContext.model`.
 - `viewComponent.viewSchema`: `viewComponent.schema`, the schema that the view
   renders. The view's own schema is its `sourceSchema`.
-- The `$loadingTracker` inject is removed: `route.loadingTracker`, the tracker
-  of the view, or `admin.loadingTracker` outside of views.
-- `dialogComponent.resolve(value)`: `container.close(value)`.
+- The `$loadingTracker` inject is removed: `routeContext.loadingTracker`, the tracker
+  of the view, or `adminContext.loadingTracker` outside of views.
+- `dialogComponent.resolve(value)`: `dataContext.close(value)`.
 - Route records no longer have `meta.schema`: views and forms take their
   schemas from their node in the route tree.
 
@@ -335,7 +336,7 @@ them through two contexts, instead of components:
 Lists, objects and trees, and the forms that edit items, provide two more
 contexts:
 
-- `source`, provided by lists, objects and trees to the components that
+- `sourceContext`, provided by lists, objects and trees to the components that
   display them and their items: `schema`, `query`, `dataPath`,
   `componentPath`, `store`, `isDisabled`, `createItem()` and `reload()`.
   Forms don't continue the source of their parent, e.g. the forms of tree
@@ -354,20 +355,20 @@ Views provide both contexts of their main component, e.g. to their panels.
 `parentResourceComponent` are removed, along with the `$sourceComponent`,
 `$resourceComponent`, `$dataComponent`, `$verbs` and `$isPopulated` injects:
 
-- `sourceComponent.query`: `source.query`. `sourceComponent.createItem()`:
-  `source.createItem()`.
+- `sourceComponent.query`: `sourceContext.query`. `sourceComponent.createItem()`:
+  `sourceContext.createItem()`.
 - `resourceComponent.resource`, the `resource` of forms and sources:
   `resource.getResource()`. `resourceComponent.submit(button)`:
   `resource.submit(button)`.
 - `dataComponent`: `resource.resourceOwner`. The components in sources
   with a resource read the root data of their route, like all others.
-- `isPopulated`: `container.hasData`.
+- `isPopulated`: `dataContext.hasData`.
 - `sourceSchema` is only defined by views, forms and `DitoSchema`, which
   injects it from the view, form or source item that renders it. In views,
   the components outside of the main component keep the view's schema. Forms
   don't see a `source` in their own callbacks either. `source.resource` is
   the resource of the source.
-- `getFormPath()` of sources: `route.getFormPath()`.
+- `getFormPath()` of sources: `routeContext.getFormPath()`.
 - The `meta` prop of the components and types is removed, along with
   `nestedMeta`.
 - The verbs and the relative resources of the components of single-component
@@ -389,11 +390,11 @@ Views provide both contexts of their main component, e.g. to their panels.
 Views and forms are built from composables, `useRouteContainer()` and
 `useLeaveGuard()`, instead of `RouteMixin`, and `SchemaParentMixin` is
 removed. Components no longer reach each other to reveal and focus
-components: `admin.ui`, the `UiRegistry` of the admin, holds the handles of
+components: `adminContext.ui`, the `UiRegistry` of the admin, holds the handles of
 the rendered components by component path, and the contexts of the rendered
 routes.
 
-- `appState.routeComponents`: `admin.ui.routes`, the route contexts by level.
+- `appState.routeComponents`: `adminContext.ui.routes`, the route contexts by level.
   Route contexts add `isLeaving`, `isDirty` and `breadcrumb`.
 - The `$schemaParentComponent` and `$tabComponent` injects, `tabComponent`,
   `parentSchemaComponent`, `schemaComponents` and `mainSchemaComponent` are
@@ -403,7 +404,7 @@ routes.
   `getPanel()` and `getPanels()`, `components`, `panes`, `panels` and
   `revealComponents()`, sections and sources no longer
   `revealComponents()`, panes no longer `focus()`.
-- `admin.ui.reveal(container, componentPath, { focus })` asks the components
+- `adminContext.ui.reveal(dataContext, componentPath, { focus })` asks the components
   on the way to the component from the outside in to render it, e.g.
   collapsed schemas open and render the tab that contains it, which focusing
   selects, and then focuses it. Focusing components in nested tabs selects
@@ -467,7 +468,7 @@ routes.
   need `inlined: true`: routed forms edit the items in the data, where
   primitive values can't be edited in place, and are refused.
 - `getPanelSchema(api, schema, dataPath, source)` receives the source context
-  of the component instead of the component, with `source.listQuery`.
+  of the component instead of the component, with `sourceContext.listQuery`.
 - `processSchema(api, schema, name)` only sets up the schema, e.g. resolves the
   schemas that it contains. It no longer receives `routes` and `level`, and
   doesn't add routes.
@@ -480,7 +481,7 @@ routes.
   instances no longer have `value`, `item`, `parentItem`, `rootItem`,
   `focused`, `validate()` or the resolved schema values, e.g. `readonly`, and
   their contexts are built from their props and services instead of the
-  instance. They no longer have `focus()`: `admin.ui.reveal()` reveals and
+  instance. They no longer have `focus()`: `adminContext.ui.reveal()` reveals and
   focuses them by their component path.
 - The data model replaces the values of components with options once the
   options are loaded, e.g. references with their related objects, and shows
@@ -509,7 +510,7 @@ too, unless the component declares them: they emit the schema's events, and
   `this.$emit('update:modelValue', value)`, which writes the value through
   `parse()`, and `onChange()`: `this.$emit('change')`.
 - `item`, `parentItem` and `rootItem`: `context.item`, `context.parentItem` and
-  `context.rootItem`. `admin.api`: `context.api`.
+  `context.rootItem`. `adminContext.api`: `context.api`.
 - `getSchemaValue(key)`: `getSchemaValue(schema, key, context)`, exported by
   `@ditojs/admin`, which calls schema values that are functions with the
   context.

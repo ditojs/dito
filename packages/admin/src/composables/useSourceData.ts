@@ -27,7 +27,7 @@ export function useSourceData(
   const isList = () => isListSource(props.schema)
   const itemAdapter = computed(() => getItemAdapter(props.schema))
   const wrappedPrimitives = ref<Data[] | null>(null)
-  const getModel = () => services.container!.model
+  const getModel = () => services.dataContext!.model
 
   const isListResults = (data: any) => (
     isList() &&
@@ -154,7 +154,7 @@ export function useSourceData(
 
     // Views load their whole data through the resource of their list:
     setData(data: any) {
-      const { route } = services
+      const { routeContext } = services
       if (isList() && isArray(data)) {
         setLoadedListItems(data)
       } else if (!data || !isList() && isObject(data)) {
@@ -162,9 +162,9 @@ export function useSourceData(
       } else if (
         !unwrapListData(data) &&
         isObject(data) &&
-        route?.isForm === false
+        routeContext?.isForm === false
       ) {
-        route.container.replaceItem(data)
+        routeContext.dataContext.replaceItem(data)
       }
     }
   }

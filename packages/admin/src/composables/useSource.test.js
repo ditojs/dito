@@ -149,7 +149,7 @@ describe('useSource()', () => {
       await flushPromises()
       expect(requests).toContain('delete /items/1/reviews/7')
       expect(onChange).toHaveBeenCalledOnce()
-      expect(routeComponent.ownRoute.isDirty).toBe(false)
+      expect(routeComponent.ownRouteContext.isDirty).toBe(false)
     })
 
     it('numbers the items left after deleting one through the resource', async () => {
@@ -215,7 +215,7 @@ describe('useSource()', () => {
       await findField('review').find('.dito-button--delete').trigger('click')
       await flushPromises()
       expect(data.review).toBe(null)
-      expect(routeComponent.ownRoute.isDirty).toBe(false)
+      expect(routeComponent.ownRouteContext.isDirty).toBe(false)
     })
   })
 
@@ -803,7 +803,7 @@ describe('useSource()', () => {
       })
       await admin.navigate('/test')
       const view = admin.getRouteComponent(isView)
-      view.ownContainer.replaceItem(data)
+      view.ownDataContext.replaceItem(data)
       await settle(view)
       return { admin, view }
     }

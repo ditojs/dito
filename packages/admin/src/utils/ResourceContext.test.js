@@ -30,11 +30,11 @@ describe('ResourceContext', () => {
 
   it('is provided by forms and sources to their components', async () => {
     const { routeComponent: form, getComponent } = await mountBook()
-    const { resource } = form.ownRoute
+    const { resourceContext: resource } = form.ownRouteContext
     expect(resource).toBeInstanceOf(ResourceContext)
     const { getResourceUrl } = getComponent('chapters').context
     expect(getResourceUrl(resource.getResource())).toBe('/items/1')
-    const chapters = getComponent('chapters').ownSource.resource
+    const chapters = getComponent('chapters').ownSourceContext.resourceContext
     expect(chapters).not.toBe(resource)
     expect(chapters.parent).toBe(resource)
     expect(getResourceUrl(chapters.getResource())).toBe('/items/1/chapters')
@@ -47,9 +47,9 @@ describe('ResourceContext', () => {
 
   it('resolves resources through the closest one with a resource', async () => {
     const { routeComponent: form, getComponent } = await mountBook()
-    const notes = getComponent('notes').ownSource.resource
+    const notes = getComponent('notes').ownSourceContext.resourceContext
     expect(notes.getResource()).toBe(null)
-    expect(notes.resourceOwner).toBe(form.ownRoute.resource)
+    expect(notes.resourceOwner).toBe(form.ownRouteContext.resourceContext)
     const { getResourceUrl } = getComponent('notes/0/text').context
     expect(getResourceUrl({ path: 'notes' })).toBe('/items/1/notes')
   })
@@ -85,8 +85,10 @@ describe('ResourceContext', () => {
 
   it('names the verbs of transient sources', async () => {
     const { routeComponent: form, getComponent } = await mountBook()
-    expect(form.ownRoute.resource.verbs.delete).toBe('delete')
-    expect(getComponent('notes').ownSource.resource.verbs.delete).toBe('remove')
+    expect(form.ownRouteContext.resourceContext.verbs.delete).toBe('delete')
+    expect(
+      getComponent('notes').ownSourceContext.resourceContext.verbs.delete
+    ).toBe('remove')
   })
 
   // The forms of tree items render inside the tree, but continue the resource
@@ -118,7 +120,9 @@ describe('ResourceContext', () => {
     await admin.navigate('/items/1/pages/3')
     const form = admin.getRouteComponent(isForm)
     await settle(form)
-    expect(form.ownRoute.resource.parent).toBe(parent.ownRoute.resource)
+    expect(form.ownRouteContext.resourceContext.parent).toBe(
+      parent.ownRouteContext.resourceContext
+    )
     expect(request).toHaveBeenCalledWith(
       expect.objectContaining({ url: '/items/1/pages/3' })
     )

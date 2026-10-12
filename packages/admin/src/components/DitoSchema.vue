@@ -5,7 +5,7 @@ slot(name="prepend")
   v-bind="$attrs"
 )
   Teleport(
-    v-if="container.hasData && panelEntries.length > 0"
+    v-if="dataContext.hasData && panelEntries.length > 0"
     to=".dito-sidebar__teleport"
   )
     DitoPanels(
@@ -94,7 +94,7 @@ slot(name="prepend")
         :generateLabels="generateLabels"
       )
       slot(
-        v-if="!inlined && container.hasData"
+        v-if="!inlined && dataContext.hasData"
         name="buttons"
       )
   slot(
@@ -186,8 +186,8 @@ export default {
     const { componentPath } = useComponentPath(() => props.dataPath)
     const schemaContext = useSchemaContext(props)
     const { services } = schemaContext
-    const { admin } = services
-    const getModel = () => services.container.model
+    const { adminContext } = services
+    const getModel = () => services.dataContext.model
 
     const createContext = (values = {}) =>
       schemaContext.createContext({
@@ -270,7 +270,7 @@ export default {
       () => (
         hasTabs.value &&
         isTopLevelSchema.value &&
-        !!services.route?.isLastRoute
+        !!services.routeContext?.isLastRoute
       )
     )
 
@@ -359,8 +359,8 @@ export default {
       }
     })
 
-    const unregisterUi = admin.ui.register(() => componentPath.value, {
-      container: services.container,
+    const unregisterUi = adminContext.ui.register(() => componentPath.value, {
+      dataContext: services.dataContext,
       async reveal(path, { focus }) {
         const [tab] = parseDataPath(
           getRelativeDataPath(path, componentPath.value)
@@ -423,7 +423,7 @@ export default {
             return errs.map(({ message }) => `${prefix} ${message}`)
           }
         )
-        admin.notify({
+        adminContext.notify({
           type: 'error',
           title: 'Validation Errors',
           text: messages.join('\n') || 'Please correct the highlighted errors.'
@@ -436,12 +436,12 @@ export default {
     const revealErrors = async (
       dataPaths = getModel().getErrorDataPaths(props.dataPath)
     ) => {
-      const { container, route } = services
+      const { dataContext, routeContext } = services
       const [firstDataPath] = dataPaths
       // Dialogs and panels with their own data aren't part of routes:
       const formRoute =
-        firstDataPath && container === route?.container
-          ? route.getFormRoute(firstDataPath)
+        firstDataPath && dataContext === routeContext?.dataContext
+          ? routeContext.getFormRoute(firstDataPath)
           : null
       if (formRoute) {
         // The form may be open already, e.g. a nested form:
@@ -452,7 +452,7 @@ export default {
         if (!failure) {
           await nextTick()
           const level = router.currentRoute.value.matched.length - 1
-          await admin.ui.routes[level].container.revealErrors()
+          await adminContext.ui.routes[level].dataContext.revealErrors()
         }
       } else {
         for (const dataPath of dataPaths) {
@@ -467,7 +467,7 @@ export default {
               rootData: context.rootItem
             }
           )
-          await admin.ui.reveal(container, path, {
+          await adminContext.ui.reveal(dataContext, path, {
             focus: dataPath === firstDataPath
           })
         }
@@ -497,7 +497,7 @@ export default {
       context,
       createContext,
       emitEvent,
-      container: services.container,
+      dataContext: services.dataContext,
       opened,
       tabs,
       hasTabs,

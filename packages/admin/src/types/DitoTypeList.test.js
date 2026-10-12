@@ -1127,7 +1127,7 @@ describe('DitoTypeList', () => {
           .findAll('tbody > tr')
           .map(row => row.classes('dito-table__row--error'))
       expect(getMarkedRows()).toEqual([false, false])
-      expect(routeComponent.ownContainer.validate()).toBe(false)
+      expect(routeComponent.ownDataContext.validate()).toBe(false)
       await flushPromises()
       expect(getMarkedRows()).toEqual([false, true])
       data.chapters[1].title = 'Two'

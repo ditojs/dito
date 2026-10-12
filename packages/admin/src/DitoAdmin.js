@@ -128,7 +128,7 @@ export default class DitoAdmin {
     }))
 
     const app = (this.app = createApp({
-      provide: { admin },
+      provide: { adminContext: admin },
 
       render: () =>
         createElement(DitoRoot, {

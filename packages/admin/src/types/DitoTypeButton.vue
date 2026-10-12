@@ -62,9 +62,9 @@ const DitoTypeButton = {
 
       // Buttons of forms and lists with a resource submit their data:
       get submit() {
-        const { resource } = services
-        return resource
-          ? options => resource.submit(button, options)
+        const { resourceContext } = services
+        return resourceContext
+          ? options => resourceContext.submit(button, options)
           : null
       }
     })
@@ -109,13 +109,13 @@ const DitoTypeButton = {
         } catch (error) {
           const res = await emitEvent('error', { context: { error } })
           if (res === undefined) {
-            const { admin } = services
+            const { adminContext } = services
             if (error instanceof AggregateError) {
               for (const err of error.errors) {
-                admin.notify({ type: 'error', text: err })
+                adminContext.notify({ type: 'error', text: err })
               }
             } else {
-              admin.notify({ type: 'error', text: error })
+              adminContext.notify({ type: 'error', text: error })
             }
           }
         } finally {

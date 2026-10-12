@@ -1,5 +1,5 @@
 import { inject, ref } from 'vue'
-import type { ContainerContext } from '../utils/ContainerContext.ts'
+import type { DataContext } from '../utils/DataContext.ts'
 import type { ListEntry } from '../utils/DataModel.ts'
 
 export interface SortableOptions {
@@ -12,14 +12,14 @@ export function useSortable({
   getListEntry,
   onChange
 }: SortableOptions = {}) {
-  const container = inject<ContainerContext | null>('container', null)
+  const dataContext = inject<DataContext | null>('dataContext', null)
   const isDragging = ref(false)
 
   const moveSortableItem = (from: number, to: number) => {
     const listEntry = getListEntry!()
     const { length } = listEntry.list
     if (from >= 0 && from !== to && to >= 0 && to < length) {
-      container!.model.move(listEntry, from, to)
+      dataContext!.model.move(listEntry, from, to)
       onChange?.()
     }
   }

@@ -15,7 +15,7 @@ export interface FocusOptions {
 }
 
 export function useFocus(
-  { admin, container }: Services,
+  { adminContext, dataContext }: Services,
   componentPath: Ref<string>,
   { focusElement, blurElement }: FocusOptions = {}
 ) {
@@ -40,8 +40,8 @@ export function useFocus(
 
   let unregister: () => void
   onBeforeMount(() => {
-    unregister = admin.ui.register(() => componentPath.value, {
-      container,
+    unregister = adminContext.ui.register(() => componentPath.value, {
+      dataContext,
       focus() {
         getFocusElement()?.scrollIntoView?.({
           behavior: 'smooth',
@@ -58,7 +58,7 @@ export function useFocus(
     element,
 
     focus() {
-      return admin.ui.reveal(container, componentPath.value, {
+      return adminContext.ui.reveal(dataContext, componentPath.value, {
         focus: true
       })
     },

@@ -157,10 +157,10 @@ const DitoTypeList = {
     const source = useSource(props, {
       onFilterErrors(errors) {
         // The filters panel is its own container:
-        const [panel] = source.services.admin.ui.getHandles(
+        const [panel] = source.services.adminContext.ui.getHandles(
           appendDataPath(source.componentPath.value, '$filters')
         )
-        panel?.container.showValidationErrors(getFiltersDataErrors(errors))
+        panel?.dataContext.showValidationErrors(getFiltersDataErrors(errors))
         return !!panel
       }
     })
@@ -191,7 +191,7 @@ const DitoTypeList = {
       hasListButtons,
       hasEditButtons,
       hasCellEditButtons,
-      dataModel: computed(() => source.services.container.model),
+      dataModel: computed(() => source.services.dataContext.model),
       hasPagination: computed(() => !!source.paginate.value),
       hasEvenCount: computed(() => !(listData.value.length % 2)),
 

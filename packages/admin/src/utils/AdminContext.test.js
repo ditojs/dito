@@ -46,8 +46,8 @@ describe('AdminContext', () => {
     const { admin, routeComponent, getComponent } = await mountSchema({
       schema: { components: { title: { type: 'text' } } }
     })
-    expect(admin.root.admin).toBe(admin.context)
-    expect(routeComponent.admin).toBe(admin.context)
+    expect(admin.root.adminContext).toBe(admin.context)
+    expect(routeComponent.adminContext).toBe(admin.context)
     expect(getComponent('title').context.api).toBe(admin.context.api)
   })
 

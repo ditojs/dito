@@ -1,10 +1,10 @@
 import { nextTick, shallowReactive, watch } from 'vue'
 import { parseDataPath } from '@ditojs/utils'
-import type { ContainerContext } from './ContainerContext.ts'
+import type { DataContext } from './DataContext.ts'
 import type { RouteContext } from './RouteContext.ts'
 
 export interface UiHandle {
-  readonly container: ContainerContext | null
+  readonly dataContext: DataContext | null
   // Render what leads to the component at `componentPath` inside this one, e.g.
   // open a collapsed schema and render its tab, which `focus` also selects:
   reveal?(componentPath: string, options: { focus: boolean }): Promise<void>
@@ -38,30 +38,30 @@ export class UiRegistry {
   // In the order the components were created, the outer ones first:
   getHandles(
     componentPath: string,
-    container?: ContainerContext | null
+    dataContext?: DataContext | null
   ): UiHandle[] {
     const handles = [...(this.#handles.get(componentPath) ?? [])]
-    return container === undefined
+    return dataContext === undefined
       ? handles
-      : handles.filter(handle => handle.container === container)
+      : handles.filter(handle => handle.dataContext === dataContext)
   }
 
   // Ask the components on the way from the outside in:
   async reveal(
-    container: ContainerContext | null,
+    dataContext: DataContext | null,
     componentPath: string,
     { focus = false } = {}
   ) {
     const parts = parseDataPath(componentPath)
     for (let index = 0; index <= parts.length; index++) {
       const path = parts.slice(0, index).join('/')
-      for (const handle of this.getHandles(path, container)) {
+      for (const handle of this.getHandles(path, dataContext)) {
         await handle.reveal?.(componentPath, { focus })
       }
     }
     if (focus) {
       await nextTick()
-      const handle = this.getHandles(componentPath, container).find(
+      const handle = this.getHandles(componentPath, dataContext).find(
         handle => !!handle.focus
       )
       handle?.focus!()

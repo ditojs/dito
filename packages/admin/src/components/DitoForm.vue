@@ -7,7 +7,7 @@
   DitoRouterView(
     v-if="!isLastUnnestedRoute && !isNestedRoute"
     v-show="!isActiveRoute"
-    :routeLevel="route.level + 1"
+    :routeLevel="routeContext.level + 1"
   )
   //- NOTE: `v-show` keeps forms alive while nested forms edit their data.
   DitoFormInner(
@@ -101,8 +101,8 @@ export default {
 
   setup() {
     const router = useRouter()
-    const admin = inject('admin')
-    const parentRoute = inject('route')
+    const adminContext = inject('adminContext')
+    const parentRouteContext = inject('routeContext')
     const schemaComponent = useTemplateRef('schema')
     const loadedData = ref(null)
     const createdData = ref(null)
@@ -111,24 +111,24 @@ export default {
     const draft = ref(null)
     const selectedTab = shallowRef(null)
 
-    const sourceSchema = computed(() => ownRoute.node.source.schema)
+    const sourceSchema = computed(() => ownRouteContext.node.source.schema)
 
     // vue-router can't map several parameters of the same name to several
     // components, see https://github.com/vuejs/vue-router/issues/1345
     const param = computed(
-      () => router.currentRoute.value.params[ownRoute.node.param] ?? null
+      () => router.currentRoute.value.params[ownRouteContext.node.param] ?? null
     )
     const isCreating = computed(() => param.value === 'create')
     const isMutating = computed(() => !!sourceSchema.value.mutate)
     const creationType = computed(() => router.currentRoute.value.query.type)
     const itemId = computed(() => (isCreating.value ? null : param.value))
-    const isNestedRoute = computed(() => ownRoute.node.isNestedForm)
+    const isNestedRoute = computed(() => ownRouteContext.node.isNestedForm)
 
     // The item of the form in the data of its parent route:
     const sourceLocation = computed(() => {
-      const { node, state } = parentRoute
+      const { node, state } = parentRouteContext
       return state.data
-        ? node.findItem(ownRoute.node, {
+        ? node.findItem(ownRouteContext.node, {
             ...state,
             routeParams: routeParams.value
           })
@@ -162,7 +162,7 @@ export default {
     const dataPath = computed(() =>
       isTransient.value
         ? appendDataPath(
-            parentRoute.dataPath,
+            parentRouteContext.dataPath,
             sourceLocation.value?.dataPath ?? ''
           )
         : ''
@@ -172,8 +172,12 @@ export default {
     const rootData = computed(() =>
       isTransient.value
         ? isMutating.value || !sourceData.value
-          ? parentRoute.rootData
-          : createDraftRoot(parentRoute.rootData, dataPath.value, data.value)
+          ? parentRouteContext.rootData
+          : createDraftRoot(
+              parentRouteContext.rootData,
+              dataPath.value,
+              data.value
+            )
         : data.value
     )
     // Forms of items in the data of their parent continue the component path
@@ -183,14 +187,14 @@ export default {
       () =>
         isTransient.value
           ? getComponentPathByDataPath(
-              parentRoute.schema,
-              parentRoute.state.data,
+              parentRouteContext.schema,
+              parentRouteContext.state.data,
               dataPath.value,
               {
-                dataPath: parentRoute.dataPath,
-                componentPath: parentRoute.componentPath,
+                dataPath: parentRouteContext.dataPath,
+                componentPath: parentRouteContext.componentPath,
                 services,
-                rootData: parentRoute.rootData
+                rootData: parentRouteContext.rootData
               }
             )
           : ''
@@ -248,7 +252,9 @@ export default {
 
     // Forms that edit the item of their parent edit it through its model:
     const getDataModel = () =>
-      isEditingSourceItem.value ? parentRoute.container.model : ownDataModel
+      isEditingSourceItem.value
+        ? parentRouteContext.dataContext.model
+        : ownDataModel
 
     const setData = value => {
       if (isTransient.value) {
@@ -272,7 +278,10 @@ export default {
     // Copy the errors of the item in the parent's model into the draft:
     const copyErrors = () => {
       if (draft.value) {
-        ownDataModel.copyErrors(parentRoute.container.model, draft.value)
+        ownDataModel.copyErrors(
+          parentRouteContext.dataContext.model,
+          draft.value
+        )
       }
     }
 
@@ -301,7 +310,7 @@ export default {
         ),
         // Forms that edit the item of their parent leave their changes there:
         isDirty: computed(
-          () => !isEditingSourceItem.value && ownContainer.isDirty
+          () => !isEditingSourceItem.value && ownDataContext.isDirty
         ),
         isTransient: computed(() => isTransient.value),
         loadingTracker: computed(() => requests.loadingTracker),
@@ -313,22 +322,27 @@ export default {
           return getDataModel()
         },
 
-        get ownResource() {
-          return ownResource
+        get ownResourceContext() {
+          return ownResourceContext
         }
       })
     )
-    const { ownContainer, ownRoute, path, routeParams, navigateWithin } =
-      routeContainer
+    const {
+      ownDataContext,
+      ownRouteContext,
+      path,
+      routeParams,
+      navigateWithin
+    } = routeContainer
     // The components of the form don't see the source of its parent, e.g. of
     // a tree that renders the forms of its items:
     const { services, createDataModel } = useContainer({
-      container: ownContainer,
-      route: ownRoute,
-      source: null,
+      dataContext: ownDataContext,
+      routeContext: ownRouteContext,
+      sourceContext: null,
 
-      get resource() {
-        return ownResource
+      get resourceContext() {
+        return ownResourceContext
       }
     })
     const { context } = useSchemaContext(reactive({ schema, data, dataPath }), {
@@ -338,7 +352,7 @@ export default {
 
     const requests = useResource({
       services,
-      parentRoute,
+      parentRouteContext,
       getSchema: () => sourceSchema.value,
       getItemId: () => itemId.value,
       isTransient: providesData => !providesData,
@@ -354,7 +368,8 @@ export default {
       emitLoad: () => emitSchemaEvent('load'),
       getData: () => data.value,
       getItemLabel: () => itemLabel.value,
-      showValidationErrors: errors => ownContainer.showValidationErrors(errors)
+      showValidationErrors: errors =>
+        ownDataContext.showValidationErrors(errors)
     })
     const {
       isTransient,
@@ -379,7 +394,7 @@ export default {
     const emitSchemaEvent = (event, options) =>
       schemaComponent.value?.emitEvent(event, options)
 
-    const close = () => ownRoute.close()
+    const close = () => ownRouteContext.close()
 
     const getSubmitVerb = (present = true) =>
       isCreating.value
@@ -414,11 +429,11 @@ export default {
         if (toRaw(item) !== toRaw(original.value)) {
           // Other items at the same path mean that the data changed:
           const hasDataChanged = !!original.value && path === previousPath
-          const { node, state } = parentRoute
+          const { node, state } = parentRouteContext
           const params = (
             hasDataChanged &&
             node.findItemParams(
-              ownRoute.node,
+              ownRouteContext.node,
               { ...state, routeParams: routeParams.value },
               original.value
             )
@@ -467,7 +482,7 @@ export default {
       button,
       { onSuccess, onError, notifySuccess, notifyError }
     ) => {
-      const parentModel = parentRoute.container.model
+      const parentModel = parentRouteContext.dataContext.model
       const list = sourceData.value
       const item = cloneWithUids(data.value)
       const success = !!list
@@ -510,7 +525,7 @@ export default {
       const submittedData = data.value
       // Wait for computed values that depend on pending loads:
       await waitUntilDataModelSettled(services)
-      if (validate && !ownContainer.validate()) {
+      if (validate && !ownDataContext.validate()) {
         return false
       }
       const { editCount } = ownDataModel
@@ -519,7 +534,7 @@ export default {
       // NOTE: `itemLabel` is HTML, the other values need to be escaped:
       const notifySubmitError = (error, message = null) => {
         const verb = getVerb(true)
-        admin.notify({
+        adminContext.notify({
           type: 'error',
           error,
           title: 'Request Error',
@@ -547,7 +562,7 @@ export default {
           ...callbacks,
           notifySuccess: () => {
             const verb = getVerb(false)
-            admin.notify({
+            adminContext.notify({
               type: 'info',
               title: isCreating.value
                 ? `Item ${capitalize(verb)}`
@@ -575,7 +590,7 @@ export default {
           },
           notifySuccess: () => {
             const verb = getVerb(false)
-            admin.notify({
+            adminContext.notify({
               type: 'success',
               title: `Successfully ${capitalize(verb)}`,
               html: `${itemLabel.value} was ${verb}.`
@@ -586,7 +601,7 @@ export default {
         })
         if (success) {
           // The source that lists the item loads it again:
-          parentRoute.findSource(ownRoute.node.source)?.reload()
+          parentRouteContext.findSource(ownRouteContext.node.source)?.reload()
         }
       }
       if (success) {
@@ -612,7 +627,7 @@ export default {
       return success
     }
 
-    const ownResource = markRaw(
+    const ownResourceContext = markRaw(
       new ResourceContext(
         reactive({
           verbs,
@@ -623,12 +638,12 @@ export default {
             return getDataModel()
           }
         }),
-        { route: parentRoute }
+        { routeContext: parentRouteContext }
       )
     )
     provide('sourceSchema', sourceSchema)
-    provide('source', null)
-    provide('resource', ownResource)
+    provide('sourceContext', null)
+    provide('resourceContext', ownResourceContext)
 
     // Set up the data before the model, which writes into it:
     if (providesData.value || isCreating.value) {
@@ -641,7 +656,7 @@ export default {
       rootData: () => rootData.value,
       dataPath: () => dataPath.value,
       sourceSchema: () => sourceSchema.value,
-      parent: () => parentRoute.container.model,
+      parent: () => parentRouteContext.dataContext.model,
       canSave: () => hasSubmitButton(buttonSchemas.value)
     })
     // Watch once the model exists, as the draft takes over its errors. The path
@@ -654,7 +669,7 @@ export default {
       router.currentRoute,
       (to, from) => {
         // Load the data of other items that the form navigates to:
-        const { param } = ownRoute.node
+        const { param } = ownRouteContext.node
         const toParam = to.params[param]
         const fromParam = from.params[param]
         // Created items are merged into the form, which opens them as they are:
@@ -694,7 +709,7 @@ export default {
     return {
       ...routeContainer,
       ...requests,
-      route: ownRoute,
+      routeContext: ownRouteContext,
       schema,
       data,
       dataPath,

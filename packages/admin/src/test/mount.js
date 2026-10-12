@@ -46,7 +46,7 @@ export async function mountSchema({
   })
   await admin.navigate(`/${name}`)
   const view = admin.getRouteComponent(isView)
-  view.ownContainer.replaceItem(clone(data))
+  view.ownDataContext.replaceItem(clone(data))
   await settle(view)
   return createMountResult(admin, view)
 }
@@ -148,7 +148,9 @@ export async function mountAdmin({ views, request = null, api = {} }) {
         name => wrapper.findAllComponents({ name }).map(({ vm }) => vm.$.proxy)
       )
       return context.ui.routes
-        .map(route => components.find(({ ownRoute }) => ownRoute === route))
+        .map(route =>
+          components.find(({ ownRouteContext }) => ownRouteContext === route)
+        )
         .filter(component => component && filter(component))
     },
 
@@ -170,7 +172,7 @@ export async function mountAdmin({ views, request = null, api = {} }) {
         .map(({ vm }) => vm)
         .filter(
           ({ componentPath }) => (
-            context.ui.getHandles(componentPath, routeComponent.ownContainer)
+            context.ui.getHandles(componentPath, routeComponent.ownDataContext)
               .length > 0
           )
         )
@@ -221,7 +223,7 @@ export async function mountAdminWithGenresView({ components, data = {} }) {
   })
   await admin.navigate('/test')
   const view = admin.getRouteComponent(isView)
-  view.ownContainer.replaceItem(data)
+  view.ownDataContext.replaceItem(data)
   await settle(view)
   return { admin, view }
 }
@@ -237,11 +239,11 @@ export function unmountAdmin(admin) {
 // Tell the route components of views and forms apart, e.g. in
 // `admin.getRouteComponent(isForm)`:
 export function isView(component) {
-  return !component.ownRoute.isForm
+  return !component.ownRouteContext.isForm
 }
 
 export function isForm(component) {
-  return component.ownRoute.isForm
+  return component.ownRouteContext.isForm
 }
 
 // Waits until rendering, events and requests are done, and the data model of
@@ -303,7 +305,7 @@ function createMountResult(admin, routeComponent) {
   // errors does.
   const focusField = dataPath =>
     admin.context.ui.reveal(
-      routeComponent.ownContainer,
+      routeComponent.ownDataContext,
       admin.getContainer(routeComponent, dataPath).componentPath,
       { focus: true }
     )

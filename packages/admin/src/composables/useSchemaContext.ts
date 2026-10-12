@@ -10,7 +10,7 @@ import DitoContext from '../DitoContext.js'
 import { getLastDataPathName } from '../utils/data.js'
 import { DataModel, type DataModelOptions } from '../utils/DataModel.ts'
 import type { AdminContext } from '../utils/AdminContext.ts'
-import type { ContainerContext } from '../utils/ContainerContext.ts'
+import type { DataContext } from '../utils/DataContext.ts'
 import type { ResourceContext } from '../utils/ResourceContext.ts'
 import type { RouteContext } from '../utils/RouteContext.ts'
 import type { SourceContext } from '../utils/SourceContext.ts'
@@ -36,32 +36,38 @@ type ContextProps = Pick<SchemaContextProps, 'dataPath'> & {
 // them, e.g. sources their own source.
 export function useServices(ownServices: Partial<Services> = {}): Services {
   // Views provide the source and resource of their main component as refs:
-  const source = inject<MaybeRef<SourceContext | null>>('source', null)
-  const resource = inject<MaybeRef<ResourceContext | null>>('resource', null)
+  const sourceContext = inject<MaybeRef<SourceContext | null>>(
+    'sourceContext',
+    null
+  )
+  const resourceContext = inject<MaybeRef<ResourceContext | null>>(
+    'resourceContext',
+    null
+  )
   return Object.defineProperties(
     {
-      admin: inject<AdminContext>('admin')!,
-      container: inject<ContainerContext | null>('container', null),
-      route: inject<RouteContext | null>('route', null),
+      adminContext: inject<AdminContext>('adminContext')!,
+      dataContext: inject<DataContext | null>('dataContext', null),
+      routeContext: inject<RouteContext | null>('routeContext', null),
 
-      get source() {
-        return unref(source)
+      get sourceContext() {
+        return unref(sourceContext)
       },
 
-      get resource() {
-        return unref(resource)
+      get resourceContext() {
+        return unref(resourceContext)
       }
     },
     Object.getOwnPropertyDescriptors(ownServices)
   )
 }
 
-// Provide the container of a component with its own data, with the services of
-// its components. Forms create the model of the data once it's set up:
+// Provide the data context of a component with its own data, with the services
+// of its components. Forms create the model of the data once it's set up:
 export function useContainer(
-  ownServices: Partial<Services> & { container: ContainerContext }
+  ownServices: Partial<Services> & { dataContext: DataContext }
 ) {
-  provide('container', ownServices.container)
+  provide('dataContext', ownServices.dataContext)
   const services = useServices(ownServices)
   return {
     services,

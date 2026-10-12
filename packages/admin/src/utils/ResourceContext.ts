@@ -33,20 +33,20 @@ export interface ResourceOwner {
 // Forms and sources provide it also without a resource of their own:
 export class ResourceContext {
   readonly #owner: ResourceOwner
-  readonly #route: RouteContext | null
+  readonly #routeContext: RouteContext | null
 
   constructor(
     owner: ResourceOwner,
     // The route that renders the owner, or the parent route of forms:
-    { route }: { route: RouteContext | null }
+    { routeContext }: { routeContext: RouteContext | null }
   ) {
     this.#owner = owner
-    this.#route = route
+    this.#routeContext = routeContext
   }
 
   // The context of the form that renders the owner, or of the parent form:
   get parent(): ResourceContext | null {
-    return this.#route?.resource ?? null
+    return this.#routeContext?.resourceContext ?? null
   }
 
   // The closest context with a resource, which loads the displayed data:

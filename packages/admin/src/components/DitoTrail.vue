@@ -30,12 +30,14 @@ export default {
   name: 'DitoTrail',
 
   setup() {
-    const admin = inject('admin')
+    const adminContext = inject('adminContext')
     const currentRoute = useRoute()
     const router = useRouter()
     return {
       // Leave out the routes that are being left, until they're unmounted.
-      trail: computed(() => admin.ui.routes.filter(route => !route.isLeaving)),
+      trail: computed(() =>
+        adminContext.ui.routes.filter(route => !route.isLeaving)
+      ),
 
       getRouteLocation(route) {
         // `force` reloads the current route too. Use paths over names, so the

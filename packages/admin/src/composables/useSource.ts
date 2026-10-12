@@ -41,7 +41,7 @@ import type { SchemaEventsEmitter } from './useSchemaEvents.ts'
 const unauthorizedError = `You don't have permission to load this data.`
 
 // A list, object or tree: its items, query, actions and resource, and the
-// `source` and `resource` contexts that it provides to its components.
+// `sourceContext` and `resourceContext` that it provides to its components.
 export function useSource(
   props: FieldProps,
   {
@@ -53,19 +53,19 @@ export function useSource(
   // Sources emit their `load` event through the schema that renders them:
   const schemaEvents = inject<SchemaEventsEmitter>('schemaEvents')!
   const services = useServices({
-    get source() {
-      return source
+    get sourceContext() {
+      return sourceContext
     },
 
-    get resource() {
-      return resource
+    get resourceContext() {
+      return resourceContext
     }
   })
-  const { admin, route } = services
-  const { router } = admin
+  const { adminContext, routeContext } = services
+  const { router } = adminContext
   const { value, context, disabled, onChange, getSchemaValue, componentPath } =
     useField(props, { services })
-  const getModel = () => services.container!.model
+  const getModel = () => services.dataContext!.model
   const getBoolean = (key: string) =>
     getSchemaValue(key, { type: Boolean, default: false })
 
@@ -144,15 +144,15 @@ export function useSource(
 
   const requests = useResource({
     services,
-    parentRoute: route,
+    parentRouteContext: routeContext,
     getSchema: () => props.schema,
     isTransient: providesData => (
-      (!providesData && !linksToView.value) || !!route?.state.isTransient
+      (!providesData && !linksToView.value) || !!routeContext?.state.isTransient
     ),
     hasData: () => sourceData.hasData.value,
     clearData: () => sourceData.clearData(),
     setLoadedData(data) {
-      if (route?.isForm) {
+      if (routeContext?.isForm) {
         getModel().removeError(props.dataPath, unauthorizedError)
       }
       sourceData.setData(data)
@@ -167,7 +167,7 @@ export function useSource(
     handleLoadError({ data, status }) {
       if (data?.type === 'FilterValidation' && onFilterErrors?.(data.errors)) {
         return true
-      } else if (status === 401 && route?.isForm) {
+      } else if (status === 401 && routeContext?.isForm) {
         // Sources in forms show that the user may not access their resource:
         getModel().addError(props.dataPath, unauthorizedError)
         return true
@@ -177,7 +177,7 @@ export function useSource(
     emitLoad: () => schemaEvents.emitEvent('load'),
     getData: () => props.data,
     showValidationErrors: errors =>
-      services.container!.showValidationErrors(errors, props.dataPath)
+      services.dataContext!.showValidationErrors(errors, props.dataPath)
   })
   const { isTransient, providesData, reloadData } = requests
 
@@ -238,9 +238,9 @@ export function useSource(
   const getViewItemPath = (key: string | undefined) => {
     const route = (
       key != null &&
-      admin.routeTree?.getViewItemRoute(props.schema.view, key)
+      adminContext.routeTree?.getViewItemRoute(props.schema.view, key)
     )
-    return route ? admin.router.resolve(route).path : null
+    return route ? adminContext.router.resolve(route).path : null
   }
 
   const getItemStore = (item: Data) =>
@@ -403,9 +403,12 @@ export function useSource(
   }
 
   const sourceNode = computed(() => {
-    const path = route && getRelativeDataPath(props.dataPath, route.dataPath)
-    return route && path !== null
-      ? (route.node as ViewNode | FormNode).findSource(path)
+    const path = (
+      routeContext &&
+      getRelativeDataPath(props.dataPath, routeContext.dataPath)
+    )
+    return routeContext && path !== null
+      ? (routeContext.node as ViewNode | FormNode).findSource(path)
       : null
   })
 
@@ -419,7 +422,7 @@ export function useSource(
     )
   )
 
-  const resource = markRaw(
+  const resourceContext = markRaw(
     new ResourceContext(
       reactive({
         verbs: requests.verbs,
@@ -427,11 +430,11 @@ export function useSource(
         getResource: requests.getResource,
         submit
       }),
-      { route }
+      { routeContext }
     )
   )
 
-  const source: SourceContext = reactive({
+  const sourceContext: SourceContext = reactive({
     schema: toRef(props, 'schema'),
     node: sourceNode,
     query,
@@ -443,13 +446,13 @@ export function useSource(
     createItem,
     getSourceItemLabel,
     reload: reloadData,
-    resource
+    resourceContext
   })
 
-  provide('source', source)
-  provide('resource', resource)
-  route?.registerSource(source, true)
-  onUnmounted(() => route?.registerSource(source, false))
+  provide('sourceContext', sourceContext)
+  provide('resourceContext', resourceContext)
+  routeContext?.registerSource(sourceContext, true)
+  onUnmounted(() => routeContext?.registerSource(sourceContext, false))
 
   if (providesData.value) {
     listQuery.syncWithRoute()
@@ -495,7 +498,7 @@ export function useSource(
       creatable.value
         ? linksToView.value
           ? getViewItemPath('create')
-          : (route?.getCreatePath(props.dataPath) ?? null)
+          : (routeContext?.getCreatePath(props.dataPath) ?? null)
         : null
     ),
 
@@ -504,16 +507,18 @@ export function useSource(
       linksToView.value
         ? objectData.value &&
           getViewItemPath(getItemId(props.schema, objectData.value))
-        : (route?.getFormPath(props.dataPath) ?? null)
+        : (routeContext?.getFormPath(props.dataPath) ?? null)
     ),
 
     getItemPath(index: number) {
       return linksToView.value
         ? getViewItemPath(getItemId(props.schema, listData.value[index], index))
-        : (route?.getFormPath(appendDataPath(props.dataPath, index)) ?? null)
+        : (routeContext?.getFormPath(
+            appendDataPath(props.dataPath, index)
+          ) ?? null)
     },
 
-    ownSource: source,
+    ownSourceContext: sourceContext,
     sourceNode,
     isReady,
     isInlined: computed(hasInlinedItems),

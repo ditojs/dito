@@ -1,11 +1,11 @@
 <template lang="pug">
 template(
-  v-if="admin.user && shouldRenderSchema(schema)"
+  v-if="adminContext.user && shouldRenderSchema(schema)"
 )
   //- NOTE: Unlike forms, views don't render while their nested routes show.
   DitoRouterView(
     v-if="!isLastRoute"
-    :routeLevel="route.level + 1"
+    :routeLevel="routeContext.level + 1"
   )
   .dito-view.dito-scroll-parent(
     v-else
@@ -52,13 +52,15 @@ export default {
   name: 'DitoView',
 
   setup() {
-    const admin = inject('admin')
+    const adminContext = inject('adminContext')
     const router = useRouter()
-    const parentRoute = inject('route', null)
+    const parentRouteContext = inject('routeContext', null)
     useComponentPath(() => '')
     const data = ref({})
     // The view displays its data as if it were an item of its source:
-    const sourceSchema = computed(() => routeContainer.ownRoute.node.schema)
+    const sourceSchema = computed(
+      () => routeContainer.ownRouteContext.node.schema
+    )
     const schema = computed(() => {
       const { component, ...schema } = sourceSchema.value
       // Render single-component views as views with that component:
@@ -77,13 +79,17 @@ export default {
     })
     const name = computed(() => schema.value.name)
     // The view provides the contexts of its main component to the others:
-    const mainSource = computed(() =>
-      routeContainer.ownRoute.findSourceByDataPath(name.value)
+    const mainSourceContext = computed(() =>
+      routeContainer.ownRouteContext.findSourceByDataPath(name.value)
     )
-    const mainResource = computed(() => mainSource.value?.resource ?? null)
+    const mainResourceContext = computed(
+      () => mainSourceContext.value?.resourceContext ?? null
+    )
     // The view is disabled while the requests of its components are pending:
     const loadingTracker = markRaw(
-      new LoadingTracker(parentRoute?.loadingTracker ?? admin.loadingTracker)
+      new LoadingTracker(
+        parentRouteContext?.loadingTracker ?? adminContext.loadingTracker
+      )
     )
 
     const routeContainer = useRouteContainer(
@@ -96,7 +102,7 @@ export default {
         componentPath: '',
         loadingTracker,
         schemaComponent: useTemplateRef('schema'),
-        isDirty: computed(() => routeContainer.ownContainer.isDirty),
+        isDirty: computed(() => routeContainer.ownDataContext.isDirty),
         breadcrumb: computed(
           () => schema.value.breadcrumb || getLabel(schema.value)
         ),
@@ -112,20 +118,20 @@ export default {
         }
       })
     )
-    const { ownContainer, ownRoute, store } = routeContainer
+    const { ownDataContext, ownRouteContext, store } = routeContainer
     provide('sourceSchema', sourceSchema)
-    provide('source', mainSource)
-    provide('resource', mainResource)
+    provide('sourceContext', mainSourceContext)
+    provide('resourceContext', mainResourceContext)
     const { services, createDataModel } = useContainer({
-      container: ownContainer,
-      route: ownRoute,
+      dataContext: ownDataContext,
+      routeContext: ownRouteContext,
 
-      get source() {
-        return mainSource.value
+      get sourceContext() {
+        return mainSourceContext.value
       },
 
-      get resource() {
-        return mainResource.value
+      get resourceContext() {
+        return mainResourceContext.value
       }
     })
     const { context } = useSchemaContext(
@@ -150,8 +156,8 @@ export default {
     return {
       ...routeContainer,
       ...useStore({ store }),
-      admin,
-      route: ownRoute,
+      adminContext,
+      routeContext: ownRouteContext,
       schema,
       name,
       data,
