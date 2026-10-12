@@ -7,25 +7,26 @@ import { shallowRef } from 'vue'
 // of the order in which they finish. `isLoading` is reactive.
 
 export class LoadingTracker {
+  readonly parent: LoadingTracker | null
   #pendingCount = shallowRef(0)
 
-  constructor(parent = null) {
+  constructor(parent: LoadingTracker | null = null) {
     this.parent = parent
   }
 
-  get isLoading() {
+  get isLoading(): boolean {
     return this.#pendingCount.value > 0
   }
 
   // The tracker of the outermost scope, e.g. to show that something is loading
   // without disabling the scopes in between.
-  get root() {
+  get root(): LoadingTracker {
     return this.parent?.root ?? this
   }
 
   // Begins an operation in this scope and its enclosing ones, and returns the
   // function that ends it. Ending an operation more than once has no effect.
-  begin() {
+  begin(): () => void {
     this.#pendingCount.value++
     const endInParent = this.parent?.begin()
     let isEnded = false
@@ -40,37 +41,12 @@ export class LoadingTracker {
 
   // Tracks the operation that `callback()` performs until its returned promise
   // settles, and returns its result.
-  async track(callback) {
+  async track<T>(callback: () => T | Promise<T>): Promise<T> {
     const end = this.begin()
     try {
       return await callback()
     } finally {
       end()
-    }
-  }
-}
-
-// A loading operation that is switched on and off instead of begun and ended,
-// for the deprecated `setLoading(isLoading)` methods. Switching it on while it
-// is on has no effect, as does switching it off while it is off.
-export class LoadingSwitch {
-  #tracker
-  #endOperation = null
-
-  constructor(tracker) {
-    this.#tracker = tracker
-  }
-
-  get isOn() {
-    return !!this.#endOperation
-  }
-
-  set(isOn) {
-    if (isOn) {
-      this.#endOperation ??= this.#tracker.begin()
-    } else {
-      this.#endOperation?.()
-      this.#endOperation = null
     }
   }
 }

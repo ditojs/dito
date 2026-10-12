@@ -8,7 +8,7 @@ import {
   type ViewNode
 } from './RouteTree.ts'
 import type { ContainerContext } from './ContainerContext.ts'
-import type { LoadingTracker } from './LoadingTracker.js'
+import type { LoadingTracker } from './LoadingTracker.ts'
 import type { ResourceContext } from './ResourceContext.ts'
 import type { SourceContext } from './SourceContext.ts'
 import type { Schema } from './types.ts'

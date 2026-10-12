@@ -2424,9 +2424,26 @@ export interface ResourceContext {
   }): Resource | null
   /** Submits the data through `button`, resolving with whether it succeeded. */
   submit(
-    button: DitoTypeInstance,
+    button: SubmitButton,
     options?: { validate?: boolean; closeForm?: boolean }
   ): Promise<boolean>
+}
+
+/**
+ * The button that submits the data of a form or source, and receives the
+ * `success` and `error` events of the submit.
+ */
+export interface SubmitButton {
+  readonly schema: ButtonSchema<any>
+  readonly context: DitoContext
+  /** Whether the form closes after the submit. */
+  readonly closeForm: boolean
+  createContext(values?: Record<string, any>): DitoContext
+  getSchemaValue(keyOrDataPath: string | string[], options?: object): any
+  emitEvent(
+    event: string,
+    options?: { context?: Record<string, any> | DitoContext }
+  ): Promise<any>
 }
 
 export interface DitoComponentInstanceBase<$Item = any>
@@ -2692,8 +2709,7 @@ export interface LoadingTracker {
 
 /**
  * The members of components that load and submit their
- * data through API resources (ResourceMixin): forms and
- * sources.
+ * data through API resources: forms and sources.
  */
 export interface DitoResourceInstance {
   /** Whether the component loads its own data from a resource. */
@@ -2706,19 +2722,6 @@ export interface DitoResourceInstance {
   readonly isLoading: boolean
   /** Tracks the pending requests of the component. */
   readonly loadingTracker: LoadingTracker
-  /**
-   * Begins or ends a loading operation of the component.
-   * The options are ignored, since the operations are
-   * always forwarded to the enclosing view and the root.
-   *
-   * @deprecated Use `loadingTracker.begin()` and call the
-   * function that it returns, or
-   * `loadingTracker.track(callback)` instead.
-   */
-  setLoading(
-    isLoading: boolean,
-    options?: { updateRoot?: boolean; updateView?: boolean }
-  ): void
 }
 
 /**
@@ -2861,7 +2864,7 @@ export interface DitoFormInstance<$Item = any>
    * fails or the request errors.
    */
   submit(
-    button?: DitoTypeInstance,
+    button: SubmitButton,
     options?: {
       validate?: boolean
       closeForm?: boolean
@@ -2922,7 +2925,7 @@ export interface DitoFormInstance<$Item = any>
    */
   resetValidation(): void
 
-  // -- Resource & route (ResourceMixin, RouteMixin) --
+  // -- Resource & route --
 
   /** Display label for this form. */
   label: string
@@ -2950,8 +2953,6 @@ export interface DitoFormInstance<$Item = any>
    * exists, otherwise loads fresh.
    */
   ensureData(): void
-  /** Clears the loaded data. */
-  clearData(): void
   /**
    * Merges `data`, e.g. returned by the server, into
    * the form's data in place, see
@@ -2963,15 +2964,6 @@ export interface DitoFormInstance<$Item = any>
    * reaches the parent once the draft is applied.
    */
   setData(data: any): any
-  /**
-   * Creates a new data object with default values
-   * from the schema. Optionally sets a `type`
-   * property for polymorphic forms.
-   */
-  createData(
-    schema: Component,
-    type?: string
-  ): Record<string, any>
   /**
    * The route parameter value for this route
    * component (e.g. an item id or `'create'`).
@@ -2998,14 +2990,6 @@ export interface DitoViewInstance<$Item = any>
   readonly isLoading: boolean
   /** Tracks the pending requests of the view's components. */
   readonly loadingTracker: LoadingTracker
-  /**
-   * Begins or ends a loading operation of the view.
-   *
-   * @deprecated Use `loadingTracker.begin()` and call the
-   * function that it returns, or
-   * `loadingTracker.track(callback)` instead.
-   */
-  setLoading(isLoading: boolean): void
 
   // -- Route (RouteMixin) --
 
@@ -3149,7 +3133,7 @@ export interface DitoSchemaInstance<$Item = any>
 export interface DitoSourceInstance<$Item = any>
   extends DitoComponentInstanceBase<$Item>,
     DitoResourceInstance {
-  // -- Data access (SourceMixin) --
+  // -- Data access --
 
   /** The list data array (getter/setter). */
   listData: any[]
@@ -3181,7 +3165,7 @@ export interface DitoSourceInstance<$Item = any>
    */
   getItemPath(index: number): string | null
 
-  // -- Resolved schema accessors (SourceMixin) --
+  // -- Resolved schema accessors --
 
   /** Whether new items can be created. */
   creatable: boolean
@@ -3197,21 +3181,17 @@ export interface DitoSourceInstance<$Item = any>
   collapsed: boolean
   /** Resolved pagination page size. */
   paginate: number | undefined
-  /** Whether the source renders in compact mode. */
-  isCompact: boolean
 
-  // -- Schema introspection (SourceMixin) --
+  // -- Schema introspection --
 
   /** Resolved column definitions. */
   columns: Record<string, ColumnSchema> | null
   /** Resolved scope definitions. */
   scopes: Record<string, any> | null
-  /** Resolved form definitions. */
-  forms: Form[]
   /** Resolved button schemas. */
   buttonSchemas: Record<string, ButtonSchema<any>>
 
-  // -- Item operations (SourceMixin) --
+  // -- Item operations --
 
   /**
    * Creates a new data item with defaults from the
@@ -3235,7 +3215,7 @@ export interface DitoSourceInstance<$Item = any>
    */
   revealComponents(dataPath: string): Promise<DitoTypeInstance[]>
 
-  // -- Resource (ResourceMixin) --
+  // -- Resource --
 
   /**
    * Whether loaded data is available on this
@@ -3255,20 +3235,10 @@ export interface DitoSourceInstance<$Item = any>
   /** Clears the loaded data. */
   clearData(): void
   /**
-   * Sets the component's loaded data directly, and
-   * returns it as the component's reactive data,
-   * which can be modified to update it.
+   * Sets the loaded data directly: a list, an object, or
+   * `{ results, total }`.
    */
-  setData(data: any): any
-  /**
-   * Creates a new data object with default values
-   * from the schema. Optionally sets a `type`
-   * property for polymorphic forms.
-   */
-  createData(
-    schema: Component,
-    type?: string
-  ): Record<string, any>
+  setData(data: any): void
 }
 
 export interface MenuSchema<$Item = any> {

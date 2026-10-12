@@ -8,11 +8,9 @@ export const widgets = createWidgetView<Widget>(
     name: { type: 'text', label: 'Name' },
     // The items list has its own `resource` (Items controller). With a
     // resource attached, the sub-form's Save fires a real PATCH against
-    // `/api/items/:id`, and `ResourceMixin.submitResource` sets
-    // `parentMeta.reload = true` on the Widget form's route record. No
-    // `inlined: true`, so each item edit lives on its own route — that
-    //'s what makes the cancel-back navigate `from.path.startsWith(to.path)`
-    // and trigger SourceMixin's reload watcher.
+    // `/api/items/:id`, after which the list in the Widget form loads its
+    // items again. No `inlined: true`, so each item edit lives on its own
+    // route.
     items: {
       type: 'list',
       label: 'Items',

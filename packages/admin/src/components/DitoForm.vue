@@ -49,7 +49,7 @@
 </template>
 
 <script>
-import { markRaw, toRaw } from 'vue'
+import { getCurrentInstance, inject, markRaw, toRaw } from 'vue'
 import {
   capitalize,
   assignDeeply,
@@ -58,14 +58,21 @@ import {
 } from '@ditojs/utils'
 import DitoComponent from '../DitoComponent.js'
 import RouteMixin from '../mixins/RouteMixin.js'
-import ResourceMixin from '../mixins/ResourceMixin.js'
-import { getResource, getMemberResource } from '../utils/resource.js'
+import { useResource } from '../composables/useResource.ts'
+import { useResourceSubmit } from '../composables/useResourceSubmit.ts'
+import { useItemLabel } from '../composables/useItemLabel.ts'
+import { useServices } from '../composables/useSchemaContext.ts'
+import { getResource } from '../utils/resource.js'
+import { ResourceContext } from '../utils/ResourceContext.ts'
 import { isListSource, isObjectSource } from '../utils/schema/structure.js'
 import {
   getButtonSchemas,
   hasSubmitButton
 } from '../utils/schema/lookup.js'
-import { getComponentPathByDataPath } from '../utils/schema/data.js'
+import {
+  getComponentPathByDataPath,
+  initializeData
+} from '../utils/schema/data.js'
 import { appendDataPath, getParentDataPath } from '../utils/data.js'
 import { resolvePath } from '../utils/path.js'
 import { getErrorMessage } from '../utils/request.js'
@@ -79,18 +86,81 @@ import { getTextFromHtml } from '../utils/html.js'
 
 // @vue/component
 export default DitoComponent.component('DitoForm', {
-  mixins: [RouteMixin, ResourceMixin],
+  mixins: [RouteMixin],
 
   provide() {
     // The components of the form don't continue the source of its parent,
     // e.g. of a tree that renders the forms of its items:
     return {
-      source: null
+      source: null,
+      resource: this.ownResource
+    }
+  },
+
+  setup() {
+    // NOTE: The form's data and route state are still members of the component:
+    const form = getCurrentInstance().proxy
+    // The components of the form don't see the source of its parent:
+    const services = useServices({
+      get container() {
+        return form.ownContainer
+      },
+
+      get route() {
+        return form.ownRoute
+      },
+
+      source: null,
+
+      get resource() {
+        return form.ownResource
+      }
+    })
+    const { verbs: resourceVerbs, ...requests } = useResource({
+      services,
+      parentRoute: inject('route'),
+      getSchema: () => form.sourceSchema,
+      getItemId: () => form.itemId,
+      isTransient: providesData => !providesData,
+      hasData: () => form.hasData,
+      clearData: () => form.setData(null),
+      // Keep the edits made while the data loaded, also in forms that can't
+      // save them. The `load` event still fires, as the data did load:
+      setLoadedData(data) {
+        if (!form.dataModel.isEdited) {
+          form.setData(data)
+        }
+      },
+      emitLoad: () => form.emitSchemaEvent('load')
+    })
+    return {
+      services,
+      ...requests,
+      resourceVerbs,
+      ...useItemLabel({
+        services,
+        getContext: () => form.context,
+        getSchema: () => form.sourceSchema,
+        getDataPath: () => form.dataPath,
+        isTransient: () => requests.isTransient.value
+      }),
+      ...useResourceSubmit({
+        admin: services.admin,
+        handleRequest: requests.handleRequest,
+        getData: () => form.data,
+        getItemLabel: () => form.itemLabel,
+        showValidationErrors: errors => form.showValidationErrors(errors)
+      })
     }
   },
 
   data() {
     return {
+      // The resource continues the one of the parent route:
+      ownResource: markRaw(
+        new ResourceContext(this, { route: this.parentRoute })
+      ),
+      loadedData: null,
       createdData: null,
       // The item in the data of the parent that the form edits, held by its
       // identity, and the copy of it that the form edits unless it mutates the
@@ -111,10 +181,9 @@ export default DitoComponent.component('DitoForm', {
       return this.route.node.source.schema
     },
 
+    // The form's components read its verbs through its `ResourceContext`:
     verbs() {
-      // Add submit / submitted to the verbs returned by ResourceMixin, which
-      // the form's components read through its `ResourceContext`:
-      const verbs = this.getVerbs()
+      const verbs = this.resourceVerbs
       const { isCreating, providesData } = this
       return {
         ...verbs,
@@ -167,10 +236,6 @@ export default DitoComponent.component('DitoForm', {
 
     isActiveRoute() {
       return this.isLastRoute || this.isLastUnnestedRoute
-    },
-
-    isTransient() {
-      return !this.providesData
     },
 
     isCreating() {
@@ -322,7 +387,6 @@ export default DitoComponent.component('DitoForm', {
         : undefined
     },
 
-    // Required by ResourceMixin, see its contract.
     hasData() {
       return !!this.data
     },
@@ -377,6 +441,11 @@ export default DitoComponent.component('DitoForm', {
   },
 
   created() {
+    // Set up the data before the model, which writes into it. Forms that create
+    // their item set it up too, also without a resource:
+    if (this.providesData || this.isCreating) {
+      this.setupData()
+    }
     // Writes defaults and computed values into the form's data, resolves
     // options and tracks whether the data is dirty, see `DataModel`. The item
     // of the parent is handled by the parent's model, see `dataModel`:
@@ -389,14 +458,7 @@ export default DitoComponent.component('DitoForm', {
         sourceSchema: () => this.sourceSchema,
         parent: () => this.parentRoute.container.model,
         canSave: () => hasSubmitButton(this.buttonSchemas),
-        // The components of the form don't see the source of its parent:
-        services: {
-          admin: this.admin,
-          container: this.ownContainer,
-          route: this.ownRoute,
-          source: null,
-          resource: this.ownResource
-        }
+        services: this.services
       })
     )
     // Watch the item after the model is created, as the draft takes over the
@@ -418,12 +480,6 @@ export default DitoComponent.component('DitoForm', {
   methods: {
     emitSchemaEvent(event, params) {
       return this.mainSchemaComponent?.emitEvent(event, params)
-    },
-
-    // @override ResourceMixin.getResource()
-    getResource(options) {
-      const resource = ResourceMixin.methods.getResource.call(this, options)
-      return getMemberResource(this.itemId, resource) || resource
     },
 
     // Hold the item of the form by its identity, in a draft unless the form
@@ -500,7 +556,6 @@ export default DitoComponent.component('DitoForm', {
       return this.mainSchemaComponent.revealErrors()
     },
 
-    // Required by ResourceMixin, see its contract.
     setupData() {
       if (this.isCreating) {
         // Drop the data of the item that the form loaded before, e.g. when
@@ -509,27 +564,17 @@ export default DitoComponent.component('DitoForm', {
         // pending, and would replace the new item once it completes:
         this.loadAbortController?.abort()
         this.loadedData = null
-        this.createdData ||= this.createData(this.schema, this.creationType)
+        const type = this.creationType
+        this.createdData ||= initializeData(
+          this.schema,
+          type ? { type } : {},
+          this
+        )
       } else {
         this.ensureData()
       }
     },
 
-    // @override ResourceMixin.setLoadedData()
-    // Keep the edits made while the data loaded, also in forms that can't save
-    // them. The `load` event still fires, as the data did load.
-    setLoadedData(data) {
-      if (!this.dataModel.isEdited) {
-        this.setData(data)
-      }
-    },
-
-    // Required by ResourceMixin, see its contract.
-    clearData() {
-      this.setData(null)
-    },
-
-    // Required by ResourceMixin, see its contract.
     setData(data) {
       if (this.isTransient) {
         // Forms of items in the data of their parent merge the data into the

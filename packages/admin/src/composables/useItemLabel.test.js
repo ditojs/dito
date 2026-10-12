@@ -9,7 +9,7 @@ const bookForm = {
 
 const maliciousTitle = '<img src="x" onerror="alert(1)">'
 
-describe('ItemMixin', () => {
+describe('useItemLabel()', () => {
   describe('getItemLabel()', () => {
     it('escapes the values of items in list labels', async () => {
       const { findField } = await mountSchema({
@@ -107,6 +107,46 @@ describe('ItemMixin', () => {
       expect(findField('books').find('b').text()).toBe('Emma')
     })
   })
+  describe('itemLabel()', () => {
+    it('receives the data path and form label of the item', async () => {
+      const contexts = []
+      const { admin } = await mountForm({
+        schema: {
+          components: {
+            chapters: {
+              type: 'list',
+              editable: true,
+              itemLabel: ({ item, dataPath, formLabel }) => {
+                contexts.push({ dataPath, formLabel })
+                return item.title
+              },
+              form: {
+                type: 'form',
+                label: 'Chapter',
+                components: { title: { type: 'text' } }
+              }
+            }
+          }
+        },
+        data: { chapters: [{ title: 'Prologue' }] }
+      })
+      expect(contexts).toContainEqual({
+        dataPath: 'chapters/0',
+        formLabel: 'Chapter'
+      })
+      // The form of the item labels it with the data path of its item too:
+      contexts.length = 0
+      await admin.navigate('/items/1/chapters/0')
+      expect(contexts).toContainEqual({
+        dataPath: 'chapters/0',
+        formLabel: 'Chapter'
+      })
+      expect(contexts.map(({ dataPath }) => dataPath)).not.toContain(
+        'chapters/0/chapters'
+      )
+    })
+  })
+
   describe('getItemDataPath()', () => {
     it('appends the index, and the name of other source schemas', async () => {
       const { getComponent } = await mountSchema({

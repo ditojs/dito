@@ -31,7 +31,14 @@ async function mountBookForm() {
   })
 }
 
-describe('SourceMixin', () => {
+// Whether the inlined items of the source are opened:
+function getOpenedItems(source) {
+  return [...source.$el.querySelectorAll('.dito-schema-inlined')].map(
+    element => element.classList.contains('dito-schema--open')
+  )
+}
+
+describe('useSource()', () => {
   afterEach(() => {
     vi.restoreAllMocks()
   })
@@ -553,6 +560,37 @@ describe('SourceMixin', () => {
       expect(books.value).toEqual([])
     })
 
+    it('loads its list again after an item was saved in its form', async () => {
+      const requests = []
+      const { admin } = await mountForm({
+        schema: {
+          components: {
+            title: { type: 'text' },
+            reviews: {
+              type: 'list',
+              resource: { path: 'reviews' },
+              editable: true,
+              form: { type: 'form', components: { text: { type: 'text' } } }
+            }
+          }
+        },
+        data: { title: 'Orlando' },
+        request({ method = 'get', url, data }) {
+          requests.push(`${method} ${url}`)
+          return { data: method === 'get' ? [{ id: 7, text: 'Great' }] : data }
+        }
+      })
+      await admin.navigate('/items/1/reviews/7')
+      const form = admin.getRouteComponent(component => component.isForm)
+      await settle(form)
+      requests.length = 0
+      form.$el.querySelector('.dito-buttons--main [type="submit"]').click()
+      await settle(form)
+      expect(requests).toEqual([
+        'patch /items/1/reviews/7', 'get /items/1/reviews'
+      ])
+    })
+
     it('unwraps list results in the data of the parent', async () => {
       const { getComponent, data } = await mountSchema({
         schema: {
@@ -625,7 +663,7 @@ describe('SourceMixin', () => {
       const item = tags.createItem(tags.schema.form)
       item.tag = 'romance'
       await settle()
-      expect(tags.wrappedPrimitives).toHaveLength(3)
+      expect(tags.listData).toHaveLength(3)
       expect(data.tags).toEqual(['fiction', 'classic', 'romance'])
     })
   })
@@ -655,10 +693,7 @@ describe('SourceMixin', () => {
         'Two',
         'Three'
       ])
-      const schemaComponent = chapters.getSchemaComponent(1)
-      expect(schemaComponent.data).toBe(chapters.listData[1])
-      expect(schemaComponent.opened).toBe(true)
-      expect(chapters.getSchemaComponent(0).opened).toBe(false)
+      expect(getOpenedItems(chapters)).toEqual([false, true, false])
     })
   })
 
@@ -681,33 +716,7 @@ describe('SourceMixin', () => {
       const chapters = getComponent('chapters')
       chapters.createItem(chapters.schema.form)
       await settle()
-      expect(chapters.listData).toHaveLength(2)
-      expect(chapters.getSchemaComponent(1).opened).toBe(true)
-      expect(chapters.getSchemaComponent(0).opened).toBe(false)
-    })
-  })
-
-  describe('getSchemaComponent()', () => {
-    it('returns nothing for empty lists and missing items', async () => {
-      const { getComponent } = await mountSchema({
-        schema: {
-          components: {
-            chapters: {
-              type: 'list',
-              inlined: true,
-              form: { type: 'form', components: { title: { type: 'text' } } }
-            },
-            prologue: {
-              type: 'list',
-              inlined: true,
-              form: { type: 'form', components: { title: { type: 'text' } } }
-            }
-          }
-        },
-        data: { chapters: [{ title: 'One' }], prologue: [] }
-      })
-      expect(getComponent('chapters').getSchemaComponent(5)).toBe(null)
-      expect(getComponent('prologue').getSchemaComponent(0)).toBe(undefined)
+      expect(getOpenedItems(chapters)).toEqual([false, true])
     })
   })
 
@@ -769,8 +778,8 @@ describe('SourceMixin', () => {
     })
   })
 
-  describe('revealComponents() outside the source', () => {
-    it(`doesn't reveal data paths of other components`, async () => {
+  describe('revealComponents()', () => {
+    it(`reveals nothing for missing items and other components`, async () => {
       const { getComponent } = await mountSchema({
         schema: {
           components: {
@@ -778,48 +787,24 @@ describe('SourceMixin', () => {
               type: 'list',
               inlined: true,
               form: { type: 'form', components: { title: { type: 'text' } } }
+            },
+            prologue: {
+              type: 'list',
+              inlined: true,
+              form: { type: 'form', components: { title: { type: 'text' } } }
             }
           }
         },
-        data: { chapters: [{ title: 'One' }] }
+        data: { chapters: [{ title: 'One' }], prologue: [] }
       })
+      const chapters = getComponent('chapters')
+      expect(await chapters.revealComponents('chapters/5/title')).toEqual([])
+      expect(await chapters.revealComponents('authors/0')).toEqual([])
       expect(
-        await getComponent('chapters').revealComponents('authors/0')
-      ).toEqual(
-        []
-      )
-    })
-  })
-
-  describe('forms', () => {
-    it('tells whether all forms are compact', async () => {
-      const { getComponent } = await mountSchema({
-        schema: {
-          components: {
-            authors: {
-              type: 'list',
-              inlined: true,
-              form: {
-                type: 'form',
-                compact: true,
-                components: { name: { type: 'text' } }
-              }
-            },
-            books: {
-              type: 'list',
-              inlined: true,
-              forms: {
-                novel: { type: 'form', compact: true, components: {} },
-                poem: { type: 'form', components: {} }
-              }
-            }
-          }
-        }
-      })
-      expect(getComponent('authors').forms).toHaveLength(1)
-      expect(getComponent('authors').isCompact).toBe(true)
-      expect(getComponent('books').forms).toHaveLength(2)
-      expect(getComponent('books').isCompact).toBe(false)
+        await getComponent('prologue').revealComponents('prologue/0/title')
+      ).toEqual([])
+      const [title] = await chapters.revealComponents('chapters/0/title')
+      expect(title.dataPath).toBe('chapters/0/title')
     })
   })
 

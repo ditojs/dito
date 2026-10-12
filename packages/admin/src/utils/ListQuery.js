@@ -2,12 +2,11 @@ import { pickBy } from '@ditojs/utils'
 import { formatQuery } from './route.js'
 
 // The query of a source that loads its list through its resource, e.g. its
-// scope, page, order and filters, see `ResourceMixin.queryParams`. The route
-// holds the query, so that the list can be linked and reloaded, and the store
-// of the source remembers it, so that the list shows it again when navigating
-// back to it, see `DitoMixin.getStore()`. All changes of the query go through
-// the router, and the source loads its list when the route query changes, see
-// the `$route` watcher in `SourceMixin`.
+// scope, page, order and filters. The route holds the query, so that the list
+// can be linked and reloaded, and the store of the source remembers it, so
+// that the list shows it again when navigating back to it. All changes of the
+// query go through the router, and the source loads its list when the route
+// query changes, see `useListQuery()`.
 export class ListQuery {
   constructor({ router, getRoute, getSourceStore, getDefaultQuery }) {
     this.router = router

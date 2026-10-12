@@ -1,4 +1,3 @@
-import { vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { mountAdmin, mountSchema, mountForm } from '../test/mount.js'
 
@@ -65,43 +64,6 @@ describe('DitoView', () => {
     await flushPromises()
     expect(view.isLoading).toBe(false)
     expect(header.attributes('aria-busy')).toBe('false')
-  })
-
-  describe('setLoading()', () => {
-    const views = {
-      books: { type: 'view', components: { title: { type: 'text' } } },
-      authors: { type: 'view', components: { name: { type: 'text' } } }
-    }
-
-    it('switches the loading state of the view and warns once', async () => {
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-      const admin = await mountAdmin({ views })
-      await admin.navigate('/books')
-      const view = admin.getRouteComponent(it => it.isView)
-      const { loadingTracker } = view.admin
-      view.setLoading(true)
-      view.setLoading(true)
-      expect(view.isLoading).toBe(true)
-      expect(loadingTracker.isLoading).toBe(true)
-      view.setLoading(false)
-      expect(view.isLoading).toBe(false)
-      expect(loadingTracker.isLoading).toBe(false)
-      const deprecationWarnings = warn.mock.calls.filter(([message]) =>
-        String(message).includes('DitoView.setLoading() is deprecated')
-      )
-      expect(deprecationWarnings).toHaveLength(1)
-    })
-
-    it('stops loading when the view unmounts', async () => {
-      vi.spyOn(console, 'warn').mockImplementation(() => {})
-      const admin = await mountAdmin({ views })
-      await admin.navigate('/books')
-      const view = admin.getRouteComponent(it => it.isView)
-      const { loadingTracker } = view.admin
-      view.setLoading(true)
-      await admin.navigate('/authors')
-      expect(loadingTracker.isLoading).toBe(false)
-    })
   })
 
   it('redirects to the root when its `if` hides it', async () => {

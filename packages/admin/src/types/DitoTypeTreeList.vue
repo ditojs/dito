@@ -28,25 +28,22 @@
 import DitoComponent from '../DitoComponent.js'
 import { defineType } from '../utils/schema/types.ts'
 import { sourceTraits } from './traits.ts'
-import { fieldProps, useField } from '../composables/useField.ts'
-import SourceMixin, { useSourceServices } from '../mixins/SourceMixin.js'
+import { fieldProps } from '../composables/useField.ts'
+import { useSource } from '../composables/useSource.ts'
+import SchemaParentMixin from '../mixins/SchemaParentMixin.js'
 import { resolveSchemaComponents } from '../utils/schema/setup.js'
 import { getParentDataPath } from '../utils/data.js'
 
 // @vue/component
 const DitoTypeTreeList = DitoComponent.component('DitoTypeTreeList', {
-  mixins: [SourceMixin],
+  mixins: [SchemaParentMixin],
   props: fieldProps,
 
   setup(props) {
-    const field = useField(props, { services: useSourceServices() })
-    const { value, context, disabled, onChange, focus, services } = field
+    const source = useSource(props)
+    const { services, onChange } = source
     return {
-      value,
-      context,
-      disabled,
-      onChange,
-      focus,
+      ...source,
 
       // Replaces the children of the tree item, as the only writer of the
       // tree, see `DitoTreeItem.changeChildren()`. Open forms follow their

@@ -1,6 +1,11 @@
 import { vi, onTestFinished } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
-import { mountForm, mountSchema, unmountAdmin } from '../test/mount.js'
+import {
+  mountAdmin,
+  mountForm,
+  mountSchema,
+  unmountAdmin
+} from '../test/mount.js'
 import { RequestError } from '../utils/request.js'
 
 // Returns a request that is pending until `resolve()` or `reject()` is called,
@@ -64,7 +69,7 @@ async function mountBookForm({ schema = bookSchema, request }) {
   return { ...result, form, button }
 }
 
-describe('ResourceMixin', () => {
+describe('useResource()', () => {
   afterEach(() => {
     vi.restoreAllMocks()
   })
@@ -129,38 +134,6 @@ describe('ResourceMixin', () => {
     })
   })
 
-  describe('setLoading()', () => {
-    it('begins and ends a loading operation and warns once', async () => {
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-      const { form } = await mountBookForm({})
-      const { loadingTracker } = form.admin
-      expect(form.isLoading).toBe(false)
-      form.setLoading(true)
-      form.setLoading(true)
-      expect(form.isLoading).toBe(true)
-      expect(loadingTracker.isLoading).toBe(true)
-      form.setLoading(false)
-      expect(form.isLoading).toBe(false)
-      expect(loadingTracker.isLoading).toBe(false)
-      form.setLoading(false)
-      expect(loadingTracker.isLoading).toBe(false)
-      const deprecationWarnings = warn.mock.calls.filter(([message]) =>
-        String(message).includes('setLoading() is deprecated')
-      )
-      expect(deprecationWarnings).toHaveLength(1)
-    })
-
-    it('ends its loading operation when the component unmounts', async () => {
-      vi.spyOn(console, 'warn').mockImplementation(() => {})
-      const { form, admin } = await mountBookForm({})
-      const { loadingTracker } = form.admin
-      form.setLoading(true)
-      expect(loadingTracker.isLoading).toBe(true)
-      await admin.navigate('/items')
-      expect(loadingTracker.isLoading).toBe(false)
-    })
-  })
-
   describe('requestData()', () => {
     it('aborts the pending data load when loading again', async () => {
       const loadRequests = []
@@ -209,7 +182,7 @@ describe('ResourceMixin', () => {
       const { form, button } = await mountBookForm({
         request: options => submitRequest.handle(options)
       })
-      const submitted = form.submit(button)
+      const submitted = button.context.submit()
       await flushPromises()
       form.reloadData()
       await flushPromises()
@@ -240,7 +213,7 @@ describe('ResourceMixin', () => {
       })
       const button = form.mainSchemaComponent.getComponentByName('publish')
       let isSubmitted = false
-      const submitted = form.submit(button).then(() => {
+      const submitted = button.context.submit().then(() => {
         isSubmitted = true
       })
       await vi.waitFor(() => expect(finishHandler).toBeDefined())
@@ -298,6 +271,35 @@ describe('ResourceMixin', () => {
       expect(getNotifications()).toContainEqual({
         title: 'Not Found Error',
         text: 'The books are gone.'
+      })
+    })
+
+    it('notifies failed loads of forms', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+      const admin = await mountAdmin({
+        views: {
+          books: {
+            type: 'view',
+            component: {
+              ...listSchema.components.books,
+              form: { type: 'form', components: { title: { type: 'text' } } }
+            }
+          }
+        },
+        request: ({ url }) => {
+          if (url === '/books/1') {
+            throw createRequestError(401, {
+              type: 'AuthorizationError',
+              message: 'Unauthorized Access'
+            })
+          }
+          return { data: [] }
+        }
+      })
+      await admin.navigate('/books/1')
+      expect(getNotifications()).toContainEqual({
+        title: 'Authorization Error',
+        text: 'Unauthorized Access'
       })
     })
 
@@ -471,13 +473,11 @@ describe('ResourceMixin', () => {
 
     it(`doesn't submit buttons without resource`, async () => {
       const request = vi.fn()
-      const { wrapper, getComponent } =
-        await mountRecipesWithPublishButton(request)
-      const list = getComponent('recipes')
+      const { wrapper } = await mountRecipesWithPublishButton(request)
       const share = wrapper
         .findAllComponents({ name: 'DitoTypeButton' })
         .find(({ vm }) => vm.schema.name === 'share').vm
-      expect(await list.submit(share)).toBe(false)
+      expect(await share.context.submit()).toBe(false)
       expect(request).not.toHaveBeenCalled()
     })
   })

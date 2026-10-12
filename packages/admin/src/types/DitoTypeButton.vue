@@ -32,7 +32,7 @@ DitoButton(
 </template>
 
 <script>
-import { computed, getCurrentInstance, inject, ref } from 'vue'
+import { computed, inject, ref } from 'vue'
 import DitoComponent from '../DitoComponent.js'
 import { defineType } from '../utils/schema/types.ts'
 import { fieldProps, useField } from '../composables/useField.ts'
@@ -48,8 +48,6 @@ const DitoTypeButton = DitoComponent.component('DitoTypeButton', {
   props: fieldProps,
 
   setup(props) {
-    // Forms and sources submit through the button's component:
-    const component = getCurrentInstance().proxy
     const getSchemaComponent = inject('$schemaComponent')
     const isRunning = ref(false)
     const services = useServices({
@@ -67,7 +65,7 @@ const DitoTypeButton = DitoComponent.component('DitoTypeButton', {
       get submit() {
         const { resource } = services
         return resource
-          ? options => resource.submit(component, options)
+          ? options => resource.submit(button, options)
           : null
       }
     })
@@ -76,6 +74,24 @@ const DitoTypeButton = DitoComponent.component('DitoTypeButton', {
       getEvents: ({ onFocus, onBlur }) => ({ onFocus, onBlur, onClick })
     })
     const { getSchemaValue, emitEvent } = field
+    const closeForm = computed(() =>
+      getSchemaValue('closeForm', { type: Boolean, default: false })
+    )
+    // The button that forms and sources submit through, see `SubmitButton`:
+    const button = {
+      get schema() {
+        return props.schema
+      },
+
+      get closeForm() {
+        return closeForm.value
+      },
+
+      context: field.context,
+      createContext: field.createContext,
+      getSchemaValue,
+      emitEvent
+    }
 
     async function onClick() {
       // Run the action once at a time, e.g. submits. The button stays enabled,
@@ -113,7 +129,6 @@ const DitoTypeButton = DitoComponent.component('DitoTypeButton', {
 
     return {
       context: field.context,
-      createContext: field.createContext,
       isRunning,
       info: field.info,
       disabled: field.disabled,
@@ -121,10 +136,7 @@ const DitoTypeButton = DitoComponent.component('DitoTypeButton', {
       focus: field.focus,
       text: computed(() => getSchemaValue('text', { type: String })),
       prefixes: computed(() => asArray(props.schema.prefix)),
-      suffixes: computed(() => asArray(props.schema.suffix)),
-      closeForm: computed(() =>
-        getSchemaValue('closeForm', { type: Boolean, default: false })
-      )
+      suffixes: computed(() => asArray(props.schema.suffix))
     }
   }
 })

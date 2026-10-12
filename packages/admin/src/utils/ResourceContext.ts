@@ -1,10 +1,26 @@
 import type { DataModel } from './DataModel.ts'
 import type { RouteContext } from './RouteContext.ts'
-import type { Resource } from './types.ts'
+import type { Context } from './schema/types.ts'
+import type { Resource, Schema } from './types.ts'
+
+export interface SubmitOptions {
+  validate?: boolean
+  closeForm?: boolean
+}
 
 export interface ResourceOptions {
   method?: string
   child?: Resource | null
+}
+
+// The button that submits the data, and receives the events of the submit:
+export interface SubmitButton {
+  readonly schema: Schema
+  readonly context: Context
+  readonly closeForm: boolean
+  createContext(values?: Record<string, any>): Context
+  getSchemaValue(keyOrDataPath: string | string[], options?: object): any
+  emitEvent(event: string, options?: { context?: object }): Promise<any>
 }
 
 // The form, list, object or tree that submits its data and resolves the
@@ -13,7 +29,7 @@ export interface ResourceOwner {
   readonly verbs: Record<string, string>
   readonly dataModel: DataModel
   getResource(options?: ResourceOptions): Resource | null
-  submit(button: unknown, options?: Record<string, any>): Promise<boolean>
+  submit(button: SubmitButton, options?: SubmitOptions): Promise<boolean>
 }
 
 // The context of a form or source, provided to the components that it
@@ -55,7 +71,7 @@ export class ResourceContext {
 
   // Submit the data through `button`, and resolve with whether it succeeded.
   // Leaving the route waits for it:
-  submit(button: unknown, options?: Record<string, any>): Promise<boolean> {
+  submit(button: SubmitButton, options?: SubmitOptions): Promise<boolean> {
     return this.#owner.dataModel.trackPendingSubmit(
       this.#owner.submit(button, options)
     )

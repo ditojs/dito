@@ -1,6 +1,6 @@
 import { computed } from 'vue'
 import type { Router } from 'vue-router'
-import { LoadingTracker } from './LoadingTracker.js'
+import { LoadingTracker } from './LoadingTracker.ts'
 import { flattenViews } from './schema/setup.js'
 import type { RouteTree } from './RouteTree.ts'
 import type { Session } from './Session.js'
