@@ -1,7 +1,7 @@
 <template lang="pug">
 //- Only show panels in tabs when the tabs are also visible.
 component.dito-panel(
-  v-if="shouldRenderSchema(schema)"
+  v-if="shouldRenderPanel"
   v-show="visible && (!isTabSelected || isTabSelected())"
   :is="panelTag"
   role="region"
@@ -47,6 +47,7 @@ import DitoComponent from '../DitoComponent.js'
 import DitoContext from '../DitoContext.js'
 import SchemaParentMixin from '../mixins/SchemaParentMixin.js'
 import { getButtonSchemas } from '../utils/schema/lookup.js'
+import { shouldRenderComponents } from '../utils/schema/data.js'
 import { getSchemaAccessor } from '../utils/accessor.js'
 import { trackRegistration } from '../utils/registration.js'
 import { DataModel } from '../utils/DataModel.ts'
@@ -85,15 +86,30 @@ export default DitoComponent.component('DitoPanel', {
 
   computed: {
     // @override
+    // The panel decides about itself in the data around it, e.g. in `if` and
+    // `data()`, while its components and buttons see the data it displays:
     context() {
-      // Evaluate the callbacks of the panel and of its components with the
-      // data that the panel displays: its own data, e.g. of `$filters`, or the
-      // data of its schema component, at that component's data path.
-      return new DitoContext(this, {
+      const { schemaComponent } = this
+      return new DitoContext(schemaComponent, {
+        schema: this.schema,
         nested: false,
-        data: this.panelData,
-        dataPath: this.panelDataPath
+        data: this.data,
+        dataPath: schemaComponent.dataPath
       })
+    },
+
+    shouldRenderPanel() {
+      return (
+        this.getSchemaValue('if', { type: Boolean, default: true }) &&
+        shouldRenderComponents(
+          this.schema,
+          new DitoContext(this, {
+            nested: false,
+            data: this.panelData,
+            dataPath: this.panelDataPath
+          })
+        )
+      )
     },
 
     componentPath() {
@@ -151,17 +167,7 @@ export default DitoComponent.component('DitoPanel', {
     )
     const { data } = this.schema
     if (data) {
-      // Create the data in the context of the data around the panel, as the
-      // panel is the container of the data that it creates:
-      this.ownData = isFunction(data)
-        ? data(
-            new DitoContext(this.schemaComponent, {
-              nested: false,
-              data: this.data,
-              dataPath: this.schemaComponent.dataPath
-            })
-          )
-        : data
+      this.ownData = isFunction(data) ? data(this.context) : data
       // Own data gets its own model, like in dialogs, so that its edits don't
       // make the displayed data dirty:
       const panel = this
@@ -169,8 +175,6 @@ export default DitoComponent.component('DitoPanel', {
         new DataModel({
           schema: () => this.schema,
           data: () => this.ownData,
-          sourceSchema: () => this.sourceSchema,
-          parent: () => this.parentContainer?.model ?? null,
           services: {
             admin: this.admin,
             container: this.ownContainer,

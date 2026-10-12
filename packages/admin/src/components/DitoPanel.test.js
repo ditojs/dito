@@ -47,6 +47,41 @@ describe('DitoPanel', () => {
     expect(wrapper.find('.dito-panel input').element.value).toBe('Emma')
   })
 
+  it('decides about itself in the context of the data around it', async () => {
+    const createData = vi.fn(() => ({ query: 'Emma' }))
+    const isRendered = vi.fn(({ item }) => item.title === 'Dune')
+    const isVisible = vi.fn(({ item }) => item.title === 'Dune')
+    const isQueryRendered = vi.fn(({ item }) => item.query === 'Emma')
+    const { wrapper } = await mountSchema({
+      schema: {
+        components: { title: { type: 'text' } },
+        panels: {
+          search: {
+            type: 'panel',
+            label: 'Search',
+            data: createData,
+            if: isRendered,
+            visible: isVisible,
+            components: {
+              query: { type: 'text', if: isQueryRendered }
+            }
+          }
+        }
+      },
+      data: { title: 'Dune' }
+    })
+    const panel = wrapper.find('.dito-panel')
+    expect(panel.isVisible()).toBe(true)
+    expect(panel.find('input').element.value).toBe('Emma')
+    for (const callback of [createData, isRendered, isVisible]) {
+      const [context] = callback.mock.lastCall
+      expect(context.schema.label).toBe('Search')
+      expect(context.processedItem).toEqual({ title: 'Dune' })
+    }
+    // The components inside the panel see the panel's data:
+    expect(isQueryRendered.mock.lastCall[0].item).toEqual({ query: 'Emma' })
+  })
+
   it('passes the data that it displays to its buttons', async () => {
     const click = vi.fn()
     const { wrapper } = await mountSchema({
@@ -99,6 +134,29 @@ describe('DitoPanel', () => {
     expect(rootItem).toEqual({ query: 'Emma' })
     expect(item).toBe(rootItem)
     expect(dataPath).toBe('refresh')
+  })
+
+  it(`processes its own data without the view's ids or types`, async () => {
+    const click = vi.fn()
+    const { wrapper } = await mountSchema({
+      schema: {
+        components: { title: { type: 'text' } },
+        panels: {
+          search: {
+            type: 'panel',
+            label: 'Search',
+            data: { id: 7, query: 'Emma' },
+            components: {
+              query: { type: 'text' },
+              refresh: { type: 'button', events: { click } }
+            }
+          }
+        }
+      },
+      data: { title: 'Dune' }
+    })
+    await wrapper.find('.dito-panel button[id$="refresh"]').trigger('click')
+    expect(click.mock.calls[0][0].processedItem).toEqual({ query: 'Emma' })
   })
 
   it('computes the values of its own data in its own data model', async () => {

@@ -90,18 +90,22 @@ export function shouldRenderSchema(schema, context) {
       schema,
       context,
       default: true
-    }) && (
-      !hasNestedSchemaComponents(schema) ||
-      // The components of sources, e.g. lists with inlined components, are
-      // rendered for each item, with the item's own context:
-      !!getSourceType(schema) ||
-      // Evaluate the components with their own contexts, like when rendered:
-      someNestedSchemaComponent(schema, (component, name) =>
-        shouldRenderSchema(
-          component,
-          context.createChildContext(component, name)
-        )
-      )
+    }) &&
+    shouldRenderComponents(schema, context)
+  )
+}
+
+// Returns whether `schema` renders any of its nested components, if it has
+// any, which `context` holds the data of:
+export function shouldRenderComponents(schema, context) {
+  return (
+    !hasNestedSchemaComponents(schema) ||
+    // The components of sources, e.g. lists with inlined components, are
+    // rendered for each item, with the item's own context:
+    !!getSourceType(schema) ||
+    // Evaluate the components with their own contexts, like when rendered:
+    someNestedSchemaComponent(schema, (component, name) =>
+      shouldRenderSchema(component, context.createChildContext(component, name))
     )
   )
 }
@@ -388,7 +392,8 @@ export function processData(schema, sourceSchema, data, dataPath, {
   target
 } = {}) {
   const options = { services, rootData, target }
-  const processedRootData = cloneItem(sourceSchema, data)
+  // Data without a source, e.g. of dialogs and panels, has nothing to identify:
+  const processedRootData = sourceSchema ? cloneItem(sourceSchema, data) : {}
   const graph = new SchemaGraph(dataPath)
 
   const before = ({ schema, data, name, dataPath, processedData }) => {
