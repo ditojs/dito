@@ -104,6 +104,8 @@ const treeTraits = {
   async processSchema(api, schema, name) {
     const { children } = schema
     if (children) {
+      // Change the schema in place, as the route tree, uids and data model are
+      // keyed by schema identity:
       children.type = 'tree-list'
     }
     await Promise.all([

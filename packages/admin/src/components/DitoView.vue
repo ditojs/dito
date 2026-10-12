@@ -56,6 +56,8 @@ export default {
     const router = useRouter()
     const parentRouteContext = inject('routeContext', null)
     useComponentPath(() => '')
+    // NOTE: Each view has its own data, as `DitoRouterView` renders each route
+    // record with its own component instance:
     const data = ref({})
     // The view displays its data as if it were an item of its source:
     const sourceSchema = computed(

@@ -85,6 +85,7 @@ export function useRouteContainer(owner: RouteContainerOwner) {
         routeParams.value = params
       }
     },
+    // Update synchronously, so the record changes with the route:
     { immediate: true, flush: 'sync' }
   )
 
@@ -134,6 +135,7 @@ export function useRouteContainer(owner: RouteContainerOwner) {
     isLeavingRoute,
     isLastRoute,
     path,
+    // The state that outlives the components, e.g. the query of lists:
     store: reactive({}),
     navigateWithin,
 

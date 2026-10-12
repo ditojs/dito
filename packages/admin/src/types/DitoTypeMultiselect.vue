@@ -261,6 +261,7 @@ const DitoTypeMultiselect = {
       },
 
       onClose() {
+        // Emit the blur event held back while the multiselect was open:
         if (focused.value) {
           onBlur()
         }
@@ -292,6 +293,7 @@ const DitoTypeMultiselect = {
         if (searchFilter.value) {
           currentSearchTerm = searchTerm
           if (searchTerm) {
+            // Show no options until the results of the search arrive:
             searchedOptions.value = []
             // Resolved promises return options without a loading indicator:
             const timer = setTimeout(() => {

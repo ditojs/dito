@@ -83,6 +83,7 @@ export function mergeData(
 
 // Match the remaining items with the new items of `target` in order, as the
 // server keeps the order of new items when it gives them their ids.
+// Copies that share the uids of their items are matched by these only:
 function mergeList(
   sourceSchema: Schema,
   target: any[],

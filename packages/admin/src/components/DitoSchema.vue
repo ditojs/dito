@@ -354,6 +354,7 @@ export default {
           element.scrollTop = scrollPositions[newTab] ?? 0
         })
       }
+      // The route of a nested form doesn't belong to this schema:
       if (shouldFollowRouteTab.value) {
         replaceRouteTab(newTab)
       }

@@ -58,6 +58,7 @@ function getMultiplier(base) {
   return base === 10 ? 1000 : 1024
 }
 
+// Round bytes to integers, larger units to two decimals:
 function roundFileSize(size, multiplier, exponent) {
   const factor = exponent > 0 ? 100 : 1
   return Math.round(size / multiplier ** exponent * factor) / factor

@@ -340,6 +340,7 @@ export class RouteTree {
     )
   }
 
+  // Dialogs don't support forms with routes:
   hasRoutedForms(): boolean {
     return this.nodes.some(node => !!findRoutedForm(node))
   }

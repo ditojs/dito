@@ -37,6 +37,7 @@ export async function resolveSchema(value, unwrapModule = false) {
     schema = await schema
   }
   if (isModule(schema)) {
+    // Copy to convert the module namespace to a plain object:
     schema = { ...schema }
     // Unwrap default or named schema:
     if (!schema.name && (unwrapModule || schema.default)) {

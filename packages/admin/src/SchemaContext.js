@@ -45,6 +45,7 @@ function toObject(context) {
 function get(context, key, defaultValue) {
   const object = toObject(context)
   const value = key in object ? object[key] : undefined
+  // Keys explicitly set to `undefined` return it, instead of the default:
   return value !== undefined || hasOwnProperty.call(object, key)
     ? value
     : isFunction(defaultValue)
@@ -69,6 +70,7 @@ export default class SchemaContext {
         ? context()
         : { ...context }
       : {}
+    // Default to `true`, so `nested` doesn't fall back to the services:
     context.nested ??= true
     context.services = services
     // `this` is always raw inside the constructor:
@@ -113,6 +115,7 @@ export default class SchemaContext {
     })
   }
 
+  // Override members in a copy that inherits from this context:
   extend(object) {
     return Object.setPrototypeOf(object, this)
   }
@@ -268,6 +271,7 @@ export default class SchemaContext {
     return get(this, 'isRunning', false)
   }
 
+  // Handlers can end the running action early, e.g. before opening a dialog:
   set isRunning(value) {
     // Set the state of components that run actions, e.g. buttons:
     const services = getServices(this)

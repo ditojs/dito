@@ -1,7 +1,7 @@
 // Emit the change of an edited value only once the editing is done, e.g. on
 // blur. Values changed by code don't emit, as only `markEdited()` edits count.
 export function createChangeOnceEdited({ isEditing, emitChange }) {
-  let isEdited = false
+  let isEdited = false // Not reactive, as nothing renders it.
 
   return {
     markEdited() {
