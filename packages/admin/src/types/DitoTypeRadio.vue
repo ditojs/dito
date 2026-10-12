@@ -32,6 +32,7 @@ import { defineType } from '../utils/schema/types.ts'
 import { optionsTraits } from './traits.ts'
 import { fieldProps, useField } from '../composables/useField.ts'
 import { useOptions } from '../composables/useOptions.ts'
+import { useServices } from '../composables/useSchemaContext.ts'
 import DitoOptionList from '../components/DitoOptionList.vue'
 import DitoOptionsEditButtons from '../components/DitoOptionsEditButtons.vue'
 
@@ -42,8 +43,17 @@ const DitoTypeRadio = {
   props: fieldProps,
 
   setup(props) {
-    const field = useField(props, { nativeField: true })
-    return { ...field, ...useOptions(props, field) }
+    const field = useField(props, {
+      nativeField: true,
+      // The contexts of the field hold its options:
+      services: useServices({
+        get options() {
+          return optionsField.options.value
+        }
+      })
+    })
+    const optionsField = useOptions(props, field)
+    return { ...field, ...optionsField }
   }
 }
 

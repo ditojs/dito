@@ -96,6 +96,33 @@ describe('useOptions()', () => {
       expect(select.value).toBe('bio')
       expect(select.selectedOptions[0].text).toBe('Biography')
     })
+
+    it.each(['select', 'multiselect', 'checkboxes', 'radio'])(
+      'gives the options to the callbacks of %s fields',
+      async type => {
+        const options = { readonly: [], formatValue: [] }
+        const record = key => context => {
+          options[key].push(toRaw(context.options))
+          return key === 'formatValue' ? context.value : false
+        }
+        await mountSchema({
+          schema: {
+            components: {
+              genre: {
+                type,
+                options: ['Fiction', 'Biography'],
+                readonly: record('readonly'),
+                formatValue: record('formatValue')
+              }
+            }
+          },
+          data: { genre: null }
+        })
+        // The container formats the value too, in its own context:
+        expect(options.readonly).toContainEqual(['Fiction', 'Biography'])
+        expect(options.formatValue).toContainEqual(['Fiction', 'Biography'])
+      }
+    )
   })
 
   describe('search', () => {

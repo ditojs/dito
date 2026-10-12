@@ -74,19 +74,10 @@ export function useOptions(
       ? groupOptions(options, option =>
           isString(group)
             ? option[group]
-            : group(createOptionsContext({ option }))
+            : group(createContext({ option }))
         )
       : options
   })
-
-  // The callbacks of the options receive the options too:
-  const createOptionsContext = (values: Record<string, any>): Context =>
-    createContext({
-      get options() {
-        return options.value
-      },
-      ...values
-    })
 
   const settings = computed<OptionsSettings>(() =>
     getOptionsSettings(
@@ -95,7 +86,7 @@ export function useOptions(
       {
         multiple: multiple.value,
         isGrouped: isGrouped.value,
-        createContext: createOptionsContext
+        createContext
       }
     )
   )
@@ -194,7 +185,7 @@ export function useOptions(
           : search
         const searchFilter = debounce ? debounceAsync(filter, debounce) : filter
         return (searchTerm: string) =>
-          searchFilter(createOptionsContext({ searchTerm }))
+          searchFilter(createContext({ searchTerm }))
       }
       return null
     }),
@@ -222,7 +213,7 @@ export function useOptions(
         ? option?.[label as string]
         : isFunction(label)
           ? label(
-              createOptionsContext({ option, isSelected: isSelected(option) })
+              createContext({ option, isSelected: isSelected(option) })
             )
           : labelize(`${option}`)
     }
