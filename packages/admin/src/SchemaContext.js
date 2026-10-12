@@ -299,7 +299,7 @@ export default class SchemaContext {
     return getAdminContext(this).router.currentRoute.value.query
   }
 
-  get listQuery() {
+  get sourceQuery() {
     return getServices(this).sourceContext?.query ?? null
   }
 

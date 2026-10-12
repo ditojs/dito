@@ -354,7 +354,7 @@ export interface BaseSchema<$Item>
    *
    * As it doesn't depend on the field's component, the
    * context's members that depend on components, e.g.
-   * `listQuery`, refer to the form, view or dialog that
+   * `sourceQuery`, refer to the form, view or dialog that
    * holds the data, not to the field.
    *
    * Reading `context.options` waits while the options
@@ -830,7 +830,7 @@ export type SchemaOptions<$Item, $Option = any> =
        * The options are loaded independently of the
        * field's component, also for computes, so the
        * context's members that depend on components, e.g.
-       * `listQuery`, refer to the form, view or dialog that
+       * `sourceQuery`, refer to the form, view or dialog that
        * holds the data, not to the field.
        */
       data?: OrItemAccessor<
@@ -2049,9 +2049,10 @@ export type SchemaContext<$Item = any> = {
   routeQuery: Record<string, string | (string | null)[]>
   /**
    * The query of the nearest list, e.g. its scope, page,
-   * order and filters, or `null` outside of lists.
+   * order and filters, or `null` outside of lists and
+   * inside forms.
    */
-  listQuery: Record<string, any> | null
+  sourceQuery: Record<string, any> | null
   /**
    * The error object, populated in button `error`
    * event handler contexts.

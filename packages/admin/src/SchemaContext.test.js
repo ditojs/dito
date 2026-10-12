@@ -234,7 +234,7 @@ describe('SchemaContext', () => {
       expect(context.isDirty).toBe(false)
       expect(context.isCreating).toBe(false)
       expect(context.selectedTab).toBe(null)
-      expect(context.listQuery).toBe(null)
+      expect(context.sourceQuery).toBe(null)
     })
 
     it('provides values of options and searches when given', () => {

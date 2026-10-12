@@ -364,8 +364,8 @@ describe('useSchemaContext()', () => {
       // The list's query, unlike the form's:
       chapters.listQuery.update({ page: 1 })
       await flushPromises()
-      expect(chapters.context.listQuery).toMatchObject({ page: '1' })
-      expect(getComponent('title').context.listQuery).toBe(null)
+      expect(chapters.context.sourceQuery).toMatchObject({ page: '1' })
+      expect(getComponent('title').context.sourceQuery).toBe(null)
     })
 
     it('return the URL of the form in lists without a resource', async () => {
