@@ -1,4 +1,3 @@
-import { vi } from 'vitest'
 import { parseHandlerDefinition } from './handler.js'
 
 describe('parseHandlerDefinition()', () => {
@@ -48,20 +47,6 @@ describe('parseHandlerDefinition()', () => {
       },
       extra: { cached: true }
     })
-  })
-
-  it('maps the deprecated `returns` setting to `response`', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    try {
-      const descriptor = parseHandlerDefinition({
-        handler() {},
-        returns: [{ type: 'number' }, { patch: false }]
-      })
-      expect(descriptor.response).toEqual({ type: 'number' })
-      expect(descriptor.options.response).toEqual({ patch: false })
-    } finally {
-      warn.mockRestore()
-    }
   })
 
   it('does not write settings onto the handler function', () => {

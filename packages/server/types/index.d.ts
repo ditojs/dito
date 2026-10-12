@@ -2378,9 +2378,6 @@ export class AdminController extends Controller {
    * `'root'` or `'dist'`. Throws if it isn't configured.
    */
   resolveConfigPath(name: string): string
-  /** @deprecated Use `resolveConfigPath(name)` instead. */
-  getPath(name: string): string
-  getPath(type: string, path: string): string
   getDitoObject(): {
     base: string
     api: AdminConfig['api']

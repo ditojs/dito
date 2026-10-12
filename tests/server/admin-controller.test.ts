@@ -39,18 +39,15 @@ describe('AdminController', () => {
     }
   })
 
-  it('resolves config paths, also through deprecated `getPath()`', async () => {
+  it('resolves config paths', async () => {
     const app = createAdminApp()
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     try {
       await app.setup()
       const controller = app.getAdminController()!
       expect(controller.resolveConfigPath('dist')).toBe(
         path.resolve(os.tmpdir())
       )
-      expect(controller.getPath('dist')).toBe(path.resolve(os.tmpdir()))
     } finally {
-      warn.mockRestore()
       await app.knex?.destroy()
     }
   })
