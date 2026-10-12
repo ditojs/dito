@@ -163,11 +163,14 @@ describe('DitoPanel', () => {
     const { wrapper, dataModel, settle } = await mountSchema({
       schema: {
         components: { title: { type: 'text' } },
+        // Both can save, so both would be dirty after edits:
+        buttons: { save: { type: 'submit' } },
         panels: {
           stats: {
             type: 'panel',
             label: 'Stats',
             data: () => ({ words: 2 }),
+            buttons: { apply: { type: 'submit' } },
             components: {
               words: { type: 'number' },
               pages: {
@@ -230,10 +233,12 @@ describe('DitoPanel', () => {
             data: { query: '' },
             components: { query: { type: 'text', required: true } },
             buttons: {
-              check: { type: 'button', text: 'Check', events: { click } }
+              check: { type: 'button', text: 'Check', events: { click } },
+              apply: { type: 'submit' }
             }
           }
-        }
+        },
+        buttons: { save: { type: 'submit' } }
       },
       data: { title: 'Dune' }
     })

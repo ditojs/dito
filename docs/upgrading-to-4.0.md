@@ -38,9 +38,10 @@ which components write the data through.
   value aren't edits.
 - Dirty state belongs to the one that saves the data: the form or view, and
   each source with its own resource for the changes of its list and inside
-  it, e.g. the order of its items or the children of tree items. Forms and
-  such sources only count as dirty if they have a button of type `submit`,
-  whatever its name, views by any edit. `dataModel.isDirty` tells this,
+  it, e.g. the order of its items or the children of tree items. They only
+  count as dirty if they have a button of type `submit`, whatever its name,
+  like views, dialogs and panels with their own data. Views without one no
+  longer ask about unsaved changes. `dataModel.isDirty` tells this,
   `dataModel.isEdited` whether the data was edited at all, also where it
   can't be saved, e.g. the order of a source without such a button.
 - Direct writes to the data don't make it dirty, e.g. of what an action on the
@@ -139,9 +140,9 @@ which components write the data through.
   `addError(dataPath, message)`, `removeError(dataPath, message)`,
   `replaceErrors(errors, { dataPath, server })` and `clearErrors(dataPath)`.
 - The errors of values, of validation and of the server, apply to the value
-  that they were set for: they're hidden once the value changes, also in
-  place or through direct writes, until it changes back. Validating a value
-  again, e.g. on blur, only replaces its validation errors.
+  that they were set for: any change of the value clears them for good, also
+  in place or through direct writes, even if it changes back. Validating a
+  value again, e.g. on blur, only replaces its validation errors.
 - The errors of fields, e.g. of options that failed to load or of searches,
   are added with `addError()` and stay until their source removes them with
   `removeError()`. `getFieldErrors()` returns their messages, `getErrors()`

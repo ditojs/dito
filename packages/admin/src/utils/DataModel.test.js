@@ -38,6 +38,8 @@ function createDataModel(schema, data, options) {
   const dataModel = new DataModel({
     schema: () => schema,
     data: () => dataRef.value,
+    // Most tests are about edits, which only count where they can be saved:
+    canSave: () => true,
     ...options
   })
   // The entry of the list at `name` for the change API:
@@ -830,6 +832,25 @@ describe('DataModel', () => {
       dataModel.stop()
     })
 
+    it('is only dirty with a submit button, by default', () => {
+      const createModel = buttons =>
+        new DataModel({
+          schema: () => ({ ...schema, buttons }),
+          data: () => reactive({ title: 'Emma', chapters: [] })
+        })
+      const [unsavable, savable] = [
+        createModel({ apply: { type: 'button' } }),
+        createModel({ save: { type: 'submit' } })
+      ]
+      for (const dataModel of [unsavable, savable]) {
+        dataModel.set(dataModel.data, 'title', 'Persuasion')
+        expect(dataModel.isEdited).toBe(true)
+        dataModel.stop()
+      }
+      expect(unsavable.isDirty).toBe(false)
+      expect(savable.isDirty).toBe(true)
+    })
+
     it('is dirty after `set()` of nested values', () => {
       const { dataModel, data } = createBookModel()
       dataModel.set(data.chapters[1], 'title', 'Second')
@@ -1348,6 +1369,24 @@ describe('DataModel', () => {
       dataModel.stop()
     })
 
+    it('clears the errors for good once the value changes', () => {
+      const { dataModel, data } = createBook()
+      const taken = [{ message: 'is taken' }]
+      dataModel.replaceErrors(
+        { 'title': taken, 'details/subtitle': taken },
+        { server: true }
+      )
+      dataModel.set(data, 'title', 'Persuasion')
+      dataModel.set(data, 'title', 'Emma')
+      expect(dataModel.getErrors('title')).toBe(null)
+      // Also when code writes the values directly:
+      data.details.subtitle = 'Volume'
+      data.details.subtitle = ''
+      expect(dataModel.getErrors('details/subtitle')).toBe(null)
+      expect(dataModel.hasErrorsWithin(data)).toBe(false)
+      dataModel.stop()
+    })
+
     it('drops the errors of other values when the value is validated', () => {
       const { dataModel, data } = createBook()
       dataModel.replaceErrors(
@@ -1783,7 +1822,7 @@ describe('DataModel', () => {
         1
       )
       expect(dataRef.value.items).toEqual([{ id: 2 }, { id: 1 }])
-      expect(dataModel.isDirty).toBe(true)
+      expect(dataModel.isEdited).toBe(true)
       dataModel.stop()
     })
 
