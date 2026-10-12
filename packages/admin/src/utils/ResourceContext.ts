@@ -1,5 +1,3 @@
-import type { DataModel } from './DataModel.ts'
-import type { RouteContext } from './RouteContext.ts'
 import type { Context } from './schema/types.ts'
 import type { Resource, Schema } from './types.ts'
 
@@ -24,50 +22,24 @@ export interface SubmitButton {
 
 // The form, list, object or tree that owns the resource:
 export interface ResourceOwner {
-  readonly verbs: Record<string, string>
-  readonly dataModel: DataModel
   getResource(options?: ResourceOptions): Resource | null
   submit(button: SubmitButton, options?: SubmitOptions): Promise<boolean>
 }
 
-// Forms and sources provide it also without a resource of their own:
+// Only forms and sources with a resource provide it, so components see the
+// nearest one with a resource:
 export class ResourceContext {
   readonly #owner: ResourceOwner
-  readonly #routeContext: RouteContext | null
 
-  constructor(
-    owner: ResourceOwner,
-    // The route that renders the owner, or the parent route of forms:
-    { routeContext }: { routeContext: RouteContext | null }
-  ) {
+  constructor(owner: ResourceOwner) {
     this.#owner = owner
-    this.#routeContext = routeContext
-  }
-
-  // The context of the form that renders the owner, or of the parent form:
-  get parent(): ResourceContext | null {
-    return this.#routeContext?.resourceContext ?? null
-  }
-
-  // The closest context with a resource, which loads the displayed data:
-  get resourceOwner(): ResourceContext | null {
-    return this.getResource()
-      ? this
-      : (this.parent?.resourceOwner ?? null)
-  }
-
-  get verbs(): Record<string, string> {
-    return this.#owner.verbs
   }
 
   getResource(options?: ResourceOptions): Resource | null {
     return this.#owner.getResource(options)
   }
 
-  // Leaving the route waits for pending submits:
   submit(button: SubmitButton, options?: SubmitOptions): Promise<boolean> {
-    return this.#owner.dataModel.trackPendingSubmit(
-      this.#owner.submit(button, options)
-    )
+    return this.#owner.submit(button, options)
   }
 }

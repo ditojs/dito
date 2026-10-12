@@ -1,7 +1,7 @@
 import { labelize } from '@ditojs/utils'
 import DitoConfirmMessage from '../components/DitoConfirmMessage.vue'
 import { getTextFromHtml } from './html.js'
-import defaultVerbs from '../verbs.js'
+import { getVerbs } from './services.ts'
 
 export const transientNote = (
   '<b>Note</b>: the parent still needs to be saved ' +
@@ -39,7 +39,7 @@ export async function confirmAndRemove(
   services,
   { label, isTransient, remove }
 ) {
-  const verbs = services.resourceContext?.verbs ?? defaultVerbs
+  const verbs = getVerbs(services)
   const [verb, pastVerb] = isTransient
     ? [verbs.remove, verbs.removed]
     : [verbs.delete, verbs.deleted]

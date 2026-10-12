@@ -98,10 +98,7 @@ export function useResource({
 
   // Continue the verbs of the parent, with the transient ones in nested data:
   const verbs = computed(() => {
-    const parentVerbs = (
-      parentRouteContext?.resourceContext?.verbs ??
-      defaultVerbs
-    )
+    const parentVerbs = parentRouteContext?.verbs ?? defaultVerbs
     return isTransient.value
       ? {
           ...parentVerbs,

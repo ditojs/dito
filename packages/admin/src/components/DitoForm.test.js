@@ -1163,7 +1163,7 @@ describe('DitoForm', () => {
       await admin.navigate('/test/recipes/0')
       const form = admin.getRouteComponent(isForm)
       await settle(form)
-      expect(form.ownRouteContext.resourceContext.resourceOwner).toBe(null)
+      expect(form.ownRouteContext.resourceContext).toBe(null)
       expect(form.dataPath).toBe('recipes/0')
       expect(new DOMWrapper(form.$el).find('input').element.value).toBe(
         'Pancakes'

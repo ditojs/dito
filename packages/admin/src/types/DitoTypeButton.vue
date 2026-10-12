@@ -60,12 +60,12 @@ const DitoTypeButton = {
         isRunning.value = value
       },
 
-      // Buttons of forms and lists with a resource submit their data:
+      // Buttons of sources submit through them, the others to their form, which
+      // applies or saves its data:
       get submit() {
-        const { resourceContext } = services
-        return resourceContext
-          ? options => resourceContext.submit(button, options)
-          : null
+        const { sourceContext, routeContext } = services
+        const target = sourceContext ?? (routeContext?.isForm && routeContext)
+        return target ? options => target.submit(button, options) : null
       }
     })
     const field = useField(props, {
