@@ -1,5 +1,3 @@
-import DitoMixin from '../../mixins/DitoMixin.js'
-import TypeMixin from '../../mixins/TypeMixin.js'
 import {
   isObject,
   isArray,
@@ -150,8 +148,8 @@ export function flattenViews(views) {
   )
 }
 
+// Resolves async schema components, e.g. `component: import('./Rating.vue')`.
 export async function resolveSchemaComponent(schema) {
-  // Resolves async schema components and adds DitoMixin and TypeMixin to them.
   let { component } = schema
   if (component) {
     component = await resolveSchema(component, true)
@@ -159,10 +157,7 @@ export async function resolveSchemaComponent(schema) {
       // Prevent warning: "Vue received a Component which was made a reactive
       // object. This can lead to unnecessary performance overhead, and should
       // be avoided by marking the component with `markRaw`":
-      schema.component = markRaw({
-        ...component,
-        mixins: [DitoMixin, TypeMixin, ...(component.mixins || [])]
-      })
+      schema.component = markRaw(component)
     }
   }
 }

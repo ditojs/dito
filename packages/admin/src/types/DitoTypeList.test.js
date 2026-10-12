@@ -391,8 +391,10 @@ describe('DitoTypeList', () => {
     it('renders the items with their `component`', async () => {
       const texts = await getItemTexts({
         component: {
+          props: { modelValue: { type: Object, required: true } },
+
           render() {
-            return h('em', `${this.data.amount} g`)
+            return h('em', `${this.modelValue.amount} g`)
           }
         }
       })

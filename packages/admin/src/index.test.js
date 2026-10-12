@@ -11,4 +11,15 @@ describe('@ditojs/admin exports', () => {
   it('exports `defineType()` to define custom types', () => {
     expect(exports.defineType).toBe(defineType)
   })
+
+  it('exports `getSchemaValue()` for custom components', () => {
+    const context = { item: { title: 'Emma' } }
+    const schema = {
+      label: 'Rating',
+      title: ({ item }) => `Rate ${item.title}`
+    }
+    expect(exports.getSchemaValue(schema, 'label', context)).toBe('Rating')
+    expect(exports.getSchemaValue(schema, 'title', context)).toBe('Rate Emma')
+    expect(exports.getSchemaValue(schema, 'max', context)).toBe(undefined)
+  })
 })

@@ -1,8 +1,6 @@
 import { vi } from 'vitest'
 import { reactive, isReactive } from 'vue'
 import { hyphenate } from '@ditojs/utils'
-import DitoMixin from '../../mixins/DitoMixin.js'
-import TypeMixin from '../../mixins/TypeMixin.js'
 import { defineType } from './types.ts'
 import { sourceDescriptor } from '../../types/descriptors.ts'
 import {
@@ -583,18 +581,14 @@ describe('setupView()', () => {
 })
 
 describe('resolveSchemaComponent()', () => {
-  it('adds the mixins of type components to custom components', async () => {
-    const OwnMixin = { methods: { own() {} } }
-    const component = { name: 'BookCover', mixins: [OwnMixin] }
+  it('resolves custom components as they are', async () => {
+    const component = { name: 'BookCover' }
     const schema = {
       type: 'component',
       component: Promise.resolve(createModule({ default: component }))
     }
     await resolveSchemaComponent(schema)
-    expect(schema.component).toEqual({
-      name: 'BookCover',
-      mixins: [DitoMixin, TypeMixin, OwnMixin]
-    })
+    expect(schema.component).toBe(component)
   })
 
   it(`marks the components as raw so they don't become reactive`, async () => {
@@ -623,7 +617,7 @@ describe('resolveSchemaComponent()', () => {
     }
     await resolveSchemaComponents(columns)
     await resolveSchemaComponents(null)
-    expect(columns.cover.component.mixins).toEqual([DitoMixin, TypeMixin])
+    expect(columns.cover.component).toEqual({ name: 'BookCover' })
     expect(columns.title).toEqual({ label: 'Title' })
   })
 
@@ -635,9 +629,6 @@ describe('resolveSchemaComponent()', () => {
         cover: { type: 'component', component: { name: 'BookCover' } }
       }
     })
-    expect(form.components.cover.component.mixins).toEqual([
-      DitoMixin,
-      TypeMixin
-    ])
+    expect(form.components.cover.component).toEqual({ name: 'BookCover' })
   })
 })

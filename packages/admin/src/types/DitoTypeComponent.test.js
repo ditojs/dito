@@ -1,29 +1,46 @@
+import { vi } from 'vitest'
 import { h } from 'vue'
+import { getSchemaValue } from '../index.js'
 import { mountSchema } from '../test/mount.js'
 
-// A custom component, which gets `DitoMixin` and `TypeMixin` added, so that it
-// can display and change `value` like the built-in types:
+// A custom component, which displays and changes its value through
+// `modelValue` and `update:modelValue`, and emits `change` once it's done:
 const RatingStars = {
+  emits: ['update:modelValue', 'change'],
+
+  props: {
+    schema: { type: Object, required: true },
+    context: { type: Object, required: true },
+    modelValue: { type: Number, default: null }
+  },
+
   render() {
     return h(
       'button',
       {
         class: 'rating-stars',
+        title: getSchemaValue(this.schema, 'title', this.context),
         onClick: () => {
-          this.value = (this.value ?? 0) + 1
+          this.$emit('update:modelValue', (this.modelValue ?? 0) + 1)
+          this.$emit('change')
         }
       },
-      '*'.repeat(this.value ?? 0)
+      '*'.repeat(this.modelValue ?? 0)
     )
   }
 }
 
 describe('DitoTypeComponent', () => {
   it('renders the custom component with the value', async () => {
+    const change = vi.fn()
     const { findField, data } = await mountSchema({
       schema: {
         components: {
-          rating: { type: 'component', component: RatingStars }
+          rating: {
+            type: 'component',
+            component: RatingStars,
+            events: { change }
+          }
         }
       },
       data: { rating: 2 }
@@ -33,6 +50,28 @@ describe('DitoTypeComponent', () => {
     await button.trigger('click')
     expect(data.rating).toBe(3)
     expect(button.text()).toBe('***')
+    // `change` emits the change event of the schema with the new value:
+    expect(change).toHaveBeenCalledOnce()
+    expect(change.mock.calls[0][0].value).toBe(3)
+  })
+
+  it('passes the schema and the reactive context', async () => {
+    const { findField, wrapper } = await mountSchema({
+      schema: {
+        components: {
+          title: { type: 'text' },
+          rating: {
+            type: 'component',
+            component: RatingStars,
+            title: ({ item }) => `Rate ${item.title}`
+          }
+        }
+      },
+      data: { title: 'Emma', rating: 1 }
+    })
+    expect(findField('rating').attributes('title')).toBe('Rate Emma')
+    await wrapper.find('input[name="title"]').setValue('Persuasion')
+    expect(findField('rating').attributes('title')).toBe('Rate Persuasion')
   })
 
   it('resolves components that are imported asynchronously', async () => {

@@ -1130,10 +1130,43 @@ export interface ComponentSchema<$Item = any> extends BaseSchema<$Item> {
   type: 'component'
   /**
    * Use a Vue component to render the component. The component is specified
-   * like this: import(...).
+   * like this: import(...). It receives the props of
+   * {@link CustomComponentProps}, and emits the events of
+   * {@link CustomComponentEmits}.
    */
   component: Resolvable<VueComponent>
 }
+
+/**
+ * The props of the custom components of `type: 'component'` schemas. Their
+ * root element gets the id that the label of the component points to.
+ */
+export interface CustomComponentProps<$Item = any, $Value = any> {
+  /** The schema of the component, see {@link getSchemaValue}. */
+  schema: ComponentSchema<$Item>
+  /** The context of the component, which follows the changes of its data. */
+  context: DitoContext<$Item>
+  /** The value of the component, after `format()`. */
+  modelValue: $Value
+}
+
+/** The events of the custom components of `type: 'component'` schemas. */
+export interface CustomComponentEmits<$Value = any> {
+  /** Changes the value of the component, through `parse()`. */
+  'update:modelValue': (value: $Value) => void
+  /** Ends the change of the value, which emits the schema's `change` event. */
+  'change': () => void
+}
+
+/**
+ * Returns the value of `key` in the schema of a custom component, calling it
+ * with the component's `context` if it's a function.
+ */
+export function getSchemaValue<$Item = any>(
+  schema: Record<string, any>,
+  key: string,
+  context: DitoContext<$Item>
+): any
 
 export interface InputSchema<$Item = any>
   extends BaseSchema<$Item>,
