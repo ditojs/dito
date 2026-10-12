@@ -613,6 +613,7 @@ export function walkSchemaData(schema, data, {
         data,
         new SchemaContext(options.services, {
           schema,
+          nested: false,
           data,
           dataPath,
           rootData: options.rootData

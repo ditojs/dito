@@ -226,4 +226,35 @@ describe('DitoTypeSection', () => {
     expect(getMobileBasis('title')).toBe('50%')
     expect(getMobileBasis('subtitle')).toBe('100%')
   })
+
+  it('passes the items of its data to `components()`', async () => {
+    const contexts = []
+    const { data } = await mountForm({
+      schema: {
+        components: {
+          publisher: {
+            type: 'object',
+            inlined: true,
+            form: {
+              type: 'form',
+              components: {
+                address: {
+                  type: 'section',
+                  components: ({ item, parentItem }) => {
+                    contexts.push({ item, parentItem })
+                    return { city: { type: 'text' } }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      data: { title: 'Emma', publisher: { city: 'London' } }
+    })
+    // The data model's walks create the components before rendering does:
+    expect(contexts).toHaveLength(1)
+    expect(contexts[0].item).toBe(data.publisher)
+    expect(contexts[0].parentItem).toBe(data)
+  })
 })
