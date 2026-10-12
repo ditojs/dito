@@ -8,11 +8,11 @@ async function request(handler, path = '/', headers = {}) {
   app.on('error', error => errors.push(error))
   app.use(handleError())
   app.use(handler)
-  const server = app.listen(0)
+  const server = app.listen(0, '127.0.0.1')
   await new Promise(resolve => server.once('listening', resolve))
   try {
     const { port } = server.address()
-    const response = await fetch(`http://localhost:${port}${path}`, {
+    const response = await fetch(`http://127.0.0.1:${port}${path}`, {
       headers
     })
     return { response, text: await response.text(), errors }
