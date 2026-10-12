@@ -19,8 +19,12 @@ td(
 <script>
 import { computed } from 'vue'
 import { escapeHtml } from '@ditojs/utils'
-import { useSchemaContext } from '../composables/useSchemaContext.ts'
+import {
+  useServices,
+  useSchemaContext
+} from '../composables/useSchemaContext.ts'
 import { appendDataPath } from '../utils/data.js'
+import { getItemValueText } from '../utils/schema/data.js'
 
 export default {
   name: 'DitoTableCell',
@@ -38,7 +42,8 @@ export default {
   },
 
   setup(props) {
-    const { createContext } = useSchemaContext(props)
+    const services = useServices()
+    const { createContext } = useSchemaContext(props, { services })
     const cellContext = computed(() => {
       const { name } = props.cell
       return createContext({
@@ -55,7 +60,13 @@ export default {
         const { name, render } = props.cell
         return render
           ? render(cellContext.value)
-          : escapeHtml(props.data[name])
+          : escapeHtml(
+              getItemValueText(props.schema, props.data, name, {
+                services,
+                dataPath: props.dataPath,
+                context: cellContext.value
+              })
+            )
       })
     }
   }

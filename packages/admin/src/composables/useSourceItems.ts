@@ -1,7 +1,7 @@
 import { labelize } from '@ditojs/utils'
 import SchemaContext from '../SchemaContext.js'
 import { appendDataPath } from '../utils/data.js'
-import { getSchemaValue } from '../utils/schema/data.js'
+import { getSchemaValue, getItemValueText } from '../utils/schema/data.js'
 import { getItemFormSchema } from '../utils/schema/lookup.js'
 import { getItemIdOrIndex, getItemLabel } from '../utils/schema/item.js'
 import type { Context } from '../utils/schema/types.ts'
@@ -73,6 +73,12 @@ export function useSourceItems({
         extended,
         asObject,
         getFormLabel,
+        getValueText: (key: string) =>
+          getItemValueText(sourceSchema, item!, key, {
+            services,
+            dataPath: getItemDataPath(sourceSchema, index),
+            context: getContext()
+          }),
         evaluateItemLabel: () =>
           sourceSchema.itemLabel(
             new SchemaContext(services, {

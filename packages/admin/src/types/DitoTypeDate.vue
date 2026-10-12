@@ -27,6 +27,7 @@
 <script>
 import { computed } from 'vue'
 import { defineType } from '../utils/schema/types.ts'
+import { getSchemaValue } from '../utils/schema/data.js'
 import { fieldProps, useField } from '../composables/useField.ts'
 import DitoInputAffixes from '../components/DitoInputAffixes.vue'
 import {
@@ -60,24 +61,12 @@ const DitoTypeDate = {
       nativeField: true,
       textField: true
     })
-    const { services, getSchemaValue } = field
+    const { services, context } = field
     return {
       ...field,
       adminContext: services.adminContext,
       pickerComponents,
-
-      format: computed(() => {
-        const { type } = props.schema
-        const { date, time } = assignDeeply(
-          {},
-          services.adminContext.api.formats,
-          getSchemaValue('format', { type: Object, default: null })
-        )
-        return {
-          date: ['date', 'datetime'].includes(type) ? date : null,
-          time: ['time', 'datetime'].includes(type) ? time : null
-        }
-      })
+      format: computed(() => getFormat(props.schema, context))
     }
   }
 }
@@ -92,6 +81,14 @@ defineType({
     return isString(value) ? (parsePlainDate(value) ?? new Date(value)) : value
   },
 
+  getValueText(context) {
+    const { schema, value, format } = context
+    const { date, time } = getFormat(schema, context)
+    return isDate(value)
+      ? format(value, { date: date ?? false, time: time ?? false })
+      : value
+  },
+
   serializeValue({ schema, value }) {
     // Send plain dates, so they can't shift to another day through time zones:
     return isDate(value)
@@ -103,4 +100,18 @@ defineType({
 })
 
 export default DitoTypeDate
+
+// The date and time formats of the type, `null` for the parts it doesn't show:
+function getFormat(schema, context) {
+  const { type } = schema
+  const { date, time } = assignDeeply(
+    {},
+    context.api.formats,
+    getSchemaValue('format', { type: Object, default: null, schema, context })
+  )
+  return {
+    date: ['date', 'datetime'].includes(type) ? date : null,
+    time: ['time', 'datetime'].includes(type) ? time : null
+  }
+}
 </script>

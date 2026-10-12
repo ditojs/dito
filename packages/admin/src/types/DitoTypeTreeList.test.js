@@ -342,6 +342,32 @@ describe('DitoTypeTreeList', () => {
     ).toEqual(['pages/0/subpages/0/slug', 'pages/0/subpages/1/slug'])
   })
 
+  it('shows loaded dates in properties as their type formats them', async () => {
+    const schema = createSiteSchema()
+    Object.assign(schema.components.pages.children, {
+      form: {
+        ...pageForm,
+        components: { ...pageForm.components, published: { type: 'date' } }
+      },
+      properties: { published: {} },
+      collapsed: false
+    })
+    const { findField } = await mountForm({
+      schema,
+      data: {
+        pages: [
+          {
+            title: 'About',
+            subpages: [{ title: 'Team', published: '2026-06-01' }]
+          }
+        ]
+      }
+    })
+    expect(
+      findField('pages').find('.dito-properties td:last-child').text()
+    ).toBe('June 1, 2026')
+  })
+
   it('disables the edit buttons of disabled trees', async () => {
     const schema = createSiteSchema({ disabled: true, draggable: true })
     Object.assign(schema.components.pages.children, {

@@ -150,6 +150,10 @@ hook converts stored values to the values that the components edit:
   types convert strings to `Date` objects in `deserializeValue()`, and back in
   `serializeValue()`. Date values that code writes, e.g. defaults and computed
   values, are `Date` objects: the date components no longer convert strings.
+- Cells without `render()` and item labels show values as their component's
+  type describes them in `getValueText()`: the date types format their dates
+  with `context.format()` and the type's `format`, e.g. 'June 1, 2026' for
+  `type: 'date'`, instead of the stored string.
 - `formats` of the date types is `format`, and the color type reads `format`
   as before, which no longer clashes with `format()`.
 - Schemas that still define `format()`, `parse()`, `compute()`, `process()`

@@ -47,6 +47,7 @@ describe('getItemLabel()', () => {
   const getLabel = (sourceSchema, item, options = {}) =>
     getItemLabel(sourceSchema, item, {
       getFormLabel,
+      getValueText: key => item[key],
       evaluateItemLabel: () => sourceSchema.itemLabel({ item }),
       ...options
     })

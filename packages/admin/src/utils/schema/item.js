@@ -39,7 +39,8 @@ export function getItemLabel(
     extended = false,
     asObject = false,
     evaluateItemLabel,
-    getFormLabel
+    getFormLabel,
+    getValueText
   }
 ) {
   const { itemLabel } = sourceSchema
@@ -70,7 +71,7 @@ export function getItemLabel(
       isListSource(sourceSchema) && columns && Object.keys(columns)[0] ||
       'name'
     )
-    const value = item[key]
+    const value = getValueText(key)
     // Arrays and objects fall through to the generated label:
     text = isString(value)
       ? escapeHtml(value)

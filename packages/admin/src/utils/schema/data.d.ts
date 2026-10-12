@@ -69,6 +69,12 @@ export function getComponentPathByDataPath(
   dataPath: string,
   options?: Options
 ): string
+export function getItemValueText(
+  sourceSchema: Schema,
+  item: Data,
+  name: string,
+  options: { services: object; dataPath: string; context: Context }
+): any
 export function getItemId(sourceSchema: Schema, item: Data): string | undefined
 export function hasItemsNumberedByOrderKey(schema: Schema): boolean
 export function updateOrder<T extends any[]>(
