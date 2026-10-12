@@ -65,8 +65,8 @@ defineType({
 
   // The form's header shows the label, except in compact forms. The form can
   // depend on the item:
-  omitLabel: context =>
-    !isCompact(
+  hasLabel: context =>
+    isCompact(
       getItemFormSchema(
         context.schema,
         context.nested ? context.value : context.item,

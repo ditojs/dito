@@ -3219,8 +3219,8 @@ export interface ItemAdapter {
 /**
  * Describes a type of schema components: the component that renders it, and
  * how the admin handles its schemas and values, also when they aren't
- * rendered. Its options tell the admin what to do for the type, as verb
- * phrases, and the defaults of schema settings start with `default`.
+ * rendered. Its flags are statements about the type, and the defaults of
+ * schema settings start with `default`.
  */
 export interface TypeDescriptor {
   /** The type, or the types that share the descriptor. */
@@ -3245,28 +3245,31 @@ export interface TypeDescriptor {
   readonly ignoreMissingValue?: (context: SchemaContext) => boolean
   /** Give values that are `null` their defaults, e.g. nested sections. */
   readonly treatNullAsMissing?: (context: SchemaContext) => boolean
-  /** Resolve the value from `schema.data` or `schema.dataPath`. */
-  readonly resolveValue?: boolean
+  /** The value resolves from `schema.data` or `schema.dataPath`. */
+  readonly resolvesValue?: boolean
   /** Generate a label from the name for components without `label`. */
   readonly generateLabel?: boolean
-  /** Omit the label of the container, as the component displays it. */
-  readonly omitLabel?: (context: SchemaContext) => boolean
+  /**
+   * The container shows the label, `true` if not set. Types that display the
+   * label themselves return `false`.
+   */
+  readonly hasLabel?: (context: SchemaContext) => boolean
   /** Omit the spacing around the component. */
   readonly omitSpacing?: boolean
-  /** Replace the component with the label of its container, if it has one. */
-  readonly replaceWithLabel?: boolean
+  /** The component renders as the label of its container, if it has one. */
+  readonly rendersLabel?: boolean
   /**
-   * Submit the data of the form, like `submit`, which makes buttons of the
-   * type count for the dirty state of forms and sources.
+   * The buttons of the type submit the data of the form, like `submit`, and
+   * count for the dirty state of forms and sources.
    */
-  readonly submitData?: boolean
+  readonly submitsData?: boolean
   /** Sources hold their items in a list or an object. */
   readonly sourceType?: 'list' | 'object'
   /**
-   * Render the forms of the items inside the form or view of their source,
+   * The forms of the items render inside the form or view of their source,
    * instead of in their own routes.
    */
-  readonly nestForms?: boolean
+  readonly hasNestedForms?: boolean
   /** The sources routed next to the forms of the items, e.g. of trees. */
   getChildSourceSchemas?(schema: Record<string, any>): Record<string, any>[]
   getItemAdapter?(schema: Record<string, any>): ItemAdapter | null

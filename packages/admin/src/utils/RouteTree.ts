@@ -402,7 +402,7 @@ export class RouteTree {
         const form = new FormNode(
           source,
           Object.values(getFormSchemas(schema)),
-          !!getTypeDescriptor(schema)?.nestForms,
+          !!getTypeDescriptor(schema)?.hasNestedForms,
           isInlined(schema)
         )
         for (const formSchema of form.schemas) {

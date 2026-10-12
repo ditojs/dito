@@ -180,7 +180,7 @@ export default {
     })
 
     const isReplacedWithLabel = computed(
-      () => hasSchemaLabel.value && !!typeDescriptor.value?.replaceWithLabel
+      () => hasSchemaLabel.value && !!typeDescriptor.value?.rendersLabel
     )
 
     const componentDisabled = computed(
@@ -212,7 +212,7 @@ export default {
       shouldRenderLabel: computed(
         () => (
           hasSchemaLabel.value &&
-          !typeDescriptor.value?.omitLabel?.(context)
+          (typeDescriptor.value?.hasLabel?.(context) ?? true)
         )
       ),
 

@@ -57,6 +57,18 @@ describe('defineType()', () => {
     defineType({ type: ['rating', 'stars'], component: {} })
   })
 
+  it('accepts the flags of the type', () => {
+    defineType({
+      type: 'heading',
+      component: {},
+      hasLabel: ({ nested }) => !nested,
+      rendersLabel: true,
+      resolvesValue: true,
+      submitsData: false,
+      hasNestedForms: false
+    })
+  })
+
   it('requires the type and the component', () => {
     // @ts-expect-error - `component` is missing.
     defineType({ type: 'rating' })

@@ -26,7 +26,7 @@ defineType({
   component: DitoTypeComputed,
   defaultValue: undefined,
   defaultVisible: false,
-  resolveValue: true
+  resolvesValue: true
 })
 
 export default DitoTypeComputed
