@@ -127,15 +127,6 @@ export default {
     transform: translateY(-4px);
   }
 
-  // TODO: BEM: Style an element class of this block, e.g. `&__buttons`.
-  .dito-buttons {
-    // Move the label padding inside .dito-buttons, so that it captures all
-    // near mouse events:
-    margin: calc(-1 * var(--label-padding));
-    margin-left: 0;
-    padding: var(--label-padding);
-  }
-
   &--fill {
     width: 100%;
 

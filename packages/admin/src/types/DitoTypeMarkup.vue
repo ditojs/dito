@@ -558,11 +558,6 @@ const LinkWithTitle = Link.extend({
     padding-right: $input-padding-hor;
   }
 
-  // TODO: BEM: Style an element class of this block, e.g. `&__buttons`.
-  .dito-buttons--toolbar {
-    margin: 0;
-  }
-
   h1,
   h2,
   h3,

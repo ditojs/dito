@@ -22,7 +22,7 @@ component.dito-panel(
     template(#prepend)
       h2.dito-panel__header(:class="{ 'dito-panel__header--sticky': sticky }")
         span {{ getLabel(schema) }}
-        DitoButtons.dito-buttons--small(
+        DitoButtons.dito-buttons--small.dito-panel__header-buttons(
           :buttons="panelButtonSchemas"
           buttonsName="panelButtons"
           :dataPath="panelDataPath"
@@ -31,7 +31,7 @@ component.dito-panel(
           :disabled="disabled"
         )
     template(#buttons)
-      DitoButtons(
+      DitoButtons.dito-panel__buttons(
         :buttons="buttonSchemas"
         :dataPath="panelDataPath"
         :data="panelData"
@@ -151,6 +151,8 @@ export default {
 @import '../styles/_imports';
 
 .dito-panel {
+  $self: &;
+
   &:not(:last-child) {
     margin-bottom: $content-padding;
   }
@@ -190,14 +192,13 @@ export default {
         margin: -$border-width;
       }
     }
+  }
 
-    // TODO: BEM: Style an element class of this block, e.g. `&__buttons`.
-    .dito-buttons {
-      position: absolute;
-      right: $input-padding-ver;
-      top: 50%;
-      transform: translateY(-50%);
-    }
+  &__header-buttons {
+    position: absolute;
+    right: $input-padding-ver;
+    top: 50%;
+    transform: translateY(-50%);
   }
 
   &__schema {
@@ -213,17 +214,13 @@ export default {
         border: none;
         padding: 0;
       }
+    }
 
-      // TODO: BEM: Style an element class of this block, e.g. `&__buttons`.
-      > .dito-buttons {
-        --button-margin: #{$form-spacing};
+    // Nested, to override the margin of `.dito-buttons`:
+    #{$self}__buttons {
+      --button-margin: #{$form-spacing};
 
-        padding: $form-spacing;
-
-        .dito-container {
-          padding: 0;
-        }
-      }
+      padding: $form-spacing;
     }
 
     .dito-label {

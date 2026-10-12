@@ -43,7 +43,7 @@ slot(name="prepend")
           :context="context"
           @update:modelValue="selectTab"
         )
-      DitoClipboard(
+      DitoClipboard.dito-schema-header__buttons(
         v-if="clipboard"
         :clipboard="clipboard"
         :schema="schema"
@@ -52,7 +52,7 @@ slot(name="prepend")
         :createContext="createContext"
         @paste="pasteData"
       )
-      slot(name="edit-buttons")
+      slot.dito-schema-header__buttons(name="edit-buttons")
   TransitionHeight(:enabled="inlined")
     .dito-schema-content(
       v-if="opened"
@@ -522,8 +522,7 @@ export default {
     margin-bottom: 0;
   }
 
-  // TODO: BEM: Style an element class of this block, e.g. `&__buttons`.
-  > .dito-buttons {
+  &__buttons {
     margin-left: var(--button-margin, 0);
   }
 }
