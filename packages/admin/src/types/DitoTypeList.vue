@@ -75,9 +75,9 @@
             DitoSourceItem(
               :schema="schema"
               :formSchema="getItemFormSchema(schema, item, context)"
-              :label="getSourceItemLabel(item, index)"
               :dataPath="getDataPath(index)"
               :data="item"
+              :index="index"
               :store="getItemStore(item)"
               :disabled="disabled || isLoading"
               :collapsed="collapsed"

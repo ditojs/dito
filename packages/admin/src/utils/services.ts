@@ -46,7 +46,7 @@ export function getResourceUrl(
 ): string | null {
   // Resources without a parent continue the one of the closest form or source
   // with a resource:
-  const parent = resourceContext?.closestWithResource
+  const parent = resourceContext?.resourceOwner
   const url = admin.api.resources.any(
     getResource(resource, {
       parent: (

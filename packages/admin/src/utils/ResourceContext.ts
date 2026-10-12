@@ -40,10 +40,10 @@ export class ResourceContext {
 
   // The context itself if it has a resource, or else the closest one above
   // with a resource, which loads the data that its components display:
-  get closestWithResource(): ResourceContext | null {
+  get resourceOwner(): ResourceContext | null {
     return this.getResource()
       ? this
-      : (this.parent?.closestWithResource ?? null)
+      : (this.parent?.resourceOwner ?? null)
   }
 
   get verbs(): Record<string, string> {

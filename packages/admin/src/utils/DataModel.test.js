@@ -937,7 +937,7 @@ describe('DataModel', () => {
       dataModel.set(data, 'title', 'Persuasion')
       dataModel.move(getListEntry('books'), 1, 0)
       // The source saves its list, which leaves the other changes dirty:
-      dataModel.markClean('books')
+      dataModel.markClean({ dataPath: 'books' })
       expect(dataModel.isDirty).toBe(true)
       dataModel.move(getListEntry('books'), 1, 0)
       dataModel.markClean()
@@ -966,7 +966,7 @@ describe('DataModel', () => {
       expect(getTitles(data.books)).toEqual(['B', 'A'])
       expect(dataModel.isEdited).toBe(true)
       expect(dataModel.isDirty).toBe(false)
-      dataModel.markClean('books')
+      dataModel.markClean({ dataPath: 'books' })
       expect(dataModel.isEdited).toBe(false)
       dataModel.stop()
     })
@@ -995,7 +995,7 @@ describe('DataModel', () => {
         0
       )
       expect(dataModel.isDirty).toBe(true)
-      dataModel.markClean('books')
+      dataModel.markClean({ dataPath: 'books' })
       expect(dataModel.isEdited).toBe(false)
       dataModel.stop()
     })
@@ -1015,6 +1015,18 @@ describe('DataModel', () => {
     it(`isn't dirty after \`markClean()\`, e.g. once saved`, () => {
       const { dataModel, data } = createBookModel()
       dataModel.set(data, 'title', 'Persuasion')
+      dataModel.markClean()
+      expect(dataModel.isDirty).toBe(false)
+      dataModel.stop()
+    })
+
+    it('stays dirty with edits after the ones that a save carried', () => {
+      const { dataModel, data } = createBookModel()
+      dataModel.set(data, 'title', 'Persuasion')
+      const { editCount } = dataModel
+      dataModel.set(data, 'title', 'Emma')
+      dataModel.markClean({ editCount })
+      expect(dataModel.isDirty).toBe(true)
       dataModel.markClean()
       expect(dataModel.isDirty).toBe(false)
       dataModel.stop()

@@ -394,7 +394,7 @@ export default class DitoContext {
   get getResourceUrl() {
     return resource => {
       const services = getServices(this)
-      resource ??= services.resource?.getResource()
+      resource ??= services.resource?.resourceOwner?.getResource()
       if (!resource) {
         throw new Error(
           'Unable to get the resource URL: There is no form or list with a ' +

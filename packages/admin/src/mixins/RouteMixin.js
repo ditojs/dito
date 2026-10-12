@@ -40,10 +40,9 @@ export default {
       // navigations that happen while its dialog is open, e.g. through the
       // browser's back button, see `beforeRouteChange()`:
       discardConfirmation: null,
-      // Whether a navigation away from the route waits for the pending submits
-      // of its data, which then don't navigate themselves, see
-      // `beforeRouteChange()` and `DitoForm.submit()`:
-      isLeavingAfterSubmits: false,
+      // The navigations away from the route that wait for the pending submits
+      // of its data, until they settle, see `navigateAfterSubmits()`:
+      waitingNavigations: markRaw(new Set()),
       // Each route-component defines a store that gets passed on to its
       // child components, so they can store values in them that live beyond
       // their life-cycle. See: DitoPane, SourceMixin
@@ -225,11 +224,12 @@ export default {
           // The form or view doesn't directly mutate data. Its data stays
           // dirty while it's being submitted, so wait for the submits first,
           // and leave without asking once they succeeded:
-          const { ownDataModel } = this
+          const { ownDataModel, waitingNavigations } = this
           if (ownDataModel.hasPendingSubmits) {
-            this.isLeavingAfterSubmits = true
+            const navigation = waitForNavigation(this.$router, to)
+            waitingNavigations.add(navigation)
+            navigation.then(() => waitingNavigations.delete(navigation))
             await ownDataModel.waitUntilSubmitted()
-            this.isLeavingAfterSubmits = false
           }
           // If it has unsaved changes, ask if the user wants to persist the
           // data first.
@@ -250,6 +250,19 @@ export default {
       return ok
     },
 
+    // Navigate after submits, e.g. to close the form, once the navigations
+    // that wait for them settled, as navigating now would cancel them, and
+    // only if none of them left the route:
+    async navigateAfterSubmits(navigate) {
+      const { waitingNavigations } = this
+      while (waitingNavigations.size > 0) {
+        await Promise.all(waitingNavigations)
+      }
+      if (!this.isLeavingRoute) {
+        await navigate()
+      }
+    },
+
     validateAll(match, notify) {
       return this.mainSchemaComponent.validateAll(match, notify)
     },
@@ -268,4 +281,18 @@ export default {
       this.dataModel.clearErrors(this.dataPath)
     }
   }
+}
+
+// Resolve once the navigation to `to` succeeded or failed, also when guards
+// redirected it, which keeps the location that it started from:
+function waitForNavigation(router, to) {
+  const start = to.redirectedFrom ?? to
+  return new Promise(resolve => {
+    const removeGuard = router.afterEach(route => {
+      if ((route.redirectedFrom ?? route) === start) {
+        removeGuard()
+        resolve()
+      }
+    })
+  })
 }

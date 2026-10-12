@@ -1,7 +1,7 @@
 <template lang="pug">
 //- Renders an item of a list or object source: Inlined items render their
 //- form, others the source's `component`, or the label that the source renders
-//- for them, see `SourceMixin.getSourceItemLabel()`.
+//- for them.
 DitoSchemaInlined(
   v-if="isInlined"
   :label="label"
@@ -47,10 +47,10 @@ export default DitoComponent.component('DitoSourceItem', {
     schema: { type: Object, required: true },
     // The form of the item, which inlined items render:
     formSchema: { type: Object, required: true },
-    // The label of the item, an object for inlined items and HTML for others:
-    label: { type: [String, Object], default: null },
     dataPath: { type: String, required: true },
     data: { type: Object, required: true },
+    // The index of the item in a list source, `null` in object sources.
+    index: { type: Number, default: null },
     store: { type: Object, required: true },
     disabled: { type: Boolean, required: true },
     // The remaining props only apply to inlined items, see `DitoSchemaInlined`:
@@ -67,6 +67,10 @@ export default DitoComponent.component('DitoSourceItem', {
   computed: {
     isInlined() {
       return isInlined(this.schema)
+    },
+
+    label() {
+      return this.source.getItemLabel(this.data, this.index)
     }
   }
 })
