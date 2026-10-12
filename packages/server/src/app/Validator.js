@@ -1,4 +1,4 @@
-import objection from 'objection'
+import * as objection from 'objection'
 import Ajv from 'ajv/dist/2020.js'
 import addFormats from 'ajv-formats'
 import { isArray, isObject, clone, isAsync, isPromise } from '@ditojs/utils'

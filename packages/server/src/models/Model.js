@@ -1,4 +1,4 @@
-import objection from 'objection'
+import * as objection from 'objection'
 import {
   isString,
   isObject,

@@ -3,7 +3,7 @@ import fs from 'fs/promises'
 import os from 'os'
 import path from 'path'
 import { stripVTControlCharacters } from 'util'
-import objection from 'objection'
+import * as objection from 'objection'
 
 const { servers } = vi.hoisted(() => ({ servers: [] }))
 

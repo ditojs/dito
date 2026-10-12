@@ -1,4 +1,4 @@
-import objection from 'objection'
+import * as objection from 'objection'
 import {
   isArray,
   isString,
@@ -820,16 +820,16 @@ function filterScopes(scopes, callback) {
 // The default options for insertDitoGraph(), upsertDitoGraph(),
 // updateDitoGraph() and patchDitoGraph()
 const insertDitoGraphOptions = {
-  // When working with large graphs, using the 'OnlyNeeded' fetch-strategy
-  // will reduce the number of update queries from a lot to only those
-  // rows that have changes.
-  fetchStrategy: 'OnlyNeeded',
   relate: true,
   allowRefs: true
 }
 
 const upsertDitoGraphOptions = {
   ...insertDitoGraphOptions,
+  // When working with large graphs, using the 'OnlyNeeded' fetch-strategy
+  // will reduce the number of update queries from a lot to only those
+  // rows that have changes.
+  fetchStrategy: 'OnlyNeeded',
   insertMissing: true,
   unrelate: true
 }
