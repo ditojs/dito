@@ -81,7 +81,9 @@ function checkContract(component) {
     ]
     if (missing.length > 0) {
       console.warn(
-        `Custom component '${component.name ?? 'anonymous'}' doesn't ` +
+        `Custom component '${
+          component.name ?? component.__file ?? 'anonymous'
+        }' doesn't ` +
         `declare the props and emits of its contract: ${missing.join(', ')}.`
       )
     }
