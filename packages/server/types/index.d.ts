@@ -713,6 +713,7 @@ export type SchemaType = LiteralUnion<
   | 'date'
   | 'datetime'
   | 'timestamp'
+  | 'color'
 >
 
 type RelatedModel<T> = T extends (infer U)[]
@@ -3949,6 +3950,7 @@ export const keywords: {
 
 /** Built-in AJV format definitions. */
 export const formats: {
+  color: Format
   empty: Format
   required: Format
 }
@@ -4187,6 +4189,7 @@ interface StringKeywords {
     | 'relative-json-pointer'
     | 'datetime'
     | 'timestamp'
+    | 'color'
   >
 }
 
@@ -4222,7 +4225,7 @@ declare type UncheckedJSONSchemaType<T, IsPartial extends boolean> = (
       : T extends string
         ? {
             type: JSONType<
-              'string' | 'text' | 'date' | 'datetime' | 'timestamp',
+              'string' | 'text' | 'date' | 'datetime' | 'timestamp' | 'color',
               IsPartial
             >
           } & StringKeywords
