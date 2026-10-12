@@ -144,7 +144,10 @@ export default DitoComponent.component('DitoForm', {
               // Submit buttons close the form by default:
               closeForm: true,
               events: {
-                click: ({ component: button }) => button.submit()
+                // Handlers are called on their button:
+                click() {
+                  return this.submit()
+                }
               }
             }
           },
@@ -185,10 +188,6 @@ export default DitoComponent.component('DitoForm', {
       return this.isEditingSourceItem
         ? this.parentRouteComponent.dataModel
         : this.ownDataModel
-    },
-
-    selectedTab() {
-      return this.mainSchemaComponent?.selectedTab || null
     },
 
     creationType() {

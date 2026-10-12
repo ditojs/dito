@@ -199,6 +199,13 @@ export default DitoComponent.component('DitoPanel', {
 
   unmounted() {
     this._unregister()
+  },
+
+  methods: {
+    setData(data) {
+      this.ownData = data
+      return this.ownData
+    }
   }
 })
 </script>

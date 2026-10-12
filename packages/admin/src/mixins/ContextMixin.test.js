@@ -1,5 +1,6 @@
 import { vi } from 'vitest'
-import { mountForm } from '../test/mount.js'
+import { DOMWrapper, flushPromises } from '@vue/test-utils'
+import { mountForm, mountSchema, enterValue } from '../test/mount.js'
 
 describe('ContextMixin', () => {
   const mountLibrary = (titleSchema = {}) =>
@@ -157,6 +158,228 @@ describe('ContextMixin', () => {
       for (const entry of processed) {
         expect(entry.processedRootItem).toBe(processedRootItem)
       }
+    })
+  })
+
+  describe('members of forms and views', () => {
+    const titleSchema = {
+      components: { title: { type: 'text', required: true } }
+    }
+
+    const chaptersSchema = {
+      components: {
+        chapters: {
+          type: 'list',
+          creatable: true,
+          form: {
+            type: 'form',
+            components: { title: { type: 'text' } }
+          }
+        }
+      }
+    }
+
+    it('tell whether the form is dirty', async () => {
+      const { wrapper, getComponent } = await mountForm({
+        schema: titleSchema,
+        data: { title: 'Emma' }
+      })
+      const { context } = getComponent('title')
+      expect(context.isDirty).toBe(false)
+      expect(context.isCreating).toBe(false)
+      await enterValue(wrapper.find('input[name="title"]'), 'Persuasion')
+      expect(context.isDirty).toBe(true)
+    })
+
+    it('tell the selected tab of the form', async () => {
+      const { getComponent, schemaComponent } = await mountForm({
+        schema: {
+          tabs: {
+            details: { type: 'tab', components: { title: { type: 'text' } } },
+            reviews: { type: 'tab', components: { rating: { type: 'number' } } }
+          }
+        },
+        data: { title: 'Emma', rating: 5 }
+      })
+      const { context } = getComponent('title')
+      expect(context.selectedTab).toBe('details')
+      schemaComponent.selectTab('reviews')
+      expect(context.selectedTab).toBe('reviews')
+    })
+
+    it('have no selected tab without tabs', async () => {
+      const { getComponent } = await mountForm({
+        schema: titleSchema,
+        data: { title: 'Emma' }
+      })
+      expect(getComponent('title').context.selectedTab).toBe(null)
+    })
+
+    it('tell whether the form creates its item', async () => {
+      const { getComponent } = await mountForm({ schema: titleSchema })
+      expect(getComponent('title').context.isCreating).toBe(true)
+    })
+
+    it('tell whether the view is dirty', async () => {
+      const { wrapper, getComponent } = await mountSchema({
+        schema: titleSchema,
+        data: { title: 'Emma' }
+      })
+      const { context } = getComponent('title')
+      expect(context.isDirty).toBe(false)
+      expect(context.isCreating).toBe(false)
+      await enterValue(wrapper.find('input[name="title"]'), 'Persuasion')
+      expect(context.isDirty).toBe(true)
+    })
+
+    it('belong to nested forms in their components', async () => {
+      const { admin, getComponent } = await mountForm({
+        schema: chaptersSchema,
+        data: { chapters: [{ title: 'Arrakis' }] }
+      })
+      const openChapterForm = async path => {
+        await admin.navigate(path)
+        return admin.getRouteComponent(component => component.isForm)
+      }
+      const getTitleContext = form =>
+        form.mainSchemaComponent.getComponentByDataPath(
+          `${form.dataPath}/title`
+        ).context
+      const newForm = await openChapterForm('/items/1/chapters/create')
+      expect(getTitleContext(newForm).isCreating).toBe(true)
+      const form = await openChapterForm('/items/1/chapters/0')
+      const context = getTitleContext(form)
+      expect(context.isCreating).toBe(false)
+      await enterValue(new DOMWrapper(form.$el).find('input'), 'Caladan')
+      expect(context.isDirty).toBe(true)
+      // The draft of the nested form doesn't make its parent dirty:
+      expect(getComponent('chapters').context.isDirty).toBe(false)
+    })
+
+    it('validate the data and show its errors', async () => {
+      const { wrapper, getComponent, getErrors } = await mountForm({
+        schema: titleSchema,
+        data: { title: '' }
+      })
+      const { context } = getComponent('title')
+      expect(context.validate()).toBe(false)
+      await flushPromises()
+      expect(getErrors('title')).toEqual(['The Title field is required.'])
+      await enterValue(wrapper.find('input[name="title"]'), 'Emma')
+      expect(context.validate()).toBe(true)
+    })
+
+    it('replace the item with data merged into it', async () => {
+      const { getComponent, data } = await mountForm({
+        schema: titleSchema,
+        data: { title: 'Emma' }
+      })
+      const { context } = getComponent('title')
+      context.markEdited()
+      expect(context.isDirty).toBe(true)
+      expect(context.replaceItem({ id: 1, title: 'Persuasion' })).toBe(data)
+      expect(data.title).toBe('Persuasion')
+      expect(context.isDirty).toBe(false)
+    })
+
+    it('close the form', async () => {
+      const { admin, getComponent } = await mountForm({
+        schema: titleSchema,
+        data: { title: 'Emma' }
+      })
+      await getComponent('title').context.closeForm()
+      expect(admin.router.currentRoute.value.path).toBe('/items')
+    })
+
+    it('fail to close forms and dialogs outside of them', async () => {
+      const { getComponent } = await mountSchema({
+        schema: titleSchema,
+        data: { title: 'Emma' }
+      })
+      const { context } = getComponent('title')
+      expect(() => context.closeForm()).toThrow(
+        'Unable to close the form: There is no form.'
+      )
+      expect(() => context.closeDialog()).toThrow(
+        'Unable to close the dialog: There is no dialog.'
+      )
+    })
+
+    it('resolve routes and read the route query', async () => {
+      const { admin, getComponent } = await mountForm({
+        schema: titleSchema,
+        data: { title: 'Emma' }
+      })
+      await admin.navigate('/items/1?source=mail')
+      const { context } = getComponent('title')
+      expect(context.routeQuery).toEqual({ source: 'mail' })
+      expect(context.getRouteUrl({ path: '/items', query: { page: 2 } })).toBe(
+        '/items?page=2'
+      )
+    })
+
+    it('return the URL of the nearest resource', async () => {
+      const { getComponent } = await mountForm({
+        schema: {
+          components: {
+            title: { type: 'text' },
+            chapters: {
+              type: 'list',
+              resource: { path: 'chapters' },
+              paginate: 10,
+              columns: { title: {} }
+            }
+          }
+        },
+        data: { title: 'Emma' },
+        request: () => ({ data: { results: [], total: 0 } })
+      })
+      const { getResourceUrl } = getComponent('title').context
+      expect(getResourceUrl()).toBe('/items/1')
+      expect(getResourceUrl({ path: 'activity' })).toBe('/items/1/activity')
+      // Lists with their own resource load their items from it:
+      const chapters = getComponent('chapters')
+      expect(chapters.context.getResourceUrl()).toBe('/items/1/chapters')
+      // The list's query, unlike the form's:
+      chapters.listQuery.update({ page: 1 })
+      await flushPromises()
+      expect(chapters.context.listQuery).toMatchObject({ page: '1' })
+      expect(getComponent('title').context.listQuery).toBe(null)
+    })
+
+    it('return the URL of the collection in creating forms', async () => {
+      const { getComponent } = await mountForm({ schema: titleSchema })
+      expect(getComponent('title').context.getResourceUrl()).toBe('/items')
+    })
+
+    it('fail to return the URL of the nearest resource without one', async () => {
+      const { getComponent } = await mountSchema({
+        schema: titleSchema,
+        data: { title: 'Emma' }
+      })
+      const { getResourceUrl } = getComponent('title').context
+      expect(() => getResourceUrl()).toThrow(
+        'Unable to get the resource URL: There is no form or list with a ' +
+        'resource.'
+      )
+      expect(getResourceUrl({ path: 'activity' })).toBe('/activity')
+    })
+
+    it('show dialogs that resolve with their result', async () => {
+      const { admin, getComponent } = await mountForm({
+        schema: titleSchema,
+        data: { title: 'Emma' }
+      })
+      const result = getComponent('title').context.showDialog(
+        {
+          components: { note: { type: 'text' } },
+          buttons: { cancel: {}, apply: { type: 'submit' } }
+        },
+        { data: { note: 'Read again' } }
+      )
+      await flushPromises()
+      await admin.wrapper.find('.dito-dialog form').trigger('submit')
+      expect(await result).toEqual({ note: 'Read again' })
     })
   })
 })

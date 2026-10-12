@@ -529,8 +529,10 @@ export default {
           data
         )
         if (isSuccessful) {
-          // The source saved its own changes, e.g. the order of its items:
+          // The source saved its own changes, e.g. the order of its items,
+          // which clears their errors, like saving forms does:
           this.dataModel.markClean(this.dataPath)
+          this.dataModel.clearErrors(this.dataPath)
         }
         return isSuccessful
       }

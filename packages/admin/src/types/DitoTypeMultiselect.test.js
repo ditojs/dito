@@ -57,6 +57,38 @@ describe('DitoTypeMultiselect', () => {
       )
     })
 
+    it('tells option labels whether they label the value', async () => {
+      const { findField } = await mountSchema({
+        schema: {
+          components: {
+            genre: {
+              type: 'multiselect',
+              options: {
+                data: genres,
+                label: ({ option, isValueLabel }) =>
+                  isValueLabel ? `${option.label} (Genre)` : option.label
+              }
+            },
+            genres: {
+              type: 'multiselect',
+              multiple: true,
+              options: {
+                data: genres,
+                label: ({ option, isValueLabel }) =>
+                  isValueLabel ? `${option.label} (Genre)` : option.label
+              }
+            }
+          }
+        },
+        data: { genre: 'poetry', genres: ['drama'] }
+      })
+      const field = findField('genre')
+      expect(field.find('.multiselect__single').text()).toBe('Poetry (Genre)')
+      await open(field)
+      expect(getOptionLabels(field)).toEqual(['Fiction', 'Poetry', 'Drama'])
+      expect(getTagLabels(findField('genres'))).toEqual(['Drama (Genre)'])
+    })
+
     it('only renders the options once opened', async () => {
       const { findField } = await mountSchema({
         schema: {

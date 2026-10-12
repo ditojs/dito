@@ -34,7 +34,7 @@ export default {
     '$sourceComponent',
     '$resourceComponent',
     '$dialogComponent',
-    '$dataModel',
+    '$dataModelComponent',
     '$panelComponent',
     '$tabComponent',
     '$loadingTracker'
@@ -45,7 +45,7 @@ export default {
     return {
       $parentComponent: self,
       ...(this.providesData && { $dataComponent: self }),
-      $dataModel: () => this.dataModel
+      $dataModelComponent: () => this.dataModelComponent
     }
   },
 
@@ -60,10 +60,15 @@ export default {
   },
 
   computed: {
-    // The data model of the data: the component's own, e.g. of a form, view
-    // or dialog, or else the one of its closest ancestor that owns one.
+    // The component that owns the data model of the data: the component
+    // itself, e.g. a form, view, dialog or panel with its own data, or else its
+    // closest ancestor that owns one.
+    dataModelComponent() {
+      return this.ownDataModel ? this : this.$dataModelComponent()
+    },
+
     dataModel() {
-      return this.ownDataModel ?? this.$dataModel()
+      return this.ownDataModel ?? this.$dataModelComponent()?.dataModel ?? null
     },
 
     providesData() {
@@ -355,13 +360,8 @@ export default {
       return response
     },
 
-    showDialog({ components, buttons, data, settings }) {
-      return this.rootComponent.showDialog({
-        components,
-        buttons,
-        data,
-        settings
-      })
+    showDialog(schema, options) {
+      return this.rootComponent.showDialog(schema, options)
     },
 
     request({ cache, ...options }) {

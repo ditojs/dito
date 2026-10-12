@@ -13,21 +13,25 @@ export const transientNote = (
 // Asks the user to confirm the HTML `message` with a button for `verb`, and
 // resolves to whether they did. Cancel comes first, to be focused first.
 export async function confirm(component, { message, verb }) {
-  const result = await component.showDialog({
-    components: {
-      message: {
-        type: 'component',
-        component: DitoConfirmMessage,
-        label: false
+  const result = await component.showDialog(
+    {
+      components: {
+        message: {
+          type: 'component',
+          component: DitoConfirmMessage,
+          label: false
+        }
+      },
+      buttons: {
+        cancel: {},
+        confirm: { type: 'submit', text: labelize(verb) }
       }
     },
-    buttons: {
-      cancel: {},
-      confirm: { type: 'submit', text: labelize(verb) }
-    },
-    data: { message },
-    settings: { label: getTextFromHtml(message) }
-  })
+    {
+      data: { message },
+      settings: { label: getTextFromHtml(message) }
+    }
+  )
   // The dialog resolves with its data when submitted, and with `undefined`
   // when cancelled, see `DitoDialog.cancel()`.
   return result !== undefined

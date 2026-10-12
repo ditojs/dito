@@ -210,6 +210,7 @@ describe('DitoPane', () => {
 
     it('render nothing without components', async () => {
       const admin = await mountTabs()
+      await admin.navigate('/books#notes')
       const notes = admin.wrapper
         .findAllComponents({ name: 'DitoPane' })
         .find(({ vm }) => vm.tab === 'notes')

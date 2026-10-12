@@ -73,6 +73,42 @@ export const filterComponents = {
 
 export function createFiltersPanel(api, filters, dataPath, query) {
   const { sticky, ...filterSchemas } = filters
+
+  const applyFilters = data => {
+    query.value = {
+      ...query.value,
+      filter: formatFiltersData(panel, data),
+      // Clear pagination when applying or clearing filters:
+      page: undefined
+    }
+  }
+
+  const createButtons = small => ({
+    clear: {
+      type: 'button',
+      text: small ? null : 'Clear',
+      disabled: ({ item }) => formatFiltersData(panel, item).length === 0,
+      events: {
+        click({ replaceItem }) {
+          // The data model sets up the new data with the defaults right away,
+          // and the errors stay with the replaced data:
+          applyFilters(replaceItem({}))
+        }
+      }
+    },
+
+    submit: {
+      type: 'submit',
+      text: small ? null : 'Filter',
+      visible: !small,
+      events: {
+        click({ item }) {
+          applyFilters(item)
+        }
+      }
+    }
+  })
+
   const panel = {
     type: 'panel',
     label: 'Filters',
@@ -92,71 +128,17 @@ export function createFiltersPanel(api, filters, dataPath, query) {
     },
 
     components: createFiltersComponents(filterSchemas),
-    buttons: createFiltersButtons(false),
-    panelButtons: createFiltersButtons(true),
+    buttons: createButtons(false),
+    panelButtons: createButtons(true),
 
     events: {
       change() {
-        this.applyFilters()
-      }
-    },
-
-    computed: {
-      filters() {
-        return formatFiltersData(this.schema, this.data)
-      },
-
-      hasFilters() {
-        return this.filters.length > 0
-      }
-    },
-
-    methods: {
-      applyFilters() {
-        query.value = {
-          ...query.value,
-          filter: this.filters,
-          // Clear pagination when applying or clearing filters:
-          page: undefined
-        }
-      },
-
-      clearFilters() {
-        this.resetData()
-        this.applyFilters()
+        applyFilters(this.data)
       }
     }
   }
   applyNestedSchemaDefaults(api, panel)
   return panel
-}
-
-function createFiltersButtons(small) {
-  return {
-    clear: {
-      type: 'button',
-      text: small ? null : 'Clear',
-      disabled: ({ schemaComponent }) => !schemaComponent.hasFilters,
-      events: {
-        click({ schemaComponent }) {
-          // Since panel buttons are outside of the schema, we need to use the
-          // schema component received from the initialize event below:
-          schemaComponent.clearFilters()
-        }
-      }
-    },
-
-    submit: {
-      type: 'submit',
-      text: small ? null : 'Filter',
-      visible: !small,
-      events: {
-        click({ schemaComponent }) {
-          schemaComponent.applyFilters()
-        }
-      }
-    }
-  }
 }
 
 function getDataName(filterName) {

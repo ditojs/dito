@@ -64,10 +64,8 @@ slot(name="prepend")
           v-for="(tabSchema, tab) in tabs"
           :key="tab"
         )
-          //- TODO: Switch to v-if instead of v-show, now that the dirty state
-          //- is based on the data. `revealComponents()` then needs to
-          //- select the tab that displays the component.
           DitoPane.dito-pane__tab(
+            v-if="shouldRenderTab(tab)"
             v-show="isTabSelected(tab)"
             ref="tabs"
             :tab="tab"
@@ -119,7 +117,7 @@ import { TransitionHeight } from '@ditojs/ui/src'
 import DitoComponent from '../DitoComponent.js'
 import DitoContext from '../DitoContext.js'
 import ContextMixin from '../mixins/ContextMixin.js'
-import { appendDataPath } from '../utils/data.js'
+import { appendDataPath, getRelativeDataPath } from '../utils/data.js'
 import { isPanel } from '../utils/schema/structure.js'
 import {
   getNamedSchemas,
@@ -127,7 +125,10 @@ import {
   getItemFormSchema,
   isEmptySchema
 } from '../utils/schema/lookup.js'
-import { initializeData, processData } from '../utils/schema/data.js'
+import {
+  processData,
+  getComponentPathByDataPath
+} from '../utils/schema/data.js'
 import { fromClipboard } from '../utils/fromClipboard.ts'
 import {
   getDataValidationErrors,
@@ -191,6 +192,9 @@ export default DitoComponent.component('DitoSchema', {
           : data
       ),
       selectedTab: null,
+      // The tabs that were selected or rendered to reveal their components,
+      // which stay rendered, see `shouldRenderTab()`:
+      mountedTabs: {},
       // Whether the selected tab still follows `defaultTab`, until the route
       // or the user select a tab, or until the data that `defaultTab()` and
       // the tabs' `if` are evaluated with is there, see `selectDefaultTab()`.
@@ -391,6 +395,9 @@ export default DitoComponent.component('DitoSchema', {
     },
 
     selectedTab(newTab, oldTab) {
+      if (newTab) {
+        this.mountedTabs[newTab] = true
+      }
       if (this.scrollable) {
         const { content } = this.$refs
         this.scrollPositions[oldTab] = content.scrollTop
@@ -524,6 +531,30 @@ export default DitoComponent.component('DitoSchema', {
       return this.selectedTab === tab
     },
 
+    // Tabs render once they're selected, and stay rendered:
+    shouldRenderTab(tab) {
+      return this.isTabSelected(tab) || !!this.mountedTabs[tab]
+    },
+
+    // Returns the first tab that displays the value at `dataPath`, if any:
+    getTabByDataPath(dataPath) {
+      const { renderedTabs } = this
+      if (renderedTabs) {
+        const [tab] = parseDataPath(
+          getComponentPathByDataPath(
+            { tabs: renderedTabs },
+            this.data,
+            getRelativeDataPath(dataPath, this.dataPath),
+            { component: this, rootData: this.rootData }
+          )
+        )
+        if (tab in renderedTabs) {
+          return tab
+        }
+      }
+      return null
+    },
+
     onOpen(open) {
       this.emitEvent('open', { context: { open } })
       this.opened = open
@@ -620,9 +651,10 @@ export default DitoComponent.component('DitoSchema', {
       dataPaths = this.dataModel.getErrorDataPaths(this.dataPath)
     ) {
       const [firstDataPath] = dataPaths
-      // The data of schemas with their own data isn't part of any route:
+      // Only the data of route components is part of routes, unlike the data
+      // of dialogs and panels with their own data:
       const route =
-        firstDataPath && !this.hasOwnData
+        firstDataPath && this.dataModelComponent === this.routeComponent
           ? this.routeComponent.getFormRoute(firstDataPath)
           : null
       if (route) {
@@ -653,7 +685,14 @@ export default DitoComponent.component('DitoSchema', {
     // inlined items. Returns the components in document order.
     async revealComponents(dataPath) {
       const { opened } = this
-      if (!opened) {
+      // Render the tab that displays the value, without selecting it, as
+      // focusing its components does:
+      const tab = this.getTabByDataPath(dataPath)
+      const shouldMountTab = !!tab && !this.mountedTabs[tab]
+      if (shouldMountTab) {
+        this.mountedTabs[tab] = true
+      }
+      if (!opened || shouldMountTab) {
         this.opened = true
         await this.$nextTick()
       }
@@ -678,15 +717,6 @@ export default DitoComponent.component('DitoSchema', {
         this.opened = opened
       }
       return components
-    },
-
-    resetData() {
-      // We can't set `this.data = ...` because it's a property, but we can set
-      // all known properties on it to the values returned by
-      // `initializeData()`, as they are all reactive already from the starts:
-      // eslint-disable-next-line vue/no-mutating-props
-      Object.assign(this.data, initializeData(this.dataSchema, {}, this))
-      this.dataModel.clearErrors(this.dataPath)
     },
 
     // Writes the data pasted through `DitoClipboard` into the schema's data,

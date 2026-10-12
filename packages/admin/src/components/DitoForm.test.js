@@ -169,10 +169,10 @@ describe('DitoForm', () => {
       expect(result.routeComponent.isDirty).toBe(false)
     })
 
-    it('make the form dirty with `dataModel.markEdited()`', async () => {
-      const result = await mountPublishableForm(({ formComponent, item }) => {
+    it('make the form dirty with `context.markEdited()`', async () => {
+      const result = await mountPublishableForm(({ item, markEdited }) => {
         item.status = 'published'
-        formComponent.dataModel.markEdited()
+        markEdited()
       })
       await clickPublish(result)
       expect(result.data.status).toBe('published')
@@ -1019,31 +1019,6 @@ describe('DitoForm', () => {
         .map(([{ method = 'get', url }]) => [method, url])
         .filter(([, url]) => url.startsWith('/items'))
       expect(itemRequests).toEqual([['post', '/items']])
-    })
-  })
-
-  describe('selectedTab', () => {
-    it('is the tab selected in the main schema', async () => {
-      const { routeComponent, schemaComponent } = await mountForm({
-        schema: {
-          tabs: {
-            details: { type: 'tab', components: { title: { type: 'text' } } },
-            reviews: { type: 'tab', components: { rating: { type: 'number' } } }
-          }
-        },
-        data: { title: 'Emma', rating: 5 }
-      })
-      expect(routeComponent.selectedTab).toBe('details')
-      schemaComponent.selectTab('reviews')
-      expect(routeComponent.selectedTab).toBe('reviews')
-    })
-
-    it('is null without tabs', async () => {
-      const { routeComponent } = await mountForm({
-        schema: { components: { title: { type: 'text' } } },
-        data: { title: 'Emma' }
-      })
-      expect(routeComponent.selectedTab).toBe(null)
     })
   })
 

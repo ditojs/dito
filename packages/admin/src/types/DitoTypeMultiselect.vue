@@ -16,7 +16,7 @@
       :placeholder="placeholder"
       tagPlaceholder="Press enter to add new tag"
       :options="populate && activeOptions || []"
-      :customLabel="getLabelForOption"
+      :customLabel="option => getLabelForOption(option)"
       :trackBy="optionValue"
       :groupLabel="groupByLabel"
       :groupValues="groupByOptions"
@@ -34,6 +34,8 @@
       @tag="onAddTag"
       @search-change="onSearchChange"
     )
+      template(#singleLabel="{ option }")
+        | {{ getLabelForOption(option, { isValueLabel: true }) }}
       //- The default tag, which marks values without options.
       template(#tag="{ option, remove }")
         span.multiselect__tag.dito-multiselect__tag(
@@ -43,7 +45,7 @@
           :title="isUnavailableOption(option) ? 'Not among the options' : null"
           @mousedown.prevent
         )
-          span {{ getLabelForOption(option) }}
+          span {{ getLabelForOption(option, { isValueLabel: true }) }}
           i.multiselect__tag-icon(
             tabindex="0"
             @keydown.enter.prevent="remove(option)"

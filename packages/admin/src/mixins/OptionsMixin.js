@@ -363,12 +363,12 @@ export default {
           : option
     },
 
-    getLabelForOption(option) {
+    getLabelForOption(option, { isValueLabel = false } = {}) {
       const { optionLabel } = this
       return isString(optionLabel)
         ? option?.[optionLabel]
         : isFunction(optionLabel)
-          ? optionLabel(new DitoContext(this, { option }))
+          ? optionLabel(new DitoContext(this, { option, isValueLabel }))
           : labelize(`${option}`)
     }
   },

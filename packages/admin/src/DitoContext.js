@@ -130,7 +130,7 @@ export default class DitoContext {
     // Contexts without a schema don't hold a value either, e.g. the ones of
     // `DitoMenu` and `DitoPanels`, evaluating views and panels.
     const holdsOwnValue = !!this.schema && hasNestedData(this.schema)
-    return DitoContext.createForSchema(this.component, {
+    return DitoContext.createForSchema(getComponent(this), {
       schema,
       name,
       nested,
@@ -277,50 +277,6 @@ export default class DitoContext {
     return get(this, 'formLabel', null)
   }
 
-  // NOTE: Like 'options', the associated component doesn't always exist, e.g.
-  // in nested forms during `processData()`. But `schema` is guaranteed to
-  // always be available.
-  get component() {
-    return get(this, 'component', null)
-  }
-
-  // TODO: Add `componentSchema` getter for the schema of the current component,
-  // even when the component isn't actually instantiated. Consider adding
-  // `sourceSchema` as well?
-
-  // TODO: Fix unclear naming: Which schema is this, that of the component or of
-  // its parent? Isn't exposing `formComponent` and `viewComponent` enough, once
-  // we offer access to their components there through `getComponent()` & co. on
-  // `DitoMixin` perhaps?  Also, there could be a `tabComponent` getter for
-  // schemas in tabs?
-  get schemaComponent() {
-    return get(this, 'schemaComponent', null)
-  }
-
-  get formComponent() {
-    return get(this, 'formComponent', null)
-  }
-
-  get viewComponent() {
-    return get(this, 'viewComponent', null)
-  }
-
-  get dialogComponent() {
-    return get(this, 'dialogComponent', null)
-  }
-
-  get panelComponent() {
-    return get(this, 'panelComponent', null)
-  }
-
-  get resourceComponent() {
-    return get(this, 'resourceComponent', null)
-  }
-
-  get sourceComponent() {
-    return get(this, 'sourceComponent', null)
-  }
-
   // When used in OptionsMixin for `schema.options.value()`,
   // `schema.options.label()` and  `schema.search.filter()` callbacks:
   get option() {
@@ -331,6 +287,14 @@ export default class DitoContext {
     return get(this, 'options', undefined)
   }
 
+  // Whether `schema.options.label()` renders the label of the selected value,
+  // e.g. of a closed multiselect or its tags, rather than of an option in the
+  // list of options:
+  get isValueLabel() {
+    return get(this, 'isValueLabel', false)
+  }
+
+  // Whether a collapsible schema opens, in its `open` event:
   get open() {
     return get(this, 'open', undefined)
   }
@@ -359,7 +323,7 @@ export default class DitoContext {
   }
 
   set isRunning(value) {
-    const { component } = this
+    const component = getComponent(this)
     if (component && 'isRunning' in component) {
       component.isRunning = value
     } else {
@@ -367,44 +331,134 @@ export default class DitoContext {
     }
   }
 
-  get query() {
-    return this.component.$route.query
+  // The state of the data of the context's form, view, dialog or panel with
+  // its own data. Nested forms that mutate their item share the parent's data:
+  get isDirty() {
+    return !!getDataModelComponent(this)?.dataModel.isDirty
+  }
+
+  // Only forms that create their item are creating:
+  get isCreating() {
+    return !!getDataModelComponent(this)?.isCreating
+  }
+
+  // The name of the selected tab of the nearest form, if it has tabs:
+  get selectedTab() {
+    return (
+      getComponent(this).formComponent?.mainSchemaComponent?.selectedTab ??
+      null
+    )
+  }
+
+  get routeQuery() {
+    return getComponent(this).$route.query
+  }
+
+  // The query of the nearest list, e.g. its scope, page, order and filters:
+  get listQuery() {
+    return getComponent(this).sourceComponent?.query ?? null
   }
 
   // Helper Methods
 
   get request() {
-    return options => this.component.request(options)
+    return options => getComponent(this).request(options)
   }
 
   get format() {
-    return (value, options) => this.component.format(value, options)
+    return (value, options) => getComponent(this).format(value, options)
   }
 
   get navigate() {
-    return location => this.component.navigate(location)
+    return location => getComponent(this).navigate(location)
+  }
+
+  get getRouteUrl() {
+    return location => getComponent(this).$router.resolve(location).href
   }
 
   get download() {
-    return options => this.component.download(options)
+    return options => getComponent(this).download(options)
   }
 
+  // Without `resource`, return the URL of the nearest form or list with a
+  // resource: of the item that the form edits, or of the collection that the
+  // list loads or the form creates its item in.
   get getResourceUrl() {
-    return resource => this.component.getResourceUrl(resource)
+    return resource => {
+      const component = getComponent(this)
+      resource ??= component.resourceComponent?.resource
+      if (!resource) {
+        throw new Error(
+          'Unable to get the resource URL: There is no form or list with a ' +
+          'resource.'
+        )
+      }
+      return component.getResourceUrl(resource)
+    }
   }
 
   get notify() {
     return options => {
-      this.component.notify(options)
+      getComponent(this).notify(options)
       set(this, 'wasNotified', true)
     }
   }
+
+  // Validate the data and show its errors, and return whether it's valid:
+  get validate() {
+    return () => getDataModelComponent(this).mainSchemaComponent.validateAll()
+  }
+
+  get markEdited() {
+    return () => getDataModelComponent(this).dataModel.markEdited()
+  }
+
+  // Forms merge `data` into their item, the others replace their data with it,
+  // which their data model sets up with the defaults right away:
+  get replaceItem() {
+    return data => getDataModelComponent(this).setData(data)
+  }
+
+  get closeForm() {
+    return () => {
+      const { formComponent } = getComponent(this)
+      if (!formComponent) {
+        throw new Error('Unable to close the form: There is no form.')
+      }
+      return formComponent.close()
+    }
+  }
+
+  // Resolves with the value that the dialog is closed with, see `closeDialog()`
+  // in the contexts of the dialog's components.
+  get showDialog() {
+    return (schema, options) => getComponent(this).showDialog(schema, options)
+  }
+
+  get closeDialog() {
+    return value => {
+      const { dialogComponent } = getComponent(this)
+      if (!dialogComponent) {
+        throw new Error('Unable to close the dialog: There is no dialog.')
+      }
+      dialogComponent.resolve(value)
+    }
+  }
+}
+
+function getComponent(context) {
+  return toObject(context).component
+}
+
+function getDataModelComponent(context) {
+  return getComponent(context)?.dataModelComponent ?? null
 }
 
 // Returns the item at `dataPath` in the data that the model holding it
 // processed for the server.
 function getProcessedData(context, dataPath, nested) {
-  let dataModel = context.component?.dataModel
+  let dataModel = getComponent(context)?.dataModel
   let path = null
   while (dataModel) {
     path = getRelativeDataPath(dataPath, dataModel.dataPath)

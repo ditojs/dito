@@ -180,10 +180,9 @@ export default DitoComponent.component('DitoRoot', {
       )
     },
 
-    async showDialog({ components, buttons, data, settings }) {
-      // Shows a dito-dialog component and wraps it in a promise so that the
-      // buttons in the dialog can use `dialog.resolve()` and `dialog.reject()`
-      // to close the modal dialog and resolve / reject the promise at once.
+    // Shows a dialog with the `components` and `buttons` of `schema`, and
+    // resolves with the value that it's closed with, see `DitoDialog`.
+    async showDialog({ components, buttons }, { data, settings } = {}) {
       // Process components to resolve async schemas first, so that errors
       // reject the returned promise.
       const schema = { type: 'dialog', components }
@@ -191,14 +190,14 @@ export default DitoComponent.component('DitoRoot', {
       if (new RouteTree({ dialog: schema }, this.api).hasRoutedForms()) {
         throw new Error('Dialogs do not support components that produce routes')
       }
-      return new Promise((resolve, reject) => {
+      return new Promise(resolve => {
         const key = `dialog-${++dialogId}`
         this.dialogs[key] = {
           components,
           buttons,
           data,
           settings,
-          promise: { resolve, reject }
+          promise: { resolve }
         }
       })
     },

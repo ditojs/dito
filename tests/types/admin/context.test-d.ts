@@ -38,6 +38,21 @@ describe('DitoContext', () => {
     expectTypeOf<Ctx['parentItemDataPath']>().toEqualTypeOf<string | null>()
   })
 
+  it('offers the state of the data without components', () => {
+    type Ctx = DitoContext<Entry>
+    expectTypeOf<Ctx['isDirty']>().toBeBoolean()
+    expectTypeOf<Ctx['isCreating']>().toBeBoolean()
+    expectTypeOf<Ctx['selectedTab']>().toEqualTypeOf<string | null>()
+    expectTypeOf<Ctx['validate']>().returns.toBeBoolean()
+    expectTypeOf<Ctx['replaceItem']>().returns.toEqualTypeOf<Entry>()
+    expectTypeOf<Ctx['getResourceUrl']>().toBeCallableWith()
+    expectTypeOf<Ctx['getResourceUrl']>().returns.toBeString()
+    expectTypeOf<Ctx['listQuery']>().toExtend<Record<string, any> | null>()
+    expectTypeOf<Ctx>().not.toHaveProperty('formComponent')
+    expectTypeOf<Ctx>().not.toHaveProperty('component')
+    expectTypeOf<Ctx>().not.toHaveProperty('query')
+  })
+
   it('OrItemAccessor accepts value or callback', () => {
     assertType<OrItemAccessor<Entry, {}, string>>('hello')
     assertType<OrItemAccessor<Entry, {}, string>>(
