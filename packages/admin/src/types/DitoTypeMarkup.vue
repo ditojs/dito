@@ -28,13 +28,7 @@
 </template>
 
 <script>
-import {
-  computed,
-  onBeforeUnmount,
-  onUnmounted,
-  ref,
-  watch
-} from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 import { defineType } from '../utils/schema/types.ts'
 import { fieldProps, useField } from '../composables/useField.ts'
 import { createChangeOnceEdited } from '../utils/changeOnceEdited.js'
@@ -73,7 +67,6 @@ import {
   isArray,
   isObject,
   hyphenate,
-  debounce,
   camelize,
   labelize
 } from '@ditojs/utils'
@@ -178,15 +171,6 @@ const DitoTypeMarkup = {
         value.value = html
       }
       changeOnceEdited.emitIfDone()
-    }
-
-    const setValueDebounced = debounce(() => updateValue(), 100)
-    // Write pending edits when the data model needs them, and before
-    // unmounting, as the destroyed editor can't be read anymore:
-    const writePendingValue = () => {
-      if (setValueDebounced.cancel()) {
-        updateValue()
-      }
     }
 
     const onClickLink = async editor => {
@@ -363,14 +347,11 @@ const DitoTypeMarkup = {
       ...editorOptions.value,
       onFocus: () => field.onFocus(),
       onBlur: () => {
-        // Write the value first, for validation on blur to see it:
-        updateValue()
         field.onBlur()
         changeOnceEdited.emitIfDone()
       },
       onUpdate: () => {
-        setValueDebounced()
-        services.container.model.trackPendingWrite(writePendingValue)
+        updateValue()
         field.onInput()
       },
       extensions: getExtensions(),
@@ -394,7 +375,6 @@ const DitoTypeMarkup = {
       () => editor.setOptions(editorOptions.value)
     )
 
-    onBeforeUnmount(writePendingValue)
     onUnmounted(() => editor.destroy())
 
     return {

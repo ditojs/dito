@@ -3,7 +3,6 @@ import { flushPromises } from '@vue/test-utils'
 import {
   mountSchema,
   mountForm,
-  unmountAdmin,
   enterValue
 } from '../test/mount.js'
 
@@ -151,34 +150,10 @@ describe('DitoTypeMarkup', () => {
     editor.commands.blur()
     await vi.waitFor(() => expect(onChange).toHaveBeenCalledOnce())
     expect(data.body).toBe('<p><em>Emma</em></p>')
-    // Let the debounced write of the edit pass, see the test below:
-    await new Promise(resolve => setTimeout(resolve, 150))
   })
 
-  // Edits made right before unmounting are written before the editor is
-  // destroyed, as reading the destroyed editor throws.
-  it('writes pending edits before destroying the editor', async () => {
-    const { admin, getComponent, data } = await mountSchema({
-      schema: { components: { body: { type: 'markup' } } },
-      data: { body: '<p>Emma</p>' }
-    })
-    const { editor } = getComponent('body')
-    let hasReadDestroyedEditor = false
-    // Record the reads instead of throwing like the destroyed editor does:
-    vi.spyOn(editor, 'getHTML').mockImplementation(() => {
-      hasReadDestroyedEditor ||= editor.isDestroyed
-      return '<p>Emma!</p>'
-    })
-    editor.commands.insertContent('!')
-    unmountAdmin(admin)
-    await new Promise(resolve => setTimeout(resolve, 150))
-    expect(hasReadDestroyedEditor).toBe(false)
-    expect(data.body).toBe('<p>Emma!</p>')
-  })
-
-  // Edits that don't blur the editor, e.g. links applied through the dialog,
-  // are written debounced, which saving right away mustn't miss.
-  it('submits pending edits', async () => {
+  // Edits that don't blur the editor, e.g. links applied through the dialog:
+  it('submits edits made right before saving', async () => {
     const { getComponent, submit } = await mountForm({
       schema: { components: { body: { type: 'markup' } } },
       data: { body: '<p>Emma</p>' },

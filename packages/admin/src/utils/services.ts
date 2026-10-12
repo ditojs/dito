@@ -53,8 +53,6 @@ export async function waitUntilDataModelSettled({
   admin,
   container
 }: Services) {
-  // The values derived from the ones that components hold back follow them:
-  container?.model.writePendingValues()
   await nextTick()
   const model = container?.model
   if (model?.hasPendingLoads) {

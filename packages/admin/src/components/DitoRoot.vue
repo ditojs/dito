@@ -161,9 +161,6 @@ export default {
       // `beforeunload` can't wait for them:
       domOn(window, {
         beforeunload: event => {
-          for (const route of admin.ui.routes) {
-            route.container.model.writePendingValues()
-          }
           if (admin.ui.routes.some(route => route.isDirty)) {
             event.preventDefault()
             // Required by older browsers to show the warning:

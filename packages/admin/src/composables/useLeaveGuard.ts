@@ -41,8 +41,6 @@ export function useLeaveGuard(
     )
     if (isClosing) {
       const { model } = route.container
-      // Write the edits that are held back, e.g. debounced ones:
-      model.writePendingValues()
       if (isMutating()) {
         // Mutating forms validate their data once, also the fields that
         // aren't mounted. Leaving again leaves the invalid data:

@@ -97,8 +97,6 @@ const DitoTypeButton = {
       // the state of the schema:
       if (!isRunning.value) {
         isRunning.value = true
-        // Write the edits that are held back, for the handlers to see them:
-        services.container.model.writePendingValues()
         try {
           const res = await emitEvent('click', { bubble: true })
           // Have buttons that define resources submit by default:
