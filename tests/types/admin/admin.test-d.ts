@@ -47,7 +47,7 @@ describe('defineType()', () => {
         component: { template: '<span />' },
         defaultValue: 0,
         sourceType: 'list',
-        excludeValue: ({ value }) => value === 0,
+        defaultExclude: ({ value }) => value === 0,
         getValidations: schema => ({ range: [0, schema.max ?? 5] })
       })
     ).toEqualTypeOf<TypeDescriptor>()

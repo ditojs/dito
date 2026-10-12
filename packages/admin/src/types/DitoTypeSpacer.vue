@@ -18,8 +18,8 @@ defineType({
   type: 'spacer',
   component: DitoTypeSpacer,
   defaultValue: undefined,
-  excludeValue: true,
-  generateLabel: false
+  defaultExclude: true,
+  generatesLabel: false
 })
 
 export default DitoTypeSpacer

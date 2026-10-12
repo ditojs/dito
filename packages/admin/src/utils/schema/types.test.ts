@@ -37,7 +37,7 @@ describe('defineType()', () => {
       defaultValue: null,
       defaultNested: false,
       defaultVisible: true,
-      generateLabel: true
+      generatesLabel: true
     })
   })
 })

@@ -1930,8 +1930,8 @@ describe('DataModel', () => {
   describe('rare paths', () => {
     it(`asks the type with the item's context whether values are missing`, async () => {
       // Like types whose values may be left out, decided per item:
-      const ignoreMissingValue = vi.fn(({ item }) => !!item.isDraft)
-      defineType({ type: 'note', ignoreMissingValue })
+      const ignoresMissingValue = vi.fn(({ item }) => !!item.isDraft)
+      defineType({ type: 'note', ignoresMissingValue })
       const schema = {
         type: 'form',
         components: {
@@ -1951,7 +1951,7 @@ describe('DataModel', () => {
         { isDraft: true },
         { isDraft: false, note: 'None' }
       ])
-      expect(ignoreMissingValue).toHaveBeenCalledWith(
+      expect(ignoresMissingValue).toHaveBeenCalledWith(
         expect.objectContaining({ dataPath: 'chapters/0/note' })
       )
       dataModel.stop()

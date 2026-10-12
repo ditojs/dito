@@ -107,13 +107,13 @@ export function hasLabel(schema, generateLabels) {
   return (
     label !== false && (
       !!label ||
-      generateLabels && getTypeDescriptor(schema)?.generateLabel
+      generateLabels && getTypeDescriptor(schema)?.generatesLabel
     )
   )
 }
 
-export function omitSpacing(schema) {
-  return !!getTypeDescriptor(schema)?.omitSpacing
+export function omitsSpacing(schema) {
+  return !!getTypeDescriptor(schema)?.omitsSpacing
 }
 
 export function getTabSchemas(schema) {

@@ -57,7 +57,7 @@ import { useSchemaValue } from '../composables/useSchemaValue.ts'
 import { useComponentPath } from '../composables/useComponentPath.ts'
 import { useValue } from '../composables/useValue.ts'
 import { getTypeComponent, getTypeDescriptor } from '../utils/schema/types.ts'
-import { hasLabel, omitSpacing } from '../utils/schema/structure.js'
+import { hasLabel, omitsSpacing } from '../utils/schema/structure.js'
 import { getAllPanelEntries } from '../utils/schema/lookup.js'
 import { parseFraction } from '../utils/math.js'
 import { appendDataPath } from '../utils/data.js'
@@ -231,7 +231,7 @@ export default {
           [`${prefix}--single`]: props.single,
           [`${prefix}--compact`]: props.compact,
           [`${prefix}--label-vertical`]: props.verticalLabels,
-          [`${prefix}--omit-spacing`]: omitSpacing(props.schema),
+          [`${prefix}--omit-spacing`]: omitsSpacing(props.schema),
           ...(isString(classes) ? { [classes]: true } : classes)
         }
       }),

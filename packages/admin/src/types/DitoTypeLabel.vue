@@ -20,8 +20,8 @@ const DitoTypeLabel = {
 defineType({
   type: 'label',
   component: DitoTypeLabel,
-  excludeValue: true,
-  generateLabel: false,
+  defaultExclude: true,
+  generatesLabel: false,
   rendersLabel: true
 })
 

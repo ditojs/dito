@@ -23,8 +23,8 @@ defineType({
   component: DitoTypePanel,
   // Panels share the data of their schema, or have their own `schema.data`:
   defaultNested: false,
-  generateLabel: false,
-  omitSpacing: true,
+  generatesLabel: false,
+  omitsSpacing: true,
 
   getPanelSchema(api, schema) {
     // The component schema is the panel schema. `getAllPanelEntries()` adds

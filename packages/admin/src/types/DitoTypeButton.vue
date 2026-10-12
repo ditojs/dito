@@ -138,9 +138,9 @@ const DitoTypeButton = {
 const buttonTraits = {
   component: DitoTypeButton,
   defaultValue: undefined,
-  excludeValue: true,
+  defaultExclude: true,
   defaultWidth: 'auto',
-  generateLabel: false
+  generatesLabel: false
 }
 
 defineType({ ...buttonTraits, type: 'button' })

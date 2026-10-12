@@ -44,7 +44,7 @@ defineType({
   component: DitoTypeComponent,
   // Custom components get no data unless their schema has a `default`:
   defaultValue: undefined,
-  ignoreMissingValue: ({ schema }) => !('default' in schema),
+  ignoresMissingValue: ({ schema }) => !('default' in schema),
 
   async setupSchema(api, schema) {
     await resolveSchemaComponent(schema)
