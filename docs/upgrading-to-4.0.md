@@ -270,10 +270,20 @@ changed value.
 `schemaComponent.resetData()` is removed: the filters panel clears its data
 with `replaceItem({})`.
 
+`index` is renamed to `valueIndex`, the index of the value in its list, next to
+`itemIndex` and `parentItemIndex`, the indices of the item and its parent item
+in their lists:
+
+| Callbacks of                                 | `valueIndex`         | `itemIndex`                |
+| -------------------------------------------- | -------------------- | -------------------------- |
+| Fields, e.g. `label` and `onChange`          | `null`               | The item holding the field |
+| Rows of lists, e.g. `itemLabel` and `render` | The row              | The row                    |
+| List values, e.g. the files of uploads       | The value's position | The item holding the list  |
+
 ### Schema handlers
 
 Schemas no longer define members of their components: `methods`, `computed`,
-`watch` and `data` are removed, and handlers, e.g. `events`, `onClick`,
+`watch` and `data` are removed, and handlers, e.g. `onChange`, `onClick`,
 `itemLabel`, `render` and `clipboard.copy()`, are called with their context
 only, not with the component as `this`.
 
@@ -281,7 +291,7 @@ only, not with the component as `this`.
   context or the values they need.
 - `computed`: read the values from the context, e.g. `item` and
   `serializedItem`, or write derived values with `computeValue()`.
-- `watch` on data: `events.change` of the form or of a component above the
+- `watch` on data: `onChange` of the form or of a component above the
   changed values, which receives the `dataPath` of the changed value, also of
   nested data. Unlike watchers, it fires for edits only, not for writes of the
   data model, e.g. defaults, computed and loaded values, or of app code. Values
@@ -309,11 +319,9 @@ methods: {
 }
 
 // After:
-events: {
-  change({ dataPath, rootItem }) {
-    if (dataPath.startsWith('deliveryAddress/')) {
-      copyAddress(rootItem)
-    }
+onChange({ dataPath, rootItem }) {
+  if (dataPath.startsWith('deliveryAddress/')) {
+    copyAddress(rootItem)
   }
 }
 
@@ -321,6 +329,36 @@ function copyAddress(order) {
   Object.assign(order.billingAddress, order.deliveryAddress)
 }
 ```
+
+Handlers are declared as `on…` properties of the schema, e.g. `onChange()`
+and `onClick()`. The grouped `events: { change() {} }` are deprecated: they
+still work in 4.0, log a deprecation warning once, and replace the `on…`
+handler of the same event in the same schema, e.g. the default `onClick()` of
+the cancel and submit buttons of forms. They'll be removed in a later major
+version.
+
+```js
+// Before:
+events: {
+  click({ item }) {}
+}
+
+// After:
+onClick({ item }) {}
+```
+
+`input` fires for each edit that changes the value, in all types, and `change`
+once the edit is done:
+
+- `input` fires per keystroke in text fields, with each pick in selects,
+  checkboxes, radios, switches and multiselects, per step in sliders and color
+  pickers, and with the `change` of lists, objects, trees and uploads. Typing
+  in the search of a multiselect or focusing a field doesn't fire it.
+- Date, datetime and time fields fire `change` when the picker closes, the
+  field loses focus or Enter is pressed, not for each picked or typed value.
+- `input` bubbles to the schemas above like `change`, with the `dataPath` of
+  the edited value, so the `onInput()` of a form sees every edit. Returning
+  `false` from a handler stops it.
 
 ### Admin context
 
@@ -416,8 +454,10 @@ context, see [Contexts](#contexts), the rest is internal:
 
 - The static options of type components move to the descriptor:
   `defaultValue`, `defaultNested`, `defaultVisible`, `defaultMultiple`,
-  `defaultWidth`, `excludeValue`, `ignoreMissingValue()`,
-  `treatNullAsMissing()`, `generateLabel`, `omitSpacing`, `processSchema()`
+  `defaultWidth`, `excludeValue` (now `defaultExclude`),
+  `ignoreMissingValue()` (now `ignoresMissingValue()`),
+  `treatNullAsMissing()` (now `treatsNullAsMissing()`), `generateLabel` (now
+  `generatesLabel`), `omitSpacing` (now `omitsSpacing`), `processSchema()`
   (now `setupSchema()`), `processValue()` (now `serializeValue()`) and
   `getChildSourceSchemas()`. `getSourceType(type)` becomes
   `sourceType: 'list'` or `'object'`, `getTypeValidations()` becomes
@@ -468,10 +508,9 @@ context, see [Contexts](#contexts), the rest is internal:
   contexts are built from their props and services instead of the instance. They
   no longer have `focus()`: validating reveals and focuses the fields with
   errors.
-- The data model replaces the values of components with options once the
-  options are loaded, e.g. references with their related objects, and shows
-  the errors of failed loads, also while the component isn't rendered. Values
-  of `taggable` multiselects that no option has are kept, also single ones.
+- The data model replaces the references of components with `relate` with
+  their related options once the options are loaded, and shows the errors of
+  failed loads, also while the component isn't rendered.
 - The schema values of the container of a component, e.g. `visible`, `width`,
   `label` and `disabled`, see the contexts of the surrounding form or list,
   not the ones that lists and buttons have of their own, e.g. `isRunning`.
@@ -563,6 +602,25 @@ are members of the context:
   components to the schemas above them unless a handler returns `false`,
   which now also stops them between schemas.
 
+### Schema options
+
+| 3.x                                    | 4.0                                       |
+| -------------------------------------- | ----------------------------------------- |
+| `open: true` of trees                  | `collapsed: false`, `true` by default     |
+| `groupBy` of options components        | `options.group`                           |
+| `relate: true` with `relateBy: 'code'` | `relate: 'code'`, `relate: true` for `id` |
+
+- `options.group` is like `options.label`: the key of the options' group, or a
+  callback that returns the group of the `option` of its context. The grouping
+  of `groupBy` on the schema and `options.groupBy` is removed.
+- Components with options keep values that no option has, also once the
+  options are loaded, e.g. of removed options, and send them when saving,
+  instead of setting them to `null`.
+- `multiple`, `searchable`, `stayOpen` and `taggable` of multiselects,
+  `multiple`, `extensions`, `accept` and `maxSize` of uploads and `lines` of
+  textareas and markups also take callbacks, which are resolved with the
+  context also when the values are serialized.
+
 ### Type names
 
 The public types no longer carry the `Dito` prefix, except `DitoAdmin`, and
@@ -589,8 +647,9 @@ tracker are internal.
 
 ### Removed deprecations
 
-- `options.groupBy` is removed from the types, as it never grouped the
-  options: use `groupBy` on the schema.
+- `defaultSort` and `defaultScope` of sources and `omitSpacing` of schemas
+  are removed from the types, as they aren't read: use `defaultSort` of
+  columns, `defaultScope` of scopes, and `omitsSpacing` of type descriptors.
 - `dateFormat` of date schemas is removed from the types, as it isn't read:
   use `format.date`.
 - The `HTTPVerb` type is removed: use `HTTPMethod`.
