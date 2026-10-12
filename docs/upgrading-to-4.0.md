@@ -92,10 +92,10 @@ which components write the data through.
 - `schemaComponent.filterData()` is removed.
 - Nested forms without `mutate: true` edit a draft of their item, which
   applying merges into the item in place, instead of writing the data
-  processed for the server back into the parent: values the form leaves out
-  or excludes stay, related objects stay whole, and `process()` only runs when
-  the parent is saved. New items in the draft keep their uids, and Cancel
-  leaves the parent untouched, also temporary ids of references.
+  serialized for the server back into the parent: values the form leaves out
+  or excludes stay, related objects stay whole, and `serializeValue()` only
+  runs when the parent is saved. New items in the draft keep their uids, and
+  Cancel leaves the parent untouched, also temporary ids of references.
 - In nested forms, `rootItem`, `parentItem` and the options and computed
   values that read data paths see the parent's data with the draft in place
   of the item. Everything outside the item is read-only there: writes warn
@@ -110,14 +110,15 @@ which components write the data through.
   its new index in the URL, which replaces the current history entry. Forms of
   list items close once their item is removed, like the forms of tree items
   did, instead of showing the next one.
-- The data processed for the server and for the clipboard is only built when
-  saving and copying. `processedItem` and `processedRootItem` of contexts are
-  built when they're read and cached until the data that they read changes,
-  also in the callbacks of the data model, e.g. `if` and `compute()`, which
-  lacked them. In `process()`, they're the data being built. Components no
-  longer have `processedData`, `processedRootData`, `processedItem`,
-  `processedRootItem`, `processData()` and `setData()`: read `processedItem`
-  and `processedRootItem` from the context.
+- The data serialized for the server and for the clipboard is only built when
+  saving and copying. `serializedItem` and `serializedRootItem` of contexts
+  (before `processedItem` and `processedRootItem`) are built when they're read
+  and cached until the data that they read changes, also in the callbacks of
+  the data model, e.g. `if` and `computeValue()`, which lacked them. In
+  `serializeValue()`, they're the data being built. Components no longer have
+  `processedData`, `processedRootData`, `processedItem`, `processedRootItem`,
+  `processData()` and `setData()`: read `serializedItem` and
+  `serializedRootItem` from the context.
 - Pasting writes the data through the data model as new items, after
   `clipboard.paste()` received the copied data: related items get new
   temporary ids each time, and sources with their own resource are left out.
@@ -127,6 +128,30 @@ which components write the data through.
   the ids of relations to data outside the item. The copied ids of related
   items are marked as `@7` for the id `7`, and as `@@7` for the temporary id
   `@7`, which both turned into `@7` before.
+
+### Value hooks
+
+The hooks that convert values are named after what they convert, and a new
+hook converts stored values to the values that the components edit:
+
+| 3.x         | 4.0                  | Converts                                    |
+| ----------- | -------------------- | ------------------------------------------- |
+| `format()`  | `formatValue()`      | the edited value to the displayed one       |
+| `parse()`   | `parseValue()`       | the entered value to the edited one         |
+| `compute()` | `computeValue()`     | the data to a derived value                 |
+| `process()` | `serializeValue()`   | the edited value to the stored one          |
+| –           | `deserializeValue()` | the stored value to the edited one          |
+
+- `deserializeValue()` runs on the values of loaded data, of the data that
+  saves respond with, of `context.replaceItem(data)`, of pasted data and of
+  the filters in the query, before the values of their items. It's the
+  counterpart of `serializeValue()`, which runs for saving and copying.
+- The types' hooks of the same names run before the schema's, e.g. the date
+  types convert strings to `Date` objects in `deserializeValue()`, and back in
+  `serializeValue()`. Date values that code writes, e.g. defaults and computed
+  values, are `Date` objects: the date components no longer convert strings.
+- `formats` of the date types is `format`, and the color type reads `format`
+  as before, which no longer clashes with `format()`.
 
 ### Validation
 
@@ -237,8 +262,8 @@ changed value.
 - `component.$refs.element.isOpen` in `options.label()`: `isSelected`, which
   tells whether the labelled option is selected, both as the shown value, e.g.
   of a closed multiselect or its tags, and as an entry in the open list.
-- In nested forms, `processedRootItem` is the projection of `rootItem`, with
-  the draft in place of the item, instead of the parent's processed data.
+- In nested forms, `serializedRootItem` is the projection of `rootItem`, with
+  the draft in place of the item, instead of the parent's serialized data.
 - `validate(match)` and `verify(match)` validate only the values whose data
   paths match, e.g. a regular expression. `verify()` doesn't show the errors.
 
@@ -255,12 +280,12 @@ only, not with the component as `this`.
 - Methods: plain functions in the module of the schema, which take the
   context or the values they need.
 - `computed`: read the values from the context, e.g. `item` and
-  `processedItem`, or write derived values with `compute()`.
+  `serializedItem`, or write derived values with `computeValue()`.
 - `watch` on data: `events.change` of the form or of a component above the
   changed values, which receives the `dataPath` of the changed value, also of
   nested data. Unlike watchers, it fires for edits only, not for writes of the
   data model, e.g. defaults, computed and loaded values, or of app code. Values
-  that derive from other values use `compute()`.
+  that derive from other values use `computeValue()`.
 - `data`: state in module scope, e.g. in a `WeakMap` or `WeakSet` keyed by the
   item. Panels keep `data` for their own data, e.g. filters.
 - `this.submit()` in buttons: `submit()` of the button's context, which
@@ -392,8 +417,9 @@ context, see [Contexts](#contexts), the rest is internal:
 - The static options of type components move to the descriptor:
   `defaultValue`, `defaultNested`, `defaultVisible`, `defaultMultiple`,
   `defaultWidth`, `excludeValue`, `ignoreMissingValue()`,
-  `treatNullAsMissing()`, `generateLabel`, `omitSpacing`, `processSchema()`,
-  `processValue()` and `getChildSourceSchemas()`. `getSourceType(type)` becomes
+  `treatNullAsMissing()`, `generateLabel`, `omitSpacing`, `processSchema()`
+  (now `setupSchema()`), `processValue()` (now `serializeValue()`) and
+  `getChildSourceSchemas()`. `getSourceType(type)` becomes
   `sourceType: 'list'` or `'object'`, `getTypeValidations()` becomes
   `getValidations(schema, context)`, and `getFormSchemasForProcessing()` is
   removed: the child sources of items are walked like components of their
@@ -411,7 +437,7 @@ context, see [Contexts](#contexts), the rest is internal:
   the data schema of the options that the data model loads. Custom types that
   load `schema.options` like `select` spread `optionsTraits` into their
   descriptor, and `numberTraits` and `textTraits` share the validations of
-  numbers and the processing of text values. All three are exported by
+  numbers and the serializing of text values. All three are exported by
   `@ditojs/admin`.
 - `getItemAdapter(schema)` wraps the items of sources for their forms and
   unwraps them again, e.g. the values of `wrapPrimitives`. In inlined forms
@@ -423,9 +449,14 @@ context, see [Contexts](#contexts), the rest is internal:
   collapsed, stays at the index when the values move.
 - `getPanelSchema(api, schema, dataPath, source)` receives the `listQuery` of
   the list as `source.listQuery` instead of the component.
-- `processSchema(api, schema, name)` only sets up the schema, e.g. resolves the
-  schemas that it contains. It no longer receives `routes` and `level`, and
-  doesn't add routes.
+- `processSchema(api, schema, name)` is `setupSchema(api, schema, name)`, and
+  only sets up the schema, e.g. resolves the schemas that it contains. It no
+  longer receives `routes` and `level`, and doesn't add routes.
+- `processValue(context, graph)` is `serializeValue(context)`, without `graph`:
+  the admin registers the sources and relations whose ids it serializes from
+  `sourceType` and `relate` itself. The new `deserializeValue(context)`
+  converts stored values to edited ones. Both run before the schema's hooks of
+  the same names.
 - Types that route sources next to the forms of their items, like the children
   of tree items, return their schemas from `getChildSourceSchemas(schema)`.
 - Components no longer have `getTypeComponent()`.
@@ -462,7 +493,7 @@ too, unless the component declares them: they emit the schema's events, and
 
 - `value`: `modelValue`. `this.value = value`:
   `this.$emit('update:modelValue', value)`, which writes the value through
-  `parse()`, and `onChange()`: `this.$emit('change')`.
+  `parseValue()`, and `onChange()`: `this.$emit('change')`.
 - `item`, `parentItem` and `rootItem`: `context.item`, `context.parentItem` and
   `context.rootItem`. `api`: `context.api`.
 - `getSchemaValue(key)`: `getSchemaValue(schema, key, context)`, exported by
@@ -561,7 +592,7 @@ tracker are internal.
 - `options.groupBy` is removed from the types, as it never grouped the
   options: use `groupBy` on the schema.
 - `dateFormat` of date schemas is removed from the types, as it isn't read:
-  use `formats.date`.
+  use `format.date`.
 - The `HTTPVerb` type is removed: use `HTTPMethod`.
 - The `$pulldown-radius`, `$pulldown-padding-ver`, `$pulldown-padding-hor` and
   `$pulldown-padding` SCSS variables are removed.
@@ -581,3 +612,44 @@ classes of the popups, e.g. `.dito-popup-bottom-left`, are
 builds and the `require` conditions of their exports are removed.
 `defineViteConfig()` of `@ditojs/build` only builds ES modules, and its
 `rollupOutput` option, which only served the UMD builds, is removed.
+
+## Server
+
+### Lifecycle
+
+- `Service.setup(config)` is `configure(config)`, which services can override
+  to read their configuration. The application starts and stops its services
+  itself, instead of `setup()` registering them for its events.
+
+### Queries
+
+- `upsert(data)` inserts the models, or updates the ones whose ids exist
+  already, atomically through `insert(data).onConflict(idColumns).merge()`.
+  The ids come from the data: the form that patched the models matched by
+  `where()` and inserted them if none matched is removed, and so are the
+  options `update` and `fetch`. Like `insert()`, it validates full models.
+- `upsertAndFetch(data)` upserts the same way, and fetches the models like
+  `insertAndFetch()`. Their relations are still left untouched.
+- The array forms of `patchAndFetch()` and `updateAndFetch()` save each model
+  by its id in one transaction, and throw for models without ids instead of
+  inserting them: insert these with `insertAndFetch()`. The collection actions
+  `put` and `patch` of controllers still insert the models without ids.
+
+### Removals
+
+- `AdminController.getPath(name)`: `resolveConfigPath(name)`.
+- `returns` of handler definitions, and `options.returns`: `response` and
+  `options.response`.
+
+### Validation
+
+- `type: 'color'` validates the values that the admin's color type stores:
+  the hex colors `#rgb`, `#rgba`, `#rrggbb` and `#rrggbbaa`, color keywords,
+  and the objects of its `rgb`, `prgb`, `hsl` and `hsv` formats. Other color
+  strings, e.g. `'rgb(0, 0, 0)'`, are rejected: use `type: 'string'` for them.
+
+### Admin development server
+
+- The admin's HMR is served through the app's server (`server.ws.server` in
+  the admin's Vite config), instead of on a port of its own: remove
+  `server.hmr.port`, and `port: 0` no longer picks a free port.

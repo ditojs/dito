@@ -48,7 +48,22 @@ In addition to Objection.js' many database methods, ...:
 ### `truncate()`
 ### `insert(data)`
 ### `upsert(data)`
+
+Inserts the models, or updates the ones whose ids exist already, atomically
+through `insert(data).onConflict(idColumns).merge()`. The ids come from the
+data, and the models are validated as full models, like in `insert()`.
+
 ### `upsertAndFetch(data)`
+
+Upserts the models like `upsert()`, and fetches them like `insertAndFetch()`.
+Their relations are left untouched.
+
+### `patchAndFetch(data)`
+### `updateAndFetch(data)`
+
+Also accept arrays of models, each patched or updated by its id in one
+transaction. Models without ids are rejected: insert them with
+`insertAndFetch()`. Their relations are left untouched, as with single models.
 
 ## Find Methods
 
