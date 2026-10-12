@@ -85,6 +85,7 @@ const DitoTypeDate = {
 defineType({
   type: ['date', 'datetime', 'time'],
   component: DitoTypeDate,
+  hasFormat: true,
 
   // Edit dates as `Date` objects, plain dates in the local time zone:
   deserializeValue({ value }) {

@@ -152,6 +152,11 @@ hook converts stored values to the values that the components edit:
   values, are `Date` objects: the date components no longer convert strings.
 - `formats` of the date types is `format`, and the color type reads `format`
   as before, which no longer clashes with `format()`.
+- Schemas that still define `format()`, `parse()`, `compute()`, `process()`
+  or `formats` throw an error when they're set up, naming the replacement.
+  The date and color types read `format` as their setting: there, a
+  `format()` of 3.x can't be told apart, and needs to be renamed to
+  `formatValue()` by hand.
 
 ### Validation
 
@@ -283,7 +288,9 @@ in their lists:
 ### Schema handlers
 
 Schemas no longer define members of their components: `methods`, `computed`,
-`watch` and `data` are removed, and handlers, e.g. `onChange`, `onClick`,
+`watch` and `data` are removed, and throw an error when a schema still
+defines them, except `data` of panels and of the types that resolve their
+value from it, e.g. `computed`. Handlers, e.g. `onChange`, `onClick`,
 `itemLabel`, `render` and `clipboard.copy()`, are called with their context
 only, not with the component as `this`.
 
@@ -469,7 +476,9 @@ context, see [Contexts](#contexts), the rest is internal:
   label itself instead of its container, `rendersLabel` renders the component
   as the label of its container, `resolvesValue` resolves the value from
   `schema.data` or `schema.dataPath`, `submitsData` makes buttons submit and
-  count for the dirty state like `submit`, and `hasNestedForms` renders the
+  count for the dirty state like `submit`, `hasFormat` reads `format` from
+  the schema, which other types reject as the `format()` of 3.x, and
+  `hasNestedForms` renders the
   forms of the items inside the form or view of their source. Buttons submit
   through `context.submit()` because the button component provides it, not
   because of an option.
