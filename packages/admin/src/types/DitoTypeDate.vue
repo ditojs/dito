@@ -57,7 +57,6 @@ const DitoTypeDate = {
 
   setup(props) {
     const field = useField(props, {
-      // TODO: Only here to add `placeholder`. Support attributes per component.
       nativeField: true,
       textField: true
     })
