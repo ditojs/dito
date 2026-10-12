@@ -177,6 +177,9 @@ const DitoTypeMarkup = {
     }
 
     const onClickLink = async editor => {
+      // The dialog returns the focus to what was focused before it: the editor,
+      // not the button. `editor.commands.focus()` would wait for a frame:
+      editor.view.focus()
       const attributes = await services.adminContext.showDialog(
         {
           components: {

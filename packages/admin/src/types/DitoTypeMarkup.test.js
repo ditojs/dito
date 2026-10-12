@@ -348,6 +348,29 @@ describe('DitoTypeMarkup', () => {
       await vi.waitFor(() => expect(data.body).toBe('<p>Emma</p>'))
     })
 
+    it('returns the focus to the editor at its selection', async () => {
+      const { admin, findField, getComponent, data } = await mountSchema({
+        schema,
+        data: { body: '<p>Call me Ishmael.</p>' }
+      })
+      const { editor } = getComponent('body')
+      // Select "Ishmael", and focus the button like clicking it does:
+      editor.commands.setTextSelection({ from: 9, to: 16 })
+      const field = findField('body')
+      field.find('button[aria-label="Link"]').element.focus()
+      const dialog = await openLinkDialog(admin, field)
+      await enterValue(dialog.find('input[name="href"]'), 'example.com')
+      await dialog.find('form').trigger('submit')
+      await vi.waitFor(() => {
+        expect(admin.wrapper.find('.dito-dialog').exists()).toBe(false)
+        expect(document.activeElement).toBe(editor.view.dom)
+      })
+      expect(data.body).toBe(
+        '<p>Call me <a href="https://example.com">Ishmael</a>.</p>'
+      )
+      expect(editor.state.selection).toMatchObject({ from: 9, to: 16 })
+    })
+
     it('keeps links when the dialog is cancelled', async () => {
       const { admin, findField, getComponent, settle } = await mountLinkSchema(
         '<p><a href="https://example.com">Emma</a></p>'
