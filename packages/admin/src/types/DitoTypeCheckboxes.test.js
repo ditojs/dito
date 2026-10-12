@@ -100,18 +100,20 @@ describe('DitoTypeCheckboxes', () => {
     )
   })
 
-  it('lists the options of each group in a fieldset with `groupBy`', async () => {
+  it('lists the options of each group in a fieldset with `options.group`', async () => {
     const { findField, data } = await mountSchema({
       schema: {
         components: {
           books: {
             type: 'checkboxes',
-            groupBy: 'shelf',
-            options: [
-              { value: 'emma', label: 'Emma', shelf: 'Classics' },
-              { value: 'dune', label: 'Dune', shelf: 'Sci-Fi' },
-              { value: 'persuasion', label: 'Persuasion', shelf: 'Classics' }
-            ]
+            options: {
+              data: [
+                { value: 'emma', label: 'Emma', shelf: 'Classics' },
+                { value: 'dune', label: 'Dune', shelf: 'Sci-Fi' },
+                { value: 'persuasion', label: 'Persuasion', shelf: 'Classics' }
+              ],
+              group: 'shelf'
+            }
           }
         }
       },
@@ -130,6 +132,36 @@ describe('DitoTypeCheckboxes', () => {
     expect(getCheckedStates(field)).toEqual([false, false, true])
     await field.findAll('input[type="checkbox"]')[1].setValue(true)
     expect(data.books).toEqual(['dune', 'persuasion'])
+  })
+
+  it('groups the options by the result of an `options.group` callback', async () => {
+    const { findField } = await mountSchema({
+      schema: {
+        components: {
+          books: {
+            type: 'checkboxes',
+            options: {
+              data: [
+                { value: 'emma', label: 'Emma', year: 1815 },
+                { value: 'dune', label: 'Dune', year: 1965 },
+                { value: 'persuasion', label: 'Persuasion', year: 1817 }
+              ],
+              group: ({ option }) => (option.year < 1900 ? 'Classic' : 'Modern')
+            }
+          }
+        }
+      }
+    })
+    const fieldsets = findField('books').findAll('fieldset')
+    expect(
+      fieldsets.map(fieldset => [
+        fieldset.find('legend').text(),
+        fieldset.findAll('label').map(label => label.text())
+      ])
+    ).toEqual([
+      ['Classic', ['Emma', 'Persuasion']],
+      ['Modern', ['Dune']]
+    ])
   })
 
   it('selects a single value with `multiple: false`', async () => {

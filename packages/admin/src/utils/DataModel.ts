@@ -986,7 +986,7 @@ export class DataModel {
           const { formatValue, parseValue } = schema
           const settings = getOptionsSettings(schema, options, {
             multiple: getMultipleValue(schema, context),
-            groupBy: null,
+            isGrouped: false,
             createContext: values => context.extend({ options, ...values })
           })
           const replaced = getReplacedValue(

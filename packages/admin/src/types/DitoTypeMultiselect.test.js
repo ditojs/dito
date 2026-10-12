@@ -653,6 +653,66 @@ describe('DitoTypeMultiselect', () => {
     expect(getTagLabels(field)).toEqual(['Drama', 'opera'])
   })
 
+  it('groups the options with `options.group`', async () => {
+    const { findField, data } = await mountSchema({
+      schema: {
+        components: {
+          book: {
+            type: 'multiselect',
+            options: {
+              data: [
+                { value: 'emma', label: 'Emma', shelf: 'Classics' },
+                { value: 'dune', label: 'Dune', shelf: 'Sci-Fi' },
+                { value: 'persuasion', label: 'Persuasion', shelf: 'Classics' }
+              ],
+              group: 'shelf'
+            }
+          }
+        }
+      }
+    })
+    const field = findField('book')
+    await open(field)
+    expect(getOptionLabels(field)).toEqual([
+      'Classics',
+      'Emma',
+      'Persuasion',
+      'Sci-Fi',
+      'Dune'
+    ])
+    await selectOption(field, 'Dune')
+    expect(data.book).toBe('dune')
+  })
+
+  it('groups the options by the result of an `options.group` callback', async () => {
+    const { findField } = await mountSchema({
+      schema: {
+        components: {
+          book: {
+            type: 'multiselect',
+            options: {
+              data: [
+                { value: 'emma', label: 'Emma', year: 1815 },
+                { value: 'dune', label: 'Dune', year: 1965 },
+                { value: 'persuasion', label: 'Persuasion', year: 1817 }
+              ],
+              group: ({ option }) => (option.year < 1900 ? 'Classic' : 'Modern')
+            }
+          }
+        }
+      }
+    })
+    const field = findField('book')
+    await open(field)
+    expect(getOptionLabels(field)).toEqual([
+      'Classic',
+      'Emma',
+      'Persuasion',
+      'Modern',
+      'Dune'
+    ])
+  })
+
   it(`doesn't add tags to grouped options with \`taggable\``, async () => {
     const { findField, getComponent, data } = await mountSchema({
       schema: {
@@ -662,11 +722,13 @@ describe('DitoTypeMultiselect', () => {
             multiple: true,
             searchable: true,
             taggable: true,
-            groupBy: 'shelf',
-            options: [
-              { value: 'emma', label: 'Emma', shelf: 'Classics' },
-              { value: 'dune', label: 'Dune', shelf: 'Sci-Fi' }
-            ]
+            options: {
+              data: [
+                { value: 'emma', label: 'Emma', shelf: 'Classics' },
+                { value: 'dune', label: 'Dune', shelf: 'Sci-Fi' }
+              ],
+              group: 'shelf'
+            }
           }
         }
       }

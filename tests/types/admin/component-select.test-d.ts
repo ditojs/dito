@@ -38,6 +38,28 @@ describe('SelectSchema', () => {
     })
   })
 
+  it('accepts the group of options as a key or a callback', () => {
+    assertType<SelectSchema<Entry>>({
+      type: 'select',
+      options: { data: [], group: 'kind' }
+    })
+    assertType<SelectSchema<Entry>>({
+      type: 'select',
+      options: {
+        data: [],
+        group({ option }) {
+          expectTypeOf(option).toBeAny()
+          return option.kind
+        }
+      }
+    })
+    assertType<SelectSchema<Entry>>({
+      type: 'select',
+      // @ts-expect-error `options.group` groups the options
+      groupBy: 'kind'
+    })
+  })
+
   it('accepts relate by id or by a key', () => {
     assertType<SelectSchema<Entry>>({ type: 'select', relate: true })
     assertType<SelectSchema<Entry>>({ type: 'select', relate: 'code' })

@@ -859,6 +859,14 @@ export type SchemaOptions<$Item, $Option = any> =
        */
       value?: keyof $Option | ItemAccessor<$Item, { option: $Option }>
       /**
+       * Either the key of the option property which holds the option's
+       * group or a function returning the option's group. Selects and
+       * multiselects show the groups in their dropdowns, radio buttons and
+       * checkboxes list each group in a fieldset with the group as its
+       * legend.
+       */
+      group?: keyof $Option | ItemAccessor<$Item, { option: $Option }, string>
+      /**
        * Custom equality function for matching a value to an
        * option. Receives a context with `value` and `option`.
        */
@@ -910,13 +918,6 @@ export interface SelectionSettings<$Item, $Option = any> {
    * string by the key of the id that it names, e.g. `relate: 'code'`.
    */
   relate?: boolean | string
-  /**
-   * The key of the option property which should be used to
-   * group the options. Selects and multiselects show the groups
-   * in their dropdowns, radio buttons and checkboxes list each
-   * group in a fieldset with the group's name as its legend.
-   */
-  groupBy?: OrItemAccessor<$Item, {}, string>
   /**
    * When defined, a search input field will be added to allow
    * searching for specific options.

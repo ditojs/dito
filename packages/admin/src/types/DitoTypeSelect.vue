@@ -29,7 +29,7 @@
           v-for="option in options"
         )
           optgroup(
-            v-if="groupBy"
+            v-if="isGrouped"
             :label="option.label"
           )
             option(

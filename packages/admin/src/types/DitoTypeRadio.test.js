@@ -53,11 +53,14 @@ describe('DitoTypeRadio', () => {
     )
   })
 
-  it('lists the options of each group in a fieldset with `groupBy`', async () => {
+  it('lists the options of each group in a fieldset with `options.group`', async () => {
     const { findField, data } = await mountSchema({
       schema: {
         components: {
-          book: { type: 'radio', groupBy: 'shelf', options: books }
+          book: {
+            type: 'radio',
+            options: { data: books, group: 'shelf' }
+          }
         }
       },
       data: { book: null }

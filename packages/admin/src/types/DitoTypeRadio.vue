@@ -4,7 +4,7 @@ DitoOptionList.dito-radio-buttons(
   role="radiogroup"
   :aria-label="label"
   :options="options"
-  :isGrouped="!!groupBy"
+  :isGrouped="isGrouped"
   :layout="schema.layout"
 )
   template(#option="{ option, isFirstOption }")
