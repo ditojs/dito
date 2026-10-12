@@ -11,10 +11,6 @@ $font-size-small: 11px;
 // Adjust line-height so that it fulfils this equation, which is used
 // to reach equal height for icon-buttons (`height: 2em`), table headers & co.:
 // `(2 * $font-size - 2 * ($border-width + $input-padding-ver)) / $font-size`
-// TODO: Ideally, this would be handled in @ditojs/ui, but it would have to be
-// done in a way independent of `$font-size`. The right approach would probably
-// be to use `$input-height` and vertical centering instead for all inputs that
-// have a height of one line?
 // NOTE: Due to higher precision in dart-sass, this needs to be rounded to 5
 // fractional digits, otherwise CSS creates the wrong resulting line-height with
 // 1 missing pixel.

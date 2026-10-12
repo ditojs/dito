@@ -3,7 +3,6 @@ td(
   :class="cell.class"
   :style="cell.style"
 )
-  //- TODO: Implement inlined components in cell mode!
   component(
     v-if="cell.component"
     :is="cell.component"

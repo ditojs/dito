@@ -98,8 +98,6 @@
       @move="delta => moveChild(item.data, delta)"
       @change-children="change => $emit('changeChildren', change)"
     )
-    //- TODO: Convert dito-tree-item to use dito-label internally, and then
-    //- pass `asObject: true` in the `getItemLabel()` call above.
 </template>
 
 <script>
