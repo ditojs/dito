@@ -421,3 +421,66 @@ Views provide both contexts of their main component, e.g. to their panels.
 - The schema values of the container of a component, e.g. `visible`, `width`,
   `label` and `disabled`, see the contexts of the surrounding form or list,
   not the ones that lists and buttons have of their own, e.g. `isRunning`.
+
+### Custom components
+
+The components of `type: 'component'` schemas no longer get `DitoMixin` and
+`TypeMixin` mixed in. They receive the `schema`, its `context` and the value as
+`modelValue`, emit `update:modelValue` to change the value, and `change` once
+the change is done, which emits the schema's `change` event. `context.item`
+follows the changes of the data. Components declare these props and events, so
+that they don't fall through to their root element, which gets the id that the
+label of the component points to. `CustomComponentProps` and
+`CustomComponentEmits` describe them.
+
+- `value`: `modelValue`. `this.value = value`:
+  `this.$emit('update:modelValue', value)`, which writes the value through
+  `parse()`, and `onChange()`: `this.$emit('change')`.
+- `item`, `parentItem` and `rootItem`: `context.item`, `context.parentItem` and
+  `context.rootItem`. `admin.api`: `context.api`.
+- `getSchemaValue(key)`: `getSchemaValue(schema, key, context)`, exported by
+  `@ditojs/admin`, which calls schema values that are functions with the
+  context.
+- The `component` of lists and objects, which renders their items, receives
+  the item as `modelValue`, and the `component` of columns the value of the
+  cell, with the column as `schema`.
+
+```js
+// Before:
+export default {
+  computed: {
+    max() {
+      return this.getSchemaValue('max')
+    }
+  },
+  methods: {
+    rate(rating) {
+      this.value = rating
+      this.onChange()
+    }
+  }
+}
+
+// After:
+import { getSchemaValue } from '@ditojs/admin'
+
+export default {
+  emits: ['update:modelValue', 'change'],
+  props: {
+    schema: { type: Object, required: true },
+    context: { type: Object, required: true },
+    modelValue: { type: Number, default: null }
+  },
+  computed: {
+    max() {
+      return getSchemaValue(this.schema, 'max', this.context)
+    }
+  },
+  methods: {
+    rate(rating) {
+      this.$emit('update:modelValue', rating)
+      this.$emit('change')
+    }
+  }
+}
+```

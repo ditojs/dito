@@ -1,5 +1,14 @@
 import { expectTypeOf, assertType, describe, it } from 'vitest'
-import type { MenuSchema, View, NumberSchema, Form } from '@ditojs/admin'
+import { getSchemaValue } from '@ditojs/admin'
+import type {
+  MenuSchema,
+  View,
+  NumberSchema,
+  Form,
+  CustomComponentProps,
+  CustomComponentEmits,
+  DitoContext
+} from '@ditojs/admin'
 import type { Entry } from './fixtures.ts'
 
 describe('MenuSchema', () => {
@@ -133,5 +142,24 @@ describe('ClipboardConfig', () => {
         title: { type: 'text' }
       }
     })
+  })
+})
+
+describe('CustomComponentProps and CustomComponentEmits', () => {
+  it('describe the props and events of custom components', () => {
+    type Props = CustomComponentProps<Entry, number>
+    expectTypeOf<Props['context']>().toEqualTypeOf<DitoContext<Entry>>()
+    expectTypeOf<Props['context']['item']['title']>().toBeString()
+    expectTypeOf<Props['modelValue']>().toBeNumber()
+    expectTypeOf<Props['schema']['type']>().toEqualTypeOf<'component'>()
+    expectTypeOf<CustomComponentEmits<number>['update:modelValue']>()
+      .parameter(0)
+      .toBeNumber()
+  })
+
+  it('reads schema values with `getSchemaValue()`', () => {
+    const context = {} as DitoContext<Entry>
+    expectTypeOf(getSchemaValue({ label: 'Rating' }, 'label', context))
+      .toBeAny()
   })
 })

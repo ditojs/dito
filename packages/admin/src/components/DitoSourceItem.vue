@@ -24,9 +24,9 @@ DitoSchemaInlined(
 component(
   v-else-if="schema.component"
   :is="schema.component"
-  :dataPath="dataPath"
-  :data="data"
-  :nested="false"
+  :schema="schema"
+  :context="context"
+  :modelValue="data"
 )
 span(
   v-else

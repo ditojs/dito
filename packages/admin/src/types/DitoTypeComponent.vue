@@ -1,7 +1,13 @@
 <template lang="pug">
 component(
   :is="schema.component"
-  v-bind="$props"
+  :id="componentPath"
+  ref="element"
+  :schema="schema"
+  :context="context"
+  :modelValue="value"
+  @update:modelValue="newValue => (value = newValue)"
+  @change="onChange"
 )
 </template>
 
@@ -13,6 +19,10 @@ component(
 //   type: 'component',
 //   component: import('./component')
 // }
+// The component receives the `schema`, its `context` and its value as
+// `modelValue`, and emits `update:modelValue` to change the value, and
+// `change` once the change is done, which the schema's change event handles.
+// Its root element gets the id that the label of the component points to.
 
 import DitoComponent from '../DitoComponent.js'
 import { defineType } from '../utils/schema/types.ts'
@@ -24,8 +34,8 @@ const DitoTypeCustomComponent = DitoComponent.component('DitoTypeComponent', {
   props: fieldProps,
 
   setup(props) {
-    const { focus } = useField(props)
-    return { focus }
+    const { context, value, onChange, focus } = useField(props)
+    return { context, value, onChange, focus }
   }
 })
 

@@ -7,16 +7,13 @@ td(
   component(
     v-if="cell.component"
     :is="cell.component"
-    :schema="schema"
-    :dataPath="dataPath"
-    :data="data"
-    :store="store"
-    :nested="nested"
-    :disabled="disabled"
+    :schema="cell"
+    :context="cellContext"
+    :modelValue="data[cell.name]"
   )
   span(
     v-else
-    v-html="renderCell(data)"
+    v-html="cellHtml"
   )
 </template>
 
@@ -34,7 +31,7 @@ export default DitoComponent.component('DitoTableCell', {
     cell: { type: Object, required: true },
     // The schema of the list or tree that holds the item.
     schema: { type: Object, required: true },
-    // The data path and data of the item, see `renderCell()`.
+    // The data path and data of the item, see `cellContext`.
     dataPath: { type: String, required: true },
     data: { type: Object, required: true },
     store: { type: Object, required: true },
@@ -42,20 +39,23 @@ export default DitoComponent.component('DitoTableCell', {
     disabled: { type: Boolean, default: false }
   },
 
-  methods: {
-    renderCell(item) {
+  computed: {
+    cellContext() {
+      const {
+        cell: { name },
+        data
+      } = this
+      return new DitoContext(this, {
+        name,
+        value: data[name],
+        data,
+        dataPath: appendDataPath(this.dataPath, name)
+      })
+    },
+
+    cellHtml() {
       const { name, render } = this.cell
-      const value = item[name]
-      return render
-        ? render(
-            new DitoContext(this, {
-              name,
-              value,
-              data: item,
-              dataPath: appendDataPath(this.dataPath, name)
-            })
-          )
-        : escapeHtml(value)
+      return render ? render(this.cellContext) : escapeHtml(this.data[name])
     }
   }
 })
