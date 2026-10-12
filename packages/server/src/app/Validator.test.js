@@ -59,15 +59,34 @@ describe('color type', () => {
     { throw: false }
   )
 
-  it.each(['#ff8800', 'red', 'rgba(0, 0, 255, 0.5)', 'hsl(30, 100%, 50%)', ''])(
-    'accepts any string, as before 3.3.0: %j',
-    color => {
-      expect(validate({ color })).toBe(true)
-    }
-  )
+  it.each([
+    '#f80',
+    '#f80c',
+    '#ff8800',
+    '#ff8800cc',
+    'red',
+    'transparent',
+    { r: 255, g: 136, b: 0, a: 1 },
+    { r: '100%', g: '53%', b: '0%', a: 0.5 },
+    { h: 32, s: 1, l: 0.5, a: 1 },
+    { h: 32, s: 1, v: 1 }
+  ])('accepts %j, as stored by the admin color type', color => {
+    expect(validate({ color })).toBe(true)
+  })
 
-  it('rejects values that are not strings', () => {
-    expect(validate({ color: { r: 255, g: 136, b: 0 } })).toBe(false)
+  it.each([
+    '#12',
+    '#ff880',
+    'ff8800',
+    'light red',
+    'rgb(0, 0, 0)',
+    '',
+    { r: 255, g: 136 },
+    { r: 255, g: 136, b: 0, x: 1 },
+    { h: '32', s: 1, l: 0.5 },
+    255
+  ])('rejects %j', color => {
+    expect(validate({ color })).toBe(false)
   })
 })
 

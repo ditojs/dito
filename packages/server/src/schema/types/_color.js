@@ -1,7 +1,23 @@
-// Colors are only validated as strings in 3.x, as before 3.3.0: the admin's
-// color type stores hex strings and color keywords, but also objects for its
-// `rgb`, `hsl` and `hsv` formats, and apps may store any CSS color string.
-// TODO: Validate colors in 4.0, together with the values the admin stores.
+// The values that the admin's color type stores, see `DitoTypeColor`: strings
+// for its hex formats and color keywords, and objects for its `rgb`, `prgb`,
+// `hsl` and `hsv` formats, with the alpha channel in `a`.
 export const color = {
-  type: 'string'
+  anyOf: [
+    { type: 'string', format: 'color' },
+    getColorObjectSchema(['r', 'g', 'b']),
+    // Percentages, e.g. `'100%'`:
+    getColorObjectSchema(['r', 'g', 'b'], 'string'),
+    getColorObjectSchema(['h', 's', 'l']),
+    getColorObjectSchema(['h', 's', 'v'])
+  ]
+}
+
+function getColorObjectSchema(keys, type = 'number') {
+  return {
+    type: 'object',
+    properties: Object.fromEntries([
+      ...keys.map(key => [key, { type, required: true }]),
+      ['a', { type: 'number' }]
+    ])
+  }
 }

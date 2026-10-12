@@ -4,7 +4,7 @@ import serve from 'koa-static'
 import { defineConfig, createServer } from 'vite'
 import createVuePlugin from '@vitejs/plugin-vue'
 import { testModuleIdentifier, getPostCssConfig } from '@ditojs/build'
-import { assignDeeply, deprecate } from '@ditojs/utils'
+import { assignDeeply } from '@ditojs/utils'
 import { Controller } from './Controller.js'
 import { handleConnectMiddleware } from '../middleware/index.js'
 import { ControllerError } from '../errors/index.js'
@@ -29,20 +29,6 @@ export class AdminController extends Controller {
       (this.app.config.env === 'development' ? 'development' : 'production')
     )
     this.closed = false
-  }
-
-  // @override
-  getPath(...args) {
-    // `Controller.getPath(type, path)` is the routing hook used by `getUrl()`.
-    if (args.length !== 1) {
-      return super.getPath(...args)
-    }
-    // TODO: Remove the `getPath(name)` signature in 4.0.
-    deprecate(
-      'AdminController.getPath(name) is deprecated. ' +
-      'Use AdminController.resolveConfigPath(name) instead.'
-    )
-    return this.resolveConfigPath(...args)
   }
 
   resolveConfigPath(name) {
