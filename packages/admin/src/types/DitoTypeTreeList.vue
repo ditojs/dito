@@ -1,9 +1,10 @@
 <template lang="pug">
-.dito-tree-list
+.dito-tree-list(ref="element")
   DitoScopes(
     v-if="scopes"
-    :query="query"
+    :listQuery="listQuery"
     :scopes="scopes"
+    :context="context"
   )
   .dito-tree-panel
     //- Objects that are `null` have no tree, as tree items can't create them.
@@ -12,237 +13,115 @@
       :schema="treeSchema"
       :dataPath="treeDataPath"
       :data="treeData"
-      :path="treePath"
-      :childrenPath="treeChildrenPath"
+      :path="rootPath"
       :draggable="draggable"
       :open="true"
       @change-children="changeChildren"
     )
     .dito-tree-form-container(
-      v-if="editPath && hasEditableForms"
+      v-if="isEditingItem"
     )
-      //- Include a router-view for the optional DitoFormInlined
-      DitoRouterView(:routeLevel="routeComponent.routeLevel + 1")
+      DitoRouterView(:routeLevel="routeContext.level + 1")
 </template>
 
 <script>
-import DitoTypeComponent from '../DitoTypeComponent.js'
-import SourceMixin from '../mixins/SourceMixin.js'
-import { resolveSchemaComponents } from '../utils/schema/setup.js'
-import { hasFormSchema, getFormSchemas } from '../utils/schema/lookup.js'
-import { isObjectSource } from '../utils/schema/structure.js'
-import { updateOrder } from '../utils/schema/data.js'
+import { computed } from 'vue'
+import { defineType } from '../utils/schema/types.ts'
+import { sourceTraits } from './traits.ts'
+import { fieldProps } from '../composables/useField.ts'
+import { useSource } from '../composables/useSource.ts'
+import {
+  resolveSchemaComponents,
+  setupSchemaComponent,
+  assertRemovedSchemaKeys
+} from '../utils/schema/setup.js'
 import { getParentDataPath } from '../utils/data.js'
-import { isPathWithin } from '../utils/route.js'
 
-export default DitoTypeComponent.register(
-  ['tree-list', 'tree-object'],
-  // @vue/component
-  {
-    mixins: [SourceMixin],
+// @vue/component
+const DitoTypeTreeList = {
+  props: fieldProps,
 
-    getSourceType(type) {
-      return type === 'tree-object' ? 'object' : 'list'
-    },
+  setup(props) {
+    const source = useSource(props)
+    const { services, value, isListSource, onChange } = source
+    const { routeContext } = services
+    return {
+      ...source,
+      routeContext,
 
-    computed: {
-      path() {
-        // The path of the route component of the tree, in a form or a view,
-        // which the edit routes of the items continue. Accessed from
-        // DitoTreeItem through `sourceComponent.path`. Trees in dialogs have no
-        // route component, and no edit routes:
-        return this.routeComponent?.path ?? ''
-      },
-
-      relativeSourcePath() {
-        // The path of the tree within `path`, as in its routes, which is empty
-        // in single-component views, see `DitoView.getChildPath()`. All
-        // `getChildPath()` implementations return paths starting with `path`:
-        return (
-          this.routeComponent
-            ?.getChildPath(this.schema.path)
-            .slice(this.path.length) ?? ''
-        )
-      },
-
-      editPath() {
-        // Accessed from DitoTreeItem through `sourceComponent.editPath`:
-        const path = this.$route.path.slice(this.path.length)
-        return isPathWithin(path, this.relativeSourcePath) ? path : ''
-      },
-
-      treeData() {
-        return this.isListSource
-          ? { [this.name]: this.value }
-          : this.value
-      },
-
-      treeDataPath() {
-        // Remove `name` from `dataPath`, as it is added
-        // to `treeData` and `treeSchema`
-        return this.isListSource
-          ? getParentDataPath(this.dataPath)
-          : this.dataPath
-      },
-
-      treePath() {
-        // The routes of the children of tree objects continue the path of the
-        // object, see `SourceMixin.processSchema()`. The root item of tree
-        // lists wraps the list, which brings its own path, see `treeSchema`.
-        return this.isListSource ? '' : this.relativeSourcePath
-      },
-
-      treeChildrenPath() {
-        // The routes of the items of tree lists continue the path of the list,
-        // which is empty in single-component views, while the routes of the
-        // children of tree objects continue the object's path with the path of
-        // the children, see `DitoTreeItem.childrenRoutePath`. Trees without a
-        // route component have no edit routes, see `path`.
-        return this.isListSource && this.routeComponent
-          ? this.relativeSourcePath
-          : null
-      },
-
-      treeSchema() {
-        return this.isListSource
-          ? {
-              children: {
-                name: this.name,
-                ...this.schema
-              }
-            }
-          : this.schema
-      },
-
-      hasEditableForms() {
-        const hasEditableForms = schema => {
-          const hasForm = hasFormSchema(schema)
-          return (
-            (
-              hasForm &&
-              this.getSchemaValue('editable', {
-                type: Boolean,
-                default: false,
-                schema
-              })
-            ) ||
-            // Object sources without forms of their own, e.g. tree objects,
-            // can still have children with editable forms, see
-            // `SourceMixin.processSchema()`.
-            (
-              (hasForm || isObjectSource(schema)) &&
-              !!schema.children &&
-              hasEditableForms(schema.children)
-            )
-          )
+      // The forms of the tree's items are routed right after its route:
+      isEditingItem: computed(() => {
+        const node = source.sourceNode.value
+        let routeNode = node && routeContext.childNode
+        while (routeNode && routeNode !== node) {
+          routeNode = routeNode.parent
         }
-        return hasEditableForms(this.schema)
+        return !!routeNode
+      }),
+
+      treeData: computed(() =>
+        isListSource.value ? { [props.schema.name]: value.value } : value.value
+      ),
+
+      // Remove `name` from `dataPath`, as it is added to `treeData` and
+      // `treeSchema`:
+      treeDataPath: computed(() =>
+        isListSource.value ? getParentDataPath(props.dataPath) : props.dataPath
+      ),
+
+      // Tree objects are edited in the form of their root item:
+      rootPath: computed(() =>
+        source.isObjectSource.value ? source.sourceContext.objectPath : null
+      ),
+
+      treeSchema: computed(() =>
+        isListSource.value
+          ? { children: { name: props.schema.name, ...props.schema } }
+          : props.schema
+      ),
+
+      // The only writer of the tree, see `DitoTreeItem`:
+      changeChildren({ entry, children }) {
+        services.dataContext.model.replaceItems(entry, children)
+        onChange()
       }
-    },
-
-    methods: {
-      // Replaces the children of the tree item that holds them in `data`, as
-      // the only writer of the tree, see `DitoTreeItem.changeChildren()`.
-      changeChildren({ data, childrenSchema, childrenPath, children }) {
-        const previousChildren = data[childrenSchema.name]
-        updateOrder(childrenSchema, children)
-        if (data === this.treeData && this.isListSource) {
-          // The root item of tree lists holds the list in a wrapper object,
-          // see `treeData`.
-          this.value = children
-        } else {
-          data[childrenSchema.name] = children
-        }
-        this.followEditedChild({
-          childrenPath,
-          previousChildren,
-          children
-        })
-        this.onChange()
-      },
-
-      // Keeps the form of an edited child or of one of its descendants open
-      // at the child's new index, or closes it if the child was removed.
-      followEditedChild({ childrenPath, previousChildren, children }) {
-        const prefix = `${childrenPath}/`
-        const { editPath } = this
-        if (childrenPath !== null && editPath.startsWith(prefix)) {
-          const [index, ...rest] = editPath.slice(prefix.length).split('/')
-          const newIndex = children.indexOf(previousChildren?.[index])
-          if (newIndex !== +index) {
-            const path =
-              newIndex >= 0
-                ? [`${this.path}${prefix}${newIndex}`, ...rest].join('/')
-                : this.path
-            this.$router.push({ path, query: this.$route.query })
-          }
-        }
-      }
-    },
-
-    async processSchema(
-      api,
-      schema,
-      name,
-      routes,
-      level,
-      nested = true,
-      flatten = false,
-      process = null
-    ) {
-      await Promise.all([
-        resolveSchemaComponents(schema.properties),
-        SourceMixin.processSchema(
-          api,
-          schema,
-          name,
-          routes,
-          level,
-          nested,
-          flatten,
-          // Pass process() to add more routes to childRoutes:
-          (childRoutes, level) => {
-            const { children } = schema
-            if (children) {
-              // Add `type` to the nested tree list.
-              children.type = 'tree-list'
-              // Recursively call `processSchema()` for the nested tree list:
-              return this.processSchema(
-                api,
-                children,
-                children.name,
-                childRoutes,
-                level,
-                nested,
-                true, // Pass `true` for `flatten` in tree lists.
-                process
-              )
-            }
-          }
-        )
-      ])
-    },
-
-    getFormSchemasForProcessing(schema, context) {
-      // Convert nested children schema to stand-alone schema component,
-      // present in each of the forms, as required by `processSchemaData()`
-      const { children } = schema
-      return getFormSchemas(
-        schema,
-        context,
-        children
-          ? form => ({
-              ...form,
-              components: {
-                ...form.components,
-                [children.name]: children
-              }
-            })
-          : null
-      )
     }
   }
-)
+}
+
+const treeTraits = {
+  ...sourceTraits,
+  component: DitoTypeTreeList,
+  // The forms of their children are routed next to theirs:
+  hasEmbeddedForms: true,
+
+  getChildSourceSchemas(schema) {
+    return schema.children ? [schema.children] : []
+  },
+
+  async setupSchema({ schema, api, name }) {
+    assertRemovedSchemaKeys(schema, name, {
+      open: `'collapsed'`,
+      expanded: `'collapsed: false'`
+    })
+    const { children } = schema
+    if (children) {
+      // Change the schema in place, as the route tree, uids and data model are
+      // keyed by schema identity:
+      children.type = 'tree-list'
+    }
+    await Promise.all([
+      resolveSchemaComponents(schema.properties),
+      sourceTraits.setupSchema({ schema, api, name }),
+      children && setupSchemaComponent(api, children, children.name)
+    ])
+  }
+}
+
+defineType({ ...treeTraits, type: 'tree-list', sourceType: 'list' })
+defineType({ ...treeTraits, type: 'tree-object', sourceType: 'object' })
+
+export default DitoTypeTreeList
 </script>
 
 <style lang="scss">

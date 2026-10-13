@@ -3,7 +3,8 @@
   :id="componentPath"
   :class=`{
     'dito-tree-item--dragging': isDragging,
-    'dito-tree-item--active': active
+    'dito-tree-item--active': active,
+    'dito-tree-item--error': hasErrors
   }`
   :style="level > 0 && { '--level': level }"
 )
@@ -16,8 +17,8 @@
       tabindex="0"
       :aria-label="ariaLabel"
       :aria-expanded="opened"
-      @click.stop="opened = !opened"
-      @keydown.enter.space.prevent="opened = !opened"
+      @click.stop="toggle"
+      @keydown.enter.space.prevent="toggle"
     )
       .dito-chevron(
         v-if="numEntries"
@@ -35,14 +36,13 @@
       .dito-tree-label(
         v-html="label"
       )
-    DitoEditButtons.dito-buttons--small(
+    DitoEditButtons.dito-buttons--small.dito-tree-item__buttons(
       v-if="hasEditButtons"
       :round="false"
       :schema="schema"
       :formSchema="getItemFormSchema(schema, data, context)"
       :dataPath="dataPath"
       :data="data"
-      :meta="nestedMeta"
       :store="store"
       :disabled="disabled"
       :draggable="draggable"
@@ -64,13 +64,13 @@
         DitoLabel(
           v-if="property.label !== false"
           :label="getLabel(property)"
+          :context="context"
         )
       DitoTableCell(
         :cell="property"
         :schema="schema"
         :dataPath="dataPath"
         :data="data"
-        :meta="nestedMeta"
         :store="store"
         :disabled="disabled"
       )
@@ -79,7 +79,7 @@
     v-show="opened"
     :options="getDraggableOptions(true)"
     :draggable="childrenDraggable"
-    :modelValue="childrenList"
+    :modelValue="childrenList || []"
     @update:modelValue="changeChildren"
   )
     DitoTreeItem(
@@ -98,29 +98,32 @@
       @move="delta => moveChild(item.data, delta)"
       @change-children="change => $emit('changeChildren', change)"
     )
-    //- TODO: Convert dito-tree-item to use dito-label internally, and then
-    //- pass `asObject: true` in the `getItemLabel()` call above.
 </template>
 
 <script>
-import DitoComponent from '../DitoComponent.js'
+import { computed, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import DitoEditButtons from './DitoEditButtons.vue'
-import ItemMixin from '../mixins/ItemMixin'
-import SortableMixin from '../mixins/SortableMixin.js'
+import { useSortable } from '../composables/useSortable.ts'
+import { useSourceItems } from '../composables/useSourceItems.ts'
+import { useSchemaContext } from '../composables/useSchemaContext.ts'
+import { useSchemaEvents } from '../composables/useSchemaEvents.ts'
+import { useSchemaValue } from '../composables/useSchemaValue.ts'
+import { useComponentPath } from '../composables/useComponentPath.ts'
 import { appendDataPath, getRelativeDataPath } from '../utils/data.js'
-import { getSchemaAccessor } from '../utils/accessor.js'
-import { getNamedSchemas, hasFormSchema } from '../utils/schema/lookup.js'
+import {
+  getItemFormSchema,
+  getNamedSchemas,
+  hasFormSchema
+} from '../utils/schema/lookup.js'
+import { getItemUid } from '../utils/schema/data.js'
 import { getTextFromHtml } from '../utils/html.js'
 import { getListWithMovedItem } from '../utils/list.js'
 import { confirmAndRemove } from '../utils/dialogs.js'
 import { isPathWithin } from '../utils/route.js'
 
-// Renders an item of a tree list or tree object, see `DitoTypeTreeList`, which
-// is the item's `sourceComponent`. Items don't write the tree: They emit the
-// changed children with `changeChildren`, which the tree list applies.
-// @vue/component
-export default DitoComponent.component('DitoTreeItem', {
-  mixins: [ItemMixin, SortableMixin],
+// Items don't write the tree: They emit `changeChildren` for the tree list.
+export default {
   components: { DitoEditButtons },
   emits: ['delete', 'move', 'changeChildren'],
 
@@ -128,11 +131,8 @@ export default DitoComponent.component('DitoTreeItem', {
     schema: { type: Object, required: true },
     dataPath: { type: String, required: true },
     data: { type: [Array, Object], default: null },
-    path: { type: String, default: '' },
-    // The path that the edit routes of the children continue with their
-    // indices, if it differs from the path of the children within `path`, see
-    // `DitoTypeTreeList.treeChildrenPath`.
-    childrenPath: { type: String, default: null },
+    // The path of the form that edits the item, if it has one:
+    path: { type: String, default: null },
     open: { type: Boolean, default: false },
     active: { type: Boolean, default: false },
     draggable: { type: Boolean, default: false },
@@ -140,216 +140,187 @@ export default DitoComponent.component('DitoTreeItem', {
     level: { type: Number, default: 0 }
   },
 
-  data() {
-    return {
-      opened: this.open || this.schema.open
-    }
-  },
-
-  computed: {
-    componentPath() {
-      // Continue the path of the tree list with the item indices and children
-      // names of the data path. The root item's data path doesn't contain the
-      // list's name, see `DitoTypeTreeList.treeDataPath`.
-      const { componentPath, dataPath } = this.sourceComponent
-      const relativeDataPath = getRelativeDataPath(this.dataPath, dataPath)
-      return relativeDataPath
-        ? appendDataPath(componentPath, relativeDataPath)
-        : componentPath
-    },
-
-    meta() {
-      return this.sourceComponent.meta
-    },
-
-    store() {
-      return this.sourceComponent.store
-    },
-
-    disabled() {
-      return this.sourceComponent.disabled
-    },
-
-    nestedMeta() {
-      return {
-        ...this.meta,
-        schema: this.schema
-      }
-    },
-
-    properties() {
-      return getNamedSchemas(this.schema.properties)
-    },
-
-    childrenSchema() {
-      return this.schema.children
-    },
-
-    childrenRoutePath() {
-      const { childrenPath, childrenSchema } = this
-      return (
-        childrenPath ?? (
-          childrenSchema?.path
-            ? `${this.path}/${childrenSchema.path}`
-            : null
-        )
-      )
-    },
-
-    childrenList() {
-      const name = this.childrenSchema?.name
-      return name && this.data[name]
-    },
-
-    childrenDraggable() {
-      return (
-        this.childrenList?.length > 1 &&
-        this.getSchemaValue('draggable', {
-          type: Boolean,
-          default: false,
-          schema: this.childrenSchema
-        })
-      )
-    },
-
-    numChildren() {
-      return this.childrenList?.length || 0
-    },
-
-    numProperties() {
-      return this.properties?.length || 0
-    },
-
-    numEntries() {
-      return this.numProperties + this.numChildren
-    },
-
-    childrenItems() {
-      const { childrenSchema, childrenList, childrenRoutePath } = this
-      if (childrenSchema && childrenList) {
-        const { editPath } = this.sourceComponent
-        // Build a children list with child meta information for the template.
-        // `open` only reflects the edit path, so that items closed by the user
-        // reopen when they come into it. `schema.open` is applied in `data()`.
-        return childrenList.map((data, index) => {
-          const path =
-            childrenRoutePath !== null ? `${childrenRoutePath}/${index}` : ''
-          // Only count as "in edit path" when it's not the full edit path.
-          const open = (
-            !!path &&
-            editPath !== path &&
-            isPathWithin(editPath, path)
-          )
-          const active = editPath === path
-          return { data, path, open, active }
-        })
-      }
-      return []
-    },
-
-    ariaLabel() {
-      return this.label ? getTextFromHtml(this.label) : null
-    },
-
-    details() {
-      const { numChildren } = this
-      return (
-        numChildren &&
-        `${numChildren} ${
-          numChildren === 1 ? 'item' : 'items'
-        }`
-      )
-    },
-
-    hasEditButtons() {
-      return this.draggable || this.editable || this.deletable
-    },
-
-    editPath() {
-      // The edit routes of the items are handled by the routes of the tree
-      // list, allowing reloads as well, see `DitoTypeTreeList.processSchema()`.
-      return this.editable && this.path
-        ? `${this.sourceComponent.path}${this.path}`
-        : null
-    },
-
-    editable: getSchemaAccessor('editable', {
-      type: Boolean,
-      default: false,
-      get(editable) {
-        return editable && hasFormSchema(this.schema)
-      }
-    }),
-
-    deletable: getSchemaAccessor('deletable', {
-      type: Boolean,
-      default: false
+  setup(props, { emit }) {
+    const currentRoute = useRoute()
+    const { context, createContext, services } = useSchemaContext(props)
+    const { emitEvent } = useSchemaEvents(() => props.schema, {
+      services,
+      createContext
     })
-  },
-
-  watch: {
-    open(open) {
-      // Open the item also when it comes into the edit path later, e.g. when
-      // navigating to the form of one of its children.
-      if (open) {
-        this.opened = true
+    const { sourceContext } = services
+    const { getSchemaValue, getLabel } = useSchemaValue(context)
+    // Continue the path of the tree list, whose name the data path of the root
+    // item doesn't contain:
+    const { componentPath } = useComponentPath(
+      () => props.dataPath,
+      () => {
+        const relativeDataPath = getRelativeDataPath(
+          props.dataPath,
+          sourceContext.dataPath
+        )
+        return relativeDataPath
+          ? appendDataPath(sourceContext.componentPath, relativeDataPath)
+          : sourceContext.componentPath
       }
-    }
-  },
+    )
+    const { getItemDataPath, getItemLabel } = useSourceItems({
+      services,
+      getContext: () => context,
+      getSchema: () => props.schema,
+      getDataPath: () => props.dataPath
+    })
+    const opened = ref(
+      props.open ||
+      !getSchemaValue('collapsed', { type: Boolean, default: true })
+    )
 
-  methods: {
-    changeChildren(children) {
-      this.$emit('changeChildren', {
-        data: this.data,
-        childrenSchema: this.childrenSchema,
-        childrenPath: this.childrenRoutePath,
+    // Open the item also when it comes into the edit path later:
+    watch(
+      () => props.open,
+      open => {
+        if (open) {
+          opened.value = true
+        }
+      }
+    )
+
+    const childrenSchema = computed(() => props.schema.children)
+    const childrenList = computed(() => {
+      const name = childrenSchema.value?.name
+      return name && props.data[name]
+    })
+    const properties = computed(() => getNamedSchemas(props.schema.properties))
+    const numChildren = computed(() => childrenList.value?.length || 0)
+    const editable = computed(
+      () => (
+        getSchemaValue('editable', { type: Boolean, default: false }) &&
+        hasFormSchema(props.schema)
+      )
+    )
+    const deletable = computed(() =>
+      getSchemaValue('deletable', { type: Boolean, default: false })
+    )
+
+    const changeChildren = children => {
+      emit('changeChildren', {
+        // The list entry for the change API of the data model:
+        entry: {
+          schema: childrenSchema.value,
+          list: childrenList.value,
+          dataPath: getItemDataPath(childrenSchema.value)
+        },
         children
       })
-    },
+    }
 
-    // Moves the child by `delta` positions, see `DitoDragHandle`.
-    moveChild(child, delta) {
-      const children = getListWithMovedItem(this.childrenList, child, delta)
-      if (children) {
-        this.changeChildren(children)
-      }
-    },
+    return {
+      getItemUid,
+      getItemFormSchema,
+      getItemDataPath,
+      getItemLabel,
+      context,
+      componentPath,
+      ...useSortable(),
+      getLabel,
+      opened,
+      properties,
+      childrenSchema,
+      childrenList,
+      editable,
+      deletable,
+      changeChildren,
 
-    // Removes the child after confirming it, like inlined lists do. The removal
-    // is transient, as the tree is part of its form's data.
-    async deleteChild(child) {
-      await confirmAndRemove(this, {
-        label: this.getItemLabel(this.childrenSchema, child, {
-          index: this.childrenList.indexOf(child),
-          extended: true
-        }),
-        isTransient: true,
-        remove: () => {
-          // Look up the child by identity once confirmed, as the children may
-          // have changed while the dialog was open.
-          const children = this.childrenList.filter(it => it !== child)
-          if (children.length === this.childrenList.length) {
-            return false
-          }
-          this.changeChildren(children)
+      toggle() {
+        opened.value = !opened.value
+        emitEvent('toggle', { context: { collapsed: !opened.value } })
+      },
+
+      store: computed(() => sourceContext.store),
+      disabled: computed(() => sourceContext.isDisabled),
+      hasErrors: computed(() =>
+        services.dataContext.model.hasErrorsWithin(props.data)
+      ),
+      numEntries: computed(
+        () => (properties.value?.length || 0) + numChildren.value
+      ),
+      ariaLabel: computed(() =>
+        props.label ? getTextFromHtml(props.label) : null
+      ),
+      details: computed(() => {
+        const count = numChildren.value
+        return count && `${count} ${count === 1 ? 'item' : 'items'}`
+      }),
+      hasEditButtons: computed(
+        () => props.draggable || editable.value || deletable.value
+      ),
+      editPath: computed(() => (editable.value ? props.path : null)),
+
+      childrenDraggable: computed(
+        () => (
+          childrenList.value?.length > 1 &&
+          getSchemaValue('draggable', {
+            type: Boolean,
+            default: false,
+            schema: childrenSchema.value
+          })
+        )
+      ),
+
+      childrenItems: computed(() => {
+        const schema = childrenSchema.value
+        const list = childrenList.value
+        if (schema && list) {
+          const routePath = currentRoute.path
+          // Reflect the route in `open`, to reopen items closed by the user:
+          return list.map((data, index) => {
+            const path = services.routeContext?.getFormPath(
+              getItemDataPath(schema, index)
+            )
+            const active = !!path && routePath === path
+            const open = !!path && !active && isPathWithin(routePath, path)
+            return { data, path, open, active }
+          })
         }
-      })
-    },
+        return []
+      }),
 
-    // @override
-    onEndDrag() {
-      // The tree list applies the reordered children and notifies of the
-      // change, see `DitoTypeTreeList.changeChildren()`.
-      this.isDragging = false
+      moveChild(child, delta) {
+        const children = getListWithMovedItem(childrenList.value, child, delta)
+        if (children) {
+          changeChildren(children)
+        }
+      },
+
+      // The removal is transient, as the tree is part of its form's data:
+      async deleteChild(child) {
+        await confirmAndRemove(services, {
+          label: getItemLabel(childrenSchema.value, child, {
+            index: childrenList.value.indexOf(child),
+            extended: true
+          }),
+          isTransient: true,
+          remove: () => {
+            // The children may have changed while the dialog was open:
+            const list = childrenList.value
+            const children = list.filter(it => it !== child)
+            if (children.length === list.length) {
+              return false
+            }
+            changeChildren(children)
+          }
+        })
+      }
     }
   }
-})
+}
 </script>
 
 <style lang="scss">
 @import '../styles/_imports';
 
 .dito-tree-item {
+  $self: &;
+
   --chevron-indent: #{$chevron-indent};
 
   overflow: hidden;
@@ -417,8 +388,7 @@ export default DitoComponent.component('DitoTreeItem', {
     color: rgba($color-black, 0.2);
   }
 
-  // TODO: BEM: Style an element class of this block, e.g. `&__buttons`.
-  .dito-buttons {
+  &__buttons {
     // Leave the width to the branch, so its focus ring spans the row:
     flex: none;
     display: flex;
@@ -432,7 +402,7 @@ export default DitoComponent.component('DitoTreeItem', {
 
   .dito-tree-header:hover,
   .dito-tree-header:focus-within {
-    > .dito-buttons {
+    > #{$self}__buttons {
       opacity: 1;
     }
   }
@@ -440,9 +410,15 @@ export default DitoComponent.component('DitoTreeItem', {
   // Hide buttons during dragging
   &--dragging {
     .dito-tree-header {
-      > .dito-buttons {
+      > #{$self}__buttons {
         visibility: hidden;
       }
+    }
+  }
+
+  &--error {
+    > .dito-tree-header {
+      box-shadow: inset $error-bar-width 0 $color-error;
     }
   }
 

@@ -3,7 +3,6 @@ DitoSchema.dito-schema-inlined(
   :schema="schema"
   :dataPath="dataPath"
   :data="data"
-  :meta="meta"
   :store="store"
   :label="isCompact ? null : label"
   :info="info"
@@ -14,19 +13,18 @@ DitoSchema.dito-schema-inlined(
   :collapsed="collapsed"
   :collapsible="collapsible"
   :generateLabels="!isCompact"
+  @toggle="collapsed => $emit('toggle', collapsed)"
 )
-  //- Render dito-edit-buttons for inlined schemas separately from all
-  //- others in `TypeList` as a scope, for better handling of layout.
-  //- `sourceSchema` is the schema of the list or object that holds the item,
-  //- passed through `meta.schema`, while `schema` is the item's form.
-  template(#edit-buttons)
+  //- The edit buttons take the schema of the list or object that holds the
+  //- item, while `schema` is the item's form. The schema passes their class:
+  template(#edit-buttons="{ class: buttonsClass }")
     DitoEditButtons(
       v-if="deletable || draggable || editable || insertIndex != null"
-      :schema="sourceSchema"
+      :class="buttonsClass"
+      :schema="sourceContext.schema"
       :formSchema="schema"
       :dataPath="dataPath"
       :data="data"
-      :meta="meta"
       :store="store"
       :disabled="disabled"
       :deletable="deletable"
@@ -42,17 +40,17 @@ DitoSchema.dito-schema-inlined(
 </template>
 
 <script>
-import DitoComponent from '../DitoComponent.js'
+import { computed } from 'vue'
+import { useServices } from '../composables/useSchemaContext.ts'
 import { isCompact } from '../utils/schema/structure.js'
-// @vue/component
-export default DitoComponent.component('DitoSchemaInlined', {
-  emits: ['delete', 'move'],
+
+export default {
+  emits: ['delete', 'move', 'toggle'],
 
   props: {
     schema: { type: Object, required: true },
     dataPath: { type: String, required: true },
     data: { type: Object, required: true },
-    meta: { type: Object, required: true },
     store: { type: Object, required: true },
     label: { type: [String, Object], default: null },
     info: { type: String, default: null },
@@ -68,12 +66,14 @@ export default DitoComponent.component('DitoSchemaInlined', {
     insertIndex: { type: Number, default: null }
   },
 
-  computed: {
-    isCompact() {
-      return isCompact(this.schema)
+  setup(props) {
+    const services = useServices()
+    return {
+      sourceContext: computed(() => services.sourceContext),
+      isCompact: computed(() => isCompact(props.schema))
     }
   }
-})
+}
 </script>
 
 <style lang="scss">

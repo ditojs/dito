@@ -1,6 +1,8 @@
 import { vi } from 'vitest'
+import { toRaw } from 'vue'
 import { flushPromises } from '@vue/test-utils'
-import { mountSchema, mountForm } from '../test/mount.js'
+import { mountSchema, mountForm, enterValue } from '../test/mount.js'
+import DitoTypeSection from './DitoTypeSection.vue'
 
 describe('DitoTypeSection', () => {
   it('renders its components with the data of the parent', async () => {
@@ -96,12 +98,13 @@ describe('DitoTypeSection', () => {
         }
       }
     })
-    const section = wrapper.findComponent({ name: 'DitoTypeSection' })
+    const section = wrapper.findComponent(DitoTypeSection)
     expect(section.vm.value).toBe(undefined)
     expect('details' in data).toBe(false)
   })
 
-  it('opens collapsed sections when their label is clicked', async () => {
+  it('toggles collapsed sections when their label is clicked', async () => {
+    const onToggle = vi.fn()
     const { findField, findContainer } = await mountSchema({
       schema: {
         components: {
@@ -110,6 +113,7 @@ describe('DitoTypeSection', () => {
             label: 'Details',
             collapsible: true,
             collapsed: true,
+            onToggle,
             components: { title: { type: 'text' } }
           }
         }
@@ -118,11 +122,53 @@ describe('DitoTypeSection', () => {
     })
     const section = findField('details')
     expect(section.find('input').exists()).toBe(false)
-    await findContainer('details')
-      .find('.dito-schema-header .dito-label')
-      .trigger('click')
-    await flushPromises()
+    const toggle = async () => {
+      await findContainer('details')
+        .find('.dito-schema-header .dito-label')
+        .trigger('click')
+      await flushPromises()
+    }
+    await toggle()
     expect(findField('details').find('input').exists()).toBe(true)
+    await toggle()
+    expect(onToggle.mock.calls.map(([{ collapsed }]) => collapsed)).toEqual([
+      false,
+      true
+    ])
+  })
+
+  it('fires its own handlers for the events of its components', async () => {
+    const onInitialize = vi.fn()
+    const onChange = vi.fn()
+    const onClick = vi.fn()
+    const onOuterChange = vi.fn()
+    const { findField } = await mountForm({
+      schema: {
+        onChange: onOuterChange,
+        components: {
+          details: {
+            type: 'section',
+            onInitialize,
+            onChange,
+            onClick,
+            components: {
+              title: { type: 'text' },
+              check: { type: 'button', label: 'Check' }
+            }
+          }
+        }
+      },
+      data: { title: 'Emma' }
+    })
+    expect(onInitialize).toHaveBeenCalledOnce()
+    await enterValue(findField('details').find('input'), 'Persuasion')
+    expect(onChange).toHaveBeenCalledOnce()
+    expect(onChange.mock.calls[0][0].dataPath).toBe('title')
+    // Change events bubble on to the schemas above:
+    expect(onOuterChange).toHaveBeenCalledOnce()
+    await findField('details').find('button').trigger('click')
+    await flushPromises()
+    expect(onClick).toHaveBeenCalledOnce()
   })
 
   it('renders components conditionally with `if`', async () => {
@@ -167,6 +213,12 @@ describe('DitoTypeSection', () => {
     expect(await submit()).toBe(null)
     expect(findField('details').find('input').exists()).toBe(true)
     expect(getErrors('title')).toEqual(['The Title field is required.'])
+    // The field is focused once the opening transition has measured it:
+    await vi.waitFor(() =>
+      expect(document.activeElement).toBe(
+        findField('details').find('input').element
+      )
+    )
   })
 
   it('reveals the components with errors in sections of list items', async () => {
@@ -203,42 +255,6 @@ describe('DitoTypeSection', () => {
     ])
   })
 
-  it(`doesn't navigate to data paths outside of its data`, async () => {
-    const { getComponent } = await mountSchema({
-      schema: {
-        components: {
-          chapters: {
-            type: 'list',
-            inlined: true,
-            form: {
-              type: 'form',
-              components: {
-                details: {
-                  type: 'section',
-                  components: { title: { type: 'text' } }
-                }
-              }
-            }
-          }
-        }
-      },
-      data: { chapters: [{ title: 'Emma' }] }
-    })
-    const section = getComponent('chapters/0/details')
-    const onComplete = vi.fn(() => true)
-    expect(section.dataPath).toBe('chapters/0')
-    expect(await section.navigateToComponent('chapters/1/title', onComplete))
-      .toBe(false)
-    expect(await section.navigateToComponent('chapters/0', onComplete)).toBe(
-      false
-    )
-    expect(onComplete).not.toHaveBeenCalled()
-    expect(
-      await section.navigateToComponent('chapters/0/title', onComplete)
-    ).toBe(true)
-    expect(onComplete).toHaveBeenCalledOnce()
-  })
-
   it('shares the width of its container with its components', async () => {
     const { findContainer } = await mountSchema({
       schema: {
@@ -262,5 +278,36 @@ describe('DitoTypeSection', () => {
       findContainer(name).element.style.getPropertyValue('--basis-mobile')
     expect(getMobileBasis('title')).toBe('50%')
     expect(getMobileBasis('subtitle')).toBe('100%')
+  })
+
+  it('passes the items of its data to `components()`', async () => {
+    const contexts = []
+    const { data } = await mountForm({
+      schema: {
+        components: {
+          publisher: {
+            type: 'object',
+            inlined: true,
+            form: {
+              type: 'form',
+              components: {
+                address: {
+                  type: 'section',
+                  components: ({ item, parentItem }) => {
+                    contexts.push({ item, parentItem })
+                    return { city: { type: 'text' } }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      data: { title: 'Emma', publisher: { city: 'London' } }
+    })
+    // The data model's walks create the components before rendering does:
+    expect(contexts).toHaveLength(1)
+    expect(toRaw(contexts[0].item)).toBe(toRaw(data.publisher))
+    expect(toRaw(contexts[0].parentItem)).toBe(toRaw(data))
   })
 })
