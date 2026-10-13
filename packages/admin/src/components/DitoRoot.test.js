@@ -36,19 +36,29 @@ describe('DitoRoot', () => {
       expect(isUnloadPrevented()).toBe(true)
     })
 
-    it('prevents unloading with unsaved changes in a view', async () => {
+    const editViewTitle = async buttons => {
       const admin = await mountAdmin({
         views: {
           books: {
             type: 'view',
-            components: { title: { type: 'text' } }
+            components: { title: { type: 'text' } },
+            buttons
           }
         }
       })
       await admin.navigate('/books')
       await enterValue(admin.wrapper.find('input[name="title"]'), 'Emma')
       await flushPromises()
+    }
+
+    it('prevents unloading with unsaved changes in a view', async () => {
+      await editViewTitle({ save: { type: 'submit' } })
       expect(isUnloadPrevented()).toBe(true)
+    })
+
+    it(`doesn't prevent unloading with edits that a view can't save`, async () => {
+      await editViewTitle({ apply: { type: 'button' } })
+      expect(isUnloadPrevented()).toBe(false)
     })
 
     it(`doesn't prevent unloading after saving`, async () => {
@@ -129,11 +139,11 @@ describe('DitoRoot', () => {
               ? { data: { user: { id: 1, username: data.username } } }
               : null
       })
-      const { session, viewRegistry } = admin.root
+      const { session } = admin.context
       await admin.navigate('/books')
       await session.logout()
       await flushPromises()
-      expect(viewRegistry.views).toEqual({})
+      expect(admin.context.views).toEqual({})
       expect(admin.router.currentRoute.value.path).toBe('/')
       expect(admin.wrapper.find('.dito-view').exists()).toBe(false)
 
@@ -144,8 +154,8 @@ describe('DitoRoot', () => {
       await enterValue(dialog.find('input[name="password"]'), 'secret')
       await dialog.find('button[type="submit"]').trigger('click')
       await flushPromises()
-      expect(session.user.username).toBe('reader')
-      expect(Object.keys(viewRegistry.views)).toEqual(['books'])
+      expect(admin.context.user.username).toBe('reader')
+      expect(Object.keys(admin.context.views)).toEqual(['books'])
       await admin.navigate('/books')
       expect(
         admin.wrapper.find('.dito-view input[name="title"]').exists()
@@ -157,7 +167,7 @@ describe('DitoRoot', () => {
     it('rejects when the components fail to set up', async () => {
       const admin = await mountAdmin({ views: {} })
       await expect(
-        admin.root.showDialog({
+        admin.context.showDialog({
           components: {
             books: {
               type: 'list',
@@ -168,32 +178,16 @@ describe('DitoRoot', () => {
       ).rejects.toThrow('Dialogs do not support components that produce routes')
       expect(admin.root.dialogs).toEqual({})
     })
-  })
 
-  describe('registerLoading()', () => {
-    it('counts the registered loading operations and warns once', async () => {
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    it('rejects the keys of 3.x in buttons', async () => {
       const admin = await mountAdmin({ views: {} })
-      const { root } = admin
-      const header = admin.wrapper.find('.dito-header')
-      root.registerLoading(true)
-      root.registerLoading(true)
-      root.registerLoading(false)
-      await flushPromises()
-      expect(root.isLoading).toBe(true)
-      expect(header.attributes('aria-busy')).toBe('true')
-      root.registerLoading(false)
-      root.registerLoading(false)
-      expect(root.isLoading).toBe(false)
-      // Unbalanced calls don't end the operations of others:
-      const end = root.loadingTracker.begin()
-      root.registerLoading(false)
-      expect(root.isLoading).toBe(true)
-      end()
-      const deprecationWarnings = warn.mock.calls.filter(([message]) =>
-        String(message).includes('registerLoading() is deprecated')
-      )
-      expect(deprecationWarnings).toHaveLength(1)
+      await expect(
+        admin.context.showDialog({
+          components: {},
+          buttons: { confirm: { type: 'submit', data: {} } }
+        })
+      ).rejects.toThrow(`Unsupported schema key 'data' in 'confirm'`)
+      expect(admin.root.dialogs).toEqual({})
     })
   })
 
@@ -224,25 +218,43 @@ describe('DitoRoot', () => {
       } finally {
         admin.app.unmount()
         element.remove()
-        appState.user = null
         vi.restoreAllMocks()
       }
     })
   })
 
-  describe('notifications', () => {
-    it('closes all notifications', async () => {
-      vi.spyOn(console, 'log').mockImplementation(() => {})
-      const admin = await mountAdmin({ views: {} })
-      const findNotifications = () =>
-        admin.element.querySelectorAll('.dito-notification')
-      admin.root.notify({ type: 'info', title: 'Saved', text: 'Emma' })
-      admin.root.notify({ type: 'info', title: 'Saved', text: 'Dune' })
+  describe('header', () => {
+    const mountLoadingAdmin = async options => {
+      const admin = await mountAdmin({
+        views: {
+          books: {
+            type: 'view',
+            component: {
+              type: 'list',
+              resource: { path: 'books' },
+              columns: { title: {} }
+            }
+          }
+        },
+        // Keep loading the list:
+        request: () => new Promise(() => {}),
+        options
+      })
+      admin.navigate('/books')
       await flushPromises()
-      expect(findNotifications()).toHaveLength(2)
-      admin.root.closeNotifications()
-      await vi.waitFor(() => expect(findNotifications()).toHaveLength(0))
-      vi.restoreAllMocks()
+      return admin.wrapper.find('.dito-header')
+    }
+
+    it('shows a spinner while loading', async () => {
+      const header = await mountLoadingAdmin()
+      expect(header.attributes('aria-busy')).toBe('true')
+      expect(header.find('.dito-spinner').exists()).toBe(true)
+    })
+
+    it(`doesn't show the spinner with \`spinner: null\``, async () => {
+      const header = await mountLoadingAdmin({ spinner: null })
+      expect(header.attributes('aria-busy')).toBe('true')
+      expect(header.find('.dito-spinner').exists()).toBe(false)
     })
   })
 

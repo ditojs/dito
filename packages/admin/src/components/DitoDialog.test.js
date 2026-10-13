@@ -3,12 +3,11 @@ import { flushPromises } from '@vue/test-utils'
 import { mountAdmin } from '../test/mount.js'
 
 // Shows a dialog through `DitoRoot.showDialog()`, and returns its promise, the
-// dialog element, and whether the promise settled.
+// dialog element, whether it's still shown, and whether the promise settled.
 async function showDialog(options) {
   const admin = await mountAdmin({ views: {} })
-  const removeDialog = vi.spyOn(admin.root, 'removeDialog')
   let isSettled = false
-  const promise = admin.root.showDialog(options).finally(() => {
+  const promise = admin.context.showDialog(options).finally(() => {
     isSettled = true
   })
   await flushPromises()
@@ -17,7 +16,7 @@ async function showDialog(options) {
     admin,
     promise,
     dialog,
-    removeDialog,
+    isShown: () => Object.keys(admin.root.dialogs).length > 0,
     get isSettled() {
       return isSettled
     }
@@ -35,10 +34,8 @@ describe('DitoDialog', () => {
           children: { name: 'subpages' }
         }
       },
-      data: {
-        pages: [{ name: 'About', subpages: [{ name: 'Team' }] }]
-      },
-      buttons: { cancel: {} }
+      buttons: { cancel: {} },
+      data: { pages: [{ name: 'About', subpages: [{ name: 'Team' }] }] }
     })
     expect(dialog.find('.dito-tree-item').exists()).toBe(true)
     expect(dialog.text()).toContain('About')
@@ -85,8 +82,22 @@ describe('DitoDialog', () => {
     expect(await withCancel.promise).toBe(undefined)
   })
 
-  it('resolves with the data on submit and removes itself once', async () => {
-    const { dialog, promise, removeDialog } = await showDialog({
+  it('cancels with Escape without buttons', async () => {
+    for (const buttons of [undefined, {}]) {
+      const { dialog, promise } = await showDialog({ components, buttons })
+      await dialog.find('input').trigger('keydown', { key: 'Escape' })
+      expect(await promise).toBe(undefined)
+    }
+  })
+
+  it('shows dialogs without components', async () => {
+    const { dialog, promise } = await showDialog({ buttons: { cancel: {} } })
+    await dialog.find('.dito-button').trigger('click')
+    expect(await promise).toBe(undefined)
+  })
+
+  it('resolves with the data on submit and removes itself', async () => {
+    const { dialog, promise, isShown } = await showDialog({
       components,
       buttons: { cancel: {}, apply: { type: 'submit' } },
       data: { title: 'Emma' }
@@ -94,7 +105,7 @@ describe('DitoDialog', () => {
     await dialog.find('form').trigger('submit')
     expect(await promise).toEqual({ title: 'Emma' })
     await flushPromises()
-    expect(removeDialog).toHaveBeenCalledOnce()
+    expect(isShown()).toBe(false)
   })
 
   it(`doesn't cancel with Escape keys that its components handled`, async () => {
@@ -110,40 +121,108 @@ describe('DitoDialog', () => {
     expect(result.isSettled).toBe(false)
   })
 
-  it('rejects through `dialogComponent.reject()` of its buttons', async () => {
-    const error = new Error('Renaming is not allowed')
-    const { dialog, promise, removeDialog } = await showDialog({
+  it('resolves with the value of `closeDialog()` of its buttons', async () => {
+    const { dialog, promise, isShown } = await showDialog({
       components,
       buttons: {
-        forbid: {
+        keep: {
           type: 'button',
-          text: 'Forbid',
-          events: {
-            click: ({ dialogComponent }) => dialogComponent.reject(error)
-          }
+          text: 'Keep',
+          onClick: ({ closeDialog }) => closeDialog('kept')
         }
       }
     })
-    await dialog.find('button[id="$buttons/forbid"]').trigger('click')
-    await expect(promise).rejects.toBe(error)
-    expect(removeDialog).toHaveBeenCalledOnce()
+    await dialog.find('button[id="$buttons/keep"]').trigger('click')
+    expect(await promise).toBe('kept')
+    expect(isShown()).toBe(false)
+  })
+
+  it('validates, edits and replaces its data through contexts', async () => {
+    const click = vi.fn()
+    const { dialog, promise } = await showDialog({
+      components: {
+        title: { type: 'text', required: true },
+        rating: { type: 'number', default: 3 }
+      },
+      buttons: {
+        check: { type: 'button', text: 'Check', onClick: click },
+        apply: { type: 'submit' }
+      }
+    })
+    await dialog.find('button[id="$buttons/check"]').trigger('click')
+    const [context] = click.mock.calls[0]
+    expect(context.isDirty).toBe(false)
+    expect(context.isCreating).toBe(false)
+    expect(context.validate()).toBe(false)
+    await flushPromises()
+    expect(dialog.find('.dito-errors').text()).toContain('required')
+    context.markDirty()
+    expect(context.isDirty).toBe(true)
+    // Replaced data is set up with the defaults, and isn't edited:
+    expect(context.resetItem({ title: 'Emma' })).toEqual({
+      title: 'Emma',
+      rating: 3
+    })
+    expect(context.isDirty).toBe(false)
+    await flushPromises()
+    expect(dialog.find('input[name="title"]').element.value).toBe('Emma')
+    expect(context.validate()).toBe(true)
+    expect(() => context.closeForm()).toThrow(
+      'Unable to close the form: There is no form.'
+    )
+    await dialog.find('form').trigger('submit')
+    expect(await promise).toEqual({ title: 'Emma', rating: 3 })
   })
 
   it('resolves as `undefined` with its cancel button', async () => {
-    const { dialog, promise, removeDialog } = await showDialog({
+    const { dialog, promise, isShown } = await showDialog({
       components,
       buttons: { cancel: {} },
       data: { title: 'Emma' }
     })
     await dialog.find('button.dito-button--cancel').trigger('click')
     expect(await promise).toBe(undefined)
-    expect(removeDialog).toHaveBeenCalledOnce()
+    expect(isShown()).toBe(false)
   })
 
-  it('is its own dialog component', async () => {
-    const { admin } = await showDialog({ components, buttons: { cancel: {} } })
-    const { vm } = admin.wrapper.findComponent({ name: 'DitoDialog' })
-    expect(vm.dialogComponent).toBe(vm)
+  it('closes with its cancel button over a deprecated click event', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const click = vi.fn()
+    const { dialog, promise, isShown } = await showDialog({
+      components,
+      buttons: { cancel: { events: { click } } }
+    })
+    await dialog.find('button.dito-button--cancel').trigger('click')
+    expect(await promise).toBe(undefined)
+    expect(isShown()).toBe(false)
+    expect(click).not.toHaveBeenCalled()
+    warn.mockRestore()
+  })
+
+  it('caches local requests while it is shown', async () => {
+    const request = vi.fn(() => ({ data: ['Classic', 'Modern'] }))
+    const admin = await mountAdmin({ views: {}, request })
+    const genre = {
+      type: 'select',
+      options: {
+        data: ({ request }) => request({ url: 'genres', cache: 'local' })
+      }
+    }
+    const showGenres = async () => {
+      const promise = admin.context.showDialog({
+        components: { genre, subgenre: genre },
+        buttons: { cancel: {} }
+      })
+      await flushPromises()
+      const dialog = admin.wrapper.findAll('.dito-dialog').at(-1)
+      await dialog.find('button.dito-button--cancel').trigger('click')
+      await promise
+    }
+    await showGenres()
+    expect(request).toHaveBeenCalledOnce()
+    // The next dialog loads them again:
+    await showGenres()
+    expect(request).toHaveBeenCalledTimes(2)
   })
 
   it('submits with Enter in its inputs only', async () => {
