@@ -2,56 +2,59 @@
 nav.dito-trail(aria-label="Breadcrumb")
   ul
     li(
-      v-for="component in trail"
+      v-for="route in trail"
     )
       RouterLink(
         v-slot="{ href, navigate }"
-        :to="getComponentRoute(component)"
+        :to="getRouteLocation(route)"
         custom
       )
         a.dito-trail__link(
-          :class="{ 'dito-trail__link--active': isCurrentComponent(component) }"
-          :aria-current="isCurrentComponent(component) ? 'page' : null"
+          :class="{ 'dito-trail__link--active': isCurrentRoute(route) }"
+          :aria-current="isCurrentRoute(route) ? 'page' : null"
           :href="href"
           @click="navigate"
         )
           span.dito-trail__text(
-            :class="{ 'dito-trail__text--dirty': component.isDirty }"
+            :class="{ 'dito-trail__text--dirty': route.isDirty }"
           )
-            | {{ component.breadcrumb }}
+            | {{ route.breadcrumb }}
   slot
 </template>
 
 <script>
-import DitoComponent from '../DitoComponent.js'
-import { getViewLinkPath } from '../utils/schema/lookup.js'
+import { computed, inject } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { adminContextKey } from '../utils/keys.ts'
 
-// @vue/component
-export default DitoComponent.component('DitoTrail', {
-  computed: {
-    trail() {
-      // The route components by route level. Leave out the components that are
-      // being left, until they're unmounted.
-      return this.appState.routeComponents.filter(
-        component => !component.isLeavingRoute
-      )
-    }
-  },
+export default {
+  setup() {
+    const adminContext = inject(adminContextKey)
+    const currentRoute = useRoute()
+    const router = useRouter()
+    return {
+      // Leave out the routes that are being left, until they're unmounted.
+      trail: computed(() =>
+        adminContext.ui.routes.filter(route => !route.isLeaving)
+      ),
 
-  methods: {
-    getComponentRoute(component) {
-      // `force` reloads the view even if it is already the current route.
-      return {
-        path: getViewLinkPath(component.schema, component.path),
-        force: true
+      getRouteLocation(route) {
+        // `force` reloads the current route too. Use paths over names, so the
+        // router also matches default children, like the forms of objects:
+        return {
+          path: route.isForm
+            ? route.path
+            : router.resolve({ name: route.node.linkRouteName }).path,
+          force: true
+        }
+      },
+
+      isCurrentRoute(route) {
+        return route.path === currentRoute.path
       }
-    },
-
-    isCurrentComponent(component) {
-      return component.path === this.$route.path
     }
   }
-})
+}
 </script>
 
 <style lang="scss">

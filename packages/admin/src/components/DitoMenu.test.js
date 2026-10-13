@@ -1,5 +1,5 @@
 import { flushPromises } from '@vue/test-utils'
-import { mountAdmin } from '../test/mount.js'
+import { mountAdmin, isForm } from '../test/mount.js'
 
 describe('DitoMenu', () => {
   const views = {
@@ -57,6 +57,28 @@ describe('DitoMenu links', () => {
     await flushPromises()
     return event.defaultPrevented
   }
+
+  it('opens the forms of objects that are the component of views', async () => {
+    const admin = await mountAdmin({
+      views: {
+        ...views,
+        generator: {
+          type: 'view',
+          label: 'Generator',
+          component: {
+            type: 'object',
+            resource: { path: 'generator' },
+            form: { type: 'form', components: { name: { type: 'text' } } }
+          }
+        }
+      },
+      request: () => ({ data: {} })
+    })
+    await admin.navigate('/books')
+    expect(await clickLink(admin, 'Generator')).toBe(true)
+    expect(admin.router.currentRoute.value.path).toBe('/generator')
+    expect(admin.getRouteComponent(isForm)).toBeTruthy()
+  })
 
   it('links menus to their first item', async () => {
     const admin = await mountAdmin({ views })

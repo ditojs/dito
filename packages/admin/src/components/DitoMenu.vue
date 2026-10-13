@@ -1,79 +1,71 @@
 <template lang="pug">
 ul.dito-menu
   li.dito-menu__item(
-    v-for="item in items"
+    v-for="node in nodes"
   )
     template(
-      v-if="shouldShowItem(item)"
+      v-if="shouldShowNode(node)"
     )
       RouterLink(
         v-slot="{ href, navigate }"
-        :to="getItemRoute(item)"
+        :to="{ path: getPath(node.linkRouteName), force: true }"
         custom
       )
         a.dito-menu__link(
           :href="href"
-          :class="{ 'dito-menu__link--active': isActiveItem(item) }"
-          :aria-current="isActiveItem(item) ? 'page' : null"
+          :class="{ 'dito-menu__link--active': isActiveNode(node) }"
+          :aria-current="isActiveNode(node) ? 'page' : null"
           @click="navigate"
-        ) {{ getLabel(item) }}
+        ) {{ getLabel(node.schema) }}
       DitoMenu.dito-menu__sub(
-        v-if="item.items"
-        :items="item.items"
-        :path="getItemPath(item)"
+        v-if="node.items"
+        :nodes="node.items"
       )
 </template>
 
 <script>
-import DitoComponent from '../DitoComponent.js'
+import { useRoute, useRouter } from 'vue-router'
+import SchemaContext from '../SchemaContext.js'
+import { useServices } from '../composables/useSchemaContext.ts'
+import { useSchemaValue } from '../composables/useSchemaValue.ts'
 import { isPathWithin } from '../utils/route.js'
-import { getViewLinkPath } from '../utils/schema/lookup.js'
 
-// @vue/component
-export default DitoComponent.component('DitoMenu', {
+// `force` reloads the view of a link even if its route is the current one.
+export default {
   props: {
-    items: {
-      type: [Object, Array],
-      default: () => []
-    },
-    path: {
-      type: String,
-      default: ''
-    }
+    nodes: { type: Array, required: true }
   },
 
-  methods: {
-    shouldShowItem(item) {
-      return (
-        this.shouldRenderSchema(item) && (
-          !item.items ||
-          Object.values(item.items).some(this.shouldRenderSchema)
+  setup() {
+    const route = useRoute()
+    const router = useRouter()
+    const { getLabel, shouldRenderSchema } = useSchemaValue(
+      new SchemaContext(useServices(), { nested: false })
+    )
+
+    // Navigate to the paths of the routes rather than their names, so that the
+    // router also matches their default children, like the forms of objects:
+    const getPath = routeName => router.resolve({ name: routeName }).path
+
+    return {
+      getLabel,
+      getPath,
+
+      shouldShowNode(node) {
+        return (
+          shouldRenderSchema(node.schema) && (
+            !node.items ||
+            node.items.some(item => shouldRenderSchema(item.schema))
+          )
         )
-      )
-    },
+      },
 
-    getItemPath(item) {
-      return `${this.path}/${item.path}`
-    },
-
-    getItemRoute(item) {
-      // `DitoRoot` only provides the views once their paths are set up.
-      // `force` reloads the view even if it is already the current route.
-      return {
-        path: getViewLinkPath(item, this.getItemPath(item)),
-        force: true
+      isActiveNode(node) {
+        return isPathWithin(route.path, getPath(node.routeName))
       }
-    },
-
-    isActiveItem(item) {
-      const path = this.getItemPath(item)
-      return (
-        isPathWithin(this.$route.path, path) ||
-        item.items && Object.values(item.items).some(this.isActiveItem)
-      )
     }
   }
-})
+}
 </script>
 
 <style lang="scss">

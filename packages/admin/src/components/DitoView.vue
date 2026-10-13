@@ -1,24 +1,20 @@
 <template lang="pug">
 template(
-  v-if="user && shouldRenderSchema(viewSchema)"
+  v-if="adminContext.user && shouldRenderSchema(schema)"
 )
-  //- Only render DitoView when it is active, otherwise a normal router-view
-  //- instead, to nest further route components.
-  //- NOTE: This is different from the handling in DitoForm, where `v-show` is
-  //- used to always render forms even when other nested forms are present.
+  //- NOTE: Unlike forms, views don't render while their nested routes show.
   DitoRouterView(
-    v-if="!isLastRoute"
-    :routeLevel="routeLevel + 1"
+    v-if="!routeContext.isLastRoute"
+    :routeLevel="routeContext.level + 1"
   )
   .dito-view.dito-scroll-parent(
     v-else
-    :data-resource="sourceSchema.path"
+    :data-resource="schemaPath"
   )
     DitoSchema(
       :key="name"
-      :schema="viewSchema"
+      :schema="schema"
       :data="data"
-      :meta="meta"
       :store="getChildStore(name)"
       padding="root"
       :disabled="isLoading"
@@ -28,76 +24,32 @@ template(
 </template>
 
 <script>
-import { markRaw } from 'vue'
-import { deprecate } from '@ditojs/utils'
-import DitoComponent from '../DitoComponent.js'
-import RouteMixin from '../mixins/RouteMixin.js'
+import { computed, inject, onMounted, reactive } from 'vue'
+import { useRouter } from 'vue-router'
 import {
-  isSingleComponentView,
-  someNestedSchemaComponent
-} from '../utils/schema/structure.js'
-import { hasResource } from '../utils/resource.js'
-import { DataModel } from '../utils/DataModel.js'
-import { LoadingTracker, LoadingSwitch } from '../utils/LoadingTracker.js'
+  useRouteContainer,
+  useRouteRecord
+} from '../composables/useRouteContainer.ts'
+import { useSchemaContext } from '../composables/useSchemaContext.ts'
+import { useSchemaValue } from '../composables/useSchemaValue.ts'
+import { useComponentPath } from '../composables/useComponentPath.ts'
+import { useStore } from '../composables/useStore.ts'
+import defaultVerbs from '../verbs.js'
+import { adminContextKey } from '../utils/keys.ts'
+import { isSingleComponentView } from '../utils/schema/structure.js'
 
-// @vue/component
-export default DitoComponent.component('DitoView', {
-  mixins: [RouteMixin],
-
-  provide() {
-    return {
-      // Redirect $sourceComponent and $resourceComponent to the main component:
-      $sourceComponent: () => this.mainComponent?.sourceComponent || null,
-      $resourceComponent: () => this.mainComponent?.resourceComponent || null,
-      $loadingTracker: () => this.loadingTracker
-    }
-  },
-
-  data() {
-    // Tracks the requests of all resource components in the view, which is
-    // disabled while any of them is pending, see `isLoading`:
-    const loadingTracker = new LoadingTracker(this.$loadingTracker())
-    return {
-      loadingTracker: markRaw(loadingTracker),
-      // The loading operation of the deprecated `setLoading()`.
-      setLoadingSwitch: markRaw(new LoadingSwitch(loadingTracker)),
-      // NOTE: Each view has its own data, as `DitoRouterView` renders each
-      // route record with its own component instance.
-      data: {}
-    }
-  },
-
-  computed: {
-    schema() {
-      // The routes of views always have a schema, see `setupView()`:
-      return this.meta.schema
-    },
-
-    name() {
-      return this.schema.name
-    },
-
-    isView() {
-      return true
-    },
-
-    isLoading() {
-      return this.loadingTracker.isLoading
-    },
-
-    isSingleComponentView() {
-      return isSingleComponentView(this.schema)
-    },
-
-    mainComponent() {
-      return this.mainSchemaComponent?.getComponentByDataPath(this.name)
-    },
-
-    viewSchema() {
-      const { component, ...schema } = this.schema
-      // Translate single-component schemas into multi-component schemas,
-      // so they can be rendered directly through DitoSchema also:
-      return this.isSingleComponentView
+export default {
+  setup() {
+    const adminContext = inject(adminContextKey)
+    const router = useRouter()
+    const route = useRouteRecord()
+    useComponentPath(() => '')
+    // The view displays its data as if it were an item of its source:
+    const sourceSchema = computed(() => route.node.value.schema)
+    const schema = computed(() => {
+      const { component, ...schema } = sourceSchema.value
+      // Render single-component views as views with that component:
+      return isSingleComponentView(sourceSchema.value)
         ? {
             ...schema,
             components: {
@@ -109,73 +61,55 @@ export default DitoComponent.component('DitoView', {
             }
           }
         : schema
-    },
+    })
+    const name = computed(() => schema.value.name)
 
-    providesData() {
-      return someNestedSchemaComponent(this.viewSchema, hasResource)
-    },
-
-    // @override DitoMixin.rootData()
-    // The data paths of the view's components are relative to its data, also
-    // when the view has no resource and thus isn't a data component.
-    rootData() {
-      return this.data
-    }
-  },
-
-  created() {
-    // Writes defaults and computed values into the view's data and resolves
-    // options, see `DataModel`:
-    this.ownDataModel = markRaw(
-      new DataModel({
-        component: this,
-        getSchema: () => this.viewSchema,
-        getData: () => this.data
+    const { routeContext, dataContext, services, store, schemaPath } =
+      useRouteContainer({
+        route,
+        schema: () => schema.value,
+        sourceSchema: () => sourceSchema.value,
+        // NOTE: Each view has its own data, as `DitoRouterView` renders each
+        // route record with its own component instance:
+        data: {},
+        breadcrumb: () => schema.value.breadcrumb || getLabel(schema.value),
+        verbs: () => defaultVerbs,
+        // The view provides the source of its main component to the others:
+        sourceContext: computed(
+          () => (
+            [...dataContext.sources].find(
+              source => source.componentPath === name.value
+            ) ?? null
+          )
+        )
       })
+    const data = computed(() => dataContext.data)
+    const { context } = useSchemaContext(
+      reactive({ schema, data, dataPath: '' }),
+      { services }
     )
-  },
+    const { getLabel, shouldRenderSchema } = useSchemaValue(context)
 
-  mounted() {
-    // Prevent bypassing of if-condition by direct URL access.
-    if (!this.shouldRenderSchema(this.viewSchema)) {
-      this.$router.replace({ path: '/' })
-    }
-  },
+    onMounted(() => {
+      // Prevent bypassing of `if` by direct URL access:
+      if (!shouldRenderSchema(schema.value)) {
+        router.replace({ path: '/' })
+      }
+    })
 
-  beforeUnmount() {
-    // Stop the model before the component's own watchers are stopped, as the
-    // model's watchers aren't part of the component, see `DataModel`.
-    this.ownDataModel.stop()
-    // Don't leave the root loading after the view is gone, see the deprecated
-    // `setLoading()`.
-    this.setLoadingSwitch.set(false)
-  },
-
-  methods: {
-    /**
-     * @deprecated `isLoading` is tracked by `loadingTracker` now. Use
-     * `loadingTracker.begin()` and call the function that it returns, or
-     * `loadingTracker.track(callback)` instead.
-     */
-    setLoading(isLoading) {
-      deprecate(
-        'DitoView.setLoading() is deprecated, use ' +
-        '`loadingTracker.begin()` or `loadingTracker.track()` instead.'
-      )
-      this.setLoadingSwitch.set(isLoading)
-    },
-
-    setData(data) {
-      this.data = data
-      return this.data
-    },
-
-    getChildPath(path) {
-      // Lists inside single-component views use the view's path for sub-paths:
-      return this.isSingleComponentView
-        ? this.path
-        : `${this.path}/${path}`
+    return {
+      ...useStore({ store }),
+      adminContext,
+      routeContext,
+      dataContext,
+      schemaPath,
+      schema,
+      name,
+      data,
+      shouldRenderSchema,
+      // The view is disabled while the requests of its components are pending:
+      isLoading: computed(() => routeContext.loadingTracker.isLoading)
     }
   }
-})
+}
 </script>
