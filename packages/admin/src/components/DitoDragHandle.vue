@@ -2,6 +2,7 @@
 //- Firefox doesn't start dragging from a <button>, so the handle is an <a>,
 //- focusable through `tabindex` for the moves by keyboard.
 DitoButton(
+  ref="handle"
   as="a"
   role="button"
   :verb="verbs.drag"
@@ -14,14 +15,12 @@ DitoButton(
 </template>
 
 <script>
+import { computed, nextTick, useTemplateRef } from 'vue'
 import { DitoButton } from '@ditojs/ui/src'
-import DitoComponent from '../DitoComponent.js'
+import { useServices } from '../composables/useSchemaContext.ts'
+import { getVerbs } from '../utils/services.ts'
 
-// The handle that items are dragged by, see `SortableMixin`. With the keyboard,
-// Alt+ArrowUp and Alt+ArrowDown move the item by emitting `move` with the
-// delta of its index, which the owner of the list applies.
-// @vue/component
-export default DitoComponent.component('DitoDragHandle', {
+export default {
   components: { DitoButton },
   emits: ['move'],
 
@@ -29,16 +28,21 @@ export default DitoComponent.component('DitoDragHandle', {
     disabled: { type: Boolean, default: false }
   },
 
-  methods: {
-    async move(delta) {
-      if (!this.disabled) {
-        this.$emit('move', delta)
-        // Moving the item can move the handle's element in the DOM, which
-        // loses its focus.
-        await this.$nextTick()
-        this.$el.focus()
+  setup(props, { emit }) {
+    const services = useServices()
+    const handle = useTemplateRef('handle')
+    return {
+      verbs: computed(() => getVerbs(services)),
+
+      async move(delta) {
+        if (!props.disabled) {
+          emit('move', delta)
+          // Moving the item in the DOM loses the focus of the handle:
+          await nextTick()
+          handle.value.$el.focus()
+        }
       }
     }
   }
-})
+}
 </script>

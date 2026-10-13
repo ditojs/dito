@@ -6,9 +6,12 @@ import {
   mountSchema,
   settle,
   stubConfirm,
-  unmountAdmin
+  unmountAdmin,
+  isView,
+  isForm
 } from '../test/mount.js'
-import { getTypeOptions } from '../utils/schema/types.js'
+import DitoTypeList from '../types/DitoTypeList.vue'
+import { getTypeDescriptor } from '../utils/schema/types.ts'
 
 async function mountBookForm() {
   return mountForm({
@@ -31,7 +34,14 @@ async function mountBookForm() {
   })
 }
 
-describe('SourceMixin', () => {
+// Whether the inlined items of the source are opened:
+function getOpenedItems(source) {
+  return [...source.$el.querySelectorAll('.dito-schema-inlined')].map(
+    element => element.classList.contains('dito-schema--open')
+  )
+}
+
+describe('useSource()', () => {
   afterEach(() => {
     vi.restoreAllMocks()
   })
@@ -116,7 +126,7 @@ describe('SourceMixin', () => {
       stubConfirm()
       const onChange = vi.fn()
       const requests = []
-      const { findField, getComponent, routeComponent } = await mountForm({
+      const { findField, routeComponent } = await mountForm({
         schema: {
           components: {
             title: { type: 'text' },
@@ -140,14 +150,186 @@ describe('SourceMixin', () => {
       await flushPromises()
       expect(requests).toContain('delete /items/1/reviews/7')
       expect(onChange).toHaveBeenCalledOnce()
-      expect(getComponent('reviews').isDirty).toBe(false)
-      expect(routeComponent.isDirty).toBe(false)
+      expect(routeComponent.routeContext.isDirty).toBe(false)
+    })
+
+    it('stays clean when deleting through resources sent with the data', async () => {
+      vi.spyOn(console, 'log').mockImplementation(() => {})
+      stubConfirm()
+      const { findField, routeComponent } = await mountForm({
+        schema: {
+          components: {
+            title: { type: 'text' },
+            reviews: {
+              type: 'list',
+              resource: { path: 'reviews' },
+              exclude: false,
+              deletable: true,
+              form: { type: 'form', components: { text: { type: 'text' } } }
+            }
+          }
+        },
+        data: { title: 'Orlando' },
+        request: ({ method = 'get' }) => ({
+          data: method === 'get' ? [{ id: 7, text: 'Great' }] : {}
+        })
+      })
+      await findField('reviews').find('.dito-button--delete').trigger('click')
+      await flushPromises()
+      expect(routeComponent.routeContext.isDirty).toBe(false)
+    })
+
+    it('keeps the edits of the source when deleting through it', async () => {
+      stubConfirm()
+      // The list loads again after the deletion, which we hold back:
+      let reload = null
+      const { findField, data, routeComponent } = await mountForm({
+        schema: {
+          components: {
+            reviews: {
+              type: 'list',
+              resource: { path: 'reviews' },
+              deletable: true,
+              form: { type: 'form', components: { text: { type: 'text' } } },
+              buttons: { save: { type: 'submit' } }
+            }
+          }
+        },
+        data: {},
+        request: ({ method = 'get' }) =>
+          method === 'delete'
+            ? { data: {} }
+            : (reload?.promise ?? {
+                data: [
+                  { id: 7, text: 'Great' },
+                  { id: 8, text: 'Fine' }
+                ]
+              })
+      })
+      const { model } = routeComponent.dataContext
+      const [, review] = data.reviews
+      model.set(
+        { data: review, name: 'text', dataPath: 'reviews/1/text' },
+        'Superb'
+      )
+      expect(routeComponent.routeContext.isDirty).toBe(true)
+      reload = Promise.withResolvers()
+      await findField('reviews').find('.dito-button--delete').trigger('click')
+      await flushPromises()
+      expect(data.reviews).toEqual([{ id: 8, text: 'Superb' }])
+      expect(routeComponent.routeContext.isDirty).toBe(true)
+      reload.resolve({ data: data.reviews })
+      await flushPromises()
+    })
+
+    it('numbers the items left after deleting one through the resource', async () => {
+      stubConfirm()
+      // The list loads again after the deletion, which we hold back:
+      let reload = null
+      const { findField, data, routeComponent } = await mountForm({
+        schema: {
+          components: {
+            title: { type: 'text' },
+            reviews: {
+              type: 'list',
+              resource: { path: 'reviews' },
+              deletable: true,
+              orderKey: 'position',
+              form: { type: 'form', components: { text: { type: 'text' } } }
+            }
+          }
+        },
+        data: { title: 'Orlando' },
+        request: ({ method = 'get' }) =>
+          method === 'delete'
+            ? { data: {} }
+            : (reload?.promise ?? {
+                data: [
+                  { id: 7, text: 'Great' },
+                  { id: 8, text: 'Fine' }
+                ]
+              })
+      })
+      reload = Promise.withResolvers()
+      await findField('reviews').find('.dito-button--delete').trigger('click')
+      await flushPromises()
+      expect(data.reviews).toEqual([{ id: 8, text: 'Fine', position: 0 }])
+      expect(routeComponent.dataContext.model.isEdited).toBe(false)
+      reload.resolve({ data: data.reviews })
+      await flushPromises()
+    })
+
+    it('removes objects deleted through their resource, staying clean', async () => {
+      stubConfirm()
+      let review = { id: 7, text: 'Great' }
+      const { findField, data, routeComponent } = await mountForm({
+        schema: {
+          components: {
+            title: { type: 'text' },
+            review: {
+              type: 'object',
+              resource: { path: 'review' },
+              deletable: true,
+              form: { type: 'form', components: { text: { type: 'text' } } }
+            }
+          }
+        },
+        data: { title: 'Orlando' },
+        request: ({ method = 'get' }) => {
+          if (method === 'delete') {
+            review = null
+          }
+          return { data: method === 'get' ? review : {} }
+        }
+      })
+      await findField('review').find('.dito-button--delete').trigger('click')
+      await flushPromises()
+      expect(data.review).toBe(null)
+      expect(routeComponent.routeContext.isDirty).toBe(false)
     })
   })
 
-  describe('navigateToComponent()', () => {
-    it('completes with the route component navigated to', async () => {
-      const { admin, getComponent, routeComponent } = await mountForm({
+  it('waits for pending loads before submitting through its buttons', async () => {
+    const admin = await mountAdmin({
+      views: {
+        books: {
+          type: 'view',
+          component: {
+            type: 'list',
+            resource: { path: 'books' },
+            columns: { title: {} },
+            buttons: {
+              saveOrder: {
+                type: 'submit',
+                resource: { path: 'order', method: 'post' }
+              }
+            }
+          }
+        }
+      },
+      request: ({ method = 'get', data }) =>
+        method === 'get' ? { data: [{ id: 1, title: 'Dune' }] } : { data }
+    })
+    await admin.navigate('/books')
+    const view = admin.getRouteComponent(isView)
+    // E.g. a running upload:
+    const upload = Promise.withResolvers()
+    const { model } = view.dataContext
+    model.trackPendingLoad(upload.promise)
+    await admin.wrapper.find('button[id$="saveOrder"]').trigger('click')
+    await flushPromises()
+    const isPosted = () =>
+      admin.request.mock.calls.some(([{ method }]) => method === 'post')
+    expect(isPosted()).toBe(false)
+    upload.resolve()
+    await settle(view)
+    expect(isPosted()).toBe(true)
+    unmountAdmin(admin)
+  })
+
+  describe('errors of items in forms of nested routes', () => {
+    it('open the form of their item', async () => {
+      const { admin, routeComponent } = await mountForm({
         schema: {
           components: {
             chapters: {
@@ -161,22 +343,23 @@ describe('SourceMixin', () => {
         },
         data: { chapters: [{ title: 'Arrakis' }, { title: 'Caladan' }] }
       })
-      const chapters = getComponent('chapters')
       // Navigate back and forth, so that route components are replaced:
       await admin.navigate('/items/1/chapters/0')
       await admin.navigate('/items/1')
       await admin.navigate('/items/1/chapters/1')
       await admin.navigate('/items/1')
-      const onComplete = vi.fn(([component]) => component)
-      const chapterForm = await chapters.navigateToComponent(
-        'chapters/1/title',
-        onComplete
-      )
+      await routeComponent.dataContext.showValidationErrors({
+        'chapters/1/title': [{ message: 'is taken' }]
+      })
       await flushPromises()
       expect(admin.router.currentRoute.value.path).toBe('/items/1/chapters/1')
+      const chapterForm = admin.getRouteComponent(isForm)
       expect(chapterForm).not.toBe(routeComponent)
-      expect(chapterForm.isForm).toBe(true)
       expect(chapterForm.data).toEqual({ title: 'Caladan' })
+      const { model } = chapterForm.dataContext
+      expect(model.getErrors('chapters/1/title')).toEqual([
+        { message: 'is taken' }
+      ])
     })
   })
 
@@ -250,7 +433,7 @@ describe('SourceMixin', () => {
       })
       await admin.navigate('/books')
       const [source] = admin.wrapper
-        .findAllComponents({ name: 'DitoTypeList' })
+        .findAllComponents(DitoTypeList)
         .map(({ vm }) => vm)
       const getLoadQueries = () =>
         admin.request.mock.calls
@@ -263,13 +446,13 @@ describe('SourceMixin', () => {
     it('loads the set query once when loading while it navigates', async () => {
       const { admin, source, getLoadQueries } = await mountBooksView()
       const loadCount = getLoadQueries().length
-      source.query = { order: 'title desc' }
-      source.loadData()
+      source.listQuery.update({ order: 'title desc' })
+      source.sourceContext.reload()
       await flushPromises()
       expect(admin.router.currentRoute.value.query).toEqual({
         order: 'title desc'
       })
-      expect(source.query).toEqual({ order: 'title desc' })
+      expect(source.listQuery.query).toEqual({ order: 'title desc' })
       expect(getLoadQueries().slice(loadCount)).toEqual([
         { order: 'title desc' }
       ])
@@ -279,10 +462,10 @@ describe('SourceMixin', () => {
       const { admin, source, getLoadQueries } = await mountBooksView()
       const loadCount = getLoadQueries().length
       admin.router.beforeEach(() => false)
-      source.query = { order: 'title desc' }
-      source.loadData()
+      source.listQuery.update({ order: 'title desc' })
+      source.sourceContext.reload()
       await flushPromises()
-      expect(source.query).toEqual({ order: 'title asc' })
+      expect(source.listQuery.query).toEqual({ order: 'title asc' })
       expect(getLoadQueries().slice(loadCount)).toEqual([
         { order: 'title asc' }
       ])
@@ -295,8 +478,8 @@ describe('SourceMixin', () => {
       admin.router.beforeEach(
         () => new Promise(resolve => (rejectNavigation = () => resolve(false)))
       )
-      source.query = { order: 'title desc' }
-      source.loadData()
+      source.listQuery.update({ order: 'title desc' })
+      source.sourceContext.reload()
       await flushPromises()
       unmountAdmin(admin)
       rejectNavigation()
@@ -305,8 +488,8 @@ describe('SourceMixin', () => {
     })
   })
 
-  describe('processing', () => {
-    it('processes the items of lists without forms as copies', async () => {
+  describe('serializing', () => {
+    it('serializes the items of lists without forms as copies', async () => {
       // Copying to the clipboard removes the ids of the items, which mustn't
       // remove them from the edited data:
       const { schemaComponent, data } = await mountSchema({
@@ -322,7 +505,7 @@ describe('SourceMixin', () => {
           ]
         }
       })
-      expect(schemaComponent.getDataForClipboard()).toEqual({
+      expect(schemaComponent.getClipboardData()).toEqual({
         authors: [{ name: 'Mary Shelley' }, { name: 'Bram Stoker' }]
       })
       expect(data.authors).toEqual([
@@ -331,23 +514,14 @@ describe('SourceMixin', () => {
       ])
     })
 
-    it('processes objects without forms as copies', () => {
+    it('serializes objects without forms as copies', () => {
       const schema = { type: 'object' }
-      const graph = { addSource: vi.fn() }
+      const { serializeValue } = getTypeDescriptor(schema)
       const value = { id: 1, name: 'Mary Shelley' }
-      const processed = getTypeOptions(schema).processValue(
-        { schema, value, dataPath: 'author' },
-        graph
-      )
-      expect(processed).toEqual(value)
-      expect(processed).not.toBe(value)
-      expect(graph.addSource).toHaveBeenCalledWith('author', schema)
-      expect(
-        getTypeOptions(schema).processValue(
-          { schema, value: null, dataPath: 'author' },
-          graph
-        )
-      ).toBe(null)
+      const serialized = serializeValue({ schema, value })
+      expect(serialized).toEqual(value)
+      expect(serialized).not.toBe(value)
+      expect(serializeValue({ schema, value: null })).toBe(null)
     })
   })
   describe('loading data', () => {
@@ -359,12 +533,11 @@ describe('SourceMixin', () => {
         request
       })
       await admin.navigate('/test')
-      const view = admin.getRouteComponent(component => component.isView)
+      const view = admin.getRouteComponent(isView)
       await settle(view)
       return {
         data: view.data,
-        getComponent: dataPath =>
-          view.mainSchemaComponent.getComponentByDataPath(dataPath)
+        getComponent: dataPath => admin.getComponent(view, dataPath)
       }
     }
 
@@ -385,6 +558,34 @@ describe('SourceMixin', () => {
       )
       expect(data.books).toEqual([{ id: 1, title: 'Emma' }])
       expect(data.note).toBe('Classics')
+    })
+
+    describe('deserializing', () => {
+      // Stored as a list, edited as text:
+      const tags = {
+        type: 'text',
+        deserializeValue: ({ value }) => value.join(', ')
+      }
+      const books = {
+        type: 'list',
+        resource: { path: 'books' },
+        form: { type: 'form', components: { tags } }
+      }
+
+      it('deserializes the items that it loads', async () => {
+        const { data } = await mountView({ books }, () => ({
+          data: [{ id: 1, tags: ['novel'] }]
+        }))
+        expect(data.books).toEqual([{ id: 1, tags: 'novel' }])
+      })
+
+      it('deserializes the data of the view that it loads', async () => {
+        const { data } = await mountView({ books, tags }, () => ({
+          data: { books: [{ id: 1, tags: ['novel'] }], tags: ['classics'] }
+        }))
+        expect(data.books).toEqual([{ id: 1, tags: 'novel' }])
+        expect(data.tags).toBe('classics')
+      })
     })
 
     it('ignores objects that lists in forms load', async () => {
@@ -422,33 +623,35 @@ describe('SourceMixin', () => {
       expect(publisher.objectData).toEqual({ id: 1, name: 'Penguin' })
     })
 
-    it('clears the value and the total when loading anew', async () => {
-      let resolveLoad = null
-      let isPending = false
-      const { getComponent } = await mountView(
-        {
-          books: {
-            type: 'list',
-            resource: { path: 'books' },
-            columns: { title: {} }
+    it('loads its list again after an item was saved in its form', async () => {
+      const requests = []
+      const { admin } = await mountForm({
+        schema: {
+          components: {
+            title: { type: 'text' },
+            reviews: {
+              type: 'list',
+              resource: { path: 'reviews' },
+              editable: true,
+              form: { type: 'form', components: { text: { type: 'text' } } }
+            }
           }
         },
-        () =>
-          isPending
-            ? new Promise(resolve => (resolveLoad = resolve))
-            : { data: { results: [{ id: 1, title: 'Emma' }], total: 12 } }
-      )
-      const books = getComponent('books')
-      expect(books.value).toEqual([{ id: 1, title: 'Emma' }])
-      expect(books.total).toBe(12)
-      isPending = true
-      books.loadData(true)
-      await flushPromises()
-      expect(books.value).toBe(null)
-      expect(books.total).toBe(0)
-      resolveLoad({ data: { results: [], total: 0 } })
-      await flushPromises()
-      expect(books.value).toEqual([])
+        data: { title: 'Orlando' },
+        request({ method = 'get', url, data }) {
+          requests.push(`${method} ${url}`)
+          return { data: method === 'get' ? [{ id: 7, text: 'Great' }] : data }
+        }
+      })
+      await admin.navigate('/items/1/reviews/7')
+      const form = admin.getRouteComponent(isForm)
+      await settle(form)
+      requests.length = 0
+      form.$el.querySelector('.dito-buttons--main [type="submit"]').click()
+      await settle(form)
+      expect(requests).toEqual([
+        'patch /items/1/reviews/7', 'get /items/1/reviews'
+      ])
     })
 
     it('unwraps list results in the data of the parent', async () => {
@@ -481,7 +684,7 @@ describe('SourceMixin', () => {
         },
         request
       })
-      expect(getComponent('books').defaultScope.name).toBe('recent')
+      expect(getComponent('books').listQuery.query.scope).toBe('recent')
       expect(request).toHaveBeenCalledWith(
         expect.objectContaining({ url: '/books', query: { scope: 'recent' } })
       )
@@ -499,7 +702,7 @@ describe('SourceMixin', () => {
           }
         }
       })
-      expect(getComponent('books').defaultScope.name).toBe('all')
+      expect(getComponent('books').listQuery.query.scope).toBe('all')
     })
   })
 
@@ -520,10 +723,10 @@ describe('SourceMixin', () => {
       })
       const tags = getComponent('tags')
       expect(tags.listData).toEqual([{ tag: 'fiction' }, { tag: 'classic' }])
-      const item = tags.createItem(tags.schema.form)
+      const item = tags.sourceContext.createItem(tags.schema.form)
       item.tag = 'romance'
       await settle()
-      expect(tags.wrappedPrimitives).toHaveLength(3)
+      expect(tags.listData).toHaveLength(3)
       expect(data.tags).toEqual(['fiction', 'classic', 'romance'])
     })
   })
@@ -545,7 +748,8 @@ describe('SourceMixin', () => {
         data: { chapters: [{ title: 'One' }, { title: 'Three' }] }
       })
       const chapters = getComponent('chapters')
-      const item = chapters.createItem(chapters.schema.form, null, 1)
+      const { sourceContext, schema } = chapters
+      const item = sourceContext.createItem(schema.form, null, 1)
       item.title = 'Two'
       await settle()
       expect(data.chapters.map(({ title }) => title)).toEqual([
@@ -553,10 +757,7 @@ describe('SourceMixin', () => {
         'Two',
         'Three'
       ])
-      const schemaComponent = chapters.getSchemaComponent(1)
-      expect(schemaComponent.data).toBe(chapters.listData[1])
-      expect(schemaComponent.opened).toBe(true)
-      expect(chapters.getSchemaComponent(0).opened).toBe(false)
+      expect(getOpenedItems(chapters)).toEqual([false, true, false])
     })
   })
 
@@ -577,35 +778,9 @@ describe('SourceMixin', () => {
         data: { chapters: [{ title: 'One' }] }
       })
       const chapters = getComponent('chapters')
-      chapters.createItem(chapters.schema.form)
+      chapters.sourceContext.createItem(chapters.schema.form)
       await settle()
-      expect(chapters.listData).toHaveLength(2)
-      expect(chapters.getSchemaComponent(1).opened).toBe(true)
-      expect(chapters.getSchemaComponent(0).opened).toBe(false)
-    })
-  })
-
-  describe('getSchemaComponent()', () => {
-    it('returns nothing for empty lists and missing items', async () => {
-      const { getComponent } = await mountSchema({
-        schema: {
-          components: {
-            chapters: {
-              type: 'list',
-              inlined: true,
-              form: { type: 'form', components: { title: { type: 'text' } } }
-            },
-            prologue: {
-              type: 'list',
-              inlined: true,
-              form: { type: 'form', components: { title: { type: 'text' } } }
-            }
-          }
-        },
-        data: { chapters: [{ title: 'One' }], prologue: [] }
-      })
-      expect(getComponent('chapters').getSchemaComponent(5)).toBe(null)
-      expect(getComponent('prologue').getSchemaComponent(0)).toBe(undefined)
+      expect(getOpenedItems(chapters)).toEqual([false, true])
     })
   })
 
@@ -667,104 +842,6 @@ describe('SourceMixin', () => {
     })
   })
 
-  describe('navigateToComponent() outside the source', () => {
-    it(`doesn't reveal data paths of other components`, async () => {
-      const { getComponent } = await mountSchema({
-        schema: {
-          components: {
-            chapters: {
-              type: 'list',
-              inlined: true,
-              form: { type: 'form', components: { title: { type: 'text' } } }
-            }
-          }
-        },
-        data: { chapters: [{ title: 'One' }] }
-      })
-      expect(
-        await getComponent('chapters').navigateToComponent('authors/0', null, {
-          shouldRevealInlinedOnly: true
-        })
-      ).toBe(false)
-    })
-  })
-
-  describe('navigateToRouteComponent()', () => {
-    const mountChapters = () =>
-      mountForm({
-        schema: {
-          components: {
-            chapters: {
-              type: 'list',
-              form: {
-                type: 'form',
-                components: { title: { type: 'text' } }
-              }
-            }
-          }
-        },
-        data: { chapters: [{ title: 'Arrakis' }] }
-      })
-
-    it('completes right away when already at the route', async () => {
-      const { admin, getComponent } = await mountChapters()
-      const chapters = getComponent('chapters')
-      await admin.navigate('/items/1/chapters/0')
-      const routeComponent = admin.getRouteComponent()
-      const onComplete = vi.fn(([component]) => component)
-      expect(
-        await chapters.navigateToRouteComponent('chapters/0', onComplete)
-      ).toBe(routeComponent)
-      expect(onComplete).toHaveBeenCalledOnce()
-      // Without `onComplete()`, it resolves to `true`:
-      expect(await chapters.navigateToRouteComponent('chapters/0')).toBe(true)
-    })
-
-    it('resolves to false without a route for the data path', async () => {
-      const { getComponent } = await mountChapters()
-      const onComplete = vi.fn()
-      expect(
-        await getComponent('chapters').navigateToRouteComponent(
-          'unknown/path',
-          onComplete
-        )
-      ).toBe(false)
-      expect(onComplete).not.toHaveBeenCalled()
-    })
-  })
-
-  describe('forms', () => {
-    it('tells whether all forms are compact', async () => {
-      const { getComponent } = await mountSchema({
-        schema: {
-          components: {
-            authors: {
-              type: 'list',
-              inlined: true,
-              form: {
-                type: 'form',
-                compact: true,
-                components: { name: { type: 'text' } }
-              }
-            },
-            books: {
-              type: 'list',
-              inlined: true,
-              forms: {
-                novel: { type: 'form', compact: true, components: {} },
-                poem: { type: 'form', components: {} }
-              }
-            }
-          }
-        }
-      })
-      expect(getComponent('authors').forms).toHaveLength(1)
-      expect(getComponent('authors').isCompact).toBe(true)
-      expect(getComponent('books').forms).toHaveLength(2)
-      expect(getComponent('books').isCompact).toBe(false)
-    })
-  })
-
   describe('routes', () => {
     const createChapterForm = () => ({
       type: 'form',
@@ -788,8 +865,8 @@ describe('SourceMixin', () => {
         ...options
       })
       await admin.navigate('/test')
-      const view = admin.getRouteComponent(it => it.isView)
-      view.setData(data)
+      const view = admin.getRouteComponent(isView)
+      view.dataContext.resetItem(data)
       await settle(view)
       return { admin, view }
     }
@@ -798,13 +875,118 @@ describe('SourceMixin', () => {
     // or `undefined` without a form.
     async function getFormData(admin, path) {
       await admin.navigate(path)
-      const form = admin.getRouteComponent(it => it.isForm)
+      const form = admin.getRouteComponent(isForm)
       if (form) await settle(form)
       return form?.data
     }
 
-    // Known bug: shared forms get their nested routes only once
-    it.skip('adds the nested routes of forms shared by several lists', async () => {
+    it('links the items of lists with resources in inlined objects by id', async () => {
+      const reviews = [
+        { id: 7, title: 'Early' },
+        { id: 9, title: 'Late' }
+      ]
+      const { admin, findField, settle } = await mountForm({
+        schema: {
+          components: {
+            meta: {
+              type: 'object',
+              components: {
+                reviews: {
+                  type: 'list',
+                  resource: { path: 'reviews' },
+                  editable: true,
+                  form: {
+                    type: 'form',
+                    components: { title: { type: 'text' } }
+                  }
+                }
+              }
+            }
+          }
+        },
+        data: { title: 'Emma', meta: {} },
+        request: ({ url }) => ({
+          data: url.endsWith('/9')
+            ? reviews[1]
+            : url.endsWith('/reviews')
+              ? reviews
+              : null
+        })
+      })
+      await findField('meta')
+        .findAll('.dito-button--edit')[1]
+        .trigger('click')
+      await settle()
+      expect(admin.router.currentRoute.value.path).toBe(
+        '/items/1/meta/reviews/9'
+      )
+      const form = admin.getRouteComponent(
+        it => isForm(it) && it.routeContext.path.endsWith('/9')
+      )
+      expect(form.data).toEqual({ id: 9, title: 'Late' })
+    })
+
+    it('stops forms that contain themselves at their `maxDepth`', async () => {
+      const categoryForm = {
+        type: 'form',
+        components: { name: { type: 'text' } }
+      }
+      categoryForm.components.subcategories = {
+        type: 'list',
+        editable: true,
+        maxDepth: 2,
+        form: categoryForm
+      }
+      const category = {
+        id: 1,
+        name: 'Food',
+        subcategories: [
+          { name: 'Fruit', subcategories: [{ name: 'Apples' }] }
+        ]
+      }
+      const admin = await mountAdmin({
+        views: {
+          categories: {
+            type: 'view',
+            component: {
+              type: 'list',
+              resource: { path: 'categories' },
+              form: categoryForm
+            }
+          }
+        },
+        request: ({ url }) => ({
+          data: url === '/categories/1' ? category : [category]
+        })
+      })
+      const getFormLists = async path => {
+        await admin.navigate(path)
+        const form = admin.getRouteComponent(isForm)
+        await settle(form)
+        return form.$el.querySelectorAll('.dito-list').length
+      }
+      expect(await getFormLists('/categories/1/subcategories/0')).toBe(1)
+      expect(
+        await getFormLists('/categories/1/subcategories/0/subcategories/0')
+      ).toBe(0)
+    })
+
+    it('renders the lists in inlined objects without routes', async () => {
+      const { admin } = await mountForm({
+        schema: {
+          components: {
+            meta: {
+              type: 'object',
+              components: { notes: { type: 'list', itemLabel: 'text' } }
+            }
+          }
+        },
+        data: { meta: { notes: [{ text: 'Late' }] } }
+      })
+      expect(admin.wrapper.find('.dito-list').text()).toContain('Late')
+    })
+
+    it('adds the nested routes of forms shared by several lists', async () => {
       const bookForm = {
         type: 'form',
         components: { chapters: createChaptersSchema() }
@@ -848,8 +1030,7 @@ describe('SourceMixin', () => {
       ])
     })
 
-    // Known bug: lists with a `path` open empty forms
-    it.skip('opens the forms of items of lists with a `path`', async () => {
+    it('opens the forms of items of lists with a `path`', async () => {
       const { admin } = await mountView(
         { components: { chapters: createChaptersSchema({ path: 'parts' }) } },
         { chapters }
@@ -859,8 +1040,7 @@ describe('SourceMixin', () => {
       })
     })
 
-    // Known bug: lists in nested sections open empty forms
-    it.skip('opens the forms of items of lists in nested sections', async () => {
+    it('opens the forms of items of lists in nested sections', async () => {
       const { admin } = await mountView(
         {
           components: {
@@ -873,13 +1053,12 @@ describe('SourceMixin', () => {
         },
         { book: { chapters } }
       )
-      expect(await getFormData(admin, '/test/chapters/1')).toEqual({
+      expect(await getFormData(admin, '/test/book/chapters/1')).toEqual({
         title: 'Epilogue'
       })
     })
 
-    // Known bug: `normalizePaths` doesn't restore all names
-    it.skip('opens the forms of items of lists with normalized paths', async () => {
+    it('opens the forms of items of lists with normalized paths', async () => {
       const { admin } = await mountView(
         { components: { tableOfURLs: createChaptersSchema() } },
         { tableOfURLs: chapters },
@@ -890,8 +1069,7 @@ describe('SourceMixin', () => {
       })
     })
 
-    // Known bug: sections of single-component views get dead links
-    it.skip('links the items of lists in sections of single-component views', async () => {
+    it('links the items of lists in sections of single-component views', async () => {
       const { admin, view } = await mountView(
         {
           component: {
@@ -901,13 +1079,12 @@ describe('SourceMixin', () => {
         },
         { chapters }
       )
-      const list = view.mainSchemaComponent.getComponentByDataPath('chapters')
-      const path = list.getEditPath(chapters[1], 1)
+      const list = admin.getComponent(view, 'chapters')
+      const path = list.getEditPath(1)
       expect(await getFormData(admin, path)).toEqual({ title: 'Epilogue' })
     })
 
-    // Known bug: lists in inlined objects get no routes, silently
-    it.skip('links the items of lists in inlined objects to their forms', async () => {
+    it('links the items of lists in inlined objects to their forms', async () => {
       const { admin, view } = await mountView(
         {
           components: {
@@ -919,11 +1096,8 @@ describe('SourceMixin', () => {
         },
         { book: { chapters } }
       )
-      const list =
-        view.mainSchemaComponent.getComponentByDataPath(
-          'book/chapters'
-        )
-      const path = list.getEditPath(chapters[1], 1)
+      const list = admin.getComponent(view, 'book/chapters')
+      const path = list.getEditPath(1)
       expect(await getFormData(admin, path)).toEqual({ title: 'Epilogue' })
     })
 
@@ -931,7 +1105,7 @@ describe('SourceMixin', () => {
       // Mounts a `books` view with a list that edits the books in its form,
       // and the `test` view with a list linked to the `books` view.
       async function mountLinkedList() {
-        const { view } = await mountView(
+        const { admin, view } = await mountView(
           {
             components: {
               books: {
@@ -959,25 +1133,23 @@ describe('SourceMixin', () => {
             request: () => ({ data: [] })
           }
         )
-        return view.mainSchemaComponent.getComponentByDataPath('books')
+        return admin.getComponent(view, 'books')
       }
 
-      // Known bug: multi-component views get wrong edit links
-      it.skip('link the items to the forms in multi-component views', async () => {
+      it('link the items to the forms in multi-component views', async () => {
         const list = await mountLinkedList()
-        expect(list.getEditPath(list.listData[0], 0)).toBe('/books/items/5')
+        expect(list.getEditPath(0)).toBe('/books/items/5')
       })
 
-      // Known bug: lists linked to views can never create
-      it.skip('create items in the forms of the views', async () => {
+      it('create items in the forms of the views', async () => {
         const list = await mountLinkedList()
         expect(list.creatable).toBe(true)
-        expect(list.createPath).toBe('/books/items/create')
+        expect(list.sourceContext.createPath).toBe('/books/items/create')
       })
     })
   })
 
-  describe('processSchema()', () => {
+  describe('setupSchema()', () => {
     const api = { normalizePath: path => path }
 
     it('refuses resources of inlined lists', async () => {
@@ -988,7 +1160,7 @@ describe('SourceMixin', () => {
         form: { type: 'form', components: {} }
       }
       await expect(
-        getTypeOptions(schema).processSchema(api, schema, 'books', [], 0)
+        getTypeDescriptor(schema).setupSchema({ schema, api, name: 'books' })
       ).rejects.toThrow('Nested lists cannot load data from their own')
     })
 
@@ -1000,8 +1172,26 @@ describe('SourceMixin', () => {
         form: { type: 'form', components: {} }
       }
       await expect(
-        getTypeOptions(schema).processSchema(api, schema, 'publisher', [], 0)
+        getTypeDescriptor(schema).setupSchema({
+          schema,
+          api,
+          name: 'publisher'
+        })
       ).rejects.toThrow('Nested objects cannot load data from their own')
+    })
+
+    it('refuses wrapped primitives in mutating routed forms', async () => {
+      const schema = {
+        type: 'list',
+        wrapPrimitives: 'tag',
+        mutate: true,
+        form: { type: 'form', components: { tag: { type: 'text' } } }
+      }
+      await expect(
+        getTypeDescriptor(schema).setupSchema({ schema, api, name: 'tags' })
+      ).rejects.toThrow(
+        `Unsupported 'mutate' in lists with 'wrapPrimitives': 'tags'.`
+      )
     })
   })
 })

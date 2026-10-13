@@ -8,26 +8,15 @@ import {
 } from '@ditojs/utils'
 import { getNamedSchemas } from './schema/lookup.js'
 import { applyNestedSchemaDefaults } from './schema/setup.js'
+import { deserializeData } from './schema/data.js'
 
 export const filterComponents = {
   'text'(filter) {
     const options = [
-      {
-        label: 'contains',
-        value: 'contains'
-      },
-      {
-        label: 'equals',
-        value: 'equals'
-      },
-      {
-        label: 'starts with',
-        value: 'starts-with'
-      },
-      {
-        label: 'ends with',
-        value: 'ends-with'
-      }
+      { label: 'contains', value: 'contains' },
+      { label: 'equals', value: 'equals' },
+      { label: 'starts with', value: 'starts-with' },
+      { label: 'ends with', value: 'ends-with' }
     ]
     return {
       operator: filter.operators
@@ -54,95 +43,39 @@ export const filterComponents = {
     const datetime = {
       type: 'datetime',
       width: '1/2',
-      formats: {
+      format: {
         // Use shorter date format in date-range filters:
-        date: {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric'
-        }
+        date: { day: '2-digit', month: '2-digit', year: 'numeric' }
       },
       clearable: true
     }
-    return {
-      from: datetime,
-      to: datetime
-    }
+    return { from: datetime, to: datetime }
   }
 }
 
 export function createFiltersPanel(api, filters, dataPath, query) {
   const { sticky, ...filterSchemas } = filters
-  const panel = {
-    type: 'panel',
-    label: 'Filters',
-    name: '$filters',
-    // Override the default value
-    disabled: false,
-    sticky,
+  // The contexts of the filters' change events are the ones of the changed
+  // filters, so we keep the panel's data to apply it on changes:
+  let filtersData = null
 
-    // NOTE: On panels, the data() callback does something else than on normal
-    // schema: It produces the `data` property to be passed to the panel's
-    // schema, not the data to be used for the panel component directly.
-    data() {
-      return parseFiltersData(
-        panel,
-        query.value
-      )
-    },
-
-    components: createFiltersComponents(filterSchemas),
-    buttons: createFiltersButtons(false),
-    panelButtons: createFiltersButtons(true),
-
-    events: {
-      change() {
-        this.applyFilters()
-      }
-    },
-
-    computed: {
-      filters() {
-        return formatFiltersData(this.schema, this.data)
-      },
-
-      hasFilters() {
-        return this.filters.length > 0
-      }
-    },
-
-    methods: {
-      applyFilters() {
-        query.value = {
-          ...query.value,
-          filter: this.filters,
-          // Clear pagination when applying or clearing filters:
-          page: undefined
-        }
-      },
-
-      clearFilters() {
-        this.resetData()
-        this.applyFilters()
-      }
+  const applyFilters = data => {
+    query.value = {
+      ...query.value,
+      filter: formatFiltersData(panel, data),
+      // Clear pagination when applying or clearing filters:
+      page: undefined
     }
   }
-  applyNestedSchemaDefaults(api, panel)
-  return panel
-}
 
-function createFiltersButtons(small) {
-  return {
+  const createButtons = small => ({
     clear: {
       type: 'button',
       text: small ? null : 'Clear',
-      disabled: ({ schemaComponent }) => !schemaComponent.hasFilters,
-      events: {
-        click({ schemaComponent }) {
-          // Since panel buttons are outside of the schema, we need to use the
-          // schema component received from the initialize event below:
-          schemaComponent.clearFilters()
-        }
+      disabled: ({ item }) => formatFiltersData(panel, item).length === 0,
+      onClick({ resetItem }) {
+        filtersData = resetItem()
+        applyFilters(filtersData)
       }
     },
 
@@ -150,13 +83,35 @@ function createFiltersButtons(small) {
       type: 'submit',
       text: small ? null : 'Filter',
       visible: !small,
-      events: {
-        click({ schemaComponent }) {
-          schemaComponent.applyFilters()
-        }
+      onClick({ item }) {
+        applyFilters(item)
       }
     }
+  })
+
+  const panel = {
+    type: 'panel',
+    label: 'Filters',
+    name: '$filters',
+    disabled: false,
+    sticky,
+
+    data() {
+      // The query holds the values serialized, e.g. dates as strings:
+      filtersData = deserializeData(panel, parseFiltersData(panel, query.value))
+      return filtersData
+    },
+
+    components: createFiltersComponents(filterSchemas),
+    buttons: createButtons(false),
+    panelButtons: createButtons(true),
+
+    onChange() {
+      applyFilters(filtersData)
+    }
   }
+  applyNestedSchemaDefaults(api, panel)
+  return panel
 }
 
 function getDataName(filterName) {
@@ -165,10 +120,7 @@ function getDataName(filterName) {
 }
 
 // The server keys the validation errors of filters by filter name, e.g.
-// `title/text`, see the server's `models/definitions/filters.js`, while the
-// filters panel keys the filter data by data name, e.g. `$title`. Returns the
-// errors keyed by the data paths of the panel. Paths that already start with a
-// data name, and empty paths, are kept.
+// `title/text`, while the panel keys the filter data by data name, `$title`:
 export function getFiltersDataErrors(errors) {
   const dataErrors = {}
   for (const [dataPath, errs] of Object.entries(errors)) {
@@ -192,10 +144,8 @@ function getFilterName(dataName) {
 function createFiltersComponents(filters) {
   const comps = {}
   for (const filter of Object.values(getNamedSchemas(filters) || {})) {
-    // Support both custom forms and default filter components, through the
-    // `filterComponents` registry. Even for default filters, still use the
-    // properties in `filter` as the base for `form`, so things like `label`
-    // can be changed on the resulting form.
+    // Use the properties of default filters as the base of `form` too, so
+    // things like `label` can be changed:
     const { filter: type, width, ...form } = filter
     const components = type
       ? filterComponents[type]?.(filter)
@@ -242,9 +192,7 @@ function formatFiltersData(schema, data) {
     const entry = data[dataName]
     if (entry) {
       // Map components sequence to arguments:
-      const args = Object.keys(
-        getComponentsForFilter(schema, dataName)
-      ).map(
+      const args = Object.keys(getComponentsForFilter(schema, dataName)).map(
         key => entry[key] ?? null
       )
       // Only apply filter if there are some arguments that aren't null:
@@ -283,8 +231,7 @@ function parseFiltersData(schema, query) {
   const filtersData = {}
   for (const dataName in schema.components) {
     const data = {}
-    // If we have retrieved params from the query, fetch the associated
-    // form components so we can map the values back to object keys:
+    // Map the params from the query back to the keys of the form components:
     const args = filters[getFilterName(dataName)]
     if (args) {
       const components = getComponentsForFilter(schema, dataName)

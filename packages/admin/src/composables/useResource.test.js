@@ -1,6 +1,12 @@
-import { vi, onTestFinished } from 'vitest'
+import { vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
-import { mountForm, mountSchema, unmountAdmin } from '../test/mount.js'
+import {
+  mountAdmin,
+  mountForm,
+  mountSchema,
+  unmountAdmin
+} from '../test/mount.js'
+import DitoTypeButton from '../types/DitoTypeButton.vue'
 import { RequestError } from '../utils/request.js'
 
 // Returns a request that is pending until `resolve()` or `reject()` is called,
@@ -64,60 +70,56 @@ async function mountBookForm({ schema = bookSchema, request }) {
   return { ...result, form, button }
 }
 
-describe('ResourceMixin', () => {
+async function mountBookFormWithNotify(options) {
+  const result = await mountBookForm(options)
+  const notify = vi.spyOn(result.admin.context, 'notify')
+  return { ...result, notify }
+}
+
+describe('useResource()', () => {
   afterEach(() => {
     vi.restoreAllMocks()
   })
 
-  describe('handleRequest()', () => {
-    it('awaits async callbacks', async () => {
-      const { form } = await mountBookForm({
-        request: () => ({ data: { id: 1, title: 'Orlando' } })
+  describe('requests', () => {
+    it(`don't notify the errors of their handlers as request errors`, async () => {
+      const { button, notify } = await mountBookFormWithNotify({
+        schema: {
+          components: {
+            publish: {
+              ...bookSchema.components.publish,
+              onSuccess() {
+                throw new Error('Publishing failed')
+              }
+            }
+          }
+        },
+        request: () => ({ data: { published: true } })
       })
-      let isCallbackDone = false
-      await form.handleRequest(
-        { method: 'get', resource: { path: 'books' } },
-        async () => {
-          await new Promise(resolve => setTimeout(resolve, 10))
-          isCallbackDone = true
-        }
+      await expect(button.context.submit()).rejects.toThrow('Publishing failed')
+      expect(notify).not.toHaveBeenCalledWith(
+        expect.objectContaining({ title: 'Request Error' })
       )
-      expect(isCallbackDone).toBe(true)
     })
 
-    it(`doesn't call the callback again for errors that it throws`, async () => {
-      const { form } = await mountBookForm({
-        request: () => ({ data: { id: 1, title: 'Orlando' } })
-      })
-      const callback = vi.fn(error => {
-        if (!error) throw new Error('Applying failed')
-      })
-      await expect(
-        form.handleRequest(
-          { method: 'get', resource: { path: 'books' } },
-          callback
-        )
-      ).rejects.toThrow('Applying failed')
-      expect(callback).toHaveBeenCalledOnce()
-    })
-
-    it('keeps the loading state until all requests are done', async () => {
+    it('keep the loading state until all of them are done', async () => {
       const first = createPendingRequest()
       const second = createPendingRequest()
-      const { form } = await mountBookForm({
+      const publish = bookSchema.components.publish
+      const { form, getComponent } = await mountBookForm({
+        schema: {
+          components: {
+            first: { ...publish, resource: { path: 'first', method: 'post' } },
+            second: { ...publish, resource: { path: 'second', method: 'post' } }
+          }
+        },
         request: options =>
           options.url.endsWith('first')
             ? first.handle(options)
             : second.handle(options)
       })
-      const firstDone = form.handleRequest(
-        { method: 'post', resource: { path: 'first' } },
-        () => {}
-      )
-      const secondDone = form.handleRequest(
-        { method: 'post', resource: { path: 'second' } },
-        () => {}
-      )
+      const firstDone = getComponent('first').context.submit()
+      const secondDone = getComponent('second').context.submit()
       await flushPromises()
       expect(form.isLoading).toBe(true)
       first.resolve({ data: {} })
@@ -129,118 +131,96 @@ describe('ResourceMixin', () => {
     })
   })
 
-  describe('setLoading()', () => {
-    it('begins and ends a loading operation and warns once', async () => {
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-      const { form } = await mountBookForm({})
-      const { rootComponent } = form
-      expect(form.isLoading).toBe(false)
-      form.setLoading(true)
-      form.setLoading(true)
-      expect(form.isLoading).toBe(true)
-      expect(rootComponent.isLoading).toBe(true)
-      form.setLoading(false)
-      expect(form.isLoading).toBe(false)
-      expect(rootComponent.isLoading).toBe(false)
-      form.setLoading(false)
-      expect(rootComponent.isLoading).toBe(false)
-      const deprecationWarnings = warn.mock.calls.filter(([message]) =>
-        String(message).includes('setLoading() is deprecated')
-      )
-      expect(deprecationWarnings).toHaveLength(1)
-    })
-
-    it('ends its loading operation when the component unmounts', async () => {
-      vi.spyOn(console, 'warn').mockImplementation(() => {})
-      const { form, admin } = await mountBookForm({})
-      const { rootComponent } = form
-      form.setLoading(true)
-      expect(rootComponent.isLoading).toBe(true)
-      await admin.navigate('/items')
-      expect(rootComponent.isLoading).toBe(false)
-    })
-  })
-
-  describe('requestData()', () => {
-    it('aborts the pending data load when loading again', async () => {
-      const loadRequests = []
-      const { form } = await mountBookForm({
+  describe('data loads', () => {
+    // Mounts the form of book 1, whose other books load until resolved:
+    const mountBookFormWithPendingLoads = async () => {
+      const loads = {}
+      const result = await mountBookForm({
         request: options => {
-          const loadRequest = createPendingRequest()
-          loadRequests.push(loadRequest)
-          return loadRequest.handle(options)
+          const id = options.url.match(/^\/items\/(\d+)$/)?.[1]
+          const load = (loads[id] = createPendingRequest())
+          return load.handle(options)
         }
       })
-      const callback = vi.fn()
-      const load = () =>
-        form.handleRequest(
-          { method: 'get', resource: { path: 'books' }, isDataLoad: true },
-          callback
-        )
-      const firstLoaded = load()
-      const secondLoaded = load()
+      return { ...result, loads }
+    }
+
+    it('abort the pending load when loading again', async () => {
+      const { admin, form, loads } = await mountBookFormWithPendingLoads()
+      await admin.navigate('/items/2')
+      await admin.navigate('/items/3')
+      // The first load was aborted, so its response is ignored:
+      loads[2].resolve({ data: { id: 2, title: 'Emma' } })
+      loads[3].resolve({ data: { id: 3, title: 'Persuasion' } })
       await flushPromises()
-      loadRequests.at(-1).resolve({ data: { title: 'Orlando' } })
-      await Promise.all([firstLoaded, secondLoaded])
-      expect(callback).toHaveBeenCalledOnce()
+      expect(form.data).toMatchObject({ id: 3, title: 'Persuasion' })
       expect(form.isLoading).toBe(false)
     })
 
-    it('aborts the pending data load when unmounted', async () => {
-      const loadRequest = createPendingRequest()
-      const { form, admin } = await mountBookForm({
-        request: options => loadRequest.handle(options)
-      })
-      const callback = vi.fn()
-      const loaded = form.handleRequest(
-        { method: 'get', resource: { path: 'books' }, isDataLoad: true },
-        callback
-      )
-      await flushPromises()
+    it('abort the pending load when unmounted', async () => {
+      const { admin, loads } = await mountBookFormWithPendingLoads()
+      await admin.navigate('/items/2')
+      const { signal } = admin.request.mock.calls.at(-1)[0]
       unmountAdmin(admin)
-      await loaded
-      expect(callback).not.toHaveBeenCalled()
+      expect(signal.aborted).toBe(true)
+      loads[2].resolve({ data: { id: 2, title: 'Emma' } })
+      await flushPromises()
+      expect(getNotificationTexts()).toEqual([])
     })
   })
 
-  describe('submitResource()', () => {
-    it(`isn't aborted by reloading the data`, async () => {
+  describe('submits', () => {
+    it(`aren't aborted by reloading the data`, async () => {
       const submitRequest = createPendingRequest()
-      const { form, button } = await mountBookForm({
-        request: options => submitRequest.handle(options)
+      const { wrapper, getComponent } = await mountSchema({
+        schema: {
+          components: {
+            books: {
+              type: 'list',
+              resource: { path: 'books' },
+              columns: { title: {} },
+              buttons: {
+                publish: {
+                  type: 'button',
+                  resource: { path: 'publish', method: 'post' }
+                }
+              }
+            }
+          }
+        },
+        request: options =>
+          options.method === 'post'
+            ? submitRequest.handle(options)
+            : { data: [{ id: 1, title: 'Orlando' }] }
       })
-      const submitted = form.submit(button)
+      await wrapper.find('[id="books/$buttons/publish"]').trigger('click')
       await flushPromises()
-      form.reloadData()
+      getComponent('books').sourceContext.reload()
       await flushPromises()
       submitRequest.resolve({ data: { published: true } })
-      expect(await submitted).toBe(true)
-      expect(getNotificationTexts().join()).toContain(
-        'Successfully Saved'
-      )
+      await flushPromises()
+      expect(getNotificationTexts().join()).toContain('Request Successful')
     })
 
-    it('waits for the success handlers of buttons', async () => {
+    it('wait for the success handlers of buttons', async () => {
       let finishHandler
-      const { form } = await mountBookForm({
+      const { getComponent } = await mountBookForm({
         schema: {
           components: {
             publish: {
               ...bookSchema.components.publish,
-              events: {
-                success: () =>
-                  new Promise(resolve => {
-                    finishHandler = resolve
-                  })
-              }
+              onSuccess: () =>
+                new Promise(resolve => {
+                  finishHandler = resolve
+                })
             }
           }
         },
         request: () => ({ data: { published: true } })
       })
-      const button = form.mainSchemaComponent.getComponentByName('publish')
+      const button = getComponent('publish')
       let isSubmitted = false
-      const submitted = form.submit(button).then(() => {
+      const submitted = button.context.submit().then(() => {
         isSubmitted = true
       })
       await vi.waitFor(() => expect(finishHandler).toBeDefined())
@@ -251,25 +231,20 @@ describe('ResourceMixin', () => {
       expect(isSubmitted).toBe(true)
     })
 
-    it('completes when unmounted while pending', async () => {
+    it('complete when unmounted while pending', async () => {
       // Submits change data on the server, so they aren't aborted, unlike
       // data loads.
       const submitRequest = createPendingRequest()
-      const { form, button, admin } = await mountBookForm({
+      const { button, admin } = await mountBookForm({
         request: options => submitRequest.handle(options)
       })
-      const callback = vi.fn()
-      const submitted = form.handleRequest(
-        { method: 'post', resource: button.resource },
-        callback
-      )
+      const submitted = button.context.submit()
       await flushPromises()
+      // The notifications are unmounted with the admin:
+      vi.spyOn(admin.context, 'notify').mockImplementation(() => {})
       unmountAdmin(admin)
       submitRequest.resolve({ data: { published: true } })
-      await submitted
-      expect(callback).toHaveBeenCalledWith(null, {
-        data: { published: true }
-      })
+      expect(await submitted).toBe(true)
     })
   })
 
@@ -298,6 +273,35 @@ describe('ResourceMixin', () => {
       expect(getNotifications()).toContainEqual({
         title: 'Not Found Error',
         text: 'The books are gone.'
+      })
+    })
+
+    it('notifies failed loads of forms', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+      const admin = await mountAdmin({
+        views: {
+          books: {
+            type: 'view',
+            component: {
+              ...listSchema.components.books,
+              form: { type: 'form', components: { title: { type: 'text' } } }
+            }
+          }
+        },
+        request: ({ url }) => {
+          if (url === '/books/1') {
+            throw createRequestError(401, {
+              type: 'AuthorizationError',
+              message: 'Unauthorized Access'
+            })
+          }
+          return { data: [] }
+        }
+      })
+      await admin.navigate('/books/1')
+      expect(getNotifications()).toContainEqual({
+        title: 'Authorization Error',
+        text: 'Unauthorized Access'
       })
     })
 
@@ -331,33 +335,6 @@ describe('ResourceMixin', () => {
         title: 'Error',
         text: 'Error: Unable to process the books'
       })
-    })
-
-    it('clears the abort controller once the data load is done', async () => {
-      // Unlike browsers, happy-dom's `AbortController` has no `toStringTag`,
-      // so Vue makes it reactive, and the stored controller is a proxy:
-      Object.defineProperty(AbortController.prototype, Symbol.toStringTag, {
-        value: 'AbortController',
-        configurable: true
-      })
-      onTestFinished(() => {
-        delete AbortController.prototype[Symbol.toStringTag]
-      })
-      const loadRequest = createPendingRequest()
-      const { form } = await mountBookForm({
-        request: options => loadRequest.handle(options)
-      })
-      const loaded = form.handleRequest(
-        { method: 'get', resource: { path: 'books' }, isDataLoad: true },
-        () => {}
-      )
-      await flushPromises()
-      const controller = form.loadAbortController
-      expect(controller).toBeInstanceOf(AbortController)
-      loadRequest.resolve({ data: { title: 'Orlando' } })
-      await loaded
-      expect(form.loadAbortController).not.toBe(controller)
-      expect(form.loadAbortController).toBe(null)
     })
   })
 
@@ -471,13 +448,11 @@ describe('ResourceMixin', () => {
 
     it(`doesn't submit buttons without resource`, async () => {
       const request = vi.fn()
-      const { wrapper, getComponent } =
-        await mountRecipesWithPublishButton(request)
-      const list = getComponent('recipes')
+      const { wrapper } = await mountRecipesWithPublishButton(request)
       const share = wrapper
-        .findAllComponents({ name: 'DitoTypeButton' })
-        .find(({ vm }) => vm.name === 'share').vm
-      expect(await list.submit(share)).toBe(false)
+        .findAllComponents(DitoTypeButton)
+        .find(({ vm }) => vm.schema.name === 'share').vm
+      expect(await share.context.submit()).toBe(false)
       expect(request).not.toHaveBeenCalled()
     })
   })
@@ -505,10 +480,27 @@ describe('ResourceMixin', () => {
       })
       expect(getErrors('reviews')).toEqual([message])
       // Loading again doesn't add the error twice:
-      getComponent('reviews').reloadData()
+      getComponent('reviews').sourceContext.reload()
       await flushPromises()
       expect(getErrors('reviews')).toEqual([message])
       expect(getNotifications()).toEqual([])
+    })
+
+    it('removes the error once the list loads', async () => {
+      let isAuthorized = false
+      const { getComponent, getErrors } = await mountForm({
+        schema: {
+          components: { title: { type: 'text' }, reviews: reviewsSchema }
+        },
+        data: { title: 'Orlando' },
+        request: request =>
+          isAuthorized ? { data: [] } : unauthorized(request)
+      })
+      expect(getErrors('reviews')).toEqual([message])
+      isAuthorized = true
+      getComponent('reviews').sourceContext.reload()
+      await flushPromises()
+      expect(getErrors('reviews')).toEqual([])
     })
 
     it('notifies the error on lists of views', async () => {

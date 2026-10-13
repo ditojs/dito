@@ -3,35 +3,37 @@
   DitoButton(
     v-for="(scope, key) in scopes"
     :key="key"
-    :class="{ 'dito-button--selected': scope.name === query.scope }"
-    :aria-pressed="scope.name === query.scope"
+    :class="{ 'dito-button--selected': scope.name === listQuery.query.scope }"
+    :aria-pressed="scope.name === listQuery.query.scope"
     :title="scope.hint || getLabel(scope)"
     @click="selectScope(scope)"
   ) {{ getLabel(scope) }}
 </template>
 
 <script>
-import DitoComponent from '../DitoComponent.js'
 import { DitoButton } from '@ditojs/ui/src'
+import { useSchemaValue } from '../composables/useSchemaValue.ts'
 
-// @vue/component
-export default DitoComponent.component('DitoScopes', {
+export default {
   components: { DitoButton },
 
   props: {
-    query: { type: Object, required: true },
-    scopes: { type: Object, required: true }
+    listQuery: { type: Object, required: true },
+    scopes: { type: Object, required: true },
+    // The context of the list, for the callbacks of the scopes:
+    context: { type: Object, required: true }
   },
 
-  methods: {
-    selectScope(scope) {
-      this.sourceComponent.listQuery.update(
-        { scope: scope.name },
-        { resetPage: true }
-      )
+  setup(props) {
+    return {
+      getLabel: useSchemaValue(props.context).getLabel,
+
+      selectScope(scope) {
+        props.listQuery.update({ scope: scope.name }, { resetPage: true })
+      }
     }
   }
-})
+}
 </script>
 
 <style lang="scss">

@@ -1,32 +1,23 @@
 import { pickBy } from '@ditojs/utils'
 import { formatQuery } from './route.js'
 
-// The query of a source that loads its list through its resource, e.g. its
-// scope, page, order and filters, see `ResourceMixin.queryParams`. The route
-// holds the query, so that the list can be linked and reloaded, and the store
-// of the source remembers it, so that the list shows it again when navigating
-// back to it, see `DitoMixin.getStore()`. All changes of the query go through
-// the router, and the source loads its list when the route query changes, see
-// the `$route` watcher in `SourceMixin`.
+// The scope, page, order and filters of a list: The route holds them, for
+// links and reloads, and the store of the source remembers them for when we
+// navigate back. All changes go through the router.
 export class ListQuery {
   constructor({ router, getRoute, getSourceStore, getDefaultQuery }) {
     this.router = router
     this.getRoute = getRoute
     this.getSourceStore = getSourceStore
     this.getDefaultQuery = getDefaultQuery
-    // The navigation of the last `update()` while it is pending, with the
-    // query that it navigates to, see `whenNavigated()`.
     this.pendingNavigation = null
   }
 
-  // The stored query, with the defaults of the source for missing values.
   get query() {
     return this.withDefaults(this.getSourceStore().query)
   }
 
-  // Navigates to the query with `changes`, e.g. `{ scope: 'published' }`.
-  // With `resetPage`, a set page is reset to the first one if the changes
-  // change the query, as the list then has other pages.
+  // A changed query has other pages, so `resetPage` resets the page then:
   update(changes, { resetPage = false } = {}) {
     const { query } = this
     const changedQuery = removeEmptyValues({ ...query, ...changes })
@@ -52,10 +43,8 @@ export class ListQuery {
     return promise
   }
 
-  // Returns `null` if no navigation of `update()` is pending, or the route
-  // already holds its query. Otherwise returns a promise that resolves once
-  // it settled, to whether the route then holds its query, as the navigation
-  // may fail or be superseded, e.g. by a navigation guard.
+  // Resolve to whether the pending navigation reached its query, as guards
+  // may fail or supersede it, or return `null` if there is nothing to await:
   whenNavigated() {
     const navigation = this.pendingNavigation
     if (!navigation || this.isRouteQuery(navigation.query)) {
@@ -69,10 +58,8 @@ export class ListQuery {
     return isSameQuery(query, this.getRoute().query)
   }
 
-  // Merges the stored query with the route query, so that the list shows the
-  // same query again when navigating back to it, while the route query can
-  // override it, e.g. through links. The route query is replaced with the
-  // merged query, so that it holds the defaults and the stored values too.
+  // The route query, e.g. of links, overrides the stored one, and the route
+  // receives the merged query with the defaults:
   syncWithRoute() {
     const route = this.getRoute()
     const query = this.withDefaults({
@@ -85,8 +72,7 @@ export class ListQuery {
     }
   }
 
-  // Stores the query of the route after it changed, and returns whether it
-  // changed the stored query, which the source then needs to load.
+  // Return whether the stored query changed, which the source then loads:
   setFromRoute(routeQuery) {
     const query = this.withDefaults(routeQuery)
     const hasChanged = !isSameQuery(query, this.query)
@@ -103,8 +89,7 @@ function removeEmptyValues(query) {
   return pickBy(query, value => value != null)
 }
 
-// Compares queries like the route does, where all values are strings, and
-// regardless of the order of their keys.
+// Compare like the route, with string values and regardless of key order:
 function isSameQuery(query1, query2) {
   const getSearchParams = query => {
     const searchParams = new URLSearchParams(formatQuery(query))

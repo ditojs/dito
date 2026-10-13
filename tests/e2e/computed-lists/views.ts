@@ -52,12 +52,12 @@ export const teams = createWidgetView<Team>('name', 'teams', {
                     }))
                 },
                 // Drops the days that the rota doesn't have anymore.
-                compute: ({ value: days, parentItem: rota }) =>
+                computeValue: ({ value: days, parentItem: rota }) =>
                   days.filter((day: number) => day <= rota.numDays)
               }
             }
           },
-          compute: ({ value: assignments, parentItem: team }) =>
+          computeValue: ({ value: assignments, parentItem: team }) =>
             team.members.map(({ name }: { name: string }) => ({
               member: name,
               days: assignments?.find(
@@ -75,7 +75,8 @@ type SizeEntry = { screen: string; columns?: number | null }
 const screens = ['small', 'medium', 'large']
 
 // The sizes of the collapsed widgets are stored as an object keyed by screen,
-// and edited as a list of entries, which `compute()` converts the object to.
+// and edited as a list of entries, which `computeValue()` converts the object
+// to.
 // Each screen's form is only offered while it has no entry.
 export const dashboards = createWidgetView<Dashboard>('name', 'dashboards', {
   name: { type: 'text', label: 'Name' },
@@ -117,7 +118,7 @@ export const dashboards = createWidgetView<Dashboard>('name', 'dashboards', {
                   }
                 ])
               ),
-              compute: ({
+              computeValue: ({
                 value,
                 item: sizes
               }: {
@@ -132,9 +133,9 @@ export const dashboards = createWidgetView<Dashboard>('name', 'dashboards', {
                         screen,
                         ...(size as object)
                       })),
-              process: ({ value, processedItem }) => {
+              serializeValue: ({ value, serializedItem }) => {
                 for (const { screen, ...size } of value) {
-                  processedItem[screen] = size
+                  serializedItem[screen] = size
                 }
               }
             }

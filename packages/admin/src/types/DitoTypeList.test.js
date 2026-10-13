@@ -1,6 +1,6 @@
 import { vi } from 'vitest'
 import { h } from 'vue'
-import { flushPromises } from '@vue/test-utils'
+import { DOMWrapper, flushPromises } from '@vue/test-utils'
 import Sortable from 'sortablejs'
 import { RequestError } from '../utils/request.js'
 import {
@@ -8,8 +8,12 @@ import {
   mountForm,
   mountAdmin,
   enterValue,
-  stubConfirm
+  stubConfirm,
+  settle,
+  isForm
 } from '../test/mount.js'
+import DitoSchema from '../components/DitoSchema.vue'
+import DitoSchemaInlined from '../components/DitoSchemaInlined.vue'
 
 const ingredientForm = {
   type: 'form',
@@ -81,6 +85,80 @@ describe('DitoTypeList', () => {
       await vi.waitFor(() => expect(onChange).toHaveBeenCalledOnce())
     })
 
+    it('creates items whose sections read the parent item', async () => {
+      const { findField, data } = await mountSchema({
+        schema: createRecipeSchema({
+          creatable: true,
+          form: {
+            type: 'form',
+            label: 'Ingredient',
+            components: {
+              details: {
+                type: 'section',
+                components: ({ parentItem }) => ({
+                  name: { type: 'text', default: parentItem.title }
+                })
+              }
+            }
+          }
+        }),
+        data: { title: 'Bread', ingredients: [] }
+      })
+      await findField('ingredients')
+        .find('.dito-create-button button')
+        .trigger('click')
+      await flushPromises()
+      expect(data.ingredients).toEqual([{ name: 'Bread' }])
+    })
+
+    it('updates the sections of created items with computed values', async () => {
+      const { findField, data, settle } = await mountSchema({
+        schema: createRecipeSchema({
+          creatable: true,
+          form: {
+            type: 'form',
+            label: 'Ingredient',
+            components: {
+              kind: { type: 'text', computeValue: () => 'liquid' },
+              details: {
+                type: 'section',
+                components: ({ item }) => ({
+                  ...(item.kind === 'liquid' && {
+                    volume: { type: 'number', default: 1 }
+                  })
+                })
+              }
+            }
+          }
+        }),
+        data: { ingredients: [] }
+      })
+      await findField('ingredients')
+        .find('.dito-create-button button')
+        .trigger('click')
+      await settle()
+      expect(data.ingredients).toEqual([{ kind: 'liquid', volume: 1 }])
+      expect(
+        findField('ingredients')
+          .find('input[name="ingredients/0/volume"]')
+          .exists()
+      ).toBe(true)
+    })
+
+    it('creates the first item of lists that are `null`', async () => {
+      const { findField, data, dataModel } = await mountSchema({
+        schema: createRecipeSchema({ creatable: true }),
+        data: { ingredients: null }
+      })
+      expect(data.ingredients).toBe(null)
+      await findField('ingredients')
+        .find('.dito-create-button button')
+        .trigger('click')
+      await flushPromises()
+      expect(data.ingredients).toEqual([{ name: null, amount: 1 }])
+      expect(dataModel.isEdited).toBe(true)
+    })
+
     it('labels the create button with `creatable.label`', async () => {
       const { findField } = await mountSchema({
         schema: createRecipeSchema({ creatable: { label: 'New Ingredient' } })
@@ -88,6 +166,28 @@ describe('DitoTypeList', () => {
       expect(
         findField('ingredients').find('.dito-create-button button').text()
       ).toBe('New Ingredient')
+    })
+
+    it('labels the create button with `creatable()`', async () => {
+      const { findField } = await mountSchema({
+        schema: createRecipeSchema({
+          creatable: () => ({ label: 'New Ingredient' })
+        })
+      })
+      expect(
+        findField('ingredients').find('.dito-create-button button').text()
+      ).toBe('New Ingredient')
+    })
+
+    it('disables the create button when its form is disabled', async () => {
+      const { findField } = await mountSchema({
+        schema: createRecipeSchema({
+          creatable: true,
+          form: { ...ingredientForm, disabled: true }
+        })
+      })
+      const button = findField('ingredients').find('.dito-create-button button')
+      expect(button.element.disabled).toBe(true)
     })
 
     it('deletes items after confirmation', async () => {
@@ -115,8 +215,8 @@ describe('DitoTypeList', () => {
     it('displays item labels returned by `itemLabel()`', async () => {
       const { findField } = await mountSchema({
         schema: createRecipeSchema({
-          itemLabel: ({ item, index }) => ({
-            text: `${index + 1}. ${item.name}`,
+          itemLabel: ({ item, valueIndex }) => ({
+            text: `${valueIndex + 1}. ${item.name}`,
             suffix: `${item.amount} g`
           })
         }),
@@ -125,6 +225,39 @@ describe('DitoTypeList', () => {
       const label = findField('ingredients').find('.dito-label')
       expect(label.text()).toContain('1. Flour')
       expect(label.text()).toContain('500 g')
+    })
+
+    it(`doesn't pass the list's query to \`itemLabel()\``, async () => {
+      // Item labels describe the item, also in its form, where no list shows:
+      const itemLabel = vi.fn(({ item }) => item.name)
+      await mountSchema({
+        schema: createRecipeSchema({ itemLabel }),
+        data: { ingredients: [{ name: 'Flour' }] }
+      })
+      expect(itemLabel).toHaveBeenCalled()
+      for (const [context] of itemLabel.mock.calls) {
+        expect(context.sourceQuery).toBe(null)
+      }
+    })
+
+    it('updates only the label of the edited item', async () => {
+      const itemLabel = vi.fn(({ item }) => item.name)
+      const { findField, settle } = await mountSchema({
+        schema: createRecipeSchema({ itemLabel }),
+        data: { ingredients: [{ name: 'Flour' }, { name: 'Salt' }] }
+      })
+      itemLabel.mockClear()
+      await enterValue(
+        findField('ingredients').find('input[name$="0/name"]'),
+        'Rye'
+      )
+      await settle()
+      expect(itemLabel.mock.calls.map(([{ item }]) => item.name)).toEqual([
+        'Rye'
+      ])
+      expect(findField('ingredients').find('.dito-label').text()).toContain(
+        'Rye'
+      )
     })
 
     it('collapses the items with `collapsed` and opens them on click', async () => {
@@ -140,7 +273,7 @@ describe('DitoTypeList', () => {
     })
 
     it('keeps the state of each item when inserting items', async () => {
-      const { findField, getComponent, settle } = await mountSchema({
+      const { wrapper, findField, getComponent, settle } = await mountSchema({
         schema: createRecipeSchema({ collapsible: true, collapsed: true }),
         data: {
           ingredients: [{ name: 'Flour' }, { name: 'Salt' }, { name: 'Yeast' }]
@@ -150,21 +283,23 @@ describe('DitoTypeList', () => {
       await settle()
       expect(getItemNames(findField('ingredients'))).toEqual(['Salt'])
       const list = getComponent('ingredients')
-      list.createItem(ingredientForm, null, 1)
+      list.sourceContext.createItem(ingredientForm, null, 1)
       await settle()
       // The inserted item is opened, see `createItem()`, and the others keep
       // their state:
       const getOpenedNames = () =>
-        list.schemaComponents
-          .filter(schemaComponent => schemaComponent.opened)
-          .map(schemaComponent => schemaComponent.data.name)
+        wrapper
+          .findAllComponents(DitoSchema)
+          .map(({ vm }) => vm)
+          .filter(schema => schema.inlined && schema.opened)
+          .map(schema => schema.data.name)
           .sort()
       expect(getOpenedNames()).toEqual(['Salt', null])
       expect(getItemNames(findField('ingredients'))).toEqual(['', 'Salt'])
     })
 
     it('numbers the items by `orderKey` and keeps numbering them', async () => {
-      const { findField, data, getComponent, settle } = await mountSchema({
+      const { findField, data, settle } = await mountSchema({
         schema: createRecipeSchema({
           creatable: true,
           draggable: true,
@@ -178,9 +313,9 @@ describe('DitoTypeList', () => {
         { name: 'Flour', position: 0 },
         { name: 'Salt', position: 1 }
       ])
-      // Reorder the items like dragging does:
-      const list = getComponent('ingredients')
-      list.listData = [...list.listData].reverse()
+      Sortable.get(findField('ingredients').find('tbody').element).option(
+        'onEnd'
+      )({ oldIndex: 0, newIndex: 1 })
       await settle()
       expect(data.ingredients).toMatchObject([
         { name: 'Salt', position: 0 },
@@ -196,7 +331,7 @@ describe('DitoTypeList', () => {
   describe('dragging', () => {
     it('reports changes only for items dropped at new positions', async () => {
       const onChange = vi.fn()
-      const { findField, getComponent, settle } = await mountSchema({
+      const { findField, dataModel, settle } = await mountSchema({
         schema: createRecipeSchema({ draggable: true, onChange }),
         data: { ingredients: [{ name: 'Flour' }, { name: 'Salt' }] }
       })
@@ -208,14 +343,28 @@ describe('DitoTypeList', () => {
       sortable.option('onEnd')({ oldIndex: 0, newIndex: 0 })
       await settle()
       expect(onChange).not.toHaveBeenCalled()
-      // Sortable moves the item and then ends the drag:
+      expect(dataModel.isEdited).toBe(false)
+      // Sortable restores its moved element, and the list moves the item:
       sortable.option('onStart')({ oldIndex: 0 })
-      const list = getComponent('ingredients')
-      list.listData = [...list.listData].reverse()
       sortable.option('onEnd')({ oldIndex: 0, newIndex: 1 })
       await settle()
       expect(onChange).toHaveBeenCalledOnce()
+      expect(dataModel.isEdited).toBe(true)
       expect(getItemNames(findField('ingredients'))).toEqual(['Salt', 'Flour'])
+    })
+
+    it('uses the fallback of Sortable with `settings.forceDragFallback`', async () => {
+      const getForceFallback = async settings => {
+        const { findField } = await mountSchema({
+          schema: createRecipeSchema({ draggable: true }),
+          data: { ingredients: [{ name: 'Flour' }] },
+          settings
+        })
+        const element = findField('ingredients').find('tbody').element
+        return Sortable.get(element).option('forceFallback')
+      }
+      expect(await getForceFallback({})).toBe(false)
+      expect(await getForceFallback({ forceDragFallback: true })).toBe(true)
     })
   })
 
@@ -357,8 +506,10 @@ describe('DitoTypeList', () => {
     it('renders the items with their `component`', async () => {
       const texts = await getItemTexts({
         component: {
+          props: { modelValue: { type: Object, required: true } },
+
           render() {
-            return h('em', `${this.data.amount} g`)
+            return h('em', `${this.modelValue.amount} g`)
           }
         }
       })
@@ -367,7 +518,7 @@ describe('DitoTypeList', () => {
 
     it('renders the items with `render()`', async () => {
       const texts = await getItemTexts({
-        render: ({ item, index }) => `${index + 1}: ${item.name}`
+        render: ({ item, valueIndex }) => `${valueIndex + 1}: ${item.name}`
       })
       expect(texts).toEqual(['1: Flour', '2: Salt'])
     })
@@ -375,6 +526,27 @@ describe('DitoTypeList', () => {
     it('renders the items with their label', async () => {
       const texts = await getItemTexts({})
       expect(texts).toEqual(['Flour', 'Salt'])
+    })
+
+    it('shows loaded dates in their label as their type formats them', async () => {
+      const { findField } = await mountForm({
+        schema: {
+          components: {
+            milestones: {
+              type: 'list',
+              itemLabel: 'due',
+              form: {
+                type: 'form',
+                components: { due: { type: 'date' } }
+              }
+            }
+          }
+        },
+        data: { milestones: [{ due: '2026-06-01' }] }
+      })
+      expect(findField('milestones').find('tbody td').text()).toBe(
+        'June 1, 2026'
+      )
     })
   })
 
@@ -425,6 +597,109 @@ describe('DitoTypeList', () => {
     })
   })
 
+  describe('list buttons with resources', () => {
+    it('notify the server errors of the items', async () => {
+      const { admin, findField, settle } = await mountForm({
+        schema: {
+          components: {
+            chapters: {
+              type: 'list',
+              resource: { path: 'chapters' },
+              columns: { title: {} },
+              buttons: {
+                saveOrder: {
+                  type: 'submit',
+                  label: 'Save Order',
+                  resource: { path: 'order', method: 'post' }
+                }
+              }
+            }
+          }
+        },
+        data: { title: 'Emma' },
+        request: ({ method = 'get', url }) => {
+          if (method === 'get') {
+            return url === '/items/1/chapters'
+              ? { data: [{ id: 1, title: 'One' }] }
+              : { data: { id: 1, title: 'Emma' } }
+          }
+          throw Object.assign(new Error('Validation failed'), {
+            response: {
+              status: 400,
+              data: {
+                type: 'ValidationError',
+                errors: { '0/title': [{ message: 'is taken' }] }
+              }
+            }
+          })
+        }
+      })
+      const notify = vi.spyOn(admin.context, 'notify')
+      await findField('chapters')
+        .find('.dito-buttons button[type="submit"]')
+        .trigger('click')
+      await settle()
+      // The items of lists with resources are edited in their own forms:
+      expect(notify).toHaveBeenCalledExactlyOnceWith({
+        type: 'error',
+        title: 'Validation Errors',
+        text: 'The field Title is taken'
+      })
+      notify.mockRestore()
+    })
+
+    it('clear the errors of the list once they succeed', async () => {
+      let isValid = false
+      const { findField, getErrors, settle } = await mountForm({
+        schema: {
+          components: {
+            chapters: {
+              type: 'list',
+              inlined: true,
+              form: {
+                type: 'form',
+                components: { title: { type: 'text' } }
+              },
+              buttons: {
+                saveTitles: {
+                  type: 'submit',
+                  resource: { path: 'titles', method: 'post' }
+                }
+              }
+            }
+          }
+        },
+        data: { chapters: [{ title: 'One' }] },
+        request: () => {
+          if (isValid) {
+            return { data: null }
+          }
+          throw Object.assign(new Error('Validation failed'), {
+            response: {
+              status: 400,
+              data: {
+                type: 'ValidationError',
+                errors: { '0/title': [{ message: 'is taken' }] }
+              }
+            }
+          })
+        }
+      })
+      const button = findField('chapters').find(
+        '.dito-buttons button[type="submit"]'
+      )
+      await button.trigger('click')
+      await settle()
+      expect(getErrors('chapters/0/title')).toEqual([
+        'The Title field is taken.'
+      ])
+      isValid = true
+      await button.trigger('click')
+      await settle()
+      expect(getErrors('chapters/0/title')).toEqual([])
+    })
+  })
+
   describe('primitive values', () => {
     it('edits primitive values through `wrapPrimitives`', async () => {
       const { findField, data } = await mountSchema({
@@ -453,6 +728,111 @@ describe('DitoTypeList', () => {
       expect(data.tags).toEqual(['classic', 'romance'])
     })
 
+    it('moves primitive values of `wrapPrimitives`', async () => {
+      const { findField, data, settle } = await mountSchema({
+        schema: {
+          components: {
+            tags: {
+              type: 'list',
+              inlined: true,
+              draggable: true,
+              wrapPrimitives: 'tag',
+              form: {
+                type: 'form',
+                components: { tag: { type: 'text' } }
+              }
+            }
+          }
+        },
+        data: { tags: ['classic', 'novel'] }
+      })
+      await findField('tags')
+        .findAll('.dito-button--drag')[0]
+        .trigger('keydown', { key: 'ArrowDown', altKey: true })
+      await settle()
+      expect(data.tags).toEqual(['novel', 'classic'])
+      const inputs = findField('tags').findAll('input')
+      expect(inputs.map(input => input.element.value)).toEqual([
+        'novel',
+        'classic'
+      ])
+    })
+
+    it('gives only the component of the value the data path of the item', async () => {
+      const { getComponent } = await mountSchema({
+        schema: {
+          components: {
+            tags: {
+              type: 'list',
+              inlined: true,
+              wrapPrimitives: 'tag',
+              form: {
+                type: 'form',
+                components: {
+                  tag: { type: 'text' },
+                  note: { type: 'text' }
+                }
+              }
+            }
+          }
+        },
+        data: { tags: ['classic'] }
+      })
+      expect(getComponent('tags/0').schema.name).toBe('tag')
+      expect(getComponent('tags/0/note').schema.name).toBe('note')
+    })
+
+    it('keeps the errors of the other values when one is edited', async () => {
+      const { findField, data, dataModel } = await mountSchema({
+        schema: {
+          components: {
+            tags: {
+              type: 'list',
+              inlined: true,
+              wrapPrimitives: 'tag',
+              form: {
+                type: 'form',
+                components: { tag: { type: 'text' } }
+              }
+            }
+          }
+        },
+        data: { tags: ['classic', 'novel'] }
+      })
+      const errors = [{ message: 'is unknown' }]
+      dataModel.replaceErrors({ 'tags/0': errors }, { server: true })
+      await enterValue(findField('tags').findAll('input')[1], 'romance')
+      expect(data.tags).toEqual(['classic', 'romance'])
+      expect(dataModel.getErrors('tags/0')).toEqual(errors)
+    })
+
+    it('creates the first primitive value of lists that are `null`', async () => {
+      const { findField, data, dataModel } = await mountSchema({
+        schema: {
+          components: {
+            tags: {
+              type: 'list',
+              inlined: true,
+              creatable: true,
+              wrapPrimitives: 'tag',
+              form: {
+                type: 'form',
+                components: { tag: { type: 'text' } }
+              }
+            }
+          }
+        },
+        data: { tags: null }
+      })
+      await findField('tags')
+        .find('.dito-create-button button')
+        .trigger('click')
+      await flushPromises()
+      await enterValue(findField('tags').find('input'), 'classic')
+      expect(data.tags).toEqual(['classic'])
+      expect(dataModel.isEdited).toBe(true)
+    })
+
     it('renders wrapped primitive values of loaded data with stores', async () => {
       // Rendering the items without their stores throws, which Vue only logs:
       const error = vi.spyOn(console, 'error').mockImplementation(() => {})
@@ -474,7 +854,7 @@ describe('DitoTypeList', () => {
         data: { tags: ['classic', 'novel'] }
       })
       const stores = findField('tags')
-        .findAllComponents({ name: 'DitoSchemaInlined' })
+        .findAllComponents(DitoSchemaInlined)
         .map(schema => schema.props('store'))
       expect(stores).toHaveLength(2)
       expect(stores).not.toContain(null)
@@ -482,6 +862,80 @@ describe('DitoTypeList', () => {
       expect(warn).not.toHaveBeenCalled()
       error.mockRestore()
       warn.mockRestore()
+    })
+  })
+
+  describe('primitive values in routed forms', () => {
+    const tagsSchema = {
+      components: {
+        tags: {
+          type: 'list',
+          editable: true,
+          creatable: true,
+          wrapPrimitives: 'tag',
+          columns: { tag: {} },
+          form: {
+            type: 'form',
+            components: { tag: { type: 'text', required: true } }
+          }
+        }
+      }
+    }
+
+    // Opens the form at `path`, enters `tag` and applies it:
+    async function applyTagForm(admin, path, tag) {
+      await admin.navigate(path)
+      const form = admin.getRouteComponent(isForm)
+      await settle(form)
+      const element = new DOMWrapper(form.$el)
+      await enterValue(element.find('input[name$="tag"]'), tag)
+      await settle(form)
+      await element
+        .find('.dito-buttons--main button[type="submit"]')
+        .trigger('click')
+      await settle(form)
+      return form
+    }
+
+    it('edit the wrapped value and write it back at its index', async () => {
+      const { admin, data, routeComponent } = await mountForm({
+        schema: tagsSchema,
+        data: { tags: ['classic', 'novel'] }
+      })
+      const tags = data.tags
+      await admin.navigate('/items/1/tags/1')
+      const form = admin.getRouteComponent(isForm)
+      await settle(form)
+      expect(form.data).toEqual({ tag: 'novel' })
+      await applyTagForm(admin, '/items/1/tags/1', 'romance')
+      expect(data.tags).toBe(tags)
+      expect(data.tags).toEqual(['classic', 'romance'])
+      expect(routeComponent.routeContext.isDirty).toBe(true)
+    })
+
+    it('create values unwrapped', async () => {
+      const { admin, data } = await mountForm({
+        schema: tagsSchema,
+        data: { tags: ['classic'] }
+      })
+      await applyTagForm(admin, '/items/1/tags/create', 'romance')
+      expect(data.tags).toEqual(['classic', 'romance'])
+    })
+
+    it('take over the errors of their value', async () => {
+      const { admin, dataModel } = await mountForm({
+        schema: tagsSchema,
+        data: { tags: ['classic'] }
+      })
+      const errors = [{ message: 'is unknown' }]
+      dataModel.replaceErrors({ 'tags/0': errors }, { server: true })
+      await admin.navigate('/items/1/tags/0')
+      const form = admin.getRouteComponent(isForm)
+      await settle(form)
+      expect(form.dataContext.model.getErrors('tags/0/tag')).toEqual(errors)
+      expect(new DOMWrapper(form.$el).find('.dito-errors').text()).toContain(
+        'is unknown'
+      )
     })
   })
 
@@ -502,6 +956,28 @@ describe('DitoTypeList', () => {
       }
     }
 
+    it('adds the query of `creatable()` to the create route', async () => {
+      const { admin, findField, settle } = await mountForm({
+        schema: {
+          components: {
+            chapters: {
+              ...chaptersSchema.components.chapters,
+              creatable: () => ({ query: () => ({ part: '2' }) })
+            }
+          }
+        },
+        data: { chapters: [] }
+      })
+      await findField('chapters')
+        .find('.dito-create-button button')
+        .trigger('click')
+      await settle()
+      expect(admin.router.currentRoute.value.path).toBe(
+        '/items/1/chapters/create'
+      )
+      expect(admin.router.currentRoute.value.query).toEqual({ part: '2' })
+    })
+
     it('edits items in nested forms and applies the changes', async () => {
       const { admin, findField, data, settle } = await mountForm({
         schema: chaptersSchema,
@@ -515,8 +991,8 @@ describe('DitoTypeList', () => {
       await field.findAll('a.dito-button--edit')[1].trigger('click')
       await settle()
       expect(admin.router.currentRoute.value.path).toBe('/items/1/chapters/1')
-      const chapterForm = admin.getRouteComponent(it => it.isForm)
-      expect(chapterForm.isTransient).toBe(true)
+      const chapterForm = admin.getRouteComponent(isForm)
+      expect(chapterForm.routeContext.state.isTransient).toBe(true)
       const input = admin.wrapper.find('input[name="chapters/1/title"]')
       await enterValue(input, 'Departure')
       // Nested forms edit a copy of the item until the changes are applied:
@@ -529,9 +1005,8 @@ describe('DitoTypeList', () => {
       expect(admin.router.currentRoute.value.path).toBe('/items/1')
     })
 
-    // Known bug: open nested forms switch to the next item
-    it.skip('keep the form of an item open when removing an earlier one', async () => {
-      const { admin, getComponent, data, settle } = await mountForm({
+    it('keep the form of an item open when removing an earlier one', async () => {
+      const { admin, findField, settle } = await mountForm({
         schema: {
           components: {
             chapters: {
@@ -554,17 +1029,42 @@ describe('DitoTypeList', () => {
       })
       await admin.navigate('/items/1/chapters/1')
       await settle()
-      const chapterForm = admin.getRouteComponent(it => it.isForm)
+      const chapterForm = admin.getRouteComponent(isForm)
       await enterValue(
         admin.wrapper.find('input[name="chapters/1/title"]'),
         'Departure'
       )
       await settle()
-      getComponent('chapters').removeItem(data.chapters[0], 0)
+      stubConfirm(true)
+      await findField('chapters').find('.dito-button--remove').trigger('click')
       await settle()
       // The form keeps editing its item, and follows it to its new index:
       expect(chapterForm.data.title).toBe('Departure')
       expect(admin.router.currentRoute.value.path).toBe('/items/1/chapters/0')
+    })
+
+    it('close the form of an item when removing it', async () => {
+      const { admin, findField, settle } = await mountForm({
+        schema: {
+          components: {
+            chapters: {
+              ...chaptersSchema.components.chapters,
+              deletable: true,
+              form: {
+                ...chaptersSchema.components.chapters.form,
+                nested: true
+              }
+            }
+          }
+        },
+        data: { chapters: [{ title: 'Prologue' }, { title: 'Arrival' }] }
+      })
+      await admin.navigate('/items/1/chapters/0')
+      await settle()
+      stubConfirm(true)
+      await findField('chapters').find('.dito-button--remove').trigger('click')
+      await settle()
+      expect(admin.router.currentRoute.value.path).toBe('/items/1')
     })
   })
 
@@ -723,6 +1223,47 @@ describe('DitoTypeList', () => {
         'books/0/title'
       )
     })
+
+    it('shows loaded dates as their types format them', async () => {
+      const { findField } = await mountForm({
+        schema: {
+          components: {
+            events: {
+              type: 'list',
+              columns: { day: {}, start: {}, doors: {} },
+              form: {
+                type: 'form',
+                components: {
+                  day: { type: 'date' },
+                  // Columns find components in sections too:
+                  times: {
+                    type: 'section',
+                    components: {
+                      start: { type: 'datetime' },
+                      doors: { type: 'time' }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        data: {
+          events: [
+            {
+              day: '2026-06-01',
+              start: '2026-06-01T19:30',
+              doors: '2026-06-01T18:45'
+            }
+          ]
+        }
+      })
+      expect(
+        findField('events')
+          .findAll('tbody td')
+          .map(cell => cell.text())
+      ).toEqual(['June 1, 2026', 'June 1, 2026 at 07:30:00 PM', '06:45:00 PM'])
+    })
   })
 
   it('spans the list buttons across the columns and edit buttons', async () => {
@@ -818,13 +1359,13 @@ describe('DitoTypeList', () => {
     })
   })
 
-  describe('processing', () => {
-    it('sends empty lists as `null` with `process()`', async () => {
+  describe('serializing', () => {
+    it('sends empty lists as `null` with `serializeValue()`', async () => {
       const { findField, submit } = await mountForm({
         schema: createRecipeSchema({
           deletable: true,
-          compute: ({ value }) => value ?? [],
-          process: ({ value }) => (value?.length > 0 ? value : null)
+          computeValue: ({ value }) => value ?? [],
+          serializeValue: ({ value }) => (value?.length > 0 ? value : null)
         }),
         data: { ingredients: [{ name: 'Flour', amount: 1 }] },
         request: ({ data }) => ({ data })
@@ -838,9 +1379,11 @@ describe('DitoTypeList', () => {
       expect(await submit()).toMatchObject({ ingredients: null })
     })
 
-    it('fills in `null` lists through `compute()`', async () => {
+    it('fills in `null` lists through `computeValue()`', async () => {
       const { data } = await mountForm({
-        schema: createRecipeSchema({ compute: ({ value }) => value ?? [] }),
+        schema: createRecipeSchema({
+          computeValue: ({ value }) => value ?? []
+        }),
         data: { ingredients: null }
       })
       expect(data.ingredients).toEqual([])
@@ -862,6 +1405,36 @@ describe('DitoTypeList', () => {
         'The Name field is required.'
       ])
       expect(getErrors('ingredients/0/name')).toEqual([])
+    })
+
+    it('marks the rows of items with errors in their forms', async () => {
+      const { routeComponent, findField, data } = await mountForm({
+        schema: {
+          components: {
+            chapters: {
+              type: 'list',
+              editable: true,
+              itemLabel: 'title',
+              form: {
+                type: 'form',
+                components: { title: { type: 'text', required: true } }
+              }
+            }
+          }
+        },
+        data: { chapters: [{ title: 'One' }, { title: '' }] }
+      })
+      const getMarkedRows = () =>
+        findField('chapters')
+          .findAll('tbody > tr')
+          .map(row => row.classes('dito-table__row--error'))
+      expect(getMarkedRows()).toEqual([false, false])
+      expect(routeComponent.dataContext.validate()).toBe(false)
+      await flushPromises()
+      expect(getMarkedRows()).toEqual([false, true])
+      data.chapters[1].title = 'Two'
+      await flushPromises()
+      expect(getMarkedRows()).toEqual([false, false])
     })
 
     it('reveals collapsed items with errors', async () => {
@@ -973,19 +1546,91 @@ describe('DitoTypeList', () => {
       const recipes = getComponent('recipes')
       recipes.listQuery.update({ page: 1 })
       await flushPromises()
-      expect(recipes.query.page).toBe('1')
+      expect(recipes.listQuery.query.page).toBe('1')
       const panel = wrapper.find('.dito-panel')
       await enterValue(panel.find('input[type="text"]'), 'Soup')
       await panel.find('button[type="submit"]').trigger('click')
       await flushPromises()
       // Filtering resets the page, as the filtered list has other pages:
-      expect(recipes.query).toMatchObject({
+      expect(recipes.listQuery.query).toMatchObject({
         filter: ['title:"Soup"'],
         page: '0'
       })
       expect(JSON.stringify(request.mock.lastCall[0].query)).toContain(
         'title:\\"Soup\\"'
       )
+    })
+
+    it('shows the filters of the route query in the panel', async () => {
+      const admin = await mountAdmin({
+        views: {
+          recipes: {
+            type: 'view',
+            component: {
+              type: 'list',
+              resource: { path: 'recipes' },
+              filters: { title: { filter: 'text' } }
+            }
+          }
+        },
+        request: () => ({ data: { results: [], total: 0 } })
+      })
+      await admin.navigate('/recipes?filter=title:"Soup"')
+      const input = admin.wrapper.find('.dito-panel input[type="text"]')
+      expect(input.element.value).toBe('Soup')
+    })
+
+    it('clears the filters to their defaults and applies them', async () => {
+      const request = vi.fn(({ query }) => {
+        if (JSON.stringify(query).includes('Soup')) {
+          throw new RequestError({
+            status: 400,
+            statusText: 'Error',
+            data: {
+              type: 'FilterValidation',
+              message: 'The query filter is not valid',
+              errors: { 'course/course': [{ message: 'is no course' }] }
+            }
+          })
+        }
+        return { data: { results: [], total: 0 } }
+      })
+      const { wrapper, getComponent } = await mountSchema({
+        schema: {
+          components: {
+            recipes: {
+              type: 'list',
+              resource: { path: 'recipes' },
+              filters: {
+                course: {
+                  components: { course: { type: 'text', default: 'Main' } }
+                }
+              },
+              form: { type: 'form', components: { title: { type: 'text' } } }
+            }
+          }
+        },
+        request
+      })
+      const recipes = getComponent('recipes')
+      const panel = wrapper.find('.dito-panel')
+      const input = panel.find('input[type="text"]')
+      expect(input.element.value).toBe('Main')
+      await enterValue(input, 'Soup')
+      await panel.find('button[type="submit"]').trigger('click')
+      await flushPromises()
+      expect(recipes.listQuery.query.filter).toEqual(['course:"Soup"'])
+      expect(panel.findAll('.dito-errors li').length).toBe(1)
+      await panel.find('button[id$="clear"]').trigger('click')
+      await flushPromises()
+      // The filters are applied with their defaults:
+      expect(recipes.listQuery.query.filter).toEqual(['course:"Main"'])
+      expect(input.element.value).toBe('Main')
+      expect(panel.findAll('.dito-errors li').length).toBe(0)
+      // Changes apply the cleared data:
+      await enterValue(input, 'Dessert')
+      await flushPromises()
+      expect(recipes.listQuery.query.filter).toEqual(['course:"Dessert"'])
     })
 
     it('notifies filter errors of lists without filters panel', async () => {

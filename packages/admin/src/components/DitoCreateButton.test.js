@@ -1,7 +1,7 @@
 import { vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
-import DitoContext from '../DitoContext.js'
-import { mountSchema } from '../test/mount.js'
+import SchemaContext from '../SchemaContext.js'
+import { mountSchema, isForm } from '../test/mount.js'
 
 const blocksSchema = {
   components: {
@@ -102,7 +102,47 @@ describe('DitoCreateButton', () => {
     expect(data.blocks).toEqual([])
   })
 
-  it('leaves out forms that are hidden or not creatable', async () => {
+  it('offers the forms by their `creatable` only', async () => {
+    const creatable = vi.fn(({ item, value }) => item.blocks === value)
+    const { findField, data } = await mountSchema({
+      schema: {
+        components: {
+          // Not a single-component view, which would give the list as item:
+          title: { type: 'text' },
+          blocks: {
+            ...blocksSchema.components.blocks,
+            forms: {
+              heading: {
+                ...blocksSchema.components.blocks.forms.heading,
+                if: false
+              },
+              quote: {
+                ...blocksSchema.components.blocks.forms.quote,
+                creatable: false
+              },
+              image: {
+                ...blocksSchema.components.blocks.forms.image,
+                visible: false,
+                creatable
+              }
+            }
+          }
+        }
+      },
+      data: { title: null, blocks: [] }
+    })
+    const field = findField('blocks')
+    await findMenuButton(field).trigger('click')
+    expect(field.findAll('[role="menuitem"]').map(item => item.text())).toEqual(
+      ['Heading', 'Image']
+    )
+    // The callback gets the button's context, of the list in its item:
+    expect(creatable).toHaveBeenCalledWith(
+      expect.objectContaining({ item: data, value: data.blocks })
+    )
+  })
+
+  it('greys out the forms that are `disabled`', async () => {
     const { findField } = await mountSchema({
       schema: {
         components: {
@@ -112,11 +152,7 @@ describe('DitoCreateButton', () => {
               ...blocksSchema.components.blocks.forms,
               quote: {
                 ...blocksSchema.components.blocks.forms.quote,
-                creatable: false
-              },
-              image: {
-                ...blocksSchema.components.blocks.forms.image,
-                visible: false
+                disabled: true
               }
             }
           }
@@ -126,9 +162,15 @@ describe('DitoCreateButton', () => {
     })
     const field = findField('blocks')
     await findMenuButton(field).trigger('click')
-    expect(field.findAll('[role="menuitem"]').map(item => item.text())).toEqual(
-      ['Heading']
-    )
+    const items = field.findAll('[role="menuitem"]')
+    expect(items.map(item => item.text())).toEqual([
+      'Heading', 'Quote', 'Image'
+    ])
+    expect(items.map(item => item.attributes('aria-disabled'))).toEqual([
+      undefined,
+      'true',
+      undefined
+    ])
   })
 
   it('renders a plain button for a single default form', async () => {
@@ -191,8 +233,9 @@ describe('DitoCreateButton', () => {
     const route = admin.router.currentRoute.value
     expect(route.path).toBe('/test/recipes/create')
     expect(route.query).toEqual({ type: 'cake', editor: 'tester' })
-    expect(query).toHaveBeenCalledWith(expect.any(DitoContext))
-    const form = admin.getRouteComponent(component => component.isForm)
-    expect(form.creationType).toBe('cake')
+    expect(query).toHaveBeenCalledWith(expect.any(SchemaContext))
+    // The form creates an item of the type:
+    const form = admin.getRouteComponent(isForm)
+    expect(form.data.type).toBe('cake')
   })
 })

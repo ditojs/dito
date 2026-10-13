@@ -1,3 +1,4 @@
+import { toRaw } from 'vue'
 import { flushPromises } from '@vue/test-utils'
 import { mountSchema, mountForm } from '../test/mount.js'
 
@@ -9,7 +10,7 @@ const bookForm = {
 
 const maliciousTitle = '<img src="x" onerror="alert(1)">'
 
-describe('ItemMixin', () => {
+describe('useSourceItems()', () => {
   describe('getItemLabel()', () => {
     it('escapes the values of items in list labels', async () => {
       const { findField } = await mountSchema({
@@ -107,6 +108,101 @@ describe('ItemMixin', () => {
       expect(findField('books').find('b').text()).toBe('Emma')
     })
   })
+  describe('itemLabel()', () => {
+    it('receives the data path and form label of the item', async () => {
+      const contexts = []
+      const { admin } = await mountForm({
+        schema: {
+          components: {
+            chapters: {
+              type: 'list',
+              editable: true,
+              itemLabel: ({ item, dataPath, formLabel }) => {
+                contexts.push({ dataPath, formLabel })
+                return item.title
+              },
+              form: {
+                type: 'form',
+                label: 'Chapter',
+                components: { title: { type: 'text' } }
+              }
+            }
+          }
+        },
+        data: { chapters: [{ title: 'Prologue' }] }
+      })
+      expect(contexts).toContainEqual({
+        dataPath: 'chapters/0',
+        formLabel: 'Chapter'
+      })
+      // The form of the item labels it with the data path of its item too:
+      contexts.length = 0
+      await admin.navigate('/items/1/chapters/0')
+      expect(contexts).toContainEqual({
+        dataPath: 'chapters/0',
+        formLabel: 'Chapter'
+      })
+      expect(contexts.map(({ dataPath }) => dataPath)).not.toContain(
+        'chapters/0/chapters'
+      )
+    })
+  })
+
+  describe('contexts of items', () => {
+    it('receive the root and parent items in `itemLabel()` and `render()`', async () => {
+      const contexts = []
+      const getLabel = context => {
+        contexts.push(context)
+        return context.item.title
+      }
+      const chapter = {
+        type: 'form',
+        components: { title: { type: 'text' } }
+      }
+      const { data } = await mountForm({
+        schema: {
+          components: {
+            title: { type: 'text' },
+            chapters: { type: 'list', itemLabel: getLabel, form: chapter },
+            notes: { type: 'list', render: getLabel, form: chapter }
+          }
+        },
+        data: {
+          title: 'Emma',
+          chapters: [{ title: 'One' }],
+          notes: [{ title: 'Two' }]
+        }
+      })
+      expect(contexts.map(({ item }) => item.title)).toEqual(
+        expect.arrayContaining(['One', 'Two'])
+      )
+      for (const { rootItem, parentItem } of contexts) {
+        expect(rootItem.title).toBe('Emma')
+        expect(toRaw(parentItem)).toBe(toRaw(data))
+      }
+    })
+
+    it('receive the schema and name of their list', async () => {
+      const contexts = []
+      const getLabel = ({ schema, name, item }) => {
+        contexts.push({ schema, name })
+        return item.title
+      }
+      const chapter = {
+        type: 'form',
+        components: { title: { type: 'text' } }
+      }
+      const chapters = { type: 'list', itemLabel: getLabel, form: chapter }
+      const notes = { type: 'list', render: getLabel, form: chapter }
+      await mountSchema({
+        schema: { components: { chapters, notes } },
+        data: { chapters: [{ title: 'One' }], notes: [{ title: 'Two' }] }
+      })
+      expect(contexts).toContainEqual({ schema: chapters, name: 'chapters' })
+      expect(contexts).toContainEqual({ schema: notes, name: 'notes' })
+    })
+  })
+
   describe('getItemDataPath()', () => {
     it('appends the index, and the name of other source schemas', async () => {
       const { getComponent } = await mountSchema({

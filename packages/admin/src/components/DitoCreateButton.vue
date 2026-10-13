@@ -6,7 +6,7 @@
     :verb="verb"
     :subject="formLabel"
     :text="text"
-    :disabled="disabled"
+    :disabled="disabled || isDisabled(creatableForm)"
     @click="createItem(creatableForm)"
   )
   DitoMenuButton(
@@ -21,103 +21,98 @@
 </template>
 
 <script>
+import { computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { DitoButton, DitoMenuButton } from '@ditojs/ui/src'
-import DitoComponent from '../DitoComponent.js'
-import ContextMixin from '../mixins/ContextMixin.js'
+import { useSchemaContext } from '../composables/useSchemaContext.ts'
+import { useSchemaValue } from '../composables/useSchemaValue.ts'
 import { isInlined } from '../utils/schema/structure.js'
 import { getCreatableForms } from '../utils/schema/data.js'
 
-// @vue/component
-export default DitoComponent.component('DitoCreateButton', {
-  mixins: [ContextMixin],
+export default {
   components: { DitoButton, DitoMenuButton },
 
   props: {
-    // The schema of the list or object source that creates the item, also
-    // when inserting at `insertIndex` from the buttons of an item.
+    // The source that creates the item, also when inserting at `insertIndex`:
     schema: { type: Object, required: true },
-    // The next four props are there for `DitoContext` and the `context()`
-    // getter in `DitoMixin`.
-    // TODO: Should they be moved to shared mixin that defines them as required
-    // and also provides the `context()` getter, perhaps `ContextMixin`?
-    // `schema` could be included as well, and `ContextMixin` could be used in
-    // `DitoForm`, `DitoView`, `DitoPanel`, `DitoSchema`, `DitoEditButtons`,
-    // etc? But the problem with the root components is that they don't have
-    // these props. We could add a `contextAttributes()` getter for easy passing
-    // on as `v-bind="contextAttributes"`.
+    // The next five props are there for the `context` of the callbacks:
     dataPath: { type: String, required: true },
     data: { type: [Object, Array], default: null },
-    meta: { type: Object, required: true },
+    itemDataPath: { type: String, default: null },
     store: { type: Object, required: true },
     nested: { type: Boolean, default: false },
-    path: { type: String, required: true },
+    path: { type: String, default: null },
     verb: { type: String, required: true },
     text: { type: String, default: null },
     disabled: { type: Boolean, required: true },
     insertIndex: { type: Number, default: null }
   },
 
-  computed: {
-    creatableForms() {
-      return getCreatableForms(this.schema, this.context)
-    },
-
-    hasCreatableForms() {
-      return Object.keys(this.creatableForms).length > 0
-    },
-
-    creatableForm() {
-      const forms = this.creatableForms
+  setup(props) {
+    const router = useRouter()
+    const { context, services } = useSchemaContext(props)
+    const { getSchemaValue, getLabel } = useSchemaValue(context)
+    const creatableForms = computed(() =>
+      getCreatableForms(props.schema, context)
+    )
+    const creatableForm = computed(() => {
+      const forms = creatableForms.value
       return (Object.keys(forms).length === 1 && forms.default) || null
-    },
+    })
+    const isInlinedSource = computed(() => isInlined(props.schema))
 
-    menuItems() {
-      return Object.entries(this.creatableForms)
-        .filter(([, form]) => this.shouldShowSchema(form))
-        .map(([type, form]) => ({
-          value: type,
-          label: this.getLabel(form),
-          disabled: this.shouldDisableSchema(form)
-        }))
-    },
+    const isDisabled = form =>
+      getSchemaValue('disabled', {
+        schema: form,
+        type: Boolean,
+        default: false
+      })
 
-    formLabel() {
-      // Only use labels declared on the form, not ones derived from its name.
-      const form = this.creatableForm
-      return form
-        ? this.getSchemaValue('label', { schema: form, type: String })
-        : null
-    },
-
-    isInlined() {
-      return isInlined(this.schema)
-    }
-  },
-
-  methods: {
-    createItem(form, type = null) {
-      if (!this.shouldDisableSchema(form)) {
-        if (this.isInlined) {
-          this.sourceComponent.createItem(form, type, this.insertIndex)
-        } else {
-          const { creatable } = this.schema
-          const query = {
-            ...(type && { type }),
-            ...creatable?.query?.(this.context)
-          }
-          this.$router.push({
-            path: `${this.path}/create`,
-            query
-          })
-        }
-      } else {
+    const createItem = (form, type = null) => {
+      if (isDisabled(form)) {
         throw new Error('Not allowed to create item for given form')
+      } else if (isInlinedSource.value) {
+        services.sourceContext.createItem(form, type, props.insertIndex)
+      } else {
+        const creatable = getSchemaValue('creatable')
+        const query = {
+          ...(type && { type }),
+          ...creatable?.query?.(context)
+        }
+        router.push({ path: props.path, query })
       }
-    },
+    }
 
-    onSelectMenuItem({ value: type }) {
-      this.createItem(this.creatableForms[type], type)
+    return {
+      creatableForm,
+      isInlined: isInlinedSource,
+      isDisabled,
+      createItem,
+
+      hasCreatableForms: computed(
+        () => Object.keys(creatableForms.value).length > 0
+      ),
+
+      menuItems: computed(() =>
+        Object.entries(creatableForms.value).map(([type, form]) => ({
+          value: type,
+          label: getLabel(form),
+          disabled: isDisabled(form)
+        }))
+      ),
+
+      // Only use labels declared on the form, not ones derived from its name.
+      formLabel: computed(() => {
+        const form = creatableForm.value
+        return form
+          ? getSchemaValue('label', { schema: form, type: String })
+          : null
+      }),
+
+      onSelectMenuItem({ value: type }) {
+        createItem(creatableForms.value[type], type)
+      }
     }
   }
-})
+}
 </script>

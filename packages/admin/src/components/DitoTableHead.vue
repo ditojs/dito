@@ -28,63 +28,62 @@ thead.dito-table-head
 </template>
 
 <script>
-import DitoComponent from '../DitoComponent.js'
+import { computed } from 'vue'
 import { DitoButton } from '@ditojs/ui/src'
 import { hyphenate } from '@ditojs/utils'
+import { useSchemaValue } from '../composables/useSchemaValue.ts'
 
-// @vue/component
-export default DitoComponent.component('DitoTableHead', {
+export default {
   components: { DitoButton },
 
   props: {
-    query: { type: Object, required: true },
+    listQuery: { type: Object, required: true },
     columns: { type: Object, required: true },
-    hasEditButtons: { type: Boolean, required: true }
+    hasEditButtons: { type: Boolean, required: true },
+    // For the callbacks of the columns, like for the cells:
+    context: { type: Object, required: true }
   },
 
-  computed: {
-    sort() {
-      const order = (this.query.order || '').split(/\s+/)
-      return {
-        name: order[0],
-        order: order[1]
+  setup(props) {
+    const sort = computed(() => {
+      const [name, order] = (props.listQuery.query.order || '').split(/\s+/)
+      return { name, order }
+    })
+
+    return {
+      ...useSchemaValue(props.context),
+
+      getColumnClass(column) {
+        return `dito-column--${hyphenate(column.name)}`
+      },
+
+      getSortClass(column) {
+        const { name, order } = sort.value
+        return name === column.name
+          ? `dito-button--selected dito-button--order-${order}`
+          : null
+      },
+
+      getSortState(column) {
+        const { name, order } = sort.value
+        const states = { asc: 'ascending', desc: 'descending' }
+        return states[name === column.name && order] || 'none'
+      },
+
+      sortByColumn(column) {
+        const { name, order } = sort.value
+        // Toggle order if the same column is clicked again.
+        const newOrder =
+          name === column.name && order === 'asc' ? 'desc' : 'asc'
+        // Sorting resets the page, as the sorted list has other pages.
+        props.listQuery.update(
+          { order: `${column.name} ${newOrder}` },
+          { resetPage: true }
+        )
       }
     }
-  },
-
-  methods: {
-    getColumnClass(column) {
-      return `dito-column--${hyphenate(column.name)}`
-    },
-
-    getSortClass(column) {
-      return this.sort.name === column.name
-        ? `dito-button--selected dito-button--order-${this.sort.order}`
-        : null
-    },
-
-    getSortState(column) {
-      const states = { asc: 'ascending', desc: 'descending' }
-      return (
-        states[this.sort.name === column.name && this.sort.order] ||
-        'none'
-      )
-    },
-
-    sortByColumn(column) {
-      // Toggle order if the same column is clicked again.
-      const order =
-        this.sort.name === column.name && this.sort.order === 'asc'
-          ? 'desc'
-          : 'asc'
-      // Sorting resets the page, as the sorted list has other pages.
-      this.sourceComponent.listQuery.update(
-        { order: `${column.name} ${order}` },
-        { resetPage: true }
-      )
-    }
   }
-})
+}
 </script>
 
 <style lang="scss">
