@@ -1,7 +1,6 @@
-import { isArray, asArray } from '../base/index.js'
+import { isArray } from '../base/index.js'
 import { parseDataPath } from './parseDataPath.js'
-
-const NOT_FOUND = Symbol('NOT_FOUND')
+import { getDeepWildcardEntries } from './getDeepWildcardEntries.js'
 
 export function getValueAtDataPath(
   obj,
@@ -13,31 +12,22 @@ export function getValueAtDataPath(
   const parsedPath = parseDataPath(path)
   let index = 0
   for (const part of parsedPath) {
-    if (obj && typeof obj === 'object') {
-      if (part in obj) {
-        obj = obj[part]
-        index++
-        continue
-      } else if (part === '*') {
-        // Support wildcards on arrays and objects
-        const pathNested = parsedPath.slice(index + 1)
-        const values = isArray(obj) ? obj : Object.values(obj)
-        return values
-          .map(value => getValueAtDataPath(value, pathNested, handleError))
-          .flat(1)
-      } else if (part === '**') {
-        // Support deep wildcards on arrays and objects
-        const pathNested = parsedPath.slice(index + 1)
-        const pathSelf = parsedPath.slice(index)
-        const values = isArray(obj) ? obj : Object.values(obj)
-        return values
-          .map(value => [
-            ...asArray(getValueAtDataPath(value, pathNested, () => NOT_FOUND)),
-            ...asArray(getValueAtDataPath(value, pathSelf, () => NOT_FOUND))
-          ])
-          .flat(1)
-          .filter(value => value !== NOT_FOUND)
-      }
+    const isObject = obj && typeof obj === 'object'
+    if (isObject && part in obj) {
+      obj = obj[part]
+      index++
+      continue
+    } else if (isObject && part === '*') {
+      // Support wildcards on arrays and objects
+      const pathNested = parsedPath.slice(index + 1)
+      const values = isArray(obj) ? obj : Object.values(obj)
+      return values
+        .map(value => getValueAtDataPath(value, pathNested, handleError))
+        .flat(1)
+    } else if (part === '**') {
+      // Support deep wildcards on arrays and objects:
+      const entries = getDeepWildcardEntries(obj, parsedPath.slice(index), [])
+      return [...entries.values()]
     }
     return handleError?.(obj, part, index)
   }

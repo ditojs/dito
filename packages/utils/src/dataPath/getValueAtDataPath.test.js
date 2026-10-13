@@ -127,6 +127,7 @@ describe('getValueAtDataPath()', () => {
 
     expect(getValueAtDataPath(data, 'object/**/object'))
       .toEqual([
+        data.object.object,
         {
           one: { name: 'three' },
           two: { name: 'four' }
@@ -136,5 +137,26 @@ describe('getValueAtDataPath()', () => {
           two: { name: 'eight' }
         }
       ])
+  })
+
+  it('should match zero or more levels with deep wildcards', () => {
+    const data = { a: { c: 1, b: { c: 2 } } }
+    expect(getValueAtDataPath(data, 'a/**/c')).toEqual([1, 2])
+    expect(getValueAtDataPath(data, '**/c')).toEqual([1, 2])
+    expect(getValueAtDataPath(data, 'a/**/b/c')).toEqual([2])
+    // At the end of the path, only the values inside:
+    expect(getValueAtDataPath(data, 'a/b/**')).toEqual([2])
+    expect(getValueAtDataPath(data, 'a/**')).toEqual([1, { c: 2 }, 2])
+  })
+
+  it('should return values reached by several deep wildcards once', () => {
+    // Both `x` match the first `x` of the path:
+    const data = { x: { x: { y: 1 } } }
+    expect(getValueAtDataPath(data, '**/x/**/y')).toEqual([1])
+  })
+
+  it('should return the values of deep wildcards depth-first', () => {
+    const data = [{ a: 1 }, 2]
+    expect(getValueAtDataPath(data, '**')).toEqual([{ a: 1 }, 1, 2])
   })
 })
