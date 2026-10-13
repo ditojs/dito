@@ -1,5 +1,3 @@
-import { deprecate } from '../function/deprecate.js'
-
 export function stripHtml(html) {
   return html != null
     ? html
@@ -9,15 +7,4 @@ export function stripHtml(html) {
         .replace(/<[^>]+>/g, '')
         .trim()
     : ''
-}
-
-/**
- * @deprecated Use stripHtml() instead
- */
-export function stripTags(html) {
-  deprecate(
-    'The `stripTags` function is deprecated in favour of `stripHtml`. ' +
-    'Update your code to use `stripHtml` instead.'
-  )
-  return stripHtml(html)
 }

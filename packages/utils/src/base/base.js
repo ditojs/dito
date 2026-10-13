@@ -97,11 +97,11 @@ export function isArrayLike(arg) {
 }
 
 export function isEmpty(arg) {
-  return (
-    arg == null ||
-    isArrayLike(arg) && arg.length === 0 ||
-    isObject(arg) && Object.keys(arg).length === 0
-  )
+  return arg instanceof Map || arg instanceof Set
+    ? arg.size === 0
+    : arg == null ||
+      isArrayLike(arg) && arg.length === 0 ||
+      isObject(arg) && !isDate(arg) && Object.keys(arg).length === 0
 }
 
 export function asObject(arg) {

@@ -79,8 +79,28 @@ describe('debounceAsync()', () => {
     expect(await promise).toBeUndefined()
     vi.advanceTimersByTime(1000)
     expect(func).toBeCalledTimes(0)
-    await debounced()
+    const next = debounced()
     vi.advanceTimersByTime(1000)
+    await next
+    expect(func).toBeCalledTimes(1)
+  })
+
+  it('should pass through return values after cancelling', async () => {
+    const func = vi.fn(async value => value)
+    const debounced = debounceAsync(func, 1000)
+    debounced()
+    debounced.cancel()
+    const promise = debounced(fixture)
+    vi.advanceTimersByTime(1000)
+    expect(await promise).toBe(fixture)
+  })
+
+  it('should settle calls after the immediate call with its result', async () => {
+    const func = vi.fn(async () => fixture)
+    const debounced = debounceAsync(func, { delay: 1000, immediate: true })
+    expect(await debounced()).toBe(fixture)
+    vi.advanceTimersByTime(500)
+    expect(await debounced()).toBe(fixture)
     expect(func).toBeCalledTimes(1)
   })
 
