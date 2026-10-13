@@ -33,7 +33,7 @@ export default [
       schema: {
         component: input,
         exclude: true,
-        compute: () => 'Computed'
+        computeValue: () => 'Computed'
       },
       seed: 'Stored',
       shown: 'Computed'

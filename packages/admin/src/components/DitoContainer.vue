@@ -11,7 +11,6 @@
     DitoPanels(
       :panels="panelEntries"
       :data="data"
-      :meta="meta"
       :store="store"
       :disabled="disabled"
     )
@@ -20,25 +19,22 @@
     :class="labelClasses"
     :htmlFor="labelHtmlFor"
     :label="label"
+    :context="context"
     :info="info"
   )
   component.dito-component(
-    v-if="!(hasLabel && isLabel)"
+    v-if="!isReplacedWithLabel"
     :is="typeComponent"
     ref="component"
     :class="componentClasses"
     :schema="schema"
     :dataPath="dataPath"
     :data="data"
-    :meta="meta"
     :store="store"
-    :width="width"
-    :label="label"
+    :field="field"
     :single="single"
     :nested="nested"
-    :errorsElementId="errorsElementId"
-    @errors="onErrors"
-    @update:component="value => (component = value)"
+    :errorsElementId="errors ? errorsElementId : null"
   )
   DitoErrors(
     :id="errorsElementId"
@@ -47,40 +43,29 @@
 </template>
 
 <script>
-import { isString, isNumber } from '@ditojs/utils'
-import DitoComponent from '../DitoComponent.js'
-import ValueMixin from '../mixins/ValueMixin.js'
-import ContextMixin from '../mixins/ContextMixin.js'
-import DitoContext from '../DitoContext.js'
-import { getSchemaAccessor } from '../utils/accessor.js'
-import { getTypeComponent } from '../utils/schema/types.js'
-import { hasLabel, omitSpacing } from '../utils/schema/structure.js'
+import {
+  computed,
+  inject,
+  onMounted,
+  provide,
+  ref,
+  unref
+} from 'vue'
+import { isString, isNumber, isFunction } from '@ditojs/utils'
+import { useContainerField } from '../composables/useField.ts'
+import { getTypeComponent, getTypeDescriptor } from '../utils/schema/types.ts'
+import { omitsSpacing, isPanel } from '../utils/schema/structure.js'
 import { getAllPanelEntries } from '../utils/schema/lookup.js'
 import { parseFraction } from '../utils/math.js'
-import { appendDataPath } from '../utils/data.js'
+import { accumulatedBasisKey, panelTabKey } from '../utils/keys.ts'
 
-// @vue/component
-export default DitoComponent.component('DitoContainer', {
-  mixins: [ValueMixin, ContextMixin],
-
-  provide() {
-    return {
-      $accumulatedBasis: () => this.combinedBasis
-    }
-  },
-
-  inject: {
-    // The basis of the closest ancestor container as a fraction of the width
-    // of the closest non-inlined schema, which provides `1`, see `DitoSchema`.
-    // The default is a factory that returns the injected function.
-    $accumulatedBasis: { default: () => () => 1 }
-  },
-
+export default {
   props: {
     schema: { type: Object, required: true },
     dataPath: { type: String, default: '' },
     data: { type: [Object, Array], required: true },
-    meta: { type: Object, required: true },
+    // The data path of `data`, e.g. of the wrappers of primitives:
+    itemDataPath: { type: String, required: true },
     store: { type: Object, required: true },
     single: { type: Boolean, default: false },
     nested: { type: Boolean, default: true },
@@ -90,227 +75,191 @@ export default DitoComponent.component('DitoContainer', {
     verticalLabels: { type: Boolean, default: false }
   },
 
-  data() {
-    return {
-      errors: null,
-      // The nested type component instance, for context-based schema accessor
-      // evaluation.
-      component: null
-    }
-  },
+  setup(props) {
+    const field = useContainerField(props)
+    const {
+      context,
+      services,
+      componentPath,
+      parentComponentPath,
+      getSchemaValue,
+      label,
+      disabled
+    } = field
+    // A fraction of the width of the closest non-inlined schema:
+    const accumulatedBasis = inject(accumulatedBasisKey, 1)
+    const panelTab = inject(panelTabKey, null)
+    const isMounted = ref(false)
+    onMounted(() => {
+      isMounted.value = true
+    })
 
-  computed: {
-    context() {
-      return new DitoContext(
-        // When available, use the type component for context-based schema
-        // accessors, but fall back to container.
-        // TODO: Consider architectural inversion to eliminate timing issues:
-        // - Type components render DitoContainer at their root
-        // - Pass type component content through container's default slot
-        // - DitoPane/DitoButtons render type components directly
-        // - Eliminates need for component instance synchronization
-        // - Provides true synchronous access to component context
-        this.component ?? this,
-        { nested: this.nested }
-      )
-    },
+    const typeDescriptor = computed(() => getTypeDescriptor(props.schema.type))
+    const hasSchemaLabel = computed(() => label.value !== null)
 
-    name() {
-      return this.schema.name
-    },
+    const width = computed(() => {
+      const width = getSchemaValue('width', {
+        type: [String, Number],
+        default: () => typeDescriptor.value?.defaultWidth
+      })
+      return width === undefined
+        ? 1.0 // Full width by default.
+        : isString(width)
+          ? width.match(/^\s*[<>]?\s*(.*)$/)[1] // Remove width operator
+          : width
+    })
 
-    componentPath() {
-      // Add the component's name, also for unnested components that don't
-      // add it to their data path, see `DitoMixin.componentPath`.
-      return appendDataPath(this.parentComponent.componentPath, this.name)
-    },
+    const widthOperator = computed(() => {
+      const width = getSchemaValue('width', { type: String })
+      return isString(width) ? width.match(/^\s*([<>]?)/)[1] || null : null
+    })
 
-    type() {
-      return this.schema.type
-    },
+    // Interpret '>50%' as '50%, flex-grow: 1`, and '<' as flex-shrink:
+    const flexGrow = computed(
+      () => widthOperator.value === '>' || width.value === 'fill'
+    )
 
-    typeComponent() {
-      return getTypeComponent(this.type)
-    },
+    const flexShrink = computed(() => widthOperator.value === '<')
 
-    isLabel() {
-      return this.type === 'label'
-    },
-
-    hasLabel() {
-      return hasLabel(this.schema, this.generateLabels)
-    },
-
-    label() {
-      return this.hasLabel ? this.getLabel(this.schema) : null
-    },
-
-    shouldRenderLabel() {
-      // Type components can display the label themselves, e.g. sections in the
-      // header of their schema. They still receive it through `label`.
-      return (
-        this.hasLabel &&
-        !this.typeComponent?.rendersOwnLabel?.(this.context)
-      )
-    },
-
-    errorsElementId() {
-      return `${this.componentPath}-errors`
-    },
-
-    labelHtmlFor() {
-      // Type components use their component path as DOM id. Unnested types
-      // don't display a value of their own to label:
-      return this.nested ? this.componentPath : null
-    },
-
-    info: getSchemaAccessor('info', {
-      type: String,
-      default: null
-    }),
-
-    width: getSchemaAccessor('width', {
-      type: [String, Number],
-      default() {
-        return this.typeComponent?.defaultWidth
-      },
-      get(width) {
-        // Use 100% == 1.0 as default width when nothing is set:
-        return width === undefined
-          ? 1.0
-          : isString(width)
-            ? width.match(/^\s*[<>]?\s*(.*)$/)[1] // Remove width operator
-            : width
-      }
-    }),
-
-    widthOperator: getSchemaAccessor('width', {
-      type: String,
-      get(width) {
-        return isString(width)
-          ? width.match(/^\s*([<>]?)/)[1] || null
-          : null
-      }
-    }),
-
-    componentVisible: getSchemaAccessor('visible', {
-      type: Boolean,
-      default() {
-        return this.typeComponent?.defaultVisible
-      }
-    }),
-
-    componentDisabled: getSchemaAccessor('disabled', {
-      type: Boolean,
-      default: false,
-      get(disabled) {
-        return disabled || this.disabled
-      }
-    }),
-
-    flexGrow() {
-      // Interpret '>50%' as '50%, flex-grow: 1`
-      return (
-        this.widthOperator === '>' ||
-        this.width === 'fill'
-      )
-    },
-
-    flexShrink() {
-      // Interpret '<50%' as '50%, flex-shrink: 1`
-      return this.widthOperator === '<'
-    },
-
-    flexBasis() {
-      const width = this.width
-      // 'auto' = no fitting:
-      return [null, 'auto', 'fill'].includes(width)
+    const flexBasis = computed(() => {
+      const value = width.value
+      return [null, 'auto', 'fill'].includes(value)
         ? 'auto'
-        : /%$/.test(width)
-          ? parseFloat(width) / 100 // percentage -> fraction
-          : /[a-z]/.test(width)
-            ? width // native units
-            : parseFraction(width) // fraction
-    },
+        : /%$/.test(value)
+          ? parseFloat(value) / 100 // percentage -> fraction
+          : /[a-z]/.test(value)
+            ? value // native units
+            : parseFraction(value) // fraction
+    })
 
-    combinedBasis() {
-      const accumulatedBasis = this.$accumulatedBasis()
-      const { flexBasis } = this
-      return isNumber(accumulatedBasis) && isNumber(flexBasis)
-        ? accumulatedBasis * flexBasis
+    const combinedBasis = computed(() => {
+      const basis = unref(accumulatedBasis)
+      return isNumber(basis) && isNumber(flexBasis.value)
+        ? basis * flexBasis.value
         : null
-    },
+    })
+    provide(accumulatedBasisKey, combinedBasis)
 
-    containerClasses() {
-      const { class: classes } = this.schema
-      const prefix = 'dito-container'
-      return {
-        [`${prefix}--disabled`]: this.componentDisabled,
-        [`${prefix}--has-errors`]: !!this.errors,
-        [`${prefix}--single`]: this.single,
-        [`${prefix}--compact`]: this.compact,
-        [`${prefix}--label-vertical`]: this.verticalLabels,
-        [`${prefix}--omit-spacing`]: omitSpacing(this.schema),
-        ...(isString(classes) ? { [classes]: true } : classes)
+    // Unnested components share the data path of their parent, which their
+    // errors don't belong to:
+    const errors = computed(() => {
+      if (props.nested) {
+        const { model } = services.dataContext
+        const { dataPath } = props
+        const fieldLabel = (
+          label.value ||
+          field.placeholder.value ||
+          props.schema.name
+        )
+        const errors = [
+          ...(model.getErrors(dataPath) ?? []).map(({ message, path }) =>
+            path
+              ? `The ${fieldLabel} field's ${path} ${message}.`
+              : `The ${fieldLabel} field ${message}.`
+          ),
+          ...(model.getFieldErrors(dataPath) ?? [])
+        ]
+        return errors.length > 0 ? errors : null
       }
-    },
+      return null
+    })
 
-    containerStyles() {
-      const { flexBasis, combinedBasis } = this
-      return {
-        '--grow': this.flexGrow ? 1 : 0,
-        '--shrink': this.flexShrink ? 1 : 0,
-        '--basis': isNumber(flexBasis) ? `${flexBasis * 100}%` : flexBasis,
-        '--basis-mobile':
-          isNumber(combinedBasis) && combinedBasis <= 0.25
-            ? `${flexBasis * 200}%`
-            : null
-      }
-    },
+    const getLayoutClasses = prefix => ({
+      [`${prefix}--fill`]: width.value === 'fill' || flexBasis.value !== 'auto',
+      [`${prefix}--grow`]: flexGrow.value,
+      [`${prefix}--shrink`]: flexShrink.value
+    })
 
-    componentClasses() {
-      return {
-        'dito-component--single': this.single,
-        ...this.getLayoutClasses('dito-component')
-      }
-    },
+    const isReplacedWithLabel = computed(
+      () => hasSchemaLabel.value && !!typeDescriptor.value?.rendersLabel
+    )
 
-    labelClasses() {
-      return {
-        'dito-label--visible': this.isLabel,
-        ...this.getLayoutClasses('dito-label')
-      }
-    },
+    return {
+      field,
+      context,
+      componentPath,
+      isMounted,
+      label,
+      info: field.info,
+      errors,
+      isReplacedWithLabel,
+      typeComponent: computed(() => getTypeComponent(props.schema.type)),
+      componentVisible: computed(() =>
+        getSchemaValue('visible', {
+          type: Boolean,
+          default: () => typeDescriptor.value?.defaultVisible
+        })
+      ),
 
-    panelEntries() {
-      return getAllPanelEntries(
-        this.api,
-        this.schema,
-        this.dataPath,
-        // The panel of the type is addressed relative to the data path, which
-        // unnested components don't add their name to:
-        this.nested ? this.componentPath : this.parentComponent.componentPath,
-        this.componentPath,
-        this.$refs.component,
-        this.tabComponent?.panelTab ?? null
+      // Type components can display the label themselves, e.g. sections:
+      shouldRenderLabel: computed(() => {
+        const hasLabel = typeDescriptor.value?.hasLabel ?? true
+        return (
+          hasSchemaLabel.value &&
+          (isFunction(hasLabel) ? hasLabel(context) : hasLabel)
+        )
+      }),
+
+      errorsElementId: computed(() => `${componentPath.value}-errors`),
+
+      // Type components use their component path as DOM id:
+      labelHtmlFor: computed(() => (props.nested ? componentPath.value : null)),
+
+      containerClasses: computed(() => {
+        const { class: classes } = props.schema
+        const prefix = 'dito-container'
+        return {
+          [`${prefix}--disabled`]: disabled.value || props.disabled,
+          [`${prefix}--has-errors`]: !!errors.value,
+          [`${prefix}--single`]: props.single,
+          [`${prefix}--compact`]: props.compact,
+          [`${prefix}--label-vertical`]: props.verticalLabels,
+          [`${prefix}--omit-spacing`]: omitsSpacing(props.schema),
+          ...(isString(classes) ? { [classes]: true } : classes)
+        }
+      }),
+
+      containerStyles: computed(() => {
+        const basis = flexBasis.value
+        const combined = combinedBasis.value
+        return {
+          '--grow': flexGrow.value ? 1 : 0,
+          '--shrink': flexShrink.value ? 1 : 0,
+          '--basis': isNumber(basis) ? `${basis * 100}%` : basis,
+          '--basis-mobile':
+            isNumber(combined) && combined <= 0.25 ? `${basis * 200}%` : null
+        }
+      }),
+
+      componentClasses: computed(() => ({
+        'dito-component--single': props.single,
+        ...getLayoutClasses('dito-component')
+      })),
+
+      labelClasses: computed(() => ({
+        'dito-label--visible': isReplacedWithLabel.value,
+        ...getLayoutClasses('dito-label')
+      })),
+
+      panelEntries: computed(() =>
+        getAllPanelEntries(
+          services.adminContext.api,
+          props.schema,
+          // The panel of the type is addressed relative to the data path, and
+          // panels relative to the item that holds them, also nested ones:
+          isPanel(props.schema) ? props.itemDataPath : props.dataPath,
+          props.nested && !isPanel(props.schema)
+            ? componentPath.value
+            : parentComponentPath.value,
+          componentPath.value,
+          // The source of lists, for their filters:
+          services.sourceContext,
+          panelTab
+        )
       )
-    }
-  },
-
-  methods: {
-    getLayoutClasses(prefix) {
-      return {
-        [`${prefix}--fill`]: this.width === 'fill' || this.flexBasis !== 'auto',
-        [`${prefix}--grow`]: this.flexGrow,
-        [`${prefix}--shrink`]: this.flexShrink
-      }
-    },
-
-    onErrors(errors) {
-      this.errors = errors
     }
   }
-})
+}
 </script>
 
 <style lang="scss">

@@ -1,12 +1,12 @@
-import { registerTypeComponent } from './types.js'
+import { defineType } from './types.ts'
 import {
   getItemIdOrIndex,
   findItemIndexById,
   getItemLabel
 } from './item.js'
 
-registerTypeComponent('list', { getSourceType: () => 'list' })
-registerTypeComponent('object', { getSourceType: () => 'object' })
+defineType({ type: 'list', sourceType: 'list' })
+defineType({ type: 'object', sourceType: 'object' })
 
 const listSchema = { type: 'list', idKey: 'id' }
 const books = [{ id: 7, title: 'Emma' }, { id: 9, title: 'Persuasion' }]
@@ -47,6 +47,7 @@ describe('getItemLabel()', () => {
   const getLabel = (sourceSchema, item, options = {}) =>
     getItemLabel(sourceSchema, item, {
       getFormLabel,
+      getDisplayValue: key => item[key],
       evaluateItemLabel: () => sourceSchema.itemLabel({ item }),
       ...options
     })
@@ -90,6 +91,12 @@ describe('getItemLabel()', () => {
   it('uses the first column, or else the name of items', () => {
     const columns = { title: {}, year: {} }
     expect(getLabel({ type: 'list', columns }, books[0])).toBe('Emma')
+    expect(
+      getLabel({ type: 'list', columns: ['title', 'year'] }, books[0])
+    ).toBe('Emma')
+    expect(
+      getLabel({ type: 'list', columns: [{ name: 'title' }] }, books[0])
+    ).toBe('Emma')
     expect(getLabel({ type: 'object' }, { name: 'Jane' })).toBe('Jane')
   })
 
