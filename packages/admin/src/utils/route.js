@@ -8,14 +8,12 @@ export function formatQuery(query) {
     : []
   return (
     new URLSearchParams(
-      // Expand array values into multiple entries under the same key, so
-      // `formatQuery({ foo: [1, 2], bar: 3 })` => 'foo=1&foo=2&bar=3'.
+      // Expand array values into multiple entries under the same key:
       entries.reduce(
         (entries, [key, value]) => {
           if (isArray(value)) {
             for (const val of value) {
-              // Prevent null or undefined values from becoming strings,
-              // but since they're entries in an array, we still include them.
+              // Keep null values in arrays, but not as strings:
               entries.push([key, val ?? ''])
             }
           } else if (value != null) {
@@ -27,16 +25,19 @@ export function formatQuery(query) {
       )
     )
       .toString()
-      // decode all these encoded characters to have the same behavior as
-      // vue-router's own query encoding.
+      // Decode these characters, like vue-router's own query encoding:
       .replaceAll(/%(?:21|24|28|29|2C|2F|3A|3B|3D|3F|40)/g, decodeURIComponent)
   )
 }
 
-// Returns true if `path` is `basePath` or one of its sub-paths, comparing
-// whole path segments, so that `/items/12` and `/items-archive` aren't within
-// `/items/1` and `/items`.
+// Compare whole path segments, so `/items-archive` isn't within `/items`:
 export function isPathWithin(path, basePath) {
   const prefix = basePath.endsWith('/') ? basePath : `${basePath}/`
   return path === basePath || path.startsWith(prefix)
+}
+
+// Resolve to whether the navigation happened, as guards may cancel it, e.g. the
+// leave guard of a form:
+export function navigate(router, location) {
+  return router.push(location).then(failure => !failure)
 }

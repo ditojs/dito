@@ -1,15 +1,19 @@
 <template lang="pug">
 nav.dito-navigation.dito-scroll-parent(aria-label="Main navigation")
   h1
-    RouterLink.dito-link(to="/") {{ appState.title }}
-  DitoMenu.dito-scroll(:items="views")
+    RouterLink.dito-link(to="/") {{ adminContext.title }}
+  DitoMenu.dito-scroll(:nodes="adminContext.routeTree?.nodes ?? []")
 </template>
 
 <script>
-import DitoComponent from '../DitoComponent.js'
+import { inject } from 'vue'
+import { adminContextKey } from '../utils/keys.ts'
 
-// @vue/component
-export default DitoComponent.component('DitoNavigation', {})
+export default {
+  setup() {
+    return { adminContext: inject(adminContextKey) }
+  }
+}
 </script>
 
 <style lang="scss">

@@ -5,13 +5,6 @@ aside.dito-sidebar.dito-scroll-parent
   .dito-sidebar__teleport.dito-scroll
 </template>
 
-<script>
-import DitoComponent from '../DitoComponent.js'
-
-// @vue/component
-export default DitoComponent.component('DitoSidebar', {})
-</script>
-
 <style lang="scss">
 @import '../styles/_imports';
 

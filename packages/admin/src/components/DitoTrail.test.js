@@ -1,6 +1,5 @@
 import { vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
-import appState from '../appState.js'
 import { mountAdmin, mountForm } from '../test/mount.js'
 
 describe('DitoTrail', () => {
@@ -40,7 +39,9 @@ describe('DitoTrail', () => {
     const push = vi.spyOn(admin.router, 'push')
     expect(await clickTrailLink(admin)).toBe(true)
     // `force` reloads the view even though it is the current route.
-    expect(push).toHaveBeenCalledWith({ path: '/books', force: true })
+    const [[location]] = push.mock.calls
+    expect(location.force).toBe(true)
+    expect(admin.router.resolve(location).path).toBe('/books')
   })
 
   it('leaves modifier-clicks to the browser', async () => {
@@ -51,7 +52,7 @@ describe('DitoTrail', () => {
     }
   })
 
-  it('lists the route components by level when navigating', async () => {
+  it('lists the routes by level when navigating', async () => {
     const { admin } = await mountForm({
       schema: {
         components: {
@@ -79,21 +80,5 @@ describe('DitoTrail', () => {
     expect(getTrail()).toEqual([...trail, 'Edit Chapter'])
     await admin.navigate('/items/1')
     expect(getTrail()).toEqual(trail)
-  })
-
-  it(`doesn't list stale route components`, async () => {
-    const admin = await mountAdmin({
-      views: {
-        ...views,
-        authors: { type: 'view', label: 'Authors', components: {} }
-      }
-    })
-    await admin.navigate('/books')
-    // Replace the view with one that is never unmounted, as happens with
-    // hot-reloading:
-    appState.routeComponents[0] = { breadcrumb: 'Stale', path: '/stale' }
-    await admin.navigate('/authors')
-    const texts = admin.wrapper.findAll('.dito-trail__text')
-    expect(texts.map(text => text.text())).toEqual(['Authors'])
   })
 })

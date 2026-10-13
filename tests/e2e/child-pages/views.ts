@@ -14,7 +14,7 @@ export const pages = createWidgetView<Page>('name', 'pages', {
     draggable: true,
     resource: { path: 'child-pages' },
     exclude: false,
-    process: ({ value }) =>
+    serializeValue: ({ value }) =>
       (value as Page[]).map(({ id, order }) => ({ id, order }))
   }
 })
@@ -43,10 +43,8 @@ export const pageOrder: ViewSchema<Page> = {
           data: ({ item: pages }: { item: Page[] }) =>
             pages.map(({ id, order }) => ({ id, order }))
         },
-        events: {
-          success: ({ notify }) => {
-            notify({ type: 'success', text: 'The order was saved.' })
-          }
+        onSuccess: ({ notify }) => {
+          notify({ type: 'success', text: 'The order was saved.' })
         }
       }
     }
