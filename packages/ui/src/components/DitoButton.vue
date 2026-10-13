@@ -37,27 +37,8 @@ component.dito-button(
 </template>
 
 <script>
-import { Comment } from 'vue'
-import { isArray, isString, asArray } from '@ditojs/utils'
 import { hasSlotContent } from '../utils/vue.js'
 import { getVerbButtonAttributes } from '../utils/button.js'
-
-// Returns whether `vnodes` render text, also inside elements and fragments,
-// e.g. the slots that `DitoMenuButton` forwards, which render as fragments also
-// when empty. Components and their slots aren't searched, so that buttons that
-// only display icons are still labelled by their verb.
-function hasVNodeText(vnodes) {
-  return asArray(vnodes).some(vnode =>
-    isString(vnode)
-      ? vnode.trim() !== ''
-      : !!vnode &&
-        vnode.type !== Comment && (
-          isString(vnode.children)
-            ? vnode.children.trim() !== ''
-            : isArray(vnode.children) && hasVNodeText(vnode.children)
-        )
-  )
-}
 
 // Renders all buttons, so that they're of `type="button"` unless stated
 // otherwise and not accidentally submit their forms.
@@ -88,13 +69,8 @@ export default {
     },
 
     verbAttributes() {
-      const { verb, subject, hasText } = this
-      return verb ? getVerbButtonAttributes({ verb, subject, hasText }) : {}
-    },
-
-    // Whether the button displays text, through `text` or its default slot.
-    hasText() {
-      return !!this.text || hasVNodeText(this.$slots.default?.())
+      const { verb, subject, text } = this
+      return verb ? getVerbButtonAttributes({ verb, subject, text }) : {}
     },
 
     hasAffixes() {
