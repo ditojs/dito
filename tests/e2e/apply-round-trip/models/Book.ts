@@ -9,6 +9,7 @@ export interface Author {
 export interface Chapter {
   title: string
   wordCount?: number | null
+  pageCount?: number | null
   code?: string | null
   note?: string | null
   author?: Author | null

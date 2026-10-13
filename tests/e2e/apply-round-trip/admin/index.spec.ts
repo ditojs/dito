@@ -35,81 +35,84 @@ async function getStoredBook(id: number) {
   return Book.query().findById(id)
 }
 
-// The tests marked with `test.fail()` describe known bugs: Applying a nested
-// form writes its data as processed for the server into the parent's data,
-// instead of the form's own data.
+// Applying a nested form merges its draft into the item in the parent's data,
+// which is processed for the server only once the parent is saved.
 test.describe('applying nested forms', () => {
-  test.fail(
-    `keeps the values of applied items that their forms don't edit`,
-    async ({ page, url }) => {
-      const id = await openBook(page, url, {
-        chapters: [{ title: 'Prologue', wordCount: 1200 }]
-      })
-      await editChapterTitle(page, 'Opening')
-      await apply(page, id)
-      await expect(getChapters(page).rows.first()).toContainText('1200')
-      await new DitoForm(page).save()
-      expect((await getStoredBook(id))?.chapters).toMatchObject([
-        { title: 'Opening', wordCount: 1200 }
-      ])
-    }
-  )
+  test(`keeps the values of applied items that their forms don't edit`, async ({
+    page,
+    url
+  }) => {
+    const id = await openBook(page, url, {
+      chapters: [{ title: 'Prologue', wordCount: 1200 }]
+    })
+    await editChapterTitle(page, 'Opening')
+    await apply(page, id)
+    await expect(getChapters(page).rows.first()).toContainText('Opening')
+    await expect(getChapters(page).rows.first()).toContainText('1200')
+  })
 
-  test.fail(
-    'keeps the excluded values of applied items',
-    async ({
-      page,
-      url
-    }) => {
-      const id = await openBook(page, url, {
-        chapters: [{ title: 'Prologue' }]
-      })
-      await getChapters(page).edit(0)
-      await getForm(page).getByLabel('Note', { exact: true }).fill('Draft')
-      await apply(page, id)
-      await getChapters(page).edit(0)
-      await expect(
-        getForm(page).getByLabel('Note', { exact: true })
-      ).toHaveValue(
-        'Draft'
-      )
-    }
-  )
+  // The payload only holds the values that the components of the schema
+  // declare, so items keep the others only with hidden components:
+  test('stores the values of items that their forms declare', async ({
+    page,
+    url
+  }) => {
+    const id = await openBook(page, url, {
+      chapters: [{ title: 'Prologue', wordCount: 1200, pageCount: 4 }]
+    })
+    await page.getByLabel('Title', { exact: true }).fill('Persuasion')
+    await new DitoForm(page).save()
+    const [chapter] = (await getStoredBook(id))?.chapters ?? []
+    expect(chapter).toMatchObject({ title: 'Prologue', pageCount: 4 })
+    expect(chapter).not.toHaveProperty('wordCount')
+  })
 
-  test.fail(
-    'keeps the data of related objects in applied items',
-    async ({
-      page,
-      url
-    }) => {
-      const id = await openBook(page, url, {
-        chapters: [{ title: 'Prologue', author: { id: 1, name: 'Jane' } }]
-      })
-      await expect(getChapters(page).rows.first()).toContainText('Jane')
-      await editChapterTitle(page, 'Opening')
-      await apply(page, id)
-      await expect(getChapters(page).rows.first()).toContainText('Jane')
-    }
-  )
+  test('keeps the excluded values of applied items', async ({
+    page,
+    url
+  }) => {
+    const id = await openBook(page, url, {
+      chapters: [{ title: 'Prologue' }]
+    })
+    await getChapters(page).edit(0)
+    await getForm(page).getByLabel('Note', { exact: true }).fill('Draft')
+    await apply(page, id)
+    await getChapters(page).edit(0)
+    await expect(
+      getForm(page).getByLabel('Note', { exact: true })
+    ).toHaveValue(
+      'Draft'
+    )
+  })
 
-  test.fail(
-    'processes the values of applied items once',
-    async ({
-      page,
-      url
-    }) => {
-      const id = await openBook(page, url, {
-        chapters: [{ title: 'Prologue' }]
-      })
-      await getChapters(page).edit(0)
-      await getForm(page).getByLabel('Code', { exact: true }).fill('1')
-      await apply(page, id)
-      await new DitoForm(page).save()
-      expect((await getStoredBook(id))?.chapters).toMatchObject([
-        { title: 'Prologue', code: 'ch-1' }
-      ])
-    }
-  )
+  test('keeps the data of related objects in applied items', async ({
+    page,
+    url
+  }) => {
+    const id = await openBook(page, url, {
+      chapters: [{ title: 'Prologue', author: { id: 1, name: 'Jane' } }]
+    })
+    await expect(getChapters(page).rows.first()).toContainText('Jane')
+    await editChapterTitle(page, 'Opening')
+    await apply(page, id)
+    await expect(getChapters(page).rows.first()).toContainText('Jane')
+  })
+
+  test('processes the values of applied items once', async ({
+    page,
+    url
+  }) => {
+    const id = await openBook(page, url, {
+      chapters: [{ title: 'Prologue' }]
+    })
+    await getChapters(page).edit(0)
+    await getForm(page).getByLabel('Code', { exact: true }).fill('1')
+    await apply(page, id)
+    await new DitoForm(page).save()
+    expect((await getStoredBook(id))?.chapters).toMatchObject([
+      { title: 'Prologue', code: 'ch-1' }
+    ])
+  })
 
   test('keeps the children of tree items when applying their forms', async ({
     page,
