@@ -1,6 +1,6 @@
 import { mixin } from '@ditojs/utils'
 
-export const TimeStampedMixin = mixin(
+export const TimestampedMixin = mixin(
   Model =>
     class extends Model {
       static properties = {
@@ -16,7 +16,7 @@ export const TimeStampedMixin = mixin(
       }
 
       static scopes = {
-        timeStamped: query =>
+        timestamped: query =>
           query
             .select('createdAt', 'updatedAt')
       }

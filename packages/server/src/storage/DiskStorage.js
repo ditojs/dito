@@ -9,7 +9,8 @@ import { AssetError } from '../errors/AssetError.js'
 export class DiskStorage extends Storage {
   static type = 'disk'
 
-  setup() {
+  // @override
+  async initialize() {
     if (!this.path) {
       throw new Error(`Missing configuration (path) for storage ${this.name}`)
     }

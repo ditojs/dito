@@ -18,13 +18,12 @@ afterEach(async () => {
 
 async function createDiskStorage(config = {}) {
   const app = { keys: ['secret'], basePath }
-  const storage = new DiskStorage(app, {
-    name: 'covers',
+  const storage = new DiskStorage(app, 'covers', {
     path: 'covers',
     url: 'https://library.example.com/covers/',
     ...config
   })
-  await storage.setup()
+  await storage.initialize()
   return storage
 }
 
@@ -52,9 +51,9 @@ describe('DiskStorage', () => {
     expect(Storage.get('disk')).toBe(DiskStorage)
   })
 
-  it('throws on setup without a configured path', async () => {
-    const storage = new DiskStorage({ basePath }, { name: 'covers' })
-    expect(() => storage.setup()).toThrow(
+  it('throws on initialization without a configured path', async () => {
+    const storage = new DiskStorage({ basePath }, 'covers', {})
+    await expect(storage.initialize()).rejects.toThrow(
       'Missing configuration (path) for storage covers'
     )
   })
@@ -176,9 +175,9 @@ describe('DiskStorage', () => {
     expect(await fs.readFile(outside, 'utf8')).toBe('Outside')
   })
 
-  it('keeps the paths of files of storages at the filesystem root', () => {
-    const storage = new DiskStorage({ basePath }, { name: 'root', path: '/' })
-    storage.setup()
+  it('keeps the paths of files of storages at the filesystem root', async () => {
+    const storage = new DiskStorage({ basePath }, 'root', { path: '/' })
+    await storage.initialize()
     expect(storage.getFilePath({ key: 'ab.txt' })).toBe(
       path.resolve('/', 'a', 'b', 'ab.txt')
     )

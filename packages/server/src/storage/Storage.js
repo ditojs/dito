@@ -13,12 +13,12 @@ import { resolveFileUrl } from '../utils/asset.js'
 const storageClasses = {}
 
 export class Storage {
-  initialized = false
+  isInitialized = false
 
-  constructor(app, config) {
+  constructor(app, name, config) {
     this.app = app
+    this.name = name
     this.config = config
-    this.name = config.name
     this.url = config.url
     this.path = config.path
     // Use a default concurrency of 8 for storage IO, e.g. the importing of
@@ -27,9 +27,6 @@ export class Storage {
     // The actual multer storage object.
     this.storage = null
   }
-
-  // @overridable
-  async setup() {}
 
   // @overridable
   async initialize() {}

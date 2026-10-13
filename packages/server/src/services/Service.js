@@ -1,7 +1,7 @@
 import { camelize, hyphenate } from '@ditojs/utils'
 
 export class Service {
-  initialized = false
+  isInitialized = false
   #loggerName
 
   constructor(app, name) {
@@ -13,10 +13,9 @@ export class Service {
     this.config = null
   }
 
-  setup(config) {
+  // @overridable
+  configure(config) {
     this.config = config
-    this.app.on('before:start', () => this.start())
-    this.app.on('after:stop', () => this.stop())
   }
 
   // @overridable

@@ -46,8 +46,8 @@ beforeEach(() => {
 async function createS3Storage(config = {}) {
   const storage = new S3Storage(
     { keys: ['secret'], basePath: '/app' },
+    'covers',
     {
-      name: 'covers',
       type: 's3',
       s3: { region: 'eu-central-1' },
       acl: 'public-read',
@@ -55,7 +55,7 @@ async function createS3Storage(config = {}) {
       ...config
     }
   )
-  await storage.setup()
+  await storage.initialize()
   return storage
 }
 
@@ -82,7 +82,7 @@ describe('S3Storage', () => {
     expect(Storage.get('s3')).toBe(S3Storage)
   })
 
-  describe('setup()', () => {
+  describe('initialize()', () => {
     it('creates the S3 client with the `s3` config', async () => {
       const storage = await createS3Storage()
       expect(s3Clients).toHaveLength(1)
@@ -246,6 +246,22 @@ describe('S3Storage', () => {
       const file = AssetFile.create({ name: 'blurb.txt', data: 'Blurb' })
       await storage.addFile(file, file.data)
       expect(file.url).toBe(`https://covers.example.com/${file.key}`)
+    })
+
+    it('uses the S3 location of uploaded files without a configured url', async () => {
+      const storage = await createS3Storage()
+      // The file object that multer receives from multer-s3, as uploading
+      // through multer-s3 needs a real S3 client:
+      const file = storage.convertStorageFile({
+        fieldname: 'file',
+        originalname: 'cover.png',
+        mimetype: 'image/png',
+        size: 33,
+        bucket: 'library-covers',
+        key: 'abc.png',
+        location: 'https://bucket.s3.example.com/abc.png'
+      })
+      expect(file.url).toBe('https://bucket.s3.example.com/abc.png')
     })
 
     it('reads files with their content type', async () => {

@@ -12,9 +12,9 @@ export class S3Storage extends Storage {
   acl = null
   bucket = null
 
-  async setup() {
+  // @override
+  async initialize() {
     const {
-      name,
       s3,
       acl,
       bucket,
@@ -119,7 +119,9 @@ export class S3Storage extends Storage {
 
   // @override
   _getFileUrl(file) {
-    return this._getUrl(file.key) ?? file.url
+    // Without `config.url`, fall back to the S3 url, which multer-s3 sets as
+    // `location` on uploaded files:
+    return this._getUrl(file.key) ?? file.url ?? file.location
   }
 
   // @override
