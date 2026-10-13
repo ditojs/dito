@@ -99,59 +99,21 @@ describe('DitoCalendar', () => {
     )
   })
 
-  it(`doesn't select disabled dates, also not today's`, async () => {
-    const now = new Date()
-    wrapper = mountCalendar({
-      modelValue: now,
-      disabledDate: date => isSameDay(date, now)
-    })
-    const cell = findCursorCell(wrapper)
-    expect(cell.attributes('aria-disabled')).toBe('true')
-    await cell.trigger('click')
-    await wrapper.find('.dito-calendar-select-now').trigger('click')
-    expect(getEmittedDates(wrapper)).toEqual([])
-    expect(wrapper.emitted('select')).toBeUndefined()
-  })
-
-  it(`doesn't select disabled dates when selecting months`, async () => {
-    wrapper = mountCalendar({
-      disabledDate: date => date.getMonth() === 3
-    })
-    await wrapper.find('.dito-calendar-select-month').trigger('click')
-    await wrapper.find('[aria-label="April"]').trigger('click')
-    await wrapper.find('.dito-calendar-select-month').trigger('click')
-    await wrapper.find('[aria-label="May"]').trigger('click')
-    expect(getEmittedDates(wrapper)).toEqual([new Date(2024, 4, 1, 14, 30)])
-  })
-
-  it('skips disabled dates when navigating', () => {
-    wrapper = mountCalendar({
-      disabledDate: date => date.getDate() === 6
-    })
+  it('selects the stepped date when navigating with `update`', () => {
+    wrapper = mountCalendar()
     const { vm } = wrapper
     expect(vm.navigate({ step: 1, mode: 'day', update: true })).toBe(true)
-    expect(getEmittedDates(wrapper)).toEqual([new Date(2024, 2, 7, 14, 30)])
+    expect(getEmittedDates(wrapper)).toEqual([new Date(2024, 2, 6, 14, 30)])
   })
 
   it('only moves the cursor when navigating without `update`', async () => {
-    wrapper = mountCalendar({
-      disabledDate: date => date.getDate() === 6
-    })
+    wrapper = mountCalendar()
     expect(wrapper.vm.navigate({ step: 1, mode: 'day' })).toBe(true)
     await flushPromises()
     expect(getEmittedDates(wrapper)).toEqual([])
     expect(findCursorCell(wrapper).attributes('aria-label')).toBe(
       'March 6, 2024'
     )
-  })
-
-  it(`doesn't select a disabled date with Enter`, () => {
-    wrapper = mountCalendar({
-      disabledDate: date => date.getDate() === 5
-    })
-    wrapper.vm.navigate({ enter: true })
-    expect(getEmittedDates(wrapper)).toEqual([])
-    expect(wrapper.emitted('select')).toBeUndefined()
   })
 
   it('moves the focus along when switching modes', async () => {

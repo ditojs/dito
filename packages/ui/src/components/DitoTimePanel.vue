@@ -28,23 +28,18 @@
 <script>
 import { alterDate } from '../utils/date.js'
 import { getKeyNavigation } from '../utils/event.js'
-import {
-  getEnabledValues,
-  getEnabledValue,
-  stepEnabledValue
-} from '../utils/time.js'
+
+const hours = [...Array(24).keys()]
+const minutes = [...Array(60).keys()]
 
 // The panel of `DitoTimePicker` and `DitoDateTimePicker`, with a list of the
-// enabled values for each of the hour, minute and second. The picker's input
-// navigates it through `handleKey()`.
+// values for each of the hour, minute and second. The picker's input navigates
+// it through `handleKey()`.
 export default {
   emits: ['update:modelValue', 'select'],
 
   props: {
-    modelValue: { type: Date, default: null },
-    disabledHour: { type: Function, default: () => false },
-    disabledMinute: { type: Function, default: () => false },
-    disabledSecond: { type: Function, default: () => false }
+    modelValue: { type: Date, default: null }
   },
 
   computed: {
@@ -58,36 +53,26 @@ export default {
       )
     },
 
-    // The enabled values of each column, apart from the current date, so they
-    // aren't collected again with each change of the time.
-    enabledValues() {
-      return {
-        hour: getEnabledValues(24, this.disabledHour),
-        minute: getEnabledValues(60, this.disabledMinute),
-        second: getEnabledValues(60, this.disabledSecond)
-      }
-    },
-
     columns() {
-      const { currentDate, enabledValues } = this
+      const { currentDate } = this
       return [
         {
           name: 'hour',
           label: 'Hour',
           value: currentDate.getHours(),
-          values: enabledValues.hour
+          values: hours
         },
         {
           name: 'minute',
           label: 'Minute',
           value: currentDate.getMinutes(),
-          values: enabledValues.minute
+          values: minutes
         },
         {
           name: 'second',
           label: 'Second',
           value: currentDate.getSeconds(),
-          values: enabledValues.second
+          values: minutes
         }
       ]
     }
@@ -121,21 +106,13 @@ export default {
     },
 
     setOptionElement(name, value, element) {
-      if (element) {
-        this.optionElements[name][value] = element
-      } else {
-        delete this.optionElements[name][value]
-      }
+      this.optionElements[name][value] = element
     },
 
-    // All changes of the time go through here, so disabled times are never
-    // set: The parts that aren't overridden move on to their next enabled
-    // value, so that any part can be picked first.
     setTime(overrides) {
       const time = { millisecond: 0 }
-      for (const { name, value, values } of this.columns) {
-        time[name] = getEnabledValue(values, overrides[name] ?? value)
-        if (time[name] === null) return
+      for (const { name, value } of this.columns) {
+        time[name] = overrides[name] ?? value
       }
       this.$emit('update:modelValue', alterDate(this.currentDate, time))
     },
@@ -153,10 +130,9 @@ export default {
         this.columns.find(({ name }) => name === part?.name)
       )
       if (column) {
-        const value = stepEnabledValue(column.values, column.value, step)
-        if (value !== null) {
-          this.setTime({ [column.name]: value })
-        }
+        // Wrap around at the ends:
+        const { length } = column.values
+        this.setTime({ [column.name]: (column.value + step + length) % length })
         return true
       }
       return false
