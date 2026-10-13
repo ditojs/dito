@@ -3,7 +3,7 @@
 The changes of each release of Dito.js. For upgrading to a new major
 version, see the upgrade guides in `docs/`.
 
-## 4.1.0 (unreleased)
+## 4.1.0 (2026-10-13)
 
 4.1.0 is the first release of Dito.js 4. 4.0.0 was withdrawn shortly after its release, and its changes are part of 4.1.0: the notes below describe all changes since 3.5.0. Dito.js 4 rebuilds the admin around its data: each view, form, dialog and panel with its own data keeps its edits, dirty state and errors, also for fields that aren't rendered, nested forms edit drafts of their items, and callbacks receive typed contexts instead of components. See [`docs/upgrading-to-4.x.md`](docs/upgrading-to-4.x.md) for how to upgrade.
 
