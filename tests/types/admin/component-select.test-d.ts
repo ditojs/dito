@@ -38,10 +38,34 @@ describe('SelectSchema', () => {
     })
   })
 
-  it('accepts relate and relateBy', () => {
+  it('accepts the group of options as a key or a callback', () => {
     assertType<SelectSchema<Entry>>({
       type: 'select',
-      relate: true,
+      options: { data: [], group: 'kind' }
+    })
+    assertType<SelectSchema<Entry>>({
+      type: 'select',
+      options: {
+        data: [],
+        group({ option }) {
+          expectTypeOf(option).toBeAny()
+          return option.kind
+        }
+      }
+    })
+    assertType<SelectSchema<Entry>>({
+      type: 'select',
+      // @ts-expect-error `options.group` groups the options
+      groupBy: 'kind'
+    })
+  })
+
+  it('accepts relate by id or by a key', () => {
+    assertType<SelectSchema<Entry>>({ type: 'select', relate: true })
+    assertType<SelectSchema<Entry>>({ type: 'select', relate: 'code' })
+    assertType<SelectSchema<Entry>>({
+      type: 'select',
+      // @ts-expect-error `relate` takes the key
       relateBy: 'id'
     })
   })
@@ -58,17 +82,27 @@ describe('MultiselectSchema', () => {
     })
   })
 
+  it('accepts callbacks for multiple, searchable, taggable', () => {
+    assertType<MultiselectSchema<Entry>>({
+      type: 'multiselect',
+      multiple: ({ item }) => !!item.title,
+      searchable: () => true,
+      taggable: () => false,
+      stayOpen: () => true
+    })
+  })
+
   it('accepts typed $Option with search callback', () => {
     type Tag = { id: number; name: string }
 
     assertType<MultiselectSchema<Entry, Tag>>({
       type: 'multiselect',
       searchable: true,
-      search({ item, query }) {
+      search({ item, searchTerm }) {
         expectTypeOf(item).not.toBeAny()
         expectTypeOf(item).toMatchTypeOf<Entry>()
-        expectTypeOf(query).not.toBeAny()
-        expectTypeOf(query).toBeString()
+        expectTypeOf(searchTerm).not.toBeAny()
+        expectTypeOf(searchTerm).toBeString()
         return [] as Tag[]
       },
       options: {

@@ -2,7 +2,7 @@ import { expectTypeOf, assertType, describe, it } from 'vitest'
 import type {
   ObjectSchema,
   TreeListSchema,
-  Form,
+  FormSchema,
   Components
 } from '@ditojs/admin'
 import type { Address, Entry, ParentWithAddress } from './fixtures.ts'
@@ -17,7 +17,7 @@ describe('ObjectSchema', () => {
           street: { type: 'text' },
           city: { type: 'text' }
         }
-      } satisfies Form<Address>
+      } satisfies FormSchema<Address>
     })
   })
 
@@ -48,7 +48,7 @@ describe('ObjectSchema', () => {
           components: {
             street: { type: 'text' }
           }
-        } satisfies Form<Address>
+        } satisfies FormSchema<Address>
       }
     })
   })
@@ -63,7 +63,24 @@ describe('TreeListSchema', () => {
         components: {
           title: { type: 'text' }
         }
-      } satisfies Form<Entry>
+      } satisfies FormSchema<Entry>
+    })
+  })
+
+  it('accepts collapsed, but not collapsible or expanded', () => {
+    assertType<TreeListSchema<Entry>>({
+      type: 'tree-list',
+      collapsed: ({ item }) => item.title !== 'About'
+    })
+    assertType<TreeListSchema<Entry>>({
+      type: 'tree-list',
+      // @ts-expect-error: Tree items are always collapsible.
+      collapsible: true
+    })
+    assertType<TreeListSchema<Entry>>({
+      type: 'tree-list',
+      // @ts-expect-error: Trees use `collapsed: false`.
+      expanded: true
     })
   })
 })

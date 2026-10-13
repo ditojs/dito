@@ -1,20 +1,20 @@
 import { expectTypeOf, assertType, describe, it } from 'vitest'
-import type { Form, ResolvableForm } from '@ditojs/admin'
+import type { FormSchema, ResolvableForm } from '@ditojs/admin'
 import type { Entry, Parent } from './fixtures.ts'
 
-describe('Form assignability', () => {
-  it('Form<Specific> is assignable to Form<any>', () => {
-    const specific: Form<Entry> = {
+describe('FormSchema assignability', () => {
+  it('FormSchema<Specific> is assignable to FormSchema<any>', () => {
+    const specific: FormSchema<Entry> = {
       type: 'form',
       components: {
         title: { type: 'text' }
       }
     }
-    assertType<Form<any>>(specific)
+    assertType<FormSchema<any>>(specific)
   })
 
-  it('Form<Specific> is assignable to ResolvableForm', () => {
-    const specific: Form<Entry> = {
+  it('FormSchema<Specific> is assignable to ResolvableForm', () => {
+    const specific: FormSchema<Entry> = {
       type: 'form',
       components: {
         title: { type: 'text' }
@@ -23,79 +23,109 @@ describe('Form assignability', () => {
     assertType<ResolvableForm>(specific)
   })
 
-  it('Record<string, Form<$Item>> is assignable to ResolvableForm<$Item>', () => {
-    const module: Record<string, Form<Entry>> = {
+  it('Record<string, FormSchema<$Item>> is assignable to ResolvableForm<$Item>', () => {
+    const module: Record<string, FormSchema<Entry>> = {
       entryForm: { type: 'form', components: {} }
     }
     assertType<ResolvableForm<Entry>>(module)
   })
 
-  it('Record<string, Form<WrongType>> is not assignable to ResolvableForm<$Item>', () => {
-    const module: Record<string, Form<Parent>> = {
+  it('Record<string, FormSchema<WrongType>> is not assignable to ResolvableForm<$Item>', () => {
+    const module: Record<string, FormSchema<Parent>> = {
       parentForm: { type: 'form', components: {} }
     }
-    // @ts-expect-error Form<Parent> isn't a ResolvableForm<Entry>
+    // @ts-expect-error FormSchema<Parent> isn't a ResolvableForm<Entry>
     assertType<ResolvableForm<Entry>>(module)
   })
 
   it('() => import() pattern is assignable to ResolvableForm', () => {
     const importForm = () =>
       Promise.resolve({
-        default: { type: 'form', components: {} } as Form<Entry>
+        default: { type: 'form', components: {} } as FormSchema<Entry>
       })
     assertType<ResolvableForm<Entry>>(importForm)
   })
 
-  it('accepts event callbacks with typed item', () => {
-    assertType<Form<Entry>>({
+  it('accepts the deprecated `events` with typed item', () => {
+    assertType<FormSchema<Entry>>({
       type: 'form',
       events: {
-        create({ item }) {
-          expectTypeOf(item).not.toBeAny()
-          expectTypeOf(item.title).toBeString()
-        },
-        submit({ item }) {
-          expectTypeOf(item).not.toBeAny()
-          expectTypeOf(item.id).toBeNumber()
-        },
         error({ item, error }) {
           expectTypeOf(item).not.toBeAny()
           expectTypeOf(item.title).toBeString()
-          expectTypeOf(error).not.toBeAny()
-          expectTypeOf(error).toEqualTypeOf<Error>()
+          expectTypeOf(error).toBeUnknown()
         }
       }
     })
   })
 
-  it('accepts onCreate/onSubmit/onError top-level callbacks', () => {
-    assertType<Form<Entry>>({
+  it('accepts onSuccess with isCreating', () => {
+    assertType<FormSchema<Entry>>({
       type: 'form',
-      onCreate({ item }) {
+      onSuccess({ item, isCreating }) {
         expectTypeOf(item).not.toBeAny()
         expectTypeOf(item.title).toBeString()
-      },
-      onSubmit({ item }) {
-        expectTypeOf(item).not.toBeAny()
-        expectTypeOf(item.id).toBeNumber()
-      },
-      onError({ item, error }) {
-        expectTypeOf(item).not.toBeAny()
-        expectTypeOf(error).not.toBeAny()
-        expectTypeOf(error).toEqualTypeOf<Error>()
+        expectTypeOf(isCreating).toBeBoolean()
       }
     })
   })
 
-  it('typed Form variable used as form prop in list component', () => {
-    const childForm: Form<Entry> = {
+  it('passes itemLabel to all form events', () => {
+    assertType<FormSchema<Entry>>({
+      type: 'form',
+      onLoad({ itemLabel }) {
+        expectTypeOf(itemLabel).toEqualTypeOf<string | null>()
+      },
+      onError({ itemLabel }) {
+        expectTypeOf(itemLabel).toEqualTypeOf<string | null>()
+      },
+      onCancel({ itemLabel }) {
+        expectTypeOf(itemLabel).toEqualTypeOf<string | null>()
+      }
+    })
+  })
+
+  it('rejects the removed onCreate and onSubmit', () => {
+    assertType<FormSchema<Entry>>({
+      type: 'form',
+      // @ts-expect-error `onSuccess()` replaces `onCreate()`.
+      onCreate() {}
+    })
+    assertType<FormSchema<Entry>>({
+      type: 'form',
+      // @ts-expect-error `onSuccess()` replaces `onSubmit()`.
+      onSubmit() {}
+    })
+  })
+
+  it('rejects `resource`, which forms load through their list', () => {
+    assertType<FormSchema<Entry>>({
+      type: 'form',
+      // @ts-expect-error Forms have no resource of their own.
+      resource: 'entries'
+    })
+  })
+
+  it('accepts the onError top-level callback', () => {
+    assertType<FormSchema<Entry>>({
+      type: 'form',
+      onError({ item, error }) {
+        expectTypeOf(item).not.toBeAny()
+        // Errors of requests, handlers and transient forms can be anything:
+        expectTypeOf(error).toBeUnknown()
+      }
+    })
+  })
+
+  it('typed FormSchema variable used as form prop in list component', () => {
+    const childForm: FormSchema<Entry> = {
       type: 'form',
       components: {
         title: { type: 'text' }
       }
     }
 
-    const parentForm: Form<Parent> = {
+    const parentForm: FormSchema<Parent> = {
       type: 'form',
       components: {
         title: { type: 'text' },
