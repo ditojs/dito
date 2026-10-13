@@ -272,6 +272,7 @@ test.describe('nested validation', () => {
     await expect(form.getByLabel('Publisher', { exact: true })).toHaveCount(0)
     await page.getByRole('button', { name: 'Save', exact: true }).click()
     await expect(getErrors(form, 'Publisher')).toContainText(/required/)
+    await expect(form.getByLabel('Publisher', { exact: true })).toBeFocused()
   })
 
   test('validates fields created by components callbacks', async ({

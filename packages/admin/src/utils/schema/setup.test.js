@@ -1,9 +1,8 @@
 import { vi } from 'vitest'
 import { reactive, isReactive } from 'vue'
 import { hyphenate } from '@ditojs/utils'
-import DitoMixin from '../../mixins/DitoMixin.js'
-import TypeMixin from '../../mixins/TypeMixin.js'
-import { registerTypeComponent } from './types.js'
+import { defineType } from './types.ts'
+import { sourceTraits } from '../../types/traits.ts'
 import {
   resolveSchema,
   resolveSchemas,
@@ -15,7 +14,6 @@ import {
   setupView,
   applySchemaDefaults,
   applyNestedSchemaDefaults,
-  setupRouteSchema,
   setupForms,
   setupForm,
   setupTab,
@@ -23,33 +21,27 @@ import {
   setupNestedSchemas
 } from './setup.js'
 
-// Register minimal type options, as the actual type components can't be
-// imported without a Vue SFC compiler. Their `processSchema()` delegate to the
+// Define minimal types, as the actual type components can't be
+// imported without a Vue SFC compiler. Their `setupSchema()` delegate to the
 // setup functions like the actual types do:
-registerTypeComponent('text', { defaultNested: true })
-registerTypeComponent('section', {
+defineType({ type: 'text' })
+defineType({
+  type: 'section',
   defaultNested: false,
-  processSchema: (api, schema, name, routes, level) =>
-    setupSchemaComponents(api, schema, routes, level)
+  setupSchema: ({ schema, api }) => setupSchemaComponents(api, schema)
 })
-registerTypeComponent('panel', {
+defineType({
+  type: 'panel',
   defaultNested: false,
-  processSchema: (api, schema, name, routes, level) =>
-    setupSchemaComponents(api, schema, routes, level)
+  setupSchema: ({ schema, api }) => setupSchemaComponents(api, schema)
 })
-// Like `SourceMixin.processSchema()`, adding a route per list with the routes
-// of its forms as children:
-registerTypeComponent('list', {
-  defaultNested: true,
-  async processSchema(api, schema, name, routes, level) {
-    setupRouteSchema(api, schema, name)
-    const children = await setupForms(api, schema, level)
-    routes?.push({ path: schema.path, level, children })
-  }
+defineType({ ...sourceTraits, type: 'list', sourceType: 'list' })
+defineType({
+  type: 'component',
+  setupSchema: ({ schema }) => resolveSchemaComponent(schema)
 })
-registerTypeComponent('component', {
-  processSchema: (api, schema) => resolveSchemaComponent(schema)
-})
+defineType({ type: 'computed', resolvesValue: true })
+defineType({ type: 'color', hasFormat: true })
 
 function createApi(defaults = {}) {
   return { defaults, normalizePath: path => hyphenate(path) }
@@ -260,7 +252,15 @@ describe('applySchemaDefaults()', () => {
     expect(schema.trim).toBe(true)
   })
 
+  it('looks up the defaults of hyphenated types by their names', () => {
+    const api = createApi({ 'tree-list': { collapsible: true } })
+    const schema = { type: 'tree-list' }
+    applySchemaDefaults(api, schema)
+    expect(schema.collapsible).toBe(true)
+  })
+
   it('looks up the defaults of hyphenated types by their camelized names', () => {
+    // E.g. from the exports of a module, `import * as defaults`:
     const api = createApi({ treeList: { collapsible: true } })
     const schema = { type: 'tree-list' }
     applySchemaDefaults(api, schema)
@@ -282,19 +282,46 @@ describe('applySchemaDefaults()', () => {
   })
 
   it('merges defaults deeply into existing objects', () => {
-    const api = createApi({ text: { format: { trim: true } } })
-    const schema = { type: 'text', format: { case: 'lower' } }
+    const defaults = { options: { value: 'id' } }
+    const api = createApi({ text: defaults })
+    const schema = { type: 'text', options: { label: 'name' } }
     applySchemaDefaults(api, schema)
-    expect(schema.format).toEqual({ case: 'lower', trim: true })
+    expect(schema.options).toEqual({ label: 'name', value: 'id' })
+    expect(defaults).toEqual({ options: { value: 'id' } })
   })
 
-  it('overrides existing values with the values of the defaults', () => {
-    // Documents the current behavior: Defaults aren't only applied to missing
-    // values, see `assignDeeply()`.
-    const api = createApi({ text: { trim: true } })
-    const schema = { type: 'text', trim: false }
+  it('keeps the values that the schema sets itself', () => {
+    const api = createApi({
+      text: { trim: true, options: { label: 'title', value: 'id' } }
+    })
+    const schema = { type: 'text', trim: false, options: { label: 'name' } }
+    applySchemaDefaults(api, schema)
+    expect(schema.trim).toBe(false)
+    expect(schema.options).toEqual({ label: 'name', value: 'id' })
+  })
+
+  it('overrides the schema with the values that default functions return', () => {
+    const api = createApi({
+      text: () => ({ trim: true, options: { label: 'title' } })
+    })
+    const schema = { type: 'text', trim: false, options: { label: 'name' } }
     applySchemaDefaults(api, schema)
     expect(schema.trim).toBe(true)
+    expect(schema.options).toEqual({ label: 'title' })
+  })
+
+  it('applies the defaults of their type to buttons', () => {
+    const api = createApi({ submit: { closeForm: true } })
+    const schema = {
+      type: 'form',
+      buttons: { save: { type: 'submit' }, cancel: {}, back: 'Back' }
+    }
+    applySchemaDefaults(api, schema)
+    expect(schema.buttons).toEqual({
+      save: { type: 'submit', closeForm: true },
+      cancel: {},
+      back: 'Back'
+    })
   })
 
   it('leaves schemas without defaults for their type alone', () => {
@@ -303,6 +330,191 @@ describe('applySchemaDefaults()', () => {
     applySchemaDefaults(api, schema)
     applySchemaDefaults(createApi(), { type: 'section' })
     expect(schema).toEqual({ type: 'text' })
+  })
+})
+
+describe('the schema keys of 3.x', () => {
+  const setupBookView = components =>
+    setupView(createApi(), { type: 'view', components }, 'books')
+
+  it.each([
+    ['format', 'formatValue()'],
+    ['parse', 'parseValue()'],
+    ['compute', 'computeValue()'],
+    ['process', 'serializeValue()']
+  ])('rejects the value hook %s() with its replacement', async (key, hook) => {
+    await expect(
+      setupBookView({ title: { type: 'text', [key]: ({ value }) => value } })
+    ).rejects.toThrow(
+      `Unsupported schema key '${key}' in 'title': Use '${hook}' instead.`
+    )
+  })
+
+  it.each(['methods', 'computed', 'watch', 'data'])(
+    'rejects the component member definitions in %s',
+    async key => {
+      await expect(
+        setupForm(createApi(), { type: 'form', [key]: {}, components: {} })
+      ).rejects.toThrow(`Unsupported schema key '${key}' in 'form'`)
+    }
+  )
+
+  it.each([
+    ['onCreate', { onCreate() {} }],
+    ['onSubmit', { onSubmit() {} }],
+    ['events.create', { events: { create() {} } }],
+    ['events.submit', { events: { submit() {} } }]
+  ])('rejects the event %s of forms', async (key, schema) => {
+    await expect(
+      setupForm(createApi(), { type: 'form', components: {}, ...schema })
+    ).rejects.toThrow(
+      `Unsupported schema key '${key}' in 'form': ` +
+      `Use 'onSuccess()' with 'context.isCreating' instead.`
+    )
+  })
+
+  it.each([
+    ['onOpen', { onOpen() {} }],
+    ['events.open', { events: { open() {} } }]
+  ])('rejects the event %s of collapsible schemas', async (key, schema) => {
+    await expect(
+      setupBookView({
+        details: { type: 'section', collapsible: true, ...schema }
+      })
+    ).rejects.toThrow(
+      `Unsupported schema key '${key}' in 'details': Use 'onToggle()', or ` +
+      `'form: { onToggle() }' in lists and objects, instead.`
+    )
+  })
+
+  it('rejects the formats of dates', async () => {
+    await expect(
+      setupBookView({ published: { type: 'date', formats: {} } })
+    ).rejects.toThrow(
+      `Unsupported schema key 'formats' in 'published': Use 'format' instead.`
+    )
+  })
+
+  it.each([
+    ['relateBy', 'relate: <key>'],
+    ['groupBy', 'options.group']
+  ])('rejects the option setting %s with its replacement', async (key, by) => {
+    await expect(
+      setupBookView({ author: { type: 'text', [key]: 'id' } })
+    ).rejects.toThrow(
+      `Unsupported schema key '${key}' in 'author': Use '${by}' instead.`
+    )
+  })
+
+  it('rejects keys that the defaults of the type add', () => {
+    const api = createApi({ text: { process: ({ value }) => value } })
+    expect(() => applySchemaDefaults(api, { type: 'text' }, 'title')).toThrow(
+      `Unsupported schema key 'process' in 'title'`
+    )
+  })
+
+  it.each([
+    [
+      'lists',
+      {
+        books: {
+          type: 'list',
+          form: createBookForm(),
+          buttons: { order: { type: 'button', data: {} } }
+        }
+      }
+    ],
+    [
+      'panels',
+      {
+        filters: {
+          type: 'panel',
+          components: {},
+          panelButtons: { order: { type: 'button', data: {} } }
+        }
+      }
+    ],
+    [
+      'the panels of components',
+      {
+        title: {
+          type: 'text',
+          panels: {
+            hints: {
+              type: 'panel',
+              components: {},
+              buttons: { order: { type: 'button', data: {} } }
+            }
+          }
+        }
+      }
+    ]
+  ])('rejects the keys of the buttons of %s', async (_, components) => {
+    await expect(setupBookView(components)).rejects.toThrow(
+      `Unsupported schema key 'data' in 'order'`
+    )
+  })
+
+  it('rejects the keys of the buttons of forms, also without a type', async () => {
+    await expect(
+      setupForm(createApi(), {
+        type: 'form',
+        components: {},
+        buttons: { submit: { data: {} } }
+      })
+    ).rejects.toThrow(`Unsupported schema key 'data' in 'submit'`)
+  })
+
+  it('keeps the format of types that read it', async () => {
+    await expect(
+      setupBookView({ cover: { type: 'color', format: 'rgb' } })
+    ).resolves.toBe(undefined)
+  })
+
+  it('keeps the data of panels and of types that resolve their value', async () => {
+    await expect(
+      setupBookView({
+        count: { type: 'computed', data: () => ({}) },
+        filters: { type: 'panel', data: () => ({}), components: {} }
+      })
+    ).resolves.toBe(undefined)
+  })
+})
+
+describe('the schema key nested', () => {
+  const setupBookView = components =>
+    setupView(createApi(), { type: 'view', components }, 'books')
+
+  it.each([true, false])(
+    'rejects nested: %s on types that nest their data anyway',
+    async nested => {
+      await expect(
+        setupBookView({ title: { type: 'text', nested } })
+      ).rejects.toThrow(
+        `Unsupported schema key 'nested' in 'title': ` +
+        `Only sections and panels support it.`
+      )
+    }
+  )
+
+  it('keeps nested of sections and panels', async () => {
+    await expect(
+      setupBookView({
+        details: { type: 'section', nested: true, components: {} },
+        filters: { type: 'panel', nested: false, components: {} }
+      })
+    ).resolves.toBe(undefined)
+  })
+
+  it('rejects nested panels with their own data', async () => {
+    await expect(
+      setupBookView({
+        search: { type: 'panel', nested: true, data: {}, components: {} }
+      })
+    ).rejects.toThrow(
+      `Unsupported schema key 'nested' in 'search': ` +
+      `Panels with their own data can't be nested.`
+    )
   })
 })
 
@@ -342,27 +554,6 @@ describe('applyNestedSchemaDefaults()', () => {
       components: { fields: { type: 'section', components } }
     })
     expect(components).not.toHaveBeenCalled()
-  })
-})
-
-describe('setupRouteSchema()', () => {
-  it('sets the name and path, and the full path if given', () => {
-    const api = createApi()
-    const schema = { type: 'view' }
-    setupRouteSchema(api, schema, 'bookLoans', '/library')
-    expect(schema).toEqual({
-      type: 'view',
-      name: 'bookLoans',
-      path: 'book-loans',
-      fullPath: '/library/book-loans'
-    })
-  })
-
-  it('keeps existing names and paths', () => {
-    const api = createApi()
-    const schema = { type: 'view', name: 'loans', path: 'lending' }
-    setupRouteSchema(api, schema, 'bookLoans')
-    expect(schema).toEqual({ type: 'view', name: 'loans', path: 'lending' })
   })
 })
 
@@ -442,36 +633,16 @@ describe('setupForm()', () => {
 
   it('sets up each form only once, also when it is recursive', async () => {
     // E.g. categories with lists of sub-categories that use the same form:
-    const api = createApi()
+    const setupList = vi.fn()
+    const api = createApi({ list: setupList })
     const categoryForm = { type: 'form', components: {} }
     categoryForm.components.subcategories = {
       type: 'list',
       form: categoryForm
     }
-    const routes = []
-    await setupForm(api, categoryForm, routes)
-    expect(routes).toEqual([
-      { path: 'subcategories', level: 1, children: [] }
-    ])
-  })
-
-  it('sets up recursive forms up to `maxDepth` times', async () => {
-    const api = createApi()
-    const categoryForm = { type: 'form', components: {} }
-    categoryForm.components.subcategories = {
-      type: 'list',
-      form: categoryForm,
-      maxDepth: 2
-    }
-    const routes = []
-    await setupForm(api, categoryForm, routes)
-    expect(routes).toEqual([
-      {
-        path: 'subcategories',
-        level: 1,
-        children: [{ path: 'subcategories', level: 2, children: [] }]
-      }
-    ])
+    await setupForm(api, categoryForm)
+    expect(setupList).toHaveBeenCalledTimes(1)
+    expect(categoryForm.components.subcategories.name).toBe('subcategories')
   })
 })
 
@@ -482,7 +653,7 @@ describe('setupForms()', () => {
       type: 'list',
       form: Promise.resolve(createModule({ default: createBookForm() }))
     }
-    await setupForms(api, schema, 0)
+    await setupForms(api, schema)
     expect(schema.form.components.title.trim).toBe(true)
   })
 
@@ -495,7 +666,7 @@ describe('setupForms()', () => {
         comic: createBookForm()
       }
     }
-    await setupForms(api, schema, 0)
+    await setupForms(api, schema)
     expect(Object.keys(schema.forms)).toEqual(['novel', 'comic'])
     expect(schema.forms.novel.components.title.trim).toBe(true)
     expect(schema.forms.comic.components.isbn.trim).toBe(true)
@@ -507,36 +678,15 @@ describe('setupForms()', () => {
       type: 'object',
       components: { street: { type: 'text' } }
     }
-    await setupForms(api, schema, 0)
+    await setupForms(api, schema)
     expect(schema.components.street.trim).toBe(true)
     expect(schema.form).toBe(undefined)
-  })
-
-  it('returns the routes of the nested lists of its forms', async () => {
-    const api = createApi()
-    const schema = {
-      type: 'list',
-      form: {
-        type: 'form',
-        components: {
-          chapters: {
-            type: 'list',
-            form: { type: 'form', components: {} }
-          }
-        }
-      }
-    }
-    expect(await setupForms(api, schema, 1)).toEqual([
-      { path: 'chapters', level: 2, children: [] }
-    ])
   })
 
   it('leaves `components()` callbacks to be set up with the data', async () => {
     const api = createApi()
     const components = vi.fn(() => ({}))
-    expect(await setupForms(api, { type: 'section', components }, 0)).toEqual(
-      []
-    )
+    await setupForms(api, { type: 'section', components })
     expect(components).not.toHaveBeenCalled()
   })
 })
@@ -601,9 +751,7 @@ describe('setupSchemaComponents()', () => {
 })
 
 describe('setupView()', () => {
-  const DitoView = { name: 'DitoView' }
-
-  it('creates the route of views with the routes of their lists', async () => {
+  it('sets up the forms of the lists of views', async () => {
     const api = createApi({ text: { trim: true } })
     const books = {
       type: 'view',
@@ -612,13 +760,8 @@ describe('setupView()', () => {
         form: createBookForm()
       }
     }
-    const route = await setupView(DitoView, api, books, 'books')
-    expect(route).toEqual({
-      path: '/books',
-      children: [{ path: 'books', level: 0, children: [] }],
-      component: DitoView,
-      meta: { api, schema: books }
-    })
+    await setupView(api, books, 'books')
+    expect(books.name).toBe('books')
     expect(books.component.form.components.title.trim).toBe(true)
   })
 
@@ -635,11 +778,11 @@ describe('setupView()', () => {
         )
       }
     }
-    await setupView(DitoView, api, dashboard, 'dashboard')
+    await setupView(api, dashboard, 'dashboard')
     expect(dashboard.tabs.stats.components.total.trim).toBe(true)
   })
 
-  it('creates the routes of menus with their items as children', async () => {
+  it('sets up the items of menus', async () => {
     const api = createApi()
     const catalog = {
       type: 'menu',
@@ -647,38 +790,27 @@ describe('setupView()', () => {
         bookAuthors: { type: 'view', components: {} }
       }
     }
-    const route = await setupView(DitoView, api, catalog, 'catalog')
-    expect(route.path).toBe('/catalog')
-    expect(route.children).toEqual([
-      {
-        path: '/catalog/book-authors',
-        children: [],
-        component: DitoView,
-        meta: { api, schema: catalog.items.bookAuthors }
-      }
-    ])
+    await setupView(api, catalog, 'catalog')
+    expect(catalog.name).toBe('catalog')
+    expect(catalog.items.bookAuthors.name).toBe('bookAuthors')
   })
 
   it('rejects schemas that are neither views nor menus', async () => {
     await expect(
-      setupView(DitoView, createApi(), { type: 'form' }, 'books')
+      setupView(createApi(), { type: 'form' }, 'books')
     ).rejects.toThrow('Invalid view schema')
   })
 })
 
 describe('resolveSchemaComponent()', () => {
-  it('adds the mixins of type components to custom components', async () => {
-    const OwnMixin = { methods: { own() {} } }
-    const component = { name: 'BookCover', mixins: [OwnMixin] }
+  it('resolves custom components as they are', async () => {
+    const component = { name: 'BookCover' }
     const schema = {
       type: 'component',
       component: Promise.resolve(createModule({ default: component }))
     }
     await resolveSchemaComponent(schema)
-    expect(schema.component).toEqual({
-      name: 'BookCover',
-      mixins: [DitoMixin, TypeMixin, OwnMixin]
-    })
+    expect(schema.component).toBe(component)
   })
 
   it(`marks the components as raw so they don't become reactive`, async () => {
@@ -707,7 +839,7 @@ describe('resolveSchemaComponent()', () => {
     }
     await resolveSchemaComponents(columns)
     await resolveSchemaComponents(null)
-    expect(columns.cover.component.mixins).toEqual([DitoMixin, TypeMixin])
+    expect(columns.cover.component).toEqual({ name: 'BookCover' })
     expect(columns.title).toEqual({ label: 'Title' })
   })
 
@@ -719,9 +851,6 @@ describe('resolveSchemaComponent()', () => {
         cover: { type: 'component', component: { name: 'BookCover' } }
       }
     })
-    expect(form.components.cover.component.mixins).toEqual([
-      DitoMixin,
-      TypeMixin
-    ])
+    expect(form.components.cover.component).toEqual({ name: 'BookCover' })
   })
 })

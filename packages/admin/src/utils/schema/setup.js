@@ -1,17 +1,17 @@
-import DitoMixin from '../../mixins/DitoMixin.js'
-import TypeMixin from '../../mixins/TypeMixin.js'
 import {
   isObject,
+  isPlainObject,
   isArray,
   isFunction,
   isPromise,
   isModule,
   camelize,
   assignDeeply,
-  mapConcurrently
+  mapConcurrently,
+  getValueAtDataPath
 } from '@ditojs/utils'
 import { markRaw } from 'vue'
-import { getTypeOptions } from './types.js'
+import { getTypeDescriptor } from './types.ts'
 import {
   iterateSchemaComponents,
   iterateNestedSchemaComponents,
@@ -19,6 +19,7 @@ import {
   isView,
   isTab,
   isPanel,
+  isPanelWithOwnData,
   isMenu,
   getSchemaIdentifier,
   getPanelSchemas
@@ -26,6 +27,36 @@ import {
 import { getFormSchemas } from './lookup.js'
 
 const resolvedSchemas = new WeakMap()
+
+// Lists and objects don't toggle, the inlined forms of their items do:
+const onToggle = `'onToggle()', or 'form: { onToggle() }' in lists and objects,`
+
+// The schema keys of earlier versions that were renamed or removed, which would
+// otherwise be ignored silently:
+const removedSchemaKeys = {
+  'format': `'formatValue()'`,
+  'parse': `'parseValue()'`,
+  'compute': `'computeValue()'`,
+  'process': `'serializeValue()'`,
+  'formats': `'format'`,
+  'methods': 'plain functions in the module of the schema',
+  'computed': `the values of the context, or 'computeValue()'`,
+  'watch': `'onChange()'`,
+  'data': 'state in the module of the schema',
+  'relateBy': `'relate: <key>'`,
+  'groupBy': `'options.group'`,
+  'onOpen': onToggle,
+  'events.open': onToggle
+}
+
+// The events of forms that `onSuccess()` replaces:
+const onSuccess = `'onSuccess()' with 'context.isCreating'`
+const removedFormKeys = {
+  'onCreate': onSuccess,
+  'onSubmit': onSuccess,
+  'events.create': onSuccess,
+  'events.submit': onSuccess
+}
 
 export async function resolveSchema(value, unwrapModule = false) {
   if (resolvedSchemas.has(value)) {
@@ -39,12 +70,11 @@ export async function resolveSchema(value, unwrapModule = false) {
     schema = await schema
   }
   if (isModule(schema)) {
-    // Copy to convert from module to object:
+    // Copy to convert the module namespace to a plain object:
     schema = { ...schema }
-    // Unwrap default or named schema
+    // Unwrap default or named schema:
     if (!schema.name && (unwrapModule || schema.default)) {
-      // Filter out internal key added by vite / vue 3 plugin when changing
-      // code in a dynamically imported vue component, see:
+      // Filter out the key that the vue plugin of vite adds on hot reloads:
       // https://github.com/vitejs/vite-plugin-vue/blob/abdf5f4f32d02af641e5f60871bde14535569b1e/packages/plugin-vue/src/main.ts#L133
       const keys = Object.keys(schema).filter(key => key !== '_rerender_only')
       if (keys.length === 1) {
@@ -56,17 +86,11 @@ export async function resolveSchema(value, unwrapModule = false) {
       }
     }
   }
-  // Other values, e.g. `undefined`, are returned without caching:
-  if (canBeWeakMapKey(value)) {
+  // Primitive values, e.g. `undefined`, can't be keys of weak maps:
+  if (Object(value) === value) {
     resolvedSchemas.set(value, schema)
   }
   return schema
-}
-
-// Only objects, arrays, promises and functions can be keys of weak maps, but
-// not primitive values.
-function canBeWeakMapKey(value) {
-  return Object(value) === value
 }
 
 export async function resolveSchemas(
@@ -78,26 +102,19 @@ export async function resolveSchemas(
     : unresolvedSchemas
   schemas = await resolveSchema(schemas, false)
   if (isArray(schemas)) {
-    // Translate an array of dynamic import, each importing one named schema
-    // module to an object with named entries.
+    // Arrays of dynamic imports of named schema modules become named entries:
     schemas = Object.fromEntries(
-      await mapConcurrently(
-        schemas,
-        async item => {
-          const schema = await resolveItem(item, true)
-          return [schema.name, schema]
-        }
-      )
+      await mapConcurrently(schemas, async item => {
+        const schema = await resolveItem(item, true)
+        return [schema.name, schema]
+      })
     )
   } else if (isObject(schemas)) {
     schemas = Object.fromEntries(
-      await mapConcurrently(
-        Object.entries(schemas),
-        async ([key, item]) => {
-          const schema = await resolveItem(item, true)
-          return [key, schema]
-        }
-      )
+      await mapConcurrently(Object.entries(schemas), async ([key, item]) => [
+        key,
+        await resolveItem(item, true)
+      ])
     )
   }
   return schemas
@@ -109,9 +126,7 @@ export async function resolveViews(unresolvedViews) {
     async (schema, unwrapModule) => {
       schema = await resolveSchema(schema, unwrapModule)
       if (isMenu(schema)) {
-        // Generate a name for sub-menus from their label if it's missing.
-        // NOTE: This is never actually referenced from anywhere, but they need
-        // a name by which they're stored in the parent object.
+        // NOTE: Sub-menus need a name to be stored by in the parent object:
         const name = schema.name || camelize(schema.label)
         const items = assertSchemas(
           await resolveSchemas(schema.items),
@@ -125,8 +140,6 @@ export async function resolveViews(unresolvedViews) {
   return assertSchemas(views, 'views')
 }
 
-// Asserts that the schemas returned by `resolveSchemas()` are an object, as it
-// returns for objects and arrays, and returns them.
 function assertSchemas(schemas, description) {
   if (!isObject(schemas)) {
     throw new Error(`Invalid ${description}: Must be an object or an array.`)
@@ -136,166 +149,115 @@ function assertSchemas(schemas, description) {
 
 export function flattenViews(views) {
   return Object.fromEntries(
-    Object.entries(views).reduce(
-      (entries, [key, schema]) => {
-        if (isMenu(schema)) {
-          entries.push(...Object.entries(schema.items))
-        } else {
-          entries.push([key, schema])
-        }
-        return entries
-      },
-      []
+    Object.entries(views).flatMap(([key, schema]) =>
+      isMenu(schema) ? Object.entries(schema.items) : [[key, schema]]
     )
   )
 }
 
+// Resolve async components, e.g. `component: import('./Rating.vue')`:
 export async function resolveSchemaComponent(schema) {
-  // Resolves async schema components and adds DitoMixin and TypeMixin to them.
   let { component } = schema
   if (component) {
     component = await resolveSchema(component, true)
     if (component) {
-      // Prevent warning: "Vue received a Component which was made a reactive
-      // object. This can lead to unnecessary performance overhead, and should
-      // be avoided by marking the component with `markRaw`":
-      schema.component = markRaw({
-        ...component,
-        mixins: [DitoMixin, TypeMixin, ...(component.mixins || [])]
-      })
+      // Prevent Vue's warning about components made reactive objects:
+      schema.component = markRaw(component)
     }
   }
 }
 
 export async function resolveSchemaComponents(schemas) {
-  // `schemas` are of the same possible forms as passed to `getNamedSchemas()`
   await mapConcurrently(Object.values(schemas || {}), resolveSchemaComponent)
 }
 
-// How many times each schema's components were set up, to stop recursive
-// forms at their `maxDepth`. The views are set up anew from the same schema
-// objects for each login, see `resetProcessedSchemaDepths()`.
-let processedSchemaDepths = new WeakMap()
+// Set up the components of each schema only once, as forms can contain
+// themselves:
+const setUpSchemas = new WeakSet()
 
-// Forgets the processed schemas, so that the next setup of the views processes
-// them again and sets up the routes of their forms, see `ViewRegistry`.
-export function resetProcessedSchemaDepths() {
-  processedSchemaDepths = new WeakMap()
-}
-
-export function setupSchemaComponents(
-  api,
-  schema,
-  routes = null,
-  level = 0,
-  maxDepth = 1
-) {
-  if (schema) {
-    const depth = processedSchemaDepths.get(schema) ?? 0
-    if (depth < maxDepth) {
-      processedSchemaDepths.set(schema, depth + 1)
-      const promises = []
-      const process = (component, name, relativeLevel) => {
-        promises.push(
-          setupSchemaComponent(
-            api,
-            component,
-            name,
-            routes,
-            level + relativeLevel
-          )
-        )
-      }
-
-      iterateNestedSchemaComponents(schema, process)
-      iterateSchemaComponents(getPanelSchemas(schema), process)
-
-      return Promise.all(promises)
+export function setupSchemaComponents(api, schema) {
+  if (schema && !setUpSchemas.has(schema)) {
+    setUpSchemas.add(schema)
+    const promises = []
+    const setupComponent = (component, name) => {
+      promises.push(setupSchemaComponent(api, component, name))
     }
+    iterateNestedSchemaComponents(schema, setupComponent)
+    iterateSchemaComponents(getPanelSchemas(schema), setupComponent)
+    return Promise.all(promises)
   }
 }
 
-export function setupSchemaComponent(
-  api,
-  schema,
-  name,
-  routes = null,
-  level = 0
-) {
-  applySchemaDefaults(api, schema)
-
-  return Promise.all([
-    // Also process nested panel schemas.
+export async function setupSchemaComponent(api, schema, name) {
+  applySchemaDefaults(api, schema, name)
+  await setupNestedSchemas(api, schema)
+  await Promise.all([
     mapConcurrently(
       getPanelSchemas(schema),
-      panel => setupSchemaComponents(api, panel, routes, level)
+      panel => setupSchemaComponents(api, panel)
     ),
-    // Delegate schema processing to the actual type components.
-    getTypeOptions(schema)?.processSchema?.(
-      api,
-      schema,
-      name,
-      routes,
-      level
-    )
+    getTypeDescriptor(schema)?.setupSchema?.({ schema, api, name })
   ])
 }
 
-export async function setupView(component, api, schema, name, fullPath = '') {
-  applySchemaDefaults(api, schema)
-  setupRouteSchema(api, schema, name, fullPath)
-  let children = []
+export async function setupView(api, schema, name) {
+  applySchemaDefaults(api, schema, name)
+  schema.name ??= name
   if (isView(schema)) {
     await setupNestedSchemas(api, schema)
-    await setupSchemaComponents(api, schema, children)
+    await setupSchemaComponents(api, schema)
   } else if (isMenu(schema)) {
-    children = await Promise.all(
-      Object.entries(schema.items).map(async ([name, item]) =>
-        setupView(component, api, item, name, schema.fullPath)
-      )
+    await mapConcurrently(Object.entries(schema.items), ([name, item]) =>
+      setupView(api, item, name)
     )
   } else {
     throw new Error(`Invalid view schema: '${getSchemaIdentifier(schema)}'`)
   }
-  return {
-    path: schema.fullPath,
-    children,
-    component,
-    meta: {
-      api,
-      schema
-    }
-  }
 }
 
-export function applySchemaDefaults(api, schema) {
+export function applySchemaDefaults(api, schema, name = schema.name) {
   let defaults = (
     api.defaults[schema.type] ||
     api.defaults[camelize(schema.type)]
   )
   if (defaults) {
-    if (isFunction(defaults)) {
+    // The values that functions return win over the schema's, e.g. to change
+    // its type, while the schema's own values win over object defaults:
+    const isCallback = isFunction(defaults)
+    if (isCallback) {
       defaults = defaults(schema)
     }
     if (isObject(defaults)) {
       for (const [key, value] of Object.entries(defaults)) {
-        if (schema[key] === undefined) {
-          schema[key] = value
-        } else {
-          schema[key] = assignDeeply(schema[key], value)
-        }
+        const current = schema[key]
+        schema[key] =
+          current === undefined
+            ? value
+            : isCallback
+              ? assignDeeply(current, value)
+              : isPlainObject(current) && isPlainObject(value)
+                ? assignDeeply({}, value, current)
+                : current
+      }
+    }
+  }
+  // Check after the defaults, which can change the type and add keys:
+  assertSupportedSchemaKeys(schema, name)
+  // Buttons are schemas but no components. Those without a type only get it
+  // when rendered, merged with the default buttons:
+  for (const buttons of [schema.buttons, schema.panelButtons]) {
+    for (const [key, button] of Object.entries(buttons ?? {})) {
+      if (isObject(button)) {
+        applySchemaDefaults(api, button, button.name ?? key)
       }
     }
   }
 }
 
 export function applyNestedSchemaDefaults(api, schema) {
-  // Process defaults for nested schemas. Note that this is also done when
-  // calling `setupSchemaComponents()`, but that function is async, and we
-  // need a sync version that only handles the defaults for filters, see
-  // `getFiltersPanel()`.
-  iterateNestedSchemaComponents(schema, component => {
-    applySchemaDefaults(api, component)
+  // A sync version of the defaults of `setupSchemaComponents()`, for filters:
+  iterateNestedSchemaComponents(schema, (component, name) => {
+    applySchemaDefaults(api, component, name)
     const forms = getFormSchemas(component)
     for (const form of Object.values(forms)) {
       applyNestedSchemaDefaults(api, form)
@@ -303,51 +265,26 @@ export function applyNestedSchemaDefaults(api, schema) {
   })
 }
 
-export function setupRouteSchema(api, schema, name, fullPath = null) {
-  // Used for view and source schemas, see SourceMixin.
-  schema.name ??= name
-  schema.path ??= api.normalizePath(name)
-  if (fullPath !== null) {
-    schema.fullPath = `${fullPath}/${schema.path}`
-  }
-}
-
-export async function setupForms(api, schema, level) {
-  const routes = []
-  // First resolve the forms and store the results back on the schema.
-  const { form, forms, components, maxDepth = 1 } = schema
+export async function setupForms(api, schema) {
+  const { form, forms, components } = schema
   if (forms) {
-    schema.forms = await resolveSchemas(forms, form =>
-      setupForm(api, form, routes, level, maxDepth)
-    )
+    schema.forms = await resolveSchemas(forms, form => setupForm(api, form))
   } else if (form) {
-    schema.form = await setupForm(api, form, routes, level, maxDepth)
+    schema.form = await setupForm(api, form)
   } else if (isObject(components)) {
-    // NOTE: Processing forms in computed components is not supported, since it
-    // only can be computed in conjunction with actual data.
-    const form = {
-      type: 'form',
-      components
-    }
-    await setupForm(api, form, routes, level, maxDepth)
+    // NOTE: Forms of `components()` callbacks can only be set up with data:
+    await setupForm(api, { type: 'form', components })
   }
-  return routes
 }
 
-export async function setupForm(
-  api,
-  schema,
-  routes = null,
-  level = 0,
-  maxDepth = 1
-) {
+export async function setupForm(api, schema) {
   schema = await resolveSchema(schema, true)
   if (!isForm(schema)) {
     throw new Error(`Invalid form schema: '${getSchemaIdentifier(schema)}'`)
   }
   applySchemaDefaults(api, schema)
   await setupNestedSchemas(api, schema)
-  await setupSchemaComponents(api, schema, routes, level, maxDepth)
+  await setupSchemaComponents(api, schema)
   return schema
 }
 
@@ -372,15 +309,59 @@ export async function setupPanel(api, schema) {
 export async function setupNestedSchemas(api, schema) {
   const { tabs, panels } = schema
   if (tabs) {
-    schema.tabs = await resolveSchemas(
-      tabs,
-      tab => setupTab(api, tab)
-    )
+    schema.tabs = await resolveSchemas(tabs, tab => setupTab(api, tab))
   }
   if (panels) {
-    schema.panels = await resolveSchemas(
-      panels,
-      panel => setupPanel(api, panel)
+    schema.panels = await resolveSchemas(panels, panel =>
+      setupPanel(api, panel)
     )
+  }
+}
+
+function assertSupportedSchemaKeys(schema, name) {
+  const descriptor = getTypeDescriptor(schema)
+  assertRemovedSchemaKeys(schema, name, removedSchemaKeys, {
+    format: !!descriptor?.hasFormat,
+    data: isPanel(schema) || !!descriptor?.resolvesValue
+  })
+  if (isForm(schema)) {
+    assertRemovedSchemaKeys(schema, name, removedFormKeys)
+  }
+  // Only types that don't nest their data by default can choose to:
+  if (schema.nested !== undefined && descriptor?.defaultNested) {
+    throw new Error(
+      `Unsupported schema key 'nested' in '${
+        name ?? schema.type
+      }': Only sections and panels support it.`
+    )
+  }
+  // Panels with their own data don't hold it in the data around them:
+  if (isPanelWithOwnData(schema) && schema.nested) {
+    throw new Error(
+      `Unsupported schema key 'nested' in '${
+        name ?? schema.type
+      }': Panels with their own data can't be nested.`
+    )
+  }
+}
+
+// Types also check the keys of 3.x that only they removed:
+export function assertRemovedSchemaKeys(
+  schema,
+  name,
+  removedKeys,
+  supportedKeys = {}
+) {
+  for (const [key, replacement] of Object.entries(removedKeys)) {
+    if (
+      getValueAtDataPath(schema, key, () => undefined) !== undefined &&
+      !supportedKeys[key]
+    ) {
+      throw new Error(
+        `Unsupported schema key '${key}' in '${
+          name ?? schema.type
+        }': Use ${replacement} instead.`
+      )
+    }
   }
 }

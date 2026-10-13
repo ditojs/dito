@@ -1,8 +1,8 @@
 import { vi } from 'vitest'
 import { reactive } from 'vue'
 import { hyphenate } from '@ditojs/utils'
-import DitoContext from '../../DitoContext.js'
-import { registerTypeComponent } from './types.js'
+import SchemaContext from '../../SchemaContext.js'
+import { defineType } from './types.ts'
 import {
   getAllPanelEntries,
   getPanelEntries,
@@ -11,29 +11,27 @@ import {
   getViewFormSchema,
   getViewSchema,
   hasViewSchema,
-  getViewPath,
-  getViewEditPath,
   getFormSchemas,
   getItemFormSchemaFromForms,
   getItemFormSchema,
   isEmptySchema,
   getNamedSchemas,
-  getButtonSchemas,
-  getViewLinkPath
+  getButtonSchemas
 } from './lookup.js'
 
-// Register minimal type options, as the actual type components can't be
+// Define minimal types, as the actual type components can't be
 // imported without a Vue SFC compiler:
-registerTypeComponent('panel', {
+defineType({
+  type: 'panel',
   defaultNested: false,
   getPanelSchema: (api, schema) => schema
 })
-registerTypeComponent('list', {
-  defaultNested: true,
+defineType({
+  type: 'list',
   getPanelSchema: () => ({ type: 'panel', name: '$filters' })
 })
-registerTypeComponent('section', { defaultNested: false })
-registerTypeComponent('text', { defaultNested: true })
+defineType({ type: 'section', defaultNested: false })
+defineType({ type: 'text' })
 
 describe('getAllPanelEntries()', () => {
   const getPaths = entries =>
@@ -160,13 +158,11 @@ describe('view lookups', () => {
   const bookForm = { type: 'form', components: { title: { type: 'text' } } }
   const books = {
     type: 'view',
-    fullPath: '/books',
     path: 'books',
     component: { type: 'list', form: bookForm }
   }
   const dashboard = {
     type: 'view',
-    fullPath: '/dashboard',
     path: 'dashboard',
     tabs: {
       stats: {
@@ -178,7 +174,7 @@ describe('view lookups', () => {
       }
     }
   }
-  const empty = { type: 'view', fullPath: '/empty', components: {} }
+  const empty = { type: 'view', components: {} }
   const context = { flattenedViews: { books, dashboard, empty } }
 
   it('find the component with a form of views, also in their tabs', () => {
@@ -196,17 +192,6 @@ describe('view lookups', () => {
     expect(getViewSchema({ view: 'empty' }, context)).toBe(null)
     expect(hasViewSchema({ view: 'dashboard' }, context)).toBe(true)
     expect(hasViewSchema({ view: 'empty' }, context)).toBe(false)
-  })
-
-  it('return the paths of views and of the items edited in them', () => {
-    // Single component views edit their items at their own path:
-    expect(getViewPath({ view: 'books' }, context)).toBe('/books')
-    expect(getViewPath({ view: 'dashboard' }, context)).toBe(
-      '/dashboard/dashboard'
-    )
-    expect(getViewPath({ view: 'empty' }, context)).toBe(null)
-    expect(getViewEditPath({ view: 'books' }, 7, context)).toBe('/books/7')
-    expect(getViewEditPath({ view: 'empty' }, 7, context)).toBe(null)
   })
 
   it('return the forms of views for lists that use them', () => {
@@ -278,7 +263,7 @@ describe('getFormSchemas()', () => {
     )
     const schema = { type: 'section', components: createComponents }
     const api = { defaults: {}, normalizePath: hyphenate }
-    const createContext = data => new DitoContext(null, { api, data })
+    const createContext = data => new SchemaContext(null, { api, data })
 
     beforeEach(() => {
       createComponents.mockClear()
@@ -393,25 +378,5 @@ describe('getNamedSchemas()', () => {
     expect(getButtonSchemas({ archive: { label: 'Archive' } })).toEqual({
       archive: { type: 'button', name: 'archive', label: 'Archive' }
     })
-  })
-})
-
-describe('getViewLinkPath()', () => {
-  it('links views to their path', () => {
-    const view = { type: 'view', fullPath: '/books' }
-    expect(getViewLinkPath(view)).toBe('/books')
-    expect(getViewLinkPath(view, '/books/1')).toBe('/books/1')
-  })
-
-  it('links menus to their first item', () => {
-    const menu = {
-      type: 'menu',
-      fullPath: '/catalog',
-      items: {
-        authors: { type: 'view', fullPath: '/catalog/authors' },
-        series: { type: 'view', fullPath: '/catalog/series' }
-      }
-    }
-    expect(getViewLinkPath(menu, '/catalog')).toBe('/catalog/authors')
   })
 })

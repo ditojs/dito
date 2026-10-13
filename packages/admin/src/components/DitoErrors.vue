@@ -1,6 +1,5 @@
 <template lang="pug">
-//- The input of the container refers to the errors by `id` through
-//- `aria-describedby`, see `TypeMixin.attributes`.
+//- The input of the container refers to the errors through `aria-describedby`:
 .dito-errors(
   v-if="errors"
   :id="id"
@@ -13,15 +12,12 @@
 </template>
 
 <script>
-import DitoComponent from '../DitoComponent.js'
-
-// @vue/component
-export default DitoComponent.component('DitoErrors', {
+export default {
   props: {
     id: { type: String, default: null },
     errors: { type: Array, default: null }
   }
-})
+}
 </script>
 
 <style lang="scss">
