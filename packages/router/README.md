@@ -33,18 +33,21 @@ router.get('/users/:id', ctx => {
   ctx.body = `requesting user ${ctx.params.id}`
 })
 
-// match-any route
+// wildcard routes: `*` matches one segment, `**` the rest of the path
 router.get('/books/*', ctx => {
-  ctx.body = `sub-route: ${ctx.params['*']}`
+  ctx.body = `book: ${ctx.params.$}`
+})
+router.get('/files/**', ctx => {
+  ctx.body = `file: ${ctx.params.$$}`
 })
 
-// Handler found
-let { handler, params } = router.find('get', '/users/233')
-console.log(handler) // ctx => { ... }
+// Handler found, methods are uppercase
+const { handler, params } = router.find('GET', '/users/233')
+console.log(handler, params) // ctx => { ... } { id: '233' }
 
-// Entry not Found
-let { handler, params } = router.find('get', '/photos/233')
-console.log(handler) // null
+// Entry not found
+const result = router.find('GET', '/photos/233')
+console.log(result.handler, result.status) // undefined 404
 
 // Install router middleware
 app.use(async (ctx, next) => {
@@ -70,3 +73,11 @@ app.use(async (ctx, next) => {
 
 app.listen(4040, () => console.log('Koa app listening on 4040'))
 ```
+
+## Options
+
+- `prefix`: is prepended to the paths of `add()` and `find()` alike, so
+  `new Router({ prefix: '/api' })` routes `/api/users/:id` and finds it with
+  `find('GET', '/users/233')`.
+- `strict`: keeps trailing slashes and paths without a leading slash as they
+  are, instead of normalizing them.
