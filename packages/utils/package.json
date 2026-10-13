@@ -11,9 +11,9 @@
   "exports": {
     ".": {
       "types": "./types/index.d.ts",
-      "import": "./src/index.js",
-      "require": "./src/index.js"
-    }
+      "import": "./src/index.js"
+    },
+    "./package.json": "./package.json"
   },
   "files": [
     "src/",
