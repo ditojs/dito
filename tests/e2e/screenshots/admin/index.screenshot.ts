@@ -1,5 +1,6 @@
 import { test, expect } from '../fixtures.js'
 import { seedProjects, openProject, expectScreenshot } from '../scenes.js'
+import { Project } from '../models/Project.js'
 
 // Screenshots of the admin's styling, compared against the baselines in
 // `__screenshots__`. They run in the browser of the Playwright Docker image,
@@ -62,6 +63,29 @@ test.describe('screenshots', () => {
     // The errors are displayed as tooltips, see `DitoErrors`.
     await expect(page.locator('.dito-errors')).toContainText(/required/)
     await expectScreenshot(page, 'form-errors.png')
+  })
+
+  test('rows and tree items with errors', async ({ page, url }) => {
+    await Project.query()
+      .findById(1)
+      .patch({
+        milestones: [
+          { title: 'Design', due: '2026-06-01' },
+          { title: '', due: '2026-09-01' }
+        ],
+        phases: [
+          { name: 'Research', tasks: [{ name: 'Interviews' }, { name: '' }] },
+          { name: 'Build', tasks: [{ name: 'Prototype' }] }
+        ]
+      })
+    await openProject(page, url)
+    // The first error is in the form itself, so the nested forms stay closed:
+    await page.getByLabel('Name', { exact: true }).fill('')
+    await page.getByRole('button', { name: 'Save', exact: true }).click()
+    await expect(page.locator('.dito-errors')).toContainText(/required/)
+    await page.getByRole('tab', { name: 'Planning', exact: true }).click()
+    await expect(page.locator('.dito-table__row--error')).toHaveCount(1)
+    await expectScreenshot(page, 'rows-errors.png')
   })
 
   test('multiselect', async ({ page, url }) => {
