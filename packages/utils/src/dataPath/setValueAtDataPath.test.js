@@ -24,7 +24,10 @@ describe('setValueAtDataPath()', () => {
   })
 
   it('should throw an error with faulty paths', () => {
-    expect(() => setValueAtDataPath(data, 'object/unknown/prop', add)).toThrow()
+    expect(() => setValueAtDataPath(data, 'object/unknown/prop', add))
+      .toThrow('Invalid path: object/unknown/prop')
+    expect(() => setValueAtDataPath(data, ['object', 'unknown', 'prop'], add))
+      .toThrow('Invalid path: object/unknown/prop')
   })
 
   it('should throw an error with invalid target', () => {

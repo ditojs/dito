@@ -3,9 +3,10 @@ import type {
   getValueAtDataPath,
   getEntriesAtDataPath,
   setValueAtDataPath,
-  setDataPathEntries,
+  setEntriesAtDataPath,
   normalizeDataPath,
-  parseDataPath
+  parseDataPath,
+  resolveDataPath
 } from '@ditojs/utils'
 
 describe('getValueAtDataPath', () => {
@@ -42,9 +43,9 @@ describe('setValueAtDataPath', () => {
   })
 })
 
-describe('setDataPathEntries', () => {
+describe('setEntriesAtDataPath', () => {
   it('preserves the object type', () => {
-    const fn = {} as typeof setDataPathEntries
+    const fn = {} as typeof setEntriesAtDataPath
     const obj = { x: 1, y: 2 }
     const result = fn(obj, { x: 10 })
     expectTypeOf(result).not.toBeAny()
@@ -71,5 +72,14 @@ describe('normalizeDataPath', () => {
     expectTypeOf(fromString).not.toBeAny()
     expectTypeOf(fromString).toBeString()
     expectTypeOf(fromArray).toBeString()
+  })
+})
+
+describe('resolveDataPath', () => {
+  it('returns a string', () => {
+    const fn = {} as typeof resolveDataPath
+    const result = fn('items/0', '../title')
+    expectTypeOf(result).not.toBeAny()
+    expectTypeOf(result).toBeString()
   })
 })

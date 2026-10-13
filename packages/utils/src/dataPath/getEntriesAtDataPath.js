@@ -1,7 +1,6 @@
 import { parseDataPath } from './parseDataPath.js'
 import { normalizeDataPath } from './normalizeDataPath.js'
-
-const NOT_FOUND = Symbol('NOT_FOUND')
+import { getDeepWildcardEntries } from './getDeepWildcardEntries.js'
 
 export function getEntriesAtDataPath(
   obj,
@@ -12,50 +11,44 @@ export function getEntriesAtDataPath(
 ) {
   const parsedPath = parseDataPath(path)
 
-  const prefixEntries = (obj, index, getEntries) => {
-    const prefix = normalizeDataPath(parsedPath.slice(0, index))
-    return Object.entries(obj).reduce(
-      (map, [key, value]) => {
-        const pathKey = prefix ? `${prefix}/${key}` : key
-        for (const [path, val] of Object.entries(getEntries(value))) {
-          if (val !== NOT_FOUND) {
-            map[`${pathKey}/${path}`] = val
-          }
-        }
-        return map
-      },
-      {}
+  // Prefix the entries found beneath `path`:
+  const prefixEntries = (path, entries) =>
+    Object.fromEntries(
+      Object.entries(entries).map(([key, value]) => [
+        normalizeDataPath([...path, key]),
+        value
+      ])
     )
-  }
 
   let index = 0
   for (const part of parsedPath) {
-    if (obj && typeof obj === 'object') {
-      if (part in obj) {
-        obj = obj[part]
-        index++
-        continue
-      } else if (part === '*') {
-        // Support wildcards on arrays and objects
-        const pathNested = parsedPath.slice(index + 1)
-        return prefixEntries(
-          obj,
-          index,
-          value => getEntriesAtDataPath(value, pathNested, handleError)
+    const isObject = obj && typeof obj === 'object'
+    if (isObject && part in obj) {
+      obj = obj[part]
+      index++
+      continue
+    } else if (isObject && part === '*') {
+      // Support wildcards on arrays and objects
+      const prefix = parsedPath.slice(0, index)
+      const pathNested = parsedPath.slice(index + 1)
+      return Object.assign(
+        {},
+        ...Object.entries(obj).map(([key, value]) =>
+          prefixEntries(
+            [...prefix, key],
+            getEntriesAtDataPath(value, pathNested, handleError)
+          )
         )
-      } else if (part === '**') {
-        // Support wildcards on arrays and objects
-        const pathNested = parsedPath.slice(index + 1)
-        const pathSelf = parsedPath.slice(index)
-        return prefixEntries(
+      )
+    } else if (part === '**') {
+      // Support deep wildcards on arrays and objects:
+      return Object.fromEntries(
+        getDeepWildcardEntries(
           obj,
-          index,
-          value => ({
-            ...getEntriesAtDataPath(value, pathNested, () => NOT_FOUND),
-            ...getEntriesAtDataPath(value, pathSelf, () => NOT_FOUND)
-          })
+          parsedPath.slice(index),
+          parsedPath.slice(0, index)
         )
-      }
+      )
     }
     const res = handleError?.(obj, part, index)
     // Do not add `undefined` results to the resulting entries object.

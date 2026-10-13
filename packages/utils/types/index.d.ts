@@ -83,14 +83,15 @@ export function isAsync(
 ): arg is (...args: any[]) => Promise<any>
 
 /**
-   * Determines whether the supplied value is array like, i.e. it has a length
-   • property between `0` and `Number.MAX_SAFE_INTEGER` and is not a function.
-   */
+ * Determines whether the supplied value is array like, i.e. it has a length
+ * property between `0` and `Number.MAX_SAFE_INTEGER` and is not a function.
+ */
 export function isArrayLike(arg: any): arg is ArrayLike<any>
 
 /**
  * Determines whether the supplied value can be considered empty,
- * i.e. undefined, null, an empty string, or an object without properties.
+ * i.e. undefined, null, an empty string or array, an empty `Map` or `Set`,
+ * or an object without properties, except dates.
  */
 export function isEmpty(arg: any): boolean
 
@@ -135,18 +136,18 @@ export function clone<T>(value: T, options?: {
   /**
    * Whether to clone the value shallowly.
    *
-   * @default false
+   * @defaultValue `false`
    */
   shallow?: boolean
   /**
    * Whether to clone all object properties, or only those that are defined
    * directly on that object, and are not inherited from the object's prototype.
    *
-   * @default true
+   * @defaultValue `true`
    */
   enumerable?: boolean
   /**
-   * @default `true` if `options.enumerable` is true, `false` otherwise
+   * @defaultValue `true` if `options.enumerable` is true, `false` otherwise
    */
   descriptors?: boolean
   transferables?: any[]
@@ -371,7 +372,7 @@ export function deindent(
 /**
  * Escapes special characters in a string for use in a regular expression.
  */
-export function escapeRegexp(string: string): string
+export function escapeRegExp(string: string): string
 /**
  * Returns the longest prefix string that is common to the supplied strings.
  */
@@ -505,7 +506,7 @@ export function format(
   value: Date | string | number | null | undefined,
   options?: {
     /**
-     * @default 'en-US'
+     * @defaultValue `'en-US'`
      */
     locale?: string
     date?: boolean | DateFormat
@@ -539,15 +540,15 @@ export function formatDate(
   value: any,
   options?: {
     /**
-     * @default 'en-US'
+     * @defaultValue `'en-US'`
      */
     locale?: string
     /**
-     * @default true
+     * @defaultValue `true`
      */
     date?: boolean | DateFormat
     /**
-     * @default true
+     * @defaultValue `true`
      */
     time?: boolean | TimeFormat
   }
@@ -595,7 +596,8 @@ export function debounce<T extends (...args: any[]) => any>(
  * Each time the debounced function is called, it returns a promise
  * which will resolve to the value that the debounced async function resolves
  * to. If the async function throws an error, the last waiting promise is
- * rejected and all others are resolved with undefined.
+ * rejected and all others are resolved with undefined. With `immediate`,
+ * calls within the delay resolve to the result of the leading call.
  *
  * The debounced function comes with a cancel method to cancel
  * delayed invocations. Provide an options object to indicate that func
@@ -822,8 +824,9 @@ export function toPromiseCallback<T, R>(
 /* -------------------------------- dataPath -------------------------------- */
 
 /**
- * Gets entries at a data path, supporting wildcards (* and **).
- * Wildcard * matches direct children, ** matches recursively.
+ * Gets entries at a data path, supporting wildcards (`*` and `**`).
+ * `*` matches one level, `**` zero or more levels, or everything inside at
+ * the end of the path, like in `.gitignore`.
  *
  * @param obj The object to query.
  * @param path The data path (supports wildcards).
@@ -840,8 +843,9 @@ export function getEntriesAtDataPath(
 /**
  * Retrieves a value from a nested object or array at a given path.
  * Supports property access notation (`obj.arr[0].prop`), JSON pointers
- * (`/obj/arr/0/prop`), and wildcard matching (`*` for shallow, `**`
- * for deep recursive).
+ * (`/obj/arr/0/prop`), and wildcard matching (`*` for one level, `**`
+ * for zero or more levels, or for everything inside at the end of the path,
+ * like in `.gitignore`).
  *
  * @param obj The object or array to retrieve from.
  * @param path The data path (multiple formats supported).
@@ -859,7 +863,8 @@ export function getValueAtDataPath(
  * Normalizes a data path to a standard format using forward slashes.
  * Converts property access notation, JSON pointers, and relative paths
  * to normalized relative path format. Resolves relative tokens (`..`
- * and `.`).
+ * and `.`), and drops the `..` that lead above the root silently, unlike
+ * {@link resolveDataPath}, which throws.
  * @see {@link parseDataPath} for supported path formats.
  */
 export function normalizeDataPath(path: OrArrayOf<string>): string
@@ -873,6 +878,16 @@ export function normalizeDataPath(path: OrArrayOf<string>): string
 export function parseDataPath(path: OrArrayOf<string>): string[]
 
 /**
+ * Resolves `path` relative to `dataPath`, or from the root if it starts with
+ * `/`, and resolves its relative tokens (`..` and `.`). Throws if it leads
+ * above the root.
+ *
+ * @returns The normalized data path, without a leading slash.
+ * @see {@link parseDataPath} for supported path formats.
+ */
+export function resolveDataPath(dataPath: string, path: string): string
+
+/**
  * Sets multiple values at data paths from an entries object.
  *
  * @param obj The object to modify.
@@ -880,7 +895,7 @@ export function parseDataPath(path: OrArrayOf<string>): string[]
  * @returns The modified object.
  * @see {@link parseDataPath} for supported path formats.
  */
-export function setDataPathEntries<O>(
+export function setEntriesAtDataPath<O>(
   obj: O,
   entries: Record<string, any>
 ): O
@@ -918,11 +933,11 @@ export function mixin<T extends new (...args: any[]) => any>(
 /* ---------------------------------- html ---------------------------------- */
 
 /**
-   * Escapes double quotes, ampersands, and angle brackets (`"&<>`).
-
-   * @param html The html to escape.
-   * @returns The newly escaped html.
-   */
+ * Escapes double quotes, ampersands, and angle brackets (`"&<>`).
+ *
+ * @param html The html to escape.
+ * @returns The newly escaped html.
+ */
 export function escapeHtml(html: string | null | undefined): string
 
 /**
@@ -931,14 +946,6 @@ export function escapeHtml(html: string | null | undefined): string
  * @returns The newly stripped string.
  */
 export function stripHtml(html: string | null | undefined): string
-
-/**
- * Strips HTML tags from the string.
- * @param html The string to strip.
- * @returns The newly stripped string.
- * @deprecated Use stripHtml() instead
- */
-export function stripTags(html: string | null | undefined): string
 
 /* -------------------------- typescript utilities -------------------------- */
 export interface ArrayLike<T> {

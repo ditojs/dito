@@ -187,18 +187,43 @@ describe('getEntriesAtDataPath()', () => {
     expect(result).toEqual(expected)
     expect(Object.values(result)).toEqual(Object.values(expected))
 
-    expect(getEntriesAtDataPath(data, 'object/**/array/**/name')).toEqual({
-      'object/array/2/array/0/name': 'five',
-      'object/array/2/array/1/name': 'six',
-      'object/array/2/array/2/object/one/name': 'seven',
-      'object/array/2/array/2/object/two/name': 'eight'
-    })
+    expect(getEntriesAtDataPath(data, 'object/**/array/**/name')).toEqual(
+      expected
+    )
 
     expect(getEntriesAtDataPath(data, 'object/**/object/**/name')).toEqual({
       'object/array/2/object/one/name': 'three',
       'object/array/2/object/two/name': 'four',
       'object/array/2/array/2/object/one/name': 'seven',
       'object/array/2/array/2/object/two/name': 'eight'
+    })
+  })
+
+  it('should match zero or more levels with deep wildcards', () => {
+    const data = { a: { c: 1, b: { c: 2 } } }
+    expect(getEntriesAtDataPath(data, 'a/**/c')).toEqual({
+      'a/c': 1,
+      'a/b/c': 2
+    })
+    expect(getEntriesAtDataPath(data, '**/c')).toEqual({
+      'a/c': 1,
+      'a/b/c': 2
+    })
+    expect(getEntriesAtDataPath(data, 'a/**/b/c')).toEqual({ 'a/b/c': 2 })
+    // At the end of the path, only the values inside:
+    expect(getEntriesAtDataPath(data, 'a/b/**')).toEqual({ 'a/b/c': 2 })
+    expect(getEntriesAtDataPath(data, 'a/**')).toEqual({
+      'a/c': 1,
+      'a/b': { c: 2 },
+      'a/b/c': 2
+    })
+  })
+
+  it('should key trailing wildcard entries without slashes', () => {
+    const data = { a: { c: 1, b: { c: 2 } } }
+    expect(getEntriesAtDataPath(data, 'a/*')).toEqual({
+      'a/c': 1,
+      'a/b': { c: 2 }
     })
   })
 })

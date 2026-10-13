@@ -1,6 +1,6 @@
-import { setDataPathEntries } from './setDataPathEntries.js'
+import { setEntriesAtDataPath } from './setEntriesAtDataPath.js'
 
-describe('setDataPathEntries()', () => {
+describe('setEntriesAtDataPath()', () => {
   const data = {
     object: {
       array: [
@@ -14,7 +14,7 @@ describe('setDataPathEntries()', () => {
 
   it('should add data at a path to a given object and array', () => {
     expect(() =>
-      setDataPathEntries(data, {
+      setEntriesAtDataPath(data, {
         'object.array[0].added': add,
         'object.array[1]': add
       })
@@ -25,12 +25,12 @@ describe('setDataPathEntries()', () => {
   })
 
   it('should throw an error with faulty paths', () => {
-    expect(() => setDataPathEntries(data, { 'object/unknown/prop': add }))
+    expect(() => setEntriesAtDataPath(data, { 'object/unknown/prop': add }))
       .toThrow()
   })
 
   it('should throw an error with invalid target', () => {
-    expect(() => setDataPathEntries(data, { 'object/number/invalid': add }))
+    expect(() => setEntriesAtDataPath(data, { 'object/number/invalid': add }))
       .toThrow('Invalid path: object/number/invalid')
   })
 })
