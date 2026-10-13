@@ -127,12 +127,12 @@ describe('seed()', () => {
     ])
   })
 
-  it('logs errors and continues with the next seed', async () => {
+  it('logs errors, continues with the next seed and fails', async () => {
     const Author = createModelClass('Author', { failInsert: true })
     const Book = createModelClass('Book')
     await writeSeed('Author.json', '[{}]')
     await writeSeed('Book.json', '[{}]')
-    expect(await seed(createApp({ Author, Book }))).toBe(true)
+    expect(await seed(createApp({ Author, Book }))).toBe(false)
     expect(output[0]).toMatch(/^Author\.json: .*Cannot insert into Author/s)
     expect(output[1]).toBe('Book.json: 1 seed records created.')
   })

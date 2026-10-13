@@ -110,8 +110,8 @@ class ModelReference {
       const toProperty = toProperties[i]
       if (fromProperty && toProperty) {
         const throughName = `${fromName}${toName}`
-        const throughFrom = this.getThroughProperty(fromName, fromProperty)
-        const throughTo = this.getThroughProperty(toName, toProperty)
+        const throughFrom = getThroughPropertyName(fromName, fromProperty)
+        const throughTo = getThroughPropertyName(toName, toProperty)
         from.push(`${throughName}.${throughFrom}`)
         to.push(`${throughName}.${throughTo}`)
       } else {
@@ -125,10 +125,13 @@ class ModelReference {
       to: this.asValue(inverse ? from : to)
     }
   }
+}
 
-  getThroughProperty(name, property) {
-    return `${name[0].toLowerCase()}${name.slice(1)}${capitalize(property)}`
-  }
+// The columns of generated join tables, also in `db:create_migration`:
+export function getThroughPropertyName(modelName, property) {
+  return `${modelName[0].toLowerCase()}${modelName.slice(1)}${
+    capitalize(property)
+  }`
 }
 
 export function getRelationClass(relation) {

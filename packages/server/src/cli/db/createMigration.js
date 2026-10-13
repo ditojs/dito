@@ -5,11 +5,11 @@ import {
   isObject,
   isArray,
   isString,
-  deindent,
-  capitalize
+  deindent
 } from '@ditojs/utils'
 import {
   getRelationClass,
+  getThroughPropertyName,
   isThroughRelationClass
 } from '../../schema/relations.js'
 import { exists } from '../../utils/fs.js'
@@ -17,7 +17,9 @@ import { exists } from '../../utils/fs.js'
 const typeToKnex = {
   number: 'double',
   object: 'json',
-  array: 'json'
+  array: 'json',
+  asset: 'json',
+  color: 'string'
 }
 
 const defaultValues = {
@@ -111,7 +113,10 @@ async function collectModelTables(modelClass, app, tables) {
       index,
       default: _default
     } = property
-    const knexType = typeToKnex[type] || type
+    // Properties that reference definitions take their type from them:
+    type ??= getReferencedType(properties, property.$ref)
+    // Properties of model types hold their models as JSON:
+    const knexType = typeToKnex[type] || (app.models[type] ? 'json' : type)
     if (!computed) {
       if (description) {
         statements.push(`// ${description.replace(/\s{2,}/g, ' ').trim()}`)
@@ -128,7 +133,11 @@ async function collectModelTables(modelClass, app, tables) {
         unique = false
       }
       const statement = primary
-        ? [`table.increments('${column}').primary()`]
+        ? [
+            type === 'integer'
+              ? `table.increments('${column}').primary()`
+              : `table.${knexType}('${column}').primary()`
+          ]
         : specificType
           ? [`table.specificType('${column}', '${specificType}')`]
           : [`table.${knexType}('${column}')`]
@@ -207,10 +216,10 @@ async function collectThroughTables(modelClass, app, tables) {
       // See convertRelations()
       const tableName = app.normalizeIdentifier(`${fromClass}${toClass}`)
       const fromId = app.normalizeIdentifier(
-        `${fromClass}${capitalize(fromProperty)}`
+        getThroughPropertyName(fromClass, fromProperty)
       )
       const toId = app.normalizeIdentifier(
-        `${toClass}${capitalize(toProperty)}`
+        getThroughPropertyName(toClass, toProperty)
       )
       tables.push({ tableName, statements })
       statements.push(`table.increments('id').primary()`)
@@ -245,4 +254,33 @@ function getTimestamp() {
     padDate(d.getMinutes()) +
     padDate(d.getSeconds())
   )
+}
+
+function getReferencedType(properties, $ref) {
+  if ($ref) {
+    const definition = findDefinition(properties, $ref)
+    // Definitions without a type, e.g. with only `properties`, hold objects:
+    return (
+      definition?.type ??
+      getReferencedType(properties, definition?.$ref) ??
+      'object'
+    )
+  }
+}
+
+function findDefinition(schema, $ref, visited = new Set()) {
+  if ((isObject(schema) || isArray(schema)) && !visited.has(schema)) {
+    visited.add(schema)
+    const definition = schema.definitions?.[$ref]
+    if (definition) {
+      return definition
+    }
+    for (const value of Object.values(schema)) {
+      const definition = findDefinition(value, $ref, visited)
+      if (definition) {
+        return definition
+      }
+    }
+  }
+  return null
 }
