@@ -1,4 +1,4 @@
-import objection from 'objection'
+import * as objection from 'objection'
 import Ajv from 'ajv/dist/2020.js'
 import addFormats from 'ajv-formats'
 import { isArray, isObject, clone, isAsync, isPromise } from '@ditojs/utils'
@@ -177,8 +177,12 @@ export class Validator extends objection.Validator {
         if (isObject(value)) {
           if (patch) {
             // Remove all required keywords and formats from schema for patch
-            // validation.
-            delete value.required
+            // validation, except for the discriminator's tag that Ajv needs:
+            if (value.discriminator) {
+              value.required = [value.discriminator.propertyName]
+            } else {
+              delete value.required
+            }
             if (value.format === 'required') {
               delete value.format
             }
@@ -389,6 +393,7 @@ function getDefinitionByAjvName(definitions, ajvName) {
 const defaultOptions = {
   strict: false,
   allErrors: true,
+  discriminator: true,
   ownProperties: true,
   passContext: true,
   useDefaults: true,

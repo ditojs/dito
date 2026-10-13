@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import objection from 'objection'
+import * as objection from 'objection'
 import { Validator } from './Validator.js'
 
 describe('Validator.getKeyword()', () => {
@@ -59,15 +59,29 @@ describe('color type', () => {
     { throw: false }
   )
 
-  it.each(['#ff8800', 'red', 'rgba(0, 0, 255, 0.5)', 'hsl(30, 100%, 50%)', ''])(
-    'accepts any string, as before 3.3.0: %j',
-    color => {
-      expect(validate({ color })).toBe(true)
-    }
-  )
+  it.each([
+    '#f80',
+    '#f80c',
+    '#ff8800',
+    '#ff8800cc'
+  ])('accepts %j, as stored by the admin color type', color => {
+    expect(validate({ color })).toBe(true)
+  })
 
-  it('rejects values that are not strings', () => {
-    expect(validate({ color: { r: 255, g: 136, b: 0 } })).toBe(false)
+  it.each([
+    '#12',
+    '#ff880',
+    'ff8800',
+    'red',
+    'transparent',
+    'light red',
+    'rgb(0, 0, 0)',
+    '',
+    { r: 255, g: 136, b: 0, a: 1 },
+    { h: 32, s: 1, l: 0.5 },
+    255
+  ])('rejects %j', color => {
+    expect(validate({ color })).toBe(false)
   })
 })
 
@@ -202,6 +216,19 @@ describe('Validator.processSchema()', () => {
         email: { type: 'string', format: 'email' }
       }
     })
+  })
+
+  it('keeps the tag of discriminators required for patch validation', () => {
+    const validator = new Validator()
+    const schema = validator.processSchema(
+      {
+        discriminator: { propertyName: 'type' },
+        required: ['type', 'title'],
+        oneOf: [{ properties: { type: { const: 'book' } } }]
+      },
+      { patch: true }
+    )
+    expect(schema.required).toEqual(['type'])
   })
 
   it('converts async `validate()` keywords to `validateAsync()`', () => {
@@ -439,5 +466,26 @@ describe('Validator model validation', () => {
         options: {}
       })
     ).toBeUndefined()
+  })
+})
+
+describe('discriminator', () => {
+  it('validates only the variant that the discriminator selects', () => {
+    const validate = new Validator().compile(
+      {
+        type: 'object',
+        discriminator: { propertyName: 'type' },
+        required: ['type'],
+        oneOf: [
+          {
+            properties: { type: { const: 'book' }, pages: { type: 'integer' } }
+          },
+          { properties: { type: { const: 'film' } } }
+        ]
+      },
+      { throw: false }
+    )
+    expect(validate({ type: 'book', pages: 'many' })).toBe(false)
+    expect(validate.errors.map(({ keyword }) => keyword)).toEqual(['type'])
   })
 })

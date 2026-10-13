@@ -72,10 +72,12 @@ class Member extends Model {
 class Team extends Model {
   declare id: number
   declare name: string
+  declare color: string | null
   declare members?: Member[]
 
   static override properties: ModelProperties = {
-    name: { type: 'string', required: true }
+    name: { type: 'string', required: true },
+    color: { type: 'color', nullable: true }
   }
 
   static override relations = {
@@ -345,6 +347,23 @@ describe('Model persistence', () => {
         .knex('Member')
         .select(app.knex.raw('"joinedOn"::text as "joinedOn"'))
       expect(row.joinedOn).toBe('2026-05-14')
+    })
+  })
+
+  describe('colors', () => {
+    it('stores colors as strings and returns them as such', async () => {
+      const { id } = await Team.query().insert({ name: 'Red', color: '#f00' })
+      const team = await Team.query().findById(id)
+      expect(team!.color).toBe('#f00')
+      await team!.$query().patch({ color: '#ff000080' })
+      expect((await Team.query().findById(id))!.color).toBe('#ff000080')
+    })
+
+    it('rejects color objects', async () => {
+      const color = { r: 255, g: 0, b: 0 }
+      await expect(
+        Team.query().insert({ name: 'Red', color } as any)
+      ).rejects.toThrow(/not valid/)
     })
   })
 

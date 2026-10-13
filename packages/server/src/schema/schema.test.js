@@ -580,7 +580,6 @@ describe('convertSchema()', () => {
       convertSchema({
         type: 'object',
         discriminator: { propertyName: 'foo' },
-        required: ['foo'],
         oneOf: [
           {
             properties: {
@@ -604,31 +603,86 @@ describe('convertSchema()', () => {
       })
     ).toEqual({
       type: 'object',
-      discriminator: { propertyName: 'foo' },
       unevaluatedProperties: false,
-      required: ['foo'],
-      oneOf: [
+      allOf: [
         {
-          properties: {
-            foo: { const: 'x' },
-            a: {
-              type: 'string',
-              format: 'required'
+          discriminator: { propertyName: 'foo' },
+          oneOf: [
+            {
+              properties: {
+                foo: { const: 'x' },
+                a: {
+                  type: 'string',
+                  format: 'required'
+                }
+              },
+              required: ['a']
+            },
+            {
+              properties: {
+                foo: { enum: ['y', 'z'] },
+                b: {
+                  type: 'string',
+                  format: 'required'
+                }
+              },
+              required: ['b']
             }
-          },
-          required: ['a']
-        },
-        {
-          properties: {
-            foo: { enum: ['y', 'z'] },
-            b: {
-              type: 'string',
-              format: 'required'
-            }
-          },
-          required: ['b']
+          ],
+          required: ['foo']
         }
       ]
+    })
+  })
+
+  it('closes objects combined through allOf at the outer level', () => {
+    expect(
+      convertSchema({
+        type: 'object',
+        allOf: [
+          { properties: { title: { type: 'string' } } },
+          { properties: { year: { type: 'integer' } } }
+        ]
+      })
+    ).toEqual({
+      type: 'object',
+      allOf: [
+        { properties: { title: { type: 'string' } } },
+        { properties: { year: { type: 'integer' } } }
+      ],
+      unevaluatedProperties: false
+    })
+  })
+
+  it('keeps JSON Schema `required` arrays of properties', () => {
+    expect(
+      convertSchema({
+        type: 'object',
+        properties: {
+          cover: {
+            type: 'object',
+            required: ['url'],
+            properties: {
+              url: { type: 'string' },
+              title: { type: 'string', required: true }
+            }
+          }
+        }
+      })
+    ).toEqual({
+      type: 'object',
+      properties: {
+        cover: {
+          type: 'object',
+          required: ['url', 'title'],
+          properties: {
+            url: { type: 'string' },
+            title: { type: 'string', format: 'required' }
+          },
+          unevaluatedProperties: false
+        }
+      },
+      unevaluatedProperties: false
     })
   })
 
@@ -683,14 +737,16 @@ describe('convertSchema()', () => {
       unevaluatedProperties: false,
       properties: {
         prop1: {
-          $ref: '#/definitions/#type1'
+          $ref: '#/definitions/#type1',
+          unevaluatedProperties: false
         },
         prop2: {
           type: 'object',
           unevaluatedProperties: false,
           properties: {
             prop3: {
-              $ref: '#/definitions/#type2'
+              $ref: '#/definitions/#type2',
+              unevaluatedProperties: false
             }
           }
         }
@@ -701,13 +757,13 @@ describe('convertSchema()', () => {
         },
         '#type2': {
           type: 'object',
-          unevaluatedProperties: false,
           properties: {
             prop4: {
               type: 'string'
             },
             prop5: {
-              $ref: '#/definitions/#type3'
+              $ref: '#/definitions/#type3',
+              unevaluatedProperties: false
             }
           }
         },
@@ -715,6 +771,60 @@ describe('convertSchema()', () => {
           type: 'boolean'
         }
       }
+    })
+  })
+
+  it('closes definitions where they are used, except in parts', () => {
+    expect(
+      convertSchema({
+        type: 'object',
+        properties: {
+          address: { $ref: '#Address' },
+          office: {
+            type: 'object',
+            allOf: [
+              { $ref: '#Address' },
+              { properties: { floor: { type: 'integer' } } }
+            ]
+          },
+          meta: { $ref: '#Meta' }
+        },
+        definitions: {
+          '#Address': {
+            type: 'object',
+            properties: { street: { type: 'string' } }
+          },
+          '#Meta': { type: 'object' }
+        }
+      })
+    ).toEqual({
+      type: 'object',
+      properties: {
+        address: {
+          $ref: '#/definitions/#Address',
+          unevaluatedProperties: false
+        },
+        office: {
+          type: 'object',
+          allOf: [
+            { $ref: '#/definitions/#Address' },
+            { properties: { floor: { type: 'integer' } } }
+          ],
+          unevaluatedProperties: false
+        },
+        meta: {
+          $ref: '#/definitions/#Meta',
+          unevaluatedProperties: false
+        }
+      },
+      definitions: {
+        '#Address': {
+          type: 'object',
+          properties: { street: { type: 'string' } }
+        },
+        '#Meta': { type: 'object', unevaluatedProperties: true }
+      },
+      unevaluatedProperties: false
     })
   })
 
@@ -829,17 +939,20 @@ describe('convertSchema()', () => {
       type: 'object',
       properties: { step }
     })
-    expect(converted.properties.step).toEqual({ $ref: '#/definitions/#step' })
+    const reference = {
+      $ref: '#/definitions/#step',
+      unevaluatedProperties: false
+    }
+    expect(converted.properties.step).toEqual(reference)
     expect(converted.definitions['#step']).toEqual({
       type: 'object',
       properties: {
         name: { type: 'string' },
         substeps: {
           type: 'array',
-          items: { $ref: '#/definitions/#step' }
+          items: reference
         }
-      },
-      unevaluatedProperties: false
+      }
     })
   })
 
@@ -862,7 +975,8 @@ describe('convertSchema()', () => {
     const converted = convertSchema(recipe)
     const { recipe: nestedRecipe } = converted.definitions['#step'].properties
     expect(nestedRecipe.properties.step).toEqual({
-      $ref: '#/definitions/#step'
+      $ref: '#/definitions/#step',
+      unevaluatedProperties: false
     })
     expect(nestedRecipe).not.toHaveProperty('definitions')
   })
