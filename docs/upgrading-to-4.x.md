@@ -107,6 +107,14 @@ it can serve as the base that other schemas extend, through `$ref` next to
 their own keywords or as a part of `allOf`. Set `unevaluatedProperties: true`
 on a definition to allow unknown properties wherever it's used.
 
+Stored data can hold properties that these schemas now reject, e.g. values of
+fields that were removed from an admin form, or keys that server code writes
+without declaring them. Saving such data fails validation. The admin only
+sends the values that its forms show, so saving an item in the admin drops the
+values of removed fields. Declare the properties that code writes. To find the
+affected rows, validate the stored values with
+`new Model().$validate({ name: value }, { patch: true })`.
+
 ### Removed deprecations
 
 | 3.5                                     | 4.x                         |
