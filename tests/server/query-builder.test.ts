@@ -1,5 +1,5 @@
 import type { ModelProperties } from '@ditojs/server'
-import { Model, QueryBuilder } from '@ditojs/server'
+import { Model, QueryBuilder, TimestampedModel } from '@ditojs/server'
 import {
   createTestApp,
   createTestDatabase,
@@ -104,8 +104,48 @@ class Recipe extends Model {
   } as any
 }
 
+// The write hooks that ran on notes, in their order:
+const noteHooks: string[] = []
+
+class Note extends TimestampedModel {
+  declare id: number
+  declare title: string
+  declare pinned: boolean
+  declare createdAt: Date
+  declare updatedAt: Date
+
+  static override properties: ModelProperties = {
+    title: { type: 'string', required: true },
+    pinned: { type: 'boolean', default: false }
+  }
+
+  static override hooks = {
+    'before:insert'() {
+      noteHooks.push('insert')
+    },
+
+    'before:update'() {
+      noteHooks.push('update')
+    },
+
+    'after:insert'({ inputItems }: any) {
+      throwForFailingNotes(inputItems)
+    },
+
+    'after:update'({ inputItems }: any) {
+      throwForFailingNotes(inputItems)
+    }
+  } as any
+}
+
+function throwForFailingNotes(notes: Note[]) {
+  if (notes.some(note => note.title === 'Fail')) {
+    throw new Error('Unable to save failing note.')
+  }
+}
+
 describe('QueryBuilder', () => {
-  const app = createTestApp({ models: { Cook, Step, Recipe } })
+  const app = createTestApp({ models: { Cook, Step, Recipe, Note } })
 
   beforeAll(async () => {
     await createTestDatabase(app)
@@ -117,9 +157,10 @@ describe('QueryBuilder', () => {
   })
 
   afterEach(async () => {
-    for (const table of ['Step', 'Recipe', 'Cook']) {
+    for (const table of ['Step', 'Recipe', 'Cook', 'Note']) {
       await app.knex(table).del()
     }
+    noteHooks.length = 0
   })
 
   function getNames(models: { name: string }[]) {
@@ -382,6 +423,8 @@ describe('QueryBuilder', () => {
     it.each([
       [['apple'], ['Apple pie', 'Pineapple cake']],
       [['contains', 'APPLE'], ['Apple pie', 'Pineapple cake']],
+      [[null, 'apple'], ['Apple pie', 'Pineapple cake']],
+      [['', 'apple'], ['Apple pie', 'Pineapple cake']],
       [['starts-with', 'apple'], ['Apple pie']],
       [['ends-with', 'CAKE'], ['Pineapple cake']],
       [['equals', 'plum crumble'], ['Plum crumble']],
@@ -832,32 +875,78 @@ describe('QueryBuilder', () => {
       expect(recipe.id).toBeGreaterThan(1)
     })
 
-    it('updates existing rows with upsert()', async () => {
-      await insertRecipes()
-      const result = await Recipe.query()
-        .where('name', 'Apple pie')
-        .upsert({ servings: 10 })
-      expect(result).toBeInstanceOf(Recipe)
-      expect(result.servings).toBe(10)
-      const recipe = await Recipe.query().findOne('name', 'Apple pie')
-      expect(recipe!.servings).toBe(10)
+    async function insertNote() {
+      const note = await Note.query().insert({
+        title: 'Shopping',
+        pinned: true
+      })
+      noteHooks.length = 0
+      return note
+    }
+
+    it('patches existing rows by id with upsert()', async () => {
+      const note = await insertNote()
+      const result = await Note.query().upsert({
+        id: note.id,
+        title: 'Groceries'
+      })
+      expect(result).toBeInstanceOf(Note)
+      expect(result.title).toBe('Groceries')
+      const notes = await Note.query()
+      expect(notes).toHaveLength(1)
+      expect(notes[0].title).toBe('Groceries')
+      expect(notes[0].pinned).toBe(true)
+      expect(notes[0].createdAt).toEqual(note.createdAt)
+      expect(noteHooks).toEqual(['update'])
     })
 
-    it('inserts missing rows with upsert()', async () => {
-      const recipe = await Recipe.query()
-        .where('name', 'Apple pie')
-        .upsert({ name: 'Apple pie', servings: 6 }, { fetch: true })
-      expect(recipe).toBeInstanceOf(Recipe)
-      expect(await Recipe.query()).toHaveLength(1)
+    it('inserts models without ids with upsert()', async () => {
+      const note = await insertNote()
+      await Note.query().upsert([
+        { id: note.id, title: 'Groceries' },
+        { title: 'Books' }
+      ])
+      const notes = await Note.query().orderBy('id')
+      expect(notes.map(({ title }) => title)).toEqual(['Groceries', 'Books'])
+      expect(noteHooks).toEqual(['insert', 'update'])
     })
 
-    it('validates full models when upserting with `update`', async () => {
-      await insertRecipes()
+    it('rolls back upsert() when saving fails', async () => {
+      const note = await insertNote()
       await expect(
-        Recipe.query()
-          .where('name', 'Apple pie')
-          .upsert({ servings: 10 }, { update: true })
-      ).rejects.toThrow(/not valid/)
+        Note.query().upsert([
+          { id: note.id, title: 'Groceries' },
+          { title: 'Fail' }
+        ])
+      ).rejects.toThrow('Unable to save failing note.')
+      const notes = await Note.query()
+      expect(notes.map(({ title }) => title)).toEqual(['Shopping'])
+    })
+
+    it('patches existing rows and fetches them with upsertAndFetch()', async () => {
+      const note = await insertNote()
+      const result = await Note.query().upsertAndFetch({
+        id: note.id,
+        title: 'Groceries'
+      })
+      expect(result).toBeInstanceOf(Note)
+      expect(result.title).toBe('Groceries')
+      expect(result.pinned).toBe(true)
+      expect(result.createdAt).toEqual(note.createdAt)
+      expect(noteHooks).toEqual(['update'])
+      expect(await Note.query()).toHaveLength(1)
+    })
+
+    it('rolls back upsertAndFetch() when saving fails', async () => {
+      const note = await insertNote()
+      await expect(
+        Note.query().upsertAndFetch([
+          { id: note.id, title: 'Groceries' },
+          { title: 'Fail' }
+        ])
+      ).rejects.toThrow('Unable to save failing note.')
+      const notes = await Note.query()
+      expect(notes.map(({ title }) => title)).toEqual(['Shopping'])
     })
 
     it('patches and updates by id', async () => {
@@ -906,6 +995,28 @@ describe('QueryBuilder', () => {
       expect(updated.name).toBe('Apple tart')
     })
 
+    it('fetches saved rows regardless of the default scope', async () => {
+      const [recipe] = await Recipe.query().insertAndFetch([
+        { name: 'Apple pie', archived: true }
+      ])
+      const { id } = recipe
+      const getServings = (models: Recipe | Recipe[]) =>
+        [models].flat().map(({ servings }) => servings)
+      expect(
+        getServings(await Recipe.query().upsertAndFetch({ id, servings: 1 }))
+      ).toEqual([1])
+      expect(
+        getServings(await Recipe.query().patchAndFetch([{ id, servings: 2 }]))
+      ).toEqual([2])
+      expect(
+        getServings(
+          await Recipe.query().updateAndFetch([
+            { id, name: 'Apple tart', servings: 3, archived: true }
+          ])
+        )
+      ).toEqual([3])
+    })
+
     it('deletes by id', async () => {
       const [apple] = await insertRecipes()
       expect(await Recipe.query().deleteById(apple.id)).toBe(1)
@@ -947,31 +1058,60 @@ describe('QueryBuilder', () => {
       expect(updated[0].name).toBe('Ada L.')
     })
 
-    it('inserts new root models in array patchAndFetch()', async () => {
+    it('rejects models without ids in array patchAndFetch() and updateAndFetch()', async () => {
       const [ada] = await insertCooks()
-      const patched = await Cook.query().patchAndFetch([
-        { id: ada.id, active: false },
-        { name: 'Edsger' }
-      ])
-      expect(patched.map((cook: Cook) => [cook.name, cook.active])).toEqual([
-        ['Ada', false],
-        ['Edsger', true]
-      ])
-      expect(patched[1].id).toEqual(expect.any(Number))
-      expect(await Cook.query()).toHaveLength(3)
+      const data = [{ id: ada.id, active: false }, { name: 'Edsger' }]
+      expect(() => Cook.query().patchAndFetch(data)).toThrow(
+        'Unable to patch models without ids.'
+      )
+      expect(() => Cook.query().updateAndFetch(data)).toThrow(
+        'Unable to update models without ids.'
+      )
+      const cooks = await Cook.query()
+      expect(cooks).toHaveLength(2)
+      expect(cooks.every(cook => cook.active)).toBe(true)
     })
 
-    it('inserts new root models in array updateAndFetch()', async () => {
-      const [ada] = await insertCooks()
-      const updated = await Cook.query().updateAndFetch([
-        { id: ada.id, name: 'Ada L.' },
-        { name: 'Edsger' }
+    it('saves arrays of models in one transaction', async () => {
+      const [apple, banana] = await insertRecipes()
+      // The second value is out of the range of the column:
+      await expect(
+        Recipe.query().patchAndFetch([
+          { id: apple.id, servings: 1 },
+          { id: banana.id, servings: 2 ** 40 }
+        ])
+      ).rejects.toThrow()
+      expect((await Recipe.query().findById(apple.id))!.servings).toBe(8)
+    })
+
+    it('leaves relations alone in array insert() and insertAndFetch()', async () => {
+      // Client data, which the model types don't describe.
+      const data: any[] = [
+        { name: 'Ada', recipes: [{ name: 'Apple pie' }] },
+        { name: 'Grace', recipes: [{ name: 'Banana bread' }] }
+      ]
+      await Cook.query().insert(data)
+      const cooks = await Cook.query().insertAndFetch(data)
+      expect(cooks.map(cook => cook.name)).toEqual(['Ada', 'Grace'])
+      expect(await Cook.query()).toHaveLength(4)
+      expect(await Recipe.query()).toHaveLength(0)
+    })
+
+    it('runs queries that wrap themselves in transactions more than once', async () => {
+      const [ada, grace] = await insertCooks()
+      const patch = Cook.query().patchAndFetch([
+        { id: ada.id, active: false },
+        { id: grace.id, active: false }
       ])
-      expect(updated.map((cook: Cook) => cook.name)).toEqual([
-        'Ada L.',
-        'Edsger'
-      ])
-      expect(await Cook.query()).toHaveLength(3)
+      expect(await patch).toHaveLength(2)
+      expect(await patch).toHaveLength(2)
+      const upsert = Cook.query().upsert({ id: ada.id, name: 'Ada' })
+      await upsert
+      await Cook.query().deleteById(ada.id)
+      // The same query now inserts the missing row:
+      await upsert
+      const cooks = await Cook.query().where('name', 'Ada')
+      expect(cooks.map(cook => cook.id)).toEqual([ada.id])
     })
 
     it('leaves relations alone in array patchAndFetch() and updateAndFetch()', async () => {
@@ -992,17 +1132,12 @@ describe('QueryBuilder', () => {
               steps: [{ text: 'Peel apples' }]
             }
           ]
-        },
-        { name: 'Edsger', recipes: [{ name: 'Banana bread' }] }
+        }
       ]
       await Cook.query().patchAndFetch(data)
-      await Cook.query().updateAndFetch(data.slice(0, 1))
+      await Cook.query().updateAndFetch(data)
       const cooks = await Cook.query().orderBy('id')
-      expect(cooks.map((cook: Cook) => cook.name)).toEqual([
-        'Ada L.',
-        'Grace',
-        'Edsger'
-      ])
+      expect(cooks.map((cook: Cook) => cook.name)).toEqual(['Ada L.', 'Grace'])
       expect((await Recipe.query()).map(recipe => recipe.name)).toEqual([
         'Apple pie'
       ])
@@ -1019,12 +1154,14 @@ describe('QueryBuilder', () => {
       expect(updated.name).toBe('Apple tart')
     })
 
-    it('inserts roots but no relations in upsertAndFetch()', async () => {
+    it('inserts and updates roots but no relations in upsertAndFetch()', async () => {
       const [ada] = await insertCooks()
-      const result = await Cook.query().upsertAndFetch([
-        { id: ada.id, active: false },
+      // Client data, which the model types don't describe.
+      const data: any = [
+        { id: ada.id, name: 'Ada', active: false },
         { name: 'Edsger', recipes: [{ name: 'Apple pie' }] }
-      ])
+      ]
+      const result = await Cook.query().upsertAndFetch(data)
       expect(result.map((cook: Cook) => [cook.name, cook.active])).toEqual([
         ['Ada', false],
         ['Edsger', true]

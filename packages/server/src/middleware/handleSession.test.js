@@ -13,11 +13,11 @@ function createSessionModel() {
           then: (resolve, reject) =>
             Promise.resolve(
               values.has(id) ? { id, value: values.get(id) } : undefined
-            ).then(resolve, reject),
-          upsert: async ({ id, value }) => {
-            values.set(id, value)
-          }
+            ).then(resolve, reject)
         }),
+        upsert: async ({ id, value }) => {
+          values.set(id, value)
+        },
         deleteById: async id => {
           values.delete(id)
         }
@@ -42,12 +42,12 @@ async function withServer({ session, models, transacted = false }, handler) {
   })
   app.use(handleSession(app, session))
   app.use(handler)
-  const server = app.listen(0)
+  const server = app.listen(0, '127.0.0.1')
   await new Promise(resolve => server.once('listening', resolve))
   const { port } = server.address()
   let cookie = ''
   const request = async (path = '/') => {
-    const response = await fetch(`http://localhost:${port}${path}`, {
+    const response = await fetch(`http://127.0.0.1:${port}${path}`, {
       headers: { cookie }
     })
     const setCookie = response.headers.getSetCookie()

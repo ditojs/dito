@@ -40,13 +40,7 @@ export default class ControllerAction {
       controller.transacted ??
       // Core graph and assets operations are always transacted, unless the
       // method is 'get':
-      (
-        core &&
-        method !== 'get' && (
-          controller.graph ||
-          controller.assets
-        )
-      )
+      (core && method !== 'get' && (controller.graph || controller.assets))
     )
     this.authorization = controller.processAuthorize(this.authorize)
     this.paramsName = ['post', 'put', 'patch'].includes(this.method)

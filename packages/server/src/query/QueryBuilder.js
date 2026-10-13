@@ -1,4 +1,4 @@
-import objection from 'objection'
+import * as objection from 'objection'
 import {
   isArray,
   isString,
@@ -9,8 +9,7 @@ import {
   clone,
   mapKeys,
   pickBy,
-  parseDataPath,
-  deprecate
+  parseDataPath
 } from '@ditojs/utils'
 import { QueryParameters } from './QueryParameters.js'
 import { KnexHelper } from '../lib/index.js'
@@ -29,6 +28,7 @@ export class QueryBuilder extends objection.QueryBuilder {
   #appliedScopes = {}
   #allowFilters = null
   #omits = []
+  #isTransacted = false
 
   // @override
   clone() {
@@ -41,6 +41,7 @@ export class QueryBuilder extends objection.QueryBuilder {
     copy.#scopes = { ...this.#scopes }
     copy.#allowScopes = this.#allowScopes ? { ...this.#allowScopes } : null
     copy.#ignoreScopes = { ...this.#ignoreScopes }
+    copy.#isTransacted = this.#isTransacted
     return copy
   }
 
@@ -55,7 +56,13 @@ export class QueryBuilder extends objection.QueryBuilder {
       })
     }
     this.#applyScopes()
-    return super.execute()
+    // Execute a clone in the transaction, so that the query itself isn't bound
+    // to it and can be executed again:
+    return this.#isTransacted && !this.knex().isTransaction
+      ? this.modelClass().transaction(trx =>
+          this.clone().transacting(trx).execute()
+        )
+      : super.execute()
   }
 
   hasNormalSelects() {
@@ -88,11 +95,8 @@ export class QueryBuilder extends objection.QueryBuilder {
 
   // @override
   toFindQuery() {
-    // Objection's `asFindQuery()` in static hooks clears the `runAfter()`
-    // callbacks of the original query itself now (objection#2093), but its
-    // `toFindQuery()` keeps them. Dito's `toFindQuery()` has always cleared
-    // them, so keep doing so in 3.x.
-    // TODO: Remove in 4.0, leaving `toFindQuery()` to Objection.
+    // Clear the `runAfter()` callbacks of the original query, like
+    // Objection's `asFindQuery()` does, but not its `toFindQuery()`:
     return super.toFindQuery().clear('runAfter')
   }
 
@@ -419,7 +423,7 @@ export class QueryBuilder extends objection.QueryBuilder {
     }
 
     // Handle the special case of root-level property separately,
-    // because `withGraph('(#propertyName)')` is not supported.
+    // because `withGraph('(@propertyName)')` is not supported.
     if (name && !relation) {
       this.select(name)
     } else {
@@ -446,41 +450,25 @@ export class QueryBuilder extends objection.QueryBuilder {
 
   // @override
   insert(data) {
-    // Only PostgreSQL is able to insert multiple entries at once it seems,
-    // all others have to fall back on insertGraph() to do so for now:
-    if (!this.isPostgreSQL() && isArray(data) && data.length > 1) {
-      rejectGraphControlProps(this.modelClass(), data)
-      return this.insertGraph(data)
-    }
-    return super.insert(data)
+    return this.#insert(data, 'insert', 'insertGraph')
   }
 
-  // https://github.com/Vincit/objection.js/issues/101#issuecomment-200363667
-  upsert(data, options = {}) {
-    let mainQuery
-    return this.runBefore((result, builder) => {
-      if (!builder.context().isMainQuery) {
-        // At this point the builder should only contain a bunch of `where*`
-        // operations. Store this query for later use in runAfter(). Also mark
-        // the query with `isMainQuery: true` so we can skip all this when
-        // this function is called for the `mainQuery`.
-        mainQuery = builder.clone().context({ isMainQuery: true })
-        // Call update() on the original query, turning it into an update.
-        builder[options.update ? 'update' : 'patch'](data)
-      }
-      return result
-    }).runAfter((result, builder) => {
-      if (!builder.context().isMainQuery) {
-        return result === 0
-          ? mainQuery[options.fetch ? 'insertAndFetch' : 'insert'](data)
-          : // We can use the `mainQuery` we saved in runBefore() to fetch the
-            // inserted results. It is noteworthy that this query will return
-            // the wrong results if the update changed any of the columns the
-            // where operates with. This also returns all updated models.
-            mainQuery.first()
-      }
-      return result
-    })
+  // @override
+  insertAndFetch(data) {
+    return this.#insert(data, 'insertAndFetch', 'insertGraphAndFetch')
+  }
+
+  #insert(data, method, graphMethod) {
+    // Only PostgreSQL is able to insert multiple entries at once it seems,
+    // all others have to fall back on insertGraph() to do so, in one
+    // transaction and without the relations, like PostgreSQL's insert():
+    if (!this.isPostgreSQL() && isArray(data) && data.length > 1) {
+      const modelClass = this.modelClass()
+      rejectGraphControlProps(modelClass, data)
+      this.#isTransacted = true
+      return this[graphMethod](omitRelations(modelClass, data))
+    }
+    return super[method](data)
   }
 
   find(query, allowParam) {
@@ -534,35 +522,56 @@ export class QueryBuilder extends objection.QueryBuilder {
   }
 
   // Extend Objection's `patchAndFetch()` and `updateAndFetch()` to also support
-  // arrays of models, not only single instances.
+  // arrays of models, each saved by its id, in one transaction.
   // See: https://gitter.im/Vincit/objection.js?at=5f994a5900a0f3369d366d6f
 
   patchAndFetch(data) {
     return isArray(data)
-      ? this.#upsertAndFetch(data)
+      ? this.#saveById(data, 'patch', 'upsertGraphAndFetch')
       : super.patchAndFetch(data)
   }
 
   updateAndFetch(data) {
     return isArray(data)
-      ? this.#upsertAndFetch(data, { update: true })
+      ? this.#saveById(data, 'update', 'upsertGraphAndFetch')
       : super.updateAndFetch(data)
   }
 
-  upsertAndFetch(data) {
-    // Also insert the models with ids that don't exist yet.
-    return this.#upsertAndFetch(data, { insertMissing: true })
+  upsert(data) {
+    return this.#saveById(data, 'upsert', 'upsertGraph')
   }
 
-  #upsertAndFetch(data, options) {
-    rejectGraphControlProps(this.modelClass(), data)
+  upsertAndFetch(data) {
+    return this.#saveById(data, 'upsert', 'upsertGraphAndFetch')
+  }
+
+  #saveById(data, action, graphMethod) {
+    const modelClass = this.modelClass()
+    rejectGraphControlProps(modelClass, data)
+    // Upserts also insert models without ids, or with ids that don't exist yet:
+    const isUpsert = action === 'upsert'
+    const idProperties = modelClass.getIdPropertyArray()
+    if (
+      !isUpsert &&
+      data.some(model => idProperties.some(key => model[key] == null))
+    ) {
+      throw new QueryBuilderError(`Unable to ${action} models without ids.`)
+    }
+    this.#isTransacted = true
     // Like `patch()` and `update()` of single models, only save the models
     // themselves, not their relations: Writing graphs is the job of the
-    // `*DitoGraph*()` methods. Models without ids are inserted.
-    return this.upsertGraphAndFetch(omitRelations(this.modelClass(), data), {
-      fetchStrategy: 'OnlyNeeded',
-      ...options
-    })
+    // `*DitoGraph*()` methods. Like `insertAndFetch()`, fetch them regardless
+    // of the default scope:
+    return this.ignoreScope('default')[graphMethod](
+      omitRelations(modelClass, data),
+      {
+        fetchStrategy: 'OnlyNeeded',
+        insertMissing: isUpsert,
+        noInsert: !isUpsert,
+        noDelete: true,
+        update: action === 'update'
+      }
+    )
   }
 
   insertDitoGraph(data, options) {
@@ -671,20 +680,13 @@ export class QueryBuilder extends objection.QueryBuilder {
   }
 
   #handleDitoGraph(method, data, options, defaultOptions) {
-    const { cyclic, ...graphOptions } = options ?? {}
-    if (cyclic !== undefined) {
-      deprecate(
-        'The `cyclic` graph option is deprecated and has no effect anymore. ' +
-        'Objection.js resolves cyclic `#ref` references on its own now.'
-      )
-    }
     rejectGraphControlProps(this.modelClass(), data)
     const graphProcessor = new DitoGraphProcessor(
       this.modelClass(),
       data,
       {
         ...defaultOptions,
-        ...graphOptions
+        ...options
       },
       {
         processOverrides: true,
@@ -789,7 +791,7 @@ for (const key of [
   }
 }
 
-// Returns the models without their relations, see `#upsertAndFetch()`.
+// Returns the models without their relations, see `#saveAndFetch()`.
 function omitRelations(modelClass, data) {
   const relations = modelClass.getRelations()
   const omit = model =>
@@ -820,16 +822,16 @@ function filterScopes(scopes, callback) {
 // The default options for insertDitoGraph(), upsertDitoGraph(),
 // updateDitoGraph() and patchDitoGraph()
 const insertDitoGraphOptions = {
-  // When working with large graphs, using the 'OnlyNeeded' fetch-strategy
-  // will reduce the number of update queries from a lot to only those
-  // rows that have changes.
-  fetchStrategy: 'OnlyNeeded',
   relate: true,
   allowRefs: true
 }
 
 const upsertDitoGraphOptions = {
   ...insertDitoGraphOptions,
+  // When working with large graphs, using the 'OnlyNeeded' fetch-strategy
+  // will reduce the number of update queries from a lot to only those
+  // rows that have changes.
+  fetchStrategy: 'OnlyNeeded',
   insertMissing: true,
   unrelate: true
 }

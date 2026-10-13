@@ -490,6 +490,43 @@ class Authors extends ModelController<any> {
   }
 }
 
+// The base controller of `SharedAuthors`, not registered itself.
+class AuthorsController extends ModelController<any> {
+  override modelClass = Author
+
+  override relations: any = {
+    books: {
+      relation: {
+        allow: ['get']
+      },
+      member: {
+        allow: ['get']
+      }
+    },
+    notes: {
+      relation: {
+        allow: ['get']
+      }
+    }
+  }
+}
+
+// Overrides some of the relation actions of its base controller.
+class SharedAuthors extends AuthorsController {
+  override relations: any = {
+    books: {
+      relation: {
+        allow: ['get', 'post']
+      }
+    },
+    notes: {
+      member: {
+        allow: ['delete']
+      }
+    }
+  }
+}
+
 // Relates notes to existing authors through their `belongsTo` relation.
 class Notes extends ModelController<any> {
   override modelClass = Note
@@ -509,7 +546,7 @@ class GraphAuthors extends ModelController<any> {
   override graph = true
 
   override collection: any = {
-    allow: ['post']
+    allow: ['post', 'put', 'patch']
   }
 
   override member: any = {
@@ -547,6 +584,7 @@ describe('ModelController', () => {
       PublishedAuthors,
       RelatingAuthors,
       GraphAuthors,
+      SharedAuthors,
       Notes
     }
   })
@@ -708,18 +746,47 @@ describe('ModelController', () => {
       })
     })
 
-    it('inserts models without ids in collection patches', async () => {
+    it('rejects models without ids in collection saves', async () => {
       const [atlas] = await insertBooks()
+      for (const method of ['PUT', 'PATCH']) {
+        const response = await request('/books', {
+          method,
+          body: [{ id: atlas.id, pages: 121 }, { title: 'Codex' }]
+        })
+        expect(response.status).toBe(400)
+        expect(response.data).toEqual({
+          type: 'BodyValidation',
+          message: (
+            'Updating a collection requires models with ids, ' +
+            'new models are created with POST'
+          )
+        })
+      }
+      expect((await Book.query().findById(atlas.id))?.pages).toBe(120)
+      expect(await Book.query().resultSize()).toBe(3)
+    })
+
+    it(`rejects entries that aren't models in collection saves`, async () => {
+      for (const method of ['PUT', 'PATCH']) {
+        const response = await request('/books', { method, body: [null] })
+        expect(response.status).toBe(400)
+        expect(response.data.type).toBe('BodyValidation')
+      }
+    })
+
+    it('saves the models of collection patches atomically', async () => {
+      const [atlas, bestiary] = await insertBooks()
       const response = await request('/books', {
         method: 'PATCH',
-        body: [{ id: atlas.id, pages: 121 }, { title: 'Codex' }]
+        // The page count passes validation but exceeds the integer column:
+        body: [
+          { id: atlas.id, pages: 121 },
+          { id: bestiary.id, pages: 2 ** 31 }
+        ]
       })
-      expect(response.status).toBe(200)
-      expect(response.data).toMatchObject([
-        { id: atlas.id, pages: 121 },
-        { id: expect.any(Number), title: 'Codex' }
-      ])
-      expect(await Book.query().resultSize()).toBe(4)
+      expect(response.status).toBe(400)
+      expect(response.data.type).toBe('DataError')
+      expect((await Book.query().findById(atlas.id))?.pages).toBe(120)
     })
 
     // Single objects would otherwise reach Objection's instance-only
@@ -1309,6 +1376,43 @@ describe('ModelController', () => {
       )
     })
 
+    it('extends the relations of base controllers in sub-classes', async () => {
+      const author = await Author.query().insert({ name: 'Ada' })
+      const atlas = await Book.query().insert({
+        title: 'Atlas',
+        authorId: author.id
+      })
+      const draft = await Note.query().insert({
+        text: 'Draft',
+        authorId: author.id
+      })
+      const books = await request(`/shared-authors/${author.id}/books`)
+      expect(books.data.map((book: any) => book.title)).toEqual(['Atlas'])
+      const created = await request(`/shared-authors/${author.id}/books`, {
+        method: 'POST',
+        body: { title: 'Bestiary' }
+      })
+      expect(created.status).toBe(201)
+      // The member actions of the base controller's relation are inherited:
+      const fetched = await request(
+        `/shared-authors/${author.id}/books/${atlas.id}`
+      )
+      expect(fetched.data).toMatchObject({ id: atlas.id, title: 'Atlas' })
+      const patched = await request(
+        `/shared-authors/${author.id}/books/${atlas.id}`,
+        { method: 'PATCH', body: { pages: 10 } }
+      )
+      expect(patched.status).toBe(405)
+      // So are the relation actions of the base controller's relation:
+      const notes = await request(`/shared-authors/${author.id}/notes`)
+      expect(notes.data.map((note: any) => note.text)).toEqual(['Draft'])
+      const unrelated = await request(
+        `/shared-authors/${author.id}/notes/${draft.id}`,
+        { method: 'DELETE' }
+      )
+      expect(unrelated.status).toBe(200)
+    })
+
     it('unrelates instead of deleting models of non-owned relations', async () => {
       const author = await Author.query().insert({ name: 'Ada' })
       const [draft, final] = await Note.query().insert([
@@ -1414,6 +1518,33 @@ describe('ModelController', () => {
       // Relation controllers inherit the graph setting of their parent.
       const controller: any = app.getController('/graph-authors')
       expect(controller.relations.books.graph).toBe(true)
+    })
+
+    it('rejects root models without ids in graph collection saves', async () => {
+      const ada = await Author.query().insert({ name: 'Ada' })
+      for (const method of ['PUT', 'PATCH']) {
+        for (const body of [{ name: 'Bo' }, [{ id: ada.id }, { name: 'Bo' }]]) {
+          const response = await request('/graph-authors', { method, body })
+          expect(response.status).toBe(400)
+          expect(response.data).toEqual({
+            type: 'BodyValidation',
+            message: (
+              'Updating a collection requires models with ids, ' +
+              'new models are created with POST'
+            )
+          })
+        }
+      }
+      expect(await Author.query().resultSize()).toBe(1)
+      // New models nested in the graph are still inserted:
+      const response = await request('/graph-authors', {
+        method: 'PATCH',
+        body: [{ id: ada.id, books: [{ title: 'Atlas' }] }]
+      })
+      expect(response.status).toBe(200)
+      expect(response.data).toMatchObject([
+        { id: ada.id, books: [{ title: 'Atlas' }] }
+      ])
     })
 
     it('does not route relation actions that are not allowed', async () => {

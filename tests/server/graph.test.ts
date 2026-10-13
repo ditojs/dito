@@ -711,33 +711,6 @@ describe('Dito.js graph handling', () => {
       expect(tehanu!.featuredChapterId).toBe(chapter.id)
     })
 
-    it('still accepts the deprecated `cyclic` option and warns once', async () => {
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-      try {
-        for (const title of ['Earthsea', 'Tehanu']) {
-          await Book.query().upsertDitoGraph(
-            {
-              title,
-              chapters: [{ '#id': 'first', 'title': 'One' }],
-              featuredChapter: { '#ref': 'first' }
-            },
-            { cyclic: true }
-          )
-        }
-        const cyclicWarnings = warn.mock.calls.filter(([message]) =>
-          String(message).includes('`cyclic`')
-        )
-        expect(cyclicWarnings).toHaveLength(1)
-      } finally {
-        warn.mockRestore()
-      }
-      const books = await Book.query().withGraph('featuredChapter')
-      expect(books).toHaveLength(2)
-      for (const book of books) {
-        expect(book.featuredChapter!.bookId).toBe(book.id)
-      }
-    })
-
     it('rejects cycles that only go through property references', async () => {
       await expect(
         Book.query().upsertDitoGraph({
