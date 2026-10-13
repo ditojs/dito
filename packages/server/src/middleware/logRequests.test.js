@@ -30,11 +30,11 @@ function createLogger({ levels = ['info', 'warn'] } = {}) {
 }
 
 async function serve(app, callback) {
-  const server = app.listen(0)
+  const server = app.listen(0, '127.0.0.1')
   await new Promise(resolve => server.once('listening', resolve))
   try {
     const { port } = server.address()
-    return await callback(`http://localhost:${port}`)
+    return await callback(`http://127.0.0.1:${port}`)
   } finally {
     await new Promise(resolve => server.close(resolve))
   }
