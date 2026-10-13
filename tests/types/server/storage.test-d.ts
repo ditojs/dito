@@ -111,3 +111,22 @@ describe('Storage', () => {
     })
   })
 })
+
+describe('Storage hooks', () => {
+  it('converts asset files, also trusted ones', () => {
+    const storage = {} as Storage
+    storage.convertAssetFile({} as AssetFileObject, { trusted: true })
+  })
+
+  it('types the overridable hooks of storages', () => {
+    expectTypeOf<Storage['_readFile']>().returns.toEqualTypeOf<
+      Promise<Buffer>
+    >()
+    expectTypeOf<Storage['_listKeys']>().returns.toEqualTypeOf<
+      Promise<string[]>
+    >()
+    expectTypeOf<Storage['_getFileUrl']>().returns.toEqualTypeOf<
+      string | undefined
+    >()
+  })
+})

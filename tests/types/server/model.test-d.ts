@@ -1,6 +1,6 @@
 import { expectTypeOf, assertType, describe, it } from 'vitest'
+import { Model } from '@ditojs/server'
 import type {
-  Model,
   QueryBuilder,
   SerializedModel,
   ModelScopes,
@@ -9,7 +9,8 @@ import type {
   ModelFilters,
   ModelHooks,
   ModelFilterFunction,
-  ModelProperty
+  ModelProperty,
+  ModelRelation
 } from '@ditojs/server'
 import type { View } from '@ditojs/admin'
 import type { Transaction } from 'objection'
@@ -99,6 +100,39 @@ describe('Model', () => {
       }
     }
     assertType<ModelScopes<Model>>(scopes)
+  })
+
+  it('accepts find-filter objects as scopes', () => {
+    assertType<ModelScopes<Model>>({ published: { published: true } })
+  })
+
+  it('accepts hook arrays and comma-separated hook keys', () => {
+    assertType<ModelHooks<Model>>({
+      'before:insert': [() => {}, () => {}],
+      'before:insert,before:update': () => {}
+    })
+  })
+
+  it('mixes the event emitter and knex helpers into the static side', () => {
+    expectTypeOf(Model.on).toBeFunction()
+    expectTypeOf(Model.isPostgreSQL()).toBeBoolean()
+    expectTypeOf<Model>().not.toHaveProperty('on')
+    expectTypeOf<Model>().not.toHaveProperty('isPostgreSQL')
+  })
+
+  it('resolves transactions to the result of their handler', () => {
+    expectTypeOf(Model.transaction(async () => 1)).toEqualTypeOf<
+      Promise<number>
+    >()
+  })
+
+  it('accepts graph options on relations', () => {
+    assertType<ModelRelation>({
+      relation: 'hasMany',
+      from: 'Book.id',
+      to: 'Chapter.bookId',
+      graphOptions: { relate: true }
+    })
   })
 
   it('filters handler receives typed query builder', () => {
