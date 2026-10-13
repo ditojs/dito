@@ -50,6 +50,14 @@ describe('Service', () => {
       }
       expect(new LoanService({}).name).toBe('loans')
     })
+
+    it('stores a passed config, e.g. for tests', async () => {
+      const config = { initialBooks: [{ title: 'Emma' }] }
+      const service = new BookCatalogService(createApp(), 'catalog', config)
+      expect(service.config).toBe(config)
+      await service.initialize()
+      expect(service.findBook('Emma')).toEqual({ title: 'Emma' })
+    })
   })
 
   describe('configure()', () => {
@@ -138,22 +146,25 @@ describe('Application services', () => {
     expect(service.findBook('Ulysses')).toBe(null)
   })
 
-  it('configures services before initializing them', async () => {
+  it('sets the config before calling the hooks', async () => {
     class ShelfService extends Service {
-      configure(config) {
-        super.configure({ ...config, shelves: config.shelves ?? 1 })
+      async initialize() {
+        this.capacity = (this.config.shelves ?? 1) * 10
       }
 
-      async initialize() {
-        this.capacity = this.config.shelves * 10
+      async start() {
+        this.openShelves = this.config.shelves
       }
     }
     const app = createApp({
       services: { shelf: ShelfService },
-      config: { services: { shelf: {} } }
+      config: { services: { shelf: { shelves: 3 } } }
     })
     await app.setupServices()
-    expect(app.getService('shelf').capacity).toBe(10)
+    const service = app.getService('shelf')
+    expect(service.capacity).toBe(30)
+    await app.emit('before:start')
+    expect(service.openShelves).toBe(3)
   })
 
   it('starts and stops services with the application', async () => {

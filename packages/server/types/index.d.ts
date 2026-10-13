@@ -3303,7 +3303,7 @@ export type QueryParameterOptionKey = keyof QueryParameterOptions
  * ```
  */
 export class Service<$Config extends object = Record<string, unknown>> {
-  constructor(app: Application<Models>, name?: string)
+  constructor(app: Application<Models>, name?: string, config?: $Config)
 
   /** The application instance. */
   app: Application<Models>
@@ -3315,14 +3315,15 @@ export class Service<$Config extends object = Record<string, unknown>> {
   isInitialized: boolean
 
   /**
-   * Receives the service's configuration from `config.services`.
-   * @overridable
+   * Internal, called by the application with the service's configuration from
+   * `config.services`, stored as `config`. Override `initialize()`, `start()`
+   * or `stop()` instead, which need no `super` call.
    */
   configure(config: $Config): void
 
   /**
-   * Override in sub-classes if the service needs async
-   * initialization.
+   * Override in sub-classes if the service needs async initialization, after
+   * `config` is set.
    * @overridable
    */
   initialize(): Promise<void>
@@ -3811,8 +3812,14 @@ export class Storage {
   storage: multer.StorageEngine | null
 
   /**
-   * Sets up the storage backend. Override in sub-classes for async
-   * initialization.
+   * Internal, called by the application to set up the storage backend before
+   * `initialize()`. Override `initialize()` instead, which needs no `super`
+   * call.
+   */
+  setup(): Promise<void>
+  /**
+   * Override in sub-classes for async initialization, after the storage backend
+   * is set up.
    * @overridable
    */
   initialize(): Promise<void>

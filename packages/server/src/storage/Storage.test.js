@@ -304,6 +304,7 @@ describe('Storage: file operations', () => {
 
   it('provides no-op default implementations', async () => {
     const storage = new Storage({ keys: ['secret'] }, 'base', {})
+    await storage.setup()
     await storage.initialize()
     const file = { key: 'a.txt' }
     expect(storage.getFilePath(file)).toBeUndefined()

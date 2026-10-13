@@ -1,6 +1,7 @@
 import { vi } from 'vitest'
 import { PassThrough, Readable } from 'stream'
 import consumers from 'stream/consumers'
+import { Application } from '../app/Application.js'
 import { S3Storage } from './S3Storage.js'
 import { AssetFile } from './AssetFile.js'
 import { Storage } from './index.js'
@@ -55,7 +56,7 @@ async function createS3Storage(config = {}) {
       ...config
     }
   )
-  await storage.initialize()
+  await storage.setup()
   return storage
 }
 
@@ -82,7 +83,7 @@ describe('S3Storage', () => {
     expect(Storage.get('s3')).toBe(S3Storage)
   })
 
-  describe('initialize()', () => {
+  describe('setup()', () => {
     it('creates the S3 client with the `s3` config', async () => {
       const storage = await createS3Storage()
       expect(s3Clients).toHaveLength(1)
@@ -99,6 +100,24 @@ describe('S3Storage', () => {
       expect(bucket).toBe('library-covers')
       const [acl] = await callStorage(storage, 'getAcl', {})
       expect(acl).toBe('public-read')
+    })
+
+    it('sets up storages that override `initialize()`', async () => {
+      class CoverStorage extends S3Storage {
+        async initialize() {
+          this.hasClient = !!this.s3
+        }
+      }
+      const app = new Application({ config: { log: { silent: true } } })
+      const storage = new CoverStorage(app, 'covers', {
+        s3: { region: 'eu-central-1' },
+        bucket: 'library-covers'
+      })
+      app.addStorage(storage, 'covers')
+      await app.setupStorages()
+      expect(storage.hasClient).toBe(true)
+      expect(storage.s3).toBe(s3Clients[0])
+      expect(storage.storage.s3).toBe(storage.s3)
     })
 
     it('passes on additional options to multer-s3', async () => {

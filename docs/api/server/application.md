@@ -319,8 +319,8 @@ Called by the constructor with `config.storages`.
 await app.setupStorages()
 ```
 
-Calls `await storage.initialize()` on all storages not yet initialized, and
-sets their `isInitialized`.
+Calls `await storage.setup()` and `await storage.initialize()` on all storages
+not yet initialized, and sets their `isInitialized`.
 
 ### getStorage()
 
