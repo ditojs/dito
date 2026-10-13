@@ -3,7 +3,7 @@
 The changes of each release of Dito.js. For upgrading to a new major
 version, see the upgrade guides in `docs/`.
 
-## 4.1.1 (unreleased)
+## 4.1.1 (2026-10-13)
 
 - **admin:** Writes to values of list items and objects that their forms don't show, e.g. a `price` that `onLoad()` calculates, don't make the data dirty, as 4.1.0 described: only changes of fields that are saved are edits.
 - **server:** `Service.configure(config)` is internal again: override `initialize()`, `start()` or `stop()` instead, which need no `super`.
