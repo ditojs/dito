@@ -18,7 +18,7 @@ function createApp({ config, ...options } = {}) {
     config: {
       log: { silent: true },
       logger: { prettyPrint: false, level: 'silent' },
-      server: { port: 0 },
+      server: { host: '127.0.0.1', port: 0 },
       ...config
     }
   })
@@ -28,7 +28,7 @@ async function withServer(app, callback) {
   await app.start()
   try {
     const { port } = app.server.address()
-    return await callback(`http://localhost:${port}`)
+    return await callback(`http://127.0.0.1:${port}`)
   } finally {
     await app.stop()
   }
@@ -140,6 +140,18 @@ describe('Application', () => {
       })
     })
 
+    it('keeps the defaults of other applications untouched', () => {
+      createApp({
+        config: {
+          assets: { cleanupTimeThreshold: 0 },
+          logger: { base: { app: 'other' } }
+        }
+      })
+      const app = createApp()
+      expect(app.config.assets.cleanupTimeThreshold).toBe('24h')
+      expect(app.config.logger.base).toBe(null)
+    })
+
     it('silences all logging with `log: false`', () => {
       const app = createApp({ config: { log: false } })
       expect(app.config.log).toEqual({})
@@ -230,7 +242,22 @@ describe('Application', () => {
       await app.setupModels()
       await app.setupModels()
       expect(initialize).toHaveBeenCalledTimes(1)
-      expect(Pantry.initialized).toBe(true)
+      expect(Pantry.isInitialized).toBe(true)
+    })
+
+    it('adds the foreign keys of relations regardless of model order', () => {
+      class Review extends Model {}
+      class Book extends Model {
+        static relations = {
+          reviews: { relation: 'hasMany', from: 'Book.id', to: 'Review.bookId' }
+        }
+      }
+      const app = createApp({ models: { Review, Book } })
+      const schema = app.validator.schemas.find(({ $id }) => $id === 'Review')
+      expect(schema.properties.bookId).toMatchObject({ type: 'integer' })
+      expect(Review.definition.properties.bookId).toMatchObject({
+        foreign: true
+      })
     })
   })
 
@@ -296,7 +323,7 @@ describe('Application', () => {
           'start'
         ])
         expect(mailer.config).toEqual({ from: 'chef@example.com' })
-        expect(mailer.initialized).toBe(true)
+        expect(mailer.isInitialized).toBe(true)
       })
       expect(mailer.events.at(-1)).toBe('stop')
     })
@@ -327,7 +354,7 @@ describe('Application', () => {
 
     it('accepts storage instances, and ignores other values', () => {
       const app = createApp()
-      const storage = new DiskStorage(app, { path: storagePath })
+      const storage = new DiskStorage(app, 'files', { path: storagePath })
       expect(app.addStorage(storage, 'files')).toBe(storage)
       expect(app.getStorage('files')).toBe(storage)
       expect(app.addStorage('photos', 'photos')).toBeNull()
@@ -336,23 +363,27 @@ describe('Application', () => {
 
     it('keeps the name of storage instances added without a name', () => {
       const app = createApp()
-      const storage = new DiskStorage(app, {
-        name: 'covers',
-        path: storagePath
-      })
+      const storage = new DiskStorage(app, 'covers', { path: storagePath })
       app.addStorage(storage)
       expect(app.getStorage('covers')).toBe(storage)
     })
 
+    it('rejects storages without a name', () => {
+      const app = createApp()
+      expect(() => app.addStorage({ type: 'disk', path: storagePath })).toThrow(
+        'Unable to add a storage without a name.'
+      )
+    })
+
     it('sets up and initializes storages only once', async () => {
       const app = createApp()
-      const storage = new DiskStorage(app, { path: storagePath })
+      const storage = new DiskStorage(app, 'files', { path: storagePath })
       const initialize = vi.spyOn(storage, 'initialize')
       app.addStorage(storage, 'files')
       await app.setupStorages()
       await app.setupStorages()
       expect(initialize).toHaveBeenCalledTimes(1)
-      expect(storage.initialized).toBe(true)
+      expect(storage.isInitialized).toBe(true)
     })
 
     it('rejects storages with invalid configurations on setup', async () => {
@@ -460,7 +491,7 @@ describe('Application', () => {
     it('excludes member parameters from the validated schema', () => {
       const app = createApp({ models: { Recipe } })
       const { list, schema } = app.compileParametersValidator([
-        { name: 'recipe', type: 'Recipe', member: true },
+        { name: 'recipe', from: 'member' },
         { name: 'servings', type: 'integer' }
       ])
       expect(list.map(({ name }) => name)).toEqual(['recipe', 'servings'])

@@ -1,4 +1,4 @@
-import objection from 'objection'
+import * as objection from 'objection'
 import {
   isString,
   isObject,
@@ -8,6 +8,7 @@ import {
   isPromise,
   isEmpty,
   asArray,
+  flatten,
   clone,
   equals,
   parseDataPath,
@@ -16,9 +17,9 @@ import {
   getEntriesAtDataPath,
   setValueAtDataPath,
   assignDeeply,
-  deprecate,
   formatPlainDate,
-  parsePlainDate
+  parsePlainDate,
+  mapConcurrently
 } from '@ditojs/utils'
 import { QueryBuilder } from '../query/index.js'
 import { EventEmitter, KnexHelper } from '../lib/index.js'
@@ -41,7 +42,7 @@ import definitions from './definitions/index.js'
 
 export class Model extends objection.Model {
   static app = null // Set by `Application.addModel()`
-  static initialized = false
+  static isInitialized = false
   static referenceValidator = null
 
   // Define a default constructor to allow new Model(json) as a short-cut to
@@ -757,12 +758,14 @@ export class Model extends objection.Model {
         ? normalizeDataPath(parsedDataPath.slice(next))
         : null
       // Only a relation found at the end of the data-path includes its own
-      // token. A property's token is excluded from the path to its relation.
+      // token. A property's token is excluded from the path to its relation,
+      // and so are array wildcards, as objection reads them as all relations.
       const expression = found
         ? parsedDataPath
             .slice(0, relation && !property ? next : index)
+            .filter(token => token !== '*')
             .join('.') +
-          (property ? `(#${name})` : '')
+          (property ? `(@${name})` : '')
         : null
       return {
         property,
@@ -837,23 +840,7 @@ export class Model extends objection.Model {
         )
       }
       // Now check possible scope prefixes and handle them:
-
-      let prefix = modifier[0]
-      const deprecatedPrefixes = { '-': '!', '#': '@' }
-      if (deprecatedPrefixes[prefix]) {
-        prefix = deprecatedPrefixes[prefix]
-        deprecate(
-          `The '${
-            modifier
-          }' modifier is deprecated, use the '${
-            prefix
-          }${
-            modifier.slice(1)
-          }' modifier instead.`
-        )
-      }
-
-      switch (prefix) {
+      switch (modifier[0]) {
         case '^': // Eager-applied scope:
           // Always apply eager-scopes, even if the model itself doesn't know
           // it. The scope may still be known in eager-loaded relations.
@@ -1175,13 +1162,84 @@ export class Model extends objection.Model {
                 })
               )
 
-        await this.app.assetManager.handleAssetFileChanges({
-          assets,
-          dataPaths,
+        const beforeFilesPerDataPath = getFilesPerAssetDataPath(
           beforeItems,
+          dataPaths
+        )
+        const afterFilesPerDataPath = getFilesPerAssetDataPath(
           afterItems,
-          transaction
-        })
+          dataPaths
+        )
+
+        const importedFiles = []
+        const modifiedFiles = []
+        // Remove imported files again if the transaction is rolled back, also
+        // when a later data path fails:
+        if (transaction?.rollback) {
+          // Prevent wrong memory leak error messages when installing more than
+          // 10 'rollback' handlers, which can happen with more complex queries.
+          transaction.setMaxListeners(0)
+          transaction.on('rollback', async error => {
+            if (importedFiles.length > 0) {
+              console.info(
+                `Received '${error}', removing imported files again: ${
+                  importedFiles.map(file => `'${file.name}'`)
+                }`
+              )
+              await mapConcurrently(
+                importedFiles,
+                file => file.storage.removeFile(file)
+              )
+            }
+            if (modifiedFiles.length > 0) {
+              // TODO: `modifiedFiles` should be restored as well, but that's
+              // far from trivial since no backup is kept in
+              // `handleModifiedAssets()`
+              console.warn(
+                `Unable to restore these already modified files: ${
+                  modifiedFiles.map(file => `'${file.name}'`)
+                }`
+              )
+            }
+          })
+        }
+
+        for (const dataPath of dataPaths) {
+          const storage = this.app.getStorage(assets[dataPath].storage)
+          const beforeFiles = beforeFilesPerDataPath[dataPath]
+          const afterFiles = afterFilesPerDataPath[dataPath]
+          const beforeByKey = mapFilesByKey(beforeFiles)
+          const afterByKey = mapFilesByKey(afterFiles)
+          const addedFiles = afterFiles.filter(file => !beforeByKey[file.key])
+          const removedFiles = beforeFiles.filter(file => !afterByKey[file.key])
+          const changedFiles = afterFiles.filter(file => {
+            const beforeFile = beforeByKey[file.key]
+            return beforeFile && !equals(file, beforeFile)
+          })
+          // Also handle files where the data property is changed before
+          // update / patch, meaning the file's content is replaced.
+          // NOTE: This will change the content for all the references to it,
+          // and so should only really be used when there's only one reference.
+          const filesWithChangedData = afterFiles.filter(
+            file => file.data && beforeByKey[file.key]
+          )
+          importedFiles.push(
+            ...(await this.app.handleAddedAndRemovedAssets(
+              storage,
+              addedFiles,
+              removedFiles,
+              changedFiles,
+              transaction
+            ))
+          )
+          modifiedFiles.push(
+            ...(await this.app.handleModifiedAssets(
+              storage,
+              filesWithChangedData,
+              transaction
+            ))
+          )
+        }
       }
     )
   }
@@ -1229,4 +1287,34 @@ function mapAssetFiles(data, storage, callback) {
     return data.map(item => mapAssetFiles(item, storage, callback))
   }
   return data ? callback(data, storage) : data
+}
+
+function getFilesPerAssetDataPath(items, dataPaths) {
+  return dataPaths.reduce(
+    (allFiles, dataPath) => {
+      allFiles[dataPath] = asArray(items).reduce(
+        (files, item) => {
+          // Ignore data paths that don't resolve, e.g. missing parents.
+          const data = asArray(getValueAtDataPath(item, dataPath, noop))
+          // Use flatten() as dataPath may contain wildcards, resulting in
+          // nested files arrays.
+          files.push(...flatten(data).filter(file => !!file))
+          return files
+        },
+        []
+      )
+      return allFiles
+    },
+    {}
+  )
+}
+
+function mapFilesByKey(files) {
+  return files.reduce(
+    (map, file) => {
+      map[file.key] = file
+      return map
+    },
+    {}
+  )
 }

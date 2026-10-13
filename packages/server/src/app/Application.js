@@ -16,7 +16,7 @@ import mount from 'koa-mount'
 import passport from 'koa-passport'
 import helmet from 'koa-helmet'
 import responseTime from 'koa-response-time'
-import { Model, knexSnakeCaseMappers } from 'objection'
+import { Model, knexSnakeCaseMappers, ref } from 'objection'
 import Router from '@ditojs/router'
 import {
   isArray,
@@ -29,20 +29,24 @@ import {
   assignDeeply,
   parseDataPath,
   normalizeDataPath,
+  groupBy,
+  mapConcurrently,
   toPromiseCallback
 } from '@ditojs/utils'
 import { Validator } from './Validator.js'
-import { AssetManager } from './AssetManager.js'
 import { EventEmitter } from '../lib/index.js'
 import { Controller, AdminController } from '../controllers/index.js'
 import { Service } from '../services/index.js'
 import { Storage } from '../storage/index.js'
 import { convertSchema } from '../schema/index.js'
 import { isHttpMethod } from '../utils/http.js'
+import { getDuration, subtractDuration } from '../utils/duration.js'
+import { resolveFileUrl } from '../utils/asset.js'
 import {
   ResponseError,
   ValidationError,
-  DatabaseError
+  DatabaseError,
+  AssetError
 } from '../errors/index.js'
 import {
   attachLogger,
@@ -89,8 +93,8 @@ export class Application extends Koa {
         log === false || log?.silent || process.env.DITO_SILENT
           ? {}
           : getOptions(log),
-      assets: assignDeeply(defaultAssetOptions, getOptions(assets)),
-      logger: assignDeeply(defaultLoggerOptions, getOptions(logger)),
+      assets: assignDeeply({}, defaultAssetOptions, getOptions(assets)),
+      logger: assignDeeply({}, defaultLoggerOptions, getOptions(logger)),
       ...rest
     }
     this.keys = keys
@@ -99,7 +103,6 @@ export class Application extends Koa {
     this.router = router || new Router()
     this.validator.app = this
     this.storages = Object.create(null)
-    this.assetManager = new AssetManager(this)
     this.services = Object.create(null)
     this.models = Object.create(null)
     this.controllers = Object.create(null)
@@ -107,7 +110,6 @@ export class Application extends Koa {
     this.isRunning = false
     this.requestStorage = new AsyncLocalStorage()
 
-    // TODO: Rename setup to configure?
     this.setupLogger()
     this.setupKnex()
     this.setupMiddleware(middleware)
@@ -200,13 +202,16 @@ export class Application extends Koa {
         throw new Error(`Unsupported storage: '${config.type}'`)
       }
       // eslint-disable-next-line new-cap
-      storage = new storageClass(this, config)
+      storage = new storageClass(this, name, config)
     } else if (config instanceof Storage) {
       storage = config
-    }
-    if (storage) {
       if (name) {
         storage.name = name
+      }
+    }
+    if (storage) {
+      if (!storage.name) {
+        throw new Error('Unable to add a storage without a name.')
       }
       this.storages[storage.name] = storage
     }
@@ -223,13 +228,10 @@ export class Application extends Koa {
   async setupStorages() {
     await Promise.all(
       Object.values(this.storages)
-        .filter(storage => !storage.initialized)
+        .filter(storage => !storage.isInitialized)
         .map(async storage => {
-          // Different from models, services and controllers, storages can have
-          // async `setup()` methods, as used by `S3Storage`.
-          await storage.setup()
           await storage.initialize()
-          storage.initialized = true
+          storage.isInitialized = true
         })
     )
   }
@@ -264,7 +266,7 @@ export class Application extends Koa {
   async setupServices() {
     await Promise.all(
       Object.values(this.services)
-        .filter(service => !service.initialized)
+        .filter(service => !service.isInitialized)
         .map(async service => {
           const { name } = service
           const config = this.config.services[name]
@@ -276,9 +278,11 @@ export class Application extends Koa {
           if (config === false) {
             delete this.services[name]
           } else {
-            service.setup(config)
+            service.configure(config)
+            this.on('before:start', () => service.start())
+            this.on('after:stop', () => service.stop())
             await service.initialize()
-            service.initialized = true
+            service.isInitialized = true
           }
         })
     )
@@ -312,9 +316,12 @@ export class Application extends Koa {
         throw new Error(`Invalid model class: ${modelClass}`)
       }
     }
-    // Then, configure all models and add their schemas to the validator:
+    // Then, configure all models, which registers their relations with the
+    // related models, before their schemas with the foreign keys are added:
     for (const modelClass of models) {
       modelClass.configure(this)
+    }
+    for (const modelClass of models) {
       this.validator.addSchema(modelClass.getJsonSchema())
     }
     this.logModels(models)
@@ -323,14 +330,14 @@ export class Application extends Koa {
   async setupModels() {
     await Promise.all(
       Object.values(this.models)
-        .filter(modelClass => !modelClass.initialized)
+        .filter(modelClass => !modelClass.isInitialized)
         .map(async modelClass => {
           // While `setup()` is used for internal dito things, `initialize()` is
           // called async and meant to be used by the user, without the need to
           // call `super.initialize()`.
           modelClass.setup()
           await modelClass.initialize()
-          modelClass.initialized = true
+          modelClass.isInitialized = true
         })
     )
   }
@@ -405,7 +412,7 @@ export class Application extends Koa {
   async setupControllers() {
     await Promise.all(
       Object.values(this.controllers)
-        .filter(controller => !controller.initialized)
+        .filter(controller => !controller.isInitialized)
         .map(async controller => {
           controller.setup()
           await controller.initialize()
@@ -415,7 +422,7 @@ export class Application extends Koa {
           if (composed) {
             this.use(mount(controller.url, composed))
           }
-          controller.initialized = true
+          controller.isInitialized = true
         })
     )
   }
@@ -502,7 +509,7 @@ export class Application extends Koa {
         name: name ?? null,
         ...schema
       })
-      if (!schema.member) {
+      if (schema.from !== 'member') {
         properties ||= {}
         properties[name || dataName] = schema
       }
@@ -898,39 +905,242 @@ export class Application extends Koa {
     }
   }
 
-  // Assets handling, see `AssetManager` for the actual implementation. These
-  // methods are the overridable entry points, also for model writes.
+  // Assets handling
 
-  createAssets(storage, files, count = 0, transaction = null) {
-    return this.assetManager.createAssets(storage, files, count, transaction)
+  async createAssets(storage, files, count = 0, transaction = null) {
+    const AssetModel = this.getModel('Asset')
+    if (!AssetModel) return []
+    // Shallow-clone file objects to avoid mutating the originals, since
+    // $parseJson() → convertAssetFile() deletes the signature.
+    // The originals may still be needed (e.g. sent as upload response).
+    // Shallow clone is sufficient as file objects are flat (scalar values).
+    const assets = files.map(file => ({
+      key: file.key,
+      file: { ...file },
+      storage: storage.name,
+      count
+    }))
+    return AssetModel.query(transaction).insert(assets)
   }
 
-  handleAddedAndRemovedAssets(
+  async handleAddedAndRemovedAssets(
     storage,
     addedFiles,
     removedFiles,
     changedFiles,
     transaction = null
   ) {
-    return this.assetManager.handleAddedAndRemovedAssets(
+    const AssetModel = this.getModel('Asset')
+    if (!AssetModel) return []
+    const importedFiles = await this.addForeignAssets(
       storage,
-      addedFiles,
-      removedFiles,
-      changedFiles,
+      [...addedFiles, ...changedFiles],
       transaction
     )
+    if (addedFiles.length > 0 || removedFiles.length > 0) {
+      const changeCount = async (files, increment) => {
+        if (files.length > 0) {
+          await AssetModel.query(transaction)
+            .whereIn(
+              'key',
+              files.map(file => file.key)
+            )
+            .increment('count', increment)
+        }
+      }
+      await Promise.all([
+        changeCount(addedFiles, 1),
+        changeCount(removedFiles, -1)
+      ])
+      const cleanupTimeThreshold = getDuration(
+        this.config.assets.cleanupTimeThreshold
+      )
+      if (cleanupTimeThreshold > 0) {
+        setTimeout(
+          // Don't pass `transaction` here, as we want this delayed execution
+          // to create its own transaction.
+          () => this.releaseUnusedAssets(),
+          cleanupTimeThreshold
+        )
+      }
+    }
+    // Also execute releaseUnusedAssets() immediately in the same
+    // transaction, to potentially clean up other pending assets.
+    await this.releaseUnusedAssets({ transaction })
+    return importedFiles
   }
 
-  addForeignAssets(storage, files, transaction = null) {
-    return this.assetManager.addForeignAssets(storage, files, transaction)
+  async addForeignAssets(storage, files, transaction = null) {
+    const AssetModel = this.getModel('Asset')
+    if (!AssetModel) return []
+    const importedFiles = []
+    // Find missing assets (copied from another system), and add them.
+    const filesByKey = groupBy(files, file => file.key)
+    await mapConcurrently(
+      Object.entries(filesByKey),
+      async ([key, files]) => {
+        const asset = await AssetModel.query(transaction).findOne('key', key)
+        if (!asset) {
+          const [file] = files // Pick the first file
+          if (file.data || file.url) {
+            let { data } = file
+            if (!data) {
+              const { url } = file
+              if (!storage.isImportSourceAllowed(url)) {
+                throw new AssetError(
+                  `Unable to import asset from foreign source: '${
+                    file.name
+                  }' ('${
+                    url
+                  }'): The source needs to be explicitly allowed.`
+                )
+              }
+              this.logger.info(
+                `Asset ${
+                  pico.green(`'${file.name}'`)
+                } is from a foreign source, fetching from ${
+                  pico.green(`'${url}'`)
+                } and adding to storage ${
+                  pico.green(`'${storage.name}'`)
+                }...`
+              )
+              if (url.startsWith('file://')) {
+                data = await fs.readFile(new URL(resolveFileUrl(url)))
+              } else {
+                const response = await fetch(url)
+                const arrayBuffer = await response.arrayBuffer()
+                // `fs.writeFile()` expects a Buffer, not an ArrayBuffer.
+                data = Buffer.from(arrayBuffer)
+              }
+            }
+            const importedFile = await storage.addFile(file, data)
+            // Sign the imported foreign file so it passes verification when
+            // createAssets() triggers $parseJson() → convertAssetFile().
+            storage.signAssetFile(importedFile)
+            await this.createAssets(
+              storage,
+              [importedFile],
+              0,
+              transaction
+            )
+            importedFiles.push(importedFile)
+            // Merge back the changed file properties into the actual file
+            // objects, so that the data from the static model hook can be
+            // used directly for the actual running query.
+            for (const file of files) {
+              Object.assign(file, importedFile)
+            }
+          } else {
+            throw new AssetError(
+              `Unable to import asset from foreign source: '${
+                file.name
+              }' ('${
+                file.key
+              }')`
+            )
+          }
+        } else {
+          // Asset is from a foreign source, but was already imported and can
+          // be reused. See above for an explanation of this merge.
+          for (const file of files) {
+            Object.assign(file, asset.file)
+          }
+          // NOTE: No need to add `file` to `importedFiles`, since it's
+          // already been imported to the storage before.
+        }
+      },
+      { concurrency: storage.concurrency }
+    )
+    return importedFiles
   }
 
-  handleModifiedAssets(storage, files, transaction = null) {
-    return this.assetManager.handleModifiedAssets(storage, files, transaction)
+  async handleModifiedAssets(storage, files, transaction = null) {
+    const AssetModel = this.getModel('Asset')
+    if (!AssetModel) return []
+    const modifiedFiles = []
+    await mapConcurrently(
+      files,
+      async file => {
+        if (file.data) {
+          const asset = await AssetModel.query(transaction).findOne(
+            'key',
+            file.key
+          )
+          if (asset) {
+            const changedFile = await storage.addFile(file, file.data)
+            // Merge back the changed file properties into the actual files
+            // object, so that the data from the static model hook can be used
+            // directly for the actual running query.
+            Object.assign(file, changedFile)
+            modifiedFiles.push(changedFile)
+          } else {
+            throw new AssetError(
+              `Unable to update modified asset from memory source: '${
+                file.name
+              }' ('${
+                file.key
+              }')`
+            )
+          }
+        }
+      },
+      { concurrency: storage.concurrency }
+    )
+    return modifiedFiles
   }
 
-  releaseUnusedAssets(options) {
-    return this.assetManager.releaseUnusedAssets(options)
+  async releaseUnusedAssets({
+    timeThreshold = null,
+    transaction = null,
+    concurrency = 8
+  } = {}) {
+    const AssetModel = this.getModel('Asset')
+    if (!AssetModel) return []
+    const { assets } = this.config
+    const cleanupTimeThreshold = getDuration(
+      timeThreshold ?? assets.cleanupTimeThreshold
+    )
+    const danglingTimeThreshold = getDuration(
+      timeThreshold ?? assets.danglingTimeThreshold
+    )
+    return AssetModel.transaction(transaction, async trx => {
+      // Calculate the date math in JS instead of SQL, as there is no easy
+      // cross-SQL way to do `now() - interval X hours`:
+      const now = new Date()
+      const cleanupDate = subtractDuration(now, cleanupTimeThreshold)
+      const danglingDate = subtractDuration(now, danglingTimeThreshold)
+      const orphanedAssets = await AssetModel.query(trx)
+        .where('count', 0)
+        .andWhere(query =>
+          query
+            .where('updatedAt', '<=', cleanupDate)
+            .orWhere(
+              // Protect freshly created assets from being deleted again
+              // right away, when `config.assets.cleanupTimeThreshold = 0`
+              query =>
+                query
+                  .where('updatedAt', '=', ref('createdAt'))
+                  .andWhere('updatedAt', '<=', danglingDate)
+            )
+        )
+      if (orphanedAssets.length > 0) {
+        const orphanedKeys = await mapConcurrently(
+          orphanedAssets,
+          async asset => {
+            try {
+              await this.getStorage(asset.storage).removeFile(asset.file)
+            } catch (error) {
+              this.emit('error', error)
+              asset.error = error
+            }
+            return asset.key
+          },
+          { concurrency }
+        )
+        await AssetModel.query(trx).delete().whereIn('key', orphanedKeys)
+      }
+      return orphanedAssets
+    })
   }
 
   get requestLocals() {
