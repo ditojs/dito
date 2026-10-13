@@ -6,12 +6,12 @@
     v-for="(buttonSchema, buttonDataPath) in buttonSchemas"
   )
     DitoContainer.dito-buttons__container(
-      v-if="shouldRenderSchema(buttonSchema)"
+      v-if="shouldRenderButton(buttonSchema, buttonDataPath)"
       :key="buttonDataPath"
       :schema="buttonSchema"
       :dataPath="buttonDataPath"
       :data="data"
-      :meta="meta"
+      :itemDataPath="itemDataPath"
       :nested="nested"
       :store="getChildStore(buttonSchema.name)"
       :disabled="disabled"
@@ -19,69 +19,92 @@
   template(
     v-for="vnode of $slots.default?.()"
   )
-    //- Render each node in the default slot through `dito-vnode`,
-    //- so it can be wrapped in a `.dito-container` class.
+    //- Wrap each node of the default slot in a `.dito-container`:
     .dito-container.dito-buttons__container(
       v-if="hasVNodeContent(vnode)"
     )
-      DitoVnode(:vnode="vnode")
+      DitoVNode(:vnode="vnode")
 </template>
 
 <script>
-import DitoComponent from '../DitoComponent.js'
-import ContextMixin from '../mixins/ContextMixin.js'
-import { appendDataPath } from '../utils/data.js'
+import { computed, provide } from 'vue'
 import { hasSlotContent, hasVNodeContent } from '@ditojs/ui/src'
+import SchemaContext from '../SchemaContext.js'
+import { useServices } from '../composables/useSchemaContext.ts'
+import { useStore } from '../composables/useStore.ts'
+import {
+  continueComponentPath,
+  useComponentPath
+} from '../composables/useComponentPath.ts'
+import { appendDataPath } from '../utils/data.js'
+import { shouldRenderSchema } from '../utils/schema/data.js'
+import { getRootData } from '../utils/services.ts'
+import { panelTabKey } from '../utils/keys.ts'
 
-// @vue/component
-export default DitoComponent.component('DitoButtons', {
-  mixins: [ContextMixin],
-
-  provide: {
-    $tabComponent: () => null
-  },
-
+export default {
   props: {
     buttons: { type: Object, default: null },
     dataPath: { type: String, default: '' },
     data: { type: [Object, Array], default: null },
-    meta: { type: Object, default: () => ({}) },
+    // The data path of `data`, e.g. of the item that holds the list of list
+    // buttons:
+    itemDataPath: { type: String, default: props => props.dataPath },
     store: { type: Object, default: () => ({}) },
     nested: { type: Boolean, default: true },
     disabled: { type: Boolean, default: false },
-    // The name of the group of buttons, e.g. `panelButtons`, see
-    // `componentPath`.
     buttonsName: { type: String, default: 'buttons' }
   },
 
-  computed: {
-    componentPath() {
-      // Add the name of the group, so that buttons don't share their component
-      // paths with components of the same name, e.g. a `publish` button with a
-      // `publish` field, as component paths are used for registries.
-      return appendDataPath(
-        this.continueParentComponentPath(),
-        `$${this.buttonsName}`
-      )
-    },
+  setup(props) {
+    // Buttons don't belong to the tab of a pane:
+    provide(panelTabKey, null)
+    // Add the group name, so buttons don't share their component paths with
+    // components of the same name, like a `publish` button and field:
+    useComponentPath(
+      () => props.dataPath,
+      parent =>
+        appendDataPath(
+          continueComponentPath(parent, props.dataPath),
+          `$${props.buttonsName}`
+        )
+    )
+    const services = useServices()
+    return {
+      ...useStore(props),
+      hasSlotContent,
+      hasVNodeContent,
 
-    buttonSchemas() {
-      // Compute a buttons list which has the dataPath baked into its keys.
-      const { dataPath, buttons } = this
-      return buttons
-        ? Object.values(buttons).reduce((schemas, button) => {
-            schemas[appendDataPath(dataPath, button.name)] = button
-            return schemas
-          }, {})
-        : null
+      // Evaluate the `if` of each button with its own context, as rendered:
+      shouldRenderButton(schema, dataPath) {
+        return shouldRenderSchema(
+          schema,
+          SchemaContext.createForSchema(services, {
+            schema,
+            name: schema.name,
+            nested: props.nested,
+            data: props.data,
+            dataPath,
+            itemDataPath: props.itemDataPath,
+            rootData: getRootData(services)
+          })
+        )
+      },
+
+      // The buttons by their data paths:
+      buttonSchemas: computed(() => {
+        const { dataPath, buttons } = props
+        return buttons
+          ? Object.fromEntries(
+              Object.values(buttons).map(button => [
+                appendDataPath(dataPath, button.name),
+                button
+              ])
+            )
+          : null
+      })
     }
-  },
-
-  methods: {
-    hasSlotContent,
-    hasVNodeContent
   }
-})
+}
 </script>
 
 <style lang="scss">

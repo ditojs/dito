@@ -1,6 +1,8 @@
 import { vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { mountSchema, mountForm } from '../test/mount.js'
+import { defineType } from '../utils/schema/types.ts'
+import DitoTypeButton from './DitoTypeButton.vue'
 
 function getNotificationTexts() {
   return [...document.querySelectorAll('.dito-notification')].map(
@@ -35,10 +37,8 @@ describe('DitoTypeButton', () => {
           title: { type: 'text' },
           uppercase: {
             type: 'button',
-            events: {
-              click({ item }) {
-                item.title = item.title.toUpperCase()
-              }
+            onClick({ item }) {
+              item.title = item.title.toUpperCase()
             }
           }
         }
@@ -135,7 +135,7 @@ describe('DitoTypeButton', () => {
     })
     await findField('publish').trigger('click')
     await flushPromises()
-    expect(onError.mock.calls[0][0].error?.errors[0].message).toBe(
+    expect(onError.mock.calls[0][0].error?.message).toBe(
       'Publishing failed'
     )
   })
@@ -236,6 +236,37 @@ describe('DitoTypeButton', () => {
     finishClick()
   })
 
+  it('tells the schema values whether its action is running', async () => {
+    let finishClick
+    const { findField } = await mountSchema({
+      schema: {
+        components: {
+          publish: {
+            type: 'button',
+            suffix: {
+              type: 'text',
+              text: 'Running',
+              if: ({ isRunning }) => isRunning
+            },
+            onClick() {
+              return new Promise(resolve => {
+                finishClick = resolve
+              })
+            }
+          }
+        }
+      }
+    })
+    const button = findField('publish')
+    expect(button.text()).not.toContain('Running')
+    await button.trigger('click')
+    await flushPromises()
+    expect(button.text()).toContain('Running')
+    finishClick()
+    await flushPromises()
+    expect(button.text()).not.toContain('Running')
+  })
+
   it('lets error handlers prevent the notification of errors', async () => {
     const onError = vi.fn(() => false)
     const { findField } = await mountSchema({
@@ -257,6 +288,29 @@ describe('DitoTypeButton', () => {
     expect(getNotificationTexts().join()).not.toContain(
       'Publishing failed'
     )
+  })
+
+  it('only shows the notifications of error handlers that notify', async () => {
+    const { findField } = await mountSchema({
+      schema: {
+        components: {
+          publish: {
+            type: 'button',
+            onClick() {
+              throw new Error('Publishing failed')
+            },
+            onError({ notify }) {
+              notify({ type: 'error', text: 'Try again later' })
+            }
+          }
+        }
+      }
+    })
+    await findField('publish').trigger('click')
+    await flushPromises()
+    const texts = getNotificationTexts().join()
+    expect(texts).toContain('Try again later')
+    expect(texts).not.toContain('Publishing failed')
   })
 
   it('submits the form to the resource of the button', async () => {
@@ -283,6 +337,82 @@ describe('DitoTypeButton', () => {
     })
   })
 
+  it('submits the form through `submit()` of its context', async () => {
+    const request = vi.fn(({ data }) => ({ data }))
+    let isSubmitted = null
+    const { findField } = await mountForm({
+      schema: {
+        components: { title: { type: 'text' } },
+        buttons: {
+          submit: {
+            closeForm: false,
+            async onClick({ submit }) {
+              isSubmitted = await submit()
+            }
+          }
+        }
+      },
+      data: { title: 'Emma' },
+      request
+    })
+    await findField('submit').trigger('click')
+    await vi.waitFor(() => expect(isSubmitted).toBe(true))
+    expect(request).toHaveBeenCalledOnce()
+    expect(request.mock.calls[0][0]).toMatchObject({
+      url: '/items/1',
+      data: { title: 'Emma' }
+    })
+  })
+
+  it('submits through `submit()` of types that use its component', async () => {
+    defineType({
+      type: 'save-button',
+      component: DitoTypeButton,
+      defaultValue: undefined,
+      defaultExclude: true
+    })
+    const request = vi.fn(({ data }) => ({ data }))
+    let isSubmitted = null
+    const { findField } = await mountForm({
+      schema: {
+        components: { title: { type: 'text' } },
+        buttons: {
+          save: {
+            type: 'save-button',
+            async onClick({ submit }) {
+              isSubmitted = await submit({ closeForm: false })
+            }
+          }
+        }
+      },
+      data: { title: 'Emma' },
+      request
+    })
+    await findField('save').trigger('click')
+    await vi.waitFor(() => expect(isSubmitted).toBe(true))
+    expect(request.mock.calls[0][0]).toMatchObject({ url: '/items/1' })
+  })
+
+  it(`throws from \`submit()\` without a form or list to submit`, async () => {
+    const onError = vi.fn(() => false)
+    const { findField } = await mountSchema({
+      schema: {
+        components: {
+          publish: {
+            type: 'button',
+            onClick: ({ submit }) => submit(),
+            onError
+          }
+        }
+      }
+    })
+    await findField('publish').trigger('click')
+    await flushPromises()
+    expect(onError.mock.calls[0][0].error?.message).toBe(
+      'Unable to submit: There is no button of a form or source.'
+    )
+  })
+
   it('notifies errors of preparing the data to submit', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
     const request = vi.fn(({ data }) => ({ data }))
@@ -291,8 +421,8 @@ describe('DitoTypeButton', () => {
         components: {
           title: {
             type: 'text',
-            process() {
-              throw new Error('Title cannot be processed')
+            serializeValue() {
+              throw new Error('Title cannot be serialized')
             }
           },
           publish: {
@@ -308,7 +438,7 @@ describe('DitoTypeButton', () => {
     await flushPromises()
     expect(request).not.toHaveBeenCalled()
     expect(getNotificationTexts().join()).toContain(
-      'Title cannot be processed'
+      'Title cannot be serialized'
     )
     expect(findField('publish').attributes('aria-busy')).toBe('false')
   })

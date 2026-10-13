@@ -1,19 +1,32 @@
-import { hyphenate } from '@ditojs/utils'
+import { deprecate, hyphenate } from '@ditojs/utils'
 
-// Returns the event handlers that `schema` defines, both in `events` and as
-// `on[A-Z]` callbacks, e.g. `events: { mouseenter }` and `onMouseenter`, with
-// the hyphenated event names that they are registered and emitted under.
-// TODO: Deprecate one format or the other, in favour of only one way of
-// doing things. Decide which one to remove.
 export function getSchemaEventEntries(schema) {
-  const entries = []
-  for (const [key, callback] of Object.entries(schema.events || {})) {
-    entries.push({ key, event: hyphenate(key), callback })
-  }
+  const entriesByEvent = {}
   for (const [key, callback] of Object.entries(schema)) {
     if (/^on[A-Z]/.test(key)) {
-      entries.push({ key, event: hyphenate(key.slice(2)), callback })
+      const event = hyphenate(key.slice(2))
+      entriesByEvent[event] = { key, event, callback }
     }
   }
-  return entries
+  if (schema.events) {
+    deprecate(
+      'Schema `events` are deprecated, use the `on…` handlers instead, ' +
+      'e.g. `onChange()` for `events: { change() }`.'
+    )
+    for (const [key, callback] of Object.entries(schema.events)) {
+      const event = hyphenate(key)
+      const entry = entriesByEvent[event]
+      // The `on…` handlers win, also the defaults of buttons:
+      if (!entry) {
+        entriesByEvent[event] = { key, event, callback }
+      } else if (process.env.NODE_ENV !== 'production') {
+        // `deprecate()` logs each message once:
+        deprecate(
+          `Schema '${schema.name ?? schema.type}' ignores its deprecated ` +
+          `\`events.${key}()\`, as \`${entry.key}()\` handles '${event}'.`
+        )
+      }
+    }
+  }
+  return Object.values(entriesByEvent)
 }

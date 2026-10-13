@@ -2,8 +2,8 @@
 DitoButton(
   :id="componentPath"
   ref="element"
-  :type="type"
-  :verb="verb"
+  :type="schema.type"
+  :verb="verbs[schema.name]"
   :text="text"
   :title="text"
   :aria-busy="isRunning"
@@ -32,99 +32,112 @@ DitoButton(
 </template>
 
 <script>
-import DitoTypeComponent from '../DitoTypeComponent.js'
+import { computed, ref } from 'vue'
+import { defineType } from '../utils/schema/types.ts'
+import { fieldProps, useField } from '../composables/useField.ts'
+import { getVerbs } from '../utils/services.ts'
 import DitoAffixes from '../components/DitoAffixes.vue'
 import { DitoButton } from '@ditojs/ui/src'
-import { getSchemaAccessor } from '../utils/accessor.js'
 import { hasResource } from '../utils/resource.js'
 import { asArray } from '@ditojs/utils'
 
-export default DitoTypeComponent.register(
-  ['button', 'submit'],
-  // @vue/component
-  {
-    components: { DitoAffixes, DitoButton },
-    defaultValue: () => undefined, // Callback to override `defaultValue: null`
-    excludeValue: true,
-    defaultWidth: 'auto',
-    generateLabel: false,
+// @vue/component
+const DitoTypeButton = {
+  components: { DitoAffixes, DitoButton },
+  props: fieldProps,
 
-    data() {
-      return {
-        isRunning: false
-      }
-    },
+  setup(props) {
+    const isRunning = ref(false)
+    const field = useField(props, {
+      members: {
+        // Handlers can end it early, like before opening a dialog:
+        get isRunning() {
+          return isRunning.value
+        },
 
-    computed: {
-      verb() {
-        return this.verbs[this.name]
+        set isRunning(value) {
+          isRunning.value = value
+        },
+
+        // Buttons of sources submit through them, the others to their form,
+        // which applies or saves its data:
+        get submit() {
+          const { sourceContext, routeContext } = services
+          const target = sourceContext ?? (routeContext?.isForm && routeContext)
+          return target ? options => target.submit(button, options) : null
+        }
+      },
+      getEvents: ({ onFocus, onBlur }) => ({ onFocus, onBlur, onClick })
+    })
+    const { services, getSchemaValue, emitEvent } = field
+    const closeForm = computed(() =>
+      getSchemaValue('closeForm', { type: Boolean, default: false })
+    )
+    // The button that forms and sources submit through, see `SubmitButton`:
+    const button = {
+      get schema() {
+        return props.schema
       },
 
-      text: getSchemaAccessor('text', {
-        type: String
-      }),
-
-      prefixes() {
-        return asArray(this.schema.prefix)
+      get closeForm() {
+        return closeForm.value
       },
 
-      suffixes() {
-        return asArray(this.schema.suffix)
-      },
+      context: field.context,
+      createContext: field.createContext,
+      getSchemaValue,
+      emitEvent
+    }
 
-      closeForm: getSchemaAccessor('closeForm', {
-        type: Boolean,
-        default: false
-      })
-    },
-
-    methods: {
-      // @override
-      getEvents() {
-        const { onFocus, onBlur, onClick } = this
-        return { onFocus, onBlur, onClick }
-      },
-
-      async submit(options) {
-        return this.resourceComponent?.submit(this, options)
-      },
-
-      async onClick() {
-        // Prevent running the action again while it's running, e.g. submits.
-        // The button isn't disabled meanwhile, as `disabled` reflects the
-        // state of the schema, e.g. of forms that can't be submitted when
-        // they're clean, which a running action doesn't change:
-        if (this.isRunning) return
-        this.isRunning = true
+    async function onClick() {
+      // Run once at a time. The button stays enabled, as `disabled` reflects
+      // the state of the schema:
+      if (!isRunning.value) {
+        isRunning.value = true
         try {
-          const res = await this.emitEvent('click', {
-            parent: this.schemaComponent
-          })
-          // Have buttons that define resources call `this.submit()` by default:
+          const res = await emitEvent('click', { bubble: true })
+          // Have buttons that define resources submit by default:
           if (
             res === undefined && // Meaning: don't prevent default.
-            hasResource(this.schema)
+            hasResource(props.schema)
           ) {
-            await this.submit()
+            await services.submit?.()
           }
         } catch (error) {
-          const res = await this.emitEvent('error', { context: { error } })
-          if (res === undefined) {
-            if (error instanceof AggregateError) {
-              for (const err of error.errors) {
-                this.notify({ type: 'error', text: err })
-              }
-            } else {
-              this.notify({ type: 'error', text: error })
-            }
+          const context = field.createContext({ error })
+          const res = await emitEvent('error', { context })
+          if (res === undefined && !context.wasNotified) {
+            services.adminContext.notify({ type: 'error', text: error })
           }
         } finally {
-          this.isRunning = false
+          isRunning.value = false
         }
       }
     }
+
+    return {
+      ...field,
+      verbs: computed(() => getVerbs(services)),
+      isRunning,
+      text: computed(() => getSchemaValue('text', { type: String })),
+      prefixes: computed(() => asArray(props.schema.prefix)),
+      suffixes: computed(() => asArray(props.schema.suffix))
+    }
   }
-)
+}
+
+const buttonTraits = {
+  component: DitoTypeButton,
+  defaultValue: undefined,
+  defaultExclude: true,
+  defaultWidth: 'auto',
+  generatesLabel: false
+}
+
+defineType({ ...buttonTraits, type: 'button' })
+defineType({ ...buttonTraits, type: 'submit', submitsData: true })
+
+export default DitoTypeButton
 </script>
 
 <style lang="scss">
