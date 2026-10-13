@@ -2,7 +2,11 @@ import type {
   ModelControllerActions,
   ModelProperties
 } from '@ditojs/server'
-import { Model, ModelController } from '@ditojs/server'
+import {
+  Model,
+  ModelController,
+  CollectionController
+} from '@ditojs/server'
 import {
   createTestApp,
   getAppUrl
@@ -20,6 +24,12 @@ class Task extends Model {
     }
   }
 }
+
+describe('CollectionController', () => {
+  it('is exported as the base of model and relation controllers', () => {
+    expect(ModelController.prototype).toBeInstanceOf(CollectionController)
+  })
+})
 
 describe('Controller action names', () => {
   it('rejects bare action names like "test"', async () => {

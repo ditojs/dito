@@ -60,18 +60,16 @@ export function getInheritanceChain(object) {
 
 export function setupPropertyInheritance(object, key, baseValue = null) {
   // Loops through the inheritance chain of `object` and sets up a related
-  // inheritance chain for the given property `key`. The resulting value with
-  // proper inheritance is returned.
-  let [current, ...parents] = getInheritanceChain(object)
-  for (const parent of parents) {
+  // inheritance chain for the given property `key`, ending in `baseValue`.
+  // The resulting value with proper inheritance is returned.
+  const chain = getInheritanceChain(object)
+  for (const [index, current] of chain.entries()) {
     if (current.hasOwnProperty(key)) {
-      const value = current[key]
-      const parentValue = parent[key] || baseValue
+      const parentValue = chain[index + 1]?.[key] || baseValue
       if (parentValue) {
-        Object.setPrototypeOf(value, parentValue)
+        Object.setPrototypeOf(current[key], parentValue)
       }
     }
-    current = parent
   }
   if (baseValue && !(key in object)) {
     // If there wasn't any override in the chain, and we have a baseValue,

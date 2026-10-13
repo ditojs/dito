@@ -574,6 +574,20 @@ describe('definition.hooks', () => {
     ])
   })
 
+  it('registers arrays of hooks', async () => {
+    class Log extends Entry {
+      static hooks = {
+        'before:insert': [
+          () => calls.push(['Log', 1]),
+          () => calls.push(['Log', 2])
+        ]
+      }
+    }
+    createApp({ Log })
+    await Log.beforeInsert({ inputItems: [], result: [] })
+    expect(calls).toEqual([['Entry', 'Log', 0], ['Log', 1], ['Log', 2]])
+  })
+
   it('returns results that hooks have replaced', async () => {
     const result = [{ title: 'A' }, { title: null }]
     expect(await Article.afterFind({ result })).toEqual([{ title: 'A' }])

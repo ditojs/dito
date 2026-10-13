@@ -12,7 +12,8 @@ export class EventEmitter extends EventEmitter2 {
     for (const key in events) {
       for (const part of key.split(',')) {
         const event = part.trim()
-        for (const callback of asArray(events[key])) {
+        // Inherited hooks arrive as arrays that can hold arrays themselves:
+        for (const callback of asArray(events[key]).flat()) {
           this.on(event, callback)
         }
       }

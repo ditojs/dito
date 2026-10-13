@@ -4,6 +4,9 @@ import { ControllerError, NotFoundError } from '../errors/index.js'
 import { setupPropertyInheritance } from '../utils/object.js'
 import { getScope } from '../utils/scope.js'
 
+// The values of relation objects that `inheritValues()` resolves:
+const inheritableKeys = ['relation', 'member', 'hooks']
+
 export class RelationController extends CollectionController {
   constructor(parent, object, relationInstance, relationDefinition) {
     super(parent.app, null)
@@ -31,11 +34,12 @@ export class RelationController extends CollectionController {
       // relations:
       this.scope = asArray(parent.scope).filter(scope => getScope(scope).graph)
     }
-    // Copy over all fields in the relation object.
+    // Copy over all fields in the relation object, except the inheritable
+    // values that `inheritValues()` resolves from it:
     for (const key in object) {
-      // On the relation objects, the `collection` actions are stored in a
-      // `relation` object, to make sense both for one- and many-relations:
-      this.setProperty(key === 'relation' ? 'collection' : key, object[key])
+      if (!inheritableKeys.includes(key)) {
+        this.setProperty(key, object[key])
+      }
     }
   }
 

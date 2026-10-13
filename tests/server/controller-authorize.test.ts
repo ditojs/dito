@@ -407,6 +407,16 @@ class Recipes extends ModelController<any> {
   }
 }
 
+class Pantry extends Controller {
+  override authorize: any = false
+
+  override actions: any = {
+    'get stock'() {
+      return 'flour'
+    }
+  }
+}
+
 describe('Controller authorization', () => {
   const app = createTestApp({
     models: { Member, Cookbook, Recipe, Review },
@@ -416,7 +426,8 @@ describe('Controller authorization', () => {
       RecipeTitles,
       Cookbooks,
       SharedCookbooks,
-      ReadOnlyCookbooks
+      ReadOnlyCookbooks,
+      Pantry
     },
     // Resolve the requesting user from a header, in place of a session.
     async middleware(ctx: any, next: any) {
@@ -805,7 +816,12 @@ describe('Controller authorization', () => {
 
   describe('boolean and function authorization', () => {
     it('always denies actions with `authorize: false`', async () => {
-      expect((await request('/recipes/secret', admin)).status).toBe(401)
+      // The cook has the role of the controller-level fallback.
+      expect((await request('/recipes/secret', cook)).status).toBe(401)
+    })
+
+    it('denies all actions of controllers with `authorize: false`', async () => {
+      expect((await request('/pantry/stock', admin)).status).toBe(401)
     })
 
     it('passes the result of authorize functions on as settings', async () => {
