@@ -39,18 +39,15 @@ describe('AdminController', () => {
     }
   })
 
-  it('resolves config paths, also through deprecated `getPath()`', async () => {
+  it('resolves config paths', async () => {
     const app = createAdminApp()
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     try {
       await app.setup()
       const controller = app.getAdminController()!
       expect(controller.resolveConfigPath('dist')).toBe(
         path.resolve(os.tmpdir())
       )
-      expect(controller.getPath('dist')).toBe(path.resolve(os.tmpdir()))
     } finally {
-      warn.mockRestore()
       await app.knex?.destroy()
     }
   })
@@ -61,7 +58,7 @@ describe('AdminController', () => {
     try {
       await app.setup()
       const controller = app.getAdminController() as Admin
-      expect(controller.getDitoObject().api).toEqual({ normalizePaths: true })
+      expect(controller.getGlobalConfig().api).toEqual({ normalizePaths: true })
       expect(api).toEqual({})
     } finally {
       await app.knex?.destroy()

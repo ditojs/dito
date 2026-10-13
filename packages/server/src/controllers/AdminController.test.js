@@ -1,5 +1,7 @@
 import { vi } from 'vitest'
+import fs from 'fs/promises'
 import os from 'os'
+import path from 'path'
 import { createServer } from 'vite'
 import { Application } from '../app/Application.js'
 import { AdminController } from './AdminController.js'
@@ -17,7 +19,7 @@ function createApp({ admin, env } = {}) {
       app: { normalizePaths: true },
       log: { silent: true },
       logger: { prettyPrint: false, level: 'silent' },
-      server: { port: 0 },
+      server: { host: '127.0.0.1', port: 0 },
       admin,
       ...(env && { env })
     },
@@ -60,7 +62,7 @@ describe('AdminController', () => {
     try {
       const { port } = app.server.address()
       const response = await fetch(
-        `http://localhost:${port}/admin/catalog.js`
+        `http://127.0.0.1:${port}/admin/catalog.js`
       )
       expect(await response.text()).toBe('export default "catalog"')
       const [[config]] = createServer.mock.calls
@@ -76,7 +78,7 @@ describe('AdminController', () => {
       await app.stop()
     }
     expect(server.close).toHaveBeenCalledTimes(1)
-    expect(app.getAdminController().closed).toBe(true)
+    expect(app.getAdminController().isClosed).toBe(true)
   })
 
   it(`doesn't close the vite dev server again once closed`, async () => {
@@ -85,7 +87,7 @@ describe('AdminController', () => {
       admin: { mode: 'development', root: os.tmpdir() }
     })
     await app.start()
-    app.getAdminController().closed = true
+    app.getAdminController().isClosed = true
     await app.stop()
     expect(server.close).not.toHaveBeenCalled()
   })
@@ -95,7 +97,7 @@ describe('AdminController', () => {
     const app = createApp({ admin: { mode: 'production', dist: os.tmpdir() } })
     vi.spyOn(app, 'loadAdminViteConfig').mockResolvedValue({
       logLevel: 'silent',
-      server: { hmr: { port: 0 } }
+      server: { hmr: { overlay: false } }
     })
     await app.setupControllers()
     await app.getAdminController().setupViteServer()
@@ -104,10 +106,48 @@ describe('AdminController', () => {
       logLevel: 'silent',
       server: {
         middlewareMode: true,
-        hmr: { port: expect.any(Number) }
+        ws: { server: null },
+        hmr: { overlay: false }
       }
     })
-    // Port 0 is replaced with a random free port.
-    expect(config.server.hmr.port).toBeGreaterThan(0)
+  })
+
+  it('stops while an HMR client is connected', async () => {
+    const { createServer: createViteServer } = await vi.importActual('vite')
+    createServer.mockImplementation(createViteServer)
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'dito-admin-'))
+    const app = createApp({ admin: { mode: 'development', root } })
+    vi.spyOn(app, 'loadAdminViteConfig').mockResolvedValue({
+      root,
+      base: '/admin/',
+      configFile: false,
+      logLevel: 'silent'
+    })
+    try {
+      await app.start()
+      const { port } = app.server.address()
+      const socket = new WebSocket(`ws://127.0.0.1:${port}/admin/`, 'vite-hmr')
+      await new Promise((resolve, reject) => {
+        socket.onopen = resolve
+        socket.onerror = reject
+      })
+      await app.stop(2000)
+    } finally {
+      await fs.rm(root, { recursive: true })
+    }
+  })
+
+  it(`serves HMR through the app's server`, async () => {
+    mockViteServer()
+    const app = createApp({
+      admin: { mode: 'development', root: os.tmpdir() }
+    })
+    await app.start()
+    try {
+      const [[config]] = createServer.mock.calls
+      expect(config.server.ws.server).toBe(app.server)
+    } finally {
+      await app.stop()
+    }
   })
 })

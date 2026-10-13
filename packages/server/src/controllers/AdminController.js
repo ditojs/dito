@@ -4,11 +4,10 @@ import serve from 'koa-static'
 import { defineConfig, createServer } from 'vite'
 import createVuePlugin from '@vitejs/plugin-vue'
 import { testModuleIdentifier, getPostCssConfig } from '@ditojs/build'
-import { assignDeeply, deprecate } from '@ditojs/utils'
+import { assignDeeply } from '@ditojs/utils'
 import { Controller } from './Controller.js'
 import { handleConnectMiddleware } from '../middleware/index.js'
 import { ControllerError } from '../errors/index.js'
-import { getRandomFreePort } from '../utils/net.js'
 import { formatJson } from '../utils/json.js'
 
 export class AdminController extends Controller {
@@ -28,21 +27,7 @@ export class AdminController extends Controller {
       this.config.mode ||
       (this.app.config.env === 'development' ? 'development' : 'production')
     )
-    this.closed = false
-  }
-
-  // @override
-  getPath(...args) {
-    // `Controller.getPath(type, path)` is the routing hook used by `getUrl()`.
-    if (args.length !== 1) {
-      return super.getPath(...args)
-    }
-    // TODO: Remove the `getPath(name)` signature in 4.0.
-    deprecate(
-      'AdminController.getPath(name) is deprecated. ' +
-      'Use AdminController.resolveConfigPath(name) instead.'
-    )
-    return this.resolveConfigPath(...args)
+    this.isClosed = false
   }
 
   resolveConfigPath(name) {
@@ -57,7 +42,7 @@ export class AdminController extends Controller {
     return path.resolve(str)
   }
 
-  getDitoObject() {
+  getGlobalConfig() {
     // Expose api config and definitions to browser side:
     // Pass on the `config.app.normalizePaths` setting to Dito.js Admin:
     const { api = {}, settings = {} } = this.config
@@ -71,17 +56,17 @@ export class AdminController extends Controller {
     }
   }
 
-  sendDitoObject(ctx) {
+  sendGlobalConfig(ctx) {
     // Send back the global dito object as JavaScript code.
     ctx.type = 'text/javascript'
-    ctx.body = `window.dito = ${formatJson(this.getDitoObject())}`
+    ctx.body = `window.dito = ${formatJson(this.getGlobalConfig())}`
   }
 
   middleware() {
     // Shield admin views against unauthorized access.
     const authorization = this.processAuthorize(this.authorize)
     return async (ctx, next) => {
-      if (this.closed) {
+      if (this.isClosed) {
         // Avoid strange behavior during shut-down of the vite dev server.
         // Sending back a 408 response seems to work best, while a 503 sadly
         // would put the client into a state that prevents the server from a
@@ -89,7 +74,7 @@ export class AdminController extends Controller {
         ctx.status = 408 // Request Timeout
       } else if (ctx.url === '/dito.js') {
         // Don't call `next()`
-        this.sendDitoObject(ctx)
+        this.sendGlobalConfig(ctx)
       } else {
         if (/\/views\b/.test(ctx.url)) {
           await this.handleAuthorization(authorization, ctx)
@@ -128,6 +113,8 @@ export class AdminController extends Controller {
     const defaultConfig = {
       server: {
         middlewareMode: true,
+        // Serve HMR through the app's server, instead of on a port of its own:
+        ws: { server: this.app.server },
         ...(this.mode === 'development' && {
           watch: {
             // Watch the @ditojs packages while in dev mode, although they are
@@ -144,22 +131,17 @@ export class AdminController extends Controller {
     )
 
     const config = assignDeeply(defaultConfig, viteConfig)
-
-    if (config.server?.hmr?.port === 0) {
-      // Setting the port to 0 means use a random free port instead of vite's
-      // default 24678, since we may be running multiple servers in parallel.
-      config.server.hmr.port = await getRandomFreePort()
-    }
-
     const server = await createServer(config)
 
-    this.closed = false
+    this.isClosed = false
 
-    this.app.once('after:stop', () => {
+    // Close before the app's server, which waits for the upgraded sockets of
+    // the HMR clients to end:
+    this.app.once('before:stop', () => {
       // For good timing it seems crucial to not add more ticks with async
       // signature, so we directly return the `server.close()` promise instead.
-      if (!this.closed) {
-        this.closed = true
+      if (!this.isClosed) {
+        this.isClosed = true
         return server.close()
       }
     })
@@ -191,7 +173,7 @@ export class AdminController extends Controller {
             {
               // Private plugin to inject script tag above main module that
               // loads the `dito` object through its own end-point, see:
-              // `sendDitoObject()`
+              // `sendGlobalConfig()`
               name: 'inject-dito-object',
               transformIndexHtml: {
                 order: 'post',
