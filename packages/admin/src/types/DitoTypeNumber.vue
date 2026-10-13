@@ -5,8 +5,8 @@ DitoInput.dito-number(
   v-model="inputValue"
   type="number"
   v-bind="attributes"
-  :min="min"
-  :max="max"
+  :min="settings.min"
+  :max="settings.max"
   :step="stepValue"
 )
   template(#prefix)
@@ -23,32 +23,31 @@ DitoInput.dito-number(
 </template>
 
 <script>
-import DitoTypeComponent from '../DitoTypeComponent.js'
-import NumberMixin from '../mixins/NumberMixin.js'
+import { defineType } from '../utils/schema/types.ts'
+import { numberTraits } from './traits.ts'
+import { fieldProps, useField } from '../composables/useField.ts'
+import { useNumber } from '../composables/useNumber.ts'
 import DitoInputAffixes from '../components/DitoInputAffixes.vue'
-import { getInputAffixesProps } from '../utils/affixes.js'
 import { DitoInput } from '@ditojs/ui/src'
 
-export default DitoTypeComponent.register(
-  ['number', 'integer'],
-  // @vue/component
-  {
-    mixins: [NumberMixin],
-    components: { DitoInput, DitoInputAffixes },
-    nativeField: true,
-    textField: true,
+// @vue/component
+const DitoTypeNumber = {
+  components: { DitoInput, DitoInputAffixes },
+  props: fieldProps,
 
-    computed: {
-      inputAffixesProps() {
-        return getInputAffixesProps(this)
-      },
-
-      isInteger() {
-        return this.type === 'integer'
-      }
-    }
+  setup(props) {
+    const field = useField(props, { nativeField: true, textField: true })
+    return { ...field, ...useNumber(props, field) }
   }
-)
+}
+
+defineType({
+  type: ['number', 'integer'],
+  component: DitoTypeNumber,
+  ...numberTraits
+})
+
+export default DitoTypeNumber
 </script>
 
 <style lang="scss">

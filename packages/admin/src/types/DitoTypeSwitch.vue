@@ -3,30 +3,31 @@ DitoSwitch.dito-switch(
   :id="componentPath"
   ref="element"
   v-model="value"
-  :labels="labels"
+  :labels="schema.labels"
   v-bind="attributes"
 )
 </template>
 
 <script>
-import DitoTypeComponent from '../DitoTypeComponent.js'
+import { defineType } from '../utils/schema/types.ts'
+import { fieldProps, useField } from '../composables/useField.ts'
 import { DitoSwitch } from '@ditojs/ui/src'
 
 // @vue/component
-export default DitoTypeComponent.register('switch', {
+const DitoTypeSwitch = {
+  components: { DitoSwitch },
+  props: fieldProps,
+  setup: props => useField(props)
+}
+
+defineType({
+  type: 'switch',
+  component: DitoTypeSwitch,
   defaultValue: false,
-  defaultWidth: 'auto',
-
-  components: {
-    DitoSwitch
-  },
-
-  computed: {
-    labels() {
-      return this.schema.labels
-    }
-  }
+  defaultWidth: 'auto'
 })
+
+export default DitoTypeSwitch
 </script>
 
 <style lang="scss">

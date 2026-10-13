@@ -10,27 +10,36 @@ textarea.dito-textarea.dito-input(
 </template>
 
 <script>
-import DitoTypeComponent from '../DitoTypeComponent.js'
-import TextMixin from '../mixins/TextMixin'
-import { getSchemaAccessor } from '../utils/accessor.js'
+import { computed } from 'vue'
+import { defineType } from '../utils/schema/types.ts'
+import { textTraits } from './traits.ts'
+import { fieldProps, useField } from '../composables/useField.ts'
 
 // @vue/component
-export default DitoTypeComponent.register('textarea', {
-  mixins: [TextMixin],
-  nativeField: true,
-  textField: true,
+const DitoTypeTextarea = {
+  props: fieldProps,
 
-  computed: {
-    lines() {
-      return this.schema.lines || 4
-    },
-
-    resizable: getSchemaAccessor('resizable', {
-      type: Boolean,
-      default: false
-    })
+  setup(props) {
+    const field = useField(props, { nativeField: true, textField: true })
+    return {
+      ...field,
+      resizable: computed(() =>
+        field.getSchemaValue('resizable', { type: Boolean, default: false })
+      ),
+      lines: computed(() =>
+        field.getSchemaValue('lines', { type: Number, default: 4 })
+      )
+    }
   }
+}
+
+defineType({
+  type: 'textarea',
+  component: DitoTypeTextarea,
+  ...textTraits
 })
+
+export default DitoTypeTextarea
 </script>
 
 <style lang="scss">

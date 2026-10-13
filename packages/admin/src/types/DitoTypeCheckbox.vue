@@ -10,12 +10,21 @@
 </template>
 
 <script>
-import DitoTypeComponent from '../DitoTypeComponent.js'
+import { defineType } from '../utils/schema/types.ts'
+import { fieldProps, useField } from '../composables/useField.ts'
 
 // @vue/component
-export default DitoTypeComponent.register('checkbox', {
-  nativeField: true
+const DitoTypeCheckbox = {
+  props: fieldProps,
+  setup: props => useField(props, { nativeField: true })
+}
+
+defineType({
+  type: 'checkbox',
+  component: DitoTypeCheckbox
 })
+
+export default DitoTypeCheckbox
 </script>
 
 <style lang="scss">

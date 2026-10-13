@@ -86,7 +86,7 @@ describe('DitoTypeNumber', () => {
 
   describe('validation', () => {
     it('validates the value against `range` on blur', async () => {
-      const { findField, getComponent, getErrors } = await mountSchema({
+      const { findField, getErrors } = await mountSchema({
         schema: {
           components: { rating: { type: 'number', range: [1, 5] } }
         }
@@ -94,15 +94,14 @@ describe('DitoTypeNumber', () => {
       const input = findField('rating').find('input')
       await enterValue(input, '7')
       await input.trigger('blur')
-      expect(getComponent('rating').isValid).toBe(false)
       expect(getErrors('rating')).toHaveLength(1)
       await enterValue(input, '4')
       await input.trigger('blur')
-      expect(getComponent('rating').isValid).toBe(true)
+      expect(getErrors('rating')).toEqual([])
     })
 
     it('validates the decimals against the decimals of `step`', async () => {
-      const { findField, getComponent } = await mountSchema({
+      const { findField, getErrors } = await mountSchema({
         schema: {
           components: { price: { type: 'number', step: 0.05 } }
         }
@@ -110,10 +109,10 @@ describe('DitoTypeNumber', () => {
       const input = findField('price').find('input')
       await enterValue(input, '1.255')
       await input.trigger('blur')
-      expect(getComponent('price').isValid).toBe(false)
+      expect(getErrors('price')).toHaveLength(1)
       await enterValue(input, '1.25')
       await input.trigger('blur')
-      expect(getComponent('price').isValid).toBe(true)
+      expect(getErrors('price')).toEqual([])
     })
 
     it(`doesn't submit integers with decimals`, async () => {

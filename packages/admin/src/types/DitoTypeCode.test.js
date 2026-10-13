@@ -104,17 +104,19 @@ describe('DitoTypeCode', () => {
     expect(code().classes()).not.toContain('language-javascript')
   })
 
-  it('focuses and blurs the textarea of the editor', async () => {
-    const { findField, getComponent } = await mountSchema({
-      schema: { components: { snippet: { type: 'code' } } }
+  it('focuses the textarea of the editor', async () => {
+    const focus = vi.fn()
+    const blur = vi.fn()
+    const { findField, focusField } = await mountSchema({
+      schema: {
+        components: { snippet: { type: 'code', onFocus: focus, onBlur: blur } }
+      }
     })
     const textarea = findField('snippet').find('textarea').element
-    const component = getComponent('snippet')
-    await component.focus()
+    await focusField('snippet')
     expect(document.activeElement).toBe(textarea)
-    expect(component.focused).toBe(true)
-    component.blur()
-    expect(document.activeElement).not.toBe(textarea)
-    expect(component.focused).toBe(false)
+    expect(focus).toHaveBeenCalledOnce()
+    textarea.blur()
+    expect(blur).toHaveBeenCalledOnce()
   })
 })

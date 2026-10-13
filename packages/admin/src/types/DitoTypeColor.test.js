@@ -1,5 +1,7 @@
 import { vi } from 'vitest'
 import { tinycolor } from 'vue-color'
+import { hyphenate } from '@ditojs/utils'
+import { setupView } from '../utils/schema/setup.js'
 import { mountSchema, mountForm, enterValue } from '../test/mount.js'
 
 describe('DitoTypeColor', () => {
@@ -56,17 +58,24 @@ describe('DitoTypeColor', () => {
       schema: {
         components: {
           rgb: { type: 'color', format: 'rgb' },
-          hex8: { type: 'color', format: 'hex8' },
-          name: { type: 'color', format: 'name' }
+          hex8: { type: 'color', format: 'hex8' }
         }
       }
     })
     await enterValue(findField('rgb').find('input'), 'ff0000')
     await enterValue(findField('hex8').find('input'), 'ff0000')
-    await enterValue(findField('name').find('input'), 'ff0000')
     expect(data.rgb).toEqual({ r: 255, g: 0, b: 0, a: 1 })
     expect(data.hex8).toBe('#ff0000ff')
-    expect(data.name).toBe('red')
+  })
+
+  it('rejects the color format `name`', async () => {
+    const schema = {
+      type: 'view',
+      components: { background: { type: 'color', format: 'name' } }
+    }
+    await expect(
+      setupView({ defaults: {}, normalizePath: hyphenate }, schema, 'colors')
+    ).rejects.toThrow(`Unsupported color format: 'name'.`)
   })
 
   it('emits change once entered colors are written on blur', async () => {
@@ -213,7 +222,7 @@ describe('DitoTypeColor', () => {
   })
 
   it('keeps the value when picking the same color', async () => {
-    const { getComponent, data, settle } = await mountSchema({
+    const { getComponent, data, dataModel, settle } = await mountSchema({
       schema: { components: { background: { type: 'color' } } },
       data: { background: 'red' }
     })
@@ -221,7 +230,7 @@ describe('DitoTypeColor', () => {
     color.colorValue = tinycolor('#ff0000')
     await settle()
     expect(data.background).toBe('red')
-    expect(color.isDirty).toBe(false)
+    expect(dataModel.isDirty).toBe(false)
     color.colorValue = tinycolor('#ff000080')
     await settle()
     expect(data.background).toBe('#ff000080')

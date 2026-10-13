@@ -6,8 +6,8 @@
   )
     .dito-thumbnail__inner
       img(
-        v-if="source"
-        :src="source"
+        v-if="imageUrl"
+        :src="imageUrl"
         crossorigin="anonymous"
       )
       .dito-thumbnail__type(
@@ -18,57 +18,49 @@
 </template>
 
 <script>
-import DitoComponent from '../DitoComponent.js'
+import { computed, ref, watch } from 'vue'
 
-// @vue/component
-export default DitoComponent.component('DitoUploadFile', {
+export default {
   props: {
     file: { type: Object, required: true },
-    // The file object of the upload component while the file is added through
-    // it, see `DitoTypeUpload.getUpload()`.
+    // The file object of the upload component while the file is being added:
     upload: { type: Object, default: null },
     thumbnail: { type: String, default: null },
     thumbnailUrl: { type: String, default: null }
   },
 
-  data() {
-    return {
-      uploadUrl: null
-    }
-  },
+  setup(props) {
+    const uploadUrl = ref(null)
 
-  computed: {
-    type() {
-      return (
-        TYPES[this.file.type] ||
-        this.file.name.split('.').pop().toUpperCase()
-      )
-    },
-
-    source() {
-      return this.uploadUrl || this.thumbnailUrl
-    }
-  },
-
-  watch: {
-    'upload.file': {
-      immediate: true,
-      handler(file) {
-        if (this.thumbnail && file?.type.startsWith('image/')) {
+    watch(
+      () => props.upload?.file,
+      file => {
+        if (props.thumbnail && file?.type.startsWith('image/')) {
           const reader = new FileReader()
           reader.onload = () => {
-            this.uploadUrl = reader.result
+            uploadUrl.value = reader.result
           }
           reader.readAsDataURL(file)
         } else {
-          this.uploadUrl = null
+          uploadUrl.value = null
         }
-      }
+      },
+      { immediate: true }
+    )
+
+    return {
+      type: computed(
+        () => (
+          types[props.file.type] ||
+          props.file.name.split('.').pop().toUpperCase()
+        )
+      ),
+      imageUrl: computed(() => uploadUrl.value || props.thumbnailUrl)
     }
   }
-})
+}
 
-const TYPES = {
+const types = {
   'text/plain': 'TXT',
   'text/html': 'HTML',
   'text/css': 'CSS',

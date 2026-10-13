@@ -1,3 +1,4 @@
+import { clone } from '@ditojs/utils'
 import { mountSchema, mountForm, enterValue } from '../test/mount.js'
 
 describe('DitoTypeDate', () => {
@@ -29,13 +30,13 @@ describe('DitoTypeDate', () => {
     expect(getText('opensAt')).toMatch(/^09:15/)
   })
 
-  it('uses the date and time formats of `formats`', async () => {
+  it('uses the date and time formats of `format`', async () => {
     const { findField } = await mountSchema({
       schema: {
         components: {
           publishedOn: {
             type: 'date',
-            formats: { date: { month: 'short' } }
+            format: { date: { month: 'short' } }
           }
         }
       },
@@ -59,7 +60,7 @@ describe('DitoTypeDate', () => {
 
   it('sends dates as plain dates and date-times as ISO strings', async () => {
     const createdAt = new Date(2026, 4, 14, 8, 0)
-    const { findField, getComponent, submit } = await mountForm({
+    const { findField, dataModel, data, submit } = await mountForm({
       schema: {
         components: {
           publishedOn: { type: 'date' },
@@ -67,13 +68,108 @@ describe('DitoTypeDate', () => {
         }
       },
       data: { publishedOn: null, createdAt: null },
-      request: ({ data }) => ({ data })
+      // Respond with a copy, like a server:
+      request: ({ data }) => ({ data: clone(data) })
     })
     await enterValue(findField('publishedOn').find('input'), 'May 14, 2026')
-    getComponent('createdAt').value = createdAt
+    dataModel.set({ data, name: 'createdAt', dataPath: 'createdAt' }, createdAt)
     expect(await submit()).toMatchObject({
       publishedOn: '2026-05-14',
       createdAt: createdAt.toISOString()
+    })
+    // The response is deserialized again:
+    expect(data.publishedOn).toBeInstanceOf(Date)
+    expect(data.createdAt).toEqual(createdAt)
+  })
+
+  it(`keeps strings that aren't dates, e.g. times`, async () => {
+    const { findField, data, submit } = await mountForm({
+      schema: { components: { opensAt: { type: 'time' } } },
+      data: { opensAt: '14:30' },
+      request: ({ data }) => ({ data: clone(data) })
+    })
+    expect(data.opensAt).toBe('14:30')
+    expect(findField('opensAt').find('input').element.value).toBe('')
+    expect(await submit()).toMatchObject({ opensAt: '14:30' })
+  })
+
+  describe('date strings written by code', () => {
+    const expiresAt = new Date(2026, 9, 13, 14, 30)
+
+    const mountWithWrite = () =>
+      mountForm({
+        schema: {
+          components: {
+            expiryDate: { type: 'date' },
+            expiresAt: { type: 'datetime' },
+            renew: {
+              type: 'button',
+              onClick({ item }) {
+                item.expiryDate = '2026-10-13'
+                item.expiresAt = expiresAt.toISOString()
+              }
+            }
+          }
+        },
+        data: { expiryDate: null, expiresAt: null },
+        request: ({ data }) => ({ data: clone(data) })
+      })
+
+    it('displays them and passes them to the picker as dates', async () => {
+      const { findField, getComponent, settle } = await mountWithWrite()
+      await findField('renew').trigger('click')
+      await settle()
+      expect(findField('expiryDate').find('input').element.value).toBe(
+        'October 13, 2026'
+      )
+      expect(getComponent('expiryDate').$refs.element.modelValue).toEqual(
+        new Date(2026, 9, 13)
+      )
+      expect(getComponent('expiresAt').$refs.element.modelValue).toEqual(
+        expiresAt
+      )
+    })
+
+    it('keeps them in the data and sends them unchanged', async () => {
+      const { findField, data, settle, submit } = await mountWithWrite()
+      await findField('renew').trigger('click')
+      await settle()
+      expect(data.expiryDate).toBe('2026-10-13')
+      expect(await submit()).toMatchObject({
+        expiryDate: '2026-10-13',
+        expiresAt: expiresAt.toISOString()
+      })
+    })
+
+    it('converts them to dates once the user edits them', async () => {
+      const { findField, data, settle } = await mountWithWrite()
+      await findField('renew').trigger('click')
+      await settle()
+      await enterValue(findField('expiryDate').find('input'), 'May 14, 2026')
+      expect(data.expiryDate).toEqual(new Date(2026, 4, 14))
+    })
+
+    it('displays them in item labels as their type formats them', async () => {
+      const { findField, data, settle } = await mountForm({
+        schema: {
+          components: {
+            milestones: {
+              type: 'list',
+              itemLabel: 'due',
+              form: {
+                type: 'form',
+                components: { due: { type: 'date' } }
+              }
+            }
+          }
+        },
+        data: { milestones: [{ due: '2026-06-01' }] }
+      })
+      data.milestones[0].due = '2026-07-01'
+      await settle()
+      expect(findField('milestones').find('tbody td').text()).toBe(
+        'July 1, 2026'
+      )
     })
   })
 

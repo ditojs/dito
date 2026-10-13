@@ -6,49 +6,58 @@
     v-model="inputValue"
     type="range"
     v-bind="attributes"
-    :min="min"
-    :max="max"
+    :min="settings.min"
+    :max="settings.max"
     :step="stepValue"
   )
-  //- The range input holds the name and the label of the field, the number
-  //- input gets a label of its own and no name, to not submit it twice:
+  //- The range input holds the name and label, don't submit the number twice:
   DitoInput.dito-number(
     v-if="input"
     v-model="inputValue"
     type="number"
     v-bind="attributes"
     :name="null"
-    :aria-label="numberInputLabel"
-    :min="min"
-    :max="max"
+    :aria-label="`${label || labelize(schema.name)} Value`"
+    :min="settings.min"
+    :max="settings.max"
     :step="stepValue"
   )
 </template>
 
 <script>
-import DitoTypeComponent from '../DitoTypeComponent.js'
-import NumberMixin from '../mixins/NumberMixin.js'
-import { getSchemaAccessor } from '../utils/accessor.js'
+import { computed } from 'vue'
+import { labelize } from '@ditojs/utils'
+import { defineType } from '../utils/schema/types.ts'
+import { numberTraits } from './traits.ts'
+import { fieldProps, useField } from '../composables/useField.ts'
+import { useNumber } from '../composables/useNumber.ts'
 import { DitoInput } from '@ditojs/ui/src'
 
 // @vue/component
-export default DitoTypeComponent.register('slider', {
-  mixins: [NumberMixin],
+const DitoTypeSlider = {
   components: { DitoInput },
-  nativeField: true,
+  props: fieldProps,
 
-  computed: {
-    // TODO: Rename to `showInput`?
-    input: getSchemaAccessor('input', {
-      type: Boolean,
-      default: true
-    }),
-
-    numberInputLabel() {
-      return `${this.label || this.labelize(this.name)} Value`
+  setup(props) {
+    const field = useField(props, { nativeField: true })
+    return {
+      ...field,
+      ...useNumber(props, field),
+      labelize,
+      input: computed(() =>
+        field.getSchemaValue('input', { type: Boolean, default: true })
+      )
     }
   }
+}
+
+defineType({
+  type: 'slider',
+  component: DitoTypeSlider,
+  ...numberTraits
 })
+
+export default DitoTypeSlider
 </script>
 
 <style lang="scss">

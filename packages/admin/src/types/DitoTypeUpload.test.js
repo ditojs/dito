@@ -1,6 +1,7 @@
 import { vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import VueUpload from 'vue-upload-component'
+import Sortable from 'sortablejs'
 import { mountSchema, mountForm, stubConfirm } from '../test/mount.js'
 
 const cover = { name: 'cover.png', size: 2_500_000, type: 'image/png' }
@@ -44,6 +45,19 @@ describe('DitoTypeUpload', () => {
     ])
   })
 
+  it('sends single files with a `multiple()` callback that is false', async () => {
+    const { submit } = await mountForm({
+      schema: {
+        components: {
+          attachment: { type: 'upload', multiple: ({ item }) => item.isGallery }
+        }
+      },
+      data: { isGallery: false, attachment: cover },
+      request: ({ data }) => ({ data })
+    })
+    expect((await submit()).attachment).toEqual(cover)
+  })
+
   it('renders files with `render()`', async () => {
     const { findField } = await mountForm({
       schema: {
@@ -51,7 +65,8 @@ describe('DitoTypeUpload', () => {
           attachments: {
             type: 'upload',
             multiple: true,
-            render: ({ value, index }) => `${index + 1}: ${value.name}`
+            render: ({ value, valueIndex }) =>
+              `${valueIndex + 1}: ${value.name}`
           }
         }
       },
@@ -83,7 +98,7 @@ describe('DitoTypeUpload', () => {
 
   it('removes files after confirmation', async () => {
     const confirm = stubConfirm(true)
-    const { findField, data } = await mountForm({
+    const { findField, data, routeComponent } = await mountForm({
       schema: {
         components: {
           attachments: { type: 'upload', multiple: true, deletable: true },
@@ -100,6 +115,7 @@ describe('DitoTypeUpload', () => {
       'Do you really want to remove cover.png?'
     )
     expect(data.attachments).toEqual([scan])
+    expect(routeComponent.routeContext.isDirty).toBe(true)
     await findField('file').find('.dito-button--delete').trigger('click')
     await flushPromises()
     expect(data.file).toBe(null)
@@ -113,7 +129,7 @@ describe('DitoTypeUpload', () => {
       },
       data: { file: { ...scan, name: 'Tom & Jerry.pdf' } }
     })
-    const notify = vi.spyOn(admin.root, 'notify')
+    const notify = vi.spyOn(admin.context, 'notify')
     await findField('file').find('.dito-button--delete').trigger('click')
     await flushPromises()
     expect(notify).toHaveBeenCalledWith({
@@ -175,7 +191,7 @@ describe('DitoTypeUpload', () => {
 
   it('adds uploading files and replaces them with the uploaded files', async () => {
     const onChange = vi.fn()
-    const { findField, getComponent, data } = await mountForm({
+    const { findField, getComponent, data, routeComponent } = await mountForm({
       schema: {
         components: {
           attachments: { type: 'upload', multiple: true, onChange }
@@ -187,6 +203,7 @@ describe('DitoTypeUpload', () => {
     const uploadFile = createUploadFile(cover)
     upload.onInputFile(uploadFile, null)
     await flushPromises()
+    expect(routeComponent.routeContext.isDirty).toBe(true)
     expect(data.attachments).toEqual([
       scan,
       {
@@ -240,16 +257,67 @@ describe('DitoTypeUpload', () => {
     )
   })
 
-  it(`doesn't send files that weren't uploaded`, async () => {
-    const { getComponent, submit } = await mountForm({
-      schema: {
-        components: { attachments: { type: 'upload', multiple: true } }
-      },
-      data: { attachments: [scan] },
-      request: ({ data }) => ({ data })
+  describe('submitting while files upload', () => {
+    // Clicks the submit button while a file uploads, without waiting for the
+    // form to settle, as it waits for the upload.
+    async function submitWhileUploading() {
+      const { wrapper, getComponent, request, settle } = await mountForm({
+        schema: {
+          components: { attachments: { type: 'upload', multiple: true } }
+        },
+        data: { attachments: [scan] },
+        request: ({ data }) => ({ data })
+      })
+      const upload = getComponent('attachments')
+      const uploadFile = createUploadFile(cover)
+      upload.onInputFile(uploadFile, null)
+      await wrapper
+        .find('.dito-buttons--main button[type="submit"]')
+        .trigger('click')
+      await flushPromises()
+      // Returns the data that the form sent, or `null`:
+      const getSentData = () => (
+        request.mock.calls.find(
+          ([{ method = 'get' }]) => method !== 'get'
+        )?.[0].data ?? null
+      )
+      return { upload, uploadFile, settle, getSentData }
+    }
+
+    it('sends the files once they are uploaded', async () => {
+      const { upload, uploadFile, settle, getSentData } =
+        await submitWhileUploading()
+      expect(getSentData()).toBe(null)
+      upload.onInputFile(
+        {
+          ...uploadFile,
+          success: true,
+          response: [{ id: 'stored-1', ...cover }]
+        },
+        uploadFile
+      )
+      await settle()
+      expect(getSentData()).toMatchObject({
+        attachments: [scan, { id: 'stored-1', ...cover }]
+      })
     })
-    getComponent('attachments').onInputFile(createUploadFile(cover), null)
-    expect(await submit()).toMatchObject({ attachments: [scan] })
+
+    it(`doesn't wait for uploads that are removed`, async () => {
+      const { upload, uploadFile, settle, getSentData } =
+        await submitWhileUploading()
+      upload.onInputFile(undefined, uploadFile)
+      await settle()
+      expect(getSentData()).toMatchObject({ attachments: [scan] })
+    })
+
+    it(`doesn't send files that fail to upload`, async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+      const { upload, uploadFile, settle, getSentData } =
+        await submitWhileUploading()
+      upload.onInputFile({ ...uploadFile, error: 'network' }, uploadFile)
+      await settle()
+      expect(getSentData()).toMatchObject({ attachments: [scan] })
+    })
   })
 
   it('posts uploads to the upload resource of the data path', async () => {
@@ -385,7 +453,7 @@ describe('DitoTypeUpload', () => {
       data: { attachments: [] }
     })
     const upload = getComponent('attachments')
-    const remove = vi.spyOn(upload.upload, 'remove')
+    const remove = vi.spyOn(upload.$refs.upload, 'remove')
     const uploadFile = createUploadFile(cover)
     upload.onInputFile(uploadFile, null)
     upload.onInputFile(
@@ -650,9 +718,13 @@ describe('DitoTypeUpload', () => {
         data: { file: scan },
         api
       })
-      const download = vi
-        .spyOn(result.getComponent('file'), 'download')
-        .mockImplementation(() => {})
+      // The download clicks a link with the file's name and URL:
+      const download = vi.fn()
+      vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(
+        function () {
+          download({ filename: this.download, url: this.href })
+        }
+      )
       return { ...result, fetch, download, revokeObjectURL }
     }
 
@@ -759,12 +831,13 @@ describe('DitoTypeUpload', () => {
     })
 
     it('stores the files in the order they are dragged into', async () => {
-      const { admin, data } = await mountAttachments()
-      admin.wrapper
-        .findComponent({ name: 'DitoDraggable' })
-        .vm.$emit('update:modelValue', [...data.attachments].reverse())
+      const { findField, data, dataModel } = await mountAttachments()
+      Sortable.get(findField('attachments').find('tbody').element).option(
+        'onEnd'
+      )({ oldIndex: 0, newIndex: 1 })
       await flushPromises()
       expect(data.attachments).toEqual([scan, cover])
+      expect(dataModel.isDirty).toBe(true)
     })
 
     it('disables the drag handles and delete buttons when disabled', async () => {
