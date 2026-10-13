@@ -1,6 +1,6 @@
 <template lang="pug">
 .dito-affixes(
-  v-if="hasContent"
+  v-if="hasContent()"
   :class="classes"
 )
   slot(name="prepend")
@@ -10,7 +10,6 @@
     :class="getItemClasses(item)"
     :style="item.style"
     :item="item"
-    :parentContext="parentContext"
   )
   button.dito-affixes__clear(
     v-if="shouldShowClearButton"
@@ -28,13 +27,13 @@
 </template>
 
 <script>
-import DitoComponent from '../DitoComponent.js'
-import DitoAffix from './DitoAffix.vue'
+import { computed } from 'vue'
 import { asArray, isString } from '@ditojs/utils'
 import { hasSlotContent } from '@ditojs/ui/src'
+import DitoAffix from './DitoAffix.vue'
 import { shouldRenderSchema } from '../utils/schema/data.js'
 
-export default DitoComponent.component('DitoAffixes', {
+export default {
   components: { DitoAffix },
   emits: ['clear'],
 
@@ -43,23 +42,18 @@ export default DitoComponent.component('DitoAffixes', {
     mode: { type: String, default: null },
     position: { type: String, default: null },
     absolute: { type: Boolean, default: false },
-    // Whether the value can be cleared, and whether there's one to clear: The
-    // clear button only shows when both are true.
+    // The clear button only shows when both are true:
     clearable: { type: Boolean, default: false },
     hasValue: { type: Boolean, default: false },
     disabled: { type: Boolean, default: false },
     inlineInfo: { type: String, default: null },
+    // For the callbacks of the items:
     parentContext: { type: Object, required: true }
   },
 
-  computed: {
-    // Override DitoMixin's context with the parent's context
-    context() {
-      return this.parentContext
-    },
-
-    processedItems() {
-      return asArray(this.items)
+  setup(props, { slots }) {
+    const visibleItems = computed(() =>
+      asArray(props.items)
         .filter(Boolean)
         .map(item =>
           isString(item)
@@ -72,53 +66,53 @@ export default DitoComponent.component('DitoAffixes', {
                   ? { type: 'html', ...item }
                   : item
         )
-    },
+        .filter(item => shouldRenderSchema(item, props.parentContext))
+    )
 
-    visibleItems() {
-      return this.processedItems.filter(item =>
-        shouldRenderSchema(item, this.context)
-      )
-    },
+    const shouldShowClearButton = computed(
+      () => props.clearable && props.hasValue
+    )
 
-    classes() {
-      const prefix = 'dito-affixes'
-      return {
-        [`${prefix}--${this.position}`]: this.position,
-        [`${prefix}--${this.mode}`]: this.mode,
-        [`${prefix}--absolute`]: this.absolute
+    return {
+      visibleItems,
+      shouldShowClearButton,
+
+      classes: computed(() => {
+        const prefix = 'dito-affixes'
+        return {
+          [`${prefix}--${props.position}`]: props.position,
+          [`${prefix}--${props.mode}`]: props.mode,
+          [`${prefix}--absolute`]: props.absolute
+        }
+      }),
+
+      // Called in the template, as the slots aren't reactive:
+      hasContent() {
+        return (
+          visibleItems.value.length > 0 ||
+          shouldShowClearButton.value ||
+          !!props.inlineInfo ||
+          hasSlotContent(slots.prepend) ||
+          hasSlotContent(slots.append)
+        )
+      },
+
+      getItemClasses(item) {
+        const prefix = 'dito-affix'
+        return [
+          {
+            [`${prefix}--${item.type}`]: item.type,
+            [`${prefix}--ellipsis`]: (
+              props.mode === 'ellipsis' &&
+              ['text', 'html'].includes(item.type)
+            )
+          },
+          item.class
+        ]
       }
-    },
-
-    shouldShowClearButton() {
-      return this.clearable && this.hasValue
-    },
-
-    hasContent() {
-      return (
-        this.visibleItems.length > 0 ||
-        this.shouldShowClearButton ||
-        this.inlineInfo ||
-        hasSlotContent(this.$slots.prepend) ||
-        hasSlotContent(this.$slots.append)
-      )
-    }
-  },
-
-  methods: {
-    getItemClasses(item) {
-      const prefix = 'dito-affix'
-      return [
-        {
-          [`${prefix}--${item.type}`]: item.type,
-          [`${prefix}--ellipsis`]: (
-            this.mode === 'ellipsis' && ['text', 'html'].includes(item.type)
-          )
-        },
-        item.class
-      ]
     }
   }
-})
+}
 </script>
 
 <style lang="scss">

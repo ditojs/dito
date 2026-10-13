@@ -12,9 +12,7 @@ export class RequestError extends Error {
   }
 }
 
-// Returns the message of a request error, which is the response data or else
-// the request error, or `null` for responses without a message, e.g.
-// `{ type: 'ServerError' }`.
+// Responses without a message have none, e.g. `{ type: 'ServerError' }`:
 export function getErrorMessage(error) {
   return isString(error?.message) ? error.message : null
 }
@@ -50,8 +48,7 @@ export async function request(api, {
   return response
 }
 
-// Returns the key under which the `request()` method of components, see
-// `DitoMixin`, caches the response of a request.
+/** @param {Record<string, any>} options */
 export function getRequestCacheKey({ method, url, query, data }) {
   return [
     method || 'get',
@@ -61,25 +58,18 @@ export function getRequestCacheKey({ method, url, query, data }) {
   ].join(' ')
 }
 
-// Returns the URL that downloads of `url` fetch and link to: Relative URLs
-// such as `files/1` are resolved against the API, while absolute and
-// root-relative URLs such as `/files/1` stay as they are, unlike in
-// `getApiUrl()`, which prefixes root-relative URLs with the API URL too.
+// Unlike `getApiUrl()`, keep root-relative URLs such as `/files/1` as they are:
 export function resolveDownloadUrl(api, url) {
   return isAbsoluteUrl(url) || url.startsWith('/')
     ? url
     : api.getApiUrl({ url })
 }
 
-// Fetches the file at `url` as a blob, with the same authentication as
-// `request()`, e.g. for downloads of files that the API protects. `url` is
-// resolved through `resolveDownloadUrl()`.
 export async function fetchBlob(api, url) {
   const downloadUrl = resolveDownloadUrl(api, url)
   // Decide on the authentication with the absolute URL, as `isApiUrl()` treats
-  // all root-relative URLs as API URLs, the way `getApiUrl()` resolves them.
-  // Without `api.timeout`, as it would also cut off downloads of large files
-  // that take longer than any request.
+  // all root-relative URLs as API URLs. No `api.timeout`, as it would cut off
+  // downloads of large files:
   const response = await fetch(
     downloadUrl,
     getFetchOptions(api, getAbsoluteUrl(downloadUrl))
@@ -90,12 +80,10 @@ export async function fetchBlob(api, url) {
   return response.blob()
 }
 
-// Returns the options for uploads to `url` through `XMLHttpRequest`, with the
-// same authentication as `request()`.
 export function getUploadOptions(api, url) {
   const { headers, credentials } = getFetchOptions(api, url)
-  // Leave out the default JSON `Content-Type`, as uploads send multipart form
-  // data, the boundary of which `XMLHttpRequest` needs to set itself.
+  // Leave out the JSON `Content-Type`, as `XMLHttpRequest` needs to set the
+  // boundary of the multipart form data itself:
   return {
     headers: Object.fromEntries(
       Object.entries(headers).filter(
@@ -106,8 +94,7 @@ export function getUploadOptions(api, url) {
   }
 }
 
-// Returns the headers and credentials mode that requests to `url` send: Only
-// requests to the API receive its headers and, with CORS, its credentials.
+// Only requests to the API receive its headers and, with CORS, its credentials:
 function getFetchOptions(api, url) {
   const isApiUrl = api.isApiUrl(url)
   return {
@@ -119,18 +106,14 @@ function getFetchOptions(api, url) {
   }
 }
 
-// Returns a signal that aborts with `signal`, and after the timeout if there is
-// one, so that nothing waits for requests forever, e.g. submitting for pending
-// loads.
+// Abort after the timeout too, so nothing waits for requests forever:
 function getRequestSignal({ signal = null, timeout = null }) {
   const signals = [signal, timeout && AbortSignal.timeout(timeout)]
   return AbortSignal.any(signals.filter(Boolean))
 }
 
-// Returns whether requests to `url` go to the API: Relative and root-relative
-// URLs do, as `getApiUrl()` resolves them against the API, and absolute URLs
-// do if they are under the API URL, compared in their absolute forms so that
-// a root-relative API URL such as `/api` matches too.
+// Relative and root-relative URLs go to the API, as `getApiUrl()` resolves them
+// against it. Compare absolute forms, so a root-relative API URL matches too:
 export function isApiUrl(api, url) {
   return (
     !isAbsoluteUrl(url) ||
@@ -138,13 +121,11 @@ export function isApiUrl(api, url) {
   )
 }
 
-// Returns `url` resolved against the document's base URL.
 function getAbsoluteUrl(url) {
   return new URL(url, document.baseURI).href
 }
 
-// Returns whether `url` is `baseUrl` or a URL under it, e.g. `/api/books` in
-// `/api`, but not `/api-docs`.
+// `/api/books` is inside `/api`, but `/api-docs` isn't:
 function isUrlInside(url, baseUrl) {
   if (!url.startsWith(baseUrl)) {
     return false
@@ -161,7 +142,6 @@ export function getApiUrl(api, { url, query }) {
   if (!url.startsWith(api.url) && !isAbsoluteUrl(url)) {
     url = combineUrls(api.url, url)
   }
-  // Support optional query parameters, to be are added to the URL.
   const search = formatQuery(query)
   return search ? `${url}${url.includes('?') ? '&' : '?'}${search}` : url
 }

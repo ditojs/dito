@@ -1,8 +1,6 @@
 <template lang="pug">
-//- The prefix or suffix of the input of a type component, see `schema.prefix`
-//- and `schema.suffix`, and `getInputAffixesProps()` for their props. The
-//- suffix also holds the clear button of clearable components, and their info
-//- when they have no label to show it.
+//- The suffix also holds the clear button of clearable components, and their
+//- info when they have no label to show it.
 DitoAffixes(
   :items="items"
   :position="position"
@@ -23,11 +21,9 @@ DitoAffixes(
 </template>
 
 <script>
-import DitoComponent from '../DitoComponent.js'
 import DitoAffixes from './DitoAffixes.vue'
 
-// @vue/component
-export default DitoComponent.component('DitoInputAffixes', {
+export default {
   components: { DitoAffixes },
   emits: ['clear'],
 
@@ -43,8 +39,8 @@ export default DitoComponent.component('DitoInputAffixes', {
     clearable: { type: Boolean, default: false },
     hasValue: { type: Boolean, default: false },
     inlineInfo: { type: String, default: null },
-    // The context of the type component, for the callbacks of the items.
+    // For the callbacks of the items:
     parentContext: { type: Object, required: true }
   }
-})
+}
 </script>

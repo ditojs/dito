@@ -11,29 +11,14 @@
 </template>
 
 <script>
-import DitoComponent from '../DitoComponent.js'
-
-// @vue/component
-export default DitoComponent.component('DitoSpinner', {
+export default {
   props: {
-    loading: {
-      type: Boolean,
-      default: true
-    },
-    color: {
-      type: String,
-      default: null
-    },
-    size: {
-      type: String,
-      default: null
-    },
-    margin: {
-      type: String,
-      default: null
-    }
+    loading: { type: Boolean, default: true },
+    color: { type: String, default: null },
+    size: { type: String, default: null },
+    margin: { type: String, default: null }
   }
-})
+}
 </script>
 
 <style lang="scss">
