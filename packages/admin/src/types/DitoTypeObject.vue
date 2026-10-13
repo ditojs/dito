@@ -2,15 +2,16 @@
 .dito-object(
   v-if="isReady"
   :id="componentPath"
+  ref="element"
 )
   .dito-object-content(
     v-if="objectData"
   )
     DitoSourceItem(
       :schema="schema"
+      :formSchema="getItemFormSchema(schema, objectData, context)"
       :dataPath="dataPath"
       :data="objectData"
-      :meta="nestedMeta"
       :store="store"
       :disabled="disabled || isLoading"
       :collapsed="collapsed"
@@ -18,67 +19,55 @@
       :deletable="deletable"
       @delete="deleteItem(objectData)"
     )
-  //- NOTE: For inlined objects, `DitoEditButtons` here only handle the create
-  //- button outside of the schema, the other edit buttons inside are handled by
-  //- `DitoSchemaInlined`.
+  //- NOTE: Inlined objects only get the create button here, the other edit
+  //- buttons are in `DitoSchemaInlined`.
   DitoEditButtons(
     :buttons="buttonSchemas"
     :schema="schema"
     :dataPath="dataPath"
     :data="objectData"
-    :meta="meta"
     :store="store"
     :disabled="disabled || isLoading"
     :creatable="creatable"
-    :createPath="createPath"
+    :createPath="sourceContext.createPath"
     :editable="editable"
-    :editPath="path"
+    :editPath="sourceContext.objectPath"
     :deletable="!isInlined && deletable"
     @delete="deleteItem(objectData)"
   )
 </template>
 
 <script>
-import DitoTypeComponent from '../DitoTypeComponent.js'
+import { defineType } from '../utils/schema/types.ts'
+import { sourceTraits } from './traits.ts'
+import { fieldProps } from '../composables/useField.ts'
+import { useSource } from '../composables/useSource.ts'
 import DitoSourceItem from '../components/DitoSourceItem.vue'
-import SourceMixin from '../mixins/SourceMixin.js'
 import { resolveSchemaComponent } from '../utils/schema/setup.js'
+import { getItemFormSchema } from '../utils/schema/lookup.js'
 
 // @vue/component
-export default DitoTypeComponent.register('object', {
-  mixins: [SourceMixin],
+const DitoTypeObject = {
   components: { DitoSourceItem },
+  props: fieldProps,
+  setup: props => ({ ...useSource(props), getItemFormSchema })
+}
 
-  getSourceType(type) {
-    // No need for transformation here. See TypeTreeList for details.
-    return type
-  },
+defineType({
+  type: 'object',
+  component: DitoTypeObject,
+  ...sourceTraits,
+  sourceType: 'object',
 
-  async processSchema(
-    api,
-    schema,
-    name,
-    routes,
-    level,
-    nested = false,
-    flatten = false,
-    process = null
-  ) {
+  async setupSchema({ schema, api, name }) {
     await Promise.all([
       resolveSchemaComponent(schema),
-      SourceMixin.processSchema(
-        api,
-        schema,
-        name,
-        routes,
-        level,
-        nested,
-        flatten,
-        process
-      )
+      sourceTraits.setupSchema({ schema, api, name })
     ])
   }
 })
+
+export default DitoTypeObject
 </script>
 
 <style lang="scss">

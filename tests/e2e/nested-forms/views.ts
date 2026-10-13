@@ -26,15 +26,13 @@ export const albums = createWidgetView<Album>(
             components: {
               title: { type: 'text', label: 'Track Title' },
               length: { type: 'text', label: 'Length' },
-              // Replaces the data of the transient form, like actions that
-              // load data for an item.
+              // Resets the data of the transient form, like actions that load
+              // data for an item.
               fillLength: {
                 type: 'button',
                 text: 'Fill Length',
-                events: {
-                  click: ({ item, formComponent }) => {
-                    formComponent?.setData({ ...item, length: '3:30' })
-                  }
+                onClick: ({ item, resetItem }) => {
+                  resetItem({ ...item, length: '3:30' })
                 }
               }
             }
