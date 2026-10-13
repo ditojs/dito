@@ -3,66 +3,70 @@ td(
   :class="cell.class"
   :style="cell.style"
 )
-  //- TODO: Implement inlined components in cell mode!
   component(
     v-if="cell.component"
     :is="cell.component"
-    :schema="schema"
-    :dataPath="dataPath"
-    :data="data"
-    :meta="meta"
-    :store="store"
-    :nested="nested"
-    :disabled="disabled"
+    :schema="cell"
+    :context="cellContext"
+    :modelValue="data[cell.name]"
   )
   span(
     v-else
-    v-html="renderCell(data)"
+    v-html="cellHtml"
   )
 </template>
 
 <script>
-import DitoComponent from '../DitoComponent.js'
-import DitoContext from '../DitoContext.js'
-import ContextMixin from '../mixins/ContextMixin.js'
-import { appendDataPath } from '../utils/data.js'
+import { computed } from 'vue'
 import { escapeHtml } from '@ditojs/utils'
+import {
+  useServices,
+  useSchemaContext
+} from '../composables/useSchemaContext.ts'
+import { appendDataPath } from '../utils/data.js'
+import { getItemDisplayValue } from '../utils/schema/data.js'
 
-// @vue/component
-export default DitoComponent.component('DitoTableCell', {
-  mixins: [ContextMixin],
-
+export default {
   props: {
-    // The schema of the cell, e.g. a column of a list or a property of a tree
-    // item, whose `name` is the key of its value in `data`.
+    // A column or tree property, whose `name` is the key of its value:
     cell: { type: Object, required: true },
-    // The schema of the list or tree that holds the item.
+    // The list or tree that holds the item:
     schema: { type: Object, required: true },
-    // The data path and data of the item, see `renderCell()`.
     dataPath: { type: String, required: true },
     data: { type: Object, required: true },
-    meta: { type: Object, required: true },
     store: { type: Object, required: true },
     nested: { type: Boolean, default: true },
     disabled: { type: Boolean, default: false }
   },
 
-  methods: {
-    renderCell(item) {
-      const { name, render } = this.cell
-      const value = item[name]
-      return render
-        ? render.call(
-            this,
-            new DitoContext(this, {
-              name,
-              value,
-              data: item,
-              dataPath: appendDataPath(this.dataPath, name)
-            })
-          )
-        : escapeHtml(value)
+  setup(props) {
+    const services = useServices()
+    const { createContext } = useSchemaContext(props, { services })
+    const cellContext = computed(() => {
+      const { name } = props.cell
+      return createContext({
+        name,
+        value: props.data[name],
+        dataPath: appendDataPath(props.dataPath, name),
+        nested: true
+      })
+    })
+
+    return {
+      cellContext,
+      cellHtml: computed(() => {
+        const { name, render } = props.cell
+        return render
+          ? render(cellContext.value)
+          : escapeHtml(
+              getItemDisplayValue(props.schema, props.data, name, {
+                services,
+                dataPath: props.dataPath,
+                context: cellContext.value
+              })
+            )
+      })
     }
   }
-})
+}
 </script>

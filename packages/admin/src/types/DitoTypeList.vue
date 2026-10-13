@@ -2,6 +2,7 @@
 .dito-list(
   v-if="isReady"
   :id="componentPath"
+  ref="element"
   role="region"
   :aria-label="label || labelize(schema.name)"
 )
@@ -10,17 +11,17 @@
   )
     DitoScopes(
       v-if="scopes"
-      :query="query"
+      :listQuery="listQuery"
       :scopes="scopes"
+      :context="context"
     )
-    //- When there's only pagination without scopes, we need a good ol' spacer
-    //- div, for the layout not to break...
+    //- Pagination without scopes needs a spacer for the layout:
     .dito-spacer(
       v-else-if="hasPagination"
     )
     DitoPagination(
       v-if="hasPagination"
-      :query="query"
+      :listQuery="listQuery"
       :limit="paginate"
       :total="total || 0"
     )
@@ -34,21 +35,22 @@
   )
     DitoTableHead(
       v-if="columns"
-      :query="query"
+      :listQuery="listQuery"
       :columns="columns"
       :hasEditButtons="hasEditButtons"
+      :context="context"
     )
     DitoDraggable(
       as="tbody"
       :options="getDraggableOptions()"
       :draggable="draggable"
       :modelValue="listData"
-      @update:modelValue="value => (listData = value)"
     )
-      tr(
+      tr.dito-table__row(
         v-for="(item, index) in listData"
         :id="getComponentPath(index)"
         :key="getItemUid(schema, item)"
+        :class="{ 'dito-table__row--error': dataModel.hasErrorsWithin(item) }"
       )
         template(
           v-if="columns"
@@ -64,7 +66,6 @@
               :schema="schema"
               :dataPath="getDataPath(index)"
               :data="item"
-              :meta="nestedMeta"
               :store="store"
               :nested="false"
               :disabled="disabled || isLoading"
@@ -75,10 +76,10 @@
           td
             DitoSourceItem(
               :schema="schema"
+              :formSchema="getItemFormSchema(schema, item, context)"
               :dataPath="getDataPath(index)"
               :data="item"
               :index="index"
-              :meta="nestedMeta"
               :store="getItemStore(item)"
               :disabled="disabled || isLoading"
               :collapsed="collapsed"
@@ -86,30 +87,28 @@
               :deletable="deletable"
               :draggable="draggable && listData.length > 1"
               :editable="editable"
-              :editPath="getEditPath(item, index)"
-              :createPath="createPath"
+              :editPath="getEditPath(index)"
+              :createPath="sourceContext.createPath"
               :insertIndex="creatable && draggable ? index : null"
               @delete="deleteItem(item, index)"
-              @move="delta => moveItem(item, delta)"
+              @move="delta => moveItem(index, delta)"
             )
         td.dito-table__buttons(
           v-if="hasCellEditButtons"
         )
           DitoEditButtons(
-            nested
             :schema="schema"
             :formSchema="getItemFormSchema(schema, item, context)"
             :dataPath="getDataPath(index)"
             :data="item"
-            :meta="nestedMeta"
             :store="getItemStore(item)"
             :disabled="disabled || isLoading"
             :deletable="deletable"
             :draggable="draggable"
             :editable="editable"
-            :editPath="getEditPath(item, index)"
+            :editPath="getEditPath(index)"
             @delete="deleteItem(item, index)"
-            @move="delta => moveItem(item, delta)"
+            @move="delta => moveItem(index, delta)"
           )
     //- Render the list buttons inside the table when not in a single
     //- component view, with the item that holds the list as their data:
@@ -123,185 +122,158 @@
             :data="data"
           )
   //- ...and outside, sticky to the bottom, when in a single component view,
-  //- with the list data as their data, e.g. for buttons that store its order:
+  //- with the list data as their item, e.g. for buttons that store its order:
   DitoEditButtons.dito-buttons--large.dito-buttons--main.dito-buttons--sticky(
     v-if="hasListButtons && single"
     v-bind="listButtonsAttributes"
     :data="listData"
+    :itemDataPath="dataPath"
   )
 </template>
 
 <script>
-import DitoTypeComponent from '../DitoTypeComponent.js'
+import { defineType } from '../utils/schema/types.ts'
+import { sourceTraits } from './traits.ts'
+import { fieldProps } from '../composables/useField.ts'
+import { useSource } from '../composables/useSource.ts'
+import { useSortable } from '../composables/useSortable.ts'
+import { useSchemaValue } from '../composables/useSchemaValue.ts'
 import DitoSourceItem from '../components/DitoSourceItem.vue'
-import SourceMixin from '../mixins/SourceMixin.js'
-import SortableMixin from '../mixins/SortableMixin.js'
 import {
   resolveSchemaComponent,
   resolveSchemaComponents
 } from '../utils/schema/setup.js'
-import { getViewEditPath } from '../utils/schema/lookup.js'
 import { createFiltersPanel, getFiltersDataErrors } from '../utils/filter.js'
 import { appendDataPath } from '../utils/data.js'
-import { getListWithMovedItem } from '../utils/list.js'
-import { hyphenate } from '@ditojs/utils'
+import { getItemUid } from '../utils/schema/data.js'
+import { getItemFormSchema } from '../utils/schema/lookup.js'
+import { hyphenate, labelize } from '@ditojs/utils'
 import { computed } from 'vue'
 
 // @vue/component
-export default DitoTypeComponent.register('list', {
-  mixins: [SourceMixin, SortableMixin],
+const DitoTypeList = {
   components: { DitoSourceItem },
+  props: fieldProps,
 
-  getSourceType(type) {
-    // No need for transformation here. See TypeTreeList for details.
-    return type
-  },
+  setup(props) {
+    const source = useSource(props, {
+      onFilterErrors(errors) {
+        // The filters panel is its own container:
+        const [panel] = source.services.adminContext.ui.getHandles(
+          appendDataPath(source.componentPath.value, '$filters')
+        )
+        panel?.dataContext.showValidationErrors(getFiltersDataErrors(errors))
+        return !!panel
+      }
+    })
+    const { getDraggableOptions, moveItem } = useSortable({
+      getListEntry: () => source.listEntry.value,
+      onChange: source.onChange
+    })
+    const { listData, editable, deletable, draggable, creatable } = source
+    const hasListButtons = computed(
+      () => !!(source.buttonSchemas.value || creatable.value)
+    )
+    const hasEditButtons = computed(
+      () => (
+        listData.value.length > 0 &&
+        (editable.value || deletable.value || draggable.value)
+      )
+    )
+    const hasCellEditButtons = computed(
+      () => !source.isInlined.value && hasEditButtons.value
+    )
 
-  getPanelSchema(api, schema, dataPath, component) {
+    return {
+      ...source,
+      shouldRenderSchema: useSchemaValue(source.context).shouldRenderSchema,
+      labelize,
+      getItemUid,
+      getItemFormSchema,
+      getDraggableOptions,
+      moveItem,
+      hasListButtons,
+      hasEditButtons,
+      hasCellEditButtons,
+      dataModel: computed(() => source.services.dataContext.model),
+      hasPagination: computed(() => !!source.paginate.value),
+      hasEvenCount: computed(() => !(listData.value.length % 2)),
+
+      numColumns: computed(() => {
+        const columns = source.columns.value
+        return (
+          (columns ? Object.keys(columns).length : 1) +
+          (hasCellEditButtons.value ? 1 : 0)
+        )
+      }),
+
+      listButtonsAttributes: computed(() => ({
+        buttons: source.buttonSchemas.value,
+        schema: props.schema,
+        dataPath: props.dataPath,
+        store: props.store,
+        nested: props.nested,
+        disabled: source.disabled.value || source.isLoading.value,
+        creatable: creatable.value,
+        createPath: source.sourceContext.createPath
+      })),
+
+      getDataPath(index) {
+        return appendDataPath(props.dataPath, index)
+      },
+
+      getComponentPath(index) {
+        return appendDataPath(source.componentPath.value, index)
+      },
+
+      getEditPath(index) {
+        return editable.value ? source.sourceContext.getItemPath(index) : null
+      },
+
+      getCellClass(column) {
+        return `dito-cell--${hyphenate(column.name)}`
+      }
+    }
+  }
+}
+
+defineType({
+  type: 'list',
+  component: DitoTypeList,
+  ...sourceTraits,
+  sourceType: 'list',
+
+  getPanelSchema(api, schema, dataPath, source) {
     const { filters } = schema
-    // See if this list component wants to display a filter panel, and if so,
-    // create the panel schema for it through `getFiltersPanel()`.
     if (filters) {
       return createFiltersPanel(
         api,
         filters,
         dataPath,
-        // Pass a computed value to get / set the query, see
-        // `createFiltersPanel()`.
         computed({
           get() {
-            return component.query
+            return source.listQuery.query
           },
 
-          // The panel clears the page, but it's only reset when the filters
-          // change the query, as the filtered list then has other pages.
+          // Only reset the page that the panel clears when the query changes:
           set({ page, ...query }) {
-            component.listQuery.update(query, { resetPage: true })
+            source.listQuery.update(query, { resetPage: true })
           }
         })
       )
     }
   },
 
-  computed: {
-    hasPagination() {
-      return !!this.paginate
-    },
-
-    hasListButtons() {
-      return !!(this.buttonSchemas || this.creatable)
-    },
-
-    listButtonsAttributes() {
-      return {
-        buttons: this.buttonSchemas,
-        schema: this.schema,
-        dataPath: this.dataPath,
-        meta: this.meta,
-        store: this.store,
-        nested: this.nested,
-        disabled: this.disabled || this.isLoading,
-        creatable: this.creatable,
-        createPath: this.createPath
-      }
-    },
-
-    hasEditButtons() {
-      const { listData } = this
-      return (
-        listData.length > 0 && (
-          this.editable ||
-          this.deletable ||
-          this.draggable
-        )
-      )
-    },
-
-    hasCellEditButtons() {
-      return !this.isInlined && this.hasEditButtons
-    },
-
-    hasEvenCount() {
-      return !(this.listData.length % 2)
-    },
-
-    numColumns() {
-      return (
-        (this.columns ? Object.keys(this.columns).length : 1) +
-        (this.hasCellEditButtons ? 1 : 0)
-      )
-    }
-  },
-
-  methods: {
-    getDataPath(index) {
-      return appendDataPath(this.dataPath, index)
-    },
-
-    getComponentPath(index) {
-      return appendDataPath(this.componentPath, index)
-    },
-
-    getEditPath(item, index) {
-      if (this.editable) {
-        const id = this.getItemId(this.schema, item, index)
-        return (
-          getViewEditPath(this.schema, id, this.context) ||
-          `${this.path}/${id}`
-        )
-      }
-      return null
-    },
-
-    // Moves the item by `delta` positions, see `DitoDragHandle`.
-    moveItem(item, delta) {
-      const listData = getListWithMovedItem(this.listData, item, delta)
-      if (listData) {
-        this.listData = listData
-        this.onChange()
-      }
-    },
-
-    getCellClass(column) {
-      return `dito-cell--${hyphenate(column.name)}`
-    },
-
-    onFilterErrors(errors) {
-      const filtersDataPath = appendDataPath(this.dataPath, '$filters')
-      const panel = this.schemaComponent.getPanelByDataPath(filtersDataPath)
-      if (panel) {
-        panel.showValidationErrors(getFiltersDataErrors(errors), true)
-        return true
-      }
-    }
-  },
-
-  async processSchema(
-    api,
-    schema,
-    name,
-    routes,
-    level,
-    nested = false,
-    flatten = false,
-    process = null
-  ) {
+  async setupSchema({ schema, api, name }) {
     await Promise.all([
       resolveSchemaComponent(schema),
       resolveSchemaComponents(schema.columns),
-      SourceMixin.processSchema(
-        api,
-        schema,
-        name,
-        routes,
-        level,
-        nested,
-        flatten,
-        process
-      )
+      sourceTraits.setupSchema({ schema, api, name })
     ])
   }
 })
+
+export default DitoTypeList
 </script>
 
 <style lang="scss">

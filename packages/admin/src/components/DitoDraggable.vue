@@ -1,7 +1,8 @@
 <template lang="pug">
 //- The sortable is always rendered, also when not `draggable`, so that the
-//- children aren't remounted when `draggable` changes, see `watch`.
+//- children aren't remounted when `draggable` changes.
 UseSortable.dito-draggable(
+  ref="sortable"
   :class="{ 'dito-draggable--dragging': isDragging }"
   :as="as"
   :modelValue="modelValue"
@@ -12,98 +13,78 @@ UseSortable.dito-draggable(
 </template>
 
 <script>
-import DitoComponent from '../DitoComponent'
-import DomMixin from '../mixins/DomMixin.js'
+import { ref, useTemplateRef, watch } from 'vue'
 import { UseSortable } from '@vueuse/integrations/useSortable/component'
 import Sortable from 'sortablejs'
+import { useDomEvents } from '../composables/useDomEvents.ts'
 
-// @vue/component
-export default DitoComponent.component('DitoDraggable', {
-  mixins: [DomMixin],
+export default {
   components: { UseSortable },
   emits: ['update:modelValue'],
 
   props: {
-    modelValue: {
-      type: Array,
-      required: true
-    },
-    as: {
-      type: String,
-      default: 'div'
-    },
-    options: {
-      type: Object,
-      required: true
-    },
-    draggable: {
-      type: Boolean,
-      default: true
-    }
+    modelValue: { type: Array, required: true },
+    as: { type: String, default: 'div' },
+    options: { type: Object, required: true },
+    draggable: { type: Boolean, default: true }
   },
 
-  data() {
-    return {
-      isDragging: false
+  setup(props) {
+    const { domOn } = useDomEvents()
+    const isDragging = ref(false)
+    // The document handlers that clear `isDragging` after dragging:
+    let dragEndHandlers = null
+
+    const removeDragEndHandlers = () => {
+      dragEndHandlers?.remove()
+      dragEndHandlers = null
     }
-  },
 
-  watch: {
-    draggable(draggable) {
-      this.getSortable()?.option('disabled', !draggable)
+    const onMouseAfterDragEnd = () => {
+      isDragging.value = false
+      removeDragEndHandlers()
     }
-  },
 
-  created() {
-    // `UseSortable` reads its options only once when it's mounted, so they're
-    // built once here. The handlers call the handlers of the current
-    // `options`, and `draggable` toggles the `disabled` option, see `watch`.
-    this.sortableOptions = {
-      ...this.options,
-      disabled: !this.draggable,
-      onStart: this.onStart,
-      onEnd: this.onEnd
+    // `UseSortable` reads its options only once when it's mounted: Delegate to
+    // the current `options`, and toggle `disabled` in the watcher below.
+    const sortableOptions = {
+      ...props.options,
+      disabled: !props.draggable,
+
+      onStart(event) {
+        props.options.onStart?.(event)
+        isDragging.value = true
+        removeDragEndHandlers()
+      },
+
+      onEnd(event) {
+        props.options.onEnd?.(event)
+        // Keep `isDragging` true until the next mouse interaction so that
+        // confused hover states are cleared before removing the hover catcher.
+        removeDragEndHandlers()
+        dragEndHandlers = domOn(document, {
+          mousedown: onMouseAfterDragEnd,
+          mousemove: onMouseAfterDragEnd,
+          mouseleave: onMouseAfterDragEnd
+        })
+      }
     }
-    // The document handlers that clear `isDragging`, see `onEnd()`:
-    this.dragEndHandlers = null
-  },
 
-  methods: {
-    // Returns the `Sortable` instance that `UseSortable` created on the
-    // element.
-    getSortable() {
-      return this.$el instanceof HTMLElement ? Sortable.get(this.$el) : null
-    },
+    // Toggle the `Sortable` instance that `UseSortable` created on its element:
+    const sortable = useTemplateRef('sortable')
+    watch(
+      () => props.draggable,
+      draggable => {
+        const element = sortable.value?.$el
+        if (element instanceof HTMLElement) {
+          Sortable.get(element)?.option('disabled', !draggable)
+        }
+      }
+    )
 
-    onStart(event) {
-      this.options.onStart?.(event)
-      this.isDragging = true
-      this.removeDragEndHandlers()
-    },
-
-    onEnd(event) {
-      this.options.onEnd?.(event)
-      // Keep `isDragging` true until the next mouse interaction so that
-      // confused hover states are cleared before removing the hover catcher.
-      this.removeDragEndHandlers()
-      this.dragEndHandlers = this.domOn(document, {
-        mousedown: this.onMouseAfterDragEnd,
-        mousemove: this.onMouseAfterDragEnd,
-        mouseleave: this.onMouseAfterDragEnd
-      })
-    },
-
-    onMouseAfterDragEnd() {
-      this.isDragging = false
-      this.removeDragEndHandlers()
-    },
-
-    removeDragEndHandlers() {
-      this.dragEndHandlers?.remove()
-      this.dragEndHandlers = null
-    }
+    return { isDragging, sortableOptions }
   }
-})
+}
 </script>
 
 <style lang="scss">

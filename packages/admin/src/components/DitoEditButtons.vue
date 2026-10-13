@@ -5,7 +5,7 @@ DitoButtons.dito-edit-buttons(
   :buttons="buttons"
   :dataPath="dataPath"
   :data="data"
-  :meta="meta"
+  :itemDataPath="context.itemDataPath"
   :store="store"
   :nested="nested"
   :disabled="disabled"
@@ -28,7 +28,7 @@ DitoButtons.dito-edit-buttons(
     :schema="schema"
     :dataPath="dataPath"
     :data="data"
-    :meta="meta"
+    :itemDataPath="context.itemDataPath"
     :store="store"
     :nested="nested"
     :path="createPath"
@@ -46,30 +46,30 @@ DitoButtons.dito-edit-buttons(
 </template>
 
 <script>
-import DitoComponent from '../DitoComponent.js'
-import DitoDragHandle from './DitoDragHandle.vue'
-import ContextMixin from '../mixins/ContextMixin.js'
+import { computed } from 'vue'
 import { DitoButton } from '@ditojs/ui/src'
 import { capitalize } from '@ditojs/utils'
+import DitoDragHandle from './DitoDragHandle.vue'
+import { useSchemaContext } from '../composables/useSchemaContext.ts'
+import { useSchemaValue } from '../composables/useSchemaValue.ts'
+import { getVerbs } from '../utils/services.ts'
+import { isInlined } from '../utils/schema/structure.js'
 
-// @vue/component
-export default DitoComponent.component('DitoEditButtons', {
-  mixins: [ContextMixin],
+export default {
   components: { DitoButton, DitoDragHandle },
   emits: ['delete', 'move'],
 
   props: {
     buttons: { type: Object, default: null },
-    // The schema of the component that owns the buttons, e.g. the list or
-    // object source, or the select. The `draggable`, `editable`, `creatable`
-    // and `deletable` props are already resolved from it.
+    // The owning source or select, which the flag props are resolved from:
     schema: { type: Object, required: true },
-    // The form schema of the item that per-item buttons act on, which can
-    // disable the buttons for its items, see `hasFormOption()`.
+    // The form of the item, which can disable the buttons of its items:
     formSchema: { type: Object, default: null },
     dataPath: { type: String, required: true },
     data: { type: [Object, Array], default: null },
-    meta: { type: Object, required: true },
+    // The data path of `data`, if it isn't the item at `dataPath`, e.g. of the
+    // list data of list buttons in single component views:
+    itemDataPath: { type: String, default: null },
     store: { type: Object, required: true },
     nested: { type: Boolean, default: false },
     disabled: { type: Boolean, required: true },
@@ -78,78 +78,73 @@ export default DitoComponent.component('DitoEditButtons', {
     creatable: { type: Boolean, default: false },
     deletable: { type: Boolean, default: false },
     editPath: { type: String, default: null },
-    // The query of the edit route, e.g. to keep the current one in trees.
     editQuery: { type: Object, default: null },
     createPath: { type: String, default: null },
     insertIndex: { type: Number, default: null },
-    // Whether the buttons are round, as in lists and objects, or square and
-    // compact, as in the rows of trees.
+    // Round in lists and objects, square and compact in the rows of trees:
     round: { type: Boolean, default: true }
   },
 
-  computed: {
-    formLabel() {
-      return this.getLabel(this.schema.form)
-    },
+  setup(props) {
+    const { context, services } = useSchemaContext(props)
+    const { getSchemaValue, getLabel } = useSchemaValue(context)
+    const verbs = computed(() => getVerbs(services))
 
-    editRoute() {
-      const { editPath, editQuery } = this
-      return editPath ? { path: editPath, query: editQuery ?? undefined } : {}
-    },
+    // Forms can disable each option with `false` or a callback returning it:
+    const hasFormOption = name => (
+      !props.formSchema ||
+      getSchemaValue(name, {
+        schema: props.formSchema,
+        type: Boolean,
+        default: true
+      })
+    )
 
-    isDraggableDisabled() {
-      return this.disabled || !this.hasFormOption('draggable')
-    },
+    return {
+      context,
+      verbs,
 
-    isDeletableDisabled() {
-      return this.disabled || !this.hasFormOption('deletable')
-    },
+      editRoute: computed(() => {
+        const { editPath, editQuery } = props
+        return editPath
+          ? { path: editPath, query: editQuery ?? undefined }
+          : {}
+      }),
 
-    isEditableDisabled() {
-      return (
-        this.disabled ||
-        !this.editPath ||
-        !this.hasFormOption('editable')
-      )
-    },
+      isDraggableDisabled: computed(
+        () => props.disabled || !hasFormOption('draggable')
+      ),
 
-    isCreatableDisabled() {
-      return (
-        this.disabled ||
-        !this.createPath ||
-        !this.hasFormOption('creatable')
-      )
-    },
+      isDeletableDisabled: computed(
+        () => props.disabled || !hasFormOption('deletable')
+      ),
 
-    createButtonText() {
-      return (
-        // Allow schema to override create button through creatable object:
-        this.schema.creatable?.label || (
-          // Auto-generate create button labels from from labels for list
-          // sources with only one form:
-          this.formLabel &&
-          `${capitalize(this.verbs.create)} ${this.formLabel}`
-        ) ||
-        null
-      )
-    }
-  },
+      isEditableDisabled: computed(
+        () => props.disabled || !props.editPath || !hasFormOption('editable')
+      ),
 
-  methods: {
-    hasFormOption(name) {
-      // All options can be disabled on a per-form basis by setting
-      // `formSchema[name]` to `false` or a callback returning `false`.
-      return (
-        !this.formSchema ||
-        this.getSchemaValue(name, {
-          schema: this.formSchema,
-          type: Boolean,
-          default: true
-        })
-      )
+      isCreatableDisabled: computed(
+        () => (
+          props.disabled ||
+          // Inlined sources create their items in place, without a route:
+          !props.createPath && !isInlined(props.schema) ||
+          !hasFormOption('creatable')
+        )
+      ),
+
+      createButtonText: computed(() => {
+        const formLabel = getLabel(props.schema.form)
+        return (
+          // Allow schema to override create button through creatable object:
+          getSchemaValue('creatable')?.label ||
+          // Derive the label from the form label for sources with one form:
+          (formLabel && `${capitalize(verbs.value.create)} ${formLabel}`) ||
+          null
+        )
+      })
     }
   }
-})
+}
 </script>
 
 <style lang="scss">

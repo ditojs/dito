@@ -18,10 +18,8 @@ const playlists = createWidgetView<PlaylistItem>(
     editFirstTrack: {
       type: 'button',
       text: 'Edit First Track',
-      events: {
-        click: async ({ item, navigate }) => {
-          await navigate(`/library/tracks/${item.tracks?.[0]?.id}`)
-        }
+      onClick: async ({ item, navigate }) => {
+        await navigate(`/library/tracks/${item.tracks?.[0]?.id}`)
       }
     },
     tracks: {
@@ -43,7 +41,7 @@ const playlists = createWidgetView<PlaylistItem>(
             relate: true,
             clearable: true,
             options: {
-              dataPath: '../..',
+              dataPath: '..',
               label: 'title'
             }
           },
@@ -54,7 +52,7 @@ const playlists = createWidgetView<PlaylistItem>(
             label: 'Next Track Title',
             disabled: true,
             exclude: true,
-            compute: ({ item }) => item.nextTrack?.title ?? null
+            computeValue: ({ item }) => item.nextTrack?.title ?? null
           }
         }
       }
@@ -80,12 +78,12 @@ const tracks = createWidgetView<Track & { initial?: string | null }>(
       if: ({ item }) => item.title.length > 0,
       disabled: true,
       exclude: true,
-      compute: ({ item }) => item.title.charAt(0)
+      computeValue: ({ item }) => item.title.charAt(0)
     }
   },
   {
     // Loaded items are numbered by their order key, with the offset of the
-    // loaded page, see `SourceMixin.setLoadedListItems()`.
+    // loaded page, see `useSourceData()`.
     orderKey: 'order',
     paginate: 2,
     columns: { title: { label: 'Title' }, order: { label: 'Order' } }

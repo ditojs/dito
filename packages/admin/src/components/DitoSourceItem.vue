@@ -1,13 +1,12 @@
 <template lang="pug">
-//- Renders an item of a list or object source: Inlined items render their
-//- form, others the source's `component`, `render()` or the item's label.
+//- Inlined items render their form, others the source's `component`, or the
+//- label that the source renders for them.
 DitoSchemaInlined(
   v-if="isInlined"
-  :label="inlinedLabel"
+  :label="label"
   :schema="formSchema"
   :dataPath="dataPath"
   :data="data"
-  :meta="meta"
   :store="store"
   :disabled="disabled"
   :collapsed="collapsed"
@@ -24,41 +23,37 @@ DitoSchemaInlined(
 component(
   v-else-if="schema.component"
   :is="schema.component"
-  :dataPath="dataPath"
-  :data="data"
-  :nested="false"
-)
-span(
-  v-else-if="sourceComponent.render"
-  v-html="renderedItem"
+  :schema="schema"
+  :context="context"
+  :modelValue="data"
 )
 span(
   v-else
-  v-html="itemLabel"
+  v-html="label"
 )
 </template>
 
 <script>
-import DitoComponent from '../DitoComponent.js'
-import DitoContext from '../DitoContext.js'
-import { isInlined, isListSource } from '../utils/schema/structure.js'
-import { getItemFormSchema } from '../utils/schema/lookup.js'
+import { computed, provide } from 'vue'
+import { useSchemaContext } from '../composables/useSchemaContext.ts'
+import { isInlined } from '../utils/schema/structure.js'
+import { sourceSchemaKey } from '../utils/keys.ts'
 
-// @vue/component
-export default DitoComponent.component('DitoSourceItem', {
+export default {
   emits: ['delete', 'move'],
 
   props: {
-    // The schema of the list or object source that holds the item.
+    // The list or object source that holds the item:
     schema: { type: Object, required: true },
+    // The form of the item, which inlined items render:
+    formSchema: { type: Object, required: true },
     dataPath: { type: String, required: true },
     data: { type: Object, required: true },
-    // The index of the item in a list source, `null` in object sources.
+    // `null` in object sources:
     index: { type: Number, default: null },
-    meta: { type: Object, required: true },
     store: { type: Object, required: true },
     disabled: { type: Boolean, required: true },
-    // The remaining props only apply to inlined items, see `DitoSchemaInlined`:
+    // The remaining props only apply to inlined items:
     collapsed: { type: Boolean, default: false },
     collapsible: { type: Boolean, default: false },
     draggable: { type: Boolean, default: false },
@@ -69,46 +64,25 @@ export default DitoComponent.component('DitoSourceItem', {
     insertIndex: { type: Number, default: null }
   },
 
-  computed: {
-    isInlined() {
-      return isInlined(this.schema)
-    },
-
-    formSchema() {
-      return getItemFormSchema(
-        this.schema,
-        this.data,
-        this.sourceComponent.context
-      )
-    },
-
-    inlinedLabel() {
-      // List items always show their label, objects only when collapsible.
-      return isListSource(this.schema) || this.collapsible
-        ? this.sourceComponent.getItemLabel(this.schema, this.data, {
-            index: this.index,
-            asObject: true
-          })
-        : null
-    },
-
-    itemLabel() {
-      return this.sourceComponent.getItemLabel(this.schema, this.data, {
-        index: this.index
-      })
-    },
-
-    renderedItem() {
-      const { sourceComponent } = this
-      return sourceComponent.render(
-        new DitoContext(sourceComponent, {
-          data: this.data,
-          value: this.data,
-          index: this.index,
-          dataPath: this.dataPath
-        })
+  setup(props) {
+    // The form of the item displays an item of the source:
+    provide(
+      sourceSchemaKey,
+      computed(() => props.schema)
+    )
+    const { createContext, services } = useSchemaContext(props)
+    return {
+      // For the custom components that render the items:
+      context: createContext({
+        get index() {
+          return props.index
+        }
+      }),
+      isInlined: computed(() => isInlined(props.schema)),
+      label: computed(() =>
+        services.sourceContext.getSourceItemLabel(props.data, props.index)
       )
     }
   }
-})
+}
 </script>

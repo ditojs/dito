@@ -1,4 +1,6 @@
 import { vi } from 'vitest'
+// Register the actual type components, for their `deserializeValue()`:
+import '../types/index.js'
 import { ref } from 'vue'
 import {
   createFiltersPanel,
@@ -51,27 +53,6 @@ function createPanel({
   const queryRef = ref(query)
   const panel = createFiltersPanel({ defaults }, filters, 'books', queryRef)
   return { panel, query: queryRef }
-}
-
-// Mimics the panel's schema component, with the computed properties and
-// methods of the panel schema bound to it.
-function createPanelComponent(panel, data) {
-  const component = {
-    schema: panel,
-    data,
-    resetData: vi.fn(() => {
-      for (const key in component.data) {
-        component.data[key] = {}
-      }
-    })
-  }
-  for (const [key, getter] of Object.entries(panel.computed)) {
-    Object.defineProperty(component, key, { get: getter.bind(component) })
-  }
-  for (const [key, method] of Object.entries(panel.methods)) {
-    component[key] = method.bind(component)
-  }
-  return component
 }
 
 describe('filterComponents', () => {
@@ -237,7 +218,7 @@ describe('createFiltersPanel()', () => {
       expect(panel.data()).toEqual({
         $title: { operator: 'starts-with', text: 'The' },
         $author: {},
-        $published: { from: '2020-01-01T00:00:00.000Z', to: null },
+        $published: { from: new Date('2020-01-01T00:00:00.000Z'), to: null },
         $genres: { genres: ['poetry', 'essay'] },
         $available: { available: false }
       })
@@ -291,43 +272,47 @@ describe('createFiltersPanel()', () => {
     })
   })
 
+  // Applies the filters of `data` through the panel's submit button, like the
+  // data that the panel displays, and returns the formatted filters:
+  function applyFilters(panel, query, data) {
+    panel.buttons.submit.onClick({ item: data })
+    return query.value.filter
+  }
+
   describe('formatting filter data into the query', () => {
     it('formats each filter as its name and JSON arguments', () => {
-      const { panel } = createPanel()
-      const component = createPanelComponent(panel, {
+      const { panel, query } = createPanel()
+      const filters = applyFilters(panel, query, {
         $title: { operator: 'contains', text: 'Sea' },
         $author: {},
         $published: { from: new Date('2020-01-01T00:00:00Z'), to: null },
         $genres: { genres: ['poetry'] },
         $available: { available: false }
       })
-      expect(component.filters).toEqual([
+      expect(filters).toEqual([
         'title:"contains","Sea"',
         'published:"2020-01-01T00:00:00.000Z",null',
         'genres:["poetry"]',
         // `false` is a value, unlike `null`, so the filter still applies:
         'available:false'
       ])
-      expect(component.hasFilters).toBe(true)
     })
 
     it('fills missing arguments with `null` to keep their sequence', () => {
-      const { panel } = createPanel()
-      const component = createPanelComponent(panel, {
-        $title: { text: 'Sea' }
-      })
-      expect(component.filters).toEqual(['title:null,"Sea"'])
+      const { panel, query } = createPanel()
+      expect(applyFilters(panel, query, { $title: { text: 'Sea' } })).toEqual(
+        ['title:null,"Sea"']
+      )
     })
 
     it('leaves out filters with only `null` or missing arguments', () => {
-      const { panel } = createPanel()
-      const component = createPanelComponent(panel, {
+      const { panel, query } = createPanel()
+      const filters = applyFilters(panel, query, {
         $title: { operator: null, text: null },
         $published: { from: null },
         $author: null
       })
-      expect(component.filters).toEqual([])
-      expect(component.hasFilters).toBe(false)
+      expect(filters).toEqual([])
     })
 
     it('round-trips the filters through the query', () => {
@@ -339,10 +324,8 @@ describe('createFiltersPanel()', () => {
         $genres: { genres: ['fiction', 'essay'] },
         $available: { available: true }
       }
-      const component = createPanelComponent(panel, data)
-      component.applyFilters()
+      applyFilters(panel, query, data)
       expect(panel.data()).toEqual(data)
-      expect(query.value.filter).toEqual(component.filters)
     })
   })
 
@@ -351,10 +334,7 @@ describe('createFiltersPanel()', () => {
       const { panel, query } = createPanel({
         query: { page: 3, order: 'title' }
       })
-      const component = createPanelComponent(panel, {
-        $author: { text: 'Woolf' }
-      })
-      component.applyFilters()
+      applyFilters(panel, query, { $author: { text: 'Woolf' } })
       expect(query.value).toEqual({
         order: 'title',
         filter: ['author:"Woolf"'],
@@ -364,23 +344,10 @@ describe('createFiltersPanel()', () => {
 
     it('applies the filters when the panel data changes', () => {
       const { panel, query } = createPanel()
-      const component = createPanelComponent(panel, {
-        $author: { text: 'Woolf' }
-      })
-      panel.events.change.call(component)
+      const data = panel.data()
+      data.$author.text = 'Woolf'
+      panel.onChange()
       expect(query.value.filter).toEqual(['author:"Woolf"'])
-    })
-
-    it('resets the data and applies the empty filters when clearing', () => {
-      const { panel, query } = createPanel({
-        query: { filter: ['author:"Woolf"'], page: 2 }
-      })
-      const component = createPanelComponent(panel, {
-        $author: { text: 'Woolf' }
-      })
-      component.clearFilters()
-      expect(component.resetData).toHaveBeenCalledOnce()
-      expect(query.value).toEqual({ filter: [], page: undefined })
     })
   })
 
@@ -400,20 +367,8 @@ describe('createFiltersPanel()', () => {
     it('disables the clear button while there are no filters', () => {
       const { panel } = createPanel()
       const { disabled } = panel.buttons.clear
-      expect(disabled({ schemaComponent: { hasFilters: false } })).toBe(true)
-      expect(disabled({ schemaComponent: { hasFilters: true } })).toBe(false)
-    })
-
-    it('delegates clicks to the panel schema component', () => {
-      const { panel } = createPanel()
-      const schemaComponent = {
-        clearFilters: vi.fn(),
-        applyFilters: vi.fn()
-      }
-      panel.panelButtons.clear.events.click({ schemaComponent })
-      panel.buttons.submit.events.click({ schemaComponent })
-      expect(schemaComponent.clearFilters).toHaveBeenCalledOnce()
-      expect(schemaComponent.applyFilters).toHaveBeenCalledOnce()
+      expect(disabled({ item: { $author: { text: null } } })).toBe(true)
+      expect(disabled({ item: { $author: { text: 'Woolf' } } })).toBe(false)
     })
   })
 })
