@@ -4,7 +4,7 @@ DitoOptionList.dito-radio-buttons(
   role="radiogroup"
   :aria-label="label"
   :options="options"
-  :isGrouped="!!groupBy"
+  :isGrouped="isGrouped"
   :layout="schema.layout"
 )
   template(#option="{ option, isFirstOption }")
@@ -22,27 +22,47 @@ DitoOptionList.dito-radio-buttons(
       :schema="schema"
       :dataPath="dataPath"
       :data="data"
-      :meta="meta"
       :store="store"
-      :parentContext="context"
       :optionValue="getValueForOption(option)"
     )
 </template>
 
 <script>
-import DitoTypeComponent from '../DitoTypeComponent.js'
-import OptionsMixin from '../mixins/OptionsMixin.js'
+import { defineType } from '../utils/schema/types.ts'
+import { optionsTraits } from './traits.ts'
+import { fieldProps, useField } from '../composables/useField.ts'
+import { useOptions } from '../composables/useOptions.ts'
 import DitoOptionList from '../components/DitoOptionList.vue'
 import DitoOptionsEditButtons from '../components/DitoOptionsEditButtons.vue'
 
 // @vue/component
-export default DitoTypeComponent.register('radio', {
-  mixins: [OptionsMixin],
+const DitoTypeRadio = {
   components: { DitoOptionList, DitoOptionsEditButtons },
+  props: fieldProps,
 
-  nativeField: true,
+  setup(props) {
+    const field = useField(props, {
+      nativeField: true,
+      // The contexts of the field hold its options:
+      members: {
+        get options() {
+          return optionsField.options.value
+        }
+      }
+    })
+    const optionsField = useOptions(props, field)
+    return { ...field, ...optionsField }
+  }
+}
+
+defineType({
+  type: 'radio',
+  component: DitoTypeRadio,
+  ...optionsTraits,
   defaultWidth: 'auto'
 })
+
+export default DitoTypeRadio
 </script>
 
 <style lang="scss">
