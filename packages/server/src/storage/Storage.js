@@ -28,6 +28,13 @@ export class Storage {
     this.storage = null
   }
 
+  // Internal, called by the application: storage implementations set
+  // themselves up here, like `DiskStorage` and `S3Storage`. Their subclasses
+  // override `initialize()`, which stays empty, so they never need to call
+  // super.
+  // @overridable
+  async setup() {}
+
   // @overridable
   async initialize() {}
 

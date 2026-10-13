@@ -29,9 +29,10 @@ code changes in most apps.
 
 ### Services and storages
 
-`Service.setup(config)` is `configure(config)`, which services override to read
-their configuration. The application starts and stops its services itself. A
-`setup()` that a service still overrides isn't called anymore:
+Services read their configuration as `this.config` in `initialize()`, which
+needs no `super` call, instead of overriding `setup(config)`. The application
+starts and stops its services itself. A `setup()` that a service still
+overrides isn't called anymore:
 
 ```js
 // Before:
@@ -41,16 +42,15 @@ setup(config) {
 }
 
 // After:
-configure(config) {
-  super.configure(config)
-  this.client = createClient(config)
+async initialize() {
+  this.client = createClient(this.config)
 }
 ```
 
 Storages are created with `constructor(app, name, config)` and named by their
 key in `config.storages`, as `config.name` isn't read anymore.
 `app.addStorage(config, name)` needs the name. Custom storages move the work of
-`setup()` into the async `initialize()`.
+`setup()` into the async `initialize()`, which needs no `super` call.
 
 ### Queries
 

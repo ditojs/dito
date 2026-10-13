@@ -13,7 +13,7 @@ export class S3Storage extends Storage {
   bucket = null
 
   // @override
-  async initialize() {
+  async setup() {
     const {
       s3,
       acl,

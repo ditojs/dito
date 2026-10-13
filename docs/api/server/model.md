@@ -583,9 +583,10 @@ static setup()
 ```
 
 Called once by [`app.setupModels()`](application.md#setupmodels), before
-`initialize()`. Empty by default; mixins use it, e.g.
-[`UserMixin`](#usermixin) registers its Passport strategy here, so call
-`super.setup()` when overriding it in their subclasses. *Hook.*
+`initialize()`. Internal: dito's mixins override it, e.g.
+[`UserMixin`](#usermixin) registers its Passport strategy here, and call
+`super.setup()`. Apps override [`initialize()`](#static-initialize)
+instead, which needs no `super`.
 
 ### `static` initialize()
 

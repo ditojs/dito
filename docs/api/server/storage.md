@@ -12,7 +12,7 @@ controller [`assets`](controllers.md#assets), and available as
 assets](../../guide/server/storages.md).
 
 The disk and S3 storages are built in. `@aws-sdk/client-s3` is an optional
-peer dependency, imported when an S3 storage initializes.
+peer dependency, imported when an S3 storage is set up.
 
 ## StorageConfig
 
@@ -97,12 +97,26 @@ const storage = new DiskStorage(app, 'covers', {
 | `path`          | `string \| undefined`             | `config.path`.                                                      |
 | `concurrency`   | `number`                          | `config.concurrency`, default `8`.                                  |
 | `isInitialized` | `boolean`                         | Set to `true` by `app.setupStorages()`.                             |
-| `storage`       | `multer.StorageEngine \| null`    | The multer storage engine for uploads, created by `initialize()`. |
+| `storage`       | `multer.StorageEngine \| null`    | The multer storage engine for uploads, created by `setup()`.      |
 
 ## Methods
 
 The methods that take a `file` need only its `key`, so stored file objects
 can be passed as they are.
+
+### setup()
+
+```js
+await storage.setup()
+```
+
+Sets up the storage backend: the disk storage checks `path` and creates its
+multer disk storage, the S3 storage imports the AWS SDK and creates its client.
+A disk storage without `path` throws here. Internal, called by
+[`app.setupStorages()`](application.md#setupstorages) before `initialize()`.
+Storage implementations, like the custom storages below, set themselves up
+here; their subclasses override [`initialize()`](#initialize), which needs no
+`super`. Returns `Promise<void>`.
 
 ### initialize()
 
@@ -110,9 +124,8 @@ can be passed as they are.
 await storage.initialize()
 ```
 
-Sets up the storage backend: the disk storage checks `path` and creates its
-multer disk storage, the S3 storage imports the AWS SDK and creates its client.
-A disk storage without `path` throws here. *Hook.* Returns `Promise<void>`.
+Asynchronous initialization, after `setup()`. Does nothing by default, so
+overrides need no `super` call. *Hook.* Returns `Promise<void>`.
 
 ### addFile()
 
@@ -259,7 +272,7 @@ const middleware = storage.getUploadHandler(config)
 Returns Koa middleware that receives multipart uploads into the storage, with
 the multer options in `config` (plus `readDimensions`). Used by controller asset
 routes. `getUploadStorage(config)` returns the multer storage engine it uses.
-Returns `Koa.Middleware | null`: `null` before `initialize()`.
+Returns `Koa.Middleware | null`: `null` before `setup()`.
 
 ## Custom storages
 

@@ -115,6 +115,8 @@ export class Model extends objection.Model {
     defineAccessor(this.prototype, false)
   }
 
+  // Internal: overridden by dito's mixins (e.g. `UserMixin`), which call
+  // `super.setup()`. Apps override `initialize()`, which needs no `super`.
   // @overridable
   static setup() {}
 

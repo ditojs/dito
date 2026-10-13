@@ -10,7 +10,7 @@ export class DiskStorage extends Storage {
   static type = 'disk'
 
   // @override
-  async initialize() {
+  async setup() {
     if (!this.path) {
       throw new Error(`Missing configuration (path) for storage ${this.name}`)
     }

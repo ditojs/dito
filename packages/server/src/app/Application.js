@@ -230,6 +230,7 @@ export class Application extends Koa {
       Object.values(this.storages)
         .filter(storage => !storage.isInitialized)
         .map(async storage => {
+          await storage.setup()
           await storage.initialize()
           storage.isInitialized = true
         })

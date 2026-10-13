@@ -13,10 +13,12 @@ are set up.
 ## Constructor
 
 ```js
-const service = new Service(app, name?)
+const service = new Service(app, name?, config?)
 ```
 
-Usually the application creates services from the classes passed to it.
+Usually the application creates services from the classes passed to it. To
+create one yourself, e.g. in tests, pass its configuration as `config`:
+`new MailService(app, 'mail', { host: 'localhost' })`.
 
 #### Parameters
 
@@ -24,6 +26,7 @@ Usually the application creates services from the classes passed to it.
 | ------ | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `app`  | [`Application`](application.md) | The application.                                                                                                                                  |
 | `name` | `string`                        | The name. Default: the class name. A `Service` suffix is removed and the result camel-cased: `'MailService'` → `'mail'`, `'search-index'` → `'searchIndex'`. |
+| `config` | `object`                      | The configuration. Default: `null`; the application passes none and sets it through the internal `configure()` once the service exists, as class fields can override `name`. |
 
 The application passes the key under which the service class was given as
 `name`, and registers the service under `service.name` after construction. A
@@ -44,7 +47,7 @@ The logger keeps the name passed to the constructor.
 | --------------- | ------------------------------- | ---------------------------------------------------------------------------- |
 | `app`           | [`Application`](application.md) | The application.                                                             |
 | `name`          | `string`                        | The name under which `app.services` holds the service.                       |
-| `config`        | `object \| null`                | The configuration, set by [`configure()`](#configure).                       |
+| `config`        | `object \| null`                | The configuration, set before [`initialize()`](#initialize).                 |
 | `isInitialized` | `boolean`                       | Set to `true` by `app.setupServices()`.                                      |
 | `logger`        | `pino.Logger`                   | A child of [`app.logger`](application.md#properties), named after the hyphenated service name. |
 
@@ -56,9 +59,9 @@ The logger keeps the name passed to the constructor.
 service.configure(config)
 ```
 
-Receives `config.services[name]` and stores it as `config`. Overrides can
-normalize it before calling `super.configure()`, e.g.
-`super.configure({ port: 25, ...config })`. *Hook.*
+Receives `config.services[name]` and stores it as `config`. Internal, called
+by [`app.setupServices()`](application.md#setupservices): override
+`initialize()`, `start()` or `stop()` instead, which need no `super` call.
 
 ### initialize()
 
@@ -66,8 +69,8 @@ normalize it before calling `super.configure()`, e.g.
 await service.initialize()
 ```
 
-Asynchronous setup after `configure()`. Does nothing by default. *Hook.* Returns
-`Promise<void>`.
+Asynchronous setup, after `config` is set. Does nothing by default. *Hook.*
+Returns `Promise<void>`.
 
 ### start()
 

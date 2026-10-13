@@ -11,14 +11,10 @@ import { Service } from '@ditojs/server'
 import nodemailer from 'nodemailer'
 
 export class MailService extends Service {
-  configure(config) {
-    super.configure({ port: 25, ...config })
-  }
-
   async initialize() {
     this.transport = nodemailer.createTransport({
       host: this.config.host,
-      port: this.config.port
+      port: this.config.port ?? 25
     })
   }
 
@@ -96,20 +92,18 @@ Code that uses a service that may be turned off checks for it:
 
 ## Lifecycle
 
-The application calls `configure(config)` with `config.services[name]` when
-it is set up; it stores it as `this.config`, and overrides call
-`super.configure()`. `initialize()` follows right after, and is awaited, for
-asynchronous setup. `start()` is called when the application starts, before
-it listens, and `stop()` once it has stopped. See the
-[`Service` API](../../api/server/service.md#methods).
+When the application is set up, it stores `config.services[name]` as
+`this.config` and awaits `initialize()`, for asynchronous setup. `start()` is
+called when the application starts, before it listens, and `stop()` once it
+has stopped. See the [`Service` API](../../api/server/service.md#methods).
 
 All of them are optional. The application sets up storages first, then
 services, then models and controllers, so services can use storages in
 `initialize()`, and models can use services in their own `initialize()`.
 
-`configure()` and `initialize()` also run when the application is only set
-up, e.g. by `dito console` or scripts that call `app.setup()`. Work that
-should only happen in a running server, such as timers, belongs in `start()`:
+`initialize()` also runs when the application is only set up, e.g. by
+`dito console` or scripts that call `app.setup()`. Work that should only happen
+in a running server, such as timers, belongs in `start()`:
 
 ```js
 export class CleanupService extends Service {

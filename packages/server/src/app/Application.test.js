@@ -378,12 +378,29 @@ describe('Application', () => {
     it('sets up and initializes storages only once', async () => {
       const app = createApp()
       const storage = new DiskStorage(app, 'files', { path: storagePath })
+      const setup = vi.spyOn(storage, 'setup')
       const initialize = vi.spyOn(storage, 'initialize')
       app.addStorage(storage, 'files')
       await app.setupStorages()
       await app.setupStorages()
+      expect(setup).toHaveBeenCalledTimes(1)
       expect(initialize).toHaveBeenCalledTimes(1)
       expect(storage.isInitialized).toBe(true)
+    })
+
+    it('sets up storages that override `initialize()`', async () => {
+      class PhotoStorage extends DiskStorage {
+        async initialize() {
+          this.hasNestedFolders = this.nestedFolders
+        }
+      }
+      const app = createApp()
+      const storage = new PhotoStorage(app, 'photos', { path: storagePath })
+      app.addStorage(storage, 'photos')
+      await app.setupStorages()
+      expect(storage.hasNestedFolders).toBe(true)
+      expect(storage.storage).not.toBeNull()
+      expect(storage.getUploadHandler({})).toBeInstanceOf(Function)
     })
 
     it('rejects storages with invalid configurations on setup', async () => {
