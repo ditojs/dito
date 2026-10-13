@@ -1,5 +1,4 @@
-import { vi } from 'vitest'
-import { stripHtml, stripTags } from './stripHtml.js'
+import { stripHtml } from './stripHtml.js'
 
 describe('stripHtml()', () => {
   it('should remove html tags from strings', () => {
@@ -34,34 +33,5 @@ describe('stripHtml()', () => {
   it('should trim leading and trailing whitespace', () => {
     expect(stripHtml('  <p>text</p>  ')).toBe('text')
     expect(stripHtml('<p>  text  </p>')).toBe('text')
-  })
-})
-
-describe('stripTags()', () => {
-  let warn
-
-  beforeEach(() => {
-    warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-  })
-
-  afterEach(() => {
-    warn.mockRestore()
-  })
-
-  it('should strip html like stripHtml()', () => {
-    expect(stripTags('<p>Chapter <em>one</em></p><p>Two</p>')).toBe(
-      'Chapter one\nTwo'
-    )
-    expect(stripTags(null)).toBe('')
-    expect(warn).toHaveBeenCalledExactlyOnceWith(
-      expect.stringContaining('deprecated in favour of `stripHtml`')
-    )
-  })
-
-  it('should warn about its deprecation only once', () => {
-    stripTags('<b>a</b>')
-    stripTags('<b>b</b>')
-    // The first test already triggered the single warning.
-    expect(warn).not.toHaveBeenCalled()
   })
 })

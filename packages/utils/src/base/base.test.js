@@ -519,7 +519,12 @@ describe('isEmpty()', () => {
     [array, false],
     [[], true],
     [string, false],
-    ['', true]
+    ['', true],
+    [new Map(), true],
+    [new Map([[1, 2]]), false],
+    [new Set(), true],
+    [new Set([1]), false],
+    [new Date(), false]
   ])(
     'isEmpty(%o)',
     (value, expected) => {

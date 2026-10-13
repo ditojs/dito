@@ -38,7 +38,9 @@ describe('isCreditCard()', () => {
     '899999996234917882863855',
     'prefix6234917882863855',
     '623491788middle2863855',
-    '6234917882863855suffix'
+    '6234917882863855suffix',
+    // A Visa prefix with 14 digits, as Visa numbers have 13 or 16:
+    '41111111111114'
   ])(
     'isCreditCard(%o)',
     str => {

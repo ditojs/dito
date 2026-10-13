@@ -5,25 +5,27 @@ export function debounceAsync(func, options) {
 
   let timer = null
   let callbacks = []
-  let cancelled = false
+  let result
 
   const resolve = result => {
     for (const { resolve } of callbacks) {
       resolve(result)
     }
+    callbacks = []
   }
 
   const execute = async (that, args) => {
     try {
-      resolve(await func.apply(that, args))
+      result = await func.apply(that, args)
+      resolve(result)
     } catch (err) {
       // Convention: reject the last waiting promise, while all the others are
       // resolved with undefined.
       const { reject } = callbacks.pop()
+      result = undefined
       resolve(undefined)
       reject(err)
     }
-    callbacks = []
   }
 
   const debounced = function (...args) {
@@ -36,11 +38,14 @@ export function debounceAsync(func, options) {
           execute(this, args)
         }
       }, delay)
-      callbacks.push({ resolve, reject })
-      if (cancelled) {
-        resolve(undefined)
-      } else if (callNow) {
-        execute(this, args)
+      if (immediate && !callNow && callbacks.length === 0) {
+        // The leading call already settled, so share its result:
+        resolve(result)
+      } else {
+        callbacks.push({ resolve, reject })
+        if (callNow) {
+          execute(this, args)
+        }
       }
     })
   }
@@ -52,7 +57,6 @@ export function debounceAsync(func, options) {
       clearTimeout(timer)
       timer = null
     }
-    cancelled = true
     return pending
   }
 
