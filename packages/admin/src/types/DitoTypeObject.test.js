@@ -96,8 +96,10 @@ describe('DitoTypeObject', () => {
             type: 'object',
             form: addressForm,
             component: {
+              props: { modelValue: { type: Object, required: true } },
+
               render() {
-                return h('em', { class: 'city' }, this.data.city)
+                return h('em', { class: 'city' }, this.modelValue.city)
               }
             }
           }

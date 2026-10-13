@@ -1,7 +1,7 @@
 <template lang="pug">
 //- Only show panels in tabs when the tabs are also visible.
 component.dito-panel(
-  v-if="shouldRenderSchema(panelSchema)"
+  v-if="shouldRenderPanel"
   v-show="visible && (!isTabSelected || isTabSelected())"
   :is="panelTag"
   role="region"
@@ -9,11 +9,10 @@ component.dito-panel(
   @submit.prevent
 )
   DitoSchema.dito-panel__schema(
-    :schema="panelSchema"
+    :schema="schema"
     :dataSchema="panelDataSchema"
     :dataPath="panelDataPath"
     :data="panelData"
-    :meta="meta"
     :store="store"
     padding="nested"
     :disabled="disabled"
@@ -23,173 +22,153 @@ component.dito-panel(
     template(#prepend)
       h2.dito-panel__header(:class="{ 'dito-panel__header--sticky': sticky }")
         span {{ getLabel(schema) }}
-        DitoButtons.dito-buttons--small(
+        DitoButtons.dito-buttons--small.dito-panel__header-buttons(
           :buttons="panelButtonSchemas"
           buttonsName="panelButtons"
           :dataPath="panelDataPath"
           :data="panelData"
-          :meta="meta"
           :store="store"
           :disabled="disabled"
         )
     template(#buttons)
-      DitoButtons(
+      DitoButtons.dito-panel__buttons(
         :buttons="buttonSchemas"
         :dataPath="panelDataPath"
         :data="panelData"
-        :meta="meta"
         :store="store"
         :disabled="disabled"
       )
 </template>
 
 <script>
+import { computed, inject, reactive, toRefs } from 'vue'
 import { isFunction } from '@ditojs/utils'
-import DitoComponent from '../DitoComponent.js'
-import DitoContext from '../DitoContext.js'
-import ContextMixin from '../mixins/ContextMixin.js'
-import ValidatorMixin from '../mixins/ValidatorMixin.js'
+import SchemaContext from '../SchemaContext.js'
+import { useContainer } from '../composables/useContainer.ts'
+import { useSchemaContext } from '../composables/useSchemaContext.ts'
+import { useSchemaValue } from '../composables/useSchemaValue.ts'
+import { useComponentPath } from '../composables/useComponentPath.ts'
+import { schemaContextKey } from '../utils/keys.ts'
 import { getButtonSchemas } from '../utils/schema/lookup.js'
-import { getSchemaAccessor } from '../utils/accessor.js'
-import { trackRegistration } from '../utils/registration.js'
+import { shouldRenderComponents } from '../utils/schema/data.js'
+import { hasNestedData } from '../utils/schema/structure.js'
+import {
+  appendDataPath,
+  getLastDataPathName,
+  toModelData
+} from '../utils/data.js'
+import { getRootData } from '../utils/services.ts'
 
-// @vue/component
-export default DitoComponent.component('DitoPanel', {
-  mixins: [ContextMixin, ValidatorMixin],
-
-  provide() {
-    return {
-      $panelComponent: () => this
-    }
-  },
-
+export default {
   props: {
     schema: { type: Object, required: true },
     dataPath: { type: String, required: true },
     data: { type: Object, required: true },
-    meta: { type: Object, required: true },
     store: { type: Object, required: true },
     disabled: { type: Boolean, required: true },
-    // Tells if the tab of the panel's component is selected, for panels of
-    // components in tabs, see `getAllPanelEntries()`:
+    // For panels of components in tabs:
     isTabSelected: { type: Function, default: null },
-    // The component path of the panel's entry, see `getAllPanelEntries()`:
     panelComponentPath: { type: String, required: true }
   },
 
-  data() {
-    return {
-      ownData: null
-    }
-  },
-
-  computed: {
-    nested() {
-      // For `ContextMixin`: The panel's address, `dataPath`, points into the
-      // item that it displays, see `getAllPanelEntries()`.
-      return true
-    },
-
-    // @override ContextMixin.context
-    context() {
-      // Evaluate the callbacks of the panel and of its components with the
-      // data that the panel displays: its own data, e.g. of `$filters`, or the
-      // data of its schema component, at that component's data path.
-      return new DitoContext(this, {
-        nested: false,
-        data: this.panelData,
-        dataPath: this.panelDataPath
-      })
-    },
-
-    panelComponent() {
-      return this
-    },
-
-    componentPath() {
-      return this.panelComponentPath
-    },
-
-    buttonSchemas() {
-      return getButtonSchemas(this.schema.buttons)
-    },
-
-    panelButtonSchemas() {
-      return getButtonSchemas(this.schema.panelButtons)
-    },
-
-    hasOwnData() {
-      return !!this.ownData
-    },
-
-    panelData() {
-      return this.ownData || this.data
-    },
-
-    panelSchema() {
-      if (this.hasOwnData) {
-        return this.schema
-      } else {
-        // Remove `data` from the schema, so that DitoSchema isn't using it to
-        // produce its own data. See $filters panel for more details on data.
-        const { data, ...schema } = this.schema
-        return schema
-      }
-    },
-
-    panelTag() {
-      // Panels that provide their own data need their own form.
-      return this.hasOwnData ? 'form' : 'div'
-    },
-
-    panelDataSchema() {
-      return this.hasOwnData ? this.schema : this.schemaComponent.schema
-    },
-
-    panelDataPath() {
-      // If the panel provides its own data, then it needs to prefix all
-      // components with its data-path, but if it shares data with the schema
-      // component, then it should share the data-path name space too.
-      return this.hasOwnData ? this.dataPath : this.schemaComponent.dataPath
-    },
-
-    visible: getSchemaAccessor('visible', {
-      type: Boolean,
-      default: true
-    }),
-
-    sticky: getSchemaAccessor('sticky', {
-      type: Boolean,
-      default: false
-    })
-  },
-
-  created() {
-    // Register the panels so that other components can find them by their
-    // data-path, e.g. in TypeList.onFilterErrors()
-    this._unregister = trackRegistration(this, (add, componentPath) =>
-      this.schemaComponent._registerPanel(this, add, componentPath)
+  setup(props) {
+    useComponentPath(
+      () => props.dataPath,
+      () => props.panelComponentPath
     )
-    // NOTE: This is not the same as `schema.data` handling in DitoSchema,
-    // where the data is added to the actual component.
-    const { data } = this.schema
-    if (data) {
-      this.ownData = isFunction(data)
-        ? data(this.context)
-        : data
-    }
-  },
+    // The panel decides about itself in the data around it, e.g. in `if` and
+    // `data()`, while its components and buttons see the data it displays:
+    const schemaContext = inject(schemaContextKey)
+    const { context, services } = useSchemaContext(
+      reactive({
+        ...toRefs(props),
+        dataPath: computed(() => schemaContext.dataPath)
+      })
+    )
+    const { getSchemaValue, getLabel } = useSchemaValue(context)
+    // Panels display the item of their schema, or an item of their own under
+    // their name in it: nested data, like sections, or their own data, within
+    // the root data around them. Own data gets its own container, so that its
+    // edits don't make the data around the panel dirty:
+    const { data } = props.schema
+    const name = getLastDataPathName(props.dataPath)
+    const isNested = hasNestedData(props.schema)
+    const hasOwnItem = !!data || isNested
+    const panelDataPath = computed(() =>
+      hasOwnItem
+        ? appendDataPath(schemaContext.dataPath, name)
+        : schemaContext.dataPath
+    )
+    const container = data
+      ? useContainer({
+          schema: () => props.schema,
+          data: isFunction(data) ? toModelData(data(context)) : data,
+          dataPath: () => panelDataPath.value,
+          rootData: () => getRootData(services),
+          componentPath: () => props.panelComponentPath,
+          parentModel: () => services.dataContext?.model ?? null
+        })
+      : null
+    const hasOwnData = !!container
+    const panelData = computed(() =>
+      container
+        ? container.dataContext.data
+        : isNested
+          ? props.data[name]
+          : props.data
+    )
+    const panelServices = container?.services ?? services
 
-  unmounted() {
-    this._unregister()
+    return {
+      getLabel,
+      hasOwnData,
+      panelData,
+      panelDataPath,
+
+      shouldRenderPanel: computed(
+        () => (
+          getSchemaValue('if', { type: Boolean, default: true }) &&
+          shouldRenderComponents(
+            props.schema,
+            new SchemaContext(panelServices, {
+              nested: false,
+              data: panelData.value,
+              dataPath: panelDataPath.value
+            })
+          )
+        )
+      ),
+
+      // Panels that provide their own data need their own form.
+      panelTag: hasOwnData ? 'form' : 'div',
+      panelDataSchema: computed(() =>
+        hasOwnItem ? props.schema : schemaContext.schema
+      ),
+
+      buttonSchemas: computed(() => getButtonSchemas(props.schema.buttons)),
+
+      panelButtonSchemas: computed(() =>
+        getButtonSchemas(props.schema.panelButtons)
+      ),
+
+      visible: computed(() =>
+        getSchemaValue('visible', { type: Boolean, default: true })
+      ),
+
+      sticky: computed(() =>
+        getSchemaValue('sticky', { type: Boolean, default: false })
+      )
+    }
   }
-})
+}
 </script>
 
 <style lang="scss">
 @import '../styles/_imports';
 
 .dito-panel {
+  $self: &;
+
   &:not(:last-child) {
     margin-bottom: $content-padding;
   }
@@ -229,14 +208,13 @@ export default DitoComponent.component('DitoPanel', {
         margin: -$border-width;
       }
     }
+  }
 
-    // TODO: BEM: Style an element class of this block, e.g. `&__buttons`.
-    .dito-buttons {
-      position: absolute;
-      right: $input-padding-ver;
-      top: 50%;
-      transform: translateY(-50%);
-    }
+  &__header-buttons {
+    position: absolute;
+    right: $input-padding-ver;
+    top: 50%;
+    transform: translateY(-50%);
   }
 
   &__schema {
@@ -252,17 +230,13 @@ export default DitoComponent.component('DitoPanel', {
         border: none;
         padding: 0;
       }
+    }
 
-      // TODO: BEM: Style an element class of this block, e.g. `&__buttons`.
-      > .dito-buttons {
-        --button-margin: #{$form-spacing};
+    // Nested, to override the margin of `.dito-buttons`:
+    #{$self}__buttons {
+      --button-margin: #{$form-spacing};
 
-        padding: $form-spacing;
-
-        .dito-container {
-          padding: 0;
-        }
-      }
+      padding: $form-spacing;
     }
 
     .dito-label {

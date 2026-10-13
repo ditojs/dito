@@ -2,7 +2,7 @@
 .dito-panels(
   v-if="panels.length > 0"
 )
-  template(
+  DitoPanel(
     v-for=`{
       schema,
       dataPath,
@@ -10,52 +10,40 @@
       tabName,
       isTabSelected
     } in panels`
+    :key="getPanelKey(dataPath, tabName)"
+    :schema="schema"
+    :dataPath="dataPath"
+    :panelComponentPath="componentPath"
+    :data="data"
+    :store="getChildStore(schema.name)"
+    :disabled="schema.disabled ?? disabled"
+    :isTabSelected="isTabSelected"
   )
-    DitoPanel(
-      v-if="shouldRenderSchema(schema)"
-      :key="getPanelKey(dataPath, tabName)"
-      :schema="schema"
-      :dataPath="dataPath"
-      :panelComponentPath="componentPath"
-      :data="data"
-      :meta="meta"
-      :store="getChildStore(schema.name)"
-      :disabled="schema.disabled ?? disabled"
-      :isTabSelected="isTabSelected"
-    )
 </template>
 
 <script>
-import DitoComponent from '../DitoComponent.js'
-import ContextMixin from '../mixins/ContextMixin.js'
+import { useStore } from '../composables/useStore.ts'
 
-// @vue/component
-export default DitoComponent.component('DitoPanels', {
-  mixins: [ContextMixin],
-
+export default {
   props: {
     panels: { type: Array, default: null },
     data: { type: Object, required: true },
-    meta: { type: Object, required: true },
     store: { type: Object, required: true },
     disabled: { type: Boolean, required: true }
   },
 
-  computed: {
-    nested() {
-      // For `ContextMixin`:
-      return false
-    }
-  },
+  setup(props) {
+    return {
+      ...useStore(props),
 
-  methods: {
-    getPanelKey(dataPath, tabName) {
-      // Allow separate tabs to use panels of the same name, by
-      // prefixing their key with the tab name.
-      return tabName ? `${tabName}_${dataPath}` : dataPath
+      // Allow separate tabs to use panels of the same name, by prefixing their
+      // key with the tab name.
+      getPanelKey(dataPath, tabName) {
+        return tabName ? `${tabName}_${dataPath}` : dataPath
+      }
     }
   }
-})
+}
 </script>
 
 <style lang="scss">

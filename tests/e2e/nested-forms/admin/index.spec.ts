@@ -46,12 +46,12 @@ test.describe('nested forms', () => {
     ])
   })
 
-  test('applies data set on transient forms to the parent right away', async ({
+  test('discards data set on transient forms when cancelled', async ({
     page,
     url
   }) => {
-    // `setData()` on transient forms sets the data of their source, see
-    // `DitoForm.setData()`, so closing the form keeps it.
+    // `resetItem()` on transient forms resets their draft, which only reaches
+    // the parent once it's applied, and isn't an edit.
     const id = await openAlbum(page, url, {
       tracks: [{ title: 'Intro' }]
     })
@@ -67,9 +67,10 @@ test.describe('nested forms', () => {
       .getByRole('button', { name: 'Close', exact: true })
       .click()
     await expect(page).toHaveURL(new RegExp(`/albums/${id}$`))
+    await getForm(page).getByLabel('Title', { exact: true }).fill('Changed')
     await new DitoForm(page).save()
     expect((await getStoredAlbum(id))?.tracks).toEqual([
-      { title: 'Intro', length: '3:30' }
+      { title: 'Intro', length: null }
     ])
   })
 
