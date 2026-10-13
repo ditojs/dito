@@ -2,18 +2,21 @@ import { isObject, isArray, isString, isEmpty, equals } from '@ditojs/utils'
 
 const schemaCaches = {}
 
-function getSchemaCache(options) {
-  const key = Object.entries(options || {})
+function getSchemaCache(options, role) {
+  const key = Object.entries({ ...options, role })
     .toSorted()
     .map(([key, value]) => `${key}:${value}`)
-    .join(',') || 'default'
+    .join(',')
   return (schemaCaches[key] ||= new WeakMap())
 }
 
+// `role` is 'definition' for the top level of definitions, and 'part' for the
+// items of `allOf`, `anyOf` and `oneOf`, which aren't closed on their own.
 export function convertSchema(
   schema,
   options = {},
-  parentEntry = null
+  parentEntry = null,
+  role = null
 ) {
   if (!isObject(schema) && !isArray(schema)) {
     // Boolean schemas (`true`, `false`) and other non-object values have
@@ -24,7 +27,7 @@ export function convertSchema(
   const original = schema
   const isRoot = parentEntry === null
 
-  const schemaCache = getSchemaCache(options)
+  const schemaCache = getSchemaCache(options, role)
   if (schemaCache.has(original)) {
     const { schema, definitions, parentEntries } = schemaCache.get(original)
     parentEntries.push(parentEntry)
@@ -137,10 +140,10 @@ export function convertSchema(
     // so that circular references resolve to the schema being converted.
     if (isArray(original)) {
       for (const item of original) {
-        schema.push(convertSchema(item, options, entry))
+        schema.push(convertSchema(item, options, entry, role))
       }
     } else {
-      convertNestedSchemas(unwrappedSchema, jsonType, options, entry)
+      convertNestedSchemas(unwrappedSchema, jsonType, options, entry, role)
     }
     if (definitions) {
       mergeDefinitions(
@@ -168,15 +171,20 @@ export function convertSchema(
   return schema
 }
 
-function convertNestedSchemas(schema, jsonType, options, entry) {
+function convertNestedSchemas(schema, jsonType, options, entry, role) {
   // Convert array items
   schema.prefixItems &&= convertSchema(schema.prefixItems, options, entry)
   schema.items &&= convertSchema(schema.items, options, entry)
 
   // Handle nested allOf, anyOf, oneOf & co. fields
-  for (const key of ['allOf', 'anyOf', 'oneOf', 'not', '$extend']) {
+  for (const key of ['allOf', 'anyOf', 'oneOf', 'not']) {
     if (key in schema) {
-      schema[key] = convertSchema(schema[key], options, entry)
+      schema[key] = convertSchema(
+        schema[key],
+        options,
+        entry,
+        compositionKeys.includes(key) ? 'part' : null
+      )
     }
   }
 
@@ -189,7 +197,7 @@ function convertNestedSchemas(schema, jsonType, options, entry) {
     )
     schema.properties = properties
     if (required.length > 0) {
-      schema.required = required
+      schema.required = [...new Set([...(schema.required ?? []), ...required])]
     }
     hasConvertedProperties = true
   }
@@ -211,14 +219,51 @@ function convertNestedSchemas(schema, jsonType, options, entry) {
     schema.patternProperties = properties
     hasConvertedProperties = true
   }
-  if (
-    jsonType &&
-    (hasConvertedProperties || schema.discriminator) &&
-    !('unevaluatedProperties' in schema)
-  ) {
-    // Invert the logic of `unevaluatedProperties` so that it needs to be
-    // explicitly set to `true`:
-    schema.unevaluatedProperties = false
+  const { discriminator } = schema
+  const hasComposition = compositionKeys.some(key => key in schema)
+  const isReference = !!schema.$ref?.startsWith('#/definitions/')
+  if (!('unevaluatedProperties' in schema)) {
+    if (role === 'definition') {
+      // As intended by JSON Schema 2020-12, we close definitions where they're
+      // used: what the `$ref` target evaluates counts there, so definitions
+      // stay reusable as bases. Objects without properties stay open:
+      if (
+        jsonType === 'object' &&
+        !hasConvertedProperties &&
+        !hasComposition &&
+        !isReference &&
+        !discriminator
+      ) {
+        schema.unevaluatedProperties = true
+      }
+    } else if (
+      jsonType && hasConvertedProperties ||
+      // Objects combined from parts are closed at the outer level, where
+      // `unevaluatedProperties` sees the properties of all parts:
+      jsonType === 'object' && hasComposition ||
+      discriminator ||
+      // `unevaluatedProperties` only applies to objects, and also sees what an
+      // explicit `unevaluatedProperties: true` of the target evaluated:
+      isReference && role !== 'part'
+    ) {
+      // Invert the logic of `unevaluatedProperties` so that it needs to be
+      // explicitly set to `true`:
+      schema.unevaluatedProperties = false
+    }
+  }
+  if (discriminator) {
+    // Ajv evaluates `unevaluatedProperties` before `discriminator` in the
+    // same schema object, so we move it with its `oneOf` into an `allOf` part,
+    // with the tag that Ajv needs to be required. `Model.getProperty()` needs
+    // the implied type, as it can't infer it from the moved keywords:
+    const { oneOf } = schema
+    delete schema.discriminator
+    delete schema.oneOf
+    schema.type ??= 'object'
+    schema.allOf = [
+      ...(schema.allOf ?? []),
+      { discriminator, oneOf, required: [discriminator.propertyName] }
+    ]
   }
 }
 
@@ -227,7 +272,8 @@ function convertProperties(schemaProperties, options, entry) {
   const required = []
   for (const [key, property] of Object.entries(schemaProperties)) {
     properties[key] = convertSchema(property, options, entry)
-    if (property?.required) {
+    // Only Dito.js' `required: true`, not JSON Schema's `required` array:
+    if (property?.required === true) {
       required.push(key)
     }
   }
@@ -247,7 +293,7 @@ function convertDefinitions(definitions, options, entry) {
       )
     }
     converted ??= {}
-    converted[key] = convertSchema(schema, options, entry)
+    converted[key] = convertSchema(schema, options, entry, 'definition')
   }
   return converted
 }
@@ -317,6 +363,8 @@ const jsonTypes = {
   object: 'object',
   array: 'array'
 }
+
+const compositionKeys = ['allOf', 'anyOf', 'oneOf']
 
 const excludeDefaults = {
   'now()': true
