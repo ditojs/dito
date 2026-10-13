@@ -45,13 +45,17 @@ dividing it into the following folder structure:
 This structure will be explained in more detail in the documentation of each
 these aspects separately:
 
-- [Configuration](docs/configuration.md)
-- [Application](docs/application.md)
-- [Models](docs/models.md)
-- [Controllers](docs/controllers.md)
-- [Migrations](docs/migrations.md)
-- [Seeds](docs/seeds.md)
-- [Admin](docs/admin.md)
+- [Configuration](docs/guide/server/configuration.md)
+- [Application](docs/guide/server/application.md)
+- [Models](docs/guide/server/models.md)
+- [Controllers](docs/guide/server/controllers.md)
+- [Migrations](docs/guide/server/database.md#migrations)
+- [Seeds](docs/guide/server/database.md#seeds)
+- [Admin](docs/guide/admin/index.md)
+- [Upgrading to 4.x](docs/upgrading-to-4.x.md)
+
+The [documentation](docs/index.md) covers everything else: guides, recipes
+and the API reference.
 
 ## Setting up `package.json` for a Dito.js Application
 
@@ -77,16 +81,16 @@ Here a brief description of each script's purpose:
 - `pnpm run console`: Starts an interactive Read-Eval-Print-Loop console in which
   all Dito.js models can be directly used.
 - `pnpm run db:seed`: Seeds the configured database with the data provided in
-  `seeds`. See [Seeds](docs/seeds.md) for more information.
+  `seeds`. See [Seeds](docs/guide/server/database.md#seeds) for more information.
 - `pnpm run db:create_migration`: Creates migration files for the specified models.
-   See [Migrations](docs/migrations.md) for more information.
+   See [Migrations](docs/guide/server/database.md) for more information.
 - `pnpm run db:migrate`: Migrates to the latest state of migrations.
-   See [Migrations](docs/migrations.md) for more information.
+   See [Migrations](docs/guide/server/database.md) for more information.
 - `pnpm run db:rollback`: Rolls back the last batch of applied migrations.
-   See [Migrations](docs/migrations.md) for more information.
+   See [Migrations](docs/guide/server/database.md) for more information.
 - `pnpm run db:reset`: Resets the database by rolling back all applied migrations,
    and then reapplying all available migrations.
-   See [Migrations](docs/migrations.md) for more information.
+   See [Migrations](docs/guide/server/database.md) for more information.
 
 ## Releasing Dito.js
 
