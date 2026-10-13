@@ -15,8 +15,10 @@ QueryFilters.register({
     handler(query, property, { operator, text }) {
       if (text === undefined) {
         text = operator
-        operator = 'contains'
+        operator = null
       }
+      // Filters without a chosen operator search for the text anywhere:
+      operator ||= 'contains'
       const templates = {
         'equals': text => text,
         'contains': text => `%${text}%`,

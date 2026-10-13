@@ -305,13 +305,11 @@ export class CollectionController extends Controller {
     },
 
     async put(ctx, modify) {
-      validateCollectionUpdateBody(ctx.request.body, this.graph)
-      return this.executeAndFetch('update', ctx, modify)
+      return saveCollectionAndFetch(this, 'update', ctx, modify)
     },
 
     async patch(ctx, modify) {
-      validateCollectionUpdateBody(ctx.request.body, this.graph)
-      return this.executeAndFetch('patch', ctx, modify)
+      return saveCollectionAndFetch(this, 'patch', ctx, modify)
     }
   })
 
@@ -359,14 +357,27 @@ function lockForUpdate(controller, builder, trx) {
   builder.forUpdate()
 }
 
-function validateCollectionUpdateBody(body, isGraph) {
+function saveCollectionAndFetch(controller, action, ctx, modify) {
+  const { modelClass, graph } = controller
+  validateCollectionUpdateBody(ctx.request.body, modelClass, graph)
+  return controller.executeAndFetch(action, ctx, modify)
+}
+
+function validateCollectionUpdateBody(body, modelClass, isGraph) {
+  const idProperties = modelClass.getIdPropertyArray()
+  const isNew = model => idProperties.some(key => model?.[key] == null)
   // Without graphs, Objection only supports updating collections through
   // arrays, as its `patchAndFetch()` & co. are instance-only for objects.
-  if (!isGraph && !isArray(body)) {
-    throw new ValidationError({
-      type: 'BodyValidation',
-      message: 'Updating a collection requires an array of models'
-    })
+  // Graphs may contain new models, but not at their roots:
+  const message =
+    !isGraph && !isArray(body)
+      ? 'Updating a collection requires an array of models'
+      : asArray(body).some(isNew)
+        ? 'Updating a collection requires models with ids, ' +
+          'new models are created with POST'
+        : null
+  if (message) {
+    throw new ValidationError({ type: 'BodyValidation', message })
   }
 }
 
