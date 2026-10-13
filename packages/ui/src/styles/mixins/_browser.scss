@@ -36,7 +36,6 @@
       $attributes: '#{$attributes}[data-agent-platform="#{$platform}"]';
     }
     @if $version {
-      // TODO: Add support for version arrays and ranges, when / if needed.
       $attributes: '#{$attributes}[data-agent-version^="#{$version}"]';
     }
     @if $attributes {
