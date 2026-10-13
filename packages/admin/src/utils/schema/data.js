@@ -28,6 +28,7 @@ import {
   hasNestedSchemaComponents,
   isPanelWithOwnData,
   isSourceWithResource,
+  isListSource,
   hasNestedData
 } from './structure.js'
 import {
@@ -430,8 +431,10 @@ export function serializeData(schema, sourceSchema, data, dataPath, {
 
 // Return whether the value at `dataPath` is excluded from the data that is
 // sent: whether no component holds it, or its component or one that contains
-// it is excluded. Excluded sources with their own resource send their data
-// themselves, so only the components below them decide.
+// it is excluded. Of the items of lists and objects, only the values of their
+// forms' components are sent, see `cloneItem()`. Excluded sources with their
+// own resource send their data themselves, so only the components below them
+// decide.
 export function isDataPathExcluded(schema, data, dataPath, {
   dataPath: itemDataPath = '',
   services = null,
@@ -457,9 +460,19 @@ export function isDataPathExcluded(schema, data, dataPath, {
         SchemaContext.createForSchema(services, { ...entry, rootData })
       )
   )
-  return excludedEntry
-    ? !isSourceWithResource(excludedEntry.schema)
-    : entries.length === 0
+  if (excludedEntry) {
+    return !isSourceWithResource(excludedEntry.schema)
+  }
+  const holder = entries.at(-1)
+  if (!holder) {
+    return true
+  }
+  const relativeDataPath = getRelativeDataPath(dataPath, holder.dataPath)
+  return (
+    hasFormSchema(holder.schema) &&
+    relativeDataPath !== '' &&
+    !(isListSource(holder.schema) && /^\d+$/.test(relativeDataPath))
+  )
 }
 
 // Convert the stored values of `data` in place to the values that the

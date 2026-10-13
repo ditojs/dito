@@ -1269,13 +1269,14 @@ describe('DataModel', () => {
         dataModel.stop()
       })
 
-      it('are edits for values inside the values of components', () => {
+      it(`aren't edits for values of items that their forms don't hold`, () => {
         const { dataModel, data } = createNotedModel()
         const item = dataModel.toEditable(data, () => '')
+        // E.g. values that handlers derive for the items, which aren't sent:
         item.author.born = 1775
-        expect(dataModel.isDirty).toBe(true)
-        dataModel.markClean()
         item.chapters[0].isOpen = true
+        expect(dataModel.isEdited).toBe(false)
+        item.chapters[0] = { title: 'Uno' }
         expect(dataModel.isDirty).toBe(true)
         dataModel.stop()
       })
