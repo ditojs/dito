@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import objection from 'objection'
+import * as objection from 'objection'
 import { Application } from '../app/Application.js'
 import {
   GraphError,
@@ -863,7 +863,22 @@ describe('Model.getPropertyOrRelationAtDataPath(): relations', () => {
       Author.getPropertyOrRelationAtDataPath('books/*/title')
     ).toMatchObject({
       name: 'title',
-      dataPath: 'books/*/title'
+      dataPath: 'books/*/title',
+      expression: 'books(@title)'
+    })
+    expect(
+      Author.getPropertyOrRelationAtDataPath('books.*.author').expression
+    ).toBe('books.author')
+  })
+
+  it('loads only the relations named in data paths with wildcards', () => {
+    const { books } = Author.query()
+      .loadDataPath('books.*.title')
+      .graphExpressionObject()
+    expect(books).toMatchObject({
+      $modify: ['@title'],
+      $allRecursive: false,
+      $childNames: []
     })
   })
 
@@ -968,27 +983,18 @@ describe('Model.modifierNotFound(): scopes and prefixes', () => {
     expect(toSQL(query)).toBe('select "Book".* from "Book"')
   })
 
-  it('supports the deprecated - and # prefixes', () => {
-    const deprecations = []
-    const warn = vi
-      .spyOn(console, 'warn')
-      .mockImplementation(message => deprecations.push(message))
-    try {
-      expect(toSQL(Book.query().modify('#title'))).toBe(
-        'select "Book"."title" from "Book"'
-      )
-      const query = Book.query().modify('-recent').applyScope('recent')
-      expect(toSQL(query)).toBe('select "Book".* from "Book"')
-    } finally {
-      warn.mockRestore()
-    }
-  })
-
   it('throws for unknown modifiers', () => {
     expect(() => Book.query().modify('popular')).toThrow(
       /Unable to determine modify function from provided value: "popular"/
     )
     expect(() => Book.query().modify('*title')).toThrow(
+      /Unable to determine modify function/
+    )
+    // The removed prefixes of 3.x, now `@` and `!`:
+    expect(() => Book.query().modify('#title')).toThrow(
+      /Unable to determine modify function/
+    )
+    expect(() => Book.query().modify('-recent')).toThrow(
       /Unable to determine modify function/
     )
   })

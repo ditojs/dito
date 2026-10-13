@@ -1,4 +1,4 @@
-import type { ModelProperties } from '@ditojs/server'
+import type { ModelProperties, StorageConfig } from '@ditojs/server'
 import { Model, AssetFile, Storage } from '@ditojs/server'
 import { vi } from 'vitest'
 import {
@@ -6,8 +6,6 @@ import {
   createTestDatabase,
   destroyTestApp
 } from './setup.js'
-
-type UntypedStorageConfig = ConstructorParameters<typeof Storage>[1]
 
 class MemoryStorage extends Storage {
   dataByKey = new Map<string, Buffer>()
@@ -21,7 +19,11 @@ class MemoryStorage extends Storage {
   }
 
   async _readFile(file: AssetFile) {
-    return this.dataByKey.get(file.key)
+    const data = this.dataByKey.get(file.key)
+    if (!data) {
+      throw new Error(`Unknown key: '${file.key}'`)
+    }
+    return data
   }
 
   async _listKeys() {
@@ -46,7 +48,7 @@ class Cookbook extends Model {
 
 describe('Model asset hooks', () => {
   const app = createTestApp({ models: { Cookbook } })
-  app.addStorage(new MemoryStorage(app, {} as UntypedStorageConfig), 'memory')
+  app.addStorage(new MemoryStorage(app, 'memory', {} as StorageConfig))
 
   beforeAll(async () => {
     await createTestDatabase(app)
@@ -64,30 +66,23 @@ describe('Model asset hooks', () => {
     const cookbook = await Cookbook.query().insertAndFetch({
       title: 'Soups'
     } as any)
-    const handleAssetFileChanges = vi.spyOn(
-      (app as any).assetManager,
-      'handleAssetFileChanges'
-    )
+    const handleAssets = vi.spyOn(app, 'handleAddedAndRemovedAssets')
     await Cookbook.query().patchAndFetchById(cookbook.id, {
       title: 'Stews'
     } as any)
-    expect(handleAssetFileChanges).not.toHaveBeenCalled()
+    expect(handleAssets).not.toHaveBeenCalled()
   })
 
   it('handles the asset files of writes with asset data', async () => {
     const cookbook = await Cookbook.query().insertAndFetch({
       title: 'Soups'
     } as any)
-    const handleAssetFileChanges = vi.spyOn(
-      (app as any).assetManager,
-      'handleAssetFileChanges'
-    )
-    await Cookbook.query().patchAndFetchById(cookbook.id, {
-      cover: AssetFile.create({ name: 'cover.txt', data: 'cover' })
-    } as any)
-    expect(handleAssetFileChanges).toHaveBeenCalledOnce()
-    expect(handleAssetFileChanges.mock.calls[0][0]).toMatchObject({
-      dataPaths: ['cover']
-    })
+    const handleAssets = vi.spyOn(app, 'handleAddedAndRemovedAssets')
+    const cover = AssetFile.create({ name: 'cover.txt', data: 'cover' })
+    await Cookbook.query().patchAndFetchById(cookbook.id, { cover } as any)
+    expect(handleAssets).toHaveBeenCalledOnce()
+    const [storage, addedFiles] = handleAssets.mock.calls[0]
+    expect(storage.name).toBe('memory')
+    expect(addedFiles).toEqual([cover])
   })
 })

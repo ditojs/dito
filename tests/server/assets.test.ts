@@ -1,7 +1,7 @@
 import fs from 'fs/promises'
 import os from 'os'
 import path from 'path'
-import type { ModelProperties } from '@ditojs/server'
+import type { ModelProperties, StorageConfig } from '@ditojs/server'
 import { Model, AssetMixin, AssetFile, Storage } from '@ditojs/server'
 import {
   createTestApp,
@@ -9,9 +9,7 @@ import {
   destroyTestApp
 } from './setup.js'
 
-// Storage configs are typed per built-in storage type only.
-type UntypedStorageConfig = ConstructorParameters<typeof Storage>[1]
-
+// Storage configs are typed per built-in storage type only, so we cast them:
 class MemoryStorage extends Storage {
   dataByKey = new Map<string, Buffer>()
 
@@ -24,7 +22,11 @@ class MemoryStorage extends Storage {
   }
 
   async _readFile(file: AssetFile) {
-    return this.dataByKey.get(file.key)
+    const data = this.dataByKey.get(file.key)
+    if (!data) {
+      throw new Error(`Unknown key: '${file.key}'`)
+    }
+    return data
   }
 
   async _listKeys() {
@@ -53,7 +55,7 @@ function createDocumentClass() {
 
 function createApp(models: Record<string, any>) {
   const app = createTestApp({ models })
-  app.addStorage(new MemoryStorage(app, {} as UntypedStorageConfig), 'memory')
+  app.addStorage(new MemoryStorage(app, 'memory', {} as StorageConfig))
   return app
 }
 
@@ -193,7 +195,7 @@ describe('Application.addStorage()', () => {
   it('names the type of an unsupported storage', () => {
     expect(() =>
       app.addStorage(
-        { type: 'unknown' } as unknown as UntypedStorageConfig,
+        { type: 'unknown' } as unknown as StorageConfig,
         'files'
       )
     ).toThrow(
@@ -202,16 +204,16 @@ describe('Application.addStorage()', () => {
   })
 })
 
-describe('AssetManager', () => {
+describe('Asset handling', () => {
   const Document = createDocumentClass()
   class Asset extends AssetMixin(Model) {}
   const app = createTestApp({ models: { Document, Asset } })
   const allowedImports: string[] = ['https://covers.example.com/**']
   // Without `url`, so that signed files have no url to match the imports.
-  const storage = new MemoryStorage(app, {
+  const storage = new MemoryStorage(app, 'memory', {
     allowedImports
-  } as unknown as UntypedStorageConfig)
-  app.addStorage(storage, 'memory')
+  } as unknown as StorageConfig)
+  app.addStorage(storage)
   let importDirectory: string
 
   beforeAll(async () => {
