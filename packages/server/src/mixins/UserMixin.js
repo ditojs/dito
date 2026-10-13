@@ -44,17 +44,9 @@ export const UserMixin = mixin(
         }
       }
 
-      get password() {
-        // Nice try ;)
-        return undefined
-      }
-
-      set password(password) {
-        this.hash = bcrypt.hashSync(password, bcrypt.genSaltSync(10))
-      }
-
       async $verifyPassword(password) {
-        return bcrypt.compare(password, this.hash)
+        // Users without a password, e.g. invited ones, can't log in:
+        return this.hash ? bcrypt.compare(password, this.hash) : false
       }
 
       $hasRole(...roles) {
@@ -71,11 +63,24 @@ export const UserMixin = mixin(
       }
 
       static setup() {
+        super.setup()
         userClasses[this.name] = this
         const {
           usernameProperty,
           passwordProperty
         } = this.definition.options
+        Object.defineProperty(this.prototype, passwordProperty, {
+          get() {
+            // Nice try ;)
+            return undefined
+          },
+
+          set(password) {
+            this.hash = bcrypt.hashSync(password, bcrypt.genSaltSync(10))
+          },
+
+          configurable: true
+        })
         passport.use(
           this.name,
           new LocalStrategy(

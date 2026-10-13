@@ -63,6 +63,12 @@ class Members extends UsersController {
   }
 }
 
+// Users that only admins may access, while anyone can log in and out:
+class Admins extends UsersController {
+  override modelClass = Member
+  override authorize = 'admin'
+}
+
 describe('UsersController', () => {
   const app = createTestApp({
     config: {
@@ -77,7 +83,7 @@ describe('UsersController', () => {
       }
     },
     models: { Session, Member },
-    controllers: { Members }
+    controllers: { Members, Admins }
   })
 
   let url: string
@@ -212,6 +218,21 @@ describe('UsersController', () => {
     expect((await request('/members/session')).data.authenticated).toBe(false)
   })
 
+  it('rejects logins of members without a password', async () => {
+    const invited = await Member.query().insert({ username: 'invited' } as any)
+    try {
+      const request = createClient()
+      const login = await request('/members/login', {
+        method: 'POST',
+        body: { username: 'invited', password: 'secret' }
+      })
+      expect(login.status).toBe(401)
+      expect(login.data.error).toBe('Password or username is incorrect')
+    } finally {
+      await Member.query().deleteById(invited.id)
+    }
+  })
+
   it('rejects logins with missing credentials', async () => {
     const request = createClient()
     const login = await request('/members/login', {
@@ -280,5 +301,22 @@ describe('UsersController', () => {
     expect((await request(`/members/${member.id}`)).status).toBe(200)
     expect((await request(`/members/${other.id}`)).status).toBe(401)
     await Member.query().deleteById(other.id)
+  })
+
+  it(`doesn't apply the controller's authorize to logins and sessions`, async () => {
+    const request = createClient()
+    const login = await request('/admins/login', {
+      method: 'POST',
+      body: { username: 'ada', password: 'secret' }
+    })
+    expect(login.status).toBe(200)
+    expect(login.data.success).toBe(true)
+    const session = await request('/admins/session')
+    expect(session.status).toBe(200)
+    expect(session.data.authenticated).toBe(true)
+    // `self` returns the user like the member route, which needs the role:
+    expect((await request('/admins/self')).status).toBe(401)
+    const logout = await request('/admins/logout', { method: 'POST' })
+    expect(logout.data).toEqual({ success: true, authenticated: false })
   })
 })

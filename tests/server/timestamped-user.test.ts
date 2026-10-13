@@ -3,7 +3,8 @@ import passport from 'koa-passport'
 import type { ModelProperties } from '@ditojs/server'
 import {
   AuthenticationError,
-  TimeStampedModel,
+  Model,
+  TimestampedModel,
   UserMixin
 } from '@ditojs/server'
 import {
@@ -12,7 +13,7 @@ import {
   destroyTestApp
 } from './setup.js'
 
-class Shelf extends TimeStampedModel {
+class Shelf extends TimestampedModel {
   declare id: number
   declare label: string
   declare createdAt: Date
@@ -27,7 +28,7 @@ class Shelf extends TimeStampedModel {
 }
 
 // Users that log in with their email, and only when they are active.
-class Librarian extends UserMixin(TimeStampedModel) {
+class Librarian extends UserMixin(TimestampedModel) {
   declare id: number
   declare email: string
   declare hash: string
@@ -60,7 +61,25 @@ class Librarian extends UserMixin(TimeStampedModel) {
   }
 }
 
-const app = createTestApp({ models: { Shelf, Librarian } })
+class Account extends Model {
+  static setupClasses: string[] = []
+
+  static override setup() {
+    super.setup()
+    Account.setupClasses.push(this.name)
+  }
+}
+
+// Users that log in with a pin, set up through their base class too.
+class Patron extends UserMixin(Account) {
+  declare hash: string
+
+  static override options = {
+    passwordProperty: 'pin'
+  }
+}
+
+const app = createTestApp({ models: { Shelf, Librarian, Patron } })
 
 function createLibrarian(json: Record<string, any>) {
   return Librarian.fromJson(json) as Librarian
@@ -113,7 +132,7 @@ afterAll(async () => {
   await destroyTestApp(app)
 })
 
-describe('TimeStampedMixin', () => {
+describe('TimestampedMixin', () => {
   afterEach(async () => {
     await Shelf.query().delete()
   })
@@ -147,9 +166,9 @@ describe('TimeStampedMixin', () => {
     )
   })
 
-  it('provides a `timeStamped` scope selecting the time stamps', async () => {
+  it('provides a `timestamped` scope selecting the time stamps', async () => {
     await Shelf.query().insert({ label: 'Poetry' })
-    const [shelf] = await Shelf.query().withScope('timeStamped')
+    const [shelf] = await Shelf.query().withScope('timestamped')
     expect(Object.keys(shelf).sort()).toEqual(['createdAt', 'updatedAt'])
   })
 })
@@ -175,6 +194,13 @@ describe('UserMixin', () => {
       expect(await alice.$verifyPassword('Open Sesame')).toBe(false)
     })
 
+    it('hashes passwords of other `passwordProperty` names', async () => {
+      const patron = Patron.fromJson({ username: 'carol', pin: '1234' } as any)
+      expect(patron.hash).toMatch(/^\$2[aby]\$10\$/)
+      expect((patron as any).pin).toBeUndefined()
+      expect(await patron.$verifyPassword('1234')).toBe(true)
+    })
+
     it('creates a new hash when setting a new password', () => {
       const user = createLibrarian({ email: 'c@example.com' })
       user.password = 'one'
@@ -182,6 +208,10 @@ describe('UserMixin', () => {
       user.password = 'one'
       expect(user.hash).not.toBe(hash)
     })
+  })
+
+  it('calls `setup()` of the base class', () => {
+    expect(Account.setupClasses).toEqual(['Patron'])
   })
 
   describe('$hasRole()', () => {

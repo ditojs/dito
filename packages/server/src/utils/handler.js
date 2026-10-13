@@ -1,4 +1,4 @@
-import { isFunction, asArray, deprecate } from '@ditojs/utils'
+import { isFunction, asArray } from '@ditojs/utils'
 
 /**
  * Parses a handler definition into a plain descriptor, without modifying the
@@ -27,18 +27,16 @@ export function parseHandlerDefinition(definition) {
     transacted = null,
     scope = null,
     parameters,
-    // TODO: `returns` was deprecated in May 2025 in favour of `response`.
-    // Remove this in 2026.
-    returns,
-    response = returns,
+    response,
     options = {},
     ...extra
   } = isFunctionDefinition ? { ...definition } : definition
 
-  if (returns || options.returns) {
-    deprecate(
-      'The `returns` property is deprecated in favour of `response`. ' +
-      'Update your handler definition to use `response` instead.'
+  // Leftovers of the former `returns` would otherwise be silently ignored,
+  // skipping the validation of the response:
+  if (extra.returns || options.returns) {
+    throw new Error(
+      `Unsupported 'returns' in handler definition, use 'response' instead.`
     )
   }
 
@@ -62,11 +60,7 @@ export function parseHandlerDefinition(definition) {
     response: responseSchema ?? null,
     options: {
       parameters: { ...options.parameters, ...parametersOptions },
-      response: {
-        ...options.returns,
-        ...options.response,
-        ...responseOptions
-      }
+      response: { ...options.response, ...responseOptions }
     },
     extra
   }

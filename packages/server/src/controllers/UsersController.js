@@ -2,6 +2,14 @@ import { ModelController } from './ModelController.js'
 
 export class UsersController extends ModelController {
   collection = {
+    // These actions authenticate users, so the controller's `authorize`
+    // setting doesn't apply to them:
+    'authorize': {
+      'post login': true,
+      'post logout': true,
+      'get session': true
+    },
+
     async 'post login'(ctx) {
       let user
       let error

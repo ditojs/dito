@@ -164,6 +164,18 @@ class Ingredients extends ModelController<any> {
   }
 }
 
+class AllIngredients extends ModelController<any> {
+  override modelClass = Ingredient
+
+  override collection: any = {
+    allow: ['*']
+  }
+
+  override member: any = {
+    allow: ['*']
+  }
+}
+
 class OpenIngredients extends ModelController<any> {
   override modelClass = Ingredient
   override assets: any = true
@@ -195,6 +207,7 @@ describe('Controller setup', () => {
           kitchen: { KitchenToolsController, Cellar }
         },
         Ingredients,
+        AllIngredients,
         OpenIngredients
       }
     })
@@ -231,6 +244,13 @@ describe('Controller setup', () => {
 
     it('only routes inherited actions that are allowed', async () => {
       expect((await fetch(`${url}/pantry/hidden`)).status).toBe(404)
+    })
+
+    it("routes all inherited actions with `allow: ['*']`", async () => {
+      const response = await fetch(`${url}/all-ingredients`, {
+        method: 'DELETE'
+      })
+      expect(response.status).toBe(200)
     })
 
     it('maps nested controller objects to namespaces', async () => {

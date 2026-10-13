@@ -1,4 +1,3 @@
-import { vi } from 'vitest'
 import { parseHandlerDefinition } from './handler.js'
 
 describe('parseHandlerDefinition()', () => {
@@ -50,20 +49,6 @@ describe('parseHandlerDefinition()', () => {
     })
   })
 
-  it('maps the deprecated `returns` setting to `response`', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    try {
-      const descriptor = parseHandlerDefinition({
-        handler() {},
-        returns: [{ type: 'number' }, { patch: false }]
-      })
-      expect(descriptor.response).toEqual({ type: 'number' })
-      expect(descriptor.options.response).toEqual({ patch: false })
-    } finally {
-      warn.mockRestore()
-    }
-  })
-
   it('does not write settings onto the handler function', () => {
     const handler = () => {}
     parseHandlerDefinition({
@@ -73,6 +58,18 @@ describe('parseHandlerDefinition()', () => {
       cached: true
     })
     expect(Object.keys(handler)).toEqual([])
+  })
+
+  it('rejects the former `returns` setting', () => {
+    const message = `Unsupported 'returns' in handler definition, use 'response' instead.`
+    const handler = () => {}
+    const returns = { type: 'string' }
+    expect(() => parseHandlerDefinition({ handler, returns })).toThrow(message)
+    expect(() =>
+      parseHandlerDefinition({ handler, options: { returns: {} } })
+    ).toThrow(message)
+    handler.returns = returns
+    expect(() => parseHandlerDefinition(handler)).toThrow(message)
   })
 
   it('returns null for definitions without a handler function', () => {

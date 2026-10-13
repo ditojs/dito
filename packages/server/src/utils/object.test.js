@@ -170,6 +170,16 @@ describe('setupPropertyInheritance()', () => {
     expect(Object.getPrototypeOf(Book.labels)).toBe(baseValue)
   })
 
+  it('inherits the topmost value of plain objects from the base value', () => {
+    const baseValue = { fallback: true }
+    const book = { labels: { title: 'Title' } }
+    const novel = Object.setPrototypeOf({ labels: { genre: 'Genre' } }, book)
+    const labels = setupPropertyInheritance(novel, 'labels', baseValue)
+    expect(labels.title).toBe('Title')
+    expect(labels.fallback).toBe(true)
+    expect(Object.getPrototypeOf(book.labels)).toBe(baseValue)
+  })
+
   it('creates an inheriting object if no class defines the property', () => {
     const baseValue = { fallback: true }
     class Book {}

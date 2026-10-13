@@ -36,7 +36,7 @@ export class Controller {
   assets = null
   actions = null
   transacted = null
-  initialized = false
+  isInitialized = false
 
   constructor(app, namespace) {
     this.app = app
@@ -268,7 +268,7 @@ export class Controller {
   // Returns the `authorize` setting of an action: its own, overriding the one
   // that `processValues()` determined from its actions object and controller.
   getActionAuthorize(definition, authorize) {
-    return definition?.authorize || authorize
+    return definition?.authorize ?? authorize
   }
 
   setupActionRoute(type, action) {
@@ -445,7 +445,7 @@ export class Controller {
     let allowMap = {}
     const authorizeMap = {}
 
-    const includeKey = key => !['allow', 'authorize'].includes(key)
+    const includeKey = key => !['allow', 'authorize', '$core'].includes(key)
 
     const handleAllow = (allow, current) => {
       const getFilteredMap = keys =>
@@ -514,9 +514,7 @@ export class Controller {
     // At the end of the chain, also support authorize settings on the
     // controller-level, acting as a fallback for actions that don't already
     // have authorization.
-    if (this.authorize) {
-      handleAuthorize(this.authorize, false)
-    }
+    handleAuthorize(this.authorize, false)
 
     return {
       // Create a filtered `values` object that only contains the allowed fields
@@ -605,7 +603,7 @@ export class Controller {
           // - '$owner': The member is asked if it is owned by `ctx.state.user`
           //   through the optional `Model.$hasOwner()` method.
           // - any string:  `ctx.state.user` is checked for this role through
-          //   the overridable `UserModel.hasRole()` method.
+          //   the overridable `UserModel.$hasRole()` method.
           value => {
             return value === '$self'
               ? user.constructor === this.modelClass &&
