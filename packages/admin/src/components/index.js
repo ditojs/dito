@@ -1,7 +1,5 @@
-// NOTE: index.js exports nothing, but Dito.js components will be registered in
-// DitoComponent and can be rendered through their tag-names.
-// NOTE: Sequence is meaningful for reasons of CSS declaration sequence. The
-// convention is in order of encountered hierarchy in the DOM.
+// NOTE: The sequence determines the CSS declaration sequence, so follow the
+// hierarchy encountered in the DOM.
 
 export { default as DitoRoot } from './DitoRoot.vue'
 export { default as DitoMenu } from './DitoMenu.vue'
@@ -28,7 +26,7 @@ export { default as DitoRouterView } from './DitoRouterView.vue'
 export { default as DitoView } from './DitoView.vue'
 export { default as DitoForm } from './DitoForm.vue'
 export { default as DitoFormInner } from './DitoFormInner.vue'
-export { default as DitoFormNested } from './DitoFormNested.vue'
+export { default as DitoFormEmbedded } from './DitoFormEmbedded.vue'
 export { default as DitoErrors } from './DitoErrors.vue'
 export { default as DitoScopes } from './DitoScopes.vue'
 export { default as DitoPagination } from './DitoPagination.vue'
