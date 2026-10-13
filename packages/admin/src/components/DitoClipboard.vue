@@ -15,118 +15,116 @@
 </template>
 
 <script>
+import { computed, inject, onMounted } from 'vue'
 import { isObject, clone } from '@ditojs/utils'
 import { DitoButton } from '@ditojs/ui/src'
-import DitoComponent from '../DitoComponent.js'
-import DomMixin from '../mixins/DomMixin.js'
-import DitoContext from '../DitoContext.js'
+import appState from '../appState.js'
+import { useDomEvents } from '../composables/useDomEvents.ts'
 import {
   getClipboardData,
   hasClipboardData,
   copyClipboardData,
   readClipboardData
 } from '../utils/clipboard.js'
+import { adminContextKey } from '../utils/keys.ts'
 
-// @vue/component
-export default DitoComponent.component('DitoClipboard', {
-  mixins: [DomMixin],
+export default {
   components: { DitoButton },
-
   emits: ['paste'],
 
   props: {
     clipboard: { type: [Boolean, Object], required: true },
     schema: { type: Object, required: true },
     hasData: { type: Boolean, required: true },
-    // Returns the data to copy. A function rather than the data itself, so
-    // that it's only processed when copying.
-    getData: { type: Function, required: true }
+    // A function, to only serialize the data when copying:
+    getData: { type: Function, required: true },
+    // For the `copy()` and `paste()` callbacks of `clipboard`:
+    createContext: { type: Function, required: true }
   },
 
-  computed: {
-    clipboardOptions() {
-      return isObject(this.clipboard) ? this.clipboard : {}
-    },
+  setup(props, { emit }) {
+    const adminContext = inject(adminContextKey)
+    const { domOn } = useDomEvents()
 
-    copyData() {
-      const { copy } = this.clipboardOptions
-      return copy
-        ? clipboardData =>
-            copy.call(this, new DitoContext(this, { clipboardData }))
-        : clipboardData => clone(clipboardData)
-    },
-
-    pasteData() {
-      const { paste } = this.clipboardOptions
-      return paste
-        ? clipboardData =>
-            paste.call(this, new DitoContext(this, { clipboardData }))
-        : clipboardData => clipboardData
-    },
-
-    isPasteEnabled() {
-      return hasClipboardData(this.schema.name)
+    const updateClipboardData = () => {
+      // Only Chrome reads the clipboard without asking for permission:
+      if (appState.agent.chrome) {
+        readClipboardData().catch(() => {}) // Report errors only when pasting.
+      }
     }
-  },
 
-  mounted() {
-    // Read the clipboard right away, and whenever something gets copied or the
-    // window gets (re)activated, as those are the moments when it can change:
-    this.updateClipboardData()
-    this.domOn(document, { copy: this.updateClipboardData })
-    this.domOn(window, { focus: this.updateClipboardData })
-  },
+    // Notifications log their error too:
+    const notifyClipboardError = (error, text = error.message) => {
+      adminContext.notify({
+        type: 'error',
+        error,
+        title: 'Clipboard Error',
+        text
+      })
+    }
 
-  methods: {
-    updateClipboardData() {
-      // Only Chrome reads the clipboard without asking for permission, so
-      // other browsers only read it when pasting.
-      if (this.appState.agent.chrome) {
-        // Errors are only reported when pasting.
-        readClipboardData().catch(() => {})
-      }
-    },
+    const clipboardOptions = computed(() =>
+      isObject(props.clipboard) ? props.clipboard : {}
+    )
 
-    async onCopy() {
-      try {
-        const data = this.getData()
-        await copyClipboardData(this.schema.name, data && this.copyData(data))
-      } catch (error) {
-        this.notifyClipboardError(error)
-      }
-    },
+    onMounted(() => {
+      // Read it now, and again when it can change, on copy and window focus:
+      updateClipboardData()
+      domOn(document, { copy: updateClipboardData })
+      domOn(window, { focus: updateClipboardData })
+    })
 
-    async onPaste() {
-      try {
-        await readClipboardData()
-      } catch (error) {
-        if (error.name === 'SyntaxError') {
-          this.notifyClipboardError(error, [
-            'The data in the clipboard appears to be malformed:',
-            error.message
-          ])
-          return
+    return {
+      isPasteEnabled: computed(() => hasClipboardData(props.schema.name)),
+
+      async onCopy() {
+        const { copy } = clipboardOptions.value
+        try {
+          const data = props.getData()
+          await copyClipboardData(
+            props.schema.name,
+            data && (
+              copy
+                ? copy(props.createContext({ clipboardData: data }))
+                : clone(data)
+            )
+          )
+        } catch (error) {
+          notifyClipboardError(error)
         }
-        // Fall back to the data copied inside the admin.
-        console.error(error, error.name, error.message)
-      }
-      try {
-        const data = getClipboardData(this.schema.name)
-        const pastedData = data && this.pasteData(data)
-        if (pastedData) {
-          this.$emit('paste', pastedData)
-        }
-      } catch (error) {
-        this.notifyClipboardError(error)
-      }
-    },
+      },
 
-    notifyClipboardError(error, text = error.message) {
-      // Notifications log their error too.
-      this.notify({ type: 'error', error, title: 'Clipboard Error', text })
+      async onPaste() {
+        try {
+          await readClipboardData()
+        } catch (error) {
+          if (error.name === 'SyntaxError') {
+            notifyClipboardError(error, [
+              'The data in the clipboard appears to be malformed:',
+              error.message
+            ])
+            return
+          }
+          // Fall back to the data copied inside the admin.
+          console.error(error, error.name, error.message)
+        }
+        const { paste } = clipboardOptions.value
+        try {
+          const data = getClipboardData(props.schema.name)
+          const pastedData = (
+            data &&
+            (paste ? paste(props.createContext({ clipboardData: data })) : data)
+          )
+          if (pastedData) {
+            emit('paste', pastedData)
+          }
+        } catch (error) {
+          notifyClipboardError(error)
+        }
+      }
     }
   }
-})
+}
 </script>
 
 <style lang="scss">
