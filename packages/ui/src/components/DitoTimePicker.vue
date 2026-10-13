@@ -9,7 +9,6 @@ DitoPickerInput.dito-time-picker(
   toggleLabel="Choose time"
   inputClass="dito-time-picker-input"
   :inputAttributes="$attrs"
-  :isValueDisabled="isValueDisabled"
   :handlePanelKey="handlePanelKey"
   @update:modelValue="value => $emit('update:modelValue', value)"
   @update:show="show => $emit('update:show', show)"
@@ -30,7 +29,6 @@ DitoPickerInput.dito-time-picker(
     DitoTimePanel(
       ref="timePanel"
       :modelValue="value"
-      v-bind="{ disabledHour, disabledMinute, disabledSecond }"
       @update:modelValue="setValue"
       @select="close"
     )
@@ -40,7 +38,6 @@ DitoPickerInput.dito-time-picker(
 import { defaultFormats } from '@ditojs/utils'
 import DitoPickerInput from './DitoPickerInput.vue'
 import DitoTimePanel from './DitoTimePanel.vue'
-import { isTimeDisabled } from '../utils/time.js'
 
 export default {
   components: { DitoPickerInput, DitoTimePanel },
@@ -62,10 +59,7 @@ export default {
         time: defaultFormats.time,
         date: false
       })
-    },
-    disabledHour: { type: Function, default: () => false },
-    disabledMinute: { type: Function, default: () => false },
-    disabledSecond: { type: Function, default: () => false }
+    }
   },
 
   computed: {
@@ -78,15 +72,6 @@ export default {
   },
 
   methods: {
-    isValueDisabled(date) {
-      const { disabledHour, disabledMinute, disabledSecond } = this
-      return isTimeDisabled(date, {
-        disabledHour,
-        disabledMinute,
-        disabledSecond
-      })
-    },
-
     handlePanelKey(event, part) {
       return this.$refs.timePanel?.handleKey(event, part) ?? false
     },

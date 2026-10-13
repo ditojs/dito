@@ -90,25 +90,12 @@ describe('DitoDatePicker', () => {
     expect(wrapper.emitted('blur')).toHaveLength(1)
   })
 
-  it('steps the date part at the caret, skipping disabled dates', async () => {
-    wrapper = mountDatePicker({
-      disabledDate: date => date.getDate() === 6
-    })
+  it('steps the date part at the caret', async () => {
+    wrapper = mountDatePicker()
     await focusInput(wrapper)
     // "March 5, 2024": The caret in the day.
     await pressKey(wrapper, 'ArrowDown', 7)
-    expect(getEmittedDates(wrapper)).toEqual([new Date(2024, 2, 7)])
-  })
-
-  it(`doesn't select disabled dates when typed`, async () => {
-    wrapper = mountDatePicker({
-      disabledDate: date => date.getDate() === 6
-    })
-    await focusInput(wrapper)
-    await findInput(wrapper).setValue('March 6, 2024')
-    expect(getEmittedDates(wrapper)).toEqual([])
-    await findInput(wrapper).setValue('March 7, 2024')
-    expect(getEmittedDates(wrapper)).toEqual([new Date(2024, 2, 7)])
+    expect(getEmittedDates(wrapper)).toEqual([new Date(2024, 2, 6)])
   })
 
   it('selects the date with Enter and closes the popup', async () => {

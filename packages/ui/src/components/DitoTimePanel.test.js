@@ -85,16 +85,9 @@ describe('DitoTimePanel', () => {
     ])
   })
 
-  it(`doesn't set a time when a column has no enabled values`, async () => {
-    wrapper = mountTimePanel({ disabledSecond: () => true })
-    expect(wrapper.findAll('.dito-time-picker-second li')).toHaveLength(0)
-    await wrapper.findAll('.dito-time-picker-hour li')[3].trigger('click')
-    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
-  })
-
   describe('handleKey()', () => {
-    it('steps the part at the caret to the next enabled value', () => {
-      wrapper = mountTimePanel({ disabledMinute: minute => minute % 15 !== 0 })
+    it('steps the part at the caret', () => {
+      wrapper = mountTimePanel()
       expect(
         wrapper.vm.handleKey(createKeyEvent('ArrowDown'), { name: 'minute' })
       ).toBe(true)
@@ -102,8 +95,19 @@ describe('DitoTimePanel', () => {
         wrapper.vm.handleKey(createKeyEvent('ArrowUp'), { name: 'hour' })
       ).toBe(true)
       expect(getEmittedTimes(wrapper)).toEqual([
-        [9, 30, 30],
+        [9, 16, 30],
         [8, 15, 30]
+      ])
+    })
+
+    it('wraps around at the ends', () => {
+      wrapper = mountTimePanel({ modelValue: new Date(2024, 2, 5, 23, 0, 30) })
+      const { vm } = wrapper
+      vm.handleKey(createKeyEvent('ArrowDown'), { name: 'hour' })
+      vm.handleKey(createKeyEvent('ArrowUp'), { name: 'minute' })
+      expect(getEmittedTimes(wrapper)).toEqual([
+        [0, 0, 30],
+        [23, 59, 30]
       ])
     })
 
@@ -123,14 +127,6 @@ describe('DitoTimePanel', () => {
       expect(vm.handleKey(createKeyEvent('ArrowLeft'), { name: 'hour' })).toBe(
         false
       )
-      expect(wrapper.emitted('update:modelValue')).toBeUndefined()
-    })
-
-    it('handles but ignores steps in columns without enabled values', () => {
-      wrapper = mountTimePanel({ disabledHour: () => true })
-      expect(
-        wrapper.vm.handleKey(createKeyEvent('ArrowDown'), { name: 'hour' })
-      ).toBe(true)
       expect(wrapper.emitted('update:modelValue')).toBeUndefined()
     })
   })
@@ -162,15 +158,6 @@ describe('DitoTimePanel', () => {
       await wrapper.setProps({ modelValue: new Date(2024, 2, 5, 9, 15, 30) })
       await flushPromises()
       expect(list.scrollTo).not.toHaveBeenCalled()
-    })
-
-    // A leak guard: the elements of options that are no longer rendered aren't
-    // kept around, which isn't observable through the rendered panel.
-    it('forgets options that are no longer rendered', async () => {
-      wrapper = mountTimePanel()
-      expect(Object.keys(wrapper.vm.optionElements.hour)).toHaveLength(24)
-      await wrapper.setProps({ disabledHour: hour => hour >= 12 })
-      expect(Object.keys(wrapper.vm.optionElements.hour)).toHaveLength(12)
     })
   })
 })

@@ -68,7 +68,6 @@
                 :class="item.state && `dito-calendar-item-${item.state}`"
                 :aria-label="dateToString(item.date)"
                 :aria-selected="item.state === 'active' ? 'true' : 'false'"
-                :aria-disabled="item.isDisabled ? 'true' : null"
                 @click="selectDay(item.date)"
               ) {{ item.date.getDate() }}
         .dito-calendar-footer
@@ -153,18 +152,12 @@ function getStartOfToday() {
   })
 }
 
-// The most steps that `navigate()` takes past disabled dates, in any date part
-// (day, month or year), before giving up, as a guard against `disabledDate`
-// disabling every date.
-const maxSkippedDateCount = 366
-
 export default {
   emits: ['update:modelValue', 'select'],
 
   props: {
     modelValue: { type: Date, default: null },
     locale: { type: String, default: 'en-US' },
-    disabledDate: { type: Function, default: () => false },
     mode: { type: String, default: 'day' }
   },
 
@@ -204,25 +197,19 @@ export default {
           firstDate.getMonth(),
           firstDate.getDate() + i
         )
-        const isDisabled = this.disabledDate(date)
         const state =
           date.getMonth() !== month
-            ? isDisabled
-              ? 'disabled'
-              : 'gray'
+            ? 'gray'
             : isSameDay(date, this.modelValue)
               ? 'active'
               : isSameDay(date, now)
                 ? 'today'
-                : isDisabled
-                  ? 'disabled'
-                  : isSameDay(date, currentValue)
-                    ? 'current'
-                    : null
+                : isSameDay(date, currentValue)
+                  ? 'current'
+                  : null
         items.push({
           date,
           state,
-          isDisabled,
           isCursor: isSameDay(date, currentValue)
         })
       }
@@ -306,15 +293,9 @@ export default {
       }
     },
 
-    // All changes of the value go through here, so disabled dates are never
-    // selected. Returns whether the date was selected.
     commitDate(date) {
-      if (this.disabledDate(date)) {
-        return false
-      }
       this.currentValue = date
       this.$emit('update:modelValue', date)
-      return true
     },
 
     stepDecade(step) {
@@ -335,9 +316,8 @@ export default {
     },
 
     selectDate(date) {
-      if (this.commitDate(date)) {
-        this.$emit('select')
-      }
+      this.commitDate(date)
+      this.$emit('select')
     },
 
     // Selects the day of `date`, keeping the time of the current value.
@@ -385,26 +365,19 @@ export default {
     },
 
     // Steps the date part `mode` of the cursor by `step`, or confirms the
-    // cursor with `enter`. With `update`, the stepped date is also selected,
-    // skipping disabled dates. Returns whether anything happened.
+    // cursor with `enter`. With `update`, the stepped date is also selected.
+    // Returns whether anything happened.
     navigate({ step, enter, mode = this.currentMode, update = false }) {
       if (step) {
         if (!['day', 'month', 'year'].includes(mode)) {
           return false
         }
-        let date = this.currentValue
-        let skippedCount = 0
-        do {
-          date = stepDate(date, mode, step)
-        } while (
-          update &&
-          this.disabledDate(date) &&
-          ++skippedCount < maxSkippedDateCount
-        )
+        const date = stepDate(this.currentValue, mode, step)
         if (update) {
-          return this.commitDate(date)
+          this.commitDate(date)
+        } else {
+          this.currentValue = date
         }
-        this.currentValue = date
         return true
       } else if (enter) {
         switch (this.currentMode) {
@@ -550,12 +523,6 @@ function getLocaleNames(locale) {
     }
   }
 
-  .dito-calendar-item-disabled {
-    background: white;
-    cursor: default;
-  }
-
-  .dito-calendar-item-disabled,
   .dito-calendar-item-gray {
     color: #999999;
   }

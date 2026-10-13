@@ -89,8 +89,6 @@ export default {
     inputClass: { type: String, default: null },
     // The attributes and listeners of the native input.
     inputAttributes: { type: Object, default: () => ({}) },
-    // Values that can't be picked, also not by typing them.
-    isValueDisabled: { type: Function, default: () => false },
     // Called with the keydown event of the input and the date part at the
     // caret, returning whether the panel handled it.
     handlePanelKey: { type: Function, default: () => false }
@@ -101,6 +99,7 @@ export default {
       currentValue: this.modelValue,
       isPopupShown: this.show,
       isInputFocused: false,
+      isEdited: false,
       caretPartName: null
     }
   },
@@ -122,7 +121,8 @@ export default {
           // of the new value.
           const input = this.getInputElement()
           const selection = getSelection(input)
-          if (this.setValue(date) && selection) {
+          this.setValue(date)
+          if (selection) {
             this.$nextTick(() => setSelection(input, selection))
           }
         }
@@ -139,6 +139,9 @@ export default {
 
     isFocused(to, from) {
       if (to ^ from) {
+        if (!to) {
+          this.emitChangeIfEdited()
+        }
         this.$emit(to ? 'focus' : 'blur')
       }
     }
@@ -149,20 +152,23 @@ export default {
       return this.$refs.input?.input ?? null
     },
 
-    // All changes of the value go through here, so disabled values are never
-    // set. Returns whether the value was set.
     setValue(value) {
-      if (value && this.isValueDisabled(value)) {
-        return false
-      }
       if (+value !== +this.currentValue) {
         this.currentValue = value
         if (+value !== +this.modelValue) {
+          this.isEdited = true
           this.$emit('update:modelValue', value)
-          this.$emit('change', value)
         }
       }
-      return true
+    },
+
+    // Emit `change` once the edit is done: when the popup closes, the input
+    // loses focus or Enter is pressed.
+    emitChangeIfEdited() {
+      if (this.isEdited) {
+        this.isEdited = false
+        this.$emit('change', this.currentValue)
+      }
     },
 
     open() {
@@ -199,6 +205,9 @@ export default {
     onUpdateShow(show) {
       // `DitoTrigger` owns the popup's state, this only mirrors it.
       this.isPopupShown = show
+      if (!show) {
+        this.emitChangeIfEdited()
+      }
       this.$emit('update:show', show)
     },
 
@@ -245,6 +254,10 @@ export default {
               )
             )
           })
+        }
+        if (enter) {
+          // Enter completes the edit, also after the panel handled it:
+          this.emitChangeIfEdited()
         }
       } else if (isTimePartName(part?.name)) {
         editTimeText(event, this.getInputElement(), this.currentText.length)

@@ -9,7 +9,6 @@ DitoPickerInput.dito-date-picker(
   toggleLabel="Choose date"
   inputClass="dito-date-picker-input"
   :inputAttributes="$attrs"
-  :isValueDisabled="disabledDate"
   :handlePanelKey="handlePanelKey"
   @update:modelValue="value => $emit('update:modelValue', value)"
   @update:show="show => $emit('update:show', show)"
@@ -30,7 +29,7 @@ DitoPickerInput.dito-date-picker(
     DitoCalendar.dito-date-picker-popup(
       ref="calendar"
       :modelValue="value"
-      v-bind="{ locale, disabledDate }"
+      :locale="locale"
       @update:modelValue="setValue"
       @select="close"
     )
@@ -61,8 +60,7 @@ export default {
         date: defaultFormats.date,
         time: false
       })
-    },
-    disabledDate: { type: Function, default: () => false }
+    }
   },
 
   computed: {

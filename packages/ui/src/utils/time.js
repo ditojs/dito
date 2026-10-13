@@ -6,44 +6,6 @@ export function isTimePartName(name) {
   return timePartNames.includes(name)
 }
 
-// Returns the values from 0 to `count - 1` that `isDisabled()` allows.
-export function getEnabledValues(count, isDisabled) {
-  const values = []
-  for (let value = 0; value < count; value++) {
-    if (!isDisabled(value)) {
-      values.push(value)
-    }
-  }
-  return values
-}
-
-// Returns the enabled value that follows `value` in the direction of `step`,
-// wrapping around at the ends. `value` itself doesn't need to be enabled.
-export function stepEnabledValue(values, value, step) {
-  if (values.length === 0) return null
-  if (step > 0) {
-    return values.find(enabled => enabled > value) ?? values[0]
-  } else {
-    return values.findLast(enabled => enabled < value) ?? values.at(-1)
-  }
-}
-
-// Returns `value` if it is enabled, or else the enabled value that follows it.
-export function getEnabledValue(values, value) {
-  return values.includes(value) ? value : stepEnabledValue(values, value, 1)
-}
-
-export function isTimeDisabled(
-  date,
-  { disabledHour, disabledMinute, disabledSecond }
-) {
-  return (
-    disabledHour(date.getHours()) ||
-    disabledMinute(date.getMinutes()) ||
-    disabledSecond(date.getSeconds())
-  )
-}
-
 function isDigit(char) {
   return /^\d$/.test(char)
 }

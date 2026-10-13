@@ -112,19 +112,11 @@ describe('DitoCalendar days', () => {
     expect(wrapper.find('[role="columnheader"]').text()).toBe('So')
   })
 
-  it('marks days outside the month as gray or disabled', () => {
-    wrapper = mountCalendar({
-      disabledDate: date => date.getDate() === 26 || date.getDate() === 12
-    })
+  it('marks days outside the month as gray', () => {
+    wrapper = mountCalendar()
     const getClasses = label =>
       wrapper.find(`[aria-label="${label}"]`).classes()
     expect(getClasses('February 25, 2024')).toContain('dito-calendar-item-gray')
-    expect(getClasses('February 26, 2024')).toContain(
-      'dito-calendar-item-disabled'
-    )
-    expect(getClasses('March 12, 2024')).toContain(
-      'dito-calendar-item-disabled'
-    )
     expect(getClasses('March 5, 2024')).toContain('dito-calendar-item-active')
     expect(getClasses('March 6, 2024')).toEqual(['dito-calendar__item'])
   })
@@ -361,15 +353,6 @@ describe('DitoCalendar year mode', () => {
     expect(wrapper.find('.dito-calendar-months').exists()).toBe(true)
   })
 
-  it(`doesn't select disabled years`, async () => {
-    wrapper = mountCalendar({
-      mode: 'year',
-      disabledDate: date => date.getFullYear() === 2027
-    })
-    await wrapper.find('[aria-label="2027"]').trigger('click')
-    expect(getEmittedDates(wrapper)).toEqual([])
-  })
-
   it('moves the focus to the current year when switching modes', async () => {
     wrapper = mountCalendar()
     const button = wrapper.find('.dito-calendar-select-year')
@@ -439,16 +422,6 @@ describe('DitoCalendar keyboard navigation', () => {
     await pressKey('ArrowDown', 2)
     expect(getEmittedDates(wrapper)).toEqual([new Date(2024, 1, 29)])
     expect(getCursorLabel(wrapper)).toBe('February 29, 2024')
-  })
-
-  it('gives up when all dates are disabled', async () => {
-    await mountDatePicker({ disabledDate: () => true })
-    // "March 5, 2024": The caret in the day, the month and the year.
-    for (const position of [6, 2, 11]) {
-      await pressKey('ArrowDown', position)
-    }
-    expect(getEmittedDates(wrapper)).toEqual([])
-    expect(getCursorLabel(wrapper)).toBe('March 5, 2024')
   })
 
   it('switches modes back with Enter', async () => {
