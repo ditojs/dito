@@ -26,14 +26,14 @@ describe('DitoTypeText', () => {
     expect(findField('title').find('input').element.value).toBe('Untitled')
   })
 
-  it('displays the value through `format()` and stores it through `parse()`', async () => {
+  it('displays the value through `formatValue()` and stores it through `parseValue()`', async () => {
     const { findField, data } = await mountSchema({
       schema: {
         components: {
           tags: {
             type: 'text',
-            format: ({ value }) => value?.join(', '),
-            parse: ({ value }) =>
+            formatValue: ({ value }) => value?.join(', '),
+            parseValue: ({ value }) =>
               value
                 .split(',')
                 .map(tag => tag.trim())
@@ -202,17 +202,15 @@ describe('DitoTypeText', () => {
     })
 
     it('validates the format of the email type', async () => {
-      const { findField, getComponent, getErrors } = await mountSchema({
+      const { findField, getErrors } = await mountSchema({
         schema: { components: { email: { type: 'email' } } }
       })
       const input = findField('email').find('input')
       await input.setValue('reader@')
       await input.trigger('blur')
-      expect(getComponent('email').isValid).toBe(false)
       expect(getErrors('email')).toHaveLength(1)
       await input.setValue('reader@example.com')
       await input.trigger('blur')
-      expect(getComponent('email').isValid).toBe(true)
       expect(getErrors('email')).toEqual([])
     })
 
@@ -234,7 +232,7 @@ describe('DitoTypeText', () => {
     })
   })
 
-  describe('processing', () => {
+  describe('serializing', () => {
     it('trims values with `trim` and sends empty values as defaults', async () => {
       const { findField, submit } = await mountForm({
         schema: {

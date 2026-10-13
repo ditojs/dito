@@ -89,9 +89,9 @@ export default [
       shown: '<p>Hello <strong>world</strong></p>'
     },
     {
-      title: 'processes the value with process',
+      title: 'serializes the value with serializeValue',
       schema: {
-        process: ({ value }: { value: string }) => value.toUpperCase()
+        serializeValue: ({ value }: { value: string }) => value.toUpperCase()
       },
       value: 'Hello',
       stored: '<P>HELLO</P>',

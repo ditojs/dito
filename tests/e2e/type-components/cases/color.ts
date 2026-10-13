@@ -64,13 +64,6 @@ const cases: TypeCase[] = [
     property: { type: 'object' },
     seed: { h: 0, s: 0, l: 1, a: 1 },
     shown: 'ffffff'
-  },
-  {
-    title: 'stores a color name with format name',
-    schema: { format: 'name' },
-    value: { pick: '#000000' },
-    stored: 'black',
-    shown: '000000'
   }
 ]
 

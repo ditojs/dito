@@ -3,7 +3,6 @@ import { flushPromises } from '@vue/test-utils'
 import {
   mountSchema,
   mountForm,
-  unmountAdmin,
   enterValue
 } from '../test/mount.js'
 
@@ -151,29 +150,19 @@ describe('DitoTypeMarkup', () => {
     editor.commands.blur()
     await vi.waitFor(() => expect(onChange).toHaveBeenCalledOnce())
     expect(data.body).toBe('<p><em>Emma</em></p>')
-    // Let the debounced write of the edit pass, see the test below:
-    await new Promise(resolve => setTimeout(resolve, 150))
   })
 
-  // Edits made right before unmounting are written before the editor is
-  // destroyed, as reading the destroyed editor throws.
-  it('writes pending edits before destroying the editor', async () => {
-    const { admin, getComponent, data } = await mountSchema({
+  // Edits that don't blur the editor, e.g. links applied through the dialog:
+  it('submits edits made right before saving', async () => {
+    const { getComponent, submit } = await mountForm({
       schema: { components: { body: { type: 'markup' } } },
-      data: { body: '<p>Emma</p>' }
+      data: { body: '<p>Emma</p>' },
+      request: ({ data }) => ({ data })
     })
-    const { editor } = getComponent('body')
-    let hasReadDestroyedEditor = false
-    // Record the reads instead of throwing like the destroyed editor does:
-    vi.spyOn(editor, 'getHTML').mockImplementation(() => {
-      hasReadDestroyedEditor ||= editor.isDestroyed
-      return '<p>Emma!</p>'
+    getComponent('body').editor.commands.setContent('<p>Emma!</p>', {
+      emitUpdate: true
     })
-    editor.commands.insertContent('!')
-    unmountAdmin(admin)
-    await new Promise(resolve => setTimeout(resolve, 150))
-    expect(hasReadDestroyedEditor).toBe(false)
-    expect(data.body).toBe('<p>Emma!</p>')
+    expect(await submit()).toMatchObject({ body: '<p>Emma!</p>' })
   })
 
   it('applies subscript with `marks.subscript`', async () => {
@@ -359,6 +348,29 @@ describe('DitoTypeMarkup', () => {
       await vi.waitFor(() => expect(data.body).toBe('<p>Emma</p>'))
     })
 
+    it('returns the focus to the editor at its selection', async () => {
+      const { admin, findField, getComponent, data } = await mountSchema({
+        schema,
+        data: { body: '<p>Call me Ishmael.</p>' }
+      })
+      const { editor } = getComponent('body')
+      // Select "Ishmael", and focus the button like clicking it does:
+      editor.commands.setTextSelection({ from: 9, to: 16 })
+      const field = findField('body')
+      field.find('button[aria-label="Link"]').element.focus()
+      const dialog = await openLinkDialog(admin, field)
+      await enterValue(dialog.find('input[name="href"]'), 'example.com')
+      await dialog.find('form').trigger('submit')
+      await vi.waitFor(() => {
+        expect(admin.wrapper.find('.dito-dialog').exists()).toBe(false)
+        expect(document.activeElement).toBe(editor.view.dom)
+      })
+      expect(data.body).toBe(
+        '<p>Call me <a href="https://example.com">Ishmael</a>.</p>'
+      )
+      expect(editor.state.selection).toMatchObject({ from: 9, to: 16 })
+    })
+
     it('keeps links when the dialog is cancelled', async () => {
       const { admin, findField, getComponent, settle } = await mountLinkSchema(
         '<p><a href="https://example.com">Emma</a></p>'
@@ -531,18 +543,22 @@ describe('DitoTypeMarkup', () => {
     expect(getComponent('body').editor.getHTML()).toBe('<p></p>')
   })
 
-  it('focuses and blurs the editor', async () => {
-    const { getComponent } = await mountSchema({
-      schema: { components: { body: { type: 'markup' } } }
+  it('focuses the editor', async () => {
+    const focus = vi.fn()
+    const blur = vi.fn()
+    const { getComponent, focusField } = await mountSchema({
+      schema: {
+        components: { body: { type: 'markup', onFocus: focus, onBlur: blur } }
+      }
     })
     const component = getComponent('body')
-    await component.focus()
-    await vi.waitFor(() => expect(component.focused).toBe(true))
+    await focusField('body')
+    await vi.waitFor(() => expect(focus).toHaveBeenCalledOnce())
     expect(component.editor.isFocused).toBe(true)
-    component.blur()
+    component.editor.commands.blur()
     await flushPromises()
     expect(component.editor.isFocused).toBe(false)
-    expect(component.focused).toBe(false)
+    expect(blur).toHaveBeenCalledOnce()
   })
 
   describe('hard breaks', () => {

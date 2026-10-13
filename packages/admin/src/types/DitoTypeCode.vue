@@ -1,6 +1,7 @@
 <template lang="pug">
 .dito-code(
   :id="componentPath"
+  ref="element"
   :style="style"
 )
   .dito-code__editor(ref="editor")
@@ -12,135 +13,116 @@
 </template>
 
 <script>
-import DitoTypeComponent from '../DitoTypeComponent.js'
-import { getSchemaAccessor } from '../utils/accessor.js'
+import { computed, onMounted, ref, useTemplateRef, watch } from 'vue'
+import { defineType } from '../utils/schema/types.ts'
+import { fieldProps, useField } from '../composables/useField.ts'
 import { createChangeOnceEdited } from '../utils/changeOnceEdited.js'
 import DitoResizeHandle from '../components/DitoResizeHandle.vue'
 import CodeFlask from 'codeflask'
 
 // @vue/component
-export default DitoTypeComponent.register('code', {
+const DitoTypeCode = {
   components: { DitoResizeHandle },
+  props: fieldProps,
 
-  data() {
-    return {
-      height: null
-    }
-  },
-
-  computed: {
-    lines: getSchemaAccessor('lines', {
-      type: Number,
-      default: 3
-    }),
-
-    language: getSchemaAccessor('language', {
-      type: String,
-      default: 'javascript'
-    }),
-
-    indentSize: getSchemaAccessor('indentSize', {
-      type: Number,
-      default: 2
-    }),
-
-    resizable: getSchemaAccessor('resizable', {
-      type: Boolean,
-      default: false
-    }),
-
-    // The height of the lines is set through `--lines` and the styles, which
-    // add the padding, unless the editor was resized to a height of its own.
-    style() {
-      return this.height ? { height: this.height } : { '--lines': this.lines }
-    }
-  },
-
-  mounted() {
-    const flask = new CodeFlask(this.$refs.editor, {
-      language: this.language,
-      indentSize: this.indentSize,
-      lineNumbers: false
+  setup(props) {
+    const editor = useTemplateRef('editor')
+    const getTextarea = () => editor.value.querySelector('textarea')
+    const field = useField(props, {
+      focusElement: () => getTextarea().focus(),
+      blurElement: () => getTextarea().blur()
     })
+    const { value, focused, readonly, disabled, getSchemaValue } = field
+    const height = ref(null)
 
-    let ignoreWatch = false
-    let ignoreUpdate = false
-
-    // Emits the change of the value once the editor isn't focused anymore.
-    const changeOnceEdited = createChangeOnceEdited({
-      isEditing: () => this.focused,
-      emitChange: () => this.onChange()
-    })
-
-    const onFocus = () => this.onFocus()
-
-    const onBlur = () => {
-      this.onBlur()
-      changeOnceEdited.emitIfDone()
-    }
-
-    // The textarea is owned by the editor, so its handlers go with it:
-    const textarea = this.$refs.editor.querySelector('textarea')
-    textarea.addEventListener('focus', onFocus)
-    textarea.addEventListener('blur', onBlur)
-
-    const setCode = code => {
-      if (code !== flask.code) {
-        ignoreUpdate = true
-        flask.updateCode(code)
-      }
-    }
-
-    const setValue = value => {
-      if (value !== this.value) {
-        ignoreWatch = true
-        this.value = value
-        changeOnceEdited.markEdited()
-        this.onInput()
-        changeOnceEdited.emitIfDone()
-      }
-    }
-
-    flask.onUpdate(value => {
-      if (ignoreUpdate) {
-        ignoreUpdate = false
-      } else {
-        setValue(value)
-      }
-    })
-
-    this.$watch('value', value => {
-      if (ignoreWatch) {
-        ignoreWatch = false
-      } else {
-        setCode(value || '')
-      }
-    })
-
-    this.$watch('language', language => {
-      flask.updateLanguage(language)
-    })
-
-    this.$watch(
-      () => this.readonly || this.disabled,
-      readonly =>
-        readonly ? flask.enableReadonlyMode() : flask.disableReadonlyMode(),
-      { immediate: true }
+    const language = computed(() =>
+      getSchemaValue('language', { type: String, default: 'javascript' })
     )
 
-    setCode(this.value || '')
-  },
+    onMounted(() => {
+      const flask = new CodeFlask(editor.value, {
+        language: language.value,
+        indentSize: getSchemaValue('indentSize', { type: Number, default: 2 }),
+        lineNumbers: false
+      })
 
-  methods: {
-    focusElement() {
-      this.$el.querySelector('textarea')?.focus()
-    },
+      let ignoreWatch = false
+      let ignoreUpdate = false
 
-    blurElement() {
-      this.$el.querySelector('textarea')?.blur()
+      const changeOnceEdited = createChangeOnceEdited({
+        isEditing: () => focused.value,
+        emitChange: () => field.onChange()
+      })
+
+      // The textarea is owned by the editor, so its handlers go with it:
+      const textarea = getTextarea()
+      textarea.addEventListener('focus', () => field.onFocus())
+      textarea.addEventListener('blur', () => {
+        field.onBlur()
+        changeOnceEdited.emitIfDone()
+      })
+
+      const setCode = code => {
+        if (code !== flask.code) {
+          ignoreUpdate = true
+          flask.updateCode(code)
+        }
+      }
+
+      flask.onUpdate(code => {
+        if (ignoreUpdate) {
+          ignoreUpdate = false
+        } else if (code !== value.value) {
+          ignoreWatch = true
+          value.value = code
+          changeOnceEdited.markEdited()
+          changeOnceEdited.emitIfDone()
+        }
+      })
+
+      watch(value, code => {
+        if (ignoreWatch) {
+          ignoreWatch = false
+        } else {
+          setCode(code || '')
+        }
+      })
+
+      watch(language, language => flask.updateLanguage(language))
+
+      watch(
+        () => readonly.value || disabled.value,
+        readonly =>
+          readonly ? flask.enableReadonlyMode() : flask.disableReadonlyMode(),
+        { immediate: true }
+      )
+
+      setCode(value.value || '')
+    })
+
+    return {
+      ...field,
+      height,
+      resizable: computed(() =>
+        getSchemaValue('resizable', { type: Boolean, default: false })
+      ),
+
+      // The styles add the padding to `--lines`, unless the editor was resized:
+      style: computed(() =>
+        height.value
+          ? { height: height.value }
+          : { '--lines': getSchemaValue('lines', { type: Number, default: 3 }) }
+      )
     }
   }
+}
+
+defineType({
+  type: 'code',
+  component: DitoTypeCode
 })
+
+export default DitoTypeCode
 </script>
 
 <style lang="scss">

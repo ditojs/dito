@@ -36,12 +36,12 @@ export default [
       invalid: true
     },
     {
-      title: 'stores the parsed value with format and parse',
+      title: 'stores the parsed value with formatValue and parseValue',
       schema: {
         suffix: '%',
-        format: ({ value }: { value: number | null }) =>
+        formatValue: ({ value }: { value: number | null }) =>
           value == null ? value : value * 100,
-        parse: ({ value }: { value: number | null }) =>
+        parseValue: ({ value }: { value: number | null }) =>
           value == null ? value : value / 100
       },
       value: '50',

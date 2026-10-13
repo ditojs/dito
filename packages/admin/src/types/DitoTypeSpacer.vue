@@ -1,11 +1,25 @@
 <!-- eslint-disable vue/valid-template-root -->
 <template lang="pug"></template>
 <script>
-import DitoTypeComponent from '../DitoTypeComponent.js'
+import { defineType } from '../utils/schema/types.ts'
+import { fieldProps, useField } from '../composables/useField.ts'
+
 // @vue/component
-export default DitoTypeComponent.register('spacer', {
-  defaultValue: () => undefined, // Callback to override `defaultValue: null`
-  excludeValue: true,
-  generateLabel: false
+const DitoTypeSpacer = {
+  props: fieldProps,
+
+  setup(props) {
+    useField(props)
+  }
+}
+
+defineType({
+  type: 'spacer',
+  component: DitoTypeSpacer,
+  defaultValue: undefined,
+  defaultExclude: true,
+  generatesLabel: false
 })
+
+export default DitoTypeSpacer
 </script>

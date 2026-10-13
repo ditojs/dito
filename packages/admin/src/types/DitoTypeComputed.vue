@@ -2,7 +2,7 @@
 input.dito-text.dito-input(
   :id="componentPath"
   ref="element"
-  :name="name"
+  :name="schema.name"
   type="text"
   :value="value"
   :disabled="disabled"
@@ -11,17 +11,22 @@ input.dito-text.dito-input(
 </template>
 
 <script>
-import DitoTypeComponent from '../DitoTypeComponent.js'
+import { defineType } from '../utils/schema/types.ts'
+import { fieldProps, useField } from '../composables/useField.ts'
 
-export default DitoTypeComponent.register(
-  ['computed', 'data', 'hidden'],
-  // @vue/component
-  {
-    defaultValue: () => undefined, // Callback to override `defaultValue: null`
-    defaultVisible: false,
-    // The value is resolved from `schema.data` or `schema.dataPath` by
-    // `DataModel`, see `hasValueFromDataSchema()`:
-    valueFromDataSchema: true
-  }
-)
+// @vue/component
+const DitoTypeComputed = {
+  props: fieldProps,
+  setup: props => useField(props)
+}
+
+defineType({
+  type: ['computed', 'data', 'hidden'],
+  component: DitoTypeComputed,
+  defaultValue: undefined,
+  defaultVisible: false,
+  resolvesValue: true
+})
+
+export default DitoTypeComputed
 </script>

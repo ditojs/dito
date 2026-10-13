@@ -9,7 +9,7 @@ describe('DitoTypeComputed', () => {
           title: { type: 'text' },
           slug: {
             type: 'computed',
-            compute: ({ item }) => (
+            computeValue: ({ item }) => (
               item.title?.toLowerCase().replaceAll(' ', '-') ?? null
             )
           }
@@ -26,8 +26,12 @@ describe('DitoTypeComputed', () => {
     const { findField } = await mountSchema({
       schema: {
         components: {
-          hidden: { type: 'computed', compute: () => 'secret' },
-          shown: { type: 'computed', visible: true, compute: () => 'shown' }
+          hidden: { type: 'computed', computeValue: () => 'secret' },
+          shown: {
+            type: 'computed',
+            visible: true,
+            computeValue: () => 'shown'
+          }
         }
       }
     })
@@ -48,7 +52,7 @@ describe('DitoTypeComputed', () => {
               components: { name: { type: 'text' } }
             }
           },
-          shelfName: { type: 'data', dataPath: '../shelf/name' },
+          shelfName: { type: 'data', dataPath: 'shelf/name' },
           loadedCount: { type: 'data', data: async () => 42 }
         }
       },
@@ -65,12 +69,12 @@ describe('DitoTypeComputed', () => {
           pages: { type: 'number' },
           sheets: {
             type: 'computed',
-            compute: ({ item }) => Math.ceil(item.pages / 2)
+            computeValue: ({ item }) => Math.ceil(item.pages / 2)
           },
           isLong: {
             type: 'computed',
             exclude: true,
-            compute: ({ item }) => item.pages > 500
+            computeValue: ({ item }) => item.pages > 500
           }
         }
       },
@@ -89,14 +93,14 @@ describe('DitoTypeComputed', () => {
           title: { type: 'text' },
           initials: {
             type: 'computed',
-            compute: ({ item }) => item.title?.[0] ?? null
+            computeValue: ({ item }) => item.title?.[0] ?? null
           }
         }
       },
       data: { title: 'Dune', initials: null }
     })
     expect(routeComponent.data.initials).toBe('D')
-    expect(routeComponent.isDirty).toBe(false)
+    expect(routeComponent.routeContext.isDirty).toBe(false)
   })
 
   it('reports computes that keep changing their value', async () => {
@@ -106,7 +110,7 @@ describe('DitoTypeComputed', () => {
         components: {
           counter: {
             type: 'computed',
-            compute: ({ value }) => (value ?? 0) + 1
+            computeValue: ({ value }) => (value ?? 0) + 1
           }
         }
       }

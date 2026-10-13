@@ -1,5 +1,8 @@
 <template lang="pug">
-.dito-markup(:id="componentPath")
+.dito-markup(
+  :id="componentPath"
+  ref="element"
+)
   .dito-buttons.dito-buttons--toolbar(
     v-if="groupedButtons.length > 0"
   )
@@ -16,20 +19,21 @@
       )
         DitoIcon(:name="icon")
   EditorContent.dito-markup-editor(
-    ref="editor"
+    ref="editorContent"
     :editor="editor"
     :style="styles"
   )
   DitoResizeHandle(
     v-if="resizable"
-    :getElement="() => $refs.editor.$el"
+    :getElement="() => $refs.editorContent.$el"
     @resize="height = `${$event}px`"
   )
 </template>
 
 <script>
-import DitoTypeComponent from '../DitoTypeComponent.js'
-import { getSchemaAccessor } from '../utils/accessor.js'
+import { computed, onUnmounted, ref, watch } from 'vue'
+import { defineType } from '../utils/schema/types.ts'
+import { fieldProps, useField } from '../composables/useField.ts'
 import { createChangeOnceEdited } from '../utils/changeOnceEdited.js'
 import DitoResizeHandle from '../components/DitoResizeHandle.vue'
 // Tiptap:
@@ -62,10 +66,16 @@ import { Footnotes, FootnoteReference, Footnote } from 'tiptap-footnotes'
 import { History } from '@tiptap/extension-history'
 
 import { DitoButton, DitoIcon } from '@ditojs/ui/src'
-import { isArray, isObject, hyphenate, debounce, camelize } from '@ditojs/utils'
+import {
+  isArray,
+  isObject,
+  hyphenate,
+  camelize,
+  labelize
+} from '@ditojs/utils'
 
 // @vue/component
-export default DitoTypeComponent.register('markup', {
+const DitoTypeMarkup = {
   components: {
     EditorContent,
     DitoButton,
@@ -73,242 +83,103 @@ export default DitoTypeComponent.register('markup', {
     DitoResizeHandle
   },
 
-  data() {
-    return {
-      editor: null,
-      height: null
-    }
-  },
+  props: fieldProps,
 
-  computed: {
-    lines() {
-      return this.schema.lines || 10
-    },
-
-    hardBreak() {
-      return !!this.schema.hardBreak
-    },
-
-    styles() {
-      return {
-        height: this.height || `calc(${this.lines}em * var(--line-height))`
-      }
-    },
-
-    markButtons() {
-      return this.getButtons('marks', {
-        bold: true,
-        italic: true,
-        underline: true,
-        strike: true,
-        small: true,
-        code: true,
-        subscript: true,
-        superscript: true,
-        link: {
-          onClick: editor => this.onClickLink(editor)
-        }
-      })
-    },
-
-    basicNodeButtons() {
-      return this.getButtons('nodes', {
-        paragraph: {
-          command: 'setParagraph'
-        },
-        heading: {
-          attribute: 'level',
-          values: headingLevels
-        }
-      })
-    },
-
-    advancedNodeButtons() {
-      return this.getButtons('nodes', {
-        bulletList: true,
-        orderedList: true,
-        blockquote: true,
-        codeBlock: true
-      })
-    },
-
-    toolButtons() {
-      return this.getButtons('tools', {
-        undo: true,
-        redo: true,
-        footnotes: {
-          command: 'addFootnote'
-        }
-      })
-    },
-
-    groupedButtons() {
-      return [
-        this.markButtons,
-        this.basicNodeButtons,
-        this.advancedNodeButtons,
-        this.toolButtons
-      ].filter(buttons => buttons.length > 0)
-    },
-
-    parseOptions() {
-      return {
-        preserveWhitespace: {
-          'collapse': false,
-          'preserve': true,
-          'preserve-all': 'full'
-        }[this.whitespace]
-      }
-    },
-
-    editorOptions() {
-      return {
-        editable: !this.readonly && !this.disabled,
-        autofocus: this.autofocus,
-        enableInputRules: this.enableRules.input,
-        enablePasteRules: this.enableRules.paste,
-        parseOptions: this.parseOptions,
-        editorProps: this.hardBreak
-          ? {
-              handlePaste: (view, event, slice) => {
-                const { schema } = view.state
-                const paragraph = schema.nodes.paragraph.create(
-                  null,
-                  getInlineContentAsLine(slice.content, schema)
-                )
-                // Insert the paragraph as an open slice, so that its inline
-                // content merges into the paragraph of the line.
-                view.dispatch(
-                  view.state.tr.replaceSelection(
-                    new Slice(Fragment.from(paragraph), 1, 1)
-                  )
-                )
-                return true
-              }
-            }
-          : {}
-      }
-    },
-
-    resizable: getSchemaAccessor('resizable', {
-      type: Boolean,
-      default: false
-    }),
-
-    whitespace: getSchemaAccessor('whitespace', {
-      type: String,
-      default: 'collapse'
-      // Possible values are: 'collapse', 'preserve', 'preserve-all'
-    }),
-
-    enableRules: getSchemaAccessor('enableRules', {
-      type: [Object, Boolean],
-      default: false,
-      get(enableRules) {
-        return isObject(enableRules)
-          ? enableRules
-          : {
-              input: !!enableRules,
-              paste: !!enableRules
-            }
-      }
+  setup(props) {
+    const field = useField(props, {
+      focusElement: () => editor.commands.focus(),
+      blurElement: () => editor.commands.blur()
     })
-  },
+    const {
+      value,
+      focused,
+      readonly,
+      disabled,
+      autofocus,
+      services,
+      getSchemaValue
+    } = field
+    const height = ref(null)
+    const hardBreak = computed(() => !!props.schema.hardBreak)
 
-  watch: {
-    readonly: 'updateEditorOptions',
-    disabled: 'updateEditorOptions',
-    autofocus: 'updateEditorOptions',
-    enableRules: 'updateEditorOptions'
-  },
+    const whitespace = computed(() =>
+      // Possible values are: 'collapse', 'preserve', 'preserve-all'
+      getSchemaValue('whitespace', { type: String, default: 'collapse' })
+    )
 
-  created() {
+    const enableRules = computed(() => {
+      const enableRules = getSchemaValue('enableRules', {
+        type: [Object, Boolean],
+        default: false
+      })
+      return isObject(enableRules)
+        ? enableRules
+        : {
+            input: !!enableRules,
+            paste: !!enableRules
+          }
+    })
+
+    const parseOptions = computed(() => ({
+      preserveWhitespace: {
+        'collapse': false,
+        'preserve': true,
+        'preserve-all': 'full'
+      }[whitespace.value]
+    }))
+
+    const editorOptions = computed(() => ({
+      editable: !readonly.value && !disabled.value,
+      autofocus: autofocus.value,
+      enableInputRules: enableRules.value.input,
+      enablePasteRules: enableRules.value.paste,
+      parseOptions: parseOptions.value,
+      editorProps: hardBreak.value
+        ? {
+            handlePaste: (view, event, slice) => {
+              const { schema } = view.state
+              const paragraph = schema.nodes.paragraph.create(
+                null,
+                getInlineContentAsLine(slice.content, schema)
+              )
+              // Insert as an open slice, to merge into the line's paragraph:
+              view.dispatch(
+                view.state.tr.replaceSelection(
+                  new Slice(Fragment.from(paragraph), 1, 1)
+                )
+              )
+              return true
+            }
+          }
+        : {}
+    }))
+
     let ignoreWatch = false
 
-    // Emits the change of the value once the editor isn't focused anymore.
     const changeOnceEdited = createChangeOnceEdited({
-      isEditing: () => this.focused,
-      emitChange: () => this.onChange()
+      isEditing: () => focused.value,
+      emitChange: () => field.onChange()
     })
-
-    const onFocus = () => this.onFocus()
-
-    const onBlur = () => {
-      // Write the value first, so that validating on blur validates it, and
-      // emit the change once the editor isn't focused anymore.
-      updateValue()
-      this.onBlur()
-      changeOnceEdited.emitIfDone()
-    }
-
-    const onUpdate = () => {
-      setValueDebounced()
-      this.onInput()
-    }
-
-    const setValueDebounced = debounce(() => updateValue(), 100)
-    // Writes the pending edits before unmounting, as the destroyed editor
-    // can't be read anymore, see `beforeUnmount()`:
-    this.writePendingValue = () => {
-      if (setValueDebounced.cancel()) {
-        updateValue()
-      }
-    }
 
     const updateValue = () => {
-      const content = this.editor.getHTML()
-      const value = this.hardBreak
+      const content = editor.getHTML()
+      const html = hardBreak.value
         ? content.replace(/^<p>(.*?)<\/p>$/s, '$1')
         : content
-      if (value !== this.value) {
+      if (html !== value.value) {
         changeOnceEdited.markEdited()
-        // The value comes from the editor, so don't set it back as content,
-        // which would re-parse it and e.g. collapse trailing whitespace.
+        // Don't set it back as content, re-parsing collapses whitespace:
         ignoreWatch = true
-        this.value = value
+        value.value = html
       }
       changeOnceEdited.emitIfDone()
     }
 
-    this.$watch('value', value => {
-      if (ignoreWatch) {
-        ignoreWatch = false
-      } else {
-        const content = this.hardBreak
-          ? `<p>${value ?? ''}</p>`
-          : value ?? ''
-        this.editor.commands.setContent(content, {
-          emitUpdate: false,
-          parseOptions: this.parseOptions
-        })
-      }
-    })
-
-    this.editor = new Editor({
-      ...this.editorOptions,
-      onFocus,
-      onBlur,
-      onUpdate,
-      extensions: this.getExtensions(),
-      content: this.value || ''
-    })
-  },
-
-  beforeUnmount() {
-    this.writePendingValue()
-  },
-
-  unmounted() {
-    this.editor.destroy()
-  },
-
-  methods: {
-    updateEditorOptions() {
-      this.editor.setOptions(this.editorOptions)
-    },
-
-    async onClickLink(editor) {
-      const attributes = await this.showDialog({
+    const onClickLink = async editor => {
+      // The dialog returns the focus to what was focused before it: the editor,
+      // not the button. `editor.commands.focus()` would wait for a frame:
+      editor.view.focus()
+      const attributes = await services.adminContext.showDialog({
         components: {
           href: {
             type: 'url',
@@ -324,20 +195,17 @@ export default DitoTypeComponent.register('markup', {
           cancel: {},
           apply: { type: 'submit' },
           remove: {
-            events: {
-              click({ dialogComponent }) {
-                dialogComponent.resolve(null)
-              }
+            onClick({ closeDialog }) {
+              closeDialog(null)
             }
           }
         },
-        data: getMarkAttributes(this.editor.state, 'link')
+        data: getMarkAttributes(editor.state, 'link')
       })
       if (attributes) {
         let { href, title } = attributes
         if (href) {
-          // See if `href` can be parsed as a URL, and if not,
-          // prefix it with a default protocol.
+          // Prefix unparsable URLs with a default protocol:
           try {
             new URL(href)
           } catch {
@@ -351,14 +219,10 @@ export default DitoTypeComponent.register('markup', {
       } else if (attributes === null) {
         editor.commands.unsetLink()
       }
-    },
+    }
 
-    getExtensions() {
-      const {
-        marks = {},
-        nodes = {},
-        tools = {}
-      } = this.schema
+    const getExtensions = () => {
+      const { marks = {}, nodes = {}, tools = {} } = props.schema
       return [
         // Essentials:
         tools.footnotes
@@ -397,25 +261,25 @@ export default DitoTypeComponent.register('markup', {
 
         HardBreak.extend({
           addKeyboardShortcuts: () => {
-            const setHardBreak = () => this.editor.commands.setHardBreak()
+            const setHardBreak = () => editor.commands.setHardBreak()
             return {
               'Mod-Enter': setHardBreak,
               'Shift-Enter': setHardBreak,
-              ...(this.hardBreak ? { Enter: setHardBreak } : null)
+              ...(hardBreak.value ? { Enter: setHardBreak } : null)
             }
           }
         })
       ].filter(extension => !!extension)
-    },
+    }
 
-    getButtons(settingsName, descriptions) {
+    const getButtons = (settingsName, descriptions) => {
       const list = []
-      const { commands } = this.editor
+      const { commands } = editor
 
       const addButton = ({
         name,
         id = name,
-        label = this.labelize(id),
+        label = labelize(id),
         icon,
         command,
         attributes,
@@ -425,7 +289,7 @@ export default DitoTypeComponent.register('markup', {
           id,
           label,
           icon,
-          isActive: this.editor.isActive(name, attributes),
+          isActive: editor.isActive(name, attributes),
           onClick: () => {
             command ??=
               name in commands
@@ -433,16 +297,16 @@ export default DitoTypeComponent.register('markup', {
                 : `toggle${camelize(name, true)}`
             if (command in commands) {
               const apply = attributes =>
-                this.editor.chain()[command](attributes).focus().run()
+                editor.chain()[command](attributes).focus().run()
               onClick
-                ? onClick(this.editor, attributes)
+                ? onClick(editor, attributes)
                 : apply(attributes)
             }
           }
         })
       }
 
-      const settings = this.schema[settingsName]
+      const settings = props.schema[settingsName]
       if (settings) {
         for (const [name, description] of Object.entries(descriptions)) {
           const settingName = ['undo', 'redo'].includes(name) ? 'history' : name
@@ -478,29 +342,114 @@ export default DitoTypeComponent.register('markup', {
         }
       }
       return list
-    },
+    }
 
-    focusElement() {
-      this.editor.commands.focus()
-    },
+    const editor = new Editor({
+      ...editorOptions.value,
+      onFocus: () => field.onFocus(),
+      onBlur: () => {
+        field.onBlur()
+        changeOnceEdited.emitIfDone()
+      },
+      onUpdate: updateValue,
+      extensions: getExtensions(),
+      content: value.value || ''
+    })
 
-    blurElement() {
-      this.editor.commands.blur()
+    watch(value, value => {
+      if (ignoreWatch) {
+        ignoreWatch = false
+      } else {
+        const content = hardBreak.value ? `<p>${value ?? ''}</p>` : value ?? ''
+        editor.commands.setContent(content, {
+          emitUpdate: false,
+          parseOptions: parseOptions.value
+        })
+      }
+    })
+
+    watch(
+      [readonly, disabled, autofocus, enableRules],
+      () => editor.setOptions(editorOptions.value)
+    )
+
+    onUnmounted(() => editor.destroy())
+
+    return {
+      ...field,
+      editor,
+      height,
+      resizable: computed(() =>
+        getSchemaValue('resizable', { type: Boolean, default: false })
+      ),
+
+      styles: computed(() => ({
+        height: (
+          height.value ||
+          `calc(${
+            getSchemaValue('lines', { type: Number, default: 10 })
+          }em * var(--line-height))`
+        )
+      })),
+
+      groupedButtons: computed(() =>
+        [
+          getButtons('marks', {
+            bold: true,
+            italic: true,
+            underline: true,
+            strike: true,
+            small: true,
+            code: true,
+            subscript: true,
+            superscript: true,
+            link: {
+              onClick: editor => onClickLink(editor)
+            }
+          }),
+          getButtons('nodes', {
+            paragraph: {
+              command: 'setParagraph'
+            },
+            heading: {
+              attribute: 'level',
+              values: headingLevels
+            }
+          }),
+          getButtons('nodes', {
+            bulletList: true,
+            orderedList: true,
+            blockquote: true,
+            codeBlock: true
+          }),
+          getButtons('tools', {
+            undo: true,
+            redo: true,
+            footnotes: {
+              command: 'addFootnote'
+            }
+          })
+        ].filter(buttons => buttons.length > 0)
+      )
     }
   }
+}
+
+defineType({
+  type: 'markup',
+  component: DitoTypeMarkup
 })
+
+export default DitoTypeMarkup
 
 const headingLevels = [1, 2, 3, 4, 5, 6]
 
-// Returns the heading levels for the `nodes.heading` setting, with `true`
-// enabling all levels.
 function getHeadingLevels(setting) {
   return setting === true ? headingLevels : setting
 }
 
-// Returns the inline content of all textblocks in the fragment as one line,
-// with hard breaks between the textblocks, dropping the block nodes around
-// them (e.g. lists and blockquotes), as a line can only hold inline content.
+// A line can only hold inline content: join the textblocks with hard breaks,
+// dropping the block nodes around them.
 function getInlineContentAsLine(fragment, schema) {
   const nodes = []
   let hasTextblock = false
@@ -513,7 +462,7 @@ function getInlineContentAsLine(fragment, schema) {
       node.content.forEach(child => nodes.push(child))
       return false
     } else if (node.isInline) {
-      // Inline nodes at the top level of the slice, e.g. from inline HTML.
+      // Top-level inline nodes, like from inline HTML:
       nodes.push(node)
       return false
     }
@@ -604,11 +553,6 @@ const LinkWithTitle = Link.extend({
     // Move padding "inside" editor to correctly position scrollbar
     margin-right: -$input-padding-hor;
     padding-right: $input-padding-hor;
-  }
-
-  // TODO: BEM: Style an element class of this block, e.g. `&__buttons`.
-  .dito-buttons--toolbar {
-    margin: 0;
   }
 
   h1,
