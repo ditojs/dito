@@ -1,13 +1,11 @@
 <template lang="pug">
-//- The edit button of an option of an editable options component, which
-//- navigates to the form of the option in the view of `schema.view`. It's never
-//- disabled, even if the component is disabled. The props come from the
-//- options component, which renders it only when it's editable.
+//- Edit the option in the view of `schema.view`. It's never disabled, even if
+//- the options component is.
 DitoEditButtons.dito-options-edit-buttons(
   :schema="schema"
   :dataPath="dataPath"
   :data="data"
-  :meta="meta"
+  nested
   :store="store"
   :disabled="false"
   editable
@@ -16,36 +14,40 @@ DitoEditButtons.dito-options-edit-buttons(
 </template>
 
 <script>
-import DitoComponent from '../DitoComponent.js'
+import { computed, inject } from 'vue'
+import { useRouter } from 'vue-router'
 import DitoEditButtons from './DitoEditButtons.vue'
-import { getViewEditPath } from '../utils/schema/lookup.js'
+import { adminContextKey } from '../utils/keys.ts'
 
-// @vue/component
-export default DitoComponent.component('DitoOptionsEditButtons', {
+export default {
   components: { DitoEditButtons },
 
   props: {
     schema: { type: Object, required: true },
     dataPath: { type: String, required: true },
     data: { type: [Object, Array], default: null },
-    meta: { type: Object, required: true },
     store: { type: Object, required: true },
-    // The context of the options component, to resolve `schema.view`. Not
-    // named `context`, which is the component's own context, see DitoMixin.
-    parentContext: { type: Object, required: true },
-    // The value of the option to edit, e.g. its id.
     optionValue: { type: null, default: null }
   },
 
-  computed: {
-    editPath() {
-      const { schema, optionValue, parentContext } = this
-      return optionValue != null
-        ? getViewEditPath(schema, optionValue, parentContext)
-        : null
+  setup(props) {
+    const adminContext = inject(adminContextKey)
+    const router = useRouter()
+    return {
+      editPath: computed(() => {
+        const { schema, optionValue } = props
+        const route = (
+          optionValue != null &&
+          adminContext.routeTree?.getViewItemRoute(
+            schema.view,
+            String(optionValue)
+          )
+        )
+        return route ? router.resolve(route).path : null
+      })
     }
   }
-})
+}
 </script>
 
 <style lang="scss">

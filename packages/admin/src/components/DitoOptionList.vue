@@ -1,9 +1,6 @@
 <template lang="pug">
-//- The list of the options of an options component that shows all of them at
-//- once, e.g. radio buttons and checkboxes. Grouped options, see
-//- `schema.groupBy`, are listed in a fieldset per group. The `option` slot
-//- renders each option, and receives `isFirstOption` so that the component can
-//- reference the input to focus, see `TypeMixin.getFocusElement()`.
+//- Options shown all at once, like radios and checkboxes, grouped in fieldsets.
+//- `isFirstOption` lets the component reference the input to focus.
 ul.dito-option-list(:class="layoutClass")
   template(
     v-if="isGrouped"
@@ -37,29 +34,26 @@ ul.dito-option-list(:class="layoutClass")
 </template>
 
 <script>
-import DitoComponent from '../DitoComponent.js'
+import { computed } from 'vue'
 
-// @vue/component
-export default DitoComponent.component('DitoOptionList', {
+export default {
   props: {
-    // The options, or with `isGrouped` their groups, each with `label` and
-    // `options`, see `OptionsMixin.groupOptions()`.
+    // With `isGrouped`, the groups of options with `label` and `options`:
     options: { type: Array, required: true },
     isGrouped: { type: Boolean, default: false },
     layout: { type: String, default: null }
   },
 
-  computed: {
-    layoutClass() {
-      return `dito-layout--${this.layout || 'vertical'}`
-    },
-
-    firstOption() {
-      const [firstEntry] = this.options
-      return this.isGrouped ? firstEntry?.options[0] : firstEntry
+  setup(props) {
+    return {
+      layoutClass: computed(() => `dito-layout--${props.layout || 'vertical'}`),
+      firstOption: computed(() => {
+        const [firstEntry] = props.options
+        return props.isGrouped ? firstEntry?.options[0] : firstEntry
+      })
     }
   }
-})
+}
 </script>
 
 <style lang="scss">

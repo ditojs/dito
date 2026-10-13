@@ -83,14 +83,15 @@ export default [
       stored: 'b'
     },
     {
-      title: 'groups options with groupBy',
+      title: 'groups options with options.group',
       schema: {
         options: {
           data: [
             { label: 'Apple', value: 'apple', kind: 'Fruit' },
-            { label: 'Carrot', value: 'carrot', kind: 'Vegetable' }
+            { label: 'Carrot', value: 'carrot', kind: 'Vegetable' },
+            { label: 'Pear', value: 'pear', kind: 'Fruit' }
           ],
-          groupBy: 'kind'
+          group: ({ option }: { option: { kind: string } }) => option.kind
         }
       },
       value: 'Carrot',

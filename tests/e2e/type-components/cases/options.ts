@@ -6,6 +6,15 @@ const sizes = [
   { label: 'Large', value: 'l' }
 ]
 
+const produce = {
+  data: [
+    { label: 'Apple', value: 'apple', kind: 'Fruit' },
+    { label: 'Carrot', value: 'carrot', kind: 'Vegetable' },
+    { label: 'Pear', value: 'pear', kind: 'Fruit' }
+  ],
+  group: 'kind'
+}
+
 export default [
   defineCases('select', { type: 'string' }, [
     {
@@ -52,6 +61,12 @@ export default [
       },
       value: 'Beta',
       stored: 'b'
+    },
+    {
+      title: 'groups options with options.group',
+      schema: { options: produce },
+      value: 'Carrot',
+      stored: 'carrot'
     }
   ]),
   defineCases('radio', { type: 'string' }, [
@@ -93,6 +108,13 @@ export default [
       seed: ['s', 'm'],
       value: ['Medium'],
       stored: ['m']
+    },
+    {
+      title: 'groups options with options.group',
+      schema: { options: produce },
+      // Checked in the order of the groups:
+      value: ['Pear', 'Carrot'],
+      stored: ['pear', 'carrot']
     }
   ])
 ]

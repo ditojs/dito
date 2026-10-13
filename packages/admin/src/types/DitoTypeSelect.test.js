@@ -82,18 +82,24 @@ describe('DitoTypeSelect', () => {
       expect(data.authorId).toBe(2)
     })
 
-    it('groups the options with `groupBy`', async () => {
+    it('groups the options with `options.group`', async () => {
       const { findField, data } = await mountSchema({
         schema: {
           components: {
             book: {
               type: 'select',
-              groupBy: 'shelf',
-              options: [
-                { value: 'emma', label: 'Emma', shelf: 'Classics' },
-                { value: 'dune', label: 'Dune', shelf: 'Sci-Fi' },
-                { value: 'persuasion', label: 'Persuasion', shelf: 'Classics' }
-              ]
+              options: {
+                data: [
+                  { value: 'emma', label: 'Emma', shelf: 'Classics' },
+                  { value: 'dune', label: 'Dune', shelf: 'Sci-Fi' },
+                  {
+                    value: 'persuasion',
+                    label: 'Persuasion',
+                    shelf: 'Classics'
+                  }
+                ],
+                group: 'shelf'
+              }
             }
           }
         }
@@ -109,6 +115,37 @@ describe('DitoTypeSelect', () => {
       await findField('book').find('select').setValue('persuasion')
       // The `value` keys of the grouped options are used as their values:
       expect(data.book).toBe('persuasion')
+    })
+
+    it('groups the options by the result of an `options.group` callback', async () => {
+      const { findField } = await mountSchema({
+        schema: {
+          components: {
+            book: {
+              type: 'select',
+              options: {
+                data: [
+                  { value: 'emma', label: 'Emma', year: 1815 },
+                  { value: 'dune', label: 'Dune', year: 1965 },
+                  { value: 'persuasion', label: 'Persuasion', year: 1817 }
+                ],
+                group: ({ option }) =>
+                  option.year < 1900 ? 'Classic' : 'Modern'
+              }
+            }
+          }
+        }
+      })
+      const groups = findField('book').findAll('optgroup')
+      expect(
+        groups.map(group => [
+          group.attributes('label'),
+          group.findAll('option').map(option => option.text())
+        ])
+      ).toEqual([
+        ['Classic', ['Emma', 'Persuasion']],
+        ['Modern', ['Dune']]
+      ])
     })
 
     it('loads options through `request()` once per form with `cache`', async () => {
@@ -169,8 +206,8 @@ describe('DitoTypeSelect', () => {
       await findField('country').find('select').setValue('fr')
       await settle()
       expect(getOptions(findField('city'))).toEqual([['lyo', 'Lyon']])
-      // The city of the previous country isn't an option anymore:
-      expect(data.city).toBe(null)
+      // The city of the previous country isn't an option anymore, but stays:
+      expect(data.city).toBe('bsl')
       expect(loadCities).toHaveBeenCalledTimes(2)
     })
 
@@ -211,8 +248,7 @@ describe('DitoTypeSelect', () => {
       )
     })
 
-    // Known bug: values missing from options are saved as `null`
-    it.skip('keeps values missing from the options when saving other values', async () => {
+    it('keeps values missing from the options when saving other values', async () => {
       const { findField, data, routeComponent, settle, submit } =
         await mountForm({
           schema: {
@@ -232,7 +268,7 @@ describe('DitoTypeSelect', () => {
           request: ({ data }) => ({ data })
         })
       expect(data.author).toBe(2)
-      expect(routeComponent.isDirty).toBe(false)
+      expect(routeComponent.routeContext.isDirty).toBe(false)
       await findField('title').find('input').setValue('Persuasion')
       await settle()
       expect(await submit()).toEqual({
@@ -333,7 +369,7 @@ describe('DitoTypeSelect', () => {
             }
           }
         })
-        routeComponent.setData({ genre: null })
+        routeComponent.dataContext.resetItem({ genre: null })
         await settle()
         expect(getErrors('genre')).toEqual(['Genres are unavailable'])
       }
@@ -342,8 +378,8 @@ describe('DitoTypeSelect', () => {
 
   describe('values', () => {
     it(
-      'replaces values without option with `null` once loaded, without ' +
-      'making the form dirty',
+      'keeps values without option once loaded, without making the form ' +
+      'dirty',
       async () => {
         const { data, routeComponent } = await mountForm({
           schema: {
@@ -356,10 +392,32 @@ describe('DitoTypeSelect', () => {
           },
           data: { genre: 'opera' }
         })
-        expect(data.genre).toBe(null)
-        expect(routeComponent.isDirty).toBe(false)
+        expect(data.genre).toBe('opera')
+        expect(routeComponent.routeContext.isDirty).toBe(false)
       }
     )
+
+    it('replaces the references that the component displays', async () => {
+      const authors = [
+        { id: 1, name: 'Mary Shelley' },
+        { id: 2, name: 'Bram Stoker' }
+      ]
+      const { data } = await mountSchema({
+        schema: {
+          components: {
+            author: {
+              type: 'select',
+              relate: true,
+              options: { data: async () => authors, label: 'name' },
+              formatValue: ({ value }) => value && { id: value },
+              parseValue: ({ value }) => value?.name
+            }
+          }
+        },
+        data: { author: 2 }
+      })
+      expect(data.author).toBe('Bram Stoker')
+    })
 
     it('computes a default option from the loaded options', async () => {
       const { data } = await mountSchema({
@@ -368,7 +426,7 @@ describe('DitoTypeSelect', () => {
             genre: {
               type: 'select',
               options: { data: async () => genres },
-              compute: ({ value, options }) => value ?? options[0].value
+              computeValue: ({ value, options }) => value ?? options[0].value
             }
           }
         }
@@ -404,7 +462,7 @@ describe('DitoTypeSelect', () => {
         captain: {
           type: 'select',
           relate: true,
-          options: { dataPath: '../members', label: 'name' }
+          options: { dataPath: 'members', label: 'name' }
         }
       }
     }
@@ -495,6 +553,30 @@ describe('DitoTypeSelect', () => {
         { name: 'Ada' },
         { '#id': reference, 'name': 'Grace' }
       ])
+    })
+
+    it('relates by the key given in `relate`', async () => {
+      const { findField, data, submit } = await mountForm({
+        schema: {
+          components: {
+            ...teamSchema.components,
+            captain: { ...teamSchema.components.captain, relate: 'code' }
+          }
+        },
+        data: {
+          members: [
+            { code: 'ada', name: 'Ada' },
+            { code: 'grace', name: 'Grace' }
+          ],
+          captain: { code: 'ada' }
+        },
+        request: ({ data }) => ({ data })
+      })
+      expect(data.captain).toBe(data.members[0])
+      await findField('captain').find('select').setValue('grace')
+      expect(data.captain).toBe(data.members[1])
+      const payload = await submit()
+      expect(payload.captain).toEqual({ code: 'grace' })
     })
   })
 

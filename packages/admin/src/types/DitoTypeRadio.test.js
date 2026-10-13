@@ -44,20 +44,23 @@ describe('DitoTypeRadio', () => {
   })
 
   it('focuses the first radio button', async () => {
-    const { getComponent, findField } = await mountSchema({
+    const { focusField, findField } = await mountSchema({
       schema: { components: { genre: { type: 'radio', options: genres } } }
     })
-    getComponent('genre').focusElement()
+    await focusField('genre')
     expect(document.activeElement).toBe(
       getRadioButtons(findField('genre'))[0].element
     )
   })
 
-  it('lists the options of each group in a fieldset with `groupBy`', async () => {
+  it('lists the options of each group in a fieldset with `options.group`', async () => {
     const { findField, data } = await mountSchema({
       schema: {
         components: {
-          book: { type: 'radio', groupBy: 'shelf', options: books }
+          book: {
+            type: 'radio',
+            options: { data: books, group: 'shelf' }
+          }
         }
       },
       data: { book: null }

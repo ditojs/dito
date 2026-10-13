@@ -12,38 +12,29 @@
       ref="element"
       v-model="selectedValue"
       v-bind="attributes"
-      @mousedown="populate = true"
-      @focus="populate = true"
     )
+      //- Plain values whose option disappeared are kept and shown as
+      //- unavailable, rather than cleared without the user noticing:
+      option(
+        v-if="shouldShowUnavailableValue"
+        :value="selectedValue"
+        disabled
+      ) {{ getLabelForOption(selectedValue) }} (unavailable)
       template(
-        v-if="populate"
+        v-for="option in options"
       )
-        //- Plain values whose option disappeared are kept and shown as
-        //- unavailable, rather than cleared without the user noticing:
-        option(
-          v-if="shouldShowUnavailableValue"
-          :value="selectedValue"
-          disabled
-        ) {{ getLabelForOption(selectedValue) }} (unavailable)
-        template(
-          v-for="option in options"
+        optgroup(
+          v-if="isGrouped"
+          :label="option.label"
         )
-          optgroup(
-            v-if="groupBy"
-            :label="option[groupByLabel]"
-          )
-            option(
-              v-for="opt in option[groupByOptions]"
-              :value="getValueForOption(opt)"
-            ) {{ getLabelForOption(opt) }}
           option(
-            v-else
-            :value="getValueForOption(option)"
-          ) {{ getLabelForOption(option) }}
-      template(
-        v-else-if="selectedOption"
-      )
-        option(:value="selectedValue") {{ getLabelForOption(selectedOption) }}
+            v-for="opt in option.options"
+            :value="getValueForOption(opt)"
+          ) {{ getLabelForOption(opt) }}
+        option(
+          v-else
+          :value="getValueForOption(option)"
+        ) {{ getLabelForOption(option) }}
     DitoInputAffixes(
       position="suffix"
       v-bind="inputAffixesProps.suffix"
@@ -55,58 +46,63 @@
     :schema="schema"
     :dataPath="dataPath"
     :data="data"
-    :meta="meta"
     :store="store"
-    :parentContext="context"
     :optionValue="selectedValue"
   )
 </template>
 
 <script>
-import DitoTypeComponent from '../DitoTypeComponent.js'
-import OptionsMixin from '../mixins/OptionsMixin.js'
+import { computed } from 'vue'
+import { defineType } from '../utils/schema/types.ts'
+import { optionsTraits } from './traits.ts'
+import { fieldProps, useField } from '../composables/useField.ts'
+import { useOptions } from '../composables/useOptions.ts'
 import DitoInputAffixes from '../components/DitoInputAffixes.vue'
-import { getInputAffixesProps } from '../utils/affixes.js'
 import DitoOptionsEditButtons from '../components/DitoOptionsEditButtons.vue'
 
 // @vue/component
-export default DitoTypeComponent.register('select', {
-  mixins: [OptionsMixin],
+const DitoTypeSelect = {
   components: { DitoInputAffixes, DitoOptionsEditButtons },
+  props: fieldProps,
 
-  nativeField: true,
-
-  data() {
+  setup(props) {
+    const field = useField(props, {
+      nativeField: true,
+      // The contexts of the field hold its options:
+      members: {
+        get options() {
+          return optionsField.options.value
+        }
+      }
+    })
+    const optionsField = useOptions(props, field)
+    const { hasOptions, selectedValue, findOptionForValue } = optionsField
     return {
-      // Lazy population of the options, on focus or mousedown, is disabled
-      // since 2019, as lineto's e2e tests chose options without focusing the
-      // select first, and found none.
-      // TODO: Re-enable it with `false` once e2e tests can handle it.
-      populate: true
-    }
-  },
+      ...field,
+      ...optionsField,
 
-  computed: {
-    inputAffixesProps() {
-      return getInputAffixesProps(this)
-    },
-
-    // Whether the value is set but none of the loaded options has it. Values
-    // of option objects are replaced with `null` when their option disappears,
-    // see `OptionsMixin`, but plain values match any value, so they stay.
-    // Object values without `optionValue` are left to the select, which
-    // matches them to their options by deep equality.
-    shouldShowUnavailableValue() {
-      const { selectedValue } = this
-      return (
-        selectedValue != null &&
-        typeof selectedValue !== 'object' &&
-        this.hasOptions &&
-        !this.findOptionForValue(selectedValue)
-      )
+      // Only plain values stay when their option disappears, see
+      // `getReplacedValue()`. The select matches objects by deep equality.
+      shouldShowUnavailableValue: computed(() => {
+        const selected = selectedValue.value
+        return (
+          selected != null &&
+          typeof selected !== 'object' &&
+          hasOptions.value &&
+          !findOptionForValue(selected)
+        )
+      })
     }
   }
+}
+
+defineType({
+  type: 'select',
+  component: DitoTypeSelect,
+  ...optionsTraits
 })
+
+export default DitoTypeSelect
 </script>
 
 <style lang="scss">

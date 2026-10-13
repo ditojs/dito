@@ -4,7 +4,7 @@ DitoOptionList.dito-checkboxes(
   role="group"
   :aria-label="label"
   :options="options"
-  :isGrouped="!!groupBy"
+  :isGrouped="isGrouped"
   :layout="schema.layout"
 )
   template(#option="{ option, isFirstOption }")
@@ -23,51 +23,75 @@ DitoOptionList.dito-checkboxes(
       :schema="schema"
       :dataPath="dataPath"
       :data="data"
-      :meta="meta"
       :store="store"
-      :parentContext="context"
       :optionValue="getValueForOption(option)"
     )
 </template>
 
 <script>
-import DitoTypeComponent from '../DitoTypeComponent.js'
-import OptionsMixin from '../mixins/OptionsMixin.js'
+import { computed } from 'vue'
+import { defineType } from '../utils/schema/types.ts'
+import { optionsTraits } from './traits.ts'
+import { fieldProps, useField } from '../composables/useField.ts'
+import { useOptions } from '../composables/useOptions.ts'
 import DitoOptionList from '../components/DitoOptionList.vue'
 import DitoOptionsEditButtons from '../components/DitoOptionsEditButtons.vue'
 import { getMultipleValue } from '../utils/schema/data.js'
 
 // @vue/component
-export default DitoTypeComponent.register('checkboxes', {
-  mixins: [OptionsMixin],
+const DitoTypeCheckboxes = {
   components: { DitoOptionList, DitoOptionsEditButtons },
+  props: fieldProps,
 
-  nativeField: true,
-  defaultValue: ({ schema }) => (getMultipleValue(schema) ? [] : null),
-  defaultWidth: 'auto',
-  defaultMultiple: true,
-
-  computed: {
-    // The values of the checked checkboxes, as an array for their `v-model`,
-    // also with `multiple: false`.
-    checkedValues: {
-      get() {
-        const { selectedValue } = this
-        return this.multiple
-          ? (selectedValue || []).filter(value => value != null)
-          : selectedValue != null
-            ? [selectedValue]
-            : []
-      },
-
-      set(values) {
-        // With `multiple: false`, checking a checkbox unchecks the checked
-        // one, as the `v-model` of checkboxes appends checked values.
-        this.selectedValue = this.multiple ? values : (values.at(-1) ?? null)
+  setup(props) {
+    const field = useField(props, {
+      nativeField: true,
+      // The contexts of the field hold its options:
+      members: {
+        get options() {
+          return optionsField.options.value
+        }
       }
+    })
+    const optionsField = useOptions(props, field)
+    const { multiple, selectedValue } = optionsField
+    return {
+      ...field,
+      ...optionsField,
+
+      // An array for the `v-model` of checkboxes, also with `multiple: false`:
+      checkedValues: computed({
+        get() {
+          const selected = selectedValue.value
+          return multiple.value
+            ? (selected || []).filter(value => value != null)
+            : selected != null
+              ? [selected]
+              : []
+        },
+
+        set(values) {
+          // Uncheck the checked one, as the `v-model` appends checked values:
+          selectedValue.value = multiple.value
+            ? values
+            : (values.at(-1) ?? null)
+        }
+      })
     }
   }
+}
+
+defineType({
+  type: 'checkboxes',
+  component: DitoTypeCheckboxes,
+  ...optionsTraits,
+  defaultValue: context =>
+    getMultipleValue(context.schema, context) ? [] : null,
+  defaultWidth: 'auto',
+  defaultMultiple: true
 })
+
+export default DitoTypeCheckboxes
 </script>
 
 <style lang="scss">

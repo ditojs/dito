@@ -57,6 +57,49 @@ describe('DitoTypeMultiselect', () => {
       )
     })
 
+    it('tells option labels whether their option is selected', async () => {
+      const { findField } = await mountSchema({
+        schema: {
+          components: {
+            genre: {
+              type: 'multiselect',
+              options: {
+                data: genres,
+                label: ({ option, isSelected }) =>
+                  isSelected ? `${option.label} (Genre)` : option.label
+              }
+            },
+            genres: {
+              type: 'multiselect',
+              multiple: true,
+              options: {
+                data: genres,
+                label: ({ option, isSelected }) =>
+                  isSelected ? `${option.label} (Genre)` : option.label
+              }
+            }
+          }
+        },
+        data: { genre: 'poetry', genres: ['drama'] }
+      })
+      const field = findField('genre')
+      expect(field.find('.multiselect__single').text()).toBe('Poetry (Genre)')
+      await open(field)
+      expect(getOptionLabels(field)).toEqual([
+        'Fiction',
+        'Poetry (Genre)',
+        'Drama'
+      ])
+      const multipleField = findField('genres')
+      expect(getTagLabels(multipleField)).toEqual(['Drama (Genre)'])
+      await open(multipleField)
+      expect(getOptionLabels(multipleField)).toEqual([
+        'Fiction',
+        'Poetry',
+        'Drama (Genre)'
+      ])
+    })
+
     it('only renders the options once opened', async () => {
       const { findField } = await mountSchema({
         schema: {
@@ -323,7 +366,7 @@ describe('DitoTypeMultiselect', () => {
       ).toBe('0')
     })
 
-    it('sends the values processed by `process()`', async () => {
+    it('sends the values serialized by `serializeValue()`', async () => {
       const { findField, submit } = await mountForm({
         schema: {
           components: {
@@ -332,7 +375,7 @@ describe('DitoTypeMultiselect', () => {
               multiple: true,
               options: genres,
               // Empty lists are sent as `null`:
-              process: ({ value }) => (value?.length > 0 ? value : null)
+              serializeValue: ({ value }) => (value?.length > 0 ? value : null)
             }
           }
         },
@@ -394,6 +437,44 @@ describe('DitoTypeMultiselect', () => {
       findField(dataPath).find('.multiselect__input').attributes('placeholder')
     expect(getPlaceholder('genre')).toBe('Select or search Genre')
     expect(getPlaceholder('mood')).toBe(undefined)
+  })
+
+  it('resolves `placeholder` callbacks', async () => {
+    const { findField } = await mountForm({
+      schema: {
+        components: {
+          genre: {
+            type: 'multiselect',
+            searchable: true,
+            placeholder: ({ item }) => `Genre of ${item.title}`,
+            options: genres
+          }
+        }
+      },
+      data: { title: 'Dracula', genre: null }
+    })
+    expect(
+      findField('genre').find('.multiselect__input').attributes('placeholder')
+    ).toBe('Genre of Dracula')
+  })
+
+  it('resolves `searchable` and `taggable` for the default placeholder', async () => {
+    const { findField } = await mountForm({
+      schema: {
+        components: {
+          genre: {
+            type: 'multiselect',
+            searchable: () => true,
+            taggable: () => false,
+            options: genres
+          }
+        }
+      },
+      data: { genre: null }
+    })
+    expect(
+      findField('genre').find('.multiselect__input').attributes('placeholder')
+    ).toBe('Select or search Genre')
   })
 
   describe('search', () => {
@@ -506,6 +587,22 @@ describe('DitoTypeMultiselect', () => {
       await search(findField('author'), 'Au')
       expect(getErrors('author')).toEqual(['Search is unavailable'])
     })
+
+    it('removes the error of a failed search once a search succeeds', async () => {
+      const { findField, getErrors } = await mountSchema({
+        schema: createAuthorSchema(async ({ searchTerm }) => {
+          if (searchTerm === 'Au') {
+            throw new Error('Search is unavailable')
+          }
+          return [authors[0]]
+        })
+      })
+      const field = findField('author')
+      await search(field, 'Au')
+      expect(getErrors('author')).toEqual(['Search is unavailable'])
+      await search(field, 'Aus')
+      expect(getErrors('author')).toEqual([])
+    })
   })
 
   it('opens and focuses multiselects with `autofocus`', async () => {
@@ -525,21 +622,24 @@ describe('DitoTypeMultiselect', () => {
     const { findField, getComponent, getErrors } = await mountSchema({
       schema: {
         components: {
-          genre: { type: 'multiselect', required: true, options: genres }
+          genre: {
+            type: 'multiselect',
+            required: true,
+            searchable: true,
+            options: genres
+          }
         }
       }
     })
-    const genre = getComponent('genre')
-    await open(findField('genre'))
-    genre.onFocus()
-    genre.onBlur()
+    const field = findField('genre')
+    await open(field)
+    // Searchable multiselects stay open when they lose the focus:
+    await field.find('.multiselect').trigger('blur')
     await flushPromises()
-    expect(genre.focused).toBe(true)
     expect(getErrors('genre')).toEqual([])
-    genre.blur()
+    getComponent('genre').$refs.element.deactivate()
     await flushPromises()
-    expect(genre.$refs.element.isOpen).toBe(false)
-    expect(genre.focused).toBe(false)
+    expect(field.find('.multiselect--active').exists()).toBe(false)
     expect(getErrors('genre')).toEqual(['The genre field is required.'])
   })
 
@@ -591,6 +691,66 @@ describe('DitoTypeMultiselect', () => {
     expect(getTagLabels(field)).toEqual(['Drama', 'opera'])
   })
 
+  it('groups the options with `options.group`', async () => {
+    const { findField, data } = await mountSchema({
+      schema: {
+        components: {
+          book: {
+            type: 'multiselect',
+            options: {
+              data: [
+                { value: 'emma', label: 'Emma', shelf: 'Classics' },
+                { value: 'dune', label: 'Dune', shelf: 'Sci-Fi' },
+                { value: 'persuasion', label: 'Persuasion', shelf: 'Classics' }
+              ],
+              group: 'shelf'
+            }
+          }
+        }
+      }
+    })
+    const field = findField('book')
+    await open(field)
+    expect(getOptionLabels(field)).toEqual([
+      'Classics',
+      'Emma',
+      'Persuasion',
+      'Sci-Fi',
+      'Dune'
+    ])
+    await selectOption(field, 'Dune')
+    expect(data.book).toBe('dune')
+  })
+
+  it('groups the options by the result of an `options.group` callback', async () => {
+    const { findField } = await mountSchema({
+      schema: {
+        components: {
+          book: {
+            type: 'multiselect',
+            options: {
+              data: [
+                { value: 'emma', label: 'Emma', year: 1815 },
+                { value: 'dune', label: 'Dune', year: 1965 },
+                { value: 'persuasion', label: 'Persuasion', year: 1817 }
+              ],
+              group: ({ option }) => (option.year < 1900 ? 'Classic' : 'Modern')
+            }
+          }
+        }
+      }
+    })
+    const field = findField('book')
+    await open(field)
+    expect(getOptionLabels(field)).toEqual([
+      'Classic',
+      'Emma',
+      'Persuasion',
+      'Modern',
+      'Dune'
+    ])
+  })
+
   it(`doesn't add tags to grouped options with \`taggable\``, async () => {
     const { findField, getComponent, data } = await mountSchema({
       schema: {
@@ -600,11 +760,13 @@ describe('DitoTypeMultiselect', () => {
             multiple: true,
             searchable: true,
             taggable: true,
-            groupBy: 'shelf',
-            options: [
-              { value: 'emma', label: 'Emma', shelf: 'Classics' },
-              { value: 'dune', label: 'Dune', shelf: 'Sci-Fi' }
-            ]
+            options: {
+              data: [
+                { value: 'emma', label: 'Emma', shelf: 'Classics' },
+                { value: 'dune', label: 'Dune', shelf: 'Sci-Fi' }
+              ],
+              group: 'shelf'
+            }
           }
         }
       }
