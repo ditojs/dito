@@ -5,6 +5,7 @@ version, see the upgrade guides in `docs/`.
 
 ## 4.1.1 (unreleased)
 
+- **admin:** Writes to values of list items and objects that their forms don't show, e.g. a `price` that `onLoad()` calculates, don't make the data dirty, as 4.1.0 described: only changes of fields that are saved are edits.
 - **server:** `Service.configure(config)` is internal again: override `initialize()`, `start()` or `stop()` instead, which need no `super`.
 - **server:** Services take an optional `config` as their third constructor argument, e.g. `new MailService(app, 'mail', config)` in tests, like storages.
 - **server:** Storages set themselves up in an internal `setup()` again, and `initialize()` is an empty hook, so subclasses of the built-in storages don't need to call `super`.
