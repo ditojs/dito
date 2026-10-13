@@ -9,9 +9,9 @@ the changes. `context.isDirty` tells whether the data is dirty.
 An edit is a change of a value that is saved with the data:
 
 - The user's edits in fields, lists and uploads.
-- Writes of code through the context to a value that a field shows, or that
-  lies inside a field's value (an object or list), e.g.
-  `item.title = 'Untitled'` in a handler. They count like the user's edits.
+- Writes of code through the context to a value that a field shows, e.g.
+  `item.title = 'Untitled'` in a handler, and changes of the items of lists.
+  They count like the user's edits.
 - Writes from inside a [panel with its own `data`](./layout.md#panels) through
   `rootItem` or `parentItem`: they change the page's data. Edits of the
   panel's own data aren't edits of the page.
@@ -22,8 +22,9 @@ by hand leaves it dirty.
 
 Changes of excluded values aren't edits: fields with `exclude: true`, buttons
 and labels, and lists with their own `resource`, which save their items
-themselves. Nor are writes to helper values without a field, e.g.
-`item.isSelected = true` in a handler.
+themselves. Nor are writes to values that no field shows, e.g.
+`item.isSelected = true` in a handler, also inside the items of lists and
+objects: only the values that their forms show are sent.
 
 ```js
 components: {

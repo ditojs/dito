@@ -175,6 +175,11 @@ object schema to allow them. The
 [schema extensions](../../api/server/validator.md#schema-extensions) list
 where Dito.js closes schemas.
 
+Data stored earlier can still hold properties that were removed from a schema
+since. Saving it fails validation, so declare the properties that code writes.
+The admin only sends the values that its forms show, so saving an item in the
+admin drops the values of removed fields.
+
 ### Computed properties
 
 A computed property has no column. Its value comes from a getter, or from a
