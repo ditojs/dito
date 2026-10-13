@@ -19,13 +19,13 @@ async function mountBookForm() {
           path: 'chapters',
           itemLabel: 'title',
           form: chapterForm,
-          open: true,
+          collapsed: false,
           children: {
             name: 'sections',
             path: 'sections',
             itemLabel: 'title',
             form: chapterForm,
-            open: true,
+            collapsed: false,
             deletable: true
           }
         }
@@ -35,8 +35,8 @@ async function mountBookForm() {
       chapters: [{ title: 'Intro', sections: [{ title: 'Tom & Jerry' }] }]
     }
   })
-  // Tree items notify through the root component, see `DitoMixin.notify()`:
-  const notify = vi.spyOn(result.admin.root, 'notify')
+  // Tree items notify through the admin context:
+  const notify = vi.spyOn(result.admin.context, 'notify')
   return { ...result, notify }
 }
 
@@ -192,6 +192,12 @@ describe('DitoTreeItem', () => {
       expect(outro.findAll('.dito-tree-item')).toHaveLength(0)
     })
 
+    it('passes `null` children to the sortable as an empty list', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      await mountChaptersForm([{ title: 'Outro', sections: null }])
+      expect(warn).not.toHaveBeenCalled()
+    })
+
     it('opens the items in the path of the edited child', async () => {
       const { admin, wrapper, settle } = await mountChaptersForm([
         { title: 'Intro', sections: [{ title: 'Welcome' }] }
@@ -255,7 +261,7 @@ describe('DitoTreeItem', () => {
       const { wrapper, data, admin } = await mountChaptersForm([
         { title: 'Intro', sections: [{ title: 'Welcome' }] }
       ])
-      const notify = vi.spyOn(admin.root, 'notify')
+      const notify = vi.spyOn(admin.context, 'notify')
       // The child is removed while the dialog is open:
       confirm.mockImplementation(() => {
         data.chapters[0].sections = []
