@@ -32,13 +32,14 @@ describe('DataSchemaResolver', () => {
     expect(createResolver({ data: 'Static' }).resolver.value).toBe('Static')
   })
 
-  it('resolves `dataPath` relative to the data path of the context', () => {
-    const rootItem = reactive({ sizes: ['S', 'M'], item: {} })
-    const { resolver } = createResolver(
-      { dataPath: '../../sizes' },
-      { rootItem, dataPath: 'item/size' }
-    )
-    expect(resolver.value).toBe(rootItem.sizes)
+  it('resolves `dataPath` relative to the item of the context', () => {
+    const rootItem = reactive({ sizes: ['S', 'M'], item: { sizes: ['L'] } })
+    const context = { rootItem, itemDataPath: 'item' }
+    const resolve = dataPath =>
+      createResolver({ dataPath }, context).resolver.value
+    expect(resolve('sizes')).toBe(rootItem.item.sizes)
+    expect(resolve('../sizes')).toBe(rootItem.sizes)
+    expect(resolve('/sizes')).toBe(rootItem.sizes)
   })
 
   it('evaluates and loads nothing before it is read', async () => {

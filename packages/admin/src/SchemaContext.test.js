@@ -1,20 +1,22 @@
 import { vi } from 'vitest'
 import { reactive } from 'vue'
-import DitoContext from './DitoContext.js'
-import { registerTypeComponent } from './utils/schema/types.js'
+import SchemaContext from './SchemaContext.js'
+import { defineType } from './utils/schema/types.ts'
+import { mountSchema } from './test/mount.js'
 
-// Register minimal type options, as the actual type components can't be
+// Define minimal types, as the actual type components can't be
 // imported without a Vue SFC compiler:
-registerTypeComponent('text', { defaultNested: true })
-registerTypeComponent('section', { defaultNested: false })
+defineType({ type: 'text' })
+defineType({ type: 'section', defaultNested: false })
 
-describe('DitoContext', () => {
+describe('SchemaContext', () => {
   describe('value', () => {
     it('reads the value of nested components from the root data', () => {
       const rootData = { items: [{ title: 'Book' }] }
-      const context = new DitoContext(null, {
+      const context = new SchemaContext(null, {
         rootData,
-        dataPath: 'items/0/title'
+        dataPath: 'items/0/title',
+        nested: true
       })
       expect(context.value).toBe('Book')
     })
@@ -24,7 +26,7 @@ describe('DitoContext', () => {
       // not read through the data path.
       const component = { value: undefined }
       const rootData = { items: [{ status: 'Stale' }] }
-      const context = new DitoContext(component, {
+      const context = new SchemaContext(component, {
         rootData,
         dataPath: 'items/0/status'
       })
@@ -36,7 +38,7 @@ describe('DitoContext', () => {
     it('is `undefined` for values missing in the root data', () => {
       // E.g. computed values that the data model hasn't written yet.
       const rootData = { items: [{}] }
-      const context = new DitoContext(null, {
+      const context = new SchemaContext(null, {
         rootData,
         dataPath: 'items/0/status'
       })
@@ -61,9 +63,10 @@ describe('DitoContext', () => {
   describe('items', () => {
     it('derives the item and parent item from the data path', () => {
       const rootData = createLibrary()
-      const context = new DitoContext(null, {
+      const context = new SchemaContext(null, {
         rootData,
-        dataPath: 'authors/0/books/1/title'
+        dataPath: 'authors/0/books/1/title',
+        nested: true
       })
       const [author] = rootData.authors
       expect(context.rootItem).toBe(rootData)
@@ -75,7 +78,7 @@ describe('DitoContext', () => {
 
     it('uses the item itself for data paths of items, if not nested', () => {
       const rootData = createLibrary()
-      const context = new DitoContext(null, {
+      const context = new SchemaContext(null, {
         rootData,
         dataPath: 'authors/0/books/1',
         nested: false
@@ -87,7 +90,11 @@ describe('DitoContext', () => {
 
     it('has no parent item at the root', () => {
       const rootData = createLibrary()
-      const context = new DitoContext(null, { rootData, dataPath: 'name' })
+      const context = new SchemaContext(null, {
+        rootData,
+        dataPath: 'name',
+        nested: true
+      })
       expect(context.item).toBe(rootData)
       expect(context.parentItem).toBe(null)
       expect(context.parentItemDataPath).toBe(null)
@@ -98,18 +105,47 @@ describe('DitoContext', () => {
       // E.g. items that are being created, which aren't in the root data yet:
       const rootData = createLibrary()
       const data = { title: 'Draft' }
-      const context = new DitoContext(null, {
+      const context = new SchemaContext(null, {
         rootData,
         data,
-        dataPath: 'authors/0/books/2/title'
+        dataPath: 'authors/0/books/2/title',
+        nested: true
       })
       expect(context.item).toBe(data)
       expect(context.parentItem).toBe(rootData.authors[0])
     })
 
+    it('derives the parent item from the provided data path of the item', () => {
+      // E.g. list buttons, whose data is the item that holds the list:
+      const rootData = createLibrary()
+      const [author] = rootData.authors
+      const context = new SchemaContext(null, {
+        rootData,
+        data: author,
+        dataPath: 'authors/0/books/export',
+        itemDataPath: 'authors/0',
+        nested: true
+      })
+      expect(context.item).toBe(author)
+      expect(context.itemIndex).toBe(0)
+      expect(context.parentItem).toBe(rootData)
+      expect(context.parentItemDataPath).toBe('')
+    })
+
+    it('reads the item at the provided data path of the item', () => {
+      const rootData = createLibrary()
+      const context = new SchemaContext(null, {
+        rootData,
+        dataPath: 'authors/0/books/export',
+        itemDataPath: 'authors/0',
+        nested: true
+      })
+      expect(context.item).toBe(rootData.authors[0])
+    })
+
     // E.g. for removed items or ones that are being created:
     it('are `null` for data paths missing in the root data', () => {
-      const context = new DitoContext(null, {
+      const context = new SchemaContext(null, {
         rootData: { authors: [] },
         dataPath: 'authors/3/books/0/title'
       })
@@ -118,40 +154,35 @@ describe('DitoContext', () => {
     })
 
     it('are `null` without root data', () => {
-      const context = new DitoContext(null, { dataPath: '' })
+      const context = new SchemaContext(null, { dataPath: '' })
       expect(context.rootItem).toBe(null)
       expect(context.item).toBe(null)
       expect(context.parentItem).toBe(null)
     })
 
-    it('provides the processed and clipboard items when given', () => {
-      const processedData = { title: 'Processed' }
-      const processedRootData = { authors: [] }
+    it('provides the serialized and clipboard items when given', () => {
+      const serializedData = { title: 'Serialized' }
       const clipboardData = { title: 'Copied' }
-      const context = new DitoContext(null, {
-        processedData,
-        processedRootData,
-        clipboardData
-      })
-      expect(context.processedItem).toBe(processedData)
-      expect(context.processedRootItem).toBe(processedRootData)
+      const context = new SchemaContext(null, { serializedData, clipboardData })
+      expect(context.serializedItem).toBe(serializedData)
       expect(context.clipboardItem).toBe(clipboardData)
-      const empty = new DitoContext(null, {})
-      expect(empty.processedItem).toBe(null)
-      expect(empty.processedRootItem).toBe(null)
+      const empty = new SchemaContext(null, {})
+      expect(empty.serializedItem).toBe(null)
+      expect(empty.serializedRootItem).toBe(null)
       expect(empty.clipboardItem).toBe(null)
     })
   })
 
   describe('data paths', () => {
     it('derives names, indices and the data paths of items', () => {
-      const context = new DitoContext(null, {
+      const context = new SchemaContext(null, {
         rootData: createLibrary(),
-        dataPath: 'authors/0/books/1/title'
+        dataPath: 'authors/0/books/1/title',
+        nested: true
       })
       expect(context.dataPath).toBe('authors/0/books/1/title')
       expect(context.name).toBe('title')
-      expect(context.index).toBe(null)
+      expect(context.valueIndex).toBe(null)
       expect(context.itemDataPath).toBe('authors/0/books/1')
       expect(context.itemIndex).toBe(1)
       expect(context.parentItemDataPath).toBe('authors/0')
@@ -159,30 +190,29 @@ describe('DitoContext', () => {
     })
 
     it('derives the index of data paths of list items', () => {
-      const context = new DitoContext(null, {
+      const context = new SchemaContext(null, {
         dataPath: 'authors/0/books/1',
         nested: false
       })
       expect(context.name).toBe(null)
-      expect(context.index).toBe(1)
+      expect(context.valueIndex).toBe(1)
       expect(context.itemIndex).toBe(1)
       expect(context.parentItemIndex).toBe(0)
     })
 
-    it('prefers the provided name and index', () => {
-      const context = new DitoContext(null, {
+    it('prefers the provided name', () => {
+      const context = new SchemaContext(null, {
         dataPath: 'authors/0',
-        name: 'author',
-        index: 5
+        name: 'author'
       })
       expect(context.name).toBe('author')
-      expect(context.index).toBe(5)
+      expect(context.valueIndex).toBe(0)
     })
 
-    it('defaults to an empty data path, nested and without a schema', () => {
-      const context = new DitoContext(null, {})
+    it('defaults to an empty data path, unnested and without a schema', () => {
+      const context = new SchemaContext(null, {})
       expect(context.dataPath).toBe('')
-      expect(context.nested).toBe(true)
+      expect(context.nested).toBe(false)
       expect(context.schema).toBe(null)
     })
   })
@@ -191,40 +221,21 @@ describe('DitoContext', () => {
     // A stand-in for the component that the context is created for:
     const createComponent = () => ({
       schema: { type: 'text' },
-      user: { name: 'Librarian' },
-      api: { locale: 'en-US' },
-      views: { books: {} },
-      flattenedViews: { books: {} },
       itemLabel: 'Book',
-      formLabel: 'Books',
-      formComponent: { name: 'DitoForm' },
-      $route: { query: { page: '2' } },
-      request: vi.fn(async options => ({ options })),
-      format: vi.fn((value, options) => `${value} ${options.unit}`),
-      navigate: vi.fn(),
-      download: vi.fn(),
-      getResourceUrl: vi.fn(resource => `/api/${resource.path}`),
-      notify: vi.fn()
+      formLabel: 'Books'
     })
 
     it('falls back to the values of the component', () => {
       const component = createComponent()
-      const context = new DitoContext(component, { dataPath: 'title' })
-      expect(context.component).toBe(component)
+      const context = new SchemaContext(component, { dataPath: 'title' })
       expect(context.schema).toBe(component.schema)
-      expect(context.user).toBe(component.user)
-      expect(context.api).toBe(component.api)
-      expect(context.views).toBe(component.views)
-      expect(context.flattenedViews).toBe(component.flattenedViews)
       expect(context.itemLabel).toBe('Book')
       expect(context.itemLabelText).toBe('Book')
       expect(context.formLabel).toBe('Books')
-      expect(context.formComponent).toBe(component.formComponent)
-      expect(context.query).toEqual({ page: '2' })
     })
 
     it('returns the text of the item label with unescaped values', () => {
-      const context = new DitoContext(createComponent(), {
+      const context = new SchemaContext(createComponent(), {
         itemLabel: `<b>Show</b> 'Tom &amp; Jerry &lt;b&gt;'`
       })
       expect(context.itemLabelText).toBe(`Show 'Tom & Jerry <b>'`)
@@ -233,80 +244,79 @@ describe('DitoContext', () => {
     it('overrides the values of the component with its own', () => {
       const component = createComponent()
       const schema = { type: 'section' }
-      const context = new DitoContext(component, { schema, user: null })
+      const context = new SchemaContext(component, { schema, user: null })
       expect(context.schema).toBe(schema)
       // Values explicitly set to `undefined` or `null` are kept too:
       expect(context.user).toBe(null)
-      const undefinedContext = new DitoContext(component, { api: undefined })
+      const undefinedContext = new SchemaContext(component, { api: undefined })
       expect(undefinedContext.api).toBe(undefined)
     })
 
     it('returns `null` for values that neither provides', () => {
-      const context = new DitoContext({}, {})
+      const context = new SchemaContext({}, {})
       expect(context.user).toBe(null)
       expect(context.api).toBe(null)
       expect(context.itemLabelText).toBe(null)
-      expect(context.dialogComponent).toBe(null)
-      expect(context.panelComponent).toBe(null)
-      expect(context.resourceComponent).toBe(null)
-      expect(context.sourceComponent).toBe(null)
-      expect(context.viewComponent).toBe(null)
-      expect(context.schemaComponent).toBe(null)
       expect(context.option).toBe(undefined)
       expect(context.options).toBe(undefined)
-      expect(context.open).toBe(undefined)
+      expect(context.isSelected).toBe(false)
+      expect(context.collapsed).toBe(undefined)
       expect(context.searchTerm).toBe(undefined)
       expect(context.error).toBe(undefined)
       expect(context.wasNotified).toBe(false)
       expect(context.isRunning).toBe(false)
+      // Contexts outside of forms, views and lists, e.g. of dialogs:
+      expect(context.isDirty).toBe(false)
+      expect(context.isCreating).toBe(false)
+      expect(context.selectedTab).toBe(null)
+      expect(context.sourceQuery).toBe(null)
     })
 
     it('provides values of options and searches when given', () => {
       const option = { value: 'novel' }
-      const context = new DitoContext(
+      const context = new SchemaContext(
         {},
         {
           option,
           options: [option],
+          isSelected: true,
           searchTerm: 'nov',
-          open: true
+          collapsed: true
         }
       )
       expect(context.option).toBe(option)
       expect(context.options).toEqual([option])
+      expect(context.isSelected).toBe(true)
       expect(context.searchTerm).toBe('nov')
-      expect(context.open).toBe(true)
+      expect(context.collapsed).toBe(true)
     })
 
-    it('delegates the helper methods to the component', async () => {
-      const component = createComponent()
-      const { request, format, navigate, download, getResourceUrl } =
-        new DitoContext(component, {})
-      expect(await request({ method: 'get' })).toEqual({
-        options: { method: 'get' }
+    it('provides the helper methods through its services', async () => {
+      // E.g. the contexts that data models create for `computeValue()`, which
+      // have no component:
+      let context = null
+      await mountSchema({
+        schema: {
+          components: {
+            title: {
+              type: 'text',
+              computeValue: computeContext => {
+                context = computeContext
+              }
+            }
+          }
+        },
+        api: { locale: 'en-US' },
+        request: () => ({ data: { title: 'Orlando' } })
       })
-      expect(format(3, { unit: 'kg' })).toBe('3 kg')
-      navigate('/books')
-      expect(component.navigate).toHaveBeenCalledWith('/books')
-      download({ url: '/file' })
-      expect(component.download).toHaveBeenCalledWith({ url: '/file' })
-      expect(getResourceUrl({ path: 'books' })).toBe('/api/books')
-    })
-
-    it('remembers that a notification was shown', () => {
-      const component = createComponent()
-      const context = new DitoContext(component, {})
-      const { notify } = context
-      notify({ type: 'info', text: 'Saved' })
-      expect(component.notify).toHaveBeenCalledWith({
-        type: 'info',
-        text: 'Saved'
-      })
-      expect(context.wasNotified).toBe(true)
+      const { request, format, getResourceUrl } = context
+      expect(await request({ url: 'books/1' })).toEqual({ title: 'Orlando' })
+      expect(format(1234.5, { date: false, time: false })).toBe('1,234.5')
+      expect(getResourceUrl({ path: 'books' })).toBe('/books')
     })
 
     it('stores whether its action is running', () => {
-      const context = new DitoContext({}, {})
+      const context = new SchemaContext({}, {})
       context.isRunning = true
       expect(context.isRunning).toBe(true)
     })
@@ -321,21 +331,11 @@ describe('DitoContext', () => {
         }
       })
 
-    it(`doesn't remember notifications on the component`, () => {
-      const component = { notify: vi.fn() }
-      const proxy = createComponentProxy(component)
-      const context = new DitoContext(proxy, {})
-      context.notify({ type: 'info', text: 'Saved' })
-      expect(context.wasNotified).toBe(true)
-      expect(component).not.toHaveProperty('wasNotified')
-      expect(new DitoContext(proxy, {}).wasNotified).toBe(false)
-    })
-
     it('sets whether the action of the component is running on it', () => {
       // E.g. to end the running state of a button before its click handler
       // returns.
       const component = { isRunning: true }
-      const context = new DitoContext(createComponentProxy(component), {})
+      const context = new SchemaContext(createComponentProxy(component), {})
       expect(context.isRunning).toBe(true)
       context.isRunning = false
       expect(component.isRunning).toBe(false)
@@ -346,52 +346,88 @@ describe('DitoContext', () => {
   describe('creation', () => {
     it('creates the context object with functions', () => {
       const createContextObject = vi.fn(() => ({ dataPath: 'name' }))
-      const context = new DitoContext(null, createContextObject)
+      const context = new SchemaContext(null, createContextObject)
       expect(context.dataPath).toBe('name')
       expect(createContextObject).toHaveBeenCalledTimes(1)
     })
 
     it(`doesn't modify the passed context object`, () => {
       const object = { dataPath: 'name' }
-      const context = new DitoContext(null, object)
-      expect(context.nested).toBe(true)
+      const context = new SchemaContext(null, object)
+      expect(context.dataPath).toBe('name')
       expect(object).toEqual({ dataPath: 'name' })
     })
 
-    it('returns existing contexts with `DitoContext.get()`', () => {
-      const context = new DitoContext(null, {})
-      expect(DitoContext.get(null, context)).toBe(context)
-      const created = DitoContext.get(null, { dataPath: 'name' })
-      expect(created).toBeInstanceOf(DitoContext)
-      expect(created.dataPath).toBe('name')
-    })
-
     it('works through reactive proxies', () => {
-      const context = reactive(new DitoContext(null, { dataPath: 'name' }))
+      const context = reactive(new SchemaContext(null, { dataPath: 'name' }))
       expect(context.dataPath).toBe('name')
     })
   })
 
   describe('extend()', () => {
     it('overrides values and keeps the others', () => {
-      // E.g. to pass a processed value on to a nested `process()` callback:
+      // E.g. to pass a serialized value on to a nested `serializeValue()`:
       const rootData = createLibrary()
-      const context = new DitoContext(null, {
+      const context = new SchemaContext(null, {
         rootData,
-        dataPath: 'authors/0/books/0/tags'
+        dataPath: 'authors/0/books/0/tags',
+        nested: true
       })
       const extended = context.extend({ value: ['classic'] })
       expect(extended.value).toEqual(['classic'])
       expect(extended.item).toBe(rootData.authors[0].books[0])
       expect(extended.dataPath).toBe('authors/0/books/0/tags')
-      expect(extended).toBeInstanceOf(DitoContext)
+      expect(extended).toBeInstanceOf(SchemaContext)
     })
 
     it('shares the state of the extended context', () => {
-      const context = new DitoContext({ notify() {} }, {})
+      const context = new SchemaContext({}, {})
       const extended = context.extend({})
-      extended.notify({ text: 'Done' })
-      expect(context.wasNotified).toBe(true)
+      extended.isRunning = true
+      expect(context.isRunning).toBe(true)
+    })
+  })
+
+  describe('getSchemaValue()', () => {
+    const schema = {
+      label: 'Rating',
+      max: '5',
+      title: ({ item }) => `Rate ${item.title}`
+    }
+
+    it('returns the values of its schema', () => {
+      const context = new SchemaContext(null, { schema })
+      expect(context.getSchemaValue('label')).toBe('Rating')
+      expect(context.getSchemaValue('min')).toBe(undefined)
+    })
+
+    it('calls the callbacks of its schema with itself', () => {
+      const context = new SchemaContext(null, {
+        schema,
+        rootData: { title: 'Emma', rating: 3 },
+        dataPath: 'rating',
+        nested: true
+      })
+      const { getSchemaValue } = context
+      expect(getSchemaValue('title')).toBe('Rate Emma')
+      const extended = context.extend({ item: { title: 'Persuasion' } })
+      expect(extended.getSchemaValue('title')).toBe('Rate Persuasion')
+    })
+
+    it('converts the values to `type`', () => {
+      const context = new SchemaContext(null, { schema })
+      expect(context.getSchemaValue('max', { type: Number })).toBe(5)
+    })
+
+    it('returns `default` for missing values, calling it with itself', () => {
+      const context = new SchemaContext(null, { schema })
+      expect(context.getSchemaValue('min', { default: 1 })).toBe(1)
+      expect(context.getSchemaValue('label', { default: 'Stars' })).toBe(
+        'Rating'
+      )
+      const getDefault = vi.fn(() => 0)
+      expect(context.getSchemaValue('min', { default: getDefault })).toBe(0)
+      expect(getDefault).toHaveBeenCalledWith(context)
     })
   })
 
@@ -400,7 +436,7 @@ describe('DitoContext', () => {
       const rootData = createLibrary()
       const [book] = rootData.authors[0].books
       const schema = { type: 'text' }
-      const context = DitoContext.createForSchema(null, {
+      const context = SchemaContext.createForSchema(null, {
         schema,
         name: 'title',
         data: book,
@@ -417,7 +453,7 @@ describe('DitoContext', () => {
 
     it('has no value for unnested components', () => {
       const book = { title: 'First' }
-      const context = DitoContext.createForSchema(null, {
+      const context = SchemaContext.createForSchema(null, {
         schema: { type: 'section' },
         name: 'details',
         data: book,
@@ -432,7 +468,7 @@ describe('DitoContext', () => {
     it(`has no value for nested components without a name`, () => {
       // Without a name, the value must not be read from `data['undefined']`:
       const book = { undefined: 'Stray' }
-      const context = DitoContext.createForSchema(null, {
+      const context = SchemaContext.createForSchema(null, {
         schema: { type: 'text' },
         data: book,
         dataPath: '',
@@ -447,7 +483,7 @@ describe('DitoContext', () => {
     const rootData = createLibrary()
     const [author] = rootData.authors
     const createAuthorContext = schema =>
-      DitoContext.createForSchema(null, {
+      SchemaContext.createForSchema(null, {
         schema,
         name: 'books',
         data: author,
@@ -470,7 +506,7 @@ describe('DitoContext', () => {
 
     it('shares the data of unnested components', () => {
       const section = { type: 'section' }
-      const parent = DitoContext.createForSchema(null, {
+      const parent = SchemaContext.createForSchema(null, {
         schema: section,
         name: 'details',
         data: author,
@@ -489,7 +525,7 @@ describe('DitoContext', () => {
 
     it('uses the item of contexts without a schema', () => {
       // E.g. the contexts of menus and panels:
-      const context = new DitoContext(null, {
+      const context = new SchemaContext(null, {
         data: author,
         rootData,
         dataPath: 'authors/0',
