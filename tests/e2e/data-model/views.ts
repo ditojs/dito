@@ -10,7 +10,7 @@ type ArticleItem = Article & {
   tagsText?: string | null
   seo: never
   resetChooser: never
-  applySavedTitle: never
+  writeTitle: never
   replaceData: never
   previewKey?: string | null
   views?: string | null
@@ -51,8 +51,8 @@ async function loadDelayed<T>(value: T): Promise<T> {
   return value
 }
 
-// Keeps valid values, and selects the first option otherwise. `compute()` only
-// runs once the options that it reads are loaded.
+// Keeps valid values, and selects the first option otherwise. `computeValue()`
+// only runs once the options that it reads are loaded.
 function getValidOrFirstOption({
   value,
   options
@@ -87,7 +87,7 @@ export const articles = createWidgetView<ArticleItem>(
               label: 'Permalink',
               disabled: true,
               exclude: true,
-              compute: ({ item }) =>
+              computeValue: ({ item }) =>
                 item.slug ? `/articles/${item.slug}` : null
             },
             // Selects the first option once the options are loaded.
@@ -100,7 +100,7 @@ export const articles = createWidgetView<ArticleItem>(
                   { label: 'Published', value: 'published' }
                 ]
               },
-              compute: ({ value, options }) => (
+              computeValue: ({ value, options }) => (
                 value ?? options[0]?.value ?? undefined
               )
             },
@@ -108,13 +108,11 @@ export const articles = createWidgetView<ArticleItem>(
               type: 'select',
               label: 'Category',
               options: { data: () => loadDelayed(categoryOptions) },
-              compute: getValidOrFirstOption,
-              events: {
-                // Sees the topic that the data model derives from the
-                // category, once the options of the topic are loaded.
-                change: ({ item }) => {
-                  item.topicOnCategoryChange = item.topic
-                }
+              computeValue: getValidOrFirstOption,
+              // Sees the topic that the data model derives from the
+              // category, once the options of the topic are loaded.
+              onChange: ({ item }) => {
+                item.topicOnCategoryChange = item.topic
               }
             },
             // The options come from data next to the select, which a button
@@ -127,45 +125,37 @@ export const articles = createWidgetView<ArticleItem>(
                 topic: {
                   type: 'select',
                   label: 'Chosen Topic',
-                  options: { dataPath: '../source/topics' }
+                  options: { dataPath: 'source/topics' }
                 }
               }
             },
             resetChooser: {
               type: 'button',
               text: 'Reset Chooser',
-              events: {
-                click: ({ item }) => {
-                  item.chooser = {}
-                }
+              onClick: ({ item }) => {
+                item.chooser = {}
               }
             },
-            // Like actions that the server saves: Applies the result as clean
-            // changes.
-            applySavedTitle: {
+            // Writes through the item in handlers are edits, as if the user
+            // made them, which make the form dirty.
+            writeTitle: {
               type: 'button',
-              text: 'Apply Saved Title',
-              events: {
-                click: ({ item, formComponent }) => {
-                  formComponent.applyCleanChanges(() => {
-                    item.title = 'Saved'
-                  })
-                }
+              text: 'Write Title',
+              onClick: ({ item }) => {
+                item.title = 'Written'
               }
             },
-            // Like actions that return the updated item: Replaces the form's
+            // Like actions that return the updated item: Resets the form's
             // data, and modifies the returned reactive data.
             replaceData: {
               type: 'button',
               text: 'Replace Data',
-              events: {
-                click: ({ item, formComponent }) => {
-                  const article = formComponent.setData({
-                    ...item,
-                    title: 'Replaced'
-                  })
-                  article.title = `${article.title} and Modified`
-                }
+              onClick: ({ item, resetItem }) => {
+                const article = resetItem({
+                  ...item,
+                  title: 'Replaced'
+                })
+                article.title = `${article.title} and Modified`
               }
             },
             // The computed value is derived from other data when it's missing,
@@ -180,7 +170,7 @@ export const articles = createWidgetView<ArticleItem>(
                 { label: 'Automatic', value: 'auto' },
                 { label: 'Custom Factor', value: 'factor' }
               ],
-              compute: ({ value, item }) => {
+              computeValue: ({ value, item }) => {
                 const pricing = (
                   value ??
                   (item.customFactor != null ? 'factor' : undefined)
@@ -197,14 +187,16 @@ export const articles = createWidgetView<ArticleItem>(
               visible: ({ item }) => item.pricing === 'factor'
             },
             // The excluded value is stored under another key through
-            // `process()`.
+            // `serializeValue()`.
             tagsText: {
               type: 'text',
               label: 'Tags',
               exclude: true,
-              compute: ({ value, item }) => value ?? item.tags?.join(',') ?? '',
-              process: ({ value, processedItem }) => {
-                processedItem.tags = value ? value.split(',') : null
+              computeValue: ({ value, item }) => (
+                value ?? item.tags?.join(',') ?? ''
+              ),
+              serializeValue: ({ value, serializedItem }) => {
+                serializedItem.tags = value ? value.split(',') : null
               }
             },
             // The stored array is edited as text, which the inputs of rendered
@@ -212,9 +204,11 @@ export const articles = createWidgetView<ArticleItem>(
             version: {
               type: 'text',
               label: 'Version',
-              compute: ({ value }) =>
+              computeValue: ({ value }) =>
                 Array.isArray(value) ? value.join('.') : value,
-              process: ({ value }) => value?.split('.').map(Number) ?? null
+              serializeValue: ({ value }) => (
+                value?.split('.').map(Number) ?? null
+              )
             },
             // The compute relies on the default of new items, and always shows
             // one keyword to fill in.
@@ -224,7 +218,7 @@ export const articles = createWidgetView<ArticleItem>(
               inlined: true,
               creatable: true,
               wrapPrimitives: 'keyword',
-              compute: ({ value }: { value: (string | null)[] }) =>
+              computeValue: ({ value }: { value: (string | null)[] }) =>
                 value.length > 0 ? value : [''],
               form: {
                 type: 'form',
@@ -258,10 +252,8 @@ export const articles = createWidgetView<ArticleItem>(
             resetPreview: {
               type: 'button',
               text: 'Reset Preview',
-              events: {
-                click: ({ item }) => {
-                  item.previewKey = null
-                }
+              onClick: ({ item }) => {
+                item.previewKey = null
               }
             },
             // Counts the changes of the markup, which are emitted once the
@@ -270,10 +262,8 @@ export const articles = createWidgetView<ArticleItem>(
               type: 'markup',
               label: 'Notes',
               exclude: true,
-              events: {
-                change: ({ item }) => {
-                  item.notesChanges = (item.notesChanges ?? 0) + 1
-                }
+              onChange: ({ item }) => {
+                item.notesChanges = (item.notesChanges ?? 0) + 1
               }
             },
             notesChanges: {
@@ -306,7 +296,7 @@ export const articles = createWidgetView<ArticleItem>(
                     label: 'Double Amount',
                     disabled: true,
                     exclude: true,
-                    compute: ({ rootItem, dataPath }) => {
+                    computeValue: ({ rootItem, dataPath }) => {
                       const line = getValueAtDataPath(
                         rootItem,
                         parseDataPath(dataPath).slice(0, 2)
@@ -340,7 +330,7 @@ export const articles = createWidgetView<ArticleItem>(
               components: {
                 slug: {
                   type: 'computed',
-                  compute: ({ item }) => (
+                  computeValue: ({ item }) => (
                     item.title?.toLowerCase().replaceAll(' ', '-') ?? null
                   )
                 },
@@ -367,7 +357,7 @@ export const articles = createWidgetView<ArticleItem>(
                         )
                     }
                   },
-                  compute: getValidOrFirstOption
+                  computeValue: getValidOrFirstOption
                 },
                 topicOnCategoryChange: {
                   type: 'text',

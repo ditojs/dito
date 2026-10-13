@@ -20,7 +20,7 @@ export const books = createWidgetView<Book>(
       editable: true,
       columns: {
         title: { label: 'Chapter' },
-        // Shown in the list, but not edited in the chapter's form.
+        // Shown in the list, but not in the chapter's form, so not stored.
         wordCount: { label: 'Words' },
         author: {
           label: 'Author',
@@ -32,14 +32,16 @@ export const books = createWidgetView<Book>(
         label: 'Chapter',
         components: {
           title: { type: 'text', label: 'Chapter Title' },
-          // Stored with its prefix, which `process()` adds when saving.
+          // Stored with its prefix, which `serializeValue()` adds when saving.
           code: {
             type: 'text',
             label: 'Code',
-            process: ({ value }) => (value ? `ch-${value}` : value)
+            serializeValue: ({ value }) => (value ? `ch-${value}` : value)
           },
           // Edited in the form, but not stored on the server.
           note: { type: 'text', label: 'Note', exclude: true },
+          // Not edited, but stored with the chapter.
+          pageCount: { type: 'hidden' },
           // Related objects are stored as references, but displayed with
           // their data, e.g. in the list's column.
           author: {

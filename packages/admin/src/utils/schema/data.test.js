@@ -1,11 +1,13 @@
 import { vi } from 'vitest'
-import DitoContext from '../../DitoContext.js'
-import { registerTypeComponent } from './types.js'
+import SchemaContext from '../../SchemaContext.js'
+import { defineType } from './types.ts'
+import { sourceTraits } from '../../types/traits.ts'
 import {
-  processSchemaData,
+  walkSchemaData,
   getComponentPathByDataPath,
-  computeValue,
-  processData,
+  getComputedValue,
+  serializeData,
+  deserializeData,
   initializeData,
   shouldRenderSchema,
   getCreatableForms,
@@ -18,25 +20,40 @@ import {
   updateOrder
 } from './data.js'
 
-// Register minimal type options, as the actual type components can't be
+// Define minimal types, as the actual type components can't be
 // imported without a Vue SFC compiler:
-registerTypeComponent('text', { defaultNested: true })
-registerTypeComponent('section', {
+defineType({ type: 'text' })
+defineType({
+  type: 'section',
   defaultNested: false,
   defaultValue: ({ schema }) => (schema.nested ? {} : undefined),
-  treatNullAsMissing: ({ schema }) => !!schema.nested
+  treatsNullAsMissing: ({ schema }) => !!schema.nested
 })
-registerTypeComponent('panel', { defaultNested: false })
-registerTypeComponent('reference', {
-  defaultNested: true,
-  processValue: ({ value }) => value && { id: value.id }
+defineType({ type: 'panel', defaultNested: false })
+defineType({
+  type: 'reference',
+  serializeValue: ({ value }) => value && { id: value.id }
 })
-registerTypeComponent('list', {
-  defaultNested: true,
-  getSourceType: () => 'list'
+defineType({ ...sourceTraits, type: 'list', sourceType: 'list' })
+defineType({ type: 'tags', defaultMultiple: true })
+// Amounts are stored in cents, and edited in units:
+defineType({
+  type: 'amount',
+  deserializeValue: ({ value }) => value / 100,
+  serializeValue: ({ value }) => Math.round(value * 100)
 })
-registerTypeComponent('tags', { defaultNested: true, defaultMultiple: true })
-registerTypeComponent('hidden', { defaultNested: true, excludeValue: true })
+defineType({ type: 'hidden', defaultExclude: true })
+// Flags of type descriptors can be plain booleans:
+defineType({
+  type: 'secret',
+  defaultValue: 'none',
+  ignoresMissingValue: true
+})
+defineType({
+  type: 'choice',
+  defaultValue: 'none',
+  treatsNullAsMissing: true
+})
 
 const chapters = {
   type: 'list',
@@ -71,17 +88,17 @@ const data = {
   chapters: [{ title: 'One' }, { title: 'Two' }]
 }
 
-describe('processSchemaData()', () => {
+describe('walkSchemaData()', () => {
   it('passes the component paths of components, tabs and panels', () => {
     const componentPaths = {}
-    processSchemaData(schema, data, {
+    walkSchemaData(schema, data, {
       dataPath: '',
       componentPath: 'book',
-      shouldProcess: ({ componentPath, dataPath }) => {
+      shouldWalk: ({ componentPath, dataPath }) => {
         componentPaths[componentPath] = dataPath
         return true
       },
-      options: { component: null }
+      options: { services: null }
     })
     expect(componentPaths).toEqual({
       'book/title': 'title',
@@ -101,10 +118,81 @@ describe('processSchemaData()', () => {
   })
 })
 
-describe('processSchemaData() with panel components', () => {
+describe('walkSchemaData() with child sources', () => {
+  // Like trees, whose items hold their children:
+  defineType({
+    type: 'outline',
+    sourceType: 'list',
+    getChildSourceSchemas: schema => [schema.children]
+  })
+
+  it('walks the child sources of items like components of their forms', () => {
+    const children = {
+      type: 'list',
+      name: 'sections',
+      form: { type: 'form', components: { heading: { type: 'text' } } }
+    }
+    const componentPaths = {}
+    walkSchemaData(
+      {
+        type: 'form',
+        components: {
+          outline: {
+            type: 'outline',
+            form: { type: 'form', components: { title: { type: 'text' } } },
+            children
+          }
+        }
+      },
+      { outline: [{ title: 'Dune', sections: [{ heading: 'Arrakis' }] }] },
+      {
+        dataPath: '',
+        componentPath: 'book',
+        shouldWalk: ({ componentPath, dataPath }) => {
+          componentPaths[componentPath] = dataPath
+          return true
+        },
+        options: { services: null }
+      }
+    )
+    expect(componentPaths).toEqual({
+      'book/outline': 'outline',
+      'book/outline/0/title': 'outline/0/title',
+      'book/outline/0/sections': 'outline/0/sections',
+      'book/outline/0/sections/0/heading': 'outline/0/sections/0/heading'
+    })
+  })
+
+  it('walks child sources once that are components of the form too', () => {
+    const children = {
+      type: 'list',
+      name: 'sections',
+      form: { type: 'form', components: { heading: { type: 'text' } } }
+    }
+    const before = vi.fn()
+    walkSchemaData(
+      {
+        type: 'form',
+        components: {
+          outline: {
+            type: 'outline',
+            form: { type: 'form', components: { sections: children } },
+            children
+          }
+        }
+      },
+      { outline: [{ sections: [{ heading: 'Arrakis' }] }] },
+      { dataPath: '', before, options: { services: null } }
+    )
+    const names = before.mock.calls.map(([{ name }]) => name)
+    expect(names).toEqual(['outline', 'sections', 'heading'])
+  })
+})
+
+describe('walkSchemaData() with panel components', () => {
   it('walks the components of panel components with their data', () => {
     const componentPaths = {}
-    processSchemaData(
+    walkSchemaData(
       {
         type: 'form',
         components: {
@@ -118,11 +206,11 @@ describe('processSchemaData() with panel components', () => {
       {
         dataPath: '',
         componentPath: 'book',
-        shouldProcess: ({ componentPath, dataPath }) => {
+        shouldWalk: ({ componentPath, dataPath }) => {
           componentPaths[componentPath] = dataPath
           return true
         },
-        options: { component: null }
+        options: { services: null }
       }
     )
     expect(componentPaths).toEqual({
@@ -132,10 +220,10 @@ describe('processSchemaData() with panel components', () => {
   })
 })
 
-describe('processSchemaData() with panels of nested components', () => {
+describe('walkSchemaData() with panels of nested components', () => {
   it('walks their components with the data around the components', () => {
     const componentPaths = {}
-    processSchemaData(
+    walkSchemaData(
       {
         type: 'form',
         components: {
@@ -154,11 +242,11 @@ describe('processSchemaData() with panels of nested components', () => {
       {
         dataPath: '',
         componentPath: 'book',
-        shouldProcess: ({ componentPath, dataPath }) => {
+        shouldWalk: ({ componentPath, dataPath }) => {
           componentPaths[componentPath] = dataPath
           return true
         },
-        options: { component: null }
+        options: { services: null }
       }
     )
     expect(componentPaths).toEqual({
@@ -169,10 +257,10 @@ describe('processSchemaData() with panels of nested components', () => {
   })
 })
 
-describe('processSchemaData() with panels that have their own data', () => {
+describe('walkSchemaData() with panels that have their own data', () => {
   it(`doesn't walk their components with the data of the schema`, () => {
     const componentPaths = []
-    processSchemaData(
+    walkSchemaData(
       {
         type: 'form',
         components: {
@@ -194,11 +282,11 @@ describe('processSchemaData() with panels that have their own data', () => {
       {
         dataPath: '',
         componentPath: '',
-        shouldProcess: ({ componentPath }) => {
+        shouldWalk: ({ componentPath }) => {
           componentPaths.push(componentPath)
           return true
         },
-        options: { component: null }
+        options: { services: null }
       }
     )
     expect(componentPaths).toEqual(['search', 'filters'])
@@ -243,55 +331,58 @@ describe('getComponentPathByDataPath()', () => {
   })
 })
 
-describe('computeValue()', () => {
+describe('getComputedValue()', () => {
   const schema = {
     type: 'text',
-    compute: ({ item }) => item.title?.toUpperCase()
+    computeValue: ({ item }) => item.title?.toUpperCase()
   }
 
   it('returns the computed value without writing it into the data', () => {
     const data = { title: 'Book' }
-    expect(computeValue(schema, data, 'upper', 'upper')).toBe('BOOK')
+    expect(getComputedValue(schema, data, 'upper', 'upper')).toBe('BOOK')
     expect(data).toEqual({ title: 'Book' })
   })
 
-  it('returns the value if `compute()` returns `undefined`', () => {
+  it('returns the value if `computeValue()` returns `undefined`', () => {
     const data = { upper: 'Kept' }
-    expect(computeValue(schema, data, 'upper', 'upper')).toBe('Kept')
+    expect(getComputedValue(schema, data, 'upper', 'upper')).toBe('Kept')
   })
 
   it('returns the default of missing values without writing it', () => {
     const data = {}
     const schema = { type: 'text', default: 'Untitled' }
-    expect(computeValue(schema, data, 'title', 'title')).toBe('Untitled')
+    expect(getComputedValue(schema, data, 'title', 'title')).toBe('Untitled')
     expect(data).toEqual({})
   })
 
   it('returns the defaults of nested sections that are `null`', () => {
     const chooser = { type: 'section', nested: true, components: {} }
     expect(
-      computeValue(chooser, { chooser: null }, 'chooser', 'chooser')
+      getComputedValue(chooser, { chooser: null }, 'chooser', 'chooser')
     ).toEqual(
       {}
     )
   })
 
-  it('provides the data path to `compute()`', () => {
-    const schema = { type: 'text', compute: ({ dataPath }) => dataPath }
-    expect(computeValue(schema, {}, 'path', 'chapters/0/path')).toBe(
+  it('provides the data path to `computeValue()`', () => {
+    const schema = { type: 'text', computeValue: ({ dataPath }) => dataPath }
+    expect(getComputedValue(schema, {}, 'path', 'chapters/0/path')).toBe(
       'chapters/0/path'
     )
   })
 
-  it('calls data path functions only when `compute()` reads them', () => {
+  it('calls data path functions only when `computeValue()` reads them', () => {
     const getDataPath = vi.fn(() => 'chapters/1/path')
-    const readsDataPath = { type: 'text', compute: ({ dataPath }) => dataPath }
-    const ignoresDataPath = { type: 'text', compute: () => 'Fixed' }
-    expect(computeValue(ignoresDataPath, {}, 'path', getDataPath)).toBe(
+    const readsDataPath = {
+      type: 'text',
+      computeValue: ({ dataPath }) => dataPath
+    }
+    const ignoresDataPath = { type: 'text', computeValue: () => 'Fixed' }
+    expect(getComputedValue(ignoresDataPath, {}, 'path', getDataPath)).toBe(
       'Fixed'
     )
     expect(getDataPath).not.toHaveBeenCalled()
-    expect(computeValue(readsDataPath, {}, 'path', getDataPath)).toBe(
+    expect(getComputedValue(readsDataPath, {}, 'path', getDataPath)).toBe(
       'chapters/1/path'
     )
     expect(getDataPath).toHaveBeenCalledOnce()
@@ -302,42 +393,44 @@ describe('computeValue()', () => {
     const getOptions = vi.fn(() => options)
     const schema = {
       type: 'text',
-      compute: context => context.value ?? context.options[0]
+      computeValue: context => context.value ?? context.options[0]
     }
     expect(
-      computeValue(schema, { size: 'Large' }, 'size', 'size', { getOptions })
+      getComputedValue(schema, { size: 'Large' }, 'size', 'size', {
+        getOptions
+      })
     ).toBe('Large')
     expect(getOptions).not.toHaveBeenCalled()
-    expect(computeValue(schema, {}, 'size', 'size', { getOptions })).toBe(
+    expect(getComputedValue(schema, {}, 'size', 'size', { getOptions })).toBe(
       'Small'
     )
     expect(getOptions).toHaveBeenCalledTimes(1)
   })
 })
 
-describe('processData()', () => {
-  it('processes the values in the data without calling `compute()`', () => {
+describe('serializeData()', () => {
+  it('serializes the values in the data without calling `computeValue()`', () => {
     // `DataModel` writes the computed values into the data.
-    const compute = vi.fn(({ item }) => item.title.toUpperCase())
+    const computeValue = vi.fn(({ item }) => item.title.toUpperCase())
     const schema = {
       type: 'form',
       components: {
         title: { type: 'text' },
-        upper: { type: 'text', compute },
+        upper: { type: 'text', computeValue },
         subtitle: { type: 'text', default: 'None' }
       }
     }
     const data = { title: 'Book', upper: 'BOOK' }
     expect(
-      processData(schema, { type: 'list' }, data, '', { target: 'server' })
+      serializeData(schema, { type: 'list' }, data, '', { target: 'server' })
     ).toEqual({ title: 'Book', upper: 'BOOK', subtitle: 'None' })
     expect(data).toEqual({ title: 'Book', upper: 'BOOK' })
-    expect(compute).not.toHaveBeenCalled()
+    expect(computeValue).not.toHaveBeenCalled()
   })
 
   it('keeps values that are no objects as they are', () => {
-    // E.g. sizes that are stored as numbers, before `compute()` converts them
-    // to the objects that their forms edit.
+    // E.g. sizes that are stored as numbers, before `computeValue()` converts
+    // them to the objects that their forms edit.
     const schema = {
       type: 'form',
       components: {
@@ -355,8 +448,8 @@ describe('processData()', () => {
     }
     const data = { sizes: [5, { value: 10, units: '%' }] }
     expect(
-      processData(schema, { type: 'list' }, data, '', {
-        component: {},
+      serializeData(schema, { type: 'list' }, data, '', {
+        services: {},
         rootData: data,
         target: 'server'
       })
@@ -382,15 +475,15 @@ describe('processData()', () => {
     }
     const data = { items: [{}] }
     expect(
-      processData(schema, { type: 'list' }, data, '', {
-        component: {},
+      serializeData(schema, { type: 'list' }, data, '', {
+        services: {},
         rootData: data,
         target: 'server'
       })
     ).toEqual({ items: [{ status: 'New' }] })
   })
 
-  it('processes the primitive values of lists with `wrapPrimitives`', () => {
+  it('serializes the primitive values of lists with `wrapPrimitives`', () => {
     const dataPaths = []
     const prices = {
       type: 'list',
@@ -400,7 +493,7 @@ describe('processData()', () => {
         components: {
           price: {
             type: 'text',
-            process: ({ value, dataPath }) => {
+            serializeValue: ({ value, dataPath }) => {
               dataPaths.push(dataPath)
               return value * 2
             }
@@ -409,16 +502,56 @@ describe('processData()', () => {
       }
     }
     expect(
-      processData(
+      serializeData(
         { type: 'form', components: { prices } },
         { type: 'list' },
         { prices: [100, 200] },
         '',
-        { component: {}, target: 'server' }
+        { services: {}, target: 'server' }
       )
     ).toEqual({ prices: [200, 400] })
-    // The values are processed at the data paths of the items:
+    // The values are serialized at the data paths of the items:
     expect(dataPaths).toEqual(['prices/0', 'prices/1'])
+  })
+
+  it('converts values with the hook of their type, then of the schema', () => {
+    const schema = {
+      type: 'form',
+      components: {
+        price: { type: 'amount', serializeValue: ({ value }) => `${value}` }
+      }
+    }
+    expect(
+      serializeData(schema, null, { price: 12.5 }, '', {
+        services: {},
+        target: 'server'
+      })
+    ).toEqual({ price: '1250' })
+  })
+
+  it('leaves out the values that `serializeValue()` returns nothing for', () => {
+    // E.g. virtual fields, which write the actual values:
+    const schema = {
+      type: 'form',
+      components: {
+        name: {
+          type: 'text',
+          serializeValue({ value, serializedItem }) {
+            const [first, last] = value.split(' ')
+            Object.assign(serializedItem, { first, last })
+          }
+        }
+      }
+    }
+    const serializedData = serializeData(
+      schema,
+      null,
+      { name: 'Jane Austen' },
+      '',
+      { services: {}, target: 'server' }
+    )
+    expect(serializedData).not.toHaveProperty('name')
+    expect(serializedData).toEqual({ first: 'Jane', last: 'Austen' })
   })
 
   it('passes items without a matching form through as shallow clones', () => {
@@ -438,17 +571,17 @@ describe('processData()', () => {
       }
     }
     const data = { works: [essay] }
-    const processed = processData(schema, { type: 'list' }, data, '', {
-      component: {},
+    const serialized = serializeData(schema, { type: 'list' }, data, '', {
+      services: {},
       rootData: data,
       target: 'server'
     })
-    expect(processed.works[0]).toEqual(essay)
-    expect(processed.works[0]).not.toBe(essay)
+    expect(serialized.works[0]).toEqual(essay)
+    expect(serialized.works[0]).not.toBe(essay)
   })
 
-  describe('with `schemaOnly`', () => {
-    const options = { component: {}, target: 'server', schemaOnly: true }
+  describe('of items', () => {
+    const options = { services: {}, target: 'server' }
     const schema = {
       type: 'form',
       components: { title: { type: 'text' } }
@@ -457,7 +590,7 @@ describe('processData()', () => {
 
     it('only keeps the id and the values of the components', () => {
       expect(
-        processData(schema, { type: 'list', form: schema }, data, '', options)
+        serializeData(schema, { type: 'list', form: schema }, data, '', options)
       ).toEqual({ id: 1, title: 'Emma' })
     })
 
@@ -467,81 +600,84 @@ describe('processData()', () => {
         type: 'list',
         forms: { novel: schema, poem: schema }
       }
-      expect(processData(schema, sourceSchema, data, '', options)).toEqual({
+      expect(serializeData(schema, sourceSchema, data, '', options)).toEqual({
         id: 1,
         type: 'novel',
         title: 'Emma'
       })
     })
   })
+})
 
-  describe('with `shouldCallProcess: false`', () => {
-    // `DitoContext` needs a component to inherit from:
-    const component = {}
-    const options = {
-      component,
-      target: 'clipboard',
-      shouldCallProcess: false
+describe('deserializeData()', () => {
+  const createPricesSchema = price => ({
+    type: 'form',
+    components: {
+      prices: {
+        type: 'list',
+        wrapPrimitives: 'price',
+        form: { type: 'form', components: { price } }
+      }
     }
+  })
 
-    it('falls back to defaults without calling `process()`', () => {
-      const process = vi.fn(({ value }) => value)
-      const schema = {
-        type: 'form',
-        components: {
-          title: { type: 'text', process },
-          upper: { type: 'text', default: 'None' }
+  it('converts values with the hook of their type, then of the schema', () => {
+    const schema = {
+      type: 'form',
+      components: {
+        price: { type: 'amount', deserializeValue: ({ value }) => `${value}` }
+      }
+    }
+    const data = { price: 1250 }
+    expect(deserializeData(schema, data)).toBe(data)
+    expect(data).toEqual({ price: '12.5' })
+  })
+
+  it('converts the values of sources before the values of their items', () => {
+    const schema = {
+      type: 'form',
+      components: {
+        items: {
+          type: 'list',
+          // Stored as an object keyed by id:
+          deserializeValue: ({ value }) => Object.values(value),
+          form: { type: 'form', components: { price: { type: 'amount' } } }
         }
       }
-      expect(
-        processData(schema, { type: 'list' }, { title: 'Book' }, '', options)
-      ).toEqual({ title: 'Book', upper: 'None' })
-      expect(process).not.toHaveBeenCalled()
-    })
+    }
+    const data = { items: { a: { id: 'a', price: 100 } } }
+    deserializeData(schema, data)
+    expect(data).toEqual({ items: [{ id: 'a', price: 1 }] })
+  })
 
-    it("processes values through their types' `processValue()`", () => {
-      const schema = {
-        type: 'form',
-        components: { author: { type: 'reference' } }
-      }
-      const data = { author: { id: 1, name: 'Author' } }
-      expect(processData(schema, { type: 'list' }, data, '', options)).toEqual({
-        author: { id: 1 }
-      })
-    })
+  it('writes the converted primitives of `wrapPrimitives` lists back', () => {
+    const data = { prices: [100, 250] }
+    deserializeData(createPricesSchema({ type: 'amount' }), data)
+    expect(data).toEqual({ prices: [1, 2.5] })
+  })
 
-    it('keeps excluded values of components with `process()`', () => {
-      const schema = {
+  it('leaves missing values to their defaults', () => {
+    const deserializeValue = vi.fn()
+    const data = {}
+    deserializeData(
+      {
         type: 'form',
-        components: {
-          tagsText: {
-            type: 'text',
-            exclude: true,
-            process: ({ value, processedItem }) => {
-              processedItem.tags = value.split(',')
-            }
-          },
-          search: { type: 'text', exclude: true }
-        }
-      }
-      const data = { tagsText: 'a,b', search: 'Search' }
-      expect(processData(schema, { type: 'list' }, data, '', options)).toEqual({
-        tagsText: 'a,b'
-      })
-      expect(
-        processData(schema, { type: 'list' }, data, '', {
-          component,
-          target: 'server'
-        })
-      ).toEqual({ tags: ['a', 'b'] })
-    })
+        components: { title: { type: 'text', deserializeValue } }
+      },
+      data
+    )
+    expect(data).toEqual({})
+    expect(deserializeValue).not.toHaveBeenCalled()
   })
 })
 
 describe('shouldRenderSchema()', () => {
   it(`doesn't evaluate the components of sources for their items`, () => {
-    // `DitoContext` needs a component to inherit from:
-    const context = new DitoContext({}, { data: { links: null }, dataPath: '' })
+    // `SchemaContext` needs a component to inherit from:
+    const context = new SchemaContext(
+      {},
+      { data: { links: null }, dataPath: '' }
+    )
     const condition = vi.fn(({ item }) => !!item.url)
     const links = {
       type: 'list',
@@ -552,27 +688,36 @@ describe('shouldRenderSchema()', () => {
   })
 
   it('hides sections whose components are all hidden', () => {
-    const context = new DitoContext({}, { data: {}, dataPath: '' })
+    const context = new SchemaContext({}, { data: {}, dataPath: '' })
     const section = {
       type: 'section',
       components: { url: { type: 'text', if: () => false } }
     }
     expect(shouldRenderSchema(section, context)).toBe(false)
   })
+
+  it('hides forms whose components are all hidden', () => {
+    const context = new SchemaContext({}, { data: {}, dataPath: '' })
+    const form = {
+      type: 'form',
+      components: { title: { type: 'text', if: () => false } }
+    }
+    expect(shouldRenderSchema(form, context)).toBe(false)
+  })
 })
 
-describe('computeValue() with if', () => {
+describe('getComputedValue() with if', () => {
   it(`doesn't compute values of components whose if is false`, () => {
     const schema = {
       type: 'text',
       if: ({ item }) => !!item.preview,
-      compute: ({ item }) => item.preview.name
+      computeValue: ({ item }) => item.preview.name
     }
-    expect(computeValue(schema, { name: 'Stored' }, 'name', 'name')).toBe(
+    expect(getComputedValue(schema, { name: 'Stored' }, 'name', 'name')).toBe(
       'Stored'
     )
     expect(
-      computeValue(schema, { preview: { name: 'Preview' } }, 'name', 'name')
+      getComputedValue(schema, { preview: { name: 'Preview' } }, 'name', 'name')
     ).toBe('Preview')
   })
 })
@@ -588,7 +733,7 @@ describe('initializeData()', () => {
       }
     }
     const data = { prices: [100, 200] }
-    // `DitoContext` needs a component to inherit from:
+    // `SchemaContext` needs a component to inherit from:
     initializeData({ type: 'form', components: { prices } }, data, {})
     expect(data).toEqual({ prices: [100, 200] })
   })
@@ -605,11 +750,21 @@ describe('initializeData()', () => {
     expect(data.chooser).toEqual({ topic: 'news' })
   })
 
-  it('can leave the defaults of computed values to `computeValue()`', () => {
+  it('reads the flags of types that are booleans', () => {
+    const schema = {
+      type: 'form',
+      components: { secret: { type: 'secret' }, choice: { type: 'choice' } }
+    }
+    expect(initializeData(schema, { choice: null })).toEqual({
+      choice: 'none'
+    })
+  })
+
+  it('can leave the defaults of computed values to `getComputedValue()`', () => {
     const pricing = {
       type: 'text',
       default: 'auto',
-      compute: ({ value, item }) => (
+      computeValue: ({ value, item }) => (
         value ?? (item.customFactor != null ? 'factor' : undefined)
       )
     }
@@ -621,8 +776,8 @@ describe('initializeData()', () => {
     expect(data).toEqual({ customFactor: 10 })
     // New data starts with all defaults:
     expect(initializeData(schema, {})).toEqual({ pricing: 'auto' })
-    expect(computeValue(pricing, data, 'pricing', 'pricing')).toBe('factor')
-    expect(computeValue(pricing, {}, 'pricing', 'pricing')).toBe('auto')
+    expect(getComputedValue(pricing, data, 'pricing', 'pricing')).toBe('factor')
+    expect(getComputedValue(pricing, {}, 'pricing', 'pricing')).toBe('auto')
   })
 
   it('numbers the items of lists with `orderKey`, also nested ones', () => {
@@ -634,8 +789,8 @@ describe('initializeData()', () => {
     const items = {
       type: 'list',
       orderKey: 'order',
-      // Lists with `compute()` are numbered too.
-      compute: ({ value }) => value,
+      // Lists with `computeValue()` are numbered too.
+      computeValue: ({ value }) => value,
       form: { type: 'form', components: { parts } }
     }
     const data = {
@@ -647,7 +802,7 @@ describe('initializeData()', () => {
     initializeData(
       { type: 'form', tabs: { main: { type: 'tab', components: { items } } } },
       data,
-      // `DitoContext` needs a component to inherit from:
+      // `SchemaContext` needs a component to inherit from:
       {}
     )
     expect(data.items.map(item => item.order)).toEqual([0, 1])
@@ -678,8 +833,8 @@ describe('initializeData()', () => {
 })
 
 describe('getCreatableForms()', () => {
-  // `DitoContext` needs a component to inherit from:
-  const createContext = data => new DitoContext({}, { data, dataPath: '' })
+  // `SchemaContext` needs a component to inherit from:
+  const createContext = data => new SchemaContext({}, { data, dataPath: '' })
   const createForm = settings => ({
     type: 'form',
     components: { title: { type: 'text' } },
@@ -690,7 +845,6 @@ describe('getCreatableForms()', () => {
     const forms = {
       article: createForm(),
       event: createForm({ creatable: true }),
-      hidden: createForm({ if: false }),
       archived: createForm({ creatable: false })
     }
     expect(getCreatableForms({ forms }, createContext({}))).toEqual({
@@ -699,7 +853,7 @@ describe('getCreatableForms()', () => {
     })
   })
 
-  it('evaluates `if` and `creatable` callbacks with the context', () => {
+  it('evaluates `creatable` callbacks with the context', () => {
     const context = createContext({ isLocked: true })
     const creatable = vi.fn(({ item }) => !item.isLocked)
     const forms = {
@@ -712,13 +866,15 @@ describe('getCreatableForms()', () => {
     expect(creatable).toHaveBeenCalledOnce()
   })
 
-  it('excludes forms whose components are all hidden', () => {
+  it('ignores the `if` and `visible` of forms and their components', () => {
     const forms = {
-      default: createForm({
+      hidden: createForm({ if: false }),
+      invisible: createForm({ visible: false }),
+      empty: createForm({
         components: { title: { type: 'text', if: () => false } }
       })
     }
-    expect(getCreatableForms({ forms }, createContext({}))).toEqual({})
+    expect(getCreatableForms({ forms }, createContext({}))).toEqual(forms)
   })
 
   it('returns an empty object for schemas without forms', () => {
@@ -809,7 +965,7 @@ describe('shouldExcludeValue()', () => {
     )
   })
 
-  it('falls back on the `excludeValue` of the type', () => {
+  it('falls back on the `defaultExclude` of the type', () => {
     expect(shouldExcludeValue({ type: 'hidden' }, {})).toBe(true)
     expect(shouldExcludeValue({ type: 'hidden', exclude: false }, {})).toBe(
       false
@@ -856,9 +1012,9 @@ describe('getItemUid()', () => {
 })
 
 describe('updateOrder()', () => {
-  it('numbers the items by their order key, offset by the pagination', () => {
+  it('numbers the items by their order key, starting at the offset', () => {
     const list = [{ title: 'A' }, { title: 'B' }]
-    expect(updateOrder({ orderKey: 'position' }, list, [10, 20])).toBe(list)
+    expect(updateOrder({ orderKey: 'position' }, list, 10)).toBe(list)
     expect(list).toEqual([
       { title: 'A', position: 10 },
       { title: 'B', position: 11 }

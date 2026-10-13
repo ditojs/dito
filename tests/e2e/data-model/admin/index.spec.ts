@@ -189,7 +189,7 @@ test.describe('data model', () => {
       .toEqual([{ amount: 1 }])
   })
 
-  test('marks forms dirty by their data, not by derived values', async ({
+  test('marks forms dirty by edits, not by derived values', async ({
     page,
     url
   }) => {
@@ -204,42 +204,34 @@ test.describe('data model', () => {
     await title.fill('New')
     await cancel.click()
     await dismissConfirmDialog(page, 'You have unsaved changes')
-    // Changing the value back makes the form clean again.
+    // Changing the value back is an edit too.
     await title.fill('Old')
     await cancel.click()
-    await expect(page).toHaveURL(/\/articles$/)
-    await expect(getConfirmDialog(page)).toHaveCount(0)
+    await dismissConfirmDialog(page, 'You have unsaved changes')
   })
-  test('marks forms dirty by excluded values that `process()` stores', async ({
+  test('saves excluded values that `serializeValue()` stores elsewhere', async ({
     page,
     url
   }) => {
     const article = await Article.query().insert({ title: 'Old', tags: ['a'] })
     await openArticle(page, url, article)
     const tags = page.getByLabel('Tags', { exact: true })
-    const cancel = page.getByRole('button', { name: 'Cancel', exact: true })
     await expect(tags).toHaveValue('a')
     await tags.fill('a,b')
-    await cancel.click()
-    await dismissConfirmDialog(page, 'You have unsaved changes')
     await page.getByRole('button', { name: 'Save', exact: true }).click()
     await expect
       .poll(async () => (await Article.query().findById(article.id))?.tags)
       .toEqual(['a', 'b'])
   })
-  test(`doesn't mark forms dirty by clean changes`, async ({
-    page,
-    url
-  }) => {
+  test('marks forms dirty by writes in handlers', async ({ page, url }) => {
     const article = await Article.query().insert({ title: 'Old' })
     await openArticle(page, url, article)
     await waitForDelayedOptions(page)
     const title = page.getByLabel('Title', { exact: true })
-    await page.getByRole('button', { name: 'Apply Saved Title' }).click()
-    await expect(title).toHaveValue('Saved')
+    await page.getByRole('button', { name: 'Write Title' }).click()
+    await expect(title).toHaveValue('Written')
     await page.getByRole('button', { name: 'Cancel', exact: true }).click()
-    await expect(page).toHaveURL(/\/articles$/)
-    await expect(getConfirmDialog(page)).toHaveCount(0)
+    await dismissConfirmDialog(page, 'You have unsaved changes')
   })
   test('emits changes of markup once the editing is done', async ({
     page,
@@ -273,7 +265,10 @@ test.describe('data model', () => {
     ).toHaveValue('football')
   })
 
-  test('returns the reactive data from `setData()`', async ({ page, url }) => {
+  test('returns the reactive data from `resetItem()`', async ({
+    page,
+    url
+  }) => {
     const article = await Article.query().insert({ title: 'Old' })
     await openArticle(page, url, article)
     await page.getByRole('button', { name: 'Replace Data' }).click()
@@ -359,8 +354,6 @@ test.describe('data model', () => {
     page,
     url
   }) => {
-    // The dirty check processes the data like the clipboard does, which
-    // removes ids, but only from its own copy of the data.
     const article = await Article.query().insert({
       title: 'Old',
       references: [{ id: 1, title: 'Reference' }]
@@ -380,17 +373,15 @@ test.describe('data model', () => {
     page,
     url
   }) => {
-    // `status` replaces the value without option with `null`, which its
-    // compute then replaces with the first option.
+    // `status` keeps the value without option, which its compute leaves as
+    // is, and selects no option:
     const article = await Article.query().insert({
       title: 'Old',
       status: 'archived'
     })
     await openArticle(page, url, article)
-    await expect(page.getByLabel('Status', { exact: true })).toHaveValue(
-      'draft'
-    )
     await waitForDelayedOptions(page)
+    await expect(page.getByLabel('Status', { exact: true })).toHaveValue('')
     await page.getByRole('button', { name: 'Cancel', exact: true }).click()
     await expect(page).toHaveURL(/\/articles$/)
     await expect(getConfirmDialog(page)).toHaveCount(0)

@@ -8,7 +8,7 @@ import {
   getParentItem,
   getLastDataPathName,
   getLastDataPathIndex,
-  setTemporaryId,
+  createTemporaryId,
   isTemporaryId,
   isReference
 } from './data.js'
@@ -167,15 +167,13 @@ describe('getLastDataPathIndex()', () => {
   })
 })
 
-describe('setTemporaryId()', () => {
-  it('sets unique temporary ids under the id key', () => {
-    const first = {}
-    const second = {}
-    setTemporaryId(first)
-    setTemporaryId(second, 'key')
-    expect(isTemporaryId(first.id)).toBe(true)
-    expect(isTemporaryId(second.key)).toBe(true)
-    expect(first.id).not.toBe(second.key)
+describe('createTemporaryId()', () => {
+  it('creates unique temporary ids', () => {
+    const first = createTemporaryId()
+    const second = createTemporaryId()
+    expect(isTemporaryId(first)).toBe(true)
+    expect(isTemporaryId(second)).toBe(true)
+    expect(first).not.toBe(second)
   })
 })
 
