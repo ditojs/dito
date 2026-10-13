@@ -6,39 +6,31 @@
     offset
     @select="onSelectMenuItem"
   )
-    span {{ user.username }}
+    span {{ adminContext.user.username }}
 </template>
 
 <script>
+import { inject } from 'vue'
 import { DitoMenuButton } from '@ditojs/ui/src'
-import DitoComponent from '../DitoComponent.js'
+import { adminContextKey } from '../utils/keys.ts'
 
-// @vue/component
-export default DitoComponent.component('DitoAccount', {
+export default {
   components: { DitoMenuButton },
 
-  data() {
+  setup() {
+    const adminContext = inject(adminContextKey)
     return {
-      items: [
-        { value: 'settings', label: 'Settings' },
-        { value: 'logout', label: 'Logout' }
-      ]
-    }
-  },
+      adminContext,
+      items: [{ value: 'logout', label: 'Logout' }],
 
-  methods: {
-    onSelectMenuItem({ value }) {
-      switch (value) {
-        case 'logout':
-          this.session.logout()
-          break
-        case 'settings':
-          console.info('TODO: Implement Settings')
-          break
+      onSelectMenuItem({ value }) {
+        if (value === 'logout') {
+          adminContext.session.logout()
+        }
       }
     }
   }
-})
+}
 </script>
 
 <style lang="scss">

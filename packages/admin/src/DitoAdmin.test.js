@@ -1,7 +1,5 @@
 import { vi } from 'vitest'
 import DitoAdmin from './DitoAdmin.js'
-import appState from './appState.js'
-import DitoTypeComponent from './DitoTypeComponent.js'
 import { mountAdmin } from './test/mount.js'
 
 describe('DitoAdmin', () => {
@@ -13,7 +11,6 @@ describe('DitoAdmin', () => {
       admin.app._container?.remove()
     }
     delete window.dito
-    appState.user = null
   })
 
   function createAdmin({ el, ...options } = {}) {
@@ -40,13 +37,14 @@ describe('DitoAdmin', () => {
     document.body.appendChild(element)
     const admin = createAdmin({ el: '#library-admin' })
     expect(admin.app._container).toBe(element)
+    expect(admin.el).toBe(element)
     expect(element.classList.contains('dito-app')).toBe(true)
   })
 
   it('works without the `dito` object', () => {
     delete window.dito
     const admin = createAdmin()
-    expect(admin.api.base).toBe('/')
+    expect(admin.api.locale).toBe('en-US')
     expect(admin.app._container.classList.contains('dito-app')).toBe(true)
   })
 
@@ -63,18 +61,24 @@ describe('DitoAdmin', () => {
     ).not.toBe(null)
   })
 
-  it('provides an object as the default `$views`', () => {
-    const admin = createAdmin()
-    expect(admin.app._instance.provides.$views()).toEqual({})
+  it('provides the settings of the `dito` object to its context', () => {
+    window.dito = { settings: { rootClass: 'global' } }
+    const settings = { rootClass: 'library', forceDragFallback: true }
+    expect(createAdmin({ dito: { settings } }).context.settings).toBe(settings)
+    expect(createAdmin({ dito: {} }).context.settings).toEqual({})
   })
 
-  it('declares the page class in the app state', async () => {
-    expect(appState).toHaveProperty('pageClass', null)
+  it('provides an object as the views until they are resolved', () => {
+    const admin = createAdmin()
+    expect(admin.context.views).toEqual({})
+  })
+
+  it('renders the page class of the admin context', async () => {
     const admin = await mountAdmin({ views: {} })
-    appState.pageClass = 'dito-page--wide'
+    expect(admin.context.pageClass).toBe(null)
+    admin.context.pageClass = 'dito-page--wide'
     await admin.navigate('/')
     expect(admin.wrapper.find('.dito-page--wide').exists()).toBe(true)
-    appState.pageClass = null
   })
 
   it('requests the API with `fetch()` by default', async () => {
@@ -119,14 +123,5 @@ describe('DitoAdmin', () => {
     const { api } = createAdmin()
     expect(api.normalizePath('bookAuthors')).toBe('bookAuthors')
     expect(api.denormalizePath('book-authors')).toBe('book-authors')
-  })
-
-  it('registers type components with `register()`', () => {
-    const admin = createAdmin()
-    const component = admin.register('rating', {
-      template: '<span>Rating</span>'
-    })
-    expect(DitoTypeComponent.get('rating')).toBe(component)
-    expect(component.name).toBe('DitoTypeRating')
   })
 })

@@ -2,7 +2,7 @@
 nav.dito-header(:aria-busy="isLoading")
   DitoTrail
     DitoSpinner(
-      v-if="isLoading"
+      v-if="isLoading && spinner !== null"
       :size="spinner?.size"
       :color="spinner?.color"
     )
@@ -12,21 +12,13 @@ nav.dito-header(:aria-busy="isLoading")
 </template>
 
 <script>
-import DitoComponent from '../DitoComponent.js'
-
-// @vue/component
-export default DitoComponent.component('DitoHeader', {
+export default {
   props: {
-    spinner: {
-      type: Object,
-      default: null
-    },
-    isLoading: {
-      type: Boolean,
-      default: false
-    }
+    // `null` disables the spinner:
+    spinner: { type: Object, default: undefined },
+    isLoading: { type: Boolean, default: false }
   }
-})
+}
 </script>
 
 <style lang="scss">

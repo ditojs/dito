@@ -1,10 +1,10 @@
-import DitoUser from './DitoUser.js'
+import AdminUser from './AdminUser.js'
 
 function createUser(roles) {
-  return Object.assign(new DitoUser(), { roles })
+  return Object.assign(new AdminUser(), { roles })
 }
 
-describe('DitoUser', () => {
+describe('AdminUser', () => {
   describe('hasRole()', () => {
     it('checks whether the user has any of the roles', () => {
       const user = createUser(['editor', 'librarian'])

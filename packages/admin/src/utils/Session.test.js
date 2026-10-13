@@ -1,7 +1,7 @@
 import { vi } from 'vitest'
-import { Session } from './Session.js'
-import DitoUser from '../DitoUser.js'
-import appState from '../appState.js'
+import { shallowRef } from 'vue'
+import { Session } from './Session.ts'
+import AdminUser from '../AdminUser.js'
 
 const user = { id: 1, username: 'tester' }
 
@@ -32,36 +32,41 @@ function createSession({
     resolve: vi.fn(async () => resolvedViews.shift() ?? true),
     clear: vi.fn()
   }
-  const session = new Session({ api, viewRegistry, redirectAfterLogin })
+  const sessionUser = shallowRef(null)
+  const session = new Session({
+    api,
+    viewRegistry,
+    user: sessionUser,
+    redirectAfterLogin
+  })
   const userInterface = {
     requestLoginData: vi.fn(async () => loginData.shift() ?? null),
     notify: vi.fn()
   }
   const detach = session.attachUserInterface(userInterface)
-  return { session, api, viewRegistry, userInterface, detach }
+  return { session, sessionUser, api, viewRegistry, userInterface, detach }
 }
 
 describe('Session', () => {
   afterEach(() => {
-    appState.user = null
-    appState.loadCache = {}
     vi.unstubAllGlobals()
   })
 
   describe('start()', () => {
     it('resolves the views for the user of the session', async () => {
-      const { session, viewRegistry, userInterface } = createSession({
-        responses: { 'get /session': { user: { ...user } } }
-      })
+      const { session, sessionUser, viewRegistry, userInterface } =
+        createSession({
+          responses: { 'get /session': { user: { ...user } } }
+        })
       await session.start()
-      expect(session.user).toEqual(user)
-      expect(session.user).toBeInstanceOf(DitoUser)
+      expect(sessionUser.value).toEqual(user)
+      expect(sessionUser.value).toBeInstanceOf(AdminUser)
       expect(viewRegistry.resolve).toHaveBeenCalledOnce()
       expect(userInterface.requestLoginData).not.toHaveBeenCalled()
     })
 
     it('asks to log in without a user in the session', async () => {
-      const { session, api, viewRegistry } = createSession({
+      const { session, sessionUser, api, viewRegistry } = createSession({
         responses: {
           'get /session': { user: null },
           'post /login': { user: { ...user } }
@@ -73,7 +78,7 @@ describe('Session', () => {
         url: '/login',
         data: { username: 'tester', password: 'secret' }
       })
-      expect(session.user).toEqual(user)
+      expect(sessionUser.value).toEqual(user)
       expect(viewRegistry.resolve).toHaveBeenCalledOnce()
     })
 
@@ -160,28 +165,28 @@ describe('Session', () => {
 
   describe('logout()', () => {
     it('clears the user and the views', async () => {
-      const { session, viewRegistry } = createSession({
+      const { session, sessionUser, viewRegistry } = createSession({
         responses: {
           'get /session': { user: { ...user } },
           'post /logout': { success: true }
         }
       })
       await session.start()
-      await session.logout()
-      expect(session.user).toBe(null)
+      expect(await session.logout()).toBe(true)
+      expect(sessionUser.value).toBe(null)
       expect(viewRegistry.clear).toHaveBeenCalledOnce()
     })
 
     it(`keeps the user when the server doesn't confirm`, async () => {
-      const { session, viewRegistry } = createSession({
+      const { session, sessionUser, viewRegistry } = createSession({
         responses: {
           'get /session': { user: { ...user } },
           'post /logout': { success: false }
         }
       })
       await session.start()
-      await session.logout()
-      expect(session.user).toEqual(user)
+      expect(await session.logout()).toBe(false)
+      expect(sessionUser.value).toEqual(user)
       expect(viewRegistry.clear).not.toHaveBeenCalled()
     })
 
@@ -190,16 +195,16 @@ describe('Session', () => {
         .spyOn(console, 'error')
         .mockImplementation(() => {})
       const error = new Error('Network down')
-      const { session } = createSession({
+      const { session, sessionUser } = createSession({
         responses: {
           'get /session': { user: { ...user } },
           'post /logout': error
         }
       })
       await session.start()
-      await session.logout()
+      expect(await session.logout()).toBe(false)
       expect(consoleError).toHaveBeenCalledWith(error)
-      expect(session.user).toEqual(user)
+      expect(sessionUser.value).toEqual(user)
       consoleError.mockRestore()
     })
   })
@@ -207,20 +212,21 @@ describe('Session', () => {
   describe('ensureUser()', () => {
     it('asks to log in once the session expired', async () => {
       let hasExpired = false
-      const { session, viewRegistry, userInterface } = createSession({
-        responses: {
-          'get /session': () => ({ user: hasExpired ? null : { ...user } }),
-          'post /login': { user: { ...user } }
-        }
-      })
+      const { session, sessionUser, viewRegistry, userInterface } =
+        createSession({
+          responses: {
+            'get /session': () => ({ user: hasExpired ? null : { ...user } }),
+            'post /login': { user: { ...user } }
+          }
+        })
       await session.start()
-      await session.ensureUser()
+      expect(await session.ensureUser()).toEqual(user)
       expect(userInterface.requestLoginData).not.toHaveBeenCalled()
       hasExpired = true
-      await session.ensureUser()
+      expect(await session.ensureUser()).toEqual(user)
       expect(viewRegistry.clear).toHaveBeenCalledOnce()
       expect(userInterface.requestLoginData).toHaveBeenCalledOnce()
-      expect(session.user).toEqual(user)
+      expect(sessionUser.value).toEqual(user)
       expect(viewRegistry.resolve).toHaveBeenCalledTimes(2)
     })
   })
@@ -236,9 +242,9 @@ describe('Session', () => {
         }
       })
       await session.start()
-      appState.loadCache.books = cachedResponse
+      session.loadCache.books = cachedResponse
       await session.logout()
-      expect(appState.loadCache).toEqual({})
+      expect(session.loadCache).toEqual({})
     })
 
     it('clears it when another user logs in', async () => {
@@ -247,10 +253,10 @@ describe('Session', () => {
         responses: { 'get /session': () => ({ user: { ...sessionUser } }) }
       })
       await session.start()
-      appState.loadCache.books = cachedResponse
+      session.loadCache.books = cachedResponse
       sessionUser = { id: 2, username: 'other' }
       await session.ensureUser()
-      expect(appState.loadCache).toEqual({})
+      expect(session.loadCache).toEqual({})
     })
 
     it('keeps it when the same user is fetched again', async () => {
@@ -258,9 +264,9 @@ describe('Session', () => {
         responses: { 'get /session': () => ({ user: { ...user } }) }
       })
       await session.start()
-      appState.loadCache.books = cachedResponse
+      session.loadCache.books = cachedResponse
       await session.ensureUser()
-      expect(appState.loadCache).toEqual({ books: cachedResponse })
+      expect(session.loadCache).toEqual({ books: cachedResponse })
     })
   })
 

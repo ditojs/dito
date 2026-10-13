@@ -13,8 +13,7 @@
       @submit.prevent="submit"
       @keydown.enter="onEnter"
     )
-      // Add an invisible button that prevents the clearable buttons from being
-      // pressed when the user presses the Enter key:
+      // Keep Enter from pressing the clearable buttons:
       button(
         v-show="false"
       )
@@ -33,27 +32,20 @@
 </template>
 
 <script>
-import { markRaw } from 'vue'
+import { computed, useTemplateRef } from 'vue'
 import { clone } from '@ditojs/utils'
-import DitoComponent from '../DitoComponent.js'
-import { getButtonSchemas } from '../utils/schema/lookup.js'
-import { DataModel } from '../utils/DataModel.js'
 import { UseFocusTrap } from '@vueuse/integrations/useFocusTrap/component'
+import { useContainer } from '../composables/useContainer.ts'
+import { getButtonSchemas, hasSubmitButton } from '../utils/schema/lookup.js'
+import { waitUntilDataModelSettled } from '../utils/services.ts'
 
-// @vue/component
-export default DitoComponent.component('DitoDialog', {
+export default {
   components: { UseFocusTrap },
   emits: ['remove'],
 
-  provide() {
-    return {
-      $dialogComponent: () => this
-    }
-  },
-
   props: {
-    components: { type: Object, required: true },
-    buttons: { type: Object, required: true },
+    components: { type: Object, default: () => ({}) },
+    buttons: { type: Object, default: null },
     promise: { type: Object, required: true },
     data: { type: Object, default: () => ({}) },
     settings: {
@@ -65,149 +57,101 @@ export default DitoComponent.component('DitoDialog', {
     }
   },
 
-  data() {
+  setup(props, { emit }) {
     // Make sure dialog data contains all the expected keys
-    const dialogData = clone(this.data)
-    for (const key in this.components) {
-      if (!(key in dialogData)) {
-        dialogData[key] = null
+    const initialData = clone(props.data)
+    for (const key in props.components) {
+      if (!(key in initialData)) {
+        initialData[key] = null
       }
     }
-    return {
-      dialogData
+    const schema = computed(() => ({
+      type: 'dialog',
+      components: props.components
+    }))
+    const dialog = useTemplateRef('dialog')
+
+    const resolve = value => {
+      props.promise.resolve(value)
+      emit('remove')
     }
-  },
 
-  computed: {
-    dialogComponent() {
-      return this
-    },
+    // Dialogs render in the root, outside of routes and sources:
+    const { dataContext, services } = useContainer({
+      schema: () => schema.value,
+      data: initialData,
+      canSave: () => hasSubmitButton(buttonSchemas.value),
+      closeDialog: resolve
+    })
+    const dialogData = computed(() => dataContext.data)
 
-    schema() {
-      return {
-        type: 'dialog',
-        components: this.components
-      }
-    },
+    // Cancelled dialogs resolve with `undefined`, as `null` can be a value:
+    const cancel = () => resolve(undefined)
 
-    buttonSchemas() {
-      return Object.fromEntries(
-        Object.entries(getButtonSchemas(this.buttons)).map(
-          // Process the button schemas to add default click events
-          // for both 'submit' and 'cancel' buttons:
-          ([key, schema]) => {
-            if (key === 'cancel' && !schema.events) {
-              schema = {
-                ...schema,
-                events: {
-                  click: () => this.cancel()
-                }
-              }
-            }
-            return [key, schema]
-          }
+    const submit = async () => {
+      // Wait for computed values that depend on pending loads, e.g. options.
+      await waitUntilDataModelSettled(services)
+      resolve(dialogData.value)
+    }
+
+    const buttonSchemas = computed(() =>
+      Object.fromEntries(
+        Object.entries(getButtonSchemas(props.buttons) ?? {}).map(
+          // Add the default click event of the cancel button:
+          ([key, schema]) => [
+            key,
+            key === 'cancel' ? { onClick: cancel, ...schema } : schema
+          ]
         )
       )
-    },
-
-    focusTrapOptions() {
-      return {
-        immediate: true,
-        fallbackFocus: () => this.$refs.dialog,
-        // Escape is handled in `onKeyDown()`, as only dialogs with a cancel
-        // button or without buttons can be cancelled. The trap is also
-        // deactivated on unmount, e.g. after submitting, so it can't cancel.
-        escapeDeactivates: false
-      }
-    },
-
-    hasButtons() {
-      return Object.keys(this.buttonSchemas).length > 0
-    },
-
-    hasCancel() {
-      return !!this.buttonSchemas.cancel
-    }
-  },
-
-  created() {
-    // Writes defaults and computed values into the dialog's data and resolves
-    // options, see `DataModel`:
-    this.ownDataModel = markRaw(
-      new DataModel({
-        component: this,
-        getSchema: () => this.schema,
-        getData: () => this.dialogData
-      })
     )
-  },
+    const hasButtons = computed(
+      () => Object.keys(buttonSchemas.value).length > 0
+    )
 
-  beforeUnmount() {
-    // Stop the model before the component's own watchers are stopped, as the
-    // model's watchers aren't part of the component, see `DataModel`.
-    this.ownDataModel.stop()
-  },
+    return {
+      schema,
+      dialogData,
+      buttonSchemas,
+      submit,
 
-  methods: {
-    remove() {
-      this.$emit('remove')
-    },
+      focusTrapOptions: {
+        immediate: true,
+        fallbackFocus: () => dialog.value,
+        // Only dialogs with a cancel button or without buttons can be
+        // cancelled, see `onKeyDown()`. The trap is also deactivated on
+        // unmount, e.g. after submitting, so it can't cancel then:
+        escapeDeactivates: false
+      },
 
-    resolve(value) {
-      this.promise.resolve(value)
-      this.remove()
-    },
+      onEnter(event) {
+        // Submit on Enter in inputs, also for password managers that simulate
+        // an untrusted Enter keypress, which browsers ignore:
+        if (event.target instanceof HTMLInputElement) {
+          submit()
+        }
+      },
 
-    reject(value) {
-      this.promise.reject(value)
-      this.remove()
-    },
+      onMouseUp() {
+        if (props.settings.clickToClose) {
+          cancel()
+        }
+      },
 
-    onEnter(event) {
-      // Handle Enter key on input fields to submit the form. This also handles
-      // password managers (e.g. 1Password) that simulate an untrusted Enter
-      // keypress to submit, which browsers ignore.
-      if (event.target instanceof HTMLInputElement) {
-        this.submit()
-      }
-    },
-
-    async submit() {
-      // Wait for computed values that depend on pending loads, e.g. options.
-      await this.waitUntilDataModelSettled()
-      this.resolve(this.dialogData)
-    },
-
-    cancel() {
-      // When cancelling, resolve as `undefined` so we can have dialogs
-      // returning null as a defined value as well.
-      this.resolve(undefined)
-    },
-
-    close() {
-      this.cancel()
-    },
-
-    onMouseUp() {
-      if (this.settings.clickToClose) {
-        this.close()
-      }
-    },
-
-    onKeyDown(event) {
-      // Escape keys that the dialog's components handled, e.g. to close their
-      // menus, don't cancel the dialog.
-      if (
-        event.key === 'Escape' &&
-        !event.defaultPrevented &&
-        (this.hasCancel || !this.hasButtons)
-      ) {
-        event.preventDefault()
-        this.cancel()
+      onKeyDown(event) {
+        // Escape keys that the dialog's components handled don't cancel it:
+        if (
+          event.key === 'Escape' &&
+          !event.defaultPrevented &&
+          (!!buttonSchemas.value.cancel || !hasButtons.value)
+        ) {
+          event.preventDefault()
+          cancel()
+        }
       }
     }
   }
-})
+}
 </script>
 
 <style lang="scss">

@@ -7,7 +7,7 @@ import { confirm, confirmAndRemove, transientNote } from './dialogs.js'
 // the dialog element.
 async function showConfirmDialog(ask) {
   const admin = await mountAdmin({ views: {} })
-  const notify = vi.spyOn(admin.root, 'notify')
+  const notify = vi.spyOn(admin.context, 'notify')
   const promise = ask(admin.root)
   await flushPromises()
   const dialog = admin.wrapper.find('.dito-dialog')
@@ -25,6 +25,14 @@ describe('confirm()', () => {
     expect(dialog.find('label').exists()).toBe(false)
     expect(dialog.attributes('aria-label')).toBe('Delete Dune?')
     expect(dialog.find('button[type="submit"]').text()).toBe('Delete')
+  })
+
+  it('follows the contract of custom components', async () => {
+    const warn = vi.spyOn(console, 'warn')
+    await showConfirmDialog(root =>
+      confirm(root, { message: 'Delete Dune?', verb: 'delete' })
+    )
+    expect(warn).not.toHaveBeenCalled()
   })
 
   it('resolves to true when confirmed', async () => {
