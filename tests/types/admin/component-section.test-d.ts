@@ -1,5 +1,5 @@
 import { expectTypeOf, assertType, describe, it } from 'vitest'
-import type { Components, Form } from '@ditojs/admin'
+import type { Components, FormSchema } from '@ditojs/admin'
 import type { Address, Entry, Parent, ParentWithAddress } from './fixtures.ts'
 
 type ParentWithSection = Parent & {
@@ -47,7 +47,7 @@ describe('Section components', () => {
   })
 
   it('accepts section with form prop', () => {
-    const sectionForm: Form<ParentWithSection> = {
+    const sectionForm: FormSchema<ParentWithSection> = {
       type: 'form',
       components: {
         title: { type: 'text' }
@@ -156,7 +156,7 @@ describe('Nested sections', () => {
             street: { type: 'text' },
             city: { type: 'text' }
           }
-        } satisfies Form<Address>
+        } satisfies FormSchema<Address>
       }
     })
   })

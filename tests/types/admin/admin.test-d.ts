@@ -1,6 +1,13 @@
 import { assertType, describe, expectTypeOf, it } from 'vitest'
-import type { default as DitoAdmin, View } from '@ditojs/admin'
-import { DitoAdmin as NamedDitoAdmin } from '@ditojs/admin'
+import type {
+  default as DitoAdmin,
+  ApiConfig,
+  HttpMethod,
+  HTTPMethod,
+  TypeDescriptor,
+  View
+} from '@ditojs/admin'
+import { DitoAdmin as NamedDitoAdmin, defineType } from '@ditojs/admin'
 import type { Entry } from './fixtures.ts'
 
 describe('DitoAdmin', () => {
@@ -26,7 +33,103 @@ describe('DitoAdmin', () => {
     ])
   })
 
+  it('accepts no options, as the views default to none', () => {
+    assertType<ConstructorParameters<typeof DitoAdmin>>(['#app'])
+    assertType<ConstructorParameters<typeof DitoAdmin>>(['#app', {}])
+  })
+
+  it('accepts views as an array of named views and view modules', () => {
+    const books = {} as Promise<{ books: View<Entry> }>
+    assertType<ConstructorParameters<typeof DitoAdmin>>([
+      '#app',
+      {
+        views: [
+          () => books,
+          { type: 'view', name: 'authors', component: { type: 'list' } }
+        ]
+      }
+    ])
+  })
+
+  it('accepts the settings and the users resource of the global config', () => {
+    assertType<ConstructorParameters<typeof DitoAdmin>>([
+      '#app',
+      {
+        dito: { settings: { forceDragFallback: true } },
+        api: { users: { login: { path: 'sign-in' } } }
+      }
+    ])
+  })
+
   it('is also exported by name', () => {
     expectTypeOf(NamedDitoAdmin).toEqualTypeOf<typeof DitoAdmin>()
+  })
+})
+
+describe('defineType()', () => {
+  it('accepts descriptors and returns them', () => {
+    expectTypeOf(
+      defineType({
+        type: 'rating',
+        component: { template: '<span />' },
+        defaultValue: 0,
+        defaultExclude: ({ value }) => value === 0,
+        getValidations: ({ schema }) => ({ range: [0, schema.max ?? 5] }),
+        setupSchema: async ({ schema, api, name }) => {
+          expectTypeOf(schema).toEqualTypeOf<Record<string, any>>()
+          expectTypeOf(api).toEqualTypeOf<ApiConfig>()
+          expectTypeOf(name).toBeString()
+        }
+      })
+    ).toEqualTypeOf<TypeDescriptor>()
+  })
+
+  it('accepts several types', () => {
+    defineType({ type: ['rating', 'stars'], component: {} })
+  })
+
+  it('accepts the flags of the type', () => {
+    defineType({
+      type: 'heading',
+      component: {},
+      hasLabel: ({ nested }) => !nested,
+      ignoresMissingValue: true,
+      treatsNullAsMissing: ({ schema }) => !!schema.nested,
+      rendersLabel: true,
+      resolvesValue: true,
+      submitsData: false,
+      hasEmbeddedForms: false
+    })
+  })
+
+  it('requires the type and the component', () => {
+    // @ts-expect-error - `component` is missing.
+    defineType({ type: 'rating' })
+  })
+
+  it('accepts types that load options', () => {
+    defineType({
+      type: 'tags',
+      component: {},
+      getOptionsDataSchema: schema => schema.options
+    })
+  })
+
+  it(`doesn't expose the members of dito's list types`, () => {
+    defineType({
+      type: 'rating',
+      component: {},
+      // @ts-expect-error - Only dito's own list types have a source type.
+      sourceType: 'list'
+    })
+    expectTypeOf<TypeDescriptor>().not.toHaveProperty('getItemAdapter')
+    expectTypeOf<TypeDescriptor>().not.toHaveProperty('getChildSourceSchemas')
+    expectTypeOf<TypeDescriptor>().not.toHaveProperty('getPanelSchema')
+  })
+})
+
+describe('HttpMethod', () => {
+  it('keeps the deprecated name HTTPMethod', () => {
+    expectTypeOf<HTTPMethod>().toEqualTypeOf<HttpMethod>()
   })
 })

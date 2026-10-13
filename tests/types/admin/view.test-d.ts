@@ -1,5 +1,5 @@
 import { expectTypeOf, assertType, describe, it } from 'vitest'
-import type { Form, View } from '@ditojs/admin'
+import type { FormSchema, View } from '@ditojs/admin'
 import type { Entry } from './fixtures.ts'
 
 describe('View with list component', () => {
@@ -19,8 +19,8 @@ describe('View with list component', () => {
     }
   })
 
-  it('accepts view with single list component and Form variable', () => {
-    const entryForm: Form<Entry> = {
+  it('accepts view with single list component and FormSchema variable', () => {
+    const entryForm: FormSchema<Entry> = {
       type: 'form',
       components: {
         title: { type: 'text' }
@@ -38,9 +38,10 @@ describe('View with list component', () => {
   })
 
   it('accepts view with single list component and promised form', () => {
-    const promisedForm: Promise<Record<string, Form<Entry>>> = Promise.resolve({
-      entryForm: { type: 'form', components: {} }
-    })
+    const promisedForm: Promise<Record<string, FormSchema<Entry>>> =
+      Promise.resolve({
+        entryForm: { type: 'form', components: {} }
+      })
 
     const view: View<Entry> = {
       type: 'view',
@@ -58,7 +59,7 @@ describe('View with list component', () => {
       components: {
         title: {
           type: 'text',
-          format({ item }) {
+          formatValue({ item }) {
             expectTypeOf(item).not.toBeAny()
             expectTypeOf(item.title).toBeString()
           }
@@ -89,16 +90,52 @@ describe('View tabs and events', () => {
   it('accepts events on a view', () => {
     const view: View<Entry> = {
       type: 'view',
-      events: {
-        open({ item, open }) {
-          expectTypeOf(item).not.toBeAny()
-          expectTypeOf(item.title).toBeString()
-          expectTypeOf(open).toBeBoolean()
-        },
-        change({ item }) {
-          expectTypeOf(item).not.toBeAny()
-          expectTypeOf(item.id).toBeNumber()
+      onChange({ item }) {
+        expectTypeOf(item).not.toBeAny()
+        expectTypeOf(item.id).toBeNumber()
+      },
+      // `input` bubbles to views and forms like `change`:
+      onInput({ item }) {
+        expectTypeOf(item.id).toBeNumber()
+      }
+    }
+  })
+
+  it('rejects `resource`, which views never load', () => {
+    const view: View<Entry> = {
+      type: 'view',
+      // @ts-expect-error Views have no resource.
+      resource: 'entries'
+    }
+  })
+
+  it('accepts onToggle() on inlined forms, not on views and lists', () => {
+    const view: View<Entry> = {
+      type: 'view',
+      component: {
+        type: 'list',
+        inlined: true,
+        form: {
+          type: 'form',
+          onToggle({ item, collapsed }) {
+            expectTypeOf(item).not.toBeAny()
+            expectTypeOf(item.title).toBeString()
+            expectTypeOf(collapsed).toBeBoolean()
+          }
         }
+      }
+    }
+    const invalidView: View<Entry> = {
+      type: 'view',
+      // @ts-expect-error: Views don't fire `toggle`.
+      onToggle() {}
+    }
+    const invalidList: View<Entry> = {
+      type: 'view',
+      component: {
+        type: 'list',
+        // @ts-expect-error: Lists don't fire `toggle`.
+        onToggle() {}
       }
     }
   })
@@ -114,6 +151,10 @@ describe('List filters', () => {
           title: {
             filter: 'text',
             operators: ['contains', 'equals']
+          },
+          author: {
+            filter: 'text',
+            operators: true
           },
           createdAt: {
             filter: 'date-range'

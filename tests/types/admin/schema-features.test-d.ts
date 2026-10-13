@@ -1,145 +1,63 @@
 import { expectTypeOf, assertType, describe, it } from 'vitest'
 import type {
-  Form,
+  FormSchema,
   Components,
   PanelSchema,
   UploadSchema,
-  DitoComponentInstance,
   HiddenSchema
 } from '@ditojs/admin'
 import type { Entry, Parent } from './fixtures.ts'
 
-describe('SchemaFields: methods', () => {
-  it('methods have `this` typed as component instance', () => {
-    assertType<Form<Entry>>({
+describe('SchemaBase: no component members', () => {
+  it('rejects `methods`, `computed`, `watch` and `data`', () => {
+    assertType<FormSchema<Entry>>({
       type: 'form',
       components: {
         title: { type: 'text' }
       },
-      methods: {
-        greet() {
-          expectTypeOf(this).not.toBeAny()
-          expectTypeOf(this).toEqualTypeOf<DitoComponentInstance<Entry>>()
-          expectTypeOf(this.item).not.toBeAny()
-          expectTypeOf(this.item.title).toBeString()
-          expectTypeOf(this.item.id).toBeNumber()
-        },
-        getTitle() {
-          return this.item.title
-        }
+      // @ts-expect-error — handlers receive their context instead
+      methods: {}
+    })
+    assertType<FormSchema<Entry>>({
+      type: 'form',
+      // @ts-expect-error — handlers receive their context instead
+      computed: {}
+    })
+    assertType<FormSchema<Entry>>({
+      type: 'form',
+      // @ts-expect-error — use `onChange` instead
+      watch: {}
+    })
+    assertType<FormSchema<Entry>>({
+      type: 'form',
+      // @ts-expect-error — keep state in module scope instead
+      data: {}
+    })
+  })
+
+  it('passes the context members to handlers', () => {
+    assertType<FormSchema<Entry>>({
+      type: 'form',
+      components: {
+        title: { type: 'text' }
+      },
+      onChange(context) {
+        const { dataPath, submit, isValid, valueIndex, itemIndex } = context
+        expectTypeOf(dataPath).toBeString()
+        expectTypeOf(valueIndex).toEqualTypeOf<number | null>()
+        expectTypeOf(itemIndex).toEqualTypeOf<number | null>()
+        // @ts-expect-error `valueIndex` is the index of the value
+        expectTypeOf(context.index)
+        expectTypeOf(submit).returns.toEqualTypeOf<Promise<boolean>>()
+        expectTypeOf(isValid(/^title/)).toBeBoolean()
       }
     })
   })
 })
 
-describe('SchemaFields: computed', () => {
-  it('computed getter uses `this` typing', () => {
-    assertType<Form<Entry>>({
-      type: 'form',
-      components: {
-        title: { type: 'text' }
-      },
-      computed: {
-        upperTitle() {
-          expectTypeOf(this).not.toBeAny()
-          expectTypeOf(this.item).not.toBeAny()
-          expectTypeOf(this.item.title).toBeString()
-          return this.item.title.toUpperCase()
-        }
-      }
-    })
-  })
-
-  it('computed getter/setter object uses `this` typing', () => {
-    assertType<Form<Entry>>({
-      type: 'form',
-      components: {
-        title: { type: 'text' }
-      },
-      computed: {
-        upperTitle: {
-          get() {
-            expectTypeOf(this).not.toBeAny()
-            expectTypeOf(this.item).not.toBeAny()
-            expectTypeOf(this.item.title).toBeString()
-            return this.item.title.toUpperCase()
-          },
-          set(_value) {
-            expectTypeOf(this).not.toBeAny()
-            expectTypeOf(this.item.id).toBeNumber()
-          }
-        }
-      }
-    })
-  })
-})
-
-describe('SchemaFields: watch', () => {
-  it('watch with plain handler function', () => {
-    assertType<Form<Entry>>({
-      type: 'form',
-      components: {
-        title: { type: 'text' }
-      },
-      watch: {
-        title(value, oldValue) {
-          expectTypeOf(this).not.toBeAny()
-          expectTypeOf(this.item).not.toBeAny()
-          expectTypeOf(this.item.title).toBeString()
-          expectTypeOf(value).toBeAny()
-          expectTypeOf(oldValue).toBeAny()
-        }
-      }
-    })
-  })
-
-  it('watch with object containing deep and immediate', () => {
-    assertType<Form<Entry>>({
-      type: 'form',
-      components: {
-        title: { type: 'text' }
-      },
-      watch: {
-        title: {
-          handler(value, oldValue) {
-            expectTypeOf(this).not.toBeAny()
-            expectTypeOf(this.item).not.toBeAny()
-            expectTypeOf(this.item.title).toBeString()
-            expectTypeOf(value).toBeAny()
-            expectTypeOf(oldValue).toBeAny()
-          },
-          deep: true,
-          immediate: true
-        }
-      }
-    })
-  })
-
-  it('watch as factory function returning handlers', () => {
-    assertType<Form<Entry>>({
-      type: 'form',
-      components: {
-        title: { type: 'text' }
-      },
-      watch() {
-        expectTypeOf(this).not.toBeAny()
-        expectTypeOf(this.item).not.toBeAny()
-        expectTypeOf(this.item.title).toBeString()
-        return {
-          title(value) {
-            expectTypeOf(this).not.toBeAny()
-            expectTypeOf(this.item).not.toBeAny()
-            expectTypeOf(this.item.id).toBeNumber()
-          }
-        }
-      }
-    })
-  })
-})
-
-describe('SchemaFields: panels', () => {
+describe('SchemaBase: panels', () => {
   it('form with panels containing components and buttons', () => {
-    assertType<Form<Entry>>({
+    assertType<FormSchema<Entry>>({
       type: 'form',
       components: {
         title: { type: 'text' }
@@ -163,9 +81,9 @@ describe('SchemaFields: panels', () => {
   })
 })
 
-describe('SchemaFields: lifecycle callbacks', () => {
+describe('SchemaBase: lifecycle callbacks', () => {
   it('onInitialize and onChange receive typed context', () => {
-    assertType<Form<Entry>>({
+    assertType<FormSchema<Entry>>({
       type: 'form',
       components: {
         title: { type: 'text' }
@@ -183,12 +101,12 @@ describe('SchemaFields: lifecycle callbacks', () => {
   })
 })
 
-describe('SchemaTypeMixin: parse and process callbacks', () => {
-  it('parse callback receives typed item', () => {
+describe('SchemaTypeMixin: parseValue and serializeValue callbacks', () => {
+  it('parseValue callback receives typed item', () => {
     assertType<Components<Parent>>({
       title: {
         type: 'text',
-        parse({ item }) {
+        parseValue({ item }) {
           expectTypeOf(item).not.toBeAny()
           expectTypeOf(item.title).toBeString()
           expectTypeOf(item.entries).toEqualTypeOf<Entry[]>()
@@ -197,11 +115,11 @@ describe('SchemaTypeMixin: parse and process callbacks', () => {
     })
   })
 
-  it('process callback receives typed item', () => {
+  it('serializeValue callback receives typed item', () => {
     assertType<Components<Parent>>({
       title: {
         type: 'text',
-        process({ item }) {
+        serializeValue({ item }) {
           expectTypeOf(item).not.toBeAny()
           expectTypeOf(item.title).toBeString()
           return item.title.trim()
@@ -245,6 +163,12 @@ describe('UploadSchema', () => {
         extensions: /\.(gif|jpe?g|png)$/i
       }
     })
+  })
+
+  it('accepts the sizes of thumbnails', () => {
+    assertType<UploadSchema<Entry>>({ type: 'upload', thumbnails: 'small' })
+    // @ts-expect-error - thumbnails come in three sizes
+    assertType<UploadSchema<Entry>>({ type: 'upload', thumbnails: 'huge' })
   })
 
   it('accepts thumbnails and downloadUrl as callbacks', () => {
@@ -322,11 +246,9 @@ describe('PanelSchema', () => {
       buttons: {
         save: {
           text: 'Save',
-          events: {
-            click({ item }) {
-              expectTypeOf(item).not.toBeAny()
-              expectTypeOf(item.title).toBeString()
-            }
+          onClick({ item }) {
+            expectTypeOf(item).not.toBeAny()
+            expectTypeOf(item.title).toBeString()
           }
         }
       },
@@ -353,7 +275,7 @@ describe('PanelSchema', () => {
       components: {
         title: {
           type: 'text',
-          format({ item }) {
+          formatValue({ item }) {
             expectTypeOf(item).not.toBeAny()
             expectTypeOf(item.title).toBeString()
             expectTypeOf(item.entries)
@@ -365,8 +287,8 @@ describe('PanelSchema', () => {
     })
   })
 
-  it('panels on Form inherit item type', () => {
-    assertType<Form<Parent>>({
+  it('panels on FormSchema inherit item type', () => {
+    assertType<FormSchema<Parent>>({
       type: 'form',
       components: {
         title: { type: 'text' }
@@ -377,7 +299,7 @@ describe('PanelSchema', () => {
           components: {
             title: {
               type: 'text',
-              format({ item }) {
+              formatValue({ item }) {
                 expectTypeOf(item).not.toBeAny()
                 expectTypeOf(item.title).toBeString()
                 return ''
@@ -387,11 +309,9 @@ describe('PanelSchema', () => {
           buttons: {
             save: {
               text: 'Save',
-              events: {
-                click({ item }) {
-                  expectTypeOf(item).not.toBeAny()
-                  expectTypeOf(item.id).toBeNumber()
-                }
+              onClick({ item }) {
+                expectTypeOf(item).not.toBeAny()
+                expectTypeOf(item.id).toBeNumber()
               }
             }
           }

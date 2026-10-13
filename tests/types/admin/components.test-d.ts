@@ -1,5 +1,5 @@
 import { expectTypeOf, assertType, describe, it } from 'vitest'
-import type { Component, Components, Form } from '@ditojs/admin'
+import type { Component, Components, FormSchema } from '@ditojs/admin'
 import type {
   Address,
   Entry,
@@ -24,7 +24,7 @@ describe('Components', () => {
           components: {
             title: { type: 'text' }
           }
-        } satisfies Form<Entry>
+        } satisfies FormSchema<Entry>
       }
     })
   })
@@ -34,14 +34,12 @@ describe('Components', () => {
       viewButton: {
         type: 'button',
         text: 'View',
-        events: {
-          click({ item }) {
-            expectTypeOf(item).not.toBeAny()
-            expectTypeOf(item).toHaveProperty('title')
-            expectTypeOf(item).toHaveProperty('entries')
-            expectTypeOf(item).not.toHaveProperty('viewButton')
-            expectTypeOf(item).not.toHaveProperty('spacer')
-          }
+        onClick({ item }) {
+          expectTypeOf(item).not.toBeAny()
+          expectTypeOf(item).toHaveProperty('title')
+          expectTypeOf(item).toHaveProperty('entries')
+          expectTypeOf(item).not.toHaveProperty('viewButton')
+          expectTypeOf(item).not.toHaveProperty('spacer')
         }
       }
     })
@@ -51,7 +49,7 @@ describe('Components', () => {
     assertType<Components<Parent>>({
       title: {
         type: 'text',
-        format({ item }) {
+        formatValue({ item }) {
           expectTypeOf(item).not.toBeAny()
           expectTypeOf(item.title).toBeString()
           expectTypeOf(item.entries).toEqualTypeOf<Entry[]>()
@@ -105,7 +103,7 @@ describe('Components with object-valued keys', () => {
             street: { type: 'text' },
             city: { type: 'text' }
           }
-        } satisfies Form<Address>
+        } satisfies FormSchema<Address>
       }
     })
   })

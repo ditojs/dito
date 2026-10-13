@@ -1,10 +1,10 @@
 import { expectTypeOf, assertType, describe, it } from 'vitest'
 import type {
   Components,
-  Form,
+  FormSchema,
   ListSchema,
   ColumnSchema,
-  DitoContext
+  SchemaContext
 } from '@ditojs/admin'
 import type { Entry, Parent } from './fixtures.ts'
 
@@ -27,7 +27,8 @@ describe('ListSchema', () => {
       columns: {
         title: {
           label: 'Title',
-          sortable: true
+          sortable: true,
+          defaultSort: true
         } satisfies ColumnSchema<Entry>
       }
     })
@@ -73,7 +74,7 @@ describe('ListSchema', () => {
       type: 'list',
       creatable(ctx) {
         expectTypeOf(ctx).not.toBeAny()
-        expectTypeOf(ctx).toMatchTypeOf<DitoContext<Entry>>()
+        expectTypeOf(ctx).toMatchTypeOf<SchemaContext<Entry>>()
         expectTypeOf(ctx.item.title).toBeString()
         return true
       }
@@ -89,13 +90,13 @@ describe('ListSchema', () => {
           components: {
             title: { type: 'text' }
           }
-        } satisfies Form<Entry>
+        } satisfies FormSchema<Entry>
       }
     })
   })
 
   it('rejects wrong form type via typed variable', () => {
-    const parentForm: Form<Parent> = {
+    const parentForm: FormSchema<Parent> = {
       type: 'form',
       components: {
         title: { type: 'text' },
@@ -105,17 +106,17 @@ describe('ListSchema', () => {
 
     assertType<ListSchema<Entry>>({
       type: 'list',
-      // @ts-expect-error Form<Parent> isn't a ResolvableForm<Entry>
+      // @ts-expect-error FormSchema<Parent> isn't a ResolvableForm<Entry>
       form: parentForm
     })
   })
 
-  it('accepts draggable as OrItemAccessor', () => {
+  it('accepts draggable as SchemaValue', () => {
     assertType<ListSchema<Entry>>({
       type: 'list',
       draggable(ctx) {
         expectTypeOf(ctx).not.toBeAny()
-        expectTypeOf(ctx).toMatchTypeOf<DitoContext<Entry>>()
+        expectTypeOf(ctx).toMatchTypeOf<SchemaContext<Entry>>()
         return true
       }
     })

@@ -1,7 +1,7 @@
 import { assertType, describe, it } from 'vitest'
 import type {
   View,
-  Form,
+  FormSchema,
   Component,
   PanelSchema,
   ButtonSchema,
@@ -81,8 +81,8 @@ describe('Variance: typed schemas assignable to any', () => {
     assertType<Record<string, View<any>>>(views)
   })
 
-  it('Form<Entry> is assignable to ResolvableForm<any>', () => {
-    const form: Form<Entry> = {
+  it('FormSchema<Entry> is assignable to ResolvableForm<any>', () => {
+    const form: FormSchema<Entry> = {
       type: 'form',
       components: {
         title: { type: 'text' }
@@ -91,8 +91,8 @@ describe('Variance: typed schemas assignable to any', () => {
     assertType<ResolvableForm<any>>(form)
   })
 
-  it('Form<Parent> (array props) is assignable to ResolvableForm<any>', () => {
-    const form: Form<Parent> = {
+  it('FormSchema<Parent> (array props) is assignable to ResolvableForm<any>', () => {
+    const form: FormSchema<Parent> = {
       type: 'form',
       components: {
         title: { type: 'text' }
@@ -101,8 +101,8 @@ describe('Variance: typed schemas assignable to any', () => {
     assertType<ResolvableForm<any>>(form)
   })
 
-  it('Form with primitive + nested arrays is assignable to ResolvableForm<any>', () => {
-    const form: Form<DeepItem> = {
+  it('FormSchema with primitive + nested arrays is assignable to ResolvableForm<any>', () => {
+    const form: FormSchema<DeepItem> = {
       type: 'form',
       components: {
         title: { type: 'text' }
@@ -118,7 +118,7 @@ describe('Variance: typed schemas assignable to any', () => {
         components: {
           title: { type: 'text' }
         }
-      } satisfies Form<Entry>
+      } satisfies FormSchema<Entry>
     }
     assertType<Record<string, ResolvableForm>>(forms)
   })

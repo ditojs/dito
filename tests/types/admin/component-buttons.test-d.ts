@@ -19,14 +19,12 @@ describe('Buttons', () => {
     assertType<Buttons<Entry>>({
       save: {
         text: 'Save',
-        events: {
-          click({ item }) {
-            expectTypeOf(item).not.toBeAny()
-            expectTypeOf(item).toHaveProperty('id')
-            expectTypeOf(item).toHaveProperty('title')
-            expectTypeOf(item.id).toBeNumber()
-            expectTypeOf(item.title).toBeString()
-          }
+        onClick({ item }) {
+          expectTypeOf(item).not.toBeAny()
+          expectTypeOf(item).toHaveProperty('id')
+          expectTypeOf(item).toHaveProperty('title')
+          expectTypeOf(item.id).toBeNumber()
+          expectTypeOf(item.title).toBeString()
         }
       }
     })

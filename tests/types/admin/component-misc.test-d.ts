@@ -1,6 +1,30 @@
 import { expectTypeOf, assertType, describe, it } from 'vitest'
-import type { MenuSchema, View, NumberSchema, Form } from '@ditojs/admin'
+import type {
+  MenuSchema,
+  UploadSchema,
+  TextareaSchema,
+  View,
+  NumberSchema,
+  FormSchema,
+  CustomComponentProps,
+  CustomComponentEmits,
+  ComponentSchemaBase,
+  SchemaContext
+} from '@ditojs/admin'
 import type { Entry } from './fixtures.ts'
+
+describe('Schemas with callbacks', () => {
+  it('accepts callbacks for the settings of uploads and lines', () => {
+    assertType<UploadSchema<Entry>>({
+      type: 'upload',
+      multiple: ({ item }) => !!item.title,
+      extensions: () => ['png'],
+      accept: () => 'image/png',
+      maxSize: () => '1MB'
+    })
+    assertType<TextareaSchema<Entry>>({ type: 'textarea', lines: () => 4 })
+  })
+})
 
 describe('MenuSchema', () => {
   it('accepts menu with items containing views', () => {
@@ -93,9 +117,27 @@ describe('SchemaAffixMixin (prefix/suffix)', () => {
     assertType<NumberSchema<Entry>>({
       type: 'number',
       prefix: [
-        { type: 'icon', text: 'currency' },
-        { html: '<b>$</b>' }
+        { type: 'icon', name: 'currency' },
+        { html: '<b>$</b>', as: 'span' }
       ]
+    })
+  })
+
+  it('accepts spinners and components as affixes', () => {
+    assertType<NumberSchema<Entry>>({
+      type: 'number',
+      suffix: [
+        { type: 'spinner', size: '12px', color: 'gray' },
+        { type: 'component', component: {}, props: { unit: 'kg' } }
+      ]
+    })
+  })
+
+  it('rejects affixes without content', () => {
+    assertType<NumberSchema<Entry>>({
+      type: 'number',
+      // @ts-expect-error - icons are given by `name`.
+      prefix: { type: 'icon', text: 'currency' }
     })
   })
 
@@ -115,7 +157,7 @@ describe('SchemaAffixMixin (prefix/suffix)', () => {
 
 describe('ClipboardConfig', () => {
   it('accepts copy/paste callbacks on a form', () => {
-    assertType<Form<Entry>>({
+    assertType<FormSchema<Entry>>({
       type: 'form',
       clipboard: {
         copy(context) {
@@ -131,6 +173,44 @@ describe('ClipboardConfig', () => {
       },
       components: {
         title: { type: 'text' }
+      }
+    })
+  })
+})
+
+describe('CustomComponentProps and CustomComponentEmits', () => {
+  it('describe the props and events of custom components', () => {
+    type Props = CustomComponentProps<Entry, number>
+    expectTypeOf<Props['context']>().toEqualTypeOf<SchemaContext<Entry>>()
+    expectTypeOf<Props['context']['item']['title']>().toBeString()
+    expectTypeOf<Props['modelValue']>().toBeNumber()
+    // Custom types of `defineType()` receive their own schema too:
+    expectTypeOf<Props['schema']['type']>().toBeString()
+    expectTypeOf<Props['schema']['label']>().not.toBeAny()
+    expectTypeOf<Props['schema']['max']>().toBeUnknown()
+    type RatingSchema = ComponentSchemaBase<Entry> & { max?: number }
+    expectTypeOf<CustomComponentProps<Entry, number, RatingSchema>['schema']>()
+      .toEqualTypeOf<RatingSchema>()
+    expectTypeOf<CustomComponentEmits<number>['update:modelValue']>()
+      .parameter(0)
+      .toBeNumber()
+    // `update:modelValue` emits the schema's `input` event:
+    expectTypeOf<CustomComponentEmits>().not.toHaveProperty('input')
+  })
+
+  it('reads schema values with `context.getSchemaValue()`', () => {
+    const context = {} as SchemaContext<Entry>
+    expectTypeOf(context.getSchemaValue('label')).toBeAny()
+    expectTypeOf(
+      context.getSchemaValue('max', { type: Number, default: 5 })
+    ).toBeNumber()
+    expectTypeOf(context.getSchemaValue<string>('label')).toBeString()
+    context.getSchemaValue(['options', 'label'])
+    context.getSchemaValue('label', {
+      type: [String, Object],
+      default: context => {
+        expectTypeOf(context.item.title).toBeString()
+        return 'Rating'
       }
     })
   })
