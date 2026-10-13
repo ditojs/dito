@@ -1,4 +1,4 @@
-import type { DitoContext } from '@ditojs/admin'
+import type { SchemaContext } from '@ditojs/admin'
 import type { Book } from './models/Book.js'
 import { createWidgetView } from '../../utils/views.js'
 
@@ -18,7 +18,7 @@ function describeItem(item?: { marker?: string } | null) {
   return item?.marker ?? JSON.stringify(item)
 }
 
-function describeContext(context: DitoContext) {
+function describeContext(context: SchemaContext) {
   const { dataPath, item, parentItem, rootItem } = context
   return [
     dataPath,
@@ -29,7 +29,7 @@ function describeContext(context: DitoContext) {
 }
 
 function recordContext(field: string) {
-  return (context: DitoContext) => {
+  return (context: SchemaContext) => {
     const recordedContexts = (window.recordedContexts ??= {})
     const descriptions = (recordedContexts[field] ??= [])
     const description = describeContext(context)
