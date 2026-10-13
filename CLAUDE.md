@@ -47,6 +47,10 @@ pnpm -C tests screenshots --update-snapshots
 
 ### Linting & Code Quality
 ```bash
+# Run linters, types and type tests in parallel, as a quick local check. The
+# full suites (coverage, e2e, screenshots) run on CI.
+pnpm run check
+
 # Run all linters
 pnpm run lint
 
@@ -81,6 +85,10 @@ pnpm run clean
 - **PascalCase** for Vue components
 - **camelCase** for props and variables
 - **kebab-case** for Vue slots
+- **Acronyms are words** in dito's own names: `getResourceUrl`, `formatJson`,
+  `ApiConfig`, `HttpMethod`. Uppercase only where an external name fixes it:
+  product names (`isPostgreSQL`), platform and library APIs (`toJSON`,
+  `HTMLElement`, `VNode`)
 - Vue attribute hyphenation disabled (use camelCase)
 - Pug templates supported in Vue files
 - ESM modules throughout (type: "module")
