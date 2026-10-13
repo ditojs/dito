@@ -83,6 +83,13 @@
     }
   }
 
+  &__row--error {
+    // Rows don't render box shadows reliably, so draw the bar on the first cell:
+    > td:first-child {
+      box-shadow: inset $error-bar-width 0 $color-error;
+    }
+  }
+
   &--larger-padding {
     // Add more spacing to cells in tables except those containing edit buttons,
     // to better align cell texts with edit buttons.

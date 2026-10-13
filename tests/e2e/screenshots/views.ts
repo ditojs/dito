@@ -82,22 +82,20 @@ export const projects = createWidgetView<Project>(
             openDialog: {
               type: 'button',
               text: 'Open Dialog',
-              events: {
-                click: ({ component }) => {
-                  component?.showDialog({
-                    components: {
-                      message: {
-                        type: 'text',
-                        label: 'Message',
-                        required: true
-                      }
-                    },
-                    buttons: {
-                      cancel: { text: 'Cancel' },
-                      submit: { text: 'Send' }
+              onClick: ({ showDialog }) => {
+                showDialog({
+                  components: {
+                    message: {
+                      type: 'text',
+                      label: 'Message',
+                      required: true
                     }
-                  })
-                }
+                  },
+                  buttons: {
+                    cancel: { text: 'Cancel' },
+                    submit: { text: 'Send' }
+                  }
+                })
               }
             }
           }
@@ -174,7 +172,7 @@ export const projects = createWidgetView<Project>(
                 type: 'form',
                 label: 'Milestone',
                 components: {
-                  title: { type: 'text', label: 'Title' },
+                  title: { type: 'text', label: 'Title', required: true },
                   due: { type: 'date', label: 'Due' }
                 }
               }
@@ -183,7 +181,7 @@ export const projects = createWidgetView<Project>(
               type: 'tree-list',
               label: 'Phases',
               itemLabel: 'name',
-              open: true,
+              collapsed: false,
               editable: true,
               deletable: true,
               draggable: true,
@@ -197,7 +195,9 @@ export const projects = createWidgetView<Project>(
                 editable: true,
                 form: {
                   type: 'form',
-                  components: { name: { type: 'text', label: 'Task Name' } }
+                  components: {
+                    name: { type: 'text', label: 'Task Name', required: true }
+                  }
                 }
               }
             }
