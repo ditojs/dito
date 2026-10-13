@@ -1,12 +1,10 @@
 import { vi } from 'vitest'
-import { registerTypeComponent } from './types.js'
+import { defineType } from './types.ts'
 import {
-  hasComponentNamed,
   iterateSchemaComponents,
   iterateNestedSchemaComponents,
   findNestedSchemaComponent,
   someNestedSchemaComponent,
-  everyNestedSchemaComponent,
   hasNestedSchemaComponents,
   isSchema,
   isForm,
@@ -19,9 +17,9 @@ import {
   isSingleComponentView,
   isCompact,
   isInlined,
-  isNested,
-  hasLabel,
-  omitSpacing,
+  hasNestedData,
+  isLabelled,
+  omitsSpacing,
   getTabSchemas,
   getPanelSchemas,
   isObjectSource,
@@ -29,70 +27,13 @@ import {
   isSourceWithResource
 } from './structure.js'
 
-// Register minimal type options, as the actual type components can't be
+// Define minimal types, as the actual type components can't be
 // imported without a Vue SFC compiler:
-registerTypeComponent('text', { defaultNested: true, generateLabel: true })
-registerTypeComponent('section', { defaultNested: false })
-registerTypeComponent('label', { omitSpacing: true })
-registerTypeComponent('list', {
-  defaultNested: true,
-  generateLabel: true,
-  getSourceType: () => 'list'
-})
-registerTypeComponent('object', {
-  defaultNested: true,
-  getSourceType: () => 'object'
-})
-
-describe('hasComponentNamed()', () => {
-  const schema = {
-    type: 'form',
-    components: {
-      title: { type: 'text' },
-      unnested: {
-        type: 'section',
-        components: {
-          note: { type: 'text' },
-          inner: {
-            type: 'section',
-            components: { remark: { type: 'text' } }
-          }
-        }
-      },
-      nested: {
-        type: 'section',
-        nested: true,
-        components: { subtitle: { type: 'text' } }
-      }
-    },
-    tabs: {
-      tab: {
-        type: 'tab',
-        components: { edition: { type: 'text' } }
-      }
-    }
-  }
-
-  it('finds components and components in tabs', () => {
-    expect(hasComponentNamed(schema, 'title')).toBe(true)
-    expect(hasComponentNamed(schema, 'edition')).toBe(true)
-  })
-
-  it('finds components of unnested components', () => {
-    expect(hasComponentNamed(schema, 'note')).toBe(true)
-    expect(hasComponentNamed(schema, 'remark')).toBe(true)
-  })
-
-  it('finds nested components, but not their components', () => {
-    expect(hasComponentNamed(schema, 'nested')).toBe(true)
-    expect(hasComponentNamed(schema, 'subtitle')).toBe(false)
-  })
-
-  it('ignores the names of unnested components', () => {
-    expect(hasComponentNamed(schema, 'unnested')).toBe(false)
-    expect(hasComponentNamed(schema, 'unknown')).toBe(false)
-  })
-})
+defineType({ type: 'text' })
+defineType({ type: 'section', defaultNested: false, generatesLabel: false })
+defineType({ type: 'label', omitsSpacing: true })
+defineType({ type: 'list', sourceType: 'list' })
+defineType({ type: 'object', sourceType: 'object' })
 
 describe('iterateSchemaComponents()', () => {
   it('passes the components with their names and relative levels', () => {
@@ -172,14 +113,12 @@ describe('nested schema component lookups', () => {
     expect(findNestedSchemaComponent(schema, isObjectSource)).toBe(null)
   })
 
-  it('tell whether some or every component matches', () => {
+  it('tell whether some component matches', () => {
     expect(someNestedSchemaComponent(schema, isListSource)).toBe(true)
     expect(someNestedSchemaComponent(schema, isObjectSource)).toBe(false)
     expect(
       someNestedSchemaComponent(schema, (component, name) => name === 'title')
     ).toBe(true)
-    expect(everyNestedSchemaComponent(schema, isNested)).toBe(true)
-    expect(everyNestedSchemaComponent(schema, isListSource)).toBe(false)
   })
 
   it('tell whether there are any components', () => {
@@ -252,23 +191,24 @@ describe('schema setting predicates', () => {
   })
 
   it('use `nested` or the default of the type for nesting', () => {
-    expect(isNested({ type: 'text' })).toBe(true)
-    expect(isNested({ type: 'section' })).toBe(false)
-    expect(isNested({ type: 'section', nested: true })).toBe(true)
-    expect(isNested({ type: 'unregistered' })).toBe(false)
+    expect(hasNestedData({ type: 'text' })).toBe(true)
+    expect(hasNestedData({ type: 'section' })).toBe(false)
+    expect(hasNestedData({ type: 'section', nested: true })).toBe(true)
+    expect(hasNestedData({ type: 'section', nested: false })).toBe(false)
+    expect(hasNestedData({ type: 'unregistered' })).toBe(false)
   })
 
   it('tell components with labels apart, also generated ones', () => {
-    expect(hasLabel({ type: 'section', label: 'Details' }, false)).toBe(true)
-    expect(hasLabel({ type: 'text' }, false)).toBe(false)
-    expect(hasLabel({ type: 'text' }, true)).toBe(true)
-    expect(hasLabel({ type: 'section' }, true)).toBeFalsy()
-    expect(hasLabel({ type: 'text', label: false }, true)).toBe(false)
+    expect(isLabelled({ type: 'section', label: 'Details' }, false)).toBe(true)
+    expect(isLabelled({ type: 'text' }, false)).toBe(false)
+    expect(isLabelled({ type: 'text' }, true)).toBe(true)
+    expect(isLabelled({ type: 'section' }, true)).toBeFalsy()
+    expect(isLabelled({ type: 'text', label: false }, true)).toBe(false)
   })
 
   it('tell components without spacing apart by their type', () => {
-    expect(omitSpacing({ type: 'label' })).toBe(true)
-    expect(omitSpacing({ type: 'text' })).toBe(false)
+    expect(omitsSpacing({ type: 'label' })).toBe(true)
+    expect(omitsSpacing({ type: 'text' })).toBe(false)
   })
 })
 

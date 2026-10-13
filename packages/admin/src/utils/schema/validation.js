@@ -1,29 +1,30 @@
-import DitoContext from '../../DitoContext.js'
+import SchemaContext from '../../SchemaContext.js'
 import * as validators from '../../validators/index.js'
-import { isFunction, isRegExp, asArray, normalizeDataPath } from '@ditojs/utils'
-import { getTypeOptions } from './types.js'
+import {
+  isFunction,
+  isRegExp,
+  asArray,
+  normalizeDataPath,
+  parseDataPath
+} from '@ditojs/utils'
+import { getTypeDescriptor } from './types.ts'
 import {
   getSchemaValue,
   shouldRenderSchema,
-  processSchemaData
+  walkSchemaData
 } from './data.js'
 
-/**
- * Returns the validations of a component schema, without requiring a
- * component: the validations of the type's static `getTypeValidations()`
- * option, `required`, and finally the `schema.rules` overrides, where
- * `undefined` removes a validation. Schema values are evaluated with `context`.
- */
-export function getValidations(schema, context) {
+export function getValidations(context) {
+  const { schema } = context
   const validations = {
-    ...getTypeOptions(schema)?.getTypeValidations?.(schema, context)
+    ...getTypeDescriptor(schema)?.getValidations?.(context)
   }
   if (getSchemaValue('required', { type: Boolean, schema, context })) {
     validations.required = true
   }
-  // Allow schema to override default rules and add any new ones:
+  // `schema.rules` override and add rules, `false` and `undefined` remove them:
   for (const [name, setting] of Object.entries(schema.rules || {})) {
-    if (setting === undefined) {
+    if (setting === undefined || setting === false) {
       delete validations[name]
     } else {
       validations[name] = setting
@@ -32,19 +33,14 @@ export function getValidations(schema, context) {
   return validations
 }
 
-/**
- * Returns the errors of validating `value` against `validations`, in the
- * format of server errors, `[{ message }]`, with messages without the label
- * prefix, or an empty array if the value is valid.
- */
+// Return errors in the format of server errors, `[{ message }]`:
 export function getValueValidationErrors(value, validations) {
   const errors = []
   for (const [name, setting] of Object.entries(validations)) {
     const validator = getValidator(name)
     if (
       validator &&
-      // Only apply 'required' validator to empty values.
-      // Apply all other validators only to non-empty values.
+      // Apply all validators except 'required' only to non-empty values:
       (name === 'required' || value != null && value !== '')
     ) {
       const { validate, message } = validator
@@ -60,11 +56,9 @@ export function getValueValidationErrors(value, validations) {
   return errors
 }
 
-// The names of unknown validators that were warned about, see `getValidator()`:
 const warnedUnknownValidatorNames = new Set()
 
-// Returns the validator of the name, or `null` with a warning, once per name,
-// e.g. for misspelled `schema.rules`.
+// Warn once per name about unknown validators, e.g. misspelled `schema.rules`:
 function getValidator(name) {
   // eslint-disable-next-line import/namespace
   const validator = validators[name] ?? null
@@ -75,44 +69,36 @@ function getValidator(name) {
   return validator
 }
 
+// Return errors like the server, `{ [dataPath]: [{ message }] }`:
 /**
- * Validates `data` along the components of `schema`, including tabs, panels
- * and the nested forms of list and object items, skipping components whose
- * `if` evaluates to `false` and sources with their own resource. Returns the
- * errors in the format of server errors, `{ [dataPath]: [{ message }] }`, or
- * `null` if the data is valid.
+ * @param {Record<string, any>} schema
+ * @param {Record<string, any>} data
+ * @param {Record<string, any>} [options]
  */
 export function getDataValidationErrors(schema, data, {
   dataPath = '',
-  component = null,
+  services = null,
   rootData = data
 } = {}) {
   let errors = null
 
-  const createContext = ({ schema, data, name, dataPath }) =>
-    new DitoContext(component, {
-      schema,
-      value: name != null ? data[name] : undefined,
-      name,
-      data,
-      dataPath,
-      rootData
-    })
+  // The same contexts as the rendered components get:
+  const createContext = entry =>
+    SchemaContext.createForSchema(services, { ...entry, rootData })
 
-  const shouldProcess = entry =>
+  const shouldWalk = entry =>
     shouldRenderSchema(entry.schema, createContext(entry))
 
   const before = entry => {
     const { schema, data, name, dataPath } = entry
     const context = createContext(entry)
     let value = data[name]
-    // Validate the value as displayed, like the components do, see
-    // `ValueMixin.value`:
-    const { format } = schema
-    if (isFunction(format)) {
-      value = format(context)
+    // Validate the value as displayed, like the components do:
+    const { formatValue } = schema
+    if (formatValue) {
+      value = formatValue(context)
     }
-    const validations = getValidations(schema, context)
+    const validations = getValidations(context)
     const valueErrors = getValueValidationErrors(value, validations)
     if (valueErrors.length > 0) {
       errors ||= {}
@@ -120,35 +106,61 @@ export function getDataValidationErrors(schema, data, {
     }
   }
 
-  processSchemaData(schema, data, {
+  walkSchemaData(schema, data, {
     dataPath,
-    shouldProcess,
+    shouldWalk,
     shouldSkipSourcesWithResource: true,
     before,
-    options: { component, rootData }
+    options: { services, rootData }
   })
   return errors
 }
 
-/**
- * Returns the entries of `errors` whose data paths match `match`, or `null` if
- * none match. `match` can be a function receiving the data path, a regular
- * expression, a data path, or an array of data paths.
- */
 export function getMatchingValidationErrors(errors, match) {
-  let isMatchingDataPath
-  if (isFunction(match)) {
-    isMatchingDataPath = match
-  } else if (isRegExp(match)) {
-    isMatchingDataPath = dataPath => match.test(dataPath)
-  } else {
-    const dataPaths = asArray(match).map(normalizeDataPath)
-    isMatchingDataPath = dataPath => dataPaths.includes(dataPath)
-  }
+  const isMatchingDataPath = getDataPathMatcher(match)
   const matchingEntries = Object.entries(errors || {}).filter(
     ([dataPath]) => isMatchingDataPath(dataPath)
   )
   return matchingEntries.length > 0
     ? Object.fromEntries(matchingEntries)
     : null
+}
+
+// Match data paths with a function, a regular expression, or data paths with
+// `*` for one level and `**` for zero or more levels, or for what's inside at
+// the end, like `@ditojs/utils`:
+export function getDataPathMatcher(match) {
+  if (isFunction(match)) {
+    return match
+  } else if (isRegExp(match)) {
+    return dataPath => match.test(dataPath)
+  } else {
+    const patterns = asArray(match).map(
+      pattern => parseDataPath(normalizeDataPath(pattern))
+    )
+    return dataPath => {
+      const path = parseDataPath(dataPath)
+      return patterns.some(pattern => isMatchingPath(pattern, path))
+    }
+  }
+}
+
+function isMatchingPath(pattern, path) {
+  const [part, ...patternRest] = pattern
+  const [token, ...pathRest] = path
+  if (part === '**') {
+    // Match zero levels with the rest, or consume one level and match more.
+    // At the end, match what's inside only:
+    return patternRest.length > 0
+      ? isMatchingPath(patternRest, path) ||
+        path.length > 0 && isMatchingPath(pattern, pathRest)
+      : path.length > 0
+  } else if (part === undefined || token === undefined) {
+    return part === token
+  } else {
+    return (
+      (part === '*' || part === token) &&
+      isMatchingPath(patternRest, pathRest)
+    )
+  }
 }

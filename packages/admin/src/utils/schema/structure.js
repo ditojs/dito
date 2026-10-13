@@ -1,5 +1,5 @@
 import { isObject, isString } from '@ditojs/utils'
-import { getTypeOptions, getSourceType } from './types.js'
+import { getTypeDescriptor, getSourceType } from './types.ts'
 
 export function iterateSchemaComponents(schemas, callback) {
   for (const schema of schemas) {
@@ -43,39 +43,8 @@ export function someNestedSchemaComponent(schema, callback) {
   )
 }
 
-export function everyNestedSchemaComponent(schema, callback) {
-  return (
-    iterateNestedSchemaComponents(
-      schema,
-      component => (callback(component) ? undefined : false)
-    ) ?? true
-  )
-}
-
 export function hasNestedSchemaComponents(schema) {
   return someNestedSchemaComponent(schema, () => true)
-}
-
-/**
- * Returns whether `schema` has a component named `name` in its components or
- * tabs, or in those of its unnested components, e.g. sections without
- * `nested: true`, which share the data of `schema` without adding their own
- * name to the data path.
- */
-export function hasComponentNamed(schema, name) {
-  const found = iterateNestedSchemaComponents(
-    schema,
-    (component, componentName) => {
-      if (
-        isNested(component)
-          ? componentName === name
-          : hasComponentNamed(component, name)
-      ) {
-        return true
-      }
-    }
-  )
-  return !!found
 }
 
 export function isSchema(schema) {
@@ -98,9 +67,7 @@ export function isPanel(schema) {
   return isSchema(schema) && schema.type === 'panel'
 }
 
-// Returns whether `schema` is a panel that provides its own data through
-// `schema.data`, e.g. a filters panel, instead of sharing the data of its
-// schema, see `DitoPanel`.
+// Panels with `schema.data`, e.g. filters, don't share their schema's data:
 export function isPanelWithOwnData(schema) {
   return isPanel(schema) && !!schema.data
 }
@@ -113,11 +80,13 @@ export function getSchemaIdentifier(schema) {
   return JSON.stringify(schema)
 }
 
+// Views and sources are routed under their names by default:
+export function getSchemaPath(schema, name, api) {
+  return schema.path ?? api.normalizePath(name)
+}
+
 export function isSingleComponentView(schema) {
-  return (
-    isView(schema) &&
-    isObject(schema.component)
-  )
+  return isView(schema) && isObject(schema.component)
 }
 
 export function isCompact(schema) {
@@ -128,22 +97,23 @@ export function isInlined(schema) {
   return !!(schema.inlined || schema.components)
 }
 
-export function isNested(schema) {
-  return !!(schema.nested || getTypeOptions(schema)?.defaultNested === true)
+// Nested components store their data under their own key in their parent's:
+export function hasNestedData(schema) {
+  return !!(schema.nested ?? getTypeDescriptor(schema)?.defaultNested)
 }
 
-export function hasLabel(schema, generateLabels) {
+export function isLabelled(schema, generateLabels) {
   const { label } = schema
   return (
     label !== false && (
       !!label ||
-      generateLabels && getTypeOptions(schema)?.generateLabel
+      generateLabels && getTypeDescriptor(schema)?.generatesLabel
     )
   )
 }
 
-export function omitSpacing(schema) {
-  return !!getTypeOptions(schema)?.omitSpacing
+export function omitsSpacing(schema) {
+  return !!getTypeDescriptor(schema)?.omitsSpacing
 }
 
 export function getTabSchemas(schema) {
@@ -162,11 +132,8 @@ export function isListSource(schemaOrType) {
   return getSourceType(schemaOrType) === 'list'
 }
 
-/**
- * Returns whether `schema` is a source with its own resource, whose items are
- * loaded, validated and submitted through their own forms, separately from
- * the data that contains them.
- */
+// The items of sources with their own resource are loaded, validated and
+// submitted through their own forms, separately from the data containing them:
 export function isSourceWithResource(schema) {
   return !!getSourceType(schema) && !!schema.resource
 }

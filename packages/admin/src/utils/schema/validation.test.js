@@ -1,6 +1,9 @@
 import { vi } from 'vitest'
-import NumberMixin from '../../mixins/NumberMixin.js'
-import { registerTypeComponent } from './types.js'
+import {
+  numberTraits,
+  sourceTraits
+} from '../../types/traits.ts'
+import { defineType } from './types.ts'
 import {
   getValidations,
   getValueValidationErrors,
@@ -11,44 +14,37 @@ import {
 // `setupForm()` needs the admin's API, see `getFormSchemas()`:
 vi.mock('./setup.js', () => ({ setupForm: async form => form }))
 
-// Register minimal type options, as the actual type components can't be
+// Define minimal types, as the actual type components can't be
 // imported without a Vue SFC compiler:
-registerTypeComponent('text', { defaultNested: true })
-registerTypeComponent('password', {
-  defaultNested: true,
-  getTypeValidations: () => ({ password: true })
-})
-registerTypeComponent('number', { ...NumberMixin, defaultNested: true })
-registerTypeComponent('integer', { ...NumberMixin, defaultNested: true })
-registerTypeComponent('section', { defaultNested: false })
-registerTypeComponent('panel', { defaultNested: false })
-registerTypeComponent('list', {
-  defaultNested: true,
-  getSourceType: () => 'list'
-})
-registerTypeComponent('object', {
-  defaultNested: true,
-  getSourceType: () => 'object'
-})
+defineType({ type: 'text' })
+defineType({ type: 'password', getValidations: () => ({ password: true }) })
+defineType({ type: 'number', ...numberTraits })
+defineType({ type: 'integer', ...numberTraits })
+defineType({ type: 'section', defaultNested: false })
+defineType({ type: 'panel', defaultNested: false })
+defineType({ ...sourceTraits, type: 'list', sourceType: 'list' })
+defineType({ type: 'object', sourceType: 'object' })
 
 describe('getValidations()', () => {
   it('returns no validations for plain schemas', () => {
-    expect(getValidations({ type: 'text' })).toEqual({})
+    expect(getValidations({ schema: { type: 'text' } })).toEqual({})
   })
 
   it('supports `required` as value and callback', () => {
-    expect(getValidations({ type: 'text', required: true })).toEqual({
+    expect(
+      getValidations({ schema: { type: 'text', required: true } })
+    ).toEqual({
       required: true
     })
     const schema = { type: 'text', required: ({ value }) => value === 1 }
-    expect(getValidations(schema, { value: 1 })).toEqual({
+    expect(getValidations({ schema, value: 1 })).toEqual({
       required: true
     })
-    expect(getValidations(schema, { value: 2 })).toEqual({})
+    expect(getValidations({ schema, value: 2 })).toEqual({})
   })
 
   it('adds the validations of the type', () => {
-    expect(getValidations({ type: 'password' })).toEqual({
+    expect(getValidations({ schema: { type: 'password' } })).toEqual({
       password: true
     })
   })
@@ -56,15 +52,31 @@ describe('getValidations()', () => {
   it('applies `schema.rules` overrides', () => {
     expect(
       getValidations({
-        type: 'password',
-        required: true,
-        rules: { password: undefined, required: undefined, email: true }
+        schema: {
+          type: 'password',
+          required: true,
+          rules: { password: undefined, required: undefined, email: true }
+        }
       })
     ).toEqual({ email: true })
   })
 
+  it('removes rules that `schema.rules` sets to `false`', () => {
+    expect(
+      getValidations({
+        schema: {
+          type: 'password',
+          required: true,
+          rules: { password: false, required: false }
+        }
+      })
+    ).toEqual({})
+  })
+
   it('ignores unknown types', () => {
-    expect(getValidations({ type: 'unknown', required: true })).toEqual({
+    expect(
+      getValidations({ schema: { type: 'unknown', required: true } })
+    ).toEqual({
       required: true
     })
   })
@@ -87,12 +99,12 @@ describe('getValidations()', () => {
         { range: [0, 2], integer: true }
       ]
     ])('%j', (schema, validations) => {
-      expect(getValidations(schema)).toEqual(validations)
+      expect(getValidations({ schema })).toEqual(validations)
     })
 
     it('evaluates callbacks with the context', () => {
       const schema = { type: 'number', max: ({ item }) => item.limit }
-      expect(getValidations(schema, { item: { limit: 3 } })).toEqual({
+      expect(getValidations({ schema, item: { limit: 3 } })).toEqual({
         max: 3
       })
     })
@@ -428,7 +440,7 @@ describe('getDataValidationErrors()', () => {
         name: {
           type: 'text',
           required: true,
-          format: ({ value }) => value?.trim()
+          formatValue: ({ value }) => value?.trim()
         }
       }
     }
@@ -487,6 +499,30 @@ describe('getMatchingValidationErrors()', () => {
         'title': required,
         'items/1/name': required
       })
+  })
+
+  it('matches data paths with wildcards', () => {
+    expect(getMatchingValidationErrors(errors, 'items/*/title')).toEqual({
+      'items/0/title': required
+    })
+    expect(getMatchingValidationErrors(errors, 'items.**')).toEqual({
+      'items/0/title': required,
+      'items/1/name': required
+    })
+    expect(getMatchingValidationErrors(errors, '**/name')).toEqual({
+      'items/1/name': required
+    })
+    // `*` stands for one level, `**` for zero or more, or for what's inside
+    // at the end:
+    expect(getMatchingValidationErrors(errors, '*/title')).toBe(null)
+    expect(getMatchingValidationErrors(errors, 'title/**')).toBe(null)
+    expect(getMatchingValidationErrors(errors, '**/title')).toEqual({
+      'title': required,
+      'items/0/title': required
+    })
+    expect(getMatchingValidationErrors(errors, 'items/**/1/name')).toEqual({
+      'items/1/name': required
+    })
   })
 
   it('returns `null` if nothing matches', () => {
