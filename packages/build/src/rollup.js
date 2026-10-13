@@ -1,5 +1,5 @@
 import { builtinModules, createRequire } from 'module'
-import { asArray, escapeRegexp } from '@ditojs/utils'
+import { asArray, escapeRegExp } from '@ditojs/utils'
 
 const require = createRequire(import.meta.url)
 
@@ -63,7 +63,7 @@ export function isRollupExternal(id, externals) {
 }
 
 export function matchModuleIdentifier(id, pattern) {
-  const regexp = new RegExp(`^${escapeRegexp(pattern).replace('\\*', '(.*)')}$`)
+  const regexp = new RegExp(`^${escapeRegExp(pattern).replace('\\*', '(.*)')}$`)
   const match = id.match(regexp)
   return {
     match: !!match,
