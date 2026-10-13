@@ -72,11 +72,11 @@ describe('AdminController hosting', () => {
 
   it('responds with 408 once the admin is closed', async () => {
     const controller = app.getAdminController()!
-    controller.closed = true
+    controller.isClosed = true
     try {
       expect((await fetch(`${url}/admin/books`)).status).toBe(408)
     } finally {
-      controller.closed = false
+      controller.isClosed = false
     }
   })
 })

@@ -6,13 +6,12 @@ import { AssetFile } from './AssetFile.js'
 
 function createStorage(keys = ['test-secret']) {
   const app = { keys }
-  return new Storage(app, { name: 'test' })
+  return new Storage(app, 'test', {})
 }
 
 function createImportStorage() {
   const app = { keys: ['test-secret'] }
-  return new Storage(app, {
-    name: 'test',
+  return new Storage(app, 'test', {
     allowedImports: ['https://example.com/**']
   })
 }
@@ -170,7 +169,7 @@ class MemoryStorage extends Storage {
 
 function createMemoryStorage(config = {}) {
   const app = { keys: ['test-secret'], basePath: '/app', emit: vi.fn() }
-  return new MemoryStorage(app, { name: 'memory', ...config })
+  return new MemoryStorage(app, 'memory', config)
 }
 
 // Creates the start of a PNG file, enough to read its dimensions.
@@ -225,7 +224,7 @@ describe('Storage: constructor', () => {
     expect(storage.path).toBe('uploads')
     expect(storage.concurrency).toBe(2)
     expect(storage.storage).toBe(null)
-    expect(storage.initialized).toBe(false)
+    expect(storage.isInitialized).toBe(false)
   })
 
   it('uses a default concurrency of 8', () => {
@@ -304,8 +303,7 @@ describe('Storage: file operations', () => {
   })
 
   it('provides no-op default implementations', async () => {
-    const storage = new Storage({ keys: ['secret'] }, { name: 'base' })
-    await storage.setup()
+    const storage = new Storage({ keys: ['secret'] }, 'base', {})
     await storage.initialize()
     const file = { key: 'a.txt' }
     expect(storage.getFilePath(file)).toBeUndefined()
@@ -431,7 +429,7 @@ describe('Storage: signatures', () => {
 
   it('rejects signatures created with other keys', () => {
     const storage = createMemoryStorage()
-    const other = new Storage({ keys: ['other-secret'] }, { name: 'other' })
+    const other = new Storage({ keys: ['other-secret'] }, 'other', {})
     const file = { key: 'a.png' }
     other.signAssetFile(file)
     expect(storage.verifyAssetFile(file)).toBe(false)
@@ -453,8 +451,8 @@ describe('Storage: signatures', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     try {
       Storage._fallbackSecret = undefined
-      const storage1 = new Storage({}, { name: 'one' })
-      const storage2 = new Storage({}, { name: 'two' })
+      const storage1 = new Storage({}, 'one', {})
+      const storage2 = new Storage({}, 'two', {})
       const file = { key: 'a.png' }
       storage1.signAssetFile(file)
       expect(storage2.verifyAssetFile(file)).toBe(true)

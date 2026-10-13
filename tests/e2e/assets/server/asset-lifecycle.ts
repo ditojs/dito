@@ -85,7 +85,7 @@ test.describe('asset lifecycle', () => {
     await AssetWidget.query().deleteById(widget.$id())
 
     // Backdate timestamps via raw Knex to bypass
-    // the TimeStampedMixin before:update hook
+    // the TimestampedMixin before:update hook
     // which always sets updatedAt = now().
     // This makes the asset eligible for cleanup
     // (danglingTimeThreshold is 24h).
