@@ -40,10 +40,13 @@ export async function seed(app) {
   // Now sort the seed model data according to `app.models` sorting,
   // as determined by `Application.sortModels()`:
   seeds.sort((entry1, entry2) => entry1.index - entry2.index)
+  let isSuccessful = true
   for (const { base, seed, modelClass } of seeds) {
-    await handleSeed(app, base, seed, modelClass)
+    if (!(await handleSeed(app, base, seed, modelClass))) {
+      isSuccessful = false
+    }
   }
-  return true
+  return isSuccessful
 }
 
 async function loadSeed(file, ext) {
@@ -76,6 +79,7 @@ async function handleSeed(app, base, seed, modelClass) {
         pico.cyan('No seed records created.')
       )
     }
+    return true
   } catch (err) {
     console.error(
       pico.red(`${base}:`),
@@ -85,5 +89,6 @@ async function handleSeed(app, base, seed, modelClass) {
         maxArrayLength: null
       })
     )
+    return false
   }
 }

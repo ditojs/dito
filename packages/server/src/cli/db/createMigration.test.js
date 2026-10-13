@@ -118,6 +118,34 @@ class Chapter extends Model {
   }
 }
 
+class Cover extends Model {
+  static properties = {
+    id: {
+      type: 'string',
+      primary: true
+    },
+    image: {
+      type: 'asset'
+    },
+    tint: {
+      type: 'color'
+    },
+    author: {
+      type: 'Author'
+    },
+    caption: {
+      $ref: '#Caption',
+      definitions: {
+        '#Caption': { type: 'text' },
+        '#Credit': { properties: { name: { type: 'string' } } }
+      }
+    },
+    credit: {
+      $ref: '#Credit'
+    }
+  }
+}
+
 let basePath
 let app
 
@@ -131,7 +159,7 @@ beforeAll(async () => {
       log: { silent: true },
       knex: { client: 'pg', normalizeDbNames: true }
     },
-    models: { Author, Book, Tag, Chapter }
+    models: { Author, Book, Tag, Chapter, Cover }
   })
   await app.setupModels()
 })
@@ -226,6 +254,22 @@ describe('createMigration()', () => {
     expect(code).not.toContain('excerpt')
   })
 
+  it('maps asset, color, model and referenced types and non-integer primary keys', async () => {
+    await createMigration(app, 'create_covers', 'Cover')
+    const code = await fs.readFile(
+      getMigrationPath('20260304050607_create_covers.js'),
+      'utf8'
+    )
+    expect(getTableLines(code, 'cover')).toEqual([
+      `table.string('id').primary()`,
+      `table.json('image')`,
+      `table.string('tint')`,
+      `table.json('author')`,
+      `table.text('caption')`,
+      `table.json('credit')`
+    ])
+  })
+
   it('adds normalized descriptions as comments', async () => {
     await createMigration(app, 'create_authors', 'Author')
     const code = await fs.readFile(
@@ -277,6 +321,37 @@ describe('createMigration()', () => {
       match => match[1]
     )
     expect(dropNames).toEqual(['book_tag', 'tag', 'book', 'author'])
+  })
+
+  it('names the columns of join tables like the relations', async () => {
+    class Novel extends Model {
+      static relations = {
+        genres: { relation: 'manyToMany', from: 'Novel.id', to: 'Genre.id' }
+      }
+    }
+    class Genre extends Model {}
+    // Without `normalizeDbNames`, the names aren't converted:
+    const plainApp = new Application({
+      config: { log: { silent: true }, knex: { client: 'pg' } },
+      models: { Novel, Genre }
+    })
+    await plainApp.setupModels()
+    plainApp.basePath = basePath
+    await createMigration(plainApp, 'create_novels', 'Novel')
+    const code = await fs.readFile(
+      getMigrationPath('20260304050607_create_novels.js'),
+      'utf8'
+    )
+    const { from, to } = Novel.getRelationMappings().genres.join.through
+    expect([from, to]).toEqual(['NovelGenre.novelId', 'NovelGenre.genreId'])
+    expect(getTableLines(code, 'NovelGenre')).toEqual([
+      `table.increments('id').primary()`,
+      `table.integer('novelId').unsigned().index()`,
+      `.references('id').inTable('Novel').onDelete('CASCADE')`,
+      `table.integer('genreId').unsigned().index()`,
+      `.references('id').inTable('Genre').onDelete('CASCADE')`
+    ])
+    await plainApp.knex.destroy()
   })
 
   it('creates empty functions without models', async () => {
