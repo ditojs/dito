@@ -12,12 +12,11 @@ const externalPublisherSchema = { type: 'select', relate: true }
 
 function createLibraryGraph() {
   const graph = new SchemaGraph()
-  // Data paths with indices, as they are passed while processing the data:
+  // Data paths with indices, as they are passed while serializing the data:
   graph.addSource('shelves', shelvesSchema)
   graph.addSource('shelves/0/books', booksSchema)
   graph.addSource('shelves/1/books', booksSchema)
   graph.addRelation('shelves/0/books/0/author', 'authors', internalAuthorSchema)
-  graph.setSourceRelated('authors')
   graph.addSource('authors', authorsSchema)
   graph.addRelation(
     'shelves/0/books/0/publisher',
@@ -140,18 +139,18 @@ describe('SchemaGraph', () => {
     })
   })
 
-  describe(`process() for target 'server'`, () => {
-    function processForServer() {
+  describe(`serialize() for target 'server'`, () => {
+    function serializeForServer() {
       const graph = createLibraryGraph()
       const reference = graph.getReferencePrefix('authors')
-      const data = graph.process(sourceSchema, createLibraryData(), {
+      const data = graph.serialize(sourceSchema, createLibraryData(), {
         target: 'server'
       })
       return { data, reference }
     }
 
     it('keeps the ids of persisted items and the root item', () => {
-      const { data } = processForServer()
+      const { data } = serializeForServer()
       expect(data.id).toBe(1)
       expect(data.authors[0]).toEqual({ id: 10 })
       expect(data.shelves[0].id).toBe(20)
@@ -163,14 +162,14 @@ describe('SchemaGraph', () => {
     })
 
     it(`converts temporary ids of unrelated sources to plain '#id'`, () => {
-      const { data } = processForServer()
+      const { data } = serializeForServer()
       expect(data.shelves[1]).toEqual({ '#id': '3', 'books': [] })
       expect(data.shelves[0].books[1]['#id']).toBe('2')
       expect(data.shelves[0].books[1]).not.toHaveProperty('id')
     })
 
     it(`pairs temporary related items as prefixed '#id' and '#ref'`, () => {
-      const { data, reference } = processForServer()
+      const { data, reference } = serializeForServer()
       expect(data.authors[1]).toEqual({ '#id': `${reference}-1` })
       expect(data.shelves[0].books[1].author).toEqual({
         '#ref': `${reference}-1`
@@ -178,50 +177,90 @@ describe('SchemaGraph', () => {
     })
   })
 
-  describe(`process() for target 'clipboard'`, () => {
-    function processForClipboard() {
+  describe(`serialize() for target 'clipboard'`, () => {
+    function serializeForClipboard() {
       const graph = createLibraryGraph()
-      return graph.process(sourceSchema, createLibraryData(), {
+      return graph.serialize(sourceSchema, createLibraryData(), {
         target: 'clipboard'
       })
     }
 
     it('removes the ids of the root item and of unrelated sources', () => {
-      const data = processForClipboard()
+      const data = serializeForClipboard()
       expect(data).not.toHaveProperty('id')
       expect(data.shelves[0]).not.toHaveProperty('id')
       expect(data.shelves[0].books[0]).not.toHaveProperty('id')
     })
 
     it('removes temporary ids of unrelated sources too', () => {
-      const data = processForClipboard()
+      const data = serializeForClipboard()
       expect(data.shelves[1]).not.toHaveProperty('id')
       expect(data.shelves[0].books[1]).not.toHaveProperty('id')
     })
 
-    it('converts the ids of related items and internal relations to `@id`', () => {
-      const data = processForClipboard()
-      expect(data.authors).toEqual([{ id: '@10' }, { id: '@1' }])
-      expect(data.shelves[0].books[0].author).toEqual({ id: '@10' })
-      expect(data.shelves[0].books[1].author).toEqual({ id: '@1' })
+    it('replaces the ids of related items and internal relations', () => {
+      const data = serializeForClipboard()
+      const [first, second] = data.authors
+      expect(first.id).toMatch(/^@\d+$/)
+      expect(second.id).toMatch(/^@\d+$/)
+      expect(second.id).not.toBe('@1')
+      expect(data.shelves[0].books[0].author).toEqual({ id: first.id })
+      expect(data.shelves[0].books[1].author).toEqual({ id: second.id })
+    })
+
+    it('keeps persisted and temporary ids with the same number apart', () => {
+      const graph = new SchemaGraph()
+      graph.addSource('authors', authorsSchema)
+      graph.addRelation('books/0/authors', 'authors', internalAuthorSchema)
+      const data = graph.serialize(
+        sourceSchema,
+        {
+          authors: [{ id: 7 }, { id: '@7' }],
+          books: [{ authors: [{ id: 7 }, { id: '@7' }] }]
+        },
+        { target: 'clipboard' }
+      )
+      const [first, second] = data.authors
+      expect(first.id).not.toBe(second.id)
+      expect(data.books[0].authors).toEqual([first, second])
+    })
+
+    it('keeps the same ids of different lists apart', () => {
+      const graph = new SchemaGraph()
+      graph.addSource('authors', authorsSchema)
+      graph.addSource('editors', authorsSchema)
+      graph.addRelation('books/0/author', 'authors', internalAuthorSchema)
+      graph.addRelation('books/0/editor', 'editors', internalAuthorSchema)
+      const data = graph.serialize(
+        sourceSchema,
+        {
+          authors: [{ id: 7 }],
+          editors: [{ id: 7 }],
+          books: [{ author: { id: 7 }, editor: { id: 7 } }]
+        },
+        { target: 'clipboard' }
+      )
+      const [author] = data.authors
+      const [editor] = data.editors
+      expect(author.id).not.toBe(editor.id)
+      expect(data.books[0]).toEqual({ author, editor })
     })
 
     it('keeps the ids of external relations', () => {
-      const data = processForClipboard()
+      const data = serializeForClipboard()
       expect(data.shelves[0].books[0].publisher).toEqual({ id: 40 })
     })
   })
 
-  describe('process() with custom id keys', () => {
-    it('uses `idKey` of sources and `relateBy` of relations', () => {
+  describe('serialize() with custom id keys', () => {
+    it('uses `idKey` of sources and the key in `relate` of relations', () => {
       const graph = new SchemaGraph()
       graph.addSource('authors', { type: 'list', idKey: 'key' })
-      graph.setSourceRelated('authors')
       graph.addRelation('books/0/author', 'authors', {
         type: 'select',
-        relateBy: 'key'
+        relate: 'key'
       })
-      const data = graph.process(
+      const data = graph.serialize(
         { type: 'form', idKey: 'key' },
         {
           key: 'library',
@@ -230,17 +269,75 @@ describe('SchemaGraph', () => {
         },
         { target: 'clipboard' }
       )
+      const [{ key }] = data.authors
+      expect(key).toMatch(/^@\d+$/)
       expect(data).toEqual({
-        authors: [{ key: '@woolf' }],
-        books: [{ id: 1, author: { key: '@woolf' } }]
+        authors: [{ key }],
+        books: [{ id: 1, author: { key } }]
       })
     })
   })
 
-  describe('process() with missing data', () => {
+  describe('serialize() of nested data', () => {
+    it('handles the data paths relative to the serialized data', () => {
+      // A book of a shelf, copied in its nested form:
+      const graph = new SchemaGraph('shelves/0/books/1')
+      graph.addSource('shelves/0/books/1/chapters', { type: 'list' })
+      graph.addRelation(
+        'shelves/0/books/1/author',
+        'authors',
+        internalAuthorSchema
+      )
+      graph.addRelation(
+        'shelves/0/books/1/chapters/0/editor',
+        'shelves/0/books/1/editors',
+        internalAuthorSchema
+      )
+      graph.addSource('shelves/0/books/1/editors', authorsSchema)
+      const data = graph.serialize(
+        booksSchema,
+        {
+          id: 30,
+          author: { id: 10 },
+          editors: [{ id: 11 }],
+          chapters: [{ id: 50, editor: { id: 11 } }]
+        },
+        { target: 'clipboard' }
+      )
+      const [{ id }] = data.editors
+      expect(id).toMatch(/^@\d+$/)
+      expect(data).toEqual({
+        author: { id: 10 },
+        editors: [{ id }],
+        chapters: [{ editor: { id } }]
+      })
+    })
+
+    it('treats relations to data outside of it as external', () => {
+      const graph = new SchemaGraph('shelves/0/books/1')
+      graph.addRelation(
+        'shelves/0/books/1/author',
+        'authors',
+        internalAuthorSchema
+      )
+      expect(graph.flatten()).toEqual([
+        [
+          'author',
+          {
+            type: 'relation',
+            schema: internalAuthorSchema,
+            internal: false,
+            reference: null
+          }
+        ]
+      ])
+    })
+  })
+
+  describe('serialize() with missing data', () => {
     it('ignores missing and empty values along the data paths', () => {
       const graph = createLibraryGraph()
-      const data = graph.process(
+      const data = graph.serialize(
         sourceSchema,
         { id: 1, shelves: [{ books: null }, { id: 2 }] },
         { target: 'server' }
@@ -250,11 +347,10 @@ describe('SchemaGraph', () => {
 
     it('handles relations to multiple items', () => {
       const graph = new SchemaGraph()
-      graph.setSourceRelated('authors')
       graph.addSource('authors', authorsSchema)
       graph.addRelation('books/0/authors', 'authors', internalAuthorSchema)
       const reference = graph.getReferencePrefix('authors')
-      const data = graph.process(
+      const data = graph.serialize(
         sourceSchema,
         {
           authors: [{ id: '@1' }, { id: 2 }],

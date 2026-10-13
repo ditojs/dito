@@ -2,7 +2,7 @@ import { vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import appState from '../appState.js'
 import { copyClipboardData, getClipboardData } from '../utils/clipboard.js'
-import { mountForm, settle } from '../test/mount.js'
+import { mountForm, settle, isForm } from '../test/mount.js'
 
 function getNotificationTexts() {
   return [...document.querySelectorAll('.dito-notification')].map(
@@ -59,6 +59,54 @@ describe('DitoClipboard', () => {
     expect(input.element.value).toBe('Emma')
   })
 
+  it(`doesn't make the data dirty by pasting the same values`, async () => {
+    const { copyButton, pasteButton, dataModel } = await mountBookForm()
+    await copyButton.trigger('click')
+    await flushPromises()
+    await pasteButton.trigger('click')
+    await flushPromises()
+    expect(dataModel.isDirty).toBe(false)
+  })
+
+  it('pastes the result of `clipboard.paste()` as new items', async () => {
+    const paste = vi.fn(({ clipboardItem }) => clipboardItem)
+    const { wrapper, data, dataModel } = await mountForm({
+      schema: {
+        clipboard: { paste },
+        components: {
+          authors: {
+            type: 'list',
+            inlined: true,
+            form: { type: 'form', components: { name: { type: 'text' } } }
+          },
+          mainAuthor: {
+            type: 'select',
+            relate: true,
+            options: { dataPath: 'authors', label: 'name' }
+          }
+        }
+      },
+      data: { authors: [{ id: 7, name: 'Jane Austen' }], mainAuthor: { id: 7 } }
+    })
+    await wrapper.find('.dito-clipboard .dito-button--copy').trigger('click')
+    await flushPromises()
+    await wrapper.find('.dito-clipboard .dito-button--paste').trigger('click')
+    await flushPromises()
+    // `paste()` receives the copied data, with temporary ids of related items:
+    const [[{ clipboardItem }]] = paste.mock.calls
+    expect(clipboardItem).toEqual({
+      authors: [{ id: expect.stringMatching(/^@\d+$/), name: 'Jane Austen' }],
+      mainAuthor: { id: clipboardItem.authors[0].id }
+    })
+    const [author] = data.authors
+    expect(author).toEqual({
+      id: expect.stringMatching(/^@\d+$/),
+      name: 'Jane Austen'
+    })
+    expect(data.mainAuthor).toMatchObject({ id: author.id })
+    expect(dataModel.isDirty).toBe(true)
+  })
+
   it('reads the system clipboard in Chrome to enable pasting', async () => {
     appState.agent.chrome = true
     vi.spyOn(navigator.clipboard, 'readText').mockResolvedValue(
@@ -92,8 +140,7 @@ describe('DitoClipboard', () => {
     )
   })
 
-  // Known bug: the clipboard of nested forms keeps the item ids
-  it.skip('copies the items of nested forms without their ids', async () => {
+  it('copies the items of nested forms without their ids', async () => {
     const { admin } = await mountForm({
       schema: {
         components: {
@@ -134,7 +181,7 @@ describe('DitoClipboard', () => {
       }
     })
     await admin.navigate('/items/1/chapters/0')
-    const form = admin.getRouteComponent(it => it.isForm)
+    const form = admin.getRouteComponent(isForm)
     await settle(form)
     await admin.wrapper
       .find('.dito-clipboard .dito-button--copy')
@@ -145,6 +192,48 @@ describe('DitoClipboard', () => {
       title: 'Prologue',
       sections: [{ name: 'Opening' }, { name: 'Ending' }]
     })
+  })
+
+  it('keeps the position of the item that the data is pasted into', async () => {
+    const { admin } = await mountForm({
+      schema: {
+        components: {
+          chapters: {
+            type: 'list',
+            editable: true,
+            orderKey: 'position',
+            form: {
+              type: 'form',
+              clipboard: true,
+              components: { title: { type: 'text' } }
+            }
+          }
+        }
+      },
+      data: {
+        chapters: [
+          { id: 1, title: 'One', position: 0 },
+          { id: 2, title: 'Two', position: 1 }
+        ]
+      }
+    })
+    const openChapter = async index => {
+      await admin.navigate(`/items/1/chapters/${index}`)
+      const form = admin.getRouteComponent(isForm)
+      await settle(form)
+      return form
+    }
+    await openChapter(1)
+    await admin.wrapper
+      .find('.dito-clipboard .dito-button--copy')
+      .trigger('click')
+    await flushPromises()
+    const form = await openChapter(0)
+    await admin.wrapper
+      .find('.dito-clipboard .dito-button--paste')
+      .trigger('click')
+    await flushPromises()
+    expect(form.data).toMatchObject({ id: 1, title: 'Two', position: 0 })
   })
 
   it('notifies errors of `clipboard.copy()`', async () => {

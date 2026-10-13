@@ -1,4 +1,9 @@
-import { isTemporaryId } from './data.js'
+import {
+  createTemporaryId,
+  getRelativeDataPath,
+  isTemporaryId
+} from './data.js'
+import { getRelateKey } from './schema/options.ts'
 import {
   isInteger,
   asArray,
@@ -7,43 +12,47 @@ import {
 } from '@ditojs/utils'
 import { nanoid } from 'nanoid'
 
-// SchemaGraph is a class to collect schema graph meta information in order to
-// process sources and relations for the given targets 'server' and 'clipboard',
-// according to the following table:
-//
+// Collect the sources and relations of data to serialize their ids for the
+// targets 'server' and 'clipboard':
 // | --------------------------------------------| --------- | --------- |
 // | data                                        | server    | clipboard |
 // | --------------------------------------------| --------- | --------- |
 // | type: 'relation', internal: false           | keep id   | keep id   |
-// | type: 'relation', internal: true            | keep id   | ref, #ref |
-// | type: 'relation', internal: true, temporary | ref, #ref | ref, #ref |
+// | type: 'relation', internal: true            | keep id   | new @id   |
+// | type: 'relation', internal: true, temporary | ref, #ref | new @id   |
 // | type: 'source', related: false              | keep id   | remove id |
 // | type: 'source', related: false, temporary   | ref, #id  | remove id |
-// | type: 'source', related: true               | keep id   | ref, #id  |
-// | type: 'source', related: true, temporary    | ref, #id  | ref, #id  |
+// | type: 'source', related: true               | keep id   | new @id   |
+// | type: 'source', related: true, temporary    | ref, #id  | new @id   |
 // | --------------------------------------------| --------- | --------- |
+// Data paths are absolute. Relations outside of `dataPath` are external.
+// Copies get a new temporary id per id of each list, shared by the relations
+// to its items.
 
 export class SchemaGraph {
   graph = {}
   references = {}
 
+  constructor(dataPath = '') {
+    this.dataPath = dataPath
+  }
+
   set(dataPath, settings, defaults) {
-    dataPath = parseDataPath(dataPath)
+    const path = parseDataPath(getRelativeDataPath(dataPath, this.dataPath))
     let subGraph = this.graph
-    for (const part of dataPath) {
+    for (const part of path) {
       const key = isInteger(+part) ? '*' : part
       subGraph = subGraph[key] ??= {}
     }
     subGraph.$settings = {
-      ...defaults, // See `addSource(dataPath)`
+      ...defaults,
       ...subGraph.$settings,
       ...settings
     }
   }
 
   addSource(dataPath, schema) {
-    // Only set `related: false` through the defaults, as `setSourceRelated()`
-    // may be called before `addSource()`, depending on the graph structure.
+    // Default to `related: false`, as `setSourceRelated()` may come first:
     this.set(dataPath, { type: 'source', schema }, { related: false })
   }
 
@@ -55,12 +64,16 @@ export class SchemaGraph {
   }
 
   addRelation(dataPath, relatedDataPath, schema) {
+    const internal = !!getRelativeDataPath(relatedDataPath, this.dataPath)
     this.set(dataPath, {
       type: 'relation',
       schema,
-      internal: !!relatedDataPath,
-      reference: this.getReferencePrefix(relatedDataPath)
+      internal,
+      reference: internal ? this.getReferencePrefix(relatedDataPath) : null
     })
+    if (internal) {
+      this.setSourceRelated(relatedDataPath)
+    }
   }
 
   getReferencePrefix(dataPath) {
@@ -86,8 +99,9 @@ export class SchemaGraph {
     return flatten(this.graph)
   }
 
-  process(sourceSchema, data, { target }) {
+  serialize(sourceSchema, data, { target }) {
     const clipboard = target === 'clipboard'
+    const temporaryIds = {}
     if (clipboard) {
       delete data[sourceSchema.idKey || 'id']
     }
@@ -97,47 +111,26 @@ export class SchemaGraph {
       const relation = type === 'relation'
       if (source || relation && internal) {
         const values = getValueAtDataPath(data, dataPath, () => null)
-        const removeId = clipboard && source && !related
-        const referenceId = (
-          clipboard && (
-            relation && internal ||
-            source && related
-          )
-        )
+        const idKey = source ? schema.idKey || 'id' : getRelateKey(schema)
         for (const value of asArray(values).flat()) {
-          const idKey = (
-            source && schema.idKey ||
-            relation && schema.relateBy ||
-            'id'
-          )
-          let id = value?.[idKey]
+          const id = value?.[idKey]
           if (id != null) {
-            if (removeId) {
-              // Unrelated sources don't need their ids on the clipboard, not
-              // even temporary ones, since nothing references them.
-              delete value[idKey]
-            } else if (referenceId || isTemporaryId(id)) {
-              if (isTemporaryId(id)) {
-                id = id.slice(1)
-              }
-              const refKey = clipboard
-                ? // Clipboard just needs temporary ids under the actual `idKey`
-                  idKey
-                : // Server wants Objection-style '#id' / '#ref' pairs.
-                  source
-                  ? '#id'
-                  : '#ref'
-              const revValue = clipboard
-                ? `@${id}`
-                : // Keep the ids unique in reference groups, since they
-                  // reference across the full graph.
-                  reference
-                  ? `${reference}-${id}`
-                  : id // A temporary id without a related, just preserve it.
-              value[refKey] = revValue
-              if (refKey !== idKey) {
+            if (clipboard) {
+              if (source && !related) {
+                // Nothing references the ids of unrelated sources:
                 delete value[idKey]
+              } else {
+                value[idKey] = temporaryIds[`${reference}-${id}`] ??=
+                  createTemporaryId()
               }
+            } else if (isTemporaryId(id)) {
+              // The server wants Objection-style '#id' / '#ref' pairs, unique
+              // per reference group, as they reference across the full graph:
+              const temporaryId = id.slice(1)
+              value[source ? '#id' : '#ref'] = reference
+                ? `${reference}-${temporaryId}`
+                : temporaryId
+              delete value[idKey]
             }
           }
         }
