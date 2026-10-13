@@ -6,11 +6,10 @@
 // Export the entire Dito.js namespace.
 
 import { ObjectCannedACL, S3ClientConfig } from '@aws-sdk/client-s3'
-import { DateFormat } from '@ditojs/utils'
+import { DateFormat, NumberFormat, TimeFormat } from '@ditojs/utils'
 import { Options as KoaCorsOptions } from '@koa/cors'
 import * as Ajv from 'ajv/dist/2020.js'
 import { AsyncLocalStorage } from 'async_hooks'
-import * as dbErrors from 'db-errors'
 import * as EventEmitter2 from 'eventemitter2'
 import helmet from 'helmet'
 import { Knex } from 'knex'
@@ -23,7 +22,6 @@ import { CreateSessionOptions as KoaSessionOptions } from 'koa-session'
 import multer from '@koa/multer'
 import multerS3 from 'multer-s3'
 import * as objection from 'objection'
-import { KnexSnakeCaseMappersFactory } from 'objection'
 import { Logger as PinoLogger, LoggerOptions as PinoLoggerOptions } from 'pino'
 import { PrettyOptions } from 'pino-pretty'
 import {
@@ -76,59 +74,61 @@ export interface ApplicationConfig {
     /** The port to listen on for connections */
     port?: string | number
   }
-  /** Logging options */
-  log?: {
-    /**
-     * Enable logging requests to console by passing `true` or pick between
-     * 'console' for logging to console and 'file' for logging to file
-     *
-     * @defaultValue `false`
-     */
-    requests?: boolean | 'console' | 'file'
-    /**
-     * Whether to output route (Controller) logs
-     *
-     * @defaultValue `false`
-     */
-    routes?: boolean
-    /**
-     * Whether to log relation mappings
-     *
-     * @defaultValue `false`
-     */
-    relations?: boolean
-    /**
-     * Whether to log the json schema generated out of the model property
-     * definitions
-     *
-     * @defaultValue `false`
-     */
-    schema?: boolean
-    /**
-     * Whether to log sql queries
-     *
-     * @defaultValue `false`
-     */
-    sql?: boolean
-    /** Whether to turn off all logging */
-    silent?: boolean
-    errors?:
-      | boolean
-      | {
-          /** Whether to log sql errors */
-          sql?: boolean
-          /** Whether to log the error stack */
-          stack?: boolean
-          json?: boolean
-        }
-  }
-  api?: ApiConfig
+  /** Logging options, or `false` to turn off all logging. */
+  log?:
+    | false
+    | {
+        /**
+         * Enable logging requests to console by passing `true` or pick between
+         * 'console' for logging to console and 'file' for logging to file
+         *
+         * @defaultValue `false`
+         */
+        requests?: boolean | 'console' | 'file'
+        /**
+         * Whether to output route (Controller) logs
+         *
+         * @defaultValue `false`
+         */
+        routes?: boolean
+        /**
+         * Whether to log relation mappings, of all models or of the models with
+         * the given names
+         *
+         * @defaultValue `false`
+         */
+        relations?: boolean | OrArrayOf<string>
+        /**
+         * Whether to log the json schema generated out of the model property
+         * definitions, of all models or of the models with the given names
+         *
+         * @defaultValue `false`
+         */
+        schema?: boolean | OrArrayOf<string>
+        /**
+         * Whether to log sql queries
+         *
+         * @defaultValue `false`
+         */
+        sql?: boolean
+        /** Whether to turn off all logging */
+        silent?: boolean
+        errors?:
+          | boolean
+          | {
+              /** Whether to log sql errors */
+              sql?: boolean
+              /** Whether to log the error stack */
+              stack?: boolean
+              json?: boolean
+            }
+      }
   app?: {
     /**
      * Whether to normalize paths from camel case to kebab case.
      *
      * @defaultValue `false`
-     * @see {@link https://github.com/ditojs/dito/blob/main/docs/controllers.md#path-normalization|Path Normalization}
+     * @see {@link https://github.com/ditojs/dito/blob/main/docs/guide/server/controllers.md#paths|Paths}
      */
     normalizePaths?: boolean
     /**
@@ -152,9 +152,6 @@ export interface ApplicationConfig {
      * @see https://github.com/helmetjs/helmet
      */
     helmet?: boolean | Parameters<typeof helmet>[0]
-    logger?: {
-      prettyPrint?: PrettyOptions
-    } & PinoLoggerOptions
     /**
      * Configure body parser.
      *
@@ -185,7 +182,15 @@ export interface ApplicationConfig {
      * @defaultValue `false`
      * @see https://github.com/koajs/session
      */
-    session?: boolean | (KoaSessionOptions & { modelClass: string })
+    session?:
+      | boolean
+      | (KoaSessionOptions & {
+          /**
+           * The model class to store sessions with, or the name it was
+           * registered with, e.g. `SessionModel`.
+           */
+          modelClass?: string | Class<Model>
+        })
     /**
      * Enable passport authentication middleware
      *
@@ -204,7 +209,9 @@ export interface ApplicationConfig {
     /** Knex connection config, or a custom adapter object (e.g. PGlite). */
     connection?: Knex.Config<any>['connection'] | Record<string, unknown>
     /** @defaultValue `false` */
-    normalizeDbNames?: boolean | Parameters<KnexSnakeCaseMappersFactory>
+    normalizeDbNames?:
+      | boolean
+      | Parameters<objection.KnexSnakeCaseMappersFactory>
     // See https://github.com/brianc/node-pg-types/blob/master/index.d.ts#L67
     typeParsers?: Record<number, <I extends string | Buffer>(value: I) => any>
   }
@@ -260,7 +267,7 @@ interface CommonStorageConfig {
   /**
    * The concurrency at which assets are added to storage.
    *
-   * @default `8`
+   * @defaultValue `8`
    */
   concurrency?: number
   /**
@@ -274,7 +281,8 @@ export type S3StorageConfig = CommonStorageConfig & {
   type: 's3'
   bucket: string
   acl?: ObjectCannedACL | string
-  s3: S3ClientConfig
+  /** The configuration of the S3 client, e.g. its `region`. */
+  s3?: S3ClientConfig
 } & Omit<
     Parameters<typeof multerS3>[0],
     's3' | 'key' | 'contentType' | 'metadata'
@@ -290,7 +298,7 @@ export interface DiskStorageConfig extends CommonStorageConfig {
    * Whether to store files in a two-level nested folder structure using the
    * first two characters of the file key.
    *
-   * @defaultValue true
+   * @defaultValue `true`
    */
   nestedFolders?: boolean
 }
@@ -305,83 +313,188 @@ export interface AdminConfig {
    * Path to the dist/src/admin directory. Mandatory when in production mode.
    */
   dist?: string
-  /** @default Application  */
+  /**
+   * @defaultValue `'development'` if the app's `env` is `'development'`, else
+   * `'production'`
+   */
   mode?: 'production' | 'development'
   /** Settings accessible on the browser side as `global.dito.settings`. */
   settings?: Record<string, any>
 }
 
+/**
+ * Describes a resource in the Dito.js server API. Resources can be
+ * nested via {@link ApiResource.parent} to build hierarchical API
+ * paths. The {@link ApiResource.type} determines how the path is
+ * constructed:
+ *
+ * - `'collection'` — uses `path` directly (e.g. `users`)
+ * - `'member'` — appends `id` to the path (e.g. `users/5`)
+ * - `'upload'` — builds an upload path under the parent collection
+ *   (e.g. `users/upload/avatar`)
+ *
+ * Paths are built recursively through the `parent` chain, so a
+ * member nested under a collection produces paths like
+ * `users/1/comments/3`.
+ */
 export interface ApiResource {
-  type: string
+  /**
+   * Determines how the resource path is constructed.
+   *
+   * @see {@link ApiResource} for the path-building rules per type.
+   */
+  type: LiteralUnion<'collection' | 'member' | 'upload'>
+  /**
+   * URL path segment for this resource. If it starts with `/`, it is
+   * treated as absolute and parent nesting is skipped. Otherwise it
+   * is appended to the parent's resolved path.
+   */
   path?: string
+  /** HTTP method for the resource request. */
+  method?: HttpMethod
+  /**
+   * Identifier of a specific resource item, used when
+   * {@link ApiResource.type} is `'member'` to append the id to the
+   * resolved path.
+   */
+  id?: string | number
+  /**
+   * Parent resource for nested API paths. The parent's path is
+   * resolved first and this resource's path is appended to it,
+   * enabling hierarchical URLs.
+   */
   parent?: ApiResource
+  /** Query parameters appended to the request URL. */
+  query?: Record<string, string | number | (string | number)[]>
 }
 
+/**
+ * The settings of the admin's API layer that `AdminController` passes to the
+ * browser as `dito.api`, see `ApiConfig` in `@ditojs/admin`. Only data reaches
+ * the browser, so the callbacks of the admin's `ApiConfig` are set there.
+ */
 export interface ApiConfig {
-  /** The base url to use for api requests. */
-  url?: string
-  /** @defaultValue 'en-US'  */
-  locale?: string
-  dateFormat?: DateFormat
   /**
-   * Whether to display admin notifications.
+   * The base URL prepended to all API requests. Relative request
+   * URLs are combined with this value.
+   */
+  url?: string
+  /**
+   * Locale used for date, time, and number formatting throughout
+   * the admin.
    *
-   * @default `true`
+   * @defaultValue `'en-US'`
+   */
+  locale?: string
+  /**
+   * Default format options for numbers, dates, and times. Merged
+   * with the built-in `defaultFormats` from `@ditojs/utils`.
+   * Individual schemas can override these on a per-component basis.
+   */
+  formats?: {
+    number?: NumberFormat
+    date?: DateFormat
+    time?: TimeFormat
+  }
+  /**
+   * Controls admin notification toasts. Set to `false` to disable
+   * all notifications, or provide an object to customize display
+   * duration.
+   *
+   * @defaultValue `true`
    */
   notifications?:
     | boolean
     | {
         /**
-         * The amount of milliseconds multiplied with the amount of characters
-         * displayed in the notification, plus 40 (40 + title + message).
+         * Milliseconds per character used to calculate notification
+         * display duration. The formula is:
+         * `(40 + text.length + title.length) * durationFactor`.
          *
          * @defaultValue `20`
          */
         durationFactor: number
       }
+  /**
+   * Milliseconds after which requests are aborted, so that
+   * nothing waits for them forever, e.g. submitting forms for
+   * pending loads of options. Requests can set their own.
+   *
+   * @defaultValue `null`, no timeout
+   */
+  timeout?: number | null
+  /** CORS settings applied to API requests. */
   cors?: {
     /**
-     * Whether cross-site `Access-Control` requests are made using credentials.
+     * Enables cross-site requests with credentials
+     * (`credentials: 'include'`).
      */
     credentials: boolean
   }
   /**
-   * Setting normalizePaths to `true` sets `api.normalizePath` to hyphenate
-   * camelized strings and `api.denormalizePath` to do the opposite. If you
-   * prefer to use another path normalization algorithm, they can be defined the
-   * api settings passed to the DitoAdmin constructor.
+   * When `true`, the admin hyphenates camelCase path segments in URLs, and
+   * camelizes them back.
    *
-   * @defaultValue Application.config.app.normalizePaths
+   * @defaultValue Inherits from
+   * `Application.config.app.normalizePaths`, falling back
+   * to `false`.
    */
   normalizePaths?: boolean
-  /** Auth resources */
+  /**
+   * Authentication resource configuration. The `path` defines the
+   * user collection endpoint, and `login`, `logout`, and `session`
+   * are nested as child resources under it (e.g. `users/login`).
+   */
   users?: {
+    /**
+     * The collection path for the user model.
+     *
+     * @defaultValue None: the endpoints are at the root of the API.
+     */
     path?: string
+    /** Login endpoint. */
     login?: {
-      /** @defaultValue `'login'` */
+      /**
+       * @defaultValue `'login'`
+       */
       path?: string
-      /** @defaultValue `'post'` */
-      method?: HTTPMethod
+      /**
+       * @defaultValue `'post'`
+       */
+      method?: HttpMethod
     }
+    /** Logout endpoint. */
     logout?: {
-      /** @defaultValue `'logout'` */
+      /**
+       * @defaultValue `'logout'`
+       */
       path?: string
-      /** @defaultValue `'post'` */
-      method?: HTTPMethod
+      /**
+       * @defaultValue `'post'`
+       */
+      method?: HttpMethod
     }
+    /**
+     * Session endpoint for checking an existing authenticated
+     * session on page load.
+     */
     session?: {
-      /** @defaultValue `'session'` */
+      /**
+       * @defaultValue `'session'`
+       */
       path?: string
-      /** @defaultValue `'get'` */
-      method?: HTTPMethod
+      /**
+       * @defaultValue `'get'`
+       */
+      method?: HttpMethod
     }
   }
-  /** Optionally override resource path handlers. */
-  resources?: Record<string, (resource: ApiResource | string) => string>
-
   /**
-   * Optionally override / extend headers sent with API
-   * requests.
+   * HTTP headers included in all API requests. Merged with the
+   * default `Content-Type: application/json` header, and can be
+   * further overridden per-request.
+   *
+   * @defaultValue `{ 'Content-Type': 'application/json' }`
    */
   headers?: Record<string, string>
 }
@@ -400,45 +513,42 @@ interface AsyncRequestLocals {
   logger: PinoLogger
 }
 
+/** The router of an application, `@ditojs/router` by default. */
+export interface ApplicationRouter {
+  add(
+    method: string,
+    path: string,
+    handler: (ctx: KoaContext, next: () => Promise<void>) => OrPromiseOf<void>
+  ): unknown
+  find(
+    method: string,
+    path: string
+  ): {
+    status: number
+    handler?: (
+      ctx: KoaContext,
+      next: () => Promise<void>
+    ) => OrPromiseOf<void>
+    params?: Record<string, string>
+    allowed: string[]
+  }
+  getAllowedMethods(path?: string | null, exclude?: string | null): string[]
+  normalizePath(path: string): string
+}
+
 export class Application<$Models extends Models = Models> {
   constructor(options: {
     basePath?: string
     config?: ApplicationConfig
     validator?: Validator
-    router?: {
-      add(
-        method: string,
-        path: string,
-        handler: (
-          ctx: KoaContext,
-          next: () => Promise<void>
-        ) => OrPromiseOf<void>
-      ): unknown
-      find(
-        method: string,
-        path: string
-      ): {
-        status: number
-        handler?: (
-          ctx: KoaContext,
-          next: () => Promise<void>
-        ) => OrPromiseOf<void>
-        params?: Record<string, string>
-        allowed: string[]
-      }
-      getAllowedMethods(
-        path?: string | null,
-        exclude?: string | null
-      ): string[]
-      normalizePath(path: string): string
-    }
+    router?: ApplicationRouter
     /**
      * Subscribe to application events. Event names: `'before:start'`,
      * `'after:start'`, `'before:stop'`, `'after:stop'`, `'error'`
      */
     events?: Record<
       string,
-      (this: Application<$Models>, ...args: any[]) => void
+      OrArrayOf<(this: Application<$Models>, ...args: any[]) => void>
     >
     models?: $Models
     controllers?: ApplicationControllers
@@ -459,6 +569,8 @@ export class Application<$Models extends Models = Models> {
   isRunning: boolean
   /** The schema validator instance. */
   validator: Validator
+  /** The router that maps the routes of the controllers. */
+  router: ApplicationRouter
   /** Registered storage instances by name. */
   storages: ResolvedStorages
   /** Registered service instances by name. */
@@ -484,10 +596,10 @@ export class Application<$Models extends Models = Models> {
    */
   setupMiddleware(middleware?: Koa.Middleware): void
 
-  addStorage(
-    config: StorageConfig | Storage,
-    name?: string
-  ): Storage
+  /** Adds a storage from its configuration under `name`. */
+  addStorage(config: StorageConfig, name: string): Storage
+  /** Adds a storage instance under `name`, or under its own name. */
+  addStorage(storage: Storage, name?: string): Storage
 
   addStorages(storages: StorageConfigs): void
   setupStorages(): Promise<void>
@@ -518,7 +630,7 @@ export class Application<$Models extends Models = Models> {
   ): Service | null
 
   addModel(model: Class<Model>): void
-  addModels(models: Models): void
+  addModels(models: Models | Class<Model>[]): void
   setupModels(): Promise<void>
   /**
    * Returns a model class by name. Also looks up
@@ -581,7 +693,7 @@ export class Application<$Models extends Models = Models> {
   }): ValidationError
 
   /** Creates a DatabaseError from a native DB error. */
-  createDatabaseError(error: dbErrors.DBError): DatabaseError
+  createDatabaseError(error: objection.DBError): DatabaseError
 
   /**
    * Wraps a database identifier through Knex's
@@ -657,7 +769,7 @@ export class Application<$Models extends Models = Models> {
   ): Promise<AssetFile[]>
 
   addRoute(
-    method: HTTPMethod,
+    method: HttpMethod,
     path: string,
     transacted: boolean,
     middlewares: OrArrayOf<
@@ -713,6 +825,7 @@ export type SchemaType = LiteralUnion<
   | 'date'
   | 'datetime'
   | 'timestamp'
+  | 'color'
 >
 
 type RelatedModel<T> = T extends (infer U)[]
@@ -754,7 +867,7 @@ type AnyModelRef<$Models> =
  * - `'manyToMany'` — array of models, via a join table
  * - `'hasOneThrough'` — single model, via a join table
  *
- * @see {@link https://github.com/ditojs/dito/blob/main/docs/model-relations.md#relation-types|Relation Types}
+ * @see {@link https://github.com/ditojs/dito/blob/main/docs/guide/server/relations.md#relation-types|Relation Types}
  */
 export type RelationType =
   | 'belongsTo'
@@ -786,7 +899,7 @@ type RelationTypeForProperty<T> = T extends Model[]
  * }
  * ```
  *
- * @see {@link https://github.com/ditojs/dito/blob/main/docs/model-relations.md|Model Relations}
+ * @see {@link https://github.com/ditojs/dito/blob/main/docs/guide/server/relations.md|Relations}
  */
 export interface ModelRelation<
   $Owner extends Model = Model,
@@ -797,7 +910,7 @@ export interface ModelRelation<
   /**
    * The type of relation
    *
-   * @see {@link https://github.com/ditojs/dito/blob/main/docs/model-relations.md#relation-types|Relation Types}
+   * @see {@link https://github.com/ditojs/dito/blob/main/docs/guide/server/relations.md#relation-types|Relation Types}
    */
   relation: unknown extends $PropertyType
     ? RelationType
@@ -815,38 +928,36 @@ export interface ModelRelation<
    */
   to: ModelRef<$Related, $Models>
   /**
-   * When set to true the join model class and table is to be built
-   * automatically, or allows to specify an existing one manually.
+   * An existing join model class or join table for through relations. Without
+   * it, the join model class and table are built automatically.
    *
-   * @see {@link https://github.com/ditojs/dito/blob/main/docs/model-relations.md#join-models-and-tables|Join Models and Tables}
+   * @see {@link https://github.com/ditojs/dito/blob/main/docs/guide/server/relations.md#join-models-and-tables|Join Models and Tables}
    */
-  through?:
-    | boolean
-    | {
-        /**
-         * The model and property name or table and column name of an existing
-         * join model class or join table from which the through relation is to
-         * be built, as a string with both identifiers separated by '.', e.g.:
-         * 'FromModelClass.fromPropertyName'
-         */
-        from: AnyModelRef<$Models>
-        /**
-         * The model and property name or table and column name of an existing
-         * join model class or join table to which the through relation is to be
-         * built, as a string with both identifiers separated by '.', e.g.:
-         * 'toModelClass.toPropertyName'
-         */
-        to: AnyModelRef<$Models>
-        /**
-         * List additional columns to be added to the related model.
-         *
-         * When working with a join model class or table, extra columns from it
-         * can be added to the related model, as if it was define on its own
-         * table. They then appear as additional properties on the related
-         * model.
-         */
-        extra?: string[]
-      }
+  through?: {
+    /**
+     * The model and property name or table and column name of an existing
+     * join model class or join table from which the through relation is to
+     * be built, as a string with both identifiers separated by '.', e.g.:
+     * 'FromModelClass.fromPropertyName'
+     */
+    from: AnyModelRef<$Models>
+    /**
+     * The model and property name or table and column name of an existing
+     * join model class or join table to which the through relation is to be
+     * built, as a string with both identifiers separated by '.', e.g.:
+     * 'toModelClass.toPropertyName'
+     */
+    to: AnyModelRef<$Models>
+    /**
+     * List additional columns to be added to the related model.
+     *
+     * When working with a join model class or table, extra columns from it
+     * can be added to the related model, as if it was define on its own
+     * table. They then appear as additional properties on the related
+     * model.
+     */
+    extra?: string[]
+  }
   /**
    * Controls whether the relation is the inverse of another relation.
    *
@@ -901,6 +1012,12 @@ export interface ModelRelation<
   modify?:
     | ((query: QueryBuilder<Model>) => void)
     | Record<string, unknown>
+  /**
+   * The options of the `*DitoGraph*()` methods for the models of this
+   * relation, e.g. `{ relate: true }`. Owner relations default to
+   * `{ relate: false, unrelate: false }`.
+   */
+  graphOptions?: DitoGraphOptions
 }
 
 export type ModelProperty<T = any> = Schema<T> & {
@@ -961,7 +1078,7 @@ export type ModelProperty<T = any> = Schema<T> & {
  * to apply filtering or ordering logic. The return value
  * is ignored at runtime.
  *
- * @see {@link https://github.com/ditojs/dito/blob/main/docs/model-scopes.md|Model Scopes}
+ * @see {@link https://github.com/ditojs/dito/blob/main/docs/guide/server/queries.md#scopes|Scopes}
  */
 // Scopes, filters and modifiers are declared through methods, to make their
 // parameters bivariant, so that models can type them with their own query
@@ -974,15 +1091,16 @@ export type ModelScope<$Model extends Model = Model> = {
 }['bivarianceHack']
 
 /**
- * Map of scope names to scope functions. Scopes can be
+ * Map of scope names to scope functions, or to find-filter objects that are
+ * applied through `find()`. Scopes can be
  * applied via `withScope()` on queries or set as defaults
  * on controllers.
  *
- * @see {@link https://github.com/ditojs/dito/blob/main/docs/model-scopes.md|Model Scopes}
+ * @see {@link https://github.com/ditojs/dito/blob/main/docs/guide/server/queries.md#scopes|Scopes}
  */
 export type ModelScopes<$Model extends Model = Model> = Record<
   string,
-  ModelScope<$Model>
+  ModelScope<$Model> | Record<string, unknown>
 >
 
 /**
@@ -1042,7 +1160,7 @@ export type ModelFilterFunction<$Model extends Model = Model> = {
  * }
  * ```
  *
- * @see {@link https://github.com/ditojs/dito/blob/main/docs/model-filters.md|Model Filters}
+ * @see {@link https://github.com/ditojs/dito/blob/main/docs/guide/server/queries.md#filters|Filters}
  */
 export interface QueryFilterTypes {
   'text': true
@@ -1059,7 +1177,7 @@ export interface QueryFilterTypes {
  *   `response` schema.
  * - A bare **handler function** as shorthand.
  *
- * @see {@link https://github.com/ditojs/dito/blob/main/docs/model-filters.md|Model Filters}
+ * @see {@link https://github.com/ditojs/dito/blob/main/docs/guide/server/queries.md#filters|Filters}
  */
 export type ModelFilter<$Model extends Model = Model> =
   | {
@@ -1078,7 +1196,7 @@ export type ModelFilter<$Model extends Model = Model> =
 /**
  * Map of filter names to filter definitions.
  *
- * @see {@link https://github.com/ditojs/dito/blob/main/docs/model-filters.md|Model Filters}
+ * @see {@link https://github.com/ditojs/dito/blob/main/docs/guide/server/queries.md#filters|Filters}
  */
 export type ModelFilters<$Model extends Model = Model> = Record<
   string,
@@ -1118,13 +1236,11 @@ export type ControllerAssets = {
   [dataPath: string]:
     | ControllerAsset
     | OrReadOnly<string[]>
-    | ControllerAssetsAuthorize
+    | ControllerAuthorize
     | undefined
   allow?: OrReadOnly<string[]>
-  authorize?: ControllerAssetsAuthorize
+  authorize?: ControllerAuthorize
 }
-
-type ControllerAssetsAuthorize = Authorize | Record<string, Authorize>
 
 export interface ModelOptions extends objection.ModelOptions {
   graph?: boolean
@@ -1140,7 +1256,8 @@ type ModelHookFunction<$Model extends Model> = (
  * Map of lifecycle hook names to handler functions. Hook
  * names follow the pattern `'before:operation'` or
  * `'after:operation'` where operation is `find`, `insert`,
- * `update`, or `delete`.
+ * `update`, or `delete`. Keys can list several hooks separated
+ * by commas, and values can be arrays of handlers.
  *
  * @example
  * ```ts
@@ -1154,23 +1271,31 @@ type ModelHookFunction<$Model extends Model> = (
  * ```
  */
 export type ModelHooks<$Model extends Model = Model> = {
-  [key in `${'before' | 'after'}:${
-    | 'find'
-    | 'insert'
-    | 'update'
-    | 'delete'
-  }`]?: ModelHookFunction<$Model>
+  [key in ModelHookKey]?: OrArrayOf<ModelHookFunction<$Model>>
+} & {
+  // Several hooks, separated by commas:
+  [key: `${ModelHookKey},${string}`]: OrArrayOf<ModelHookFunction<$Model>>
 }
+
+type ModelHookKey = `${'before' | 'after'}:${
+  | 'find'
+  | 'insert'
+  | 'update'
+  | 'delete'
+}`
 
 // objection's static side, minus the members that dito types with its own
 // `Model` and `QueryBuilder`. objection's versions use its own types, which
 // these can't be compatible with, e.g. modifiers receive objection's
-// QueryBuilder, while they always receive dito's at runtime.
+// QueryBuilder, while they always receive dito's at runtime. Dito mixes the
+// event emitter and the knex helpers into the static side of models.
 interface ObjectionModelStatic
   extends Omit<
     typeof objection.Model,
     'modifiers' | 'query' | 'fromJson' | 'createNotFoundError'
-  > {
+  >,
+    EventEmitter,
+    KnexHelper {
   new (): objection.Model
 }
 declare const ObjectionModel: ObjectionModelStatic
@@ -1183,16 +1308,16 @@ export class Model extends ObjectionModel {
 
   constructor(json?: Record<string, any>)
 
-  /** @see {@link https://github.com/ditojs/dito/blob/main/docs/model-properties.md|Model Properties} */
+  /** @see {@link https://github.com/ditojs/dito/blob/main/docs/guide/server/models.md#properties|Properties} */
   static properties: ModelProperties
 
-  /** @see {@link https://github.com/ditojs/dito/blob/main/docs/model-relations.md|Model Relations} */
+  /** @see {@link https://github.com/ditojs/dito/blob/main/docs/guide/server/relations.md|Relations} */
   static relations: ModelRelations
 
-  /** @see {@link https://github.com/ditojs/dito/blob/main/docs/model-scopes.md|Model Scopes} */
+  /** @see {@link https://github.com/ditojs/dito/blob/main/docs/guide/server/queries.md#scopes|Scopes} */
   static scopes: ModelScopes<Model>
 
-  /** @see {@link https://github.com/ditojs/dito/blob/main/docs/model-filters.md|Model Filters} */
+  /** @see {@link https://github.com/ditojs/dito/blob/main/docs/guide/server/queries.md#filters|Filters} */
   static filters: ModelFilters<Model>
 
   /**
@@ -1240,11 +1365,17 @@ export class Model extends ObjectionModel {
 
   static assets: ModelAssets
 
+  /**
+   * Model options, merged from the class hierarchy into `definition.options`,
+   * e.g. `usernameProperty` of {@link UserMixin}.
+   */
+  static options: Record<string, any>
+
   /** The merged definition object, assembled from the class hierarchy. */
   static get definition(): {
     properties: ModelProperties
     relations: ModelRelations
-    scopes: ModelScopes
+    scopes: Record<string, ModelScope>
     filters: ModelFilters
     hooks: ModelHooks
     assets: ModelAssets
@@ -1283,7 +1414,7 @@ export class Model extends ObjectionModel {
   /** The application instance this model is registered with. */
   static app: Application<Models>
   /** Whether the model has been initialized by the application. */
-  static initialized: boolean
+  static isInitialized: boolean
   /** Whether to deep-clone object attributes on read. */
   static cloneObjectAttributes: boolean
   /**
@@ -1296,7 +1427,11 @@ export class Model extends ObjectionModel {
 
   /** Called by the application during model registration. */
   static configure(app: Application<Models>): void
-  /** Sets up model schema, relations, and scopes. */
+  /**
+   * Called by the application after all models are configured, before
+   * `initialize()`. Overrides need to call `super.setup()`.
+   * @overridable
+   */
   static setup(): void
   /**
    * Async initialization hook. Override in subclasses for
@@ -1418,15 +1553,18 @@ export class Model extends ObjectionModel {
 
   /** Starts a new transaction. */
   static transaction(): Promise<objection.Transaction>
-  /** Runs a callback within a transaction. */
-  static transaction(
-    handler: (trx: objection.Transaction) => Promise<any>
-  ): Promise<any>
+  /**
+   * Runs a handler within a new transaction, or within `trx` if given, and
+   * resolves to its result.
+   */
+  static transaction<T>(
+    handler: (trx: objection.Transaction) => Promise<T>
+  ): Promise<T>
 
-  static transaction(
-    trx: objection.Transaction,
-    handler: (trx: objection.Transaction) => Promise<any>
-  ): Promise<any>
+  static transaction<T>(
+    trx: objection.Transaction | null | undefined,
+    handler: (trx: objection.Transaction) => Promise<T>
+  ): Promise<T>
 
   static getPropertyOrRelationAtDataPath(
     dataPath: OrArrayOf<string>
@@ -1575,17 +1713,21 @@ export class Model extends ObjectionModel {
   $is(model: Model | null | undefined): boolean
   /** Returns `true` if all named properties are defined. */
   $has(...properties: string[]): boolean
-  /** Returns the knex instance, as in objection. */
+  // NOTE: It starts a transaction like the static `transaction()`, but has to
+  // stay compatible with objection's types, which declare `Knex`:
   $transaction(): Knex
-  /** Runs a callback within a transaction. */
-  $transaction(
-    handler: (trx: objection.Transaction) => Promise<any>
-  ): Promise<any>
+  /**
+   * Runs a handler within a new transaction, or within `trx` if given, and
+   * resolves to its result.
+   */
+  $transaction<T>(
+    handler: (trx: objection.Transaction) => Promise<T>
+  ): Promise<T>
 
-  $transaction(
-    trx: objection.Transaction,
-    handler: (trx: objection.Transaction) => Promise<any>
-  ): Promise<any>
+  $transaction<T>(
+    trx: objection.Transaction | null | undefined,
+    handler: (trx: objection.Transaction) => Promise<T>
+  ): Promise<T>
 
   /** Emits an event on this model instance. */
   $emit(event: string, ...args: any[]): Promise<any[]>
@@ -1624,7 +1766,7 @@ export class Model extends ObjectionModel {
   ): ($JSON | this) | Promise<$JSON | this>
 
   $validateGraph(
-    options: ModelOptions & Record<string, any>
+    options?: ModelOptions & Record<string, any>
   ): Promise<this>
 
   /**
@@ -1660,10 +1802,12 @@ export class Model extends ObjectionModel {
   /**
    * Parses general JSON data. Converts date strings to
    * Date objects and handles asset file conversion.
+   * `trusted` asset files skip the verification of their signature.
    * @override @overridable
    */
   $parseJson(
-    json: Record<string, any>
+    json: Record<string, any>,
+    options?: ModelOptions & { trusted?: boolean }
   ): Record<string, any>
 
   /**
@@ -1770,10 +1914,6 @@ export class Model extends ObjectionModel {
   static havingRaw: StaticQueryBuilderMethod<'havingRaw'>
   static havingWrapped: StaticQueryBuilderMethod<'havingWrapped'>
 
-  // static scope:  QueryBuilder<Model>['scope']
-  // static mergeScope:  QueryBuilder<Model>['mergeScope']
-  // static clearScope:  QueryBuilder<Model>['clearScope']
-
   /* --------------------- End QueryBuilder.mixin(Model) -------------------- */
 }
 
@@ -1783,10 +1923,6 @@ type StaticQueryBuilderMethod<
   this: Constructor<$Model>,
   ...args: Parameters<QueryBuilder<$Model>[K]>
 ) => ReturnType<QueryBuilder<$Model>[K]>
-
-// @eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface Model extends EventEmitter {}
-export interface Model extends KnexHelper {}
 
 export type ModelClass = Class<Model>
 
@@ -1835,18 +1971,18 @@ type ModelRelationKey<T, K extends keyof T> = K extends
  *     }
  * }
  * ```
+ *
+ * Objection.js-style relation mappings, with a relation class and `join`, are
+ * passed on as they are.
  */
 export type ModelRelations<$Model extends Model = Model, $Models = unknown> = [
   keyof SerializedModel<$Model>
 ] extends [never]
-  ? Record<string, ModelRelation>
+  ? Record<string, ModelRelation | objection.RelationMapping<Model>>
   : {
-      [K in keyof $Model as ModelRelationKey<$Model, K>]?: ModelRelation<
-        $Model,
-        RelatedModel<$Model[K]>,
-        $Models,
-        $Model[K]
-      >
+      [K in keyof $Model as ModelRelationKey<$Model, K>]?:
+        | ModelRelation<$Model, RelatedModel<$Model[K]>, $Models, $Model[K]>
+        | objection.RelationMapping<Model>
     }
 
 export type ModelProperties<$Model extends Model = Model> = [
@@ -1901,12 +2037,12 @@ export class Controller {
   app: Application
   /**
    * Optionally provide the controller path. A default is
-   * deducted from the normalized class name otherwise.
+   * deduced from the normalized class name otherwise.
    */
   path?: string
   /**
    * The controller's name. If not provided, it is
-   * automatically deducted from the controller class name.
+   * automatically deduced from the controller class name.
    * If this name ends in 'Controller', that is stripped
    * off the name, so 'GreetingsController' turns into
    * 'Greetings'.
@@ -1920,7 +2056,7 @@ export class Controller {
    * controller object passed to the Dito.js application's
    * constructor and its sub-objects.
    *
-   * @see {@link https://github.com/ditojs/dito/blob/main/docs/controllers.md#namespaces Namespaces}
+   * @see {@link https://github.com/ditojs/dito/blob/main/docs/guide/server/application.md#namespaces Namespaces}
    */
   namespace?: string
   /** The fully resolved URL for this controller. */
@@ -1931,25 +2067,29 @@ export class Controller {
    */
   transacted?: boolean
   /** Whether this controller has been initialized. */
-  initialized: boolean
+  isInitialized: boolean
   /** The nesting level of this controller. */
   level: number
   /** Whether to log routes during setup. */
   logRoutes: boolean
 
   /**
-   * Which inherited actions to enable, e.g.
-   * `['get', 'post', 'get stats']`. Actions defined
-   * directly on the same object are always enabled.
-   * When set, it replaces any parent controller's
-   * `allow` list. When omitted, the parent's `allow`
-   * list is inherited.
+   * The authorization of all actions and asset uploads that don't have their
+   * own, or of each by its action name or asset data path.
    */
-  allow?: OrReadOnly<ControllerActionName[]>
-
-  /** Authorization */
-  authorize?: Authorize
+  authorize?: ControllerAuthorize
   actions?: ControllerActions<this>
+  /**
+   * The asset upload routes, by data path, or `true` on collection
+   * controllers to use the model's asset definitions.
+   */
+  assets?: boolean | ControllerAssets
+  /**
+   * Hooks that run before or after actions, by keys like
+   * `'before:actions:post import'`. Keys can list several hooks separated by
+   * commas, and values can be arrays of handlers.
+   */
+  hooks?: ControllerHooks<this>
 
   /** Returns the logger, optionally scoped to a context. */
   getLogger(ctx?: KoaContext): PinoLogger
@@ -1962,7 +2102,7 @@ export class Controller {
    */
   handleRequestAuthorization(
     ctx: KoaContext,
-    method: HTTPMethod,
+    method: HttpMethod,
     authorize?: Authorize
   ): Promise<void>
 
@@ -2014,7 +2154,7 @@ export class Controller {
    */
   logRoute(str: string, indent?: number): void
   setupRoute<$ControllerAction extends ControllerAction = ControllerAction>(
-    method: HTTPMethod,
+    method: HttpMethod,
     url: string,
     transacted: boolean,
     authorize: Authorize,
@@ -2128,8 +2268,8 @@ type ModelDataProperties<$Model extends Model = Model> = {
 /**
  * Authorization configuration for controllers and actions.
  *
- * - `boolean`: `true` requires authentication, `false` is
- *   public.
+ * - `boolean`: `true` allows access to everyone, `false` denies
+ *   it.
  * - `'$self'`: Authorized only if the member matches the
  *   authenticated user.
  * - `'$owner'`: Authorized if the member is owned by the
@@ -2137,26 +2277,23 @@ type ModelDataProperties<$Model extends Model = Model> = {
  * - Any other `string`: Checked as a role via
  *   `UserModel.$hasRole()`.
  * - `function`: Dynamically resolves to any of the above.
- * - `Partial<Record<HTTPMethod, string | string[]>>`: Per-method
- *   role authorization.
  */
 export type Authorize =
   | boolean
   | OrArrayOf<LiteralUnion<'$self' | '$owner'>>
-  | ((ctx: KoaContext) => OrPromiseOf<Authorize>)
-  | Partial<Record<HTTPMethod, string | string[]>>
+  | ((ctx: KoaContext, member?: Model) => OrPromiseOf<Authorize>)
+
+/**
+ * The authorization of a controller or an actions object: one setting for all
+ * its actions, or settings by action name, e.g. `{ 'post import': 'admin' }`.
+ */
+export type ControllerAuthorize = Authorize | Record<string, Authorize>
 
 export type BaseControllerActionOptions = {
   /**
-   * The HTTP method (`'get'`, `'post'`, `'put'`, `'delete'` or `'patch'`) to
-   * which the action should listen. By default, the `'get'` method is assigned
-   * if none is provided.
-   */
-  method?: HTTPMethod
-  /**
    * The path to which the action is mapped, defined in relation to the route
-   * path of its controller. By default, the normalized method name is used as
-   * the action's path.
+   * path of its controller. By default, the part of the action name after its
+   * method is used, e.g. `'import'` for `'post import'`.
    */
   path?: string
   /**
@@ -2164,13 +2301,13 @@ export type BaseControllerActionOptions = {
    * be one of the values as described below, an array of them or a function
    * which returns one or more of them.
    *
-   * - Boolean: `true` if the action should be authorized, `false` otherwise.
+   * - Boolean: `true` allows access to everyone, `false` denies it.
    * - '$self': The requested member is checked against `ctx.state.user` and the
    *   action is only authorized if it matches the member.
    * - '$owner': The member is asked if it is owned by `ctx.state.user` through
    *   the optional `Model.$hasOwner()` method.
    * - Any string: `ctx.state.user` is checked for this role through the
-   *   overridable `UserModel.hasRole()` method.
+   *   overridable `UserModel.$hasRole()` method.
    */
   authorize?: Authorize
   /**
@@ -2178,22 +2315,37 @@ export type BaseControllerActionOptions = {
    * optionally maps the value to a key inside a returned object when it
    * contains a `name` property.
    *
-   * @see {@link https://github.com/ditojs/dito/blob/main/docs/model-properties.md Model Properties}
+   * @see {@link https://github.com/ditojs/dito/blob/main/docs/guide/server/models.md#properties Properties}
    */
-  response?: Schema & { name?: string }
+  response?: ActionResponse | [ActionResponse, ValidationOptions?]
   /**
-   * The scope(s) to be applied to every query executed through the action.
+   * The scope(s) applied to the member query of the action's
+   * `{ from: 'member' }` parameters.
    *
-   * @see {@link https://github.com/ditojs/dito/blob/main/docs/model-scopes.md Model Scopes}
+   * @see {@link https://github.com/ditojs/dito/blob/main/docs/guide/server/queries.md#scopes Scopes}
    */
-  scope?: string[]
+  scope?: OrArrayOf<string>
   /**
    * Determines whether queries in the action should be executed within a
    * transaction. Any failure will mean the database will rollback any queries
    * executed to the pre-transaction state.
    */
   transacted?: boolean
+  /**
+   * The validation options of the parameters and the response, e.g.
+   * `{ parameters: { coerceTypes: false } }`.
+   */
+  options?: {
+    parameters?: ValidationOptions
+    response?: ValidationOptions
+  }
 }
+
+/** The schema of an action's response, optionally named by `name`. */
+export type ActionResponse = Schema & { name?: string }
+
+/** Options of the validators of action parameters and responses. */
+export type ValidationOptions = Record<string, any>
 
 export type ControllerActionOptions<
   $Controller extends Controller = Controller,
@@ -2216,7 +2368,9 @@ export type ControllerActionOptions<
    * }>
    * ```
    */
-  parameters?: { [K in keyof $Params]: ParameterSchema<$Params[K]> }
+  parameters?: ActionParameters<{
+    [K in keyof $Params]: ParameterSchema<$Params[K]>
+  }>
   handler: ControllerActionHandler<$Controller, $Params>
 }
 
@@ -2227,10 +2381,18 @@ export type ModelControllerActionOptions<$ModelController = ModelController> =
      * The handler receives a single parameter object with
      * the same keys.
      */
-    parameters?: { [key: string]: ParameterSchema }
+    parameters?: ActionParameters<{ [key: string]: ParameterSchema }>
     /** The function to be called when the action route is requested. */
     handler: ModelControllerActionHandler<$ModelController>
   }
+
+/**
+ * Action parameters, also as `[parameters, options]` with their validation
+ * options.
+ */
+type ActionParameters<$Parameters> =
+  | $Parameters
+  | [$Parameters, ValidationOptions?]
 
 export type MemberActionParameter<$Model extends Model = Model> =
   | Schema
@@ -2246,7 +2408,7 @@ export type MemberActionParameter<$Model extends Model = Model> =
        * modified or deleted by other transactions until the current transaction
        * ends.
        *
-       * @default `false`
+       * @defaultValue `false`
        * @see {@link http://knexjs.org/#Builder-forUpdate}
        * @see {@link https://www.postgresql.org/docs/12/explicit-locking.html#LOCKING-ROWS}
        */
@@ -2271,18 +2433,18 @@ export type ModelControllerAction<$ModelController = ModelController> =
 export type ModelControllerActions<$ModelController = ModelController> = {
   [name: ControllerActionName]: ModelControllerAction<$ModelController>
   allow?: OrReadOnly<ControllerActionName[]>
-  authorize?: Authorize
+  authorize?: ControllerAuthorize
 }
 
 type ModelControllerMemberAction<
   $ModelController extends ModelControllerLike = ModelController
 > =
   | (Omit<ModelControllerActionOptions<$ModelController>, 'parameters'> & {
-      parameters?: {
+      parameters?: ActionParameters<{
         [key: string]: MemberActionParameter<
           ModelFromModelController<$ModelController>
         >
-      }
+      }>
     })
   | ModelControllerActionHandler<$ModelController>
 
@@ -2297,7 +2459,7 @@ export type ModelControllerMemberActions<
 > = {
   [name: ControllerActionName]: ModelControllerMemberAction<$ModelController>
   allow?: OrReadOnly<ControllerActionName[]>
-  authorize?: Authorize
+  authorize?: ControllerAuthorize
 }
 
 /**
@@ -2308,7 +2470,7 @@ export type ModelControllerMemberActions<
  * Bare names without an HTTP method prefix (e.g. `'login'`)
  * are not supported and will throw at runtime.
  */
-export type ControllerActionName = `${HTTPMethod}${string}`
+export type ControllerActionName = `${HttpMethod}${string}`
 
 /**
  * Map of action names to action definitions for a
@@ -2355,7 +2517,7 @@ export type ControllerActions<
 } & {
   [name: ControllerActionName]: ControllerAction<$Controller, any>
   allow?: OrReadOnly<ControllerActionName[]>
-  authorize?: Authorize
+  authorize?: ControllerAuthorize
 }
 
 export class UsersController<
@@ -2371,39 +2533,25 @@ export class UsersController<
 export class AdminController extends Controller {
   config: AdminConfig
   mode: 'production' | 'development'
-  closed: boolean
+  isClosed: boolean
   koa: Koa
   /**
    * Resolves the file system path configured in `config.admin[name]`, e.g.
    * `'root'` or `'dist'`. Throws if it isn't configured.
    */
   resolveConfigPath(name: string): string
-  /** @deprecated Use `resolveConfigPath(name)` instead. */
-  getPath(name: string): string
-  getPath(type: string, path: string): string
-  getDitoObject(): {
+  getGlobalConfig(): {
     base: string
     api: AdminConfig['api']
     settings: AdminConfig['settings']
   }
 
-  sendDitoObject(ctx: Koa.Context): void
+  sendGlobalConfig(ctx: Koa.Context): void
   middleware(): Koa.Middleware
   setupViteServer(): Promise<void>
   defineViteConfig(config?: UserConfig): UserConfig
 }
 type ModelControllerHookType = 'collection' | 'member'
-type ModelControllerHookKey = `${
-  | 'before'
-  | 'after'
-  | '*'
-}:${
-  | ModelControllerHookType
-  | '*'
-}:${
-  | ControllerActionName
-  | '*'
-}`
 
 type CrudActionName = 'get' | 'post' | 'put' | 'patch' | 'delete'
 type NonDeleteCrudActionName = Exclude<CrudActionName, 'delete'>
@@ -2423,36 +2571,57 @@ type AfterCustomHookKey =
 export type ModelControllerHooks<
   $ModelController extends ModelControllerLike = ModelController
 > = {
-  [$Key in BeforeHookKey]?: ControllerHandler<
-    $ModelController,
-    [ctx: KoaContext, params?: Record<string, any>],
-    void
+  [$Key in BeforeHookKey]?: OrArrayOf<
+    ControllerHandler<
+      $ModelController,
+      [ctx: KoaContext, params?: Record<string, any>],
+      void
+    >
   >
 } & {
-  [$Key in AfterDeleteHookKey]?: ControllerHandler<
-    $ModelController,
-    [ctx: KoaContext, result: { count: number }]
+  [$Key in AfterDeleteHookKey]?: OrArrayOf<
+    ControllerHandler<
+      $ModelController,
+      [ctx: KoaContext, result: { count: number }]
+    >
   >
 } & {
-  [$Key in AfterItemHookKey]?: ControllerHandler<
-    $ModelController,
-    [ctx: KoaContext, item: ModelFromModelController<$ModelController>]
+  [$Key in AfterItemHookKey]?: OrArrayOf<
+    ControllerHandler<
+      $ModelController,
+      [ctx: KoaContext, item: ModelFromModelController<$ModelController>]
+    >
   >
 } & {
-  [$Key in AfterCollectionGetHookKey]?: ControllerHandler<
-    $ModelController,
-    [
-      ctx: KoaContext,
-      result:
-        | ModelFromModelController<$ModelController>[]
-        | Page<ModelFromModelController<$ModelController>>
-    ]
+  [$Key in AfterCollectionGetHookKey]?: OrArrayOf<
+    ControllerHandler<
+      $ModelController,
+      [
+        ctx: KoaContext,
+        result:
+          | ModelFromModelController<$ModelController>[]
+          | Page<ModelFromModelController<$ModelController>>
+      ]
+    >
   >
 } & {
-  [$Key in AfterCustomHookKey]?: ControllerHandler<
-    $ModelController,
-    [ctx: KoaContext, result: any]
+  [$Key in AfterCustomHookKey]?: OrArrayOf<
+    ControllerHandler<$ModelController, [ctx: KoaContext, result: any]>
   >
+}
+
+/**
+ * Hooks of a controller that run before or after its actions, by keys like
+ * `'before:actions:post import'` or `'after:actions:*'`. `before:` hooks
+ * receive the action's arguments, `after:` hooks its result, and the value
+ * they return replaces it.
+ */
+export type ControllerHooks<$Controller extends Controller = Controller> = {
+  [key: string]:
+    | OrArrayOf<
+        ControllerHandler<$Controller, [ctx: KoaContext, ...args: any[]]>
+      >
+    | undefined
 }
 
 /**
@@ -2679,11 +2848,6 @@ export class ModelController<
    * object to assign them to the member.
    */
   member?: ModelControllerMemberActions<this>
-  /**
-   * The asset upload routes, by data path, or `true` to use the model's
-   * asset definitions.
-   */
-  assets?: boolean | ControllerAssets
 
   /**
    * Lifecycle hooks that run before or after controller
@@ -2750,16 +2914,21 @@ export class ModelController<
 export type ModelControllerRelation = Partial<
   Pick<
     RelationController,
+    | 'path'
+    | 'authorize'
     | 'graph'
     | 'transacted'
     | 'scope'
     | 'allowScope'
     | 'allowFilter'
     | 'allowParam'
+    | 'relate'
+    | 'unrelate'
   >
 > & {
   relation?: ModelControllerActions<RelationController>
   member?: ModelControllerMemberActions<RelationController>
+  hooks?: ModelControllerHooks<RelationController>
 }
 
 /**
@@ -2770,7 +2939,7 @@ export class RelationController<
   $Model extends Model = Model
 > extends CollectionController<$Model> {
   /** The parent controller that owns this relation. */
-  parent: CollectionController
+  parent: ModelController
 
   /** The raw relation definition object. */
   object: Record<string, unknown>
@@ -2783,42 +2952,61 @@ export class RelationController<
 
   /** Whether this is a one-to-one relation. */
   isOneToOne: boolean
-  /** Whether relate operations are supported. */
+  /**
+   * Whether relate operations are supported.
+   *
+   * @defaultValue `true`, unless the relation is the `owner` of its models
+   */
   relate: boolean
-  /** Whether unrelate operations are supported. */
+  /**
+   * Whether unrelate operations are supported.
+   *
+   * @defaultValue `true`, unless the relation is the `owner` of its models
+   */
   unrelate: boolean
+}
+
+/** The Ajv options of a validator. */
+export type ValidatorOptions = {
+  /** @defaultValue `false` */
+  $data?: boolean
+  /** @defaultValue `false` */
+  $comment?: boolean
+  /** @defaultValue `false` */
+  coerceTypes?: boolean
+  /** @defaultValue `true` */
+  discriminator?: boolean
+  multipleOfPrecision?: number
+  /** @defaultValue `true` */
+  ownProperties?: boolean
+  /** @defaultValue `false` */
+  removeAdditional?: boolean
+  /** @defaultValue `true` */
+  uniqueItems?: boolean
+  /** @defaultValue `true` */
+  useDefaults?: boolean
+  /** @defaultValue `false` */
+  verbose?: boolean
 }
 
 export class Validator extends objection.Validator {
   constructor(options?: {
-    options?: {
-      /** @defaultValue `false` */
-      async?: boolean
-      /** @defaultValue `false` */
-      patch?: boolean
-      /** @defaultValue `false` */
-      $data?: boolean
-      /** @defaultValue `false` */
-      $comment?: boolean
-      /** @defaultValue `false` */
-      coerceTypes?: boolean
-      /** @defaultValue `false` */
-      multipleOfPrecision?: boolean
-      /** @defaultValue `true` */
-      ownProperties?: boolean
-      /** @defaultValue `false` */
-      removeAdditional?: boolean
-      /** @defaultValue `true` */
-      uniqueItems?: boolean
-      /** @defaultValue `true` */
-      useDefaults?: boolean
-      /** @defaultValue `false` */
-      verbose?: boolean
-    }
+    options?: ValidatorOptions
     keywords?: Record<string, Keyword>
     formats?: Record<string, Format>
     types?: Record<string, any>
   })
+
+  /** The application that the validator belongs to. */
+  app: Application
+  /** The Ajv options, merged with the defaults. */
+  options: ValidatorOptions & Record<string, any>
+  /** The keywords, merged with dito's own. */
+  keywords: Record<string, Keyword>
+  /** The formats, merged with dito's own. */
+  formats: Record<string, Format>
+  /** The types, merged with dito's own. */
+  types: Record<string, any>
 
   /**
    * Compiles a JSON schema into a validation function.
@@ -2826,7 +3014,14 @@ export class Validator extends objection.Validator {
    */
   compile(
     jsonSchema: Schema,
-    options?: Record<string, any>
+    options?: ValidatorOptions & {
+      /** @defaultValue `false` */
+      async?: boolean
+      /** Validate without `required` and defaults. @defaultValue `false` */
+      patch?: boolean
+      /** @defaultValue `true` */
+      throw?: boolean
+    }
   ): Ajv.ValidateFunction
 
   /** Adds a schema to all cached Ajv instances. */
@@ -2874,9 +3069,11 @@ export class Validator extends objection.Validator {
 
 // NOTE: Because EventEmitter overrides a number of EventEmitter2 methods with
 // changed signatures, we are unable to extend it.
-export class EventEmitter {
-  static mixin: (target: any) => void
-  constructor(options?: EventEmitter2.ConstructorOptions)
+/**
+ * The event emitter that dito mixes into applications, controllers and the
+ * static side of models.
+ */
+export interface EventEmitter {
   emit(
     event: EventEmitter2.event | EventEmitter2.eventNS,
     ...values: any[]
@@ -3021,13 +3218,6 @@ export class EventEmitter {
   ): boolean
 
   hasListeners(event?: string): boolean
-  static once(
-    emitter: EventEmitter2.EventEmitter2,
-    event: EventEmitter2.event | EventEmitter2.eventNS,
-    options?: EventEmitter2.OnceOptions
-  ): EventEmitter2.CancelablePromise<any[]>
-
-  static defaultMaxListeners: number
 }
 
 /**
@@ -3077,14 +3267,6 @@ export interface DitoGraphOptions {
   noDelete?: boolean | string[]
   noRelate?: boolean | string[]
   noUnrelate?: boolean | string[]
-  /**
-   * @deprecated Has no effect anymore. Objection.js resolves cycles created
-   * by `#ref` references on its own, by inserting the owner of a nullable
-   * (or deferrable) `belongsTo` foreign key first and patching the key in
-   * afterwards. Cycles that can't be resolved this way are rejected with an
-   * error.
-   */
-  cyclic?: boolean
 }
 
 export type QueryParameterOptions = {
@@ -3130,9 +3312,13 @@ export class Service<$Config extends object = Record<string, unknown>> {
   /** The service configuration. */
   config: $Config | null
   /** Whether this service has been initialized. */
-  initialized: boolean
+  isInitialized: boolean
 
-  setup(config: $Config): void
+  /**
+   * Receives the service's configuration from `config.services`.
+   * @overridable
+   */
+  configure(config: $Config): void
 
   /**
    * Override in sub-classes if the service needs async
@@ -3274,15 +3460,6 @@ export class QueryBuilder<
     options?: objection.WithGraphOptions
   ): this
 
-  /** Patches or updates the matched model, or inserts it if none matched. */
-  upsert(
-    data: PartialModelObject<M>,
-    options?: {
-      update?: boolean
-      fetch?: boolean
-    }
-  ): objection.SingleQueryBuilder<this>
-
   /**
    * Applies query parameters through the handlers registered in
    * {@link QueryParameters}, which may handle parameters beyond the built-in
@@ -3297,7 +3474,10 @@ export class QueryBuilder<
         }
   ): this
 
-  /** Also supports arrays of models, not only single instances. */
+  /**
+   * Also supports arrays of models, each patched by its id in one
+   * transaction. Models without ids are rejected.
+   */
   patchAndFetch(
     data: objection.PartialModelObject<M>[]
   ): objection.ArrayQueryBuilder<this>
@@ -3306,7 +3486,10 @@ export class QueryBuilder<
     data: objection.PartialModelObject<M>
   ): objection.SingleQueryBuilder<this>
 
-  /** Also supports arrays of models, not only single instances. */
+  /**
+   * Also supports arrays of models, each updated by its id in one
+   * transaction. Models without ids are rejected.
+   */
   updateAndFetch(
     data: objection.PartialModelObject<M>[]
   ): objection.ArrayQueryBuilder<this>
@@ -3316,15 +3499,27 @@ export class QueryBuilder<
   ): objection.SingleQueryBuilder<this>
 
   /**
-   * Upserts the models, inserting missing ones only at the root and leaving
-   * their relations untouched.
+   * Patches the models by their ids and inserts the missing ones, in one
+   * transaction. Their relations are left untouched.
+   */
+  upsert(
+    data: objection.PartialModelObject<M>[]
+  ): objection.ArrayQueryBuilder<this>
+
+  upsert(
+    data: objection.PartialModelObject<M>
+  ): objection.SingleQueryBuilder<this>
+
+  /**
+   * Patches the models by their ids and inserts the missing ones, in one
+   * transaction, and fetches them. Their relations are left untouched.
    */
   upsertAndFetch(
-    data: objection.PartialModelGraph<M>[]
+    data: objection.PartialModelObject<M>[]
   ): objection.ArrayQueryBuilder<this>
 
   upsertAndFetch(
-    data: objection.PartialModelGraph<M>
+    data: objection.PartialModelObject<M>
   ): objection.SingleQueryBuilder<this>
 
   insertDitoGraph(
@@ -3368,7 +3563,8 @@ export class QueryBuilder<
   ): objection.SingleQueryBuilder<this>
 
   upsertDitoGraphAndFetchById(
-    id: Id,
+    // Arrays for composite ids:
+    id: OrArrayOf<Id>,
     data: PartialDitoModelGraph<M>,
     options?: DitoGraphOptions
   ): objection.SingleQueryBuilder<this>
@@ -3394,7 +3590,8 @@ export class QueryBuilder<
   ): objection.SingleQueryBuilder<this>
 
   updateDitoGraphAndFetchById(
-    id: Id,
+    // Arrays for composite ids:
+    id: OrArrayOf<Id>,
     data: PartialDitoModelGraph<M>,
     options?: DitoGraphOptions
   ): objection.SingleQueryBuilder<this>
@@ -3420,7 +3617,8 @@ export class QueryBuilder<
   ): objection.SingleQueryBuilder<this>
 
   patchDitoGraphAndFetchById(
-    id: Id,
+    // Arrays for composite ids:
+    id: OrArrayOf<Id>,
     data: PartialDitoModelGraph<M>,
     options?: DitoGraphOptions
   ): objection.SingleQueryBuilder<this>
@@ -3460,14 +3658,19 @@ export const QueryParameters: {
   getAllowed(): Record<string, boolean>
 }
 
-export type QueryFilterDefinition = {
-  parameters?: Record<string, Schema>
-  handler: (
-    query: QueryBuilder<Model>,
-    property: string,
-    ...args: unknown[]
-  ) => void
-}
+type QueryFilterHandler = (
+  query: QueryBuilder<Model>,
+  property: string,
+  ...args: unknown[]
+) => void
+
+// A handler, which can hold its `parameters` as a property, or an object:
+export type QueryFilterDefinition =
+  | (QueryFilterHandler & { parameters?: Record<string, Schema> })
+  | {
+      parameters?: Record<string, Schema>
+      handler: QueryFilterHandler
+    }
 
 /**
  * Registry of built-in query filters (text, date-range).
@@ -3519,14 +3722,15 @@ export class ResponseError extends Error {
     error:
       | {
           /** The http status code. */
-          status: number
+          status?: number
           /** The error message. */
           message?: string
           /**
-           * An optional code to be used to distinguish
-           * different error instances.
+           * An optional code to be used to distinguish different error
+           * instances, stored in `data.code` like any other additional data.
            */
           code?: string | number
+          [key: string]: unknown
         }
       | Error
       | string,
@@ -3535,8 +3739,7 @@ export class ResponseError extends Error {
   )
 
   status: number
-  code?: string | number
-  /** Additional error data. */
+  /** Additional error data, e.g. its `code`, sent along with the message. */
   data?: Record<string, unknown>
   toJSON(): Record<string, unknown>
 }
@@ -3546,17 +3749,18 @@ export class AuthorizationError extends ResponseError {}
 export class DatabaseError extends ResponseError {
   constructor(
     error:
-      | dbErrors.CheckViolationError
-      | dbErrors.NotNullViolationError
-      | dbErrors.ConstraintViolationError
-      | dbErrors.DataError
-      | dbErrors.DBError,
+      | objection.CheckViolationError
+      | objection.NotNullViolationError
+      | objection.ConstraintViolationError
+      | objection.DataError
+      | objection.DBError,
     overrides?: Record<string, unknown>
   )
 }
 export class GraphError extends ResponseError {}
 export class ModelError extends ResponseError {
-  constructor(model: Class<Model> | Model, error?: unknown)
+  // The message, prefixed with the name of the model:
+  constructor(model: Class<Model> | Model, error: string)
 }
 export class NotFoundError extends ResponseError {}
 export class NotImplementedError extends ResponseError {}
@@ -3568,7 +3772,8 @@ export class ControllerError extends ResponseError {
     controller:
       | Function
       | { constructor: { name: string } },
-    error?: unknown
+    // The message, prefixed with the name of the controller:
+    error: string
   )
 }
 /* ------------------------------- End Errors ------------------------------ */
@@ -3579,7 +3784,11 @@ export class ControllerError extends ResponseError {
  * disk and S3 storage.
  */
 export class Storage {
-  constructor(app: Application<Models>, config: StorageConfig)
+  /**
+   * The application creates storages from their configuration in
+   * `config.storages`, named by their key.
+   */
+  constructor(app: Application<Models>, name: string, config: StorageConfig)
   /** The application instance. */
   app: Application<Models>
   /** The storage configuration. */
@@ -3597,12 +3806,13 @@ export class Storage {
    */
   concurrency: number
   /** Whether this storage has been initialized. */
-  initialized: boolean
+  isInitialized: boolean
+  /** The multer storage engine that handles uploads, set by sub-classes. */
+  storage: multer.StorageEngine | null
 
-  /** Sets up the storage backend. */
-  setup(): Promise<void>
   /**
-   * Override in sub-classes for async initialization.
+   * Sets up the storage backend. Override in sub-classes for async
+   * initialization.
    * @overridable
    */
   initialize(): Promise<void>
@@ -3659,10 +3869,14 @@ export class Storage {
   ): AssetFileObject[]
 
   /**
-   * Converts a plain file object into an AssetFile
-   * instance in-place on this storage.
+   * Converts a plain file object into an AssetFile instance in-place on this
+   * storage. Unless `trusted`, the file needs a valid signature or an allowed
+   * import source.
    */
-  convertAssetFile(file: AssetFileObject): void
+  convertAssetFile(
+    file: AssetFileObject,
+    options?: { trusted?: boolean }
+  ): void
 
   /**
    * Signs an asset file by setting its `signature` property
@@ -3676,6 +3890,19 @@ export class Storage {
    * or invalid.
    */
   verifyAssetFile(file: AssetFile): boolean
+
+  /** @overridable */
+  _addFile(file: AssetFile, data: Buffer): Promise<void>
+  /** @overridable */
+  _removeFile(file: AssetFile): Promise<void>
+  /** @overridable */
+  _readFile(file: AssetFile): Promise<Buffer>
+  /** @overridable */
+  _listKeys(): Promise<string[]>
+  /** @overridable */
+  _getFilePath(file: AssetFile): string | undefined
+  /** @overridable */
+  _getFileUrl(file: AssetFile | StorageFile): string | undefined
 
   /** Registers a storage subclass by type name. */
   static register(storageClass: Class<Storage>): void
@@ -3761,9 +3988,9 @@ export type AssetFileObject = {
   size: number
   // The public url of the file
   url: string
-  // The width of the image if the storage defines `config.readDimensions`
+  // The width of the image, if its asset sets `readDimensions`
   width?: number
-  // The height of the image if the storage defines `config.readDimensions`
+  // The height of the image, if its asset sets `readDimensions`
   height?: number
   // HMAC signature of the key, present in upload responses, stripped before
   // persistence.
@@ -3785,13 +4012,13 @@ export const AssetMixin: <T extends Constructor<{}>>(
     updatedAt: Date
     $parseJson(
       json: object,
-      opt?: ModelOptions
+      options?: ModelOptions & { trusted?: boolean }
     ): object
   }>
 
 export const AssetModel: ReturnType<typeof AssetMixin<typeof Model>>
 
-export const TimeStampedMixin: <T extends Constructor<{}>>(
+export const TimestampedMixin: <T extends Constructor<{}>>(
   target: T
 ) => T &
   Constructor<{
@@ -3799,7 +4026,7 @@ export const TimeStampedMixin: <T extends Constructor<{}>>(
     updatedAt: Date
   }>
 
-export const TimeStampedModel: ReturnType<typeof TimeStampedMixin<typeof Model>>
+export const TimestampedModel: ReturnType<typeof TimestampedMixin<typeof Model>>
 
 export const SessionMixin: <T extends Constructor<{}>>(
   target: T
@@ -3822,7 +4049,11 @@ export const UserMixin: <T extends Constructor<{}>>(
 
     $verifyPassword(password: string): Promise<boolean>
 
-    $hasRole(...roles: string[]): boolean
+    /**
+     * Returns the first of the given roles that the user has, or `false`.
+     * @overridable
+     */
+    $hasRole(...roles: string[]): string | false
 
     $hasOwner(owner: InstanceType<typeof UserModel>): boolean
 
@@ -3848,7 +4079,7 @@ export const UserMixin: <T extends Constructor<{}>>(
     ): Promise<InstanceType<typeof UserModel>>
 
     sessionQuery(
-      trx: Knex.Transaction
+      trx?: Knex.Transaction
     ): QueryBuilder<InstanceType<typeof UserModel>>
   }
 
@@ -3856,7 +4087,7 @@ export const UserModel: ReturnType<typeof UserMixin<typeof Model>>
 
 /* ------------------------------ End Mixins ----------------------------- */
 
-export type HTTPMethod =
+export type HttpMethod =
   | 'get'
   | 'head'
   | 'post'
@@ -3866,6 +4097,9 @@ export type HTTPMethod =
   | 'options'
   | 'trace'
   | 'connect'
+
+/** @deprecated Use {@link HttpMethod}. */
+export type HTTPMethod = HttpMethod
 
 export interface KnexHelper {
   getDialect(): string | null
@@ -3945,6 +4179,7 @@ export const keywords: {
 
 /** Built-in AJV format definitions. */
 export const formats: {
+  color: Format
   empty: Format
   required: Format
 }
@@ -4049,7 +4284,7 @@ export type SelectModelPropertyKeys<T extends Model> = keyof SerializedModel<T>
  * Used throughout the framework for model property definitions, action
  * parameters, and response schemas.
  *
- * @template T - The TypeScript type that this schema validates against.
+ * @template $Value - The TypeScript type that this schema validates against.
  *
  * @example
  * ```ts
@@ -4060,30 +4295,16 @@ export type SelectModelPropertyKeys<T extends Model> = keyof SerializedModel<T>
  * }
  * ```
  */
-/**
- * The schema of an action parameter, with the source of its value.
- */
-export type ParameterSchema<$Value = any> = Schema<$Value> & {
-  /**
-   * Where the value of the parameter comes from, instead of the parameters
-   * of the request:
-   * - `'root'`: The whole parameters, e.g. an array in the body.
-   * - `'member'`: The member that a member action is called on.
-   * - `'path'`, `'query'`, `'body'`: The path parameters, the query or the
-   *   body of the request.
-   */
-  from?: 'root' | 'member' | 'path' | 'query' | 'body'
-}
-
 export type Schema<$Value = any> = JSONSchemaType<$Value> & {
   // keywords/_validate.js
   validate?: (params: {
     data: $Value
     parentData: object | unknown[]
     rootData: object | unknown[]
-    dataPath: string
+    instancePath: string
     parentIndex?: number
     parentKey?: string
+    ctx: objection.ValidatorContext
     app: Application<Models>
     validator: Validator
     options: unknown
@@ -4094,9 +4315,10 @@ export type Schema<$Value = any> = JSONSchemaType<$Value> & {
     data: $Value
     parentData: object | unknown[]
     rootData: object | unknown[]
-    dataPath: string
+    instancePath: string
     parentIndex?: number
     parentKey?: string
+    ctx: objection.ValidatorContext
     app: Application<Models>
     validator: Validator
     options: unknown
@@ -4130,6 +4352,21 @@ export type Schema<$Value = any> = JSONSchemaType<$Value> & {
     | typeof RegExp
     | typeof Buffer
   >
+}
+
+/**
+ * The schema of an action parameter, with the source of its value.
+ */
+export type ParameterSchema<$Value = any> = Schema<$Value> & {
+  /**
+   * Where the value of the parameter comes from, instead of the parameters
+   * of the request:
+   * - `'root'`: The whole parameters, e.g. an array in the body.
+   * - `'member'`: The member that a member action is called on.
+   * - `'path'`, `'query'`, `'body'`: The path parameters, the query or the
+   *   body of the request.
+   */
+  from?: 'root' | 'member' | 'path' | 'query' | 'body'
 }
 
 declare type StrictNullChecksWrapper<
@@ -4183,6 +4420,7 @@ interface StringKeywords {
     | 'relative-json-pointer'
     | 'datetime'
     | 'timestamp'
+    | 'color'
   >
 }
 
@@ -4218,7 +4456,7 @@ declare type UncheckedJSONSchemaType<T, IsPartial extends boolean> = (
       : T extends string
         ? {
             type: JSONType<
-              'string' | 'text' | 'date' | 'datetime' | 'timestamp',
+              'string' | 'text' | 'date' | 'datetime' | 'timestamp' | 'color',
               IsPartial
             >
           } & StringKeywords

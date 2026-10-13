@@ -1,9 +1,8 @@
 import { expectTypeOf, assertType, describe, it } from 'vitest'
-import { ModelController } from '@ditojs/server'
+import { Controller, ModelController } from '@ditojs/server'
 import type { AdminController } from '@ditojs/server'
 import type {
   ApplicationControllers,
-  Controller,
   CollectionController,
   RelationController,
   QueryBuilder,
@@ -16,6 +15,10 @@ import type {
   ControllerActionHandler,
   ControllerActions,
   ModelControllerRelation,
+  ControllerAuthorize,
+  Authorize,
+  HttpMethod,
+  HTTPMethod,
   Page,
   ModelClass
 } from '@ditojs/server'
@@ -420,7 +423,9 @@ describe('KoaContext', () => {
     const ctx = {} as KoaContext
     expectTypeOf(ctx.state.user).not.toBeAny()
     expectTypeOf(ctx.state.user.username).toBeString()
-    expectTypeOf(ctx.state.user.$hasRole('admin')).toBeBoolean()
+    expectTypeOf(ctx.state.user.$hasRole('admin')).toEqualTypeOf<
+      string | false
+    >()
     expectTypeOf(ctx.state.user.$verifyPassword('pw')).toEqualTypeOf<
       Promise<boolean>
     >()
@@ -438,7 +443,9 @@ describe('KoaContext', () => {
       get(ctx) {
         expectTypeOf(ctx.state.user).not.toBeAny()
         expectTypeOf(ctx.state.user.username).toBeString()
-        expectTypeOf(ctx.state.user.$hasRole('admin')).toBeBoolean()
+        expectTypeOf(ctx.state.user.$hasRole('admin')).toEqualTypeOf<
+          string | false
+        >()
       }
     }
   })
@@ -476,6 +483,18 @@ describe('ModelControllerRelation', () => {
       Record<string, ModelControllerRelation> | undefined
     >()
   })
+
+  it('accepts path, authorize and hooks', () => {
+    assertType<ModelControllerRelation>({
+      path: 'tomes',
+      authorize: { post: 'editor' },
+      hooks: {
+        'after:member:get'(ctx, item) {
+          return item
+        }
+      }
+    })
+  })
 })
 
 describe('Member and model class resolution', () => {
@@ -505,5 +524,52 @@ describe('AdminController', () => {
     expectTypeOf<
       ReturnType<AdminController['resolveConfigPath']>
     >().toEqualTypeOf<string>()
+  })
+})
+
+describe('HttpMethod', () => {
+  it('keeps the deprecated name HTTPMethod', () => {
+    expectTypeOf<HTTPMethod>().toEqualTypeOf<HttpMethod>()
+  })
+})
+
+describe('Controller settings', () => {
+  it('authorizes by action name, not by method', () => {
+    assertType<ControllerAuthorize>({ 'post import': 'admin', 'get': true })
+    assertType<Authorize>((ctx: KoaContext, member?: Model) => !!member)
+    // @ts-expect-error - only controllers and actions objects take objects
+    assertType<Authorize>({ get: 'admin' })
+  })
+
+  it('accepts hooks and assets on all controllers', () => {
+    class Imports extends Controller {
+      override hooks = {
+        'before:actions:post import'() {},
+        'after:actions:post import,after:actions:post export': [
+          (ctx: KoaContext, result: unknown) => result
+        ]
+      }
+
+      override assets = {
+        'files/*': { storage: 'disk' }
+      }
+    }
+    expectTypeOf<Imports>().toMatchTypeOf<Controller>()
+  })
+
+  it('accepts action paths and validation options, but no methods', () => {
+    const actions: ControllerActions = {
+      'post import': {
+        path: 'import-all',
+        parameters: [{ file: { type: 'object' } }, { coerceTypes: false }],
+        response: [{ type: 'object' }, { patch: false }],
+        options: { parameters: { coerceTypes: false } },
+        scope: 'published',
+        handler() {}
+      },
+      // @ts-expect-error - the method is part of the action name
+      'get export': { method: 'post', handler() {} }
+    }
+    assertType<ControllerActions>(actions)
   })
 })

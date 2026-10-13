@@ -19,6 +19,12 @@ describe('Errors', () => {
     expectTypeOf(err).toMatchTypeOf<Error>()
   })
 
+  it('ResponseError keeps the code in its data', () => {
+    const err = {} as ResponseError
+    expectTypeOf(err.data).toEqualTypeOf<Record<string, unknown> | undefined>()
+    expectTypeOf(err).not.toHaveProperty('code')
+  })
+
   it('NotFoundError extends ResponseError', () => {
     expectTypeOf<NotFoundError>().toMatchTypeOf<ResponseError>()
   })

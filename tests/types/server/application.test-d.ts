@@ -1,5 +1,5 @@
 import { expectTypeOf, describe, it } from 'vitest'
-import type { Application, Model } from '@ditojs/server'
+import type { Application, Model, Storage } from '@ditojs/server'
 import type { app } from './fixtures.ts'
 
 describe('Application', () => {
@@ -22,6 +22,14 @@ describe('Application', () => {
   it('addModels accepts model class map', () => {
     type App = typeof app
     expectTypeOf<App['addModels']>().toBeFunction()
+  })
+
+  it('addStorage requires a name for configurations', () => {
+    const application = {} as Application
+    application.addStorage({ type: 'disk', path: 'uploads' }, 'uploads')
+    application.addStorage({} as Storage)
+    // @ts-expect-error: Storage configurations need a name.
+    application.addStorage({ type: 'disk', path: 'uploads' })
   })
 
   it('asset methods always return arrays', () => {

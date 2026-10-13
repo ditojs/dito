@@ -6,6 +6,7 @@ import {
 } from 'vitest'
 import type {
   Application,
+  ApplicationConfig,
   ModelProperties,
   ModelProperty,
   ModelRelations,
@@ -21,6 +22,7 @@ import type {
   Schema
 } from '@ditojs/server'
 import { Model, Service } from '@ditojs/server'
+import type { RelationMapping, ValidatorContext } from 'objection'
 import type * as ModelsType from '../../server/models'
 import { Task, Tag } from '../../server/models'
 
@@ -636,7 +638,7 @@ describe('ModelRelations<T, Models> — typed through', () => {
     }
   })
 
-  it('accepts through: true for auto-generated join', () => {
+  it('rejects through: true, as joins are built without through', () => {
     class _Good extends Model {
       declare id: number
       declare tasks: Task[]
@@ -651,6 +653,7 @@ describe('ModelRelations<T, Models> — typed through', () => {
           relation: 'manyToMany',
           from: '_Good.id',
           to: 'Task.id',
+          // @ts-expect-error - leave out `through` for auto-generated joins
           through: true
         }
       }
@@ -802,11 +805,12 @@ describe('QueryFilterTypes — extensible filter registry', () => {
 })
 
 describe('Model relations — shared', () => {
-  it('relation indexer returns ModelRelation', () => {
+  it('relation indexer returns ModelRelation or objection mappings', () => {
     const relations = {} as ModelRelations
     expectTypeOf(relations.tasks).not.toBeAny()
-    expectTypeOf(relations.tasks)
-      .toEqualTypeOf<ModelRelation>()
+    expectTypeOf(relations.tasks).toEqualTypeOf<
+      ModelRelation | RelationMapping<Model>
+    >()
   })
 
   it('rejects relation missing required fields', () => {
@@ -884,6 +888,18 @@ describe('Schema<$Value>.validate — typed data param', () => {
       validate({ data }) {
         expectTypeOf(data).not.toBeAny()
         expectTypeOf(data).toBeString()
+        return true
+      }
+    }
+    assertType<ModelProperty<string>>(prop)
+  })
+
+  it('passes the instance path and the context of the validation', () => {
+    const prop: ModelProperty<string> = {
+      type: 'string',
+      validate({ instancePath, ctx }) {
+        expectTypeOf(instancePath).toBeString()
+        expectTypeOf(ctx).toEqualTypeOf<ValidatorContext>()
         return true
       }
     }
@@ -1022,6 +1038,25 @@ describe('ApplicationConfig — extensible via augmentation', () => {
     const app = {} as Application
     expectTypeOf(app.config.knex).not.toBeAny()
   })
+
+  it('turns off logging or logs the schemas of named models', () => {
+    assertType<ApplicationConfig>({ log: false })
+    assertType<ApplicationConfig>({
+      log: { schema: ['Task'], relations: true }
+    })
+  })
+
+  it('stores sessions through model classes or their names', () => {
+    assertType<ApplicationConfig>({ app: { session: { modelClass: Task } } })
+    assertType<ApplicationConfig>({ app: { session: { modelClass: 'Task' } } })
+  })
+
+  it('has no config that the application ignores', () => {
+    // @ts-expect-error - `api` is read from the admin config
+    assertType<ApplicationConfig>({ api: {} })
+    // @ts-expect-error - `logger` is a top-level setting
+    assertType<ApplicationConfig>({ app: { logger: {} } })
+  })
 })
 
 describe('ApplicationServices — typed service registry', () => {
@@ -1056,18 +1091,18 @@ describe('Service<Config> — typed config', () => {
     expectTypeOf(config.from).toBeString()
   })
 
-  it('setup accepts the typed config', () => {
+  it('configure accepts the typed config', () => {
     const mail = {} as MailService
-    mail.setup({
+    mail.configure({
       smtp: { host: 'localhost', port: 587 },
       from: 'noreply@example.com'
     })
   })
 
-  it('setup rejects wrong config shape', () => {
+  it('configure rejects wrong config shape', () => {
     const mail = {} as MailService
     // @ts-expect-error - missing required keys
-    mail.setup({ wrong: true })
+    mail.configure({ wrong: true })
   })
 
   it('unparameterized Service has generic config', () => {
@@ -1101,7 +1136,9 @@ describe('KoaContextState — typed ctx.state', () => {
     expectTypeOf(ctx.state).not.toBeAny()
     expectTypeOf(ctx.state.user).not.toBeAny()
     expectTypeOf(ctx.state.user.username).toBeString()
-    expectTypeOf(ctx.state.user.$hasRole('admin')).toBeBoolean()
+    expectTypeOf(ctx.state.user.$hasRole('admin')).toEqualTypeOf<
+      string | false
+    >()
   })
 
   it('ctx.state includes augmented properties', () => {
