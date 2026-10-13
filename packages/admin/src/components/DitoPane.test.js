@@ -1,6 +1,7 @@
 import { vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { mountSchema, mountAdmin } from '../test/mount.js'
+import DitoPane from './DitoPane.vue'
 
 describe('DitoPane', () => {
   // happy-dom doesn't lay out elements, so place all containers in one row,
@@ -20,7 +21,7 @@ describe('DitoPane', () => {
   }
 
   async function measureRows(wrapper) {
-    wrapper.findComponent({ name: 'DitoPane' }).vm.onResizePane()
+    wrapper.findComponent(DitoPane).vm.onResizePane()
     await flushPromises()
   }
 
@@ -109,7 +110,7 @@ describe('DitoPane', () => {
       data: { name: 'Rovers', captain: true }
     })
     await measureRows(wrapper)
-    const pane = wrapper.findComponent({ name: 'DitoPane' }).vm
+    const pane = wrapper.findComponent(DitoPane).vm
     expect(pane.positions).toEqual([null, null])
     expect(
       findContainer('captain').classes('dito-container--label-vertical')
@@ -134,7 +135,7 @@ describe('DitoPane', () => {
       data: { coach: { name: 'Alex' } }
     })
     const pane = wrapper
-      .findAllComponents({ name: 'DitoPane' })
+      .findAllComponents(DitoPane)
       .find(({ vm }) => vm.dataPath === 'coach').vm
     pane.onResizePane()
     await flushPromises()
@@ -165,13 +166,13 @@ describe('DitoPane', () => {
     })
     const getBlockPane = () =>
       wrapper
-        .findAllComponents({ name: 'DitoPane' })
+        .findAllComponents(DitoPane)
         .find(({ vm }) => vm.dataPath === 'blocks/0').vm
     const pane = getBlockPane()
     pane.positions.push({ top: 0, height: 3 }, { top: 0, height: 3 })
     data.blocks[0].type = 'heading'
     await settle()
-    expect(getBlockPane()).toBe(pane)
+    expect(getBlockPane().$).toBe(pane.$)
     expect(pane.componentSchemas.map(({ schema }) => schema.name)).toEqual([
       'text'
     ])
@@ -199,32 +200,35 @@ describe('DitoPane', () => {
       return admin
     }
 
-    it('select their tab when focused', async () => {
+    it('are selected when their components are focused', async () => {
       const admin = await mountTabs()
-      const panes = admin.wrapper.findAllComponents({ name: 'DitoPane' })
-      const details = panes.find(({ vm }) => vm.tab === 'details').vm
       await admin.navigate('/books#notes')
-      await details.focus()
+      const title = admin.getComponent(admin.getRouteComponent(), 'title')
+      await admin.context.ui.reveal(title.container, title.componentPath, {
+        focus: true
+      })
+      await flushPromises()
       expect(admin.router.currentRoute.value.hash).toBe('#details')
     })
 
     it('render nothing without components', async () => {
       const admin = await mountTabs()
+      await admin.navigate('/books#notes')
       const notes = admin.wrapper
-        .findAllComponents({ name: 'DitoPane' })
+        .findAllComponents(DitoPane)
         .find(({ vm }) => vm.tab === 'notes')
       expect(notes.vm.componentSchemas).toEqual([])
       expect(notes.find('.dito-pane').exists()).toBe(false)
     })
   })
 
-  it(`doesn't navigate when focusing panes that aren't tabs`, async () => {
-    const { admin, wrapper } = await mountSchema({
+  it(`doesn't navigate when focusing components outside of tabs`, async () => {
+    const { admin, focusField } = await mountSchema({
       schema: { components: { title: { type: 'text' } } },
       data: { title: 'Emma' }
     })
-    const pane = wrapper.findComponent({ name: 'DitoPane' }).vm
-    expect(pane.focus()).toBe(undefined)
+    await focusField('title')
+    await flushPromises()
     expect(admin.router.currentRoute.value.fullPath).toBe('/test')
   })
 })

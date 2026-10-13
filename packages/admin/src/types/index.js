@@ -1,13 +1,11 @@
-// NOTE: index.js exports nothing, but type components will be registered in
-// DitoComponent and can be retrieved through DitoTypeComponent.get(type) and
-// rendered through their component-names (e.g. dito-type-list).
+// NOTE: Importing the types defines them and registers their components.
 
 export { default as DitoTypeButton } from './DitoTypeButton.vue'
 export { default as DitoTypeCheckbox } from './DitoTypeCheckbox.vue'
 export { default as DitoTypeCheckboxes } from './DitoTypeCheckboxes.vue'
 export { default as DitoTypeCode } from './DitoTypeCode.vue'
 export { default as DitoTypeColor } from './DitoTypeColor.vue'
-export { default as DitoDitoTypeComponent } from './DitoTypeComponent.vue'
+export { default as DitoTypeComponent } from './DitoTypeComponent.vue'
 export { default as DitoTypeComputed } from './DitoTypeComputed.vue'
 export { default as DitoTypeDate } from './DitoTypeDate.vue'
 export { default as DitoTypeList } from './DitoTypeList.vue'

@@ -35,55 +35,43 @@ component.dito-label(
 </template>
 
 <script>
-import DitoComponent from '../DitoComponent.js'
-import DitoAffixes from './DitoAffixes.vue'
+import { computed } from 'vue'
 import { isObject, asArray } from '@ditojs/utils'
+import DitoAffixes from './DitoAffixes.vue'
 
-// @vue/component
-export default DitoComponent.component('DitoLabel', {
+export default {
   components: { DitoAffixes },
-
-  emits: ['open'],
+  emits: ['toggle'],
 
   props: {
     label: { type: [String, Object], default: null },
-    // The DOM id of the labelled element, see `DitoContainer.labelHtmlFor`.
+    // For the callbacks of the affixes:
+    context: { type: Object, required: true },
     htmlFor: { type: String, default: null },
     collapsed: { type: Boolean, default: false },
     collapsible: { type: Boolean, default: false },
     info: { type: String, default: null }
   },
 
-  computed: {
-    text() {
-      const { label } = this
-      return isObject(label) ? label?.text : label
-    },
-
-    prefixes() {
-      return asArray(this.label?.prefix)
-    },
-
-    suffixes() {
-      return asArray(this.label?.suffix)
-    },
-
-    attributes() {
-      return this.collapsible
-        ? {
-            'onClick': this.onClick,
-            'aria-expanded': !this.collapsed
-          }
-        : {}
-    }
-  },
-
-  methods: {
-    onClick() {
-      this.$emit('open', this.collapsed)
+  setup(props, { emit }) {
+    return {
+      text: computed(() => {
+        const { label } = props
+        return isObject(label) ? label?.text : label
+      }),
+      prefixes: computed(() => asArray(props.label?.prefix)),
+      suffixes: computed(() => asArray(props.label?.suffix)),
+      attributes: computed(() =>
+        props.collapsible
+          ? {
+              'onClick': () => emit('toggle', !props.collapsed),
+              'aria-expanded': !props.collapsed
+            }
+          : {}
+      )
     }
   }
-})
+}
 </script>
 
 <style lang="scss">
@@ -136,15 +124,6 @@ export default DitoComponent.component('DitoLabel', {
 
   sup {
     transform: translateY(-4px);
-  }
-
-  // TODO: BEM: Style an element class of this block, e.g. `&__buttons`.
-  .dito-buttons {
-    // Move the label padding inside .dito-buttons, so that it captures all
-    // near mouse events:
-    margin: calc(-1 * var(--label-padding));
-    margin-left: 0;
-    padding: var(--label-padding);
   }
 
   &--fill {
