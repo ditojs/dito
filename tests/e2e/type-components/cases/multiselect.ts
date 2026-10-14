@@ -59,7 +59,6 @@ export default [
             )
           }
         },
-        searchable: true,
         // Provides the labels of stored values, as searching is the only way
         // to get options otherwise.
         options: { data: fruits, label: 'label', value: 'value' }

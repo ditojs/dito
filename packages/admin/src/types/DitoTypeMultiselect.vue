@@ -110,7 +110,6 @@ const DitoTypeMultiselect = {
     const getBoolean = key =>
       computed(() => getSchemaValue(key, { type: Boolean, default: false }))
     const multiple = getBoolean('multiple')
-    const searchable = getBoolean('searchable')
     const taggable = getBoolean('taggable')
 
     const optionsField = useOptions(props, field, {
@@ -132,6 +131,13 @@ const DitoTypeMultiselect = {
       getValueForOption,
       getOptionForValue
     } = optionsField
+    // `search` turns on searching, unless `searchable` is set:
+    const searchable = computed(() =>
+      getSchemaValue('searchable', {
+        type: Boolean,
+        default: !!searchFilter.value
+      })
+    )
 
     function onBlur() {
       if (!element.value.isOpen) {
@@ -324,6 +330,7 @@ const DitoTypeMultiselect = {
 defineType({
   type: 'multiselect',
   component: DitoTypeMultiselect,
+  hasSearch: true,
   ...optionsTraits
 })
 

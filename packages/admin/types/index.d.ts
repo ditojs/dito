@@ -1617,12 +1617,13 @@ export interface MultiselectSchema<$Item = any, $Option = any>
    * Whether to enable a search input field in the dropdown
    * for filtering options.
    *
-   * @defaultValue `false`
+   * @defaultValue `true` with `search`, otherwise `false`
    */
   searchable?: SchemaValue<$Item, {}, boolean>
   /**
    * Searches the options for the `searchTerm` of the search input, e.g.
-   * through the API, instead of filtering them by their labels.
+   * through the API, instead of filtering them by their labels. Turns on
+   * `searchable`.
    */
   search?:
     | SchemaValueCallback<

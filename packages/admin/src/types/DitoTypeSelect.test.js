@@ -374,6 +374,21 @@ describe('DitoTypeSelect', () => {
         expect(getErrors('genre')).toEqual(['Genres are unavailable'])
       }
     )
+    it('warns once about `search`, which only multiselects support', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      await mountSchema({
+        schema: {
+          components: {
+            genre: { type: 'select', options: genres, search: () => genres }
+          }
+        }
+      })
+      expect(warn).toHaveBeenCalledExactlyOnceWith(
+        `Unsupported schema key 'search' in 'genre' is ignored: ` +
+        `Only multiselects support it.`
+      )
+      warn.mockRestore()
+    })
   })
 
   describe('values', () => {

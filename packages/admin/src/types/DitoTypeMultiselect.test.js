@@ -551,13 +551,13 @@ describe('DitoTypeMultiselect', () => {
           author: {
             type: 'multiselect',
             label: 'Author',
-            searchable: true,
             relate: true,
             // Single values are only displayed when they're among the options:
             options: {
               data: ({ item }) => (item.author ? [item.author] : []),
               label: 'name'
             },
+            // Turns on searching without `searchable`:
             search: { filter }
           }
         }

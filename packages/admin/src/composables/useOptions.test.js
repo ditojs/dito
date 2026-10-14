@@ -132,7 +132,6 @@ describe('useOptions()', () => {
           components: {
             genres: {
               type: 'multiselect',
-              searchable: true,
               options: ['Fiction', 'Biography'],
               search
             }

@@ -327,6 +327,14 @@ function assertSupportedSchemaKeys(schema, name) {
   if (isForm(schema)) {
     assertRemovedSchemaKeys(schema, name, removedFormKeys)
   }
+  // Other types ignore `search`, so we only warn about it:
+  if (schema.search !== undefined && !descriptor?.hasSearch) {
+    console.warn(
+      `Unsupported schema key 'search' in '${
+        name ?? schema.type
+      }' is ignored: Only multiselects support it.`
+    )
+  }
   // Only types that don't nest their data by default can choose to:
   if (schema.nested !== undefined && descriptor?.defaultNested) {
     throw new Error(
