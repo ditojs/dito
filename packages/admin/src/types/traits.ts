@@ -29,6 +29,8 @@ export const nestableTraits = {
 
 export const sourceTraits = {
   defaultValue: ({ schema }: Context) => (isListSource(schema) ? [] : null),
+  // Lists are never `null`, but `null` means there's no object:
+  treatsNullAsMissing: ({ schema }: Context) => isListSource(schema),
   // Exclude all sources that have their own resource handling the data.
   defaultExclude: ({ schema }: Context) => !!schema.resource,
 
@@ -80,6 +82,11 @@ export const sourceTraits = {
 } satisfies Partial<TypeDescriptor>
 
 export const optionsTraits = {
+  defaultValue: (context: Context) =>
+    getMultipleValue(context.schema, context) ? [] : null,
+  // Multiple values are never `null`:
+  treatsNullAsMissing: (context: Context) =>
+    getMultipleValue(context.schema, context),
   getOptionsDataSchema: schema => schema.options,
 
   serializeValue(context: Context) {

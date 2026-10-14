@@ -100,19 +100,19 @@ type uses an option depends on the type: `maxLength`, `placeholder` and
 | `label` | `SchemaValue<string \| boolean \| { text?, prefix?, suffix? }>` | the labelized name | The label. `false` hides it. The object form adds [affixes](#affixes) to the text. Buttons, labels, panels, sections and spacers don't generate one. |
 | `if` | `SchemaValue<boolean>` | `true` | Renders the component only if `true`. Values of components that aren't rendered aren't computed. |
 | `visible` | `SchemaValue<boolean>` | `true`, `false` for `computed`, `data`, `hidden` | Shows or hides the component. Hidden components keep their value. |
-| `default` | `SchemaValue` | the type's default | The value used when the item lacks the key, e.g. in new items. |
+| `default` | `SchemaValue` | the type's default | The value used when the item lacks the key, e.g. in new items. Lists, `checkboxes` and multiselects with `multiple` also use it for `null`. |
 | `computeValue` | `SchemaValueCallback` | | Computes the value reactively into the data, also when the component isn't shown, unless `if` is `false`. Returning `undefined` keeps the current value. |
 | `formatValue` | `SchemaValueCallback` | | Converts the value for display. |
 | `parseValue` | `SchemaValueCallback` | | Converts the edited value before it's written into the data. |
 | `deserializeValue` | `SchemaValueCallback` | | Converts the stored value when data is loaded, merged from a save response, reset with `resetItem()`, pasted or read from the query, after the type's own conversion. |
 | `serializeValue` | `SchemaValueCallback` | | Converts the value for the server and the clipboard, after the type's own conversion. Returning `undefined` leaves out the key. |
 | `exclude` | `SchemaValue<boolean>` | `false`; `true` for buttons, labels, spacers and sources with their own `resource` | Leaves the value out of the data sent to the server. Changes of excluded values don't make the data dirty. |
-| `required` | `SchemaValue<boolean>` | `false` | Validates that there is a value. |
+| `required` | `SchemaValue<boolean>` | `false` | Validates that there is a value: not `null`, `''` or an empty array, so lists and fields with multiple values need at least one entry. Unlike the server's `required`, which accepts empty arrays. |
 | `rules` | `SchemaRules` | | Validation rules to add or change, keyed by validator name, or to turn off by setting them to `false` or `undefined`, e.g. `{ email: false }`. Types add their own rules, e.g. `min` for numbers. |
 | `readonly` | `SchemaValue<boolean>` | `false` | Text inputs become read-only, all other components disabled. |
 | `disabled` | `SchemaValue<boolean>` | `false` | Disables the component. |
 | `autofocus` | `SchemaValue<boolean>` | `false` | Focuses the input when rendered. |
-| `clearable` | `SchemaValue<boolean>` | `false` | Adds a button that clears the value. Ignored while `readonly`. |
+| `clearable` | `SchemaValue<boolean>` | `false` | Adds a button that clears the value to `null`, or to `[]` with `multiple`. Ignored while `readonly`. |
 | `placeholder` | `SchemaValue<string>` | | The hint shown in empty inputs. Multiselects also take `false`, see [`multiselect`](#multiselect). |
 | `info` | `SchemaValue<string>` | | Info text shown next to the label. |
 | `maxLength` | `SchemaValue<number>` | | The maximum length of text input. |
@@ -640,7 +640,7 @@ options.
 | Option | Type | Default | Description |
 | ------ | ---- | ------- | ----------- |
 | `type` | `'multiselect'` | | Required. |
-| `multiple` | `SchemaValue<boolean>` | `false` | Selects several options, held in an array. |
+| `multiple` | `SchemaValue<boolean>` | `false` | Selects several options, held in an array, `[]` by default. A stored `null` loads as the `default`. |
 | `searchable` | `SchemaValue<boolean>` | `false` | Adds a search input that filters the options. |
 | `search` | `SchemaValueCallback<OrPromiseOf<any[]>> \| { filter, debounce? }` | | Loads the options for the search term instead of filtering them: `filter` receives `searchTerm` in the context and returns the options. `debounce` delays it, in milliseconds or as `{ delay, immediate? }`. |
 | `stayOpen` | `SchemaValue<boolean>` | `false` | Keeps the dropdown open after selecting. |
@@ -692,7 +692,7 @@ format: {
 ### checkboxes
 
 `CheckboxesSchema`. A checkbox per option. Its default width is `'auto'`, its
-default value `[]`.
+default value `[]`, which a stored `null` loads as too.
 
 | Option | Type | Default | Description |
 | ------ | ---- | ------- | ----------- |
@@ -927,7 +927,8 @@ the list or object.
 
 ### list
 
-`ListSchema`. A table of items. Its default value is `[]`.
+`ListSchema`. A table of items. Its default value is `[]`, which a stored `null`
+loads as too.
 
 | Option | Type | Default | Description |
 | ------ | ---- | ------- | ----------- |

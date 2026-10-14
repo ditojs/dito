@@ -58,6 +58,18 @@ format: {
 Values that are missing from the options, e.g. after an option was removed,
 are kept and shown as unavailable.
 
+`checkboxes`, and multiselects with `multiple: true`, hold an array. It's never
+`null`: a stored `null` loads as the `default`, or `[]`, and the clear button
+empties it. To store empty choices as `null`, convert them when saving:
+
+```js
+genres: {
+  type: 'checkboxes',
+  options: ['fiction', 'poetry', 'drama'],
+  serializeValue: ({ value }) => (value.length > 0 ? value : null)
+}
+```
+
 ## Relations
 
 `relate` selects related objects, with options loaded from the API: while

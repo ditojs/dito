@@ -3,6 +3,13 @@
 The changes of each release of Dito.js. For upgrading to a new major
 version, see the upgrade guides in `docs/`.
 
+## 4.2.0 (unreleased)
+
+### Behaviour changes
+
+- **admin:** Lists, `checkboxes` and multiselects with `multiple` never hold `null`: a stored `null` loads as their `default`, or `[]`, without making the data dirty. Multiselects with `multiple` default to `[]` like checkboxes, and their clear button sets `[]`, so new and cleared multiselects are sent as `[]` instead of `null`. To store empty values as `null`, return it from `serializeValue()`. Objects and single choices keep `null`.
+- **admin:** `required` rejects empty arrays, so required lists and fields with multiple values need at least one entry. The server's `required` still accepts them.
+
 ## 4.1.1 (2026-10-13)
 
 - **admin:** Writes to values of list items and objects that their forms don't show, e.g. a `price` that `onLoad()` calculates, don't make the data dirty, as 4.1.0 described: only changes of fields that are saved are edits.

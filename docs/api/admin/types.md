@@ -308,8 +308,9 @@ server doesn't return.
 treatsNullAsMissing?: boolean | ((context: SchemaContext) => boolean)
 ```
 
-Values that are `null` get their defaults like missing ones, e.g. nested
-sections.
+Values that are `null` get their defaults like missing ones. Dito's own types
+set it for lists, nested sections and panels, and `checkboxes` and
+`multiselect` with `multiple`. Objects and single values keep `null`.
 
 #### resolvesValue
 

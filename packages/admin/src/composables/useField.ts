@@ -15,6 +15,7 @@ import { getInputAffixesProps } from '../utils/affixes.js'
 import { getSchemaEventEntries } from '../utils/schema/events.js'
 import { isLabelled } from '../utils/schema/structure.js'
 import { appendDataPath } from '../utils/data.js'
+import { getMultipleValue } from '../utils/schema/data.js'
 import {
   useSchemaContext,
   useServices,
@@ -302,7 +303,8 @@ export function useField(
     validate,
 
     clear() {
-      value.value = null
+      // Multiple values are never `null`:
+      value.value = getMultipleValue(props.schema, context) ? [] : null
       focus.blur()
       handlers.onChange()
     }

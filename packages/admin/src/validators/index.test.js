@@ -35,18 +35,19 @@ describe('validators', () => {
   })
 
   describe('required', () => {
-    it('rejects `null`, `undefined` and empty strings', () => {
+    it('rejects `null`, `undefined`, empty strings and empty arrays', () => {
       // Only truthiness matters, see `getValueValidationErrors()`:
       expect(validate('required', null)).toBeFalsy()
       expect(validate('required', undefined)).toBeFalsy()
       expect(validate('required', '')).toBeFalsy()
+      expect(validate('required', [])).toBeFalsy()
       expect(getMessage('required')).toBe('is required')
     })
 
     it('accepts other falsy values', () => {
       expect(validate('required', 0)).toBe(true)
       expect(validate('required', false)).toBe(true)
-      expect(validate('required', [])).toBe(true)
+      expect(validate('required', ['s'])).toBe(true)
     })
 
     it('accepts unchanged passwords, which are `undefined`', () => {

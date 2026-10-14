@@ -161,6 +161,18 @@ describe('DitoTypeMultiselect', () => {
       await findField('genre').find('.dito-affixes__clear').trigger('click')
       expect(data.genre).toBe(null)
     })
+
+    it('keeps `null` values instead of their `default`', async () => {
+      const { data } = await mountSchema({
+        schema: {
+          components: {
+            genre: { type: 'multiselect', options: genres, default: 'drama' }
+          }
+        },
+        data: { genre: null }
+      })
+      expect(data.genre).toBe(null)
+    })
     it('links the selected option to its form in `view` when `editable`', async () => {
       const { admin } = await mountAdminWithGenresView({
         components: {
@@ -214,6 +226,55 @@ describe('DitoTypeMultiselect', () => {
       expect(getTagLabels(field)).toEqual(['Drama', 'Fiction'])
       await field.find('.multiselect__tag-icon').trigger('mousedown')
       expect(data.genres).toEqual(['fiction'])
+    })
+
+    it('clears the values to an empty array with the clear button', async () => {
+      const { findField, data, settle } = await mountSchema({
+        schema: {
+          components: {
+            genres: {
+              type: 'multiselect',
+              multiple: true,
+              clearable: true,
+              default: ['drama'],
+              options: genres
+            }
+          }
+        },
+        data: { genres: ['poetry'] }
+      })
+      await findField('genres').find('.dito-affixes__clear').trigger('click')
+      await settle()
+      // Empty arrays aren't missing values that get the `default` again:
+      expect(data.genres).toEqual([])
+    })
+
+    it('holds an empty array by default', async () => {
+      const { data } = await mountSchema({
+        schema: {
+          components: {
+            genres: { type: 'multiselect', multiple: true, options: genres }
+          }
+        }
+      })
+      expect(data.genres).toEqual([])
+    })
+
+    it('loads `null` values as the `default`', async () => {
+      const { data } = await mountSchema({
+        schema: {
+          components: {
+            genres: {
+              type: 'multiselect',
+              multiple: true,
+              default: ['drama'],
+              options: genres
+            }
+          }
+        },
+        data: { genres: null }
+      })
+      expect(data.genres).toEqual(['drama'])
     })
 
     it('marks values without option as unavailable and keeps them', async () => {

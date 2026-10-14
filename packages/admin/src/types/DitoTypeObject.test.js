@@ -42,6 +42,7 @@ describe('DitoTypeObject', () => {
       },
       data: { address: null }
     })
+    expect(data.address).toBe(null)
     const field = findField('address')
     expect(field.find('input').exists()).toBe(false)
     await field.find('.dito-create-button button').trigger('click')

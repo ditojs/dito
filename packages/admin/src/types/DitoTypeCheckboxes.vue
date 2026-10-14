@@ -36,7 +36,6 @@ import { fieldProps, useField } from '../composables/useField.ts'
 import { useOptions } from '../composables/useOptions.ts'
 import DitoOptionList from '../components/DitoOptionList.vue'
 import DitoOptionsEditButtons from '../components/DitoOptionsEditButtons.vue'
-import { getMultipleValue } from '../utils/schema/data.js'
 
 // @vue/component
 const DitoTypeCheckboxes = {
@@ -85,8 +84,6 @@ defineType({
   type: 'checkboxes',
   component: DitoTypeCheckboxes,
   ...optionsTraits,
-  defaultValue: context =>
-    getMultipleValue(context.schema, context) ? [] : null,
   defaultWidth: 'auto',
   defaultMultiple: true
 })
