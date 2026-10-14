@@ -84,6 +84,7 @@ export default {
       parentComponentPath,
       getSchemaValue,
       label,
+      labelText,
       disabled
     } = field
     // A fraction of the width of the closest non-inlined schema:
@@ -147,7 +148,7 @@ export default {
         const { model } = services.dataContext
         const { dataPath } = props
         const fieldLabel = (
-          label.value ||
+          labelText.value ||
           field.placeholder.value ||
           props.schema.name
         )

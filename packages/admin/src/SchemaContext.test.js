@@ -230,15 +230,7 @@ describe('SchemaContext', () => {
       const context = new SchemaContext(component, { dataPath: 'title' })
       expect(context.schema).toBe(component.schema)
       expect(context.itemLabel).toBe('Book')
-      expect(context.itemLabelText).toBe('Book')
       expect(context.formLabel).toBe('Books')
-    })
-
-    it('returns the text of the item label with unescaped values', () => {
-      const context = new SchemaContext(createComponent(), {
-        itemLabel: `<b>Show</b> 'Tom &amp; Jerry &lt;b&gt;'`
-      })
-      expect(context.itemLabelText).toBe(`Show 'Tom & Jerry <b>'`)
     })
 
     it('overrides the values of the component with its own', () => {
@@ -256,7 +248,7 @@ describe('SchemaContext', () => {
       const context = new SchemaContext({}, {})
       expect(context.user).toBe(null)
       expect(context.api).toBe(null)
-      expect(context.itemLabelText).toBe(null)
+      expect(context.itemLabel).toBe(null)
       expect(context.option).toBe(undefined)
       expect(context.options).toBe(undefined)
       expect(context.isSelected).toBe(false)

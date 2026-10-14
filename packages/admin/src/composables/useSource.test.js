@@ -13,7 +13,10 @@ import {
 import DitoTypeList from '../types/DitoTypeList.vue'
 import { getTypeDescriptor } from '../utils/schema/types.ts'
 
-async function mountBookForm() {
+async function mountBookForm({
+  itemLabel = 'title',
+  chapters = [{ title: 'Tom & Jerry <img src=x>' }]
+} = {}) {
   return mountForm({
     schema: {
       components: {
@@ -21,7 +24,7 @@ async function mountBookForm() {
           type: 'list',
           inlined: true,
           deletable: true,
-          itemLabel: 'title',
+          itemLabel,
           form: {
             type: 'form',
             label: 'Chapter',
@@ -30,7 +33,7 @@ async function mountBookForm() {
         }
       }
     },
-    data: { chapters: [{ title: 'Tom & Jerry <img src=x>' }] }
+    data: { chapters }
   })
 }
 
@@ -66,6 +69,36 @@ describe('useSource()', () => {
         `Chapter 'Tom & Jerry <img src=x>' was removed.`,
         'Note: the parent still needs to be saved ' +
         'in order to persist this change.'
+      ])
+    })
+
+    it('confirms with the labels that `itemLabel()` returns', async () => {
+      vi.spyOn(console, 'log').mockImplementation(() => {})
+      const messages = []
+      // Closing dialogs may still show, the one being answered comes last:
+      stubConfirm().mockImplementation(() => {
+        const message = [
+          ...document.querySelectorAll('.dito-confirm-message')
+        ].at(-1)
+        messages.push(message.innerHTML)
+        return true
+      })
+      const { findField, data } = await mountBookForm({
+        itemLabel: ({ item }) =>
+          item.html ? { html: `<b>${item.title}</b>` } : item.title,
+        chapters: [
+          { title: 'Tom & <i>Jerry</i>' },
+          { title: 'Dune', html: true }
+        ]
+      })
+      while (data.chapters.length > 0) {
+        const button = findField('chapters').find('.dito-button--remove')
+        await button.trigger('click')
+        await flushPromises()
+      }
+      expect(messages).toEqual([
+        'Do you really want to remove Tom &amp; &lt;i&gt;Jerry&lt;/i&gt;?',
+        'Do you really want to remove <b>Dune</b>?'
       ])
     })
 

@@ -81,4 +81,37 @@ describe('DitoTrail', () => {
     await admin.navigate('/items/1')
     expect(getTrail()).toEqual(trail)
   })
+
+  it('shows the labels of views as text', async () => {
+    const admin = await mountAdmin({
+      views: {
+        books: { type: 'view', label: 'Books & <i>Films</i>', components: {} }
+      }
+    })
+    await admin.navigate('/books')
+    const trail = admin.wrapper.find('.dito-trail')
+    expect(trail.find('.dito-trail__text').text()).toBe('Books & <i>Films</i>')
+    expect(trail.find('i').exists()).toBe(false)
+  })
+
+  it('shows the text of `{ html }` form labels', async () => {
+    const { admin } = await mountForm({
+      schema: {
+        components: {
+          chapters: {
+            type: 'list',
+            form: {
+              type: 'form',
+              label: { html: '<b>Chapter</b>' },
+              components: { title: { type: 'text' } }
+            }
+          }
+        }
+      },
+      data: { chapters: [{ title: 'Arrakis' }] }
+    })
+    await admin.navigate('/items/1/chapters/0')
+    const texts = admin.wrapper.findAll('.dito-trail__text')
+    expect(texts.at(-1).text()).toBe('Edit Chapter')
+  })
 })

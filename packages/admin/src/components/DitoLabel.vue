@@ -1,6 +1,6 @@
 <template lang="pug">
 component.dito-label(
-  v-if="text || collapsible"
+  v-if="hasContent || collapsible"
   :is="collapsible ? 'button' : 'div'"
   :type="collapsible ? 'button' : null"
   v-bind="attributes"
@@ -10,7 +10,7 @@ component.dito-label(
     :class="{ 'dito-chevron--open': !collapsed }"
   )
   .dito-label__inner(
-    v-if="text || prefixes.length > 0 || suffixes.length > 0"
+    v-if="hasContent || prefixes.length > 0 || suffixes.length > 0"
   )
     DitoAffixes(
       :items="prefixes"
@@ -18,9 +18,13 @@ component.dito-label(
       :parentContext="context"
     )
     label(
-      v-if="text"
+      v-if="content.text"
       :for="htmlFor"
-      v-html="text"
+    ) {{ content.text }}
+    label(
+      v-else-if="content.html"
+      :for="htmlFor"
+      v-html="content.html"
     )
     DitoAffixes(
       :items="suffixes"
@@ -28,9 +32,9 @@ component.dito-label(
       position="suffix"
       :parentContext="context"
     )
-    .dito-info(
+    DitoInfo(
       v-if="info"
-      :data-info="info"
+      :info="info"
     )
 </template>
 
@@ -38,27 +42,30 @@ component.dito-label(
 import { computed } from 'vue'
 import { isObject, asArray } from '@ditojs/utils'
 import DitoAffixes from './DitoAffixes.vue'
+import DitoInfo from './DitoInfo.vue'
 
 export default {
-  components: { DitoAffixes },
+  components: { DitoAffixes, DitoInfo },
   emits: ['toggle'],
 
   props: {
+    // Text, or `{ text | html, prefix, suffix }`:
     label: { type: [String, Object], default: null },
     // For the callbacks of the affixes:
     context: { type: Object, required: true },
     htmlFor: { type: String, default: null },
     collapsed: { type: Boolean, default: false },
     collapsible: { type: Boolean, default: false },
-    info: { type: String, default: null }
+    info: { type: [String, Object], default: null }
   },
 
   setup(props, { emit }) {
+    const content = computed(() =>
+      isObject(props.label) ? props.label : { text: props.label }
+    )
     return {
-      text: computed(() => {
-        const { label } = props
-        return isObject(label) ? label?.text : label
-      }),
+      content,
+      hasContent: computed(() => !!(content.value.text || content.value.html)),
       prefixes: computed(() => asArray(props.label?.prefix)),
       suffixes: computed(() => asArray(props.label?.suffix)),
       attributes: computed(() =>

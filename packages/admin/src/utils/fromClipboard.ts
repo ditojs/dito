@@ -1,10 +1,11 @@
-import { asArray, clone, isArray, isObject, labelize } from '@ditojs/utils'
+import { asArray, clone, isArray, isObject } from '@ditojs/utils'
 import SchemaContext from '../SchemaContext.js'
 import { createTemporaryId, isTemporaryId } from './data.js'
+import { getText } from './html.js'
 import {
   walkSchemaData,
   deserializeData,
-  getSchemaValue
+  getLabel
 } from './schema/data.js'
 import { getSourceType } from './schema/types.ts'
 import { findOptionsForLabel, getRelateKey } from './schema/options.ts'
@@ -70,10 +71,7 @@ export async function fromClipboard(
       ...entry,
       rootData: walkOptions.rootData
     })
-    const fieldLabel = (
-      getSchemaValue('label', { type: String, schema, context }) ||
-      labelize(name)
-    )
+    const fieldLabel = getText(getLabel(schema, context, name))
     const unresolvedLabels: string[] = []
     const resolve = (value: any) => {
       if (isLabel(value)) {

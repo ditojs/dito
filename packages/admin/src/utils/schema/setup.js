@@ -25,6 +25,7 @@ import {
   getPanelSchemas
 } from './structure.js'
 import { getFormSchemas } from './lookup.js'
+import { getText } from '../html.js'
 
 const resolvedSchemas = new WeakMap()
 
@@ -127,7 +128,7 @@ export async function resolveViews(unresolvedViews) {
       schema = await resolveSchema(schema, unwrapModule)
       if (isMenu(schema)) {
         // NOTE: Sub-menus need a name to be stored by in the parent object:
-        const name = schema.name || camelize(schema.label)
+        const name = schema.name || camelize(getText(schema.label))
         const items = assertSchemas(
           await resolveSchemas(schema.items),
           `items of menu '${name}'`

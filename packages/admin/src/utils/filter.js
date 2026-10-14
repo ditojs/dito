@@ -1,11 +1,13 @@
 import {
   isArray,
+  isObject,
   isString,
   asArray,
   labelize,
   normalizeDataPath,
   parseDataPath
 } from '@ditojs/utils'
+import { getText } from './html.js'
 import { getNamedSchemas } from './schema/lookup.js'
 import { applyNestedSchemaDefaults } from './schema/setup.js'
 import { deserializeData } from './schema/data.js'
@@ -153,14 +155,16 @@ function createFiltersComponents(filters) {
     if (components) {
       form.type = 'form'
       form.components = {}
-      // Convert labels to placeholders:
+      // Convert labels to placeholders, which are text:
       for (const [key, component] of Object.entries(components)) {
         if (component) {
-          const label = component.label || labelize(component.name || key)
+          const { label } = component
           form.components[key] = {
             ...component,
             label: false,
-            placeholder: label
+            placeholder: isObject(label)
+              ? getText(label)
+              : label || labelize(component.name || key)
           }
         }
       }

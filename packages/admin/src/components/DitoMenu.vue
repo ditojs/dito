@@ -16,7 +16,7 @@ ul.dito-menu
           :class="{ 'dito-menu__link--active': isActiveNode(node) }"
           :aria-current="isActiveNode(node) ? 'page' : null"
           @click="navigate"
-        ) {{ getLabel(node.schema) }}
+        ) {{ getLabelText(node.schema) }}
       DitoMenu.dito-menu__sub(
         v-if="node.items"
         :nodes="node.items"
@@ -39,7 +39,7 @@ export default {
   setup() {
     const route = useRoute()
     const router = useRouter()
-    const { getLabel, shouldRenderSchema } = useSchemaValue(
+    const { getLabelText, shouldRenderSchema } = useSchemaValue(
       new SchemaContext(useServices(), { nested: false })
     )
 
@@ -48,7 +48,7 @@ export default {
     const getPath = routeName => router.resolve({ name: routeName }).path
 
     return {
-      getLabel,
+      getLabelText,
       getPath,
 
       shouldShowNode(node) {

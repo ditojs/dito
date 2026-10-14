@@ -20,9 +20,9 @@
     @mousedown.stop
   )
   slot(name="append")
-  .dito-info(
+  DitoInfo(
     v-if="inlineInfo"
-    :data-info="inlineInfo"
+    :info="inlineInfo"
   )
 </template>
 
@@ -31,10 +31,11 @@ import { computed } from 'vue'
 import { asArray, isString } from '@ditojs/utils'
 import { hasSlotContent } from '@ditojs/ui/src'
 import DitoAffix from './DitoAffix.vue'
+import DitoInfo from './DitoInfo.vue'
 import { shouldRenderSchema } from '../utils/schema/data.js'
 
 export default {
-  components: { DitoAffix },
+  components: { DitoAffix, DitoInfo },
   emits: ['clear'],
 
   props: {
@@ -46,7 +47,7 @@ export default {
     clearable: { type: Boolean, default: false },
     hasValue: { type: Boolean, default: false },
     disabled: { type: Boolean, default: false },
-    inlineInfo: { type: String, default: null },
+    inlineInfo: { type: [String, Object], default: null },
     // For the callbacks of the items:
     parentContext: { type: Object, required: true }
   },

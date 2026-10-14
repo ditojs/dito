@@ -158,7 +158,7 @@ export default {
     data: { type: Object, default: null },
     store: { type: Object, default: () => ({}) },
     label: { type: [String, Object], default: null },
-    info: { type: String, default: null },
+    info: { type: [String, Object], default: null },
     single: { type: Boolean, default: false },
     padding: { type: String, default: null },
     active: { type: Boolean, default: true },
@@ -190,10 +190,10 @@ export default {
         ...values
       })
     const context = createContext()
-    const { getSchemaValue, getLabel, shouldRenderSchema } =
+    const { getSchemaValue, getLabelText, shouldRenderSchema } =
       useSchemaValue(context)
     const formLabel = computed(() =>
-      getLabel(getItemFormSchema(unref(sourceSchema), props.data, context))
+      getLabelText(getItemFormSchema(unref(sourceSchema), props.data, context))
     )
 
     const schemaEvents = useSchemaEvents(() => props.schema, {

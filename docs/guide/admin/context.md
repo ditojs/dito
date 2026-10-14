@@ -135,19 +135,19 @@ The API lists all places, see
 
 ## The label of the item
 
-Inside a form, every context has `itemLabel`, the label of the form's item as
-HTML, and `itemLabelText`, the same as plain text. They're computed when read,
-from the `itemLabel` of the list or object that holds the item:
+Inside a form, every context has `itemLabel`, the text of the label of the
+form's item. It's computed when read, from the `itemLabel` of the list or object
+that holds the item:
 
 ```js
 deleteButton: {
   type: 'button',
-  text: ({ itemLabelText }) => `Delete ${itemLabelText}`,
+  text: ({ itemLabel }) => `Delete ${itemLabel}`,
   …
 }
 ```
 
-Inside the `itemLabel()` callback itself, they're `null`.
+Inside the `itemLabel()` callback itself, it's `null`.
 
 ## The form's actions
 

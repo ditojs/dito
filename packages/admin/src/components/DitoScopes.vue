@@ -5,9 +5,9 @@
     :key="key"
     :class="{ 'dito-button--selected': scope.name === listQuery.query.scope }"
     :aria-pressed="scope.name === listQuery.query.scope"
-    :title="scope.hint || getLabel(scope)"
+    :title="scope.hint || getLabelText(scope)"
     @click="selectScope(scope)"
-  ) {{ getLabel(scope) }}
+  ) {{ getLabelText(scope) }}
 </template>
 
 <script>
@@ -26,7 +26,7 @@ export default {
 
   setup(props) {
     return {
-      getLabel: useSchemaValue(props.context).getLabel,
+      getLabelText: useSchemaValue(props.context).getLabelText,
 
       selectScope(scope) {
         props.listQuery.update({ scope: scope.name }, { resetPage: true })

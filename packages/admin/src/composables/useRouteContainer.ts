@@ -37,7 +37,7 @@ export interface RouteContainerOptions
   isMutating?: () => boolean
   breadcrumb: () => string
   verbs: () => Record<string, string>
-  // The label of the item that forms edit, as HTML:
+  // The text of the label of the item that forms edit:
   itemLabel?: () => string | null
   // Forms with a resource of their own:
   resourceContext?: ResourceContext | null

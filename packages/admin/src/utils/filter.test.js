@@ -150,6 +150,25 @@ describe('createFiltersPanel()', () => {
     )
   })
 
+  it('converts `{ text }` and `{ html }` labels to text placeholders', () => {
+    const label = ({ item }) => item.title
+    const { panel } = createPanel({
+      filters: {
+        price: {
+          components: {
+            from: { type: 'number', label: { text: 'From & <up>' } },
+            to: { type: 'number', label: { html: '<b>To</b> &amp; under' } },
+            currency: { type: 'text', label }
+          }
+        }
+      }
+    })
+    const { components } = panel.components.$price.form
+    expect(components.from.placeholder).toBe('From & <up>')
+    expect(components.to.placeholder).toBe('To & under')
+    expect(components.currency.placeholder).toBe(label)
+  })
+
   it('leaves out the operator component of text filters without operators', () => {
     const { panel } = createPanel()
     expect(Object.keys(panel.components.$author.form.components)).toEqual([

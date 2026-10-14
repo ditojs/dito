@@ -16,9 +16,9 @@ const form = {
       }
     }
   },
-  onSuccess({ notify, itemLabelText, isCreating }) {
+  onSuccess({ notify, itemLabel, isCreating }) {
     const action = isCreating ? 'created' : 'saved'
-    notify({ text: `${itemLabelText} was ${action}.` })
+    notify({ text: `${itemLabel} was ${action}.` })
   }
 }
 ```
@@ -109,8 +109,8 @@ written, including the ones that depend on options to load:
 ```js
 const form = {
   type: 'form',
-  onLoad({ item, itemLabelText }) {
-    document.title = itemLabelText
+  onLoad({ item, itemLabel }) {
+    document.title = itemLabel
   }
 }
 ```
@@ -237,8 +237,7 @@ suppress dito's notification, see [Return values](#return-values).
 `type: 'form'` schemas, including the forms of lists, objects and trees. The
 contexts of form events describe the form's item, see
 [Which item a context describes](./context.md#which-item-a-context-describes):
-`value` is `undefined`, and they have `itemLabel`, `itemLabelText` and
-`formLabel`.
+`value` is `undefined`, and they have `itemLabel` and `formLabel`.
 
 ### onSuccess()
 

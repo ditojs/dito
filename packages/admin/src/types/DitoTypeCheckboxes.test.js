@@ -226,4 +226,19 @@ describe('DitoTypeCheckboxes', () => {
       '/genres/2'
     ])
   })
+
+  it('labels the group with the text of its label', async () => {
+    const { findField } = await mountSchema({
+      schema: {
+        components: {
+          genres: {
+            type: 'checkboxes',
+            label: { html: '<b>Genres</b> &amp; forms' },
+            options: genres
+          }
+        }
+      }
+    })
+    expect(findField('genres').attributes('aria-label')).toBe('Genres & forms')
+  })
 })

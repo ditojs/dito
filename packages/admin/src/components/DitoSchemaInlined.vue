@@ -53,7 +53,7 @@ export default {
     data: { type: Object, required: true },
     store: { type: Object, required: true },
     label: { type: [String, Object], default: null },
-    info: { type: String, default: null },
+    info: { type: [String, Object], default: null },
     padding: { type: String, default: null },
     disabled: { type: Boolean, required: true },
     collapsed: { type: Boolean, default: false },

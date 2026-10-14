@@ -1,9 +1,13 @@
-import { labelize } from '@ditojs/utils'
 import SchemaContext from '../SchemaContext.js'
 import { appendDataPath } from '../utils/data.js'
-import { getSchemaValue, getItemDisplayValue } from '../utils/schema/data.js'
+import {
+  getLabel,
+  getItemDisplayValue,
+  type Label
+} from '../utils/schema/data.js'
 import { getItemFormSchema } from '../utils/schema/lookup.js'
 import { getItemIdOrIndex, getItemLabel } from '../utils/schema/item.js'
+import { getText } from '../utils/html.js'
 import type { Context } from '../utils/schema/types.ts'
 import type { Data, Schema } from '../utils/types.ts'
 
@@ -42,7 +46,7 @@ export function useSourceItems({
       })
     },
 
-    // Labels are HTML:
+    // Item labels are HTML:
     getItemLabel(
       sourceSchema: Schema,
       item: Data | null,
@@ -52,18 +56,12 @@ export function useSourceItems({
         asObject = false
       }: { index?: number | null; extended?: boolean; asObject?: boolean } = {}
     ) {
-      let formLabel: string | undefined
+      let formLabel: Label | undefined
       const getFormLabel = () => {
         if (formLabel === undefined) {
           const context = getContext()
           const form = getItemFormSchema(sourceSchema, item, context)
-          formLabel = form
-            ? getSchemaValue('label', {
-                schema: form,
-                context,
-                type: [String, Object]
-              }) || labelize(form.name)
-            : ''
+          formLabel = form ? getLabel(form, context) : ''
         }
         return formLabel
       }
@@ -98,7 +96,7 @@ export function useSourceItems({
               },
 
               get formLabel() {
-                return getFormLabel()
+                return getText(getFormLabel())
               }
             })
           )

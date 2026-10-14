@@ -71,7 +71,7 @@ export default {
         // NOTE: Each view has its own data, as `DitoRouterView` renders each
         // route record with its own component instance:
         data: {},
-        breadcrumb: () => schema.value.breadcrumb || getLabel(schema.value),
+        breadcrumb: () => schema.value.breadcrumb || getLabelText(schema.value),
         verbs: () => defaultVerbs,
         // The view provides the source of its main component to the others:
         sourceContext: computed(
@@ -87,7 +87,7 @@ export default {
       reactive({ schema, data, dataPath: '' }),
       { services }
     )
-    const { getLabel, shouldRenderSchema } = useSchemaValue(context)
+    const { getLabelText, shouldRenderSchema } = useSchemaValue(context)
 
     onMounted(() => {
       // Prevent bypassing of `if` by direct URL access:

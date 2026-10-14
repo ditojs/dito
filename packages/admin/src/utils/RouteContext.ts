@@ -31,7 +31,7 @@ export interface RouteContext {
   // The tab of the route's schema:
   selectedTab: string | null
   readonly verbs: Record<string, string>
-  // The label of the item that forms edit, as HTML, `null` in views:
+  // The text of the label of the item that forms edit, `null` in views:
   readonly itemLabel: string | null
   // Views track the requests of their forms too:
   readonly loadingTracker: LoadingTracker

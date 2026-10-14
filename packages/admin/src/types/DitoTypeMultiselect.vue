@@ -10,7 +10,7 @@
       :id="componentPath"
       ref="element"
       v-model="selectedOptions"
-      :aria-label="label"
+      :aria-label="labelText"
       :class="multiselectClasses"
       :showLabels="false"
       :placeholder="placeholder"
@@ -249,7 +249,7 @@ const DitoTypeMultiselect = {
         if (isBoolean(placeholder)) {
           placeholder = placeholder ? undefined : null
         }
-        const label = field.label.value
+        const label = field.labelText.value
         return placeholder === undefined
           ? searchable.value && taggable.value
             ? label

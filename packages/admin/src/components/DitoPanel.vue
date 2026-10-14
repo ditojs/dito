@@ -5,7 +5,7 @@ component.dito-panel(
   v-show="visible && (!isTabSelected || isTabSelected())"
   :is="panelTag"
   role="region"
-  :aria-label="getLabel(schema)"
+  :aria-label="getLabelText(schema)"
   @submit.prevent
 )
   DitoSchema.dito-panel__schema(
@@ -21,7 +21,7 @@ component.dito-panel(
   )
     template(#prepend)
       h2.dito-panel__header(:class="{ 'dito-panel__header--sticky': sticky }")
-        span {{ getLabel(schema) }}
+        span {{ getLabelText(schema) }}
         DitoButtons.dito-buttons--small.dito-panel__header-buttons(
           :buttons="panelButtonSchemas"
           buttonsName="panelButtons"
@@ -85,7 +85,7 @@ export default {
         dataPath: computed(() => schemaContext.dataPath)
       })
     )
-    const { getSchemaValue, getLabel } = useSchemaValue(context)
+    const { getSchemaValue, getLabelText } = useSchemaValue(context)
     // Panels display the item of their schema, or an item of their own under
     // their name in it: nested data, like sections, or their own data, within
     // the root data around them. Own data gets its own container, so that its
@@ -120,7 +120,7 @@ export default {
     const panelServices = container?.services ?? services
 
     return {
-      getLabel,
+      getLabelText,
       hasOwnData,
       panelData,
       panelDataPath,

@@ -201,6 +201,14 @@ describe('resolveViews()', () => {
     })
   })
 
+  it('names sub-menus after the text of `{ text }` and `{ html }` labels', async () => {
+    const views = await resolveViews([
+      { type: 'menu', label: { text: 'New Books' }, items: [] },
+      { type: 'menu', label: { html: '<b>Used</b> Books' }, items: [] }
+    ])
+    expect(Object.keys(views)).toEqual(['newBooks', 'usedBooks'])
+  })
+
   it('resolves the items of named sub-menus too', async () => {
     const books = { type: 'view', label: 'Books' }
     const catalog = {

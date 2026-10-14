@@ -16,7 +16,7 @@
       :path="rootPath"
       :draggable="draggable"
       :open="true"
-      :aria-label="label || labelize(schema.name)"
+      :aria-label="labelText || labelize(schema.name)"
       @change-children="changeChildren"
     )
     .dito-tree-form-container(

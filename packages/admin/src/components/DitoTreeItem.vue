@@ -126,7 +126,7 @@ import {
   hasFormSchema
 } from '../utils/schema/lookup.js'
 import { getItemUid } from '../utils/schema/data.js'
-import { getTextFromHtml } from '../utils/html.js'
+import { getText } from '../utils/html.js'
 import { getListWithMovedItem } from '../utils/list.js'
 import { confirmAndRemove } from '../utils/dialogs.js'
 import { isPathWithin } from '../utils/route.js'
@@ -252,7 +252,7 @@ export default {
       numEntries: computed(
         () => (properties.value?.length || 0) + numChildren.value
       ),
-      ariaLabel: computed(() => getTextFromHtml(props.label?.text)),
+      ariaLabel: computed(() => getText(props.label)),
       details: computed(() => {
         const count = numChildren.value
         return count && `${count} ${count === 1 ? 'item' : 'items'}`

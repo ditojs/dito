@@ -8,6 +8,11 @@ version, see the upgrade guides in `docs/`.
 ### Behaviour changes
 
 - **server:** `@ditojs/build`, `vite` and `@vitejs/plugin-vue` are optional peer dependencies, loaded only to build the admin or serve it in development: install them as dev dependencies of the app. `app.defineAdminViteConfig()` and `defineViteConfig()` of `AdminController` return promises, which Vite awaits as the default export of `admin.vite.config.js`.
+- **admin:** Labels, the results of `itemLabel()`, `info` and the values of `label` components are text unless they're given as `{ html }`: strings show as they are, e.g. `&` and `<b>`, where labels and the strings returned by `itemLabel()` were HTML. Labels and callbacks that return HTML return `{ html }` instead. Labels show as text in tabs, the menu, the trail, column headers, buttons and accessible names, also for `{ html }`. `context.formLabel` is the text of the form's label, and `context.itemLabel` the text of the item's label, which was HTML: notifications that interpolate it pass it as `text`. `context.itemLabelText` is removed, use `context.itemLabel`.
+
+### New
+
+- **admin:** `{ html }` on `label`, the results of `itemLabel()` and `info`, which renders its HTML, and `TextOrHtml` and `SchemaLabel` types for them. Filter placeholders use the text of `{ text }` and `{ html }` labels.
 
 ### Fixes
 

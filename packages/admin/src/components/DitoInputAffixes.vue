@@ -38,7 +38,7 @@ export default {
     disabled: { type: Boolean, default: false },
     clearable: { type: Boolean, default: false },
     hasValue: { type: Boolean, default: false },
-    inlineInfo: { type: String, default: null },
+    inlineInfo: { type: [String, Object], default: null },
     // For the callbacks of the items:
     parentContext: { type: Object, required: true }
   }

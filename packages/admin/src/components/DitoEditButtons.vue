@@ -87,7 +87,7 @@ export default {
 
   setup(props) {
     const { context, services } = useSchemaContext(props)
-    const { getSchemaValue, getLabel } = useSchemaValue(context)
+    const { getSchemaValue, getLabelText } = useSchemaValue(context)
     const verbs = computed(() => getVerbs(services))
 
     // Forms can disable each option with `false` or a callback returning it:
@@ -133,7 +133,7 @@ export default {
       ),
 
       createButtonText: computed(() => {
-        const formLabel = getLabel(props.schema.form)
+        const formLabel = getLabelText(props.schema.form)
         return (
           // Allow schema to override create button through creatable object:
           getSchemaValue('creatable')?.label ||

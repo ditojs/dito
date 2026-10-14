@@ -210,18 +210,10 @@ The schema of the component.
 context.itemLabel: string | null
 ```
 
-The label of the form's item, as HTML with escaped item values. Available in
-every context inside a form, e.g. in its events and in the `if` and `label` of
-its components, and computed when it's read. `null` inside the `itemLabel()`
-callback itself.
-
-### itemLabelText
-
-```ts
-context.itemLabelText: string | null
-```
-
-The text of `itemLabel`, with its item values unescaped.
+The text of the label of the form's item. Available in every context inside a
+form, e.g. in its events and in the `if` and `label` of its components, and
+computed when it's read. `null` inside the `itemLabel()` callback itself. Use
+`text`, not `html`, when passing it to [`notify()`](#notify).
 
 ### formLabel
 
@@ -229,7 +221,8 @@ The text of `itemLabel`, with its item values unescaped.
 context.formLabel: string | null
 ```
 
-The label of the form, in the contexts of form events.
+The text of the form's label, in the contexts of form events and in
+`itemLabel()`.
 
 ### isDirty
 
@@ -427,11 +420,8 @@ The extended context.
 #### Example
 
 ```js
-import { escapeHtml } from '@ditojs/utils'
-
 // A label callback, shared by the chapters list and its select:
-const getChapterLabel = ({ value }) =>
-  escapeHtml(`${value.position}. ${value.title}`)
+const getChapterLabel = ({ value }) => `${value.position}. ${value.title}`
 
 const chapters = {
   type: 'list',
@@ -778,7 +768,7 @@ of button and form events, calling it suppresses dito's own notification.
 #### Example
 
 ```js
-onSuccess({ notify, itemLabelText }) {
-  notify({ type: 'success', text: `${itemLabelText} was published.` })
+onSuccess({ notify, itemLabel }) {
+  notify({ type: 'success', text: `${itemLabel} was published.` })
 }
 ```

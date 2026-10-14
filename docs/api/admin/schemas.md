@@ -98,7 +98,7 @@ that can be cleared.
 | ------ | ---- | ------- | ----------- |
 | `type` | `string` | | The component type. Required. |
 | `name` | `string` | the key | The key of the value in the item. Set from the key in `components`. |
-| `label` | `SchemaValue<string \| boolean \| { text?, prefix?, suffix? }>` | the labelized name | The label. `false` hides it. The object form adds [affixes](#affixes) to the text. Buttons, labels, panels, sections and spacers don't generate one. |
+| `label` | `SchemaValue<TextOrHtml \| boolean \| { text? \| html?, prefix?, suffix? }>` | the labelized name | The label, see [Text and HTML](#text-and-html). `false` hides it. The object form adds [affixes](#affixes). Buttons, labels, panels, sections and spacers don't generate one. |
 | `if` | `SchemaValue<boolean>` | `true` | Renders the component only if `true`. Values of components that aren't rendered aren't computed. |
 | `visible` | `SchemaValue<boolean>` | `true`, `false` for `value` | Shows or hides the component. Hidden components keep their value. |
 | `default` | `SchemaValue` | the type's default | The value used when the item lacks the key, e.g. in new items. Lists, `checkboxes` and multiselects with `multiple` also use it for `null`. |
@@ -115,7 +115,7 @@ that can be cleared.
 | `autofocus` | `SchemaValue<boolean>` | `false` | Focuses the input when rendered. |
 | `clearable` | `SchemaValue<boolean>` | `false` | Adds a button that clears the value to `null`, or to `[]` with `multiple`. Ignored while `readonly`. |
 | `placeholder` | `SchemaValue<string>` | | The hint shown in empty inputs, and in selects while no option is selected. Multiselects also take `false`, see [`multiselect`](#multiselect). |
-| `info` | `SchemaValue<string>` | | Info text shown next to the label. |
+| `info` | `SchemaValue<TextOrHtml>` | | Info shown in a tooltip next to the label, see [Text and HTML](#text-and-html). Line breaks in text show. |
 | `maxLength` | `SchemaValue<number>` | | The maximum length of text input. |
 | `autocomplete` | `SchemaValue<'on' \| 'off'>` | | The `autocomplete` attribute of text inputs. |
 | `width` | `SchemaValue<…>` | `1` (full); `'auto'` for buttons, `checkboxes`, `radio`, `switch` | See [Layout options](#layout-options). |
@@ -159,6 +159,21 @@ exceed 100%.
 | `'fill'` | Fills the space left in the line. |
 | `'>50%'`, `'<50%'` | The width, growing (`>`) or shrinking (`<`) to fit the line. |
 | `'200px'` | A width in CSS units. |
+
+### Text and HTML
+
+Labels, item labels and info are `TextOrHtml`: a string or `{ text }` is text
+and shows as it is, `{ html }` is HTML. Only `{ html }` renders tags, so escape
+the values that its HTML includes with `escapeHtml()` of
+[@ditojs/utils](../utils.md).
+
+```js
+title: { type: 'text', label: 'Title & Subtitle' },
+isbn: { type: 'text', label: { html: '<abbr>ISBN</abbr>' } }
+```
+
+Where labels show as text, e.g. in tabs, the menu, the trail, column headers
+and accessible names, `{ html }` shows its text without the tags.
 
 ### Removed keys
 
@@ -819,7 +834,9 @@ panels: {
 ### label
 
 `LabelSchema`. Shows text in the place of a component: its `label` if it has
-one, or else its value. It is excluded from the data sent to the server.
+one, or else its value, which is `TextOrHtml` as well, see
+[Text and HTML](#text-and-html). It is excluded from the data sent to the
+server.
 
 ```js
 notice: { type: 'label', label: 'Prices include VAT.' }
@@ -866,7 +883,7 @@ buttons: {
     closeForm: true,
     onSuccess({ notify, itemLabel }) {
       // Replaces dito's notification:
-      notify({ type: 'success', html: `${itemLabel} was archived.` })
+      notify({ type: 'success', text: `${itemLabel} was archived.` })
     }
   },
   export: {
@@ -908,7 +925,7 @@ sources share the [source options](#source-options), in addition to the
 | `deletable` | `SchemaValue<boolean>` | `false` | Adds delete buttons, which ask first. Sources with a resource delete the item through it; others remove it from the data. |
 | `draggable` | `SchemaValue<boolean>` | `false` | Lets the items of lists be reordered by dragging. |
 | `orderKey` | `string` | | The key that stores the order of dragged items. Items are numbered when loaded and when added, removed or moved. |
-| `itemLabel` | `SchemaValue<string \| { text?, prefix?, suffix? }> \| false` | the value of the first column, else of `name` | The label of items, in HTML. A string names the item's key, or is the label itself when the item has no such key. Callbacks return HTML and must escape item values with `escapeHtml()`. Callbacks can also return `{ text, prefix, suffix }`, whose prefix and suffix are [affixes](#affixes) shown in the headers of inlined forms and in tree items. Items of lists without a label show their number. `false` shows none. |
+| `itemLabel` | `SchemaValue<TextOrHtml \| { text? \| html?, prefix?, suffix? }> \| false` | the value of the first column, else of `name` | The label of items. A string names the item's key, or is the label itself when the item has no such key. Callbacks return text, or `{ html }`, see [Text and HTML](#text-and-html). Callbacks can also return objects with `prefix` and `suffix`, [affixes](#affixes) shown in the headers of inlined forms and in tree items. Items of lists without a label show their number. `false` shows none. |
 | `render` | `SchemaValueCallback<string>` | | Renders the HTML of items without inlined forms, instead of their label. |
 | `component` | `Resolvable<VueComponent>` | | A Vue component that renders items without inlined forms. It receives `schema`, `context` and `modelValue` (the item). |
 | `columns` | `Columns \| string[]` | | The table columns of lists, see [Columns](#columns). |
@@ -972,7 +989,7 @@ chapters: {
   creatable: true,
   deletable: true,
   collapsible: true,
-  itemLabel: ({ item }) => escapeHtml(item.title || 'Untitled'),
+  itemLabel: ({ item }) => item.title || 'Untitled',
   components: {
     title: { type: 'text' }
   }
@@ -985,7 +1002,7 @@ chapters: {
 
 | Option | Type | Default | Description |
 | ------ | ---- | ------- | ----------- |
-| `label` | `string` | the labelized key | The column header. |
+| `label` | `TextOrHtml` | the labelized key | The column header. |
 | `sortable` | `boolean` | `false` | Makes the column sortable, by the value. |
 | `defaultSort` | `true \| 'asc' \| 'desc'` | | Sorts by this column by default, `true` meaning `'asc'`. The first column with it wins. |
 | `render` | `SchemaValueCallback<string \| null>` | | Returns the HTML of the cell. Receives `value` in the context. |
@@ -1107,7 +1124,7 @@ of [`DitoAdmin`](./admin.md) map names to views or menus.
 | ------ | ---- | ------- | ----------- |
 | `type` | `'view'` | | Required. |
 | `name` | `string` | the key in `views` | The name of the view. |
-| `label` | `SchemaValue<string>` | the labelized name | The label in the menu and the trail. |
+| `label` | `SchemaValue<TextOrHtml>` | the labelized name | The label in the menu and the trail. |
 | `path` | `string` | the normalized name | The URL path of the view. |
 | `component` | `Component` | | A single component that the view displays, usually a list. It is named after the view and has no label. |
 | `components` | `Components` | | The components of the view, instead of `component`. |
@@ -1173,7 +1190,7 @@ schemas, also as promises, functions returning them, or module namespaces of
 | ------ | ---- | ------- | ----------- |
 | `type` | `'form'` | | Required. |
 | `name` | `SchemaValue<string>` | | The name of the item model, used in labels. |
-| `label` | `SchemaValue<string \| boolean>` | the labelized name | The label of the form, e.g. in `'Edit Book'`. |
+| `label` | `SchemaValue<TextOrHtml \| boolean>` | the labelized name | The label of the form, e.g. in `'Edit Book'`. |
 | `components` | `Components` | | The components of the form. Can also be a callback that creates them from the context, which runs again when the data it reads changes. |
 | `tabs` | `Record<string, object>` | | Shows groups of components in tabs, see [Tabs](#tabs). |
 | `idKey` | `string` | `'id'` | The key of the item's id. |
@@ -1208,7 +1225,7 @@ export const bookForm = {
     // Replaces dito's notification:
     notify({
       type: 'success',
-      html: `${itemLabel} was ${isCreating ? 'created' : 'saved'}.`
+      text: `${itemLabel} was ${isCreating ? 'created' : 'saved'}.`
     })
   }
 }

@@ -493,17 +493,7 @@ export interface ComponentSchemaBase<$Item> extends SchemaBase<$Item> {
    *
    * @defaultValue The title-cased component name.
    */
-  label?: SchemaValue<
-    $Item,
-    {},
-    | string
-    | boolean
-    | {
-        text?: string
-        prefix?: OrArrayOf<SchemaAffix>
-        suffix?: OrArrayOf<SchemaAffix>
-      }
-  >
+  label?: SchemaValue<$Item, {}, SchemaLabel | boolean>
 
   /**
    * The width of the component. The value can either be given in percent
@@ -568,9 +558,9 @@ export interface ComponentSchemaBase<$Item> extends SchemaBase<$Item> {
   placeholder?: SchemaValue<$Item, {}, string>
 
   /**
-   * Info text displayed near the component label.
+   * Info displayed near the component label, as text or `{ html }`.
    */
-  info?: SchemaValue<$Item, {}, string>
+  info?: SchemaValue<$Item, {}, TextOrHtml>
 
   /**
    * The maximum allowed length of the input value.
@@ -677,22 +667,9 @@ export interface SourceSettings<$Item> {
    * the default is the 'name' property of the item,
    * followed by the label of the form (plus item id)
    * and other defaults.
-   * Labels are HTML: Callbacks return HTML, and need to
-   * escape the item values that they include with
-   * `escapeHtml()` from `@ditojs/utils`.
+   * Callbacks return text, or `{ html }` for HTML.
    */
-  itemLabel?:
-    | SchemaValue<
-        $Item,
-        {},
-        | string
-        | {
-            text?: string
-            prefix?: OrArrayOf<SchemaAffix>
-            suffix?: OrArrayOf<SchemaAffix>
-          }
-      >
-    | false
+  itemLabel?: SchemaValue<$Item, {}, SchemaLabel> | false
   /**
    * The columns displayed in the table. Can be an array
    * of property names or an object with column schemas.
@@ -1032,6 +1009,20 @@ export interface TextSettings<$Item> {
 
 /** @deprecated Use {@link TextSettings}. */
 export type SchemaTextMixin<$Item> = TextSettings<$Item>
+
+/**
+ * Text, or HTML given as `{ html }`. Strings and `{ text }` are escaped, only
+ * `{ html }` renders tags.
+ */
+export type TextOrHtml = string | { text: string } | { html: string }
+
+/** A label as text or HTML, with optional affixes. */
+export type SchemaLabel =
+  | TextOrHtml
+  | (({ text?: string } | { html: string }) & {
+      prefix?: OrArrayOf<SchemaAffix>
+      suffix?: OrArrayOf<SchemaAffix>
+    })
 
 /** Plain text, or an object that describes the content of the affix. */
 export type SchemaAffix =
@@ -1969,7 +1960,7 @@ export type ColumnSchema<$Item = any, $Value = any> = {
    * The label of the column.
    * @defaultValue The labelized column key.
    */
-  label?: string
+  label?: TextOrHtml
   /**
    * Use a Vue component to render the cell. The component is specified
    * like this: import(...).
@@ -2199,19 +2190,13 @@ export type SchemaContext<$Item = any> = {
   /** All views flattened into a single record. */
   readonly flattenedViews: Record<string, ViewSchema>
   /**
-   * Display label of the current item, as HTML with
-   * escaped item values: of the form's item in all callbacks
-   * inside a form, e.g. its events and the `if` and `label`
-   * of its components, computed when it's read. `null` in
-   * `itemLabel()` itself.
+   * The text of the label of the current item: of the form's
+   * item in all callbacks inside a form, e.g. its events and
+   * the `if` and `label` of its components, computed when
+   * it's read. `null` in `itemLabel()` itself.
    */
   readonly itemLabel: string | null
-  /**
-   * The text of `itemLabel`, with its item values
-   * unescaped.
-   */
-  readonly itemLabelText: string | null
-  /** Display label of the current form. */
+  /** The label of the current form, as text. */
   readonly formLabel: string | null
   /**
    * The option being labelled, grouped, compared or valued in the callbacks
@@ -2604,7 +2589,7 @@ export interface ViewSchema<$Item = any> extends RouteSchemaBase<$Item> {
    *
    * @defaultValue The title-cased view name.
    */
-  label?: SchemaValue<$Item, {}, string>
+  label?: SchemaValue<$Item, {}, TextOrHtml>
   /**
    * The URL path for the view.
    */
@@ -2972,7 +2957,7 @@ export interface FormSchema<$Item = any>
   /**
    * The label of the form.
    */
-  label?: SchemaValue<$Item, {}, string | boolean>
+  label?: SchemaValue<$Item, {}, TextOrHtml | boolean>
   /**
    * Whether the list or object can create items with this form, of the forms
    * that it offers.
