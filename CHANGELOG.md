@@ -13,6 +13,10 @@ version, see the upgrade guides in `docs/`.
 
 - **admin:** `placeholder` on selects, shown while no option is selected.
 
+### Fixes
+
+- **admin:** Tree items show the `prefix` and `suffix` of labels returned by `itemLabel()`.
+
 ## 4.3.0 (2026-10-14)
 
 ### Behaviour changes

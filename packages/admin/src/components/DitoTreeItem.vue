@@ -24,8 +24,9 @@
         v-if="numEntries"
         :class="{ 'dito-chevron--open': opened }"
       )
-      .dito-tree-label(
-        v-html="label"
+      DitoLabel.dito-tree-label(
+        :label="label"
+        :context="context"
       )
       .dito-tree-info(
         v-if="details"
@@ -33,8 +34,9 @@
     .dito-tree-leaf(
       v-else
     )
-      .dito-tree-label(
-        v-html="label"
+      DitoLabel.dito-tree-label(
+        :label="label"
+        :context="context"
       )
     DitoEditButtons.dito-buttons--small.dito-tree-item__buttons(
       v-if="hasEditButtons"
@@ -92,7 +94,10 @@
       :open="item.open"
       :active="item.active"
       :draggable="childrenDraggable"
-      :label="getItemLabel(childrenSchema, item.data, { index })"
+      :label=`getItemLabel(childrenSchema, item.data, {
+        index,
+        asObject: true
+      })`
       :level="level + 1"
       @delete="deleteChild(item.data)"
       @move="delta => moveChild(item.data, delta)"
@@ -136,7 +141,7 @@ export default {
     open: { type: Boolean, default: false },
     active: { type: Boolean, default: false },
     draggable: { type: Boolean, default: false },
-    label: { type: String, default: null },
+    label: { type: Object, default: null },
     level: { type: Number, default: 0 }
   },
 
@@ -243,9 +248,7 @@ export default {
       numEntries: computed(
         () => (properties.value?.length || 0) + numChildren.value
       ),
-      ariaLabel: computed(() =>
-        props.label ? getTextFromHtml(props.label) : null
-      ),
+      ariaLabel: computed(() => getTextFromHtml(props.label?.text)),
       details: computed(() => {
         const count = numChildren.value
         return count && `${count} ${count === 1 ? 'item' : 'items'}`
@@ -367,15 +370,15 @@ export default {
   }
 
   .dito-tree-label {
-    display: flex;
+    // Size the label like a line of text, not like a field label:
+    flex: 0 1 auto;
     align-items: baseline;
-    gap: 0.25em;
-    min-width: 0;
-    white-space: nowrap;
+    min-height: 0;
+    margin: 0;
 
-    > :first-child {
-      overflow: hidden;
-      text-overflow: ellipsis;
+    label {
+      font-weight: inherit;
+      line-height: inherit;
     }
   }
 
