@@ -3,6 +3,12 @@
 The changes of each release of Dito.js. For upgrading to a new major
 version, see the upgrade guides in `docs/`.
 
+## 4.4.0 (unreleased)
+
+### Behaviour changes
+
+- **admin:** `defineType()` throws for unknown descriptor keys, naming the replacement of the keys of 3.x, e.g. `excludeValue` or `processSchema`, and for the names of built-in types unless the descriptor has `override: true`.
+
 ## 4.3.0 (2026-10-14)
 
 ### Behaviour changes

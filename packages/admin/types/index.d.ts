@@ -3148,6 +3148,8 @@ export interface TypeDescriptor {
   /** The type, or the types that share the descriptor. */
   readonly type: string | string[]
   readonly component: VueComponent
+  /** Replace the built-in type of the same name. */
+  readonly override?: boolean
   /**
    * The default of `default`, `null` if not set. Functions are called with
    * the context of the component and return the default.

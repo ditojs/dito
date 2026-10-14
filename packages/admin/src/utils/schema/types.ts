@@ -65,6 +65,10 @@ export function defineType(descriptor: TypeDescriptor): TypeDescriptor {
   return typeDescriptor
 }
 
+export function getTypes(): string[] {
+  return Object.keys(descriptorsByType)
+}
+
 export function getTypeDescriptor(
   schemaOrType: Schema | string | null | undefined
 ): TypeDescriptor | null {

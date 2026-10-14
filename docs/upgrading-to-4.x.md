@@ -542,6 +542,8 @@ defineType({
   `getValidations()` receives the schema as `context.schema`.
 - `getSourceType()`, `getPanelSchema()` and `getFormSchemasForProcessing()` of
   dito's list types are internal or removed.
+- `defineType()` throws for the options of 3.5, naming their replacement, and
+  for the names of built-in types without `override: true`.
 
 ## TypeScript types
 

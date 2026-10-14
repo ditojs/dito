@@ -172,7 +172,9 @@ defineType(descriptor: TypeDescriptor): TypeDescriptor
 ```
 
 Registers a type of schema components under `descriptor.type`, replacing a
-type of the same name. Call it before the admin resolves its views.
+type of the same name. Call it before the admin resolves its views. It throws
+for unknown members, naming the replacement of the options of 3.x, and for the
+name of a built-in type without `override: true`.
 
 The component receives the same props and emits the same events as the
 components of [`type: 'component'`](./schemas.md#component). Schemas of
@@ -235,6 +237,15 @@ component: Component
 ```
 
 The Vue component that renders the type.
+
+#### override
+
+```ts
+override?: boolean
+```
+
+Replace the built-in type of the same name, e.g. `'color'`. Without it,
+`defineType()` throws for the names of built-in types.
 
 #### defaultValue
 
