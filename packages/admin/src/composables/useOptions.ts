@@ -193,6 +193,7 @@ export function useOptions(
     ),
 
     selectedValue,
+    isSelected,
     selectedOption: computed(() => getOptionForValue(selectedValue.value)),
 
     getValueForOption(option: any) {

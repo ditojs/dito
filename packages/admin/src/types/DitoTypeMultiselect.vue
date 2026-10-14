@@ -21,7 +21,7 @@
       :groupLabel="isGrouped ? 'label' : null"
       :groupValues="isGrouped ? 'options' : null"
       :multiple="multiple"
-      :taggable="taggable"
+      :taggable="!!taggable"
       :searchable="searchable"
       :internalSearch="!searchFilter"
       :preserveSearch="!!searchFilter"
@@ -110,7 +110,10 @@ const DitoTypeMultiselect = {
     const getBoolean = key =>
       computed(() => getSchemaValue(key, { type: Boolean, default: false }))
     const multiple = getBoolean('multiple')
-    const taggable = getBoolean('taggable')
+    // `taggable` can be an object with `label` and `value` converters:
+    const taggable = computed(() =>
+      getSchemaValue('taggable', { type: [Boolean, Object], default: false })
+    )
 
     const optionsField = useOptions(props, field, {
       multiple,
@@ -128,6 +131,7 @@ const DitoTypeMultiselect = {
       searchFilter,
       selectedValue,
       selectedOption,
+      isSelected,
       getValueForOption,
       getOptionForValue
     } = optionsField
@@ -283,20 +287,37 @@ const DitoTypeMultiselect = {
 
       onAddTag(tag) {
         if (taggable.value) {
-          const label = optionLabel.value
-          const key = optionValue.value
-          const option =
-            label && key
-              ? {
-                  [label]: tag,
-                  [key]: tag
-                }
-              : tag
-          addedTagOptions.value.push(option)
+          const { label: toLabel, value: toValue } = isObject(taggable.value)
+            ? taggable.value
+            : {}
+          const context = field.createContext({ value: tag })
+          const value = toValue ? toValue(context) : tag
+          const labelKey = optionLabel.value
+          const valueKey = optionValue.value
+          // Select existing options instead of adding duplicates:
+          const isObjectOption = !!(labelKey && valueKey)
+          const existingOption = isObjectOption
+            ? getOptionForValue(value)
+            : null
+          const option = (
+            existingOption ?? (
+              isObjectOption
+                ? {
+                    [labelKey]: toLabel ? toLabel(context) : tag,
+                    [valueKey]: value
+                  }
+                : value
+            )
+          )
+          if (!existingOption) {
+            addedTagOptions.value.push(option)
+          }
           // `selectedOptions` emits the change:
-          selectedOptions.value = multiple.value
-            ? [...selectedOptions.value, option]
-            : option
+          if (!multiple.value) {
+            selectedOptions.value = option
+          } else if (!isSelected(option)) {
+            selectedOptions.value = [...selectedOptions.value, option]
+          }
         }
       },
 

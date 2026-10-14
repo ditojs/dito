@@ -1,5 +1,6 @@
 import { vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
+import { underscore } from '@ditojs/utils'
 import {
   mountSchema,
   mountForm,
@@ -37,6 +38,12 @@ function getOptionLabels(field) {
   return field
     .findAll('.multiselect__element .multiselect__option')
     .map(option => option.text())
+}
+
+async function addTag(field, text) {
+  await search(field, text)
+  await field.find('.multiselect__input').trigger('keydown.enter')
+  await flushPromises()
 }
 
 function getTagLabels(field) {
@@ -750,6 +757,132 @@ describe('DitoTypeMultiselect', () => {
       value: 'opera'
     })
     expect(getTagLabels(field)).toEqual(['Drama', 'opera'])
+  })
+
+  describe('taggable converters', () => {
+    const mountGenres = taggable =>
+      mountSchema({
+        schema: {
+          components: {
+            genres: {
+              type: 'multiselect',
+              multiple: true,
+              searchable: true,
+              taggable,
+              options: genres
+            }
+          }
+        },
+        data: { genres: ['drama'] }
+      })
+
+    it('converts the value of added tags with `taggable.value`', async () => {
+      const { findField, getComponent, data } = await mountGenres({
+        value: ({ value }) => underscore(value)
+      })
+      const field = findField('genres')
+      await addTag(field, 'Science Fiction')
+      expect(data.genres).toEqual(['drama', 'science_fiction'])
+      expect(getComponent('genres').options).toContainEqual({
+        label: 'Science Fiction',
+        value: 'science_fiction'
+      })
+      expect(getTagLabels(field)).toEqual(['Drama', 'Science Fiction'])
+    })
+
+    it('converts the label of added tags with `taggable.label`', async () => {
+      const { findField, data } = await mountGenres({
+        label: ({ value }) => value.toUpperCase()
+      })
+      const field = findField('genres')
+      await addTag(field, 'opera')
+      expect(data.genres).toEqual(['drama', 'opera'])
+      expect(getTagLabels(field)).toEqual(['Drama', 'OPERA'])
+    })
+
+    it('converts both the label and value of added tags', async () => {
+      const { findField, data } = await mountGenres({
+        label: ({ value }) => value.toUpperCase(),
+        value: ({ value }) => underscore(value)
+      })
+      const field = findField('genres')
+      await addTag(field, 'Science Fiction')
+      expect(data.genres).toEqual(['drama', 'science_fiction'])
+      expect(getTagLabels(field)).toEqual(['Drama', 'SCIENCE FICTION'])
+    })
+
+    it('resolves `taggable` callbacks that return converters', async () => {
+      const { findField, data } = await mountGenres(
+        ({ item }) => item.genres && { value: ({ value }) => underscore(value) }
+      )
+      const field = findField('genres')
+      await addTag(field, 'Science Fiction')
+      expect(data.genres).toEqual(['drama', 'science_fiction'])
+    })
+
+    it('adds no tags when a `taggable` callback returns false', async () => {
+      const { findField, data } = await mountGenres(() => false)
+      const field = findField('genres')
+      await addTag(field, 'Science Fiction')
+      expect(data.genres).toEqual(['drama'])
+    })
+
+    it('stores converted values under the value key of the options', async () => {
+      const { findField, getComponent, data } = await mountSchema({
+        schema: {
+          components: {
+            genres: {
+              type: 'multiselect',
+              multiple: true,
+              searchable: true,
+              taggable: { value: ({ value }) => underscore(value) },
+              options: {
+                data: [{ key: 'drama', name: 'Drama' }],
+                label: 'name',
+                value: 'key'
+              }
+            }
+          }
+        },
+        data: { genres: [] }
+      })
+      const field = findField('genres')
+      await addTag(field, 'Science Fiction')
+      expect(data.genres).toEqual(['science_fiction'])
+      expect(getComponent('genres').options).toContainEqual({
+        name: 'Science Fiction',
+        key: 'science_fiction'
+      })
+    })
+
+    it('selects existing options that match converted values', async () => {
+      const options = [
+        { value: 'drama', label: 'Drama' },
+        { value: 'science_fiction', label: 'Sci-Fi' }
+      ]
+      const { findField, getComponent, data } = await mountSchema({
+        schema: {
+          components: {
+            genres: {
+              type: 'multiselect',
+              multiple: true,
+              searchable: true,
+              taggable: { value: ({ value }) => underscore(value) },
+              options
+            }
+          }
+        },
+        data: { genres: ['drama'] }
+      })
+      const field = findField('genres')
+      await addTag(field, 'Science Fiction')
+      expect(data.genres).toEqual(['drama', 'science_fiction'])
+      expect(getTagLabels(field)).toEqual(['Drama', 'Sci-Fi'])
+      expect(getComponent('genres').options).toEqual(options)
+      // Selected options aren't selected twice:
+      await addTag(field, 'Science  Fiction')
+      expect(data.genres).toEqual(['drama', 'science_fiction'])
+    })
   })
 
   it('groups the options with `options.group`', async () => {

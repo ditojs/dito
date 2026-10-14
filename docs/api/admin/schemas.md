@@ -649,7 +649,7 @@ options.
 | `searchable` | `SchemaValue<boolean>` | `true` with `search`, otherwise `false` | Adds a search input that filters the options. |
 | `search` | `SchemaValueCallback<OrPromiseOf<any[]>> \| { filter, debounce? }` | | Loads the options for the search term instead of filtering them: `filter` receives `searchTerm` in the context and returns the options. `debounce` delays it, in milliseconds or as `{ delay, immediate? }`. Turns on `searchable`. Only multiselects support it, other types warn about it. |
 | `stayOpen` | `SchemaValue<boolean>` | `false` | Keeps the dropdown open after selecting. |
-| `taggable` | `SchemaValue<boolean>` | `false` | Lets the user add options by typing them and pressing Enter. |
+| `taggable` | `SchemaValue<boolean \| { label?, value? }>` | `false` | Lets the user add options by typing them and pressing Enter. The `label` and `value` callbacks of an object receive the typed text as `value` in the context and return the new option's label and value, e.g. `{ value: ({ value }) => underscore(value) }`. A converted value that matches an existing option selects it. |
 | `placeholder` | `SchemaValue<string \| boolean>` | generated for searchable multiselects, from the label, e.g. `'Select or search Author'`, or `'Search or add a Tag'` when also `taggable` | `false` shows none, `true` the generated one. |
 | `prefix`, `suffix` | `OrArrayOf<SchemaAffix>` | | See [Affixes](#affixes). |
 

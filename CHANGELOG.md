@@ -12,6 +12,7 @@ version, see the upgrade guides in `docs/`.
 ### New
 
 - **admin:** `placeholder` on selects, shown while no option is selected.
+- **admin:** `taggable: { label, value }` on multiselects converts the typed text into the label and value of added options, and selects existing options with the converted value.
 
 ### Fixes
 

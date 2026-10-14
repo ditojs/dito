@@ -1672,11 +1672,21 @@ export interface MultiselectSchema<$Item = any, $Option = any>
   /**
    * Whether users can create new options by typing and
    * pressing Enter, adding custom tags not in the options
-   * list.
+   * list. An object converts the typed text, received as
+   * `value` in the context, into the new option's label and
+   * value.
    *
    * @defaultValue `false`
    */
-  taggable?: SchemaValue<$Item, {}, boolean>
+  taggable?: SchemaValue<
+    $Item,
+    {},
+    | boolean
+    | {
+        label?: SchemaValueCallback<$Item, { value: string }>
+        value?: SchemaValueCallback<$Item, { value: string }>
+      }
+  >
 }
 
 export interface SelectSchema<$Item = any>
