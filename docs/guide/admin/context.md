@@ -104,8 +104,6 @@ inside `chapters`, but not `chapters` itself.
 A context describes one value: `value`, stored under `name` in `item`. Where
 dito hands a callback an item, it also hands over the item's path,
 `itemDataPath`, and `itemIndex` and `parentItem` follow from that path.
-`nested` tells the two cases apart: `true` for a value inside `item`, `false`
-for `item` itself.
 
 In a book with an inlined list `chapters` and a section `metadata` with
 `nested: true`:
@@ -120,7 +118,7 @@ In a book with an inlined list `chapters` and a section `metadata` with
 | The `buttons` of the list `chapters` | the book | `''` | `null` |
 
 - The own events of forms and sections describe their item, not a value:
-  `nested` is `false` and `value` is `undefined`. Read `item`. Events that
+  `value` is `undefined`. Read `item`. Events that
   bubble up from a field keep the field's context, see
   [Events](./events.md#bubbling).
 - The buttons of a list describe the item that holds the list, or the list's

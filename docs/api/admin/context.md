@@ -58,8 +58,7 @@ root throws.
 context.value: any
 ```
 
-The value that the context describes, at `dataPath`, when `nested` is `true`.
-In `onChange()` of fields, the parsed value. `undefined` in the events of
+The value that the context describes, at `dataPath`. In `onChange()` of fields, the parsed value. `undefined` in the events of
 forms and sections, which describe their item: read `item` there. Objects
 inside the data are returned editable: writes to them count as edits, see
 [`markDirty()`](#markdirty). `value` itself is read-only; write to
@@ -135,17 +134,6 @@ context.name: string
 ```
 
 The name of the component, the last key of its data path.
-
-### nested
-
-```ts
-context.nested: boolean
-```
-
-`true` when the context describes a value under its name inside `item`, e.g.
-in the callbacks and events of fields, `false` when it describes the item
-itself, e.g. in the events of forms and sections, and of panels with their own
-data.
 
 ### dataPath
 
@@ -349,21 +337,21 @@ All views, including the ones inside menus, by name.
 A book, edited in a form with its own resource: `chapters` is a list with
 inlined forms, `metadata` a nested section, `author` an inlined object:
 
-| Place | `item` | `itemDataPath` | `itemIndex` | `parentItem` | `nested` |
-| ----- | ------ | -------------- | ----------- | ------------ | -------- |
-| Field or button of the book | book | `''` | `null` | `null` | `true` |
-| Field in a chapter's inlined form | chapter | `'chapters/1'` | `1` | book | `true` |
-| Event of a chapter's inlined form | chapter | `'chapters/1'` | `1` | book | `false` |
-| Event of a section without `nested` | book | `''` | `null` | `null` | `false` |
-| Event of the nested section `metadata` | metadata | `'metadata'` | `null` | book | `false` |
-| Event of the inlined object `author` | author | `'author'` | `null` | book | `false` |
-| Buttons of the list `chapters` | book | `''` | `null` | `null` | `true` |
-| `render()` of a cell of `chapters` | chapter | `'chapters/1'` | `1` | book | `true` |
-| `render()` of the items of `chapters` | chapter | `'chapters/1'` | `1` | book | `false` |
-| Event of a routed chapter form | the draft | `'chapters/1'` | `1` | the draft root | `false` |
-| Field of a panel with its own data `search` | panel data | `'search'` | `null` | book | `true` |
-| Field of a panel with `nested: true`, `details` | details | `'details'` | `null` | book | `true` |
-| Field or button of a dialog | dialog data | `''` | `null` | `null` | `true` |
+| Place | `item` | `itemDataPath` | `itemIndex` | `parentItem` | `value` |
+| ----- | ------ | -------------- | ----------- | ------------ | ------- |
+| Field or button of the book | book | `''` | `null` | `null` | the component's |
+| Field in a chapter's inlined form | chapter | `'chapters/1'` | `1` | book | the component's |
+| Event of a chapter's inlined form | chapter | `'chapters/1'` | `1` | book | `undefined` |
+| Event of a section without `nested` | book | `''` | `null` | `null` | `undefined` |
+| Event of the nested section `metadata` | metadata | `'metadata'` | `null` | book | `undefined` |
+| Event of the inlined object `author` | author | `'author'` | `null` | book | `undefined` |
+| Buttons of the list `chapters` | book | `''` | `null` | `null` | the component's |
+| `render()` of a cell of `chapters` | chapter | `'chapters/1'` | `1` | book | the component's |
+| `render()` of the items of `chapters` | chapter | `'chapters/1'` | `1` | book | `undefined` |
+| Event of a routed chapter form | the draft | `'chapters/1'` | `1` | the draft root | `undefined` |
+| Field of a panel with its own data `search` | panel data | `'search'` | `null` | book | the component's |
+| Field of a panel with `nested: true`, `details` | details | `'details'` | `null` | book | the component's |
+| Field or button of a dialog | dialog data | `''` | `null` | `null` | the component's |
 
 Lists with `wrapPrimitives` give the fields of their items the wrapper object
 as `item`. The buttons of lists describe the item that holds the list; in the
