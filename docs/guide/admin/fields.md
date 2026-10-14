@@ -159,7 +159,9 @@ sortTitle: {
 
 `computeValue()` writes its result into the data, also while the field isn't
 rendered, e.g. in a tab that wasn't opened, but not while its `if` returns
-`false`. Returning `undefined` keeps the current value. See
+`false`. Returning `undefined` keeps the current value. It receives the stored
+value as it is, also a stored `null` of a list or of multiple choices, which
+only fields without `computeValue()` load as their default. See
 [`ComponentSchemaBase`](../../api/admin/schemas.md#componentschemabase) for
 when each hook runs.
 
