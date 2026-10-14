@@ -145,12 +145,13 @@ describe('DitoTypeList', () => {
       ).toBe(true)
     })
 
-    it('creates the first item of lists that are `null`', async () => {
+    it('loads lists stored as `null` as empty lists', async () => {
       const { findField, data, dataModel } = await mountSchema({
         schema: createRecipeSchema({ creatable: true }),
         data: { ingredients: null }
       })
-      expect(data.ingredients).toBe(null)
+      expect(data.ingredients).toEqual([])
+      expect(dataModel.isEdited).toBe(false)
       await findField('ingredients')
         .find('.dito-create-button button')
         .trigger('click')

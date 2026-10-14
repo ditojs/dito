@@ -837,7 +837,8 @@ describe('DitoForm', () => {
     async function mountBookForm({
       chapters = [],
       author = null,
-      chapterEvents = {}
+      chapterEvents = {},
+      computeChapters
     } = {}) {
       const result = await mountForm({
         schema: {
@@ -849,6 +850,7 @@ describe('DitoForm', () => {
               editable: true,
               creatable: true,
               itemLabel: 'title',
+              computeValue: computeChapters,
               form: { ...chapterForm, ...chapterEvents }
             },
             author: {
@@ -1073,9 +1075,19 @@ describe('DitoForm', () => {
       expect(form.data).toEqual({ title: 'Prologue' })
     })
 
+    it('adds created items to lists stored as `null`', async () => {
+      const { admin, data } = await mountBookForm({ chapters: null })
+      const form = await openNestedForm(admin, '/items/1/chapters/create')
+      await submitNestedForm(form, 'Epilogue')
+      expect(data.chapters).toEqual([{ title: 'Epilogue' }])
+    })
+
     it(`notifies the error when the list to add to is missing`, async () => {
       vi.spyOn(console, 'error').mockImplementation(() => {})
-      const { admin, data, notify } = await mountBookForm({ chapters: null })
+      // Computed values get no defaults, unlike the `null` of stored lists:
+      const { admin, data, notify } = await mountBookForm({
+        computeChapters: () => null
+      })
       const form = await openNestedForm(admin, '/items/1/chapters/create')
       await submitNestedForm(form, 'Epilogue')
       expect(data.chapters).toBe(null)

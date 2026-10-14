@@ -3184,7 +3184,7 @@ export interface TypeDescriptor {
   /** Don't give values that are missing their defaults, e.g. passwords. */
   readonly ignoresMissingValue?:
     boolean | ((context: TypeDescriptorContext) => boolean)
-  /** Give values that are `null` their defaults, e.g. nested sections. */
+  /** Give values that are `null` their defaults, e.g. lists. */
   readonly treatsNullAsMissing?:
     boolean | ((context: TypeDescriptorContext) => boolean)
   /** The value resolves from `schema.data` or `schema.dataPath`. */

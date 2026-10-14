@@ -698,6 +698,14 @@ defineType({
   from a handler of either event stops it from bubbling further.
 - Selects and multiselects keep values that their options lack and show them as
   unavailable, instead of setting them to `null`.
+- Since 4.2, lists, `checkboxes` and multiselects with `multiple` never hold
+  `null`: a stored `null` loads as their `default`, or `[]`. Multiselects with
+  `multiple` default to `[]` like checkboxes, and clearing them sets `[]`, so
+  new and cleared ones are sent as `[]` instead of `null`. To store empty
+  values as `null`, return it from `serializeValue()`:
+  `serializeValue: ({ value }) => (value.length > 0 ? value : null)`. Objects
+  and single choices keep `null`. `required` rejects empty arrays, so required
+  lists and fields with multiple values need at least one entry.
 - Tabs render once they're selected and stay rendered.
 - In panels with their own data, e.g. filters, `item` is the panel's data and
   `rootItem` the data of the page. Writes through `rootItem` and `parentItem`

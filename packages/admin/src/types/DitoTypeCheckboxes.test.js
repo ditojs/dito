@@ -34,17 +34,32 @@ describe('DitoTypeCheckboxes', () => {
     expect(data.genres).toEqual(['fiction'])
   })
 
-  it('checks no checkboxes for a `null` value', async () => {
-    const { findField, data } = await mountSchema({
+  it('loads `null` values as empty arrays', async () => {
+    const { findField, data, dataModel } = await mountSchema({
       schema: {
         components: { genres: { type: 'checkboxes', options: genres } }
       },
       data: { genres: null }
     })
+    expect(data.genres).toEqual([])
+    expect(dataModel.isEdited).toBe(false)
     const field = findField('genres')
     expect(getCheckedStates(field)).toEqual([false, false, false])
     await field.findAll('input[type="checkbox"]')[1].setValue(true)
     expect(data.genres).toEqual(['poetry'])
+  })
+
+  it('loads `null` values as the `default`', async () => {
+    const { findField, data } = await mountSchema({
+      schema: {
+        components: {
+          genres: { type: 'checkboxes', options: genres, default: ['drama'] }
+        }
+      },
+      data: { genres: null }
+    })
+    expect(data.genres).toEqual(['drama'])
+    expect(getCheckedStates(findField('genres'))).toEqual([false, false, true])
   })
 
   it(`doesn't check values without option once the options are loaded`, async () => {

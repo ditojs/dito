@@ -136,6 +136,7 @@ shippingAddress: {
 ```
 
 An object is `null` until it's created: with `creatable`, a button creates it.
+A list is never `null`: a stored `null` loads as its `default`, or `[]`.
 Use a [section](./layout.md#sections) with `nested: true` instead, for an
 object that always exists.
 
