@@ -9,6 +9,10 @@ version, see the upgrade guides in `docs/`.
 
 - **admin:** Clipboard data holds the labels of related records outside the copied data instead of their ids, e.g. `author: { $label: 'Jane Austen' }`, and pasting resolves them through the options of the fields. Labels that match no option or several paste `null`, or are left out of multiple values, and a notification lists them. `clipboard.copy()` and `clipboard.paste()` see the labels instead of the ids.
 
+### New
+
+- **admin:** `search` on multiselects turns on searching without `searchable: true`, which `searchable: false` still turns off. Other types warn about `search` when they're set up, as they ignore it.
+
 ### Deprecations
 
 - **admin:** `context.nested` is internal: `value` is `undefined` when a context describes an item.

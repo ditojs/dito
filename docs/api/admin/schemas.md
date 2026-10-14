@@ -641,8 +641,8 @@ options.
 | ------ | ---- | ------- | ----------- |
 | `type` | `'multiselect'` | | Required. |
 | `multiple` | `SchemaValue<boolean>` | `false` | Selects several options, held in an array, `[]` by default. A stored `null` loads as the `default`. |
-| `searchable` | `SchemaValue<boolean>` | `false` | Adds a search input that filters the options. |
-| `search` | `SchemaValueCallback<OrPromiseOf<any[]>> \| { filter, debounce? }` | | Loads the options for the search term instead of filtering them: `filter` receives `searchTerm` in the context and returns the options. `debounce` delays it, in milliseconds or as `{ delay, immediate? }`. |
+| `searchable` | `SchemaValue<boolean>` | `true` with `search`, otherwise `false` | Adds a search input that filters the options. |
+| `search` | `SchemaValueCallback<OrPromiseOf<any[]>> \| { filter, debounce? }` | | Loads the options for the search term instead of filtering them: `filter` receives `searchTerm` in the context and returns the options. `debounce` delays it, in milliseconds or as `{ delay, immediate? }`. Turns on `searchable`. Only multiselects support it, other types warn about it. |
 | `stayOpen` | `SchemaValue<boolean>` | `false` | Keeps the dropdown open after selecting. |
 | `taggable` | `SchemaValue<boolean>` | `false` | Lets the user add options by typing them and pressing Enter. |
 | `placeholder` | `SchemaValue<string \| boolean>` | generated for searchable multiselects, from the label, e.g. `'Select or search Author'`, or `'Search or add a Tag'` when also `taggable` | `false` shows none, `true` the generated one. |
@@ -662,7 +662,6 @@ genres: {
 author: {
   type: 'multiselect',
   relate: true,
-  searchable: true,
   search: {
     filter: ({ request, searchTerm }) =>
       request({ resource: '/authors', query: { search: searchTerm } }),

@@ -13,6 +13,8 @@ export type TypeDescriptor = PublicTypeDescriptor & {
   // Only dito's date and color types read `format` from their schema. Other
   // types reject it, as the `format()` of 3.x is `formatValue()`:
   readonly hasFormat?: boolean
+  // Only multiselects read `search` from their schema:
+  readonly hasSearch?: boolean
   // Sources hold their items in a list or an object:
   readonly sourceType?: 'list' | 'object'
   // The sources routed next to the forms of the items, e.g. of trees:
