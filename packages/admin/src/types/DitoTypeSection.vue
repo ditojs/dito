@@ -2,6 +2,8 @@
 .dito-section(
   ref="element"
   :class="{ 'dito-section--labelled': !!schema.label }"
+  role="region"
+  :aria-label="label || labelize(schema.name)"
 )
   DitoSchemaInlined.dito-section__schema(
     :schema="formSchema"
@@ -19,6 +21,7 @@
 
 <script>
 import { computed } from 'vue'
+import { labelize } from '@ditojs/utils'
 import { defineType } from '../utils/schema/types.ts'
 import { nestableTraits } from './traits.ts'
 import { fieldProps, useField } from '../composables/useField.ts'
@@ -40,6 +43,7 @@ const DitoTypeSection = {
     )
     return {
       ...field,
+      labelize,
       item,
       collapsible,
       collapsed: computed(

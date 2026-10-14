@@ -8,7 +8,7 @@
   VueUpload.dito-upload__input(
     ref="upload"
     v-model="uploads"
-    :inputId="dataPath"
+    :inputId="componentPath"
     :name="dataPath"
     :disabled="disabled"
     :postAction="uploadPath"

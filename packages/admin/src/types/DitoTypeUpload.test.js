@@ -77,6 +77,23 @@ describe('DitoTypeUpload', () => {
     )
   })
 
+  it('points its label to its input', async () => {
+    const { findContainer } = await mountForm({
+      schema: {
+        // Tabs add their name to the component path, but not to the data path:
+        tabs: {
+          files: {
+            type: 'tab',
+            components: { file: { type: 'upload', label: 'File' } }
+          }
+        }
+      }
+    })
+    const container = findContainer('file')
+    const { id } = container.find('input[type="file"]').attributes()
+    expect(container.find('label').attributes('for')).toBe(id)
+  })
+
   it('links files to the URLs of `downloadUrl()`', async () => {
     const { findField } = await mountForm({
       schema: {

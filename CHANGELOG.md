@@ -9,6 +9,11 @@ version, see the upgrade guides in `docs/`.
 
 - **server:** `@ditojs/build`, `vite` and `@vitejs/plugin-vue` are optional peer dependencies, loaded only to build the admin or serve it in development: install them as dev dependencies of the app. `app.defineAdminViteConfig()` and `defineViteConfig()` of `AdminController` return promises, which Vite awaits as the default export of `admin.vite.config.js`.
 
+### Fixes
+
+- **admin:** The labels of upload fields point to their inputs, which use the component path as their id, like the inputs of other types.
+- **admin:** Trees and their items have the `tree`, `treeitem` and `group` roles, and sections the `region` role with their label, like lists and panels.
+
 ## 4.4.0 (2026-10-14)
 
 ### Behaviour changes

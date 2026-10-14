@@ -83,6 +83,27 @@ describe('DitoTypeTreeList', () => {
     ])
   })
 
+  it('marks the tree and its items with their roles', async () => {
+    const schema = createSiteSchema()
+    schema.components.pages.collapsed = false
+    const { findField } = await mountForm({ schema, data: site })
+    const tree = findField('pages').find('[role="tree"]')
+    expect(tree.attributes('aria-label')).toBe('Pages')
+    const getIds = selector =>
+      tree.findAll(selector).map(item => item.attributes('id'))
+    expect(getIds('[role="treeitem"]')).toEqual([
+      'pages/0',
+      'pages/0/subpages/0',
+      'pages/0/subpages/1',
+      'pages/1'
+    ])
+    // Only the children of items are grouped, not the items of the tree:
+    expect(getIds('[role="group"] > [role="treeitem"]')).toEqual([
+      'pages/0/subpages/0',
+      'pages/0/subpages/1'
+    ])
+  })
+
   it('expands all items with `collapsed: false`', async () => {
     const schema = createSiteSchema()
     schema.components.pages.collapsed = false
