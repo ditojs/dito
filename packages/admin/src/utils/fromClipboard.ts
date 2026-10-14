@@ -1,16 +1,23 @@
-import { asArray, clone } from '@ditojs/utils'
+import { asArray, clone, isArray, isObject, labelize } from '@ditojs/utils'
+import SchemaContext from '../SchemaContext.js'
 import { createTemporaryId, isTemporaryId } from './data.js'
-import { walkSchemaData, deserializeData } from './schema/data.js'
+import {
+  walkSchemaData,
+  deserializeData,
+  getSchemaValue
+} from './schema/data.js'
 import { getSourceType } from './schema/types.ts'
-import { getRelateKey } from './schema/options.ts'
+import { findOptionsForLabel, getRelateKey } from './schema/options.ts'
 import { isSourceWithResource } from './schema/structure.js'
+import type { Services } from './services.ts'
 import type { Data, Schema, SchemaDataEntry } from './types.ts'
 
 // Copied items have no ids, except the related ones, which `SchemaGraph`
 // replaced with temporary ones. We replace these with new ones, so pasting
 // twice doesn't repeat them. Sources with their own resource are left out, as
-// they save their items.
-export function fromClipboard(
+// they save their items. Relations to records outside of the copy hold labels,
+// which resolve to the option that matches them, or else are left out.
+export async function fromClipboard(
   schema: Schema,
   clipboardData: Data,
   {
@@ -19,10 +26,10 @@ export function fromClipboard(
     rootData = null
   }: {
     dataPath?: string | null
-    services?: object | null
+    services?: Services | null
     rootData?: Data | null
   } = {}
-): Data {
+): Promise<{ data: Data; unresolvedLabels: string[] }> {
   const data = clone(clipboardData)
   const temporaryIds: Record<string, string> = {}
   const replaceTemporaryIds = (objects: any, idKey: string) => {
@@ -35,16 +42,62 @@ export function fromClipboard(
   }
 
   // Use the same id keys as `SchemaGraph.serialize()`:
-  const before = ({ schema, data, name }: SchemaDataEntry) => {
+  const labeledEntries: SchemaDataEntry[] = []
+  const before = (entry: SchemaDataEntry) => {
+    const { schema, data, name } = entry
     if (isSourceWithResource(schema)) {
       delete data[name]
     } else if (getSourceType(schema)) {
       replaceTemporaryIds(data[name], schema.idKey || 'id')
     } else if (schema.relate) {
       replaceTemporaryIds(data[name], getRelateKey(schema)!)
+      if (asArray(data[name]).some(isLabel)) {
+        labeledEntries.push(entry)
+      }
     }
   }
-  const options = { services, rootData: rootData ?? data }
-  walkSchemaData(schema, data, { dataPath, before, options })
-  return deserializeData(schema, data, { dataPath, ...options })
+  const walkOptions = { services, rootData: rootData ?? data }
+  walkSchemaData(schema, data, { dataPath, before, options: walkOptions })
+  deserializeData(schema, data, { dataPath, ...walkOptions })
+
+  const resolveLabels = async (entry: SchemaDataEntry) => {
+    const { schema, data, name } = entry
+    // The options of the pasted values, loaded like the ones of fields:
+    const options = (await services!
+      .dataContext!.model.getOptionsResolver(entry)
+      .waitForValue()) ?? []
+    const context = SchemaContext.createForSchema(services, {
+      ...entry,
+      rootData: walkOptions.rootData
+    })
+    const fieldLabel = (
+      getSchemaValue('label', { type: String, schema, context }) ||
+      labelize(name)
+    )
+    const unresolvedLabels: string[] = []
+    const resolve = (value: any) => {
+      if (isLabel(value)) {
+        const { $label: label } = value
+        const found = findOptionsForLabel(schema, options, label, context)
+        if (found.length === 1) {
+          return found[0]
+        }
+        unresolvedLabels.push(`${fieldLabel} '${label}'`)
+        return null
+      }
+      return value
+    }
+    const value = data[name]
+    data[name] = isArray(value)
+      ? value.map(resolve).filter(value => value !== null)
+      : resolve(value)
+    return unresolvedLabels
+  }
+
+  const unresolvedLabels = await Promise.all(labeledEntries.map(resolveLabels))
+  return { data, unresolvedLabels: unresolvedLabels.flat() }
+}
+
+function isLabel(value: any) {
+  return isObject(value) && '$label' in value
 }

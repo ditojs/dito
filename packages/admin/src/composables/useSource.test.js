@@ -505,7 +505,7 @@ describe('useSource()', () => {
           ]
         }
       })
-      expect(schemaComponent.getClipboardData()).toEqual({
+      expect(await schemaComponent.getClipboardData()).toEqual({
         authors: [{ name: 'Mary Shelley' }, { name: 'Bram Stoker' }]
       })
       expect(data.authors).toEqual([

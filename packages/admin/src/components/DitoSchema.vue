@@ -135,8 +135,8 @@ import {
   getItemFormSchema,
   isEmptySchema
 } from '../utils/schema/lookup.js'
-import { serializeData } from '../utils/schema/data.js'
 import { fromClipboard } from '../utils/fromClipboard.ts'
+import { toClipboard } from '../utils/toClipboard.ts'
 import {
   accumulatedBasisKey,
   panelTabKey,
@@ -451,12 +451,12 @@ export default {
         opened.value = !collapsed
       },
 
-      pasteData(clipboardData) {
-        const data = fromClipboard(props.dataSchema, clipboardData, {
-          dataPath: props.dataPath,
-          services,
-          rootData: context.rootItem
-        })
+      async pasteData(clipboardData) {
+        const { data, unresolvedLabels } = await fromClipboard(
+          props.dataSchema,
+          clipboardData,
+          { dataPath: props.dataPath, services, rootData: context.rootItem }
+        )
         // The item keeps its position in its list:
         const orderKey = unref(sourceSchema)?.orderKey
         for (const [name, value] of Object.entries(data)) {
@@ -471,15 +471,21 @@ export default {
             )
           }
         }
+        if (unresolvedLabels.length > 0) {
+          adminContext.notify({
+            type: 'warning',
+            text: `Not found when pasting: ${unresolvedLabels.join(', ')}`
+          })
+        }
       },
 
       getClipboardData() {
-        return serializeData(
+        return toClipboard(
           props.dataSchema,
           unref(sourceSchema),
           props.data,
           props.dataPath,
-          { rootData: context.rootItem, services, target: 'clipboard' }
+          { rootData: context.rootItem, services }
         )
       }
     }

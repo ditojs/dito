@@ -8,14 +8,14 @@ import {
   debounceAsync,
   isArray,
   isFunction,
-  isString,
-  labelize
+  isString
 } from '@ditojs/utils'
 import { getMultipleValue } from '../utils/schema/data.js'
 import { hasViewSchema } from '../utils/schema/lookup.js'
 import {
   findOptionForValue,
-  getOptionKey,
+  getLabelForOption,
+  getOptionLabel,
   getOptionsSettings,
   getSelectedValue,
   getValueForOption,
@@ -150,16 +150,11 @@ export function useOptions(
       : selected === value
   }
 
-  const optionLabel = computed<string | ((context: Context) => any) | null>(
-    () => (
-      getSchemaValue(['options', 'label'], {
-        type: [String, Function],
-        default: null
-      }) ||
-      // Options that are objects with a `label` hold their labels:
-      getOptionKey(activeOptions.value, isGrouped.value, 'label') ||
-      null
-    )
+  const optionLabel = computed(() =>
+    getOptionLabel(props.schema, activeOptions.value, {
+      isGrouped: isGrouped.value,
+      context
+    })
   )
 
   return {
@@ -208,14 +203,9 @@ export function useOptions(
     findOptionForValue: findOption,
 
     getLabelForOption(option: any) {
-      const label = optionLabel.value
-      return isString(label)
-        ? option?.[label as string]
-        : isFunction(label)
-          ? label(
-              createContext({ option, isSelected: isSelected(option) })
-            )
-          : labelize(`${option}`)
+      return getLabelForOption(optionLabel.value, option, () =>
+        createContext({ option, isSelected: isSelected(option) })
+      )
     }
   }
 }

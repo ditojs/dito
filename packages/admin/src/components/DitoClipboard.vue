@@ -80,7 +80,7 @@ export default {
       async onCopy() {
         const { copy } = clipboardOptions.value
         try {
-          const data = props.getData()
+          const data = await props.getData()
           await copyClipboardData(
             props.schema.name,
             data && (

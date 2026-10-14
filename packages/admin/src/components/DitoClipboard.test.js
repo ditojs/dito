@@ -261,4 +261,224 @@ describe('DitoClipboard', () => {
     expect(alert).not.toHaveBeenCalled()
     expect(getNotificationTexts().join()).toContain('Pasting failed')
   })
+
+  describe('relations to records outside of the copy', () => {
+    const records = {
+      authors: [
+        { id: 1, name: 'Jane Austen' },
+        { id: 2, name: 'Mary Shelley' }
+      ],
+      genres: [
+        { id: 10, name: 'Gothic' },
+        { id: 11, name: 'Romance' }
+      ]
+    }
+
+    const relateRecords = (url, options = {}) => ({
+      type: 'select',
+      relate: true,
+      options: {
+        data: ({ request }) => request({ url }),
+        label: 'name'
+      },
+      ...options
+    })
+
+    // The genres are in a tab that isn't shown, so their options only load
+    // when copying:
+    async function mountBookForm({ data, request = null }) {
+      const loadRecords = vi.fn(
+        request ?? (({ url }) => ({ data: records[url] }))
+      )
+      const result = await mountForm({
+        schema: {
+          name: 'book',
+          clipboard: true,
+          tabs: {
+            main: {
+              type: 'tab',
+              components: {
+                title: { type: 'text' },
+                author: relateRecords('authors'),
+                chapters: {
+                  type: 'list',
+                  inlined: true,
+                  form: {
+                    type: 'form',
+                    components: {
+                      title: { type: 'text' },
+                      narrator: relateRecords('authors')
+                    }
+                  }
+                }
+              }
+            },
+            more: {
+              type: 'tab',
+              components: {
+                genres: relateRecords('genres', {
+                  type: 'multiselect',
+                  multiple: true
+                })
+              }
+            }
+          }
+        },
+        data,
+        request: loadRecords
+      })
+      const { wrapper } = result
+      return {
+        ...result,
+        loadRecords,
+        async copy() {
+          await wrapper
+            .find('.dito-clipboard .dito-button--copy')
+            .trigger('click')
+          await flushPromises()
+        },
+        async paste() {
+          await wrapper
+            .find('.dito-clipboard .dito-button--paste')
+            .trigger('click')
+          await flushPromises()
+        }
+      }
+    }
+
+    const book = {
+      title: 'Northanger Abbey',
+      author: { id: 1 },
+      chapters: [{ id: 5, title: 'One', narrator: { id: 2 } }],
+      genres: [{ id: 10 }, { id: 11 }]
+    }
+
+    it('copies the labels of the related records instead of ids', async () => {
+      const { copy, loadRecords } = await mountBookForm({ data: book })
+      expect(loadRecords).not.toHaveBeenCalledWith(
+        expect.objectContaining({ url: 'genres' })
+      )
+      await copy()
+      expect(getClipboardData('book')).toEqual({
+        title: 'Northanger Abbey',
+        author: { $label: 'Jane Austen' },
+        chapters: [{ title: 'One', narrator: { $label: 'Mary Shelley' } }],
+        genres: [{ $label: 'Gothic' }, { $label: 'Romance' }]
+      })
+    })
+
+    it('keeps the temporary ids of relations inside the copy', async () => {
+      const { wrapper } = await mountForm({
+        schema: {
+          name: 'book',
+          clipboard: true,
+          components: {
+            authors: {
+              type: 'list',
+              inlined: true,
+              form: { type: 'form', components: { name: { type: 'text' } } }
+            },
+            mainAuthor: {
+              type: 'select',
+              relate: true,
+              options: { dataPath: 'authors', label: 'name' }
+            },
+            publisher: {
+              type: 'select',
+              relate: true,
+              options: {
+                data: [{ id: 30, name: 'Hogarth Press' }],
+                label: 'name'
+              }
+            }
+          }
+        },
+        data: {
+          authors: [{ id: 7, name: 'Jane Austen' }],
+          mainAuthor: { id: 7 },
+          publisher: { id: 30 }
+        }
+      })
+      await wrapper.find('.dito-clipboard .dito-button--copy').trigger('click')
+      await flushPromises()
+      const clipboardData = getClipboardData('book')
+      expect(clipboardData).toEqual({
+        authors: [{ id: expect.stringMatching(/^@\d+$/), name: 'Jane Austen' }],
+        mainAuthor: { id: clipboardData.authors[0].id },
+        publisher: { $label: 'Hogarth Press' }
+      })
+    })
+
+    it('resolves labels ignoring case and whitespace', async () => {
+      // Another admin, with other ids for the same records:
+      const { paste, data } = await mountBookForm({
+        data: { title: '', author: null, chapters: [], genres: [] },
+        request: ({ url }) => ({
+          data: records[url].map(({ id, name }) => ({ id: id + 100, name }))
+        })
+      })
+      await copyClipboardData('book', {
+        title: 'Frankenstein',
+        author: { $label: '  mary   SHELLEY ' },
+        chapters: [{ title: 'One', narrator: { $label: 'jane austen' } }],
+        genres: [{ $label: 'GOTHIC' }]
+      })
+      await paste()
+      expect(data.author).toEqual({ id: 102, name: 'Mary Shelley' })
+      expect(data.chapters[0].narrator).toEqual({
+        id: 101,
+        name: 'Jane Austen'
+      })
+      expect(data.genres).toEqual([{ id: 110, name: 'Gothic' }])
+      expect(getNotificationTexts()).toEqual([])
+    })
+
+    it('pastes `null` for unmatched and ambiguous labels', async () => {
+      const { paste, data } = await mountBookForm({
+        data: book,
+        request: ({ url }) => ({
+          data: [...records[url], { id: 3, name: 'Mary Shelley' }]
+        })
+      })
+      await copyClipboardData('book', {
+        author: { $label: 'Mary Shelley' },
+        chapters: [{ title: 'One', narrator: { $label: 'Ann Radcliffe' } }]
+      })
+      await paste()
+      expect(data.author).toBe(null)
+      expect(data.chapters[0].narrator).toBe(null)
+      expect(getNotificationTexts().join()).toContain(
+        `Not found when pasting: Author 'Mary Shelley', Narrator 'Ann Radcliffe'`
+      )
+    })
+
+    it('keeps the matched records of multiple relations', async () => {
+      const { paste, data } = await mountBookForm({ data: book })
+      await copyClipboardData('book', {
+        genres: [{ $label: 'Romance' }, { $label: 'Satire' }]
+      })
+      await paste()
+      expect(data.genres).toEqual([{ id: 11, name: 'Romance' }])
+      expect(getNotificationTexts().join()).toContain(
+        `Not found when pasting: Genres 'Satire'`
+      )
+    })
+
+    it('pastes copied relations back within the same admin', async () => {
+      const { copy, paste, data, dataModel } = await mountBookForm({
+        data: book
+      })
+      await copy()
+      data.author = { id: 2 }
+      data.genres = []
+      await paste()
+      expect(data.author).toMatchObject({ id: 1 })
+      expect(data.chapters).toMatchObject([
+        { title: 'One', narrator: { id: 2 } }
+      ])
+      expect(data.genres).toMatchObject([{ id: 10 }, { id: 11 }])
+      expect(getNotificationTexts()).toEqual([])
+      expect(dataModel.isDirty).toBe(true)
+    })
+  })
 })

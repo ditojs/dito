@@ -1,5 +1,12 @@
 import { toRaw } from 'vue'
-import { asArray, isArray, isFunction, isObject, isString } from '@ditojs/utils'
+import {
+  asArray,
+  isArray,
+  isFunction,
+  isObject,
+  isString,
+  labelize
+} from '@ditojs/utils'
 import { getSchemaValue } from './data.js'
 import { createTemporaryId, isReference } from '../data.js'
 import type { Context } from './types.ts'
@@ -78,6 +85,67 @@ export function getOptionKey(
   const [firstEntry] = options
   const option = isGrouped ? firstEntry?.options?.[0] : firstEntry
   return isObject(option) && key in option ? key : null
+}
+
+// Return the key or function that gives the labels of options:
+export function getOptionLabel(
+  schema: Schema,
+  options: any[],
+  { isGrouped, context }: { isGrouped: boolean; context: Context }
+): string | ((context: Context) => any) | null {
+  return (
+    getSchemaValue(['options', 'label'], {
+      type: [String, Function],
+      schema,
+      context
+    }) ||
+    // Options that are objects with a `label` hold their labels:
+    getOptionKey(options, isGrouped, 'label')
+  )
+}
+
+export function getLabelForOption(
+  optionLabel: string | ((context: Context) => any) | null,
+  option: any,
+  getContext: () => Context
+) {
+  return isString(optionLabel)
+    ? option?.[optionLabel]
+    : isFunction(optionLabel)
+      ? optionLabel(getContext())
+      : labelize(`${option}`)
+}
+
+// Clipboard data refers to related records by the labels of their options, as
+// their ids don't carry over to other databases. Related values without an
+// option use their own label:
+export function getLabelForRelated(
+  schema: Schema,
+  options: any[],
+  value: any,
+  context: Context
+): string | null {
+  const { settings, getLabel } = getLabelSettings(schema, options, context)
+  const option = findOptionForValue(
+    settings,
+    options,
+    getValueForOption(settings, value)
+  )
+  return getLabel(option ?? value)
+}
+
+// Match labels exactly, but ignore case and whitespace:
+export function findOptionsForLabel(
+  schema: Schema,
+  options: any[],
+  label: string,
+  context: Context
+): any[] {
+  const { getLabel } = getLabelSettings(schema, options, context)
+  const normalizedLabel = normalizeLabel(label)
+  return options.filter(
+    option => normalizeLabel(getLabel(option)) === normalizedLabel
+  )
 }
 
 export function getValueForOption(settings: OptionsSettings, option: any) {
@@ -187,6 +255,30 @@ export function getReplacedValue(
 interface SelectedValueOptions {
   hasOptions: boolean
   findOption(value: any): any
+}
+
+function getLabelSettings(schema: Schema, options: any[], context: Context) {
+  const settings = getOptionsSettings(schema, options, {
+    multiple: false,
+    isGrouped: false,
+    createContext: values => context.extend({ options, ...values })
+  })
+  const optionLabel = getOptionLabel(schema, options, {
+    isGrouped: false,
+    context
+  })
+  return {
+    settings,
+    getLabel: (option: any): string | null => (
+      getLabelForOption(optionLabel, option, () =>
+        settings.createContext({ option })
+      ) ?? null
+    )
+  }
+}
+
+function normalizeLabel(label: any) {
+  return `${label ?? ''}`.trim().replace(/\s+/g, ' ').toLowerCase()
 }
 
 function shouldSetTemporaryId(settings: OptionsSettings, option: any) {
