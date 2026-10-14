@@ -1,6 +1,8 @@
 <template lang="pug">
+//- The root item is the tree itself, without a label:
 .dito-tree-item(
   :id="componentPath"
+  :role="level > 0 ? 'treeitem' : 'tree'"
   :class=`{
     'dito-tree-item--dragging': isDragging,
     'dito-tree-item--active': active,
@@ -76,9 +78,11 @@
         :store="store"
         :disabled="disabled"
       )
+  //- Screen readers count the groups around an item for its level:
   DitoDraggable(
     v-if="childrenSchema"
     v-show="opened"
+    :role="level > 0 ? 'group' : null"
     :options="getDraggableOptions(true)"
     :draggable="childrenDraggable"
     :modelValue="childrenList || []"

@@ -16,6 +16,7 @@
       :path="rootPath"
       :draggable="draggable"
       :open="true"
+      :aria-label="label || labelize(schema.name)"
       @change-children="changeChildren"
     )
     .dito-tree-form-container(
@@ -26,6 +27,7 @@
 
 <script>
 import { computed } from 'vue'
+import { labelize } from '@ditojs/utils'
 import { defineType } from '../utils/schema/types.ts'
 import { sourceTraits } from './traits.ts'
 import { fieldProps } from '../composables/useField.ts'
@@ -48,6 +50,7 @@ const DitoTypeTreeList = {
     return {
       ...source,
       routeContext,
+      labelize,
 
       // The forms of the tree's items are routed right after its route:
       isEditingItem: computed(() => {

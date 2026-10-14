@@ -87,7 +87,7 @@ describe('useSourceItems()', () => {
       const field = findField('chapters')
       expect(field.find('img').exists()).toBe(false)
       expect(field.find('.dito-tree-label').text()).toBe(maliciousTitle)
-      expect(field.find('[aria-label]').attributes('aria-label')).toBe(
+      expect(field.find('.dito-tree-branch').attributes('aria-label')).toBe(
         maliciousTitle
       )
     })
