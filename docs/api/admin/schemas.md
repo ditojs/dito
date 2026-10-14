@@ -25,7 +25,7 @@ described in [SchemaContext](./context.md).
 | `code` | `CodeSchema` | [Fields](#code) |
 | `markup` | `MarkupSchema` | [Fields](#markup) |
 | `upload` | `UploadSchema` | [Fields](#upload) |
-| `computed`, `data`, `hidden` | `ComputedSchema`, `DataSchema`, `HiddenSchema` | [Fields](#computed-data-hidden) |
+| `value` | `ValueSchema` | [Fields](#value) |
 | `component` | `ComponentSchema` | [Fields](#component) |
 | `select` | `SelectSchema` | [Options](#select) |
 | `multiselect` | `MultiselectSchema` | [Options](#multiselect) |
@@ -99,7 +99,7 @@ type uses an option depends on the type: `maxLength`, `placeholder` and
 | `name` | `string` | the key | The key of the value in the item. Set from the key in `components`. |
 | `label` | `SchemaValue<string \| boolean \| { text?, prefix?, suffix? }>` | the labelized name | The label. `false` hides it. The object form adds [affixes](#affixes) to the text. Buttons, labels, panels, sections and spacers don't generate one. |
 | `if` | `SchemaValue<boolean>` | `true` | Renders the component only if `true`. Values of components that aren't rendered aren't computed. |
-| `visible` | `SchemaValue<boolean>` | `true`, `false` for `computed`, `data`, `hidden` | Shows or hides the component. Hidden components keep their value. |
+| `visible` | `SchemaValue<boolean>` | `true`, `false` for `value` | Shows or hides the component. Hidden components keep their value. |
 | `default` | `SchemaValue` | the type's default | The value used when the item lacks the key, e.g. in new items. Lists, `checkboxes` and multiselects with `multiple` also use it for `null`. |
 | `computeValue` | `SchemaValueCallback` | | Computes the value reactively into the data, also when the component isn't shown, unless `if` is `false`. Returning `undefined` keeps the current value. |
 | `formatValue` | `SchemaValueCallback` | | Converts the value for display. |
@@ -479,29 +479,32 @@ samplePages: {
 }
 ```
 
-### computed, data, hidden
+### value
 
-`ComputedSchema`, `DataSchema`, `HiddenSchema`. Three names of the same type:
-a read-only field whose value comes from `computeValue()`, `data` or
+`ValueSchema`. A value that is never edited, from `computeValue()`, `data` or
 `dataPath`. It is invisible by default; `visible: true` shows the value in a
 read-only input. Values are part of the data and sent to the server, unless
 `exclude: true`.
 
+`computed`, `data` and `hidden` are deprecated names of `value`, with the
+deprecated schema types `ComputedSchema`, `DataSchema` and `HiddenSchema`.
+They keep working until 5.0, with a warning when their schemas are set up.
+
 | Option | Type | Default | Description |
 | ------ | ---- | ------- | ----------- |
-| `type` | `'computed' \| 'data' \| 'hidden'` | | Required. |
+| `type` | `'value'` | | Required. |
 | `data` | `SchemaValue<any>` | | The value, or a callback that returns it, also asynchronously. |
 | `dataPath` | `string` | | The data path of the value, relative to the item the field sits in, e.g. `'author/name'`, or absolute with a leading `/`. `..` goes up a level; above the root throws. |
 
 ```js
 // In the customer form:
 fullName: {
-  type: 'computed',
+  type: 'value',
   computeValue: ({ item }) => `${item.firstName} ${item.lastName}`,
   exclude: true
 },
 // In the book form:
-authorName: { type: 'data', dataPath: 'author/name', exclude: true }
+authorName: { type: 'value', dataPath: 'author/name', exclude: true }
 ```
 
 ### component
@@ -801,7 +804,7 @@ panels: {
     sticky: true,
     components: {
       wordCount: {
-        type: 'computed',
+        type: 'value',
         visible: true,
         exclude: true,
         computeValue: ({ item }) => item.summary?.split(/\s+/).length ?? 0

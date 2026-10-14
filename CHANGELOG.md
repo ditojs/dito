@@ -16,6 +16,7 @@ version, see the upgrade guides in `docs/`.
 ### Deprecations
 
 - **admin:** `context.nested` is internal: `value` is `undefined` when a context describes an item.
+- **admin:** `type: 'value'` replaces `type: 'computed'`, `'data'` and `'hidden'`, which keep working until 5.0 with a deprecation warning, and `ValueSchema` replaces `ComputedSchema`, `DataSchema` and `HiddenSchema`, which stay as deprecated aliases.
 
 ## 4.2.0 (2026-10-14)
 
