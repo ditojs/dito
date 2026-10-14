@@ -60,6 +60,43 @@ describe('DitoPane', () => {
     expect(isLabelVertical('title')).toBe(false)
   })
 
+  it.each([
+    [
+      'sections',
+      {
+        type: 'section',
+        components: { title: { type: 'text', label: 'Title' } }
+      }
+    ],
+    [
+      'inlined objects',
+      {
+        type: 'object',
+        label: false,
+        inlined: true,
+        form: {
+          type: 'form',
+          components: { title: { type: 'text', label: 'Title' } }
+        }
+      }
+    ]
+  ])('aligns the components in rows with labels of %s', async (_, schema) => {
+    stubLayout()
+    const { wrapper, findContainer } = await mountSchema({
+      schema: {
+        components: {
+          inStock: { type: 'checkbox', label: false, width: '1/2' },
+          details: { ...schema, width: '1/2' }
+        }
+      },
+      data: { inStock: true, title: 'Emma', details: { title: 'Emma' } }
+    })
+    await measureRows(wrapper)
+    expect(
+      findContainer('inStock').classes('dito-container--label-vertical')
+    ).toBe(true)
+  })
+
   it('keeps aligning a row once its last component is gone', async () => {
     stubLayout()
     const { wrapper, findContainer, data, settle } = await mountSchema({

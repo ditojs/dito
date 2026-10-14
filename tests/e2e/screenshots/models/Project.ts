@@ -43,6 +43,8 @@ export interface Project {
   files?: object[] | null
   links?: object[] | null
   contactInfo?: { phone?: string | null; email?: string | null } | null
+  approved?: boolean | null
+  approval?: { approver?: string | null; approvedOn?: string | null } | null
   // Buttons and labels don't hold data of their own, so their keys are
   // `never`.
   openDialog?: never
@@ -75,7 +77,9 @@ export class Project extends Model {
     meetingAt: { type: 'timestamp', nullable: true },
     files: { type: 'array', nullable: true, items: { type: 'object' } },
     links: { type: 'array', nullable: true, items: { type: 'object' } },
-    contactInfo: { type: 'object', nullable: true }
+    contactInfo: { type: 'object', nullable: true },
+    approved: { type: 'boolean', nullable: true },
+    approval: { type: 'object', nullable: true }
   }
 
   static override scopes = {
