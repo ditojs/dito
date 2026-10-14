@@ -3,7 +3,7 @@
   ref="element"
   :class="{ 'dito-section--labelled': !!schema.label }"
   role="region"
-  :aria-label="label || labelize(schema.name)"
+  :aria-label="labelText || labelize(schema.name)"
 )
   DitoSchemaInlined.dito-section__schema(
     :schema="formSchema"

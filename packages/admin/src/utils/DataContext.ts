@@ -7,8 +7,9 @@ import {
 } from '@ditojs/utils'
 import SchemaContext from '../SchemaContext.js'
 import { appendDataPath } from './data.js'
+import { getText } from './html.js'
 import {
-  getSchemaValue,
+  getLabel,
   getComponentPathByDataPath
 } from './schema/data.js'
 import {
@@ -115,18 +116,16 @@ export function createDataContext({
     if (!isEmpty(errors)) {
       // The label of the data's schema, also for the errors of its sources:
       const { schema, data } = context
-      const label = (
-        getSchemaValue('label', {
-          type: String,
+      const label = getText(
+        getLabel(
           schema,
-          context: new SchemaContext(services, {
+          new SchemaContext(services, {
             schema,
             nested: false,
             data,
             dataPath: context.dataPath
           })
-        }) ||
-        labelize(schema.name)
+        )
       )
       const messages = Object.entries(unmatchedErrors ?? {}).flatMap(
         ([dataPath, errs]) => {

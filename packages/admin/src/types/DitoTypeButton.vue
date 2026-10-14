@@ -25,9 +25,9 @@ DitoButton(
       :disabled="disabled"
       :parentContext="context"
     )
-    .dito-info(
+    DitoInfo(
       v-if="!label && info"
-      :data-info="info"
+      :info="info"
     )
 </template>
 
@@ -37,13 +37,14 @@ import { defineType } from '../utils/schema/types.ts'
 import { fieldProps, useField } from '../composables/useField.ts'
 import { getVerbs } from '../utils/services.ts'
 import DitoAffixes from '../components/DitoAffixes.vue'
+import DitoInfo from '../components/DitoInfo.vue'
 import { DitoButton } from '@ditojs/ui/src'
 import { hasResource } from '../utils/resource.js'
 import { asArray } from '@ditojs/utils'
 
 // @vue/component
 const DitoTypeButton = {
-  components: { DitoAffixes, DitoButton },
+  components: { DitoAffixes, DitoButton, DitoInfo },
   props: fieldProps,
 
   setup(props) {

@@ -1,8 +1,10 @@
-import { labelize } from '@ditojs/utils'
 import {
   getSchemaValue as getValue,
-  shouldRenderSchema
+  getLabel,
+  shouldRenderSchema,
+  type Label
 } from '../utils/schema/data.js'
+import { getText } from '../utils/html.js'
 import type { Context } from '../utils/schema/types.ts'
 import type { Schema } from '../utils/types.ts'
 
@@ -24,12 +26,12 @@ export function useSchemaValue(context: Context) {
   return {
     getSchemaValue,
 
-    // Labels can be objects with affixes:
-    getLabel(schema: Schema | null, name?: string): string | object {
-      return schema
-        ? getSchemaValue('label', { schema, type: [String, Object] }) ||
-          labelize(name || schema.name)
-        : labelize(name) || ''
+    getLabel(schema: Schema | null, name?: string): Label {
+      return getLabel(schema, context, name)
+    },
+
+    getLabelText(schema: Schema | null, name?: string): string {
+      return getText(getLabel(schema, context, name))
     },
 
     shouldRenderSchema(schema: Schema | null = null): boolean {

@@ -53,10 +53,11 @@ them: their changes are saved through their own requests, not with the form.
 
 `itemLabel` sets how items are named in lists without columns, delete
 confirmations and notifications. A string names the key to show, a
-callback returns HTML:
+callback returns text, or HTML as `{ html }`, see
+[Text and HTML](../../api/admin/schemas.md#text-and-html):
 
 ```js
-itemLabel: ({ item }) => escapeHtml(`${item.title} (${item.isbn})`)
+itemLabel: ({ item }) => `${item.title} (${item.isbn})`
 ```
 
 Without `itemLabel`, the first column is used, else the item's `name`. Inside
@@ -103,7 +104,7 @@ chapters: {
   creatable: true,
   deletable: true,
   collapsible: true,
-  itemLabel: ({ item }) => escapeHtml(item.title || 'Untitled'),
+  itemLabel: ({ item }) => item.title || 'Untitled',
   components: {
     title: { type: 'text' },
     text: { type: 'markup', marks: { bold: true, italic: true } }

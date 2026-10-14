@@ -15,6 +15,7 @@ import { getInputAffixesProps } from '../utils/affixes.js'
 import { getSchemaEventEntries } from '../utils/schema/events.js'
 import { isLabelled } from '../utils/schema/structure.js'
 import { appendDataPath } from '../utils/data.js'
+import { getText } from '../utils/html.js'
 import { getMultipleValue } from '../utils/schema/data.js'
 import {
   useSchemaContext,
@@ -94,6 +95,11 @@ export function useContainerField(
   const { context } = schemaContext
   const { value, parsedValue } = useValue(props, schemaContext)
   const { getSchemaValue, getLabel } = useSchemaValue(context)
+  const label = computed(() =>
+    isLabelled(props.schema, props.generateLabels)
+      ? getLabel(props.schema)
+      : null
+  )
   // Add the name, also of unnested components:
   const { componentPath, parentComponentPath } = useComponentPath(
     () => props.dataPath,
@@ -108,13 +114,10 @@ export function useContainerField(
     componentPath,
     parentComponentPath,
     getSchemaValue,
-    label: computed(() =>
-      isLabelled(props.schema, props.generateLabels)
-        ? getLabel(props.schema)
-        : null
-    ),
+    label,
+    labelText: computed(() => getText(label.value)),
     info: computed(() =>
-      getSchemaValue('info', { type: String, default: null })
+      getSchemaValue('info', { type: [String, Object], default: null })
     ),
     placeholder: computed(() =>
       getSchemaValue('placeholder', { type: String })
@@ -157,6 +160,7 @@ export function useField(
     componentPath,
     getSchemaValue,
     label,
+    labelText,
     info,
     placeholder,
     readonly,
@@ -302,6 +306,7 @@ export function useField(
     clearable,
     placeholder,
     label,
+    labelText,
     info,
     attributes,
     inputAffixesProps,

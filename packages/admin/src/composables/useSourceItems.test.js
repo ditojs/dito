@@ -92,7 +92,7 @@ describe('useSourceItems()', () => {
       )
     })
 
-    it('keeps the HTML that `itemLabel()` returns', async () => {
+    it('escapes the text that `itemLabel()` returns', async () => {
       const { findField } = await mountSchema({
         schema: {
           components: {
@@ -105,10 +105,68 @@ describe('useSourceItems()', () => {
         },
         data: { books: [{ title: 'Emma' }] }
       })
+      const field = findField('books')
+      expect(field.find('b').exists()).toBe(false)
+      expect(field.text()).toContain('<b>Emma</b>')
+    })
+
+    it('keeps the HTML that `itemLabel()` returns as `{ html }`', async () => {
+      const { findField } = await mountSchema({
+        schema: {
+          components: {
+            books: {
+              type: 'list',
+              itemLabel: ({ item }) => ({ html: `<b>${item.title}</b>` }),
+              form: bookForm
+            }
+          }
+        },
+        data: { books: [{ title: 'Emma' }] }
+      })
       expect(findField('books').find('b').text()).toBe('Emma')
     })
+
+    it('escapes the form label in extended labels', async () => {
+      const { findField } = await mountSchema({
+        schema: {
+          components: {
+            books: {
+              type: 'list',
+              inlined: true,
+              collapsible: true,
+              form: { ...bookForm, label: 'Book <i>' }
+            }
+          }
+        },
+        data: { books: [{}] }
+      })
+      const label = findField('books').find('.dito-label')
+      expect(label.find('i').exists()).toBe(false)
+      expect(label.text()).toContain('Book <i> 1')
+    })
   })
+
   describe('itemLabel()', () => {
+    it('receives the form label as text', async () => {
+      const formLabels = []
+      await mountSchema({
+        schema: {
+          components: {
+            books: {
+              type: 'list',
+              itemLabel: ({ item, formLabel }) => {
+                formLabels.push(formLabel)
+                return item.title
+              },
+              form: { ...bookForm, label: { html: '<b>Book</b> &amp; co' } }
+            }
+          }
+        },
+        data: { books: [{ title: 'Emma' }] }
+      })
+      expect(formLabels).toContain('Book & co')
+    })
+
     it('receives the data path and form label of the item', async () => {
       const contexts = []
       const { admin } = await mountForm({

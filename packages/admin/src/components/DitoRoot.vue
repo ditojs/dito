@@ -157,6 +157,8 @@ export default {
         interactive: true,
         delay: 250,
         zIndex: 1,
+        // `DitoInfo` passes the info as HTML:
+        allowHTML: true,
         appendTo: node => node.closest('.dito-pane'),
         onShow: instance => instance.setContent(instance.reference.dataset.info)
       })

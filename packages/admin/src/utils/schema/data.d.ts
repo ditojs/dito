@@ -7,6 +7,14 @@ export function getSchemaValue(
   keyOrDataPath: string | string[],
   options?: Options
 ): any
+export type Label =
+  | string
+  | { text?: string; html?: string; prefix?: any; suffix?: any }
+export function getLabel(
+  schema: Schema | null,
+  context: Context,
+  name?: string
+): Label
 export function shouldRenderSchema(
   schema: Schema | null,
   context: Context

@@ -16,10 +16,10 @@ thead.dito-table-head
           @click="sortByColumn(column)"
         )
           .dito-button__order-arrows
-          span {{ getLabel(column) }}
+          span {{ getLabelText(column) }}
         span(
           v-else
-        ) {{ getLabel(column) }}
+        ) {{ getLabelText(column) }}
     th(
       v-if="hasEditButtons"
     )

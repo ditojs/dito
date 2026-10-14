@@ -17,7 +17,7 @@
     type="number"
     v-bind="attributes"
     :name="null"
-    :aria-label="`${label || labelize(schema.name)} Value`"
+    :aria-label="`${labelText || labelize(schema.name)} Value`"
     :min="settings.min"
     :max="settings.max"
     :step="stepValue"

@@ -87,7 +87,7 @@ publish: {
   text: 'Publish',
   resource: { path: 'publish', method: 'post' },
   onSuccess({ itemLabel, notify }) {
-    notify({ type: 'success', html: `${itemLabel} is now online.` })
+    notify({ type: 'success', text: `${itemLabel} is now online.` })
   },
   onError({ error, notify }) {
     notify({ type: 'error', text: error.message })

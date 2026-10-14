@@ -11,7 +11,7 @@
     :class="{ 'dito-tabs__link--active': modelValue === key }"
     @click="$emit('update:modelValue', key)"
     @keydown="onKeyDown($event, key)"
-  ) {{ getLabel(tabSchema, key) }}
+  ) {{ getLabelText(tabSchema, key) }}
 </template>
 
 <script>
@@ -36,7 +36,7 @@ export default {
 
     return {
       getTabId,
-      getLabel: useSchemaValue(props.context).getLabel,
+      getLabelText: useSchemaValue(props.context).getLabelText,
 
       getTabPanelId(key) {
         return `${schemaComponentPath.path}-tabpanel-${key}`

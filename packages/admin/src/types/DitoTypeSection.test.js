@@ -120,6 +120,23 @@ describe('DitoTypeSection', () => {
     expect(section.attributes('aria-label')).toBe('Details')
   })
 
+  it('labels its region with the text of `{ html }` labels', async () => {
+    const { findField } = await mountSchema({
+      schema: {
+        components: {
+          details: {
+            type: 'section',
+            label: { html: '<b>Details</b> &amp; notes' },
+            components: { title: { type: 'text' } }
+          }
+        }
+      }
+    })
+    expect(findField('details').attributes('aria-label')).toBe(
+      'Details & notes'
+    )
+  })
+
   it('toggles collapsed sections when their label is clicked', async () => {
     const onToggle = vi.fn()
     const { findField, findContainer } = await mountSchema({

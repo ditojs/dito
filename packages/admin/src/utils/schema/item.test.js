@@ -66,10 +66,20 @@ describe('getItemLabel()', () => {
     ).toBe(`Book 'Tom &amp; Jerry'`)
   })
 
-  it('keeps the HTML that `itemLabel()` returns', () => {
+  it('escapes the text that `itemLabel()` returns', () => {
     const schema = {
       type: 'list',
-      itemLabel: ({ item }) => `<b>${item.id}</b>`
+      itemLabel: ({ item }) => `<b>${item.id}</b> & co`
+    }
+    expect(getLabel(schema, books[0], { extended: true })).toBe(
+      '&lt;b&gt;7&lt;/b&gt; &amp; co'
+    )
+  })
+
+  it('keeps the HTML that `itemLabel()` returns as `{ html }`', () => {
+    const schema = {
+      type: 'list',
+      itemLabel: ({ item }) => ({ html: `<b>${item.id}</b>` })
     }
     expect(getLabel(schema, books[0], { extended: true })).toBe('<b>7</b>')
   })
@@ -85,6 +95,9 @@ describe('getItemLabel()', () => {
   it('uses `itemLabel` as the label if the item has no such key', () => {
     expect(getLabel({ type: 'list', itemLabel: 'Untitled' }, {})).toBe(
       'Untitled'
+    )
+    expect(getLabel({ type: 'list', itemLabel: 'Q & A' }, {})).toBe(
+      'Q &amp; A'
     )
   })
 
@@ -115,13 +128,27 @@ describe('getItemLabel()', () => {
   it('returns labels with prefix and suffix as objects', () => {
     const schema = {
       type: 'list',
-      itemLabel: () => ({ text: 'Emma', prefix: '1.' })
+      itemLabel: () => ({ text: 'Tom & Jerry', prefix: '1.' })
     }
     expect(getLabel(schema, books[0], { asObject: true })).toEqual({
-      text: 'Emma',
+      html: 'Tom &amp; Jerry',
       prefix: '1.',
       suffix: undefined
     })
+    expect(
+      getLabel(
+        { type: 'list', itemLabel: () => ({ html: '<b>Emma</b>', suffix: 1 }) },
+        books[0],
+        { asObject: true }
+      )
+    ).toEqual({ html: '<b>Emma</b>', prefix: undefined, suffix: 1 })
+    expect(
+      getLabel(
+        { type: 'list', itemLabel: () => ({ prefix: '1.' }) },
+        books[0],
+        { index: 0, asObject: true }
+      )
+    ).toEqual({ html: 'Book 1', prefix: '1.', suffix: undefined })
     expect(
       getLabel({ type: 'list' }, {}, { asObject: true, getFormLabel: () => '' })
     ).toBe(null)

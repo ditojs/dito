@@ -179,6 +179,21 @@ describe('DitoForm', () => {
   })
 
   describe('item label', () => {
+    it('is the text of the label of the item', async () => {
+      const labels = []
+      await mountForm({
+        schema: {
+          label: 'Book',
+          components: { name: { type: 'text' } },
+          onLoad({ itemLabel }) {
+            labels.push(itemLabel)
+          }
+        },
+        data: { name: 'Tom & <b>Jerry</b>' }
+      })
+      expect(labels).toEqual([`Book 'Tom & <b>Jerry</b>'`])
+    })
+
     it('is read by the callbacks of components when they run', async () => {
       const labels = []
       const { wrapper, settle } = await mountForm({

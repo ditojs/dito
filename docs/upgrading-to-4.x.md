@@ -278,6 +278,14 @@ writes of code, `onChange()` only fires for the edits of the user.
   `value`, and `ValueSchema` is its schema type. The old names keep working
   until 5.0, with a deprecation warning, and `ComputedSchema`, `DataSchema` and
   `HiddenSchema` are deprecated aliases of `ValueSchema`.
+- Since 4.5, labels, the results of `itemLabel()` and `info` are text unless
+  they're given as `{ html }`, see
+  [Text and HTML](./api/admin/schemas.md#text-and-html). Labels and callbacks
+  that return HTML strings return `{ html }` instead, and callbacks that only
+  escaped values with `escapeHtml()` return the plain text.
+- Since 4.5, `context.itemLabel` is the text of the item's label, like
+  `context.formLabel`: pass it to `notify()` as `text`, not `html`.
+  `context.itemLabelText` is removed: use `context.itemLabel`.
 
 ## Event handlers
 
@@ -780,10 +788,9 @@ defineType({
 - Forms fire `onCancel()` when their cancel button closes them. A value
   returned from `onSuccess()` or `onError()` of forms suppresses the
   notification, like on buttons.
-- `itemLabel` and `itemLabelText` hold the label of the form's item in all
-  callbacks inside a form, e.g. its events like `onSuccess()` and the `if` and
-  `label` of its components, computed when they're read. In `itemLabel()`
-  itself, they're `null`.
+- `itemLabel` holds the label of the form's item in all callbacks inside a
+  form, e.g. its events like `onSuccess()` and the `if` and `label` of its
+  components, computed when it's read. In `itemLabel()` itself, it's `null`.
 - Trees fire `onToggle()`, set on the tree or on its `children` schema, with
   `context.collapsed` and the item's context when their items collapse or
   expand.

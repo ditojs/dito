@@ -214,7 +214,7 @@ export default {
       parentModel: () => parentDataContext.model,
       isEditingParentItem: () => isEditingParentItem.value,
       getParentItem: () => sourceItem.value,
-      itemLabel: () => itemLabel.value,
+      itemLabel: () => itemLabelText.value,
       canSave: () => hasSubmitButton(buttonSchemas.value),
       resetItem: data => resetItem(data),
       copyErrors: () => copyErrors(),
@@ -222,7 +222,7 @@ export default {
         schema.value.breadcrumb ||
         `${
           capitalize(isCreating.value ? verbs.value.create : verbs.value.edit)
-        } ${getLabel(schema.value)}`
+        } ${getLabelText(schema.value)}`
       ),
       verbs: () => verbs.value,
       resourceContext: requests.resourceContext,
@@ -247,12 +247,12 @@ export default {
       reactive({ schema, data, dataPath }),
       { services }
     )
-    const { getLabel } = useSchemaValue(context)
+    const { getLabelText } = useSchemaValue(context)
     // The events of the data, e.g. `load`, like the form's schema emits them:
     const createEventContext = values =>
       createContext({
         get formLabel() {
-          return getLabel(schema.value)
+          return getLabelText(schema.value)
         },
         ...values
       })
@@ -267,9 +267,11 @@ export default {
       getDataPath: () => dataPath.value,
       isTransient: () => isTransient.value
     })
+    // HTML for notifications, text for the contexts and the form's label:
     const itemLabel = computed(() =>
       getItemLabel(sourceSchema.value, data.value, { extended: true })
     )
+    const itemLabelText = computed(() => getTextFromHtml(itemLabel.value))
 
     const close = () => routeContext.close()
 
@@ -729,7 +731,7 @@ export default {
       isActiveRoute: computed(
         () => routeContext.isLastRoute || isLastUnnestedRoute.value
       ),
-      itemLabelText: computed(() => getTextFromHtml(itemLabel.value))
+      itemLabelText
     }
   }
 }

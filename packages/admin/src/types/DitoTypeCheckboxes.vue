@@ -2,7 +2,7 @@
 DitoOptionList.dito-checkboxes(
   :id="componentPath"
   role="group"
-  :aria-label="label"
+  :aria-label="labelText"
   :options="options"
   :isGrouped="isGrouped"
   :layout="schema.layout"

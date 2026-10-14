@@ -259,31 +259,48 @@ describe('DitoRoot', () => {
   })
 
   describe('info tooltips', () => {
-    it('shows the info of labels in a tooltip in their pane', async () => {
-      vi.useFakeTimers({ shouldAdvanceTime: true })
-      try {
-        const admin = await mountAdmin({
-          views: {
-            books: {
-              type: 'view',
-              components: {
-                title: { type: 'text', info: 'The title on the cover' }
-              }
-            }
+    // Hovers the info of the `title` field and returns its tooltip:
+    async function showInfoTooltip(info) {
+      const admin = await mountAdmin({
+        views: {
+          books: {
+            type: 'view',
+            components: { title: { type: 'text', info } }
           }
-        })
-        await admin.navigate('/books')
-        const info = admin.element.querySelector('.dito-info')
-        expect(info.dataset.info).toBe('The title on the cover')
-        info.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
-        info.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))
-        await vi.advanceTimersByTimeAsync(500)
-        const tooltip = document.querySelector('[data-tippy-root]')
-        expect(tooltip.textContent).toBe('The title on the cover')
-        expect(tooltip.parentElement.closest('.dito-pane')).not.toBe(null)
-      } finally {
-        vi.useRealTimers()
-      }
+        }
+      })
+      await admin.navigate('/books')
+      const element = admin.element.querySelector('.dito-info')
+      element.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
+      element.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))
+      await vi.advanceTimersByTimeAsync(500)
+      return document.querySelector('[data-tippy-root]')
+    }
+
+    beforeEach(() => {
+      vi.useFakeTimers({ shouldAdvanceTime: true })
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    it('shows the info of labels in a tooltip in their pane', async () => {
+      const tooltip = await showInfoTooltip('The title on the cover')
+      expect(tooltip.textContent).toBe('The title on the cover')
+      expect(tooltip.parentElement.closest('.dito-pane')).not.toBe(null)
+    })
+
+    it('shows text info as text, with its line breaks', async () => {
+      const tooltip = await showInfoTooltip('Cover & <b>spine</b>\nOr back')
+      expect(tooltip.textContent).toBe('Cover & <b>spine</b>\nOr back')
+      expect(tooltip.querySelector('b')).toBe(null)
+    })
+
+    it('renders the HTML of `{ html }` info', async () => {
+      const tooltip = await showInfoTooltip({ html: 'The <b>cover</b>' })
+      expect(tooltip.querySelector('b').textContent).toBe('cover')
+      expect(tooltip.textContent).toBe('The cover')
     })
   })
 })

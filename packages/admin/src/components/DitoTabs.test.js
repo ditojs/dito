@@ -100,4 +100,27 @@ describe('DitoTabs', () => {
     expect(document.activeElement).toBe(link.element)
     expect(getSelectedTab(wrapper)).toBe('Details')
   })
+
+  it('shows the labels of tabs as text', async () => {
+    const { wrapper } = await mountForm({
+      schema: {
+        tabs: {
+          details: {
+            type: 'tab',
+            label: 'Q & A <i>',
+            components: { title: { type: 'text' } }
+          },
+          notes: {
+            type: 'tab',
+            label: { html: '<b>Notes</b>' },
+            components: { notes: { type: 'text' } }
+          }
+        }
+      },
+      data: {}
+    })
+    const links = wrapper.findAll('.dito-tabs__link')
+    expect(links.map(link => link.text())).toEqual(['Q & A <i>', 'Notes'])
+    expect(wrapper.find('.dito-tabs b, .dito-tabs i').exists()).toBe(false)
+  })
 })

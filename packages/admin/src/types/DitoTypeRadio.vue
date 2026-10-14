@@ -2,7 +2,7 @@
 DitoOptionList.dito-radio-buttons(
   :id="componentPath"
   role="radiogroup"
-  :aria-label="label"
+  :aria-label="labelText"
   :options="options"
   :isGrouped="isGrouped"
   :layout="schema.layout"

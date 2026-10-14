@@ -83,15 +83,15 @@ export const bookForm = {
   type: 'form',
   components: { … },
 
-  onLoad({ itemLabelText }) {
-    console.log(`Editing ${itemLabelText}`)
+  onLoad({ itemLabel }) {
+    console.log(`Editing ${itemLabel}`)
   },
 
   onSuccess({ isCreating, itemLabel, notify }) {
     // Replaces dito's own notification:
     notify({
       type: 'success',
-      html: `${itemLabel} was ${isCreating ? 'added to the shop' : 'saved'}.`
+      text: `${itemLabel} was ${isCreating ? 'added to the shop' : 'saved'}.`
     })
   },
 
@@ -116,8 +116,8 @@ export const bookForm = {
   [Nested forms](./nested-forms.md#events).
 - `onCancel()` fires when the cancel button closed the form.
 
-The label of the item is available in all of them, as `itemLabel` (HTML) and
-`itemLabelText`. See [Events](./events.md) for all events.
+The text of the item's label is available in all of them, as `itemLabel`. See
+[Events](./events.md) for all events.
 
 ## Acting on the form from code
 

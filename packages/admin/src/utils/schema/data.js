@@ -14,6 +14,7 @@ import {
   isFunction,
   asArray,
   clone,
+  labelize,
   getValueAtDataPath,
   resolveDataPath
 } from '@ditojs/utils'
@@ -77,6 +78,15 @@ export function getSchemaValue(
     }
   }
   return value
+}
+
+// Labels are text or `{ text | html, prefix, suffix }` objects, which the
+// renderers display as they are:
+export function getLabel(schema, context, name) {
+  return schema
+    ? getSchemaValue('label', { schema, context, type: [String, Object] }) ||
+      labelize(name || schema.name)
+    : labelize(name) || ''
 }
 
 export function shouldRenderSchema(schema, context) {

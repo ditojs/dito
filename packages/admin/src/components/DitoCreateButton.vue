@@ -51,7 +51,7 @@ export default {
   setup(props) {
     const router = useRouter()
     const { context, services } = useSchemaContext(props)
-    const { getSchemaValue, getLabel } = useSchemaValue(context)
+    const { getSchemaValue, getLabelText } = useSchemaValue(context)
     const creatableForms = computed(() =>
       getCreatableForms(props.schema, context)
     )
@@ -96,7 +96,7 @@ export default {
       menuItems: computed(() =>
         Object.entries(creatableForms.value).map(([type, form]) => ({
           value: type,
-          label: getLabel(form),
+          label: getLabelText(form),
           disabled: isDisabled(form)
         }))
       ),
@@ -104,9 +104,7 @@ export default {
       // Only use labels declared on the form, not ones derived from its name.
       formLabel: computed(() => {
         const form = creatableForm.value
-        return form
-          ? getSchemaValue('label', { schema: form, type: String })
-          : null
+        return form?.label ? getLabelText(form) : null
       }),
 
       onSelectMenuItem({ value: type }) {

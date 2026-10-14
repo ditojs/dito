@@ -20,7 +20,6 @@ import {
 } from './utils/data.js'
 import { getSchemaValue } from './utils/schema/data.js'
 import { hasNestedData } from './utils/schema/structure.js'
-import { getTextFromHtml } from './utils/html.js'
 import { navigate } from './utils/route.js'
 import {
   getRootData as getServicesRootData,
@@ -213,17 +212,13 @@ export default class SchemaContext {
     return getAdminValue(this, 'flattenedViews')
   }
 
-  // The label of the item of the form, computed when it's read:
+  // The text of the label of the item of the form, computed when it's read:
   get itemLabel() {
     return get(
       this,
       'itemLabel',
       () => getServices(this)?.routeContext?.itemLabel ?? null
     )
-  }
-
-  get itemLabelText() {
-    return getTextFromHtml(this.itemLabel)
   }
 
   get formLabel() {
