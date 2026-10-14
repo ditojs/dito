@@ -9,6 +9,10 @@ version, see the upgrade guides in `docs/`.
 
 - **admin:** `defineType()` throws for unknown descriptor keys, naming the replacement of the keys of 3.x, e.g. `excludeValue` or `processSchema`, and for the names of built-in types unless the descriptor has `override: true`.
 
+### New
+
+- **admin:** `placeholder` on selects, shown while no option is selected.
+
 ## 4.3.0 (2026-10-14)
 
 ### Behaviour changes
