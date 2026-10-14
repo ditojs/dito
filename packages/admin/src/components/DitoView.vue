@@ -17,7 +17,6 @@ template(
       :data="data"
       :store="getChildStore(name)"
       padding="root"
-      :disabled="isLoading"
       scrollable
       single
     )
@@ -106,9 +105,7 @@ export default {
       schema,
       name,
       data,
-      shouldRenderSchema,
-      // The view is disabled while the requests of its components are pending:
-      isLoading: computed(() => routeContext.loadingTracker.isLoading)
+      shouldRenderSchema
     }
   }
 }

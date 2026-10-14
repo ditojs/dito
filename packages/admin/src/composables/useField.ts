@@ -70,7 +70,10 @@ export interface FieldOptions extends FocusOptions {
 // The field of a container: the value of its type component and the schema
 // values that both show, evaluated once with the members of the component:
 export function useContainerField(
-  props: SchemaContextProps & { readonly generateLabels: boolean }
+  props: SchemaContextProps & {
+    readonly disabled: boolean
+    readonly generateLabels: boolean
+  }
 ) {
   // The members that the type component adds, see `useField()`. They override
   // the services that the contexts inherit from:
@@ -97,9 +100,6 @@ export function useContainerField(
     parent => appendDataPath(parent.path, props.schema.name)
   )
 
-  const getBoolean = (key: string) =>
-    computed(() => getSchemaValue(key, { type: Boolean, default: false }))
-
   return {
     ...schemaContext,
     members,
@@ -119,8 +119,16 @@ export function useContainerField(
     placeholder: computed(() =>
       getSchemaValue('placeholder', { type: String })
     ),
-    readonly: getBoolean('readonly'),
-    disabled: getBoolean('disabled')
+    readonly: computed(() =>
+      getSchemaValue('readonly', { type: Boolean, default: false })
+    ),
+    // Components are disabled along with the schema around them:
+    disabled: computed(
+      () => (
+        props.disabled ||
+        getSchemaValue('disabled', { type: Boolean, default: false })
+      )
+    )
   }
 }
 

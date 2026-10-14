@@ -137,6 +137,44 @@ describe('DitoPanel', () => {
     expect(item).toMatchObject({ notes: 'Classic' })
   })
 
+  it('disables all components and buttons inside it', async () => {
+    const { wrapper } = await mountSchema({
+      schema: {
+        components: { title: { type: 'text' } },
+        panels: {
+          summary: {
+            type: 'panel',
+            label: 'Summary',
+            disabled: true,
+            components: {
+              notes: { type: 'textarea' },
+              isRead: { type: 'checkbox' },
+              details: {
+                type: 'section',
+                components: { pages: { type: 'number' } }
+              }
+            },
+            buttons: {
+              refresh: { type: 'button', text: 'Refresh' }
+            }
+          }
+        }
+      },
+      data: { title: 'Dune' }
+    })
+    expect(
+      wrapper
+        .findAll('.dito-panel :is(input, textarea, button)')
+        .map(({ element }) => [element.name || element.id, element.disabled])
+    ).toEqual([
+      ['notes', true],
+      ['isRead', true],
+      ['pages', true],
+      [expect.stringMatching(/refresh$/), true]
+    ])
+    expect(wrapper.find('input[name="title"]').element.disabled).toBe(false)
+  })
+
   it('gives its own data as item, within the root data around it', async () => {
     const click = vi.fn()
     const { wrapper } = await mountSchema({

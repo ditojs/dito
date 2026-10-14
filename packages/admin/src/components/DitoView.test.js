@@ -24,13 +24,15 @@ describe('DitoView', () => {
     expect(view.data.title).toBe(null)
   })
 
-  it('stays disabled until all of its lists are loaded', async () => {
+  it('stays busy until all of its lists are loaded', async () => {
     const pendingResponses = {}
     const admin = await mountAdmin({
       views: {
         library: {
           type: 'view',
           components: {
+            search: { type: 'text' },
+            refresh: { type: 'button', text: 'Refresh' },
             books: {
               type: 'list',
               resource: { path: 'books' },
@@ -50,20 +52,22 @@ describe('DitoView', () => {
         })
     })
     await admin.navigate('/library')
-    const view = admin.getRouteComponent(isView)
     const header = admin.wrapper.find('.dito-header')
     expect(Object.keys(pendingResponses).sort()).toEqual([
       '/authors',
       '/books'
     ])
-    expect(view.isLoading).toBe(true)
     pendingResponses['/books']({ data: [] })
     await flushPromises()
-    expect(view.isLoading).toBe(true)
     expect(header.attributes('aria-busy')).toBe('true')
+    // Loading doesn't disable the components of the view:
+    expect(
+      admin.wrapper
+        .findAll(':is(input[name="search"], button[id$="refresh"])')
+        .map(({ element }) => element.disabled)
+    ).toEqual([false, false])
     pendingResponses['/authors']({ data: [] })
     await flushPromises()
-    expect(view.isLoading).toBe(false)
     expect(header.attributes('aria-busy')).toBe('false')
   })
 

@@ -193,6 +193,52 @@ describe('DitoTypeSection', () => {
     )
   })
 
+  it('disables all components inside it, also in nested sections', async () => {
+    const { wrapper, settle } = await mountSchema({
+      schema: {
+        components: {
+          isLocked: { type: 'checkbox' },
+          details: {
+            type: 'section',
+            disabled: ({ item }) => item.isLocked,
+            components: {
+              title: { type: 'text' },
+              isRead: { type: 'checkbox' },
+              format: { type: 'select', options: ['hardcover', 'e-book'] },
+              publish: { type: 'button', text: 'Publish' },
+              dimensions: {
+                type: 'section',
+                nested: true,
+                components: { width: { type: 'number' } }
+              }
+            }
+          }
+        }
+      },
+      data: { isLocked: true }
+    })
+    const getDisabled = () =>
+      wrapper
+        .findAll('.dito-section :is(input, select, button)')
+        .map(({ element }) => [element.name || element.id, element.disabled])
+    expect(getDisabled()).toEqual([
+      ['title', true],
+      ['isRead', true],
+      ['format', true],
+      ['details/publish', true],
+      ['dimensions/width', true]
+    ])
+    await wrapper.find('input[name="isLocked"]').setValue(false)
+    await settle()
+    expect(getDisabled()).toEqual([
+      ['title', false],
+      ['isRead', false],
+      ['format', false],
+      ['details/publish', false],
+      ['dimensions/width', false]
+    ])
+  })
+
   it('reveals the components with errors in collapsed sections', async () => {
     const { findField, submit, getErrors } = await mountForm({
       schema: {
