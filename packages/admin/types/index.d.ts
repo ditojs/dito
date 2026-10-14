@@ -773,7 +773,8 @@ export interface SourceSettings<$Item> {
    */
   compact?: boolean
   /**
-   * Enables copy/paste for the items of the inlined form of `components`.
+   * Enables copy/paste in the forms of the items, unless a form sets its own
+   * `clipboard`.
    */
   clipboard?: ClipboardConfig
   /**
