@@ -21,6 +21,9 @@ import { ViewRegistry } from './utils/ViewRegistry.js'
 import { AdminContext } from './utils/AdminContext.ts'
 import { adminContextKey } from './utils/keys.ts'
 
+// The options other than `dito`, `api` and `views`:
+const knownOptions = ['login', 'spinner']
+
 export default class DitoAdmin {
   constructor(el, {
     // The base, api and settings passed from `AdminController`:
@@ -32,6 +35,11 @@ export default class DitoAdmin {
     // Merge the `api` settings of `config.admin` with the passed ones:
     this.api = api = assignDeeply({}, ditoObject.api, api)
     this.options = options
+    for (const key of Object.keys(options)) {
+      if (!knownOptions.includes(key)) {
+        console.warn(`Unknown DitoAdmin option: '${key}'.`)
+      }
+    }
 
     api.locale ||= 'en-US'
     api.formats = assignDeeply({}, defaultFormats, api.formats)

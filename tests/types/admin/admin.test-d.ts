@@ -61,6 +61,24 @@ describe('DitoAdmin', () => {
     ])
   })
 
+  it('accepts the login and spinner options', () => {
+    assertType<ConstructorParameters<typeof DitoAdmin>>([
+      '#app',
+      {
+        login: { redirectAfterLogin: '/books' },
+        spinner: null
+      }
+    ])
+  })
+
+  it('rejects unknown options', () => {
+    assertType<ConstructorParameters<typeof DitoAdmin>>([
+      '#app',
+      // @ts-expect-error - `catalog` is no option of `DitoAdmin`.
+      { catalog: 'books' }
+    ])
+  })
+
   it('is also exported by name', () => {
     expectTypeOf(NamedDitoAdmin).toEqualTypeOf<typeof DitoAdmin>()
   })

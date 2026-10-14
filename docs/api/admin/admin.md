@@ -47,7 +47,8 @@ new DitoAdmin(element, options)
 | `options.login.redirectAfterLogin` | `string` | A URL to load after a successful login, instead of resolving the views in place. |
 | `options.spinner` | `{ size?: string, color?: string } \| null` | Size and color of the loading spinner in the header. `null` hides it. |
 
-Other options are kept in [`admin.options`](#options).
+`login` and `spinner` are kept in [`admin.options`](#options). Unknown options
+log a warning.
 
 ### Example
 
@@ -106,7 +107,7 @@ The Vue application instance.
 ### options
 
 ```ts
-admin.options: Record<string, any>
+admin.options: { login?, spinner? }
 ```
 
 The constructor options other than `dito`, `api` and `views`.

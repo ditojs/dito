@@ -3089,12 +3089,12 @@ export class DitoAdmin<
   context: AdminContext
   /** The Vue application instance. */
   app: import('vue').App
-  /** Additional options passed at construction. */
-  options: Record<string, any>
+  /** The constructor options other than `dito`, `api` and `views`. */
+  options: AdminOptions
 
   constructor(
     element: Element | string,
-    options?: {
+    options?: AdminOptions & {
       /**
        * The base, api and settings passed from `AdminController`.
        *
@@ -3114,21 +3114,23 @@ export class DitoAdmin<
           | OrFunctionReturning<OrPromiseOf<View | Record<string, View>>>[]
         >
       >
-      login?: {
-        additionalComponents?: Components
-        redirectAfterLogin?: string
-      }
-      /**
-       * Controls the loading spinner displayed in the
-       * admin header. Set to `null` to disable it.
-       */
-      spinner?: {
-        size?: string
-        color?: string
-      } | null
-      [key: string]: any
     }
   )
+}
+
+interface AdminOptions {
+  login?: {
+    additionalComponents?: Components
+    redirectAfterLogin?: string
+  }
+  /**
+   * Controls the loading spinner displayed in the
+   * admin header. Set to `null` to disable it.
+   */
+  spinner?: {
+    size?: string
+    color?: string
+  } | null
 }
 
 // The hooks of type descriptors receive the contexts of their components:

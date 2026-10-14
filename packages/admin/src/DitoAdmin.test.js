@@ -11,6 +11,7 @@ describe('DitoAdmin', () => {
       admin.app._container?.remove()
     }
     delete window.dito
+    vi.restoreAllMocks()
   })
 
   function createAdmin({ el, ...options } = {}) {
@@ -106,6 +107,15 @@ describe('DitoAdmin', () => {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' }
     })
+  })
+
+  it('warns about each unknown option', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    createAdmin({ spinner: null, catalog: 'books', shelves: 3 })
+    expect(warn.mock.calls).toEqual([
+      [`Unknown DitoAdmin option: 'catalog'.`],
+      [`Unknown DitoAdmin option: 'shelves'.`]
+    ])
   })
 
   it('normalizes the paths with `normalizePaths`', () => {
