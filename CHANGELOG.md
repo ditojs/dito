@@ -13,6 +13,7 @@ version, see the upgrade guides in `docs/`.
 ### New
 
 - **admin:** `search` on multiselects turns on searching without `searchable: true`, which `searchable: false` still turns off. Other types warn about `search` when they're set up, as they ignore it.
+- **ui:** `DitoDateTimePicker` supports `show`, `update:show`, `placement` and `target`, like `DitoDatePicker` and `DitoTimePicker`.
 
 ### Deprecations
 

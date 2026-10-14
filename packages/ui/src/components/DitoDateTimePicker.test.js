@@ -66,6 +66,38 @@ describe('DitoDateTimePicker', () => {
     expect(popup.classes()).toContain('dito-popup--bottom-right')
   })
 
+  it('keeps a given placement for both panels', async () => {
+    wrapper = mountDateTimePicker({ placement: 'top-left' })
+    const text = findInput(wrapper).element.value
+    await clickAt(wrapper, 1)
+    const popup = wrapper.find('.dito-popup')
+    expect(popup.classes()).toContain('dito-popup--top-left')
+    await clickAt(wrapper, text.indexOf('30'))
+    expect(getShownPanel(wrapper)).toBe('time')
+    expect(popup.classes()).toContain('dito-popup--top-left')
+  })
+
+  it('shows the popup with `show` and emits `update:show`', async () => {
+    wrapper = mountDateTimePicker({ show: true })
+    await flushPromises()
+    expect(getShownPanel(wrapper)).toBe('date')
+    await findInput(wrapper).trigger('keydown', { key: 'Escape' })
+    await flushPromises()
+    expect(getShownPanel(wrapper)).toBe(null)
+    expect(wrapper.emitted('update:show')).toEqual([[false]])
+  })
+
+  it('keeps the popup open for clicks on its `target`', async () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    wrapper = mountDateTimePicker({ show: true, target })
+    await flushPromises()
+    target.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }))
+    await flushPromises()
+    expect(getShownPanel(wrapper)).toBe('date')
+    target.remove()
+  })
+
   it('reopens for the other panel only', async () => {
     wrapper = mountDateTimePicker()
     const text = findInput(wrapper).element.value
