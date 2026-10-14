@@ -92,6 +92,24 @@ describe('MultiselectSchema', () => {
     })
   })
 
+  it('accepts label and value converters for taggable', () => {
+    assertType<MultiselectSchema<Entry>>({
+      type: 'multiselect',
+      taggable: {
+        label({ item, value }) {
+          expectTypeOf(item).toMatchTypeOf<Entry>()
+          expectTypeOf(value).toBeString()
+          return value.toUpperCase()
+        },
+        value: ({ value }) => value.toLowerCase()
+      }
+    })
+    assertType<MultiselectSchema<Entry>>({
+      type: 'multiselect',
+      taggable: ({ item }) => (item.title ? { value: () => 'new' } : false)
+    })
+  })
+
   it('accepts typed $Option with search callback', () => {
     type Tag = { id: number; name: string }
 
