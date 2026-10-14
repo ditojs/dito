@@ -179,6 +179,23 @@ describe('DitoTypeTreeList', () => {
     ])
   })
 
+  it('renders the prefix and suffix of item labels', async () => {
+    const { findField } = await mountForm({
+      schema: createSiteSchema({
+        itemLabel: ({ item }) => ({
+          text: item.title,
+          prefix: 'Page',
+          suffix: `${item.subpages.length} subpages`
+        })
+      }),
+      data: site
+    })
+    const label = findField('pages').find('.dito-tree-label').text()
+    expect(label).toContain('Page')
+    expect(label).toContain('About')
+    expect(label).toContain('2 subpages')
+  })
+
   it('navigates to the form of the item with the edit button', async () => {
     const schema = createSiteSchema()
     schema.components.pages.children.editable = true
