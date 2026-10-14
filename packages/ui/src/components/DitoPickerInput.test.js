@@ -144,6 +144,21 @@ describe('DitoPickerInput', () => {
     expect(wrapper.emitted('update:modelValue')).toBeUndefined()
   })
 
+  it('shows the value again when the focus leaves text that is no date', async () => {
+    wrapper = mountPickerInput()
+    const input = findInput(wrapper).element
+    input.focus()
+    await flushPromises()
+    await findInput(wrapper).setValue('13/32/2024')
+    wrapper.vm.close()
+    await flushPromises()
+    expect(input.value).toBe('13/32/2024')
+    input.blur()
+    await flushPromises()
+    expect(input.value).toBe('March 5, 2024')
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+  })
+
   it('keeps the caret in place while the typed text is reformatted', async () => {
     wrapper = mountPickerInput()
     const input = findInput(wrapper).element

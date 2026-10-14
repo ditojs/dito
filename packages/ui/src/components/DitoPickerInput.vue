@@ -13,10 +13,11 @@ DitoTrigger.dito-picker-input(
     DitoInput(
       v-else
       ref="input"
-      v-model="currentText"
+      :modelValue="currentText"
       type="text"
       :class="inputClass"
       v-bind="{ placeholder, disabled, focused: isFocused, ...inputAttributes }"
+      @update:modelValue="onInputText"
       @focus="onInputFocus"
       @blur="isInputFocused = false"
       @click="onInputClick"
@@ -97,6 +98,8 @@ export default {
   data() {
     return {
       currentValue: this.modelValue,
+      // The typed text, which isn't always a date.
+      currentText: format(this.modelValue, this.formatOptions) || '',
       isPopupShown: this.show,
       isInputFocused: false,
       isEdited: false,
@@ -109,24 +112,8 @@ export default {
       return this.isInputFocused || this.isPopupShown
     },
 
-    currentText: {
-      get() {
-        return format(this.currentValue, this.formatOptions) || ''
-      },
-
-      set(text) {
-        const date = parseDate(text, this.formatOptions)
-        if (date) {
-          // Keep the caret in place while the text is replaced with the one
-          // of the new value.
-          const input = this.getInputElement()
-          const selection = getSelection(input)
-          this.setValue(date)
-          if (selection) {
-            this.$nextTick(() => setSelection(input, selection))
-          }
-        }
-      }
+    valueText() {
+      return format(this.currentValue, this.formatOptions) || ''
     }
   },
 
@@ -137,10 +124,16 @@ export default {
       }
     },
 
+    valueText(text) {
+      this.currentText = text
+    },
+
     isFocused(to, from) {
       if (to ^ from) {
         if (!to) {
           this.emitChangeIfEdited()
+          // Drop typed text that isn't a date, so the input shows the value:
+          this.currentText = this.valueText
         }
         this.$emit(to ? 'focus' : 'blur')
       }
@@ -209,6 +202,21 @@ export default {
         this.emitChangeIfEdited()
       }
       this.$emit('update:show', show)
+    },
+
+    onInputText(text) {
+      this.currentText = text
+      const date = parseDate(text, this.formatOptions)
+      if (date) {
+        // Keep the caret in place while the text is replaced with the one of
+        // the new value.
+        const input = this.getInputElement()
+        const selection = getSelection(input)
+        this.setValue(date)
+        if (selection) {
+          this.$nextTick(() => setSelection(input, selection))
+        }
+      }
     },
 
     onInputFocus() {
