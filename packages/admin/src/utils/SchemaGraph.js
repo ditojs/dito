@@ -17,7 +17,7 @@ import { nanoid } from 'nanoid'
 // | --------------------------------------------| --------- | --------- |
 // | data                                        | server    | clipboard |
 // | --------------------------------------------| --------- | --------- |
-// | type: 'relation', internal: false           | keep id   | keep id   |
+// | type: 'relation', internal: false           | keep id   | $label    |
 // | type: 'relation', internal: true            | keep id   | new @id   |
 // | type: 'relation', internal: true, temporary | ref, #ref | new @id   |
 // | type: 'source', related: false              | keep id   | remove id |
@@ -27,7 +27,8 @@ import { nanoid } from 'nanoid'
 // | --------------------------------------------| --------- | --------- |
 // Data paths are absolute. Relations outside of `dataPath` are external.
 // Copies get a new temporary id per id of each list, shared by the relations
-// to its items.
+// to its items. External relations hold the labels of their options in copies,
+// which `serializeData()` writes, as only it has their options.
 
 export class SchemaGraph {
   graph = {}
@@ -64,7 +65,7 @@ export class SchemaGraph {
   }
 
   addRelation(dataPath, relatedDataPath, schema) {
-    const internal = !!getRelativeDataPath(relatedDataPath, this.dataPath)
+    const internal = this.isInternal(relatedDataPath)
     this.set(dataPath, {
       type: 'relation',
       schema,
@@ -74,6 +75,10 @@ export class SchemaGraph {
     if (internal) {
       this.setSourceRelated(relatedDataPath)
     }
+  }
+
+  isInternal(relatedDataPath) {
+    return !!getRelativeDataPath(relatedDataPath, this.dataPath)
   }
 
   getReferencePrefix(dataPath) {

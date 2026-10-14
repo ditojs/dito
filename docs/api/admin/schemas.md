@@ -1291,14 +1291,23 @@ it read the clipboard. Data is only pasted into schemas of the same name.
   that they paste as new items. Items that relations inside the copied data
   point to get new temporary ids instead, so the pasted relations point to the
   pasted items. Lists with their own resource are left out.
+- Relations to records outside the copied data hold the labels of their
+  options instead of ids, through `options.label`:
+  `author: { $label: 'Jane Austen' }`, or an array of these for multiple
+  values. Copying loads the options that aren't loaded yet.
 - Pasting writes the copied values of the keys that the item has into it, as
   edits: lists are replaced, not added to. The item keeps its id and its
   position (`orderKey`). Each paste gives the related items fresh temporary
   ids, so pasting twice doesn't repeat them.
+- Pasting resolves the labels of related records to the option of the field
+  whose label matches, ignoring case and whitespace. Labels that match no
+  option or several paste `null`, or are left out of multiple values, and are
+  listed in a notification.
 - `copy()` receives the serialized data as `context.clipboardItem` and returns
   the data to copy. `paste()` receives the copied data as
   `context.clipboardItem` and returns the data to paste, which is then
-  deserialized like loaded data.
+  deserialized like loaded data. Both see the labels of related records, not
+  their ids.
 
 ```js
 clipboard: {

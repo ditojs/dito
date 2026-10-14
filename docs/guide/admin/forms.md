@@ -187,6 +187,10 @@ only pasted into schemas of the same name: a copied book only into book forms.
 The copy leaves out the item's id and the ids of the items in its lists. Items
 that relations in the copy point to get new temporary ids instead, one for
 each id in each list, so that these relations keep pointing to the same items.
+Relations to records outside the copy, e.g. the author of a book, hold the
+label that their field shows for the record instead of its id, as ids differ
+between databases: `author: { $label: 'Jane Austen' }`, or an array of these
+for multiple values. Options that aren't loaded yet are loaded first.
 
 **Paste** writes the copied values into the item, as edits:
 
@@ -198,13 +202,18 @@ each id in each list, so that these relations keep pointing to the same items.
   themselves.
 - `deserializeValue()` converts the pasted values like loaded ones, e.g. date
   strings to dates.
+- Labels of related records are matched against the field's options, ignoring
+  case and whitespace. A label that matches no option or several pastes
+  `null`, or is left out of multiple values, and a notification lists these,
+  e.g. "Not found when pasting: Author 'Jane Austen'".
 
 The form is dirty after pasting, and saving it stores the pasted data.
 
 `clipboard` takes `copy()` and `paste()` callbacks instead of `true`. Each
 receives the [context](./context.md) with the data as `clipboardItem`, and
-returns the data to copy or paste. Both run synchronously, and returning
-nothing from `paste()` pastes nothing:
+returns the data to copy or paste. Both see the labels of related records
+outside the copy, not their ids. Both run synchronously, and returning nothing
+from `paste()` pastes nothing:
 
 ```js
 clipboard: {

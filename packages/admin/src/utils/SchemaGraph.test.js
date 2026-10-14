@@ -246,7 +246,7 @@ describe('SchemaGraph', () => {
       expect(data.books[0]).toEqual({ author, editor })
     })
 
-    it('keeps the ids of external relations', () => {
+    it('leaves the values of external relations unchanged', () => {
       const data = serializeForClipboard()
       expect(data.shelves[0].books[0].publisher).toEqual({ id: 40 })
     })

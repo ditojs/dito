@@ -31,6 +31,7 @@ import {
   isListSource,
   hasNestedData
 } from './structure.js'
+import { getLabelForRelated } from './options.ts'
 import {
   hasFormSchema,
   hasMultipleFormSchemas,
@@ -378,17 +379,24 @@ export function serializeData(schema, sourceSchema, data, dataPath, {
       value = value.map(itemAdapter.unwrap)
     }
     // Register the sources and relations whose ids the graph serializes:
+    let labels
     if (getSourceType(schema)) {
       graph.addSource(dataPath, schema)
     } else if (schema.relate) {
       // Internally related data (`options.dataPath`) needs both the options
       // (for '#ref') and the value ('#id') serialized:
       const path = schema.options?.dataPath
-      graph.addRelation(
-        dataPath,
-        path ? resolveDataPath(getItemDataPath(dataPath, true), path) : null,
-        schema
-      )
+      const relatedDataPath = path
+        ? resolveDataPath(getItemDataPath(dataPath, true), path)
+        : null
+      graph.addRelation(dataPath, relatedDataPath, schema)
+      if (target === 'clipboard' && !graph.isInternal(relatedDataPath)) {
+        labels = getRelatedLabels(
+          { schema, data, name, dataPath, itemDataPath },
+          value,
+          options
+        )
+      }
     }
     const createContext = value =>
       new SchemaContext(services, {
@@ -414,7 +422,7 @@ export function serializeData(schema, sourceSchema, data, dataPath, {
     ) {
       delete serializedData[name]
     } else {
-      serializedData[name] = value
+      serializedData[name] = labels ?? value
     }
   }
 
@@ -820,6 +828,20 @@ export function getItemUid(sourceSchema, item) {
   // Pass ids through `getUid()` too, to associate them with the item in a weak
   // map, as `serializeData()` can filter out ids still used as component keys.
   return getUid(item, item => getItemId(sourceSchema, item))
+}
+
+// Copies refer to the related records outside of them by the labels of their
+// options, which `toClipboard()` loads first:
+function getRelatedLabels(entry, value, { services, rootData }) {
+  const options = services.dataContext.model.getOptionsResolver(entry).value
+  const context = SchemaContext.createForSchema(services, {
+    ...entry,
+    rootData
+  })
+  const toLabel = value => ({
+    $label: getLabelForRelated(entry.schema, options ?? [], value, context)
+  })
+  return isArray(value) ? value.map(toLabel) : value && toLabel(value)
 }
 
 // Convert the value with the hook of its type first, then with the schema's:

@@ -728,6 +728,11 @@ defineType({
   items new temporary ids, distinct for each id in each list, e.g. `@12` and
   `@13` for the id `7` and the temporary id `@7`, which both became `@7`
   before. Copying the item of a nested form leaves out the ids of its items.
+- Since 4.3, relations to records outside the copied data are copied by the
+  labels of their options instead of their ids, e.g.
+  `author: { $label: 'Jane Austen' }`, and pasting resolves them through the
+  options of the fields. `clipboard.copy()` and `clipboard.paste()` see the
+  labels instead of the ids.
 
 ### Data paths
 

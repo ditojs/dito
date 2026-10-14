@@ -125,7 +125,8 @@ context.clipboardItem: any
 ```
 
 The data of the form serialized for clipboard copy and paste, in the
-`clipboard.copy()` and `clipboard.paste()` callbacks.
+`clipboard.copy()` and `clipboard.paste()` callbacks. Relations to records
+outside the data hold labels, e.g. `{ $label: 'Jane Austen' }`, not ids.
 
 ### name
 

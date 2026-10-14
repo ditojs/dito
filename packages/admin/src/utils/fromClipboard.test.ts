@@ -1,4 +1,6 @@
-// Register the actual type components, for their `serializeValue()`:
+// Register the actual type components, for their `serializeValue()`. Copies of
+// relations to records outside of them need their options, which only the data
+// model loads, see `DitoClipboard.test.js`:
 import '../types/index.js'
 import { fromClipboard } from './fromClipboard.ts'
 import { serializeData } from './schema/data.js'
@@ -34,11 +36,6 @@ const library = createForm({
           // The same data, from the root:
           options: { dataPath: '/authors', label: 'name' }
         }),
-        publisher: {
-          type: 'select',
-          relate: true,
-          options: { data: [{ id: 30, name: 'Hogarth Press' }] }
-        },
         chapters: {
           type: 'list',
           orderKey: 'position',
@@ -75,7 +72,6 @@ const createLibrary = () => ({
       title: 'Orlando',
       author: { id: 10 },
       coAuthors: [{ id: 10 }, { id: '@100' }],
-      publisher: { id: 30 },
       chapters: [
         { id: 40, position: 0, title: 'One' },
         { id: '@3', position: 1, title: 'Two' }
@@ -101,9 +97,9 @@ function copy(schema: Record<string, any>, data: Record<string, any>) {
 }
 
 describe('fromClipboard()', () => {
-  it('turns copied data back into the data of new items', () => {
+  it('turns copied data back into the data of new items', async () => {
     const clipboardData = copy(library, createLibrary())
-    const data = fromClipboard(library, clipboardData)
+    const { data } = await fromClipboard(library, clipboardData)
     const [woolf, sackvilleWest] = data.authors
     const authorIds = [woolf.id, sackvilleWest.id]
     expect(authorIds).toEqual([
@@ -127,8 +123,6 @@ describe('fromClipboard()', () => {
           title: 'Orlando',
           author: { id: woolf.id },
           coAuthors: [{ id: woolf.id }, { id: sackvilleWest.id }],
-          // Relations to items outside the copied data keep their ids:
-          publisher: { id: 30 },
           chapters: [
             { position: 0, title: 'One' },
             { position: 1, title: 'Two' }
@@ -146,15 +140,15 @@ describe('fromClipboard()', () => {
     })
   })
 
-  it('creates new temporary ids each time the data is pasted', () => {
+  it('creates new temporary ids each time the data is pasted', async () => {
     const clipboardData = copy(library, createLibrary())
-    const first = fromClipboard(library, clipboardData)
-    const second = fromClipboard(library, clipboardData)
+    const { data: first } = await fromClipboard(library, clipboardData)
+    const { data: second } = await fromClipboard(library, clipboardData)
     expect(first.authors[0].id).not.toBe(second.authors[0].id)
     expect(second.books[0].author.id).toBe(second.authors[0].id)
   })
 
-  it('keeps copied items with the same persisted and temporary id apart', () => {
+  it('keeps copied items with the same persisted and temporary id apart', async () => {
     const schema = createForm({
       authors: { type: 'list', form: createForm({ name: text }) },
       books: {
@@ -169,13 +163,15 @@ describe('fromClipboard()', () => {
       ],
       books: [{ author: { id: 7 } }, { author: { id: '@7' } }]
     })
-    const { authors, books } = fromClipboard(schema, clipboardData)
+    const {
+      data: { authors, books }
+    } = await fromClipboard(schema, clipboardData)
     expect(authors[0].id).not.toBe(authors[1].id)
     expect(books[0].author.id).toBe(authors[0].id)
     expect(books[1].author.id).toBe(authors[1].id)
   })
 
-  it('leaves out sources with their own resource', () => {
+  it('leaves out sources with their own resource', async () => {
     const schema = createForm({
       name: text,
       authors: {
@@ -184,50 +180,41 @@ describe('fromClipboard()', () => {
         form: createForm({ name: text })
       }
     })
-    const data = fromClipboard(schema, {
+    const { data } = await fromClipboard(schema, {
       name: 'Bloomsbury',
       authors: [{ name: 'Virginia Woolf' }]
     })
     expect(data).toEqual({ name: 'Bloomsbury' })
   })
 
-  it(`doesn't change the clipboard data`, () => {
+  it(`doesn't change the clipboard data`, async () => {
     const clipboardData = copy(library, createLibrary())
     const json = JSON.stringify(clipboardData)
-    const data = fromClipboard(library, clipboardData)
+    const { data } = await fromClipboard(library, clipboardData)
     expect(JSON.stringify(clipboardData)).toBe(json)
     expect(data.authors).not.toBe(clipboardData.authors)
   })
 
-  it('deserializes the values of the clipboard data like loaded data', () => {
+  it('deserializes the values of the clipboard data like loaded data', async () => {
     // The conversions that serializing can't invert stay, like in loaded data:
     const schema = createForm({
       name: { type: 'text', trim: true },
       notes: { type: 'text', exclude: true },
-      openedOn: { type: 'date' },
-      publisher: {
-        type: 'select',
-        relate: true,
-        options: { data: [{ id: 30, name: 'Hogarth Press' }] }
-      },
-      editor: { type: 'select', relate: true, options: { data: [] } }
+      openedOn: { type: 'date' }
     })
     const clipboardData = copy(schema, {
       name: ' Bloomsbury ',
       notes: 'Excluded',
-      openedOn: new Date(1925, 4, 14),
-      publisher: { id: 30, name: 'Hogarth Press' },
-      editor: null
+      openedOn: new Date(1925, 4, 14)
     })
-    expect(fromClipboard(schema, clipboardData)).toEqual({
+    const { data } = await fromClipboard(schema, clipboardData)
+    expect(data).toEqual({
       name: 'Bloomsbury',
-      openedOn: new Date(1925, 4, 14),
-      publisher: { id: 30 },
-      editor: null
+      openedOn: new Date(1925, 4, 14)
     })
   })
 
-  it('uses `idKey` of sources and the key in `relate` of relations', () => {
+  it('uses `idKey` of sources and the key in `relate` of relations', async () => {
     const schema = createForm({
       authors: {
         type: 'list',
@@ -240,7 +227,7 @@ describe('fromClipboard()', () => {
       }
     })
     // As `SchemaGraph` copies them, see its tests:
-    const data = fromClipboard(schema, {
+    const { data } = await fromClipboard(schema, {
       authors: [{ key: '@woolf', name: 'Virginia Woolf' }],
       books: [{ author: { key: '@woolf' } }]
     })
@@ -248,7 +235,7 @@ describe('fromClipboard()', () => {
     expect(data.books[0].author.key).toBe(data.authors[0].key)
   })
 
-  it('passes the data path and root data to the callbacks of the schema', () => {
+  it('passes the data path and root data to the callbacks of the schema', async () => {
     // Pasted into the second book of a library with the authors as columns:
     const rootData = { hasColumns: true, books: [{}, {}] }
     const schema = createForm({
@@ -260,7 +247,7 @@ describe('fromClipboard()', () => {
             : {}
       }
     })
-    const data = fromClipboard(
+    const { data } = await fromClipboard(
       schema,
       { authors: [{ id: '@woolf', name: 'Virginia Woolf' }] },
       { dataPath: 'books/1', rootData }
