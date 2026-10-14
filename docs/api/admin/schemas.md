@@ -90,8 +90,9 @@ event fires and what return values mean.
 ## ComponentSchemaBase
 
 The options of all component types, in addition to `SchemaBase`. Whether a
-type uses an option depends on the type: `maxLength`, `placeholder` and
-`autocomplete` apply to text inputs, `clearable` to inputs that can be cleared.
+type uses an option depends on the type: `maxLength` and `autocomplete` apply
+to text inputs, `placeholder` to text inputs and selects, `clearable` to inputs
+that can be cleared.
 
 | Option | Type | Default | Description |
 | ------ | ---- | ------- | ----------- |
@@ -113,7 +114,7 @@ type uses an option depends on the type: `maxLength`, `placeholder` and
 | `disabled` | `SchemaValue<boolean>` | `false` | Disables the component. Disabled sections and panels disable all components inside them, also nested ones. Loading forms and views don't disable their components. |
 | `autofocus` | `SchemaValue<boolean>` | `false` | Focuses the input when rendered. |
 | `clearable` | `SchemaValue<boolean>` | `false` | Adds a button that clears the value to `null`, or to `[]` with `multiple`. Ignored while `readonly`. |
-| `placeholder` | `SchemaValue<string>` | | The hint shown in empty inputs. Multiselects also take `false`, see [`multiselect`](#multiselect). |
+| `placeholder` | `SchemaValue<string>` | | The hint shown in empty inputs, and in selects while no option is selected. Multiselects also take `false`, see [`multiselect`](#multiselect). |
 | `info` | `SchemaValue<string>` | | Info text shown next to the label. |
 | `maxLength` | `SchemaValue<number>` | | The maximum length of text input. |
 | `autocomplete` | `SchemaValue<'on' \| 'off'>` | | The `autocomplete` attribute of text inputs. |
@@ -631,6 +632,7 @@ format: {
     { label: 'Hardcover', value: 'hardcover' },
     { label: 'Paperback', value: 'paperback' }
   ],
+  placeholder: 'Choose a format',
   clearable: true
 }
 ```

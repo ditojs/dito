@@ -449,6 +449,34 @@ describe('DitoTypeSelect', () => {
       expect(data.genre).toBe('fiction')
     })
 
+    it('shows the `placeholder` while no option is selected', async () => {
+      const { findField, data } = await mountSchema({
+        schema: {
+          components: {
+            genre: {
+              type: 'select',
+              options: genres,
+              placeholder: 'Choose a genre',
+              clearable: true
+            }
+          }
+        }
+      })
+      const field = findField('genre')
+      const select = field.find('select').element
+      const placeholder = select.options[0]
+      expect(placeholder.text).toBe('Choose a genre')
+      expect(placeholder.disabled && placeholder.hidden).toBe(true)
+      expect(select.selectedIndex).toBe(0)
+      expect(field.classes()).toContain('dito-select--placeholder')
+      await field.find('select').setValue('drama')
+      expect(field.classes()).not.toContain('dito-select--placeholder')
+      await field.find('.dito-affixes__clear').trigger('click')
+      expect(data.genre).toBe(null)
+      expect(select.selectedIndex).toBe(0)
+      expect(field.classes()).toContain('dito-select--placeholder')
+    })
+
     it('clears the value with the clear button', async () => {
       const { findField, data } = await mountSchema({
         schema: {

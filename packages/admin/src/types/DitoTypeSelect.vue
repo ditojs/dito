@@ -1,6 +1,6 @@
 <template lang="pug">
 //- Nesting is needed to make an arrow appear over the select item:
-.dito-select
+.dito-select(:class="{ 'dito-select--placeholder': isShowingPlaceholder }")
   .dito-select__inner
     DitoInputAffixes(
       position="prefix"
@@ -13,6 +13,12 @@
       v-model="selectedValue"
       v-bind="attributes"
     )
+      option(
+        v-if="placeholder"
+        :value="null"
+        disabled
+        hidden
+      ) {{ placeholder }}
       //- Plain values whose option disappeared are kept and shown as
       //- unavailable, rather than cleared without the user noticing:
       option(
@@ -81,6 +87,10 @@ const DitoTypeSelect = {
       ...field,
       ...optionsField,
 
+      isShowingPlaceholder: computed(
+        () => !!field.placeholder.value && selectedValue.value == null
+      ),
+
       // Only plain values stay when their option disappears, see
       // `getReplacedValue()`. The select matches objects by deep equality.
       shouldShowUnavailableValue: computed(() => {
@@ -116,6 +126,16 @@ export default DitoTypeSelect
     @extend %input;
 
     padding-right: $select-arrow-width;
+  }
+
+  &--placeholder {
+    select {
+      color: $color-placeholder;
+    }
+
+    option {
+      color: $color-text;
+    }
   }
 
   // `&___inner` is needed to make the edit buttons appear to the right of the
