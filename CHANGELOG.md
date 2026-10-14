@@ -8,6 +8,7 @@ version, see the upgrade guides in `docs/`.
 ### Behaviour changes
 
 - **admin:** Clipboard data holds the labels of related records outside the copied data instead of their ids, e.g. `author: { $label: 'Jane Austen' }`, and pasting resolves them through the options of the fields. Labels that match no option or several paste `null`, or are left out of multiple values, and a notification lists them. `clipboard.copy()` and `clipboard.paste()` see the labels instead of the ids.
+- **admin:** `new DitoAdmin()` warns about each unknown option, and its types reject them: options other than `dito`, `api`, `views`, `login` and `spinner`. `admin.options` is typed with `login` and `spinner` only.
 
 ### New
 
