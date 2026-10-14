@@ -106,7 +106,7 @@ describe('useResource()', () => {
       const first = createPendingRequest()
       const second = createPendingRequest()
       const publish = bookSchema.components.publish
-      const { form, getComponent } = await mountBookForm({
+      const { admin, getComponent } = await mountBookForm({
         schema: {
           components: {
             first: { ...publish, resource: { path: 'first', method: 'post' } },
@@ -121,13 +121,13 @@ describe('useResource()', () => {
       const firstDone = getComponent('first').context.submit()
       const secondDone = getComponent('second').context.submit()
       await flushPromises()
-      expect(form.isLoading).toBe(true)
+      expect(admin.context.loadingTracker.isLoading).toBe(true)
       first.resolve({ data: {} })
       await firstDone
-      expect(form.isLoading).toBe(true)
+      expect(admin.context.loadingTracker.isLoading).toBe(true)
       second.resolve({ data: {} })
       await secondDone
-      expect(form.isLoading).toBe(false)
+      expect(admin.context.loadingTracker.isLoading).toBe(false)
     })
   })
 
@@ -154,7 +154,7 @@ describe('useResource()', () => {
       loads[3].resolve({ data: { id: 3, title: 'Persuasion' } })
       await flushPromises()
       expect(form.data).toMatchObject({ id: 3, title: 'Persuasion' })
-      expect(form.isLoading).toBe(false)
+      expect(admin.context.loadingTracker.isLoading).toBe(false)
     })
 
     it('abort the pending load when unmounted', async () => {

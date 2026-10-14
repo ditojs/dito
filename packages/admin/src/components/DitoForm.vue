@@ -28,7 +28,6 @@
       :store="store"
       :padding="isEmbeddedRoute ? 'nested' : 'root'"
       :active="isActiveRoute"
-      :disabled="isLoading"
       :scrollable="!isEmbeddedRoute"
       generateLabels
     )
@@ -39,7 +38,6 @@
           :dataPath="dataPath"
           :data="data"
           :store="store"
-          :disabled="isLoading"
         )
 </template>
 
@@ -728,7 +726,6 @@ export default {
       buttonSchemas,
       isEmbeddedRoute,
       isLastUnnestedRoute,
-      isLoading: requests.isLoading,
       isActiveRoute: computed(
         () => routeContext.isLastRoute || isLastUnnestedRoute.value
       ),

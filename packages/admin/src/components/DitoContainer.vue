@@ -209,7 +209,7 @@ export default {
         const { class: classes } = props.schema
         const prefix = 'dito-container'
         return {
-          [`${prefix}--disabled`]: disabled.value || props.disabled,
+          [`${prefix}--disabled`]: disabled.value,
           [`${prefix}--has-errors`]: !!errors.value,
           [`${prefix}--single`]: props.single,
           [`${prefix}--compact`]: props.compact,

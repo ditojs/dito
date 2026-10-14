@@ -47,6 +47,40 @@ describe('DitoForm', () => {
       .toBe(`Show 'Tom & Jerry'`)
   })
 
+  it('keeps its fields and buttons enabled while it saves', async () => {
+    let finishSubmit
+    const request = vi.fn(
+      ({ data }) =>
+        new Promise(resolve => {
+          finishSubmit = () => resolve({ data })
+        })
+    )
+    const { wrapper, findField } = await mountForm({
+      schema: {
+        components: {
+          title: { type: 'text' },
+          preview: { type: 'button', text: 'Preview' }
+        },
+        buttons: { submit: { closeForm: false } }
+      },
+      data: { title: 'Dune' },
+      request
+    })
+    await findField('submit').trigger('click')
+    await vi.waitFor(() => expect(request).toHaveBeenCalledOnce())
+    expect(
+      wrapper
+        .findAll(':is(input, button[id$="preview"], button[id$="submit"])')
+        .map(({ element }) => [element.name || element.id, element.disabled])
+    ).toEqual([
+      ['title', false],
+      ['preview', false],
+      ['$buttons/submit', false]
+    ])
+    finishSubmit()
+    await flushPromises()
+  })
+
   describe('submit()', () => {
     it('notifies the success with the escaped item label', async () => {
       const { submit, notify } = await mountBookForm(({ data }) => ({ data }))

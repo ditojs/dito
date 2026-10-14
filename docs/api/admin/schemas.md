@@ -110,7 +110,7 @@ type uses an option depends on the type: `maxLength`, `placeholder` and
 | `required` | `SchemaValue<boolean>` | `false` | Validates that there is a value: not `null`, `''` or an empty array, so lists and fields with multiple values need at least one entry. Unlike the server's `required`, which accepts empty arrays. |
 | `rules` | `SchemaRules` | | Validation rules to add or change, keyed by validator name, or to turn off by setting them to `false` or `undefined`, e.g. `{ email: false }`. Types add their own rules, e.g. `min` for numbers. |
 | `readonly` | `SchemaValue<boolean>` | `false` | Text inputs become read-only, all other components disabled. |
-| `disabled` | `SchemaValue<boolean>` | `false` | Disables the component. |
+| `disabled` | `SchemaValue<boolean>` | `false` | Disables the component. Disabled sections and panels disable all components inside them, also nested ones. Loading forms and views don't disable their components. |
 | `autofocus` | `SchemaValue<boolean>` | `false` | Focuses the input when rendered. |
 | `clearable` | `SchemaValue<boolean>` | `false` | Adds a button that clears the value to `null`, or to `[]` with `multiple`. Ignored while `readonly`. |
 | `placeholder` | `SchemaValue<string>` | | The hint shown in empty inputs. Multiselects also take `false`, see [`multiselect`](#multiselect). |
@@ -790,7 +790,7 @@ with its own `data` edits that data instead, and can't be nested.
 | `panelButtons` | `Buttons` | | Small buttons in the header. |
 | `sticky` | `SchemaValue<boolean>` | `false` | Keeps the header at the top while scrolling. |
 | `if`, `visible` | `SchemaValue<boolean>` | `true` | Renders or shows the panel. Panels of components in tabs only show while their tab is selected. |
-| `disabled` | `boolean` | the disabled state around the panel | Disables the panel's components. |
+| `disabled` | `boolean` | the disabled state around the panel | Disables the panel's components and buttons. |
 
 Events: `onInitialize`, `onDestroy`, `onLoad`, and `onInput` and `onChange`
 bubbling up from the panel's components, see [Events](./events.md). Panels
