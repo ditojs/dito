@@ -50,6 +50,18 @@ describe('DitoTypeCode', () => {
     expect(findField('snippet').find('textarea').element.value).toBe('')
   })
 
+  it('keeps null values clean when the editor mounts', async () => {
+    const { data, dataModel, settle } = await mountSchema({
+      schema: { components: { snippet: { type: 'code' } } },
+      data: { snippet: null }
+    })
+    // The editor reports its initial updates after a timeout:
+    await new Promise(resolve => setTimeout(resolve, 10))
+    await settle()
+    expect(data.snippet).toBe(null)
+    expect(dataModel.isDirty).toBe(false)
+  })
+
   it('makes the editor readonly for disabled fields', async () => {
     const { findField, data, settle } = await mountSchema({
       schema: {

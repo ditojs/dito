@@ -16,6 +16,7 @@ version, see the upgrade guides in `docs/`.
 ### Fixes
 
 - **admin:** Tree items show the `prefix` and `suffix` of labels returned by `itemLabel()`.
+- **admin:** Code fields with `null` values keep the form clean when they mount.
 
 ## 4.3.0 (2026-10-14)
 

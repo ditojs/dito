@@ -72,7 +72,7 @@ const DitoTypeCode = {
       flask.onUpdate(code => {
         if (ignoreUpdate) {
           ignoreUpdate = false
-        } else if (code !== value.value) {
+        } else if (code !== (value.value || '')) {
           ignoreWatch = true
           value.value = code
           changeOnceEdited.markEdited()
