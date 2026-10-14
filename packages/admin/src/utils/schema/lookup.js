@@ -62,9 +62,9 @@ export function getFormSchemas(schema, context, modifyForm) {
     throw new Error(`Unknown view: '${schema.view}'`)
   }
 
-  let { form, forms } = schema
+  let { form, forms, clipboard } = schema
   if (!form && !forms) {
-    const { type, name, compact, clipboard, tabs, components } = schema
+    const { type, name, compact, tabs, components } = schema
     if (components || tabs) {
       // Convert inlined forms to stand-alone forms. Sections are their form,
       // so it handles their events:
@@ -72,7 +72,6 @@ export function getFormSchemas(schema, context, modifyForm) {
         type: 'form',
         name,
         compact,
-        clipboard,
         tabs,
         components,
         ...(type === 'section' && getSectionHandlers(schema))
@@ -84,6 +83,11 @@ export function getFormSchemas(schema, context, modifyForm) {
   forms ||= { default: form }
   return Object.fromEntries(
     Object.entries(forms).map(([type, form]) => {
+      // Copy the forms that take the source's clipboard, as other schemas may
+      // share them:
+      if (clipboard && form.clipboard === undefined) {
+        form = { ...form, clipboard }
+      }
       if (context && isFunction(form.components)) {
         form = getFormWithCreatedComponents(form, context)
       }

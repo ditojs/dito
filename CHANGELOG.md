@@ -13,6 +13,7 @@ version, see the upgrade guides in `docs/`.
 
 - **admin:** The labels of upload fields point to their inputs, which use the component path as their id, like the inputs of other types.
 - **admin:** Trees and their items have the `tree`, `treeitem` and `group` roles, and sections the `region` role with their label, like lists and panels.
+- **admin:** `clipboard` on lists and objects applies to their `form` and `forms`, not only to the inlined form of `components`. Forms with their own `clipboard` keep it.
 
 ## 4.4.0 (2026-10-14)
 

@@ -897,7 +897,7 @@ sources share the [source options](#source-options), in addition to the
 | `components` | `Components` | | The components of an inlined form, instead of `form`. Implies `inlined`. |
 | `tabs` | `Record<string, object>` | | The [tabs](#tabs) of the inlined form of `components`. |
 | `compact` | `boolean` | `false` | Renders the inlined form of `components` with reduced spacing, with labels outside of it. |
-| `clipboard` | [`ClipboardConfig`](#clipboard) | | Adds copy and paste buttons to the inlined form of `components`. |
+| `clipboard` | [`ClipboardConfig`](#clipboard) | | Adds copy and paste buttons to the forms of the items, unless a form sets its own `clipboard`. |
 | `view` | `string` | | The name of a view whose form edits the items. Editing navigates to that view. Unknown names throw. |
 | `resource` | [`Resource`](#resource) | | The API resource of the items. Sources with a resource save their items themselves and are excluded from the data around them, unless `exclude: false`, e.g. to save their order through `serializeValue()`. Inlined sources can't have one. |
 | `inlined` | `boolean` | `false` | Edits the items in forms inside the source instead of routed forms. |

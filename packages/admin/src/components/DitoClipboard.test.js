@@ -236,6 +236,66 @@ describe('DitoClipboard', () => {
     expect(form.data).toMatchObject({ id: 1, title: 'Two', position: 0 })
   })
 
+  it('applies the clipboard of lists to their form', async () => {
+    const { admin } = await mountForm({
+      schema: {
+        components: {
+          chapters: {
+            type: 'list',
+            editable: true,
+            clipboard: true,
+            form: {
+              type: 'form',
+              name: 'chapter',
+              components: { title: { type: 'text' } }
+            }
+          }
+        }
+      },
+      data: { chapters: [{ id: 1, title: 'Prologue' }] }
+    })
+    await admin.navigate('/items/1/chapters/0')
+    await settle(admin.getRouteComponent(isForm))
+    await admin.wrapper
+      .find('.dito-clipboard .dito-button--copy')
+      .trigger('click')
+    await flushPromises()
+    expect(getClipboardData('chapter')).toEqual({ title: 'Prologue' })
+  })
+
+  it('applies the clipboard of lists to forms without one', async () => {
+    const { wrapper } = await mountForm({
+      schema: {
+        components: {
+          books: {
+            type: 'list',
+            inlined: true,
+            clipboard: true,
+            forms: {
+              novel: {
+                type: 'form',
+                components: { title: { type: 'text' } }
+              },
+              comic: {
+                type: 'form',
+                clipboard: false,
+                components: { artist: { type: 'text' } }
+              }
+            }
+          }
+        }
+      },
+      data: {
+        books: [
+          { id: 1, type: 'novel', title: 'Emma' },
+          { id: 2, type: 'comic', artist: 'Hergé' },
+          { id: 3, type: 'novel', title: 'Persuasion' }
+        ]
+      }
+    })
+    expect(wrapper.findAll('.dito-clipboard')).toHaveLength(2)
+  })
+
   it('notifies errors of `clipboard.copy()`', async () => {
     const { copyButton } = await mountBookForm({
       copy() {

@@ -233,7 +233,6 @@ describe('getFormSchemas()', () => {
         type: 'form',
         name: 'address',
         compact: true,
-        clipboard: undefined,
         tabs,
         components
       }
