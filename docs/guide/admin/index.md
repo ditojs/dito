@@ -67,8 +67,10 @@ export default {
 
 In development (`config.env === 'development'`), the controller serves the
 admin's sources through Vite with hot reloading. Otherwise it serves the build
-in `dist`. To build, add `admin.vite.config.js` to the app's root folder and
-run `vite build --config admin.vite.config.js`:
+in `dist`. Both need the build tools, see
+[Installation](../server/index.md#installation). To build, add
+`admin.vite.config.js` to the app's root folder and run
+`vite build --config admin.vite.config.js`:
 
 ```js
 // admin.vite.config.js

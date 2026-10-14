@@ -788,7 +788,7 @@ export class Application<$Models extends Models = Models> {
     normalizeDbNames?: boolean
   }): Record<string, Record<string, Record<string, any>>>
 
-  defineAdminViteConfig(config?: UserConfig): UserConfig | null
+  defineAdminViteConfig(config?: UserConfig): Promise<UserConfig | null>
   logger: PinoLogger
   requestStorage: AsyncLocalStorage<AsyncRequestLocals>
   requestLocals: Partial<AsyncRequestLocals>
@@ -2549,7 +2549,7 @@ export class AdminController extends Controller {
   sendGlobalConfig(ctx: Koa.Context): void
   middleware(): Koa.Middleware
   setupViteServer(): Promise<void>
-  defineViteConfig(config?: UserConfig): UserConfig
+  defineViteConfig(config?: UserConfig): Promise<UserConfig>
 }
 type ModelControllerHookType = 'collection' | 'member'
 

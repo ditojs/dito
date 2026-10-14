@@ -434,8 +434,8 @@ export class Application extends Koa {
     )
   }
 
-  defineAdminViteConfig(config) {
-    return this.getAdminController()?.defineViteConfig(config) || null
+  async defineAdminViteConfig(config) {
+    return (await this.getAdminController()?.defineViteConfig(config)) || null
   }
 
   async loadAdminViteConfig() {

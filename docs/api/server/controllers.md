@@ -877,14 +877,14 @@ configured. Returns `string`.
 ### defineViteConfig()
 
 ```js
-const viteConfig = controller.defineViteConfig(config?)
+const viteConfig = await controller.defineViteConfig(config?)
 ```
 
 Returns the Vite configuration for building and serving the admin, deeply merged
 with `config`. Throws without `config.admin.root`.
 [`app.defineAdminViteConfig()`](./application.md#defineadminviteconfig) calls
 it, e.g. in an `admin.vite.config.js` in the app's `basePath`. Returns
-`UserConfig`.
+`Promise<UserConfig>`.
 
 ### middleware()
 

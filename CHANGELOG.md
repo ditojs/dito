@@ -3,6 +3,12 @@
 The changes of each release of Dito.js. For upgrading to a new major
 version, see the upgrade guides in `docs/`.
 
+## 4.5.0 (unreleased)
+
+### Behaviour changes
+
+- **server:** `@ditojs/build`, `vite` and `@vitejs/plugin-vue` are optional peer dependencies, loaded only to build the admin or serve it in development: install them as dev dependencies of the app. `app.defineAdminViteConfig()` and `defineViteConfig()` of `AdminController` return promises, which Vite awaits as the default export of `admin.vite.config.js`.
+
 ## 4.4.0 (2026-10-14)
 
 ### Behaviour changes

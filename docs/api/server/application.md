@@ -539,7 +539,7 @@ export default app.defineAdminViteConfig({ /* Vite config to merge */ })
 
 Returns the Vite configuration of the admin, built by the admin controller and
 deep-merged with `config`. Throws without `config.admin.root`. Returns
-`UserConfig | null`: `null` without an admin controller.
+`Promise<UserConfig | null>`: `null` without an admin controller.
 
 ### loadAdminViteConfig()
 

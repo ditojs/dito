@@ -1,9 +1,6 @@
 import path from 'path'
 import Koa from 'koa'
 import serve from 'koa-static'
-import { defineConfig, createServer } from 'vite'
-import createVuePlugin from '@vitejs/plugin-vue'
-import { testModuleIdentifier, getPostCssConfig } from '@ditojs/build'
 import { assignDeeply } from '@ditojs/utils'
 import { Controller } from './Controller.js'
 import { handleConnectMiddleware } from '../middleware/index.js'
@@ -127,9 +124,10 @@ export class AdminController extends Controller {
 
     const viteConfig = (
       (await this.app.loadAdminViteConfig()) ||
-      this.defineViteConfig()
+      (await this.defineViteConfig())
     )
 
+    const { createServer } = await importBuildModules()
     const config = assignDeeply(defaultConfig, viteConfig)
     const server = await createServer(config)
 
@@ -153,7 +151,13 @@ export class AdminController extends Controller {
     )
   }
 
-  defineViteConfig(config = {}) {
+  async defineViteConfig(config = {}) {
+    const {
+      defineConfig,
+      createVuePlugin,
+      testModuleIdentifier,
+      getPostCssConfig
+    } = await importBuildModules()
     const isDevelopment = this.mode === 'development'
 
     const root = this.resolveConfigPath('root')
@@ -301,3 +305,28 @@ const coreDependencies = [
   'orderedmap',
   'w3c-keyname'
 ]
+
+// Load the build tools only to build or develop the admin, as apps don't need
+// them in production:
+async function importBuildModules() {
+  try {
+    const [
+      { defineConfig, createServer },
+      { default: createVuePlugin },
+      build
+    ] = await Promise.all([
+      import('vite'),
+      import('@vitejs/plugin-vue'),
+      import('@ditojs/build')
+    ])
+    return { defineConfig, createServer, createVuePlugin, ...build }
+  } catch (error) {
+    throw error.code === 'ERR_MODULE_NOT_FOUND'
+      ? new Error(
+          `Unable to load the admin's build tools: Install '@ditojs/build', ` +
+          `'vite' and '@vitejs/plugin-vue' as dev dependencies of the app.`,
+          { cause: error }
+        )
+      : error
+  }
+}

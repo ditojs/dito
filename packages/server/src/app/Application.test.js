@@ -432,10 +432,10 @@ describe('Application', () => {
       )
     })
 
-    it('returns no admin controller or vite config without an admin', () => {
+    it('returns no admin controller or vite config without an admin', async () => {
       const app = createApp()
       expect(app.getAdminController()).toBeNull()
-      expect(app.defineAdminViteConfig({})).toBeNull()
+      expect(await app.defineAdminViteConfig({})).toBeNull()
     })
 
     it('loads the admin vite config from the base path', async () => {
