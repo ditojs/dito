@@ -1,14 +1,14 @@
 import { vi } from 'vitest'
 import { mountSchema, mountForm, enterValue } from '../test/mount.js'
 
-describe('DitoTypeComputed', () => {
+describe('DitoTypeValue', () => {
   it('computes the value from other values of the item', async () => {
     const { findField, data } = await mountSchema({
       schema: {
         components: {
           title: { type: 'text' },
           slug: {
-            type: 'computed',
+            type: 'value',
             computeValue: ({ item }) => (
               item.title?.toLowerCase().replaceAll(' ', '-') ?? null
             )
@@ -26,9 +26,9 @@ describe('DitoTypeComputed', () => {
     const { findField } = await mountSchema({
       schema: {
         components: {
-          hidden: { type: 'computed', computeValue: () => 'secret' },
+          hidden: { type: 'value', computeValue: () => 'secret' },
           shown: {
-            type: 'computed',
+            type: 'value',
             visible: true,
             computeValue: () => 'shown'
           }
@@ -39,6 +39,41 @@ describe('DitoTypeComputed', () => {
     const input = findField('shown')
     expect(input.element.value).toBe('shown')
     expect(input.attributes('readonly')).toBeDefined()
+  })
+
+  it('supports the deprecated names, warning once for each', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const { findField, data } = await mountSchema({
+      schema: {
+        components: {
+          title: { type: 'text' },
+          slug: {
+            type: 'computed',
+            computeValue: ({ item }) => item.title?.toLowerCase()
+          },
+          initials: {
+            type: 'computed',
+            computeValue: ({ item }) => item.title?.[0]
+          },
+          copy: { type: 'data', dataPath: 'title' },
+          count: { type: 'hidden', data: () => 42 }
+        }
+      },
+      data: { title: 'Dune' }
+    })
+    expect(data).toMatchObject({
+      slug: 'dune',
+      initials: 'D',
+      copy: 'Dune',
+      count: 42
+    })
+    expect(findField('slug').isVisible()).toBe(false)
+    expect(warn.mock.calls).toEqual(
+      ['computed', 'data', 'hidden'].map(type => [
+        `\`type: '${type}'\` is deprecated, use \`type: 'value'\` instead.`
+      ])
+    )
+    warn.mockRestore()
   })
 
   it('resolves the value of `data` and `dataPath`', async () => {
@@ -52,8 +87,8 @@ describe('DitoTypeComputed', () => {
               components: { name: { type: 'text' } }
             }
           },
-          shelfName: { type: 'data', dataPath: 'shelf/name' },
-          loadedCount: { type: 'data', data: async () => 42 }
+          shelfName: { type: 'value', dataPath: 'shelf/name' },
+          loadedCount: { type: 'value', data: async () => 42 }
         }
       },
       data: { shelf: { name: 'Classics' } }
@@ -68,11 +103,11 @@ describe('DitoTypeComputed', () => {
         components: {
           pages: { type: 'number' },
           sheets: {
-            type: 'computed',
+            type: 'value',
             computeValue: ({ item }) => Math.ceil(item.pages / 2)
           },
           isLong: {
-            type: 'computed',
+            type: 'value',
             exclude: true,
             computeValue: ({ item }) => item.pages > 500
           }
@@ -92,7 +127,7 @@ describe('DitoTypeComputed', () => {
         components: {
           title: { type: 'text' },
           initials: {
-            type: 'computed',
+            type: 'value',
             computeValue: ({ item }) => item.title?.[0] ?? null
           }
         }
@@ -109,7 +144,7 @@ describe('DitoTypeComputed', () => {
       schema: {
         components: {
           counter: {
-            type: 'computed',
+            type: 'value',
             computeValue: ({ value }) => (value ?? 0) + 1
           }
         }

@@ -268,6 +268,10 @@ writes of code, `onChange()` only fires for the edits of the user.
   less: `'../authors'` becomes `'authors'`. A leading `/` makes them absolute,
   as it already did in `options.dataPath`, and `..` above the root throws,
   where 3.5 dropped it silently.
+- Since 4.3, the `computed`, `data` and `hidden` types are one type named
+  `value`, and `ValueSchema` is its schema type. The old names keep working
+  until 5.0, with a deprecation warning, and `ComputedSchema`, `DataSchema` and
+  `HiddenSchema` are deprecated aliases of `ValueSchema`.
 
 ## Event handlers
 

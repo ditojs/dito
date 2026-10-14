@@ -1092,9 +1092,8 @@ export interface AffixSettings<$Item> {
 export type SchemaAffixMixin<$Item> = AffixSettings<$Item>
 
 /**
- * The settings of the `computed`, `data` and `hidden` fields, which resolve
- * their value from `data` or `dataPath`, unless they compute it with
- * `computeValue()`.
+ * The settings of `value` fields, which resolve their value from `data` or
+ * `dataPath`, unless they compute it with `computeValue()`.
  */
 export interface DataSettings<$Item> {
   /**
@@ -1512,18 +1511,27 @@ export interface LabelSchema<$Item = any> extends ComponentSchemaBase<$Item> {
 }
 
 /**
- * A read-only field whose value comes from `computeValue()`, `data` or
- * `dataPath`. It's invisible by default, `visible: true` shows it. The types
- * `computed`, `data` and `hidden` are the same.
+ * A value that is never edited, from `computeValue()`, `data` or `dataPath`.
+ * It's invisible by default, `visible: true` shows it in a read-only input.
  */
-export interface HiddenSchema<$Item = any>
+export interface ValueSchema<$Item = any>
   extends ComponentSchemaBase<$Item>,
     DataSettings<$Item> {
   /**
-   * The type of the component.
+   * The type of the component. `'computed'`, `'data'` and `'hidden'` are
+   * deprecated names of `'value'`.
    */
-  type: 'hidden'
+  type: 'value' | 'computed' | 'data' | 'hidden'
 }
+
+/** @deprecated Use {@link ValueSchema}. */
+export type ComputedSchema<$Item = any> = ValueSchema<$Item>
+
+/** @deprecated Use {@link ValueSchema}. */
+export type DataSchema<$Item = any> = ValueSchema<$Item>
+
+/** @deprecated Use {@link ValueSchema}. */
+export type HiddenSchema<$Item = any> = ValueSchema<$Item>
 
 export interface UploadSchema<$Item = any> extends ComponentSchemaBase<$Item> {
   /**
@@ -2618,34 +2626,6 @@ export interface ViewSchema<$Item = any> extends RouteSchemaBase<$Item> {
   components?: Components<$Item>
 }
 
-/**
- * A read-only field whose value comes from `computeValue()`, `data` or
- * `dataPath`. It's invisible by default, `visible: true` shows it. The types
- * `computed`, `data` and `hidden` are the same.
- */
-export interface ComputedSchema<$Item = any>
-  extends ComponentSchemaBase<$Item>,
-    DataSettings<$Item> {
-  /**
-   * The type of the component.
-   */
-  type: 'computed'
-}
-
-/**
- * A read-only field whose value comes from `computeValue()`, `data` or
- * `dataPath`. It's invisible by default, `visible: true` shows it. The types
- * `computed`, `data` and `hidden` are the same.
- */
-export interface DataSchema<$Item = any>
-  extends ComponentSchemaBase<$Item>,
-    DataSettings<$Item> {
-  /**
-   * The type of the component.
-   */
-  type: 'data'
-}
-
 export interface ObjectSchema<$Item = { [key: string]: any }>
   extends SourceSettings<$Item>,
     ComponentSchemaBase<$Item> {
@@ -2807,12 +2787,10 @@ type NonSectionComponent<$Item = any> =
   | DateSchema<$Item>
   | ComponentSchema<$Item>
   | LabelSchema<$Item>
-  | HiddenSchema<$Item>
+  | ValueSchema<$Item>
   | ObjectSchema<$Item>
   | TreeListSchema<$Item>
   | TreeObjectSchema<$Item>
-  | ComputedSchema<$Item>
-  | DataSchema<$Item>
   | SpacerSchema<$Item>
   | ProgressSchema<$Item>
 
@@ -3266,9 +3244,11 @@ export type SchemaByType<$Item = any> = {
   'code': CodeSchema<$Item>
   'color': ColorSchema<$Item>
   'component': ComponentSchema<$Item>
-  'computed': ComputedSchema<$Item>
+  /** @deprecated Use `'value'`. */
+  'computed': ValueSchema<$Item>
   'creditcard': InputSchema<$Item>
-  'data': DataSchema<$Item>
+  /** @deprecated Use `'value'`. */
+  'data': ValueSchema<$Item>
   'date': DateSchema<$Item>
   'datetime': DateSchema<$Item>
   'domain': InputSchema<$Item>
@@ -3296,10 +3276,12 @@ export type SchemaByType<$Item = any> = {
   'tree-object': TreeObjectSchema<$Item>
   'upload': UploadSchema<$Item>
   'url': InputSchema<$Item>
+  'value': ValueSchema<$Item>
   'label': LabelSchema<$Item>
   'section': SectionSchema<$Item>
   'panel': PanelSchema<$Item>
-  'hidden': HiddenSchema<$Item>
+  /** @deprecated Use `'value'`. */
+  'hidden': ValueSchema<$Item>
   'unknown': never
 }
 

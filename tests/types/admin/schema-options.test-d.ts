@@ -77,7 +77,7 @@ describe('component options', () => {
   it('types the data of data schemas as values or loaders', () => {
     assertType<Components<Entry>>({
       title: {
-        type: 'computed',
+        type: 'value',
         data:
           ({ item }) =>
           () =>

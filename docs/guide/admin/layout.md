@@ -122,7 +122,7 @@ export const book = {
       sticky: true,
       components: {
         wordCount: {
-          type: 'computed',
+          type: 'value',
           visible: true,
           exclude: true,
           computeValue: ({ item }) => item.summary?.split(/\s+/).length ?? 0

@@ -84,10 +84,7 @@ See [Events](./events.md).
 | `ColorSchema<$Item>` | `type: 'color'`. |
 | `ColorFormat` | The `format` option of colors: `'hex'`, `'rgb'`, `'hsl'`, … |
 | `ComponentSchema<$Item>` | `type: 'component'`, with a custom Vue component. |
-| `ComputedSchema<$Item>` | `type: 'computed'`. |
-| `DataSchema<$Item>` | `type: 'data'`. |
 | `DateSchema<$Item>` | `type: 'date' \| 'datetime' \| 'time'`. |
-| `HiddenSchema<$Item>` | `type: 'hidden'`. |
 | `InputSchema<$Item>` | The text inputs: `'text'`, `'email'`, `'url'`, `'password'`, `'tel'`, `'hostname'`, `'domain'`, `'creditcard'`. |
 | `LabelSchema<$Item>` | `type: 'label'`. |
 | `ListSchema<$Item>` | `type: 'list'`. |
@@ -109,6 +106,7 @@ See [Events](./events.md).
 | `TreeListSchema<$Item>` | `type: 'tree-list'`. |
 | `TreeObjectSchema<$Item>` | `type: 'tree-object'`. |
 | `UploadSchema<$Item>` | `type: 'upload'`. |
+| `ValueSchema<$Item>` | `type: 'value'`. |
 | `ClipboardConfig` | The `clipboard` option of forms: `true`, or `copy()` and `paste()` callbacks. |
 
 See [Schemas](./schemas.md).
@@ -128,7 +126,7 @@ See [Schemas](./schemas.md).
 | `TextSettings<$Item>` | The `trim` option of text inputs and textareas. |
 | `AffixSettings<$Item>` | The `prefix` and `suffix` options. |
 | `SchemaAffix` | One prefix or suffix, see [Affixes](./schemas.md#affixes). |
-| `DataSettings<$Item>` | The `data` and `dataPath` options of `computed`, `data` and `hidden`. |
+| `DataSettings<$Item>` | The `data` and `dataPath` options of `value`. |
 
 ## Custom components and types
 
@@ -153,7 +151,8 @@ See [Schemas](./schemas.md).
 The earlier names of these types, e.g. `DitoContext` or `HTTPMethod`, keep
 working as deprecated aliases until a future major version. The
 [upgrade guide](../../upgrading-to-4.x.md#typescript-types) lists them with
-their new names. The `events: {}` options of schemas are deprecated too, see
+their new names. `ComputedSchema`, `DataSchema` and `HiddenSchema` are
+deprecated aliases of `ValueSchema`, until 5.0. The `events: {}` options of schemas are deprecated too, see
 [Events](./events.md#deprecated-events).
 
 ## TypeDescriptor
@@ -319,8 +318,8 @@ resolvesValue?: boolean
 ```
 
 The value resolves from `schema.data` or `schema.dataPath`, like the values of
-`computed`, `data` and `hidden` components. Only these types (and panels)
-support the `data` option.
+`value` components. Only these types (and panels) support the `data`
+option.
 
 #### generatesLabel
 

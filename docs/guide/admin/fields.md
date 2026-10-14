@@ -221,21 +221,21 @@ running uploads.
 
 ## Derived values
 
-`computed`, `data` and `hidden` are three names of one type: a read-only field,
+The `value` type holds a value that is never edited: a read-only field,
 invisible unless `visible: true`, whose value comes from `computeValue()`,
-`data` or `dataPath`. Their values are part of the data and sent to the server
+`data` or `dataPath`. Its value is part of the data and sent to the server
 unless `exclude: true`:
 
 ```js
 wordCount: {
-  type: 'computed',
+  type: 'value',
   visible: true,
   exclude: true,
   computeValue: ({ item }) => item.summary?.split(/\s+/).length ?? 0
 },
 
 authorName: {
-  type: 'data',
+  type: 'value',
   // Relative to the item the field sits in:
   dataPath: 'author/name',
   exclude: true
