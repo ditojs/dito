@@ -135,6 +135,26 @@ export const projects = createWidgetView<Project>(
               components: {
                 slug: { type: 'text', label: 'Slug' }
               }
+            },
+            // A row of a checkbox and a section without labels, whose fields
+            // have labels. Only planned projects show it, so that the other
+            // screenshots stay the same:
+            approved: {
+              type: 'checkbox',
+              label: false,
+              width: '1/4',
+              if: ({ item }) => item.status === 'Planned'
+            },
+            approval: {
+              type: 'section',
+              label: false,
+              nested: true,
+              width: '3/4',
+              if: ({ item }) => item.status === 'Planned',
+              components: {
+                approver: { type: 'text', label: 'Approver', width: '1/2' },
+                approvedOn: { type: 'date', label: 'Approved On', width: '1/2' }
+              }
             }
           }
         },

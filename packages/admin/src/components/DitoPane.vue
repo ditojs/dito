@@ -63,10 +63,12 @@ import { getRootData } from '../utils/services.ts'
 import { appendDataPath } from '../utils/data.js'
 import {
   isLabelled,
+  isCompact,
   hasNestedData,
   isInlined
 } from '../utils/schema/structure.js'
 import { shouldRenderSchema } from '../utils/schema/data.js'
+import { getItemFormSchema } from '../utils/schema/lookup.js'
 import { getItemAdapter } from '../utils/schema/types.ts'
 import { panelTabKey, sourceSchemaKey } from '../utils/keys.ts'
 
@@ -128,9 +130,7 @@ export default {
             // The data path of `data`, also of wrapped values:
             itemDataPath: props.dataPath,
             nested,
-            store: getChildStore(name),
-            // Also of type components that render their own label:
-            isLabelled: isLabelled(schema, props.generateLabels)
+            store: getChildStore(name)
           }
         }
       )
@@ -140,22 +140,45 @@ export default {
       () => props.single && componentSchemas.value.length === 1
     )
 
+    const contexts = computed(() =>
+      componentSchemas.value.map(({ schema, nested, dataPath, itemDataPath }) =>
+        SchemaContext.createForSchema(services, {
+          schema,
+          name: schema.name,
+          nested,
+          data: props.data,
+          dataPath,
+          itemDataPath,
+          rootData: getRootData(services)
+        })
+      )
+    )
+
     // Evaluate the `if` of the components before they're rendered:
     const shouldRenderComponentByIndex = computed(() =>
-      componentSchemas.value.map(({ schema, nested, dataPath, itemDataPath }) =>
-        shouldRenderSchema(
-          schema,
-          SchemaContext.createForSchema(services, {
-            schema,
-            name: schema.name,
-            nested,
-            data: props.data,
-            dataPath,
-            itemDataPath,
-            rootData: getRootData(services)
-          })
-        )
+      componentSchemas.value.map(({ schema }, index) =>
+        shouldRenderSchema(schema, contexts.value[index])
       )
+    )
+
+    // Also of type components that render their own label, and of sections
+    // and inlined objects whose forms show labels. NOTE: We only look one
+    // level deep, and a label anywhere in the nested form counts, not only in
+    // its first row, as rows are only known once the nested pane is measured:
+    const isLabelledByIndex = computed(() =>
+      componentSchemas.value.map(({ schema, nested }, index) => {
+        const isFormLabelled = () => {
+          const item = nested ? props.data?.[schema.name] : props.data
+          const form = getItemFormSchema(schema, item, contexts.value[index])
+          return Object.values(form.components || {}).some(component =>
+            isLabelled(component, !isCompact(form))
+          )
+        }
+        return (
+          isLabelled(schema, props.generateLabels) ||
+          isInlined(schema) && isFormLabelled()
+        )
+      })
     )
 
     const verticalLabelsByIndices = computed(() => {
@@ -198,7 +221,7 @@ export default {
         const hasLabelsInRow = row.some(
           index => (
             renderedPositions[index]?.height > 2 &&
-            componentSchemas.value[index].isLabelled
+            isLabelledByIndex.value[index]
           )
         )
         for (const index of row) {

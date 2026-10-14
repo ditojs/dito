@@ -17,6 +17,7 @@ version, see the upgrade guides in `docs/`.
 
 - **admin:** Tree items show the `prefix` and `suffix` of labels returned by `itemLabel()`.
 - **admin:** Code fields with `null` values keep the form clean when they mount.
+- **admin:** Rows with sections or inlined objects whose forms show labels align their other components with the labels.
 
 ## 4.3.0 (2026-10-14)
 

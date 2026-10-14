@@ -30,6 +30,21 @@ test.describe('screenshots', () => {
     await expectScreenshot(page, 'form-details.png')
   })
 
+  test('row with a section without a label', async ({ page, url }) => {
+    await Project.query()
+      .findById(2)
+      .patch({
+        approved: true,
+        approval: { approver: 'Grace', approvedOn: '2026-05-14' }
+      })
+    await page.goto(`${url}/admin/projects/2`)
+    await page.getByRole('tab', { name: 'Details', exact: true }).click()
+    const approver = page.getByLabel('Approver', { exact: true })
+    await expect(approver).toHaveValue('Grace')
+    await approver.scrollIntoViewIfNeeded()
+    await expectScreenshot(page, 'form-section-row.png')
+  })
+
   test('form with lists and trees', async ({ page, url }) => {
     await openProject(page, url, 'Planning')
     await expect(page.getByText('Interviews')).toBeVisible()
