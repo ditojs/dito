@@ -1,14 +1,17 @@
 <template lang="pug">
 DitoPickerInput.dito-date-time-picker(
   ref="pickerInput"
-  v-bind="{ modelValue, transition, disabled, placeholder, formatOptions }"
-  :placement="activePanel === 'time' ? 'bottom-right' : 'bottom-left'"
+  v-bind="{ modelValue, show, transition, target, disabled }"
+  :placement="popupPlacement"
+  :placeholder="placeholder"
+  :formatOptions="formatOptions"
   icon="calendar"
   toggleLabel="Choose date and time"
   inputClass="dito-date-time-picker__input"
   :inputAttributes="$attrs"
   :handlePanelKey="handlePanelKey"
   @update:modelValue="value => $emit('update:modelValue', value)"
+  @update:show="show => $emit('update:show', show)"
   @change="value => $emit('change', value)"
   @focus="$emit('focus')"
   @blur="$emit('blur')"
@@ -47,14 +50,18 @@ import { isTimePartName } from '../utils/time.js'
 // on where the caret is in the input.
 export default {
   components: { DitoPickerInput, DitoCalendar, DitoTimePanel },
-  emits: ['update:modelValue', 'change', 'focus', 'blur'],
+  emits: ['update:modelValue', 'update:show', 'change', 'focus', 'blur'],
   inheritAttrs: false,
 
   props: {
     modelValue: { type: Date, default: null },
     transition: { type: String, default: 'slide' },
+    // Without a placement, the popup follows the panel that it shows:
+    placement: { type: String, default: null },
     placeholder: { type: String, default: null },
+    show: { type: Boolean, default: false },
     disabled: { type: Boolean, default: false },
+    target: { type: [String, HTMLElement], default: 'trigger' },
     locale: { type: String, default: 'en-US' },
     format: { type: Object, default: null }
   },
@@ -67,6 +74,13 @@ export default {
   },
 
   computed: {
+    popupPlacement() {
+      return (
+        this.placement ||
+        (this.activePanel === 'time' ? 'bottom-right' : 'bottom-left')
+      )
+    },
+
     formatOptions() {
       const options = assignDeeply(
         {

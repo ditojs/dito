@@ -406,9 +406,12 @@ the date, and the time panel while it's in the time.
 | `format` | `object` | `null` | `date` and `time` options of [`format()`](./utils.md#format), merged deeply over the defaults with a short month, e.g. `'Oct 13, 2026, 02:05:00 PM'`. |
 | `placeholder` | `string` | `null` | The input's placeholder. |
 | `disabled` | `boolean` | `false` | Disables input and popup. |
+| `show` | `boolean` | `false` | Whether the popup is shown (`v-model:show`). |
+| `placement` | `string` | `null` | See [`DitoTrigger`](#ditotrigger). Without it, the popup is placed `'bottom-left'` for the calendar and `'bottom-right'` for the time panel. |
 | `transition` | `string` | `'slide'` | See [`DitoTrigger`](#ditotrigger). |
+| `target` | `string \| HTMLElement` | `'trigger'` | See [`DitoTrigger`](#ditotrigger). |
 
-Events: `update:modelValue`, `change`, `focus` and `blur`, as in
+Events: `update:modelValue`, `change`, `update:show`, `focus` and `blur`, as in
 [`DitoDatePicker`](#ditodatepicker). Slots: `prefix` and `suffix`. Methods:
 `focus()` and `blur()`. All other attributes go to the
 [`DitoInput`](#ditoinput).
