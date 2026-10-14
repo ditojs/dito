@@ -2096,6 +2096,8 @@ export type SchemaContext<$Item = any> = {
   /**
    * `true` when the data-path points to a value inside
    * an item, `false` when it points to the item itself.
+   * @deprecated Internal. `value` is `undefined` when the
+   * context describes an item.
    */
   readonly nested: boolean
   /**

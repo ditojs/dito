@@ -9,6 +9,10 @@ version, see the upgrade guides in `docs/`.
 
 - **admin:** Clipboard data holds the labels of related records outside the copied data instead of their ids, e.g. `author: { $label: 'Jane Austen' }`, and pasting resolves them through the options of the fields. Labels that match no option or several paste `null`, or are left out of multiple values, and a notification lists them. `clipboard.copy()` and `clipboard.paste()` see the labels instead of the ids.
 
+### Deprecations
+
+- **admin:** `context.nested` is internal: `value` is `undefined` when a context describes an item.
+
 ## 4.2.0 (2026-10-14)
 
 ### Behaviour changes
