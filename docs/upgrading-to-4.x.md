@@ -24,6 +24,12 @@ code changes in most apps.
   `escapeRegexp()` is `escapeRegExp()`.
 - `isEmpty()` of `@ditojs/utils` checks the size of `Map` and `Set` objects
   and never treats dates as empty, where 3.5 returned `true` for all of them.
+- Since 4.5, `@ditojs/server` loads `@ditojs/build`, `vite` and
+  `@vitejs/plugin-vue` only to build the admin or serve it in development, as
+  optional peer dependencies: install them as dev dependencies of the app,
+  `pnpm add -D @ditojs/build vite @vitejs/plugin-vue`.
+  `app.defineAdminViteConfig()` returns a promise, which Vite awaits as the
+  default export of `admin.vite.config.js`.
 
 ## Server
 

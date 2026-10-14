@@ -90,6 +90,14 @@ developed against PostgreSQL; a few features are PostgreSQL only, e.g.
 `@aws-sdk/client-s3` is an optional peer dependency. Install it if you store
 files in S3, see [Storages and assets](storages.md).
 
+`@ditojs/build`, `vite` and `@vitejs/plugin-vue` are optional peer
+dependencies too, needed only to build the admin or serve it in development.
+Install them as dev dependencies, so production installs leave them out:
+
+```sh
+pnpm add -D @ditojs/build vite @vitejs/plugin-vue
+```
+
 The admin interface comes with the server, as `@ditojs/admin` is one of its
 dependencies. Setting it up is described in the
 [admin guide](../admin/index.md).
