@@ -1,7 +1,7 @@
 // tests/server/setup.ts
 import { Application } from '@ditojs/server'
 import type { Knex } from 'knex'
-import { createPGliteKnex } from '../utils/pglite-knex.js'
+import { createTestKnex } from '../utils/test-knex.js'
 
 export { createTestDatabase } from '../utils/database.js'
 
@@ -18,7 +18,7 @@ export function createTestApp({
   config,
   ...options
 }: TestAppOptions = {}): TestApp {
-  const { knex } = createPGliteKnex()
+  const knex = createTestKnex()
   return new Application({
     config: {
       log: { silent: true },

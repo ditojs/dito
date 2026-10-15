@@ -5,6 +5,7 @@ import {
   createTestDatabase,
   destroyTestApp
 } from './setup.js'
+import { isSQLiteTest } from '../utils/test-knex.js'
 
 class Cook extends Model {
   declare id: number
@@ -167,6 +168,11 @@ describe('QueryBuilder', () => {
     return models.map(model => model.name).sort()
   }
 
+  // Quotes identifiers like PostgreSQL, as SQLite quotes them with backticks.
+  function quoteIdentifiers(sql: string) {
+    return sql.replaceAll('`', '"')
+  }
+
   async function insertRecipes() {
     return Recipe.query().insert([
       { name: 'Apple pie', servings: 8, published: true },
@@ -267,7 +273,9 @@ describe('QueryBuilder', () => {
     it('applies scopes immediately with applyScope()', async () => {
       await insertRecipes()
       const query = Recipe.query().applyScope('hearty', null)
-      expect(query.toKnexQuery().toQuery()).toMatch(/"servings" >= 4/)
+      expect(quoteIdentifiers(query.toKnexQuery().toQuery())).toMatch(
+        /"servings" >= 4/
+      )
       expect(getNames(await query)).toEqual(['Apple pie', 'Cherry tart'])
     })
 
@@ -453,6 +461,15 @@ describe('QueryBuilder', () => {
     ])('applies date-range filter arguments %j', async (args, expected) => {
       const recipes = await Recipe.query().applyFilter('created', ...args)
       expect(getNames(recipes)).toEqual(expected)
+    })
+
+    it('compares datetimes with dates in queries', async () => {
+      const recipes = await Recipe.query().where(
+        'createdAt',
+        '>',
+        new Date('2026-02-01T00:00:00Z')
+      )
+      expect(getNames(recipes)).toEqual(['Pineapple cake', 'Plum crumble'])
     })
 
     it('applies multiple filters with an object', async () => {
@@ -641,9 +658,9 @@ describe('QueryBuilder', () => {
       expect(result!.cook!.name).toBe('Ada')
       expect(result!.steps).toHaveLength(1)
       // The table metadata for `toKnexQuery()` is only there after execution:
-      expect(createQuery().toKnexQuery().toQuery()).toMatch(
-        /left join "Step"/
-      )
+      expect(
+        quoteIdentifiers(createQuery().toKnexQuery().toQuery())
+      ).toMatch(/left join "Step"/)
     })
 
     describe('mixing joined and fetched relations', () => {
@@ -744,7 +761,7 @@ describe('QueryBuilder', () => {
         const [result] = await createQuery()
         expect(result.steps).toHaveLength(2)
         expect(result.cook!.recipes).toHaveLength(1)
-        const sql = createQuery().toKnexQuery().toQuery()
+        const sql = quoteIdentifiers(createQuery().toKnexQuery().toQuery())
         expect(sql).toMatch(/left join "Step"/)
         expect(sql).not.toMatch(/join "Cook"/)
       })
@@ -839,7 +856,7 @@ describe('QueryBuilder', () => {
         .where({ servings: 2 })
         .orderBy('name')
         .toSQL()
-      expect(sql).toBe(
+      expect(quoteIdentifiers(sql)).toBe(
         'select "Recipe"."name" as "title", "unknown" from "Recipe" ' +
         'where "Recipe"."servings" = ? order by "Recipe"."name" asc'
       )
@@ -868,7 +885,8 @@ describe('QueryBuilder', () => {
       expect(recipe.id).toBe(1)
     })
 
-    it('keeps identities when truncating without restart', async () => {
+    it('keeps identities when truncating without restart', async context => {
+      context.skip(isSQLiteTest, 'SQLite always restarts identities')
       await Recipe.query().insert({ name: 'Old' })
       await Recipe.query().truncate({ restart: false, cascade: true })
       const recipe = await Recipe.query().insert({ name: 'Fresh' })
@@ -1072,7 +1090,8 @@ describe('QueryBuilder', () => {
       expect(cooks.every(cook => cook.active)).toBe(true)
     })
 
-    it('saves arrays of models in one transaction', async () => {
+    it('saves arrays of models in one transaction', async context => {
+      context.skip(isSQLiteTest, 'SQLite has no integer range to exceed')
       const [apple, banana] = await insertRecipes()
       // The second value is out of the range of the column:
       await expect(

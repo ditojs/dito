@@ -3,6 +3,16 @@
 The changes of each release of Dito.js. For upgrading to a new major
 version, see the upgrade guides in `docs/`.
 
+## 4.6.1 (unreleased)
+
+### Fixes
+
+- **server:** `Model.count()` counts rows on SQLite and MySQL, where it returned 0, and so does the `count` action of controllers.
+- **server:** `truncate()` no longer applies the default scope of the model, which knex rejects.
+- **server:** Relating several models to a many-to-many relation through its controller works on SQLite and MySQL, where it failed with a 500 error.
+- **server:** On SQLite with the `better-sqlite3` client, `Date` values in queries are bound as ISO strings, as dates are stored, so date-range filters, `releaseUnusedAssets()` and queries like `where('createdAt', '>', date)` match.
+- **server:** `log.sql` logs the rows of SQLite responses as arrays.
+
 ## 4.6.0 (2026-10-16)
 
 ### New

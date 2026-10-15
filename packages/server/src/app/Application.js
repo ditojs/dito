@@ -21,6 +21,7 @@ import Router from '@ditojs/router'
 import {
   isArray,
   isObject,
+  isFunction,
   asArray,
   isPlainObject,
   isModule,
@@ -703,7 +704,7 @@ export class Application extends Koa {
           ...knexSnakeCaseMappers(snakeCaseOptions)
         }
       }
-      this.knex = Knex(knex)
+      this.knex = Knex({ ...knex, client: getKnexClient(knex.client) })
       // Support PostgreSQL type parser mappings in the config.
       if (
         knex.client === 'postgresql' &&
@@ -753,13 +754,15 @@ export class Application extends Koa {
       const duration = diff[0] * 1e3 + diff[1] / 1e6
       delete startTimes[id]
       const { sql, bindings } = query
-      response = response
-        ? Object.fromEntries(
-            Object.entries(response).filter(
-              ([key]) => !key.startsWith('_')
-            )
-          )
-        : null
+      // Leave out the internals of PostgreSQL results. Other databases respond
+      // with the rows, which are logged as they are:
+      if (!response) {
+        response = null
+      } else if (!isArray(response)) {
+        response = Object.fromEntries(
+          Object.entries(response).filter(([key]) => !key.startsWith('_'))
+        )
+      }
       logger.info({ duration, bindings, response, error }, sql)
     }
 
@@ -1174,6 +1177,26 @@ EventEmitter.mixin(Application.prototype)
 
 function getOptions(options) {
   return isObject(options) ? options : {}
+}
+
+// SQLite stores dates as ISO strings, see `Model.$formatDatabaseJson()`, but
+// knex's better-sqlite3 client binds `Date` objects as numbers. Bind them as
+// ISO strings too, so that queries can compare with them:
+function getKnexClient(client) {
+  const Client = isFunction(client)
+    ? client
+    : Knex({ client }).client.constructor
+  return Client.prototype.driverName === 'better-sqlite3'
+    ? class extends Client {
+        _formatBindings(bindings) {
+          return super._formatBindings(
+            bindings?.map(binding =>
+              binding instanceof Date ? binding.toISOString() : binding
+            )
+          )
+        }
+      }
+    : client
 }
 
 const defaultAssetOptions = {

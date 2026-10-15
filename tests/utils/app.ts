@@ -2,7 +2,7 @@
 import path from 'path'
 import { Application } from '@ditojs/server'
 import type { Knex } from 'knex'
-import { createPGliteKnex } from './pglite-knex.js'
+import { createTestKnex } from './test-knex.js'
 
 type TestApp = Application & { knex: Knex }
 
@@ -32,7 +32,7 @@ const host = '127.0.0.1'
 export function createTestApp(
   options: TestAppOptions = {}
 ): TestApp {
-  const { knex } = createPGliteKnex()
+  const knex = createTestKnex()
 
   const app = new Application({
     config: {

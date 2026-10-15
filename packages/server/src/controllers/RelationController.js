@@ -154,7 +154,16 @@ export class RelationController extends CollectionController {
       // `upsertGraph()` rejects relating through `$relatedQuery()`.
       const ids = this.getCollectionIds(ctx)
       const fetchQuery = query.clone()
-      await query.relate(this.getRelateReferences(ctx, ids))
+      const references = this.getRelateReferences(ctx, ids)
+      if (query.isPostgreSQL() || query.isMsSQL()) {
+        await query.relate(references)
+      } else {
+        // Objection relates several models at once only on PostgreSQL and SQL
+        // Server, so relate them one by one on the other databases:
+        for (const reference of references) {
+          await query.clone().relate(reference)
+        }
+      }
       return fetchQuery
         .modify(builder =>
           isArray(ctx.request.body)

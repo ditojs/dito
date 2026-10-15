@@ -1,5 +1,8 @@
 import { vi } from 'vitest'
-import { createPGliteKnex } from '../../../../tests/utils/pglite-knex.ts'
+import {
+  createTestKnex,
+  isSQLiteTest
+} from '../../../../tests/utils/test-knex.ts'
 import { createTransaction } from './createTransaction.js'
 import { Application } from '../app/Application.js'
 import { DatabaseError } from '../errors/index.js'
@@ -9,7 +12,7 @@ describe('createTransaction()', { timeout: 30_000 }, () => {
   const app = new Application({
     config: {
       log: { silent: true },
-      knex: createPGliteKnex().knex
+      knex: createTestKnex()
     }
   })
   const { knex } = app
@@ -62,7 +65,8 @@ describe('createTransaction()', { timeout: 30_000 }, () => {
     expect(await knex('child').count('* as count')).toEqual([{ count: 1 }])
   })
 
-  it('throws and emits the rollback event when the commit fails', async () => {
+  it('throws and emits the rollback event when the commit fails', async context => {
+    context.skip(isSQLiteTest, 'SQLite leaves failed commits open')
     const ctx = createContext()
     const events = []
     await expect(
@@ -76,7 +80,8 @@ describe('createTransaction()', { timeout: 30_000 }, () => {
     expect(await knex('child').count('* as count')).toEqual([{ count: 0 }])
   })
 
-  it('wraps the errors of failed commits like other database errors', async () => {
+  it('wraps the errors of failed commits like other database errors', async context => {
+    context.skip(isSQLiteTest, 'SQLite leaves failed commits open')
     const ctx = createContext()
     const error = await middleware(ctx, async () => {
       await insertChild(ctx, 1234)
@@ -89,7 +94,8 @@ describe('createTransaction()', { timeout: 30_000 }, () => {
     )
   })
 
-  it(`doesn't roll back transactions that a failed commit completed`, async () => {
+  it(`doesn't roll back transactions that a failed commit completed`, async context => {
+    context.skip(isSQLiteTest, 'SQLite leaves failed commits open')
     const ctx = createContext()
     let rollback
     await expect(

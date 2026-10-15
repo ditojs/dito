@@ -138,7 +138,10 @@ A few things to know about types:
   clients the same way, and are read as local midnight.
 - `'object'` and `'array'` properties are stored as JSON, and read back as
   objects and arrays.
-- On SQLite, booleans are converted from and to integers.
+- On SQLite, booleans are converted from and to integers, and dates are
+  stored as strings. Queries on `'date'` properties compare with plain dates
+  (`'2026-05-14'`), not `Date` objects. Use the `better-sqlite3` client: with
+  `sqlite3`, `Date` objects in queries are bound as numbers and don't match.
 - `required: true` rejects missing values, `null` and `''`.
 - `default: 'now()'` is a database default only: migrations use the current
   time, validation ignores it.
