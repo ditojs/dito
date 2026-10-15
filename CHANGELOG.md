@@ -5,6 +5,10 @@ version, see the upgrade guides in `docs/`.
 
 ## 4.6.1 (unreleased)
 
+### Behaviour changes
+
+- **server:** `self` stands for the logged-in user in the member routes of `UsersController`, so `PATCH users/self` runs `member.patch` with all its settings, e.g. `transacted`, `parameters` and hooks, which the `'patch self'` collection action of 4.6.0 skipped. `'patch self'` is removed: remove it from `collection.allow` and from overrides.
+
 ### Fixes
 
 - **server:** `Model.count()` counts rows on SQLite and MySQL, where it returned 0, and so does the `count` action of controllers.
@@ -19,7 +23,6 @@ version, see the upgrade guides in `docs/`.
 
 ### New
 
-- **server:** `UsersController` has a `'patch self'` collection action, `PATCH users/self`, that patches the logged-in user through `member.patch` and returns it, where `member.patch` is allowed and authorizes the user. Subclasses that set `collection.allow` list it to route it.
 - **server:** `FromModel` derives the instance types of models from their `properties` and `relations` declared `as const`, see [Deriving types](docs/guide/server/models.md#deriving-types).
 - **admin:** `account.settings` in the options of `DitoAdmin` takes a form that edits the logged-in user, opened through a Settings item in the account menu at `/account/settings`, without an item in the main menu. It loads and saves the user through `api.users.self`, by default `users/self`, and shows the changes in the account menu right away.
 

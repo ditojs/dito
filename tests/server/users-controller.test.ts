@@ -4,6 +4,7 @@ import { createTestApp, getAppUrl } from '../utils/app.js'
 import { createTestDatabase } from '../utils/database.js'
 
 const loginEvents: string[] = []
+const patchTransactions: boolean[] = []
 
 class Session extends SessionModel {}
 
@@ -47,8 +48,7 @@ class Members extends UsersController {
       'post login',
       'post logout',
       'get session',
-      'get self',
-      'patch self'
+      'get self'
     ],
     'authorize': {
       get: true
@@ -67,7 +67,16 @@ class Members extends UsersController {
 
   // Inherits `authorize: ['$self']` from `UsersController`.
   override member: any = {
-    allow: ['get', 'patch']
+    allow: ['get', 'patch'],
+
+    // Record whether patches run in a transaction, also through `self`:
+    patch: {
+      transacted: true,
+      handler(ctx: any, modify: any) {
+        patchTransactions.push(!!ctx.transaction)
+        return super.patch(ctx, modify)
+      }
+    }
   }
 }
 
@@ -137,8 +146,11 @@ describe('UsersController', () => {
           cookies.delete(key)
         }
       }
-      const text = await response.text()
-      return { status: response.status, data: text ? JSON.parse(text) : null }
+      const isJson = response.headers.get('content-type')?.includes('json')
+      return {
+        status: response.status,
+        data: isJson ? await response.json() : null
+      }
     }
   }
 
@@ -325,6 +337,21 @@ describe('UsersController', () => {
     await Member.query().deleteById(other.id)
   })
 
+  it('patches members through `self` with the settings of `patch`', async () => {
+    const request = createClient()
+    await request('/members/login', {
+      method: 'POST',
+      body: { username: 'ada', password: 'secret' }
+    })
+    patchTransactions.length = 0
+    const self = await request('/members/self', {
+      method: 'PATCH',
+      body: { username: 'ada' }
+    })
+    expect(self.status).toBe(200)
+    expect(patchTransactions).toEqual([true])
+  })
+
   it('lets members patch themselves', async () => {
     const other = await Member.query().insert({
       username: 'bo',
@@ -383,7 +410,10 @@ describe('UsersController', () => {
   })
 
   it(`only lets members patch themselves like their member`, async () => {
-    for (const path of ['readers', 'editors']) {
+    for (const [path, status] of [
+      ['readers', 405],
+      ['editors', 401]
+    ] as const) {
       const request = createClient()
       await request(`/${path}/login`, {
         method: 'POST',
@@ -393,7 +423,8 @@ describe('UsersController', () => {
         method: 'PATCH',
         body: { nickname: 'Countess' }
       })
-      expect(self.status).toBe(401)
+      // Without a routed `patch`, `self` has no member route to go to:
+      expect(self.status).toBe(status)
     }
     expect((await Member.query().findById(member.id))!.nickname).toBeNull()
   })
