@@ -88,7 +88,8 @@ export const projects = createWidgetView<Project>(
                     message: {
                       type: 'text',
                       label: 'Message',
-                      required: true
+                      required: true,
+                      clearable: true
                     }
                   },
                   buttons: {
