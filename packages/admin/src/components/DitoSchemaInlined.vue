@@ -86,10 +86,14 @@ export default {
   grid-template-rows: min-content;
   grid-template-columns: 100%;
 
-  &:not(:hover, .dito-schema--open) {
-    > .dito-schema-header
-      .dito-button:not(.dito-button--edit, .dito-button--remove) {
-      display: none;
+  // Show the buttons other than edit and remove only on hover, hidden but
+  // keeping their space so that the header doesn't shift:
+  @media (hover: hover) {
+    &:not(:hover, :focus-within) {
+      > .dito-schema-header
+        .dito-button:not(.dito-button--edit, .dito-button--remove) {
+        visibility: hidden;
+      }
     }
   }
 }
