@@ -176,4 +176,35 @@ test.describe('layout', () => {
     )
     expect(overflows).toEqual([])
   })
+
+  test('keeps long file names of uploads inside their lists', async ({
+    page,
+    url
+  }) => {
+    await Widget.query().insert({
+      name: 'Widget A',
+      links: [
+        {
+          url: 'https://example.com',
+          image: {
+            // Names without break opportunities, as of encoded URLs:
+            name: `${'x'.repeat(300)}.svg`,
+            type: 'image/svg+xml',
+            size: 100,
+            url: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg"/>'
+          }
+        }
+      ]
+    })
+    const list = new DitoListView(page, url, 'Widget')
+    const form = new DitoForm(page)
+    await list.navigate('/widgets')
+    await list.list.edit('Widget A')
+    await form.selectTab('Details')
+    const links = page.getByRole('region', { name: 'Links' })
+    await expect(links.locator('.dito-upload-file')).toBeVisible()
+    const listBox = (await links.boundingBox())!
+    const tableBox = (await links.locator('.dito-table').first().boundingBox())!
+    expect(tableBox.width).toBe(listBox.width)
+  })
 })

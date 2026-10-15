@@ -14,7 +14,7 @@
         v-else
       )
         span {{ type }}
-  span {{ file.name }}
+  span.dito-upload-file__name {{ file.name }}
 </template>
 
 <script>
@@ -86,6 +86,11 @@ const types = {
   display: flex;
   align-items: center;
   justify-content: flex-start;
+
+  &__name {
+    // Break long names without spaces, so they don't widen the table:
+    overflow-wrap: anywhere;
+  }
 }
 
 .dito-thumbnail {

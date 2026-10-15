@@ -47,6 +47,13 @@ export const widgets = createWidgetView<Widget>(
                 type: 'form',
                 components: {
                   url: { type: 'url', label: 'URL' },
+                  image: {
+                    type: 'upload',
+                    label: 'Image',
+                    thumbnails: 'medium',
+                    clipboard: true,
+                    deletable: true
+                  },
                   // Long labels are clipped with an ellipsis:
                   parts: {
                     type: 'list',
