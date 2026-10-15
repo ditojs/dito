@@ -2,10 +2,16 @@ name: Publish
 
 # Publishes the packages of pushed version tags to npm, through npm's trusted
 # publishing: npm trusts this workflow, so no tokens are needed. The versions
-# are created locally with `pnpm release`, which pushes the tags.
+# are created locally with `pnpm release`, which pushes the tags. Run it
+# manually with a tag to finish a release that failed partway.
 on:
   push:
     tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Version tag to publish, e.g. v4.5.1
+        required: true
 
 permissions:
   contents: read
@@ -13,18 +19,21 @@ permissions:
 
 jobs:
   publish:
+    if: startsWith(inputs.tag || github.ref_name, 'v')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          # `lerna publish from-git` reads the version tag of the commit.
-          fetch-depth: 0
+          ref: refs/tags/${{ inputs.tag || github.ref_name }}
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
-          registry-url: https://registry.npmjs.org
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
       - run: pnpm build
-      - run: pnpm exec lerna publish from-git --yes
+      # Publishes the versions that aren't on npm yet. pnpm retries a failed
+      # provenance signature with a new one, where lerna's sigstore client
+      # sends the same Rekor entry again and fails on its 409 conflict.
+      - run: pnpm -r publish --no-git-checks
