@@ -263,8 +263,8 @@ export function useField(
     }
     if (nativeField) {
       attributes.name = props.dataPath
-      if (label.value) {
-        attributes.title = label.value
+      if (labelText.value) {
+        attributes.title = labelText.value
       }
       attributes.readonly = readonly.value
       attributes.autofocus = autofocus.value

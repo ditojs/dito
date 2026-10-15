@@ -152,6 +152,23 @@ describe('DitoTypeText', () => {
     })
   })
 
+  it('uses the text of label objects as the title of the input', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const { findField } = await mountSchema({
+      schema: {
+        components: {
+          title: { type: 'text', label: { text: 'Title', suffix: 'Book' } },
+          author: { type: 'text', label: { html: '<b>Author</b> &amp; Co' } }
+        }
+      }
+    })
+    const getTitle = name => findField(name).find('input').attributes('title')
+    expect(getTitle('title')).toBe('Title')
+    expect(getTitle('author')).toBe('Author & Co')
+    expect(warn).not.toHaveBeenCalled()
+    warn.mockRestore()
+  })
+
   it('uses the matching input types for the text based types', async () => {
     const { findField } = await mountSchema({
       schema: {
