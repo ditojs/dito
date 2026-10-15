@@ -26,6 +26,8 @@ export default {
 .dito-errors {
   // Take a line of its own also in compact containers with wrapping rows.
   width: 100%;
+  // Wrap within the width of the field instead of widening it:
+  contain: inline-size;
   margin-top: $form-spacing-half;
   color: $color-error;
   white-space: pre-line;

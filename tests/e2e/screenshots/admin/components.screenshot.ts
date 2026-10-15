@@ -108,6 +108,21 @@ test.describe('component screenshots', () => {
     await expectScreenshot(page, 'markup-toolbar.png')
   })
 
+  test('markup link dialog', async ({ page, url }) => {
+    await openProject(page, url, 'Details')
+    await page.getByText('all teams').dblclick()
+    await page.getByRole('button', { name: 'Link', exact: true }).click()
+    const dialog = page.getByRole('dialog')
+    await expect(dialog).toBeVisible()
+    await expectScreenshot(page, 'markup-link-dialog.png')
+    await dialog.getByLabel('Link', { exact: true }).fill('not a url')
+    await dialog.getByLabel('Title', { exact: true }).focus()
+    await expect(
+      dialog.getByText('The Link field is not a valid URL.')
+    ).toBeVisible()
+    await expectScreenshot(page, 'markup-link-dialog-error.png')
+  })
+
   test('code editor focus', async ({ page, url }) => {
     await openProject(page, url, 'Details')
     // The code editor isn't labelled, so click into it below its label.

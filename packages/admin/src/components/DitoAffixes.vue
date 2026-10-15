@@ -125,6 +125,7 @@ export default {
   @include user-select(none);
 
   display: flex;
+  position: relative;
   align-items: center;
   gap: $input-padding-hor;
 
@@ -167,7 +168,10 @@ export default {
     --size: #{calc($input-height - 4 * $border-width)};
 
     display: none;
-    position: relative;
+    // Overlay the other affixes and the input's padding instead of widening
+    // the input:
+    position: absolute;
+    right: 0;
     cursor: pointer;
     width: var(--size);
     height: var(--size);
@@ -195,11 +199,11 @@ export default {
     }
   }
 
-  // Hide other affixes when clear button is shown
+  // Hide other affixes when clear button is shown, but keep their space:
   // prettier-ignore
   @at-root .dito-component:hover:not(:has(.dito-component, .dito-popup:hover))
         #{$self}:has(#{$self}__clear) > *:not(#{$self}__clear) {
-      display: none;
+      visibility: hidden;
     }
 }
 </style>
