@@ -20,12 +20,24 @@
       :settings="dialog.settings"
       @remove="removeDialog(key)"
     )
-  DitoNavigation
+  DitoNavigation#dito-navigation(
+    ref="navigation"
+    :class="`dito-navigation--${menu.state}`"
+  )
   main.dito-page.dito-scroll-parent(:class="adminContext.pageClass")
     DitoHeader(
       :spinner="options.spinner"
       :isLoading="adminContext.loadingTracker.isLoading"
     )
+      template(#prepend)
+        button.dito-header__toggle(
+          ref="menuButton"
+          type="button"
+          aria-label="Menu"
+          aria-controls="dito-navigation"
+          :aria-expanded="menu.isExpanded"
+          @click="menu.toggle()"
+        )
     DitoRouterView(:routeLevel="0")
   DitoSidebar
     DitoAccount(
@@ -42,6 +54,7 @@
 
 <script>
 import {
+  computed,
   inject,
   markRaw,
   onMounted,
@@ -54,6 +67,7 @@ import {
 import { delegate as tippyDelegate } from 'tippy.js'
 import appState from '../appState.js'
 import { useDomEvents } from '../composables/useDomEvents.ts'
+import { useSidebar } from '../composables/useSidebar.ts'
 import DitoDialog from './DitoDialog.vue'
 import {
   applySchemaDefaults,
@@ -81,6 +95,13 @@ export default {
     provide(fileDropTargetsKey, fileDropTargets)
     // The login link shows without a user once the session started:
     const hasSessionStarted = ref(false)
+    const navigation = useTemplateRef('navigation')
+    const menu = useSidebar({
+      name: 'menu',
+      breakpoint: 800,
+      region: computed(() => navigation.value?.content),
+      button: useTemplateRef('menuButton')
+    })
 
     const showDialog = async ({ components, buttons, data, settings }) => {
       // Resolve async schemas first, so that their errors reject:
@@ -189,6 +210,7 @@ export default {
       dialogs,
       fileDropTargets,
       hasSessionStarted,
+      menu,
 
       removeDialog(key) {
         delete dialogs[key]

@@ -288,6 +288,35 @@ test.describe('component screenshots', () => {
     await expectScreenshot(page, 'tree-active-focus.png')
   })
 
+  test('menu overlay', async ({ page, url }) => {
+    await page.setViewportSize({ width: 640, height: 1000 })
+    await openProject(page, url)
+    await page.getByRole('button', { name: 'Menu', exact: true }).click()
+    await expect(page.getByRole('link', { name: 'Reports' })).toBeVisible()
+    await expectScreenshot(page, 'menu-overlay.png')
+  })
+
+  test('sidebar overlay', async ({ page, url }) => {
+    await page.setViewportSize({ width: 900, height: 1000 })
+    await openProject(page, url)
+    await page.getByRole('button', { name: 'Sidebar', exact: true }).click()
+    await expect(page.getByText('Owner: Ada')).toBeVisible()
+    await expectScreenshot(page, 'sidebar-overlay.png')
+  })
+
+  test('collapsed menu and sidebar', async ({ page, url }) => {
+    await openProject(page, url)
+    await page.getByRole('button', { name: 'Menu', exact: true }).click()
+    // Click the sidebar's button once it stopped moving with the menu:
+    await expect(page.getByLabel('Main navigation')).toHaveCSS(
+      'flex-basis',
+      '0px'
+    )
+    await page.getByRole('button', { name: 'Sidebar', exact: true }).click()
+    await expect(page.getByText('Owner: Ada')).toBeHidden()
+    await expectScreenshot(page, 'collapsed.png')
+  })
+
   for (const width of [900, 640]) {
     test(`narrow form ${width}`, async ({ page, url }) => {
       await page.setViewportSize({ width, height: 1000 })

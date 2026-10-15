@@ -1,5 +1,6 @@
 <template lang="pug">
 nav.dito-header(:aria-busy="isLoading")
+  slot(name="prepend")
   DitoTrail
     DitoSpinner(
       v-if="isLoading && spinner !== null"
@@ -26,6 +27,7 @@ export default {
 
 .dito-header {
   position: relative;
+  display: flex;
   background: $color-black;
   font-size: $header-font-size;
   line-height: $header-line-height;
@@ -51,6 +53,34 @@ export default {
       &::after {
         content: '\200b';
       }
+    }
+  }
+
+  // The buttons that toggle the menu and the sidebar:
+  &__toggle {
+    position: relative;
+    flex: 0 0 auto;
+    width: $header-height;
+    padding: 0;
+    border: 0;
+    color: $color-white;
+    background: none;
+
+    &::before {
+      @extend %icon-sidebar;
+    }
+
+    &:hover {
+      color: $color-light;
+    }
+
+    &:focus-visible {
+      @include focus-ring;
+    }
+
+    // The button's own spacing separates it from the first breadcrumb:
+    + .dito-trail li:first-child span {
+      padding-left: 0;
     }
   }
 

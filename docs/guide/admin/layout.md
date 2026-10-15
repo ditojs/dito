@@ -182,6 +182,14 @@ gap: { type: 'spacer', width: '1/3' }
 `compact: true` reduces the spacing of a view, form or section, and
 `wide: true` widens the content area of views and forms.
 
+## Menu and sidebar
+
+The navigation menu and the sidebar with the panels are docked next to the
+content on wide screens. The buttons at both ends of the header collapse them,
+which the browser remembers. On screens narrower than 1200px, the sidebar
+hides, and below 800px, the menu does too. The buttons then open them above
+the content, until a click outside, Escape or navigation closes them.
+
 ## Reference
 
 - [Layout schemas](../../api/admin/schemas.md#layout): `section`, `panel`,
