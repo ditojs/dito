@@ -144,6 +144,31 @@ describe('DitoForm', () => {
       ).toEqual([])
     })
 
+    it('leaves single-component views of objects for the root', async () => {
+      const admin = await mountAdmin({
+        views: {
+          books: { type: 'view', label: 'Books', components: {} },
+          settings: {
+            type: 'view',
+            label: 'Settings',
+            component: {
+              type: 'object',
+              resource: { path: 'settings' },
+              form: { type: 'form', components: { name: { type: 'text' } } }
+            }
+          }
+        },
+        request: () => ({ data: {} })
+      })
+      await admin.navigate('/settings')
+      await admin.wrapper
+        .find('.dito-buttons--main button[aria-label="Cancel"]')
+        .trigger('click')
+      await flushPromises()
+      expect(admin.router.currentRoute.value.path).toBe('/')
+      expect(admin.getRouteComponent(isForm)).toBe(null)
+    })
+
     it('calls `onCancel()` once the form is closed', async () => {
       const onCancel = vi.fn()
       const { admin, wrapper } = await mountForm({

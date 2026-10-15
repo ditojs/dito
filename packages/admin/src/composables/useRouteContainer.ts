@@ -220,7 +220,13 @@ export function useRouteContainer({
       if (!parent) {
         throw new Error('Unable to close the route: Views cannot be closed.')
       }
-      return navigate(router, parent.path)
+      // Object forms of single-component views share the path of their view,
+      // so we leave the view for the admin's root:
+      const { source } = getNode() as FormNode
+      return navigate(
+        router,
+        source.isViewComponent && !source.isList ? '/' : parent.path
+      )
     },
 
     submit(button: SubmitButton, options?: SubmitOptions) {
