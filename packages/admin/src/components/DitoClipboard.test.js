@@ -463,6 +463,93 @@ describe('DitoClipboard', () => {
       }
     })
 
+    describe('of primitives, with `wrapPrimitives`', () => {
+      async function mountFonts(fonts) {
+        const result = await mountForm({
+          schema: {
+            components: {
+              fonts: {
+                type: 'list',
+                inlined: true,
+                form: {
+                  type: 'form',
+                  components: {
+                    cuts: {
+                      type: 'list',
+                      wrapPrimitives: 'name',
+                      inlined: true,
+                      clipboard: true,
+                      creatable: true,
+                      draggable: true,
+                      deletable: ({ value }) => value.length > 1,
+                      // Lists always show at least one empty cut:
+                      computeValue: ({ value }) =>
+                        value.length > 0 ? value : [''],
+                      form: {
+                        type: 'form',
+                        compact: true,
+                        components: { name: { type: 'text' } }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          data: { fonts }
+        })
+        const findButton = (dataPath, button) =>
+          result
+            .findContainer(dataPath)
+            .find(`.dito-label .dito-button--${button}`)
+        return {
+          ...result,
+          async click(dataPath, button) {
+            await findButton(dataPath, button).trigger('click')
+            await flushPromises()
+          }
+        }
+      }
+
+      it('copies the values and pastes them as values', async () => {
+        const { click, data, dataModel, findField } = await mountFonts([
+          { id: 1, cuts: ['Regular', 'Bold'] },
+          { id: 2, cuts: ['Light'] }
+        ])
+        await click('fonts/0/cuts', 'copy')
+        expect(getClipboardData('cuts', 'list')).toEqual({
+          items: [{ name: 'Regular' }, { name: 'Bold' }]
+        })
+        await click('fonts/1/cuts', 'paste')
+        expect(data.fonts[1].cuts).toEqual(['Light', 'Regular', 'Bold'])
+        expect(
+          findField('fonts/1/cuts')
+            .findAll('input')
+            .map(input => input.element.value)
+        ).toEqual(['Light', 'Regular', 'Bold'])
+        expect(getNotificationTexts()).toEqual([])
+        expect(dataModel.isDirty).toBe(true)
+      })
+
+      // Empty text serializes to `null`, as when the form is submitted:
+      it('copies and pastes the empty value of empty lists', async () => {
+        const { click, data } = await mountFonts([
+          { id: 1, cuts: [] },
+          { id: 2, cuts: ['Light'] }
+        ])
+        expect(data.fonts[0].cuts).toEqual([''])
+        await click('fonts/0/cuts', 'copy')
+        expect(getClipboardData('cuts', 'list')).toEqual({
+          items: [{ name: null }]
+        })
+        await click('fonts/1/cuts', 'paste')
+        expect(data.fonts[1].cuts).toEqual(['Light', null])
+        await click('fonts/1/cuts', 'copy')
+        await click('fonts/0/cuts', 'paste')
+        expect(data.fonts[0].cuts).toEqual(['', 'Light', null])
+      })
+    })
+
     it('gives lists with their own resource no clipboard', async () => {
       const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
       const { findField } = await mountForm({
