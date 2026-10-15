@@ -247,6 +247,41 @@ list as a whole:
 The items themselves only get Copy and Paste buttons through the `clipboard`
 of their form, e.g. `form: { components, clipboard: true }`.
 
+### Download and Upload
+
+`clipboard: { interchange: true }` adds a menu to the Copy and Paste buttons,
+with **Download** and **Upload**, to move data together with its files, e.g.
+a book with its cover and sample pages into another installation. It works
+wherever `clipboard` does, on forms, lists and uploads, and combines with
+`copy()` and `paste()`:
+
+```js
+clipboard: { interchange: true }
+```
+
+**Download** saves the data that Copy would copy as a zip:
+
+- `data.json` holds the data with its `$schema` and `$type`, as Copy writes
+  it to the clipboard.
+- `files/<key>` holds each file of the [upload](../../api/admin/schemas.md#upload) fields in the
+  data, which `data.json` refers to as
+  `{ key, name, type, size, width, height, $file: 'files/<key>' }`, without
+  the file's `url` and `signature`.
+
+**Upload** reads such a zip and pastes its data like Paste, but only when its
+`$schema` and `$type` match. It first uploads each referenced file through
+the upload route of its field, where the server stores it under a new key, and
+replaces the reference with the stored file. Files that the field's
+`extensions` or `maxSize` don't accept, or that are missing from the zip, are
+left out and listed in a notification. Entries of the zip that `data.json`
+doesn't refer to are never read. The form is dirty afterwards, and saving it
+stores the data with the new files.
+
+The zip carries what the clipboard carries: lists with their own `resource`
+are left out, and relations to records outside the data travel as their
+labels, `{ $label }`, which resolve against the options of the installation
+that the zip is uploaded into. The files need a `url` to be downloaded.
+
 ## Reference
 
 - [`form`](../../api/admin/schemas.md#form) options and

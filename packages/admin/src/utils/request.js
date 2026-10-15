@@ -27,11 +27,16 @@ export async function request(api, {
   timeout = api.timeout ?? null
 }) {
   const fetchOptions = getFetchOptions(api, url)
+  const isFormData = data instanceof FormData
   const response = await fetch(api.getApiUrl({ url, query }), {
     method: method.toUpperCase(),
-    ...(data && { body: JSON.stringify(data) }),
+    ...(data && { body: isFormData ? data : JSON.stringify(data) }),
     headers: {
-      ...fetchOptions.headers,
+      ...(
+        isFormData
+          ? omitContentType(fetchOptions.headers)
+          : fetchOptions.headers
+      ),
       ...headers
     },
     credentials: fetchOptions.credentials,
@@ -82,16 +87,20 @@ export async function fetchBlob(api, url) {
 
 export function getUploadOptions(api, url) {
   const { headers, credentials } = getFetchOptions(api, url)
-  // Leave out the JSON `Content-Type`, as `XMLHttpRequest` needs to set the
-  // boundary of the multipart form data itself:
   return {
-    headers: Object.fromEntries(
-      Object.entries(headers).filter(
-        ([name]) => name.toLowerCase() !== 'content-type'
-      )
-    ),
+    headers: omitContentType(headers),
     withCredentials: credentials === 'include'
   }
+}
+
+// Leave out the JSON `Content-Type` of form data, as the browser needs to set
+// the boundary of its multipart encoding itself:
+function omitContentType(headers) {
+  return Object.fromEntries(
+    Object.entries(headers).filter(
+      ([name]) => name.toLowerCase() !== 'content-type'
+    )
+  )
 }
 
 // Only requests to the API receive its headers and, with CORS, its credentials:

@@ -49,6 +49,7 @@ slot(name="prepend")
         :schema="schema"
         :hasData="hasData"
         :getData="getClipboardData"
+        :getUploadEntries="getClipboardUploadEntries"
         :createContext="createContext"
         @paste="pasteData"
       )
@@ -137,6 +138,7 @@ import {
 } from '../utils/schema/lookup.js'
 import { fromClipboard } from '../utils/fromClipboard.ts'
 import { toClipboard } from '../utils/toClipboard.ts'
+import { getUploadEntries } from '../utils/interchange.ts'
 import {
   accumulatedBasisKey,
   panelTabKey,
@@ -485,6 +487,14 @@ export default {
           props.dataPath,
           { rootData: context.rootItem, services }
         )
+      },
+
+      getClipboardUploadEntries(data) {
+        return getUploadEntries(props.dataSchema, data, {
+          dataPath: props.dataPath,
+          services,
+          rootData: context.rootItem
+        })
       }
     }
   }

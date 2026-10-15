@@ -15,6 +15,11 @@ version, see the upgrade guides in `docs/`.
 - **server:** Validation errors of `if` keywords, "must match "else" schema", are left out, as the `then` or `else` schema reports its own. The "must be null" and "must match exactly one schema in oneOf" errors of a `oneOf` with a `null` type aren't left out anymore, which only `nullable` references produced.
 - **server:** The validator runs Ajv with `strictSchema`, `strictNumbers` and `strictTuples`, where it ran with `strict: false`: a schema with an unknown keyword, e.g. `item` instead of `items`, or with a `default` that Ajv can't apply, e.g. at the root of a definition that references itself, throws where Ajv ignored it. Model schemas are compiled when the app sets up its models, so they throw on startup. Fix the schema, or opt out with `new Validator({ options: { strictSchema: false } })`.
 
+### New
+
+- **admin:** `clipboard: { interchange: true }` joins the Copy and Paste buttons into one group with a menu to download the data with its files as a zip, and to upload such a zip again, e.g. into another installation. Uploading stores the files under new keys through the upload routes of their fields, and then pastes the data, see [Download and Upload](docs/guide/admin/forms.md#download-and-upload). The Copy and Paste buttons are joined also without it. Requires the new peer dependency `fflate`, which is only loaded on the first download or upload.
+- **ui:** The items of `DitoMenuButton` take an `icon`, shown instead of their label, which becomes their title, and the icon set has `archive-download` and `archive-upload`.
+
 ### Fixes
 
 - **server:** `Model.count()` counts rows on SQLite and MySQL, where it returned 0, and so does the `count` action of controllers.

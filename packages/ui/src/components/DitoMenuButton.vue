@@ -40,21 +40,35 @@ DitoTrigger.dito-menu-button(
           role="menuitem"
           tabindex="-1"
           :aria-disabled="item.disabled ? 'true' : null"
-          :class="{ 'dito-menu-button__item--disabled': item.disabled }"
+          :title="item.icon ? item.label : null"
+          :class=`{
+            'dito-menu-button__item--icon': item.icon,
+            'dito-menu-button__item--disabled': item.disabled
+          }`
           @click="selectItem(item)"
-        ) {{ item.label }}
+        )
+          DitoIcon(
+            v-if="item.icon"
+            :name="item.icon"
+          )
+          template(
+            v-else
+          ) {{ item.label }}
 </template>
 
 <script>
 import DitoTrigger from './DitoTrigger.vue'
 import DitoButton from './DitoButton.vue'
+import DitoIcon from './DitoIcon.vue'
 
 // A button that opens a menu of `items`, each `{ value, label, disabled }`,
 // and emits `select` with the item that is chosen, by mouse or keyboard.
+// Items with an `icon` show it instead of their label, which becomes their
+// title.
 // Attributes, e.g. `class` or the `verb` and `text` of `DitoButton`, go to the
 // button, its content to the default slot.
 export default {
-  components: { DitoTrigger, DitoButton },
+  components: { DitoTrigger, DitoButton, DitoIcon },
   inheritAttrs: false,
   emits: ['select'],
 
@@ -210,6 +224,12 @@ $menu-button-padding: $menu-button-padding-ver 1em;
     color: inherit;
     background: $button-color;
     @include user-select(none);
+
+    &--icon {
+      // Show only the icon, in a square:
+      display: flex;
+      padding: $menu-button-padding-ver;
+    }
 
     &--disabled {
       color: $color-disabled;

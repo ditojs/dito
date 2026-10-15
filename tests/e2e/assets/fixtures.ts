@@ -92,9 +92,10 @@ export const test = base.extend<{ url: string }, { workerUrl: string }>({
         const url = await startAndWaitForAdmin(app)
 
         // Update storage config with the actual port. Storage._getUrl()
-        // requires an absolute base URL, and allowedImports uses the
-        // actual port for HTTP import tests (B12).
-        app.getStorage('test').url = `${url}/uploads`
+        // requires an absolute base URL, with a trailing slash to keep its
+        // path, and allowedImports uses the actual port for HTTP import tests
+        // (B12).
+        app.getStorage('test').url = `${url}/uploads/`
         allowedImports.push(`${url}/fixtures/**`)
 
         try {

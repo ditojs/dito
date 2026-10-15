@@ -6,13 +6,19 @@ const clipboardState = reactive({ data: null })
 // Counts copies and reads, to ignore reads overtaken by newer ones:
 let clipboardVersion = 0
 
-export function getClipboardData(schemaName, type) {
-  if (!clipboardState.data) {
+// Mark the data with `$schema`, and with `$type` if it isn't the data of a
+// form, e.g. 'list' or 'upload':
+export function createClipboardData(schemaName, data, type) {
+  return data ? { $schema: schemaName, $type: type, ...data } : null
+}
+
+// Files paste into all uploads, all other data only into schemas of the same
+// name and type:
+export function matchClipboardData(clipboardData, schemaName, type) {
+  if (!clipboardData) {
     return null
   }
-  const { $schema, $type, ...data } = clipboardState.data
-  // Files paste into all uploads, all other data only into schemas of the same
-  // name and type:
+  const { $schema, $type, ...data } = clipboardData
   const isMatch = (
     $type === type &&
     (type === 'upload' || $schema === schemaName)
@@ -20,16 +26,16 @@ export function getClipboardData(schemaName, type) {
   return isMatch ? data : null
 }
 
+export function getClipboardData(schemaName, type) {
+  return matchClipboardData(clipboardState.data, schemaName, type)
+}
+
 export function hasClipboardData(schemaName, type) {
   return !!getClipboardData(schemaName, type)
 }
 
-// Mark the data with `$schema`, and with `$type` if it isn't the data of a
-// form, e.g. 'list' or 'upload':
 export async function copyClipboardData(schemaName, data, type) {
-  const clipboardData = data
-    ? { $schema: schemaName, $type: type, ...data }
-    : null
+  const clipboardData = createClipboardData(schemaName, data, type)
   clipboardVersion++
   clipboardState.data = clipboardData
   try {

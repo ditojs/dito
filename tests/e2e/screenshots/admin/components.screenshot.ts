@@ -59,6 +59,18 @@ test.describe('component screenshots', () => {
     await expectScreenshot(page, 'list-clipboard.png')
   })
 
+  test('clipboard menu', async ({ page, url }) => {
+    await openProject(page, url, 'Extras')
+    const links = getLabel(page, 'Links')
+    await links
+      .getByRole('button', { name: 'Download or Upload Data' })
+      .click()
+    await expect(
+      visible(page.getByRole('menuitem', { name: 'Upload' }))
+    ).toBeVisible()
+    await expectScreenshot(page, 'clipboard-menu.png')
+  })
+
   test('list collapse all', async ({ page, url }) => {
     await openProject(page, url, 'Extras')
     const links = getLabel(page, 'Links')

@@ -2,6 +2,14 @@
 .dito-clipboard.dito-buttons.dito-buttons--round(
   v-if="clipboard"
 )
+  input(
+    v-if="interchange"
+    ref="input"
+    type="file"
+    accept=".zip"
+    hidden
+    @change="onSelectFile"
+  )
   DitoButton.dito-button--copy(
     title="Copy Data"
     :disabled="!hasData"
@@ -12,24 +20,40 @@
     :disabled="!isPasteEnabled"
     @click="onPaste"
   )
+  DitoMenuButton.dito-button--interchange(
+    v-if="interchange"
+    title="Download or Upload Data"
+    :items="interchangeItems"
+    placement="bottom-right"
+    :cover="false"
+    @select="onSelectInterchangeItem"
+  )
 </template>
 
 <script>
-import { computed, inject, onMounted } from 'vue'
+import { computed, onMounted, useTemplateRef } from 'vue'
 import { isObject, clone } from '@ditojs/utils'
-import { DitoButton } from '@ditojs/ui/src'
+import { DitoButton, DitoMenuButton } from '@ditojs/ui/src'
 import appState from '../appState.js'
 import { useDomEvents } from '../composables/useDomEvents.ts'
+import { useServices } from '../composables/useSchemaContext.ts'
 import {
+  createClipboardData,
+  matchClipboardData,
   getClipboardData,
   hasClipboardData,
   copyClipboardData,
   readClipboardData
 } from '../utils/clipboard.js'
-import { adminContextKey } from '../utils/keys.ts'
+import {
+  createInterchangeZip,
+  readInterchangeData,
+  uploadInterchangeFiles
+} from '../utils/interchange.ts'
+import { downloadBlob } from '../utils/services.ts'
 
 export default {
-  components: { DitoButton },
+  components: { DitoButton, DitoMenuButton },
   emits: ['paste'],
 
   props: {
@@ -40,14 +64,18 @@ export default {
     hasData: { type: Boolean, required: true },
     // A function, to only serialize the data when copying:
     getData: { type: Function, required: true },
+    // The upload fields in the data, for `interchange` to find their files:
+    getUploadEntries: { type: Function, required: true },
     // For the `copy()` and `paste()` callbacks of `clipboard`:
     createContext: { type: Function, required: true },
     disabled: { type: Boolean, default: false }
   },
 
   setup(props, { emit }) {
-    const adminContext = inject(adminContextKey)
+    const services = useServices()
+    const { adminContext } = services
     const { domOn } = useDomEvents()
+    const input = useTemplateRef('input')
 
     const updateClipboardData = () => {
       // Only Chrome reads the clipboard without asking for permission:
@@ -57,18 +85,61 @@ export default {
     }
 
     // Notifications log their error too:
-    const notifyClipboardError = (error, text = error.message) => {
-      adminContext.notify({
-        type: 'error',
-        error,
-        title: 'Clipboard Error',
-        text
-      })
+    const notifyError = (error, {
+      title = 'Clipboard Error',
+      text = error.message
+    } = {}) => {
+      adminContext.notify({ type: 'error', error, title, text })
     }
 
     const clipboardOptions = computed(() =>
       isObject(props.clipboard) ? props.clipboard : {}
     )
+
+    const getCopyData = async () => {
+      const { copy } = clipboardOptions.value
+      const data = await props.getData()
+      return (
+        data && (
+          copy
+            ? copy(props.createContext({ clipboardData: data }))
+            : clone(data)
+        )
+      )
+    }
+
+    const pasteData = data => {
+      const { paste } = clipboardOptions.value
+      const pastedData = paste
+        ? paste(props.createContext({ clipboardData: data }))
+        : data
+      if (pastedData) {
+        emit('paste', pastedData)
+      }
+    }
+
+    const downloadData = async () => {
+      try {
+        const { name } = props.schema
+        const clipboardData = createClipboardData(
+          name,
+          await getCopyData(),
+          props.type
+        )
+        const zip = await createInterchangeZip(
+          services,
+          clipboardData,
+          props.getUploadEntries(clipboardData)
+        )
+        downloadBlob(
+          services,
+          new Blob([zip], { type: 'application/zip' }),
+          `${name}.zip`
+        )
+      } catch (error) {
+        notifyError(error, { title: 'Download Error' })
+      }
+    }
 
     onMounted(() => {
       // Read it now, and again when it can change, on copy and window focus:
@@ -78,25 +149,36 @@ export default {
     })
 
     return {
+      interchange: computed(() => !!clipboardOptions.value.interchange),
+
       isPasteEnabled: computed(
         () => !props.disabled && hasClipboardData(props.schema.name, props.type)
       ),
 
+      interchangeItems: computed(() => [
+        {
+          value: 'download',
+          label: 'Download',
+          icon: 'archive-download',
+          disabled: !props.hasData
+        },
+        {
+          value: 'upload',
+          label: 'Upload',
+          icon: 'archive-upload',
+          disabled: props.disabled
+        }
+      ]),
+
       async onCopy() {
-        const { copy } = clipboardOptions.value
         try {
-          const data = await props.getData()
           await copyClipboardData(
             props.schema.name,
-            data && (
-              copy
-                ? copy(props.createContext({ clipboardData: data }))
-                : clone(data)
-            ),
+            await getCopyData(),
             props.type
           )
         } catch (error) {
-          notifyClipboardError(error)
+          notifyError(error)
         }
       },
 
@@ -105,27 +187,69 @@ export default {
           await readClipboardData()
         } catch (error) {
           if (error.name === 'SyntaxError') {
-            notifyClipboardError(error, [
-              'The data in the clipboard appears to be malformed:',
-              error.message
-            ])
+            notifyError(error, {
+              text: [
+                'The data in the clipboard appears to be malformed:',
+                error.message
+              ]
+            })
             return
           }
           // Fall back to the data copied inside the admin.
           console.error(error, error.name, error.message)
         }
-        const { paste } = clipboardOptions.value
         try {
           const data = getClipboardData(props.schema.name, props.type)
-          const pastedData = (
-            data &&
-            (paste ? paste(props.createContext({ clipboardData: data })) : data)
-          )
-          if (pastedData) {
-            emit('paste', pastedData)
+          if (data) {
+            pasteData(data)
           }
         } catch (error) {
-          notifyClipboardError(error)
+          notifyError(error)
+        }
+      },
+
+      onSelectInterchangeItem({ value }) {
+        if (value === 'download') {
+          downloadData()
+        } else {
+          input.value.click()
+        }
+      },
+
+      // Upload the files first, then paste the data like the clipboard's:
+      async onSelectFile() {
+        const [file] = input.value.files
+        // Let the same file be selected again:
+        input.value.value = ''
+        try {
+          const zip = new Uint8Array(await file.arrayBuffer())
+          const data = matchClipboardData(
+            await readInterchangeData(zip),
+            props.schema.name,
+            props.type
+          )
+          if (data) {
+            const rejectedNames = await uploadInterchangeFiles(
+              services,
+              zip,
+              props.getUploadEntries(data)
+            )
+            if (rejectedNames.length > 0) {
+              adminContext.notify({
+                type: 'warning',
+                text: `Not accepted when uploading: ${rejectedNames.join(', ')}`
+              })
+            }
+            pasteData(data)
+          } else {
+            adminContext.notify({
+              type: 'error',
+              title: 'Upload Error',
+              text: `The file doesn't contain data of '${props.schema.name}'.`
+            })
+          }
+        } catch (error) {
+          notifyError(error, { title: 'Upload Error' })
         }
       }
     }
@@ -138,6 +262,41 @@ export default {
 
 .dito-clipboard {
   display: flex;
+  // Join the buttons into one group:
+  gap: 0;
+
+  .dito-button {
+    // Round like a button, not a pill:
+    border-radius: 2 * $border-radius;
+
+    &--copy {
+      // The rounded corner takes up room, so balance the icon with more:
+      padding-left: $button-round-padding-hor + 0.25em;
+    }
+
+    &--copy,
+    &--paste:not(:last-child) {
+      border-top-right-radius: 0;
+      border-bottom-right-radius: 0;
+    }
+
+    &--paste,
+    &--interchange {
+      border-top-left-radius: 0;
+      border-bottom-left-radius: 0;
+
+      &:not(:focus) {
+        // Show only one border between the buttons:
+        border-left-color: transparent;
+      }
+    }
+
+    &--interchange:empty::before {
+      @extend %icon-chevron;
+
+      transform: rotate(90deg);
+    }
+  }
 
   .dito-schema & {
     // Push clipboard to the right in the flex layout, see:
@@ -146,10 +305,11 @@ export default {
   }
 
   .dito-header & {
-    margin-left: 0;
+    margin: 0 0 $tab-margin $tab-margin;
 
     .dito-button {
-      margin: 0 0 $tab-margin $tab-margin;
+      // Keep the buttons joined, which `DitoHeader` spaces apart:
+      margin: 0;
     }
   }
 }

@@ -192,6 +192,25 @@ describe('ClipboardConfig', () => {
       }
     })
   })
+
+  it('accepts interchange, also with copy/paste callbacks', () => {
+    assertType<FormSchema<Entry>>({
+      type: 'form',
+      clipboard: { interchange: true },
+      components: {}
+    })
+    assertType<FormSchema<Entry>>({
+      type: 'form',
+      clipboard: { interchange: true, copy: ({ item }) => item },
+      components: {}
+    })
+    assertType<FormSchema<Entry>>({
+      type: 'form',
+      // @ts-expect-error - interchange is a boolean
+      clipboard: { interchange: 'zip' },
+      components: {}
+    })
+  })
 })
 
 describe('CustomComponentProps and CustomComponentEmits', () => {

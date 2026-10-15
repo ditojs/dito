@@ -169,10 +169,11 @@ import { useSortable } from '../composables/useSortable.ts'
 import DitoDragHandle from '../components/DitoDragHandle.vue'
 import DitoClipboard from '../components/DitoClipboard.vue'
 import { DitoButton } from '@ditojs/ui/src'
-import { formatFileSize, parseFileSize } from '../utils/units.js'
+import { formatFileSize } from '../utils/units.js'
+import { getUploadLimits, isAcceptedFile } from '../utils/upload.ts'
 import { appendDataPath } from '../utils/data.js'
 import { getMultipleValue } from '../utils/schema/data.js'
-import { download, getResourceUrl, getVerbs } from '../utils/services.ts'
+import { downloadBlob, getResourceUrl, getVerbs } from '../utils/services.ts'
 import {
   fetchBlob,
   getUploadOptions,
@@ -327,10 +328,7 @@ const DitoTypeUpload = {
 
     const removeFile = file => replaceFile(file, null)
 
-    const maxSize = computed(() => {
-      const maxSize = getSchemaValue('maxSize', { type: [String, Number] })
-      return maxSize ? parseFileSize(maxSize) : undefined
-    })
+    const uploadLimits = computed(() => getUploadLimits(props.schema, context))
 
     const settleUpload = id => {
       settleUploadById.get(id)?.()
@@ -403,16 +401,14 @@ const DitoTypeUpload = {
         )
       ),
 
-      extensions: computed(() =>
-        getSchemaValue('extensions', { type: [Array, String, RegExp] })
-      ),
+      extensions: computed(() => uploadLimits.value.extensions),
 
       accept: computed(() => {
         const accept = getSchemaValue('accept', { type: Array })
         return isArray(accept) ? accept.join(',') : accept
       }),
 
-      maxSize,
+      maxSize: computed(() => uploadLimits.value.maxSize),
 
       draggable: computed(
         () => (
@@ -442,6 +438,14 @@ const DitoTypeUpload = {
         type: 'upload',
         hasData: getStoredFiles(value.value).length > 0,
         getData: () => ({ files: getStoredFiles(value.value) }),
+        getUploadEntries: data => [
+          {
+            schema: props.schema,
+            data,
+            name: 'files',
+            dataPath: props.dataPath
+          }
+        ],
         createContext,
         disabled: disabled.value || field.readonly.value
       })),
@@ -559,13 +563,7 @@ const DitoTypeUpload = {
             adminContext.api,
             downloadUrls.value[index]
           )
-          const url = URL.createObjectURL(blob)
-          try {
-            download(services, { filename: file.name, url })
-          } finally {
-            // Some browsers don't start the download synchronously:
-            setTimeout(() => URL.revokeObjectURL(url), 1000)
-          }
+          downloadBlob(services, blob, file.name)
         } catch (error) {
           adminContext.notify({
             type: 'error',
@@ -578,14 +576,9 @@ const DitoTypeUpload = {
 
       // Paste only the files that the upload would accept, and only once:
       pasteFiles({ files: pastedFiles }) {
-        // The extensions as `VueUpload` matches them:
-        const { iExtensions } = upload.value
-        const isAcceptedFile = file => (
-          (!iExtensions || iExtensions.test(file.name)) &&
-          !(maxSize.value && file.size > maxSize.value)
-        )
-        const acceptedFiles = pastedFiles.filter(isAcceptedFile)
-        const rejectedFiles = pastedFiles.filter(file => !isAcceptedFile(file))
+        const isAccepted = file => isAcceptedFile(file, uploadLimits.value)
+        const acceptedFiles = pastedFiles.filter(isAccepted)
+        const rejectedFiles = pastedFiles.filter(file => !isAccepted(file))
         const keys = new Set(files.value.map(file => file.key))
         const newFiles = acceptedFiles
           .slice(0, multiple.value ? Infinity : 1)
