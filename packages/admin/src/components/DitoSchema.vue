@@ -30,7 +30,7 @@ slot(name="prepend")
         :info="info"
         :collapsible="collapsible"
         :collapsed="!opened"
-        @toggle="onToggle"
+        @toggle="collapsed => (opened = !collapsed)"
       )
       Transition(
         v-if="tabs"
@@ -227,6 +227,12 @@ export default {
     const scrollPositions = {}
 
     const opened = useStore(props).getStoreRef('opened', () => !props.collapsed)
+    // Fire the toggle events of the form, and of the component that holds it,
+    // also when lists with `collapsible: 'all'` toggle it through its store:
+    watch(opened, opened => {
+      emitEvent('toggle', { context: { collapsed: !opened } })
+      emit('toggle', !opened)
+    })
 
     const tabs = computed(() => getNamedSchemas(props.schema.tabs))
     const hasTabs = computed(() => !!tabs.value)
@@ -441,14 +447,6 @@ export default {
 
       shouldRenderTab(tab) {
         return isTabSelected(tab) || !!mountedTabs[tab]
-      },
-
-      // The events of the form, and of the component that holds it, e.g. a
-      // section:
-      onToggle(collapsed) {
-        emitEvent('toggle', { context: { collapsed } })
-        emit('toggle', collapsed)
-        opened.value = !collapsed
       },
 
       async pasteData(clipboardData) {

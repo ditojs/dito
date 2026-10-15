@@ -2020,12 +2020,19 @@ export type ColumnSchema<$Item = any, $Value = any> = {
 export type ResolvableForm<$Item = any> = Resolvable<FormSchema<$Item>>
 
 export interface ListSchema<$Item = { [key: string]: any }>
-  extends SourceSettings<$Item>,
+  extends Omit<SourceSettings<$Item>, 'collapsible'>,
     ComponentSchemaBase<$Item> {
   /**
    * The type of the component.
    */
   type: 'list'
+  /**
+   * Whether the inlined forms are collapsible. `'all'` also adds a double
+   * chevron before the label that expands or collapses all loaded items at
+   * once.
+   * @defaultValue `false`
+   */
+  collapsible?: SchemaValue<$Item, {}, boolean | 'all'>
 
   /**
    * Filter definitions that render a filter panel above the

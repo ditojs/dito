@@ -88,6 +88,12 @@ export default DitoTypeSection
 @import '../styles/_imports';
 
 .dito-section {
+  // Inset the chevrons of collapsible sections like the ones of lists, in line
+  // with the content of the section:
+  &__schema > .dito-schema-header > button.dito-label {
+    margin-left: $form-spacing + $border-width;
+  }
+
   &--labelled > &__schema {
     // Display the header with the label above the bordered content.
     > .dito-schema-content {

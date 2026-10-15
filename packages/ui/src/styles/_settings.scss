@@ -51,6 +51,10 @@ $border-style: $border-width solid $border-color;
 // Shadows
 $shadow-window: 0 2px 6px 0 $color-shadow;
 $shadow-focus: 0 0 0 $border-width $color-active; // Use shadow as 1px border.
+// The room around chevrons and their labels for their focus rings, and the
+// height of the rings, the line and the ring:
+$focus-ring-padding: 4px;
+$focus-ring-height: calc(1lh + 2 * #{$border-width});
 
 // Input
 $input-padding-ver: 3px;

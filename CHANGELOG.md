@@ -10,6 +10,7 @@ version, see the upgrade guides in `docs/`.
 - **server:** Two actions of the same type with the same identifier in hook keys throw when the controller is set up, e.g. `'get :token'` and `'get token'`: change the route of one of them.
 - **server:** `@ditojs/build`, `vite` and `@vitejs/plugin-vue` are optional peer dependencies, loaded only to build the admin or serve it in development: install them as dev dependencies of the app. `app.defineAdminViteConfig()` and `defineViteConfig()` of `AdminController` return promises, which Vite awaits as the default export of `admin.vite.config.js`.
 - **admin:** Labels, the results of `itemLabel()`, `info` and the values of `label` components are text unless they're given as `{ html }`: strings show as they are, e.g. `&` and `<b>`, where labels and the strings returned by `itemLabel()` were HTML. Labels and callbacks that return HTML return `{ html }` instead. Labels show as text in tabs, the menu, the trail, column headers, buttons and accessible names, also for `{ html }`. `context.formLabel` is the text of the form's label, and `context.itemLabel` the text of the item's label, which was HTML: notifications that interpolate it pass it as `text`. `context.itemLabelText` is removed, use `context.itemLabel`.
+- **admin:** `onToggle()` of collapsible sections and inlined forms also fires when the admin expands them to show a field, e.g. one with a validation error.
 - **admin:** `clipboard` on lists copies and pastes the list as a whole, and doesn't add copy and paste buttons to the inlined form of `components` anymore: give the items a clipboard through `form: { components, clipboard }`, or a form with its own `clipboard`.
 
 ### New
@@ -17,10 +18,12 @@ version, see the upgrade guides in `docs/`.
 - **server:** Hooks identify custom actions by their method and path, with hyphenated parameter names and without wildcards, e.g. `'before:member:get-tech-doc-format'` for `'get tech-doc-:format'`. `ctx.action.identifier` holds the part after `before:` or `after:`, e.g. `'member:get-tech-doc-format'`.
 - **server:** `before` and `after` options of actions, hooks of the action only, which run after the controller's hooks.
 - **admin:** `{ html }` on `label`, the results of `itemLabel()` and `info`, which renders its HTML, and `TextOrHtml` and `SchemaLabel` types for them. Filter placeholders use the text of `{ text }` and `{ html }` labels.
-- **admin:** `clipboard` on upload fields, which copies their files and pastes them into other upload fields, adding the files that aren't there yet.
+- **admin:** `clipboard` on upload fields, with copy and paste buttons next to the upload button, which copies their files and pastes them into other upload fields, adding the files that aren't there yet.
 - **admin:** `validate()` on all types, which validates values that aren't empty with a callback, together with the other rules: it receives the context with the value after `formatValue()`, and returns `false` to fail with "is invalid", or a message to fail with.
-- **admin:** `clipboard` on lists, with copy and paste buttons above the items: copying copies the loaded items, like forms copy theirs, as `{ items }`, and pasting appends them to `creatable` lists of the same name, each created with the form of its `type`. Items without a creatable form are left out. Lists with their own `resource` don't support it and warn.
+- **admin:** `clipboard` on lists, with copy and paste buttons in the row of the label, or in the row of the scopes and pagination without a label: copying copies the loaded items, like forms copy theirs, as `{ items }`, and pasting appends them to `creatable` lists of the same name, each created with the form of its `type`. Items without a creatable form are left out. Lists with their own `resource` don't support it and warn.
+- **admin:** `collapsible: 'all'` on lists, which adds a double chevron before the label that expands or collapses all loaded items at once, or at the start of the row of the scopes and pagination without a label. The items fire their `toggle` events, as when clicked.
 - **admin:** Buttons in the header collapse the menu and the sidebar, which the browser remembers. On small screens, they hide and open as overlays: the sidebar below 1200px, the menu below 800px.
+- **ui:** `.dito-chevron` of sections, inlined forms and tree items is a stroke icon like the others instead of a triangle, and `.dito-chevron--double` shows two chevrons. The focus rings of collapsible labels and tree items enclose only their chevron and label.
 
 ### Fixes
 

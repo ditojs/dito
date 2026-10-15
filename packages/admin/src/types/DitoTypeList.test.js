@@ -273,6 +273,137 @@ describe('DitoTypeList', () => {
       expect(getItemNames(findField('ingredients'))).toEqual(['Flour'])
     })
 
+    describe(`collapsible: 'all'`, () => {
+      const getToggleAll = field => field.find('.dito-chevron--double')
+
+      it('expands and collapses all items, which fire their events', async () => {
+        const onToggle = vi.fn()
+        const { findField, settle } = await mountSchema({
+          schema: createRecipeSchema({
+            collapsible: 'all',
+            form: { ...ingredientForm, onToggle }
+          }),
+          data: {
+            ingredients: [
+              { name: 'Flour' },
+              { name: 'Salt' },
+              { name: 'Yeast' }
+            ]
+          }
+        })
+        const field = findField('ingredients')
+        expect(getToggleAll(field).attributes('aria-label')).toBe(
+          'Collapse All'
+        )
+        await getToggleAll(field).trigger('click')
+        await settle()
+        expect(getItemNames(field)).toEqual([])
+        expect(getToggleAll(field).attributes('aria-label')).toBe('Expand All')
+        expect(getToggleAll(field).attributes('title')).toBe('Expand All')
+        expect(getToggleAll(field).attributes('aria-expanded')).toBe('false')
+        expect(
+          onToggle.mock.calls.map(([{ item, collapsed }]) => [
+            item.name,
+            collapsed
+          ])
+        ).toEqual([
+          ['Flour', true],
+          ['Salt', true],
+          ['Yeast', true]
+        ])
+        // Expanding one item still leaves the others to expand:
+        await field.findAll('.dito-label')[1].trigger('click')
+        await settle()
+        expect(getToggleAll(field).attributes('aria-label')).toBe('Expand All')
+        onToggle.mockClear()
+        await getToggleAll(field).trigger('click')
+        await settle()
+        expect(getItemNames(field)).toEqual(['Flour', 'Salt', 'Yeast'])
+        expect(getToggleAll(field).attributes('aria-label')).toBe(
+          'Collapse All'
+        )
+        expect(onToggle.mock.calls.map(([{ item }]) => item.name)).toEqual([
+          'Flour',
+          'Yeast'
+        ])
+      })
+
+      it('starts with the items collapsed by `collapsed`', async () => {
+        const { findField, settle } = await mountSchema({
+          schema: createRecipeSchema({ collapsible: 'all', collapsed: true }),
+          data: { ingredients: [{ name: 'Flour' }, { name: 'Salt' }] }
+        })
+        const field = findField('ingredients')
+        expect(getItemNames(field)).toEqual([])
+        // `'all'` makes the items collapsible, as `true` does:
+        await field.findAll('.dito-label')[0].trigger('click')
+        await settle()
+        expect(getItemNames(field)).toEqual(['Flour'])
+        expect(getToggleAll(field).attributes('aria-label')).toBe('Expand All')
+        await getToggleAll(field).trigger('click')
+        await settle()
+        expect(getItemNames(field)).toEqual(['Flour', 'Salt'])
+      })
+
+      it('shows no toggle without items, or with `collapsible: true`', async () => {
+        const { findField } = await mountSchema({
+          schema: {
+            components: {
+              ...createRecipeSchema({ collapsible: 'all' }).components,
+              steps: {
+                type: 'list',
+                inlined: true,
+                collapsible: true,
+                form: ingredientForm
+              }
+            }
+          },
+          data: { ingredients: [], steps: [{ name: 'Mix' }] }
+        })
+        expect(getToggleAll(findField('ingredients')).exists()).toBe(false)
+        expect(getToggleAll(findField('steps')).exists()).toBe(false)
+      })
+
+      const schema = createRecipeSchema({
+        label: 'Ingredients',
+        collapsible: 'all',
+        clipboard: true
+      })
+      const data = { ingredients: [{ name: 'Flour' }] }
+
+      it('shows the toggle after the label, the clipboard at its end', async () => {
+        const { findField, findContainer } = await mountSchema({ schema, data })
+        const label = findContainer('ingredients').find(':scope > .dito-label')
+        const [start, end] = label.findAll(':scope > .dito-label__buttons')
+        expect(start.classes()).toContain('dito-label__buttons--start')
+        expect(getToggleAll(start).exists()).toBe(true)
+        expect(end.find('.dito-clipboard').exists()).toBe(true)
+        // The header stays empty, and hidden:
+        expect(
+          findField('ingredients').findAll('.dito-list__header > *')
+        ).toHaveLength(0)
+      })
+
+      it('shows the toggle and clipboard in the header without a label', async () => {
+        const { findField, findContainer } = await mountSchema({
+          schema: {
+            components: {
+              ingredients: { ...schema.components.ingredients, label: false }
+            }
+          },
+          data
+        })
+        expect(
+          findContainer('ingredients').find(':scope > .dito-label').exists()
+        ).toBe(false)
+        const [start, end] = findField('ingredients').findAll(
+          '.dito-list__header > .dito-label-buttons'
+        )
+        expect(getToggleAll(start).exists()).toBe(true)
+        expect(end.find('.dito-clipboard').exists()).toBe(true)
+      })
+    })
+
     it('keeps the state of each item when inserting items', async () => {
       const { wrapper, findField, getComponent, settle } = await mountSchema({
         schema: createRecipeSchema({ collapsible: true, collapsed: true }),

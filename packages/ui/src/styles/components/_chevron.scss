@@ -2,14 +2,26 @@
   position: relative;
   width: $chevron-indent;
   flex: none;
-  color: $color-grey;
+  color: $color-dark;
 
   &::before {
-    content: '\25b6';
-    position: absolute;
-    left: 0;
-    color: inherit;
+    @extend %icon-chevron;
+
+    right: auto;
     transition: transform 0.1s ease;
+  }
+
+  &--double {
+    // Only as wide as the icon, centered in the padding of its button and kept
+    // apart from the text like the focus rings of labels:
+    width: 1em;
+    margin-right: $focus-ring-padding;
+
+    &::before {
+      @extend %icon-chevrons;
+
+      right: 0;
+    }
   }
 
   &--open::before {
@@ -19,5 +31,26 @@
   &::after {
     // For the height to align well with text:
     content: '\200b'; // zero-width space;
+  }
+
+  @at-root button#{&} {
+    box-sizing: content-box;
+    border: 0;
+    // Padded and high enough for the focus ring, like labels:
+    height: $focus-ring-height;
+    padding: 0 $focus-ring-padding;
+    margin-left: -$focus-ring-padding;
+    background: none;
+    font: inherit;
+    border-radius: $border-radius;
+    cursor: pointer;
+
+    &:hover {
+      color: $color-darker;
+    }
+
+    &:focus-visible {
+      @include focus-ring($inset: true);
+    }
   }
 }

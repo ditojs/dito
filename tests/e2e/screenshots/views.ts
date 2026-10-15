@@ -271,6 +271,7 @@ export const projects = createWidgetView<Project>(
               creatable: true,
               deletable: true,
               draggable: true,
+              collapsible: 'all',
               clipboard: true,
               forms: {
                 link: {
@@ -295,6 +296,26 @@ export const projects = createWidgetView<Project>(
                   components: {
                     linksHint: { type: 'label', label: 'Links open in tabs' }
                   }
+                }
+              }
+            },
+            // A single upload and a list without labels:
+            attachment: {
+              type: 'upload',
+              label: false,
+              clipboard: true
+            },
+            references: {
+              type: 'list',
+              label: false,
+              inlined: true,
+              collapsible: 'all',
+              clipboard: true,
+              form: {
+                type: 'form',
+                label: 'Reference',
+                components: {
+                  url: { type: 'url', label: 'Reference URL' }
                 }
               }
             }

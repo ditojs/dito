@@ -52,4 +52,26 @@ test.describe('layout', () => {
     await expect(form.getField('Notes')).toHaveValue('Stored notes')
     await expect(form.getField('Color')).toHaveValue('blue')
   })
+
+  test('toggles sections on a click after their label', async ({
+    page,
+    url
+  }) => {
+    await Widget.query().insert({ name: 'Widget A', settings: {} })
+    const list = new DitoListView(page, url, 'Widget')
+    const form = new DitoForm(page)
+    await list.navigate('/widgets')
+    await list.list.edit('Widget A')
+    await form.selectTab('Details')
+    const label = page.getByRole('button', { name: 'Settings', exact: true })
+    const box = (await label.boundingBox())!
+    const text = (await label.getByText('Settings').boundingBox())!
+    // Click the empty space at the end of the label, well after its text:
+    const x = box.width - 2
+    expect(box.x + x).toBeGreaterThan(text.x + text.width + 100)
+    await label.click({ position: { x, y: box.height / 2 } })
+    await expect(form.getField('Color')).toBeHidden()
+    await label.click({ position: { x, y: box.height / 2 } })
+    await expect(form.getField('Color')).toBeVisible()
+  })
 })

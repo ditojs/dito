@@ -45,7 +45,14 @@ const project: Partial<Project> = {
   links: [
     { type: 'link', url: 'https://example.com/docs' },
     { type: 'note', text: 'Ask Ada about the fonts' }
-  ]
+  ],
+  attachment: {
+    key: 'c.pdf',
+    name: 'budget.pdf',
+    type: 'application/pdf',
+    size: 65536
+  },
+  references: [{ url: 'https://example.com/brand' }]
 }
 
 // Inserts the edited project, with `overrides` applied, and two more projects

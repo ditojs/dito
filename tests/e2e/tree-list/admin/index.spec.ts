@@ -51,6 +51,20 @@ test.describe('tree list', () => {
     await expect(getTreeLabels(page)).toHaveText(['Fiction', 'Dune'])
   })
 
+  test('opens items on a click after their label', async ({ page, url }) => {
+    await openLibrary(page, url, [
+      { name: 'Fiction', order: 0, books: [{ name: 'Dune', order: 0 }] }
+    ])
+    const branch = page.getByRole('button', { name: 'Fiction' })
+    const box = (await branch.boundingBox())!
+    const text = (await branch.locator('.dito-tree-label').boundingBox())!
+    // Click the empty space of the row, well after the label:
+    const x = box.width - 2
+    expect(box.x + x).toBeGreaterThan(text.x + text.width + 100)
+    await branch.click({ position: { x, y: box.height / 2 } })
+    await expect(getTreeLabels(page)).toHaveText(['Fiction', 'Dune'])
+  })
+
   test('stores items edited in their forms', async ({ page, url }) => {
     const library = await openLibrary(page, url, [
       { name: 'Fiction', order: 0, books: [] }
