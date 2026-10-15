@@ -1591,6 +1591,11 @@ export interface UploadSchema<$Item = any> extends ComponentSchemaBase<$Item> {
    * URL or function returning URL for file downloads.
    */
   downloadUrl?: SchemaValue<$Item, {}, string>
+  /**
+   * Enables copy/paste for the field's files, between all upload fields. The
+   * data is `{ files }`.
+   */
+  clipboard?: ClipboardConfig
 }
 
 export interface MultiselectSchema<$Item = any, $Option = any>

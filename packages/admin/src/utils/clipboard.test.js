@@ -35,6 +35,16 @@ describe('clipboard', () => {
       expect(hasClipboardData('author')).toBe(false)
     })
 
+    it('provides typed data to all schemas of the same type', async () => {
+      await copyClipboardData('cover', { files: [] }, 'upload')
+      expect(getClipboardData('cover', 'upload')).toEqual({ files: [] })
+      expect(getClipboardData('scan', 'upload')).toEqual({ files: [] })
+      expect(getClipboardData('cover')).toBe(null)
+      expect(
+        JSON.parse(navigator.clipboard.writeText.mock.lastCall[0])
+      ).toEqual({ $schema: 'cover', $type: 'upload', files: [] })
+    })
+
     it('clears the data when copying `null`', async () => {
       await copyClipboardData('book', { title: 'Emma' })
       await copyClipboardData('book', null)

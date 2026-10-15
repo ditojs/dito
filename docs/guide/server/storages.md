@@ -253,6 +253,10 @@ covers: {
 `file://` URLs import local files, e.g. `'file:///data/covers/**'`.
 Importing needs the asset model.
 
+Files of the same app that are stored in another storage than the one of their
+field, e.g. pasted from another upload field in the admin, are copied to the
+field's storage under a new key.
+
 ## Custom storages
 
 Storages for other backends extend `Storage` and register themselves for a

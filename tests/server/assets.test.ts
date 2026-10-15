@@ -475,3 +475,81 @@ describe('Asset handling', () => {
     })
   })
 })
+
+describe('asset handling across storages', () => {
+  class Book extends Model {
+    declare id: number
+    declare cover: AssetFile | null
+    declare scan: AssetFile | null
+
+    static override properties: ModelProperties = {
+      cover: { type: 'object', nullable: true },
+      scan: { type: 'object', nullable: true }
+    }
+
+    static override assets = {
+      cover: { storage: 'covers' },
+      scan: { storage: 'scans' }
+    }
+  }
+  class Asset extends AssetMixin(Model) {}
+  const app = createTestApp({ models: { Book, Asset } })
+  const covers = new MemoryStorage(app, 'covers', {} as StorageConfig)
+  const scans = new MemoryStorage(app, 'scans', {} as StorageConfig)
+  app.addStorage(covers)
+  app.addStorage(scans)
+
+  beforeAll(async () => {
+    await createTestDatabase(app)
+  })
+
+  afterAll(async () => {
+    await destroyTestApp(app)
+  })
+
+  // Returns the cover as the admin sends it back, signed:
+  async function createCover(data: string) {
+    const book = await Book.query().insertAndFetch({
+      cover: AssetFile.create({ name: 'cover.txt', data })
+    })
+    return JSON.parse(JSON.stringify(book)).cover as AssetFile
+  }
+
+  it('copies files of other storages under a new key', async () => {
+    const cover = await createCover('Emma')
+    const info = vi.spyOn(app.logger, 'info').mockImplementation(() => {})
+    try {
+      // The copy's properties are merged into the passed file:
+      const coverKey = cover.key
+      const book = await Book.query().insertAndFetch({ scan: cover })
+      const { key } = book.scan!
+      expect(key).not.toBe(coverKey)
+      expect(scans.dataByKey.get(key)?.toString()).toBe('Emma')
+      expect(await Asset.query().findOne('key', key)).toMatchObject({
+        count: 1,
+        storage: 'scans'
+      })
+      expect(await Asset.query().findOne('key', coverKey)).toMatchObject({
+        count: 1,
+        storage: 'covers'
+      })
+      expect(info).toHaveBeenCalledWith(
+        expect.stringContaining('is from storage')
+      )
+    } finally {
+      info.mockRestore()
+    }
+  })
+
+  it('reuses files of the same storage', async () => {
+    const cover = await createCover('Persuasion')
+    const book = await Book.query().insertAndFetch({ cover })
+    expect(book.cover!.key).toBe(cover.key)
+    expect(covers.dataByKey.get(cover.key)?.toString()).toBe('Persuasion')
+    expect(covers.dataByKey.size).toBe(2)
+    expect(await Asset.query().findOne('key', cover.key)).toMatchObject({
+      count: 2,
+      storage: 'covers'
+    })
+  })
+})

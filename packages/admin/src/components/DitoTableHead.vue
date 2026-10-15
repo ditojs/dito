@@ -99,7 +99,7 @@ export default {
       text-align: left;
       white-space: nowrap;
 
-      .dito-button {
+      > .dito-button {
         // Convention: Nested spans handle padding, see below
         display: block; // Override default inline-flex positioning.
         padding: 0;

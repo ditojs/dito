@@ -35,11 +35,14 @@ export default {
   props: {
     clipboard: { type: [Boolean, Object], required: true },
     schema: { type: Object, required: true },
+    // The type of data other than the data of forms, e.g. 'upload':
+    type: { type: String, default: undefined },
     hasData: { type: Boolean, required: true },
     // A function, to only serialize the data when copying:
     getData: { type: Function, required: true },
     // For the `copy()` and `paste()` callbacks of `clipboard`:
-    createContext: { type: Function, required: true }
+    createContext: { type: Function, required: true },
+    disabled: { type: Boolean, default: false }
   },
 
   setup(props, { emit }) {
@@ -75,7 +78,9 @@ export default {
     })
 
     return {
-      isPasteEnabled: computed(() => hasClipboardData(props.schema.name)),
+      isPasteEnabled: computed(
+        () => !props.disabled && hasClipboardData(props.schema.name, props.type)
+      ),
 
       async onCopy() {
         const { copy } = clipboardOptions.value
@@ -87,7 +92,8 @@ export default {
               copy
                 ? copy(props.createContext({ clipboardData: data }))
                 : clone(data)
-            )
+            ),
+            props.type
           )
         } catch (error) {
           notifyClipboardError(error)
@@ -110,7 +116,7 @@ export default {
         }
         const { paste } = clipboardOptions.value
         try {
-          const data = getClipboardData(props.schema.name)
+          const data = getClipboardData(props.schema.name, props.type)
           const pastedData = (
             data &&
             (paste ? paste(props.createContext({ clipboardData: data })) : data)

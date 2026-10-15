@@ -180,6 +180,16 @@ describe('UploadSchema', () => {
     })
   })
 
+  it('accepts clipboard', () => {
+    assertType<UploadSchema<Entry>>({ type: 'upload', clipboard: true })
+    assertType<UploadSchema<Entry>>({
+      type: 'upload',
+      clipboard: {
+        copy: ({ clipboardItem }) => clipboardItem
+      }
+    })
+  })
+
   it('accepts the sizes of thumbnails', () => {
     assertType<UploadSchema<Entry>>({ type: 'upload', thumbnails: 'small' })
     // @ts-expect-error - thumbnails come in three sizes

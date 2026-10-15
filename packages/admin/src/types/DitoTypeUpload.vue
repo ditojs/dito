@@ -34,6 +34,17 @@
           span Status
         th(scope="col")
           span
+            DitoClipboard(
+              v-if="schema.clipboard"
+              :clipboard="schema.clipboard"
+              :schema="schema"
+              type="upload"
+              :hasData="hasStoredFiles"
+              :getData="getClipboardData"
+              :createContext="createContext"
+              :disabled="disabled || readonly"
+              @paste="pasteFiles"
+            )
     DitoDraggable(
       :modelValue="files"
       as="tbody"
@@ -153,6 +164,7 @@ import { defineType } from '../utils/schema/types.ts'
 import { fieldProps, useField } from '../composables/useField.ts'
 import { useSortable } from '../composables/useSortable.ts'
 import DitoDragHandle from '../components/DitoDragHandle.vue'
+import DitoClipboard from '../components/DitoClipboard.vue'
 import { DitoButton } from '@ditojs/ui/src'
 import { formatFileSize, parseFileSize } from '../utils/units.js'
 import { appendDataPath } from '../utils/data.js'
@@ -164,13 +176,13 @@ import {
   resolveDownloadUrl
 } from '../utils/request.js'
 import { confirmAndRemove } from '../utils/dialogs.js'
-import { isArray, asArray, escapeHtml } from '@ditojs/utils'
+import { isArray, asArray, clone, escapeHtml } from '@ditojs/utils'
 import VueUpload from 'vue-upload-component'
 import { fileDropTargetsKey } from '../utils/keys.ts'
 
 // @vue/component
 const DitoTypeUpload = {
-  components: { VueUpload, DitoButton, DitoDragHandle },
+  components: { VueUpload, DitoButton, DitoDragHandle, DitoClipboard },
   props: fieldProps,
 
   setup(props) {
@@ -312,6 +324,11 @@ const DitoTypeUpload = {
 
     const removeFile = file => replaceFile(file, null)
 
+    const maxSize = computed(() => {
+      const maxSize = getSchemaValue('maxSize', { type: [String, Number] })
+      return maxSize ? parseFileSize(maxSize) : undefined
+    })
+
     const settleUpload = id => {
       settleUploadById.get(id)?.()
       settleUploadById.delete(id)
@@ -392,12 +409,7 @@ const DitoTypeUpload = {
         return isArray(accept) ? accept.join(',') : accept
       }),
 
-      maxSize: computed(() => {
-        const maxSize = getSchemaValue('maxSize', {
-          type: [String, Number]
-        })
-        return maxSize ? parseFileSize(maxSize) : undefined
-      }),
+      maxSize,
 
       draggable: computed(
         () => (
@@ -419,6 +431,8 @@ const DitoTypeUpload = {
       }),
 
       hasFiles: computed(() => files.value.length > 0),
+
+      hasStoredFiles: computed(() => getStoredFiles(value.value).length > 0),
 
       isUploadActive: computed(() => hasUploads.value && upload.value.active),
 
@@ -550,6 +564,40 @@ const DitoTypeUpload = {
         }
       },
 
+      getClipboardData() {
+        return { files: getStoredFiles(value.value) }
+      },
+
+      // Paste only the files that the upload would accept, and only once:
+      pasteFiles({ files: pastedFiles }) {
+        // The extensions as `VueUpload` matches them:
+        const { iExtensions } = upload.value
+        const isAcceptedFile = file => (
+          (!iExtensions || iExtensions.test(file.name)) &&
+          !(maxSize.value && file.size > maxSize.value)
+        )
+        const acceptedFiles = pastedFiles.filter(isAcceptedFile)
+        const rejectedFiles = pastedFiles.filter(file => !isAcceptedFile(file))
+        const keys = new Set(files.value.map(file => file.key))
+        const newFiles = acceptedFiles
+          .slice(0, multiple.value ? Infinity : 1)
+          .filter(file => !keys.has(file.key))
+        for (const file of newFiles) {
+          addFile(clone(file))
+        }
+        if (newFiles.length > 0) {
+          onChange()
+        }
+        if (rejectedFiles.length > 0) {
+          adminContext.notify({
+            type: 'warning',
+            text: `Not accepted when pasting: ${
+              rejectedFiles.map(file => file.name).join(', ')
+            }`
+          })
+        }
+      },
+
       onClickUpload(event) {
         upload.value.$el
           .querySelector('input')
@@ -564,10 +612,7 @@ defineType({
   component: DitoTypeUpload,
 
   serializeValue(context) {
-    // Filter out added files that weren't uploaded:
-    const files = asFiles(context.value)
-      .map(({ upload, ...file }) => (!upload || upload.success ? file : null))
-      .filter(file => file)
+    const files = getStoredFiles(context.value)
     return getMultipleValue(context.schema, context) ? files : files[0] || null
   }
 })
@@ -576,6 +621,13 @@ export default DitoTypeUpload
 
 function asFiles(value) {
   return value ? asArray(value) : []
+}
+
+// Filter out added files that weren't uploaded:
+function getStoredFiles(value) {
+  return asFiles(value)
+    .map(({ upload, ...file }) => (!upload || upload.success ? file : null))
+    .filter(file => file)
 }
 </script>
 
@@ -601,6 +653,13 @@ function asFiles(value) {
     .dito-table__buttons {
       vertical-align: middle;
     }
+  }
+
+  .dito-table-head .dito-clipboard {
+    // Fit the round buttons into the line of the header:
+    height: $line-height * $font-size;
+    align-items: center;
+    font-size: $font-size-small;
   }
 
   &__size,

@@ -249,7 +249,8 @@ export const projects = createWidgetView<Project>(
               multiple: true,
               draggable: true,
               deletable: true,
-              extensions: 'png,pdf'
+              extensions: 'png,pdf',
+              clipboard: true
             },
             links: {
               type: 'list',
