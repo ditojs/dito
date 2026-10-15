@@ -59,22 +59,24 @@ export class UsersController extends ModelController {
             this.getContextWithMemberId(ctx, ctx.state.user.$id())
           )
         : null
-    },
-
-    async 'patch self'(ctx) {
-      // Users can only patch themselves where they can patch their member:
-      if (this.member.patch && this.isAuthenticated(ctx)) {
-        ctx = this.getContextWithMemberId(ctx, ctx.state.user.$id())
-        await this.controller.authorizeMember(ctx, 'patch')
-        return this.member.patch.call(this, ctx)
-      } else {
-        throw new AuthorizationError()
-      }
     }
   }
 
   member = {
     authorize: ['$self']
+  }
+
+  // @override
+  getMemberId(ctx) {
+    // `self` stands for the logged-in user in member routes, e.g. in
+    // `PATCH /users/self`:
+    if (ctx.params[this.idParam] !== 'self') {
+      return super.getMemberId(ctx)
+    } else if (this.isAuthenticated(ctx)) {
+      return ctx.state.user.$id()
+    } else {
+      throw new AuthorizationError()
+    }
   }
 
   isAuthenticated(ctx) {

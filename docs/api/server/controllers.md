@@ -814,7 +814,7 @@ Extends [`ModelController`](#modelcontroller) for models with
 [`UserMixin`](./model.md#usermixin), with these collection actions. They are
 inherited actions, see [`allow`](#allow): a subclass that sets
 `collection.allow` has to list them too, e.g.
-`allow: ['get', 'post login', 'post logout', 'get session', 'get self', 'patch self']`.
+`allow: ['get', 'post login', 'post logout', 'get session', 'get self']`.
 
 | Action               | Response |
 | -------------------- | ------------------------------------------------------- |
@@ -822,15 +822,13 @@ inherited actions, see [`allow`](#allow): a subclass that sets
 | `'post logout'`      | `{ success, authenticated }` |
 | `'get session'`      | `{ authenticated, user }` |
 | `'get self'`         | The authenticated user through `member.get`, or `null`. |
-| `'patch self'`       | Patches the authenticated user through `member.patch` and returns it. Only where `member.patch` is allowed and authorizes the user, otherwise and without a login it responds with 401. |
 
 The controller's [`authorize`](#authorize) doesn't apply to `login`, `logout`
-and `session`, which authenticate users; `self` follows it. As `patch self`
-goes through `member.patch`, an override of `member.patch` that restricts the
-fields of the patch, e.g. drops `roles` for users without a role, applies to
-both. Its member actions
+and `session`, which authenticate users; `self` follows it. Its member actions
 default to `authorize: ['$self']`, and are routed when listed in `allow` like
-on other model controllers.
+on other model controllers. In member routes, `self` stands for the
+authenticated user, see [`getMemberId()`](#getmemberid-1), e.g.
+`PATCH /users/self` runs `member.patch` on them.
 
 ```js
 import { UsersController } from '@ditojs/server'
@@ -848,6 +846,19 @@ const isAuthenticated = controller.isAuthenticated(ctx)
 ```
 
 Returns whether the request is authenticated with a user of `modelClass`.
+
+### getMemberId()
+
+```js
+const id = controller.getMemberId(ctx)
+```
+
+Returns the id of the authenticated user where the route parameter is `self`,
+and responds with 401 without a login, otherwise the validated id like
+[`CollectionController#getMemberId()`](#getmemberid). So `self` works in all
+member routes and in the routes of relations, e.g. `/users/self/notes`, which
+grants nothing beyond the user's own id. A user with the id `'self'` can't be
+addressed by id.
 
 ## AdminController
 
