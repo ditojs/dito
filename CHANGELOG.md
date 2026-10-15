@@ -16,9 +16,11 @@ version, see the upgrade guides in `docs/`.
 - **server:** Hooks identify custom actions by their method and path, with hyphenated parameter names and without wildcards, e.g. `'before:member:get-tech-doc-format'` for `'get tech-doc-:format'`. `ctx.action.identifier` holds the part after `before:` or `after:`, e.g. `'member:get-tech-doc-format'`.
 - **server:** `before` and `after` options of actions, hooks of the action only, which run after the controller's hooks.
 - **admin:** `{ html }` on `label`, the results of `itemLabel()` and `info`, which renders its HTML, and `TextOrHtml` and `SchemaLabel` types for them. Filter placeholders use the text of `{ text }` and `{ html }` labels.
+- **admin:** `clipboard` on upload fields, which copies their files and pastes them into other upload fields, adding the files that aren't there yet.
 
 ### Fixes
 
+- **server:** Saving copies the files of assets from another storage than their field's, e.g. pasted from another upload field, to the field's storage under a new key, instead of referring to a file that the storage doesn't have.
 - **server:** Wildcard hooks such as `'before:*:*'` and `'before:actions:*'` run for actions with route parameters too.
 - **admin:** The labels of upload fields point to their inputs, which use the component path as their id, like the inputs of other types.
 - **admin:** Trees and their items have the `tree`, `treeitem` and `group` roles, and sections the `region` role with their label, like lists and panels.

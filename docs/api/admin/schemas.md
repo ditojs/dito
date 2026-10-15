@@ -482,6 +482,7 @@ for running uploads, and files that failed to upload are left out.
 | `thumbnailUrl` | `SchemaValue<string>` | the file's `url` for images | The thumbnail URL. Receives the file as `value`. |
 | `downloadUrl` | `SchemaValue<string>` | the file's `url` | The download URL of files without a `url`. Receives the file as `value`. |
 | `render` | `SchemaValueCallback<string>` | | Returns the HTML shown for each file, instead of its name and thumbnail. Receives the file as `value`. |
+| `clipboard` | [`ClipboardConfig`](#clipboard) | | Adds copy and paste buttons for the files to the field's header. Pasting adds the files that aren't in the field yet, or replaces the file of single uploads, and leaves out files that `extensions` and `maxSize` don't accept. Files paste into all upload fields, also of other storages, as `{ files }`. |
 
 ```js
 samplePages: {
@@ -1292,7 +1293,8 @@ options.
 ### Clipboard
 
 `clipboard` of views, forms, sections and inlined lists and objects (next to
-their `components`) adds copy and paste buttons to their header:
+their `components`) adds copy and paste buttons to their header, and of
+[uploads](#upload) to the header of their files:
 
 ```ts
 type ClipboardConfig =
@@ -1306,7 +1308,8 @@ type ClipboardConfig =
 For how to use it, see the [forms guide](../../guide/admin/forms.md#clipboard).
 `true` copies the data, serialized like for the server, as JSON to the system
 clipboard, and keeps it in the admin as a fallback for browsers that don't let
-it read the clipboard. Data is only pasted into schemas of the same name.
+it read the clipboard. Data is only pasted into schemas of the same name, and
+the files of uploads into all uploads.
 
 - Copying leaves out the item's id, and the ids of the items of its lists, so
   that they paste as new items. Items that relations inside the copied data

@@ -981,9 +981,29 @@ export class Application extends Koa {
       Object.entries(filesByKey),
       async ([key, files]) => {
         const asset = await AssetModel.query(transaction).findOne('key', key)
-        if (!asset) {
+        if (asset?.storage !== storage.name) {
           const [file] = files // Pick the first file
-          if (file.data || file.url) {
+          let importedFile
+          if (asset) {
+            // Copy assets of other storages, under a new key since keys are
+            // unique across all storages:
+            this.logger.info(
+              `Asset ${
+                pico.green(`'${file.name}'`)
+              } is from storage ${
+                pico.green(`'${asset.storage}'`)
+              }, copying to storage ${
+                pico.green(`'${storage.name}'`)
+              }...`
+            )
+            const data = await this.getStorage(asset.storage).readFile(
+              asset.file
+            )
+            importedFile = await storage.addFile(
+              { ...asset.file, key: storage.getUniqueKey(asset.file.name) },
+              data
+            )
+          } else if (file.data || file.url) {
             let { data } = file
             if (!data) {
               const { url } = file
@@ -1014,23 +1034,7 @@ export class Application extends Koa {
                 data = Buffer.from(arrayBuffer)
               }
             }
-            const importedFile = await storage.addFile(file, data)
-            // Sign the imported foreign file so it passes verification when
-            // createAssets() triggers $parseJson() → convertAssetFile().
-            storage.signAssetFile(importedFile)
-            await this.createAssets(
-              storage,
-              [importedFile],
-              0,
-              transaction
-            )
-            importedFiles.push(importedFile)
-            // Merge back the changed file properties into the actual file
-            // objects, so that the data from the static model hook can be
-            // used directly for the actual running query.
-            for (const file of files) {
-              Object.assign(file, importedFile)
-            }
+            importedFile = await storage.addFile(file, data)
           } else {
             throw new AssetError(
               `Unable to import asset from foreign source: '${
@@ -1039,6 +1043,17 @@ export class Application extends Koa {
                 file.key
               }')`
             )
+          }
+          // Sign the imported foreign file so it passes verification when
+          // createAssets() triggers $parseJson() → convertAssetFile().
+          storage.signAssetFile(importedFile)
+          await this.createAssets(storage, [importedFile], 0, transaction)
+          importedFiles.push(importedFile)
+          // Merge back the changed file properties into the actual file
+          // objects, so that the data from the static model hook can be
+          // used directly for the actual running query.
+          for (const file of files) {
+            Object.assign(file, importedFile)
           }
         } else {
           // Asset is from a foreign source, but was already imported and can

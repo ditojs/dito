@@ -6,21 +6,25 @@ const clipboardState = reactive({ data: null })
 // Counts copies and reads, to ignore reads overtaken by newer ones:
 let clipboardVersion = 0
 
-export function getClipboardData(schemaName) {
+export function getClipboardData(schemaName, type) {
   if (!clipboardState.data) {
     return null
   }
-  const { $schema, ...data } = clipboardState.data
-  return $schema === schemaName ? data : null
+  const { $schema, $type, ...data } = clipboardState.data
+  return $type === type && (type || $schema === schemaName) ? data : null
 }
 
-export function hasClipboardData(schemaName) {
-  return !!getClipboardData(schemaName)
+export function hasClipboardData(schemaName, type) {
+  return !!getClipboardData(schemaName, type)
 }
 
-// Mark the data with `$schema`, to only paste it into schemas of the same name:
-export async function copyClipboardData(schemaName, data) {
-  const clipboardData = data ? { $schema: schemaName, ...data } : null
+// Mark the data with `$schema`, and with `$type` if it isn't the data of a
+// form. Data of a type pastes into all schemas of that type, e.g. files into
+// all uploads, the data of forms only into schemas of the same name:
+export async function copyClipboardData(schemaName, data, type) {
+  const clipboardData = data
+    ? { $schema: schemaName, $type: type, ...data }
+    : null
   clipboardVersion++
   clipboardState.data = clipboardData
   try {

@@ -2,7 +2,13 @@ import { vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import VueUpload from 'vue-upload-component'
 import Sortable from 'sortablejs'
-import { mountSchema, mountForm, stubConfirm } from '../test/mount.js'
+import {
+  mountSchema,
+  mountForm,
+  stubConfirm,
+  unmountAdmin
+} from '../test/mount.js'
+import { copyClipboardData, getClipboardData } from '../utils/clipboard.js'
 
 const cover = { name: 'cover.png', size: 2_500_000, type: 'image/png' }
 const scan = { name: 'scan.pdf', size: 12_000, type: 'application/pdf' }
@@ -989,6 +995,122 @@ describe('DitoTypeUpload', () => {
       })
       await dispatchDragEvent(findField('title').element, 'dragenter')
       expect(wrapper.find('.dito-drag-overlay').exists()).toBe(false)
+    })
+  })
+
+  describe('clipboard', () => {
+    const stored = {
+      cover: { ...cover, key: 'a1.png', url: '/a1.png', signature: 'f00' },
+      scan: { ...scan, key: 'b2.pdf', url: '/b2.pdf', signature: 'ba5' }
+    }
+
+    afterEach(async () => {
+      await copyClipboardData('reset', null)
+    })
+
+    async function mountImages({ name = 'images', schema, data }) {
+      const result = await mountForm({
+        schema: {
+          components: {
+            [name]: { type: 'upload', clipboard: true, ...schema }
+          }
+        },
+        data: { [name]: data }
+      })
+      const field = result.findField(name)
+      return {
+        ...result,
+        copyButton: field.find('thead .dito-button--copy'),
+        pasteButton: field.find('thead .dito-button--paste')
+      }
+    }
+
+    // Copy from a field of another name in another admin, like in another
+    // record:
+    async function copyImages(images) {
+      const { admin, copyButton } = await mountImages({
+        name: 'gallery',
+        schema: { multiple: true },
+        data: images
+      })
+      await copyButton.trigger('click')
+      await flushPromises()
+      // Forms teleport their header into the first admin:
+      unmountAdmin(admin)
+    }
+
+    it('copies the stored files of the field', async () => {
+      await copyImages([stored.cover, stored.scan])
+      expect(getClipboardData('gallery', 'upload')).toEqual({
+        files: [stored.cover, stored.scan]
+      })
+    })
+
+    it('adds pasted files to multiple files, except existing ones', async () => {
+      await copyImages([stored.cover, stored.scan])
+      const { pasteButton, data, dataModel } = await mountImages({
+        schema: { multiple: true },
+        data: [stored.scan]
+      })
+      await pasteButton.trigger('click')
+      await flushPromises()
+      expect(data.images).toEqual([stored.scan, stored.cover])
+      expect(dataModel.isDirty).toBe(true)
+    })
+
+    it('replaces a single file with the first pasted file', async () => {
+      await copyImages([stored.cover, stored.scan])
+      const { pasteButton, data, dataModel } = await mountImages({
+        data: stored.scan
+      })
+      await pasteButton.trigger('click')
+      await flushPromises()
+      expect(data.images).toEqual(stored.cover)
+      expect(dataModel.isDirty).toBe(true)
+    })
+
+    it(`doesn't paste files with other extensions and notifies`, async () => {
+      await copyImages([stored.cover, stored.scan])
+      const { pasteButton, data } = await mountImages({
+        schema: { multiple: true, extensions: ['pdf'] },
+        data: []
+      })
+      await pasteButton.trigger('click')
+      await flushPromises()
+      expect(data.images).toEqual([stored.scan])
+      expect(
+        document.querySelector('.dito-notification').textContent
+      ).toContain('Not accepted when pasting: cover.png')
+    })
+
+    it(`doesn't paste the data of forms with the same name`, async () => {
+      const { pasteButton } = await mountImages({ data: null })
+      await copyClipboardData('images', { files: [stored.cover] })
+      await flushPromises()
+      expect(pasteButton.attributes('disabled')).toBeDefined()
+    })
+
+    it(`doesn't paste files into forms with the same name`, async () => {
+      await copyImages([stored.cover])
+      const { wrapper } = await mountForm({
+        schema: {
+          name: 'gallery',
+          clipboard: true,
+          components: { title: { type: 'text' } }
+        },
+        data: { title: 'Emma' }
+      })
+      const pasteButton = wrapper.find('.dito-clipboard .dito-button--paste')
+      expect(pasteButton.attributes('disabled')).toBeDefined()
+    })
+
+    it(`doesn't paste into disabled fields`, async () => {
+      await copyImages([stored.cover])
+      const { pasteButton } = await mountImages({
+        schema: { disabled: true },
+        data: null
+      })
+      expect(pasteButton.attributes('disabled')).toBeDefined()
     })
   })
 })

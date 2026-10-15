@@ -739,7 +739,8 @@ await app.addForeignAssets(storage, files, transaction?)
 
 Imports files without asset records from their `data`, or their `url` if the
 storage's `allowedImports` allow it (`file://` and HTTP URLs), and creates their
-records. Returns `Promise<AssetFile[]>`: the imported files.
+records. Files of assets in another storage are copied to `storage` under a new
+key. Returns `Promise<AssetFile[]>`: the imported and copied files.
 
 ### handleModifiedAssets()
 
