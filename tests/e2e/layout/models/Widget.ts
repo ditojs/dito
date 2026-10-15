@@ -7,7 +7,13 @@ export interface Widget {
   notes?: string | null
   settings?: { color?: string } | null
   size?: string | null
-  links?: { url?: string; parts?: { name?: string }[] }[] | null
+  links?:
+    | {
+        url?: string
+        image?: { name: string; type: string; size: number; url?: string }
+        parts?: { name?: string }[]
+      }[]
+    | null
 }
 
 export class Widget extends Model {
