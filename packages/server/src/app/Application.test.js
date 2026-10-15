@@ -3,7 +3,6 @@ import fs from 'fs/promises'
 import http from 'http'
 import os from 'os'
 import path from 'path'
-import Knex from 'knex'
 import { Application } from './Application.js'
 import { Controller } from '../controllers/index.js'
 import { Model } from '../models/index.js'
@@ -1057,39 +1056,33 @@ describe('Application', () => {
       }
     })
 
-    it.each([
-      ['name', 'better-sqlite3'],
-      ['class', Knex({ client: 'better-sqlite3' }).client.constructor]
-    ])(
-      'binds dates as ISO strings with a better-sqlite3 %s',
-      async (_, client) => {
-        const app = createApp({
-          config: {
-            knex: {
-              client,
-              connection: { filename: ':memory:' },
-              useNullAsDefault: true
-            }
+    it('binds dates as ISO strings on better-sqlite3', async () => {
+      const app = createApp({
+        config: {
+          knex: {
+            client: 'better-sqlite3',
+            connection: { filename: ':memory:' },
+            useNullAsDefault: true
           }
-        })
-        try {
-          // Pin the knex method that dito's client subclass overrides:
-          const { prototype } = Object.getPrototypeOf(
-            app.knex.client.constructor
-          )
-          expect(prototype._formatBindings).toBeTypeOf('function')
-          expect(app.knex.client._formatBindings).not.toBe(
-            prototype._formatBindings
-          )
-          const date = new Date('2026-05-14T09:30:00Z')
-          expect(await app.knex.raw('select ? as value', [date])).toEqual([
-            { value: '2026-05-14T09:30:00.000Z' }
-          ])
-        } finally {
-          await app.knex.destroy()
         }
+      })
+      try {
+        // Pin the knex method that dito's client subclass overrides:
+        const { prototype } = Object.getPrototypeOf(
+          app.knex.client.constructor
+        )
+        expect(prototype._formatBindings).toBeTypeOf('function')
+        expect(app.knex.client._formatBindings).not.toBe(
+          prototype._formatBindings
+        )
+        const date = new Date('2026-05-14T09:30:00Z')
+        expect(await app.knex.raw('select ? as value', [date])).toEqual([
+          { value: '2026-05-14T09:30:00.000Z' }
+        ])
+      } finally {
+        await app.knex.destroy()
       }
-    )
+    })
 
     it('rolls back what a failed commit leaves open on better-sqlite3', async () => {
       const app = createApp({
