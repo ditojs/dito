@@ -8,6 +8,7 @@ version, see the upgrade guides in `docs/`.
 ### Improvements
 
 - **admin:** Upload fields show their copy and paste buttons before the upload and remove buttons, and show them and the drag handles of their files only on hover or focus, like inlined forms. The hidden buttons keep their space, so the table doesn't shift.
+- **admin:** Open inlined forms show only their edit and remove buttons, like collapsed ones, and their other buttons on hover or focus. The hidden buttons keep their space, so the header doesn't shift.
 
 ### Fixes
 

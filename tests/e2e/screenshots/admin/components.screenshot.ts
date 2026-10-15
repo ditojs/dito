@@ -126,10 +126,11 @@ test.describe('component screenshots', () => {
 
   test('drag handle focus in inline list', async ({ page, url }) => {
     await openProject(page, url, 'Planning')
-    await focusByKeyboard(
-      page,
-      visible(page.getByLabel('Drag', { exact: true })).first()
-    )
+    // The drag handle shows on hover, and stays while it has the focus:
+    const item = page.locator('.dito-schema-inlined').first()
+    await item.hover()
+    await focusByKeyboard(page, item.getByLabel('Drag', { exact: true }))
+    await page.mouse.move(0, 0)
     await expectScreenshot(page, 'drag-handle-focus.png')
   })
 
