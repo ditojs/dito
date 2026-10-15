@@ -37,7 +37,8 @@ export const widgets = createWidgetView<Widget>(
               type: 'list',
               label: 'Links',
               inlined: true,
-              collapsible: true,
+              collapsible: 'all',
+              clipboard: true,
               itemLabel: ({ item }) => ({
                 text: 'Link',
                 suffix: { html: ` — <small>${item.url}</small>` }

@@ -23,6 +23,11 @@
     :context="context"
     :info="info"
     :hasButtons="!!labelId"
+    :collapsible="!!labelToggle"
+    :collapsed="labelToggle?.collapsed"
+    :togglesAll="!!labelToggle"
+    :title="labelToggle?.title"
+    @toggle="labelToggle.toggle()"
   )
   component.dito-component(
     v-if="!isReplacedWithLabel"
@@ -52,6 +57,7 @@ import {
   onMounted,
   provide,
   ref,
+  shallowRef,
   unref
 } from 'vue'
 import { isString, isNumber, isFunction } from '@ditojs/utils'
@@ -60,7 +66,11 @@ import { getTypeComponent, getTypeDescriptor } from '../utils/schema/types.ts'
 import { omitsSpacing, isPanel } from '../utils/schema/structure.js'
 import { getAllPanelEntries } from '../utils/schema/lookup.js'
 import { parseFraction } from '../utils/math.js'
-import { accumulatedBasisKey, panelTabKey } from '../utils/keys.ts'
+import {
+  accumulatedBasisKey,
+  labelToggleKey,
+  panelTabKey
+} from '../utils/keys.ts'
 
 export default {
   props: {
@@ -143,6 +153,9 @@ export default {
         : null
     })
     provide(accumulatedBasisKey, combinedBasis)
+    // The type component registers the toggle of all its items for the label:
+    const labelToggle = shallowRef(null)
+    provide(labelToggleKey, labelToggle)
 
     // Unnested components share the data path of their parent, which their
     // errors don't belong to:
@@ -205,6 +218,7 @@ export default {
       ),
 
       shouldRenderLabel,
+      labelToggle,
 
       errorsElementId: computed(() => `${componentPath.value}-errors`),
 

@@ -1,19 +1,21 @@
 <template lang="pug">
+//- With buttons, only the chevron and the text toggle:
 component.dito-label(
   v-if="hasContent || collapsible"
-  :is="collapsible ? 'button' : 'div'"
-  :type="collapsible ? 'button' : null"
-  v-bind="attributes"
+  :is="collapsible && !hasButtons ? 'button' : 'div'"
+  v-bind="hasButtons ? null : toggleAttributes"
 )
-  //- Type components teleport their buttons here, see `DitoLabelButtons`:
-  .dito-label__buttons.dito-label__buttons--start(
-    v-if="hasButtons"
-  )
   //- The chevron and the text, which the focus ring of toggles encloses:
-  .dito-label__content
+  component.dito-label__content(
+    :is="collapsible && hasButtons ? 'button' : 'div'"
+    v-bind="hasButtons ? toggleAttributes : null"
+  )
     .dito-chevron(
       v-if="collapsible"
-      :class="{ 'dito-chevron--open': !collapsed }"
+      :class=`{
+        'dito-chevron--open': !collapsed,
+        'dito-chevron--double': togglesAll
+      }`
     )
     .dito-label__inner(
       v-if="hasContent || prefixes.length > 0 || suffixes.length > 0"
@@ -42,7 +44,8 @@ component.dito-label(
         v-if="info"
         :info="info"
       )
-  .dito-label__buttons.dito-label__buttons--end(
+  //- Type components teleport their buttons here, see `DitoLabelButtons`:
+  .dito-label__buttons(
     v-if="hasButtons"
   )
 </template>
@@ -65,6 +68,10 @@ export default {
     htmlFor: { type: String, default: null },
     collapsed: { type: Boolean, default: false },
     collapsible: { type: Boolean, default: false },
+    // Draw a double chevron, for toggles of all items:
+    togglesAll: { type: Boolean, default: false },
+    // The title and accessible name of the toggle, if not the label:
+    title: { type: String, default: null },
     info: { type: [String, Object], default: null },
     hasButtons: { type: Boolean, default: false }
   },
@@ -78,13 +85,16 @@ export default {
       hasContent: computed(() => !!(content.value.text || content.value.html)),
       prefixes: computed(() => asArray(props.label?.prefix)),
       suffixes: computed(() => asArray(props.label?.suffix)),
-      attributes: computed(() =>
+      toggleAttributes: computed(() =>
         props.collapsible
           ? {
-              'onClick': () => emit('toggle', !props.collapsed),
-              'aria-expanded': !props.collapsed
+              'type': 'button',
+              'title': props.title,
+              'aria-label': props.title,
+              'aria-expanded': !props.collapsed,
+              'onClick': () => emit('toggle', !props.collapsed)
             }
-          : {}
+          : null
       )
     }
   }
@@ -173,45 +183,17 @@ export default {
     margin-left: 0.35em;
   }
 
-  // Buttons precede the text of the label, or sit at its end:
   &__buttons {
     display: flex;
-
-    &--end {
-      margin-left: auto;
-    }
+    margin-left: auto;
   }
 
-  @at-root button#{&} {
+  @at-root button#{&},
+    button#{&}__content {
     border: 0;
     padding: 0;
     background: none;
     text-align: start;
-
-    // The whole label toggles, but the focus ring only encloses its content,
-    // padded for it:
-    > #{$self}__content {
-      display: flex;
-      align-items: center;
-      position: relative;
-      min-width: 0;
-      padding: 0 $focus-ring-padding;
-      margin-left: -$focus-ring-padding;
-
-      > #{$self}__inner {
-        flex: 0 1 auto;
-      }
-
-      // Suffixes with ellipsis have no width of their own, so the content
-      // fills the row for them to clip their text in:
-      &:has(> #{$self}__inner > .dito-affixes--ellipsis) {
-        flex: 1;
-
-        > #{$self}__inner {
-          flex: 1 0 0%;
-        }
-      }
-    }
 
     &:hover {
       .dito-chevron {
@@ -221,11 +203,43 @@ export default {
 
     &:focus-visible {
       outline: none;
+    }
+  }
 
-      > #{$self}__content {
-        @include focus-ring-line;
+  // The label or its content toggles, but the focus ring only encloses the
+  // content, padded for it:
+  @at-root button#{&} > #{&}__content,
+    button#{&}__content {
+    display: flex;
+    align-items: center;
+    position: relative;
+    min-width: 0;
+    padding: 0 $focus-ring-padding;
+    margin-left: -$focus-ring-padding;
+
+    > #{$self}__inner {
+      flex: 0 1 auto;
+    }
+
+    // Inset toggles of all items like the chevrons of the items:
+    &:has(> .dito-chevron--double) {
+      margin-left: $form-spacing + $border-width - $focus-ring-padding;
+    }
+
+    // Suffixes with ellipsis have no width of their own, so the content
+    // fills the row for them to clip their text in:
+    &:has(> #{$self}__inner > .dito-affixes--ellipsis) {
+      flex: 1;
+
+      > #{$self}__inner {
+        flex: 1 0 0%;
       }
     }
+  }
+
+  @at-root button#{&}:focus-visible > #{&}__content,
+    button#{&}__content:focus-visible {
+    @include focus-ring-line;
   }
 }
 </style>

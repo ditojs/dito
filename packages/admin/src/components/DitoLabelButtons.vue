@@ -5,7 +5,7 @@ Teleport(
   :disabled="!target"
   defer
 )
-  .dito-label-buttons(:class="`dito-label-buttons--${position}`")
+  .dito-label-buttons
     slot
 </template>
 
@@ -15,9 +15,7 @@ import { computed } from 'vue'
 export default {
   props: {
     // The id of the label, see `fieldProps`:
-    labelId: { type: String, default: null },
-    // Before the text of the label, or at its end:
-    position: { type: String, default: 'end' }
+    labelId: { type: String, default: null }
   },
 
   setup(props) {
@@ -26,9 +24,7 @@ export default {
       target: computed(
         () => (
           props.labelId &&
-          `#${CSS.escape(props.labelId)} > .dito-label__buttons--${
-            props.position
-          }`
+          `#${CSS.escape(props.labelId)} > .dito-label__buttons`
         )
       )
     }
@@ -48,22 +44,18 @@ export default {
   }
 
   // Inset the buttons like the ones in the cells of the component's table:
-  &--start {
-    margin-left: $form-spacing + $border-width;
-  }
-
-  &--end:last-child {
+  &:last-child {
     margin-right: $form-spacing + $border-width;
   }
 
-  .dito-label__buttons--end > & {
+  .dito-label__buttons > & {
     margin-left: $form-spacing;
   }
 }
 
 // Keep the round buttons at the end of the label apart from the component,
 // like the buttons in the headers of forms:
-.dito-label:has(> .dito-label__buttons--end > .dito-label-buttons:not(:empty)) {
+.dito-label:has(> .dito-label__buttons > .dito-label-buttons:not(:empty)) {
   margin-bottom: $form-spacing-half;
 }
 </style>

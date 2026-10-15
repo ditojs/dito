@@ -371,13 +371,32 @@ describe('DitoTypeList', () => {
       })
       const data = { ingredients: [{ name: 'Flour' }] }
 
-      it('shows the toggle after the label, the clipboard at its end', async () => {
-        const { findField, findContainer } = await mountSchema({ schema, data })
+      it('toggles all items by their label, but not by the clipboard', async () => {
+        const { findField, findContainer, settle } = await mountSchema({
+          schema,
+          data
+        })
         const label = findContainer('ingredients').find(':scope > .dito-label')
-        const [start, end] = label.findAll(':scope > .dito-label__buttons')
-        expect(start.classes()).toContain('dito-label__buttons--start')
-        expect(getToggleAll(start).exists()).toBe(true)
-        expect(end.find('.dito-clipboard').exists()).toBe(true)
+        // The chevron and the text form the toggle, the clipboard follows it:
+        const toggle = label.find(':scope > button.dito-label__content')
+        expect(getToggleAll(toggle).exists()).toBe(true)
+        expect(toggle.attributes()).toMatchObject({
+          'title': 'Collapse All',
+          'aria-label': 'Collapse All',
+          'aria-expanded': 'true'
+        })
+        await toggle.find('label').trigger('click')
+        await settle()
+        expect(getItemNames(findField('ingredients'))).toEqual([])
+        expect(toggle.attributes('aria-expanded')).toBe('false')
+        expect(toggle.attributes('title')).toBe('Expand All')
+        const clipboard = label.find(':scope > .dito-label__buttons')
+        await clipboard.find('.dito-clipboard').trigger('click')
+        await settle()
+        expect(getItemNames(findField('ingredients'))).toEqual([])
+        await toggle.trigger('click')
+        await settle()
+        expect(getItemNames(findField('ingredients'))).toEqual(['Flour'])
         // The header stays empty, and hidden:
         expect(
           findField('ingredients').findAll('.dito-list__header > *')
@@ -396,11 +415,13 @@ describe('DitoTypeList', () => {
         expect(
           findContainer('ingredients').find(':scope > .dito-label').exists()
         ).toBe(false)
-        const [start, end] = findField('ingredients').findAll(
-          '.dito-list__header > .dito-label-buttons'
-        )
-        expect(getToggleAll(start).exists()).toBe(true)
-        expect(end.find('.dito-clipboard').exists()).toBe(true)
+        const header = findField('ingredients').find('.dito-list__header')
+        expect(
+          header.find(':scope > button.dito-chevron--double').exists()
+        ).toBe(true)
+        expect(
+          header.find(':scope > .dito-label-buttons > .dito-clipboard').exists()
+        ).toBe(true)
       })
     })
 
