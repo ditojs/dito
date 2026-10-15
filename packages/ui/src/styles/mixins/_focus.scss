@@ -6,7 +6,7 @@
 // inside the element instead, e.g. around content padded for the ring.
 @mixin focus-ring($color: null, $inset: false) {
   @if $inset {
-    outline: $border-width solid if($color, $color, $color-active);
+    outline: $border-width solid ($color or $color-active);
     outline-offset: -$border-width;
   } @else {
     outline: none;
