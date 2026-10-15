@@ -20,6 +20,7 @@ version, see the upgrade guides in `docs/`.
 - **admin:** `clipboard` on upload fields, which copies their files and pastes them into other upload fields, adding the files that aren't there yet.
 - **admin:** `validate()` on all types, which validates values that aren't empty with a callback, together with the other rules: it receives the context with the value after `formatValue()`, and returns `false` to fail with "is invalid", or a message to fail with.
 - **admin:** `clipboard` on lists, with copy and paste buttons above the items: copying copies the loaded items, like forms copy theirs, as `{ items }`, and pasting appends them to `creatable` lists of the same name, each created with the form of its `type`. Items without a creatable form are left out. Lists with their own `resource` don't support it and warn.
+- **admin:** Buttons in the header collapse the menu and the sidebar, which the browser remembers. On small screens, they hide and open as overlays: the sidebar below 1200px, the menu below 800px.
 
 ### Fixes
 
