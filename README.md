@@ -105,7 +105,9 @@ changed since the last release, commits them as `vX.Y.Z`, tags the commit and
 pushes both. The pushed tag starts the
 [Publish workflow](.github/workflows/publish.yml), which builds the packages and
 publishes the bumped ones through npm's trusted publishing, without npm tokens or
-logins. Only repository admins can create `v*` tags.
+logins. Only repository admins can create `v*` tags. It publishes only the
+versions that aren't on npm yet, so a release that failed partway is finished by
+rerunning it, or with `gh workflow run publish.yml -f tag=vX.Y.Z`.
 
 All packages are always released together, also the ones that didn't change
 (`forcePublish` in `lerna.json`), so their versions stay in sync and each

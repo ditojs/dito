@@ -10,7 +10,6 @@
     "clean": "pnpm -r run clean",
     "build": "pnpm -r run build",
     "watch": "pnpm -r --parallel run watch",
-    "prepublishOnly": "pnpm run lint",
     "version": "pnpm install && git stage pnpm-lock.yaml",
     "postinstall": "husky",
     "release": "lerna version",
