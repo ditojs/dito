@@ -753,6 +753,10 @@ defineType({
   `author: { $label: 'Jane Austen' }`, and pasting resolves them through the
   options of the fields. `clipboard.copy()` and `clipboard.paste()` see the
   labels instead of the ids.
+- Since 4.5, `clipboard` on lists copies and pastes the list as a whole,
+  instead of adding copy and paste buttons to the items. Give the items a
+  clipboard through `form: { components, clipboard }`, or a form with its own
+  `clipboard`.
 
 ### Data paths
 

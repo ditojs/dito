@@ -10,6 +10,7 @@ import { reactive, computed, toRaw } from 'vue'
 import { getTypeDescriptor } from './types.ts'
 import {
   findNestedSchemaComponent,
+  isListSource,
   isSchema
 } from './structure.js'
 import { setupForm } from './setup.js'
@@ -62,7 +63,9 @@ export function getFormSchemas(schema, context, modifyForm) {
     throw new Error(`Unknown view: '${schema.view}'`)
   }
 
-  let { form, forms, clipboard } = schema
+  let { form, forms } = schema
+  // The clipboard of lists copies the whole list, objects are their form:
+  const clipboard = !isListSource(schema) && schema.clipboard
   if (!form && !forms) {
     const { type, name, compact, tabs, components } = schema
     if (components || tabs) {

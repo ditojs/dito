@@ -28,8 +28,10 @@ defineType({
 })
 defineType({
   type: 'list',
+  sourceType: 'list',
   getPanelSchema: () => ({ type: 'panel', name: '$filters' })
 })
+defineType({ type: 'object', sourceType: 'object' })
 defineType({ type: 'section', defaultNested: false })
 defineType({ type: 'text' })
 
@@ -237,6 +239,22 @@ describe('getFormSchemas()', () => {
         components
       }
     })
+  })
+
+  it('passes the clipboard of objects to their form, not of lists', () => {
+    const components = { title: { type: 'text' } }
+    expect(
+      getFormSchemas({ type: 'object', clipboard: true, form: novel })
+    ).toEqual({ default: { ...novel, clipboard: true } })
+    expect(
+      getFormSchemas({ type: 'object', clipboard: true, components })
+    ).toEqual({ default: { type: 'form', clipboard: true, components } })
+    expect(
+      getFormSchemas({ type: 'list', clipboard: true, forms: { novel } })
+    ).toEqual({ novel })
+    expect(
+      getFormSchemas({ type: 'list', clipboard: true, components })
+    ).toEqual({ default: { type: 'form', components } })
   })
 
   it('returns no forms for schemas without forms', () => {

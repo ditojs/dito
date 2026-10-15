@@ -236,64 +236,257 @@ describe('DitoClipboard', () => {
     expect(form.data).toMatchObject({ id: 1, title: 'Two', position: 0 })
   })
 
-  it('applies the clipboard of lists to their form', async () => {
-    const { admin } = await mountForm({
+  it('gives the forms of objects their clipboard, not of lists', async () => {
+    const form = { type: 'form', components: { title: { type: 'text' } } }
+    const { findField } = await mountForm({
       schema: {
         components: {
           chapters: {
             type: 'list',
-            editable: true,
+            inlined: true,
             clipboard: true,
-            form: {
+            components: { title: { type: 'text' } }
+          },
+          books: { type: 'list', inlined: true, clipboard: true, form },
+          cover: { type: 'object', inlined: true, clipboard: true, form }
+        }
+      },
+      data: {
+        chapters: [{ id: 1, title: 'Prologue' }],
+        books: [{ id: 2, title: 'Emma' }],
+        cover: { title: 'Front' }
+      }
+    })
+    for (const name of ['chapters', 'books']) {
+      const list = findField(name)
+      expect(list.findAll('.dito-clipboard')).toHaveLength(1)
+      expect(list.findAll('tbody .dito-clipboard')).toHaveLength(0)
+    }
+    expect(findField('cover').findAll('.dito-clipboard')).toHaveLength(1)
+  })
+
+  describe('lists', () => {
+    const relateAuthor = {
+      type: 'select',
+      relate: true,
+      options: { dataPath: '/authors', label: 'name' }
+    }
+
+    const createBooks = settings => ({
+      type: 'list',
+      inlined: true,
+      creatable: true,
+      clipboard: true,
+      orderKey: 'position',
+      forms: {
+        novel: {
+          type: 'form',
+          components: { title: { type: 'text' }, author: relateAuthor }
+        },
+        comic: { type: 'form', components: { artist: { type: 'text' } } }
+      },
+      ...settings
+    })
+
+    async function mountShelves({ books, shelf } = {}) {
+      const result = await mountForm({
+        schema: {
+          components: {
+            authors: {
+              type: 'list',
+              inlined: true,
+              form: {
+                type: 'form',
+                components: { name: { type: 'text' } }
+              }
+            },
+            books: createBooks(books),
+            // A list of the same name elsewhere, and one of another name:
+            shelf: {
+              type: 'section',
+              nested: true,
+              components: { books: createBooks(shelf) }
+            },
+            magazines: createBooks()
+          }
+        },
+        data: {
+          authors: [
+            { id: 1, name: 'Jane Austen' },
+            { id: 2, name: 'Mary Shelley' }
+          ],
+          books: [
+            {
+              id: 5,
+              type: 'novel',
+              title: 'Emma',
+              author: { id: 1 },
+              position: 0
+            },
+            { id: 6, type: 'comic', artist: 'Hergé', position: 1 }
+          ],
+          shelf: {
+            books: [{ id: 9, type: 'comic', artist: 'Moebius', position: 0 }]
+          },
+          magazines: []
+        }
+      })
+      const { findField } = result
+      const findButton = (dataPath, button) =>
+        findField(dataPath).find(`.dito-list__header .dito-button--${button}`)
+      return {
+        ...result,
+        findButton,
+        async click(dataPath, button) {
+          await findButton(dataPath, button).trigger('click')
+          await flushPromises()
+        }
+      }
+    }
+
+    it('copies the items and pastes them into lists of the same name', async () => {
+      const { click, data, dataModel } = await mountShelves()
+      await click('books', 'copy')
+      expect(getClipboardData('books', 'list')).toEqual({
+        items: [
+          {
+            type: 'novel',
+            title: 'Emma',
+            author: { $label: 'Jane Austen' },
+            position: 0
+          },
+          { type: 'comic', artist: 'Hergé', position: 1 }
+        ]
+      })
+      await click('shelf/books', 'paste')
+      // Each item is created with the form of its type:
+      expect(data.shelf.books).toEqual([
+        { id: 9, type: 'comic', artist: 'Moebius', position: 0 },
+        {
+          type: 'novel',
+          title: 'Emma',
+          author: { id: 1, name: 'Jane Austen' },
+          position: 1
+        },
+        { type: 'comic', artist: 'Hergé', position: 2 }
+      ])
+      expect(getNotificationTexts()).toEqual([])
+      expect(dataModel.isDirty).toBe(true)
+    })
+
+    it('leaves out the items without a creatable form', async () => {
+      const { click, data } = await mountShelves({
+        shelf: {
+          forms: {
+            comic: {
               type: 'form',
-              name: 'chapter',
+              components: { artist: { type: 'text' } }
+            },
+            novel: {
+              type: 'form',
+              creatable: false,
               components: { title: { type: 'text' } }
             }
           }
         }
-      },
-      data: { chapters: [{ id: 1, title: 'Prologue' }] }
+      })
+      await click('books', 'copy')
+      await click('shelf/books', 'paste')
+      expect(data.shelf.books).toEqual([
+        { id: 9, type: 'comic', artist: 'Moebius', position: 0 },
+        { type: 'comic', artist: 'Hergé', position: 1 }
+      ])
     })
-    await admin.navigate('/items/1/chapters/0')
-    await settle(admin.getRouteComponent(isForm))
-    await admin.wrapper
-      .find('.dito-clipboard .dito-button--copy')
-      .trigger('click')
-    await flushPromises()
-    expect(getClipboardData('chapter')).toEqual({ title: 'Prologue' })
-  })
 
-  it('applies the clipboard of lists to forms without one', async () => {
-    const { wrapper } = await mountForm({
-      schema: {
-        components: {
-          books: {
-            type: 'list',
-            inlined: true,
-            clipboard: true,
-            forms: {
-              novel: {
+    it(`doesn't paste into lists that aren't creatable`, async () => {
+      const { click, findButton } = await mountShelves({
+        shelf: { creatable: false }
+      })
+      await click('books', 'copy')
+      expect(
+        findButton('books', 'paste').attributes('disabled')
+      ).toBeUndefined()
+      expect(
+        findButton('shelf/books', 'paste').attributes('disabled')
+      ).toBeDefined()
+    })
+
+    it(`doesn't paste into lists of another name`, async () => {
+      const { click, findButton } = await mountShelves()
+      await click('books', 'copy')
+      expect(
+        findButton('shelf/books', 'paste').attributes('disabled')
+      ).toBeUndefined()
+      expect(
+        findButton('magazines', 'paste').attributes('disabled')
+      ).toBeDefined()
+    })
+
+    it(`doesn't paste lists into forms and uploads, or back`, async () => {
+      const { wrapper, findField } = await mountForm({
+        schema: {
+          name: 'book',
+          clipboard: true,
+          components: {
+            chapters: {
+              type: 'list',
+              inlined: true,
+              creatable: true,
+              clipboard: true,
+              components: { title: { type: 'text' } }
+            },
+            files: { type: 'upload', multiple: true, clipboard: true }
+          }
+        },
+        data: {
+          chapters: [{ id: 1, title: 'Prologue' }],
+          files: [{ name: 'a.png', size: 1, type: 'image/png', key: 'a.png' }]
+        }
+      })
+      const buttons = {
+        book: '.dito-schema-header .dito-clipboard',
+        chapters: '.dito-list__header .dito-clipboard',
+        files: 'thead .dito-clipboard'
+      }
+      const findButton = (name, button) => {
+        const parent = name === 'book' ? wrapper : findField(name)
+        return parent.find(`${buttons[name]} .dito-button--${button}`)
+      }
+      const getPastable = () =>
+        Object.keys(buttons).filter(
+          name => findButton(name, 'paste').attributes('disabled') === undefined
+        )
+      for (const name of Object.keys(buttons)) {
+        await findButton(name, 'copy').trigger('click')
+        await flushPromises()
+        expect(getPastable()).toEqual([name])
+      }
+    })
+
+    it('gives lists with their own resource no clipboard', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const { findField } = await mountForm({
+        schema: {
+          components: {
+            chapters: {
+              type: 'list',
+              resource: { path: 'chapters' },
+              clipboard: true,
+              form: {
                 type: 'form',
                 components: { title: { type: 'text' } }
-              },
-              comic: {
-                type: 'form',
-                clipboard: false,
-                components: { artist: { type: 'text' } }
               }
             }
           }
-        }
-      },
-      data: {
-        books: [
-          { id: 1, type: 'novel', title: 'Emma' },
-          { id: 2, type: 'comic', artist: 'Hergé' },
-          { id: 3, type: 'novel', title: 'Persuasion' }
-        ]
-      }
+        },
+        data: { title: 'Emma' },
+        request: () => ({ data: [{ id: 1, title: 'Prologue' }] })
+      })
+      expect(findField('chapters').find('.dito-clipboard').exists()).toBe(false)
+      expect(warn).toHaveBeenCalledWith(
+        `Unsupported 'clipboard' in lists with 'resource': 'chapters'.`
+      )
     })
-    expect(wrapper.findAll('.dito-clipboard')).toHaveLength(2)
   })
 
   it('notifies errors of `clipboard.copy()`', async () => {

@@ -11,7 +11,13 @@ export function getClipboardData(schemaName, type) {
     return null
   }
   const { $schema, $type, ...data } = clipboardState.data
-  return $type === type && (type || $schema === schemaName) ? data : null
+  // Files paste into all uploads, all other data only into schemas of the same
+  // name and type:
+  const isMatch = (
+    $type === type &&
+    (type === 'upload' || $schema === schemaName)
+  )
+  return isMatch ? data : null
 }
 
 export function hasClipboardData(schemaName, type) {
@@ -19,8 +25,7 @@ export function hasClipboardData(schemaName, type) {
 }
 
 // Mark the data with `$schema`, and with `$type` if it isn't the data of a
-// form. Data of a type pastes into all schemas of that type, e.g. files into
-// all uploads, the data of forms only into schemas of the same name:
+// form, e.g. 'list' or 'upload':
 export async function copyClipboardData(schemaName, data, type) {
   const clipboardData = data
     ? { $schema: schemaName, $type: type, ...data }

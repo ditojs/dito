@@ -757,8 +757,9 @@ export interface SourceSettings<$Item> {
    */
   compact?: boolean
   /**
-   * Enables copy/paste in the forms of the items, unless a form sets its own
-   * `clipboard`.
+   * Enables copy/paste of all loaded items in lists, and of the form in
+   * objects, unless the form sets its own `clipboard`. Not supported in lists
+   * with their own `resource`, and in tree lists.
    */
   clipboard?: ClipboardConfig
   /**

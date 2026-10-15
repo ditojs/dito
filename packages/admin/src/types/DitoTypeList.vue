@@ -7,7 +7,7 @@
   :aria-label="labelText || labelize(schema.name)"
 )
   .dito-list__header(
-    v-if="scopes || hasPagination"
+    v-if="scopes || hasPagination || hasClipboard"
   )
     DitoScopes(
       v-if="scopes"
@@ -18,6 +18,17 @@
     //- Pagination without scopes needs a spacer for the layout:
     .dito-spacer(
       v-else-if="hasPagination"
+    )
+    DitoClipboard(
+      v-if="hasClipboard"
+      :clipboard="schema.clipboard"
+      :schema="schema"
+      type="list"
+      :hasData="listData.length > 0"
+      :getData="getClipboardData"
+      :createContext="createContext"
+      :disabled="!creatable || disabled || readonly || isLoading"
+      @paste="pasteItems"
     )
     DitoPagination(
       v-if="hasPagination"
@@ -139,20 +150,27 @@ import { useSource } from '../composables/useSource.ts'
 import { useSortable } from '../composables/useSortable.ts'
 import { useSchemaValue } from '../composables/useSchemaValue.ts'
 import DitoSourceItem from '../components/DitoSourceItem.vue'
+import DitoClipboard from '../components/DitoClipboard.vue'
 import {
   resolveSchemaComponent,
   resolveSchemaComponents
 } from '../utils/schema/setup.js'
 import { createFiltersPanel, getFiltersDataErrors } from '../utils/filter.js'
 import { appendDataPath } from '../utils/data.js'
-import { getItemUid } from '../utils/schema/data.js'
-import { getItemFormSchema } from '../utils/schema/lookup.js'
+import { getCreatableForms, getItemUid } from '../utils/schema/data.js'
+import {
+  getItemFormSchema,
+  getItemFormSchemaFromForms
+} from '../utils/schema/lookup.js'
+import { isSourceWithResource } from '../utils/schema/structure.js'
+import { fromClipboard } from '../utils/fromClipboard.ts'
+import { toClipboard } from '../utils/toClipboard.ts'
 import { hyphenate, labelize } from '@ditojs/utils'
 import { computed } from 'vue'
 
 // @vue/component
 const DitoTypeList = {
-  components: { DitoSourceItem },
+  components: { DitoSourceItem, DitoClipboard },
   props: fieldProps,
 
   setup(props) {
@@ -171,6 +189,7 @@ const DitoTypeList = {
       onChange: source.onChange
     })
     const { listData, editable, deletable, draggable, creatable } = source
+    const { services, context } = source
     const hasListButtons = computed(
       () => !!(source.buttonSchemas.value || creatable.value)
     )
@@ -232,6 +251,59 @@ const DitoTypeList = {
 
       getCellClass(column) {
         return `dito-cell--${hyphenate(column.name)}`
+      },
+
+      // Lists with their own resource save their items through it:
+      hasClipboard: computed(
+        () => !!props.schema.clipboard && !isSourceWithResource(props.schema)
+      ),
+
+      // Copy the loaded items like the forms copy theirs:
+      async getClipboardData() {
+        return {
+          items: await Promise.all(
+            listData.value.map((item, index) =>
+              toClipboard(
+                getItemFormSchema(props.schema, item, context),
+                props.schema,
+                item,
+                appendDataPath(props.dataPath, index),
+                { services, rootData: context.rootItem }
+              )
+            )
+          )
+        }
+      },
+
+      // Append the items with their creatable forms, and leave out the others:
+      async pasteItems({ items }) {
+        const forms = getCreatableForms(props.schema, context)
+        const getForm = item => getItemFormSchemaFromForms(forms, item)
+        const offset = listData.value.length
+        const results = await Promise.all(
+          items.filter(getForm).map((item, index) =>
+            fromClipboard(getForm(item), item, {
+              dataPath: appendDataPath(props.dataPath, offset + index),
+              services,
+              rootData: context.rootItem
+            })
+          )
+        )
+        for (const { data } of results) {
+          source.insertItem(getForm(data), data)
+        }
+        if (results.length > 0) {
+          source.onChange()
+        }
+        const unresolvedLabels = results.flatMap(
+          result => result.unresolvedLabels
+        )
+        if (unresolvedLabels.length > 0) {
+          services.adminContext.notify({
+            type: 'warning',
+            text: `Not found when pasting: ${unresolvedLabels.join(', ')}`
+          })
+        }
       }
     }
   }
@@ -265,6 +337,11 @@ defineType({
   },
 
   async setupSchema({ schema, api, name }) {
+    if (schema.clipboard && schema.resource) {
+      console.warn(
+        `Unsupported 'clipboard' in lists with 'resource': '${name}'.`
+      )
+    }
     await Promise.all([
       resolveSchemaComponent(schema),
       resolveSchemaComponents(schema.columns),
@@ -299,6 +376,14 @@ export default DitoTypeList
       display: flex;
       flex: 0 1 auto;
       min-width: 0;
+    }
+
+    .dito-clipboard {
+      align-items: center;
+
+      + .dito-pagination {
+        margin-left: $form-spacing;
+      }
     }
   }
 
