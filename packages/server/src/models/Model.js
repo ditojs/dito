@@ -155,7 +155,7 @@ export class Model extends objection.Model {
       .update(properties)
       .runAfter((result, query) =>
         // Only perform `$set()` and return `this` if the query wasn't modified
-        // in a way that would remove the `update()` command, e.g. toFindQuery()
+        // in a way that would remove the `update()` command, e.g. clear()
         query.has('update') ? this.$set(result) : result
       )
   }
@@ -165,7 +165,7 @@ export class Model extends objection.Model {
       .patch(properties)
       .runAfter((result, query) =>
         // Only perform `$set()` and return `this` if the query wasn't modified
-        // in a way that would remove the `patch()` command, e.g. toFindQuery()
+        // in a way that would remove the `patch()` command, e.g. clear()
         query.has('patch') ? this.$set(result) : result
       )
   }
@@ -673,9 +673,9 @@ export class Model extends objection.Model {
   }
 
   // @override
-  $parseDatabaseJson(json) {
+  $parseDatabaseJson(json, options) {
     const { constructor } = this
-    json = super.$parseDatabaseJson(json)
+    json = super.$parseDatabaseJson(json, options)
     if (constructor.isSQLite()) {
       // SQLite does not support boolean natively and needs conversion...
       for (const key of constructor.booleanAttributes) {
@@ -1074,12 +1074,7 @@ export class Model extends objection.Model {
           result = res
         }
       }
-      // Unfortunately `result` is always an array, even when the actual result
-      // is a model object. Avoid returning it when it's not actually changed.
-      // See: https://github.com/Vincit/objection.js/issues/1842
-      if (result !== originalArgs.result) {
-        return result
-      }
+      return result
     }
   }
 
@@ -1168,8 +1163,9 @@ export class Model extends objection.Model {
               dataPath => (
                 // Skip check for wildcard data-paths.
                 /^\*\*?/.test(dataPath) ||
-                // Only keep normal data paths that match present properties.
-                (parseDataPath(dataPath)[0] in inputItems[0])
+                // Only keep normal data paths that match present properties,
+                // in any of the items that inserts may write at once.
+                inputItems.some(item => parseDataPath(dataPath)[0] in item)
               )
             )
         // `dataPaths` is empty in the case of an update/insert that does not

@@ -95,13 +95,6 @@ export class QueryBuilder extends objection.QueryBuilder {
     return this
   }
 
-  // @override
-  toFindQuery() {
-    // Clear the `runAfter()` callbacks of the original query, like
-    // Objection's `asFindQuery()` does, but not its `toFindQuery()`:
-    return super.toFindQuery().clear('runAfter')
-  }
-
   omit(...properties) {
     this.#omits.push(...properties)
     return this
@@ -454,23 +447,19 @@ export class QueryBuilder extends objection.QueryBuilder {
 
   // @override
   insert(data) {
-    return this.#insert(data, 'insert', 'insertGraph')
+    return this.#insert(data, 'insert')
   }
 
   // @override
   insertAndFetch(data) {
-    return this.#insert(data, 'insertAndFetch', 'insertGraphAndFetch')
+    return this.#insert(data, 'insertAndFetch')
   }
 
-  #insert(data, method, graphMethod) {
-    // Only PostgreSQL is able to insert multiple entries at once it seems,
-    // all others have to fall back on insertGraph() to do so, in one
-    // transaction and without the relations, like PostgreSQL's insert():
-    if (!this.isPostgreSQL() && isArray(data) && data.length > 1) {
-      const modelClass = this.modelClass()
-      rejectGraphControlProps(modelClass, data)
+  #insert(data, method) {
+    // Objection may split arrays into several queries, so insert them in one
+    // transaction:
+    if (isArray(data) && data.length > 1) {
       this.#isTransacted = true
-      return this[graphMethod](omitRelations(modelClass, data))
     }
     return super[method](data)
   }

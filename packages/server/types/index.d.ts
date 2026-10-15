@@ -1348,8 +1348,8 @@ export interface ModelOptions extends objection.ModelOptions {
   mutable?: boolean
 }
 
-type ModelHookFunction<$Model extends Model> = (
-  args: objection.StaticHookArguments<$Model>
+type ModelHookFunction<$Model extends Model, $Result> = (
+  args: objection.StaticHookArguments<$Model, $Result>
 ) => void
 
 /**
@@ -1371,18 +1371,29 @@ type ModelHookFunction<$Model extends Model> = (
  * ```
  */
 export type ModelHooks<$Model extends Model = Model> = {
-  [key in ModelHookKey]?: OrArrayOf<ModelHookFunction<$Model>>
+  [K in ModelHookKey]?: OrArrayOf<
+    ModelHookFunction<$Model, ModelHookResults<$Model>[K]>
+  >
 } & {
   // Several hooks, separated by commas:
-  [key: `${ModelHookKey},${string}`]: OrArrayOf<ModelHookFunction<$Model>>
+  [key: `${ModelHookKey},${string}`]: OrArrayOf<
+    ModelHookFunction<$Model, ModelHookResults<$Model>[ModelHookKey]>
+  >
 }
 
-type ModelHookKey = `${'before' | 'after'}:${
-  | 'find'
-  | 'insert'
-  | 'update'
-  | 'delete'
-}`
+// The `result` of each hook, in the shape that the query returns:
+type ModelHookResults<$Model extends Model = Model> = {
+  'before:find': undefined
+  'after:find': $Model | $Model[] | undefined
+  'before:insert': undefined
+  'after:insert': $Model | $Model[]
+  'before:update': undefined
+  'after:update': number | $Model | $Model[] | undefined
+  'before:delete': undefined
+  'after:delete': number | $Model | $Model[] | undefined
+}
+
+type ModelHookKey = keyof ModelHookResults
 
 // objection's static side, minus the members that dito types with its own
 // `Model` and `QueryBuilder`. objection's versions use its own types, which
@@ -1703,7 +1714,7 @@ export class Model extends ObjectionModel {
    * @overridable
    */
   static afterFind(
-    args: objection.StaticHookArguments<Model>
+    args: objection.StaticHookArguments<Model, ModelHookResults['after:find']>
   ): Promise<void>
 
   /**
@@ -1719,7 +1730,7 @@ export class Model extends ObjectionModel {
    * @overridable
    */
   static afterInsert(
-    args: objection.StaticHookArguments<Model>
+    args: objection.StaticHookArguments<Model, ModelHookResults['after:insert']>
   ): Promise<void>
 
   /**
@@ -1735,7 +1746,7 @@ export class Model extends ObjectionModel {
    * @overridable
    */
   static afterUpdate(
-    args: objection.StaticHookArguments<Model>
+    args: objection.StaticHookArguments<Model, ModelHookResults['after:update']>
   ): Promise<void>
 
   /**
@@ -1751,7 +1762,7 @@ export class Model extends ObjectionModel {
    * @overridable
    */
   static afterDelete(
-    args: objection.StaticHookArguments<Model>
+    args: objection.StaticHookArguments<Model, ModelHookResults['after:delete']>
   ): Promise<void>
 
   /**
@@ -1903,7 +1914,8 @@ export class Model extends ObjectionModel {
    * @override @overridable
    */
   $parseDatabaseJson(
-    json: Record<string, any>
+    json: Record<string, any>,
+    options?: objection.DatabaseJsonOptions
   ): Record<string, any>
 
   /**
@@ -2034,7 +2046,7 @@ type StaticQueryBuilderMethod<
 export type ModelClass = Class<Model>
 
 type ModelRelationKey<T, K extends keyof T> = K extends
-  | 'QueryBuilderType'
+  | ModelTypeMember
   | `$${string}`
   ? never
   : T[K] extends (...args: any[]) => any
@@ -2587,8 +2599,11 @@ export type ControllerActionHandler<
   ? ControllerHandler<$Controller, [ctx: KoaContext]>
   : ControllerHandler<$Controller, [ctx: KoaContext, params: $Params]>
 
+// The type-only members of objection's models, which aren't data:
+type ModelTypeMember = 'QueryBuilderType' | 'ColumnNameMapping'
+
 type ModelDataKey<T, K extends keyof T> = K extends
-  | 'QueryBuilderType'
+  | ModelTypeMember
   | `$${string}`
   ? never
   : T[K] extends (...args: any[]) => any
@@ -3885,8 +3900,9 @@ type QueryScopeArguments =
 
 export class QueryBuilder<
   M extends Model,
-  R = M[]
-> extends objection.QueryBuilder<M, R> {
+  R = M[],
+  X = unknown
+> extends objection.QueryBuilder<M, R, X> {
   /**
    * Exposes a selection of query builder methods on the target, redirecting
    * the calls to `this.query()[method](...)`.
@@ -3905,9 +3921,8 @@ export class QueryBuilder<
   ): this
 
   /**
-   * Creates a find-only copy of this query (clears
-   * `runAfter` callbacks).
-   * @override
+   * Creates a find query with the filters of this query, without its
+   * `runAfter` callbacks, resolved value and fetched graph.
    */
   toFindQuery(): QueryBuilder<M, M[]>
 
@@ -3977,11 +3992,11 @@ export class QueryBuilder<
    * transaction. Models without ids are rejected.
    */
   patchAndFetch(
-    data: objection.PartialModelObject<M>[]
+    data: objection.PartialModelPatch<M>[]
   ): objection.ArrayQueryBuilder<this>
 
   patchAndFetch(
-    data: objection.PartialModelObject<M>
+    data: objection.PartialModelPatch<M>
   ): objection.SingleQueryBuilder<this>
 
   /**
@@ -3989,11 +4004,11 @@ export class QueryBuilder<
    * transaction. Models without ids are rejected.
    */
   updateAndFetch(
-    data: objection.PartialModelObject<M>[]
+    data: objection.PartialModelRow<M>[]
   ): objection.ArrayQueryBuilder<this>
 
   updateAndFetch(
-    data: objection.PartialModelObject<M>
+    data: objection.PartialModelRow<M>
   ): objection.SingleQueryBuilder<this>
 
   /**
@@ -4001,11 +4016,11 @@ export class QueryBuilder<
    * transaction. Their relations are left untouched.
    */
   upsert(
-    data: objection.PartialModelObject<M>[]
+    data: objection.PartialModelRow<M>[]
   ): objection.ArrayQueryBuilder<this>
 
   upsert(
-    data: objection.PartialModelObject<M>
+    data: objection.PartialModelRow<M>
   ): objection.SingleQueryBuilder<this>
 
   /**
@@ -4013,11 +4028,11 @@ export class QueryBuilder<
    * transaction, and fetches them. Their relations are left untouched.
    */
   upsertAndFetch(
-    data: objection.PartialModelObject<M>[]
+    data: objection.PartialModelRow<M>[]
   ): objection.ArrayQueryBuilder<this>
 
   upsertAndFetch(
-    data: objection.PartialModelObject<M>
+    data: objection.PartialModelRow<M>
   ): objection.SingleQueryBuilder<this>
 
   insertDitoGraph(
@@ -4127,13 +4142,10 @@ export class QueryBuilder<
     cascade?: boolean
   }): this & Promise<void>
 
-  ArrayQueryBuilderType: QueryBuilder<M, M[]>
-  SingleQueryBuilderType: QueryBuilder<M, M>
-  NumberQueryBuilderType: QueryBuilder<M, number>
-  PageQueryBuilderType: QueryBuilder<M, objection.Page<M>>
-  MaybeSingleQueryBuilderType: QueryBuilder<M, M | undefined>
+  RebindType: QueryBuilder<this['~M'], this['~R'], this['~X']>
 }
-export interface QueryBuilder<M extends Model, R = M[]> extends KnexHelper {}
+export interface QueryBuilder<M extends Model, R = M[], X = unknown>
+  extends KnexHelper {}
 
 /**
  * Registry of built-in query parameter handlers (scope,

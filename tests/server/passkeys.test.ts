@@ -9,7 +9,6 @@ import { createTestApp, getAppUrl } from '../utils/app.js'
 import { createAuthenticator } from '../utils/authenticator.js'
 import { createClient } from '../utils/client.js'
 import { createTestDatabase } from '../utils/database.js'
-import { isSQLiteTest } from '../utils/test-knex.js'
 
 const loginEvents: string[] = []
 
@@ -339,8 +338,7 @@ describe('Passkeys', () => {
         method: 'POST',
         body: authenticator.register(options.data)
       })
-      // db-errors misses the unique violations of better-sqlite3:
-      expect(passkey.status).toBe(isSQLiteTest ? 500 : 409)
+      expect(passkey.status).toBe(409)
       const credentials = await Credential.query()
       expect(credentials.map(({ userId }) => userId)).toEqual([
         `${member.id}`

@@ -333,9 +333,9 @@ query.insert(data)
 query.insertAndFetch(data)
 ```
 
-Objection.js' methods, with arrays of several models supported on all
-databases: outside PostgreSQL, they are inserted in one transaction, without
-their relations, through `insertGraph()`.
+Objection.js' methods, which insert arrays of models without their relations,
+in one transaction. MySQL inserts them only with their ids: insert them with
+`insertGraph()` otherwise.
 
 ```js
 const books = await Book.query().insert([{ title: 'Dune' }, { title: 'Emma' }])
@@ -487,8 +487,7 @@ const book = await Book.query().patchDitoGraphAndFetchById(1, {
 
 These Objection.js methods are overridden to carry Dito.js' scope, filter and
 graph state: `clone()` copies all of it; `childQueryOf()` makes child queries
-inherit the graph scopes (internal queries inherit none); `toFindQuery()` also
-clears the `runAfter()` callbacks, like `asFindQuery()`.
+inherit the graph scopes (internal queries inherit none).
 
 ## Dialect
 

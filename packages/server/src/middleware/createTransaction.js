@@ -1,5 +1,4 @@
-import { transaction } from 'objection'
-import { wrapDbError } from 'objection/lib/utils/wrapDbError.js'
+import { transaction, wrapError } from 'objection'
 import { emitAsync } from '../utils/emitter.js'
 
 export function createTransaction() {
@@ -59,6 +58,6 @@ async function commit(ctx, trx) {
   // The error comes from the database driver, so wrap it like Objection.js
   // wraps the errors of its own queries:
   await trx.executionPromise.catch(error => {
-    throw ctx.app.createDatabaseError(wrapDbError(error))
+    throw ctx.app.createDatabaseError(wrapError(error))
   })
 }

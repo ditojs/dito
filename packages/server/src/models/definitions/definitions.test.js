@@ -607,10 +607,8 @@ describe('definition.hooks', () => {
     ).toEqual([{ title: 'A', seen: true }])
   })
 
-  it('returns nothing when hooks keep the result unchanged', async () => {
-    expect(await Note.afterInsert({ result: [{}] })).toBeUndefined()
-    expect(await Note.afterDelete({ result: [{}] })).toBeUndefined()
-    expect(await Entry.afterUpdate({ result: [{}] })).toBeUndefined()
-    expect(await Entry.beforeFind({ result: [] })).toBeUndefined()
+  it('returns the result unchanged when hooks return nothing', async () => {
+    const result = {}
+    expect(await Note.afterInsert({ result })).toBe(result)
   })
 })

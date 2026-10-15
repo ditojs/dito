@@ -166,6 +166,24 @@ describe('Model', () => {
     assertType<ModelHooks<Model>>(hooks)
   })
 
+  it('hooks receive the result in the shape that the query returns', () => {
+    const hooks: ModelHooks<Item> = {
+      'before:find'({ result }) {
+        expectTypeOf(result).toEqualTypeOf<undefined>()
+      },
+      'after:find'({ result }) {
+        expectTypeOf(result).toEqualTypeOf<Item | Item[] | undefined>()
+      },
+      'after:insert'({ result }) {
+        expectTypeOf(result).toEqualTypeOf<Item | Item[]>()
+      },
+      'after:update,after:delete'({ result }) {
+        expectTypeOf(result).toExtend<number | Item | Item[] | undefined>()
+      }
+    }
+    assertType<ModelHooks<Item>>(hooks)
+  })
+
   it('modifiers receive typed query builder', () => {
     const modifiers: ModelModifiers<Model> = {
       sharedSelects(query) {

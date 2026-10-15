@@ -22,6 +22,13 @@ version, see the upgrade guides in `docs/`.
 - **server:** The app always listens to its `'error'` events, also before `start()`, and `log.errors: false` only stops logging them. With it, nothing logs request errors, Koa's fallback included.
 - **admin:** Dialogs validate their data on submit, like forms.
 - **admin:** `@simplewebauthn/browser` and `lean-qr` are required peer dependencies.
+- **server:** Dito.js uses objection 4.2, an ES module that needs knex 3.3, and TypeScript 5.8 for its types, see its [migration guide](https://ditojs.github.io/objection/release-notes/migration.html). Among its changes for apps: the `result` of `after:` hooks has the shape that the query returns, e.g. one model or `undefined` for `first()`, and `before:` hooks get none; JSON in PostgreSQL `text` columns is no longer parsed; graph writes reject conflicting graphs and missing related rows before writing anything, and `insertDitoGraph()` rejects upsert options; `limit` and `offset` in the modifiers of graph fetches apply per parent; on PostgreSQL, JSON refs with one key compile to `->` and `->>`, so expression indexes on them need to be rebuilt.
+- **server:** `toFindQuery()` leaves out the resolved value and the fetched graph of the write too, besides its `runAfter()` callbacks.
+- **server:** `insert()` and `insertAndFetch()` insert arrays of models in one transaction on all databases, and outside PostgreSQL through objection's own batches instead of `insertGraph()`. On MySQL, objection throws for arrays of models without ids: insert these with `insertGraph()`.
+- **server:** A model listed twice in a many-to-many relation of a graph gets one join row.
+- **server:** In the types, `patchAndFetch()`, `updateAndFetch()`, `upsert()` and `upsertAndFetch()` take objection's `PartialModelPatch` and `PartialModelRow`, which reject relation data and `Partial<M>`. Custom query builders that extend dito's `QueryBuilder` declare `RebindType` instead of the five `*QueryBuilderType` members.
+- **server:** The validation errors of nested models in graphs have keys with slashes, e.g. `chapters/1/title`, which start with the model's index for array input, e.g. `1/chapters/1/title`.
+- **server:** Collection and member `DELETE` requests answer 400 for `range`, `limit` and `offset`, which deletes can't apply. With `offset`, they deleted all matching rows.
 
 ### New
 
@@ -42,12 +49,14 @@ version, see the upgrade guides in `docs/`.
 
 ### Fixes
 
+- **server:** Empty `PATCH` requests to existing members answer with the unchanged member instead of 404.
 - **server:** Logins with unknown usernames take as long as wrong passwords, and usernames and passwords that aren't strings answer like wrong ones.
 - **server:** `super` calls work in actions in the options form, e.g. `{ handler, parameters }`, instead of throwing.
 - **admin:** Dialog buttons that are wider than their components stay off the dialog's edges.
 - **admin:** Failed logins show the message of the server's response.
 - **admin:** Errors of `context.request()` carry the `status` of their response.
 - **admin:** Lists outside of routes, e.g. in dialogs, keep their scope, page, order and filters to themselves instead of using the route's.
+- **server:** Inserts of several models at once handle the asset files of all of them, where models after the first were skipped when the first had no asset data.
 
 ## 4.8.0 (2026-10-18)
 

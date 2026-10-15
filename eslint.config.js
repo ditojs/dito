@@ -148,6 +148,9 @@ export default [
 
     rules: {
       'import/export': 'off',
+      // TypeScript checks the names of namespaces, also of types, which this
+      // rule looks up in the JavaScript exports.
+      'import/namespace': 'off',
       'no-dupe-class-members': 'off',
       'no-redeclare': 'off',
       'no-unused-vars': 'off',

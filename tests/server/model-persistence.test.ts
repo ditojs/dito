@@ -62,10 +62,12 @@ class Member extends Model {
       hookCalls.push(`${this.name} inserted`)
     },
     'after:find'({ result }: any) {
-      // Sort found members by name, without changing the query.
-      return [...result].sort((a: Member, b: Member) =>
-        a.name.localeCompare(b.name)
-      )
+      // Sort found members by name, without changing the query:
+      return Array.isArray(result)
+        ? [...result].sort((a: Member, b: Member) =>
+            a.name.localeCompare(b.name)
+          )
+        : result
     }
   } as any
 }
@@ -253,32 +255,7 @@ describe('Model persistence', () => {
       ).rejects.toThrow('The provided data for the Member model is not valid')
     })
 
-    it('returns the query result when the patch is turned into a find', async () => {
-      const member = await Member.query().insertAndFetch({
-        name: 'Ada'
-      } as any)
-      const result = await (member.$patch({ name: 'Grace' }) as any)
-        .toFindQuery()
-        .first()
-      expect(result).toBeInstanceOf(Member)
-      expect(result).not.toBe(member)
-      expect(result.name).toBe('Ada')
-      expect(member.name).toBe('Ada')
-    })
-
-    it('returns the query result when the update is turned into a find', async () => {
-      const member = await Member.query().insertAndFetch({
-        name: 'Ada'
-      } as any)
-      const result = await (member.$update({ name: 'Grace' } as any) as any)
-        .toFindQuery()
-        .first()
-      expect(result).not.toBe(member)
-      expect(result.name).toBe('Ada')
-    })
-
     it('returns the query result when the patch operation is cleared', async () => {
-      // Unlike `toFindQuery()`, clearing the operation keeps `runAfter()`.
       const member = await Member.query().insertAndFetch({
         name: 'Ada'
       } as any)
@@ -398,13 +375,29 @@ describe('Model persistence', () => {
     })
   })
 
+  describe('QueryBuilder#insert()', () => {
+    it('inserts arrays of models in one transaction', async () => {
+      const ada = await Member.query().insert({ name: 'Ada' } as any)
+      // Objection splits PostgreSQL inserts above 65000 bound values, here of 3
+      // columns, into several queries:
+      const members = Array.from({ length: 21666 }, () => ({ name: 'Grace' }))
+      await expect(
+        Member.query().insert([...members, { id: ada.id, name: 'Ada' }] as any)
+      ).rejects.toThrow(DatabaseError)
+      expect(await Member.count()).toBe(1)
+    })
+  })
+
   describe('query errors', () => {
-    it('converts database errors to DatabaseError', async context => {
-      context.skip(isSQLiteTest, 'db-errors misses better-sqlite3 errors')
+    it('converts database errors to DatabaseError', async () => {
       const promise = Member.query().where('nickname', 'Ada')
       const error = await promise.catch(error => error)
       expect(error).toBeInstanceOf(DatabaseError)
-      expect(error.message).toMatch(/column "nickname" does not exist/)
+      expect(error.message).toMatch(
+        isSQLiteTest
+          ? /no such column: nickname/
+          : /column "nickname" does not exist/
+      )
       // The SQL is only included with the `log.errors.sql` setting.
       expect(error.message).not.toMatch(/^select/)
     })
