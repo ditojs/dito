@@ -814,7 +814,7 @@ Extends [`ModelController`](#modelcontroller) for models with
 [`UserMixin`](./model.md#usermixin), with these collection actions. They are
 inherited actions, see [`allow`](#allow): a subclass that sets
 `collection.allow` has to list them too, e.g.
-`allow: ['get', 'post login', 'post logout', 'get session', 'get self']`.
+`allow: ['get', 'post login', 'post logout', 'get session', 'get self', 'patch self']`.
 
 | Action               | Response |
 | -------------------- | ------------------------------------------------------- |
@@ -822,9 +822,13 @@ inherited actions, see [`allow`](#allow): a subclass that sets
 | `'post logout'`      | `{ success, authenticated }` |
 | `'get session'`      | `{ authenticated, user }` |
 | `'get self'`         | The authenticated user through `member.get`, or `null`. |
+| `'patch self'`       | Patches the authenticated user through `member.patch` and returns it. Only where `member.patch` is allowed and authorizes the user, otherwise and without a login it responds with 401. |
 
 The controller's [`authorize`](#authorize) doesn't apply to `login`, `logout`
-and `session`, which authenticate users; `self` follows it. Its member actions
+and `session`, which authenticate users; `self` follows it. As `patch self`
+goes through `member.patch`, an override of `member.patch` that restricts the
+fields of the patch, e.g. drops `roles` for users without a role, applies to
+both. Its member actions
 default to `authorize: ['$self']`, and are routed when listed in `allow` like
 on other model controllers.
 

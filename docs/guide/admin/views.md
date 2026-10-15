@@ -144,6 +144,69 @@ the `authorize` settings of the controllers, see
 The admin resolves its views again for each login: a `views` function is
 called again, e.g. to load schemas that depend on the API.
 
+## Account settings
+
+`account.settings` gives each user a form to edit their own account, opened
+through the menu under their name in the sidebar, without an item in the main
+menu. The admin shows it at `/account/settings`, loads the user from
+`GET /api/users/self` and saves it with `PATCH /api/users/self`, then shows the
+changes, e.g. of the username, right away:
+
+```js
+// src/admin/index.js
+new DitoAdmin('#dito-admin', {
+  views: () => import('./views/index.js'),
+  account: {
+    settings: () => import('./account-settings.js')
+  }
+})
+```
+
+```js
+// src/admin/account-settings.js
+export default {
+  type: 'form',
+  label: 'Account',
+  components: {
+    email: {
+      type: 'email',
+      label: 'Email',
+      required: true
+    },
+    // Only sent when a new password is entered:
+    password: {
+      type: 'password',
+      label: 'New Password'
+    }
+  }
+}
+```
+
+On the server, `PATCH /users/self` goes through the `patch` member action of
+the `UsersController`, so the users need to be allowed to patch themselves:
+`member = { allow: ['get', 'patch'] }`, which only allows users to patch
+themselves (`'$self'`) by default. To keep users from changing some of their
+fields, e.g. their roles, override the member's `patch` action, which applies
+to both routes:
+
+```js
+export class Users extends UsersController {
+  modelClass = User
+
+  member = {
+    allow: ['get', 'patch'],
+    authorize: ['$self', 'admin'],
+
+    patch(ctx) {
+      if (!ctx.state.user.$hasRole('admin')) {
+        delete ctx.request.body.roles
+      }
+      return super.patch(ctx)
+    }
+  }
+}
+```
+
 ## Panels and tabs
 
 Views take `panels`, shown in the sidebar, and `tabs`, like forms. See

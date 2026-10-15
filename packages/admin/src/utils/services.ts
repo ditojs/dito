@@ -1,5 +1,5 @@
 import { nextTick } from 'vue'
-import { equals, format as formatValue, isString } from '@ditojs/utils'
+import { format as formatValue, isString } from '@ditojs/utils'
 import defaultVerbs from '../verbs.js'
 import { getResource, getMemberResource } from './resource.js'
 import { getRequestCacheKey } from './request.js'
@@ -100,13 +100,18 @@ export async function sendRequest(
     await session.ensureUser()
   }
   const response = await api.request({ method, url, query, data, signal })
-  // Fetch the own user again when it changed:
-  if (
-    checkUser &&
-    method === 'patch' &&
-    equals(resource, getMemberResource(adminContext.user!.id, api.users))
-  ) {
-    await session.fetchUser()
+  // Fetch the own user again when it changed, through its member or `self`:
+  if (checkUser && method === 'patch') {
+    const { users } = api
+    const userUrls = [
+      getMemberResource(adminContext.user!.id, users)!,
+      users.self!
+    ].map(resource =>
+      getResourceUrl({ adminContext, resourceContext: null }, resource)
+    )
+    if (userUrls.includes(url)) {
+      await session.fetchUser()
+    }
   }
   return response
 }

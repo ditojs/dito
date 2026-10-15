@@ -46,9 +46,10 @@ new DitoAdmin(element, options)
 | `options.login.additionalComponents` | `Components` | Components added to the login dialog after `username` and `password`. Their values are sent with the credentials. |
 | `options.login.redirectAfterLogin` | `string` | A URL to load after a successful login, instead of resolving the views in place. |
 | `options.spinner` | `{ size?: string, color?: string } \| null` | Size and color of the loading spinner in the header. `null` hides it. |
+| `options.account.settings` | `Form \| Promise \| () => …` | The form of the account settings, which the account menu opens at `/account/settings`, to edit the logged-in user through [`api.users.self`](#users). Also a promise or a function returning it, e.g. a dynamic `import()`. Its `label` is the view's label, default `'Settings'`. See [Account settings](../../guide/admin/views.md#account-settings). |
 
-`login` and `spinner` are kept in [`admin.options`](#options). Unknown options
-log a warning.
+`login`, `spinner` and `account` are kept in [`admin.options`](#options).
+Unknown options log a warning.
 
 ### Example
 
@@ -107,7 +108,7 @@ The Vue application instance.
 ### options
 
 ```ts
-admin.options: { login?, spinner? }
+admin.options: { login?, spinner?, account? }
 ```
 
 The constructor options other than `dito`, `api` and `views`.
@@ -145,17 +146,20 @@ api: {
     path: 'users',
     login: { path: 'login', method: 'post' },
     logout: { path: 'logout', method: 'post' },
-    session: { path: 'session', method: 'get' }
+    session: { path: 'session', method: 'get' },
+    self: { path: 'self' }
   }
 }
 ```
 
 `users.path` is the collection of the user model; `users: 'users'` is short
-for `users: { path: 'users' }`. `login`, `logout` and `session` are resources
-nested under it, shown here with their defaults, so the admin logs in through
-`POST users/login`. The server's `UsersController` provides them. The admin
-reads `user` from the responses of `login` and `session`, and `success` from
-the response of `logout`. See [AdminContext](#session) for
+for `users: { path: 'users' }`. `login`, `logout`, `session` and `self` are
+resources nested under it, shown here with their defaults, so the admin logs
+in through `POST users/login`. The server's `UsersController` provides them.
+The admin reads `user` from the responses of `login` and `session`, and
+`success` from the response of `logout`. The
+[account settings](#parameters) load the logged-in user from `self` and patch
+it there, after which the admin fetches the session's user again. See [AdminContext](#session) for
 the session that uses them.
 
 ### defaults

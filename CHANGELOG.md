@@ -3,6 +3,13 @@
 The changes of each release of Dito.js. For upgrading to a new major
 version, see the upgrade guides in `docs/`.
 
+## 4.6.0 (unreleased)
+
+### New
+
+- **server:** `UsersController` has a `'patch self'` collection action, `PATCH users/self`, that patches the logged-in user through `member.patch` and returns it, where `member.patch` is allowed and authorizes the user. Subclasses that set `collection.allow` list it to route it.
+- **admin:** `account.settings` in the options of `DitoAdmin` takes a form that edits the logged-in user, opened through a Settings item in the account menu at `/account/settings`, without an item in the main menu. It loads and saves the user through `api.users.self`, by default `users/self`, and shows the changes in the account menu right away.
+
 ## 4.5.1 (2026-10-15)
 
 ### Improvements

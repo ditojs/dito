@@ -324,20 +324,30 @@ export class SourceNode extends RouteNode {
 }
 
 export class RouteTree {
+  // The nodes of the menu:
   readonly nodes: (MenuNode | ViewNode)[]
+  // The nodes of the views that have routes but no menu items:
+  readonly #hiddenNodes: (MenuNode | ViewNode)[]
   readonly #api: Pick<Api, 'normalizePath'>
   readonly #viewsByName = new Map<string, ViewNode>()
   readonly #sourcesWithRoutes: Set<Schema>
 
   constructor(
     views: Record<string, Schema>,
-    api: Pick<Api, 'normalizePath'>
+    api: Pick<Api, 'normalizePath'>,
+    hiddenViews: Record<string, Schema> = {}
   ) {
     this.#api = api
-    this.#sourcesWithRoutes = findSourcesWithRoutes(views)
-    this.nodes = Object.entries(views).map(([name, schema]) =>
-      this.#createViewNode(schema, name, null)
-    )
+    this.#sourcesWithRoutes = findSourcesWithRoutes([
+      ...Object.values(views),
+      ...Object.values(hiddenViews)
+    ])
+    const createViewNodes = (views: Record<string, Schema>) =>
+      Object.entries(views).map(([name, schema]) =>
+        this.#createViewNode(schema, name, null)
+      )
+    this.nodes = createViewNodes(views)
+    this.#hiddenNodes = createViewNodes(hiddenViews)
   }
 
   // Dialogs don't support forms with routes:
@@ -352,8 +362,15 @@ export class RouteTree {
     return form ? { name: form.routeName, params: { [form.param]: key } } : null
   }
 
+  getViewRoute(name: string): Route | null {
+    const view = this.#viewsByName.get(name)
+    return view ? { name: view.routeName, params: {} } : null
+  }
+
   createRouteRecords(components: RouteComponents): RouteRecordRaw[] {
-    return this.nodes.map(node => this.#createViewRecord(node, components))
+    return [...this.nodes, ...this.#hiddenNodes].map(node =>
+      this.#createViewRecord(node, components)
+    )
   }
 
   #createViewNode(
@@ -551,7 +568,7 @@ function forEachSource(
 
 // Collect the graph of all sources once, then follow it back from the sources
 // with routed forms, in linear time, unlike expanding all inlined sources:
-function findSourcesWithRoutes(views: Record<string, Schema>): Set<Schema> {
+function findSourcesWithRoutes(views: Schema[]): Set<Schema> {
   const parentsBySource = new Map<Schema, Set<Schema>>()
   const routedSources: Schema[] = []
   const addSource = (source: Schema, parent: Schema | null) => {
@@ -583,7 +600,7 @@ function findSourcesWithRoutes(views: Record<string, Schema>): Set<Schema> {
       forEachSource(schema, source => addSource(source, null))
     }
   }
-  Object.values(views).forEach(addView)
+  views.forEach(addView)
   const sourcesWithRoutes = new Set<Schema>()
   const markSource = (source: Schema) => {
     if (!sourcesWithRoutes.has(source)) {

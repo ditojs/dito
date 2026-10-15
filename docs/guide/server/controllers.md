@@ -581,13 +581,16 @@ export class Users extends UsersController {
 - `POST /users/logout` logs out.
 - `GET /users/session` returns `{ authenticated, user }`.
 - `GET /users/self` returns the logged-in user.
+- `PATCH /users/self` patches the logged-in user through the member's `patch`
+  action, if it is allowed, and returns it. The admin's
+  [account settings](../admin/views.md#account-settings) use it.
 
 `authorize` on the controller doesn't apply to login, logout and session,
 which authenticate, so users can always log in; `self` follows it. Member
 actions are only allowed for the user themselves (`'$self'`) by default; the
 example also allows admins. If a subclass sets `collection.allow`, it has to
 list the routes above too, e.g.
-`allow: ['get', 'post login', 'post logout', 'get session', 'get self']`.
+`allow: ['get', 'post login', 'post logout', 'get session', 'get self', 'patch self']`.
 
 In actions, `ctx.state.user` is the logged-in user. The admin logs in through
 these routes, see the [admin guide](../admin/index.md).

@@ -1,6 +1,6 @@
 import { shallowRef } from 'vue'
 import { mapConcurrently } from '@ditojs/utils'
-import { resolveViews, setupView } from './schema/setup.js'
+import { resolveSchema, resolveViews, setupView } from './schema/setup.js'
 import { RouteTree } from './RouteTree.ts'
 
 // The views are resolved anew for each login, as the schemas may depend on the
@@ -10,15 +10,17 @@ export class ViewRegistry {
   #api
   #router
   #unresolvedViews
+  #account
   #routeComponents
   #views = shallowRef({})
   #routeTree = shallowRef(null)
   #removeRoutes = null
 
-  constructor({ api, router, unresolvedViews, routeComponents }) {
+  constructor({ api, router, unresolvedViews, account, routeComponents }) {
     this.#api = api
     this.#router = router
     this.#unresolvedViews = unresolvedViews
+    this.#account = account
     this.#routeComponents = routeComponents
   }
 
@@ -34,16 +36,19 @@ export class ViewRegistry {
   // request of their schemas:
   async resolve() {
     let views
+    let hiddenViews
     try {
       views = await resolveViews(this.#unresolvedViews)
+      hiddenViews = await resolveAccountViews(this.#api, this.#account)
     } catch (error) {
       console.error(error)
       return false
     }
-    await mapConcurrently(Object.entries(views), ([name, schema]) =>
-      setupView(this.#api, schema, name)
+    await mapConcurrently(
+      [...Object.entries(views), ...Object.entries(hiddenViews)],
+      ([name, schema]) => setupView(this.#api, schema, name)
     )
-    const routeTree = new RouteTree(views, this.#api)
+    const routeTree = new RouteTree(views, this.#api, hiddenViews)
     const { fullPath } = this.#router.currentRoute.value
     this.#removeRoutes?.()
     this.#removeRoutes = addRoutes(this.#router, [
@@ -64,6 +69,21 @@ export class ViewRegistry {
     this.#routeTree.value = null
     return this.#router.push('/')
   }
+}
+
+// The account settings edit the own user, in a view without a menu item:
+async function resolveAccountViews(api, { settings } = {}) {
+  const form = settings && (await resolveSchema(settings, true))
+  return form
+    ? {
+        accountSettings: {
+          type: 'view',
+          label: form.label ?? 'Settings',
+          path: 'account/settings',
+          component: { type: 'object', resource: api.users.self, form }
+        }
+      }
+    : {}
 }
 
 function addRoutes(router, routes) {

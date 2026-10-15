@@ -25,6 +25,8 @@ interface StartTestAppOptions {
   models: Record<string, typeof Model>
   controllers: Record<string, unknown>
   config?: Record<string, unknown>
+  /** Merged into the admin's api config. */
+  api?: Record<string, unknown>
 }
 
 /** Create the embedded app + auth stub. Returns the unstarted app. */
@@ -35,11 +37,14 @@ export function startTestApp(opts: StartTestAppOptions): TestApp {
     admin: {
       name: path.basename(opts.dirname),
       views: path.join(opts.dirname, 'views.ts'),
-      api: { url: '/api/' }
+      api: { url: '/api/', ...opts.api }
     },
     config: opts.config
   })
-  stubSession(app)
+  // Scenarios with users of their own log in through their controller:
+  if (!opts.api?.users) {
+    stubSession(app)
+  }
   return app
 }
 
@@ -105,6 +110,9 @@ export interface ScenarioOptions {
   tables?: string[]
   /** Extra config merged into the app config. */
   config?: Record<string, unknown>
+  /** Merged into the admin's api config, e.g. `users` to log in through a
+   * `UsersController` instead of the stubbed session. */
+  api?: Record<string, unknown>
   /** Runs once after the database is created, before the app starts, e.g.
    * to create join tables that `createTestDatabase()` doesn't derive. */
   setup?: (app: TestApp) => Promise<void>
@@ -124,6 +132,7 @@ export function defineScenario({
   controllers = {},
   tables = [],
   config,
+  api: adminApi,
   setup,
   beforeEach
 }: ScenarioOptions) {
@@ -152,7 +161,8 @@ export function defineScenario({
           dirname,
           models,
           controllers: { admin: AdminController, api },
-          config
+          config,
+          api: adminApi
         })
         await bootTestDb(app)
         await setup?.(app)

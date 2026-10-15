@@ -94,7 +94,16 @@ test.describe('component screenshots', () => {
     // The stub user has no username, so the account button has no text.
     await page.getByRole('complementary').getByRole('button').first().click()
     await expect(page.getByText('Logout', { exact: true })).toBeVisible()
+    await expect(page.getByText('Settings', { exact: true })).toBeVisible()
     await expectScreenshot(page, 'account-menu.png')
+  })
+
+  test('account settings', async ({ page, url }) => {
+    await openProject(page, url)
+    await page.getByRole('complementary').getByRole('button').first().click()
+    await page.getByText('Settings', { exact: true }).click()
+    await expect(page.getByLabel('Name', { exact: true })).toHaveValue('Test')
+    await expectScreenshot(page, 'account-settings.png')
   })
 
   test('date picker', async ({ page, url }) => {
