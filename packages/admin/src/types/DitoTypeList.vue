@@ -39,6 +39,7 @@
         type="list"
         :hasData="listData.length > 0"
         :getData="getClipboardData"
+        :getUploadEntries="getClipboardUploadEntries"
         :createContext="createContext"
         :disabled="!creatable || disabled || readonly || isLoading"
         @paste="pasteItems"
@@ -179,6 +180,7 @@ import {
 import { isSourceWithResource } from '../utils/schema/structure.js'
 import { fromClipboard } from '../utils/fromClipboard.ts'
 import { toClipboard } from '../utils/toClipboard.ts'
+import { getUploadEntries } from '../utils/interchange.ts'
 import { labelToggleKey } from '../utils/keys.ts'
 import { hyphenate, labelize } from '@ditojs/utils'
 import { computed, inject, watchEffect } from 'vue'
@@ -327,6 +329,20 @@ const DitoTypeList = {
             )
           )
         }
+      },
+
+      getClipboardUploadEntries({ items }) {
+        return items.flatMap((item, index) =>
+          getUploadEntries(
+            getItemFormSchema(props.schema, item, context),
+            item,
+            {
+              dataPath: appendDataPath(props.dataPath, index),
+              services,
+              rootData: context.rootItem
+            }
+          )
+        )
       },
 
       // Append the items with their creatable forms, and leave out the others:

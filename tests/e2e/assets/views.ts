@@ -31,6 +31,32 @@ export const assets = createWidgetView<AssetWidget>(
   }
 )
 
+// Forms that download their data with its files as a zip, and upload it again:
+export const interchange: ViewSchema<AssetWidget> = {
+  type: 'view',
+  component: {
+    type: 'list',
+    itemLabel: 'files',
+    resource: { path: 'asset-widgets' },
+    editable: true,
+    form: {
+      type: 'form',
+      clipboard: { interchange: true },
+      components: {
+        files: {
+          type: 'upload',
+          extensions: 'gif,jpg,jpeg,png,webp',
+          multiple: true
+        },
+        file: {
+          type: 'upload',
+          extensions: 'gif,jpg,jpeg,png,webp'
+        }
+      }
+    }
+  }
+}
+
 export const nestedAssets: ViewSchema<NestedAssetWidget> = {
   type: 'view',
   component: {

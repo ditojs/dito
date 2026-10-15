@@ -85,6 +85,23 @@ describe('DitoMenuButton', () => {
     expect(button.attributes('aria-expanded')).toBe('false')
   })
 
+  it('shows the icons of items instead of their labels', async () => {
+    wrapper = mountMenuButton({
+      items: [
+        { value: 'heading', label: 'Heading' },
+        { value: 'image', label: 'Image', icon: 'image' }
+      ]
+    })
+    await findButton(wrapper).trigger('click')
+    const [textItem, iconItem] = findMenuItems(wrapper)
+    expect(textItem.text()).toBe('Heading')
+    expect(textItem.attributes('title')).toBeUndefined()
+    expect(iconItem.text()).toBe('')
+    expect(iconItem.attributes('title')).toBe('Image')
+    expect(iconItem.classes()).toContain('dito-menu-button__item--icon')
+    expect(iconItem.find('.dito-icon--image').exists()).toBe(true)
+  })
+
   it('selects items with clicks and closes the menu', async () => {
     wrapper = mountMenuButton()
     const button = findButton(wrapper)

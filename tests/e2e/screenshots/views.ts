@@ -262,7 +262,7 @@ export const projects = createWidgetView<Project>(
               draggable: true,
               deletable: true,
               extensions: 'png,pdf',
-              clipboard: true
+              clipboard: { interchange: true }
             },
             links: {
               type: 'list',
@@ -272,7 +272,7 @@ export const projects = createWidgetView<Project>(
               deletable: true,
               draggable: true,
               collapsible: 'all',
-              clipboard: true,
+              clipboard: { interchange: true },
               // Long suffixes are clipped with an ellipsis:
               itemLabel: ({
                 formLabel,
@@ -325,6 +325,7 @@ export const projects = createWidgetView<Project>(
               form: {
                 type: 'form',
                 label: 'Reference',
+                clipboard: { interchange: true },
                 components: {
                   url: { type: 'url', label: 'Reference URL' }
                 }

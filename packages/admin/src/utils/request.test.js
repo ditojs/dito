@@ -72,6 +72,22 @@ describe('request()', () => {
     })
   })
 
+  it('sends form data as it is, without the JSON `Content-Type`', async () => {
+    const fetch = stubFetch()
+    const api = createApi({
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer secret'
+      }
+    })
+    const data = new FormData()
+    data.append('cover', new File(['cover'], 'cover.png'))
+    await request(api, { url: 'books/upload/cover', method: 'post', data })
+    const [, options] = fetch.mock.calls[0]
+    expect(options.body).toBe(data)
+    expect(options.headers).toEqual({ Authorization: 'Bearer secret' })
+  })
+
   it('sends no body without data', async () => {
     const fetch = stubFetch()
     await request(createApi(), { url: 'books' })

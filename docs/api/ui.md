@@ -131,7 +131,7 @@ the menu, the arrow keys, Home and End move between items, Escape closes it.
 
 | Prop | Type | Default | Description |
 | ---- | ---- | ------- | ----------- |
-| `items` | `Array<{ value, label, disabled? }>` | required | The menu items. |
+| `items` | `Array<{ value, label, icon?, disabled? }>` | required | The menu items. Items with an `icon` from the [icon set](#icons) show it instead of their `label`, which becomes their title. |
 | `placement` | `string` | `'bottom'` | Where the menu opens, see [`DitoTrigger`](#ditotrigger). |
 | `cover` | `boolean` | `true` | Opens the menu over the button, like native menus. |
 | `offset` | `boolean` | `false` | Opens the menu one item padding below the top of the button, e.g. to line up with the text of a taller button. |
@@ -716,15 +716,15 @@ The icons are available as [`DitoIcon`](#ditoicon) with their
 placeholders `%icon-{name}` and the list `$icons`:
 
 `add`, `align-center`, `align-justify`, `align-left`, `align-right`,
-`alternate`, `arrow`, `at-sign`, `blockquote`, `bold`, `bookmark`,
-`bullet-list`, `calendar`, `chevron`, `chevrons`, `clear`, `clock`,
-`code-block`, `code`, `command`, `copy`, `credit-card`, `crop`,
-`dollar-sign`, `drag`, `edit`, `ellipsis`, `footnotes`, `hash`, `heading-1`,
-`heading-2`, `heading-3`, `heart`, `home`, `horizontal-rule`, `image`, `info`,
-`italic`, `link`, `mail`, `menu`, `ordered-list`, `paperclip`, `paragraph`,
-`paste`, `percent`, `redo`, `refresh`, `remove`, `resize`, `search`,
-`settings`, `small`, `strike`, `subscript`, `superscript`, `tag`, `trash`,
-`type`, `underline`, `undo`, `upload`.
+`alternate`, `archive-download`, `archive-upload`, `arrow`, `at-sign`,
+`blockquote`, `bold`, `bookmark`, `bullet-list`, `calendar`, `chevron`,
+`chevrons`, `clear`, `clock`, `code-block`, `code`, `command`, `copy`,
+`credit-card`, `crop`, `dollar-sign`, `drag`, `edit`, `ellipsis`, `footnotes`,
+`hash`, `heading-1`, `heading-2`, `heading-3`, `heart`, `home`,
+`horizontal-rule`, `image`, `info`, `italic`, `link`, `mail`, `menu`,
+`ordered-list`, `paperclip`, `paragraph`, `paste`, `percent`, `redo`, `refresh`,
+`remove`, `resize`, `search`, `settings`, `small`, `strike`, `subscript`,
+`superscript`, `tag`, `trash`, `type`, `underline`, `undo`, `upload`.
 
 ```scss
 @import '@ditojs/ui/imports.scss';

@@ -188,3 +188,13 @@ export function download(
   a.click()
   body.removeChild(a)
 }
+
+export function downloadBlob(services: Services, blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob)
+  try {
+    download(services, { filename, url })
+  } finally {
+    // Some browsers don't start the download synchronously:
+    setTimeout(() => URL.revokeObjectURL(url), 1000)
+  }
+}

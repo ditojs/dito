@@ -58,7 +58,9 @@ export type RequestMethod = <T>(options: {
    * @defaultValue `'get'`
    */
   method?: HttpMethod
-  /** Request body payload. */
+  /**
+   * Request body payload, sent as JSON, or as it is if it's `FormData`.
+   */
   data?: unknown
   /** URL query parameters. */
   query?:
@@ -2606,6 +2608,13 @@ export type ClipboardConfig =
        * returns the data to paste.
        */
       paste?: (context: SchemaContext) => unknown
+      /**
+       * Whether to also download the data with its files as a zip, and
+       * upload such a zip again, e.g. into another installation.
+       *
+       * @defaultValue `false`
+       */
+      interchange?: boolean
     }
 
 export type View<$Item = any> =

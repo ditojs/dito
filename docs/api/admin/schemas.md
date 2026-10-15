@@ -1303,6 +1303,7 @@ type ClipboardConfig =
   | {
       copy?: (context: SchemaContext) => unknown
       paste?: (context: SchemaContext) => unknown
+      interchange?: boolean
     }
 ```
 
@@ -1338,6 +1339,9 @@ files of uploads, which paste into all uploads.
   `context.clipboardItem` and returns the data to paste, which is then
   deserialized like loaded data. Both see the labels of related records, not
   their ids.
+- `interchange: true` adds a menu to download the data with its files as a
+  zip, and to upload such a zip again, see
+  [Download and Upload](../../guide/admin/forms.md#download-and-upload).
 
 ```js
 clipboard: {
