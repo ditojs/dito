@@ -22,6 +22,8 @@ export function parseHandlerDefinition(definition) {
   }
   const {
     handler = definition,
+    before = null,
+    after = null,
     core = false,
     authorize = null,
     transacted = null,
@@ -52,6 +54,8 @@ export function parseHandlerDefinition(definition) {
 
   return {
     handler,
+    before,
+    after,
     core,
     authorize,
     transacted,

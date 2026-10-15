@@ -7,18 +7,26 @@ version, see the upgrade guides in `docs/`.
 
 ### Behaviour changes
 
+- **server:** Two actions of the same type with the same identifier in hook keys throw when the controller is set up, e.g. `'get :token'` and `'get token'`: change the route of one of them.
 - **server:** `@ditojs/build`, `vite` and `@vitejs/plugin-vue` are optional peer dependencies, loaded only to build the admin or serve it in development: install them as dev dependencies of the app. `app.defineAdminViteConfig()` and `defineViteConfig()` of `AdminController` return promises, which Vite awaits as the default export of `admin.vite.config.js`.
 - **admin:** Labels, the results of `itemLabel()`, `info` and the values of `label` components are text unless they're given as `{ html }`: strings show as they are, e.g. `&` and `<b>`, where labels and the strings returned by `itemLabel()` were HTML. Labels and callbacks that return HTML return `{ html }` instead. Labels show as text in tabs, the menu, the trail, column headers, buttons and accessible names, also for `{ html }`. `context.formLabel` is the text of the form's label, and `context.itemLabel` the text of the item's label, which was HTML: notifications that interpolate it pass it as `text`. `context.itemLabelText` is removed, use `context.itemLabel`.
 
 ### New
 
+- **server:** Hooks identify custom actions by their method and path, with hyphenated parameter names and without wildcards, e.g. `'before:member:get-tech-doc-format'` for `'get tech-doc-:format'`. `ctx.action.identifier` holds the part after `before:` or `after:`, e.g. `'member:get-tech-doc-format'`.
+- **server:** `before` and `after` options of actions, hooks of the action only, which run after the controller's hooks.
 - **admin:** `{ html }` on `label`, the results of `itemLabel()` and `info`, which renders its HTML, and `TextOrHtml` and `SchemaLabel` types for them. Filter placeholders use the text of `{ text }` and `{ html }` labels.
 
 ### Fixes
 
+- **server:** Wildcard hooks such as `'before:*:*'` and `'before:actions:*'` run for actions with route parameters too.
 - **admin:** The labels of upload fields point to their inputs, which use the component path as their id, like the inputs of other types.
 - **admin:** Trees and their items have the `tree`, `treeitem` and `group` roles, and sections the `region` role with their label, like lists and panels.
 - **admin:** `clipboard` on lists and objects applies to their `form` and `forms`, not only to the inlined form of `components`. Forms with their own `clipboard` keep it.
+
+### Deprecations
+
+- **server:** Hook keys that name custom actions by their keys, e.g. `'before:member:get tech-doc-:format'`, keep working until 5.0 with a deprecation warning that names the new key.
 
 ## 4.4.0 (2026-10-14)
 

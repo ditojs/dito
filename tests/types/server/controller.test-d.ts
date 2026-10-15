@@ -11,6 +11,7 @@ import type {
   ModelControllerActionHandler,
   ModelControllerActions,
   ModelControllerMemberActions,
+  ModelControllerHooks,
   ControllerAction,
   ControllerActionHandler,
   ControllerActions,
@@ -232,7 +233,7 @@ describe('ModelController', () => {
     const ctrl = {} as ModelController<Model>
     ctrl.hooks = {
       'before:collection:get'() {},
-      'after:collection:get session'() {},
+      'after:collection:get-session'() {},
       'after:member:patch'() {},
       'before:*:get'() {},
       '*:collection:*'() {},
@@ -344,7 +345,7 @@ describe('ModelController', () => {
       'after:*:get'(ctx, result) {
         expectTypeOf(result).toBeAny()
       },
-      'after:collection:get stats'(ctx, result) {
+      'after:collection:get-stats'(ctx, result) {
         expectTypeOf(result).toBeAny()
       }
     }
@@ -544,8 +545,8 @@ describe('Controller settings', () => {
   it('accepts hooks and assets on all controllers', () => {
     class Imports extends Controller {
       override hooks = {
-        'before:actions:post import'() {},
-        'after:actions:post import,after:actions:post export': [
+        'before:actions:post-import'() {},
+        'after:actions:post-import,after:actions:post-export': [
           (ctx: KoaContext, result: unknown) => result
         ]
       }
@@ -571,5 +572,28 @@ describe('Controller settings', () => {
       'get export': { method: 'post', handler() {} }
     }
     assertType<ControllerActions>(actions)
+  })
+
+  it('accepts action hooks', () => {
+    class Books extends ModelController<Model> {
+      override member: ModelControllerMemberActions<Books> = {
+        'get cover-:format': {
+          before(ctx) {
+            expectTypeOf(this).toEqualTypeOf<Books>()
+            expectTypeOf(ctx).toEqualTypeOf<KoaContext>()
+          },
+          after(ctx, result) {
+            return result
+          },
+          handler() {}
+        }
+      }
+    }
+    assertType<ModelControllerHooks<Books>>({
+      'before:member:get-cover-format'() {},
+      'after:member:get-cover-format'(ctx, result) {
+        expectTypeOf(result).toBeAny()
+      }
+    })
   })
 })

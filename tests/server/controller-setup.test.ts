@@ -37,7 +37,7 @@ class PantryController extends Controller {
     'before:actions:*'(ctx: any) {
       events.push(`base before ${ctx.action.name}`)
     },
-    'after:actions:get stock'(ctx: any, result: any) {
+    'after:actions:get-stock'(ctx: any, result: any) {
       events.push('base after')
       return { ...result, checkedBy: 'base' }
     }
@@ -56,7 +56,7 @@ class PantryController extends Controller {
 
 class Pantry extends PantryController {
   override hooks: any = {
-    'after:actions:get stock'(ctx: any, result: any) {
+    'after:actions:get-stock'(ctx: any, result: any) {
       events.push('sub after')
       return { ...result, checkedBy: `${result.checkedBy} and sub` }
     }
