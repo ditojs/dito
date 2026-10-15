@@ -368,3 +368,15 @@ export const reports = {
     done: { ...createScopeView('done'), label: 'Done Projects' }
   }
 } as const
+
+export const account = {
+  settings: {
+    type: 'form',
+    label: 'Account',
+    components: {
+      name: { type: 'text', label: 'Name' },
+      email: { type: 'email', label: 'Email' },
+      password: { type: 'password', label: 'New Password' }
+    }
+  }
+} as const

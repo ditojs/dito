@@ -1,4 +1,5 @@
 import { ModelController } from './ModelController.js'
+import { AuthorizationError } from '../errors/index.js'
 
 export class UsersController extends ModelController {
   collection = {
@@ -58,6 +59,17 @@ export class UsersController extends ModelController {
             this.getContextWithMemberId(ctx, ctx.state.user.$id())
           )
         : null
+    },
+
+    async 'patch self'(ctx) {
+      // Users can only patch themselves where they can patch their member:
+      if (this.member.patch && this.isAuthenticated(ctx)) {
+        ctx = this.getContextWithMemberId(ctx, ctx.state.user.$id())
+        await this.controller.authorizeMember(ctx, 'patch')
+        return this.member.patch.call(this, ctx)
+      } else {
+        throw new AuthorizationError()
+      }
     }
   }
 

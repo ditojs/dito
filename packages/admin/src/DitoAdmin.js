@@ -22,7 +22,7 @@ import { AdminContext } from './utils/AdminContext.ts'
 import { adminContextKey } from './utils/keys.ts'
 
 // The options other than `dito`, `api` and `views`:
-const knownOptions = ['login', 'spinner']
+const knownOptions = ['login', 'spinner', 'account']
 
 export default class DitoAdmin {
   constructor(el, {
@@ -59,6 +59,8 @@ export default class DitoAdmin {
     for (const [name, method] of Object.entries(methods)) {
       users[name] = getResource(users[name] || name, { method, parent: users })
     }
+    // The own user, that the account settings load and patch:
+    users.self = getResource(users.self || 'self', { parent: users })
     api.users = users
 
     // Apps may override the handlers of resource paths:
@@ -119,6 +121,7 @@ export default class DitoAdmin {
       api,
       router,
       unresolvedViews: views,
+      account: options.account,
       routeComponents: {
         view: DitoView,
         form: DitoForm,

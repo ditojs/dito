@@ -280,6 +280,16 @@ export interface ApiConfig {
        */
       method?: HttpMethod
     }
+    /**
+     * The endpoint of the logged-in user, which the account settings load
+     * and patch.
+     */
+    self?: {
+      /**
+       * @defaultValue `'self'`
+       */
+      path?: string
+    }
   }
   /**
    * Custom resource path handlers, keyed by resource type. Merged
@@ -3147,6 +3157,13 @@ interface AdminOptions {
     size?: string
     color?: string
   } | null
+  account?: {
+    /**
+     * The form of the account settings, which edit the logged-in user through
+     * `api.users.self` in a view that the account menu opens.
+     */
+    settings?: ResolvableForm
+  }
 }
 
 // The hooks of type descriptors receive the contexts of their components:

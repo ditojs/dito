@@ -151,12 +151,15 @@ export function createTestApp(
 }
 
 export function stubSession(app: TestApp) {
+  const user = { id: 1, name: 'Test' }
   app.use(async (ctx, next) => {
     if (ctx.path === '/api/session') {
-      ctx.body = {
-        authenticated: true,
-        user: { id: 1, name: 'Test' }
-      }
+      ctx.body = { authenticated: true, user }
+      return
+    }
+    // The user of the account settings:
+    if (ctx.path === '/api/self' && ctx.method === 'GET') {
+      ctx.body = user
       return
     }
     await next()

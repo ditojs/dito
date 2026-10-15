@@ -10,6 +10,7 @@ class Session extends SessionModel {}
 class Member extends UserModel {
   declare id: number
   declare username: string
+  declare nickname: string | null
 
   static override properties: ModelProperties = {
     nickname: {
@@ -41,7 +42,14 @@ class Members extends UsersController {
 
   override collection: any = {
     // Keep the inherited login actions and add the default `get` action.
-    'allow': ['get', 'post login', 'post logout', 'get session', 'get self'],
+    'allow': [
+      'get',
+      'post login',
+      'post logout',
+      'get session',
+      'get self',
+      'patch self'
+    ],
     'authorize': {
       get: true
     },
@@ -59,7 +67,21 @@ class Members extends UsersController {
 
   // Inherits `authorize: ['$self']` from `UsersController`.
   override member: any = {
-    allow: ['get']
+    allow: ['get', 'patch']
+  }
+}
+
+// Members that can't patch themselves, as \`allow\` doesn't route \`patch\`:
+class Readers extends UsersController {
+  override modelClass = Member
+}
+
+// Members whose patches need a role:
+class Editors extends UsersController {
+  override modelClass = Member
+  override member: any = {
+    allow: ['get', 'patch'],
+    authorize: { patch: 'editor' }
   }
 }
 
@@ -83,7 +105,7 @@ describe('UsersController', () => {
       }
     },
     models: { Session, Member },
-    controllers: { Members, Admins }
+    controllers: { Members, Admins, Readers, Editors }
   })
 
   let url: string
@@ -301,6 +323,79 @@ describe('UsersController', () => {
     expect((await request(`/members/${member.id}`)).status).toBe(200)
     expect((await request(`/members/${other.id}`)).status).toBe(401)
     await Member.query().deleteById(other.id)
+  })
+
+  it('lets members patch themselves', async () => {
+    const other = await Member.query().insert({
+      username: 'bo',
+      password: 'secret'
+    } as any)
+    try {
+      const request = createClient()
+      await request('/members/login', {
+        method: 'POST',
+        body: { username: 'bo', password: 'secret' }
+      })
+      const self = await request('/members/self', {
+        method: 'PATCH',
+        body: { nickname: 'Bobo', password: 'changed' }
+      })
+      expect(self.status).toBe(200)
+      expect(self.data).toMatchObject({ id: other.id, nickname: 'Bobo' })
+      expect(self.data).not.toHaveProperty('hash')
+      expect((await Member.query().findById(member.id))!.nickname).toBeNull()
+      // The password is hashed like in other patches:
+      const login = await createClient()('/members/login', {
+        method: 'POST',
+        body: { username: 'bo', password: 'changed' }
+      })
+      expect(login.data.success).toBe(true)
+    } finally {
+      await Member.query().deleteById(other.id)
+    }
+  })
+
+  it('validates the patches of members', async () => {
+    const request = createClient()
+    await request('/members/login', {
+      method: 'POST',
+      body: { username: 'ada', password: 'secret' }
+    })
+    const self = await request('/members/self', {
+      method: 'PATCH',
+      body: { nickname: 1 }
+    })
+    expect(self.status).toBe(400)
+    expect(self.data).toMatchObject({
+      type: 'ModelValidation',
+      errors: { nickname: [{ keyword: 'type' }] }
+    })
+    expect((await Member.query().findById(member.id))!.nickname).toBeNull()
+  })
+
+  it('rejects patches of the user without a login', async () => {
+    const request = createClient()
+    const self = await request('/members/self', {
+      method: 'PATCH',
+      body: { nickname: 'Anonymous' }
+    })
+    expect(self.status).toBe(401)
+  })
+
+  it(`only lets members patch themselves like their member`, async () => {
+    for (const path of ['readers', 'editors']) {
+      const request = createClient()
+      await request(`/${path}/login`, {
+        method: 'POST',
+        body: { username: 'ada', password: 'secret' }
+      })
+      const self = await request(`/${path}/self`, {
+        method: 'PATCH',
+        body: { nickname: 'Countess' }
+      })
+      expect(self.status).toBe(401)
+    }
+    expect((await Member.query().findById(member.id))!.nickname).toBeNull()
   })
 
   it(`doesn't apply the controller's authorize to logins and sessions`, async () => {

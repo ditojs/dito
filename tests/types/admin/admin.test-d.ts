@@ -2,6 +2,7 @@ import { assertType, describe, expectTypeOf, it } from 'vitest'
 import type {
   default as DitoAdmin,
   ApiConfig,
+  Form,
   HttpMethod,
   HTTPMethod,
   TypeDescriptor,
@@ -68,6 +69,23 @@ describe('DitoAdmin', () => {
         login: { redirectAfterLogin: '/books' },
         spinner: null
       }
+    ])
+  })
+
+  it('accepts the form of the account settings, also as a module', () => {
+    const settings = {} as Promise<{ default: Form<Entry> }>
+    assertType<ConstructorParameters<typeof DitoAdmin>>([
+      '#app',
+      {
+        api: { users: { path: 'users', self: { path: 'me' } } },
+        account: {
+          settings: { type: 'form', components: { title: { type: 'text' } } }
+        }
+      }
+    ])
+    assertType<ConstructorParameters<typeof DitoAdmin>>([
+      '#app',
+      { account: { settings: () => settings } }
     ])
   })
 

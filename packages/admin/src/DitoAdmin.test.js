@@ -111,7 +111,12 @@ describe('DitoAdmin', () => {
 
   it('warns about each unknown option', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    createAdmin({ spinner: null, catalog: 'books', shelves: 3 })
+    createAdmin({
+      spinner: null,
+      account: { settings: { type: 'form', components: {} } },
+      catalog: 'books',
+      shelves: 3
+    })
     expect(warn.mock.calls).toEqual([
       [`Unknown DitoAdmin option: 'catalog'.`],
       [`Unknown DitoAdmin option: 'shelves'.`]
