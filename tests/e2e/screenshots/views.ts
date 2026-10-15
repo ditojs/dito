@@ -104,7 +104,18 @@ export const projects = createWidgetView<Project>(
           type: 'tab',
           label: 'Details',
           components: {
-            notes: { type: 'markup', label: 'Notes' },
+            notes: {
+              type: 'markup',
+              label: 'Notes',
+              marks: {
+                bold: true,
+                italic: true,
+                underline: true,
+                strike: true,
+                link: true
+              },
+              nodes: { bulletList: true, orderedList: true }
+            },
             config: {
               type: 'code',
               label: 'Config',

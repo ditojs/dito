@@ -104,6 +104,10 @@
     gap: var(--button-margin);
   }
 
+  &__group {
+    display: flex;
+  }
+
   &__group + &__group {
     margin-left: 1.5em;
   }
