@@ -1091,6 +1091,37 @@ describe('Application', () => {
       }
     )
 
+    it('rolls back what a failed commit leaves open on better-sqlite3', async () => {
+      const app = createApp({
+        config: {
+          knex: {
+            client: 'better-sqlite3',
+            connection: { filename: ':memory:' },
+            useNullAsDefault: true
+          }
+        }
+      })
+      const { knex } = app
+      try {
+        await knex.raw('PRAGMA foreign_keys = ON')
+        await knex.raw('CREATE TABLE parent (id integer PRIMARY KEY)')
+        await knex.raw(`
+          CREATE TABLE child (
+            id integer PRIMARY KEY,
+            parent_id integer REFERENCES parent (id)
+              DEFERRABLE INITIALLY DEFERRED
+          )
+        `)
+        await expect(
+          knex.transaction(trx => trx('child').insert({ parent_id: 1234 }))
+        ).rejects.toThrow(/FOREIGN KEY constraint failed/)
+        await knex.transaction(trx => trx('parent').insert({ id: 1 }))
+        expect(await knex('parent').select('id')).toEqual([{ id: 1 }])
+      } finally {
+        await knex.destroy()
+      }
+    })
+
     it('logs SQL queries with `log.sql`', async () => {
       const app = createKnexApp({ log: { sql: true } })
       const logger = { info: vi.fn() }

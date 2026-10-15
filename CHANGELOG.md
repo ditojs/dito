@@ -12,6 +12,7 @@ version, see the upgrade guides in `docs/`.
 - **server:** Relating several models to a many-to-many relation through its controller works on SQLite and MySQL, where it failed with a 500 error.
 - **server:** On SQLite with the `better-sqlite3` client, `Date` values in queries are bound as ISO strings, as dates are stored, so date-range filters, `releaseUnusedAssets()` and queries like `where('createdAt', '>', date)` match.
 - **server:** `log.sql` logs the rows of SQLite responses as arrays.
+- **server:** On SQLite with the `better-sqlite3` client, a transaction whose commit failed, e.g. on a deferred constraint, is rolled back before the connection is used again, instead of making every later transaction fail with "cannot start a transaction within a transaction".
 
 ## 4.6.0 (2026-10-16)
 
