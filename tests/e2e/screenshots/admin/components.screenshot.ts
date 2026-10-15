@@ -11,6 +11,13 @@ function visible(locator: Locator) {
   return locator.filter({ visible: true })
 }
 
+// The label of a component, with the buttons in its row:
+function getLabel(page: Page, text: string) {
+  return page
+    .locator('.dito-label')
+    .filter({ hasText: new RegExp(`^${text}$`) })
+}
+
 // Moves the focus to `locator` after a key press, so that browsers match
 // `:focus-visible` as with keyboard navigation.
 async function focusByKeyboard(page: Page, locator: Locator) {
@@ -44,12 +51,31 @@ test.describe('component screenshots', () => {
     // Copying logs an error if it can't write to the system clipboard:
     await page.context().grantPermissions(['clipboard-read', 'clipboard-write'])
     await openProject(page, url, 'Extras')
-    const links = page.getByRole('region', { name: 'Links' })
+    const links = getLabel(page, 'Links')
     await links.getByRole('button', { name: 'Copy Data' }).click()
     await expect(
       links.getByRole('button', { name: 'Paste Data' })
     ).toBeEnabled()
     await expectScreenshot(page, 'list-clipboard.png')
+  })
+
+  test('list collapse all', async ({ page, url }) => {
+    await openProject(page, url, 'Extras')
+    const links = getLabel(page, 'Links')
+    await links.getByRole('button', { name: 'Collapse All' }).click()
+    await expect(
+      links.getByRole('button', { name: 'Expand All' })
+    ).toBeVisible()
+    await expect(page.getByLabel('Link URL')).toBeHidden()
+    await expectScreenshot(page, 'list-collapse-all.png')
+  })
+
+  test('list collapse all without a label', async ({ page, url }) => {
+    await openProject(page, url, 'Extras')
+    const references = page.getByRole('region', { name: 'References' })
+    await references.getByRole('button', { name: 'Collapse All' }).click()
+    await expect(page.getByLabel('Reference URL')).toBeHidden()
+    await expectScreenshot(page, 'list-collapse-all-unlabelled.png')
   })
 
   test('create menu with multiple forms', async ({ page, url }) => {
@@ -286,6 +312,24 @@ test.describe('component screenshots', () => {
       page.getByRole('button', { name: 'Research', exact: true })
     )
     await expectScreenshot(page, 'tree-active-focus.png')
+  })
+
+  test('section label focus', async ({ page, url }) => {
+    await openProject(page, url, 'Details')
+    await focusByKeyboard(
+      page,
+      page.getByRole('button', { name: 'Settings', exact: true })
+    )
+    await expectScreenshot(page, 'section-label-focus.png')
+  })
+
+  test('list collapse all focus', async ({ page, url }) => {
+    await openProject(page, url, 'Extras')
+    await focusByKeyboard(
+      page,
+      getLabel(page, 'Links').getByRole('button', { name: 'Collapse All' })
+    )
+    await expectScreenshot(page, 'list-collapse-all-focus.png')
   })
 
   test('menu overlay', async ({ page, url }) => {

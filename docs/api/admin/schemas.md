@@ -483,7 +483,7 @@ for running uploads, and files that failed to upload are left out.
 | `thumbnailUrl` | `SchemaValue<string>` | the file's `url` for images | The thumbnail URL. Receives the file as `value`. |
 | `downloadUrl` | `SchemaValue<string>` | the file's `url` | The download URL of files without a `url`. Receives the file as `value`. |
 | `render` | `SchemaValueCallback<string>` | | Returns the HTML shown for each file, instead of its name and thumbnail. Receives the file as `value`. |
-| `clipboard` | [`ClipboardConfig`](#clipboard) | | Adds copy and paste buttons for the files to the field's header. Pasting adds the files that aren't in the field yet, or replaces the file of single uploads, and leaves out files that `extensions` and `maxSize` don't accept. Files paste into all upload fields, also of other storages, as `{ files }`. |
+| `clipboard` | [`ClipboardConfig`](#clipboard) | | Adds copy and paste buttons for the files next to the upload button. Pasting adds the files that aren't in the field yet, or replaces the file of single uploads, and leaves out files that `extensions` and `maxSize` don't accept. Files paste into all upload fields, also of other storages, as `{ files }`. |
 
 ```js
 samplePages: {
@@ -916,11 +916,11 @@ sources share the [source options](#source-options), in addition to the
 | `components` | `Components` | | The components of an inlined form, instead of `form`. Implies `inlined`. |
 | `tabs` | `Record<string, object>` | | The [tabs](#tabs) of the inlined form of `components`. |
 | `compact` | `boolean` | `false` | Renders the inlined form of `components` with reduced spacing, with labels outside of it. |
-| `clipboard` | [`ClipboardConfig`](#clipboard) | | Adds copy and paste buttons for all loaded items to the header of lists, and to the form of objects, unless the form sets its own `clipboard`. Lists with their own `resource` and tree lists don't support it. |
+| `clipboard` | [`ClipboardConfig`](#clipboard) | | Adds copy and paste buttons for all loaded items to the row of the label of lists, or to the row of their scopes and pagination without a label, and to the form of objects, unless the form sets its own `clipboard`. Lists with their own `resource` and tree lists don't support it. |
 | `view` | `string` | | The name of a view whose form edits the items. Editing navigates to that view. Unknown names throw. |
 | `resource` | [`Resource`](#resource) | | The API resource of the items. Sources with a resource save their items themselves and are excluded from the data around them, unless `exclude: false`, e.g. to save their order through `serializeValue()`. Inlined sources can't have one. |
 | `inlined` | `boolean` | `false` | Edits the items in forms inside the source instead of routed forms. |
-| `collapsible` | `SchemaValue<boolean>` | `false` | Whether inlined forms can be collapsed. |
+| `collapsible` | `SchemaValue<boolean \| 'all'>` | `false` | Whether inlined forms can be collapsed. `'all'` on lists also adds a double chevron before the label that expands or collapses all loaded items at once, or at the start of the row of the scopes and pagination without a label. |
 | `collapsed` | `SchemaValue<boolean>` | `false` | Whether inlined forms are collapsed initially. Only with `collapsible`. |
 | `creatable` | `SchemaValue<boolean \| { label?, query? }>` | `false` | Adds a button to create items. Needs a form or `view`; objects only while they're empty. `label` sets the button text, `query(context)` returns query parameters for the create route of routed forms. |
 | `editable` | `SchemaValue<boolean>` | `false` | Adds edit buttons to items with routed forms. |

@@ -42,7 +42,9 @@ export const fieldProps = {
   single: { type: Boolean, default: false },
   nested: { type: Boolean, default: true },
   // The id of the element that displays the errors, while there are errors:
-  errorsElementId: { type: String, default: null }
+  errorsElementId: { type: String, default: null },
+  // The id of the label, if it shows buttons of the component:
+  labelId: { type: String, default: null }
 } as const
 
 export type FieldProps = Readonly<ExtractPropTypes<typeof fieldProps>>

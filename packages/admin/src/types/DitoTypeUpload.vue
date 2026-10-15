@@ -34,17 +34,6 @@
           span Status
         th(scope="col")
           span
-            DitoClipboard(
-              v-if="schema.clipboard"
-              :clipboard="schema.clipboard"
-              :schema="schema"
-              type="upload"
-              :hasData="hasStoredFiles"
-              :getData="getClipboardData"
-              :createContext="createContext"
-              :disabled="disabled || readonly"
-              @paste="pasteFiles"
-            )
     DitoDraggable(
       :modelValue="files"
       as="tbody"
@@ -110,11 +99,18 @@
               | Stored
           td.dito-table__buttons
             .dito-buttons.dito-buttons--round
-              DitoButton.dito-button--upload(
+              template(
                 v-if="!multiple"
-                :title="uploadTitle"
-                @click="onClickUpload"
               )
+                DitoButton.dito-button--upload(
+                  :title="uploadTitle"
+                  @click="onClickUpload"
+                )
+                DitoClipboard(
+                  v-if="schema.clipboard"
+                  v-bind="clipboardAttributes"
+                  @paste="pasteFiles"
+                )
               DitoDragHandle(
                 v-if="draggable"
                 :disabled="disabled"
@@ -142,11 +138,18 @@
                 v-if="isUploadActive"
                 @click.prevent="$refs.upload.active = false"
               ) Cancel
-              DitoButton.dito-button--upload(
+              template(
                 v-if="multiple || !hasFiles"
-                :title="uploadTitle"
-                @click="onClickUpload"
               )
+                DitoButton.dito-button--upload(
+                  :title="uploadTitle"
+                  @click="onClickUpload"
+                )
+                DitoClipboard(
+                  v-if="schema.clipboard"
+                  v-bind="clipboardAttributes"
+                  @paste="pasteFiles"
+                )
 </template>
 
 <script>
@@ -432,7 +435,16 @@ const DitoTypeUpload = {
 
       hasFiles: computed(() => files.value.length > 0),
 
-      hasStoredFiles: computed(() => getStoredFiles(value.value).length > 0),
+      // The clipboard follows the upload button, in the row of single files:
+      clipboardAttributes: computed(() => ({
+        clipboard: props.schema.clipboard,
+        schema: props.schema,
+        type: 'upload',
+        hasData: getStoredFiles(value.value).length > 0,
+        getData: () => ({ files: getStoredFiles(value.value) }),
+        createContext,
+        disabled: disabled.value || field.readonly.value
+      })),
 
       isUploadActive: computed(() => hasUploads.value && upload.value.active),
 
@@ -564,10 +576,6 @@ const DitoTypeUpload = {
         }
       },
 
-      getClipboardData() {
-        return { files: getStoredFiles(value.value) }
-      },
-
       // Paste only the files that the upload would accept, and only once:
       pasteFiles({ files: pastedFiles }) {
         // The extensions as `VueUpload` matches them:
@@ -653,13 +661,6 @@ function getStoredFiles(value) {
     .dito-table__buttons {
       vertical-align: middle;
     }
-  }
-
-  .dito-table-head .dito-clipboard {
-    // Fit the round buttons into the line of the header:
-    height: $line-height * $font-size;
-    align-items: center;
-    font-size: $font-size-small;
   }
 
   &__size,

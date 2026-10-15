@@ -6,9 +6,24 @@
   role="region"
   :aria-label="labelText || labelize(schema.name)"
 )
+  //- Without a label, the buttons show in the header, which is otherwise
+  //- empty and hidden:
   .dito-list__header(
-    v-if="scopes || hasPagination || hasClipboard"
+    v-if="scopes || hasPagination || hasClipboard || hasToggleAll"
   )
+    DitoLabelButtons(
+      :labelId="labelId"
+      position="start"
+    )
+      button.dito-chevron.dito-chevron--double(
+        v-if="hasToggleAll"
+        type="button"
+        :class="{ 'dito-chevron--open': !hasCollapsedItems }"
+        :title="toggleAllLabel"
+        :aria-label="toggleAllLabel"
+        :aria-expanded="!hasCollapsedItems"
+        @click="toggleAll"
+      )
     DitoScopes(
       v-if="scopes"
       :listQuery="listQuery"
@@ -19,17 +34,21 @@
     .dito-spacer(
       v-else-if="hasPagination"
     )
-    DitoClipboard(
-      v-if="hasClipboard"
-      :clipboard="schema.clipboard"
-      :schema="schema"
-      type="list"
-      :hasData="listData.length > 0"
-      :getData="getClipboardData"
-      :createContext="createContext"
-      :disabled="!creatable || disabled || readonly || isLoading"
-      @paste="pasteItems"
+    DitoLabelButtons(
+      :labelId="labelId"
+      position="end"
     )
+      DitoClipboard(
+        v-if="hasClipboard"
+        :clipboard="schema.clipboard"
+        :schema="schema"
+        type="list"
+        :hasData="listData.length > 0"
+        :getData="getClipboardData"
+        :createContext="createContext"
+        :disabled="!creatable || disabled || readonly || isLoading"
+        @paste="pasteItems"
+      )
     DitoPagination(
       v-if="hasPagination"
       :listQuery="listQuery"
@@ -151,6 +170,7 @@ import { useSortable } from '../composables/useSortable.ts'
 import { useSchemaValue } from '../composables/useSchemaValue.ts'
 import DitoSourceItem from '../components/DitoSourceItem.vue'
 import DitoClipboard from '../components/DitoClipboard.vue'
+import DitoLabelButtons from '../components/DitoLabelButtons.vue'
 import {
   resolveSchemaComponent,
   resolveSchemaComponents
@@ -170,7 +190,7 @@ import { computed } from 'vue'
 
 // @vue/component
 const DitoTypeList = {
-  components: { DitoSourceItem, DitoClipboard },
+  components: { DitoSourceItem, DitoClipboard, DitoLabelButtons },
   props: fieldProps,
 
   setup(props) {
@@ -189,7 +209,8 @@ const DitoTypeList = {
       onChange: source.onChange
     })
     const { listData, editable, deletable, draggable, creatable } = source
-    const { services, context } = source
+    const { services, context, getItemStore } = source
+    const { getSchemaValue, shouldRenderSchema } = useSchemaValue(context)
     const hasListButtons = computed(
       () => !!(source.buttonSchemas.value || creatable.value)
     )
@@ -202,10 +223,16 @@ const DitoTypeList = {
     const hasCellEditButtons = computed(
       () => !source.isInlined.value && hasEditButtons.value
     )
+    // The inlined schemas of the items read their state from their stores:
+    const hasCollapsedItems = computed(() =>
+      listData.value.some(
+        item => !(getItemStore(item).opened ?? !source.collapsed.value)
+      )
+    )
 
     return {
       ...source,
-      shouldRenderSchema: useSchemaValue(source.context).shouldRenderSchema,
+      shouldRenderSchema,
       labelize,
       getItemUid,
       getItemFormSchema,
@@ -217,6 +244,27 @@ const DitoTypeList = {
       dataModel: computed(() => source.services.dataContext.model),
       hasPagination: computed(() => !!source.paginate.value),
       hasEvenCount: computed(() => !(listData.value.length % 2)),
+      hasCollapsedItems,
+
+      toggleAllLabel: computed(() =>
+        hasCollapsedItems.value ? 'Expand All' : 'Collapse All'
+      ),
+
+      hasToggleAll: computed(
+        () => (
+          source.collapsible.value &&
+          listData.value.length > 0 &&
+          getSchemaValue('collapsible') === 'all'
+        )
+      ),
+
+      // Only the loaded items, which fire their toggle events themselves:
+      toggleAll() {
+        const opened = hasCollapsedItems.value
+        for (const item of listData.value) {
+          getItemStore(item).opened = opened
+        }
+      },
 
       numColumns: computed(() => {
         const columns = source.columns.value
@@ -314,6 +362,7 @@ defineType({
   component: DitoTypeList,
   ...sourceTraits,
   sourceType: 'list',
+  hasLabelButtons: true,
 
   getPanelSchema(api, schema, dataPath, source) {
     const { filters } = schema
@@ -378,8 +427,9 @@ export default DitoTypeList
       min-width: 0;
     }
 
-    .dito-clipboard {
-      align-items: center;
+    // The buttons of lists without a label:
+    .dito-label-buttons--end {
+      margin-left: auto;
 
       + .dito-pagination {
         margin-left: $form-spacing;

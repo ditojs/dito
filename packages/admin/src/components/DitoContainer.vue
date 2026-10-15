@@ -16,11 +16,13 @@
     )
   DitoLabel(
     v-if="shouldRenderLabel"
+    :id="labelId"
     :class="labelClasses"
     :htmlFor="labelHtmlFor"
     :label="label"
     :context="context"
     :info="info"
+    :hasButtons="!!labelId"
   )
   component.dito-component(
     v-if="!isReplacedWithLabel"
@@ -35,6 +37,7 @@
     :single="single"
     :nested="nested"
     :errorsElementId="errors ? errorsElementId : null"
+    :labelId="labelId"
   )
   DitoErrors(
     :id="errorsElementId"
@@ -175,6 +178,15 @@ export default {
       () => hasSchemaLabel.value && !!typeDescriptor.value?.rendersLabel
     )
 
+    // Type components can display the label themselves, e.g. sections:
+    const shouldRenderLabel = computed(() => {
+      const hasLabel = typeDescriptor.value?.hasLabel ?? true
+      return (
+        hasSchemaLabel.value &&
+        (isFunction(hasLabel) ? hasLabel(context) : hasLabel)
+      )
+    })
+
     return {
       field,
       context,
@@ -192,16 +204,16 @@ export default {
         })
       ),
 
-      // Type components can display the label themselves, e.g. sections:
-      shouldRenderLabel: computed(() => {
-        const hasLabel = typeDescriptor.value?.hasLabel ?? true
-        return (
-          hasSchemaLabel.value &&
-          (isFunction(hasLabel) ? hasLabel(context) : hasLabel)
-        )
-      }),
+      shouldRenderLabel,
 
       errorsElementId: computed(() => `${componentPath.value}-errors`),
+
+      // Type components teleport their buttons into the row of the label:
+      labelId: computed(() =>
+        shouldRenderLabel.value && typeDescriptor.value?.hasLabelButtons
+          ? `${componentPath.value}-label`
+          : null
+      ),
 
       // Type components use their component path as DOM id:
       labelHtmlFor: computed(() => (props.nested ? componentPath.value : null)),

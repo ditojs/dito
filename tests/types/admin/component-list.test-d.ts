@@ -3,6 +3,7 @@ import type {
   Components,
   FormSchema,
   ListSchema,
+  ObjectSchema,
   ColumnSchema,
   SchemaContext
 } from '@ditojs/admin'
@@ -163,6 +164,16 @@ describe('ListSchema', () => {
       type: 'list',
       mutate: true
     })
+  })
+
+  it(`accepts collapsible: 'all'`, () => {
+    assertType<ListSchema<Entry>>({ type: 'list', collapsible: 'all' })
+    assertType<ListSchema<Entry>>({
+      type: 'list',
+      collapsible: ({ item }) => (item.title ? 'all' : false)
+    })
+    // @ts-expect-error: Only lists expand and collapse all items.
+    assertType<ObjectSchema<Entry>>({ type: 'object', collapsible: 'all' })
   })
 
   it('accepts wrapPrimitives as the key of wrapped values', () => {

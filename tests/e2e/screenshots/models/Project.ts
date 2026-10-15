@@ -42,6 +42,8 @@ export interface Project {
   meetingAt?: string | null
   files?: object[] | null
   links?: object[] | null
+  attachment?: object | null
+  references?: { url?: string | null }[] | null
   contactInfo?: { phone?: string | null; email?: string | null } | null
   approved?: boolean | null
   approval?: { approver?: string | null; approvedOn?: string | null } | null
@@ -77,6 +79,8 @@ export class Project extends Model {
     meetingAt: { type: 'timestamp', nullable: true },
     files: { type: 'array', nullable: true, items: { type: 'object' } },
     links: { type: 'array', nullable: true, items: { type: 'object' } },
+    attachment: { type: 'object', nullable: true },
+    references: { type: 'array', nullable: true, items: { type: 'object' } },
     contactInfo: { type: 'object', nullable: true },
     approved: { type: 'boolean', nullable: true },
     approval: { type: 'object', nullable: true }

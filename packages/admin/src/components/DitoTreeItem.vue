@@ -22,17 +22,16 @@
       @click.stop="toggle"
       @keydown.enter.space.prevent="toggle"
     )
-      .dito-chevron(
-        v-if="numEntries"
-        :class="{ 'dito-chevron--open': opened }"
-      )
-      DitoLabel.dito-tree-label(
-        :label="label"
-        :context="context"
-      )
-      .dito-tree-info(
-        v-if="details"
-      ) {{ details }}
+      //- The chevron and the text, which the focus ring encloses:
+      .dito-tree-branch__content
+        .dito-chevron(:class="{ 'dito-chevron--open': opened }")
+        DitoLabel.dito-tree-label(
+          :label="label"
+          :context="context"
+        )
+        .dito-tree-info(
+          v-if="details"
+        ) {{ details }}
     .dito-tree-leaf(
       v-else
     )
@@ -349,12 +348,26 @@ export default {
   }
 
   .dito-tree-branch {
+    // Make room for the focus ring of the content, without moving it:
+    margin-left: -$focus-ring-padding;
     cursor: pointer;
-    border-radius: $border-radius;
 
     &:focus-visible {
-      @include focus-ring;
+      outline: none;
+
+      > .dito-tree-branch__content {
+        @include focus-ring-line;
+      }
     }
+  }
+
+  // The whole branch toggles, but the focus ring only encloses its content,
+  // padded for it:
+  .dito-tree-branch__content {
+    display: flex;
+    position: relative;
+    min-width: 0;
+    padding: 0 $focus-ring-padding;
   }
 
   .dito-tree-header {
@@ -368,8 +381,11 @@ export default {
     flex: auto;
     overflow: hidden;
     min-width: 0;
+    // High enough for the focus ring of branches, which `overflow` would cut:
+    min-height: $focus-ring-height;
     position: relative;
-    margin: 1px 0;
+    margin-top: 1px;
+    margin-bottom: 1px;
     @include user-select(none);
   }
 
@@ -396,7 +412,6 @@ export default {
   }
 
   &__buttons {
-    // Leave the width to the branch, so its focus ring spans the row:
     flex: none;
     display: flex;
     // Transparent rather than hidden, so the buttons can be focused with the
@@ -434,16 +449,16 @@ export default {
       background: $color-active;
 
       > .dito-tree-branch {
-        > .dito-chevron::before {
+        .dito-chevron::before {
           color: $color-white;
         }
 
-        &:focus-visible {
-          @include focus-ring($color-white);
+        &:focus-visible > .dito-tree-branch__content {
+          @include focus-ring-line($color-white);
         }
       }
 
-      > * > .dito-tree-label {
+      .dito-tree-label {
         color: $color-white;
       }
     }

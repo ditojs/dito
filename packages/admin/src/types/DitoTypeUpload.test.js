@@ -1017,11 +1017,11 @@ describe('DitoTypeUpload', () => {
         },
         data: { [name]: data }
       })
-      const field = result.findField(name)
+      const container = result.findContainer(name)
       return {
         ...result,
-        copyButton: field.find('thead .dito-button--copy'),
-        pasteButton: field.find('thead .dito-button--paste')
+        copyButton: container.find('.dito-button--copy'),
+        pasteButton: container.find('.dito-button--paste')
       }
     }
 
@@ -1044,6 +1044,31 @@ describe('DitoTypeUpload', () => {
       expect(getClipboardData('gallery', 'upload')).toEqual({
         files: [stored.cover, stored.scan]
       })
+    })
+
+    it('shows the clipboard after the upload button', async () => {
+      const { findField } = await mountImages({
+        schema: { multiple: true },
+        data: [stored.scan]
+      })
+      const buttons = findField('images').findAll(
+        '.dito-upload__footer > .dito-buttons > *'
+      )
+      expect(buttons.map(button => button.classes())).toEqual([
+        expect.arrayContaining(['dito-button--upload']),
+        expect.arrayContaining(['dito-clipboard'])
+      ])
+    })
+
+    it('shows the clipboard after the upload button of single files', async () => {
+      const { findField } = await mountImages({ data: stored.scan })
+      const field = findField('images')
+      const buttons = field.findAll('tbody .dito-table__buttons > div > *')
+      expect(buttons.map(button => button.classes())).toEqual([
+        expect.arrayContaining(['dito-button--upload']),
+        expect.arrayContaining(['dito-clipboard'])
+      ])
+      expect(field.find('tfoot').exists()).toBe(false)
     })
 
     it('adds pasted files to multiple files, except existing ones', async () => {

@@ -238,7 +238,7 @@ describe('DitoClipboard', () => {
 
   it('gives the forms of objects their clipboard, not of lists', async () => {
     const form = { type: 'form', components: { title: { type: 'text' } } }
-    const { findField } = await mountForm({
+    const { findField, findContainer } = await mountForm({
       schema: {
         components: {
           chapters: {
@@ -258,9 +258,9 @@ describe('DitoClipboard', () => {
       }
     })
     for (const name of ['chapters', 'books']) {
-      const list = findField(name)
-      expect(list.findAll('.dito-clipboard')).toHaveLength(1)
-      expect(list.findAll('tbody .dito-clipboard')).toHaveLength(0)
+      const container = findContainer(name)
+      expect(container.findAll('.dito-clipboard')).toHaveLength(1)
+      expect(container.findAll('.dito-label .dito-clipboard')).toHaveLength(1)
     }
     expect(findField('cover').findAll('.dito-clipboard')).toHaveLength(1)
   })
@@ -331,9 +331,9 @@ describe('DitoClipboard', () => {
           magazines: []
         }
       })
-      const { findField } = result
+      const { findContainer } = result
       const findButton = (dataPath, button) =>
-        findField(dataPath).find(`.dito-list__header .dito-button--${button}`)
+        findContainer(dataPath).find(`.dito-label .dito-button--${button}`)
       return {
         ...result,
         findButton,
@@ -423,7 +423,7 @@ describe('DitoClipboard', () => {
     })
 
     it(`doesn't paste lists into forms and uploads, or back`, async () => {
-      const { wrapper, findField } = await mountForm({
+      const { wrapper, findContainer } = await mountForm({
         schema: {
           name: 'book',
           clipboard: true,
@@ -445,11 +445,11 @@ describe('DitoClipboard', () => {
       })
       const buttons = {
         book: '.dito-schema-header .dito-clipboard',
-        chapters: '.dito-list__header .dito-clipboard',
-        files: 'thead .dito-clipboard'
+        chapters: '.dito-label .dito-clipboard',
+        files: 'tfoot .dito-clipboard'
       }
       const findButton = (name, button) => {
-        const parent = name === 'book' ? wrapper : findField(name)
+        const parent = name === 'book' ? wrapper : findContainer(name)
         return parent.find(`${buttons[name]} .dito-button--${button}`)
       }
       const getPastable = () =>

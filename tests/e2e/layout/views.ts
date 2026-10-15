@@ -28,6 +28,7 @@ export const widgets = createWidgetView<Widget>(
               type: 'section',
               label: 'Settings',
               nested: true,
+              collapsible: true,
               components: {
                 color: { type: 'text', label: 'Color' }
               }

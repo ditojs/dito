@@ -2,12 +2,35 @@
 // that doesn't affect the layout. A mixin rather than a placeholder, so that it
 // keeps its place in the cascade, after the resets of the other states.
 // Pass `$color` for elements on backgrounds of `$color-active`, e.g. selected
-// items, where the default ring wouldn't show.
-@mixin focus-ring($color: null) {
-  outline: none;
-  @if $color {
-    box-shadow: 0 0 0 $border-width $color;
+// items, where the default ring wouldn't show, and `$inset: true` to draw it
+// inside the element instead, e.g. around content padded for the ring.
+@mixin focus-ring($color: null, $inset: false) {
+  @if $inset {
+    outline: $border-width solid if($color, $color, $color-active);
+    outline-offset: -$border-width;
   } @else {
-    box-shadow: $shadow-focus;
+    outline: none;
+    @if $color {
+      box-shadow: 0 0 0 $border-width $color;
+    } @else {
+      box-shadow: $shadow-focus;
+    }
+  }
+}
+
+// The focus ring around a chevron and its text, padded with
+// `$focus-ring-padding` and as high as their line, whatever the height of the
+// element, which needs to be positioned:
+@mixin focus-ring-line($color: null) {
+  outline: none;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    height: $focus-ring-height;
+    margin: auto 0;
+    border-radius: $border-radius;
+    @include focus-ring($color, $inset: true);
   }
 }
