@@ -164,6 +164,21 @@ describe('ModelProperties<T> — typed property keys', () => {
     }
   })
 
+  it('accepts prefixItems for tuple fields', () => {
+    class _Good extends Model {
+      declare version: [number, number]
+
+      static override properties: ModelProperties<_Good> = {
+        version: {
+          type: 'array',
+          prefixItems: [{ type: 'integer' }, { type: 'integer' }],
+          minItems: 2,
+          items: false
+        }
+      }
+    }
+  })
+
   it('allows partial properties (not all keys required)', () => {
     class _Partial extends Model {
       declare name: string
@@ -238,6 +253,35 @@ describe('Model properties — shared', () => {
       // @ts-expect-error - type must be a string
       bad: { type: 123 }
     })
+  })
+
+  it('accepts nested object and tuple properties', () => {
+    assertType<ModelProperties>({
+      address: {
+        type: 'object',
+        properties: {
+          street: { type: 'string' },
+          zip: { type: 'string', nullable: true }
+        }
+      },
+      point: {
+        type: 'array',
+        prefixItems: [{ type: 'number' }, { type: 'number' }],
+        items: false
+      }
+    })
+  })
+
+  it('accepts nested properties declared as const', () => {
+    class _Good extends Model {
+      static override properties = {
+        role: { type: 'string', enum: ['admin', 'user'] },
+        address: {
+          type: 'object',
+          properties: { street: { type: 'string' } }
+        }
+      } as const
+    }
   })
 })
 

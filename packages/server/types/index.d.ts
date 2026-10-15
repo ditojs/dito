@@ -4494,7 +4494,7 @@ declare type UncheckedJSONSchemaType<T, IsPartial extends boolean> = (
             : T extends readonly [any, ...any[]]
               ? {
                   type: JSONType<'array', IsPartial>
-                  items: {
+                  prefixItems: {
                     readonly [K in keyof T]-?: UncheckedJSONSchemaType<
                       T[K],
                       false
@@ -4509,13 +4509,17 @@ declare type UncheckedJSONSchemaType<T, IsPartial extends boolean> = (
                       maxItems: T['length']
                     }
                   | {
-                      additionalItems: false
+                      items: false
                     }
                 )
               : T extends readonly any[]
                 ? {
                     type: JSONType<'array', IsPartial>
-                    items: UncheckedJSONSchemaType<T[0], false>
+                    prefixItems?: readonly UncheckedJSONSchemaType<
+                      T[0],
+                      false
+                    >[]
+                    items?: UncheckedJSONSchemaType<T[0], false> | false
                     contains?: UncheckedPartialSchema<T[0]>
                     minItems?: number
                     maxItems?: number
@@ -4628,15 +4632,18 @@ declare type RequiredMembers<T> = StrictNullChecksWrapper<
   'RequiredMembers',
   UncheckedRequiredMembers<T>
 >
-declare type Nullable<T> = undefined extends T
-  ? {
-      nullable: true
-      const?: null
-      enum?: Readonly<(T | null)[]>
-      default?: T | null
-    }
-  : {
-      const?: T
-      enum?: Readonly<T[]>
-      default?: T
-    }
+// Untyped values (`any`) can be nullable, but don't have to be:
+declare type Nullable<T> = 0 extends 1 & T
+  ? { nullable?: boolean }
+  : undefined extends T
+    ? {
+        nullable: true
+        const?: null
+        enum?: Readonly<(T | null)[]>
+        default?: T | null
+      }
+    : {
+        const?: T
+        enum?: Readonly<T[]>
+        default?: T
+      }
