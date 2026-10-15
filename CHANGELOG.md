@@ -41,6 +41,7 @@ version, see the upgrade guides in `docs/`.
 
 - **server:** Saving copies the files of assets from another storage than their field's, e.g. pasted from another upload field, to the field's storage under a new key, instead of referring to a file that the storage doesn't have.
 - **server:** Wildcard hooks such as `'before:*:*'` and `'before:actions:*'` run for actions with route parameters too.
+- **server:** The `ModelProperties` type accepts nested `properties` of objects without `nullable: true`, and tuples as JSON Schema 2020 declares them, with `prefixItems` and `items: false`, as the validator expects.
 - **admin:** The labels of upload fields point to their inputs, which use the component path as their id, like the inputs of other types.
 - **admin:** Trees and their items have the `tree`, `treeitem` and `group` roles, and sections the `region` role with their label, like lists and panels.
 - **admin:** `clipboard` on objects applies to their `form`, not only to the inlined form of `components`. Forms with their own `clipboard` keep it.
