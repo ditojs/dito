@@ -127,7 +127,7 @@ export class AdminController extends Controller {
       (await this.defineViteConfig())
     )
 
-    const { createServer } = await importBuildModules()
+    const { createServer } = await import('vite')
     const config = assignDeeply(defaultConfig, viteConfig)
     const server = await createServer(config)
 
@@ -152,12 +152,12 @@ export class AdminController extends Controller {
   }
 
   async defineViteConfig(config = {}) {
-    const {
-      defineConfig,
-      createVuePlugin,
-      testModuleIdentifier,
-      getPostCssConfig
-    } = await importBuildModules()
+    // The build tools are optional peer dependencies, only needed to build or
+    // develop the admin, so import them lazily:
+    const { defineConfig } = await import('vite')
+    const { default: createVuePlugin } = await import('@vitejs/plugin-vue')
+    const { testModuleIdentifier, getPostCssConfig } =
+      await import('@ditojs/build')
     const isDevelopment = this.mode === 'development'
 
     const root = this.resolveConfigPath('root')
@@ -305,28 +305,3 @@ const coreDependencies = [
   'orderedmap',
   'w3c-keyname'
 ]
-
-// Load the build tools only to build or develop the admin, as apps don't need
-// them in production:
-async function importBuildModules() {
-  try {
-    const [
-      { defineConfig, createServer },
-      { default: createVuePlugin },
-      build
-    ] = await Promise.all([
-      import('vite'),
-      import('@vitejs/plugin-vue'),
-      import('@ditojs/build')
-    ])
-    return { defineConfig, createServer, createVuePlugin, ...build }
-  } catch (error) {
-    throw error.code === 'ERR_MODULE_NOT_FOUND'
-      ? new Error(
-          `Unable to load the admin's build tools: Install '@ditojs/build', ` +
-          `'vite' and '@vitejs/plugin-vue' as dev dependencies of the app.`,
-          { cause: error }
-        )
-      : error
-  }
-}
