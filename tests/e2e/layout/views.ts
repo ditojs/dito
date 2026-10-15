@@ -46,7 +46,19 @@ export const widgets = createWidgetView<Widget>(
               form: {
                 type: 'form',
                 components: {
-                  url: { type: 'url', label: 'URL' }
+                  url: { type: 'url', label: 'URL' },
+                  // Long labels are clipped with an ellipsis:
+                  parts: {
+                    type: 'list',
+                    label: {
+                      html: `Parts <small>${'long '.repeat(100)}</small>`
+                    },
+                    inlined: true,
+                    form: {
+                      type: 'form',
+                      components: { name: { type: 'text', label: 'Part Name' } }
+                    }
+                  }
                 }
               }
             }

@@ -147,4 +147,33 @@ test.describe('layout', () => {
     await page.keyboard.press('Enter')
     await expect(form.getField('URL')).toBeVisible()
   })
+
+  test('keeps long labels inside their containers', async ({ page, url }) => {
+    await Widget.query().insert({
+      name: 'Widget A',
+      links: [{ url: 'https://example.com', parts: [{ name: 'Part' }] }]
+    })
+    const list = new DitoListView(page, url, 'Widget')
+    const form = new DitoForm(page)
+    await list.navigate('/widgets')
+    await list.list.edit('Widget A')
+    await form.selectTab('Details')
+    await expect(form.getField('Part Name')).toBeVisible()
+    const links = page.getByRole('region', { name: 'Links' })
+    const listBox = (await links.boundingBox())!
+    const tableBox = (await links.locator('.dito-table').first().boundingBox())!
+    expect(tableBox.width).toBe(listBox.width)
+    const overflows = await page.evaluate(() =>
+      [...document.querySelectorAll('.dito-label__inner')]
+        .filter(inner => {
+          const container = inner.closest('.dito-container')!
+          return (
+            inner.getBoundingClientRect().right >
+            container.getBoundingClientRect().right
+          )
+        })
+        .map(inner => inner.textContent)
+    )
+    expect(overflows).toEqual([])
+  })
 })
