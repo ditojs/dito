@@ -11,5 +11,9 @@
     "types": ["vitest/globals"]
   },
   "include": ["**/*.ts"],
-  "exclude": ["e2e/**", "utils/admin-app/**"]
+  "exclude": [
+    "e2e/**",
+    "utils/admin-app/**",
+    "types/server/from-model-js/**"
+  ]
 }

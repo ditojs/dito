@@ -29,7 +29,8 @@ import {
   ConditionalKeys,
   Constructor,
   SetOptional,
-  SetReturnType
+  SetReturnType,
+  Simplify
 } from 'type-fest'
 import { UserConfig } from 'vite'
 
@@ -1992,6 +1993,255 @@ export type ModelProperties<$Model extends Model = Model> = [
   : {
       [K in keyof $Model as ModelDataKey<$Model, K>]?: ModelProperty<$Model[K]>
     }
+
+/**
+ * The instance type of a model, derived from its own `properties` and
+ * `relations` declared `as const`. Inherited fields come from the base class.
+ *
+ * @example
+ * ```ts
+ * import type * as models from './index.js'
+ *
+ * export class Book extends Model {
+ *   static override properties = {
+ *     title: { type: 'string', required: true },
+ *     authorId: { type: 'integer', foreign: true }
+ *   } as const
+ *
+ *   static override relations = {
+ *     author: { relation: 'belongsTo', from: 'Book.authorId', to: 'Author.id' }
+ *   } as const
+ * }
+ *
+ * export interface Book extends FromModel<typeof Book, typeof models> {}
+ * ```
+ *
+ * Model names, in `type` and in relations, are looked up in `$Models`, the
+ * exports of the models module. Without it, relations are left out.
+ *
+ * @see {@link https://github.com/ditojs/dito/blob/main/docs/guide/server/models.md#deriving-types|Deriving Types}
+ */
+export type FromModel<
+  $ModelClass extends {
+    properties: unknown
+    relations: unknown
+    idColumn: unknown
+  },
+  $Models = unknown
+> = DerivedProperties<
+  $ModelClass['properties'],
+  $ModelClass['relations'],
+  $ModelClass['idColumn'],
+  $Models
+> &
+  DerivedRelations<$ModelClass['relations'], $Models>
+
+// The general types inherited from `Model` have string keys and add nothing.
+type DerivedProperties<$Properties, $Relations, $IdColumn, $Models> =
+  string extends keyof $Properties
+    ? {}
+    : DerivedFields<
+        PropertyFields<
+          $Properties,
+          $Models,
+          PropertyDefinitions<$Properties>,
+          true
+        > &
+          AddedProperties<$Properties, $Relations, $IdColumn>,
+        KeysMatching<$Properties, { computed: true }>,
+        KeysMatching<$Properties, { hidden: true }>
+      >
+
+// Dito.js adds the ids and the foreign keys of relations when they aren't
+// defined, see `definitions/properties.js`:
+type AddedProperties<
+  $Properties,
+  $Relations,
+  $IdColumn,
+  $Ids = [KeysMatching<$Properties, { primary: true }>] extends [never]
+    ? string extends $IdColumn
+      ? 'id'
+      : $IdColumn extends readonly (infer K)[]
+        ? K
+        : $IdColumn
+    : never
+> = {
+  -readonly [K in Exclude<$Ids | ForeignKeys<$Relations>, keyof $Properties> &
+    string]?: K extends Exclude<
+    ForeignKeys<$Relations, { nullable: true }>,
+    $Ids
+  >
+    ? number | null
+    : number
+}
+
+// The owner side of relations, the property in `from`, holds the keys.
+type ForeignKeys<$Relations, $Match = unknown> = string extends keyof $Relations
+  ? never
+  : {
+      [K in keyof $Relations]: $Relations[K] extends {
+        from: `${string}.${infer P}`
+      } & $Match
+        ? P
+        : never
+    }[keyof $Relations]
+
+type DerivedFields<$Fields, $Computed, $Hidden> = Simplify<
+  Omit<$Fields, $Computed & keyof $Fields> &
+    Readonly<Pick<$Fields, $Computed & keyof $Fields>> & {
+      // Mark hidden properties for `SerializedModel`, with a key each, so that
+      // subclasses add to them:
+      readonly [K in $Hidden & string as `$hidden:${K}`]?: true
+    }
+>
+
+type DerivedRelations<$Relations, $Models> = unknown extends $Models
+  ? {}
+  : string extends keyof $Relations
+    ? {}
+    : {
+        -readonly [K in keyof $Relations as $Relations[K] extends {
+          relation: RelationType
+        }
+          ? K
+          : never]?: $Relations[K] extends {
+          relation: 'hasMany' | 'manyToMany'
+        }
+          ? ModelTypeForRelation<$Relations[K], $Models>[]
+          : ModelTypeForRelation<$Relations[K], $Models> | null
+      }
+
+type ModelTypeForRelation<$Relation, $Models> = $Relation extends {
+  modelClass: infer C
+}
+  ? C extends string
+    ? ModelTypeForName<C, $Models>
+    : C extends abstract new (...args: any) => infer M
+      ? M
+      : unknown
+  : $Relation extends { to: `${infer N}.${string}` }
+    ? ModelTypeForName<N, $Models>
+    : unknown
+
+// The instance is inferred without checking it against `Model`, as that check
+// would circle back through the types of models that refer to each other.
+type ModelTypeForName<$Name, $Models> =
+  ResolveModels<$Models> extends infer R
+    ? $Name extends keyof R
+      ? R[$Name] extends abstract new (...args: any) => infer M
+        ? M
+        : unknown
+      : unknown
+    : unknown
+
+type KeysMatching<$Object, $Match> = {
+  [K in keyof $Object]: $Object[K] extends $Match ? K : never
+}[keyof $Object]
+
+// Dito.js collects the `definitions` of all root properties for `$ref`.
+type PropertyDefinitions<$Properties> = UnionToIntersection<
+  $Properties[keyof $Properties] extends infer S
+    ? S extends { definitions: infer D }
+      ? D
+      : never
+    : never
+>
+
+type PropertyFields<
+  $Properties,
+  $Models,
+  $Definitions,
+  $IsRoot extends boolean,
+  $Required extends keyof $Properties = KeysMatching<
+    $Properties,
+    { required: true }
+  >
+> = Simplify<
+  {
+    -readonly [K in $Required]: PropertyType<
+      $Properties[K],
+      $Models,
+      $Definitions,
+      $IsRoot
+    >
+  } & {
+    -readonly [K in Exclude<keyof $Properties, $Required>]?: PropertyType<
+      $Properties[K],
+      $Models,
+      $Definitions,
+      $IsRoot
+    >
+  }
+>
+
+// Inferred, so that hovers show the type instead of the alias.
+type PropertyType<
+  $Schema,
+  $Models,
+  $Definitions,
+  $IsRoot extends boolean
+> = ValueTypeForSchema<$Schema, $Models, $Definitions, $IsRoot> &
+  CombinedTypeForSchema<$Schema, $Models, $Definitions> extends infer T
+  ? T | ($Schema extends { nullable: true } ? null : never)
+  : never
+
+type ValueTypeForSchema<$Schema, $Models, $Definitions, $IsRoot> =
+  $Schema extends { const: infer C }
+    ? C
+    : $Schema extends { enum: readonly (infer E)[] }
+      ? E
+      : $Schema extends { $ref: infer N }
+        ? N extends keyof $Definitions
+          ? PropertyType<$Definitions[N], $Models, $Definitions, false>
+          : unknown
+        : $Schema extends { type: infer N }
+          ? ValueTypeForSchemaType<N, $Schema, $Models, $Definitions, $IsRoot>
+          : $Schema extends { properties: infer P }
+            ? PropertyFields<P, $Models, $Definitions, false>
+            : unknown
+
+type CombinedTypeForSchema<$Schema, $Models, $Definitions> = $Schema extends {
+  allOf: readonly (infer A)[]
+}
+  ? UnionToIntersection<
+      A extends unknown ? PropertyType<A, $Models, $Definitions, false> : never
+    >
+  : $Schema extends
+        { anyOf: readonly (infer A)[] } | { oneOf: readonly (infer A)[] }
+    ? PropertyType<A, $Models, $Definitions, false>
+    : unknown
+
+type ValueTypeForSchemaType<$Name, $Schema, $Models, $Definitions, $IsRoot> =
+  $Name extends 'string' | 'text' | 'color'
+    ? string
+    : $Name extends 'number' | 'integer'
+      ? number
+      : $Name extends 'boolean'
+        ? boolean
+        : $Name extends 'date' | 'datetime' | 'timestamp'
+          ? // `$parseJson()` only converts the dates of root properties.
+            $IsRoot extends true
+            ? $Schema extends { computed: true }
+              ? string
+              : Date
+            : string
+          : $Name extends 'object'
+            ? $Schema extends { properties: infer P }
+              ? PropertyFields<P, $Models, $Definitions, false>
+              : Record<string, unknown>
+            : $Name extends 'array'
+              ? ArrayTypeForSchema<$Schema, $Models, $Definitions>
+              : ModelTypeForName<$Name, $Models>
+
+type ArrayTypeForSchema<$Schema, $Models, $Definitions> = $Schema extends {
+  prefixItems: infer I extends readonly unknown[]
+}
+  ? {
+      -readonly [K in keyof I]: PropertyType<I[K], $Models, $Definitions, false>
+    }
+  : $Schema extends { items: infer I extends object }
+    ? PropertyType<I, $Models, $Definitions, false>[]
+    : unknown[]
 
 /**
  * A controller action definition. The HTTP method and route
@@ -4279,13 +4529,13 @@ type SerializeModelPropertyValue<T> = T extends (infer U)[]
 
 /**
  * Extracts the JSON-serialized data properties from a Dito
- * Model, stripping methods, `$`-prefixed, and internal keys.
+ * Model, stripping methods, `$`-prefixed, internal and hidden keys.
  * Converts `Date` to `string` to reflect JSON serialization.
  */
 export type SerializedModel<T extends Model> = {
-  -readonly [K in keyof T as ModelDataKey<T, K>]: SerializeModelPropertyValue<
-    T[K]
-  >
+  -readonly [K in keyof T as `$hidden:${K & string}` extends keyof T
+    ? never
+    : ModelDataKey<T, K>]: SerializeModelPropertyValue<T[K]>
 }
 
 /** @deprecated Use `SerializedModel` instead. */
@@ -4450,6 +4700,12 @@ interface StringKeywords {
 // The first two unions allow arbitrary unions of types
 declare type UncheckedJSONSchemaType<T, IsPartial extends boolean> = (
   | {
+      $ref: string
+    }
+  // Untyped values also take the types that Dito.js adds, e.g. `'asset'` and
+  // model names:
+  | (0 extends 1 & T ? { type: SchemaType } : never)
+  | {
       anyOf: readonly UncheckedJSONSchemaType<T, IsPartial>[]
     }
   | {
@@ -4596,8 +4852,8 @@ declare type UncheckedJSONSchemaType<T, IsPartial extends boolean> = (
   [keyword: string]: any
   $id?: string
   $ref?: string
-  $defs?: Record<string, UncheckedJSONSchemaType<Known, true>>
-  definitions?: Record<string, UncheckedJSONSchemaType<Known, true>>
+  $defs?: Record<string, UncheckedJSONSchemaType<any, false>>
+  definitions?: Record<string, UncheckedJSONSchemaType<any, false>>
 }
 
 declare type JSONSchemaType<T> = StrictNullChecksWrapper<

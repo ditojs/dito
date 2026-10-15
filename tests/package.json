@@ -6,7 +6,7 @@
     "prepare": "playwright install chromium",
     "types": "tsc --noEmit",
     "test": "pnpm run /^test:/",
-    "test:types": "vitest --run --typecheck && tsc -p e2e",
+    "test:types": "vitest --run --typecheck && tsc -p e2e && tsc -p types/server/from-model-js",
     "test:e2e": "playwright test",
     "screenshots": "node scripts/screenshots.js"
   },
