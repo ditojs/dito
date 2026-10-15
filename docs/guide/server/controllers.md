@@ -580,10 +580,14 @@ export class Users extends UsersController {
 - `POST /users/login` logs in with `{ username, password }` in the body.
 - `POST /users/logout` logs out.
 - `GET /users/session` returns `{ authenticated, user }`.
-- `GET /users/self` returns the logged-in user.
+- `GET /users/self` returns the logged-in user through the member's `get`
+  action.
 - `PATCH /users/self` patches the logged-in user through the member's `patch`
   action, if it is allowed, and returns it. The admin's
   [account settings](../admin/views.md#account-settings) use it.
+
+Both `self` routes run the member actions with all their settings, e.g.
+`transacted` and `parameters`.
 
 `authorize` on the controller doesn't apply to login, logout and session,
 which authenticate, so users can always log in; `self` follows it. Member

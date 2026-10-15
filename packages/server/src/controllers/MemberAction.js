@@ -2,9 +2,11 @@ import ControllerAction from './ControllerAction.js'
 
 export default class MemberAction extends ControllerAction {
   // @override
-  async callAction(ctx) {
+  async callAction(ctx, memberId = this.controller.getMemberId(ctx)) {
     // Include `ctx.memberId` for convenient access in member actions.
-    return super.callAction(this.controller.getContextWithMemberId(ctx))
+    return super.callAction(
+      this.controller.getContextWithMemberId(ctx, memberId)
+    )
   }
 
   // @override

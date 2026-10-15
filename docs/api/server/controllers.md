@@ -706,8 +706,7 @@ Id[]`.
 
 ### Internal members
 
-`idValidator` and `setupMemberAuthorizations()` are internal, and not part of
-the types.
+`idValidator` and `memberActions` are internal, and not part of the types.
 
 ## ModelController
 
@@ -821,16 +820,18 @@ inherited actions, see [`allow`](#allow): a subclass that sets
 | `'post login'`       | Logs in through [`modelClass.login(ctx)`](./model.md#static-login) and sets `lastLogin`: `{ success, authenticated, user, error }`. A failed login responds with the error's status, by default 401, and emits it as `'error'` on the app. |
 | `'post logout'`      | `{ success, authenticated }` |
 | `'get session'`      | `{ authenticated, user }` |
-| `'get self'`         | The authenticated user through `member.get`, or `null`. |
-| `'patch self'`       | Patches the authenticated user through `member.patch` and returns it. Only where `member.patch` is allowed and authorizes the user, otherwise and without a login it responds with 401. |
+| `'get self'`         | Runs `member.get` for the authenticated user, or returns `null` without a login. |
+| `'patch self'`       | Runs `member.patch` for the authenticated user. Without a login it responds with 401. |
 
 The controller's [`authorize`](#authorize) doesn't apply to `login`, `logout`
-and `session`, which authenticate users; `self` follows it. As `patch self`
-goes through `member.patch`, an override of `member.patch` that restricts the
-fields of the patch, e.g. drops `roles` for users without a role, applies to
-both. Its member actions
-default to `authorize: ['$self']`, and are routed when listed in `allow` like
-on other model controllers.
+and `session`, which authenticate users; `self` follows it. `self` runs the
+member actions with all their settings: their authorization, `parameters`,
+`response`, `transacted`, `before` and `after`, and the controller's
+`member:get` and `member:patch` hooks. It responds with 401 where `allow`
+doesn't route them. An override of `member.patch` that restricts the fields of
+the patch, e.g. drops `roles` for users without a role, applies to both. Its
+member actions default to `authorize: ['$self']`, and are routed when listed
+in `allow` like on other model controllers.
 
 ```js
 import { UsersController } from '@ditojs/server'

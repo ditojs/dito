@@ -3,10 +3,11 @@
 The changes of each release of Dito.js. For upgrading to a new major
 version, see the upgrade guides in `docs/`.
 
-## 4.6.1 (unreleased)
+## 4.7.0 (unreleased)
 
 ### Fixes
 
+- **server:** `GET` and `PATCH users/self` of `UsersController` run `member.get` and `member.patch` with all their settings, e.g. `transacted`, `parameters` and their `member:get` and `member:patch` hooks, so overrides of the member actions apply to them without redeclaring `self`. `GET users/self` also applies the authorization of `member.get`, and responds with 401 where `allow` doesn't route it.
 - **server:** `Model.count()` counts rows on SQLite and MySQL, where it returned 0, and so does the `count` action of controllers.
 - **server:** `truncate()` no longer applies the default scope of the model, which knex rejects.
 - **server:** Relating several models to a many-to-many relation through its controller works on SQLite and MySQL, where it failed with a 500 error.

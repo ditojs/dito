@@ -193,13 +193,14 @@ export class Controller {
     if (actions) {
       const namesByIdentifier = {}
       for (const [name, action] of Object.entries(actions)) {
-        const { identifier, handler } = this.setupAction(
+        const controllerAction = this.setupAction(
           type,
           actions,
           name,
           action,
           authorize[name]
         )
+        const { identifier, handler } = controllerAction
         const otherName = namesByIdentifier[identifier]
         if (otherName) {
           throw new ControllerError(
@@ -210,6 +211,7 @@ export class Controller {
           )
         }
         namesByIdentifier[identifier] = name
+        this.setupActionRoute(type, controllerAction)
         // Replace the action object with the converted action handler, so they
         // too can benefit from prototypal inheritance:
         actions[name] = handler
@@ -248,7 +250,7 @@ export class Controller {
     // ahead of their call.
     const actionClass = type === 'member' ? MemberAction : ControllerAction
     // eslint-disable-next-line new-cap
-    const controllerAction = new actionClass(
+    return new actionClass(
       this,
       actions,
       definition,
@@ -259,8 +261,6 @@ export class Controller {
       path,
       authorize
     )
-    this.setupActionRoute(type, controllerAction)
-    return controllerAction
   }
 
   /**

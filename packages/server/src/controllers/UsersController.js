@@ -54,22 +54,12 @@ export class UsersController extends ModelController {
 
     'get self'(ctx) {
       return this.isAuthenticated(ctx)
-        ? this.member.get.call(
-            this,
-            this.getContextWithMemberId(ctx, ctx.state.user.$id())
-          )
+        ? callSelfAction(this.controller, ctx, 'get')
         : null
     },
 
-    async 'patch self'(ctx) {
-      // Users can only patch themselves where they can patch their member:
-      if (this.member.patch && this.isAuthenticated(ctx)) {
-        ctx = this.getContextWithMemberId(ctx, ctx.state.user.$id())
-        await this.controller.authorizeMember(ctx, 'patch')
-        return this.member.patch.call(this, ctx)
-      } else {
-        throw new AuthorizationError()
-      }
+    'patch self'(ctx) {
+      return callSelfAction(this.controller, ctx, 'patch')
     }
   }
 
@@ -77,8 +67,45 @@ export class UsersController extends ModelController {
     authorize: ['$self']
   }
 
+  // @override
+  setupAction(type, actions, name, action, authorize) {
+    const controllerAction = super.setupAction(
+      type,
+      actions,
+      name,
+      action,
+      authorize
+    )
+    if (type === 'collection' && controllerAction.path === 'self') {
+      // Transactions are created per route, so create one for `self` where its
+      // member action needs one:
+      controllerAction.transacted ||= !!getSelfAction(
+        this,
+        controllerAction.method
+      )?.transacted
+    }
+    return controllerAction
+  }
+
   isAuthenticated(ctx) {
     // Make sure the currently logged in user has the correct model-class:
     return ctx.isAuthenticated() && ctx.state.user instanceof this.modelClass
   }
+}
+
+// Run the member action for the logged-in user, with all its settings:
+function callSelfAction(controller, ctx, method) {
+  const action = getSelfAction(controller, method)
+  if (action && controller.isAuthenticated(ctx)) {
+    return action.callAction(ctx, ctx.state.user.$id())
+  } else {
+    throw new AuthorizationError()
+  }
+}
+
+function getSelfAction(controller, method) {
+  // Users can only access themselves where `allow` routes the member action:
+  return Object.hasOwn(controller.member, method)
+    ? controller.memberActions[method]
+    : null
 }

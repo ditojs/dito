@@ -4,6 +4,7 @@ import { createTestApp, getAppUrl } from '../utils/app.js'
 import { createTestDatabase } from '../utils/database.js'
 
 const loginEvents: string[] = []
+const patchEvents: string[] = []
 
 class Session extends SessionModel {}
 
@@ -76,12 +77,48 @@ class Readers extends UsersController {
   override modelClass = Member
 }
 
-// Members whose patches need a role:
+// Members that need a role to access themselves:
 class Editors extends UsersController {
   override modelClass = Member
   override member: any = {
     allow: ['get', 'patch'],
-    authorize: { patch: 'editor' }
+    authorize: { get: 'editor', patch: 'editor' }
+  }
+}
+
+// Members whose patches are audited, validated and undone in a transaction:
+class Auditors extends UsersController {
+  override modelClass = Member
+
+  override hooks: any = {
+    'before:member:patch'(ctx: any) {
+      patchEvents.push(
+        `patch ${ctx.memberId}, transacted: ${!!ctx.transaction}`
+      )
+    }
+  }
+
+  override member: any = {
+    allow: ['get', 'patch'],
+
+    patch: {
+      transacted: true,
+      parameters: {
+        nickname: {
+          type: 'string',
+          maxLength: 10
+        }
+      },
+      async handler(ctx: any, { nickname }: { nickname: string }) {
+        // Members can't change their username:
+        delete ctx.request.body.username
+        const result = await super.patch(ctx)
+        if (nickname === 'Undone') {
+          throw new Error('Undone')
+        }
+        return result
+      }
+    }
   }
 }
 
@@ -105,7 +142,7 @@ describe('UsersController', () => {
       }
     },
     models: { Session, Member },
-    controllers: { Members, Admins, Readers, Editors }
+    controllers: { Members, Admins, Readers, Editors, Auditors }
   })
 
   let url: string
@@ -168,6 +205,7 @@ describe('UsersController', () => {
 
   afterEach(async () => {
     loginEvents.length = 0
+    patchEvents.length = 0
     await app.knex('Session').del()
   })
 
@@ -396,6 +434,52 @@ describe('UsersController', () => {
       expect(self.status).toBe(401)
     }
     expect((await Member.query().findById(member.id))!.nickname).toBeNull()
+  })
+
+  it(`only lets members get themselves like their member`, async () => {
+    const request = createClient()
+    await request('/editors/login', {
+      method: 'POST',
+      body: { username: 'ada', password: 'secret' }
+    })
+    expect((await request('/editors/self')).status).toBe(401)
+  })
+
+  it('patches members themselves with the settings of their member', async () => {
+    const auditor = await Member.query().insert({
+      username: 'cy',
+      password: 'secret'
+    } as any)
+    try {
+      const request = createClient()
+      await request('/auditors/login', {
+        method: 'POST',
+        body: { username: 'cy', password: 'secret' }
+      })
+      const patchSelf = (body: object) =>
+        request('/auditors/self', { method: 'PATCH', body })
+      const getNickname = async () =>
+        (await Member.query().findById(auditor.id))!.nickname
+
+      // The patch is rolled back with the transaction of `member.patch`:
+      expect((await patchSelf({ nickname: 'Undone' })).status).toBe(500)
+      expect(await getNickname()).toBeNull()
+      expect(patchEvents).toEqual([`patch ${auditor.id}, transacted: true`])
+
+      // The parameters of `member.patch` are validated:
+      const invalid = await patchSelf({ nickname: 'Much too long' })
+      expect(invalid.status).toBe(400)
+      expect(invalid.data).toMatchObject({ type: 'ParameterValidation' })
+      expect(await getNickname()).toBeNull()
+
+      // The override of `member.patch` applies:
+      const self = await patchSelf({ nickname: 'Cy', username: 'root' })
+      expect(self.status).toBe(200)
+      expect(self.data).toMatchObject({ nickname: 'Cy', username: 'cy' })
+      expect(await getNickname()).toBe('Cy')
+    } finally {
+      await Member.query().deleteById(auditor.id)
+    }
   })
 
   it(`doesn't apply the controller's authorize to logins and sessions`, async () => {

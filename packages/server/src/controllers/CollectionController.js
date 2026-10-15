@@ -1,7 +1,6 @@
 import { isObject, isArray, asArray } from '@ditojs/utils'
 import { Controller } from './Controller.js'
 import { ControllerError, ValidationError } from '../errors/index.js'
-import { parseHandlerDefinition } from '../utils/handler.js'
 
 // Abstract base class for ModelController and RelationController
 export class CollectionController extends Controller {
@@ -13,11 +12,8 @@ export class CollectionController extends Controller {
   isOneToOne = false
   idParam = null
   idValidator = null
-  // The handler of `member.get`, resolved by `setup()`, see `getMember()`.
-  #memberGetHandler = null
-  // The authorizations of the `get` and `patch` member actions, resolved by
-  // `setup()`, see `authorizeMember()`.
-  #memberAuthorizations = null
+  // The member actions by name, see `setup()`.
+  memberActions = null
 
   // @override
   configure() {
@@ -32,45 +28,53 @@ export class CollectionController extends Controller {
     // resolve `modelClass` after `super.configure()`, see `ModelController`.
     // eslint-disable-next-line new-cap
     this.idValidator = new this.modelClass()
-    // Inherit the member actions here, as `this.member` only holds the routed
-    // handlers after `setupActions()`, see `#memberGetHandler` below.
+    // Inherit the member actions before `setupActions()` replaces `member` with
+    // the routed handlers.
     const memberActions = this.inheritValues('member')
-    this.#memberAuthorizations = this.setupMemberAuthorizations(memberActions)
     this.logController()
-    this.setProperty('collection', this.setupActions('collection'))
+    // Set up the member actions before the collection actions, which can run
+    // them, see `UsersController`.
+    this.memberActions = {}
     this.setProperty(
       'member',
       this.isOneToOne ? {} : this.setupActions('member')
     )
-    // `getMember()` resolves members through `member.get`, also when `allow`
-    // doesn't route it, so set up its handler from the inherited actions then.
-    this.#memberGetHandler = Object.hasOwn(this.member, 'get')
-      ? this.member.get
-      : this.setupActionDefinition(memberActions, 'get').handler
+    // `getMember()` and `authorizeMember()` go through `member.get` and
+    // `member.patch` also when `allow` doesn't route them, as they protect the
+    // members either way:
+    const { authorize } = this.processValues(memberActions)
+    for (const name of ['get', 'patch']) {
+      this.memberActions[name] ??= this.setupAction(
+        'member',
+        memberActions,
+        name,
+        memberActions[name],
+        authorize[name]
+      )
+    }
+    this.setProperty('collection', this.setupActions('collection'))
     this.setProperty('assets', this.setupAssets())
   }
 
-  setupMemberAuthorizations(memberActions) {
-    // Also for actions that `allow` doesn't route, as they protect the members
-    // either way.
-    const { authorize = {} } = this.processValues(memberActions)
-    return Object.fromEntries(
-      ['get', 'patch'].map(name => [
-        name,
-        this.processAuthorize(
-          this.getActionAuthorize(
-            parseHandlerDefinition(memberActions?.[name]),
-            authorize[name]
-          )
-        )
-      ])
+  // @override
+  setupAction(type, actions, name, action, authorize) {
+    const controllerAction = super.setupAction(
+      type,
+      actions,
+      name,
+      action,
+      authorize
     )
+    if (type === 'member') {
+      this.memberActions[name] = controllerAction
+    }
+    return controllerAction
   }
 
   // Authorizes the requested member like the `get` or `patch` member action
   // does, for reading or changing its relations, see `RelationController`.
   async authorizeMember(ctx, name) {
-    await this.handleAuthorization(this.#memberAuthorizations[name], ctx)
+    await this.handleAuthorization(this.memberActions[name].authorization, ctx)
   }
 
   // @override
@@ -164,7 +168,7 @@ export class CollectionController extends Controller {
     // calls do, see `ControllerAction#callHandler()`, so overrides can rely on
     // `this.controller` and sibling actions. One-to-one relations have no
     // member actions, so fall back to the controller there.
-    return this.#memberGetHandler.call(
+    return this.memberActions.get.handler.call(
       this.isOneToOne ? this : this.member,
       ctx.extend({ filteredQuery: query }),
       builder => {
