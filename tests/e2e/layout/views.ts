@@ -32,6 +32,22 @@ export const widgets = createWidgetView<Widget>(
               components: {
                 color: { type: 'text', label: 'Color' }
               }
+            },
+            links: {
+              type: 'list',
+              label: 'Links',
+              inlined: true,
+              collapsible: true,
+              itemLabel: ({ item }) => ({
+                text: 'Link',
+                suffix: { html: ` — <small>${item.url}</small>` }
+              }),
+              form: {
+                type: 'form',
+                components: {
+                  url: { type: 'url', label: 'URL' }
+                }
+              }
             }
           }
         }

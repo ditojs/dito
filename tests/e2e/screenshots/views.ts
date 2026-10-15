@@ -273,6 +273,17 @@ export const projects = createWidgetView<Project>(
               draggable: true,
               collapsible: 'all',
               clipboard: true,
+              // Long suffixes are clipped with an ellipsis:
+              itemLabel: ({
+                formLabel,
+                item
+              }: {
+                formLabel: string | null
+                item: { url?: string; text?: string }
+              }) => ({
+                text: formLabel ?? '',
+                suffix: { html: ` — <small>${item.url ?? item.text}</small>` }
+              }),
               forms: {
                 link: {
                   type: 'form',

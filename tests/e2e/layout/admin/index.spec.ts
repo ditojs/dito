@@ -74,4 +74,35 @@ test.describe('layout', () => {
     await label.click({ position: { x, y: box.height / 2 } })
     await expect(form.getField('Color')).toBeVisible()
   })
+
+  test('clips long suffixes of collapsible item labels', async ({
+    page,
+    url
+  }) => {
+    await Widget.query().insert({
+      name: 'Widget A',
+      links: [{ url: `https://example.com/${'long/'.repeat(100)}` }]
+    })
+    const list = new DitoListView(page, url, 'Widget')
+    const form = new DitoForm(page)
+    await list.navigate('/widgets')
+    await list.list.edit('Widget A')
+    await form.selectTab('Details')
+    const links = page.getByRole('region', { name: 'Links' })
+    const suffix = links.locator('.dito-affix--ellipsis')
+    await expect(suffix).toBeVisible()
+    const listBox = (await links.boundingBox())!
+    const suffixBox = (await suffix.boundingBox())!
+    expect(suffixBox.width).toBeGreaterThan(0)
+    expect(suffixBox.x + suffixBox.width).toBeLessThanOrEqual(
+      listBox.x + listBox.width
+    )
+    // The text is longer than the suffix, which clips it with an ellipsis:
+    expect(
+      await suffix.evaluate(element => ({
+        isClipped: element.scrollWidth > element.clientWidth,
+        textOverflow: getComputedStyle(element).textOverflow
+      }))
+    ).toEqual({ isClipped: true, textOverflow: 'ellipsis' })
+  })
 })

@@ -44,7 +44,15 @@ const project: Partial<Project> = {
   ],
   links: [
     { type: 'link', url: 'https://example.com/docs' },
-    { type: 'note', text: 'Ask Ada about the fonts' }
+    {
+      type: 'note',
+      text: (
+        'Ask Ada about the fonts, the colors and the grid of the new ' +
+        'design, before the team starts to build the templates and the ' +
+        'components of the new website, and the illustrations of the ' +
+        'campaign that goes with it'
+      )
+    }
   ],
   attachment: {
     key: 'c.pdf',
