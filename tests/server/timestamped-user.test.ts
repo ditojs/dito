@@ -12,6 +12,7 @@ import {
   createTestDatabase,
   destroyTestApp
 } from './setup.js'
+import { isSQLiteTest } from '../utils/test-knex.js'
 
 class Shelf extends TimestampedModel {
   declare id: number
@@ -335,7 +336,8 @@ describe('UserMixin', () => {
       expect(await deserializeUser(`Shelf-${alice.id}`)).toBe(false)
     })
 
-    it('passes on query errors', async () => {
+    it('passes on query errors', async context => {
+      context.skip(isSQLiteTest, 'SQLite compares text with integer ids')
       await expect(deserializeUser('Librarian-not-a-number')).rejects.toThrow()
     })
   })

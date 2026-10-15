@@ -278,10 +278,12 @@ export class Model extends objection.Model {
   }
 
   static async count(...args) {
-    const { count } = (await this.query()
+    // The databases name the count column differently, e.g. `count` on
+    // PostgreSQL and `count(*)` on SQLite, so read the row's only value:
+    const row = await this.query()
       .count(...args)
-      .first()) || {}
-    return +count || 0
+      .first()
+    return +Object.values(row ?? {})[0] || 0
   }
 
   // @override

@@ -214,13 +214,15 @@ export class QueryBuilder extends objection.QueryBuilder {
   #applyScopes() {
     if (!this.#ignoreScopes[SYMBOL_ALL]) {
       // Objection's `isFind()` is also true for `upsertGraph()`, which rejects
-      // `where` conditions on its root query, so check for it separately:
+      // `where` conditions on its root query, and for `truncate()`, which
+      // can't have any, so check for them separately:
       const isUpsertGraph = this.has(/^upsertGraph/)
       // Only apply default scopes if this is a normal find query, meaning it
       // does not define any write operations or special selects, e.g. `count`:
       const isNormalFind = (
         this.isFind() &&
         !isUpsertGraph &&
+        !this.has('truncate') &&
         !this.hasSpecialSelects()
       )
       // If this isn't a normal find query, ignore all graph operations,

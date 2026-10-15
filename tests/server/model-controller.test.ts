@@ -7,6 +7,7 @@ import {
 } from '@ditojs/server'
 import { createTestApp, getAppUrl } from '../utils/app.js'
 import { createTestDatabase } from '../utils/database.js'
+import { isSQLiteTest } from '../utils/test-knex.js'
 
 class Author extends Model {
   declare id: number
@@ -286,9 +287,8 @@ class Books extends ModelController<any> {
       response: {
         type: 'integer'
       },
-      async handler() {
-        const { count } = (await Book.query().count().first()) as any
-        return +count
+      handler() {
+        return Book.count()
       }
     },
 
@@ -774,7 +774,8 @@ describe('ModelController', () => {
       }
     })
 
-    it('saves the models of collection patches atomically', async () => {
+    it('saves the models of collection patches atomically', async context => {
+      context.skip(isSQLiteTest, 'SQLite has no integer range to exceed')
       const [atlas, bestiary] = await insertBooks()
       const response = await request('/books', {
         method: 'PATCH',

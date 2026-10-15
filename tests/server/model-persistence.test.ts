@@ -10,6 +10,7 @@ import {
   createTestDatabase,
   destroyTestApp
 } from './setup.js'
+import { isSQLiteTest } from '../utils/test-knex.js'
 
 const hookCalls: string[] = []
 const foundBeforeDelete: unknown[] = []
@@ -343,10 +344,10 @@ describe('Model persistence', () => {
       } as any)
       expect(member.joinedOn).toEqual(new Date(2026, 4, 14))
       expect(member.toJSON().joinedOn).toBe('2026-05-14')
-      const [row] = await app
+      const { value } = await app
         .knex('Member')
-        .select(app.knex.raw('"joinedOn"::text as "joinedOn"'))
-      expect(row.joinedOn).toBe('2026-05-14')
+        .first(app.knex.raw('cast(?? as text) as value', ['joinedOn']))
+      expect(value).toBe('2026-05-14')
     })
   })
 
@@ -398,7 +399,8 @@ describe('Model persistence', () => {
   })
 
   describe('query errors', () => {
-    it('converts database errors to DatabaseError', async () => {
+    it('converts database errors to DatabaseError', async context => {
+      context.skip(isSQLiteTest, 'db-errors misses better-sqlite3 errors')
       const promise = Member.query().where('nickname', 'Ada')
       const error = await promise.catch(error => error)
       expect(error).toBeInstanceOf(DatabaseError)

@@ -147,7 +147,7 @@ describe('PGlite integration', () => {
   })
 })
 
-describe('PGlite date properties', () => {
+describe('Date properties', () => {
   class Event extends Model {
     declare id: number
     declare day: Date | string | null
@@ -171,11 +171,11 @@ describe('PGlite date properties', () => {
   })
 
   async function getStored(id: number, column: string) {
-    const { rows } = await app.knex.raw(
-      `select ??::text as value from "Event" where id = ?`,
-      [column, id]
-    )
-    return rows[0].value
+    const { value } = await app
+      .knex('Event')
+      .first(app.knex.raw('cast(?? as text) as value', [column]))
+      .where('id', id)
+    return value
   }
 
   it.each([

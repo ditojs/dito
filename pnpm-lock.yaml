@@ -276,7 +276,7 @@ importers:
         version: 9.1.7
       knex:
         specifier: ^3.3.0
-        version: 3.3.0(pg@8.23.1)(supports-color@7.2.0)
+        version: 3.3.0(better-sqlite3@13.0.3)(pg@8.23.1)(supports-color@7.2.0)
       lerna:
         specifier: ^10.0.1
         version: 10.0.1(@types/node@26.6.4)(supports-color@7.2.0)(typescript@6.0.3)
@@ -285,7 +285,7 @@ importers:
         version: 17.6.0
       objection:
         specifier: ^3.3.0
-        version: 3.5.0(knex@3.3.0(pg@8.23.1)(supports-color@7.2.0))
+        version: 3.5.0(knex@3.3.0(better-sqlite3@13.0.3)(pg@8.23.1)(supports-color@7.2.0))
       pg:
         specifier: ^8.23.1
         version: 8.23.1
@@ -674,10 +674,10 @@ importers:
         version: 26.6.4
       knex:
         specifier: ^3.3.0
-        version: 3.3.0(pg@8.23.1)(supports-color@7.2.0)
+        version: 3.3.0(better-sqlite3@13.0.3)(pg@8.23.1)(supports-color@7.2.0)
       objection:
         specifier: ^3.3.0
-        version: 3.5.0(knex@3.3.0(pg@8.23.1)(supports-color@7.2.0))
+        version: 3.5.0(knex@3.3.0(better-sqlite3@13.0.3)(pg@8.23.1)(supports-color@7.2.0))
       typescript:
         specifier: ^6.0.3
         version: 6.0.3
@@ -728,12 +728,15 @@ importers:
       '@playwright/test':
         specifier: ^1.64.0
         version: 1.64.0
+      better-sqlite3:
+        specifier: ^13.0.3
+        version: 13.0.3
       knex:
         specifier: ^3.3.0
-        version: 3.3.0(pg@8.23.1)(supports-color@10.2.2)
+        version: 3.3.0(better-sqlite3@13.0.3)(pg@8.23.1)(supports-color@10.2.2)
       objection:
         specifier: ^3.3.0
-        version: 3.5.0(knex@3.3.0(pg@8.23.1)(supports-color@10.2.2))
+        version: 3.5.0(knex@3.3.0(better-sqlite3@13.0.3)(pg@8.23.1)(supports-color@10.2.2))
       vitest:
         specifier: ^5.0.3
         version: 5.0.3(@types/node@26.6.4)(@vitest/coverage-v8@5.0.3)(happy-dom@20.14.5)(vite@8.3.4(@types/node@26.6.4)(sass@1.105.1)(yaml@2.9.1))
@@ -2527,6 +2530,10 @@ packages:
 
   before-after-hook@2.2.3:
     resolution: {integrity: sha512-NzUnlZexiaH/46WDhANlyR2bXRopNg4F/zuSA3OpZnllCUgRaOF2znDioDWrmbNVsuZk6l9pMquQB38cfBZwkQ==}
+
+  better-sqlite3@13.0.3:
+    resolution: {integrity: sha512-RbOBxmLBG8uvFUc15X9+9SFemKcQ0WBuISBVkpuiaUB2qblC8UWlHEjdWVoZ8AdhSwmoEgsiXKfopX0CQxaACQ==}
+    engines: {node: '>=22'}
 
   bin-links@5.0.0:
     resolution: {integrity: sha512-sdleLVfCjBtgO5cNjA2HVRvWBJAHs4zwenaCPMNJAJU0yNxpzj80IpjOIimkpkr+mhlA+how5poQtt53PygbHA==}
@@ -4471,6 +4478,10 @@ packages:
   node-addon-api@7.1.1:
     resolution: {integrity: sha512-5m3bsyrjFWE1xf7nz7YXdN4udnVtXK6/Yfgn5qnahL6bCkf2yKt4k3nuTKAtT4r3IG8JNR2ncsIMdZuAzJjHQQ==}
 
+  node-addon-api@8.9.2:
+    resolution: {integrity: sha512-VijLXbi3UACN69I0JVXJsX4tjACjNoQDgv2gTF6sx2wWEi8tkSg2eX8p5gSIFi8z2+DL3oHmY6OyKce38SDolg==}
+    engines: {node: ^18 || ^20 || >= 21}
+
   node-exports-info@1.6.2:
     resolution: {integrity: sha512-kXs9Go0cah0qHVV2v389IXQLdLCeE1xfFtjOAF+iobu0OIoG1pje8At2vMHyaPMiPMnG/LWP50twML21eMcAag==}
     engines: {node: '>= 0.4'}
@@ -4608,6 +4619,7 @@ packages:
   objection@3.5.0:
     resolution: {integrity: sha512-uHKovRPeQX/h6u3yyBB+rWary9Q/Phr6epgiotioqTuive4PjWOyRvjrRT9GALetQCNMvcrymXy5s44AbsQLpQ==}
     engines: {node: '>=14.0.0'}
+    deprecated: 'Graph data can bypass noDelete/noUnrelate via #delete/#unrelate markers, plus regressions. Upgrade to 3.7.0.'
     peerDependencies:
       knex: '>=2.3.0'
 
@@ -7968,6 +7980,10 @@ snapshots:
 
   before-after-hook@2.2.3: {}
 
+  better-sqlite3@13.0.3:
+    dependencies:
+      node-addon-api: 8.9.2
+
   bin-links@5.0.0:
     dependencies:
       cmd-shim: 7.0.0
@@ -9537,7 +9553,7 @@ snapshots:
 
   kind-of@6.0.3: {}
 
-  knex@3.3.0(pg@8.23.1)(supports-color@10.2.2):
+  knex@3.3.0(better-sqlite3@13.0.3)(pg@8.23.1)(supports-color@10.2.2):
     dependencies:
       colorette: 2.0.19
       commander: 10.0.1
@@ -9554,11 +9570,12 @@ snapshots:
       tarn: 3.1.2
       tildify: 2.0.0
     optionalDependencies:
+      better-sqlite3: 13.0.3
       pg: 8.23.1
     transitivePeerDependencies:
       - supports-color
 
-  knex@3.3.0(pg@8.23.1)(supports-color@7.2.0):
+  knex@3.3.0(better-sqlite3@13.0.3)(pg@8.23.1)(supports-color@7.2.0):
     dependencies:
       colorette: 2.0.19
       commander: 10.0.1
@@ -9575,6 +9592,7 @@ snapshots:
       tarn: 3.1.2
       tildify: 2.0.0
     optionalDependencies:
+      better-sqlite3: 13.0.3
       pg: 8.23.1
     transitivePeerDependencies:
       - supports-color
@@ -10052,6 +10070,8 @@ snapshots:
   node-addon-api@7.1.1:
     optional: true
 
+  node-addon-api@8.9.2: {}
+
   node-exports-info@1.6.2:
     dependencies:
       array.prototype.flatmap: 1.3.3
@@ -10317,19 +10337,19 @@ snapshots:
       define-properties: 1.2.1
       es-object-atoms: 1.1.2
 
-  objection@3.5.0(knex@3.3.0(pg@8.23.1)(supports-color@10.2.2)):
+  objection@3.5.0(knex@3.3.0(better-sqlite3@13.0.3)(pg@8.23.1)(supports-color@10.2.2)):
     dependencies:
       ajv: 8.20.0
       ajv-formats: 3.0.1
       db-errors: 0.2.3
-      knex: 3.3.0(pg@8.23.1)(supports-color@10.2.2)
+      knex: 3.3.0(better-sqlite3@13.0.3)(pg@8.23.1)(supports-color@10.2.2)
 
-  objection@3.5.0(knex@3.3.0(pg@8.23.1)(supports-color@7.2.0)):
+  objection@3.5.0(knex@3.3.0(better-sqlite3@13.0.3)(pg@8.23.1)(supports-color@7.2.0)):
     dependencies:
       ajv: 8.20.0
       ajv-formats: 3.0.1
       db-errors: 0.2.3
-      knex: 3.3.0(pg@8.23.1)(supports-color@7.2.0)
+      knex: 3.3.0(better-sqlite3@13.0.3)(pg@8.23.1)(supports-color@7.2.0)
 
   obug@2.2.1: {}
 

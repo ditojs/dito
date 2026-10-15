@@ -41,6 +41,22 @@ jobs:
       - run: pnpm --filter @ditojs/tests test:types
       - run: pnpm types
 
+  unit-sqlite:
+    runs-on: ubuntu-latest
+    env:
+      TZ: Europe/Zurich
+      DITO_TEST_DB: sqlite
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # The server tests run from source and need no build.
+      - run: pnpm test:unit --project node packages/server tests/server
+
   e2e:
     runs-on: ubuntu-latest
     strategy:

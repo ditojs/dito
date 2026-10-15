@@ -3,6 +3,7 @@ import fs from 'fs/promises'
 import http from 'http'
 import os from 'os'
 import path from 'path'
+import Knex from 'knex'
 import { Application } from './Application.js'
 import { Controller } from '../controllers/index.js'
 import { Model } from '../models/index.js'
@@ -10,7 +11,10 @@ import { Service } from '../services/index.js'
 import { Storage } from '../storage/index.js'
 import { DiskStorage } from '../storage/DiskStorage.js'
 import { ResponseError } from '../errors/index.js'
-import { createPGliteKnex } from '../../../../tests/utils/pglite-knex.ts'
+import {
+  createTestKnex,
+  isSQLiteTest
+} from '../../../../tests/utils/test-knex.ts'
 
 function createApp({ config, ...options } = {}) {
   return new Application({
@@ -957,7 +961,7 @@ describe('Application', () => {
     const createKnexApp = ({ knex, ...config } = {}) =>
       createApp({
         config: {
-          knex: { ...createPGliteKnex().knex, ...knex },
+          knex: { ...createTestKnex(), ...knex },
           ...config
         },
         models: { Recipe }
@@ -1053,6 +1057,40 @@ describe('Application', () => {
       }
     })
 
+    it.each([
+      ['name', 'better-sqlite3'],
+      ['class', Knex({ client: 'better-sqlite3' }).client.constructor]
+    ])(
+      'binds dates as ISO strings with a better-sqlite3 %s',
+      async (_, client) => {
+        const app = createApp({
+          config: {
+            knex: {
+              client,
+              connection: { filename: ':memory:' },
+              useNullAsDefault: true
+            }
+          }
+        })
+        try {
+          // Pin the knex method that dito's client subclass overrides:
+          const { prototype } = Object.getPrototypeOf(
+            app.knex.client.constructor
+          )
+          expect(prototype._formatBindings).toBeTypeOf('function')
+          expect(app.knex.client._formatBindings).not.toBe(
+            prototype._formatBindings
+          )
+          const date = new Date('2026-05-14T09:30:00Z')
+          expect(await app.knex.raw('select ? as value', [date])).toEqual([
+            { value: '2026-05-14T09:30:00.000Z' }
+          ])
+        } finally {
+          await app.knex.destroy()
+        }
+      }
+    )
+
     it('logs SQL queries with `log.sql`', async () => {
       const app = createKnexApp({ log: { sql: true } })
       const logger = { info: vi.fn() }
@@ -1065,7 +1103,10 @@ describe('Application', () => {
         const [[success, sql], [failure]] = logger.info.mock.calls
         expect(sql).toBe('select 1 as one')
         expect(success.duration).toBeGreaterThanOrEqual(0)
-        expect(success.response.rows).toEqual([{ one: 1 }])
+        // PostgreSQL responds with results, SQLite with the rows:
+        expect(
+          isSQLiteTest ? success.response : success.response.rows
+        ).toEqual([{ one: 1 }])
         expect(success.error).toBeUndefined()
         expect(failure.response).toBeNull()
         expect(failure.error).toBeInstanceOf(Error)
