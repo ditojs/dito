@@ -22,6 +22,10 @@ export default defineConfig({
           // several seconds when many test files do so at once:
           testTimeout: 30_000,
           hookTimeout: 30_000,
+          // NOTE: The V8 of Node.js 24 sometimes frees wasm code twice when
+          // collecting pglite's dead wasm code, and crashes the worker:
+          // https://github.com/nodejs/node/issues/66366
+          execArgv: ['--no-wasm-code-gc'],
           exclude: [...excludedDirectories, `${componentPackages}/*.test.*`]
         }
       },
