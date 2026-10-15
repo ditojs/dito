@@ -27,7 +27,8 @@ describe('validators', () => {
       'password',
       'range',
       'required',
-      'url'
+      'url',
+      'validate'
     ])
     for (const validator of Object.values(validators)) {
       expect(validator.validate).toBeTypeOf('function')

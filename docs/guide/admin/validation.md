@@ -26,8 +26,7 @@ validate a format, and `required` accepts them unchanged, so a saved password
 needn't be entered again. `rules` adds
 or changes rules, e.g. `rules: { max: 100 }`, and turns them off when set to
 `false` or `undefined`. Rules other than `required` only apply to values that
-aren't empty. Custom rules aren't supported: validate such values on the
-server.
+aren't empty.
 
 `required` takes a callback:
 
@@ -37,6 +36,27 @@ isbn: {
   required: ({ item }) => item.format !== 'ebook'
 }
 ```
+
+## Custom validation
+
+`validate()` validates the value with a callback, together with the other
+rules. It receives the context, with the value after `formatValue()`, and
+returns `false` to fail with "is invalid", or a message to fail with:
+
+```js
+isbn: {
+  type: 'text',
+  label: 'ISBN',
+  validate: ({ value }) =>
+    /^97[89]\d{10}$/.test(value.replaceAll('-', '')) ||
+    'must be an ISBN with 13 digits'
+}
+```
+
+The error reads "The ISBN field must be an ISBN with 13 digits." `true` and
+`undefined` pass. Like the rules, `validate()` only applies to values that
+aren't empty, and runs synchronously: validate values that need requests on
+the server.
 
 ## When validation runs
 
