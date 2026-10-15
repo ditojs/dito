@@ -9,21 +9,18 @@
   //- Without a label, the buttons show in the header, which is otherwise
   //- empty and hidden:
   .dito-list__header(
-    v-if="scopes || hasPagination || hasClipboard || hasToggleAll"
+    v-if="scopes || hasPagination || hasClipboard || hasToggleAll && !labelId"
   )
-    DitoLabelButtons(
-      :labelId="labelId"
-      position="start"
+    //- With a label, the label toggles all items:
+    button.dito-chevron.dito-chevron--double(
+      v-if="hasToggleAll && !labelId"
+      type="button"
+      :class="{ 'dito-chevron--open': !hasCollapsedItems }"
+      :title="toggleAllTitle"
+      :aria-label="toggleAllTitle"
+      :aria-expanded="!hasCollapsedItems"
+      @click="toggleAll"
     )
-      button.dito-chevron.dito-chevron--double(
-        v-if="hasToggleAll"
-        type="button"
-        :class="{ 'dito-chevron--open': !hasCollapsedItems }"
-        :title="toggleAllLabel"
-        :aria-label="toggleAllLabel"
-        :aria-expanded="!hasCollapsedItems"
-        @click="toggleAll"
-      )
     DitoScopes(
       v-if="scopes"
       :listQuery="listQuery"
@@ -34,10 +31,7 @@
     .dito-spacer(
       v-else-if="hasPagination"
     )
-    DitoLabelButtons(
-      :labelId="labelId"
-      position="end"
-    )
+    DitoLabelButtons(:labelId="labelId")
       DitoClipboard(
         v-if="hasClipboard"
         :clipboard="schema.clipboard"
@@ -185,8 +179,9 @@ import {
 import { isSourceWithResource } from '../utils/schema/structure.js'
 import { fromClipboard } from '../utils/fromClipboard.ts'
 import { toClipboard } from '../utils/toClipboard.ts'
+import { labelToggleKey } from '../utils/keys.ts'
 import { hyphenate, labelize } from '@ditojs/utils'
-import { computed } from 'vue'
+import { computed, inject, watchEffect } from 'vue'
 
 // @vue/component
 const DitoTypeList = {
@@ -229,6 +224,34 @@ const DitoTypeList = {
         item => !(getItemStore(item).opened ?? !source.collapsed.value)
       )
     )
+    const hasToggleAll = computed(
+      () => (
+        source.collapsible.value &&
+        listData.value.length > 0 &&
+        getSchemaValue('collapsible') === 'all'
+      )
+    )
+    const toggleAllTitle = computed(() =>
+      hasCollapsedItems.value ? 'Expand All' : 'Collapse All'
+    )
+    // Only the loaded items, which fire their toggle events themselves:
+    const toggleAll = () => {
+      const opened = hasCollapsedItems.value
+      for (const item of listData.value) {
+        getItemStore(item).opened = opened
+      }
+    }
+    // The label of the container toggles all items, if there is one:
+    const labelToggle = inject(labelToggleKey)
+    watchEffect(() => {
+      labelToggle.value = hasToggleAll.value
+        ? {
+            collapsed: hasCollapsedItems.value,
+            title: toggleAllTitle.value,
+            toggle: toggleAll
+          }
+        : null
+    })
 
     return {
       ...source,
@@ -245,26 +268,9 @@ const DitoTypeList = {
       hasPagination: computed(() => !!source.paginate.value),
       hasEvenCount: computed(() => !(listData.value.length % 2)),
       hasCollapsedItems,
-
-      toggleAllLabel: computed(() =>
-        hasCollapsedItems.value ? 'Expand All' : 'Collapse All'
-      ),
-
-      hasToggleAll: computed(
-        () => (
-          source.collapsible.value &&
-          listData.value.length > 0 &&
-          getSchemaValue('collapsible') === 'all'
-        )
-      ),
-
-      // Only the loaded items, which fire their toggle events themselves:
-      toggleAll() {
-        const opened = hasCollapsedItems.value
-        for (const item of listData.value) {
-          getItemStore(item).opened = opened
-        }
-      },
+      hasToggleAll,
+      toggleAllTitle,
+      toggleAll,
 
       numColumns: computed(() => {
         const columns = source.columns.value
@@ -427,8 +433,13 @@ export default DitoTypeList
       min-width: 0;
     }
 
-    // The buttons of lists without a label:
-    .dito-label-buttons--end {
+    // The toggle and buttons of lists without a label:
+    > .dito-chevron {
+      align-self: center;
+      margin-left: $form-spacing + $border-width - $focus-ring-padding;
+    }
+
+    .dito-label-buttons {
       margin-left: auto;
 
       + .dito-pagination {

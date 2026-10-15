@@ -105,4 +105,46 @@ test.describe('layout', () => {
       }))
     ).toEqual({ isClipped: true, textOverflow: 'ellipsis' })
   })
+
+  test('toggles all items of lists by their label', async ({ page, url }) => {
+    await Widget.query().insert({
+      name: 'Widget A',
+      links: [{ url: 'https://example.com' }]
+    })
+    const list = new DitoListView(page, url, 'Widget')
+    const form = new DitoForm(page)
+    await list.navigate('/widgets')
+    await list.list.edit('Widget A')
+    await form.selectTab('Details')
+    const label = page.locator('.dito-label').filter({ hasText: /^Links$/ })
+    const toggle = label.getByRole('button', {
+      name: /^(Collapse|Expand) All$/
+    })
+    await label.getByText('Links', { exact: true }).click()
+    await expect(form.getField('URL')).toBeHidden()
+    await expect(toggle).toHaveAccessibleName('Expand All')
+    // The clipboard in the row of the label doesn't toggle:
+    await page.context().grantPermissions(['clipboard-read', 'clipboard-write'])
+    await label.getByTitle('Copy Data').click()
+    await expect(form.getField('URL')).toBeHidden()
+    // The focus ring encloses the chevron and the text:
+    await page.keyboard.press('Shift')
+    await toggle.focus()
+    const ring = await toggle.evaluate(element => {
+      const { outlineStyle } = getComputedStyle(element, '::before')
+      const { left, right } = element.getBoundingClientRect()
+      return { outlineStyle, left, right }
+    })
+    expect(ring.outlineStyle).toBe('solid')
+    for (const part of [
+      label.locator('.dito-chevron'),
+      label.getByText('Links', { exact: true })
+    ]) {
+      const box = (await part.boundingBox())!
+      expect(box.x).toBeGreaterThanOrEqual(ring.left)
+      expect(box.x + box.width).toBeLessThanOrEqual(ring.right)
+    }
+    await page.keyboard.press('Enter')
+    await expect(form.getField('URL')).toBeVisible()
+  })
 })

@@ -11,17 +11,8 @@
     transition: transform 0.1s ease;
   }
 
-  &--double {
-    // Only as wide as the icon, centered in the padding of its button and kept
-    // apart from the text like the focus rings of labels:
-    width: 1em;
-    margin-right: $focus-ring-padding;
-
-    &::before {
-      @extend %icon-chevrons;
-
-      right: 0;
-    }
+  &--double::before {
+    @extend %icon-chevrons;
   }
 
   &--open::before {
@@ -44,6 +35,15 @@
     font: inherit;
     border-radius: $border-radius;
     cursor: pointer;
+
+    // Keep the icon inside the padding:
+    &::before {
+      left: $focus-ring-padding;
+    }
+
+    &--double {
+      width: 1em;
+    }
 
     &:hover {
       color: $color-darker;

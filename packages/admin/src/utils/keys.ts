@@ -10,6 +10,14 @@ import type { Schema } from './types.ts'
 import type { SchemaEventsEmitter } from '../composables/useSchemaEvents.ts'
 import type { ComponentPath } from '../composables/useComponentPath.ts'
 
+// Type components register the toggle of all their items, which the label of
+// their container shows:
+export interface LabelToggle {
+  readonly collapsed: boolean
+  readonly title: string
+  toggle(): void
+}
+
 export interface PanelTab {
   readonly tabName: string
   isTabSelected(): boolean
@@ -35,6 +43,10 @@ export const sourceSchemaKey: Key<Ref<Schema | null>> = Symbol('sourceSchema')
 export const schemaEventsKey: Key<SchemaEventsEmitter> = Symbol('schemaEvents')
 export const schemaContextKey: Key<Context> = Symbol('schemaContext')
 export const componentPathKey: Key<ComponentPath> = Symbol('componentPath')
+export const labelToggleKey: Key<Ref<LabelToggle | null>> =
+  Symbol(
+    'labelToggle'
+  )
 export const panelTabKey: Key<PanelTab | null> = Symbol('panelTab')
 export const accumulatedBasisKey: Key<MaybeRef<number | null>> =
   Symbol(
