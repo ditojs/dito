@@ -30,7 +30,8 @@ columns, and the related model classes don't need to be imported: Dito.js
 finds them among the models of the application.
 
 The [`Model` API](../../api/server/model.md#static-relations) lists all
-options.
+options. In TypeScript, [`FromModel`](models.md#deriving-types) types the
+relations of instances from these definitions.
 
 ## Relation types
 

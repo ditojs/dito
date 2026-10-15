@@ -8,10 +8,13 @@ version, see the upgrade guides in `docs/`.
 ### New
 
 - **server:** `UsersController` has a `'patch self'` collection action, `PATCH users/self`, that patches the logged-in user through `member.patch` and returns it, where `member.patch` is allowed and authorizes the user. Subclasses that set `collection.allow` list it to route it.
+- **server:** `FromModel` derives the instance types of models from their `properties` and `relations` declared `as const`, see [Deriving types](docs/guide/server/models.md#deriving-types).
 - **admin:** `account.settings` in the options of `DitoAdmin` takes a form that edits the logged-in user, opened through a Settings item in the account menu at `/account/settings`, without an item in the main menu. It loads and saves the user through `api.users.self`, by default `users/self`, and shows the changes in the account menu right away.
 
 ### Fixes
 
+- **server:** The `ModelProperties` type accepts nested `properties` of objects without `nullable: true`, and tuples as JSON Schema 2020 declares them, with `prefixItems` and `items: false`, as the validator expects.
+- **server:** The `ModelProperties` type accepts `$ref` without `type`, `definitions` with object schemas, and the types that Dito.js adds, e.g. `'asset'` and model names.
 - **admin:** The labels of lists with `collapsible: 'all'` expand or collapse all items when clicked, not only their double chevron, and their keyboard focus ring encloses the chevron and the text, like the labels of collapsible sections. The double chevron lines up with the chevrons of the items, at the same distance from the text.
 - **admin:** Long labels of full-width components, e.g. lists in inlined forms, are clipped with an ellipsis again, instead of widening the form.
 - **admin:** Inputs with label objects, e.g. `{ text, suffix }` or `{ html }`, use the text of the label as their title, instead of passing the object and causing a Vue warning.
@@ -54,7 +57,6 @@ version, see the upgrade guides in `docs/`.
 
 - **server:** Saving copies the files of assets from another storage than their field's, e.g. pasted from another upload field, to the field's storage under a new key, instead of referring to a file that the storage doesn't have.
 - **server:** Wildcard hooks such as `'before:*:*'` and `'before:actions:*'` run for actions with route parameters too.
-- **server:** The `ModelProperties` type accepts nested `properties` of objects without `nullable: true`, and tuples as JSON Schema 2020 declares them, with `prefixItems` and `items: false`, as the validator expects.
 - **admin:** The labels of upload fields point to their inputs, which use the component path as their id, like the inputs of other types.
 - **admin:** Trees and their items have the `tree`, `treeitem` and `group` roles, and sections the `region` role with their label, like lists and panels.
 - **admin:** `clipboard` on objects applies to their `form`, not only to the inlined form of `components`. Forms with their own `clipboard` keep it.

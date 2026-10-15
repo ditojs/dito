@@ -283,6 +283,29 @@ describe('Model properties — shared', () => {
       } as const
     }
   })
+
+  it('accepts references to definitions', () => {
+    assertType<ModelProperties>({
+      shippingAddress: {
+        $ref: '#Address',
+        nullable: true,
+        definitions: {
+          '#Address': {
+            type: 'object',
+            properties: { street: { type: 'string', required: true } }
+          }
+        }
+      }
+    })
+  })
+
+  it('accepts assets and model names as types', () => {
+    assertType<ModelProperties>({
+      cover: { type: 'asset', nullable: true },
+      images: { type: 'array', items: { type: 'asset' } },
+      author: { type: 'Author' }
+    })
+  })
 })
 
 describe('ModelRelations<T> — typed relation keys', () => {

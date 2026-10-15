@@ -97,6 +97,7 @@ Main TypeScript types, besides the classes above:
 | `KoaContext`, `KoaSession`                                    | The Koa context of requests.                                 |
 | `HttpMethod`                                                  | `'get' \| 'head' \| 'post' \| 'put' \| 'delete' \| 'patch' \| 'options' \| 'trace' \| 'connect'` |
 | `Id`, `Page`, `SerializedModel`                               | Ids, `range` results, and the JSON of models.                |
+| `FromModel`                                                   | [Instance types derived from definitions](../../guide/server/models.md#deriving-types). |
 
 ## Deprecated
 

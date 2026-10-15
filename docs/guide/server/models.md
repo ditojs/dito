@@ -348,6 +348,95 @@ their own, so always extend them, which also names the table:
 `class Order extends TimestampedModel {}`. The
 [Mixins API](../../api/server/model.md#mixins) describes each.
 
+## Deriving types
+
+In TypeScript, `FromModel` derives the type of a model's instances from its
+`properties` and `relations`. Declare them `as const`, and add the derived
+fields to the class with an interface of the same name:
+
+```ts
+import { FromModel, Model } from '@ditojs/server'
+import type * as models from './index.js'
+
+export class Book extends Model {
+  static override properties = {
+    title: { type: 'string', required: true },
+    publishedAt: { type: 'datetime', nullable: true },
+    authorId: { type: 'integer', foreign: true }
+  } as const
+
+  static override relations = {
+    author: { relation: 'belongsTo', from: 'Book.authorId', to: 'Author.id' }
+  } as const
+}
+
+export interface Book extends FromModel<typeof Book, typeof models> {}
+```
+
+`book.title` is a `string`, `book.publishedAt` a `Date | null | undefined` and
+`book.author` an `Author | null | undefined`. The second parameter is the
+module that exports the models, through which the models named in relations
+and in `type` are found. Without it, relations are left out.
+
+- `required: true` makes a property required, others are optional.
+  `nullable: true` adds `null`.
+- `'string'`, `'text'` and `'color'` are strings, `'number'` and `'integer'`
+  numbers, `'boolean'` booleans.
+- `'date'`, `'datetime'` and `'timestamp'` are `Date` objects, as models read
+  them. Computed ones and those nested in objects and arrays are strings.
+- Objects with `properties` and arrays with `items` or `prefixItems` are typed
+  by them. Objects without `properties` are `Record<string, unknown>`.
+- `enum` and `const` give their values, a model name that model, `$ref` its
+  definition, `anyOf` and `oneOf` a union and `allOf` an intersection.
+- Computed properties are `readonly`. Hidden properties are left out of
+  `SerializedModel`, the type of their JSON data.
+- Other types, e.g. `'asset'`, are `unknown`: declare them in the interface,
+  e.g. `cover?: AssetFile`.
+- `belongsTo`, `hasOne` and `hasOneThrough` relations are `M | null`,
+  `hasMany` and `manyToMany` relations `M[]`. Relations are optional, as they
+  are only present when loaded.
+- The [automatic properties](#automatic-properties) that aren't defined are
+  numbers: the id, named by `idColumn` if it returns a literal, and the
+  properties in `from` of the model's relations. Those that relations of other
+  models add, e.g. `bookId` of `Book`'s `hasMany` relation to `Chapter`, need
+  to be defined in `properties`.
+
+Each model derives its own definitions, and inherits the fields of its base
+class, e.g. `createdAt` of `TimestampedModel`. Definitions declared `as const`
+can only be extended, so subclasses spread those of their base class into
+theirs: `{ ...Book.properties, isbn: { type: 'string' } }`.
+
+In JavaScript, `/** @type {const} */` replaces `as const`, and a `.d.ts` file
+adds the interfaces to the modules of the models:
+
+```js
+// src/server/models/Book.js
+export class Book extends Model {
+  static properties = /** @type {const} */ ({
+    title: { type: 'string', required: true }
+  })
+}
+```
+
+```ts
+// src/server/models/types.d.ts
+import type { FromModel } from '@ditojs/server'
+import type * as models from './index.js'
+
+declare module './Book.js' {
+  interface Book extends FromModel<typeof Book, typeof models> {}
+}
+```
+
+Without `/** @type {const} */`, the types of the definitions are widened to
+`string` and `boolean`, so that the properties are `unknown` and optional, and
+the relations are left out.
+
+A model uses either `FromModel`, or fields declared by hand
+(`declare title: string`) with `ModelProperties<Book>` and
+`ModelRelations<Book>` as the types of its definitions, which check them
+against the fields. Combined, the check would read its own result.
+
 ## Methods
 
 Models are classes, so they can define methods like any class: static methods
