@@ -461,6 +461,10 @@ export default {
       .dito-tree-label {
         color: $color-white;
       }
+
+      .dito-tree-info {
+        color: rgba($color-white, 0.6);
+      }
     }
   }
 
