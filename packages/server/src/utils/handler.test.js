@@ -10,6 +10,8 @@ describe('parseHandlerDefinition()', () => {
     handler.cached = true
     expect(parseHandlerDefinition(handler)).toEqual({
       handler,
+      before: null,
+      after: null,
       core: false,
       authorize: 'admin',
       transacted: null,
@@ -26,8 +28,12 @@ describe('parseHandlerDefinition()', () => {
 
   it('parses the object form with `[schema, options]` settings', () => {
     const handler = () => {}
+    const before = () => {}
+    const after = () => {}
     const descriptor = parseHandlerDefinition({
       handler,
+      before,
+      after,
       transacted: true,
       parameters: [{ name: { type: 'string' } }, { patch: true }],
       response: { type: 'string' },
@@ -35,6 +41,8 @@ describe('parseHandlerDefinition()', () => {
     })
     expect(descriptor).toEqual({
       handler,
+      before,
+      after,
       core: false,
       authorize: null,
       transacted: true,

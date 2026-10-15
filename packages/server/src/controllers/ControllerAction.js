@@ -9,12 +9,15 @@ export default class ControllerAction {
     definition,
     type,
     name,
+    identifier,
     method,
     path,
     _authorize
   ) {
     const {
       handler,
+      before,
+      after,
       core,
       scope,
       transacted,
@@ -28,9 +31,11 @@ export default class ControllerAction {
     this.controller = controller
     this.actions = actions
     this.handler = handler
+    this.before = before
+    this.after = after
     this.type = type
     this.name = name
-    this.identifier = `${type}:${name}`
+    this.identifier = identifier
     this.method = method
     this.path = path
     this.scope = scope
@@ -95,18 +100,25 @@ export default class ControllerAction {
     ctx.filteredQuery = this.getFilteredQuery(ctx, params, wrapped)
     const { args, member } = await this.collectArguments(ctx, params)
     await this.controller.handleAuthorization(this.authorization, ctx, member)
-    const { identifier } = this
-    await this.controller.emitHook(`before:${identifier}`, false, ctx, ...args)
+    const { controller, identifier, before, after } = this
+    // Run the action's own hooks after the controller's:
+    await controller.emitHook(`before:${identifier}`, false, ctx, ...args)
+    await before?.call(controller, ctx, ...args)
     const response = await this.callHandler(ctx, ...args)
-    const result =
+    const converted =
       // Don't convert response to JSON if it isn't being validated, or if the
       // response validation schema contains model references.
       !this.response.validate || this.response.hasModelRefs
         ? response
         : convertModelsToJson(response)
-    return this.validateResponse(
-      await this.controller.emitHook(`after:${identifier}`, true, ctx, result)
+    const result = await controller.emitHook(
+      `after:${identifier}`,
+      true,
+      ctx,
+      converted
     )
+    const res = await after?.call(controller, ctx, result)
+    return this.validateResponse(res !== undefined ? res : result)
   }
 
   async callHandler(ctx, ...args) {

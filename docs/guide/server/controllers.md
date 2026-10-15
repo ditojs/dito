@@ -454,6 +454,11 @@ export class Notes extends ModelController {
 `before:` hooks run after authorization and receive the handler's arguments.
 `after:` hooks receive the result; a returned value replaces it.
 
+Hooks identify custom actions by their method and path, without colons, e.g.
+`'before:member:get-tech-doc-format'` for `'get tech-doc-:format'`, and
+actions take their own `before` and `after` hooks, see
+[Hooks](../../api/server/controllers.md#hooks).
+
 ## Transactions
 
 `transacted: true` runs an action in a database transaction, available as

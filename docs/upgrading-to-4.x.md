@@ -764,6 +764,13 @@ defineType({
 
 ### Server
 
+- Since 4.5, hooks identify custom actions by their method and path, without
+  colons, e.g. `'before:member:get-tech-doc-format'` for
+  `'get tech-doc-:format'`, see
+  [Hooks](./api/server/controllers.md#hooks). Keys with the action's key keep
+  working until 5.0, with a deprecation warning. Two actions of the same type
+  with the same identifier throw: change the route of one of them. Wildcard
+  hooks like `'before:*:*'` also run for actions with route parameters.
 - `authorize: false` on an action or a controller denies access, where 3.5
   skipped it and fell back to the next setting, or made the action public.
   Remove it from actions that need to stay reachable.

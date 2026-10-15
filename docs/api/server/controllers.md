@@ -42,6 +42,8 @@ the response body.
 | Option        | Type                                    | Description |
 | ------------- | --------------------------------------- | ------------------------------------------------ |
 | `handler`     | `function(ctx, ...args)`                | The action. Required. |
+| `before`      | `function(ctx, ...args)`                | A `before:` [hook](#hooks) of this action only. |
+| `after`       | `function(ctx, result)`                 | An `after:` [hook](#hooks) of this action only. |
 | `parameters`  | `object` \| `array` \| `[schema, options]` | Validated parameters, see [Parameters](#parameters). |
 | `response`    | `Schema & { name? }` \| `[schema, options]` | Schema of the returned value. With `name`, the value is sent wrapped as `{ [name]: value }`. |
 | `authorize`   | [`Authorize`](#authorize)               | Authorization of this action, overriding the one of its actions object and controller. |
@@ -116,7 +118,7 @@ Requests of actions have these members on the Koa context:
 
 | Property              | Description |
 | --------------------- | -------------------------------------------------- |
-| `ctx.action`          | The action object, with `name`, `type`, `method`, `path`, `authorize`, `transacted` and any extra options. |
+| `ctx.action`          | The action object, with `name` (its key), `identifier` (its part of [hook](#hooks) keys), `type`, `method`, `path`, `authorize`, `transacted` and any extra options. |
 | `ctx.controller`      | The controller. |
 | `ctx.params`          | The route parameters, e.g. `{ id: '1' }`. |
 | `ctx.route`           | The route, see [`addRoute()`](./application.md#addroute). |
@@ -200,11 +202,24 @@ hooks = {
 }
 ```
 
-Hook keys are `'<before|after>:<type>:<action name>'`, where `<type>` is
-`actions` (`Controller`), `collection` or `member`; relation actions use
-`collection` for their `relation` actions. `*` matches any segment, the first
-one too (`'*:member:patch'` runs before and after), and keys separated by
-commas register the same hook for several events. Each value is one function.
+Hook keys are `'<before|after>:<identifier>'`, where the identifier of an
+action, `ctx.action.identifier`, is `'<type>:<action>'`. `<type>` is `actions`
+(`Controller`), `collection` or `member`; relation actions use `collection` for
+their `relation` actions. `<action>` is the method and the parts of the path,
+parameters included, joined with hyphens, with camelCase hyphenated and
+without `:` and wildcards: `'get'` and `'get .'` are `get`, `'get :section'`
+is `get-section`, `'get :shopOrderId'` is `get-shop-order-id`,
+`'get tech-doc-:format'` is `get-tech-doc-format` and
+`'get job-status/:token'` is `get-job-status-token`. `*` matches any segment,
+the first one too (`'*:member:patch'` runs before and after), and keys
+separated by commas register the same hook for several events. Each value is
+one function.
+
+Two actions of the same type with the same identifier throw when the
+controller is set up, e.g. `'get :token'` and `'get token'`: change the route
+of one of them. Keys with the action's key instead of its identifier, e.g.
+`'before:member:get tech-doc-:format'`, keep working until 5.0, with a
+deprecation warning.
 
 - `before:` hooks receive `(ctx, ...args)`, the arguments of the handler
   after `ctx` (none for the default actions), and run after authorization.
@@ -213,7 +228,19 @@ commas register the same hook for several events. Each value is one function.
 
 Hooks run with the controller as `this`, in sequence, base class hooks first.
 `hooks` objects inherit from the ones of base classes, and relation objects
-accept their own `hooks`.
+accept their own `hooks`. The `before` and `after` options of an action run
+after the controller's hooks of the action, with the same arguments:
+
+```js
+member = {
+  'get tech-doc-:format': {
+    handler(ctx) { … },
+    after(ctx, result) {
+      ctx.set('Cache-Control', 'max-age=3600')
+    }
+  }
+}
+```
 
 ## Controller
 

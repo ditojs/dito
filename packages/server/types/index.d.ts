@@ -2086,7 +2086,7 @@ export class Controller {
   assets?: boolean | ControllerAssets
   /**
    * Hooks that run before or after actions, by keys like
-   * `'before:actions:post import'`. Keys can list several hooks separated by
+   * `'before:actions:post-import'`. Keys can list several hooks separated by
    * commas, and values can be arrays of handlers.
    */
   hooks?: ControllerHooks<this>
@@ -2372,7 +2372,7 @@ export type ControllerActionOptions<
     [K in keyof $Params]: ParameterSchema<$Params[K]>
   }>
   handler: ControllerActionHandler<$Controller, $Params>
-}
+} & ActionHooks<$Controller>
 
 export type ModelControllerActionOptions<$ModelController = ModelController> =
   BaseControllerActionOptions & {
@@ -2384,7 +2384,18 @@ export type ModelControllerActionOptions<$ModelController = ModelController> =
     parameters?: ActionParameters<{ [key: string]: ParameterSchema }>
     /** The function to be called when the action route is requested. */
     handler: ModelControllerActionHandler<$ModelController>
-  }
+  } & ActionHooks<$ModelController>
+
+/**
+ * The hooks of an action, run after the controller's hooks of the action, with
+ * the controller as `this`.
+ */
+type ActionHooks<$Controller> = {
+  /** Receives the arguments of the handler. */
+  before?: ControllerHandler<$Controller, [ctx: KoaContext, ...args: any[]]>
+  /** Receives the result. Values other than `undefined` replace it. */
+  after?: ControllerHandler<$Controller, [ctx: KoaContext, result: any]>
+}
 
 /**
  * Action parameters, also as `[parameters, options]` with their validation
@@ -2612,9 +2623,12 @@ export type ModelControllerHooks<
 
 /**
  * Hooks of a controller that run before or after its actions, by keys like
- * `'before:actions:post import'` or `'after:actions:*'`. `before:` hooks
- * receive the action's arguments, `after:` hooks its result, and the value
- * they return replaces it.
+ * `'before:actions:post-import'` or `'after:actions:*'`: `before:` or `after:`
+ * and the identifier of the action, `ctx.action.identifier`. The identifier is
+ * the type of the action and its method and route joined with hyphens, without
+ * colons, e.g. `'member:get-tech-doc-format'` for `'get tech-doc-:format'` in
+ * `member`. `before:` hooks receive the action's arguments, `after:` hooks its
+ * result, and the value they return replaces it.
  */
 export type ControllerHooks<$Controller extends Controller = Controller> = {
   [key: string]:
@@ -2852,7 +2866,9 @@ export class ModelController<
   /**
    * Lifecycle hooks that run before or after controller
    * actions. Keys follow the pattern
-   * `'{before|after|*}:{collection|member|*}:{actionName|*}'`.
+   * `'{before|after|*}:{collection|member|*}:{action|*}'`, with
+   * the action's identifier after the first colon, see
+   * {@link ControllerHooks}.
    * Use `'*'` in any segment to match all values.
    *
    * @example
@@ -2878,11 +2894,11 @@ export class ModelController<
    *     logger.info(`Deleted ${result.count} ${name} record(s)`)
    *   },
    *   // Custom action: runs after a custom 'get export' action
-   *   'after:collection:get export'(ctx, items) {
+   *   'after:collection:get-export'(ctx, items) {
    *     analytics.track('export', { count: items.length })
    *   },
    *   // Custom action: receives the resolved parameters
-   *   'before:member:post import'(ctx, params) {
+   *   'before:member:post-import'(ctx, params) {
    *     logger.info(`Importing ${params?.repoFamily?.name}`)
    *   }
    * }

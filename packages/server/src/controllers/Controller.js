@@ -25,6 +25,8 @@ import {
   isFunction,
   asArray,
   equals,
+  hyphenate,
+  deprecate,
   parseDataPath,
   normalizeDataPath
 } from '@ditojs/utils'
@@ -55,14 +57,30 @@ export class Controller {
     // that the base class callbacks are run first.
     const chain = getInheritanceChain(hooks).reverse()
     const keys = Object.keys(Object.assign({}, hooks, ...chain))
-    const events = Object.fromEntries(
-      keys.map(event => [
-        event,
-        chain
-          .map(hooks => (hooks.hasOwnProperty(event) ? hooks[event] : null))
-          .filter(Boolean)
-      ])
-    )
+    // Map the deprecated events that name actions by their keys to their
+    // identifiers, e.g. 'before:actions:get :id/tech-doc-:format' to
+    // 'before:actions:get-id-tech-doc-format'. Remove in 5.0.
+    const getEvent = event => {
+      const [prefix, type, ...parts] = event.split(':')
+      const key = parts.join(':')
+      if (key.includes(' ')) {
+        const mapped = `${prefix}:${getIdentifier(type, key)}`
+        deprecate(`Hook '${event}' is deprecated, use '${mapped}' instead.`)
+        return mapped
+      }
+      return event
+    }
+    const events = {}
+    for (const key of keys) {
+      const callbacks = chain
+        .map(hooks => (hooks.hasOwnProperty(key) ? hooks[key] : null))
+        .filter(Boolean)
+      for (const part of key.split(',')) {
+        // Deprecated events can map to the same event as others, so merge:
+        const event = getEvent(part.trim())
+        events[event] = [...(events[event] ?? []), ...callbacks]
+      }
+    }
     this._configureEmitter(events, {
       // Support wildcard hooks only on controllers:
       wildcard: true
@@ -173,16 +191,28 @@ export class Controller {
       authorize
     } = this.processValues(this.inheritValues(type))
     if (actions) {
+      const namesByIdentifier = {}
       for (const [name, action] of Object.entries(actions)) {
-        // Replace the action object with the converted action handler, so they
-        // too can benefit from prototypal inheritance:
-        actions[name] = this.setupAction(
+        const { identifier, handler } = this.setupAction(
           type,
           actions,
           name,
           action,
           authorize[name]
         )
+        const otherName = namesByIdentifier[identifier]
+        if (otherName) {
+          throw new ControllerError(
+            this,
+            `Actions '${otherName}' and '${name}' share the identifier '${
+              identifier
+            }' of their hooks: Change the route of '${name}'.`
+          )
+        }
+        namesByIdentifier[identifier] = name
+        // Replace the action object with the converted action handler, so they
+        // too can benefit from prototypal inheritance:
+        actions[name] = handler
       }
       // Expose a direct reference to the controller on the action object, but
       // also make it inherit from the controller so that all its public fields
@@ -217,21 +247,20 @@ export class Controller {
     // Custom member actions have their own class so they can fetch the members
     // ahead of their call.
     const actionClass = type === 'member' ? MemberAction : ControllerAction
-    this.setupActionRoute(
+    // eslint-disable-next-line new-cap
+    const controllerAction = new actionClass(
+      this,
+      actions,
+      definition,
       type,
-      // eslint-disable-next-line new-cap
-      new actionClass(
-        this,
-        actions,
-        definition,
-        type,
-        name,
-        method,
-        path,
-        authorize
-      )
+      name,
+      getIdentifier(type, name),
+      method,
+      path,
+      authorize
     )
-    return definition.handler
+    this.setupActionRoute(type, controllerAction)
+    return controllerAction
   }
 
   /**
@@ -643,3 +672,18 @@ export class Controller {
 EventEmitter.mixin(Controller.prototype)
 
 const inheritanceMap = new WeakMap()
+
+// Identify actions in hooks by their type, method and route, with hyphenated
+// parameter names and without wildcards, e.g. 'get :shopId/:format' in member
+// as 'member:get-shop-id-format'. The parameters avoid clashes of common pairs
+// like 'get' and 'get :section'.
+function getIdentifier(type, key) {
+  return `${type}:${
+    key
+      .replace(/[:*]/g, '')
+      .split(/[\s/-]+/)
+      .filter(part => part && part !== '.')
+      .map(hyphenate)
+      .join('-')
+  }`
+}
