@@ -21,6 +21,7 @@ export async function createTestDatabase(
     : Object.values(app.models)
   for (const modelClass of models) {
     const { properties } = modelClass.definition
+    const { jsonAttributes } = modelClass
     await app.knex.schema.createTable(
       modelClass.tableName,
       (table: Knex.CreateTableBuilder) => {
@@ -36,7 +37,7 @@ export async function createTestDatabase(
           if (name === '#id' || name === '#ref') {
             continue
           }
-          addColumn(table, name, property)
+          addColumn(table, name, property, jsonAttributes.includes(name))
           const { unique } = property
           if (typeof unique === 'string') {
             uniqueComposites[unique] ||= []
@@ -54,9 +55,11 @@ export async function createTestDatabase(
 function addColumn(
   table: Knex.CreateTableBuilder,
   name: string,
-  property: PropertyDefinition
+  property: PropertyDefinition,
+  isJson: boolean
 ) {
-  const { type } = property
+  // `jsonAttributes` also holds the properties that reference definitions:
+  const type = isJson ? 'json' : property.type
   let column: Knex.ColumnBuilder
 
   if (property.primary) {
@@ -93,10 +96,7 @@ function addColumn(
     case 'timestamp':
       column = table.timestamp(name)
       break
-    case 'object':
-      column = table.jsonb(name)
-      break
-    case 'array':
+    case 'json':
       column = table.jsonb(name)
       break
     default:

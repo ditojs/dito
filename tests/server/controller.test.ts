@@ -280,6 +280,44 @@ describe('Controller action verbs', () => {
   })
 })
 
+describe('ModelController member patch', () => {
+  it.each([false, true])(
+    'answers empty patches with the unchanged member (graph: %s)',
+    async graph => {
+      class Tasks extends ModelController<Task> {
+        override modelClass = Task
+        override graph = graph
+
+        override member: ModelControllerActions<Tasks> = {
+          allow: ['patch']
+        }
+      }
+
+      const app = createTestApp({
+        models: { Task },
+        controllers: { Tasks }
+      })
+
+      await createTestDatabase(app)
+      await app.start()
+
+      try {
+        const task = await Task.query().insert({ name: 'Write' })
+        const resp = await fetch(`${getAppUrl(app)}/tasks/${task.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: '{}'
+        })
+        expect(resp.status).toBe(200)
+        expect(await resp.json()).toEqual({ id: task.id, name: 'Write' })
+      } finally {
+        await app.stop()
+        await app.knex?.destroy()
+      }
+    }
+  )
+})
+
 describe('ModelController modelClass', () => {
   it('resolves the model class with the `Model` suffix', async () => {
     class ProjectModel extends Model {

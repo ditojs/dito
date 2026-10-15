@@ -8,6 +8,7 @@ interface Pet extends Model {
 
 interface Person extends Model {
   name: string
+  meta?: { color?: string }
   pets?: Pet[]
   parent?: Person | null
 }
@@ -104,6 +105,29 @@ describe('QueryBuilder', () => {
     expectTypeOf(
       query.updateById(1, {})
     ).resolves.toEqualTypeOf<number>()
+  })
+
+  it('toFindQuery returns a find query of the model', () => {
+    const query = {} as QueryBuilder<Person, number>
+    expectTypeOf(query.toFindQuery()).toEqualTypeOf<
+      QueryBuilder<Person, Person[]>
+    >()
+  })
+
+  it('writes and fetches rows without relation data', () => {
+    const query = {} as PersonQB
+    expectTypeOf(
+      query.patchAndFetch({ name: 'Ada' })
+    ).resolves.toEqualTypeOf<Person>()
+    expectTypeOf(
+      query.updateAndFetch([{ name: 'Ada' }])
+    ).resolves.toEqualTypeOf<Person[]>()
+    // Only patches write parts of json columns:
+    query.patchAndFetch({ 'meta:color': 'red' })
+    // @ts-expect-error - updates write whole values
+    query.updateAndFetch({ 'meta:color': 'red' })
+    // @ts-expect-error - relation data needs the graph methods
+    query.upsert({ name: 'Ada', pets: [] })
   })
 
   it('find returns this for chaining', () => {

@@ -5,7 +5,33 @@ This guide describes how to upgrade an app from Dito.js 4.x to 5.x.
 
 ## Objection 4
 
-<!-- TODO: To be filled with the PR that updates to Objection.js 4. -->
+Dito.js uses objection 4.2, an ES module that needs knex 3.3, and TypeScript
+5.8 for its types. Its
+[migration guide](https://ditojs.github.io/objection/release-notes/migration.html)
+covers its own changes. Check these in your app:
+
+- `after:` hooks get a `result` in the shape that the query returns, e.g. one
+  model or `undefined` for `first()`, and `before:` hooks get none.
+- JSON in PostgreSQL `text` columns is no longer parsed.
+- Graph writes reject conflicting graphs and missing related rows before they
+  write anything, and `insertDitoGraph()` rejects upsert options.
+- `limit` and `offset` in the modifiers of graph fetches apply per parent.
+- On PostgreSQL, JSON refs with one key compile to `->` and `->>`: rebuild
+  expression indexes on them.
+- `toFindQuery()` leaves out the resolved value and the fetched graph of the
+  write too, besides its `runAfter()` callbacks.
+- On MySQL, `insert()` and `insertAndFetch()` throw for arrays of models
+  without ids: insert these with `insertGraph()`.
+- A model listed twice in a many-to-many relation of a graph gets one join row.
+- In TypeScript, `patchAndFetch()`, `updateAndFetch()`, `upsert()` and
+  `upsertAndFetch()` take objection's `PartialModelPatch` and
+  `PartialModelRow`, which reject relation data and `Partial<M>`. Custom query
+  builders that extend dito's `QueryBuilder` declare `RebindType` instead of
+  the five `*QueryBuilderType` members.
+- Validation errors of nested models in graphs have keys with slashes, e.g.
+  `chapters/1/title`, starting with the model's index for array input.
+- Collection and member `DELETE` requests answer 400 for `range`, `limit` and
+  `offset`.
 
 ## Server
 

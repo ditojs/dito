@@ -78,27 +78,13 @@ describe('QueryBuilder: write queries in other databases', () => {
     expect(sql).toBe('delete from `Ingredient`')
   })
 
-  it('inserts multiple models through insertGraph()', () => {
-    const query = Ingredient.query().insert([
-      { name: 'Flour' },
-      { name: 'Sugar' }
-    ])
-    expect(query.has('insertGraph')).toBe(true)
-  })
-
-  it('inserts and fetches multiple models through insertGraphAndFetch()', () => {
-    const query = Ingredient.query().insertAndFetch([
-      { name: 'Flour' },
-      { name: 'Sugar' }
-    ])
-    expect(query.has('insertGraphAndFetch')).toBe(true)
-  })
-
-  it('inserts single models and single-entry arrays directly', () => {
-    expect(Ingredient.query().insert({ name: 'Flour' }).has('insert'))
-      .toBe(true)
-    const query = Ingredient.query().insert([{ name: 'Flour' }])
-    expect(query.has('insert')).toBe(true)
-    expect(query.has('insertGraph')).toBe(false)
+  it('inserts arrays of models with insert() and insertAndFetch()', () => {
+    const data = [{ name: 'Flour' }, { name: 'Sugar' }]
+    const insert = Ingredient.query().insert(data)
+    const insertAndFetch = Ingredient.query().insertAndFetch(data)
+    expect(insert.has('insert')).toBe(true)
+    expect(insert.has('insertGraph')).toBe(false)
+    expect(insertAndFetch.has('insertAndFetch')).toBe(true)
+    expect(insertAndFetch.has('insertGraphAndFetch')).toBe(false)
   })
 })

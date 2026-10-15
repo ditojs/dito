@@ -820,6 +820,21 @@ describe('ModelController', () => {
       expect(response.data).toEqual({ count: 2 })
       expect(await Book.query().resultSize()).toBe(1)
     })
+
+    it('rejects pagination parameters for deletes', async () => {
+      // Only unpublished books can be deleted:
+      const [, bestiary] = await insertBooks()
+      for (const path of [
+        '/books?offset=1',
+        '/books?limit=1',
+        '/books?range=0,1',
+        `/books/${bestiary.id}?offset=1`
+      ]) {
+        const response = await request(path, { method: 'DELETE' })
+        expect(response.status).toBe(400)
+      }
+      expect(await Book.query().resultSize()).toBe(3)
+    })
   })
 
   describe('default member actions', () => {

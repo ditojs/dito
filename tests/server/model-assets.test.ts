@@ -85,4 +85,16 @@ describe('Model asset hooks', () => {
     expect(storage.name).toBe('memory')
     expect(addedFiles).toEqual([cover])
   })
+
+  it('handles the asset files of all models inserted at once', async () => {
+    const handleAssets = vi.spyOn(app, 'handleAddedAndRemovedAssets')
+    const cover = AssetFile.create({ name: 'cover.txt', data: 'cover' })
+    // Only the second model has asset data:
+    await Cookbook.query().insert([
+      { title: 'Soups' },
+      { title: 'Stews', cover }
+    ] as any)
+    expect(handleAssets).toHaveBeenCalledOnce()
+    expect(handleAssets.mock.calls[0][1]).toEqual([cover])
+  })
 })

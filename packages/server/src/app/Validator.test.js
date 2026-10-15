@@ -315,6 +315,23 @@ describe('Validator.parseErrors()', () => {
     })
   })
 
+  it('keeps property names that look like data paths', () => {
+    const errors = ['/a.b', '/[0]', '/..', '/'].map(instancePath => ({
+      instancePath,
+      keyword: 'type',
+      message: 'x'
+    }))
+    expect(Object.keys(validator.parseErrors(errors))).toEqual([
+      'a.b',
+      '[0]',
+      '..',
+      ''
+    ])
+    expect(
+      Object.keys(validator.parseErrors(errors, { dataPath: '[1].pets[0]' }))
+    ).toEqual(['1/pets/0/a.b', '1/pets/0/[0]', '1/pets/0/..', '1/pets/0/'])
+  })
+
   it('filters out duplicate errors and `$` keywords', () => {
     const error = { instancePath: '/a', keyword: 'type', message: 'x' }
     expect(

@@ -1,5 +1,5 @@
 import type { ModelProperties } from '@ditojs/server'
-import { Model, GraphError } from '@ditojs/server'
+import { Model, GraphError, ValidationError } from '@ditojs/server'
 import {
   DitoGraphProcessor,
   rejectGraphControlProps
@@ -505,6 +505,27 @@ describe('Dito.js graph handling', () => {
       const books = await Book.query().orderBy('title')
       expect(books.map(book => book.title)).toEqual(['First', 'Second'])
     })
+
+    it('reports the data paths of invalid nested models', async () => {
+      const getErrorPaths = async (data: any) => {
+        const error = await Book.query()
+          .insertDitoGraph(data)
+          .catch(error => error)
+        expect(error).toBeInstanceOf(ValidationError)
+        return Object.keys(error.data.errors)
+      }
+      const chapters = [{ title: 'Prologue' }, { title: 42 }]
+      expect(await getErrorPaths({ title: 'Earthsea', chapters })).toEqual([
+        'chapters/1/title'
+      ])
+      // Array input starts with the index of the invalid root model:
+      expect(
+        await getErrorPaths([
+          { title: 'First' },
+          { title: 'Earthsea', chapters }
+        ])
+      ).toEqual(['1/chapters/1/title'])
+    })
   })
 
   describe('upsertDitoGraph()', () => {
@@ -617,15 +638,15 @@ describe('Dito.js graph handling', () => {
       })
 
       it('keeps #id and #ref references within the graph', async () => {
-        const book = await Book.query().insertDitoGraphAndFetch({
-          title: 'Tehanu',
-          genres: [
-            { '#id': 'fantasy', 'name': 'Fantasy' },
-            { '#ref': 'fantasy' }
-          ]
-        })
-        expect(book.genres).toHaveLength(2)
-        expect(book.genres[0].id).toBe(book.genres[1].id)
+        const [first, second] = await Book.query().insertDitoGraphAndFetch([
+          {
+            title: 'Tehanu',
+            genres: [{ '#id': 'fantasy', 'name': 'Fantasy' }]
+          },
+          { title: 'Tales from Earthsea', genres: [{ '#ref': 'fantasy' }] }
+        ])
+        expect(second.genres).toHaveLength(1)
+        expect(second.genres[0].id).toBe(first.genres[0].id)
       })
     })
 
