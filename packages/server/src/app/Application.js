@@ -21,7 +21,6 @@ import Router from '@ditojs/router'
 import {
   isArray,
   isObject,
-  isFunction,
   asArray,
   isPlainObject,
   isModule,
@@ -39,6 +38,7 @@ import { EventEmitter } from '../lib/index.js'
 import { Controller, AdminController } from '../controllers/index.js'
 import { Service } from '../services/index.js'
 import { Storage } from '../storage/index.js'
+import { drivers } from '../drivers/index.js'
 import { convertSchema } from '../schema/index.js'
 import { isHttpMethod } from '../utils/http.js'
 import { getDuration, subtractDuration } from '../utils/duration.js'
@@ -704,41 +704,10 @@ export class Application extends Koa {
           ...knexSnakeCaseMappers(snakeCaseOptions)
         }
       }
-      this.knex = Knex({ ...knex, client: getKnexClient(knex.client) })
-      // Support PostgreSQL type parser mappings in the config.
-      if (
-        knex.client === 'postgresql' &&
-        knex.typeParsers &&
-        this.knex.client.driver
-      ) {
-        const { types } = this.knex.client.driver
-        // Support type parser mappings defined in user-land.
-        for (const [type, parser] of Object.entries(knex.typeParsers)) {
-          types.setTypeParser(type, parser)
-        }
-        // Automatically setup array type parsers for numeric and int8.
-        const setupArrayParser = (valueType, arrayType) => {
-          if (
-            valueType in knex.typeParsers &&
-            !(arrayType in knex.typeParsers)
-          ) {
-            const parseValue = types.getTypeParser(valueType)
-            const parseArray = types.getTypeParser(arrayType)
-            types.setTypeParser(arrayType, text =>
-              parseArray(text).map(value =>
-                value === null ? value : parseValue(value)
-              )
-            )
-          }
-        }
-
-        setupArrayParser(1700, 1231) // numeric
-        setupArrayParser(20, 1016) // int8
-        // setupArrayParser(21, 1005) // int2
-        // setupArrayParser(23, 1007) // int4
-        // setupArrayParser(700, 1021) // float4
-        // setupArrayParser(701, 1022) // float8
-      }
+      this.knex = Knex({
+        ...knex,
+        client: drivers[knex.client] ?? knex.client
+      })
       if (log.sql) {
         this.setupKnexLogging()
       }
@@ -1184,39 +1153,6 @@ EventEmitter.mixin(Application.prototype)
 
 function getOptions(options) {
   return isObject(options) ? options : {}
-}
-
-// Work around two issues of knex's better-sqlite3 client:
-function getKnexClient(client) {
-  const Client = isFunction(client)
-    ? client
-    : Knex({ client }).client.constructor
-  return Client.prototype.driverName === 'better-sqlite3'
-    ? class extends Client {
-        // SQLite stores dates as ISO strings, see
-        // `Model.$formatDatabaseJson()`, but knex binds `Date` objects as
-        // numbers. Bind them as ISO strings too, so queries can compare them:
-        _formatBindings(bindings) {
-          return super._formatBindings(
-            bindings?.map(binding =>
-              binding instanceof Date ? binding.toISOString() : binding
-            )
-          )
-        }
-
-        // SQLite keeps a transaction open when its COMMIT fails, e.g. on a
-        // deferred constraint, but knex doesn't roll it back. No knex
-        // transaction holds a connection that the pool hands out, so an open
-        // transaction is such a leftover:
-        async acquireConnection() {
-          const connection = await super.acquireConnection()
-          if (connection.inTransaction) {
-            connection.exec('ROLLBACK')
-          }
-          return connection
-        }
-      }
-    : client
 }
 
 const defaultAssetOptions = {
