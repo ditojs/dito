@@ -40,6 +40,18 @@ test.describe('component screenshots', () => {
     await expectScreenshot(page, 'extras.png')
   })
 
+  test('list clipboard', async ({ page, url }) => {
+    // Copying logs an error if it can't write to the system clipboard:
+    await page.context().grantPermissions(['clipboard-read', 'clipboard-write'])
+    await openProject(page, url, 'Extras')
+    const links = page.getByRole('region', { name: 'Links' })
+    await links.getByRole('button', { name: 'Copy Data' }).click()
+    await expect(
+      links.getByRole('button', { name: 'Paste Data' })
+    ).toBeEnabled()
+    await expectScreenshot(page, 'list-clipboard.png')
+  })
+
   test('create menu with multiple forms', async ({ page, url }) => {
     await openProject(page, url, 'Extras')
     await visible(page.getByRole('button', { name: 'Add', exact: true }))

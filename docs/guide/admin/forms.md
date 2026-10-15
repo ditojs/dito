@@ -231,6 +231,22 @@ clipboard: {
 }
 ```
 
+`clipboard` on a list adds Copy and Paste buttons above its items, for the
+list as a whole:
+
+- **Copy** copies the loaded items, each like a form copies its item, as
+  `{ items }`: paginated lists copy only the page that is shown. Relations
+  between the items are copied by their labels, like relations to records
+  outside the copy.
+- **Paste** appends the items to the list, each created with the form of its
+  `type`, and leaves out the items whose form isn't `creatable`. Only lists
+  of the same name that are `creatable` paste, e.g. the chapters of one book
+  into the chapters of another.
+- Lists with their own `resource` and tree lists don't support it.
+
+The items themselves only get Copy and Paste buttons through the `clipboard`
+of their form, e.g. `form: { components, clipboard: true }`.
+
 ## Reference
 
 - [`form`](../../api/admin/schemas.md#form) options and

@@ -45,6 +45,14 @@ describe('clipboard', () => {
       ).toEqual({ $schema: 'cover', $type: 'upload', files: [] })
     })
 
+    it('provides list data only to lists of the same name', async () => {
+      await copyClipboardData('books', { items: [] }, 'list')
+      expect(getClipboardData('books', 'list')).toEqual({ items: [] })
+      expect(getClipboardData('authors', 'list')).toBe(null)
+      expect(getClipboardData('books')).toBe(null)
+      expect(getClipboardData('books', 'upload')).toBe(null)
+    })
+
     it('clears the data when copying `null`', async () => {
       await copyClipboardData('book', { title: 'Emma' })
       await copyClipboardData('book', null)

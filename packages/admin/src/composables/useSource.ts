@@ -69,8 +69,10 @@ export function useSource(
     value,
     context,
     services,
+    createContext,
     labelText,
     disabled,
+    readonly,
     onChange,
     getSchemaValue,
     componentPath
@@ -210,15 +212,9 @@ export function useSource(
   const getItemStore = (item: Data) =>
     itemStores.getStore(getItemUid(props.schema, item))
 
-  // Create an item with the form `schema`, of `type` if the source has several
-  // forms, and insert it at `index`, or else at the end:
-  const createItem = (
-    schema: Schema,
-    type?: string | null,
-    index?: number | null
-  ) => {
-    // Insert the item first, so it's initialized in its place in the data:
-    const data = type ? { type } : {}
+  // Insert `data` as an item with the form `schema` at `index`, or else at the
+  // end, and initialize it in its place in the data:
+  const insertItem = (schema: Schema, data: Data, index?: number | null) => {
     let item: Data
     let dataPath = props.dataPath
     if (isObjectSource.value) {
@@ -239,6 +235,17 @@ export function useSource(
       dataPath,
       rootData: getModel().rootData
     })
+    return item
+  }
+
+  // Create an item with the form `schema`, of `type` if the source has several
+  // forms, and insert it at `index`, or else at the end:
+  const createItem = (
+    schema: Schema,
+    type?: string | null,
+    index?: number | null
+  ) => {
+    const item = insertItem(schema, type ? { type } : {}, index)
     if (collapsible.value) {
       // Open the new item, which its inlined schema reads from its store:
       const store = isObjectSource.value ? props.store : getItemStore(item)
@@ -451,9 +458,11 @@ export function useSource(
   return {
     value,
     context,
+    createContext,
     componentPath,
     labelText,
     disabled,
+    readonly,
     onChange,
     services,
     sourceContext,
@@ -477,6 +486,7 @@ export function useSource(
     collapsible,
     collapsed,
     getItemStore,
+    insertItem,
     deleteItem,
     // Lists with routed forms don't render where the recursion of forms that
     // contain themselves stops. Sources without data and resource render, e.g.

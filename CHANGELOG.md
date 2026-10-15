@@ -10,6 +10,7 @@ version, see the upgrade guides in `docs/`.
 - **server:** Two actions of the same type with the same identifier in hook keys throw when the controller is set up, e.g. `'get :token'` and `'get token'`: change the route of one of them.
 - **server:** `@ditojs/build`, `vite` and `@vitejs/plugin-vue` are optional peer dependencies, loaded only to build the admin or serve it in development: install them as dev dependencies of the app. `app.defineAdminViteConfig()` and `defineViteConfig()` of `AdminController` return promises, which Vite awaits as the default export of `admin.vite.config.js`.
 - **admin:** Labels, the results of `itemLabel()`, `info` and the values of `label` components are text unless they're given as `{ html }`: strings show as they are, e.g. `&` and `<b>`, where labels and the strings returned by `itemLabel()` were HTML. Labels and callbacks that return HTML return `{ html }` instead. Labels show as text in tabs, the menu, the trail, column headers, buttons and accessible names, also for `{ html }`. `context.formLabel` is the text of the form's label, and `context.itemLabel` the text of the item's label, which was HTML: notifications that interpolate it pass it as `text`. `context.itemLabelText` is removed, use `context.itemLabel`.
+- **admin:** `clipboard` on lists copies and pastes the list as a whole, and doesn't add copy and paste buttons to the inlined form of `components` anymore: give the items a clipboard through `form: { components, clipboard }`, or a form with its own `clipboard`.
 
 ### New
 
@@ -18,6 +19,7 @@ version, see the upgrade guides in `docs/`.
 - **admin:** `{ html }` on `label`, the results of `itemLabel()` and `info`, which renders its HTML, and `TextOrHtml` and `SchemaLabel` types for them. Filter placeholders use the text of `{ text }` and `{ html }` labels.
 - **admin:** `clipboard` on upload fields, which copies their files and pastes them into other upload fields, adding the files that aren't there yet.
 - **admin:** `validate()` on all types, which validates values that aren't empty with a callback, together with the other rules: it receives the context with the value after `formatValue()`, and returns `false` to fail with "is invalid", or a message to fail with.
+- **admin:** `clipboard` on lists, with copy and paste buttons above the items: copying copies the loaded items, like forms copy theirs, as `{ items }`, and pasting appends them to `creatable` lists of the same name, each created with the form of its `type`. Items without a creatable form are left out. Lists with their own `resource` don't support it and warn.
 
 ### Fixes
 
@@ -25,7 +27,7 @@ version, see the upgrade guides in `docs/`.
 - **server:** Wildcard hooks such as `'before:*:*'` and `'before:actions:*'` run for actions with route parameters too.
 - **admin:** The labels of upload fields point to their inputs, which use the component path as their id, like the inputs of other types.
 - **admin:** Trees and their items have the `tree`, `treeitem` and `group` roles, and sections the `region` role with their label, like lists and panels.
-- **admin:** `clipboard` on lists and objects applies to their `form` and `forms`, not only to the inlined form of `components`. Forms with their own `clipboard` keep it.
+- **admin:** `clipboard` on objects applies to their `form`, not only to the inlined form of `components`. Forms with their own `clipboard` keep it.
 
 ### Deprecations
 

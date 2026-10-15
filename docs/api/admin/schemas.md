@@ -916,7 +916,7 @@ sources share the [source options](#source-options), in addition to the
 | `components` | `Components` | | The components of an inlined form, instead of `form`. Implies `inlined`. |
 | `tabs` | `Record<string, object>` | | The [tabs](#tabs) of the inlined form of `components`. |
 | `compact` | `boolean` | `false` | Renders the inlined form of `components` with reduced spacing, with labels outside of it. |
-| `clipboard` | [`ClipboardConfig`](#clipboard) | | Adds copy and paste buttons to the forms of the items, unless a form sets its own `clipboard`. |
+| `clipboard` | [`ClipboardConfig`](#clipboard) | | Adds copy and paste buttons for all loaded items to the header of lists, and to the form of objects, unless the form sets its own `clipboard`. Lists with their own `resource` and tree lists don't support it. |
 | `view` | `string` | | The name of a view whose form edits the items. Editing navigates to that view. Unknown names throw. |
 | `resource` | [`Resource`](#resource) | | The API resource of the items. Sources with a resource save their items themselves and are excluded from the data around them, unless `exclude: false`, e.g. to save their order through `serializeValue()`. Inlined sources can't have one. |
 | `inlined` | `boolean` | `false` | Edits the items in forms inside the source instead of routed forms. |
@@ -1293,8 +1293,8 @@ options.
 
 ### Clipboard
 
-`clipboard` of views, forms, sections and inlined lists and objects (next to
-their `components`) adds copy and paste buttons to their header, and of
+`clipboard` of views, forms, sections and objects adds copy and paste buttons
+to their header, of lists to the header of their items, and of
 [uploads](#upload) to the header of their files:
 
 ```ts
@@ -1309,8 +1309,9 @@ type ClipboardConfig =
 For how to use it, see the [forms guide](../../guide/admin/forms.md#clipboard).
 `true` copies the data, serialized like for the server, as JSON to the system
 clipboard, and keeps it in the admin as a fallback for browsers that don't let
-it read the clipboard. Data is only pasted into schemas of the same name, and
-the files of uploads into all uploads.
+it read the clipboard. Data is only pasted into schemas of the same name and
+kind, e.g. the items of a list only into lists of the same name, except for the
+files of uploads, which paste into all uploads.
 
 - Copying leaves out the item's id, and the ids of the items of its lists, so
   that they paste as new items. Items that relations inside the copied data
@@ -1324,6 +1325,10 @@ the files of uploads into all uploads.
   edits: lists are replaced, not added to. The item keeps its id and its
   position (`orderKey`). Each paste gives the related items fresh temporary
   ids, so pasting twice doesn't repeat them.
+- Lists copy their loaded items as `{ items }`, each like the form of the item
+  copies it, and only paste when they're `creatable`: the items are appended
+  as new items, each with the form of its `type`, leaving out the items whose
+  form isn't `creatable`.
 - Pasting resolves the labels of related records to the option of the field
   whose label matches, ignoring case and whitespace. Labels that match no
   option or several paste `null`, or are left out of multiple values, and are

@@ -271,6 +271,7 @@ export const projects = createWidgetView<Project>(
               creatable: true,
               deletable: true,
               draggable: true,
+              clipboard: true,
               forms: {
                 link: {
                   type: 'form',
