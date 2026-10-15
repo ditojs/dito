@@ -110,6 +110,7 @@ that can be cleared.
 | `exclude` | `SchemaValue<boolean>` | `false`; `true` for buttons, labels, spacers and sources with their own `resource` | Leaves the value out of the data sent to the server. Changes of excluded values don't make the data dirty. |
 | `required` | `SchemaValue<boolean>` | `false` | Validates that there is a value: not `null`, `''` or an empty array, so lists and fields with multiple values need at least one entry. Unlike the server's `required`, which accepts empty arrays. |
 | `rules` | `SchemaRules` | | Validation rules to add or change, keyed by validator name, or to turn off by setting them to `false` or `undefined`, e.g. `{ email: false }`. Types add their own rules, e.g. `min` for numbers. |
+| `validate` | `(context) => boolean \| string \| void` | | Validates values that aren't empty, with the value after `formatValue()`. Returning `false` fails with "is invalid", a string fails with it as the message, e.g. `'must have 13 digits'`. See [Validation](../../guide/admin/validation.md#custom-validation). |
 | `readonly` | `SchemaValue<boolean>` | `false` | Text inputs become read-only, all other components disabled. |
 | `disabled` | `SchemaValue<boolean>` | `false` | Disables the component. Disabled sections and panels disable all components inside them, also nested ones. Loading forms and views don't disable their components. |
 | `autofocus` | `SchemaValue<boolean>` | `false` | Focuses the input when rendered. |

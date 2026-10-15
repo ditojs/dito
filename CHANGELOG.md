@@ -17,6 +17,7 @@ version, see the upgrade guides in `docs/`.
 - **server:** `before` and `after` options of actions, hooks of the action only, which run after the controller's hooks.
 - **admin:** `{ html }` on `label`, the results of `itemLabel()` and `info`, which renders its HTML, and `TextOrHtml` and `SchemaLabel` types for them. Filter placeholders use the text of `{ text }` and `{ html }` labels.
 - **admin:** `clipboard` on upload fields, which copies their files and pastes them into other upload fields, adding the files that aren't there yet.
+- **admin:** `validate()` on all types, which validates values that aren't empty with a callback, together with the other rules: it receives the context with the value after `formatValue()`, and returns `false` to fail with "is invalid", or a message to fail with.
 
 ### Fixes
 

@@ -452,6 +452,13 @@ export interface ComponentSchemaBase<$Item> extends SchemaBase<$Item> {
   rules?: SchemaRules
 
   /**
+   * Validates values that aren't empty, together with the other rules, and
+   * receives the value after `formatValue()`. Return `false` to fail with
+   * "is invalid", or a message to fail with, e.g. `'must have 13 digits'`.
+   */
+  validate?: (context: SchemaContext<$Item>) => boolean | string | void
+
+  /**
    * Value used when the field's key is absent from the
    * data object.
    */

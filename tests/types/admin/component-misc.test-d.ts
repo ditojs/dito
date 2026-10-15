@@ -103,6 +103,22 @@ describe('NumberSchema', () => {
       }
     })
   })
+
+  it('accepts validate callbacks that return booleans or messages', () => {
+    assertType<NumberSchema<Entry>>({
+      type: 'integer',
+      validate: ({ value, item }) => value !== 0 || `${item.title} is empty`
+    })
+    assertType<TextareaSchema<Entry>>({
+      type: 'textarea',
+      validate: () => {}
+    })
+    assertType<NumberSchema<Entry>>({
+      type: 'integer',
+      // @ts-expect-error Messages are strings:
+      validate: () => 1
+    })
+  })
 })
 
 describe('SchemaAffixMixin (prefix/suffix)', () => {

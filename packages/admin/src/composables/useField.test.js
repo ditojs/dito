@@ -100,6 +100,113 @@ describe('useField()', () => {
       await settle()
       expect(getErrors('title')).toEqual(['The title field is required.'])
     })
+
+    describe('validate()', () => {
+      const mountIsbn = (isbn, validate) =>
+        mountSchema({
+          schema: { components: { isbn: { type: 'text', validate } } },
+          data: { isbn }
+        })
+
+      const getBlurErrors = async (isbn, validate) => {
+        const { findField, getErrors, settle } = await mountIsbn(isbn, validate)
+        await leave(findField('isbn').find('input'))
+        await settle()
+        return getErrors('isbn')
+      }
+
+      it('fails with the default message on blur when it returns `false`', async () => {
+        expect(await getBlurErrors('123', () => false)).toEqual([
+          'The isbn field is invalid.'
+        ])
+      })
+
+      it('fails with the message that it returns', async () => {
+        expect(
+          await getBlurErrors('123', () => 'must have 13 digits')
+        ).toEqual(['The isbn field must have 13 digits.'])
+      })
+
+      it('passes when it returns `true` or `undefined`', async () => {
+        expect(await getBlurErrors('123', () => true)).toEqual([])
+        expect(await getBlurErrors('123', () => undefined)).toEqual([])
+      })
+
+      it('skips empty values', async () => {
+        const validate = vi.fn(() => false)
+        expect(await getBlurErrors('', validate)).toEqual([])
+        expect(await getBlurErrors(null, validate)).toEqual([])
+        expect(validate).not.toHaveBeenCalled()
+      })
+
+      it('receives the `item` and the formatted `value`', async () => {
+        const validate = vi.fn(({ value }) => /^\d{13}$/.test(value))
+        const { getComponent, findField, getErrors, settle } =
+          await mountSchema({
+            schema: {
+              components: {
+                isbn: {
+                  type: 'text',
+                  formatValue: ({ value }) => value.replaceAll('-', ''),
+                  validate
+                }
+              }
+            },
+            data: { isbn: '978-0-14-143951-8' }
+          })
+        await leave(findField('isbn').find('input'))
+        await settle()
+        expect(getErrors('isbn')).toEqual([])
+        expect(getComponent('isbn').context.isValid()).toBe(true)
+        expect(validate).toHaveBeenCalledTimes(2)
+        for (const [context] of validate.mock.calls) {
+          expect(context.value).toBe('9780141439518')
+          expect(context.item).toEqual({ isbn: '978-0-14-143951-8' })
+        }
+      })
+
+      it('fails `isValid()`', async () => {
+        const { getComponent } = await mountIsbn('123', () => false)
+        expect(getComponent('isbn').context.isValid()).toBe(false)
+      })
+
+      it('fails the submit, also in nested forms', async () => {
+        const { submit, getErrors } = await mountForm({
+          schema: {
+            components: {
+              editions: {
+                type: 'list',
+                inlined: true,
+                form: {
+                  type: 'form',
+                  components: {
+                    format: { type: 'text' },
+                    isbn: {
+                      type: 'text',
+                      validate: ({ item, value }) =>
+                        item.format !== 'ebook' && value.length !== 13
+                          ? 'must have 13 digits'
+                          : true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          data: {
+            editions: [
+              { format: 'ebook', isbn: '123' },
+              { format: 'paperback', isbn: '123' }
+            ]
+          }
+        })
+        expect(await submit()).toBe(null)
+        expect(getErrors('editions/0/isbn')).toEqual([])
+        expect(getErrors('editions/1/isbn')).toEqual([
+          'The Isbn field must have 13 digits.'
+        ])
+      })
+    })
   })
 
   describe('events', () => {
