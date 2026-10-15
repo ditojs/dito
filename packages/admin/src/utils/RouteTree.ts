@@ -316,6 +316,16 @@ export class SourceNode extends RouteNode {
     return isListSource(this.schema)
   }
 
+  // The single component of a view, routed under the path of its view:
+  get isViewComponent(): boolean {
+    const { parent, schema } = this
+    return (
+      parent instanceof ViewNode &&
+      isSingleComponentView(parent.schema) &&
+      schema === parent.schema.component
+    )
+  }
+
   // Lists address their items by index in transient data, and in sources
   // without a resource, whose forms edit transient data too:
   usesIndexKeys(isTransient: boolean): boolean {
@@ -520,12 +530,8 @@ export class RouteTree {
   // Single-component views use the path of their view, all other sources
   // replace the last segment of their data path with their own `path`:
   #getSourcePath(source: SourceNode): string {
-    const { parent, schema, dataPath } = source
-    if (
-      parent instanceof ViewNode &&
-      isSingleComponentView(parent.schema) &&
-      schema === parent.schema.component
-    ) {
+    const { schema, dataPath } = source
+    if (source.isViewComponent) {
       return ''
     } else {
       const segments = parseDataPath(dataPath)

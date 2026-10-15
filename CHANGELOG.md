@@ -3,7 +3,7 @@
 The changes of each release of Dito.js. For upgrading to a new major
 version, see the upgrade guides in `docs/`.
 
-## 4.6.1 (unreleased)
+## 4.7.0 (unreleased)
 
 ### Behaviour changes
 
@@ -23,6 +23,7 @@ version, see the upgrade guides in `docs/`.
 - **server:** Constraint violations that make a transaction's commit fail, e.g. of deferred foreign keys, respond with 409 like the same violations in queries, instead of 500.
 - **server:** Typed objects with properties in `allOf` aren't closed on their own anymore, so they no longer reject each other's properties. The object that combines them is closed instead.
 - **admin:** Upload fields break long file names without spaces, instead of widening their table and the lists and forms around it.
+- **admin:** Cancelling or closing the object form of a view with a single `component`, e.g. the account settings, leaves the view for the admin's root, instead of doing nothing.
 
 ## 4.6.0 (2026-10-16)
 

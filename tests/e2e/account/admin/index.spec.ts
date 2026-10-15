@@ -76,4 +76,14 @@ test.describe('account settings', () => {
       await context.close()
     }
   })
+
+  test('cancel the settings for the root', async ({ page, url }) => {
+    await login(page, url, ['ada', 'secret'])
+    await getAccountButton(page).click()
+    await page.getByRole('menuitem', { name: 'Settings' }).click()
+    await expect(page).toHaveURL(`${url}/admin/account/settings`)
+    await page.getByRole('button', { name: 'Cancel' }).click()
+    await expect(page).toHaveURL(`${url}/admin/`)
+    await expect(page.getByLabel('Username', { exact: true })).toBeHidden()
+  })
 })
