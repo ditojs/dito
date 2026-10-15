@@ -13,6 +13,7 @@ version, see the upgrade guides in `docs/`.
 ### Fixes
 
 - **admin:** The labels of lists with `collapsible: 'all'` expand or collapse all items when clicked, not only their double chevron, and their keyboard focus ring encloses the chevron and the text, like the labels of collapsible sections. The double chevron lines up with the chevrons of the items, at the same distance from the text.
+- **admin:** Long labels of full-width components, e.g. lists in inlined forms, are clipped with an ellipsis again, instead of widening the form.
 
 ## 4.5.1 (2026-10-15)
 

@@ -159,24 +159,9 @@ export default {
 
   &--fill {
     width: 100%;
-
-    // In order for ellipsis to work on labels without affecting other layout,
-    // we need to position it absolutely inside its container. But we can only
-    // do so if there is't also a chevron or other UX elements besides it.
-    &:has(> #{$self}__content:only-child > #{$self}__inner:only-child) {
-      flex: 1; // When in `.dito-schema-header`.
-
-      > #{$self}__content > #{$self}__inner {
-        position: absolute;
-        inset: 0;
-      }
-    }
-
-    &::after {
-      // Since <label> uses `position: absolute`, set content to a zero-width
-      // space on its parent to enforce the right text height in the container
-      content: '\200b'; // zero-width space;
-    }
+    // Size only by the container, so that long text is clipped with an
+    // ellipsis instead of widening the layout, e.g. the tables of lists:
+    contain: inline-size;
   }
 
   .dito-info {
