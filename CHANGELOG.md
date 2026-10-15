@@ -3,7 +3,7 @@
 The changes of each release of Dito.js. For upgrading to a new major
 version, see the upgrade guides in `docs/`.
 
-## 4.5.1 (unreleased)
+## 4.5.1 (2026-10-15)
 
 ### Improvements
 
@@ -13,6 +13,7 @@ version, see the upgrade guides in `docs/`.
 ### Fixes
 
 - **admin:** The suffixes of collapsible labels, e.g. from `itemLabel()`, show again and are clipped with an ellipsis, instead of running out of the label and widening the form.
+- **ui:** Building the admin no longer warns about the deprecated Sass `if()` function.
 
 ## 4.5.0 (2026-10-15)
 
