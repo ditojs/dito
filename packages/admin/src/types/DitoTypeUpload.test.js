@@ -1046,7 +1046,7 @@ describe('DitoTypeUpload', () => {
       })
     })
 
-    it('shows the clipboard after the upload button', async () => {
+    it('shows the clipboard before the upload button', async () => {
       const { findField } = await mountImages({
         schema: { multiple: true },
         data: [stored.scan]
@@ -1055,18 +1055,18 @@ describe('DitoTypeUpload', () => {
         '.dito-upload__footer > .dito-buttons > *'
       )
       expect(buttons.map(button => button.classes())).toEqual([
-        expect.arrayContaining(['dito-button--upload']),
-        expect.arrayContaining(['dito-clipboard'])
+        expect.arrayContaining(['dito-clipboard']),
+        expect.arrayContaining(['dito-button--upload'])
       ])
     })
 
-    it('shows the clipboard after the upload button of single files', async () => {
+    it('shows the clipboard before the upload button of single files', async () => {
       const { findField } = await mountImages({ data: stored.scan })
       const field = findField('images')
       const buttons = field.findAll('tbody .dito-table__buttons > div > *')
       expect(buttons.map(button => button.classes())).toEqual([
-        expect.arrayContaining(['dito-button--upload']),
-        expect.arrayContaining(['dito-clipboard'])
+        expect.arrayContaining(['dito-clipboard']),
+        expect.arrayContaining(['dito-button--upload'])
       ])
       expect(field.find('tfoot').exists()).toBe(false)
     })

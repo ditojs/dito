@@ -5,6 +5,10 @@ version, see the upgrade guides in `docs/`.
 
 ## 4.5.1 (unreleased)
 
+### Improvements
+
+- **admin:** Upload fields show their copy and paste buttons before the upload and remove buttons, and show them and the drag handles of their files only on hover or focus, like inlined forms. The hidden buttons keep their space, so the table doesn't shift.
+
 ### Fixes
 
 - **admin:** The suffixes of collapsible labels, e.g. from `itemLabel()`, show again and are clipped with an ellipsis, instead of running out of the label and widening the form.

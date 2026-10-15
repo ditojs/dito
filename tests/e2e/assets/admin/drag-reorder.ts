@@ -62,12 +62,12 @@ test.describe('drag reorder', () => {
       'tiny.jpg'
     )
 
-    // Move the first file down with the keyboard, which moves it through
-    // the data model like dropping it there does:
-    await upload
-      .getRow(0)
-      .locator('.dito-button--drag')
-      .press('Alt+ArrowDown')
+    // Hover the first file to show its drag handle, and move it down with the
+    // keyboard, which moves it through the data model like dropping it there
+    // does:
+    const row = upload.getRow(0)
+    await row.hover()
+    await row.locator('.dito-button--drag').press('Alt+ArrowDown')
 
     // Verify new order in DOM
     await expect(upload.getRow(0)).toContainText(
