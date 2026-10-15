@@ -102,14 +102,14 @@
               template(
                 v-if="!multiple"
               )
-                DitoButton.dito-button--upload(
-                  :title="uploadTitle"
-                  @click="onClickUpload"
-                )
                 DitoClipboard(
                   v-if="schema.clipboard"
                   v-bind="clipboardAttributes"
                   @paste="pasteFiles"
+                )
+                DitoButton.dito-button--upload(
+                  :title="uploadTitle"
+                  @click="onClickUpload"
                 )
               DitoDragHandle(
                 v-if="draggable"
@@ -141,14 +141,14 @@
               template(
                 v-if="multiple || !hasFiles"
               )
-                DitoButton.dito-button--upload(
-                  :title="uploadTitle"
-                  @click="onClickUpload"
-                )
                 DitoClipboard(
                   v-if="schema.clipboard"
                   v-bind="clipboardAttributes"
                   @paste="pasteFiles"
+                )
+                DitoButton.dito-button--upload(
+                  :title="uploadTitle"
+                  @click="onClickUpload"
                 )
 </template>
 
@@ -435,7 +435,7 @@ const DitoTypeUpload = {
 
       hasFiles: computed(() => files.value.length > 0),
 
-      // The clipboard follows the upload button, in the row of single files:
+      // Shared by the clipboards in the footer and in the row of single files:
       clipboardAttributes: computed(() => ({
         clipboard: props.schema.clipboard,
         schema: props.schema,
@@ -660,6 +660,18 @@ function getStoredFiles(value) {
     tr,
     .dito-table__buttons {
       vertical-align: middle;
+    }
+  }
+
+  // Like inlined items, show the clipboard and drag buttons only on hover,
+  // hidden but keeping their space so that the table doesn't shift:
+  @media (hover: hover) {
+    &:not(:hover, :focus-within) &__footer,
+    tbody tr:not(:hover, :focus-within) {
+      .dito-clipboard .dito-button,
+      .dito-button--drag {
+        visibility: hidden;
+      }
     }
   }
 
