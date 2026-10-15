@@ -83,9 +83,9 @@ test.describe('component screenshots', () => {
     await visible(page.getByRole('button', { name: 'Add', exact: true }))
       .last()
       .click()
-    await expect(visible(page.getByText('Note', { exact: true }))).toHaveCount(
-      1
-    )
+    await expect(
+      visible(page.getByRole('menuitem', { name: 'Note', exact: true }))
+    ).toHaveCount(1)
     await expectScreenshot(page, 'create-menu.png')
   })
 

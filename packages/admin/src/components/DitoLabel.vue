@@ -201,6 +201,16 @@ export default {
       > #{$self}__inner {
         flex: 0 1 auto;
       }
+
+      // Suffixes with ellipsis have no width of their own, so the content
+      // fills the row for them to clip their text in:
+      &:has(> #{$self}__inner > .dito-affixes--ellipsis) {
+        flex: 1;
+
+        > #{$self}__inner {
+          flex: 1 0 0%;
+        }
+      }
     }
 
     &:hover {

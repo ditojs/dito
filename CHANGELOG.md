@@ -3,6 +3,12 @@
 The changes of each release of Dito.js. For upgrading to a new major
 version, see the upgrade guides in `docs/`.
 
+## 4.5.1 (unreleased)
+
+### Fixes
+
+- **admin:** The suffixes of collapsible labels, e.g. from `itemLabel()`, show again and are clipped with an ellipsis, instead of running out of the label and widening the form.
+
 ## 4.5.0 (2026-10-15)
 
 ### Behaviour changes
