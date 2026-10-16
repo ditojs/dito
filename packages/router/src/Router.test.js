@@ -253,6 +253,20 @@ describe('Router', () => {
     expect(result.handler).toBeUndefined()
   })
 
+  it('throws on wildcards inside segments', () => {
+    for (const path of ['/files/*.json', '/files/**.json', '/files/a*/b']) {
+      expect(() => router.add('GET', path, handler)).toThrow(
+        `Unsupported wildcard in path: '${path}'.`
+      )
+    }
+  })
+
+  it('throws on params inside segments after match-any nodes', () => {
+    expect(() =>
+      router.add('GET', '/files/**/tech-doc-:format', handler)
+    ).toThrow(`Unsupported param after '**': 'tech-doc-:format'.`)
+  })
+
   it('lets the route added last win of a param and a placeholder', () => {
     const paramHandler = () => {}
     const placeholderHandler = () => {}

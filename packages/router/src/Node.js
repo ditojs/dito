@@ -62,6 +62,14 @@ export default class Node {
   }
 
   add(path, handler) {
+    if (
+      path.split('/').some(token => token.includes('*') && !isWildcard(token))
+    ) {
+      throw new Error(
+        `Unsupported wildcard in path: '${path}'. Use '*' and '**' only as ` +
+        'whole segments.'
+      )
+    }
     const parameters = new Parameters()
     for (let pos = 0, length = path.length; pos < length; pos++) {
       const ch = path[pos]
@@ -276,6 +284,11 @@ class Parameters {
       } else if (token.startsWith(':')) {
         pattern.push('([^/]+)')
         this.addKey(token.slice(1))
+      } else if (token.includes(':')) {
+        throw new Error(
+          `Unsupported param after '**': '${token}'. Use params after '**' ` +
+          'only as whole segments.'
+        )
       } else {
         pattern.push(escapeRegExp(token))
       }
@@ -320,5 +333,9 @@ function compareMatchAnyPatterns(pattern1, pattern2) {
 }
 
 function isStaticToken(token) {
-  return token !== '*' && token !== '**' && !token.startsWith(':')
+  return !isWildcard(token) && !token.startsWith(':')
+}
+
+function isWildcard(token) {
+  return token === '*' || token === '**'
 }

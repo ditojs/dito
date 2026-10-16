@@ -49,8 +49,9 @@ then the one with more static segments, then the one added first:
 path ending in `/**` doesn't match the path before it: `/covers/**` doesn't
 match `/covers`.
 
-`*` and `**` only work as whole segments, and params can't use the names of
-wildcards, e.g. `$` or `$0`.
+`*` and `**` only work as whole segments, and so do params after `**`: routes
+like `/files/*.json` or `/files/**/:name.json` throw an error when added. Params
+can't use the names of wildcards, e.g. `$` or `$0`.
 
 ```js
 router.get('/books/*/chapters/*', handler)
