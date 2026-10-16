@@ -385,10 +385,33 @@ describe('convertSchema()', () => {
       type: 'object',
       properties: {
         myModel: {
-          oneOf: [
-            { type: 'null' },
-            { $ref: 'MyModel' }
-          ]
+          if: { type: 'null' },
+          else: { $ref: 'MyModel' }
+        }
+      },
+      unevaluatedProperties: false
+    })
+  })
+
+  it('keeps the default of `nullable: true` references outside', () => {
+    expect(
+      convertSchema({
+        type: 'object',
+        properties: {
+          myModel: {
+            type: 'MyModel',
+            nullable: true,
+            default: null
+          }
+        }
+      })
+    ).toEqual({
+      type: 'object',
+      properties: {
+        myModel: {
+          if: { type: 'null' },
+          else: { $ref: 'MyModel' },
+          default: null
         }
       },
       unevaluatedProperties: false

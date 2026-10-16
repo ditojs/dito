@@ -311,12 +311,15 @@ export function addRelationSchemas(modelClass, properties) {
       // Allow reference objects for relations that don't own their data.
       anyOf.push({ relate: $ref })
     }
-    // Finally the model itself
-    anyOf.push({ $ref })
+    // Validate everything else as the model itself, in `else` and not in
+    // `anyOf`, where Ajv doesn't apply the model's defaults:
     const items =
-      anyOf.length > 1
-        ? { anyOf }
-        : anyOf[0]
+      anyOf.length > 0
+        ? {
+            if: anyOf.length > 1 ? { anyOf } : anyOf[0],
+            else: { $ref }
+          }
+        : { $ref }
     properties[name] = isOneToOne
       ? items
       : {

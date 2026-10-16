@@ -248,41 +248,31 @@ describe('Validator.processSchema()', () => {
 describe('Validator.parseErrors()', () => {
   const validator = new Validator()
 
-  it('removes the null type errors of nullable `oneOf` schemas', () => {
+  it('removes the errors of `if`, but not of its `else` branch', () => {
     expect(
       validator.parseErrors([
         {
-          instancePath: '/cover',
+          instancePath: '/cover/size',
           keyword: 'type',
-          message: 'must be null',
-          params: { type: 'null' }
+          message: 'must be integer',
+          params: { type: 'integer' }
         },
         {
           instancePath: '/cover',
-          keyword: 'oneOf',
-          message: 'must match exactly one schema in oneOf',
-          params: {}
+          keyword: 'if',
+          message: 'must match "else" schema',
+          params: { failingKeyword: 'else' }
         }
       ])
-    ).toEqual({})
-  })
-
-  it('keeps pairs of errors that are not caused by `nullable`', () => {
-    const errors = [
-      {
-        instancePath: '/title',
-        keyword: 'type',
-        message: 'must be string',
-        params: { type: 'string' }
-      },
-      {
-        instancePath: '/title',
-        keyword: 'oneOf',
-        message: 'must match exactly one schema in oneOf',
-        params: {}
-      }
-    ]
-    expect(Object.keys(validator.parseErrors(errors))).toEqual(['title'])
+    ).toEqual({
+      'cover/size': [
+        {
+          message: 'must be integer',
+          keyword: 'type',
+          params: { type: 'integer' }
+        }
+      ]
+    })
   })
 
   it('supports `dataPath`, missing paths and prefixes', () => {
