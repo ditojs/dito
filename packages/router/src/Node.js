@@ -63,11 +63,14 @@ export default class Node {
 
   add(path, handler) {
     if (
-      path.split('/').some(token => !isWildcard(token) && token.includes('*'))
+      path.split('/').some(
+        token => !isWildcard(token) && token.includes('*')
+      )
     ) {
       throw new Error(
-        `Unsupported wildcard in path: '${path}'. Use '*' and '**' only as ` +
-        'whole segments.'
+        `Unsupported wildcard in path: '${
+          path
+        }'. Use '*' and '**' only as whole segments.`
       )
     }
     const parameters = new Parameters()
@@ -286,8 +289,9 @@ class Parameters {
         this.addKey(token.slice(1))
       } else if (token.includes(':')) {
         throw new Error(
-          `Unsupported param after '**': '${token}'. Use params after '**' ` +
-          'only as whole segments.'
+          `Unsupported param after '**': '${
+            token
+          }'. Use params after '**' only as whole segments.`
         )
       } else {
         pattern.push(escapeRegExp(token))
