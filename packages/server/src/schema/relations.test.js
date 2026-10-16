@@ -158,11 +158,13 @@ describe('addRelationSchemas()', () => {
   it('adds correct property schema for a belongs-to relation', () => {
     expect(addRelationSchemas(ModelOne, {})).toEqual({
       modelTwo: {
-        anyOf: [
-          { type: 'null' },
-          { relate: 'ModelTwo' },
-          { $ref: 'ModelTwo' }
-        ]
+        if: {
+          anyOf: [
+            { type: 'null' },
+            { relate: 'ModelTwo' }
+          ]
+        },
+        else: { $ref: 'ModelTwo' }
       }
     })
   })
@@ -650,7 +652,8 @@ describe('addRelationSchemas(): one-to-one owner relations', () => {
   it('allows null and the model, but no references', () => {
     expect(addRelationSchemas(Member, {})).toEqual({
       profile: {
-        anyOf: [{ type: 'null' }, { $ref: 'Profile' }]
+        if: { type: 'null' },
+        else: { $ref: 'Profile' }
       }
     })
   })

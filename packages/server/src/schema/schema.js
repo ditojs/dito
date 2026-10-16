@@ -113,18 +113,21 @@ export function convertSchema(
     if (excludeDefaults[schema.default]) {
       delete schema.default
     }
-    // `nullable` may wrap the schema in `oneOf` below, but its nested schemas
+    // `nullable` may wrap the schema in `else` below, but its nested schemas
     // remain on the wrapped schema:
     unwrappedSchema = schema
     if (schema.nullable) {
       if (schema.$ref) {
-        // `$ref` doesn't play with `nullable`, so convert to `oneOf`
+        // `$ref` doesn't play with `nullable`, so convert to `if` / `else`,
+        // where Ajv applies the defaults of the referenced schema, unlike in
+        // `oneOf`. Keep the property's own default outside, for Ajv to see:
+        const { default: value } = schema
         delete schema.nullable
+        delete schema.default
         schema = {
-          oneOf: [
-            { type: 'null' },
-            schema
-          ]
+          if: { type: 'null' },
+          else: schema,
+          ...(value !== undefined && { default: value })
         }
       } else if (schema.enum && !schema.enum.includes(null)) {
         // Make nullable work with enum, see the issue for more details:

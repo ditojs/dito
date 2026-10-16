@@ -526,7 +526,7 @@ describe('Model.jsonSchema', () => {
   it('includes schemas for relations', () => {
     expect(Author.jsonSchema.properties.books).toEqual({
       type: 'array',
-      items: { anyOf: [{ relate: 'Book' }, { $ref: 'Book' }] }
+      items: { if: { relate: 'Book' }, else: { $ref: 'Book' } }
     })
   })
 
@@ -791,6 +791,96 @@ describe('Model#$validate()', () => {
     await expect(
       Recipe.fromJson({ title: '' }, { async: true })
     ).rejects.toThrow(ValidationError)
+  })
+})
+
+describe('Model validation of relations and nullable references', () => {
+  class Author extends Model {
+    static properties = {
+      name: { type: 'string', required: true },
+      awards: { type: 'array', default: [] }
+    }
+  }
+
+  class Book extends Model {
+    static properties = {
+      authorId: { type: 'integer' },
+      editor: { type: 'Author', nullable: true },
+      tint: { type: 'color', nullable: true, default: '#ffffff' },
+      cover: {
+        $ref: '#Cover',
+        nullable: true,
+        definitions: {
+          '#Cover': {
+            type: 'object',
+            properties: {
+              color: { type: 'string' },
+              size: { type: 'integer', default: 1 }
+            }
+          }
+        }
+      }
+    }
+
+    static relations = {
+      author: { relation: 'belongsTo', from: 'Book.authorId', to: 'Author.id' }
+    }
+  }
+
+  createApp({ Author, Book })
+
+  async function getGraphErrors(json) {
+    const book = Book.fromJson(json, { skipValidation: true })
+    const error = await book.$validateGraph().catch(error => error)
+    expect(error).toBeInstanceOf(ValidationError)
+    return error.data.errors
+  }
+
+  it('accepts null and references for relations', async () => {
+    for (const author of [null, { id: 1 }]) {
+      const book = Book.fromJson({ author }, { skipValidation: true })
+      await expect(book.$validateGraph()).resolves.toBe(book)
+    }
+  })
+
+  it('reports only the errors of the related model', async () => {
+    expect(await getGraphErrors({ author: { name: 5 } })).toEqual({
+      'author/name': [
+        {
+          message: 'must be string',
+          keyword: 'type',
+          params: { type: 'string' }
+        }
+      ]
+    })
+    expect(await getGraphErrors({ author: 'Ursula' })).toEqual({
+      author: [
+        {
+          message: 'must be object',
+          keyword: 'type',
+          params: { type: 'object' }
+        }
+      ]
+    })
+  })
+
+  it('accepts null for nullable references', () => {
+    const book = Book.fromJson({ editor: null, cover: null })
+    expect(book).toMatchObject({ editor: null, cover: null })
+  })
+
+  it('applies the defaults of nullable references', () => {
+    const book = Book.fromJson({
+      editor: { name: 'Ursula' },
+      cover: { color: 'red' }
+    })
+    expect(book.editor).toEqual({ name: 'Ursula', awards: [] })
+    expect(book.cover).toEqual({ color: 'red', size: 1 })
+  })
+
+  it('applies the defaults of nullable reference properties', () => {
+    expect(Book.fromJson({}).tint).toBe('#ffffff')
+    expect(Book.fromJson({ tint: null }).tint).toBeNull()
   })
 })
 
