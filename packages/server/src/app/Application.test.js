@@ -913,7 +913,18 @@ describe('Application', () => {
           method: 'POST'
         })
         expect(response.status).toBe(405)
-        expect(response.headers.get('allow')).toBe('GET')
+        expect(response.headers.get('allow')).toBe('GET, HEAD')
+      })
+    })
+
+    it('responds to HEAD requests through GET routes', async () => {
+      const app = createKitchenApp()
+      await withServer(app, async url => {
+        const response = await fetch(`${url}/kitchen/menu`, {
+          method: 'HEAD'
+        })
+        expect(response.status).toBe(200)
+        expect(await response.text()).toBe('')
       })
     })
 

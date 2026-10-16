@@ -1,33 +1,26 @@
-const SYMBOL_ALLOWED = Symbol('allowed')
-
 export default class Result {
-  constructor(router, method, path, tree) {
-    // Send 405 / 501 errors, except for 'GET' (404) and 'OPTIONS' (200).
-    // 405: 'Method Not Allowed' (tree was found, but node was not)
-    // 501: 'Method Not Implemented' (there is no tree for that method)
-    this.status = (
-      {
-        GET: 404,
-        get: 404,
-        options: 200,
-        OPTIONS: 200
-      }[method] ||
-      (tree ? 405 : 501)
-    )
-    // Getter for the `allowed` property, called once, then cached:
-    this[SYMBOL_ALLOWED] = () =>
-      tree
-        ? router.getAllowedMethods(path, method)
-        : router.getAllowedMethods()
+  #getAllowed
+  #allowed
+
+  constructor(router, method, path) {
+    this.#getAllowed = () => router.getAllowedMethods(path, method)
+    // 404: 'Not Found' (always for GET / HEAD, and if no method handles path)
+    // 200: For OPTIONS, along with the allowed methods
+    // 405: 'Method Not Allowed' (there are routes for the method)
+    // 501: 'Not Implemented' (there are no routes for the method)
+    this.status =
+      method === 'GET' || method === 'HEAD' || this.allowed.length === 0
+        ? 404
+        : method === 'OPTIONS'
+          ? 200
+          : router.trees[method]
+            ? 405
+            : 501
   }
 
   get allowed() {
-    const allowed = this[SYMBOL_ALLOWED]()
-    // Redefine `allowed` property with computed value.
-    Object.defineProperty(this, 'allowed', {
-      value: allowed,
-      configurable: true
-    })
-    return allowed
+    // Only look up `allowed` when needed, as misses of GET and HEAD are 404
+    // without it, e.g. for requests handled by later middleware:
+    return (this.#allowed ??= this.#getAllowed())
   }
 }

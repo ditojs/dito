@@ -30,7 +30,7 @@ new Router({ prefix, strict } = {})
 
 | Option | Default | Description |
 | ------ | ------- | ----------- |
-| `prefix` | – | A path prepended to all paths, of routes and of lookups alike. |
+| `prefix` | – | A path prepended to all paths, of routes and of lookups alike. Unless `strict`, a trailing slash is removed from it. |
 | `strict` | `false` | Uses paths as they are. Otherwise a trailing slash is removed, except from `'/'`, and a leading slash added if missing. |
 
 ## Route paths
@@ -63,8 +63,8 @@ router.find('GET', '/covers/2026/orlando.jpg').params
 router.add(method, path, handler)
 ```
 
-Adds a route for the HTTP method `method`, and returns the router. Methods are
-case-sensitive: use upper case, as in `ctx.method` of Koa.
+Adds a route for the HTTP method `method`, and returns the router. Methods can
+be given in any case.
 
 ### Method shortcuts
 
@@ -92,17 +92,17 @@ router.find(method, path)
 
 Looks up the route of `method` and `path`. When one is found, it returns
 `{ handler, params, status: 200 }`. Otherwise it returns a result without
-`handler`, with the `status` to respond with and the `allowed` methods:
+`handler`, with the `status` to respond with and the `allowed` methods, the
+other methods with a route for `path`. `HEAD` requests without a `HEAD` route
+are found through the `GET` route, and `HEAD` is allowed wherever `GET` is.
 
 | Case | `status` |
 | ---- | -------- |
-| `GET` | `404` |
+| No method has a route for `path` | `404` |
+| `GET` and `HEAD` | `404` |
 | `OPTIONS` | `200` |
 | Other methods with routes, but not for `path` | `405` |
 | Methods without any routes | `501` |
-
-`allowed` lists the other methods with a route for `path` if `method` has
-routes, and all methods with routes if it has none.
 
 ```js
 app.use(async (ctx, next) => {
@@ -112,7 +112,7 @@ app.use(async (ctx, next) => {
     return result.handler(ctx, next)
   }
   ctx.status = result.status
-  if (result.allowed.length > 0) {
+  if (result.status !== 404) {
     ctx.set('Allow', result.allowed.join(', '))
   }
 })
@@ -124,8 +124,9 @@ app.use(async (ctx, next) => {
 router.getAllowedMethods(path = null, exclude = null)
 ```
 
-Returns the methods that have a route for `path`, leaving out `exclude`.
-Without `path`, returns all methods that have routes.
+Returns the methods that have a route for `path`, leaving out `exclude`, in
+any case. Without `path`, returns all methods that have routes. `HEAD` is
+included wherever `GET` is.
 
 ### normalizePath()
 
