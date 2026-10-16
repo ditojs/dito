@@ -40,6 +40,14 @@ class Library extends Model {
       definitions: { '#Motto': { type: 'string' } }
     },
     tint: { type: 'color' },
+    // An object combined from typed parts:
+    edition: {
+      type: 'object',
+      allOf: [
+        { type: 'object', properties: { title: { type: 'string' } } },
+        { type: 'object', properties: { year: { type: 'integer' } } }
+      ]
+    },
     // Variants that combine a base with their own properties through `allOf`,
     // without a discriminator:
     sections: {
@@ -141,6 +149,21 @@ describe('Definitions in model properties', () => {
       await getErrors(Library.query().insert({ motto: 42 } as any))
     ).toEqual({
       motto: [expect.objectContaining({ keyword: 'type' })]
+    })
+  })
+
+  it('combines typed `allOf` parts into one object', async () => {
+    const edition = { title: 'Origins', year: 1859 }
+    const library: any = await Library.query().insertAndFetch({
+      edition
+    } as any)
+    expect(library.edition).toEqual(edition)
+    expect(
+      await getErrors(
+        Library.query().insert({ edition: { ...edition, pages: 502 } } as any)
+      )
+    ).toEqual({
+      edition: [expect.objectContaining({ keyword: 'unevaluatedProperties' })]
     })
   })
 

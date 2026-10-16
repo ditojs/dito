@@ -654,6 +654,25 @@ describe('convertSchema()', () => {
     })
   })
 
+  it(`doesn't close the typed parts of allOf on their own`, () => {
+    expect(
+      convertSchema({
+        type: 'object',
+        allOf: [
+          { type: 'object', properties: { title: { type: 'string' } } },
+          { type: 'object', properties: { year: { type: 'integer' } } }
+        ]
+      })
+    ).toEqual({
+      type: 'object',
+      allOf: [
+        { type: 'object', properties: { title: { type: 'string' } } },
+        { type: 'object', properties: { year: { type: 'integer' } } }
+      ],
+      unevaluatedProperties: false
+    })
+  })
+
   it('keeps JSON Schema `required` arrays of properties', () => {
     expect(
       convertSchema({

@@ -21,6 +21,7 @@ version, see the upgrade guides in `docs/`.
 - **server:** On SQLite with the `better-sqlite3` client, a transaction whose commit failed, e.g. on a deferred constraint, is rolled back before the connection is used again, instead of making every later transaction fail with "cannot start a transaction within a transaction".
 - **server:** Upserts and array saves that run in their own transaction use the knex passed to `query()`, instead of the model's.
 - **server:** Constraint violations that make a transaction's commit fail, e.g. of deferred foreign keys, respond with 409 like the same violations in queries, instead of 500.
+- **server:** Typed objects with properties in `allOf` aren't closed on their own anymore, so they no longer reject each other's properties. The object that combines them is closed instead.
 - **admin:** Upload fields break long file names without spaces, instead of widening their table and the lists and forms around it.
 
 ## 4.6.0 (2026-10-16)
