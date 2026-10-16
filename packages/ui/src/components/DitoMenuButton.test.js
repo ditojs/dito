@@ -57,6 +57,14 @@ describe('DitoMenuButton', () => {
     expect(wrapper.classes()).toContain('dito-menu-button--offset')
   })
 
+  it('attaches the menu below the button with `cover: false`', () => {
+    wrapper = mountMenuButton()
+    expect(wrapper.classes()).not.toContain('dito-menu-button--attached')
+    wrapper.unmount()
+    wrapper = mountMenuButton({ cover: false })
+    expect(wrapper.classes()).toContain('dito-menu-button--attached')
+  })
+
   it('renders its button with `DitoButton`, passing on its verb', () => {
     wrapper = mount(DitoMenuButton, {
       props: { items },
@@ -224,11 +232,15 @@ describe('DitoMenuButton', () => {
     document.body.removeEventListener('keydown', onKeyDown)
   })
 
-  it('closes with Tab', async () => {
+  it('tabs through the items, and closes after the last one', async () => {
     wrapper = mountMenuButton()
     const button = findButton(wrapper)
     await pressKey(button, 'Enter')
-    await pressKey(wrapper.find('[role="menu"]'), 'Tab')
+    const menu = wrapper.find('[role="menu"]')
+    await pressKey(menu, 'Tab')
+    expect(button.attributes('aria-expanded')).toBe('true')
+    await pressKey(menu, 'End')
+    await pressKey(menu, 'Tab')
     expect(button.attributes('aria-expanded')).toBe('false')
   })
 

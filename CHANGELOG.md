@@ -19,6 +19,7 @@ version, see the upgrade guides in `docs/`.
 
 - **admin:** `clipboard: { interchange: true }` joins the Copy and Paste buttons into one group with a menu to download the data with its files as a zip, and to upload such a zip again, e.g. into another installation. Uploading stores the files under new keys through the upload routes of their fields, and then pastes the data, see [Download and Upload](docs/guide/admin/forms.md#download-and-upload). The Copy and Paste buttons are joined also without it. Requires the new peer dependency `fflate`, which is only loaded on the first download or upload.
 - **ui:** The items of `DitoMenuButton` take an `icon`, shown instead of their label, which becomes their title, and the icon set has `archive-download` and `archive-upload`.
+- **ui:** `DitoMenuButton` with `cover: false` attaches its menu below the button, joined into one shape and as wide as the wider of the two.
 
 ### Fixes
 
@@ -32,6 +33,7 @@ version, see the upgrade guides in `docs/`.
 - **server:** Constraint violations that make a transaction's commit fail, e.g. of deferred foreign keys, respond with 409 like the same violations in queries, instead of 500.
 - **server:** Typed objects with properties in `allOf` aren't closed on their own anymore, so they no longer reject each other's properties. The object that combines them is closed instead.
 - **admin:** Upload fields break long file names without spaces, instead of widening their table and the lists and forms around it.
+- **ui:** Tab moves through the items of an open `DitoMenuButton` and closes the menu once the focus leaves them, instead of closing it right away.
 - **admin:** Cancelling or closing the object form of a view with a single `component`, e.g. the account settings, leaves the view for the admin's root, instead of doing nothing.
 
 ## 4.6.0 (2026-10-16)
