@@ -9,7 +9,7 @@ exported by `@ditojs/server`:
 | [`CollectionController`](#collectioncontroller) | Base class of model and relation controllers. Not extended directly. |
 | [`ModelController`](#modelcontroller)     | CRUD routes for a model's collection and members, plus its relations. |
 | [`RelationController`](#relationcontroller) | Routes for a relation of a model controller. Created from `relations`, never extended. |
-| [`UsersController`](#userscontroller)     | A model controller with login, logout and session actions. |
+| [`UsersController`](#userscontroller)     | A model controller with login, logout, session and passkey actions. |
 | [`AdminController`](#admincontroller)     | Serves Dito.js Admin. |
 
 Controllers are registered through the `controllers` option of the
@@ -286,8 +286,9 @@ application. Sets up `hooks`, `name`, `path` and `url`. Call
 controller.setup()
 ```
 
-Sets up the routes of the actions and asset uploads. Call `super.setup()`.
-*Hook.*
+Sets up the routes of the actions and asset uploads, before `initialize()`.
+Internal: dito's controllers override it, and may do so asynchronously. Apps
+override [`initialize()`](#initialize) instead, which needs no `super`.
 
 ### initialize()
 
@@ -786,7 +787,8 @@ Extends [`ModelController`](#modelcontroller) for models with
 [`UserMixin`](./model.md#usermixin), with these collection actions. They are
 inherited actions, see [`allow`](#allow): a subclass that sets
 `collection.allow` has to list them too, e.g.
-`allow: ['get', 'post login', 'post logout', 'get session', 'get self']`.
+`allow: ['get', 'post login', 'post logout', 'get session', 'get self']`, and
+`'post password'` to let users change their password.
 
 | Action               | Response |
 | -------------------- | ------------------------------------------------------- |
@@ -794,11 +796,35 @@ inherited actions, see [`allow`](#allow): a subclass that sets
 | `'post logout'`      | `{ success, authenticated }` |
 | `'get session'`      | `{ authenticated, user }` |
 | `'get self'`         | The authenticated user through `member.get`, or `null`. |
+| `'post password'`    | Changes the password of the authenticated user to `password` in the body, after verifying `currentPassword`: `{ success }`, or 400 if `currentPassword` is wrong. The new password is validated by the user model, e.g. its `minLength`. |
 
-The controller's [`authorize`](#authorize) doesn't apply to `login`, `logout`
-and `session`, which authenticate users; `self` follows it. Its member actions
-default to `authorize: ['$self']`, and are routed when listed in `allow` like
-on other model controllers. In member routes, `self` stands for the
+With [`app.auth.passkeys`](./application.md#configappauth), users log in with
+passkeys and manage their own ones through these collection actions, which
+aren't routed without it:
+
+| Action                         | Response |
+| ------------------------------ | ------------------------------------------------------- |
+| `'post passkey-login-options'` | The options of a passkey login for `startAuthentication()` of `@simplewebauthn/browser`, without a username. |
+| `'post passkey-login'`         | Logs in with the response of `startAuthentication()` in the body, like `'post login'`: `{ success, authenticated, user, error }`. |
+| `'get passkeys'`               | The passkeys of the authenticated user: `[{ id, name, createdAt, lastUsedAt }]`. |
+| `'post passkey-options'`       | The options of a new passkey for `startRegistration()`, which excludes the user's passkeys. |
+| `'post passkeys'`              | Stores the passkey of the response of `startRegistration()` in the body, named after its provider, e.g. `'1Password'`, or `'Passkey'` for unknown ones: `{ id, name, createdAt, lastUsedAt }`, or 409 for passkeys that are already registered. |
+| `'delete passkeys/:id'`        | Deletes a passkey of the authenticated user: `{ success }`, or 404 for other passkeys. |
+
+A subclass that sets `collection.allow` has to list the passkey actions too,
+else they aren't routed. The challenges of the options are kept in the
+session, and can be answered once within 5 minutes. Failed passkey logins
+answer `'Passkey is incorrect'`, and emit the reason as `'error'` on the app.
+Passkeys are discoverable and verify the user, e.g. with a fingerprint, so a
+passkey login counts as two factors. It only logs in users of the controller's
+`modelClass`, through their `sessionScope`, and fires the
+[login events](./model.md#login-events).
+
+The controller's [`authorize`](#authorize) doesn't apply to `login`, `logout`,
+`session`, `password` and the passkey actions, which authenticate users, or
+are only allowed for the authenticated user; `self` follows it. Its member
+actions default to `authorize: ['$self']`, and are routed when listed in
+`allow` like on other model controllers. In member routes, `self` stands for the
 authenticated user, see [`getMemberId()`](#getmemberid-1), e.g.
 `PATCH /users/self` runs `member.patch` on them.
 

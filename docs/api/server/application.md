@@ -106,6 +106,33 @@ augmentation of `ApplicationConfig` for project-specific settings.
 | `bodyParser`     | `object`                                         |         | Options of [koa-bodyparser](https://github.com/koajs/bodyparser#options).                                    |
 | `session`        | `boolean \| object`                              | `false` | Sessions through [koa-session](https://github.com/koajs/session). `modelClass` (a name or a model class) stores them in a model, e.g. one using [`SessionMixin`](model.md#sessionmixin). `autoCommit` (default `true`) commits the session after each request, on transacted routes only when the request succeeds. |
 | `passport`       | `boolean`                                        |         | Deprecated, without effect: users are always handled, see [`UserMixin`](model.md#usermixin). |
+| `auth`           | `object`                                         |         | Authentication beyond passwords, see [`config.app.auth`](#configappauth).                                     |
+
+### config.app.auth
+
+```js
+app: {
+  session: { modelClass: 'Session' },
+  auth: {
+    credentials: { modelClass: 'Credential' },
+    passkeys: {
+      name: 'Example',
+      id: 'example.com',
+      origins: ['https://example.com', 'https://admin.example.com']
+    }
+  }
+}
+```
+
+| Key                      | Type                       | Description                                                                                      |
+| ------------------------ | -------------------------- | ------------------------------------------------------------------------------------------------ |
+| `credentials.modelClass` | `string \| Class<Model>`   | The model that stores the credentials of all user models, using [`CredentialMixin`](model.md#credentialmixin). |
+| `passkeys`               | `object`                   | Enables the passkeys of [`UsersController`](controllers.md#userscontroller). Needs `credentials` and a `session` stored on the server, through `modelClass` or `store`, else the setup fails. |
+| `passkeys.name`          | `string`                   | The name of the app that authenticators show.                                                    |
+| `passkeys.id`            | `string`                   | The domain that the passkeys belong to, the WebAuthn relying party id. Frontends on this domain or its subdomains can use them. |
+| `passkeys.origins`       | `string[]`                 | The origins of the frontends that log in with passkeys, which may differ from the API's.        |
+
+Passkeys need the optional peer dependency `@simplewebauthn/server`.
 
 ### config.admin
 

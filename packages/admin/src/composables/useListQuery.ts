@@ -8,17 +8,21 @@ import type { Schema } from '../utils/types.ts'
 import type { FieldProps } from './useField.ts'
 
 // The scope, page, order and filters of a list, remembered in the store, and
-// held by the route for lists that load their data, see `ListQuery`.
+// held by the route for lists that load their data in routes, see `ListQuery`.
 export function useListQuery(
   props: FieldProps,
   {
     getPaginate,
+    isInRoute,
     isRouted,
     onChange
   }: {
     getPaginate: () => number | undefined
+    // Lists in routes change the query through the route...
+    isInRoute: () => boolean
+    // ...and those that load their data also follow it:
     isRouted: () => boolean
-    // Called once the route changed only the query, which the list loads:
+    // Called once the query changed, which the list loads:
     onChange: () => void
   }
 ) {
@@ -55,7 +59,9 @@ export function useListQuery(
         scope: defaultScope.value?.name,
         page: props.schema.page,
         order: defaultOrder.value
-      })
+      }),
+      isInRoute,
+      onChange
     })
   )
 

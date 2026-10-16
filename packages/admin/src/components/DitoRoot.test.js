@@ -1,5 +1,6 @@
 import { vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
+import { startAuthentication } from '@simplewebauthn/browser'
 import appState from '../appState.js'
 import DitoAdmin from '../DitoAdmin.js'
 import {
@@ -8,6 +9,12 @@ import {
   unmountAdmin,
   enterValue
 } from '../test/mount.js'
+
+// The DOM of the tests has no WebAuthn, so we answer passkey logins with a
+// fixed response. The e2e tests run them in a browser:
+vi.mock('@simplewebauthn/browser', () => ({
+  startAuthentication: vi.fn(async () => ({ id: 'passkey' }))
+}))
 
 // Dispatches `beforeunload` like the browser does when the page is reloaded or
 // closed, and returns whether the page asks to stay.
@@ -163,6 +170,77 @@ describe('DitoRoot', () => {
     })
   })
 
+  describe('login dialog', () => {
+    const mountLoggedOut = async options => {
+      const request = vi.fn(({ method, url, data }) =>
+        method === 'post' && url === '/logout'
+          ? { data: { success: true } }
+          : method === 'post' && url === '/login'
+            ? { data: { user: { id: 1, username: data.username } } }
+            : method === 'post' && url === '/passkey-login-options'
+              ? { data: { challenge: 'challenge' } }
+              : method === 'post' && url === '/passkey-login'
+                ? { data: { user: { id: 2, username: 'passkey-user' } } }
+                : null
+      )
+      const admin = await mountAdmin({ views: {}, request, options })
+      await admin.context.session.logout()
+      await flushPromises()
+      await admin.wrapper.find('button.dito-login').trigger('click')
+      await flushPromises()
+      return { admin, request, dialog: admin.wrapper.find('.dito-dialog') }
+    }
+
+    // Browsers with WebAuthn have `PublicKeyCredential`:
+    beforeEach(() => vi.stubGlobal('PublicKeyCredential', class {}))
+    afterEach(() => vi.unstubAllGlobals())
+
+    it('logs in with a passkey', async () => {
+      const { admin, request, dialog } = await mountLoggedOut({
+        login: { passkeys: true }
+      })
+      const button = dialog
+        .findAll('button')
+        .find(button => button.text() === 'Login with Passkey')
+      await button.trigger('click')
+      await flushPromises()
+      expect(startAuthentication).toHaveBeenCalledWith({
+        optionsJSON: { challenge: 'challenge' }
+      })
+      expect(request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          method: 'post',
+          url: '/passkey-login',
+          data: { id: 'passkey' }
+        })
+      )
+      expect(admin.context.user.username).toBe('passkey-user')
+    })
+
+    it('sends no passkey with the password', async () => {
+      const { admin, request, dialog } = await mountLoggedOut({
+        login: { passkeys: true }
+      })
+      await enterValue(dialog.find('input[name="username"]'), 'reader')
+      await enterValue(dialog.find('input[name="password"]'), 'secret')
+      await dialog.find('button[type="submit"]').trigger('click')
+      await flushPromises()
+      expect(request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          method: 'post',
+          url: '/login',
+          data: { username: 'reader', password: 'secret' }
+        })
+      )
+      expect(admin.context.user.username).toBe('reader')
+    })
+
+    it('offers passkeys only with the option', async () => {
+      const { dialog } = await mountLoggedOut({})
+      expect(dialog.text()).not.toContain('Login with Passkey')
+    })
+  })
+
   describe('showDialog()', () => {
     it('rejects when the components fail to set up', async () => {
       const admin = await mountAdmin({ views: {} })
@@ -188,6 +266,25 @@ describe('DitoRoot', () => {
         })
       ).rejects.toThrow(`Unsupported schema key 'data' in 'confirm'`)
       expect(admin.root.dialogs).toEqual({})
+    })
+
+    it('resolves only with valid data', async () => {
+      const admin = await mountAdmin({ views: {} })
+      const promise = admin.context.showDialog({
+        components: { title: { type: 'text', required: true } },
+        buttons: { save: { type: 'submit' } }
+      })
+      await flushPromises()
+      const dialog = admin.wrapper.find('.dito-dialog')
+      const submit = async () => {
+        await dialog.find('button[type="submit"]').trigger('click')
+        await flushPromises()
+      }
+      await submit()
+      expect(dialog.find('.dito-errors').text()).toContain('required')
+      await enterValue(dialog.find('input[name="title"]'), 'Emma')
+      await submit()
+      expect(await promise).toEqual({ title: 'Emma' })
     })
   })
 

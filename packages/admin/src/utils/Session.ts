@@ -1,4 +1,5 @@
 import type { ShallowRef } from 'vue'
+import { startAuthentication } from '@simplewebauthn/browser'
 import AdminUser from '../AdminUser.js'
 import type { ViewRegistry } from './ViewRegistry.js'
 import type { NotifyOptions } from './AdminContext.ts'
@@ -7,7 +8,7 @@ import type { Api } from './types.ts'
 export type User = Record<string, any>
 
 interface UserInterface {
-  requestLoginData(): Promise<Record<string, any> | null>
+  requestLoginData(): Promise<Record<string, any> | 'passkey' | null>
   notify(options: NotifyOptions): void
 }
 
@@ -41,7 +42,8 @@ export class Session {
     this.#redirectAfterLogin = redirectAfterLogin
   }
 
-  // `requestLoginData()` returns the credentials, or `null` when cancelled.
+  // `requestLoginData()` returns the credentials, `'passkey'` to log in with a
+  // passkey, or `null` when cancelled.
   attachUserInterface({ requestLoginData, notify }: UserInterface) {
     const userInterface = { requestLoginData, notify }
     this.#userInterface = userInterface
@@ -68,10 +70,21 @@ export class Session {
     }
     let user
     try {
-      const response = await this.#request(this.#api.users.login, loginData)
+      const { users } = this.#api
+      let response
+      if (loginData === 'passkey') {
+        const options = await this.#request(users.passkeyLoginOptions)
+        const passkey = await startAuthentication({ optionsJSON: options.data })
+        response = await this.#request(users.passkeyLogin, passkey)
+      } else {
+        response = await this.#request(users.login, loginData)
+      }
       user = response.data.user
     } catch (error) {
-      this.#notifyError(error)
+      // Ask again quietly when the passkey prompt is cancelled:
+      if (!isPasskeyPromptCancelled(error)) {
+        this.#notifyError(error)
+      }
       return this.login()
     }
     if (this.#redirectAfterLogin) {
@@ -149,4 +162,10 @@ export class Session {
       console.error(responseError)
     }
   }
+}
+
+// Browsers reject passkey prompts that users cancel or let time out with these
+// WebAuthn errors:
+export function isPasskeyPromptCancelled(error: any) {
+  return ['NotAllowedError', 'AbortError'].includes(error.name)
 }

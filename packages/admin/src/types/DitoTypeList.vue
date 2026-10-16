@@ -136,6 +136,10 @@
             @delete="deleteItem(item, index)"
             @move="delta => moveItem(index, delta)"
           )
+      tr.dito-table__row.dito-table__row--empty(
+        v-if="emptyText && !listData.length && !isLoading"
+      )
+        td(:colspan="numColumns") {{ emptyText }}
     //- Render the list buttons inside the table when not in a single
     //- component view, with the item that holds the list as their data:
     tfoot(
@@ -274,6 +278,7 @@ const DitoTypeList = {
       hasToggleAll,
       toggleAllTitle,
       toggleAll,
+      emptyText: computed(() => getSchemaValue('empty', { type: String })),
 
       numColumns: computed(() => {
         const columns = source.columns.value
