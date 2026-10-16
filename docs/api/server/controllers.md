@@ -122,7 +122,7 @@ Requests of actions have these members on the Koa context:
 | `ctx.controller`      | The controller. |
 | `ctx.params`          | The route parameters, e.g. `{ id: '1' }`. |
 | `ctx.route`           | The route, see [`addRoute()`](./application.md#addroute). |
-| `ctx.logger`          | The logger of the request, with its request id (and the user with `app.passport`). |
+| `ctx.logger`          | The logger of the request, with its request id and user. |
 | `ctx.memberId`        | The validated member id, in member actions. |
 | `ctx.filteredQuery`   | The query parameters not consumed by `parameters`. |
 | `ctx.transaction`     | The transaction of transacted actions. |
@@ -175,7 +175,7 @@ type ControllerAuthorize = Authorize | Record<string, Authorize>
 | function   | Called with `(ctx, member)`; its result is checked like a setting. Returning `undefined` denies, returning `null` authorizes like unset. |
 
 Strings and arrays deny requests without an authenticated user
-(`ctx.state.user`, set by the application's Passport middleware).
+(`ctx.state.user`, see [`UserMixin`](./model.md#sessions)).
 
 `authorize` can be set in three places, from strongest to weakest:
 

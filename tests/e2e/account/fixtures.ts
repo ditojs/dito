@@ -24,8 +24,7 @@ export const test = defineScenario({
       normalizePaths: true,
       helmet: false,
       keys: ['account-secret'],
-      session: true,
-      passport: true
+      session: true
     }
   },
   // The computed `password` property isn't stored in the database:

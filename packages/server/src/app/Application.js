@@ -13,7 +13,6 @@ import compose from 'koa-compose'
 import compress from 'koa-compress'
 import conditional from 'koa-conditional-get'
 import mount from 'koa-mount'
-import passport from 'koa-passport'
 import helmet from 'koa-helmet'
 import responseTime from 'koa-response-time'
 import { Model, knexSnakeCaseMappers, ref } from 'objection'
@@ -672,15 +671,9 @@ export class Application extends Koa {
     if (app.session) {
       this.use(handleSession(this, getOptions(app.session)))
     }
-    // 6. passport
-    if (app.passport) {
-      this.use(passport.initialize())
-      if (app.session) {
-        this.use(passport.session())
-      }
-      this.use(handleUser())
-    }
-    // 6. finally handle the found route, or set status / allow accordingly.
+    // 6. users
+    this.use(handleUser())
+    // 7. finally handle the found route, or set status / allow accordingly.
     this.use(handleRoute())
   }
 

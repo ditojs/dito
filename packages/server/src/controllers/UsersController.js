@@ -80,7 +80,11 @@ export class UsersController extends ModelController {
   }
 
   isAuthenticated(ctx) {
-    // Make sure the currently logged in user has the correct model-class:
-    return ctx.isAuthenticated() && ctx.state.user instanceof this.modelClass
+    // Make sure the currently logged in user has the exact model class, since
+    // sub-classes have their own tables and ids:
+    return (
+      ctx.isAuthenticated() &&
+      ctx.state.user.constructor === this.modelClass
+    )
   }
 }

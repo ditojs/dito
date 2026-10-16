@@ -1,5 +1,3 @@
-// @ts-expect-error -- koa-passport comes without type declarations.
-import passport from 'koa-passport'
 import type { ModelProperties } from '@ditojs/server'
 import {
   AuthenticationError,
@@ -12,7 +10,6 @@ import {
   createTestDatabase,
   destroyTestApp
 } from './setup.js'
-import { isSQLiteTest } from '../utils/test-knex.js'
 
 class Shelf extends TimestampedModel {
   declare id: number
@@ -88,23 +85,9 @@ function createLibrarian(json: Record<string, any>) {
 
 function createLoginContext(body: Record<string, any>): any {
   return {
-    req: {},
     request: { body },
-    query: {},
-    state: {} as Record<string, any>,
-    set() {},
     login: vi.fn(async () => {})
   }
-}
-
-function deserializeUser(identifier: string) {
-  return new Promise((resolve, reject) => {
-    ;(passport as any).deserializeUser(
-      identifier,
-      { ctx: {} },
-      (err: Error | null, user: any) => (err ? reject(err) : resolve(user))
-    )
-  })
 }
 
 let alice: Librarian
@@ -301,55 +284,15 @@ describe('UserMixin', () => {
         email: 'alice@example.com',
         password: 'open sesame'
       })
-      const sessionQuery = vi
-        .spyOn(Librarian, 'sessionQuery')
-        .mockImplementation(() => {
-          throw new Error('Database is down')
-        })
+      // A failing database can't be reached otherwise:
+      const query = vi.spyOn(Librarian, 'query').mockImplementation(() => {
+        throw new Error('Database is down')
+      })
       try {
         await expect(Librarian.login(ctx)).rejects.toThrow('Database is down')
       } finally {
-        sessionQuery.mockRestore()
+        query.mockRestore()
       }
     })
-  })
-
-  describe('session deserialization', () => {
-    it('loads users through the session scope', async () => {
-      const user: any = await deserializeUser(`Librarian-${alice.id}`)
-      expect(user).toBeInstanceOf(Librarian)
-      expect(user.id).toBe(alice.id)
-    })
-
-    // `findById()` resolves to `undefined` for users that are excluded by the
-    // session scope or were deleted, which passport treats as "not handled",
-    // failing with an error instead of ending the session.
-    test('logs out users excluded by the session scope', async () => {
-      expect(await deserializeUser(`Librarian-${bob.id}`)).toBe(false)
-    })
-
-    test('logs out users that no longer exist', async () => {
-      expect(await deserializeUser('Librarian-999999')).toBe(false)
-    })
-
-    it('ignores identifiers of unknown user classes', async () => {
-      expect(await deserializeUser(`Shelf-${alice.id}`)).toBe(false)
-    })
-
-    it('passes on query errors', async context => {
-      context.skip(isSQLiteTest, 'SQLite compares text with integer ids')
-      await expect(deserializeUser('Librarian-not-a-number')).rejects.toThrow()
-    })
-  })
-
-  it('does not serialize users of unregistered classes', async () => {
-    const promise = new Promise((resolve, reject) => {
-      ;(passport as any).serializeUser(
-        Shelf.fromJson({ id: 1, label: 'Poetry' }),
-        {},
-        (err: Error | null, id: any) => (err ? reject(err) : resolve(id))
-      )
-    })
-    await expect(promise).rejects.toThrow('Failed to serialize user')
   })
 })
