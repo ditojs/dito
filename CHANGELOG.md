@@ -3,6 +3,12 @@
 The changes of each release of Dito.js. For upgrading to a new major
 version, see the upgrade guides in `docs/`.
 
+## 4.7.1 (unreleased)
+
+### New
+
+- **server:** The references of `app.getAssetReferences()` include the `config` of the model's asset data path that they were found through, e.g. to read `readDimensions`.
+
 ## 4.7.0 (2026-10-16)
 
 ### Behaviour changes

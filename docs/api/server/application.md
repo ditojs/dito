@@ -733,7 +733,9 @@ occurrence, as the reference counts count them.
 
 Returns `Promise<object[]>`: a reference for each occurrence, with the file's
 `key`, the `file` itself, the `model` name, the record's `id`, the `dataPath` of
-the file inside the record, e.g. `'photos/1'`, and the `storage` name.
+the file inside the record, e.g. `'photos/1'`, the `storage` name, and the
+`config` of the model's asset data path that the file was found through, e.g.
+`{ storage: 'photos', readDimensions: true }`.
 
 ### recountAssets()
 

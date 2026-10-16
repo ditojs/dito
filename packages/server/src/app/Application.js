@@ -1142,6 +1142,7 @@ export class Application extends Koa {
         }
         for (const item of await query) {
           for (const dataPath of dataPaths) {
+            const config = assets[dataPath]
             const entries = getEntriesAtDataPath(item, dataPath, () => {})
             for (const [path, value] of Object.entries(entries)) {
               for (const [index, file] of asArray(value).entries()) {
@@ -1152,7 +1153,8 @@ export class Application extends Koa {
                     model: modelName,
                     id: item.$id(),
                     dataPath: isArray(value) ? `${path}/${index}` : path,
-                    storage: assets[dataPath].storage
+                    storage: config.storage,
+                    config
                   })
                 }
               }

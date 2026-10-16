@@ -816,7 +816,7 @@ describe('asset references', () => {
     }
 
     static override assets = {
-      cover: { storage: 'memory' },
+      cover: { storage: 'memory', readDimensions: true },
       photos: { storage: 'memory' }
     }
   }
@@ -964,6 +964,23 @@ describe('asset references', () => {
       key: file.key,
       file: { key: file.key }
     })
+  })
+
+  it('includes the asset config that each file was found through', async () => {
+    const file = await upload('configured.jpg')
+    await Album.query().insert({ cover: copy(file), photos: [copy(file)] })
+    const references = await app.getAssetReferences({ keys: [file.key] })
+    expect(
+      references.map(({ dataPath, config }) => ({ dataPath, config }))
+    ).toEqual(
+      expect.arrayContaining([
+        {
+          dataPath: 'cover',
+          config: { storage: 'memory', readDimensions: true }
+        },
+        { dataPath: 'photos/0', config: { storage: 'memory' } }
+      ])
+    )
   })
 
   it('matches keys exactly, not as text', async () => {
