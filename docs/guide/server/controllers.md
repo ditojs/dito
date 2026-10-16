@@ -299,8 +299,8 @@ it doesn't exist. Its options:
   `transacted: true`.
 - `modify`: a function that changes the query.
 
-`member.get` also fetches the members for `'$owner'` authorization and for
-the routes of [relations](#relations). Overriding it controls which members
+Where `allow` routes it, `member.get` also fetches the members for
+`'$owner'` authorization and for the routes of [relations](#relations). Overriding it controls which members
 these see, along with `GET` requests. The default `PUT`, `PATCH` and `DELETE`
 actions find their member by id directly, so restrict them separately, e.g.
 with `'$owner'`. Pass `modify` on, so that the requesting action's settings

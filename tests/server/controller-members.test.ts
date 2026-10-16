@@ -144,7 +144,7 @@ class ActiveNotes extends ModelController<Note> {
 }
 
 // Hides the archived notes like `ActiveNotes`, but through a `member.get`
-// override in object notation that sub-classes don't route.
+// override in object notation that `UnarchivedNotes` doesn't route.
 class UnarchivedNotesBase extends ModelController<Note> {
   override modelClass = Note
 
@@ -223,9 +223,8 @@ class ConfiguredNotes extends ModelController<Note> {
   } as any
 }
 
-// Resolves the folder of the notes' one-to-one `folder` relation through a
-// `member.get` override. As one-to-one relations have no member actions, it is
-// called with the controller as `this`.
+// Resolves the folder of the notes' one-to-one `folder` relation as the
+// member of its actions.
 class FiledNotes extends ModelController<Note> {
   override modelClass = Note
 
@@ -233,13 +232,6 @@ class FiledNotes extends ModelController<Note> {
     folder: {
       relation: {
         allow: ['get']
-      },
-      member: {
-        get(this: any, ctx: any, modify: any) {
-          return this.execute(ctx, (query: any) =>
-            query.first().throwIfNotFound().modify(modify)
-          )
-        }
       }
     }
   }
@@ -308,18 +300,14 @@ describe('Controller members', () => {
     expect(await activeResponse.json()).toEqual({ name: 'Active' })
   })
 
-  it('resolves members through unrouted `member.get` overrides', async () => {
-    const active = await Note.query().insert({ name: 'Active' })
+  it("resolves members by id where `allow` doesn't route `member.get`", async () => {
     const archived = await Note.query().insert({ name: 'Archived' })
     const url = `${getAppUrl(app)}/unarchived-notes`
-    // `allow` doesn't route `member.get`, but members still resolve through it.
-    const getResponse = await fetch(`${url}/${active.id}`)
-    expect(getResponse.status).toBe(404)
+    // The unrouted override doesn't apply, members are fetched by id:
+    expect((await fetch(`${url}/${archived.id}`)).status).toBe(404)
     const archivedResponse = await fetch(`${url}/${archived.id}/name`)
-    expect(archivedResponse.status).toBe(404)
-    const activeResponse = await fetch(`${url}/${active.id}/name`)
-    expect(activeResponse.status).toBe(200)
-    expect(await activeResponse.json()).toEqual({ name: 'Active' })
+    expect(archivedResponse.status).toBe(200)
+    expect(await archivedResponse.json()).toEqual({ name: 'Archived' })
   })
 
   it('routes inherited `member.get` overrides in object notation', async () => {

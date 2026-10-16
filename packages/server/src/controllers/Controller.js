@@ -228,12 +228,24 @@ export class Controller {
   }
 
   setupAction(type, actions, name, action, authorize) {
-    const definition = this.setupActionDefinition(actions, name)
+    // Parse the definition before changing its prototype below, so that its
+    // settings can't be inherited from the parent actions object.
+    const definition = parseHandlerDefinition(action)
     if (!definition) {
       throw new ControllerError(
         this,
         `Missing handler in '${name}' action: ${formatJson(action)}`
       )
+    }
+    if (isObject(action)) {
+      // In order to support `super` calls in the `handler` function in object
+      // notation, deploy this crazy JS sorcery: Make the action inherit from
+      // the parent of the actions object that defines it, which may also be
+      // the one of a parent class:
+      const definingActions = getInheritanceChain(actions).findLast(
+        object => Object.hasOwn(object, name) && object[name] === action
+      )
+      Object.setPrototypeOf(action, Object.getPrototypeOf(definingActions))
     }
     // Action naming convention: `'<method> <path>'`, or just `'<method>'` for
     // the default methods.
@@ -261,37 +273,6 @@ export class Controller {
     )
     this.setupActionRoute(type, controllerAction)
     return controllerAction
-  }
-
-  /**
-   * Parses the definition of the action `name` in `actions`, and sets up its
-   * `super` support, independently of whether the action is routed.
-   *
-   * @param {Object} actions the actions object that provides the action,
-   *   directly or through inheritance
-   * @param {string} name the name of the action
-   * @return {Object|null} the parsed definition, see `parseHandlerDefinition()`
-   */
-  setupActionDefinition(actions, name) {
-    const action = actions[name]
-    // Parse the definition before changing its prototype below, so that its
-    // settings can't be inherited from the parent actions object.
-    const definition = parseHandlerDefinition(action)
-    if (definition && isObject(action)) {
-      // In order to support `super` calls in the `handler` function in object
-      // notation, deploy this crazy JS sorcery: Make the action inherit from
-      // the parent of the actions object that defines it, so that `super`
-      // resolves to the parent controller's actions. The filtered actions of
-      // `processValues()` hold the action too, so find the last object in
-      // the chain that holds it, as that is the one that defines it. This way,
-      // the prototype is the same for all controllers that share the action,
-      // whether they route it or not.
-      const definingActions = getInheritanceChain(actions).findLast(
-        object => Object.hasOwn(object, name) && object[name] === action
-      )
-      Object.setPrototypeOf(action, Object.getPrototypeOf(definingActions))
-    }
-    return definition
   }
 
   setupActionRoute(type, action) {
