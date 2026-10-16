@@ -1,11 +1,12 @@
 import type { ModelProperties } from '@ditojs/server'
 import { Model, QueryBuilder, TimestampedModel } from '@ditojs/server'
+import { knex, type Knex } from 'knex'
 import {
   createTestApp,
   createTestDatabase,
   destroyTestApp
 } from './setup.js'
-import { isSQLiteTest } from '../utils/test-knex.js'
+import { createTestKnex, isSQLiteTest } from '../utils/test-knex.js'
 
 class Cook extends Model {
   declare id: number
@@ -939,6 +940,29 @@ describe('QueryBuilder', () => {
       ).rejects.toThrow('Unable to save failing note.')
       const notes = await Note.query()
       expect(notes.map(({ title }) => title)).toEqual(['Shopping'])
+    })
+
+    it('runs transacted queries on the knex passed to query()', async () => {
+      // A separate database, with only the table that the query needs:
+      const other = knex(createTestKnex() as Knex.Config)
+      try {
+        await other.schema.createTable('Note', table => {
+          table.increments('id').primary()
+          table.text('title')
+          table.boolean('pinned')
+          table.timestamp('createdAt')
+          table.timestamp('updatedAt')
+        })
+        await Note.query(other).upsert([
+          { title: 'Groceries' },
+          { title: 'Books' }
+        ])
+        const titles = await other('Note').orderBy('id').pluck('title')
+        expect(titles).toEqual(['Groceries', 'Books'])
+        expect(await Note.query()).toHaveLength(0)
+      } finally {
+        await other.destroy()
+      }
     })
 
     it('patches existing rows and fetches them with upsertAndFetch()', async () => {

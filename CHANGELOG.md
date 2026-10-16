@@ -19,6 +19,7 @@ version, see the upgrade guides in `docs/`.
 - **server:** On SQLite with the `better-sqlite3` client, `Date` values in queries are bound as ISO strings, as dates are stored, so date-range filters, `releaseUnusedAssets()` and queries like `where('createdAt', '>', date)` match.
 - **server:** `log.sql` logs the rows of SQLite responses as arrays.
 - **server:** On SQLite with the `better-sqlite3` client, a transaction whose commit failed, e.g. on a deferred constraint, is rolled back before the connection is used again, instead of making every later transaction fail with "cannot start a transaction within a transaction".
+- **server:** Upserts and array saves that run in their own transaction use the knex passed to `query()`, instead of the model's.
 - **admin:** Upload fields break long file names without spaces, instead of widening their table and the lists and forms around it.
 
 ## 4.6.0 (2026-10-16)
