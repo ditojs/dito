@@ -366,7 +366,11 @@ function getDefinitionByAjvName(definitions, ajvName) {
 }
 
 const defaultOptions = {
-  strict: false,
+  strictSchema: true,
+  strictNumbers: true,
+  strictTuples: true,
+  strictTypes: false,
+  strictRequired: false,
   allErrors: true,
   discriminator: true,
   ownProperties: true,

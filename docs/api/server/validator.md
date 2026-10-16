@@ -34,9 +34,13 @@ application creates a `new Validator()`. All options are optional.
 Names may start with `_` to avoid clashes with reserved words
 (`_instanceof`); Ajv receives them without it.
 
-Default Ajv options: `strict: false`, `allErrors: true`,
-`discriminator: true`, `ownProperties: true`, `passContext: true`,
-`useDefaults: true`, `validateSchema: true`.
+Default Ajv options: `strictSchema: true`, `strictNumbers: true`,
+`strictTuples: true`, `strictTypes: false`, `strictRequired: false`,
+`allErrors: true`, `discriminator: true`, `ownProperties: true`,
+`passContext: true`, `useDefaults: true`, `validateSchema: true`. With
+`strictSchema`, unknown keywords throw when a schema is compiled, for model
+schemas when the app sets up its models; pass
+`options: { strictSchema: false }` to ignore them.
 
 #### Example
 

@@ -248,6 +248,18 @@ describe('Application', () => {
       expect(Pantry.isInitialized).toBe(true)
     })
 
+    it('rejects invalid model schemas on setup', async () => {
+      class Pantry extends Model {
+        static properties = {
+          shelves: { type: 'array', item: { type: 'string' } }
+        }
+      }
+      const app = createApp({ models: { Pantry } })
+      await expect(app.setupModels()).rejects.toThrow(
+        'strict mode: unknown keyword: "item"'
+      )
+    })
+
     it('adds the foreign keys of relations regardless of model order', () => {
       class Review extends Model {}
       class Book extends Model {
@@ -516,6 +528,16 @@ describe('Application', () => {
       ])
       expect(list.map(({ name }) => name)).toEqual(['recipe', 'servings'])
       expect(Object.keys(schema.properties)).toEqual(['servings'])
+    })
+
+    it('validates parameters borrowed from other request objects', () => {
+      const app = createApp()
+      const { list, schema, validate } = app.compileParametersValidator({
+        page: { type: 'integer', from: 'query' }
+      })
+      expect(list).toEqual([{ name: 'page', type: 'integer', from: 'query' }])
+      expect(schema.properties.page).toEqual({ type: 'integer' })
+      expect(() => validate({ page: 'first' })).toThrow()
     })
 
     it('detects references to model schemas', () => {
