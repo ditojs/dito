@@ -72,6 +72,7 @@ export default {
     }))
     const dialog = useTemplateRef('dialog')
     const dialogButtons = useTemplateRef('dialogButtons')
+    const openedAt = Date.now()
 
     const resolve = value => {
       props.promise.resolve(value)
@@ -94,6 +95,15 @@ export default {
       // Wait for computed values that depend on pending loads, e.g. options.
       await waitUntilDataModelSettled(services)
       if (dataContext.validate()) {
+        // Keep dialogs that are submitted right away, e.g. by password
+        // managers, visible for `minDuration`:
+        const remaining = (
+          (props.settings.minDuration ?? 0) -
+          (Date.now() - openedAt)
+        )
+        if (remaining > 0) {
+          await new Promise(resolve => setTimeout(resolve, remaining))
+        }
         resolve(dialogData.value)
       }
     }

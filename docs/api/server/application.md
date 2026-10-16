@@ -114,12 +114,16 @@ augmentation of `ApplicationConfig` for project-specific settings.
 app: {
   session: { modelClass: 'Session' },
   auth: {
-    credentials: { modelClass: 'Credential' },
+    credentials: {
+      modelClass: 'Credential',
+      secret: process.env.CREDENTIALS_SECRET
+    },
     passkeys: {
       name: 'Example',
       id: 'example.com',
       origins: ['https://example.com', 'https://admin.example.com']
-    }
+    },
+    totp: { issuer: 'Example' }
   }
 }
 ```
@@ -127,12 +131,16 @@ app: {
 | Key                      | Type                       | Description                                                                                      |
 | ------------------------ | -------------------------- | ------------------------------------------------------------------------------------------------ |
 | `credentials.modelClass` | `string \| Class<Model>`   | The model that stores the credentials of all user models, using [`CredentialMixin`](model.md#credentialmixin). |
+| `credentials.secret`     | `string`                   | A long random string, required by `totp`, that encrypts the TOTP secrets and hashes the backup codes. It is separate from `keys`, which can rotate: changing it makes the stored TOTP secrets and backup codes unusable. |
 | `passkeys`               | `object`                   | Enables the passkeys of [`UsersController`](controllers.md#userscontroller). Needs `credentials` and a `session` stored on the server, through `modelClass` or `store`, else the setup fails. |
 | `passkeys.name`          | `string`                   | The name of the app that authenticators show.                                                    |
 | `passkeys.id`            | `string`                   | The domain that the passkeys belong to, the WebAuthn relying party id. Frontends on this domain or its subdomains can use them. |
 | `passkeys.origins`       | `string[]`                 | The origins of the frontends that log in with passkeys, which may differ from the API's.        |
+| `totp`                   | `object`                   | Enables two-factor authentication with TOTP in [`UsersController`](controllers.md#userscontroller). Needs `credentials`, `credentials.secret` and a `session` stored on the server, else the setup fails. |
+| `totp.issuer`            | `string`                   | The name of the app that authenticator apps show.                                                |
 
-Passkeys need the optional peer dependency `@simplewebauthn/server`.
+Passkeys need the optional peer dependency `@simplewebauthn/server`, TOTP
+needs `otpauth`.
 
 ### config.admin
 

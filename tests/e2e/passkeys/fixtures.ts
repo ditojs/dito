@@ -32,11 +32,12 @@ export const test = defineScenario({
       normalizePaths: true,
       helmet: false,
       keys: ['passkeys-secret'],
-      // Passkeys need sessions stored on the server:
+      // Passkeys and TOTP need sessions stored on the server:
       session: { modelClass: 'Session' },
       auth: {
-        credentials: { modelClass: 'Credential' },
-        passkeys
+        credentials: { modelClass: 'Credential', secret: 'credentials-secret' },
+        passkeys,
+        totp: { issuer: 'Example' }
       }
     }
   },

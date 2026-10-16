@@ -49,6 +49,58 @@ async function addPasskeys() {
   }
 }
 
+// TOTP with all backup codes left. The login and the security dialog only check
+// that the credentials exist:
+async function addTotp() {
+  const user = await User.query().findOne({ username: 'ada' })
+  for (const type of ['totp', ...Array(10).fill('backup-code')]) {
+    await Credential.query().insert({
+      type,
+      userModel: 'User',
+      userId: `${user!.id}`,
+      data: {}
+    } as any)
+  }
+}
+
+// The server creates a random secret for each setup, and only confirms codes
+// of it, so we answer both with fixed data for screenshots that stay the same:
+async function mockTotpSetup(page: Page) {
+  const secret = 'JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP'
+  await page.route('**/api/users/totp', route =>
+    route.request().method() === 'POST'
+      ? route.fulfill({
+          json: {
+            uri: `otpauth://totp/Example:ada?issuer=Example&secret=${secret}`,
+            secret
+          }
+        })
+      : route.continue()
+  )
+  await page.route('**/api/users/totp-confirm', route =>
+    route.fulfill({
+      json: {
+        backupCodes: Array.from(
+          { length: 10 },
+          (_, index) => `${index}a2b4-c6d8e`
+        )
+      }
+    })
+  )
+}
+
+async function openTotpSetup(page: Page, url: string) {
+  await mockTotpSetup(page)
+  await login(page, url)
+  const security = await openSecurity(page)
+  await security.getByRole('button', { name: 'Set Up' }).click()
+  const dialog = page.getByRole('dialog', {
+    name: 'Set Up Two-Factor Authentication'
+  })
+  await expect(dialog.getByRole('img', { name: 'QR code' })).toBeVisible()
+  return dialog
+}
+
 test.describe('screenshots', () => {
   test('login dialog with passkeys', async ({ page, url }) => {
     await page.goto(`${url}/admin/`)
@@ -93,5 +145,51 @@ test.describe('screenshots', () => {
     const dialog = page.getByRole('dialog', { name: 'Change Password' })
     await expect(dialog.getByLabel('Current Password')).toBeFocused()
     await expectScreenshot(page, 'change-password.png')
+  })
+
+  test('login code dialog', async ({ page, url }) => {
+    await addTotp()
+    await page.goto(`${url}/admin/`)
+    const dialog = page.getByRole('dialog')
+    await dialog.getByLabel('Username').fill('ada')
+    await dialog.getByLabel('Password').fill('secret')
+    await dialog.getByRole('button', { name: 'Sign In', exact: true }).click()
+    await expect(dialog.getByLabel('Authentication Code')).toBeFocused()
+    await expectScreenshot(page, 'login-code.png')
+  })
+
+  test('security dialog with TOTP', async ({ page, url }) => {
+    await login(page, url)
+    await addTotp()
+    const dialog = await openSecurity(page)
+    await expect(dialog).toContainText('Enabled · 10 backup codes left')
+    await expectScreenshot(page, 'security-totp.png')
+  })
+
+  test('TOTP setup dialog', async ({ page, url }) => {
+    const dialog = await openTotpSetup(page, url)
+    await expect(dialog.getByLabel('Authentication Code')).toBeFocused()
+    await expectScreenshot(page, 'totp-setup.png')
+  })
+
+  test('backup codes dialog', async ({ page, url }) => {
+    const setup = await openTotpSetup(page, url)
+    await setup.getByLabel('Authentication Code').fill('123456')
+    await setup.getByRole('button', { name: 'Turn On' }).click()
+    const dialog = page.getByRole('dialog', { name: 'Backup Codes' })
+    await expect(dialog.getByRole('textbox')).toHaveValue(/0a2b4-c6d8e/)
+    await expectScreenshot(page, 'totp-backup-codes.png')
+  })
+
+  test('turn off TOTP dialog', async ({ page, url }) => {
+    await login(page, url)
+    await addTotp()
+    const security = await openSecurity(page)
+    await security.getByRole('button', { name: 'Turn Off' }).click()
+    const dialog = page.getByRole('dialog', {
+      name: 'Turn Off Two-Factor Authentication'
+    })
+    await expect(dialog.getByLabel('Authentication Code')).toBeFocused()
+    await expectScreenshot(page, 'totp-turn-off.png')
   })
 })

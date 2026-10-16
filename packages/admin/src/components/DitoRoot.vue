@@ -54,6 +54,7 @@
     DitoAccount(
       v-if="adminContext.user"
       :passkeys="!!options.login?.passkeys"
+      :totp="!!options.login?.totp"
     )
     button.dito-login(
       v-else-if="hasSessionStarted"
@@ -96,6 +97,7 @@ import {
 import { RouteTree } from '../utils/RouteTree.ts'
 import { FileDropTargets } from '../utils/FileDropTargets.js'
 import { adminContextKey, fileDropTargetsKey } from '../utils/keys.ts'
+import { createCodeComponent } from '../utils/security.js'
 
 export default {
   components: { DitoDialog },
@@ -204,6 +206,28 @@ export default {
                 text: 'Cancel'
               }
             }
+          })
+        },
+
+        // Return the code of users with TOTP, or `null` if the user cancels:
+        requestLoginCode() {
+          return showDialog({
+            components: {
+              code: createCodeComponent()
+            },
+            buttons: {
+              verify: {
+                type: 'submit',
+                text: 'Verify'
+              },
+
+              cancel: {
+                type: 'button',
+                text: 'Cancel'
+              }
+            },
+            // Show password managers filling in the code:
+            settings: { minDuration: 1000 }
           })
         }
       }
