@@ -2997,6 +2997,11 @@ export class CollectionController<
    */
   getCollectionIds(ctx: KoaContext): Array<Id | Id[]>
   /**
+   * Validates the body of collection updates: an array of models with ids,
+   * or with `graph`, models with ids at the root.
+   */
+  validateCollectionBody(ctx: KoaContext): void
+  /**
    * Returns relevant IDs for the current request: from
    * route params for member requests, from body for
    * collection requests.

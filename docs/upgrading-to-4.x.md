@@ -90,6 +90,8 @@ key in `config.storages`, as `config.name` isn't read anymore.
 - `upsert()`, `upsertAndFetch()`, the array forms of `patchAndFetch()` and
   `updateAndFetch()`, and array inserts outside of PostgreSQL run in a
   transaction: a failure rolls back the models saved before it.
+- The `text` filter searches with `'contains'` when its operator is `null` or
+  empty, instead of applying no filter.
 
 ### Validation
 

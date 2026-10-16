@@ -562,7 +562,7 @@ describe('Dito.js graph handling', () => {
         }
         expectToReject(
           () => Book.query().patchDitoGraph(data, { noUnrelate: true }),
-          `Unsupported graph control property '#unrelate' at 'genres/0'`
+          `Unsupported graph control property '#unrelate' at 'genres/0'.`
         )
         expect(await getBookGenreRows(book.id)).toEqual([
           { genreId: fantasy.id, rank: 1 },
@@ -579,7 +579,7 @@ describe('Dito.js graph handling', () => {
         }
         expectToReject(
           () => Book.query().patchDitoGraph(data, { noDelete: true }),
-          `Unsupported graph control property '#delete' at 'chapters/0'`
+          `Unsupported graph control property '#delete' at 'chapters/0'.`
         )
         expect(await Chapter.query().findById(one.id)).toBeDefined()
       })
@@ -596,7 +596,7 @@ describe('Dito.js graph handling', () => {
         }
         expectToReject(
           () => Book.query().insertDitoGraph(data),
-          `Unsupported graph control property '#dbRef' at 'chapters/0'`
+          `Unsupported graph control property '#dbRef' at 'chapters/0'.`
         )
         expect((await Chapter.query().findById(foreign.id))!.bookId).toBe(
           other.id
@@ -609,7 +609,7 @@ describe('Dito.js graph handling', () => {
         const data: any = [
           { id: book.id, chapters: [{ 'id': one.id, '#delete': true }] }
         ]
-        const message = `Unsupported graph control property '#delete' at '0/chapters/0'`
+        const message = `Unsupported graph control property '#delete' at '0/chapters/0'.`
         expectToReject(() => Book.query().patchAndFetch(data), message)
         expectToReject(() => Book.query().updateAndFetch(data), message)
         expectToReject(() => Book.query().upsertAndFetch(data), message)
@@ -1101,12 +1101,12 @@ describe('Dito.js graph handling', () => {
             chapters: [{ title: 'One' }, { title: 'Two', [prop]: null }]
           })
         ).toThrow(
-          `Unsupported graph control property '${prop}' at 'chapters/1'`
+          `Unsupported graph control property '${prop}' at 'chapters/1'.`
         )
       }
       expect(() =>
         rejectGraphControlProps(Book, [{ 'title': 'Earthsea', '#dbRef': 1 }])
-      ).toThrow(`Unsupported graph control property '#dbRef' at '0'`)
+      ).toThrow(`Unsupported graph control property '#dbRef' at '0'.`)
     })
 
     it('rejects them in model instances', () => {

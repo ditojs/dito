@@ -25,12 +25,7 @@ export function ensureModelArray(modelClass, data, options) {
     : []
 }
 
-// Rejects Objection.js' graph control properties, as graphs often come from
-// clients, who must not be able to pass them on: `#dbRef` relates existing
-// models by id, even where relating is disabled, and `#unrelate` / `#delete`
-// override the `noUnrelate` / `noDelete` options. Code that needs them can use
-// Objection.js' own graph methods. `#id` and `#ref` only reference models
-// within the same graph, so they are fine.
+// Graphs often come from clients, who must not relate or delete through them:
 export function rejectGraphControlProps(modelClass, graph, dataPath = []) {
   if (isArray(graph)) {
     graph.forEach((model, index) =>
@@ -47,7 +42,7 @@ export function rejectGraphControlProps(modelClass, graph, dataPath = []) {
         throw new GraphError(
           `Unsupported graph control property '${prop}'${
             path ? ` at '${path}'` : ''
-          }`
+          }.`
         )
       }
     }
