@@ -10,8 +10,9 @@ function getSchemaCache(options, role) {
   return (schemaCaches[key] ||= new WeakMap())
 }
 
-// `role` is 'definition' for the top level of definitions, and 'part' for the
-// items of `allOf`, `anyOf` and `oneOf`, which aren't closed on their own.
+// `role` is 'definition' for the top level of definitions, 'part' for the
+// items of `allOf`, which aren't closed on their own, and 'alternative' for the
+// items of `anyOf` and `oneOf`.
 export function convertSchema(
   schema,
   options = {},
@@ -183,7 +184,11 @@ function convertNestedSchemas(schema, jsonType, options, entry, role) {
         schema[key],
         options,
         entry,
-        compositionKeys.includes(key) ? 'part' : null
+        key === 'allOf'
+          ? 'part'
+          : compositionKeys.includes(key)
+            ? 'alternative'
+            : null
       )
     }
   }
@@ -237,14 +242,16 @@ function convertNestedSchemas(schema, jsonType, options, entry, role) {
         schema.unevaluatedProperties = true
       }
     } else if (
-      jsonType && hasConvertedProperties ||
       // Objects combined from parts are closed at the outer level, where
       // `unevaluatedProperties` sees the properties of all parts:
-      jsonType === 'object' && hasComposition ||
-      discriminator ||
-      // `unevaluatedProperties` only applies to objects, and also sees what an
-      // explicit `unevaluatedProperties: true` of the target evaluated:
-      isReference && role !== 'part'
+      role !== 'part' && (
+        jsonType && hasConvertedProperties ||
+        jsonType === 'object' && hasComposition ||
+        discriminator ||
+        // `unevaluatedProperties` only applies to objects, and also sees what
+        // an explicit `unevaluatedProperties: true` of the target evaluated:
+        isReference && role !== 'alternative'
+      )
     ) {
       // Invert the logic of `unevaluatedProperties` so that it needs to be
       // explicitly set to `true`:
