@@ -86,7 +86,8 @@ describe('createTransaction()', { timeout: 30_000 }, () => {
       await insertChild(ctx, 1234)
     }).catch(error => error)
     expect(error).toBeInstanceOf(DatabaseError)
-    expect(error.status).toBe(500)
+    // Like the same violation in a query, not a generic database error:
+    expect(error.status).toBe(409)
     expect(error.message).toBe(
       'insert or update on table "child" violates foreign key constraint ' +
       '"child_parent_id_fkey"'
