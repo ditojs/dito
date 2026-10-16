@@ -47,6 +47,7 @@ slot(name="prepend")
         v-if="clipboard"
         :clipboard="clipboard"
         :schema="schema"
+        :label="clipboardLabel"
         :hasData="hasData"
         :getData="getClipboardData"
         :getUploadEntries="getClipboardUploadEntries"
@@ -437,6 +438,11 @@ export default {
       ),
 
       clipboard: computed(() => props.schema?.clipboard ?? null),
+
+      // The item label of the form, as its header shows it, or the form label:
+      clipboardLabel: computed(
+        () => isTopLevelSchema.value && context.itemLabel || formLabel.value
+      ),
 
       hasHeader: computed(
         () => hasLabel.value || hasTabs.value || !!props.schema?.clipboard

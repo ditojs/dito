@@ -435,6 +435,7 @@ const DitoTypeUpload = {
       clipboardAttributes: computed(() => ({
         clipboard: props.schema.clipboard,
         schema: props.schema,
+        label: field.labelText.value,
         type: 'upload',
         hasData: getStoredFiles(value.value).length > 0,
         getData: () => ({ files: getStoredFiles(value.value) }),

@@ -2610,11 +2610,18 @@ export type ClipboardConfig =
       paste?: (context: SchemaContext) => unknown
       /**
        * Whether to also download the data with its files as a zip, and
-       * upload such a zip again, e.g. into another installation.
+       * upload such a zip again, e.g. into another installation. `filename`
+       * names the zip, by default after the form and item label.
        *
        * @defaultValue `false`
        */
-      interchange?: boolean
+      interchange?:
+        | boolean
+        | {
+            filename?:
+              | string
+              | ((context: SchemaContext) => OrPromiseOf<string | null>)
+          }
     }
 
 export type View<$Item = any> =

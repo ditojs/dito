@@ -32,7 +32,7 @@
 
 <script>
 import { computed, onMounted, useTemplateRef } from 'vue'
-import { isObject, clone } from '@ditojs/utils'
+import { isObject, isFunction, clone } from '@ditojs/utils'
 import { DitoButton, DitoMenuButton } from '@ditojs/ui/src'
 import appState from '../appState.js'
 import { useDomEvents } from '../composables/useDomEvents.ts'
@@ -61,6 +61,8 @@ export default {
     schema: { type: Object, required: true },
     // The type of data other than the data of forms, e.g. 'upload':
     type: { type: String, default: undefined },
+    // The text to name downloads after, or else the name of the schema:
+    label: { type: String, default: null },
     hasData: { type: Boolean, required: true },
     // A function, to only serialize the data when copying:
     getData: { type: Function, required: true },
@@ -131,10 +133,16 @@ export default {
           clipboardData,
           props.getUploadEntries(clipboardData)
         )
+        const { filename } = isObject(clipboardOptions.value.interchange)
+          ? clipboardOptions.value.interchange
+          : {}
+        const label = isFunction(filename)
+          ? await filename(props.createContext({ clipboardData }))
+          : filename
         downloadBlob(
           services,
           new Blob([zip], { type: 'application/zip' }),
-          `${name}.zip`
+          `${getFileName(label || props.label || name || 'data')}.zip`
         )
       } catch (error) {
         notifyError(error, { title: 'Download Error' })
@@ -254,6 +262,16 @@ export default {
       }
     }
   }
+}
+
+// Drop the quotes that `getItemLabel()` adds after form labels, a `.zip` that
+// `filename` may include, and characters that file systems reject:
+function getFileName(label) {
+  return label
+    .replace(/ '(.*)'$/, ' $1')
+    .replace(/\.zip$/i, '')
+    .replace(/[\s/\\:*?"<>|\p{Cc}]+/gu, ' ')
+    .trim()
 }
 </script>
 
