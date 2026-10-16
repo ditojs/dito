@@ -108,7 +108,7 @@ test.describe('component screenshots', () => {
   test('account menu', async ({ page, url }) => {
     await openProject(page, url)
     await getAccountButton(page).click()
-    await expect(page.getByText('Logout', { exact: true })).toBeVisible()
+    await expect(page.getByText('Sign Out', { exact: true })).toBeVisible()
     await expect(page.getByText('Settings', { exact: true })).toBeVisible()
     await expectScreenshot(page, 'account-menu.png')
   })

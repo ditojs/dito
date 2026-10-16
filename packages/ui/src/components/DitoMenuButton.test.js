@@ -65,6 +65,23 @@ describe('DitoMenuButton', () => {
     expect(wrapper.classes()).toContain('dito-menu-button--attached')
   })
 
+  it('opens the menu as a separate panel with `floating`', async () => {
+    wrapper = mountMenuButton({ cover: false, floating: true })
+    expect(wrapper.classes()).toContain('dito-menu-button--floating')
+    expect(wrapper.classes()).not.toContain('dito-menu-button--attached')
+    const button = findButton(wrapper)
+    await button.trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[role="menu"]').exists()).toBe(true)
+    // The button keeps its size and place:
+    const { minWidth, marginLeft, marginRight } = button.element.style
+    expect({ minWidth, marginLeft, marginRight }).toEqual({
+      minWidth: '',
+      marginLeft: '',
+      marginRight: ''
+    })
+  })
+
   it('renders its button with `DitoButton`, passing on its verb', () => {
     wrapper = mount(DitoMenuButton, {
       props: { items },

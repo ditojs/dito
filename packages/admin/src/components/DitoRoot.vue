@@ -53,7 +53,7 @@
       type="button"
       @click="adminContext.session.login()"
     )
-      span Login
+      span Sign In
     button.dito-header__toggle(
       ref="sidebarButton"
       type="button"
@@ -177,7 +177,7 @@ export default {
             buttons: {
               login: {
                 type: 'submit',
-                text: 'Login'
+                text: 'Sign In'
               },
 
               // `DitoDialog` adds the click event of the cancel button:
