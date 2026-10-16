@@ -18,6 +18,10 @@ function getLabel(page: Page, text: string) {
     .filter({ hasText: new RegExp(`^${text}$`) })
 }
 
+function getAccountButton(page: Page) {
+  return page.getByRole('button', { name: 'test', exact: true })
+}
+
 // Moves the focus to `locator` after a key press, so that browsers match
 // `:focus-visible` as with keyboard navigation.
 async function focusByKeyboard(page: Page, locator: Locator) {
@@ -103,8 +107,7 @@ test.describe('component screenshots', () => {
 
   test('account menu', async ({ page, url }) => {
     await openProject(page, url)
-    // The stub user has no username, so the account button has no text.
-    await page.getByRole('complementary').getByRole('button').first().click()
+    await getAccountButton(page).click()
     await expect(page.getByText('Logout', { exact: true })).toBeVisible()
     await expect(page.getByText('Settings', { exact: true })).toBeVisible()
     await expectScreenshot(page, 'account-menu.png')
@@ -112,7 +115,7 @@ test.describe('component screenshots', () => {
 
   test('account settings', async ({ page, url }) => {
     await openProject(page, url)
-    await page.getByRole('complementary').getByRole('button').first().click()
+    await getAccountButton(page).click()
     await page.getByText('Settings', { exact: true }).click()
     await expect(page.getByLabel('Name', { exact: true })).toHaveValue('Test')
     await expectScreenshot(page, 'account-settings.png')
@@ -381,6 +384,28 @@ test.describe('component screenshots', () => {
     await page.getByRole('button', { name: 'Sidebar', exact: true }).click()
     await expect(page.getByText('Owner: Ada')).toBeHidden()
     await expectScreenshot(page, 'collapsed.png')
+  })
+
+  test('collapsed menu without panels', async ({ page, url }) => {
+    await page.setViewportSize({ width: 990, height: 1000 })
+    await openProject(page, url)
+    await page.getByRole('button', { name: 'Menu', exact: true }).click()
+    await expect(page.getByLabel('Main navigation')).toHaveCSS(
+      'flex-basis',
+      '0px'
+    )
+    await getAccountButton(page).click()
+    await page.getByText('Settings', { exact: true }).click()
+    await expect(page.getByLabel('Name', { exact: true })).toHaveValue('Test')
+    await expectScreenshot(page, 'collapsed-menu-without-panels.png')
+  })
+
+  test('folded sidebar with panels', async ({ page, url }) => {
+    await page.setViewportSize({ width: 540, height: 1000 })
+    await openProject(page, url)
+    // The folded sidebar keeps only its header, its panels slide out:
+    await expect(page.locator('#dito-sidebar')).toBeHidden()
+    await expectScreenshot(page, 'folded-sidebar-with-panels.png')
   })
 
   for (const width of [900, 640]) {

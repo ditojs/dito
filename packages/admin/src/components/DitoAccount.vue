@@ -3,7 +3,7 @@
   DitoMenuButton.dito-account__button(
     :items="items"
     placement="bottom-left"
-    offset
+    :cover="false"
     @select="onSelectMenuItem"
   )
     span {{ adminContext.user.username }}
@@ -50,23 +50,35 @@ export default {
 @import '../styles/_imports';
 
 .dito-account {
-  display: inline-block;
+  display: flex;
+  align-items: center;
+  height: $header-height;
 
-  // The menu button is a `DitoButton`, but shows the user name as plain text,
-  // so reset the button styles, including the ones of its states:
+  // A button like the ones of the clipboard, which shows the user name as plain
+  // text until its menu opens:
   & &__button {
-    cursor: pointer;
+    min-width: 0;
+    min-height: $input-height;
+    padding: $button-round-padding;
+    border-radius: 2 * $border-radius;
+    // Keep the name in place when the menu widens the button:
+    justify-content: flex-start;
+    font: inherit;
+    line-height: 1em;
 
+    span {
+      padding: 0;
+      color: inherit;
+    }
+  }
+
+  .dito-menu-button:not(.dito-menu-button--open) &__button {
     &,
     &:hover,
     &:active,
     &:focus {
-      min-width: 0;
-      min-height: 0;
-      padding: 0;
-      border: 0;
-      font: inherit;
-      color: inherit;
+      border-color: transparent;
+      color: $color-white;
       background: none;
       box-shadow: none;
     }

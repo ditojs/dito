@@ -151,7 +151,7 @@ export function createTestApp(
 }
 
 export function stubSession(app: TestApp) {
-  const user = { id: 1, name: 'Test' }
+  const user = { id: 1, username: 'test', name: 'Test' }
   app.use(async (ctx, next) => {
     if (ctx.path === '/api/session') {
       ctx.body = { authenticated: true, user }

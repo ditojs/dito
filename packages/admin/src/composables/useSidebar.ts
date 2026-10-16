@@ -31,6 +31,7 @@ export function useSidebar({
   const isOverlay = ref(media.matches)
   const isOpen = ref(false)
   const isCollapsed = ref(getStoredItem(storageKey) === 'true')
+  const isSliding = ref(false)
   let overlayEvents: { remove(): void } | null = null
   let resizeEvents: { remove(): void } | null = null
 
@@ -70,45 +71,69 @@ export function useSidebar({
     }
   }
 
-  // CSS can't transition the space to the width of its content, so animate it
-  // between the measured widths, while the content keeps its docked width:
-  const collapse = async (collapsed: boolean) => {
+  // Changes the state, and animates the change: CSS can't transition the space
+  // to the width of its content, so animate it between the measured widths.
+  // The content slides between the space and the window's edge, and keeps the
+  // width that it slides out at, or in at, so its layout doesn't change:
+  const transition = async (change: () => void) => {
     const content = region.value!
     const space = content.parentElement!
+    // Measure what is shown, also in the middle of a previous transition:
+    const wasDocked = state.value === 'docked'
     const from = getWidth(space)
-    let width = collapsed ? getWidth(content) : null
+    let width = wasDocked ? getWidth(content) : null
     resetSize()
-    isCollapsed.value = collapsed
-    setStoredItem(storageKey, collapsed)
+    setEdge(space, content)
+    // Measure the new widths without the transition of the space:
+    space.style.transition = 'none'
+    change()
     await nextTick()
+    setEdge(space, content)
     const to = getWidth(space)
-    width ??= getWidth(content)
-    if (from !== to) {
+    // Content that slides out keeps its width, and so does content that slides
+    // in while its space grows. Otherwise it follows the layout, e.g. when the
+    // window keeps growing after the layout switched:
+    if (wasDocked || from !== to) {
+      width ??= getWidth(content)
       setSize(space, content, { from, width })
       space.style.flexBasis = `${to}px`
-      const onTransitionEnd = (event: TransitionEvent) => {
-        if (event.target === space && event.propertyName === 'flex-basis') {
-          resetSize()
-        }
+      isSliding.value = true
+      if (wasDocked && isOverlay.value) {
+        // The docked content slides out without the overlay's shadow:
+        content.style.boxShadow = 'none'
       }
-      resizeEvents = domOn(space, {
-        transitionend: onTransitionEnd,
-        transitioncancel: onTransitionEnd
+      // Both the slide and the space end now, but only the slide always runs:
+      resizeEvents = domOn(content, {
+        transitionend(event: TransitionEvent) {
+          if (event.target === content && event.propertyName === 'transform') {
+            resetSize()
+          }
+        }
       })
+    } else {
+      space.style.transition = ''
     }
   }
 
   const resetSize = () => {
     resizeEvents?.remove()
     resizeEvents = null
+    isSliding.value = false
     const content = region.value!
     setSize(content.parentElement!, content, null)
   }
 
+  const collapse = (collapsed: boolean) =>
+    transition(() => {
+      isCollapsed.value = collapsed
+      setStoredItem(storageKey, collapsed)
+    })
+
   const onMediaChange = () => {
     close()
-    resetSize()
-    isOverlay.value = media.matches
+    transition(() => {
+      isOverlay.value = media.matches
+    })
   }
   // NOTE: Not through `domOn()`, as happy-dom ignores the `signal` here:
   media.addEventListener('change', onMediaChange)
@@ -128,6 +153,8 @@ export function useSidebar({
 
   return reactive({
     state,
+    isOverlay,
+    isSliding,
     isExpanded: computed(() => ['open', 'docked'].includes(state.value)),
 
     toggle() {
@@ -142,6 +169,13 @@ export function useSidebar({
       }
     }
   })
+}
+
+// Exposes the distance from the space to the window's right edge, for the
+// content of sidebars on the right to slide out of the window:
+function setEdge(space: HTMLElement, content: HTMLElement) {
+  const { left } = space.getBoundingClientRect()
+  content.style.setProperty('--sidebar-edge', `${window.innerWidth - left}px`)
 }
 
 function getWidth(element: HTMLElement) {
@@ -162,7 +196,10 @@ function setSize(
       ? { flex: `0 0 ${size.from}px`, minWidth: '0', maxWidth: 'none' }
       : { flex: '', minWidth: '', maxWidth: '' }
   )
-  content.style.width = size ? `${size.width}px` : ''
+  Object.assign(
+    content.style,
+    size ? { width: `${size.width}px` } : { width: '', boxShadow: '' }
+  )
   // Apply the size before the transitions return:
   getWidth(space)
   space.style.transition = ''

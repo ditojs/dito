@@ -34,6 +34,9 @@ version, see the upgrade guides in `docs/`.
 - **server:** Typed objects with properties in `allOf` aren't closed on their own anymore, so they no longer reject each other's properties. The object that combines them is closed instead.
 - **admin:** Upload fields break long file names without spaces, instead of widening their table and the lists and forms around it.
 - **ui:** Tab moves through the items of an open `DitoMenuButton` and closes the menu once the focus leaves them, instead of closing it right away.
+- **admin:** The trail of the header scrolls, fading out on the sides that it hides, where the header is too narrow for it, instead of running under the tabs and buttons of the form.
+- **admin:** The menu and the sidebar slide in and out without the layout of their content changing, also when the window crosses their breakpoints, and below the sidebar's breakpoint the page's content uses the room under the sidebar's header.
+- **admin:** The account opens its menu attached below the user name, which turns into a button.
 - **admin:** Cancelling or closing the object form of a view with a single `component`, e.g. the account settings, leaves the view for the admin's root, instead of doing nothing.
 
 ## 4.6.0 (2026-10-16)

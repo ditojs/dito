@@ -269,6 +269,16 @@ export default {
     // Round like a button, not a pill:
     border-radius: 2 * $border-radius;
 
+    &:disabled {
+      // Keep the group solid, e.g. on the header's background, and only dim
+      // the icon:
+      opacity: 1;
+
+      &::before {
+        opacity: 0.4;
+      }
+    }
+
     &--copy {
       // The rounded corner takes up room, so balance the icon with more:
       padding-left: $button-round-padding-hor + 0.25em;
@@ -305,7 +315,9 @@ export default {
   }
 
   .dito-header & {
-    margin: 0 0 $tab-margin $tab-margin;
+    // Centered in the header, unlike the tabs, which sit on the page:
+    align-self: center;
+    margin: 0 0 0 $tab-margin;
 
     .dito-button {
       // Keep the buttons joined, which `DitoHeader` spaces apart:
