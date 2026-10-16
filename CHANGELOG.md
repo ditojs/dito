@@ -14,6 +14,11 @@ version, see the upgrade guides in `docs/`.
 ### Fixes
 
 - **router:** A trailing slash of the `prefix` option is removed unless in strict mode, so `new Router({ prefix: '/api/' })` routes `/users` as `/api/users` instead of `/api//users` (#336).
+- **router:** `**` routes added after a `*` route at the same position match, e.g. `/a/**` after `/a/*`, instead of being nested under the `*` route and never matching (#330).
+- **router:** Params and `*` at the same position are both tried, e.g. `/a/1/y` finds `/a/*/y` next to `/a/:id/x`, where only the route added first was tried. A param and `*` that end at the same position, e.g. `/a/:id` and `/a/*`, are the same route, so the one added last wins, as with two params, where the one added first won (#331).
+- **router:** Of several `**` routes that match at the same position, the one with more segments wins, then the one with more static segments, e.g. `/f/**/edit` over `/f/**`, where the one added first won. Adding the same `**` route again replaces its handler, as with all other routes, instead of keeping the first one (#332).
+- **router:** The text after `**` is matched literally, e.g. `/f/**/x.json` doesn't match `/f/a/xajson` anymore, and params after `**` can have any name, e.g. `:my-id`, which threw an `Invalid capture group name` error (#333).
+- **router:** Params starting with `$` keep their names next to wildcards, e.g. `$x` in `/a/*/:$x`, instead of being renamed to `$` or `$$` and replacing the wildcard's value (#334).
 
 ## 4.7.2 (2026-10-16)
 
