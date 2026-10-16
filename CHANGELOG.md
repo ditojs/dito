@@ -3,7 +3,7 @@
 The changes of each release of Dito.js. For upgrading to a new major
 version, see the upgrade guides in `docs/`.
 
-## 4.7.0 (unreleased)
+## 4.7.0 (2026-10-16)
 
 ### Behaviour changes
 
