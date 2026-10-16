@@ -9,6 +9,7 @@ DitoTrigger.dito-menu-button(
   :transition="null"
   :class=`{
     'dito-menu-button--open': isOpen,
+    'dito-menu-button--attached': !cover,
     'dito-menu-button--offset': offset
   }`
 )
@@ -25,6 +26,7 @@ DitoTrigger.dito-menu-button(
       slot
   template(#popup)
     ul.dito-menu-button__menu(
+      ref="menu"
       role="menu"
       @keydown="onMenuKeyDown"
       @keyup="onKeyUp"
@@ -38,7 +40,6 @@ DitoTrigger.dito-menu-button(
           :ref="element => setItemElement(item, element)"
           type="button"
           role="menuitem"
-          tabindex="-1"
           :aria-disabled="item.disabled ? 'true' : null"
           :title="item.icon ? item.label : null"
           :class=`{
@@ -75,7 +76,8 @@ export default {
   props: {
     items: { type: Array, required: true },
     placement: { type: String, default: 'bottom' },
-    // Whether the menu opens over the button, like native menus do.
+    // Whether the menu opens over the button, like native menus do, or else
+    // attached below it, with the width of the wider of the two.
     cover: { type: Boolean, default: true },
     // Whether the menu opens one item padding below the top of the button,
     // e.g. to line up with text inside a taller button.
@@ -86,6 +88,31 @@ export default {
   data() {
     return {
       isOpen: false
+    }
+  },
+
+  watch: {
+    async isOpen(isOpen) {
+      if (!this.cover) {
+        const button = this.$refs.button.$el
+        Object.assign(button.style, {
+          minWidth: '',
+          marginLeft: '',
+          marginRight: ''
+        })
+        if (isOpen) {
+          await this.$nextTick()
+          const { menu } = this.$refs
+          const buttonWidth = getWidth(button)
+          const width = Math.max(buttonWidth, getWidth(menu))
+          button.style.minWidth = menu.style.minWidth = `${width}px`
+          // Grow the button towards the menu without moving what's around it:
+          const side = this.placement.endsWith('-right')
+            ? 'marginLeft'
+            : 'marginRight'
+          button.style[side] = `${buttonWidth - width}px`
+        }
+      }
     }
   },
 
@@ -161,8 +188,11 @@ export default {
           this.selectItem(item)
         }
       } else if (key === 'Tab') {
-        // Let the focus move on as usual, but close the menu.
-        this.isOpen = false
+        // Tab through the items, which follow the button, and close the menu
+        // once the focus leaves them:
+        if (event.shiftKey ? index === 0 : index === count - 1) {
+          this.isOpen = false
+        }
       } else {
         const targetIndex = {
           ArrowDown: (index + 1) % count,
@@ -187,9 +217,14 @@ export default {
     }
   }
 }
+
+function getWidth(element) {
+  return element.getBoundingClientRect().width
+}
 </script>
 
 <style lang="scss">
+@use 'sass:list';
 @import '../styles/_imports';
 
 $menu-button-radius: 0.5em;
@@ -206,6 +241,22 @@ $menu-button-padding: $menu-button-padding-ver 1em;
     border-radius: $menu-button-radius;
     box-shadow: $shadow-window;
     overflow: hidden;
+  }
+
+  // Join the attached menu and its button into one shape, and cut off the
+  // shadow at the button, so the menu doesn't float above it:
+  &--attached#{&}--open .dito-button {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+
+  &--attached &__menu {
+    $blur: list.nth($shadow-window, 3);
+    // The radius of the buttons that attached menus join:
+    $radius: 2 * $border-radius;
+
+    border-radius: 0 0 $radius $radius;
+    clip-path: inset(0 (-$blur) (-2 * $blur));
   }
 
   &--offset &__menu {
