@@ -12,8 +12,6 @@ export class CollectionController extends Controller {
   isOneToOne = false
   idParam = null
   idValidator = null
-  // The handler of `member.get`, resolved by `setup()`, see `getMember()`.
-  #memberGetHandler = null
 
   // @override
   configure() {
@@ -28,20 +26,12 @@ export class CollectionController extends Controller {
     // resolve `modelClass` after `super.configure()`, see `ModelController`.
     // eslint-disable-next-line new-cap
     this.idValidator = new this.modelClass()
-    // Inherit the member actions here, as `this.member` only holds the routed
-    // handlers after `setupActions()`, see `#memberGetHandler` below.
-    const memberActions = this.inheritValues('member')
     this.logController()
     this.setProperty('collection', this.setupActions('collection'))
     this.setProperty(
       'member',
       this.isOneToOne ? {} : this.setupActions('member')
     )
-    // `getMember()` resolves members through `member.get`, also when `allow`
-    // doesn't route it, so set up its handler from the inherited actions then.
-    this.#memberGetHandler = Object.hasOwn(this.member, 'get')
-      ? this.member.get
-      : this.setupActionDefinition(memberActions, 'get').handler
     this.setProperty('assets', this.setupAssets())
   }
 
@@ -126,27 +116,23 @@ export class CollectionController extends Controller {
     base = this,
     { query = {}, modify = null, forUpdate = false } = {}
   ) {
-    // Go through `member.get` so that apps overriding it also control the
-    // members that `from: 'member'` parameters and `$owner` checks receive.
-    // Pass `query` as `ctx.filteredQuery` and `forUpdate` through `modify`,
-    // as overrides pass on `ctx` and `modify` to `super.get()`. Overrides
-    // may call `modify` without `trx`, so lock with `ctx.transaction`, the
-    // transaction that `execute()` runs the query in.
-    // Call the handler with the member actions object as `this`, as routed
-    // calls do, see `ControllerAction#callHandler()`, so overrides can rely on
-    // `this.controller` and sibling actions. One-to-one relations have no
-    // member actions, so fall back to the controller there.
-    return this.#memberGetHandler.call(
-      this.isOneToOne ? this : this.member,
-      ctx.extend({ filteredQuery: query }),
-      builder => {
-        this.setupQuery(builder, base)
-        builder.modify(modify)
-        if (forUpdate) {
-          lockForUpdate(this, builder, ctx.transaction)
-        }
+    // Go through `member.get` where it's routed, so that its overrides also
+    // control the members of `from: 'member'` parameters and `$owner` checks.
+    // Overrides may call `modify` without `trx`, so use `ctx.transaction`:
+    const modifyMember = builder => {
+      this.setupQuery(builder, base)
+      builder.modify(modify)
+      if (forUpdate) {
+        lockForUpdate(this, builder, ctx.transaction)
       }
-    )
+    }
+    return this.member.get
+      ? this.member.get.call(
+          this.member,
+          ctx.extend({ filteredQuery: query }),
+          modifyMember
+        )
+      : this.fetchMember(ctx, { id: ctx.memberId, query, modify: modifyMember })
   }
 
   async fetchMember(

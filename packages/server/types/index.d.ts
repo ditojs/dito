@@ -2944,8 +2944,9 @@ export class CollectionController<
    */
   getModelId(model: $Model): Id | Id[]
   /**
-   * Retrieves a member model from the database for the
-   * current request context, through the controller's `member.get` action.
+   * Retrieves a member model from the database for the current request
+   * context, through the controller's `member.get` action where `allow`
+   * routes it, otherwise through `fetchMember()`.
    */
   getMember(
     ctx: KoaContext,

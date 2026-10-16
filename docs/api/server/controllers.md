@@ -395,8 +395,8 @@ Logs the controller during setup, if `config.log.routes` is set. *Hook.*
 `setupAssetRoute()`, `inheritValues()`, `processValues()`, `setProperty()`,
 `logRoute()` and `describeAuthorize()` are declared in the types for
 subclasses that change how routes are set up. Their behaviour is not part of
-the documented API. `markAsCoreActions()`, `setupAction()` and
-`setupActionDefinition()` are internal helpers, and not part of the types.
+the documented API. `markAsCoreActions()` and `setupAction()` are internal
+helpers, and not part of the types.
 
 ## Assets
 
@@ -492,10 +492,10 @@ collection = {
 
 ### Overriding member.get
 
-`member.get` also fetches the members of `from: 'member'` parameters, of
-`'$owner'` authorizations and of the parent check of relation routes, also
-when `allow` doesn't route it. Overriding it controls which members these
-receive; the default `put`, `patch` and `delete` actions query by id
+Where `allow` routes it, `member.get` also fetches the members of
+`from: 'member'` parameters, of `'$owner'` authorizations and of the parent
+check of relation routes, otherwise `fetchMember()` does. Overriding it
+controls which members these receive; the default `put`, `patch` and `delete` actions query by id
 directly. It is called with
 `(ctx, modify)`: `ctx.memberId` and `ctx.filteredQuery` describe the member,
 `modify` applies the requesting action's scope, the `modify` option and the
@@ -555,7 +555,8 @@ member's `$relatedQuery()`. Returns `Promise`: the callback's result.
 const member = await controller.getMember(ctx, base?, options?)
 ```
 
-Fetches the member of the request through `member.get`.
+Fetches the member of the request through `member.get` where `allow` routes
+it, otherwise through [`fetchMember()`](#fetchmember).
 
 #### Parameters
 
