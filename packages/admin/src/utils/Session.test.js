@@ -18,6 +18,7 @@ const user = { id: 1, username: 'tester' }
 function createSession({
   responses = {},
   loginData = [{ username: 'tester', password: 'secret' }],
+  loginCodes = [],
   resolvedViews = [true],
   redirectAfterLogin = null
 } = {}) {
@@ -27,7 +28,8 @@ function createSession({
       logout: { method: 'post', path: 'logout' },
       session: { method: 'get', path: 'session' },
       passkeyLoginOptions: { method: 'post', path: 'passkey-login-options' },
-      passkeyLogin: { method: 'post', path: 'passkey-login' }
+      passkeyLogin: { method: 'post', path: 'passkey-login' },
+      loginCode: { method: 'post', path: 'login-code' }
     },
     resources: { any: resource => `/${resource.path}` },
     getApiUrl: ({ url }) => url,
@@ -50,6 +52,7 @@ function createSession({
   })
   const userInterface = {
     requestLoginData: vi.fn(async () => loginData.shift() ?? null),
+    requestLoginCode: vi.fn(async () => loginCodes.shift() ?? null),
     notify: vi.fn()
   }
   const detach = session.attachUserInterface(userInterface)
@@ -167,6 +170,85 @@ describe('Session', () => {
       expect(await session.login()).toEqual(user)
       expect(userInterface.requestLoginData).toHaveBeenCalledTimes(2)
       expect(userInterface.notify).not.toHaveBeenCalled()
+    })
+
+    describe('with TOTP', () => {
+      const codeRequired = { success: false, codeRequired: true, user: null }
+
+      const createError = (status, error) =>
+        Object.assign(new Error(error), {
+          response: { status, data: { error } }
+        })
+
+      it('asks for the code after the password', async () => {
+        const { session, sessionUser, api } = createSession({
+          responses: {
+            'post /login': codeRequired,
+            'post /login-code': { user: { ...user } }
+          },
+          loginCodes: [{ code: '123456' }]
+        })
+        expect(await session.login()).toEqual(user)
+        expect(api.request).toHaveBeenLastCalledWith({
+          method: 'post',
+          url: '/login-code',
+          data: { code: '123456' }
+        })
+        expect(sessionUser.value).toEqual(user)
+      })
+
+      it('asks for the code again after a wrong one', async () => {
+        let attempt = 0
+        const { session, userInterface } = createSession({
+          responses: {
+            'post /login': codeRequired,
+            'post /login-code': () => {
+              if (++attempt === 1) {
+                throw createError(401, 'Code is incorrect')
+              }
+              return { user: { ...user } }
+            }
+          },
+          loginCodes: [{ code: '000000' }, { code: '123456' }]
+        })
+        expect(await session.login()).toEqual(user)
+        expect(userInterface.requestLoginData).toHaveBeenCalledOnce()
+        expect(userInterface.requestLoginCode).toHaveBeenCalledTimes(2)
+        expect(userInterface.notify).toHaveBeenCalledWith(
+          expect.objectContaining({ text: 'Code is incorrect' })
+        )
+      })
+
+      it('asks for the password when the code is cancelled', async () => {
+        const { session, userInterface } = createSession({
+          responses: {
+            'post /login': codeRequired,
+            'post /login-code': { user: { ...user } }
+          },
+          loginData: [{ username: 'tester' }, { username: 'tester' }],
+          loginCodes: [null, { code: '123456' }]
+        })
+        expect(await session.login()).toEqual(user)
+        expect(userInterface.requestLoginData).toHaveBeenCalledTimes(2)
+        expect(userInterface.notify).not.toHaveBeenCalled()
+      })
+
+      it('asks for the password when the login has expired', async () => {
+        const { session, userInterface } = createSession({
+          responses: {
+            'post /login': codeRequired,
+            'post /login-code': createError(400, 'Missing or expired login')
+          },
+          loginData: [{ username: 'tester' }, null],
+          loginCodes: [{ code: '123456' }]
+        })
+        expect(await session.login()).toBe(null)
+        expect(userInterface.requestLoginData).toHaveBeenCalledTimes(2)
+        expect(userInterface.requestLoginCode).toHaveBeenCalledOnce()
+        expect(userInterface.notify).toHaveBeenCalledWith(
+          expect.objectContaining({ text: 'Missing or expired login' })
+        )
+      })
     })
 
     it('returns `null` when the user cancels', async () => {

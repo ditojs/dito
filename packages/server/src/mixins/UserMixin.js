@@ -122,8 +122,26 @@ export const UserMixin = mixin(
             username
           )
           if (user && (await user.$verifyPassword(password))) {
-            await ctx.login(user, options)
-            return user
+            const totp = this.app.config.app.auth?.totp
+              ? await this.credentialQuery(ctx.transaction).findOne({
+                  type: 'totp',
+                  userId: `${user.$id()}`
+                })
+              : null
+            if (totp) {
+              // Users with TOTP are only logged in once they enter a code,
+              // through `'post login-code'` of `UsersController`. Until then,
+              // there is no user to return:
+              ctx.session.pendingLogin = {
+                user: `${this.name}-${user.$id()}`,
+                expires: Date.now() + 5 * 60 * 1000, // 5 minutes
+                attempts: 5
+              }
+              return null
+            } else {
+              await ctx.login(user, options)
+              return user
+            }
           } else {
             throw new AuthenticationError('Password or username is incorrect')
           }
