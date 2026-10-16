@@ -1,4 +1,5 @@
-import { transaction, DBError } from 'objection'
+import { transaction } from 'objection'
+import { wrapDbError } from 'objection/lib/utils/wrapDbError.js'
 import { emitAsync } from '../utils/emitter.js'
 
 export function createTransaction() {
@@ -55,9 +56,9 @@ async function commit(ctx, trx) {
   // Knex resolves `commit()` even when the `COMMIT` statement fails, e.g. on
   // deferred constraints, and only rejects `executionPromise`, see:
   // https://github.com/knex/knex/issues/6141
-  // The error comes from the database driver, as Objection.js only wraps the
-  // errors of its own queries, so wrap it like those, see `Model.query()`.
+  // The error comes from the database driver, so wrap it like Objection.js
+  // wraps the errors of its own queries:
   await trx.executionPromise.catch(error => {
-    throw ctx.app.createDatabaseError(new DBError({ nativeError: error }))
+    throw ctx.app.createDatabaseError(wrapDbError(error))
   })
 }
