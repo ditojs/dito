@@ -8,7 +8,8 @@
     "test": "pnpm run /^test:/",
     "test:types": "vitest --run --typecheck && tsc -p e2e && tsc -p types/server/from-model-js",
     "test:e2e": "playwright test",
-    "screenshots": "node scripts/screenshots.js"
+    "screenshots": "node scripts/screenshots.js",
+    "serve": "node scripts/serve.js"
   },
   "dependencies": {
     "@ditojs/admin": "workspace:^",

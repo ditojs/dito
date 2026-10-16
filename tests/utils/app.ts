@@ -169,7 +169,7 @@ export function stubSession(app: TestApp) {
 export function getAppUrl(app: TestApp): string {
   const address = app.server?.address?.()
   if (address && typeof address === 'object') {
-    return `http://${host}:${address.port}`
+    return `http://${app.config.server!.host}:${address.port}`
   }
   throw new Error('Server not listening')
 }
