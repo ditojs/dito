@@ -1,15 +1,7 @@
 <template lang="pug">
-aside.dito-sidebar(:class="`dito-sidebar--${sidebar.state}`")
+aside.dito-sidebar
   nav.dito-header
     slot
-    button.dito-header__toggle(
-      ref="button"
-      type="button"
-      aria-label="Sidebar"
-      aria-controls="dito-sidebar"
-      :aria-expanded="sidebar.isExpanded"
-      @click="sidebar.toggle()"
-    )
   #dito-sidebar.dito-sidebar__teleport.dito-scroll(
     ref="region"
     tabindex="-1"
@@ -18,24 +10,21 @@ aside.dito-sidebar(:class="`dito-sidebar--${sidebar.state}`")
 
 <script>
 import { useTemplateRef } from 'vue'
-import { useSidebar } from '../composables/useSidebar.ts'
 
 export default {
+  // The panels slide in and out, see `useSidebar()` in `DitoRoot`:
+  expose: ['region'],
+
   setup() {
     return {
-      sidebar: useSidebar({
-        name: 'sidebar',
-        // The form needs the room first, so the sidebar hides before the menu:
-        breakpoint: 1200,
-        region: useTemplateRef('region'),
-        button: useTemplateRef('button')
-      })
+      region: useTemplateRef('region')
     }
   }
 }
 </script>
 
 <style lang="scss">
+@use 'sass:list';
 @import '../styles/_imports';
 
 .dito-sidebar {
@@ -70,8 +59,14 @@ export default {
     }
   }
 
-  &:has(#{$self}__teleport:empty) .dito-header__toggle {
-    display: none;
+  &:has(#{$self}__teleport:empty) {
+    > .dito-header {
+      padding-right: 0;
+    }
+
+    .dito-header__toggle {
+      display: none;
+    }
   }
 
   &__teleport {
@@ -93,7 +88,7 @@ export default {
 
   &--collapsed #{$self}__teleport {
     // Slide out to the edge of the window, wherever the sidebar is:
-    transform: translateX(100vw);
+    transform: translateX(var(--sidebar-edge, 100vw));
   }
 
   &--collapsed,
@@ -123,7 +118,8 @@ export default {
   }
 
   &--closed #{$self}__teleport {
-    transform: translateX(100%);
+    // Also slide the shadow out of the window, by the size of its blur:
+    transform: translateX(calc(100% + #{list.nth($shadow-window, 3)}));
   }
 }
 </style>

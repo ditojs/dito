@@ -1,6 +1,10 @@
 <template lang="pug">
 nav.dito-trail(aria-label="Breadcrumb")
-  ul
+  ul.dito-trail__items(
+    ref="items"
+    :class="itemsClasses"
+    @scroll.passive="updateMasks"
+  )
     li(
       v-for="route in trail"
     )
@@ -23,7 +27,16 @@ nav.dito-trail(aria-label="Breadcrumb")
 </template>
 
 <script>
-import { computed, inject } from 'vue'
+import {
+  computed,
+  inject,
+  nextTick,
+  onMounted,
+  onUnmounted,
+  ref,
+  useTemplateRef,
+  watch
+} from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { adminContextKey } from '../utils/keys.ts'
 
@@ -32,11 +45,44 @@ export default {
     const adminContext = inject(adminContextKey)
     const currentRoute = useRoute()
     const router = useRouter()
+    // Leave out the routes that are being left, until they're unmounted.
+    const trail = computed(() =>
+      adminContext.ui.routes.filter(route => !route.isLeaving)
+    )
+
+    // The trail scrolls where the header is too narrow for it, and fades out
+    // on the sides that it hides:
+    const items = useTemplateRef('items')
+    const isMaskedStart = ref(false)
+    const isMaskedEnd = ref(false)
+    const updateMasks = () => {
+      const { scrollLeft, clientWidth, scrollWidth } = items.value
+      isMaskedStart.value = scrollLeft > 0
+      isMaskedEnd.value = scrollLeft + clientWidth < scrollWidth - 1
+    }
+    // Show the current route at the end of the trail:
+    watch(
+      () => trail.value.length,
+      async () => {
+        await nextTick()
+        items.value.scrollLeft = items.value.scrollWidth
+      },
+      { immediate: true, flush: 'post' }
+    )
+    let observer = null
+    onMounted(() => {
+      observer = new ResizeObserver(updateMasks)
+      observer.observe(items.value)
+    })
+    onUnmounted(() => observer.disconnect())
+
     return {
-      // Leave out the routes that are being left, until they're unmounted.
-      trail: computed(() =>
-        adminContext.ui.routes.filter(route => !route.isLeaving)
-      ),
+      trail,
+      updateMasks,
+      itemsClasses: computed(() => ({
+        'dito-trail__items--masked-start': isMaskedStart.value,
+        'dito-trail__items--masked-end': isMaskedEnd.value
+      })),
 
       getRouteLocation(route) {
         // `force` reloads the current route too. Use paths over names, so the
@@ -66,9 +112,36 @@ export default {
   display: flex;
   box-sizing: border-box;
   height: 3em;
+  // Take the room that the header leaves, and scroll the items within it:
+  flex: 1;
+  min-width: 0;
 
-  ul {
+  &__items {
+    --mask-start: 0em;
+    --mask-end: 0em;
+
     display: flex;
+    overflow-x: auto;
+    scrollbar-width: none;
+    mask-image: linear-gradient(
+      to right,
+      transparent,
+      black var(--mask-start),
+      black calc(100% - var(--mask-end)),
+      transparent
+    );
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+
+    &--masked-start {
+      --mask-start: 2em;
+    }
+
+    &--masked-end {
+      --mask-end: 2em;
+    }
   }
 
   li {

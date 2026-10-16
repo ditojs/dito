@@ -1,6 +1,7 @@
 <template lang="pug">
 .dito-root(
   ref="root"
+  :class="rootClasses"
   :data-agent-browser="appState.agent.browser"
   :data-agent-platform="appState.agent.platform"
   :data-agent-version="appState.agent.versionNumber"
@@ -38,8 +39,12 @@
           :aria-expanded="menu.isExpanded"
           @click="menu.toggle()"
         )
-    DitoRouterView(:routeLevel="0")
-  DitoSidebar
+    .dito-page__content.dito-scroll-parent
+      DitoRouterView(:routeLevel="0")
+  DitoSidebar(
+    ref="aside"
+    :class="`dito-sidebar--${sidebar.state}`"
+  )
     DitoAccount(
       v-if="adminContext.user"
     )
@@ -49,6 +54,14 @@
       @click="adminContext.session.login()"
     )
       span Login
+    button.dito-header__toggle(
+      ref="sidebarButton"
+      type="button"
+      aria-label="Sidebar"
+      aria-controls="dito-sidebar"
+      :aria-expanded="sidebar.isExpanded"
+      @click="sidebar.toggle()"
+    )
   DitoNotifications(ref="notifications")
 </template>
 
@@ -102,6 +115,18 @@ export default {
       region: computed(() => navigation.value?.content),
       button: useTemplateRef('menuButton')
     })
+    const aside = useTemplateRef('aside')
+    const sidebar = useSidebar({
+      name: 'sidebar',
+      // The form needs the room first, so the sidebar hides before the menu:
+      breakpoint: 1200,
+      region: computed(() => aside.value?.region),
+      button: useTemplateRef('sidebarButton')
+    })
+    // The overlay sidebar keeps the room of its header, which the page's
+    // content reaches under, up to the root's edge. CSS can't know the
+    // header's width, so measure the room whenever the root's columns change:
+    let sidebarObserver = null
 
     const showDialog = async ({ components, buttons, data, settings }) => {
       // Resolve async schemas first, so that their errors reject:
@@ -165,9 +190,21 @@ export default {
         }
       }
     )
-    onUnmounted(detachSessionUserInterface)
+    onUnmounted(() => {
+      detachSessionUserInterface()
+      sidebarObserver.disconnect()
+    })
 
     onMounted(async () => {
+      const sidebarElement = aside.value.$el
+      sidebarObserver = new ResizeObserver(() => {
+        const { right } = root.value.getBoundingClientRect()
+        const { left } = sidebarElement.getBoundingClientRect()
+        root.value.style.setProperty('--dito-sidebar-room', `${right - left}px`)
+      })
+      for (const column of root.value.children) {
+        sidebarObserver.observe(column)
+      }
       // The uploads handle the dropped files, the root only the overlay:
       domOn(document, fileDropTargets.getDocumentEventHandlers())
 
@@ -211,6 +248,11 @@ export default {
       fileDropTargets,
       hasSessionStarted,
       menu,
+      sidebar,
+      rootClasses: computed(() => ({
+        'dito-root--overlay-sidebar': sidebar.isOverlay,
+        'dito-root--sliding-sidebar': sidebar.isSliding
+      })),
 
       removeDialog(key) {
         delete dialogs[key]
@@ -232,6 +274,19 @@ let dialogId = 0
   display: flex;
 }
 
+.dito-root {
+  // The page's content reaches under the header of the overlay sidebar, while
+  // the page's header stays next to it:
+  &--overlay-sidebar .dito-page__content {
+    margin-right: calc(-1 * var(--dito-sidebar-room));
+  }
+
+  // Grow and shrink with the sliding sidebar, and with resizes right away:
+  &--sliding-sidebar .dito-page__content {
+    transition: margin-right $sidebar-duration;
+  }
+}
+
 .dito-page {
   // For the layout of `DitoContainer` in narrow pages:
   container: dito-page / inline-size;
@@ -247,6 +302,10 @@ let dialogId = 0
 
   &--wide {
     --max-content-width: #{$content-width-wide};
+  }
+
+  &__content {
+    max-width: var(--max-page-width);
   }
 }
 
