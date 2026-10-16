@@ -52,7 +52,7 @@ router.find('HEAD', '/users/233').handler // ctx => { ... }
 const result = router.find('GET', '/photos/233')
 console.log(result.handler, result.status) // undefined 404
 
-// Other methods handle the path, see the statuses in docs/api/router.md
+// Other methods handle the path, see the statuses in the API docs
 router.find('POST', '/users/233') // { status: 501, allowed: ['GET', 'HEAD'] }
 
 // Install router middleware
@@ -80,11 +80,9 @@ app.use(async (ctx, next) => {
 app.listen(4040, () => console.log('Koa app listening on 4040'))
 ```
 
-## Options
+## Options and API
 
-- `prefix`: is prepended to the paths of `add()` and `find()` alike, so
-  `new Router({ prefix: '/api' })` routes `/api/users/:id` and finds it with
-  `find('GET', '/users/233')`. A trailing slash is removed, unless in strict
-  mode.
-- `strict`: keeps trailing slashes and paths without a leading slash as they
-  are, instead of normalizing them.
+See the
+[router API docs](https://github.com/ditojs/dito/blob/main/docs/api/router.md)
+for the `prefix` and `strict` options, the route paths and the statuses of
+misses.

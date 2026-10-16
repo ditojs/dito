@@ -5,14 +5,15 @@ import Result from './Result.js'
 const CHAR_SLASH = '/'.charCodeAt(0)
 
 export default class Router {
-  #prefix
+  #options
 
   constructor(options) {
     this.trees = {}
-    // `this.options()` is already a method for the OPTIONS method!
-    this._options = options || {}
-    const { strict, prefix } = this._options
-    this.#prefix = prefix && !strict ? removeTrailingSlash(prefix) : prefix
+    const { strict, prefix } = options || {}
+    this.#options = {
+      strict,
+      prefix: prefix && !strict ? removeTrailingSlash(prefix) : prefix
+    }
   }
 
   add(method, path, handler) {
@@ -98,8 +99,7 @@ export default class Router {
   }
 
   normalizePath(path) {
-    const { strict } = this._options
-    const prefix = this.#prefix
+    const { strict, prefix } = this.#options
     if (!strict && path !== '/') {
       // When not in strict mode, remove trailing slash from any path except
       // '/', and make sure path starts with '/'

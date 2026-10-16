@@ -47,6 +47,10 @@ describe('Router', () => {
       router.add('GET', '/', () => {})
       router.add('POST', '/', () => {})
       expect(router.getAllowedMethods('/', 'GET')).toStrictEqual(['POST'])
+      expect(router.getAllowedMethods('/', 'HEAD')).toStrictEqual([
+        'GET',
+        'POST'
+      ])
     })
 
     it('normalizes paths', () => {
