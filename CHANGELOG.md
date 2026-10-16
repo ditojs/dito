@@ -13,6 +13,7 @@ version, see the upgrade guides in `docs/`.
 - **server:** Values of `nullable` properties with a model type or a `$ref` get the defaults of the referenced schema, which Ajv ignored, e.g. `{ type: 'Author', nullable: true }` the defaults of `Author`, and these properties get their own `default`, e.g. `{ type: 'color', nullable: true, default: '#ffffff' }`.
 - **server:** `$validateGraph()` reports only the errors of related models for relations, without the "must be null" and "must match a schema in anyOf" errors at the relation itself, and it applies the defaults of related models, unless it validates a patch.
 - **server:** Validation errors of `if` keywords, "must match "else" schema", are left out, as the `then` or `else` schema reports its own. The "must be null" and "must match exactly one schema in oneOf" errors of a `oneOf` with a `null` type aren't left out anymore, which only `nullable` references produced.
+- **server:** The validator runs Ajv with `strictSchema`, `strictNumbers` and `strictTuples`, where it ran with `strict: false`: a schema with an unknown keyword, e.g. `item` instead of `items`, or with a `default` that Ajv can't apply, e.g. at the root of a definition that references itself, throws where Ajv ignored it. Model schemas are compiled when the app sets up its models, so they throw on startup. Fix the schema, or opt out with `new Validator({ options: { strictSchema: false } })`.
 
 ### Fixes
 

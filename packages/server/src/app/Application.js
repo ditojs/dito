@@ -334,6 +334,8 @@ export class Application extends Koa {
       Object.values(this.models)
         .filter(modelClass => !modelClass.isInitialized)
         .map(async modelClass => {
+          // Compile the schema on setup, to throw on invalid schemas early:
+          this.validator.getAjv().getSchema(modelClass.getJsonSchema().$id)
           // While `setup()` is used for internal dito things, `initialize()` is
           // called async and meant to be used by the user, without the need to
           // call `super.initialize()`.
@@ -506,12 +508,14 @@ export class Application extends Koa {
     const { dataName = 'data' } = options
 
     let properties = null
-    const addParameter = (name, schema) => {
+    const addParameter = (name, parameter) => {
       list.push({
         name: name ?? null,
-        ...schema
+        ...parameter
       })
-      if (schema.from !== 'member') {
+      // `from` is a parameter option, not a schema keyword:
+      const { from, ...schema } = parameter
+      if (from !== 'member') {
         properties ||= {}
         properties[name || dataName] = schema
       }

@@ -149,24 +149,40 @@ describe('Validator.compile()', () => {
     expect(validateShelf).not.toHaveBeenCalled()
   })
 
+  it('rejects unknown keywords', () => {
+    const validator = new Validator()
+    expect(() =>
+      validator.compile({
+        type: 'object',
+        properties: {
+          tags: { type: 'array', item: { type: 'string' } }
+        }
+      })
+    ).toThrow('strict mode: unknown keyword: "item"')
+  })
+
+  it('accepts unknown keywords when `strictSchema` is disabled', () => {
+    const validator = new Validator({ options: { strictSchema: false } })
+    const validate = validator.compile(
+      { type: 'array', item: { type: 'string' } },
+      { throw: false }
+    )
+    expect(validate([1])).toBe(true)
+  })
+
   it('skips disabled keywords, formats and types', () => {
     const validator = new Validator({
       keywords: { range: null },
       formats: { color: null },
       types: { color: null }
     })
-    const validate = validator.compile(
-      {
-        type: 'object',
-        properties: {
-          pages: { type: 'integer', range: [1, 10] },
-          tint: { type: 'string', format: 'color' }
-        }
-      },
-      { throw: false }
-    )
-    // Ajv runs with `strict: false`, so unknown keywords and formats pass.
-    expect(validate({ pages: 100, tint: 'not a color' })).toBe(true)
+    // Ajv doesn't know disabled keywords and formats:
+    expect(() =>
+      validator.compile({ type: 'integer', range: [1, 10] })
+    ).toThrow('strict mode: unknown keyword: "range"')
+    expect(() =>
+      validator.compile({ type: 'string', format: 'color' })
+    ).toThrow('unknown format "color"')
     expect(validator.getAjv().getSchema('color')).toBeUndefined()
   })
 
