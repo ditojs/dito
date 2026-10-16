@@ -714,6 +714,17 @@ export class Application<$Models extends Models = Models> {
 
   /** Logs an error to the application logger. */
   logError(error: Error | ResponseError, ctx?: KoaContext): void
+  /**
+   * Finds every place in the data that stores an asset file, one reference
+   * for each occurrence.
+   */
+  getAssetReferences(options?: {
+    models?: string[]
+    storage?: string | null
+    keys?: string[] | null
+    transaction?: objection.Transaction | null
+  }): Promise<AssetReference[]>
+
   /** Releases unused assets past the cleanup threshold. */
   releaseUnusedAssets(options?: {
     timeThreshold?: string | number | null
@@ -793,6 +804,19 @@ export class Application<$Models extends Models = Models> {
   logger: PinoLogger
   requestStorage: AsyncLocalStorage<AsyncRequestLocals>
   requestLocals: Partial<AsyncRequestLocals>
+}
+
+export interface AssetReference {
+  key: string
+  file: AssetFile
+  /** The name of the model that stores the file. */
+  model: string
+  /** The id of the record that stores the file, an array for composite ids. */
+  id: Id | Id[]
+  /** The data path of the file inside the record, e.g. `'photos/1'`. */
+  dataPath: string
+  /** The name of the storage of the file. */
+  storage: string
 }
 
 export interface Application

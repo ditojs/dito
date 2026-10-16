@@ -29,6 +29,7 @@ import {
   assignDeeply,
   parseDataPath,
   normalizeDataPath,
+  getEntriesAtDataPath,
   groupBy,
   mapConcurrently,
   toPromiseCallback
@@ -921,10 +922,21 @@ export class Application extends Koa {
         const changeCount = (files, increment) =>
           mapConcurrently(
             Object.entries(groupBy(files, 'key')),
-            ([key, files]) =>
-              AssetModel.query(transaction)
+            async ([key, files]) => {
+              const changed = await AssetModel.query(transaction)
                 .where('key', key)
                 .increment('count', files.length * increment)
+              // Don't store references to assets released in the meantime:
+              if (!changed && increment > 0) {
+                throw new AssetError(
+                  `Unable to reference released asset: '${
+                    files[0].name
+                  }' ('${
+                    key
+                  }')`
+                )
+              }
+            }
           )
         await Promise.all([
           changeCount(addedFiles, 1),
@@ -942,9 +954,6 @@ export class Application extends Koa {
           )
         }
       }
-      // Also execute releaseUnusedAssets() immediately in the same
-      // transaction, to potentially clean up other pending assets.
-      await this.releaseUnusedAssets({ transaction })
     }
     return importedFiles
   }
@@ -1085,6 +1094,76 @@ export class Application extends Koa {
     return modifiedFiles
   }
 
+  async getAssetReferences({
+    models = Object.keys(this.models),
+    storage = null,
+    keys = null,
+    transaction = null
+  } = {}) {
+    const references = []
+    const keySet = keys && new Set(keys)
+    await mapConcurrently(models, async modelName => {
+      const modelClass = this.models[modelName]
+      if (!modelClass) {
+        throw new Error(`Unknown model: '${modelName}'.`)
+      }
+      const { assets } = modelClass.definition
+      const dataPaths = Object.keys(assets || {}).filter(
+        dataPath => !storage || assets[dataPath].storage === storage
+      )
+      if (dataPaths.length > 0) {
+        const columns = [
+          ...new Set(dataPaths.map(dataPath => parseDataPath(dataPath)[0]))
+        ]
+        // Default scopes may hide records that still store files:
+        const query = modelClass.query(transaction).ignoreScope()
+        // Wildcards at the root can match any column, so load all of them:
+        if (!columns.some(column => column.startsWith('*'))) {
+          query.select(...modelClass.getIdPropertyArray(), ...columns)
+          if (keys) {
+            // Find the records that contain the keys in their JSON text, and
+            // match the files exactly below:
+            const text = modelClass.isPostgreSQL()
+              ? '??::text'
+              : modelClass.isMySQL()
+                ? 'cast(?? as char)'
+                : '??'
+            query.where(query => {
+              for (const column of columns) {
+                for (const key of keys) {
+                  query.orWhereRaw(`${text} like ? escape '!'`, [
+                    column,
+                    `%${escapeLike(JSON.stringify(key).slice(1, -1))}%`
+                  ])
+                }
+              }
+            })
+          }
+        }
+        for (const item of await query) {
+          for (const dataPath of dataPaths) {
+            const entries = getEntriesAtDataPath(item, dataPath, () => {})
+            for (const [path, value] of Object.entries(entries)) {
+              for (const [index, file] of asArray(value).entries()) {
+                if (file && (!keySet || keySet.has(file.key))) {
+                  references.push({
+                    key: file.key,
+                    file,
+                    model: modelName,
+                    id: item.$id(),
+                    dataPath: isArray(value) ? `${path}/${index}` : path,
+                    storage: assets[dataPath].storage
+                  })
+                }
+              }
+            }
+          }
+        }
+      }
+    })
+    return references
+  }
+
   async releaseUnusedAssets({
     timeThreshold = null,
     transaction = null,
@@ -1123,9 +1202,37 @@ export class Application extends Koa {
                   .andWhere('updatedAt', '<=', danglingDate)
               )
           )
+          // Make concurrent writes that reference these assets wait:
+          .forUpdate()
+        const unusedAssets = []
         if (orphanedAssets.length > 0) {
-          const orphanedKeys = await mapConcurrently(
-            orphanedAssets,
+          // Counts can be too low, e.g. after writes that skip the model hooks,
+          // so only release the assets that no data references anymore, and
+          // correct the counts of the others:
+          const referencesByKey = groupBy(
+            await this.getAssetReferences({
+              keys: orphanedAssets.map(asset => asset.key),
+              transaction: trx
+            }),
+            'key'
+          )
+          for (const asset of orphanedAssets) {
+            const count = referencesByKey[asset.key]?.length
+            if (count) {
+              this.logger.warn(
+                `Asset ${
+                  pico.green(`'${asset.file.name}'`)
+                } has ${count} references but a count of 0, correcting it.`
+              )
+              await AssetModel.query(trx).findById(asset.id).patch({ count })
+            } else {
+              unusedAssets.push(asset)
+            }
+          }
+        }
+        if (unusedAssets.length > 0) {
+          const unusedKeys = await mapConcurrently(
+            unusedAssets,
             async asset => {
               try {
                 await this.getStorage(asset.storage).removeFile(asset.file)
@@ -1137,9 +1244,9 @@ export class Application extends Koa {
             },
             { concurrency }
           )
-          await AssetModel.query(trx).delete().whereIn('key', orphanedKeys)
+          await AssetModel.query(trx).delete().whereIn('key', unusedKeys)
         }
-        return orphanedAssets
+        return unusedAssets
       })
     }
     return []
@@ -1197,4 +1304,9 @@ const defaultLoggerOptions = {
     '*.headers["authorization"]'
   ],
   base: null // no pid,hostname,name
+}
+
+// Escape the wildcards of `like` patterns, with `!` as the escape character:
+function escapeLike(string) {
+  return string.replace(/[!%_]/g, '!$&')
 }

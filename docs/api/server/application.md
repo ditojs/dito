@@ -692,7 +692,10 @@ const released = await app.releaseUnusedAssets({
 
 Removes the files and records of assets that are no longer referenced
 (`count` 0) and unchanged for `assets.cleanupTimeThreshold`, or never
-persisted for `assets.danglingTimeThreshold`.
+persisted for `assets.danglingTimeThreshold`. Assets that data still references
+despite their count are kept and get their count corrected, with a warning.
+Writes of asset data call it once their transaction is completed, in its own
+transaction, and report its errors through the `'error'` event, or log them.
 
 #### Parameters
 
@@ -704,6 +707,33 @@ persisted for `assets.danglingTimeThreshold`.
 
 Returns `Promise<Model[]>`: the released asset records. Files that failed to be
 removed carry the `error`, which is also emitted as `'error'`.
+
+### getAssetReferences()
+
+```js
+const references = await app.getAssetReferences({
+  models,
+  storage,
+  keys,
+  transaction
+})
+```
+
+Finds every place in the data that stores an asset file, one reference for each
+occurrence, as the reference counts count them.
+
+#### Parameters
+
+| Name          | Type          | Description                                     |
+| ------------- | ------------- | ----------------------------------------------- |
+| `models`      | `string[]`    | Names of the models to search. Default: all.    |
+| `storage`     | `string`      | Only find files of this storage.                |
+| `keys`        | `string[]`    | Only find files with these keys.                |
+| `transaction` | `Transaction` | Transaction to run in.                          |
+
+Returns `Promise<object[]>`: a reference for each occurrence, with the file's
+`key`, the `file` itself, the `model` name, the record's `id`, the `dataPath` of
+the file inside the record, e.g. `'photos/1'`, and the `storage` name.
 
 ### createAssets()
 
@@ -727,10 +757,11 @@ await app.handleAddedAndRemovedAssets(
 ```
 
 Imports foreign files among the added and changed ones, adjusts the reference
-counts, and releases unused assets: right away in `transaction`, and again after
-`assets.cleanupTimeThreshold` when counts changed. Returns
-`Promise<AssetFile[]>`: the imported files. Each occurrence of a file in
-`addedFiles` and `removedFiles` adds or removes one reference.
+counts, and releases unused assets after `assets.cleanupTimeThreshold` when
+counts changed. Returns `Promise<AssetFile[]>`: the imported files. Each
+occurrence of a file in `addedFiles` and `removedFiles` adds or removes one
+reference. Throws an `AssetError` when an added file's asset was released in the
+meantime.
 
 ### addForeignAssets()
 

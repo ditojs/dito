@@ -1119,6 +1119,16 @@ export class Model extends objection.Model {
 
   static _configureAssetsHooks(assets) {
     const assetDataPaths = Object.keys(assets)
+    // Releases run after their writes are done, so report their errors
+    // instead of failing the writes:
+    const releaseUnusedAssets = () =>
+      this.app.releaseUnusedAssets().catch(error => {
+        if (this.app.listenerCount('error') > 0) {
+          this.app.emit('error', error)
+        } else {
+          this.app.logError(error)
+        }
+      })
 
     this.on(
       [
@@ -1126,7 +1136,7 @@ export class Model extends objection.Model {
         'before:update',
         'before:delete'
       ],
-      async ({ type, transaction, inputItems, asFindQuery }) => {
+      async ({ type, transaction, context, inputItems, asFindQuery }) => {
         const isInsert = type === 'before:insert'
         const isDelete = type === 'before:delete'
         // Figure out which asset data paths where actually present in the
@@ -1144,6 +1154,25 @@ export class Model extends objection.Model {
         // `dataPaths` is empty in the case of an update/insert that does not
         // affect the assets.
         if (dataPaths.length === 0) return
+
+        // Release unused assets in their own transaction once the data is
+        // written and committed, as the release removes files that rollbacks
+        // can't restore, and checks that no data references them anymore:
+        if (transaction.isTransaction) {
+          let trx = transaction
+          while (trx.parentTransaction) {
+            trx = trx.parentTransaction
+          }
+          if (!releasingTransactions.has(trx)) {
+            releasingTransactions.add(trx)
+            // Knex also resolves `executionPromise` for rollbacks without an
+            // error, so we can't tell them from commits. Releasing after
+            // rollbacks is fine, as they restore the counts:
+            trx.executionPromise.then(releaseUnusedAssets, releaseUnusedAssets)
+          }
+        } else {
+          context[SYMBOL_RELEASE_ASSETS] = true
+        }
 
         // Load the model's asset files in their current state before the query
         // is executed. For deletes, load the data for all asset data-paths.
@@ -1251,6 +1280,20 @@ export class Model extends objection.Model {
         }
       }
     )
+
+    // Writes outside of transactions are committed once written:
+    this.on(
+      [
+        'after:insert',
+        'after:update',
+        'after:delete'
+      ],
+      async ({ context }) => {
+        if (context[SYMBOL_RELEASE_ASSETS]) {
+          await releaseUnusedAssets()
+        }
+      }
+    )
   }
 }
 
@@ -1260,6 +1303,9 @@ KnexHelper.mixin(Model)
 QueryBuilder.mixin(Model)
 
 const metaMap = new WeakMap()
+// The transactions that release unused assets once completed:
+const releasingTransactions = new WeakSet()
+const SYMBOL_RELEASE_ASSETS = Symbol('releaseAssets')
 
 function getMeta(modelClass, key, value) {
   let meta = metaMap.get(modelClass)
