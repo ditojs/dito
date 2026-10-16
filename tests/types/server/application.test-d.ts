@@ -1,5 +1,10 @@
 import { expectTypeOf, describe, it } from 'vitest'
-import type { Application, Model, Storage } from '@ditojs/server'
+import type {
+  Application,
+  AssetReference,
+  Model,
+  Storage
+} from '@ditojs/server'
 import type { app } from './fixtures.ts'
 
 describe('Application', () => {
@@ -40,5 +45,9 @@ describe('Application', () => {
     expectTypeOf<ReturnType<App['releaseUnusedAssets']>>().toEqualTypeOf<
       Promise<Model[]>
     >()
+    expectTypeOf<ReturnType<App['getAssetReferences']>>().toEqualTypeOf<
+      Promise<AssetReference[]>
+    >()
+    expectTypeOf<AssetReference['dataPath']>().toEqualTypeOf<string>()
   })
 })

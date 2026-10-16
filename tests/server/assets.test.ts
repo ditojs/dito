@@ -371,9 +371,8 @@ describe('Asset handling', () => {
           await createUploadedFile('scheduled.txt', 'scheduled')
         ])
         await app.handleAddedAndRemovedAssets(storage, [asset.file], [], [])
-        // Once immediately in the same transaction, once after the timeout.
-        expect(release).toHaveBeenCalledTimes(1)
-        await vi.waitFor(() => expect(release).toHaveBeenCalledTimes(2))
+        expect(release).not.toHaveBeenCalled()
+        await vi.waitFor(() => expect(release).toHaveBeenCalledTimes(1))
         expect(release).toHaveBeenLastCalledWith()
       } finally {
         assets.cleanupTimeThreshold = cleanupTimeThreshold
@@ -381,7 +380,7 @@ describe('Asset handling', () => {
       }
     })
 
-    it('releases unused assets only immediately without cleanup time', async () => {
+    it('schedules no release without cleanup time', async () => {
       const assets = app.config.assets!
       const { cleanupTimeThreshold } = assets
       assets.cleanupTimeThreshold = 0
@@ -393,7 +392,7 @@ describe('Asset handling', () => {
         await app.handleAddedAndRemovedAssets(storage, [], [asset.file], [])
         // Give a wrongly scheduled release the time to happen.
         await new Promise(resolve => setTimeout(resolve, 20))
-        expect(release).toHaveBeenCalledTimes(1)
+        expect(release).not.toHaveBeenCalled()
       } finally {
         assets.cleanupTimeThreshold = cleanupTimeThreshold
         release.mockRestore()
@@ -802,5 +801,381 @@ describe('asset reference counting', () => {
     await app.releaseUnusedAssets()
     await Album.query().insert({ cover })
     expect(await getCount(cover!)).toBe(1)
+  })
+})
+
+describe('asset references', () => {
+  class Album extends Model {
+    declare id: number
+    declare cover: AssetFile | null
+    declare photos: AssetFile[] | null
+
+    static override properties: ModelProperties = {
+      cover: { type: 'object', nullable: true },
+      photos: { type: 'array', items: { type: 'object' }, nullable: true }
+    }
+
+    static override assets = {
+      cover: { storage: 'memory' },
+      photos: { storage: 'memory' }
+    }
+  }
+
+  class Track extends Model {
+    declare id: number
+    declare artwork: AssetFile | null
+
+    static override properties: ModelProperties = {
+      artwork: { type: 'object', nullable: true }
+    }
+
+    static override assets = {
+      artwork: { storage: 'memory' }
+    }
+  }
+
+  class Clip extends Model {
+    declare id: number
+    declare hidden: boolean
+    declare video: AssetFile | null
+
+    static override properties: ModelProperties = {
+      hidden: { type: 'boolean', default: false },
+      video: { type: 'object', nullable: true }
+    }
+
+    static override scopes = {
+      default: (query: any) => query.where('hidden', false)
+    }
+
+    static override assets = {
+      video: { storage: 'memory' }
+    }
+  }
+
+  class Page extends Model {
+    declare id: number
+    declare content: Record<string, any> | null
+
+    static override properties: ModelProperties = {
+      content: { type: 'object', nullable: true }
+    }
+
+    static override assets = {
+      '**.file': { storage: 'memory' }
+    }
+  }
+
+  class Asset extends AssetMixin(Model) {}
+  const app = createApp({ Album, Track, Clip, Page, Asset })
+  const storage = app.getStorage('memory') as MemoryStorage
+
+  beforeAll(async () => {
+    await createTestDatabase(app)
+  })
+
+  afterAll(async () => {
+    await destroyTestApp(app)
+  })
+
+  // Stores a file like the upload route, and returns it as the admin sends it
+  // back, signed and not persisted yet:
+  async function upload(name: string) {
+    const file = AssetFile.create({ name, data: name })
+    await storage.addFile(file, Buffer.from(name))
+    storage.signAssetFile(file)
+    await app.createAssets(storage, [file], 0)
+    // Uploads happen before their data is saved, and the release tells never
+    // persisted assets by `updatedAt = createdAt`, so backdate both:
+    const date = new Date(Date.now() - 1000)
+    await Asset.knex()(Asset.tableName)
+      .where('key', file.key)
+      .update({ createdAt: date, updatedAt: date })
+    return copy(file)
+  }
+
+  // Copies data like the clipboard, through JSON:
+  function copy<T>(data: T): T {
+    return JSON.parse(JSON.stringify(data))
+  }
+
+  async function getCount(file: AssetFile) {
+    const asset = await Asset.query().findOne('key', file.key)
+    return asset?.count
+  }
+
+  async function withCleanupTimeThreshold(
+    threshold: string | number,
+    callback: () => Promise<void>
+  ) {
+    const assets = app.config.assets!
+    const { cleanupTimeThreshold } = assets
+    assets.cleanupTimeThreshold = threshold
+    try {
+      await callback()
+    } finally {
+      assets.cleanupTimeThreshold = cleanupTimeThreshold
+    }
+  }
+
+  // Simulates writes that skip the asset hooks, e.g. of scripts and seeds:
+  async function insertWithoutHooks(data: Record<string, unknown>) {
+    const [row] = await Track.knex()(Track.tableName)
+      .insert({ artwork: JSON.stringify(data.artwork) })
+      .returning('id')
+    return row.id ?? row
+  }
+
+  it('finds every place that stores a file', async () => {
+    const file = await upload('everywhere.jpg')
+    const other = await upload('elsewhere.jpg')
+    const album = await Album.query().insertAndFetch({
+      cover: copy(file),
+      photos: [copy(other), copy(file)]
+    })
+    const track = await Track.query().insertAndFetch({ artwork: copy(file) })
+    const references = await app.getAssetReferences({ keys: [file.key] })
+    expect(
+      references.map(({ model, id, dataPath, storage }) => ({
+        model,
+        id,
+        dataPath,
+        storage
+      }))
+    ).toEqual(
+      expect.arrayContaining([
+        { model: 'Album', id: album.id, dataPath: 'cover', storage: 'memory' },
+        {
+          model: 'Album',
+          id: album.id,
+          dataPath: 'photos/1',
+          storage: 'memory'
+        },
+        {
+          model: 'Track',
+          id: track.id,
+          dataPath: 'artwork',
+          storage: 'memory'
+        }
+      ])
+    )
+    expect(references).toHaveLength(3)
+    expect(references[0]).toMatchObject({
+      key: file.key,
+      file: { key: file.key }
+    })
+  })
+
+  it('matches keys exactly, not as text', async () => {
+    const file = await upload('exact.jpg')
+    // The name contains the key, which the text search finds:
+    const other = await upload('other.jpg')
+    await Track.query().insert({
+      artwork: { ...copy(other), name: file.key } as AssetFile
+    })
+    expect(await app.getAssetReferences({ keys: [file.key] })).toEqual([])
+  })
+
+  it('finds the references of all files without keys', async () => {
+    const file = await upload('listed.jpg')
+    await Track.query().insert({ artwork: copy(file) })
+    const references = await app.getAssetReferences({ models: ['Track'] })
+    expect(references.map(reference => reference.key)).toContain(file.key)
+    expect(references.every(reference => reference.model === 'Track')).toBe(
+      true
+    )
+  })
+
+  it('rejects unknown models', async () => {
+    await expect(
+      app.getAssetReferences({ models: ['Unknown'] })
+    ).rejects.toThrow(`Unknown model: 'Unknown'.`)
+  })
+
+  it('filters references by storage', async () => {
+    const file = await upload('stored.jpg')
+    await Track.query().insert({ artwork: copy(file) })
+    expect(
+      await app.getAssetReferences({ keys: [file.key], storage: 'other' })
+    ).toEqual([])
+    expect(
+      await app.getAssetReferences({ keys: [file.key], storage: 'memory' })
+    ).toHaveLength(1)
+  })
+
+  it('keeps referenced files and corrects their count', async () => {
+    const warn = vi.spyOn(app.logger, 'warn').mockImplementation(() => {})
+    try {
+      await withCleanupTimeThreshold(0, async () => {
+        const file = await upload('missed.jpg')
+        const track = await Track.query().insertAndFetch({
+          artwork: copy(file)
+        })
+        await insertWithoutHooks({ artwork: copy(file) })
+        // Removing the counted reference would release the file right away:
+        await Track.query().deleteById(track.id)
+        expect(await getCount(file)).toBe(1)
+        expect(storage.dataByKey.has(file.key)).toBe(true)
+        expect(warn).toHaveBeenCalledWith(
+          expect.stringContaining('has 1 references but a count of 0')
+        )
+      })
+    } finally {
+      warn.mockRestore()
+    }
+  })
+
+  it('finds files of records that default scopes hide', async () => {
+    const file = await upload('hidden.mp4')
+    await Clip.query().insert({ hidden: true, video: copy(file) })
+    const references = await app.getAssetReferences({ keys: [file.key] })
+    expect(references).toHaveLength(1)
+    expect(references[0]).toMatchObject({ model: 'Clip', dataPath: 'video' })
+  })
+
+  it('finds keys that JSON escapes', async () => {
+    const file = await upload('quoted."x\\y')
+    await Track.query().insert({ artwork: copy(file) })
+    expect(
+      await app.getAssetReferences({ keys: [file.key] })
+    ).toHaveLength(1)
+  })
+
+  it('counts and finds files at wildcard data paths', async () => {
+    const file = await upload('nested.jpg')
+    const page = await Page.query().insertAndFetch({
+      content: {
+        header: { file: copy(file) },
+        items: [{ file: copy(file) }, { text: 'Text' }]
+      }
+    })
+    expect(await getCount(file)).toBe(2)
+    const references = await app.getAssetReferences({ keys: [file.key] })
+    expect(references.map(reference => reference.dataPath).sort()).toEqual([
+      'content/header/file',
+      'content/items/0/file'
+    ])
+    await Page.query().patchById(page.id, { content: {} })
+    expect(await getCount(file)).toBe(0)
+  })
+
+  describe('in transactions', () => {
+    it('releases unused files once the transaction is committed', async () => {
+      await withCleanupTimeThreshold(0, async () => {
+        const track = await Track.query().insertAndFetch({
+          artwork: await upload('committed.jpg')
+        })
+        const { key } = track.artwork!
+        await Track.transaction(async trx => {
+          await Track.query(trx).patchById(track.id, { artwork: null })
+          expect(storage.dataByKey.has(key)).toBe(true)
+        })
+        await vi.waitFor(() => expect(storage.dataByKey.has(key)).toBe(false))
+        expect(await Asset.query().findOne('key', key)).toBeUndefined()
+      })
+    })
+
+    it('keeps the files of rolled back transactions', async () => {
+      await withCleanupTimeThreshold(0, async () => {
+        const track = await Track.query().insertAndFetch({
+          artwork: await upload('rolled-back.jpg')
+        })
+        const { key } = track.artwork!
+        const release = vi.spyOn(app, 'releaseUnusedAssets')
+        try {
+          await expect(
+            Track.transaction(async trx => {
+              await Track.query(trx).patchById(track.id, { artwork: null })
+              throw new Error('Rolled back')
+            })
+          ).rejects.toThrow('Rolled back')
+          await vi.waitFor(() => expect(release).toHaveBeenCalledOnce())
+          await release.mock.results[0].value
+        } finally {
+          release.mockRestore()
+        }
+        expect(storage.dataByKey.has(key)).toBe(true)
+        expect(await getCount(track.artwork!)).toBe(1)
+      })
+    })
+
+    it('releases once for all writes of a transaction', async () => {
+      const first = await upload('first.jpg')
+      const second = await upload('second.jpg')
+      const release = vi.spyOn(app, 'releaseUnusedAssets')
+      try {
+        await Track.transaction(async trx => {
+          await Track.query(trx).insert({ artwork: first })
+          // Nested transactions are released with the outer one:
+          await Track.transaction(trx, async trx => {
+            await Track.query(trx).insert({ artwork: second })
+          })
+          expect(release).not.toHaveBeenCalled()
+        })
+        await vi.waitFor(() => expect(release).toHaveBeenCalledOnce())
+      } finally {
+        release.mockRestore()
+      }
+    })
+  })
+
+  describe('errors of releases', () => {
+    // Releases fail on database or storage errors, which we can't cause here:
+    function failReleases() {
+      return vi
+        .spyOn(app, 'releaseUnusedAssets')
+        .mockRejectedValue(new Error('Release failed'))
+    }
+
+    it('logs them after transactions without error listeners', async () => {
+      const file = await upload('logged.jpg')
+      const release = failReleases()
+      const logError = vi.spyOn(app, 'logError').mockImplementation(() => {})
+      try {
+        await Track.transaction(async trx => {
+          await Track.query(trx).insert({ artwork: file })
+        })
+        await vi.waitFor(() =>
+          expect(logError).toHaveBeenCalledWith(new Error('Release failed'))
+        )
+      } finally {
+        release.mockRestore()
+        logError.mockRestore()
+      }
+    })
+
+    it('emits them after writes, which they do not fail', async () => {
+      const file = await upload('emitted.jpg')
+      const release = failReleases()
+      const onError = vi.fn()
+      app.on('error', onError)
+      try {
+        const track = await Track.query().insertAndFetch({ artwork: file })
+        expect(track.artwork).toMatchObject({ key: file.key })
+        expect(onError).toHaveBeenCalledWith(new Error('Release failed'))
+      } finally {
+        app.off('error', onError)
+        release.mockRestore()
+      }
+    })
+  })
+
+  it('rejects references to assets released in the meantime', async () => {
+    const file = await upload('raced.jpg')
+    // A concurrent release needs a second connection, so we release the asset
+    // where `addForeignAssets()` would only find it:
+    const addForeignAssets = vi
+      .spyOn(app, 'addForeignAssets')
+      .mockImplementation(async () => {
+        await Asset.query().delete().where('key', file.key)
+        return []
+      })
+    try {
+      await expect(
+        Track.query().insert({ artwork: copy(file) })
+      ).rejects.toThrow(`Unable to reference released asset: 'raced.jpg'`)
+    } finally {
+      addForeignAssets.mockRestore()
+    }
   })
 })
