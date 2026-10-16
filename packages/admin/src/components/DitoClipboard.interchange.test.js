@@ -29,6 +29,7 @@ const contentsByUrl = {
   '/files/b2.pdf': 'scan'
 }
 
+// Zips of 4.7 store their files under their keys, which uploads still follow:
 const reference = {
   cover: {
     key: 'a1.png',
@@ -217,21 +218,93 @@ describe('DitoClipboard interchange', () => {
     const files = unzipSync(new Uint8Array(await blobs[0].arrayBuffer()))
     expect(Object.keys(files).sort()).toEqual([
       'data.json',
-      'files/a1.png',
-      'files/b2.pdf'
+      'files/cover.png',
+      'files/scan.pdf'
     ])
-    expect(strFromU8(files['files/a1.png'])).toBe('cover')
-    expect(strFromU8(files['files/b2.pdf'])).toBe('scan')
+    expect(strFromU8(files['files/cover.png'])).toBe('cover')
+    expect(strFromU8(files['files/scan.pdf'])).toBe('scan')
     // The file of both fields is only fetched once:
     expect(fetch).toHaveBeenCalledTimes(2)
+    const cover = { ...reference.cover, $file: 'files/cover.png' }
+    const scan = { ...reference.scan, $file: 'files/scan.pdf' }
     expect(JSON.parse(strFromU8(files['data.json']))).toEqual({
       $schema: 'book',
       title: 'Emma',
-      cover: reference.cover,
-      chapters: [
-        { heading: 'One', scans: [reference.scan, reference.cover] }
-      ]
+      cover,
+      chapters: [{ heading: 'One', scans: [scan, cover] }]
     })
+  })
+
+  it('numbers files of the same name, and replaces unsafe characters', async () => {
+    const files = {
+      'c3.png': { name: 'cover.png', contents: 'other cover' },
+      'd4.png': { name: 'COVER.png', contents: 'upper cover' },
+      'e5.png': { name: '../covers/cover.png', contents: 'outside' },
+      'f6.png': { name: '..\\x.png', contents: 'backslash' },
+      'g7.png': { name: '\u202Egnp.exe', contents: 'override' },
+      'h8': { name: '..', contents: 'dots' },
+      'i9': { name: '', contents: 'empty' }
+    }
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async url => ({
+        ok: true,
+        blob: async () =>
+          new Blob([
+            contentsByUrl[url] ?? files[url.slice('/files/'.length)].contents
+          ])
+      }))
+    )
+    const { blobs } = stubDownloads()
+    const { selectMenuItem } = await mountBook({
+      data: {
+        title: 'Emma',
+        cover: stored.cover,
+        chapters: [
+          {
+            heading: 'One',
+            scans: Object.entries(files).map(([key, { name }]) => ({
+              ...stored.cover,
+              key,
+              name,
+              url: `/files/${key}`
+            }))
+          }
+        ]
+      }
+    })
+    await selectMenuItem('Download')
+    await vi.waitFor(() => expect(blobs).toHaveLength(1))
+    const zipFiles = unzipSync(new Uint8Array(await blobs[0].arrayBuffer()))
+    expect(
+      Object.fromEntries(
+        Object.entries(zipFiles).map(([path, bytes]) => [
+          path,
+          strFromU8(bytes)
+        ])
+      )
+    ).toEqual({
+      'data.json': expect.any(String),
+      'files/cover.png': 'cover',
+      'files/cover (2).png': 'other cover',
+      // Numbered also when only differing in case:
+      'files/COVER (3).png': 'upper cover',
+      'files/..-covers-cover.png': 'outside',
+      'files/..-x.png': 'backslash',
+      'files/-gnp.exe': 'override',
+      'files/-': 'dots',
+      'files/- (2)': 'empty'
+    })
+    const { chapters } = JSON.parse(strFromU8(zipFiles['data.json']))
+    expect(chapters[0].scans.map(scan => scan.$file)).toEqual([
+      'files/cover (2).png',
+      'files/COVER (3).png',
+      'files/..-covers-cover.png',
+      'files/..-x.png',
+      'files/-gnp.exe',
+      'files/-',
+      'files/- (2)'
+    ])
   })
 
   it('names downloads after the form and item label', async () => {

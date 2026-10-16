@@ -263,9 +263,12 @@ clipboard: { interchange: true }
 
 - `data.json` holds the data with its `$schema` and `$type`, as Copy writes
   it to the clipboard.
-- `files/<key>` holds each file of the [upload](../../api/admin/schemas.md#upload) fields in the
-  data, which `data.json` refers to as
-  `{ key, name, type, size, width, height, $file: 'files/<key>' }`, without
+- `files/<name>` holds each file of the [upload](../../api/admin/schemas.md#upload) fields in the
+  data under its name, e.g. `files/cover.png`. Different files of the same
+  name are numbered, e.g. `files/cover (2).png`, also when they only differ
+  in case, and `/ \ : * ? " < > |` and control characters are replaced with
+  `-`. `data.json` refers to each file as
+  `{ key, name, type, size, width, height, $file: 'files/<name>' }`, without
   the file's `url` and `signature`.
 
 **Upload** reads such a zip and pastes its data like Paste, but only when its

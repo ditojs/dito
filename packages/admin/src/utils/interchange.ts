@@ -36,7 +36,7 @@ export function getUploadEntries(
 }
 
 // Write the clipboard data as `data.json`, with its files under `files/` by
-// their keys, referenced instead of their URLs and signatures:
+// their names, referenced instead of their URLs and signatures:
 export async function createInterchangeZip(
   services: Services,
   clipboardData: Data,
@@ -46,6 +46,8 @@ export async function createInterchangeZip(
   // Load `fflate` only when it's used, outside of the admin's main chunk:
   const { strToU8, zipSync } = await import('fflate')
   const filesByPath = new Map<string, Promise<Uint8Array>>()
+  const pathsByKey = new Map<string, string>()
+  const takenPaths = new Set<string>()
   const readFile = async (url: string) => {
     const blob = await fetchBlob(api, url)
     return new Uint8Array(await blob.arrayBuffer())
@@ -55,8 +57,10 @@ export async function createInterchangeZip(
     if (!url) {
       throw new Error(`Unable to download file without url: '${name}'.`)
     }
-    const path = `files/${key}`
-    if (!filesByPath.has(path)) {
+    let path = pathsByKey.get(key)
+    if (!path) {
+      path = getFilePath(name, takenPaths)
+      pathsByKey.set(key, path)
       filesByPath.set(path, readFile(url))
     }
     return { key, name, type, size, width, height, $file: path }
@@ -191,6 +195,25 @@ async function replaceFiles(
 function getFiles({ data, name }: UploadEntry): Data[] {
   const value = data[name]
   return value ? asArray(value) : []
+}
+
+// Name the files after their names in the zip, numbered when different files
+// share a name, and without characters that reach outside of `files/` or that
+// file systems reject:
+function getFilePath(name: string, takenPaths: Set<string>) {
+  const fileName = name
+    .replace(/[/\\:*?"<>|\p{Cc}\p{Cf}]/gu, '-')
+    .replace(/^\.*$/, '-')
+  const [, base, extension = ''] = fileName.match(/^(.+?)(\.[^.]*)?$/)!
+  // Compare the paths like file systems that ignore case and normalization do,
+  // e.g. the ones of macOS and Windows:
+  const normalize = (path: string) => path.normalize('NFC').toLowerCase()
+  let path = `files/${fileName}`
+  for (let count = 2; takenPaths.has(normalize(path)); count++) {
+    path = `files/${base} (${count})${extension}`
+  }
+  takenPaths.add(normalize(path))
+  return path
 }
 
 function isFileReference(file: Data) {
