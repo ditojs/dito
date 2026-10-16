@@ -1,7 +1,6 @@
 import { isObject, isArray, asArray } from '@ditojs/utils'
 import { Controller } from './Controller.js'
 import { ControllerError, ValidationError } from '../errors/index.js'
-import { parseHandlerDefinition } from '../utils/handler.js'
 
 // Abstract base class for ModelController and RelationController
 export class CollectionController extends Controller {
@@ -15,9 +14,6 @@ export class CollectionController extends Controller {
   idValidator = null
   // The handler of `member.get`, resolved by `setup()`, see `getMember()`.
   #memberGetHandler = null
-  // The authorizations of the `get` and `patch` member actions, resolved by
-  // `setup()`, see `authorizeMember()`.
-  #memberAuthorizations = null
 
   // @override
   configure() {
@@ -35,7 +31,6 @@ export class CollectionController extends Controller {
     // Inherit the member actions here, as `this.member` only holds the routed
     // handlers after `setupActions()`, see `#memberGetHandler` below.
     const memberActions = this.inheritValues('member')
-    this.#memberAuthorizations = this.setupMemberAuthorizations(memberActions)
     this.logController()
     this.setProperty('collection', this.setupActions('collection'))
     this.setProperty(
@@ -48,29 +43,6 @@ export class CollectionController extends Controller {
       ? this.member.get
       : this.setupActionDefinition(memberActions, 'get').handler
     this.setProperty('assets', this.setupAssets())
-  }
-
-  setupMemberAuthorizations(memberActions) {
-    // Also for actions that `allow` doesn't route, as they protect the members
-    // either way.
-    const { authorize = {} } = this.processValues(memberActions)
-    return Object.fromEntries(
-      ['get', 'patch'].map(name => [
-        name,
-        this.processAuthorize(
-          this.getActionAuthorize(
-            parseHandlerDefinition(memberActions?.[name]),
-            authorize[name]
-          )
-        )
-      ])
-    )
-  }
-
-  // Authorizes the requested member like the `get` or `patch` member action
-  // does, for reading or changing its relations, see `RelationController`.
-  async authorizeMember(ctx, name) {
-    await this.handleAuthorization(this.#memberAuthorizations[name], ctx)
   }
 
   // @override

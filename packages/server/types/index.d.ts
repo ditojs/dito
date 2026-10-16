@@ -2346,26 +2346,6 @@ export class Controller {
   /** The controller's logger instance. */
   get logger(): PinoLogger
   /**
-   * Authorizes requests of actions and asset uploads beyond their own
-   * `authorize` setting, before anything else. No-op in the base class;
-   * relation controllers authorize the parent member here.
-   */
-  handleRequestAuthorization(
-    ctx: KoaContext,
-    method: HttpMethod,
-    authorize?: Authorize
-  ): Promise<void>
-
-  /**
-   * Returns the `authorize` setting of an action: its own, overriding the one
-   * determined from its actions object and controller.
-   */
-  getActionAuthorize(
-    definition: { authorize?: Authorize } | null,
-    authorize?: Authorize
-  ): Authorize | undefined
-
-  /**
    * Returns a member model for the request context.
    * No-op in the base class; override in subclasses.
    */
@@ -2976,12 +2956,6 @@ export class CollectionController<
       forUpdate?: boolean
     }
   ): Promise<$Model | null>
-
-  /**
-   * Authorizes the requested member like the `get` or `patch` member action
-   * does, for reading or changing its relations.
-   */
-  authorizeMember(ctx: KoaContext, name: 'get' | 'patch'): Promise<void>
 
   /**
    * Fetches the member with the given `id`, applying `query` as filters and

@@ -329,36 +329,6 @@ controllers fetch it through `member.get`, see
 [`CollectionController.getMember()`](#getmember-1). Returns `Promise<Model |
 null>`.
 
-### handleRequestAuthorization()
-
-```js
-await controller.handleRequestAuthorization(ctx, method, authorize)
-```
-
-Authorizes requests of actions and asset uploads before anything else, beyond
-their own `authorize` setting. Does nothing in `Controller`;
-`RelationController` authorizes the parent member here. *Hook.*
-
-#### Parameters
-
-| Name        | Type                        | Description                                                                   |
-| ----------- | --------------------------- | ----------------------------------------------------------------------------- |
-| `ctx`       | `KoaContext`                | The request context.                                                          |
-| `method`    | [`HttpMethod`](#httpmethod) | The action's method.                                                          |
-| `authorize` | [`Authorize`](#authorize)   | The action's setting, from the action, its actions object or the controller. |
-
-Returns `Promise<void>`.
-
-### getActionAuthorize()
-
-```js
-const authorize = controller.getActionAuthorize(definition, authorize)
-```
-
-Returns the action's own `definition.authorize`, falling back to `authorize`,
-the setting determined from its actions object and controller. Returns
-[`Authorize`](#authorize) `| undefined`.
-
 ### processAuthorize()
 
 ```js
@@ -377,7 +347,9 @@ await controller.handleAuthorization(authorization, ctx, member?)
 
 Calls an authorization function from `processAuthorize()` and throws an
 [`AuthorizationError`](./errors.md#authorizationerror) unless it returns `true`.
-Returns `Promise<void>`.
+Actions and asset uploads authorize through it, so overrides can add checks:
+`RelationController` also authorizes the parent member here. *Hook.* Returns
+`Promise<void>`.
 
 ### emitHook()
 
@@ -611,16 +583,6 @@ default `member.get`. One-to-one relations fetch their single related model
 without `id`. Responds with a 404 error when not found. Returns
 `Promise<Model>`.
 
-### authorizeMember()
-
-```js
-await controller.authorizeMember(ctx, name)
-```
-
-Authorizes the requested member like the `get` or `patch` member action does
-(`name`), also when `allow` doesn't route it. Used by relation controllers.
-Returns `Promise<void>`.
-
 ### executeAndFetch()
 
 ```js
@@ -706,8 +668,7 @@ Id[]`.
 
 ### Internal members
 
-`idValidator` and `setupMemberAuthorizations()` are internal, and not part of
-the types.
+`idValidator` is internal, and not part of the types.
 
 ## ModelController
 
@@ -768,13 +729,13 @@ For relations without `owner: true`, `relate` and `unrelate` are set:
 `post` relates existing models by id (including extra columns of join tables)
 and `delete` unrelates. Set them on the relation object to override this.
 
-Requests are authorized for the parent member first: reading a relation
-requires the parent's `get` member authorization, changing it (including
-uploads) also its `patch` authorization, unless the relation sets `authorize`
-for the action: on the action, its actions object, or the relation object. The
-parent must then be found through its `member.get`, or the request responds
-with a 404 error. `'$owner'` and `'$self'` in the parent check refer to the
-parent member.
+Requests are also authorized for the parent member: reading a relation
+requires the parent's `get` member authorization, changing it also its `patch`
+authorization, unless the relation sets `authorize` for the action: on the
+action, its actions object, or the relation object. Asset uploads always need
+the parent's `patch` authorization. The parent must then be found through its
+`member.get`, or the request responds with a 404 error. `'$owner'` and
+`'$self'` in the parent check refer to the parent member.
 
 ```js
 export class Books extends ModelController {
@@ -803,7 +764,7 @@ export class Books extends ModelController {
 | `relationInstance`   | `objection.Relation`    | The Objection relation. |
 | `relationDefinition` | `object`                | The model's relation definition. |
 
-It overrides [`handleRequestAuthorization()`](#handlerequestauthorization),
+It overrides [`handleAuthorization()`](#handleauthorization),
 [`execute()`](#execute) and [`relateAndFetch()`](#relateandfetch).
 `getParentColumns()` and `getRelateReferences()` are internal, and not part of
 the types.

@@ -294,12 +294,6 @@ export class Controller {
     return definition
   }
 
-  // Returns the `authorize` setting of an action: its own, overriding the one
-  // that `processValues()` determined from its actions object and controller.
-  getActionAuthorize(definition, authorize) {
-    return definition?.authorize ?? authorize
-  }
-
   setupActionRoute(type, action) {
     const url = this.getUrl(type, action.path)
     const { method, transacted, authorize } = action
@@ -382,7 +376,6 @@ export class Controller {
     const authorization = this.processAuthorize(authorize)
     this.setupRoute('post', url, transacted, authorize, null, [
       async (ctx, next) => {
-        await this.handleRequestAuthorization(ctx, 'post', authorize)
         await this.handleAuthorization(authorization, ctx)
         return next()
       },
@@ -578,11 +571,6 @@ export class Controller {
     }
     return result
   }
-
-  // Authorizes requests of actions and asset uploads beyond their own
-  // `authorize` setting, before anything else, see `RelationController`.
-  // @overridable
-  async handleRequestAuthorization(/* ctx, method, authorize */) {}
 
   async getMember(/* ctx, base = this, param = { ... } */) {
     // This is only defined in `CollectionController`, where it resolves to the
