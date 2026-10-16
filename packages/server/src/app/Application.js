@@ -1164,6 +1164,61 @@ export class Application extends Koa {
     return references
   }
 
+  async recountAssets({ dryRun = false, transaction = null } = {}) {
+    const changed = []
+    const missing = []
+    const lost = []
+    const AssetModel = this.getModel('Asset')
+    if (AssetModel) {
+      await AssetModel.transaction(transaction, async trx => {
+        // Lock the assets before counting, so that concurrent writes either
+        // are counted or change the counts after the recount:
+        const query = AssetModel.query(trx)
+        const assets = await (dryRun ? query : query.forUpdate())
+        const referencesByKey = groupBy(
+          await this.getAssetReferences({ transaction: trx }),
+          'key'
+        )
+        for (const asset of assets) {
+          const count = referencesByKey[asset.key]?.length ?? 0
+          if (count !== asset.count) {
+            changed.push({ asset, count })
+            if (!dryRun) {
+              await AssetModel.query(trx).findById(asset.id).patch({ count })
+            }
+          }
+        }
+        // Create the missing assets of referenced files that are still stored,
+        // as files without assets can't be stored in other places:
+        const assetKeys = new Set(assets.map(asset => asset.key))
+        const storedKeysByStorage = {}
+        for (const [key, references] of Object.entries(referencesByKey)) {
+          if (!assetKeys.has(key)) {
+            const storage = this.getStorage(references[0].storage)
+            const storedKeys = (storedKeysByStorage[storage.name] ||=
+              await getStoredKeys(storage))
+            if (storedKeys.has(key)) {
+              missing.push({ key, references })
+              if (!dryRun) {
+                const file = { ...references[0].file }
+                storage.signAssetFile(file)
+                await this.createAssets(
+                  storage,
+                  [file],
+                  references.length,
+                  trx
+                )
+              }
+            } else {
+              lost.push({ key, references })
+            }
+          }
+        }
+      })
+    }
+    return { changed, missing, lost }
+  }
+
   async releaseUnusedAssets({
     timeThreshold = null,
     transaction = null,
@@ -1309,4 +1364,14 @@ const defaultLoggerOptions = {
 // Escape the wildcards of `like` patterns, with `!` as the escape character:
 function escapeLike(string) {
   return string.replace(/[!%_]/g, '!$&')
+}
+
+async function getStoredKeys(storage) {
+  const keys = await storage.listKeys()
+  if (!keys) {
+    throw new AssetError(
+      `Unable to list the keys of storage '${storage.name}'.`
+    )
+  }
+  return new Set(keys)
 }

@@ -725,6 +725,20 @@ export class Application<$Models extends Models = Models> {
     transaction?: objection.Transaction | null
   }): Promise<AssetReference[]>
 
+  /**
+   * Sets the counts of all assets to the number of their references, and
+   * creates the missing assets of referenced files. With `dryRun`, it only
+   * returns what it would change.
+   */
+  recountAssets(options?: {
+    dryRun?: boolean
+    transaction?: objection.Transaction | null
+  }): Promise<{
+    changed: { asset: InstanceType<typeof AssetModel>; count: number }[]
+    missing: { key: string; references: AssetReference[] }[]
+    lost: { key: string; references: AssetReference[] }[]
+  }>
+
   /** Releases unused assets past the cleanup threshold. */
   releaseUnusedAssets(options?: {
     timeThreshold?: string | number | null

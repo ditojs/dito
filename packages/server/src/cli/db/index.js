@@ -1,6 +1,7 @@
 export * from './createMigration.js'
 export * from './listAssetConfig.js'
 export * from './migrate.js'
+export * from './recountAssets.js'
 export * from './rollback.js'
 export * from './reset.js'
 export * from './seed.js'

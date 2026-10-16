@@ -215,7 +215,8 @@ Dito.js checks for such files once writes of asset data are committed. Before
 removing a file, it checks that no data references it anymore, as writes that
 skip the model hooks, e.g. of scripts and seeds, don't count the references
 they add. To clean up on a schedule as well, call `app.releaseUnusedAssets()`,
-e.g. from a [service](services.md).
+e.g. from a [service](services.md). `pnpm db:recount_assets` sets the counts to
+the references in the data again.
 
 ## Adding files in code
 
