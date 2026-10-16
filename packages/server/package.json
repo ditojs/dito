@@ -75,6 +75,7 @@
   "peerDependencies": {
     "@aws-sdk/client-s3": "^3.0.0",
     "@ditojs/build": "workspace:^",
+    "@simplewebauthn/server": "^14.0.0",
     "@vitejs/plugin-vue": "^6.0.0",
     "knex": "^3.3.0",
     "objection": "^3.3.0",
@@ -87,6 +88,9 @@
     "@ditojs/build": {
       "optional": true
     },
+    "@simplewebauthn/server": {
+      "optional": true
+    },
     "@vitejs/plugin-vue": {
       "optional": true
     },
@@ -96,6 +100,7 @@
   },
   "devDependencies": {
     "@aws-sdk/client-s3": "^3.1147.0",
+    "@simplewebauthn/server": "^14.0.3",
     "@types/koa-bodyparser": "^4.3.13",
     "@types/koa-compress": "^4.0.7",
     "@types/koa-mount": "^4.0.5",

@@ -504,6 +504,54 @@ describe('useSource()', () => {
       ])
     })
 
+    describe('in dialogs', () => {
+      async function showAuthorsDialog(admin) {
+        admin.context.showDialog({
+          components: {
+            authors: {
+              type: 'list',
+              resource: { path: 'authors' },
+              columns: { name: { sortable: true } }
+            }
+          },
+          buttons: { cancel: {} }
+        })
+        await flushPromises()
+        const source = admin.wrapper
+          .findAllComponents(DitoTypeList)
+          .map(({ vm }) => vm)
+          .find(({ schema }) => schema.name === 'authors')
+        const getLoadQueries = () =>
+          admin.request.mock.calls
+            .map(([options]) => options)
+            .filter(({ url }) => url === '/authors')
+            .map(({ query }) => query)
+        return { source, getLoadQueries }
+      }
+
+      it(`doesn't load the query of the route`, async () => {
+        const { admin } = await mountBooksView()
+        await admin.navigate('/books?order=title+desc&page=2')
+        const { getLoadQueries } = await showAuthorsDialog(admin)
+        expect(getLoadQueries()).toEqual([{}])
+        expect(admin.router.currentRoute.value.query).toEqual({
+          order: 'title desc',
+          page: '2'
+        })
+      })
+
+      it('loads its changed query without navigating', async () => {
+        const { admin } = await mountBooksView()
+        const { source, getLoadQueries } = await showAuthorsDialog(admin)
+        await source.listQuery.update({ order: 'name asc' })
+        await flushPromises()
+        expect(getLoadQueries()).toEqual([{}, { order: 'name asc' }])
+        expect(admin.router.currentRoute.value.query).toEqual({
+          order: 'title asc'
+        })
+      })
+    })
+
     it(`doesn't load once unmounted when the navigation fails`, async () => {
       const { admin, source, getLoadQueries } = await mountBooksView()
       const loadCount = getLoadQueries().length
@@ -518,6 +566,64 @@ describe('useSource()', () => {
       rejectNavigation()
       await flushPromises()
       expect(getLoadQueries().slice(loadCount)).toEqual([])
+    })
+  })
+
+  describe('context.reload()', () => {
+    it('reloads the list of the button', async () => {
+      let titles = ['Emma']
+      const { findField } = await mountSchema({
+        schema: {
+          components: {
+            books: {
+              type: 'list',
+              resource: { path: 'books' },
+              columns: ['title'],
+              buttons: {
+                reload: {
+                  text: 'Reload',
+                  async onClick({ reload }) {
+                    titles = ['Emma', 'Persuasion']
+                    await reload()
+                  }
+                }
+              }
+            }
+          }
+        },
+        request: () => ({
+          data: titles.map((title, index) => ({ id: index + 1, title }))
+        })
+      })
+      const books = findField('books')
+      await books
+        .findAll('button')
+        .find(button => button.text() === 'Reload')
+        .trigger('click')
+      await flushPromises()
+      expect(books.findAll('tbody tr').map(row => row.text())).toEqual([
+        'Emma',
+        'Persuasion'
+      ])
+    })
+
+    it('throws outside of lists and objects', async () => {
+      let context = null
+      await mountSchema({
+        schema: {
+          components: {
+            title: {
+              type: 'text',
+              computeValue: computeContext => {
+                context = computeContext
+              }
+            }
+          }
+        }
+      })
+      await expect(context.reload()).rejects.toThrow(
+        'Unable to reload: There is no list or object.'
+      )
     })
   })
 

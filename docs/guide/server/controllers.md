@@ -594,6 +594,73 @@ list the routes above too, e.g.
 In actions, `ctx.state.user` is the logged-in user. The admin logs in through
 these routes, see the [admin guide](../admin/index.md).
 
+### Passkeys
+
+Users can also log in with passkeys, without a password. Install the optional
+peer dependency `@simplewebauthn/server`, add a model for the credentials, and
+turn on passkeys:
+
+```js
+import { Model, CredentialMixin } from '@ditojs/server'
+
+export class Credential extends CredentialMixin(Model) {}
+```
+
+```js
+// config/index.js
+export default {
+  app: {
+    session: { modelClass: 'Session' },
+    auth: {
+      credentials: { modelClass: 'Credential' },
+      passkeys: {
+        name: 'Example',
+        id: 'example.com',
+        origins: ['https://example.com']
+      }
+    }
+  }
+}
+```
+
+The users controller then adds the passkey routes, see
+[`UsersController`](../../api/server/controllers.md#userscontroller). In the
+browser, `@simplewebauthn/browser` runs them against the authenticator. A
+logged-in user adds a passkey:
+
+```js
+import { startRegistration } from '@simplewebauthn/browser'
+
+const post = async (path, body) => {
+  const response = await fetch(`/api/users/${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  })
+  return response.json()
+}
+
+const optionsJSON = await post('passkey-options')
+const response = await startRegistration({ optionsJSON })
+await post('passkeys', { name: 'Laptop', response })
+```
+
+And logs in with it later, without a username:
+
+```js
+import { startAuthentication } from '@simplewebauthn/browser'
+
+const optionsJSON = await post('passkey-login-options')
+const { user } = await post(
+  'passkey-login',
+  await startAuthentication({ optionsJSON })
+)
+```
+
+`GET /users/passkeys` lists the user's passkeys, and
+`DELETE /users/passkeys/:id` removes one. The admin offers both with its
+`login.passkeys` option, see [`DitoAdmin`](../../api/admin/admin.md#parameters).
+
 ## Admin
 
 The `AdminController` serves the admin interface at its path. In development

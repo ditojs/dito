@@ -1,6 +1,7 @@
 import type { ModelProperties } from '@ditojs/server'
 import { SessionModel, UserModel, UsersController } from '@ditojs/server'
 import { createTestApp, getAppUrl } from '../utils/app.js'
+import { createClient } from '../utils/client.js'
 import { createTestDatabase } from '../utils/database.js'
 import { isSQLiteTest } from '../utils/test-knex.js'
 
@@ -145,40 +146,6 @@ describe('UsersController', () => {
   let url: string
   let member: Member
 
-  // A minimal cookie jar, to keep the session between requests.
-  const createClient = () => {
-    const cookies = new Map<string, string>()
-    return async (
-      path: string,
-      { method = 'GET', body }: { method?: string; body?: any } = {}
-    ) => {
-      const response = await fetch(`${url}${path}`, {
-        method,
-        headers: {
-          'accept': 'application/json',
-          'content-type': 'application/json',
-          'cookie': [...cookies]
-            .map(([key, value]) => `${key}=${value}`)
-            .join('; ')
-        },
-        body: body !== undefined ? JSON.stringify(body) : undefined
-      })
-      for (const cookie of response.headers.getSetCookie()) {
-        const [, key, value] = cookie.match(/^([^=]+)=([^;]*)/) ?? []
-        if (value) {
-          cookies.set(key, value)
-        } else {
-          cookies.delete(key)
-        }
-      }
-      const isJson = response.headers.get('content-type')?.includes('json')
-      return {
-        status: response.status,
-        data: isJson ? await response.json() : null
-      }
-    }
-  }
-
   beforeAll(async () => {
     await createTestDatabase(app, Member, Lead)
     // Session ids are strings, not auto-incrementing integers.
@@ -211,7 +178,7 @@ describe('UsersController', () => {
   })
 
   it('reports unauthenticated sessions', async () => {
-    const request = createClient()
+    const request = createClient(url)
     expect((await request('/members/session')).data).toEqual({
       authenticated: false,
       user: null
@@ -222,7 +189,7 @@ describe('UsersController', () => {
   })
 
   it('logs in members and persists the session in the database', async () => {
-    const request = createClient()
+    const request = createClient(url)
     const login = await request('/members/login', {
       method: 'POST',
       body: { username: 'ada', password: 'secret' }
@@ -246,7 +213,7 @@ describe('UsersController', () => {
   })
 
   it('restores the user from the session in later requests', async () => {
-    const request = createClient()
+    const request = createClient(url)
     await request('/members/login', {
       method: 'POST',
       body: { username: 'ada', password: 'secret' }
@@ -262,7 +229,7 @@ describe('UsersController', () => {
   })
 
   it('rejects logins with wrong passwords', async () => {
-    const request = createClient()
+    const request = createClient(url)
     const login = await request('/members/login', {
       method: 'POST',
       body: { username: 'ada', password: 'wrong' }
@@ -282,7 +249,7 @@ describe('UsersController', () => {
   it('rejects logins of members without a password', async () => {
     const invited = await Member.query().insert({ username: 'invited' } as any)
     try {
-      const request = createClient()
+      const request = createClient(url)
       const login = await request('/members/login', {
         method: 'POST',
         body: { username: 'invited', password: 'secret' }
@@ -295,7 +262,7 @@ describe('UsersController', () => {
   })
 
   it('rejects logins with missing credentials', async () => {
-    const request = createClient()
+    const request = createClient(url)
     const login = await request('/members/login', {
       method: 'POST',
       body: {}
@@ -313,7 +280,7 @@ describe('UsersController', () => {
       password: 'secret'
     } as any)
     try {
-      const request = createClient()
+      const request = createClient(url)
       const login = await request('/members/login', {
         method: 'POST',
         body: { username: 'locked', password: 'secret' }
@@ -330,7 +297,7 @@ describe('UsersController', () => {
   })
 
   it('logs out members and clears the session', async () => {
-    const request = createClient()
+    const request = createClient(url)
     await request('/members/login', {
       method: 'POST',
       body: { username: 'ada', password: 'secret' }
@@ -344,7 +311,7 @@ describe('UsersController', () => {
   })
 
   it('regenerates the session id on login', async () => {
-    const request = createClient()
+    const request = createClient(url)
     const credentials = { username: 'ada', password: 'secret' }
     await request('/members/login', { method: 'POST', body: credentials })
     const [before] = await Session.query()
@@ -355,7 +322,7 @@ describe('UsersController', () => {
   })
 
   it('does not read credentials from the query string', async () => {
-    const request = createClient()
+    const request = createClient(url)
     const login = await request('/members/login?username=ada&password=secret', {
       method: 'POST',
       body: {}
@@ -365,7 +332,7 @@ describe('UsersController', () => {
   })
 
   it('leaves no session behind when a transacted login fails', async () => {
-    const request = createClient()
+    const request = createClient(url)
     const login = await request('/members/broken-login', {
       method: 'POST',
       body: { username: 'ada', password: 'secret' }
@@ -390,7 +357,7 @@ describe('UsersController', () => {
     })
 
     const loginOther = async () => {
-      const request = createClient()
+      const request = createClient(url)
       await request('/members/login', {
         method: 'POST',
         body: { username: 'bo', password: 'secret' }
@@ -434,7 +401,7 @@ describe('UsersController', () => {
       password: 'secret'
     } as any)
     try {
-      const request = createClient()
+      const request = createClient(url)
       await request('/leads/login', {
         method: 'POST',
         body: { username: 'lea', password: 'secret' }
@@ -454,7 +421,7 @@ describe('UsersController', () => {
   })
 
   it('does not log out unauthenticated requests', async () => {
-    const request = createClient()
+    const request = createClient(url)
     const logout = await request('/members/logout', { method: 'POST' })
     expect(logout.data).toEqual({ success: false, authenticated: false })
   })
@@ -464,7 +431,7 @@ describe('UsersController', () => {
       username: 'bo',
       password: 'secret'
     } as any)
-    const request = createClient()
+    const request = createClient(url)
     expect((await request(`/members/${member.id}`)).status).toBe(401)
     await request('/members/login', {
       method: 'POST',
@@ -476,7 +443,7 @@ describe('UsersController', () => {
   })
 
   it('patches members through `self` with the settings of `patch`', async () => {
-    const request = createClient()
+    const request = createClient(url)
     await request('/members/login', {
       method: 'POST',
       body: { username: 'ada', password: 'secret' }
@@ -496,7 +463,7 @@ describe('UsersController', () => {
       password: 'secret'
     } as any)
     try {
-      const request = createClient()
+      const request = createClient(url)
       await request('/members/login', {
         method: 'POST',
         body: { username: 'bo', password: 'secret' }
@@ -510,7 +477,7 @@ describe('UsersController', () => {
       expect(self.data).not.toHaveProperty('hash')
       expect((await Member.query().findById(member.id))!.nickname).toBeNull()
       // The password is hashed like in other patches:
-      const login = await createClient()('/members/login', {
+      const login = await createClient(url)('/members/login', {
         method: 'POST',
         body: { username: 'bo', password: 'changed' }
       })
@@ -521,7 +488,7 @@ describe('UsersController', () => {
   })
 
   it('validates the patches of members', async () => {
-    const request = createClient()
+    const request = createClient(url)
     await request('/members/login', {
       method: 'POST',
       body: { username: 'ada', password: 'secret' }
@@ -539,7 +506,7 @@ describe('UsersController', () => {
   })
 
   it('rejects patches of the user without a login', async () => {
-    const request = createClient()
+    const request = createClient(url)
     const self = await request('/members/self', {
       method: 'PATCH',
       body: { nickname: 'Anonymous' }
@@ -552,7 +519,7 @@ describe('UsersController', () => {
       ['readers', 405],
       ['editors', 401]
     ] as const) {
-      const request = createClient()
+      const request = createClient(url)
       await request(`/${path}/login`, {
         method: 'POST',
         body: { username: 'ada', password: 'secret' }
@@ -568,7 +535,7 @@ describe('UsersController', () => {
   })
 
   it(`doesn't apply the controller's authorize to logins and sessions`, async () => {
-    const request = createClient()
+    const request = createClient(url)
     const login = await request('/admins/login', {
       method: 'POST',
       body: { username: 'ada', password: 'secret' }

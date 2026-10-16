@@ -677,6 +677,31 @@ buttons of sources and forms.
 
 Whether the submit succeeded.
 
+### reload()
+
+```ts
+context.reload(): Promise<void>
+```
+
+Reloads the items of the list or object that the component is or is in, e.g.
+of a list button after it changed the items on the server, and resolves once
+they're loaded. Sources without their own `resource` are part of the data
+around them and have nothing to load. Throws outside of lists and objects.
+
+#### Example
+
+```js
+buttons: {
+  import: {
+    text: 'Import',
+    async onClick({ request, reload }) {
+      await request({ method: 'post', resource: { path: 'import' } })
+      await reload()
+    }
+  }
+}
+```
+
 ### closeForm()
 
 ```ts

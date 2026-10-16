@@ -1,6 +1,7 @@
-import { expectTypeOf, describe, it } from 'vitest'
+import { assertType, expectTypeOf, describe, it } from 'vitest'
 import type {
   Application,
+  ApplicationConfig,
   AssetReference,
   Model,
   ModelAsset,
@@ -54,5 +55,21 @@ describe('Application', () => {
     expectTypeOf<
       Awaited<ReturnType<App['recountAssets']>>['missing'][number]['references']
     >().toEqualTypeOf<AssetReference[]>()
+  })
+
+  it('accepts credentials and passkeys in app.auth', () => {
+    assertType<ApplicationConfig>({
+      app: {
+        session: { modelClass: 'Session' },
+        auth: {
+          credentials: { modelClass: 'Credential' },
+          passkeys: {
+            name: 'Example',
+            id: 'example.com',
+            origins: ['https://example.com']
+          }
+        }
+      }
+    })
   })
 })
