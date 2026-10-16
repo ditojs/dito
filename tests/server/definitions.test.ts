@@ -108,7 +108,7 @@ class Archive extends Model {
 }
 
 describe('Definitions in model properties', () => {
-  const app = createTestApp({ models: { Library, Archive } })
+  const app = createTestApp({ models: { Library } })
 
   beforeAll(async () => {
     await createTestDatabase(app)
@@ -194,9 +194,8 @@ describe('Definitions in model properties', () => {
   })
 
   it('rejects discriminators with the tag in `allOf` parts', async () => {
-    await expect(
-      Archive.query().insert({ sections: [{ type: 'chapter' }] } as any)
-    ).rejects.toThrow(
+    const app = createTestApp({ models: { Archive } })
+    await expect(app.setupModels()).rejects.toThrow(
       'discriminator: oneOf subschemas (or referenced schemas) must have ' +
       '"properties/type"'
     )

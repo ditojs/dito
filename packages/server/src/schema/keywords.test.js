@@ -331,6 +331,20 @@ describe('instanceof keyword', () => {
     const restockedAt = new Date()
     expect(Shelf.fromJson({ restockedAt }).restockedAt).toBe(restockedAt)
   })
+
+  it('rejects types that are neither names nor constructors', () => {
+    class Crate extends Model {
+      static properties = {
+        packedAt: {
+          instanceof: 42
+        }
+      }
+    }
+    createApp({ Crate })
+    expect(() => Crate.fromJson({ packedAt: new Date() })).toThrow(
+      'keyword "instanceof" value is invalid'
+    )
+  })
 })
 
 describe('range keyword', () => {
