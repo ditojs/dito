@@ -670,7 +670,9 @@ export function walkSchemaData(schema, data, {
                 value = serializedData
                   ? value.map(walkItem)
                   : value.forEach(walkItem)
-              } else {
+              } else if (!isListSource(componentSchema)) {
+                // Lists only hold items in arrays. Apps may store them in other
+                // values that `computeValue()` converts, e.g. objects by type:
                 value = walkItem(value)
               }
               if (serializedData) {

@@ -344,6 +344,50 @@ describe('DitoClipboard', () => {
       }
     }
 
+    it('leaves lists stored in values other than arrays as they are', async () => {
+      // Apps may store lists in other values that `computeValue()` converts,
+      // e.g. objects by type. Walking them as one item would apply the default
+      // form to them:
+      const blocks = { article: { title: 'Emma' } }
+      const { data, wrapper } = await mountForm({
+        schema: {
+          clipboard: true,
+          components: {
+            blocks: {
+              type: 'list',
+              forms: {
+                article: {
+                  type: 'form',
+                  components: { title: { type: 'text' } }
+                },
+                default: {
+                  type: 'form',
+                  components: {
+                    targets: {
+                      type: 'list',
+                      form: {
+                        type: 'form',
+                        components: { name: { type: 'text' } }
+                      },
+                      computeValue: () => ({})
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        data: { blocks }
+      })
+      expect(data.blocks).toEqual(blocks)
+      await wrapper.find('.dito-clipboard .dito-button--copy').trigger('click')
+      await flushPromises()
+      expect(getClipboardData()).toEqual({ blocks })
+      await wrapper.find('.dito-clipboard .dito-button--paste').trigger('click')
+      await flushPromises()
+      expect(data.blocks).toEqual(blocks)
+    })
+
     it('copies the items and pastes them into lists of the same name', async () => {
       const { click, data, dataModel } = await mountShelves()
       await click('books', 'copy')

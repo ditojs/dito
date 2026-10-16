@@ -9,6 +9,10 @@ version, see the upgrade guides in `docs/`.
 
 - **admin:** The zips that `clipboard: { interchange: true }` downloads store their files under their names, e.g. `files/cover.png`, instead of their storage keys, numbering different files of the same name, also when they only differ in case. Zips downloaded with 4.7.0 and 4.7.1 still upload (#323).
 
+### Fixes
+
+- **admin:** Lists whose value isn't an array, e.g. an object that the app converts with `computeValue()`, keep their value when the data is loaded, copied, pasted and saved, instead of being handled as one item of the list's form, e.g. its `default` form, which added that form's values to them and left out their other keys. Their values are no longer validated or given the computed and default values of that form.
+
 ## 4.7.1 (2026-10-16)
 
 ### New

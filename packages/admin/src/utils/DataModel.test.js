@@ -1559,6 +1559,26 @@ describe('DataModel', () => {
       dataModel.stop()
     })
 
+    it('merges copies into the rows of lists stored in objects in place', () => {
+      // Lists show the values of objects as rows, with their keys as indices:
+      const { dataModel, data } = createDataModel(schema, {
+        chapters: { one: { title: 'One', notes: [{ text: 'A' }] } }
+      })
+      const { one } = data.chapters
+      const [note] = one.notes
+      const draft = cloneWithUids(one)
+      draft.title = 'First'
+      dataModel.merge(
+        { data: data.chapters, name: 'one', dataPath: 'chapters/one' },
+        draft,
+        chapterList
+      )
+      expect(data.chapters.one).toBe(one)
+      expect(one.title).toBe('First')
+      expect(one.notes[0]).toBe(note)
+      dataModel.stop()
+    })
+
     it('rewrites computed values that hold the merged copy', async () => {
       const chapterList = {
         type: 'list',
