@@ -8,6 +8,7 @@ version, see the upgrade guides in `docs/`.
 ### Behaviour changes
 
 - **server:** `self` stands for the logged-in user in the member routes of `UsersController`, so `PATCH users/self` runs `member.patch` with all its settings, e.g. `transacted`, `parameters` and hooks, which the `'patch self'` collection action of 4.6.0 skipped. `'patch self'` is removed: remove it from `collection.allow` and from overrides.
+- **server:** Relation controllers authorize their parent member in an override of `handleAuthorization()`, after the parameters are validated like all other authorization, instead of in `handleRequestAuthorization()` before anything else. Asset uploads on relations always need the parent's `patch` authorization. `handleRequestAuthorization()`, `authorizeMember()` and `getActionAuthorize()` are removed.
 
 ### Fixes
 

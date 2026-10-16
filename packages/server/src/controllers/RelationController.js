@@ -74,23 +74,23 @@ export class RelationController extends CollectionController {
   }
 
   // @override
-  async handleRequestAuthorization(ctx, method, authorize) {
+  async handleAuthorization(authorization, ctx, member) {
     // Relations are part of their parent member: Accessing them requires its
     // `get` authorization, changing them also its `patch` authorization,
-    // unless the relation authorizes the change itself. Like the parent's own
-    // member actions, authorize before looking up the member, so that requests
-    // learn nothing about members they aren't authorized for.
-    const isReading = method === 'get'
-    const isAuthorizedByRelation = authorize != null
+    // unless the relation authorizes the change itself. Asset uploads have no
+    // action and always change the relation.
     const { parent } = this
     const parentCtx = parent.getContextWithMemberId(ctx)
-    await parent.authorizeMember(parentCtx, 'get')
-    if (!isReading && !isAuthorizedByRelation) {
-      await parent.authorizeMember(parentCtx, 'patch')
+    const { get, patch } = parent.member.authorizations
+    const { method, authorize } = ctx.action || {}
+    await super.handleAuthorization(get, parentCtx)
+    if (method !== 'get' && authorize == null) {
+      await super.handleAuthorization(patch, parentCtx)
     }
     if (!(await parent.getMember(parentCtx))) {
       throw new NotFoundError()
     }
+    return super.handleAuthorization(authorization, ctx, member)
   }
 
   // @override

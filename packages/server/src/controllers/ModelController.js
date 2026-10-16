@@ -4,6 +4,7 @@ import { CollectionController } from './CollectionController.js'
 import { RelationController } from './RelationController.js'
 import { ControllerError } from '../errors/index.js'
 import { setupPropertyInheritance } from '../utils/object.js'
+import { parseHandlerDefinition } from '../utils/handler.js'
 
 export class ModelController extends CollectionController {
   // @override
@@ -28,7 +29,22 @@ export class ModelController extends CollectionController {
   }
 
   setup() {
+    // Relations require the authorization of their parent member's `get` and
+    // `patch` actions, also where `allow` doesn't route them, so process them
+    // before `setupActions()` replaces `member` with the routed handlers:
+    const memberActions = this.inheritValues('member')
+    const { authorize } = this.processValues(memberActions)
+    const authorizations = Object.fromEntries(
+      ['get', 'patch'].map(name => [
+        name,
+        this.processAuthorize(
+          parseHandlerDefinition(memberActions[name])?.authorize ??
+          authorize[name]
+        )
+      ])
+    )
     super.setup()
+    this.member.authorizations = authorizations
     this.setProperty('relations', this.setupRelations())
   }
 

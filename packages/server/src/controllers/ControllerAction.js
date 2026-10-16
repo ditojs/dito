@@ -20,6 +20,7 @@ export default class ControllerAction {
       after,
       core,
       scope,
+      authorize,
       transacted,
       parameters,
       response,
@@ -39,7 +40,9 @@ export default class ControllerAction {
     this.method = method
     this.path = path
     this.scope = scope
-    this.authorize = controller.getActionAuthorize(definition, _authorize)
+    // Allow action handlers to override the predetermined defaults for
+    // `authorize`:
+    this.authorize = authorize ?? _authorize
     this.transacted = !!(
       transacted ??
       controller.transacted ??
@@ -89,11 +92,6 @@ export default class ControllerAction {
   }
 
   async callAction(ctx) {
-    await this.controller.handleRequestAuthorization(
-      ctx,
-      this.method,
-      this.authorize
-    )
     const { params, wrapped } = await this.validateParameters(ctx)
     // Expose the query parameters that aren't consumed by the action's
     // parameters, for the default actions to pass on to their queries.
