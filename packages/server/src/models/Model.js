@@ -16,6 +16,7 @@ import {
   getValueAtDataPath,
   getEntriesAtDataPath,
   setValueAtDataPath,
+  groupBy,
   assignDeeply,
   formatPlainDate,
   parsePlainDate,
@@ -1144,9 +1145,6 @@ export class Model extends objection.Model {
         // affect the assets.
         if (dataPaths.length === 0) return
 
-        const afterItems = isDelete
-          ? []
-          : inputItems
         // Load the model's asset files in their current state before the query
         // is executed. For deletes, load the data for all asset data-paths.
         // Otherwise, only load the columns present in the input data.
@@ -1165,6 +1163,12 @@ export class Model extends objection.Model {
                   return property && !property.computed
                 })
               )
+        // Updates apply their data to each of the records:
+        const afterItems = isInsert
+          ? inputItems
+          : isDelete
+            ? []
+            : beforeItems.map(() => inputItems[0])
 
         const beforeFilesPerDataPath = getFilesPerAssetDataPath(
           beforeItems,
@@ -1212,12 +1216,13 @@ export class Model extends objection.Model {
           const storage = this.app.getStorage(assets[dataPath].storage)
           const beforeFiles = beforeFilesPerDataPath[dataPath]
           const afterFiles = afterFilesPerDataPath[dataPath]
-          const beforeByKey = mapFilesByKey(beforeFiles)
-          const afterByKey = mapFilesByKey(afterFiles)
-          const addedFiles = afterFiles.filter(file => !beforeByKey[file.key])
-          const removedFiles = beforeFiles.filter(file => !afterByKey[file.key])
+          const beforeByKey = groupBy(beforeFiles, 'key')
+          const afterByKey = groupBy(afterFiles, 'key')
+          // Each occurrence of a file counts as one reference:
+          const addedFiles = getExtraFiles(afterByKey, beforeByKey)
+          const removedFiles = getExtraFiles(beforeByKey, afterByKey)
           const changedFiles = afterFiles.filter(file => {
-            const beforeFile = beforeByKey[file.key]
+            const beforeFile = beforeByKey[file.key]?.[0]
             return beforeFile && !equals(file, beforeFile)
           })
           // Also handle files where the data property is changed before
@@ -1313,12 +1318,10 @@ function getFilesPerAssetDataPath(items, dataPaths) {
   )
 }
 
-function mapFilesByKey(files) {
-  return files.reduce(
-    (map, file) => {
-      map[file.key] = file
-      return map
-    },
-    {}
+// Collect the files that occur more often in `filesByKey` than in
+// `otherFilesByKey`, one for each additional occurrence:
+function getExtraFiles(filesByKey, otherFilesByKey) {
+  return Object.entries(filesByKey).flatMap(
+    ([key, files]) => files.slice(otherFilesByKey[key]?.length ?? 0)
   )
 }

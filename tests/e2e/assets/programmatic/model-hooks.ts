@@ -31,7 +31,8 @@ test.describe('model hooks', () => {
     const asset1 = await Asset.query().findOne({ key: file1.key })
     const asset2 = await Asset.query().findOne({ key: file2.key })
 
-    expect(asset1!.count).toBe(0)
+    // `cleanupTimeThreshold` is 0, so file1 is released right away:
+    expect(asset1).toBeUndefined()
     expect(asset2!.count).toBe(1)
   })
 
