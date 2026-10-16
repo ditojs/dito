@@ -5,11 +5,12 @@ DitoTrigger.dito-menu-button(
   :placement="placement"
   :disabled="disabled"
   :matchTargetWidth="false"
-  :cover="cover"
+  :cover="cover && !floating"
   :transition="null"
   :class=`{
     'dito-menu-button--open': isOpen,
-    'dito-menu-button--attached': !cover,
+    'dito-menu-button--attached': isAttached,
+    'dito-menu-button--floating': floating,
     'dito-menu-button--offset': offset
   }`
 )
@@ -79,6 +80,9 @@ export default {
     // Whether the menu opens over the button, like native menus do, or else
     // attached below it, with the width of the wider of the two.
     cover: { type: Boolean, default: true },
+    // Whether the menu opens below the button as a separate panel, which
+    // overrides `cover`.
+    floating: { type: Boolean, default: false },
     // Whether the menu opens one item padding below the top of the button,
     // e.g. to line up with text inside a taller button.
     offset: { type: Boolean, default: false },
@@ -91,9 +95,15 @@ export default {
     }
   },
 
+  computed: {
+    isAttached() {
+      return !this.cover && !this.floating
+    }
+  },
+
   watch: {
     async isOpen(isOpen) {
-      if (!this.cover) {
+      if (this.isAttached) {
         const button = this.$refs.button.$el
         Object.assign(button.style, {
           minWidth: '',
@@ -225,6 +235,7 @@ function getWidth(element) {
 
 <style lang="scss">
 @use 'sass:list';
+@use 'sass:math';
 @import '../styles/_imports';
 
 $menu-button-radius: 0.5em;
@@ -261,6 +272,52 @@ $menu-button-padding: $menu-button-padding-ver 1em;
 
   &--offset &__menu {
     margin-top: $menu-button-padding-ver;
+  }
+
+  &--floating {
+    $tip-size: 0.5em;
+    $tip-side: $tip-size * math.sqrt(2);
+    $padding: 0.25em;
+
+    .dito-popup {
+      margin-top: math.div(-$tip-size, 2);
+      padding-top: $tip-size;
+
+      // The tip pointing at the button, a square half hidden by the menu,
+      // which casts its own shadow:
+      &::before {
+        content: '';
+        position: absolute;
+        top: $tip-size - math.div($tip-side, 2);
+        left: 1.5em;
+        width: $tip-side;
+        height: $tip-side;
+        background: $button-color;
+        box-shadow: $shadow-window;
+        transform: rotate(45deg);
+      }
+
+      // Keep the tip near the edge that lines up with the button:
+      &--bottom-right::before {
+        left: auto;
+        right: 1.5em;
+      }
+    }
+
+    .dito-menu-button__menu {
+      position: relative;
+      padding: $padding;
+      background: $button-color;
+    }
+
+    .dito-menu-button__item {
+      // Concentric with the menu's corners, around its padding:
+      border-radius: $menu-button-radius - $padding;
+
+      &:not(.dito-menu-button__item--icon) {
+        padding: 0.6em 1em;
+      }
+    }
   }
 
   &__item {

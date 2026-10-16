@@ -134,6 +134,7 @@ the menu, the arrow keys, Home and End move between items, Escape closes it.
 | `items` | `Array<{ value, label, icon?, disabled? }>` | required | The menu items. Items with an `icon` from the [icon set](#icons) show it instead of their `label`, which becomes their title. |
 | `placement` | `string` | `'bottom'` | Where the menu opens, see [`DitoTrigger`](#ditotrigger). |
 | `cover` | `boolean` | `true` | Opens the menu over the button, like native menus. |
+| `floating` | `boolean` | `false` | Opens the menu below the button as a separate panel with a tip pointing at the button, overriding `cover`. |
 | `offset` | `boolean` | `false` | Opens the menu one item padding below the top of the button, e.g. to line up with the text of a taller button. |
 | `disabled` | `boolean` | `false` | Disables the button. |
 

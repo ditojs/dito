@@ -2,8 +2,8 @@
 .dito-account
   DitoMenuButton.dito-account__button(
     :items="items"
-    placement="bottom-left"
-    :cover="false"
+    placement="bottom-right"
+    floating
     @select="onSelectMenuItem"
   )
     span {{ adminContext.user.username }}
@@ -29,7 +29,7 @@ export default {
       items: computed(() =>
         [
           settingsRoute.value && { value: 'settings', label: 'Settings' },
-          { value: 'logout', label: 'Logout' }
+          { value: 'logout', label: 'Sign Out' }
         ].filter(Boolean)
       ),
 
@@ -54,25 +54,15 @@ export default {
   align-items: center;
   height: $header-height;
 
-  // A button like the ones of the clipboard, which shows the user name as plain
-  // text until its menu opens:
+  // A button that shows the user name as plain text:
   & &__button {
     min-width: 0;
     min-height: $input-height;
     padding: $button-round-padding;
     border-radius: 2 * $border-radius;
-    // Keep the name in place when the menu widens the button:
-    justify-content: flex-start;
     font: inherit;
     line-height: 1em;
 
-    span {
-      padding: 0;
-      color: inherit;
-    }
-  }
-
-  .dito-menu-button:not(.dito-menu-button--open) &__button {
     &,
     &:hover,
     &:active,
@@ -85,6 +75,11 @@ export default {
 
     &:focus-visible {
       @include focus-ring;
+    }
+
+    span {
+      padding: 0;
+      color: inherit;
     }
   }
 }

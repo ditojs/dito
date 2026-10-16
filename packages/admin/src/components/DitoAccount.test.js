@@ -19,7 +19,7 @@ describe('DitoAccount', () => {
     const logout = vi.spyOn(session, 'logout').mockResolvedValue()
     const { button, items } = await openMenu(admin)
     expect(button.text()).toBe('tester')
-    expect(items.map(item => item.text())).toEqual(['Logout'])
+    expect(items.map(item => item.text())).toEqual(['Sign Out'])
     await items[0].trigger('click')
     expect(logout).toHaveBeenCalledOnce()
     expect(button.attributes('aria-expanded')).toBe('false')
@@ -71,7 +71,7 @@ describe('DitoAccount', () => {
     it('opens the settings of the user from the menu', async () => {
       const { admin, request } = await mountWithSettings()
       const { items } = await openMenu(admin)
-      expect(items.map(item => item.text())).toEqual(['Settings', 'Logout'])
+      expect(items.map(item => item.text())).toEqual(['Settings', 'Sign Out'])
       await items[0].trigger('click')
       await flushPromises()
       expect(admin.router.currentRoute.value.path).toBe('/account/settings')

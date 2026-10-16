@@ -8,7 +8,7 @@ async function login(page: Page, url: string, [username, password]: string[]) {
   const dialog = page.locator('.dito-dialog')
   await dialog.getByLabel('Username').fill(username)
   await dialog.getByLabel('Password').fill(password)
-  await dialog.getByRole('button', { name: 'Login' }).click()
+  await dialog.getByRole('button', { name: 'Sign In' }).click()
   await expect(dialog).toBeHidden()
 }
 
