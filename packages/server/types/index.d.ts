@@ -831,6 +831,8 @@ export interface AssetReference {
   dataPath: string
   /** The name of the storage of the file. */
   storage: string
+  /** The asset configuration of the model that the file was found through. */
+  config: ModelAsset
 }
 
 export interface Application

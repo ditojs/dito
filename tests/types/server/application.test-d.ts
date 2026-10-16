@@ -3,6 +3,7 @@ import type {
   Application,
   AssetReference,
   Model,
+  ModelAsset,
   Storage
 } from '@ditojs/server'
 import type { app } from './fixtures.ts'
@@ -49,6 +50,7 @@ describe('Application', () => {
       Promise<AssetReference[]>
     >()
     expectTypeOf<AssetReference['dataPath']>().toEqualTypeOf<string>()
+    expectTypeOf<AssetReference['config']>().toEqualTypeOf<ModelAsset>()
     expectTypeOf<
       Awaited<ReturnType<App['recountAssets']>>['missing'][number]['references']
     >().toEqualTypeOf<AssetReference[]>()
