@@ -49,5 +49,8 @@ describe('Application', () => {
       Promise<AssetReference[]>
     >()
     expectTypeOf<AssetReference['dataPath']>().toEqualTypeOf<string>()
+    expectTypeOf<
+      Awaited<ReturnType<App['recountAssets']>>['missing'][number]['references']
+    >().toEqualTypeOf<AssetReference[]>()
   })
 })

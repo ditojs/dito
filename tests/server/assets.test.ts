@@ -1025,6 +1025,80 @@ describe('asset references', () => {
     }
   })
 
+  it('recounts the references of all assets', async () => {
+    const missed = await upload('recount-missed.jpg')
+    const left = await upload('recount-left.jpg')
+    const pending = await upload('recount-pending.jpg')
+    await Track.query().insert({ artwork: copy(missed) })
+    await insertWithoutHooks({ artwork: copy(missed) })
+    const track = await Track.query().insertAndFetch({ artwork: copy(left) })
+    await Track.knex()(Track.tableName).where('id', track.id).delete()
+    const { changed, missing } = await app.recountAssets()
+    const countsByKey = Object.fromEntries(
+      changed.map(({ asset, count }) => [asset.key, [asset.count, count]])
+    )
+    expect(countsByKey[missed.key]).toEqual([1, 2])
+    expect(countsByKey[left.key]).toEqual([1, 0])
+    expect(countsByKey[pending.key]).toBeUndefined()
+    expect(missing).toEqual([])
+    expect((await Asset.query().findOne('key', missed.key))?.count).toBe(2)
+    expect((await Asset.query().findOne('key', left.key))?.count).toBe(0)
+    expect((await app.recountAssets()).changed).toEqual([])
+  })
+
+  it('only reports wrong counts in a dry run', async () => {
+    const file = await upload('recount-dry.jpg')
+    await insertWithoutHooks({ artwork: copy(file) })
+    const { changed } = await app.recountAssets({ dryRun: true })
+    expect(changed).toContainEqual({
+      asset: expect.objectContaining({ key: file.key, count: 0 }),
+      count: 1
+    })
+    expect((await Asset.query().findOne('key', file.key))?.count).toBe(0)
+    await app.recountAssets()
+  })
+
+  it('creates the missing assets of referenced files', async () => {
+    const file = await upload('recount-missing.jpg')
+    const track = await Track.query().insertAndFetch({ artwork: copy(file) })
+    await Asset.knex()(Asset.tableName).where('key', file.key).delete()
+    // Files without assets can't be stored in other places:
+    const { artwork } = copy(track)
+    await expect(Track.query().insert({ artwork })).rejects.toThrow(
+      `Unable to import asset from foreign source: 'recount-missing.jpg'`
+    )
+    const { missing } = await app.recountAssets()
+    expect(missing).toEqual([
+      {
+        key: file.key,
+        references: [expect.objectContaining({ id: track.id })]
+      }
+    ])
+    expect(await Asset.query().findOne('key', file.key)).toMatchObject({
+      count: 1,
+      storage: 'memory',
+      file: { name: 'recount-missing.jpg' }
+    })
+    await Track.query().insert({ artwork: copy(track).artwork })
+    expect((await Asset.query().findOne('key', file.key))?.count).toBe(2)
+  })
+
+  it('reports referenced files that are lost from their storage', async () => {
+    const file = await upload('recount-lost.jpg')
+    const track = await Track.query().insertAndFetch({ artwork: copy(file) })
+    await Asset.knex()(Asset.tableName).where('key', file.key).delete()
+    storage.dataByKey.delete(file.key)
+    const { missing, lost } = await app.recountAssets()
+    expect(missing).toEqual([])
+    expect(lost).toEqual([
+      {
+        key: file.key,
+        references: [expect.objectContaining({ id: track.id })]
+      }
+    ])
+    expect(await Asset.query().findOne('key', file.key)).toBeUndefined()
+  })
+
   it('finds files of records that default scopes hide', async () => {
     const file = await upload('hidden.mp4')
     await Clip.query().insert({ hidden: true, video: copy(file) })

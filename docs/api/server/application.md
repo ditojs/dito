@@ -735,6 +735,37 @@ Returns `Promise<object[]>`: a reference for each occurrence, with the file's
 `key`, the `file` itself, the `model` name, the record's `id`, the `dataPath` of
 the file inside the record, e.g. `'photos/1'`, and the `storage` name.
 
+### recountAssets()
+
+```js
+const { changed, missing, lost } = await app.recountAssets({
+  dryRun,
+  transaction
+})
+```
+
+Sets the count of every asset to the number of its references, as
+[`getAssetReferences()`](#getassetreferences) finds them, and creates the
+missing assets of referenced files that their storage still has, as files
+without assets can't be stored in other places, and throws for storages that
+can't list their keys. It locks the assets while counting, unless it runs as a
+dry run. Counts drift when writes skip the model hooks, e.g. deletes through
+database cascades, scripts and seeds. The [`db:recount_assets`](#commands)
+command runs it.
+
+#### Parameters
+
+| Name          | Type          | Description                                 |
+| ------------- | ------------- | ------------------------------------------- |
+| `dryRun`      | `boolean`     | Only return what it would change.           |
+| `transaction` | `Transaction` | Transaction to run in.                      |
+
+Returns `Promise<{ changed, missing, lost }>`: `changed` holds `{ asset, count }` for
+each asset whose count differs, with the asset as it was and the counted
+`count`, `missing` holds `{ key, references }` for each referenced file without
+an asset, and `lost` the same for referenced files that their storage doesn't
+have anymore, which it only reports.
+
 ### createAssets()
 
 ```js
@@ -865,7 +896,8 @@ application. Projects usually wrap them in `package.json` scripts:
     "db:unlock": "dito db:unlock ./config/index.js",
     "db:seed": "dito db:seed ./src/server/app.js",
     "db:create_migration": "dito db:create_migration ./src/server/app.js",
-    "db:list_asset_config": "dito db:list_asset_config ./src/server/app.js"
+    "db:list_asset_config": "dito db:list_asset_config ./src/server/app.js",
+    "db:recount_assets": "dito db:recount_assets ./src/server/app.js"
   }
 }
 ```
@@ -885,6 +917,7 @@ when the command succeeds, and `1` with the error printed otherwise.
 | `db:seed`              | application   | Runs the seeds in the `seeds` folder. |
 | `db:create_migration`  | application   | Creates a migration for the tables of models. |
 | `db:list_asset_config` | application   | Prints the asset configuration of models. |
+| `db:recount_assets`    | application   | Recounts the references of all assets, see [`recountAssets()`](#recountassets). `--dry-run` only prints what it would change. |
 | `console`              | application   | Starts the application with an interactive console. |
 
 Migrations are read from the directory set in the `knex.migrations`
