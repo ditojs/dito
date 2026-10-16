@@ -585,7 +585,7 @@ static setup()
 
 Called once by [`app.setupModels()`](application.md#setupmodels), before
 `initialize()`. Internal: dito's mixins override it, e.g.
-[`UserMixin`](#usermixin) registers its Passport strategy here, and call
+[`UserMixin`](#usermixin) defines its password property here, and call
 `super.setup()`. Apps override [`initialize()`](#static-initialize)
 instead, which needs no `super`.
 
@@ -935,9 +935,7 @@ export class User extends UserMixin(Model) {
 }
 ```
 
-Users that log in with a username and password, through
-[Passport](https://www.passportjs.org/)'s local strategy. Enable
-`app.passport` (and usually `app.session`) in the
+Users that log in with a username and password. Enable `app.session` in the
 [configuration](application.md#configapp), and serve the model through a
 [`UsersController`](controllers.md#userscontroller) for the `login`,
 `logout`, `session` and `self` actions.
@@ -967,21 +965,11 @@ Set as `static options` on the model:
 const user = await User.login(ctx, options?)
 ```
 
-Authenticates the request's credentials with the model's Passport strategy and
-logs the user in with `ctx.login(user, options)`. Resolves to the user. Rejects
-with an [`AuthenticationError`](errors.md#authenticationerror): status 401 with
-"Password or username is incorrect" for wrong credentials, or the status and
-message of the strategy, e.g. 400 "Missing credentials".
-
-#### `static` sessionQuery()
-
-```js
-const query = User.sessionQuery(trx?)
-```
-
-The query that loads users for logins and sessions, with the `sessionScope`
-scopes applied. Override it to load users differently. *Hook.* Returns
-[`QueryBuilder`](query-builder.md).
+Authenticates the credentials in the request body, under `usernameProperty` and
+`passwordProperty`, and logs the user in with `ctx.login(user, options)`.
+Resolves to the user. Rejects with an
+[`AuthenticationError`](errors.md#authenticationerror): status 400 with "Missing
+credentials", or 401 with "Password or username is incorrect".
 
 #### `static` setup()
 
@@ -989,8 +977,8 @@ scopes applied. Override it to load users differently. *Hook.* Returns
 static setup()
 ```
 
-Registers the Passport strategy of the model under its class name, and the
-accessor of the password property. Call `super.setup()` when overriding it.
+Defines the accessor of the password property. Call `super.setup()` when
+overriding it.
 
 #### $verifyPassword()
 
@@ -1043,8 +1031,10 @@ Returns `boolean`: whether this user is the logged in user of the request,
 
 Logged in users are stored in the session as `<ModelName>-<id>`, so several
 user model classes can be used side by side. When a session is loaded, the
-user is fetched with `sessionQuery()`; users that no longer exist, or that the
-session scope excludes, end the session.
+user is fetched with the `sessionScope` and set as `ctx.state.user`; users that
+no longer exist, or that the session scope excludes, end the session.
+`ctx.login(user, { session: false })` logs a user in for the request only, and
+`ctx.isAuthenticated()` tells whether the request has a user.
 
 #### Login events
 
@@ -1076,8 +1066,7 @@ const app = new Application({
   config: {
     app: {
       keys: ['…'],
-      session: { modelClass: 'Session' },
-      passport: true
+      session: { modelClass: 'Session' }
     }
   },
   models: { User, Session }

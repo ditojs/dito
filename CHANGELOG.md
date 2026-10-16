@@ -22,12 +22,24 @@ version, see the upgrade guides in `docs/`.
 - **utils:** `capitalize()` doesn't start new words after digits, e.g. `capitalize('the 1st place')` returns `'The 1st Place'`, where it returned `'The 1St Place'`. This also changes the column names that the server derives with it for the join tables of `through` relations, for property names with such words (#356).
 - **utils:** `escapeHtml()` escapes single quotes as `&#39;`, so its result is safe inside single-quoted attributes, where it left them unescaped (#359).
 - **utils:** `isAbsoluteUrl()` only accepts letters, digits, plus, period and hyphen in schemes, e.g. `isAbsoluteUrl('a,b:c')` returns `false`, where commas were accepted too (#360).
+- **server:** `UserMixin.login()` reads the credentials only from the request body, where Passport's local strategy also read them from the query string.
+- **server:** Dito.js logs users in and restores them from the session itself, instead of through koa-passport. Passport's `ctx.req.user` mirror of `ctx.state.user` and custom Passport strategies through Dito.js are gone.
+- **server:** `UsersController` only treats users of its own model class as logged in, not users of its sub-classes, which have their own tables and ids. This affects apps that serve sub-classed user models through the parent's `UsersController`: their `session`, `self` and `logout` actions no longer mistake such users for the parent's user with the same id.
+- **server:** `UserMixin.sessionQuery()` is internal: `sessionScope` sets the scopes of the users of logins and sessions.
 
 ### New
 
 - **ui:** `DitoMenuButton` takes `floating`, which opens the menu below the button as a separate panel with a tip pointing at the button (#344).
 - **admin:** The account menu opens as a floating panel, right-aligned with the user name, and leaves the name unchanged while it is open (#344).
 - **utils:** `isTypedArray()` checks for typed arrays, e.g. `Uint8Array`, including Node.js buffers (#350).
+
+### Deprecations
+
+- **server:** `app.passport` has no effect: users are always handled, with sessions when `app.session` is set.
+
+### Improvements
+
+- **server:** `@ditojs/server` no longer depends on `koa-passport` and `passport-local`. Existing sessions stay valid.
 
 ### Fixes
 
