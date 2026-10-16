@@ -1303,7 +1303,13 @@ type ClipboardConfig =
   | {
       copy?: (context: SchemaContext) => unknown
       paste?: (context: SchemaContext) => unknown
-      interchange?: boolean
+      interchange?:
+        | boolean
+        | {
+            filename?:
+              | string
+              | ((context: SchemaContext) => string | null)
+          }
     }
 ```
 
@@ -1341,7 +1347,10 @@ files of uploads, which paste into all uploads.
   their ids.
 - `interchange: true` adds a menu to download the data with its files as a
   zip, and to upload such a zip again, see
-  [Download and Upload](../../guide/admin/forms.md#download-and-upload).
+  [Download and Upload](../../guide/admin/forms.md#download-and-upload). The
+  zip is named after the form and item label, e.g. `Page Home.zip`, or after
+  `interchange.filename`, a string or a function that receives the copied data
+  as `context.clipboardItem`.
 
 ```js
 clipboard: {

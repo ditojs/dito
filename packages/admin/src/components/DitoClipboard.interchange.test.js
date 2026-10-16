@@ -1,7 +1,7 @@
 import { vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate'
-import { mountForm } from '../test/mount.js'
+import { mountForm, mountSchema } from '../test/mount.js'
 
 const stored = {
   cover: {
@@ -63,6 +63,33 @@ function createZip(data, files = {}) {
   })
 }
 
+// Stub the anchor that `downloadBlob()` clicks, and its object URL:
+function stubDownloads() {
+  const blobs = []
+  const filenames = []
+  vi.spyOn(URL, 'createObjectURL').mockImplementation(blob => {
+    blobs.push(blob)
+    return 'blob:download'
+  })
+  vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+  vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(
+    function () {
+      filenames.push(this.download)
+    }
+  )
+  return { blobs, filenames }
+}
+
+async function selectMenuItem(clipboard, label) {
+  await clipboard.find('.dito-button--interchange').trigger('click')
+  await flushPromises()
+  const item = clipboard
+    .findAll('.dito-menu-button__item')
+    .find(item => item.attributes('title') === label)
+  await item.trigger('click')
+  await flushPromises()
+}
+
 // The server stores uploads under new keys and returns them signed:
 function createUploadedFile(file) {
   return {
@@ -83,6 +110,7 @@ async function mountBook({
   const result = await mountForm({
     schema: {
       name: 'book',
+      label: 'Book',
       clipboard: clipboardConfig,
       components: {
         title: { type: 'text' },
@@ -117,15 +145,7 @@ async function mountBook({
     clipboard,
     uploads,
 
-    async selectMenuItem(label) {
-      await clipboard.find('.dito-button--interchange').trigger('click')
-      await flushPromises()
-      const item = clipboard
-        .findAll('.dito-menu-button__item')
-        .find(item => item.attributes('title') === label)
-      await item.trigger('click')
-      await flushPromises()
-    },
+    selectMenuItem: label => selectMenuItem(clipboard, label),
 
     async uploadZip(zip) {
       const input = clipboard.find('input[type="file"]')
@@ -183,18 +203,7 @@ describe('DitoClipboard interchange', () => {
       blob: async () => new Blob([contentsByUrl[url]])
     }))
     vi.stubGlobal('fetch', fetch)
-    const blobs = []
-    vi.spyOn(URL, 'createObjectURL').mockImplementation(blob => {
-      blobs.push(blob)
-      return 'blob:book'
-    })
-    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
-    const filenames = []
-    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(
-      function () {
-        filenames.push(this.download)
-      }
-    )
+    const { blobs, filenames } = stubDownloads()
     const { selectMenuItem } = await mountBook({
       data: {
         title: 'Emma',
@@ -204,7 +213,7 @@ describe('DitoClipboard interchange', () => {
     })
     await selectMenuItem('Download')
     await vi.waitFor(() => expect(blobs).toHaveLength(1))
-    expect(filenames).toEqual(['book.zip'])
+    expect(filenames).toEqual(['Book.zip'])
     const files = unzipSync(new Uint8Array(await blobs[0].arrayBuffer()))
     expect(Object.keys(files).sort()).toEqual([
       'data.json',
@@ -223,6 +232,105 @@ describe('DitoClipboard interchange', () => {
         { heading: 'One', scans: [reference.scan, reference.cover] }
       ]
     })
+  })
+
+  it('names downloads after the form and item label', async () => {
+    const { filenames } = stubDownloads()
+    const { wrapper } = await mountForm({
+      schema: {
+        label: 'Page',
+        clipboard: { interchange: true },
+        components: { name: { type: 'text' } }
+      },
+      data: { name: 'Home' }
+    })
+    await selectMenuItem(
+      wrapper.find('.dito-schema-header .dito-clipboard'),
+      'Download'
+    )
+    await vi.waitFor(() => expect(filenames).toHaveLength(1))
+    expect(filenames).toEqual(['Page Home.zip'])
+  })
+
+  it('names downloads through `interchange.filename`', async () => {
+    const { filenames } = stubDownloads()
+    const { wrapper } = await mountForm({
+      schema: {
+        label: 'Page',
+        clipboard: {
+          interchange: {
+            filename: ({ clipboardItem }) => `page-${clipboardItem.name}.zip`
+          }
+        },
+        components: { name: { type: 'text' } }
+      },
+      data: { name: 'Home' }
+    })
+    await selectMenuItem(
+      wrapper.find('.dito-schema-header .dito-clipboard'),
+      'Download'
+    )
+    await vi.waitFor(() => expect(filenames).toHaveLength(1))
+    expect(filenames).toEqual(['page-Home.zip'])
+  })
+
+  it('names downloads without characters invalid in file names', async () => {
+    const { filenames } = stubDownloads()
+    const { wrapper } = await mountForm({
+      schema: {
+        label: 'Page',
+        clipboard: { interchange: true },
+        components: { name: { type: 'text' } }
+      },
+      data: { name: `Home: 'Vol. 1' / <Draft>?` }
+    })
+    await selectMenuItem(
+      wrapper.find('.dito-schema-header .dito-clipboard'),
+      'Download'
+    )
+    await vi.waitFor(() => expect(filenames).toHaveLength(1))
+    expect(filenames).toEqual([`Page Home 'Vol. 1' Draft.zip`])
+  })
+
+  it('names downloads of forms without labels and name `data`', async () => {
+    const { filenames } = stubDownloads()
+    const { wrapper } = await mountForm({
+      schema: {
+        clipboard: { interchange: true },
+        components: { title: { type: 'text' } }
+      },
+      data: { title: 'Emma' }
+    })
+    await selectMenuItem(
+      wrapper.find('.dito-schema-header .dito-clipboard'),
+      'Download'
+    )
+    await vi.waitFor(() => expect(filenames).toHaveLength(1))
+    expect(filenames).toEqual(['data.zip'])
+  })
+
+  it('names downloads of lists after their label', async () => {
+    const { filenames } = stubDownloads()
+    const { findContainer } = await mountSchema({
+      schema: {
+        components: {
+          links: {
+            type: 'list',
+            label: 'Links',
+            inlined: true,
+            clipboard: { interchange: true },
+            form: { type: 'form', components: { url: { type: 'text' } } }
+          }
+        }
+      },
+      data: { links: [{ url: 'https://example.com' }] }
+    })
+    await selectMenuItem(
+      findContainer('links').find('.dito-clipboard'),
+      'Download'
+    )
+    await vi.waitFor(() => expect(filenames).toHaveLength(1))
+    expect(filenames).toEqual(['Links.zip'])
   })
 
   it('uploads the files of a zip to their fields and pastes its data', async () => {
@@ -377,6 +485,23 @@ describe('DitoClipboard interchange', () => {
       })
       return { ...result, uploads }
     }
+
+    it('names downloads after the label of the field', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => ({ ok: true, blob: async () => new Blob(['x']) }))
+      )
+      const { filenames } = stubDownloads()
+      const { findContainer, data } = await mountGallery()
+      data.gallery.push(stored.cover)
+      await flushPromises()
+      await selectMenuItem(
+        findContainer('gallery').find('.dito-clipboard'),
+        'Download'
+      )
+      await vi.waitFor(() => expect(filenames).toHaveLength(1))
+      expect(filenames).toEqual(['Gallery.zip'])
+    })
 
     it('uploads files of other upload fields into the field', async () => {
       const { findContainer, uploads, data } = await mountGallery()

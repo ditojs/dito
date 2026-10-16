@@ -36,6 +36,7 @@
         v-if="hasClipboard"
         :clipboard="schema.clipboard"
         :schema="schema"
+        :label="labelText"
         type="list"
         :hasData="listData.length > 0"
         :getData="getClipboardData"
