@@ -334,7 +334,7 @@ export class Controller {
     const matchDataPath = new RegExp(
       `^${
         getDataPath(
-          // Use the exact same regexps as in `Router`:
+          // Use the same wildcard regexps as in `Router`:
           token =>
             token === '*'
               ? '[^/]+' // shallow wildcard
