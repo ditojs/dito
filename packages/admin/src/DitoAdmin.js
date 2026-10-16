@@ -55,12 +55,28 @@ export default class DitoAdmin {
 
     // Allow configuring the auth resources, e.g. `api.users.path = '/admins'`:
     const users = getResource(api.users, { type: 'collection' }) || {}
-    const methods = { login: 'post', logout: 'post', session: 'get' }
+    const methods = {
+      login: 'post',
+      logout: 'post',
+      session: 'get',
+      password: 'post',
+      passkeyLoginOptions: 'post',
+      passkeyLogin: 'post',
+      passkeyOptions: 'post'
+    }
     for (const [name, method] of Object.entries(methods)) {
-      users[name] = getResource(users[name] || name, { method, parent: users })
+      users[name] = getResource(users[name] || hyphenate(name), {
+        method,
+        parent: users
+      })
     }
     // The own user, that the account settings load and patch:
     users.self = getResource(users.self || 'self', { parent: users })
+    // The passkeys of the own user, that the security dialog manages:
+    users.passkeys = getResource(users.passkeys || 'passkeys', {
+      type: 'collection',
+      parent: users
+    })
     api.users = users
 
     // Apps may override the handlers of resource paths:

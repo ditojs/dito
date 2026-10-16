@@ -14,11 +14,16 @@ import { computed, inject } from 'vue'
 import { useRouter } from 'vue-router'
 import { DitoMenuButton } from '@ditojs/ui/src'
 import { adminContextKey } from '../utils/keys.ts'
+import { showSecurityDialog } from '../utils/security.js'
 
 export default {
   components: { DitoMenuButton },
 
-  setup() {
+  props: {
+    passkeys: { type: Boolean, default: false }
+  },
+
+  setup(props) {
     const adminContext = inject(adminContextKey)
     const router = useRouter()
     const settingsRoute = computed(
@@ -29,6 +34,7 @@ export default {
       items: computed(() =>
         [
           settingsRoute.value && { value: 'settings', label: 'Settings' },
+          props.passkeys && { value: 'security', label: 'Security' },
           { value: 'logout', label: 'Sign Out' }
         ].filter(Boolean)
       ),
@@ -37,6 +43,8 @@ export default {
         if (value === 'settings') {
           // Navigate to the path, which also opens the view's object form:
           router.push(router.resolve(settingsRoute.value).path)
+        } else if (value === 'security') {
+          showSecurityDialog(adminContext, { passkeys: props.passkeys })
         } else if (value === 'logout') {
           adminContext.session.logout()
         }

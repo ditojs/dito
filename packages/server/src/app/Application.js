@@ -417,7 +417,7 @@ export class Application extends Koa {
       Object.values(this.controllers)
         .filter(controller => !controller.isInitialized)
         .map(async controller => {
-          controller.setup()
+          await controller.setup()
           await controller.initialize()
           // Each controller can also compose their own middleware (or app),
           // e.g.  as used in `AdminController`:

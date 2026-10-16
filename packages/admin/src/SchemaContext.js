@@ -377,6 +377,17 @@ export default class SchemaContext {
     }
   }
 
+  // Reload the items of the list or object that the component is or is in:
+  get reload() {
+    return async () => {
+      const { sourceContext } = getServices(this)
+      if (!sourceContext) {
+        throw new Error('Unable to reload: There is no list or object.')
+      }
+      await sourceContext.reload()
+    }
+  }
+
   get closeForm() {
     return () => {
       const { routeContext } = getServices(this)

@@ -93,7 +93,9 @@ export default {
     const submit = async () => {
       // Wait for computed values that depend on pending loads, e.g. options.
       await waitUntilDataModelSettled(services)
-      resolve(dialogData.value)
+      if (dataContext.validate()) {
+        resolve(dialogData.value)
+      }
     }
 
     const buttonSchemas = computed(() =>

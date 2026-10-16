@@ -7,6 +7,7 @@ interface PropertyDefinition {
   primary?: boolean
   nullable?: boolean
   index?: boolean
+  unique?: boolean | string
 }
 
 type TestApp = Application & { knex: Knex }
@@ -23,6 +24,9 @@ export async function createTestDatabase(
     await app.knex.schema.createTable(
       modelClass.tableName,
       (table: Knex.CreateTableBuilder) => {
+        // Properties with the same string in `unique` share one constraint,
+        // like in migrations:
+        const uniqueComposites: Record<string, string[]> = {}
         for (const [name, property] of Object.entries(
           properties as Record<
             string,
@@ -33,6 +37,14 @@ export async function createTestDatabase(
             continue
           }
           addColumn(table, name, property)
+          const { unique } = property
+          if (typeof unique === 'string') {
+            uniqueComposites[unique] ||= []
+            uniqueComposites[unique].push(name)
+          }
+        }
+        for (const columns of Object.values(uniqueComposites)) {
+          table.unique(columns)
         }
       }
     )
@@ -48,7 +60,11 @@ function addColumn(
   let column: Knex.ColumnBuilder
 
   if (property.primary) {
-    column = table.increments(name).primary()
+    // Sessions have string ids, other models auto-incrementing integers:
+    column =
+      type === 'string'
+        ? table.string(name).primary()
+        : table.increments(name).primary()
     return column
   }
 

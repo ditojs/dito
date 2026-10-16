@@ -79,6 +79,7 @@ describe('SchemaContext', () => {
     expectTypeOf<Ctx['resetItem']>().returns.toEqualTypeOf<Entry>()
     expectTypeOf<Ctx['resetItem']>().toBeCallableWith()
     expectTypeOf<Ctx['closeForm']>().returns.toEqualTypeOf<Promise<boolean>>()
+    expectTypeOf<Ctx['reload']>().returns.toEqualTypeOf<Promise<void>>()
     expectTypeOf<Ctx['navigate']>().returns.toEqualTypeOf<Promise<boolean>>()
     expectTypeOf<Ctx['navigate']>().toBeCallableWith({ path: '/items' })
     expectTypeOf<Ctx['sourceQuery']>().toExtend<Record<string, any> | null>()
