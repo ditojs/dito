@@ -63,7 +63,7 @@ export default class Node {
 
   add(path, handler) {
     if (
-      path.split('/').some(token => token.includes('*') && !isWildcard(token))
+      path.split('/').some(token => !isWildcard(token) && token.includes('*'))
     ) {
       throw new Error(
         `Unsupported wildcard in path: '${path}'. Use '*' and '**' only as ` +
