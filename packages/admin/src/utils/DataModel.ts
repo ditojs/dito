@@ -41,7 +41,7 @@ import {
   isEmptySchema,
   hasSubmitButton
 } from './schema/lookup.js'
-import { isSourceWithResource } from './schema/structure.js'
+import { isListSource, isSourceWithResource } from './schema/structure.js'
 import { getOptionsDataSchema } from './schema/types.ts'
 import {
   getSchemaValue,
@@ -492,13 +492,18 @@ export class DataModel {
       if (changedDataPaths.some(path => !this.#isDataPathExcluded(path))) {
         this.#markEdited(dataPath)
       }
-      // Merge it as the value of its source, e.g. with tree item children:
-      data[name] = mergeData(
+      // Merge it through its source, e.g. with tree item children. The items
+      // of lists are merged as the only item of their list, matching the uids
+      // that drafts share with them, as lists only walk the items of arrays:
+      const value = data[name]
+      const isListItem = isListSource(sourceSchema)
+      const merged = mergeData(
         { components: { [name]: sourceSchema } },
-        { [name]: data[name] },
-        { [name]: item },
+        { [name]: isListItem ? [value] : value },
+        { [name]: isListItem ? [item] : item },
         { services: this.#options.services, shouldMatchUids: true }
       )[name]
+      data[name] = isListItem ? merged[0] : merged
       // The item takes over the computed values of the draft, which may hold
       // references to the draft:
       this.#writeComputedValues()
