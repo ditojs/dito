@@ -66,7 +66,7 @@ describe('DitoAdmin', () => {
     assertType<ConstructorParameters<typeof DitoAdmin>>([
       '#app',
       {
-        login: { redirectAfterLogin: '/books', passkeys: true },
+        login: { redirectAfterLogin: '/books', passkeys: true, totp: true },
         spinner: null
       }
     ])

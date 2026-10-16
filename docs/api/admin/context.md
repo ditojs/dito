@@ -736,6 +736,7 @@ Also available outside of schemas as `admin.context.showDialog()`, see
 | `options.settings.label` | `string` | The accessible label of the dialog. Defaults to `'Dialog'`. |
 | `options.settings.width` | `number` | The CSS max-width of the dialog, in pixels. Defaults to `480`. |
 | `options.settings.clickToClose` | `boolean` | Whether clicking outside of the dialog cancels it. Defaults to `false`. |
+| `options.settings.minDuration` | `number` | The time in milliseconds that the dialog stays visible at least, when it's submitted right after it opened, e.g. by a password manager. Defaults to `0`. |
 
 Submitting validates the data first, like forms do. Escape cancels dialogs
 that have a `cancel` button or no buttons.

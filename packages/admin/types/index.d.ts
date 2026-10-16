@@ -315,6 +315,18 @@ export interface ApiConfig {
        */
       path?: string
     }
+    /**
+     * Posted to with the code of users with TOTP, when the login answers
+     * `codeRequired`, with the default path `'login-code'`.
+     */
+    loginCode?: { path?: string; method?: HttpMethod }
+    /**
+     * The TOTP of the logged-in user, loaded, set up and turned off by the
+     * security dialog, and confirmed through `totpConfirm`, with the default
+     * paths `'totp'` and `'totp-confirm'`.
+     */
+    totp?: { path?: string }
+    totpConfirm?: { path?: string; method?: HttpMethod }
   }
   /**
    * Custom resource path handlers, keyed by resource type. Merged
@@ -3205,6 +3217,11 @@ interface AdminOptions {
      * account menu that manages the user's passkeys.
      */
     passkeys?: boolean
+    /**
+     * Adds a security dialog to the account menu that sets up and turns off
+     * the user's two-factor authentication with TOTP.
+     */
+    totp?: boolean
   }
   /**
    * Controls the loading spinner displayed in the

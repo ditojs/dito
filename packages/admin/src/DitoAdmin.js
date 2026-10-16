@@ -62,7 +62,9 @@ export default class DitoAdmin {
       password: 'post',
       passkeyLoginOptions: 'post',
       passkeyLogin: 'post',
-      passkeyOptions: 'post'
+      passkeyOptions: 'post',
+      loginCode: 'post',
+      totpConfirm: 'post'
     }
     for (const [name, method] of Object.entries(methods)) {
       users[name] = getResource(users[name] || hyphenate(name), {
@@ -77,6 +79,9 @@ export default class DitoAdmin {
       type: 'collection',
       parent: users
     })
+    // The TOTP of the own user, loaded, set up and turned off by the security
+    // dialog through its methods:
+    users.totp = getResource(users.totp || 'totp', { parent: users })
     api.users = users
 
     // Apps may override the handlers of resource paths:

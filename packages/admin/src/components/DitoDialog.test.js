@@ -108,6 +108,26 @@ describe('DitoDialog', () => {
     expect(isShown()).toBe(false)
   })
 
+  it('stays visible for `minDuration` when submitted right away', async () => {
+    vi.useFakeTimers({ toFake: ['Date', 'setTimeout'] })
+    try {
+      const result = await showDialog({
+        components,
+        buttons: { apply: { type: 'submit' } },
+        data: { title: 'Emma' },
+        settings: { minDuration: 1000 }
+      })
+      await result.dialog.find('form').trigger('submit')
+      await vi.advanceTimersByTimeAsync(900)
+      expect(result.isSettled).toBe(false)
+      expect(result.isShown()).toBe(true)
+      await vi.advanceTimersByTimeAsync(100)
+      expect(await result.promise).toEqual({ title: 'Emma' })
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it(`doesn't cancel with Escape keys that its components handled`, async () => {
     const result = await showDialog({
       components,

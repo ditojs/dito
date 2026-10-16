@@ -111,14 +111,21 @@ describe('services', () => {
 
     it('converts errors of responses with data', async () => {
       const error = new Error('Request failed')
-      error.response = { data: { message: 'Not found', type: 'NotFound' } }
+      error.response = {
+        status: 404,
+        data: { message: 'Not found', type: 'NotFound' }
+      }
       const { schemaComponent } = await mountSchema({
         schema: { components: { title: { type: 'text' } } },
         request: () => Promise.reject(error)
       })
       await expect(
         schemaComponent.context.request({ url: 'books' })
-      ).rejects.toMatchObject({ message: 'Not found', type: 'NotFound' })
+      ).rejects.toMatchObject({
+        message: 'Not found',
+        type: 'NotFound',
+        status: 404
+      })
     })
   })
 
