@@ -122,11 +122,10 @@ export interface ScenarioOptions {
 }
 
 /**
- * Returns a Playwright test object for a scenario: one embedded Dito app per
- * worker (PGlite-backed, Vite-served admin), exposed through the `url`
- * fixture, with the scenario's models reset before each test.
+ * Starts the embedded Dito app of a scenario (PGlite-backed, Vite-served
+ * admin), with a `reset()` function that resets its models and seeds them.
  */
-export function defineScenario({
+export async function startScenario({
   dirname,
   models,
   controllers = {},
@@ -152,27 +151,49 @@ export function defineScenario({
   }
   const modelClasses = Object.values(models).reverse()
 
-  let knex: TestApp['knex']
+  const app = startTestApp({
+    dirname,
+    models,
+    controllers: { admin: AdminController, api },
+    config,
+    api: adminApi
+  })
+  await bootTestDb(app)
+  await setup?.(app)
+  const url = await startAndWaitForAdmin(app)
 
-  return base.extend<{ url: string; reset: void }, { workerUrl: string }>({
+  const reset = async () => {
+    for (const table of tables) {
+      await app.knex.table(table).delete()
+    }
+    for (const modelClass of modelClasses) {
+      await modelClass.query().delete()
+    }
+    await beforeEach?.()
+  }
+
+  return { app, url, reset }
+}
+
+/**
+ * Returns a Playwright test object for a scenario: one app per worker, exposed
+ * through the `url` fixture, with the scenario's models reset before each test.
+ */
+export function defineScenario(options: ScenarioOptions) {
+  let scenario: Awaited<ReturnType<typeof startScenario>>
+
+  const test = base.extend<
+    { url: string; reset: void },
+    { workerUrl: string }
+  >({
     workerUrl: [
       async ({ browser }, use) => {
-        const app = startTestApp({
-          dirname,
-          models,
-          controllers: { admin: AdminController, api },
-          config,
-          api: adminApi
-        })
-        await bootTestDb(app)
-        await setup?.(app)
-        knex = app.knex
-        const url = await startAndWaitForAdmin(app)
-        await warmAdmin(browser, url)
+        scenario = await startScenario(options)
+        await warmAdmin(browser, scenario.url)
         try {
-          await use(url)
+          await use(scenario.url)
         } finally {
-          await teardownTestApp(app)
+          await teardownTestApp(scenario.app)
         }
       },
       // Starting the app and compiling its admin takes as long as it takes,
@@ -188,18 +209,15 @@ export function defineScenario({
     // Requesting `url` boots the app, which binds the models to its knex.
     reset: [
       async ({ url: _url }, use) => {
-        for (const table of tables) {
-          await knex.table(table).delete()
-        }
-        for (const modelClass of modelClasses) {
-          await modelClass.query().delete()
-        }
-        await beforeEach?.()
+        await scenario.reset()
         await use()
       },
       { auto: true }
     ]
   })
+
+  // Expose the options to start the scenario by hand, see `scripts/serve.js`:
+  return Object.assign(test, { options })
 }
 
 /**

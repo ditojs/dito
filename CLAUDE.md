@@ -43,6 +43,13 @@ pnpm test
 # changing styles, and update the baselines when changes are intended.
 pnpm -C tests screenshots
 pnpm -C tests screenshots --update-snapshots
+
+# Start the app of an e2e scenario (a directory in tests/e2e) as its tests do,
+# with the data of its `beforeEach`, at http://localhost:8080/admin/ until
+# Ctrl+C. Scenarios with `api.users` log in with their own users, e.g. `ada`
+# / `secret` in `account`, the others are logged in by a stubbed session.
+# Without a name, it lists the scenarios.
+pnpm -C tests serve account --port 8080
 ```
 
 ### Linting & Code Quality

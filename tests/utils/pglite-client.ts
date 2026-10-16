@@ -3,7 +3,7 @@
 import { createRequire } from 'module'
 import { dirname, join } from 'path'
 import { PGlite } from '@electric-sql/pglite'
-import { Knex } from 'knex'
+import type { Knex } from 'knex'
 
 const require = createRequire(import.meta.url)
 // Resolve the deep path via knex's main entry to avoid exports restrictions
