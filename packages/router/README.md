@@ -41,13 +41,19 @@ router.get('/files/**', ctx => {
   ctx.body = `file: ${ctx.params.$$}`
 })
 
-// Handler found, methods are uppercase
+// Handler found, methods are matched in any case
 const { handler, params } = router.find('GET', '/users/233')
 console.log(handler, params) // ctx => { ... } { id: '233' }
+
+// HEAD requests fall back on GET routes
+router.find('HEAD', '/users/233').handler // ctx => { ... }
 
 // Entry not found
 const result = router.find('GET', '/photos/233')
 console.log(result.handler, result.status) // undefined 404
+
+// Other methods handle the path, see the statuses in docs/api/router.md
+router.find('POST', '/users/233') // { status: 501, allowed: ['GET', 'HEAD'] }
 
 // Install router middleware
 app.use(async (ctx, next) => {
@@ -62,8 +68,8 @@ app.use(async (ctx, next) => {
       await next()
     } finally {
       if (ctx.body === undefined && ctx.status === 404) {
-        ctx.status = result.status || 404
-        if (ctx.status !== 404 && result.allowed) {
+        ctx.status = result.status
+        if (ctx.status !== 404) {
           ctx.set('Allow', result.allowed.join(', '))
         }
       }
@@ -78,6 +84,7 @@ app.listen(4040, () => console.log('Koa app listening on 4040'))
 
 - `prefix`: is prepended to the paths of `add()` and `find()` alike, so
   `new Router({ prefix: '/api' })` routes `/api/users/:id` and finds it with
-  `find('GET', '/users/233')`.
+  `find('GET', '/users/233')`. A trailing slash is removed, unless in strict
+  mode.
 - `strict`: keeps trailing slashes and paths without a leading slash as they
   are, instead of normalizing them.

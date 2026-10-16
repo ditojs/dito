@@ -21,7 +21,7 @@ describe('Router', () => {
         it('reports correct allowed methods', () => {
           router[method]('/', () => {})
           expect(router.getAllowedMethods()).toStrictEqual(
-            [method.toUpperCase()]
+            method === 'get' ? ['GET', 'HEAD'] : [method.toUpperCase()]
           )
         })
       }
@@ -34,8 +34,8 @@ describe('Router', () => {
 
     it('returns allowed methods', () => {
       router.add('GET', '/', () => {})
-      expect(router.getAllowedMethods()).toStrictEqual(['GET'])
-      expect(router.getAllowedMethods('/')).toStrictEqual(['GET'])
+      expect(router.getAllowedMethods()).toStrictEqual(['GET', 'HEAD'])
+      expect(router.getAllowedMethods('/')).toStrictEqual(['GET', 'HEAD'])
     })
 
     it('does not count routes without handlers for allowed methods', () => {
@@ -66,6 +66,15 @@ describe('Router', () => {
     expect(router.normalizePath('/no-trailing/')).toBe('/bla/no-trailing')
     expect(router.normalizePath('wacky-path')).toBe('/bla/wacky-path')
     expect(router.normalizePath('//like-whatever')).toBe('/bla//like-whatever')
+  })
+
+  it('removes trailing slashes from prefixes', () => {
+    router = new Router({ prefix: '/bla/' })
+    router.add('GET', '/users', handler)
+    expect(router.find('GET', 'users').handler).toBe(handler)
+    expect(router.normalizePath('/users/')).toBe('/bla/users')
+    router = new Router({ prefix: '/bla/', strict: true })
+    expect(router.normalizePath('/users/')).toBe('/bla//users/')
   })
 
   it('does not normalize paths in strict mode', () => {
@@ -114,13 +123,69 @@ describe('Router', () => {
 
     result = router.find('PUT', '/folders/files/bolt.hash.gif')
     expect(result.handler).toBeUndefined()
-    expect(result.status).toBe(405)
+    expect(result.status).toBe(404)
     expect(result.allowed).toStrictEqual([])
 
     result = router.find('POST', '/folders/files/bolt.gif')
     expect(result.handler).toBeUndefined()
     expect(result.status).toBe(501)
-    expect(result.allowed).toStrictEqual(['GET', 'PUT'])
+    expect(result.allowed).toStrictEqual(['GET', 'PUT', 'HEAD'])
+  })
+
+  it('answers misses with 404 unless other methods handle the path', () => {
+    router.add('GET', '/users', handler)
+    router.add('PUT', '/users', handler)
+    router.add('POST', '/posts', handler)
+
+    const expectMiss = (method, path, status, allowed) => {
+      result = router.find(method, path)
+      expect(result.handler).toBeUndefined()
+      expect(result.status).toBe(status)
+      expect(result.allowed).toStrictEqual(allowed)
+    }
+
+    // No method handles the path:
+    expectMiss('POST', '/nothing', 404, [])
+    expectMiss('DELETE', '/nothing', 404, [])
+    expectMiss('OPTIONS', '/nothing', 404, [])
+    // Other methods handle the path:
+    expectMiss('POST', '/users', 405, ['GET', 'PUT', 'HEAD'])
+    expectMiss('DELETE', '/users', 501, ['GET', 'PUT', 'HEAD'])
+    expectMiss('OPTIONS', '/users', 200, ['GET', 'PUT', 'HEAD'])
+    // GET and HEAD stay 404:
+    expectMiss('GET', '/posts', 404, ['POST'])
+    expectMiss('HEAD', '/posts', 404, ['POST'])
+  })
+
+  it('finds HEAD requests through GET routes', () => {
+    const getHandler = () => {}
+    const headHandler = () => {}
+    router.add('GET', '/users', getHandler)
+    router.add('GET', '/files', getHandler)
+    router.add('HEAD', '/files', headHandler)
+
+    expect(router.find('HEAD', '/users').handler).toBe(getHandler)
+    expect(router.find('HEAD', '/files').handler).toBe(headHandler)
+    expect(router.getAllowedMethods()).toStrictEqual(['GET', 'HEAD'])
+    expect(router.getAllowedMethods('/users')).toStrictEqual(['GET', 'HEAD'])
+    expect(router.getAllowedMethods('/files')).toStrictEqual(['GET', 'HEAD'])
+    expect(router.find('POST', '/users').allowed).toStrictEqual(
+      ['GET', 'HEAD']
+    )
+  })
+
+  it('handles methods in any case', () => {
+    router.add('get', '/users', handler)
+    router.add('Post', '/users', handler)
+
+    expect(router.find('GET', '/users').handler).toBe(handler)
+    expect(router.find('post', '/users').handler).toBe(handler)
+    expect(router.getAllowedMethods('/users', 'get')).toStrictEqual(['POST'])
+    expect(router.toString('post')).toBe(router.toString('POST'))
+
+    result = router.find('put', '/users')
+    expect(result.status).toBe(501)
+    expect(result.allowed).toStrictEqual(['GET', 'POST', 'HEAD'])
   })
 
   it('handles match-any nodes (catch-all)', () => {

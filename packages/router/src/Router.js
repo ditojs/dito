@@ -5,13 +5,18 @@ import Result from './Result.js'
 const CHAR_SLASH = '/'.charCodeAt(0)
 
 export default class Router {
+  #prefix
+
   constructor(options) {
     this.trees = {}
     // `this.options()` is already a method for the OPTIONS method!
     this._options = options || {}
+    const { strict, prefix } = this._options
+    this.#prefix = prefix && !strict ? removeTrailingSlash(prefix) : prefix
   }
 
   add(method, path, handler) {
+    method = method.toUpperCase()
     path = this.normalizePath(path)
     const tree = this.trees[method] || (this.trees[method] = new Node())
     tree.add(path, handler)
@@ -19,28 +24,34 @@ export default class Router {
   }
 
   find(method, path) {
+    method = method.toUpperCase()
     path = this.normalizePath(path)
-    const tree = this.trees[method]
-    return tree && tree.find(path) || new Result(this, method, path, tree)
+    const { trees } = this
+    return (
+      trees[method]?.find(path) ||
+      // HEAD requests fall back on GET routes:
+      method === 'HEAD' && trees.GET?.find(path) ||
+      new Result(this, method, path)
+    )
   }
 
   getAllowedMethods(path = null, exclude = null) {
-    if (path) {
-      const allowed = []
-      // Search for allowed methods in all trees.
-      for (const method in this.trees) {
-        if (method === exclude) {
-          continue
-        }
-        const tree = this.trees[method]
-        if (tree.find(path)?.handler) {
-          allowed.push(method)
-        }
-      }
-      return allowed
-    } else {
-      return Object.keys(this.trees)
+    exclude = exclude?.toUpperCase()
+    const allowed = Object.keys(this.trees).filter(
+      method => (
+        method !== exclude &&
+        (!path || this.trees[method].find(path)?.handler)
+      )
+    )
+    // HEAD is allowed wherever GET is, see `find()`:
+    if (
+      allowed.includes('GET') &&
+      !allowed.includes('HEAD') &&
+      exclude !== 'HEAD'
+    ) {
+      allowed.push('HEAD')
     }
+    return allowed
   }
 
   get(...args) {
@@ -87,14 +98,12 @@ export default class Router {
   }
 
   normalizePath(path) {
-    const { strict, prefix } = this._options
+    const { strict } = this._options
+    const prefix = this.#prefix
     if (!strict && path !== '/') {
       // When not in strict mode, remove trailing slash from any path except
       // '/', and make sure path starts with '/'
-      const { length } = path
-      if (path.charCodeAt(length - 1) === CHAR_SLASH) {
-        path = path.slice(0, length - 1)
-      }
+      path = removeTrailingSlash(path)
       if (path.charCodeAt(0) !== CHAR_SLASH) {
         path = '/' + path
       }
@@ -106,4 +115,11 @@ export default class Router {
     const tree = this.trees[method.toUpperCase()]
     return tree ? tree.toString() : ''
   }
+}
+
+function removeTrailingSlash(path) {
+  const { length } = path
+  return path.charCodeAt(length - 1) === CHAR_SLASH
+    ? path.slice(0, length - 1)
+    : path
 }

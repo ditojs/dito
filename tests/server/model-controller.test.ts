@@ -1189,7 +1189,7 @@ describe('ModelController', () => {
         body: { title: 'Dictionary' }
       })
       expect(created.status).toBe(405)
-      expect(created.headers.get('allow')).toBe('GET')
+      expect(created.headers.get('allow')).toBe('GET, HEAD')
       const deleted = await request(`/published-books/${atlas.id}`, {
         method: 'DELETE'
       })

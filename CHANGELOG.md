@@ -3,6 +3,18 @@
 The changes of each release of Dito.js. For upgrading to a new major
 version, see the upgrade guides in `docs/`.
 
+## Unreleased
+
+### Behaviour changes
+
+- **router:** Requests for paths that no method handles respond with 404, where they responded with 405 and an empty `Allow` header, or with 501 and an `Allow` header listing every method with routes. 405 and 501 remain for paths that other methods handle, with these methods in `Allow`. OPTIONS requests for such paths respond with 404 instead of 200 with an empty `Allow` header (#328).
+- **router:** HEAD requests, e.g. of link checkers and health probes, are handled by the GET route of their path when no HEAD route matches, where they responded with 501, and `Allow` lists HEAD wherever it lists GET. Misses of HEAD requests respond with 404 like those of GET requests (#329).
+- **router:** `add()`, `find()` and the `exclude` argument of `getAllowedMethods()` take methods in any case, e.g. `add('get', …)` matches `find('GET', …)`. This only affects code that calls the router directly with lowercase methods, as the server always passes them uppercase (#335).
+
+### Fixes
+
+- **router:** A trailing slash of the `prefix` option is removed unless in strict mode, so `new Router({ prefix: '/api/' })` routes `/users` as `/api/users` instead of `/api//users` (#336).
+
 ## 4.7.2 (2026-10-16)
 
 ### New
