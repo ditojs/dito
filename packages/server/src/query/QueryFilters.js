@@ -17,7 +17,6 @@ QueryFilters.register({
         text = operator
         operator = null
       }
-      // Filters without a chosen operator search for the text anywhere:
       operator ||= 'contains'
       const templates = {
         'equals': text => text,

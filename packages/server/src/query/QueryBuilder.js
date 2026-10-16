@@ -558,10 +558,8 @@ export class QueryBuilder extends objection.QueryBuilder {
       throw new QueryBuilderError(`Unable to ${action} models without ids.`)
     }
     this.#isTransacted = true
-    // Like `patch()` and `update()` of single models, only save the models
-    // themselves, not their relations: Writing graphs is the job of the
-    // `*DitoGraph*()` methods. Like `insertAndFetch()`, fetch them regardless
-    // of the default scope:
+    // Only save the models, not their relations, and fetch them regardless of
+    // the default scope, like `insertAndFetch()`:
     return this.ignoreScope('default')[graphMethod](
       omitRelations(modelClass, data),
       {
@@ -791,7 +789,7 @@ for (const key of [
   }
 }
 
-// Returns the models without their relations, see `#saveAndFetch()`.
+// Strip relations, as array saves only write the models:
 function omitRelations(modelClass, data) {
   const relations = modelClass.getRelations()
   const omit = model =>

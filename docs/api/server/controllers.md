@@ -639,6 +639,16 @@ const ids = controller.getCollectionIds(ctx)
 
 Returns the validated ids of the models in the body. Returns `Array<Id | Id[]>`.
 
+### validateCollectionBody()
+
+```js
+controller.validateCollectionBody(ctx)
+```
+
+Used by the collection's `put` and `patch` actions. Throws a
+[`ValidationError`](./errors.md#validationerror) unless the body is an array
+of models with ids, or with `graph`, models with ids at the root.
+
 ### getIds()
 
 ```js
