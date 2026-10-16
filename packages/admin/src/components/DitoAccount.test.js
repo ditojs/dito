@@ -345,5 +345,163 @@ describe('DitoAccount', () => {
         )
       })
     })
+
+    describe('with TOTP', () => {
+      const backupCodes = Array.from(
+        { length: 10 },
+        (_, index) => `code${index}-00000`
+      )
+
+      // A server with TOTP, without passkeys, which accepts the code
+      // '123456':
+      const mountWithTotp = async ({ enabled = false } = {}) => {
+        const createError = (status, message) =>
+          Object.assign(new Error(message), {
+            response: { status, data: { message } }
+          })
+        const checkCode = code => {
+          if (code === 'expired') {
+            throw createError(400, 'Missing or expired TOTP setup')
+          } else if (code !== '123456') {
+            throw createError(401, 'Code is incorrect')
+          }
+        }
+        const request = vi.fn(({ method = 'get', url, data }) => {
+          if (url === '/users/session') {
+            return { data: { user: { id: 1, username: 'tester' } } }
+          } else if (url === '/users/totp' && method === 'get') {
+            return {
+              data: { enabled, backupCodes: enabled ? backupCodes.length : 0 }
+            }
+          } else if (url === '/users/totp' && method === 'post') {
+            return {
+              data: {
+                uri: 'otpauth://totp/Example:tester?secret=JBSWY3DPEHPK3PXP',
+                secret: 'JBSWY3DPEHPK3PXP'
+              }
+            }
+          } else if (url === '/users/totp-confirm') {
+            checkCode(data.code)
+            enabled = true
+            return { data: { backupCodes } }
+          } else if (url === '/users/totp' && method === 'delete') {
+            checkCode(data.code)
+            enabled = false
+            return { data: { success: true } }
+          }
+          throw new Error(`Unexpected request: ${method} ${url}`)
+        })
+        const admin = await mountAdmin({
+          views,
+          api: { users: { path: 'users' } },
+          request,
+          options: { login: { totp: true } }
+        })
+        const { items } = await openMenu(admin)
+        expect(items.map(item => item.text())).toEqual(['Security', 'Logout'])
+        await items[0].trigger('click')
+        await flushPromises()
+        const getState = () =>
+          admin.wrapper.find('.dito-dialog .dito-object').text()
+        return { admin, request, getState }
+      }
+
+      const getLastDialog = admin =>
+        admin.wrapper.findAll('.dito-dialog').at(-1)
+
+      const submitCode = async (admin, code) => {
+        const dialog = getLastDialog(admin)
+        await enterValue(dialog.find('input[name="code"]'), code)
+        await dialog.find('button[type="submit"]').trigger('click')
+        await flushPromises()
+      }
+
+      it('sets up TOTP and shows the backup codes', async () => {
+        const { admin, request, getState } = await mountWithTotp()
+        expect(getState()).toContain('Not set up')
+        await findButton(admin, 'Set Up').trigger('click')
+        await flushPromises()
+        const dialog = getLastDialog(admin)
+        const image = dialog.find('img.dito-qr-code__image')
+        expect(image.attributes('src')).toMatch(/^data:image\/svg\+xml/)
+        expect(dialog.find('input[name="secret"]').element.value).toBe(
+          'JBSW Y3DP EHPK 3PXP'
+        )
+        await submitCode(admin, '123456')
+        expect(request).toHaveBeenCalledWith(
+          expect.objectContaining({
+            method: 'post',
+            url: '/users/totp-confirm',
+            data: { code: '123456' }
+          })
+        )
+        const codes = getLastDialog(admin).find('textarea').element.value
+        expect(codes.split(/\s+/)).toEqual(backupCodes)
+        await findButton(admin, 'Done').trigger('click')
+        await flushPromises()
+        expect(getState()).toContain('Enabled · 10 backup codes left')
+      })
+
+      it('asks for the code again after a wrong one', async () => {
+        const { admin, getState } = await mountWithTotp()
+        const notify = vi
+          .spyOn(admin.context, 'notify')
+          .mockImplementation(() => {})
+        await findButton(admin, 'Set Up').trigger('click')
+        await flushPromises()
+        await submitCode(admin, '000000')
+        expect(notify).toHaveBeenCalledWith(
+          expect.objectContaining({ type: 'error', text: 'Code is incorrect' })
+        )
+        await submitCode(admin, '123456')
+        await findButton(admin, 'Done').trigger('click')
+        await flushPromises()
+        expect(getState()).toContain('Enabled')
+      })
+
+      it('stops asking for codes when the setup expired', async () => {
+        const { admin, request, getState } = await mountWithTotp()
+        const notify = vi
+          .spyOn(admin.context, 'notify')
+          .mockImplementation(() => {})
+        await findButton(admin, 'Set Up').trigger('click')
+        await flushPromises()
+        await submitCode(admin, 'expired')
+        expect(notify).toHaveBeenCalledWith(
+          expect.objectContaining({
+            type: 'error',
+            text: 'Missing or expired TOTP setup'
+          })
+        )
+        // Only the Security dialog stays, as the code dialog is leaving:
+        expect(
+          admin.wrapper.findAll('.dito-dialog:not(.dito-dialog-leave-active)')
+        ).toHaveLength(1)
+        expect(
+          request.mock.calls.filter(
+            ([{ url }]) => url === '/users/totp-confirm'
+          )
+        ).toHaveLength(1)
+        expect(getState()).toContain('Not set up')
+      })
+
+      it('turns off TOTP with a code', async () => {
+        const { admin, request, getState } = await mountWithTotp({
+          enabled: true
+        })
+        expect(getState()).toContain('Enabled · 10 backup codes left')
+        await findButton(admin, 'Turn Off').trigger('click')
+        await flushPromises()
+        await submitCode(admin, '123456')
+        expect(request).toHaveBeenCalledWith(
+          expect.objectContaining({
+            method: 'delete',
+            url: '/users/totp',
+            data: { code: '123456' }
+          })
+        )
+        expect(getState()).toContain('Not set up')
+      })
+    })
   })
 })

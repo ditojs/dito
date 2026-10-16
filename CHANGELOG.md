@@ -16,14 +16,18 @@ version, see the upgrade guides in `docs/`.
 - **server:** `UsersController` only treats users of its own model class as logged in, not users of its sub-classes, which have their own tables and ids. This affects apps that serve sub-classed user models through the parent's `UsersController`: their `session`, `self` and `logout` actions no longer mistake such users for the parent's user with the same id.
 - **server:** `Controller.setup()` is internal, like `Model.setup()`, and may be asynchronous: apps override `initialize()` instead.
 - **server:** `UserMixin.sessionQuery()` is internal: `sessionScope` sets the scopes of the users of logins and sessions.
+- **server:** With `app.auth.totp`, `UserMixin.login()` doesn't log in users with TOTP and resolves to `null`, and `'post login'` answers `{ success: false, codeRequired: true }` for them, with status 200: they log in with their code through `'post login-code'`.
 - **admin:** Dialogs validate their data when submitted, like forms, and only resolve once it's valid, where they resolved with invalid data, e.g. with empty `required` fields.
+- **admin:** `@simplewebauthn/browser` and `lean-qr` are required peer dependencies of `@ditojs/admin`: admin apps install them, also without `login.passkeys` or `login.totp`.
 
 ### New
 
 - **server:** Users log in with passkeys, with `app.auth.passkeys`, sessions stored on the server and the optional peer dependency `@simplewebauthn/server`. `UsersController` adds `'post passkey-login-options'` and `'post passkey-login'`, and lets users manage their own passkeys through `'get passkeys'`, `'post passkey-options'`, `'post passkeys'` and `'delete passkeys/:id'`, see [Passkeys](docs/guide/server/controllers.md#passkeys). Passkeys are named after their providers, e.g. `'1Password'`, through the new dependency `aaguids`.
 - **server:** `UsersController` lets users change their password through `'post password'`, with the current password. Subclasses that set `collection.allow` list it to route it.
 - **server:** `CredentialMixin` and `CredentialModel` store the credentials of all user models in one table, set in `app.auth.credentials`. Deleting users deletes their credentials.
+- **server:** Two-factor authentication with TOTP, with `app.auth.totp`, `app.auth.credentials.secret`, sessions stored on the server and the optional peer dependency `otpauth`. Users with TOTP enter a code from their authenticator app or one of their backup codes after the password, through `'post login-code'`, and set up and turn off TOTP through `'get totp'`, `'post totp'`, `'post totp-confirm'` and `'delete totp'`, see [Two-factor authentication](docs/guide/server/controllers.md#two-factor-authentication). Ten wrong codes in a row lock the account for 15 minutes. Passkey logins don't ask for codes.
 - **admin:** `login: { passkeys: true }` adds a passkey login to the login dialog, and a Security dialog to the account menu that changes the user's password, and lists, adds and removes the user's passkeys. Requires the new peer dependency `@simplewebauthn/browser`.
+- **admin:** The login dialog asks users with TOTP for the code of their authenticator app, or a backup code, after the password. `login: { totp: true }` adds a Security dialog to the account menu that changes the user's password, sets up TOTP with a QR code and shows the backup codes, and turns it off again. Requires the new peer dependency `lean-qr`.
 - **admin:** The `empty` option of lists shows a row with its text while the list has no items, e.g. `empty: 'No books yet.'`.
 - **admin:** `context.reload()` reloads the items of the list or object that the component is or is in, e.g. after a list button changed them on the server.
 
@@ -37,6 +41,8 @@ version, see the upgrade guides in `docs/`.
 
 ### Fixes
 
+- **admin:** Errors of `context.request()` carry the `status` of their response, as documented.
+- **admin:** Dialogs focus their input with `autofocus`, also when it isn't the first one, where they focused the first input.
 - **admin:** Lists outside of routes, e.g. in dialogs, keep their scope, page, order and filters to themselves, instead of loading the query of the current route and navigating to their changes. Lists in routes still change them through the route.
 - **router:** A trailing slash of the `prefix` option is removed unless in strict mode, so `new Router({ prefix: '/api/' })` routes `/users` as `/api/users` instead of `/api//users` (#336).
 - **router:** `**` routes added after a `*` route at the same position match, e.g. `/a/**` after `/a/*`, instead of being nested under the `*` route and never matching (#330).

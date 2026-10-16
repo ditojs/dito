@@ -968,7 +968,11 @@ const user = await User.login(ctx, options?)
 
 Authenticates the credentials in the request body, under `usernameProperty` and
 `passwordProperty`, and logs the user in with `ctx.login(user, options)`.
-Resolves to the user. Rejects with an
+Resolves to the user. With `app.auth.totp`, users with TOTP aren't logged in
+yet: it keeps a pending login in the session, with a new session id, which
+[`'post login-code'`](controllers.md#userscontroller) completes with their
+code, and resolves to `null`. Only `login()` asks for TOTP, not
+`ctx.login()`. Rejects with an
 [`AuthenticationError`](errors.md#authenticationerror): status 400 with "Missing
 credentials", or 401 with "Password or username is incorrect".
 
@@ -1085,19 +1089,19 @@ import { CredentialModel } from '@ditojs/server'
 export class Credential extends CredentialModel {}
 ```
 
-A model to store the credentials of users beyond their password, for now
-their [passkeys](controllers.md#userscontroller). One table holds the
+A model to store the credentials of users beyond their password: their
+[passkeys and TOTP](controllers.md#userscontroller). One table holds the
 credentials of all user models. Use it with `app.auth.credentials.modelClass`,
 the model's name or class, see [`config.app`](application.md#configapp).
 
 | Property     | Description                                                                 |
 | ------------ | --------------------------------------------------------------------------- |
-| `type`       | `string`, required: `'passkey'`.                                            |
+| `type`       | `string`, required: `'passkey'`, `'totp'`, one per user, or `'backup-code'`, ten per user with TOTP. |
 | `userModel`  | `string`, required: the name of the user's model class.                     |
 | `userId`     | `string`, required: the id of the user, also of integer ids.                |
 | `key`        | `string`, nullable, unique per `userModel`: the credential id of passkeys.  |
 | `name`       | `string`, nullable: the name of the provider of passkeys, e.g. `'1Password'`. |
-| `data`       | `object`, hidden: the public key, signature counter and transports of passkeys. |
+| `data`       | `object`, hidden: the public key, signature counter and transports of passkeys, the encrypted secret and the time step of the last accepted code of TOTP, the hash of backup codes. |
 | `createdAt`  | `timestamp`, set on insert.                                                 |
 | `lastUsedAt` | `timestamp`, nullable: the time of the last login with the credential.     |
 

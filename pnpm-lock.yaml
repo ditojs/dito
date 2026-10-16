@@ -431,6 +431,9 @@ importers:
       focus-trap:
         specifier: ^8.2.3
         version: 8.2.3
+      lean-qr:
+        specifier: ^2.7.4
+        version: 2.7.4
       nanoid:
         specifier: ^6.0.2
         version: 6.0.2
@@ -684,6 +687,9 @@ importers:
       objection:
         specifier: ^3.3.0
         version: 3.9.1(knex@3.3.0(better-sqlite3@13.0.3)(pg@8.23.1)(supports-color@7.2.0))
+      otpauth:
+        specifier: ^9.5.2
+        version: 9.5.2
       typescript:
         specifier: ^6.0.3
         version: 6.0.3
@@ -746,6 +752,9 @@ importers:
       objection:
         specifier: ^3.3.0
         version: 3.9.1(knex@3.3.0(better-sqlite3@13.0.3)(pg@8.23.1)(supports-color@10.2.2))
+      otpauth:
+        specifier: ^9.5.2
+        version: 9.5.2
       vitest:
         specifier: ^5.0.3
         version: 5.0.3(@types/node@26.6.4)(@vitest/coverage-v8@5.0.3)(happy-dom@20.14.5)(vite@8.3.4(@types/node@26.6.4)(sass@1.105.1)(yaml@2.9.1))
@@ -1259,6 +1268,10 @@ packages:
     peerDependencies:
       '@emnapi/core': ^1.7.1 || ^2.0.0-alpha.4
       '@emnapi/runtime': ^1.7.1 || ^2.0.0-alpha.4
+
+  '@noble/hashes@2.4.0':
+    resolution: {integrity: sha512-X5XaVWZIBCT7HHZGm5I7ZQXDwLG+bGXuSrMQAW+7Zvl87h1kmc1ZB1VSRJcpUfoUrGQp4Fkoxm5kZ+Ms+aW+eA==}
+    engines: {node: '>= 20.19.0'}
 
   '@nodelib/fs.scandir@2.1.5':
     resolution: {integrity: sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g==}
@@ -4217,6 +4230,10 @@ packages:
     resolution: {integrity: sha512-e7IpWJrnanNUroVK2taAgMxoEZvHLXdQiNjeExSu/DEIWm83jaKGBgb7tLmu2rMYpA027qFB3iLR/k3AVpFRnA==}
     engines: {node: '>= 18'}
 
+  lean-qr@2.7.4:
+    resolution: {integrity: sha512-tlMPFfqhAAZN7+j/djRSvl/2+AYT2+7RRuyq8bvcbV8gMiENiscquQ9WTfCSyeEdxsVaEB+tU7e9nFZC63BFnQ==}
+    hasBin: true
+
   leather@3.0.3:
     resolution: {integrity: sha512-z8RafbVo9OohVmkNCpJ/OyncYQbPUcW+80NPrsJPZ7Jugu6LTw/GtqYGUrGKu0hdcRtBUe67GGiz+aiyTI2WIg==}
 
@@ -4742,6 +4759,9 @@ packages:
 
   orderedmap@2.1.1:
     resolution: {integrity: sha512-TvAWxi0nDe1j/rtMcWcIj94+Ffe6n7zhow33h40SKxmsmozs6dz/e+EajymfoFcHd7sxNn8yHM8839uixMOV6g==}
+
+  otpauth@9.5.2:
+    resolution: {integrity: sha512-GQ5emWR/x1tcExT62IBT0UfO95wZzJZyxYOJOGVeQF47SYEN9vmh0vISvDZaNMuFJRG+IaWCKtfm+t9Bfoal6w==}
 
   own-keys@1.0.2:
     resolution: {integrity: sha512-19YVAg7T+WTrxggPukVq7DjTv6+PJ867TmhCvBsYwmbFCsZd344rq2Ld1p0wo8f8Qrrhgp82c6FJRqdXWtSEhg==}
@@ -6816,6 +6836,8 @@ snapshots:
       '@emnapi/runtime': 1.10.0
       '@tybys/wasm-util': 0.10.4
     optional: true
+
+  '@noble/hashes@2.4.0': {}
 
   '@nodelib/fs.scandir@2.1.5':
     dependencies:
@@ -9904,6 +9926,8 @@ snapshots:
       type-is: 2.1.0
       vary: 1.1.2
 
+  lean-qr@2.7.4: {}
+
   leather@3.0.3: {}
 
   lerna@10.0.1(@types/node@26.6.4)(supports-color@7.2.0)(typescript@6.0.3):
@@ -10621,6 +10645,10 @@ snapshots:
       wcwidth: 1.0.1
 
   orderedmap@2.1.1: {}
+
+  otpauth@9.5.2:
+    dependencies:
+      '@noble/hashes': 2.4.0
 
   own-keys@1.0.2:
     dependencies:

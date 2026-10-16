@@ -664,6 +664,59 @@ const { user } = await post(
 `DELETE /users/passkeys/:id` removes one. The admin offers both with its
 `login.passkeys` option, see [`DitoAdmin`](../../api/admin/admin.md#parameters).
 
+### Two-factor authentication
+
+Users can protect their password logins with a second factor, the codes of an
+authenticator app (TOTP). Install the optional peer dependency `otpauth`, add
+the model for the credentials as for passkeys, and turn on TOTP with a secret
+of its own, a long random string that encrypts the users' TOTP secrets:
+
+```js
+// config/index.js
+export default {
+  app: {
+    session: { modelClass: 'Session' },
+    auth: {
+      credentials: {
+        modelClass: 'Credential',
+        secret: process.env.CREDENTIALS_SECRET
+      },
+      totp: { issuer: 'Example' }
+    }
+  }
+}
+```
+
+A logged-in user sets up TOTP by scanning the QR code of `uri` in their
+authenticator app, e.g. rendered with a QR code library, and confirming it with
+a code. The response holds the backup codes, which are only shown once:
+
+```js
+const { uri, secret } = await post('totp')
+// Show `uri` as QR code, and `secret` to enter by hand:
+const { backupCodes } = await post('totp-confirm', { code: '123456' })
+```
+
+From then on, their password login answers `codeRequired` instead of logging
+in, and the code of the app, or one of the backup codes, completes it:
+
+```js
+let response = await post('login', { username, password })
+if (response.codeRequired) {
+  response = await post('login-code', { code: '123456' })
+}
+const { user } = response
+```
+
+Ten wrong codes in a row lock the account for 15 minutes. `GET /users/totp`
+tells whether TOTP is set up and how many backup codes are left, and
+`DELETE /users/totp` with `{ code }` turns it off. Only password logins through
+`login()` ask for the code, while `ctx.login(user)` logs in without it, e.g.
+to impersonate users. The admin's login
+dialog asks for the code, and its `login.totp` option sets up and turns off
+TOTP in the account menu, see
+[`DitoAdmin`](../../api/admin/admin.md#parameters).
+
 ## Admin
 
 The `AdminController` serves the admin interface at its path. In development

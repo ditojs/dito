@@ -172,17 +172,22 @@ describe('DitoRoot', () => {
 
   describe('login dialog', () => {
     const mountLoggedOut = async options => {
-      const request = vi.fn(({ method, url, data }) =>
-        method === 'post' && url === '/logout'
-          ? { data: { success: true } }
-          : method === 'post' && url === '/login'
-            ? { data: { user: { id: 1, username: data.username } } }
-            : method === 'post' && url === '/passkey-login-options'
-              ? { data: { challenge: 'challenge' } }
-              : method === 'post' && url === '/passkey-login'
-                ? { data: { user: { id: 2, username: 'passkey-user' } } }
-                : null
-      )
+      const request = vi.fn(({ method, url, data }) => {
+        // Users named 'totp-user' have TOTP:
+        const responses = {
+          '/logout': { success: true },
+          '/login':
+            data?.username === 'totp-user'
+              ? { success: false, codeRequired: true, user: null }
+              : { user: { id: 1, username: data?.username } },
+          '/login-code': { user: { id: 3, username: 'totp-user' } },
+          '/passkey-login-options': { challenge: 'challenge' },
+          '/passkey-login': { user: { id: 2, username: 'passkey-user' } }
+        }
+        return method === 'post' && url in responses
+          ? { data: responses[url] }
+          : null
+      })
       const admin = await mountAdmin({ views: {}, request, options })
       await admin.context.session.logout()
       await flushPromises()
@@ -233,6 +238,55 @@ describe('DitoRoot', () => {
         })
       )
       expect(admin.context.user.username).toBe('reader')
+    })
+
+    describe('with TOTP', () => {
+      const loginWithPassword = async () => {
+        const mounted = await mountLoggedOut({})
+        const { dialog } = mounted
+        await enterValue(dialog.find('input[name="username"]'), 'totp-user')
+        await enterValue(dialog.find('input[name="password"]'), 'secret')
+        await dialog.find('button[type="submit"]').trigger('click')
+        await flushPromises()
+        return mounted
+      }
+
+      it('asks for the code after the password', async () => {
+        const { admin, request } = await loginWithPassword()
+        // The password dialog may still be leaving:
+        const dialog = admin.wrapper.findAll('.dito-dialog').at(-1)
+        expect(dialog.find('input[name="password"]').exists()).toBe(false)
+        const input = dialog.find('input[name="code"]')
+        expect(input.attributes('placeholder')).toBe('123456')
+        expect(dialog.find('.dito-info').attributes('data-info')).toBe(
+          'Enter the code from your authenticator app, or a backup code.'
+        )
+        await enterValue(input, '123456')
+        await dialog.find('button[type="submit"]').trigger('click')
+        await flushPromises()
+        expect(request).toHaveBeenCalledWith(
+          expect.objectContaining({
+            method: 'post',
+            url: '/login-code',
+            data: { code: '123456' }
+          })
+        )
+        expect(admin.context.user.username).toBe('totp-user')
+      })
+
+      it('goes back to the password when the code is cancelled', async () => {
+        const { admin } = await loginWithPassword()
+        const cancel = admin.wrapper
+          .findAll('.dito-dialog')
+          .at(-1)
+          .findAll('button')
+          .find(button => button.text() === 'Cancel')
+        await cancel.trigger('click')
+        await flushPromises()
+        const dialog = admin.wrapper.findAll('.dito-dialog').at(-1)
+        expect(dialog.find('input[name="password"]').exists()).toBe(true)
+        expect(admin.context.user).toBe(null)
+      })
     })
 
     it('offers passkeys only with the option', async () => {

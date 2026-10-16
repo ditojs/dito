@@ -9,7 +9,7 @@ exported by `@ditojs/server`:
 | [`CollectionController`](#collectioncontroller) | Base class of model and relation controllers. Not extended directly. |
 | [`ModelController`](#modelcontroller)     | CRUD routes for a model's collection and members, plus its relations. |
 | [`RelationController`](#relationcontroller) | Routes for a relation of a model controller. Created from `relations`, never extended. |
-| [`UsersController`](#userscontroller)     | A model controller with login, logout, session and passkey actions. |
+| [`UsersController`](#userscontroller)     | A model controller with login, logout, session, passkey and TOTP actions. |
 | [`AdminController`](#admincontroller)     | Serves Dito.js Admin. |
 
 Controllers are registered through the `controllers` option of the
@@ -820,12 +820,47 @@ passkey login counts as two factors. It only logs in users of the controller's
 `modelClass`, through their `sessionScope`, and fires the
 [login events](./model.md#login-events).
 
+With [`app.auth.totp`](./application.md#configappauth), users with TOTP enter a
+code after their password, and set up and turn off their TOTP through these
+collection actions, which aren't routed without it:
+
+| Action                 | Response |
+| ---------------------- | ------------------------------------------------------- |
+| `'post login-code'`    | Logs in the user of the pending login with `{ code }`, a TOTP code or a backup code, like `'post login'`: `{ success, authenticated, user, error }`. |
+| `'get totp'`           | `{ enabled, backupCodes }`, with the number of the remaining backup codes. |
+| `'post totp'`          | A new secret, kept in the session until it is confirmed: `{ uri, secret }`, the `otpauth://` URI for the QR code of authenticator apps, and the secret in base32 to enter by hand. 409 if TOTP is already set up. |
+| `'post totp-confirm'`  | Stores the secret with `{ code }`, a code of the new secret, and creates 10 backup codes: `{ backupCodes }`, only shown in this response. |
+| `'delete totp'`        | Turns TOTP off with `{ code }`, a TOTP code or a backup code, and deletes the backup codes: `{ success }`. |
+
+For users with TOTP, `'post login'` with the right password doesn't log in, but
+responds with status 200 and `{ success: false, codeRequired: true,
+authenticated: false, user: null }`, and keeps a pending login in the session,
+see [`login()`](./model.md#static-login), with a new session id.
+`'post login-code'` completes it within 5 minutes. Wrong codes answer
+`'Code is incorrect'` with status 401, also in `'post totp-confirm'` and
+`'delete totp'`, and missing or expired pending logins and setups status 400.
+Ten wrong codes in a row lock the account for 15 minutes, across pending
+logins and sessions: the tenth and all codes during the lock answer
+`'Too many attempts'` with status 400. Ten wrong codes in `'post totp-confirm'`
+end the setup the same way. Each TOTP code is accepted once, also the one that
+confirmed the setup and of concurrent requests, as well as the codes before
+and after the current one for clocks that drift. Each backup code is deleted
+once used. Passkey logins don't ask for codes. A subclass that sets
+`collection.allow` has to list the TOTP actions too, else they aren't routed.
+
+TOTP is only asked for by [`UserMixin.login()`](./model.md#static-login), and
+thus by `'post login'`. `ctx.login(user)` logs in without it, by design, e.g.
+for impersonation or custom login flows. The credentials of TOTP are stored
+under the name of the user model class: renaming the class drops them, and two
+user model classes on one table each have their own, so TOTP set up through
+one isn't asked for by logins through the other.
+
 The controller's [`authorize`](#authorize) doesn't apply to `login`, `logout`,
-`session`, `password` and the passkey actions, which authenticate users, or
-are only allowed for the authenticated user; `self` follows it. Its member
-actions default to `authorize: ['$self']`, and are routed when listed in
-`allow` like on other model controllers. In member routes, `self` stands for the
-authenticated user, see [`getMemberId()`](#getmemberid-1), e.g.
+`session`, `password`, the passkey and the TOTP actions, which authenticate
+users, or are only allowed for the authenticated user; `self` follows it. Its
+member actions default to `authorize: ['$self']`, and are routed when listed
+in `allow` like on other model controllers. In member routes, `self` stands
+for the authenticated user, see [`getMemberId()`](#getmemberid-1), e.g.
 `PATCH /users/self` runs `member.patch` on them.
 
 ```js

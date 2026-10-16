@@ -148,9 +148,14 @@ export function request(
       if (loadCache?.[cacheKey] === res) {
         delete loadCache[cacheKey]
       }
-      // Convert the data of error responses, e.g. Dito.js errors, to errors:
+      // Convert the data of error responses, e.g. Dito.js errors, to errors
+      // with the status of the response:
       const data = error.response?.data
-      throw data ? Object.assign(new Error(data.message), data) : error
+      throw data
+        ? Object.assign(new Error(data.message), data, {
+            status: error.response.status
+          })
+        : error
     })
   if (loadCache) {
     loadCache[cacheKey] = res

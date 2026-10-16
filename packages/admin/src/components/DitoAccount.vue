@@ -20,7 +20,8 @@ export default {
   components: { DitoMenuButton },
 
   props: {
-    passkeys: { type: Boolean, default: false }
+    passkeys: { type: Boolean, default: false },
+    totp: { type: Boolean, default: false }
   },
 
   setup(props) {
@@ -34,7 +35,10 @@ export default {
       items: computed(() =>
         [
           settingsRoute.value && { value: 'settings', label: 'Settings' },
-          props.passkeys && { value: 'security', label: 'Security' },
+          (props.passkeys || props.totp) && {
+            value: 'security',
+            label: 'Security'
+          },
           { value: 'logout', label: 'Logout' }
         ].filter(Boolean)
       ),
@@ -44,7 +48,7 @@ export default {
           // Navigate to the path, which also opens the view's object form:
           router.push(router.resolve(settingsRoute.value).path)
         } else if (value === 'security') {
-          showSecurityDialog(adminContext, { passkeys: props.passkeys })
+          showSecurityDialog(adminContext, props)
         } else if (value === 'logout') {
           adminContext.session.logout()
         }
