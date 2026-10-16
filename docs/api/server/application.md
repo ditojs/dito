@@ -729,7 +729,8 @@ await app.handleAddedAndRemovedAssets(
 Imports foreign files among the added and changed ones, adjusts the reference
 counts, and releases unused assets: right away in `transaction`, and again after
 `assets.cleanupTimeThreshold` when counts changed. Returns
-`Promise<AssetFile[]>`: the imported files.
+`Promise<AssetFile[]>`: the imported files. Each occurrence of a file in
+`addedFiles` and `removedFiles` adds or removes one reference.
 
 ### addForeignAssets()
 

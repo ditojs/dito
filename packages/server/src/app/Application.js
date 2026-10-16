@@ -917,16 +917,15 @@ export class Application extends Koa {
         transaction
       )
       if (addedFiles.length > 0 || removedFiles.length > 0) {
-        const changeCount = async (files, increment) => {
-          if (files.length > 0) {
-            await AssetModel.query(transaction)
-              .whereIn(
-                'key',
-                files.map(file => file.key)
-              )
-              .increment('count', increment)
-          }
-        }
+        // Files occur once for each reference that they gain or lose:
+        const changeCount = (files, increment) =>
+          mapConcurrently(
+            Object.entries(groupBy(files, 'key')),
+            ([key, files]) =>
+              AssetModel.query(transaction)
+                .where('key', key)
+                .increment('count', files.length * increment)
+          )
         await Promise.all([
           changeCount(addedFiles, 1),
           changeCount(removedFiles, -1)
@@ -1103,21 +1102,25 @@ export class Application extends Koa {
       return AssetModel.transaction(transaction, async trx => {
         // Calculate the date math in JS instead of SQL, as there is no easy
         // cross-SQL way to do `now() - interval X hours`:
-        const now = new Date()
-        const cleanupDate = subtractDuration(now, cleanupTimeThreshold)
-        const danglingDate = subtractDuration(now, danglingTimeThreshold)
+        // NOTE: `subtractDuration()` changes the passed date.
+        const cleanupDate = subtractDuration(new Date(), cleanupTimeThreshold)
+        const danglingDate = subtractDuration(new Date(), danglingTimeThreshold)
         const orphanedAssets = await AssetModel.query(trx)
           .where('count', 0)
           .andWhere(query =>
             query
-              .where('updatedAt', '<=', cleanupDate)
-              .orWhere(
-                // Protect freshly created assets from being deleted again
-                // right away, when `config.assets.cleanupTimeThreshold = 0`
-                query =>
-                  query
-                    .where('updatedAt', '=', ref('createdAt'))
-                    .andWhere('updatedAt', '<=', danglingDate)
+              // Assets that lost their last reference:
+              .where(query =>
+                query
+                  .where('updatedAt', '!=', ref('createdAt'))
+                  .andWhere('updatedAt', '<=', cleanupDate)
+              )
+              // Assets that were uploaded but never persisted, protected from
+              // being deleted right away when `cleanupTimeThreshold = 0`:
+              .orWhere(query =>
+                query
+                  .where('updatedAt', '=', ref('createdAt'))
+                  .andWhere('updatedAt', '<=', danglingDate)
               )
           )
         if (orphanedAssets.length > 0) {

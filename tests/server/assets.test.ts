@@ -553,3 +553,254 @@ describe('asset handling across storages', () => {
     })
   })
 })
+
+describe('asset reference counting', () => {
+  class Album extends Model {
+    declare id: number
+    declare cover: AssetFile | null
+    declare photos: AssetFile[] | null
+    declare tracks: Track[]
+
+    static override properties: ModelProperties = {
+      cover: { type: 'object', nullable: true },
+      photos: { type: 'array', items: { type: 'object' }, nullable: true }
+    }
+
+    static override relations = {
+      tracks: {
+        relation: 'hasMany',
+        from: 'Album.id',
+        to: 'Track.albumId',
+        owner: true
+      }
+    } as any
+
+    static override assets = {
+      cover: { storage: 'memory' },
+      photos: { storage: 'memory' }
+    }
+  }
+
+  class Track extends Model {
+    declare id: number
+    declare albumId: number | null
+    declare artwork: AssetFile | null
+
+    static override properties: ModelProperties = {
+      albumId: { type: 'integer', nullable: true },
+      artwork: { type: 'object', nullable: true }
+    }
+
+    static override assets = {
+      artwork: { storage: 'memory' }
+    }
+  }
+
+  class Asset extends AssetMixin(Model) {}
+  const app = createApp({ Album, Track, Asset })
+  const storage = app.getStorage('memory') as MemoryStorage
+
+  beforeAll(async () => {
+    await createTestDatabase(app)
+  })
+
+  afterAll(async () => {
+    await destroyTestApp(app)
+  })
+
+  // Stores a file like the upload route, and returns it as the admin sends it
+  // back, signed and not persisted yet:
+  async function upload(name: string) {
+    const file = AssetFile.create({ name, data: name })
+    await storage.addFile(file, Buffer.from(name))
+    storage.signAssetFile(file)
+    await app.createAssets(storage, [file], 0)
+    // Uploads happen before their data is saved, and the release tells never
+    // persisted assets by `updatedAt = createdAt`, so backdate both:
+    const date = new Date(Date.now() - 1000)
+    await Asset.knex()(Asset.tableName)
+      .where('key', file.key)
+      .update({ createdAt: date, updatedAt: date })
+    return copy(file)
+  }
+
+  // Copies data like the clipboard, through JSON:
+  function copy<T>(data: T): T {
+    return JSON.parse(JSON.stringify(data))
+  }
+
+  async function getCount(file: AssetFile) {
+    const asset = await Asset.query().findOne('key', file.key)
+    return asset?.count
+  }
+
+  async function withCleanupTimeThreshold(
+    threshold: string | number,
+    callback: () => Promise<void>
+  ) {
+    const assets = app.config.assets!
+    const { cleanupTimeThreshold } = assets
+    assets.cleanupTimeThreshold = threshold
+    try {
+      await callback()
+    } finally {
+      assets.cleanupTimeThreshold = cleanupTimeThreshold
+    }
+  }
+
+  it('counts one asset for an upload stored in several records', async () => {
+    const file = await upload('shared.jpg')
+    await Album.query().insert({ cover: copy(file) })
+    await Album.query().insert({ cover: copy(file) })
+    expect(await Asset.query().where('key', file.key)).toHaveLength(1)
+    expect(await getCount(file)).toBe(2)
+  })
+
+  it('reuses persisted assets stored in other records', async () => {
+    const album = await Album.query().insertAndFetch({
+      cover: await upload('persisted.jpg')
+    })
+    const { cover } = copy(album)
+    await Album.query().insert({ cover })
+    expect(await getCount(cover!)).toBe(2)
+  })
+
+  it('counts down when files are replaced or records deleted', async () => {
+    const file = await upload('replaced.jpg')
+    const first = await Album.query().insertAndFetch({ cover: copy(file) })
+    const second = await Album.query().insertAndFetch({ cover: copy(file) })
+    const other = await upload('other.jpg')
+    await Album.query().patchById(first.id, { cover: other })
+    expect(await getCount(file)).toBe(1)
+    expect(await getCount(other)).toBe(1)
+    await Album.query().deleteById(second.id)
+    expect(await getCount(file)).toBe(0)
+    await Album.query().patchById(first.id, { cover: null })
+    expect(await getCount(other)).toBe(0)
+  })
+
+  it('counts each occurrence of a file in one property', async () => {
+    const file = await upload('repeated.jpg')
+    const album = await Album.query().insertAndFetch({
+      photos: [copy(file), copy(file)]
+    })
+    expect(await getCount(file)).toBe(2)
+    await Album.query().patchById(album.id, {
+      photos: [copy(file), copy(file), copy(file)]
+    })
+    expect(await getCount(file)).toBe(3)
+    await Album.query().patchById(album.id, { photos: [copy(file)] })
+    expect(await getCount(file)).toBe(1)
+    await Album.query().patchById(album.id, { photos: [] })
+    expect(await getCount(file)).toBe(0)
+  })
+
+  it('counts added and removed files of several keys together', async () => {
+    const first = await upload('first.jpg')
+    const second = await upload('second.jpg')
+    const album = await Album.query().insertAndFetch({
+      photos: [copy(first), copy(first), copy(second)]
+    })
+    expect(await getCount(first)).toBe(2)
+    expect(await getCount(second)).toBe(1)
+    await Album.query().patchById(album.id, {
+      photos: [copy(second), copy(second), copy(second)]
+    })
+    expect(await getCount(first)).toBe(0)
+    expect(await getCount(second)).toBe(3)
+  })
+
+  it('counts a file stored in several properties of a record', async () => {
+    const file = await upload('cover-and-photo.jpg')
+    const album = await Album.query().insertAndFetch({
+      cover: copy(file),
+      photos: [copy(file)]
+    })
+    expect(await getCount(file)).toBe(2)
+    await Album.query().patchById(album.id, { cover: null })
+    expect(await getCount(file)).toBe(1)
+  })
+
+  it('counts a file stored in several records of a graph', async () => {
+    const file = await upload('artwork.jpg')
+    const album = await Album.query().insertGraphAndFetch({
+      tracks: [{ artwork: copy(file) }, { artwork: copy(file) }]
+    })
+    expect(await getCount(file)).toBe(2)
+    await Track.query().deleteById(album.tracks[0].id)
+    expect(await getCount(file)).toBe(1)
+    await Track.query().deleteById(album.tracks[1].id)
+    expect(await getCount(file)).toBe(0)
+  })
+
+  it('counts a file in all records that a query deletes', async () => {
+    const file = await upload('deleted.jpg')
+    const albums = await Promise.all([
+      Album.query().insertAndFetch({ cover: copy(file) }),
+      Album.query().insertAndFetch({ cover: copy(file) }),
+      Album.query().insertAndFetch({ cover: copy(file) })
+    ])
+    expect(await getCount(file)).toBe(3)
+    const ids = albums.map(album => album.id)
+    await Album.query().whereIn('id', ids).delete()
+    expect(await getCount(file)).toBe(0)
+  })
+
+  it('counts a file in all records that a query patches', async () => {
+    const file = await upload('patched.jpg')
+    const albums = await Promise.all([
+      Album.query().insertAndFetch({ cover: null }),
+      Album.query().insertAndFetch({ cover: null })
+    ])
+    const ids = albums.map(album => album.id)
+    await Album.query()
+      .whereIn('id', ids)
+      .patch({ cover: copy(file) })
+    expect(await getCount(file)).toBe(2)
+    await Album.query().whereIn('id', ids).patch({ cover: null })
+    expect(await getCount(file)).toBe(0)
+  })
+
+  it('counts no references for patches without records', async () => {
+    const file = await upload('missing.jpg')
+    await Album.query().patchById(-1, { cover: copy(file) })
+    expect(await getCount(file)).toBe(0)
+  })
+
+  it('releases files right after their last reference without cleanup time', async () => {
+    await withCleanupTimeThreshold(0, async () => {
+      const album = await Album.query().insertAndFetch({
+        cover: await upload('released.jpg')
+      })
+      const { key } = album.cover!
+      await Album.query().patchById(album.id, { cover: null })
+      expect(await Asset.query().findOne('key', key)).toBeUndefined()
+      expect(storage.dataByKey.has(key)).toBe(false)
+    })
+  })
+
+  it('keeps unsaved uploads for the dangling time without cleanup time', async () => {
+    await withCleanupTimeThreshold(0, async () => {
+      const pending = await upload('pending.jpg')
+      // Saving any other files releases unused assets:
+      await Album.query().insert({ cover: await upload('saved.jpg') })
+      expect(await getCount(pending)).toBe(0)
+      expect(storage.dataByKey.has(pending.key)).toBe(true)
+      await Album.query().insert({ cover: pending })
+      expect(await getCount(pending)).toBe(1)
+    })
+  })
+
+  it('keeps released files for the cleanup time', async () => {
+    const album = await Album.query().insertAndFetch({
+      cover: await upload('restored.jpg')
+    })
+    // The copy of a deleted record can be stored again:
+    const { cover } = copy(album)
+    await Album.query().deleteById(album.id)
+    expect(await getCount(cover!)).toBe(0)
+    await app.releaseUnusedAssets()
+    await Album.query().insert({ cover })
+    expect(await getCount(cover!)).toBe(1)
+  })
+})

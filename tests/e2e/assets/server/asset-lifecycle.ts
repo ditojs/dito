@@ -35,8 +35,9 @@ test.describe('asset lifecycle', () => {
       files: [file2]
     })
 
+    // `cleanupTimeThreshold` is 0, so file1 is released right away:
     const asset1 = await Asset.query().findOne({ key: file1.key })
-    expect(asset1!.count).toBe(0)
+    expect(asset1).toBeUndefined()
 
     const asset2 = await Asset.query().findOne({ key: file2.key })
     expect(asset2!.count).toBe(1)
@@ -53,8 +54,9 @@ test.describe('asset lifecycle', () => {
 
     await AssetWidget.query().deleteById(id)
 
+    // `cleanupTimeThreshold` is 0, so the file is released right away:
     asset = await Asset.query().findOne({ key: fileObj.key })
-    expect(asset!.count).toBe(0)
+    expect(asset).toBeUndefined()
   })
 
   test('shared asset reference counting', async ({ url }) => {
@@ -77,18 +79,11 @@ test.describe('asset lifecycle', () => {
     await AssetWidget.query().deleteById(w2.$id())
   })
 
-  test('orphan cleanup removes file and record', async ({ url }) => {
+  test('dangling cleanup removes old uploads', async ({ url }) => {
     const fileObj = await uploadViaApi(url)
 
-    // Insert then delete to make count=0
-    const widget = await AssetWidget.query().insert({ files: [fileObj] })
-    await AssetWidget.query().deleteById(widget.$id())
-
-    // Backdate timestamps via raw Knex to bypass
-    // the TimestampedMixin before:update hook
-    // which always sets updatedAt = now().
-    // This makes the asset eligible for cleanup
-    // (danglingTimeThreshold is 24h).
+    // Backdate the never persisted upload past `danglingTimeThreshold`, via
+    // raw knex, as the TimestampedMixin hooks set `updatedAt` to now:
     await Asset.knex()
       .table(Asset.tableName)
       .where({ key: fileObj.key })

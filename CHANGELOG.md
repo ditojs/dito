@@ -14,6 +14,8 @@ version, see the upgrade guides in `docs/`.
 - **server:** `$validateGraph()` reports only the errors of related models for relations, without the "must be null" and "must match a schema in anyOf" errors at the relation itself, and it applies the defaults of related models, unless it validates a patch.
 - **server:** Validation errors of `if` keywords, "must match "else" schema", are left out, as the `then` or `else` schema reports its own. The "must be null" and "must match exactly one schema in oneOf" errors of a `oneOf` with a `null` type aren't left out anymore, which only `nullable` references produced.
 - **server:** The validator runs Ajv with `strictSchema`, `strictNumbers` and `strictTuples`, where it ran with `strict: false`: a schema with an unknown keyword, e.g. `item` instead of `items`, or with a `default` that Ajv can't apply, e.g. at the root of a definition that references itself, throws where Ajv ignored it. Model schemas are compiled when the app sets up its models, so they throw on startup. Fix the schema, or opt out with `new Validator({ options: { strictSchema: false } })`.
+- **server:** Asset files count one reference for each place that stores them, also several times in one record, e.g. the same image twice in a list, where such a record counted as one. `handleAddedAndRemovedAssets()` receives a file once for each reference that it gains or loses.
+- **server:** `releaseUnusedAssets()` removes unused assets after `assets.cleanupTimeThreshold` and never persisted ones after `assets.danglingTimeThreshold`, where both waited for the sum of the two, e.g. 48 hours instead of 24 by default. With `cleanupTimeThreshold: 0`, unused assets are removed right away, where they waited for `danglingTimeThreshold`, while uploads that aren't persisted yet are still kept for `danglingTimeThreshold`. Setups that used `0` to keep files, e.g. of storages shared between installations, need a long threshold instead, e.g. `'100y'`.
 
 ### New
 
@@ -32,6 +34,7 @@ version, see the upgrade guides in `docs/`.
 - **server:** Upserts and array saves that run in their own transaction use the knex passed to `query()`, instead of the model's.
 - **server:** Constraint violations that make a transaction's commit fail, e.g. of deferred foreign keys, respond with 409 like the same violations in queries, instead of 500.
 - **server:** Typed objects with properties in `allOf` aren't closed on their own anymore, so they no longer reject each other's properties. The object that combines them is closed instead.
+- **server:** Writes of several records, e.g. graph inserts on PostgreSQL and deletes and patches of several records, count the asset references of each record, where they counted one for all of them, so that deleting one record could release a file that others still store. Patches that match no record count no references.
 - **admin:** Upload fields break long file names without spaces, instead of widening their table and the lists and forms around it.
 - **ui:** Tab moves through the items of an open `DitoMenuButton` and closes the menu once the focus leaves them, instead of closing it right away.
 - **admin:** The trail of the header scrolls, fading out on the sides that it hides, where the header is too narrow for it, instead of running under the tabs and buttons of the form.
