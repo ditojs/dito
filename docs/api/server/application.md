@@ -42,7 +42,7 @@ controllers. Nothing is initialized until [`setup()`](#setup) or
 | `validator`   | [`Validator`](validator.md)                | A custom validator. Default: `new Validator()`.                                                                                                                                 |
 | `router`      | `object`                                   | A custom router. The app calls its `add(method, path, route)` with the upper-case method and a route object, and `find(method, path)`, which returns `{ status, handler, params, allowed }` with the route object as `handler`. Default: a `@ditojs/router` instance. |
 | `events`      | `Record<string, Function \| Function[]>`   | Event listeners, keyed by event name. Several comma-separated names may share one key. See [Events](#events).                                                                   |
-| `middleware`  | `Koa.Middleware`                           | Application-level middleware, installed after the route lookup and before the body parser, transactions, session and passport. Combine several with [koa-compose](https://github.com/koajs/compose). |
+| `middleware`  | `Koa.Middleware`                           | Application-level middleware, installed after the route lookup and before the body parser, transactions, session and user handling. Combine several with [koa-compose](https://github.com/koajs/compose). |
 | `services`    | `Record<string, Service \| Class<Service>>` | Services to add, see [`addServices()`](#addservices).                                                                                                                          |
 | `models`      | `Record<string, Class<Model>>`             | Models to add, see [`addModels()`](#addmodels).                                                                                                                                 |
 | `controllers` | `ApplicationControllers`                   | Controllers to add, see [`addControllers()`](#addcontrollers).                                                                                                                  |
@@ -105,7 +105,7 @@ augmentation of `ApplicationConfig` for project-specific settings.
 | `etag`           | `boolean`                                        | `true`  | Conditional GET and ETag headers.                                                                            |
 | `bodyParser`     | `object`                                         |         | Options of [koa-bodyparser](https://github.com/koajs/bodyparser#options).                                    |
 | `session`        | `boolean \| object`                              | `false` | Sessions through [koa-session](https://github.com/koajs/session). `modelClass` (a name or a model class) stores them in a model, e.g. one using [`SessionMixin`](model.md#sessionmixin). `autoCommit` (default `true`) commits the session after each request, on transacted routes only when the request succeeds. |
-| `passport`       | `boolean`                                        | `false` | Authentication through koa-passport, with sessions when `session` is set. Needed for [`UserMixin`](model.md#usermixin). |
+| `passport`       | `boolean`                                        |         | Deprecated, without effect: users are always handled, see [`UserMixin`](model.md#usermixin). |
 
 ### config.admin
 
@@ -859,8 +859,8 @@ app.setupMiddleware(middleware?)
 
 Installs the middleware: logger, response time, request logging, error handling,
 context extensions, helmet, CORS, compression, ETag, request storage, route
-lookup, the passed `middleware`, body parser, transactions, session, passport
-with the user handling, and the route handler. Middleware added later through
+lookup, the passed `middleware`, body parser, transactions, session, the user
+handling, and the route handler. Middleware added later through
 Koa's `app.use()` sees the requests that the route handler passes on, e.g. those
 without a route. *Hook.*
 

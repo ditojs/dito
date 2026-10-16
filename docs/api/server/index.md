@@ -51,7 +51,7 @@ explains the concepts; these pages list the members.
 | Export                                                          | Description                                    |
 | --------------------------------------------------------------- | ---------------------------------------------- |
 | [`TimestampedMixin`, `TimestampedModel`](model.md#timestampedmixin) | `createdAt` and `updatedAt`.               |
-| [`UserMixin`, `UserModel`](model.md#usermixin)                  | Users with Passport authentication.            |
+| [`UserMixin`, `UserModel`](model.md#usermixin)                  | Users that log in with a password.             |
 | [`SessionMixin`, `SessionModel`](model.md#sessionmixin)         | Session storage.                               |
 | [`AssetMixin`, `AssetModel`](model.md#assetmixin)               | Asset records.                                 |
 

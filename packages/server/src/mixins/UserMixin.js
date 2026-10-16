@@ -1,7 +1,5 @@
 import bcrypt from 'bcryptjs'
-import passport from 'koa-passport'
-import { Strategy as LocalStrategy } from 'passport-local'
-import { mixin, asArray, isString } from '@ditojs/utils'
+import { mixin, asArray } from '@ditojs/utils'
 import { AuthenticationError } from '../errors/index.js'
 
 export const UserMixin = mixin(
@@ -64,11 +62,7 @@ export const UserMixin = mixin(
 
       static setup() {
         super.setup()
-        userClasses[this.name] = this
-        const {
-          usernameProperty,
-          passwordProperty
-        } = this.definition.options
+        const { passwordProperty } = this.definition.options
         Object.defineProperty(this.prototype, passwordProperty, {
           get() {
             // Nice try ;)
@@ -81,66 +75,34 @@ export const UserMixin = mixin(
 
           configurable: true
         })
-        passport.use(
-          this.name,
-          new LocalStrategy(
-            {
-              usernameField: usernameProperty,
-              passwordField: passwordProperty,
-              // Wee need the `req` object, so we can get the active database
-              // transaction through `req.ctx.transaction`:
-              passReqToCallback: true
-            },
-            async (req, username, password, done) => {
-              try {
-                const user = await this.sessionQuery(
-                  req.ctx.transaction
-                ).findOne(usernameProperty, username)
-                const res =
-                  user && (await user.$verifyPassword(password))
-                    ? user
-                    : null
-                done(null, res)
-              } catch (err) {
-                done(err)
-              }
-            }
-          )
-        )
       }
 
       static async login(ctx, options) {
-        // Unfortunately koa-passport isn't promisified yet so do some wrapping:
-        return new Promise((resolve, reject) => {
-          // Use a custom callback to handle authentication, see:
-          // http://www.passportjs.org/docs/downloads/html/#custom-callback
-          passport.authenticate(
-            this.name,
-            async (err, user, info, status) => {
-              if (err) {
-                reject(err)
-              } else if (user) {
-                try {
-                  await ctx.login(user, options)
-                  resolve(user)
-                } catch (err) {
-                  reject(err)
-                }
-              } else {
-                // Passport passes `info` as a string or a `{ message }`
-                // object, and an optional status, e.g. 400 for missing
-                // credentials. Without one, `AuthenticationError` uses 401.
-                reject(
-                  new AuthenticationError({
-                    message: 'Password or username is incorrect',
-                    ...(isString(info) ? { message: info } : info),
-                    ...(status != null && { status })
-                  })
-                )
-              }
-            }
-          )(ctx)
-        })
+        const {
+          usernameProperty,
+          passwordProperty
+        } = this.definition.options
+        const {
+          [usernameProperty]: username,
+          [passwordProperty]: password
+        } = ctx.request.body
+        if (username && password) {
+          const user = await this.sessionQuery(ctx.transaction).findOne(
+            usernameProperty,
+            username
+          )
+          if (user && (await user.$verifyPassword(password))) {
+            await ctx.login(user, options)
+            return user
+          } else {
+            throw new AuthenticationError('Password or username is incorrect')
+          }
+        } else {
+          throw new AuthenticationError({
+            message: 'Missing credentials',
+            status: 400
+          })
+        }
       }
 
       static sessionQuery(trx) {
@@ -150,34 +112,3 @@ export const UserMixin = mixin(
       }
     }
 )
-
-const userClasses = {}
-
-// NOTE: We can't use toCallback() here since passport checks function arity to
-// determine sequence of arguments received, and `req` would not be included:
-passport.serializeUser((req, user, done) => {
-  // To support multiple user model classes, use both the model class name and
-  // id as identifier.
-  const modelName = user?.constructor.name
-  const identifier =
-    modelName && userClasses[modelName]
-      ? `${modelName}-${user.$id()}`
-      : null
-  done(null, identifier)
-})
-
-passport.deserializeUser(async (req, identifier, done) => {
-  // Only split at the first hyphen, since ids may contain hyphens (UUIDs).
-  const [, modelName, userId] = identifier.match(/^([^-]+)-(.+)$/) ?? []
-  const userClass = userClasses[modelName]
-  try {
-    const user = userClass
-      ? await userClass.sessionQuery(req.ctx.transaction).findById(userId)
-      : null
-    // Passing `false` ends the session of users that no longer exist or are
-    // excluded by the session scope, while `undefined` means "not handled".
-    done(null, user ?? false)
-  } catch (err) {
-    done(err)
-  }
-})
