@@ -45,6 +45,7 @@ new DitoAdmin(element, options)
 | `options.dito` | [`GlobalConfig`](#globalconfig) | The global configuration. Defaults to `globalThis.dito`, which `AdminController` provides. |
 | `options.login.additionalComponents` | `Components` | Components added to the login dialog after `username` and `password`. Their values are sent with the credentials. |
 | `options.login.redirectAfterLogin` | `string` | A URL to load after a successful login, instead of resolving the views in place. |
+| `options.login.passkeys` | `boolean` | Adds a Sign In with Passkey button to the login dialog, and a Security item to the account menu, whose dialog changes the user's password through [`api.users.password`](#users), and lists, adds and removes the user's passkeys, named after their providers. Needs passkeys on the server, see [Passkeys](../../guide/server/controllers.md#passkeys), and the peer dependency `@simplewebauthn/browser`. |
 | `options.spinner` | `{ size?: string, color?: string } \| null` | Size and color of the loading spinner in the header. `null` hides it. |
 | `options.account.settings` | `Form \| Promise \| () => …` | The form of the account settings, which the account menu opens at `/account/settings`, to edit the logged-in user through [`api.users.self`](#users). Also a promise or a function returning it, e.g. a dynamic `import()`. Its `label` is the view's label, default `'Settings'`. See [Account settings](../../guide/admin/views.md#account-settings). |
 
@@ -147,15 +148,21 @@ api: {
     login: { path: 'login', method: 'post' },
     logout: { path: 'logout', method: 'post' },
     session: { path: 'session', method: 'get' },
-    self: { path: 'self' }
+    self: { path: 'self' },
+    password: { path: 'password', method: 'post' },
+    passkeyLoginOptions: { path: 'passkey-login-options', method: 'post' },
+    passkeyLogin: { path: 'passkey-login', method: 'post' },
+    passkeyOptions: { path: 'passkey-options', method: 'post' },
+    passkeys: { path: 'passkeys' }
   }
 }
 ```
 
 `users.path` is the collection of the user model; `users: 'users'` is short
-for `users: { path: 'users' }`. `login`, `logout`, `session` and `self` are
-resources nested under it, shown here with their defaults, so the admin logs
-in through `POST users/login`. The server's `UsersController` provides them.
+for `users: { path: 'users' }`. `login`, `logout`, `session`, `self`,
+`password` and the passkey resources of `login.passkeys` are resources nested
+under it, shown here with their defaults, so the admin logs in through
+`POST users/login`. The server's `UsersController` provides them.
 The admin reads `user` from the responses of `login` and `session`, and
 `success` from the response of `logout`. The
 [account settings](#parameters) load the logged-in user from `self` and patch
@@ -352,8 +359,9 @@ responses cached with `request({ cache: 'global' })`.
 session.login(): Promise<AdminUser | null>
 ```
 
-Shows the login dialog and posts the credentials to `api.users.login`, asking
-again after each failure, until it succeeds or the user cancels. With
+Shows the login dialog and posts the credentials to `api.users.login`, or
+logs in with a passkey through `api.users.passkeyLogin`, asking again after
+each failure, until it succeeds or the user cancels. With
 `login.redirectAfterLogin`, a successful login loads that URL instead.
 
 ##### Return value

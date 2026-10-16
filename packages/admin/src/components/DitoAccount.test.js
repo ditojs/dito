@@ -1,6 +1,13 @@
 import { vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
+import { startRegistration } from '@simplewebauthn/browser'
 import { mountAdmin, isForm, settle, enterValue } from '../test/mount.js'
+
+// The DOM of the tests has no WebAuthn, so we answer registrations with a fixed
+// response. The e2e tests run them in a browser:
+vi.mock('@simplewebauthn/browser', () => ({
+  startRegistration: vi.fn(async () => ({ id: 'passkey' }))
+}))
 
 describe('DitoAccount', () => {
   const views = { test: { type: 'view', label: 'Test', components: {} } }
@@ -107,6 +114,242 @@ describe('DitoAccount', () => {
       )
       expect(admin.context.user.username).toBe('editor')
       expect(admin.wrapper.find('.dito-account').text()).toBe('editor')
+    })
+  })
+
+  describe('security', () => {
+    // A server with passkeys, which adds and deletes them, and changes the
+    // password 'secret':
+    const mountWithPasskeys = async ({
+      passkeys = [
+        {
+          id: 1,
+          name: '1Password',
+          createdAt: '2026-01-02T12:00:00Z',
+          lastUsedAt: null
+        }
+      ]
+    } = {}) => {
+      const request = vi.fn(({ method = 'get', url, data }) => {
+        if (url === '/users/session') {
+          return { data: { user: { id: 1, username: 'tester' } } }
+        } else if (url === '/users/passkeys' && method === 'get') {
+          return { data: passkeys }
+        } else if (url === '/users/passkey-options') {
+          return { data: { challenge: 'challenge' } }
+        } else if (url === '/users/passkeys' && method === 'post') {
+          passkeys = [
+            ...passkeys,
+            {
+              id: 2,
+              name: 'Passkey',
+              createdAt: '2026-01-03T12:00:00Z',
+              lastUsedAt: null
+            }
+          ]
+          return { data: passkeys.at(-1) }
+        } else if (url === '/users/passkeys/1' && method === 'delete') {
+          passkeys = passkeys.filter(passkey => passkey.id !== 1)
+          return { data: { success: true } }
+        } else if (url === '/users/password' && method === 'post') {
+          if (data.currentPassword !== 'secret') {
+            throw Object.assign(new Error('Request failed'), {
+              response: {
+                status: 400,
+                data: { message: 'Password is incorrect' }
+              }
+            })
+          }
+          return { data: { success: true } }
+        }
+        throw new Error(`Unexpected request: ${method} ${url}`)
+      })
+      const admin = await mountAdmin({
+        views,
+        api: { users: { path: 'users' } },
+        request,
+        options: { login: { passkeys: true } }
+      })
+      const { items } = await openMenu(admin)
+      expect(items.map(item => item.text())).toEqual(['Security', 'Sign Out'])
+      await items[0].trigger('click')
+      await flushPromises()
+      const getRows = () =>
+        admin.wrapper
+          .findAll('.dito-dialog .dito-list tbody tr')
+          .map(row => row.text())
+      return { admin, request, getRows }
+    }
+
+    const findButton = (admin, text) =>
+      admin.wrapper.findAll('button').find(button => button.text() === text)
+
+    const getLastDialog = admin => admin.wrapper.findAll('.dito-dialog').at(-1)
+
+    it('lists the passkeys of the user', async () => {
+      const { getRows } = await mountWithPasskeys()
+      expect(getRows()).toEqual(['1PasswordJanuary 2, 2026Never'])
+    })
+
+    it('shows a row when there are no passkeys', async () => {
+      const { admin, getRows } = await mountWithPasskeys({ passkeys: [] })
+      expect(getRows()).toEqual(['No passkeys yet.'])
+      const cell = admin.wrapper.find('.dito-table__row--empty td')
+      expect(cell.attributes('colspan')).toBe('3')
+    })
+
+    it('adds passkeys, named by the server', async () => {
+      const { admin, request, getRows } = await mountWithPasskeys()
+      await findButton(admin, 'Add Passkey').trigger('click')
+      await flushPromises()
+      expect(startRegistration).toHaveBeenCalledWith({
+        optionsJSON: { challenge: 'challenge' }
+      })
+      expect(request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          method: 'post',
+          url: '/users/passkeys',
+          data: { id: 'passkey' }
+        })
+      )
+      expect(getRows()).toEqual([
+        '1PasswordJanuary 2, 2026Never',
+        'PasskeyJanuary 3, 2026Never'
+      ])
+    })
+
+    it('stops quietly when the passkey prompt is cancelled', async () => {
+      startRegistration.mockRejectedValueOnce(
+        Object.assign(new Error('The operation was cancelled.'), {
+          name: 'NotAllowedError'
+        })
+      )
+      const { admin, request, getRows } = await mountWithPasskeys()
+      const notify = vi.spyOn(admin.context, 'notify')
+      await findButton(admin, 'Add Passkey').trigger('click')
+      await flushPromises()
+      expect(startRegistration).toHaveBeenCalled()
+      expect(request).not.toHaveBeenCalledWith(
+        expect.objectContaining({ method: 'post', url: '/users/passkeys' })
+      )
+      expect(notify).not.toHaveBeenCalled()
+      expect(getRows()).toEqual(['1PasswordJanuary 2, 2026Never'])
+    })
+
+    it('deletes passkeys after asking', async () => {
+      const { admin, request, getRows } = await mountWithPasskeys()
+      await admin.wrapper
+        .find('.dito-dialog .dito-list .dito-button--delete')
+        .trigger('click')
+      await flushPromises()
+      expect(getLastDialog(admin).text()).toContain(
+        'Do you really want to delete the 1Password passkey?'
+      )
+      await findButton(admin, 'Delete').trigger('click')
+      await flushPromises()
+      expect(request).toHaveBeenCalledWith(
+        expect.objectContaining({ method: 'delete', url: '/users/passkeys/1' })
+      )
+      expect(getRows()).toEqual(['No passkeys yet.'])
+    })
+
+    it('names unknown passkeys plainly when asking', async () => {
+      const { admin } = await mountWithPasskeys({
+        passkeys: [{ id: 1, name: 'Passkey', createdAt: '2026-01-02' }]
+      })
+      await admin.wrapper
+        .find('.dito-dialog .dito-list .dito-button--delete')
+        .trigger('click')
+      await flushPromises()
+      expect(getLastDialog(admin).text()).toContain(
+        'Do you really want to delete the passkey?'
+      )
+    })
+
+    describe('password', () => {
+      const changePassword = async (admin, values) => {
+        await findButton(admin, 'Change').trigger('click')
+        await flushPromises()
+        const dialog = getLastDialog(admin)
+        for (const [name, value] of Object.entries(values)) {
+          await enterValue(dialog.find(`input[name="${name}"]`), value)
+        }
+        await dialog.find('button[type="submit"]').trigger('click')
+        await flushPromises()
+        return dialog
+      }
+
+      it('shows a placeholder instead of the password', async () => {
+        const { admin } = await mountWithPasskeys()
+        const row = getLastDialog(admin).find('.dito-object')
+        expect(row.text()).toBe('••••••••Change')
+      })
+
+      it('asks for the current and the new password', async () => {
+        const { admin } = await mountWithPasskeys()
+        await findButton(admin, 'Change').trigger('click')
+        await flushPromises()
+        const dialog = getLastDialog(admin)
+        const getAutocomplete = name =>
+          dialog.find(`input[name="${name}"]`).attributes('autocomplete')
+        expect(getAutocomplete('currentPassword')).toBe('current-password')
+        expect(getAutocomplete('password')).toBe('new-password')
+        expect(getAutocomplete('confirmation')).toBe('new-password')
+      })
+
+      it('changes the password', async () => {
+        const { admin, request } = await mountWithPasskeys()
+        const notify = vi.spyOn(admin.context, 'notify')
+        await changePassword(admin, {
+          currentPassword: 'secret',
+          password: 'changed',
+          confirmation: 'changed'
+        })
+        expect(request).toHaveBeenCalledWith(
+          expect.objectContaining({
+            method: 'post',
+            url: '/users/password',
+            data: { currentPassword: 'secret', password: 'changed' }
+          })
+        )
+        expect(notify).toHaveBeenCalledWith(
+          expect.objectContaining({
+            type: 'success',
+            text: 'Your password was changed.'
+          })
+        )
+      })
+
+      it(`doesn't submit a confirmation that doesn't match`, async () => {
+        const { admin, request } = await mountWithPasskeys()
+        const dialog = await changePassword(admin, {
+          currentPassword: 'secret',
+          password: 'changed',
+          confirmation: 'chagned'
+        })
+        expect(dialog.text()).toContain('must match the new password')
+        expect(request).not.toHaveBeenCalledWith(
+          expect.objectContaining({ url: '/users/password' })
+        )
+      })
+
+      it('reports wrong current passwords', async () => {
+        const { admin } = await mountWithPasskeys()
+        const notify = vi
+          .spyOn(admin.context, 'notify')
+          .mockImplementation(() => {})
+        await changePassword(admin, {
+          currentPassword: 'wrong',
+          password: 'changed',
+          confirmation: 'changed'
+        })
+        expect(notify).toHaveBeenCalledWith(
+          expect.objectContaining({ type: 'error' })
+        )
+        expect(notify).not.toHaveBeenCalledWith(
+          expect.objectContaining({ type: 'success' })
+        )
+      })
     })
   })
 })

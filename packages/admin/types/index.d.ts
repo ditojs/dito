@@ -292,6 +292,29 @@ export interface ApiConfig {
        */
       path?: string
     }
+    /**
+     * Posted to by the security dialog with the current and the new password,
+     * with the default path `'password'`.
+     */
+    password?: { path?: string; method?: HttpMethod }
+    /**
+     * The passkey endpoints of `login.passkeys`, posted to, with the default
+     * paths `'passkey-login-options'`, `'passkey-login'` and
+     * `'passkey-options'`.
+     */
+    passkeyLoginOptions?: { path?: string; method?: HttpMethod }
+    passkeyLogin?: { path?: string; method?: HttpMethod }
+    passkeyOptions?: { path?: string; method?: HttpMethod }
+    /**
+     * The passkeys of the logged-in user, listed, added and deleted by the
+     * security dialog.
+     */
+    passkeys?: {
+      /**
+       * @defaultValue `'passkeys'`
+       */
+      path?: string
+    }
   }
   /**
    * Custom resource path handlers, keyed by resource type. Merged
@@ -2047,6 +2070,12 @@ export interface ListSchema<$Item = { [key: string]: any }>
   collapsible?: SchemaValue<$Item, {}, boolean | 'all'>
 
   /**
+   * The text of the row shown when the list has no items, e.g.
+   * `'No passkeys yet.'`. Without it, empty lists show no row.
+   */
+  empty?: SchemaValue<$Item, {}, string>
+
+  /**
    * Filter definitions that render a filter panel above the
    * list, allowing users to filter displayed items. Each
    * filter can be a text filter with operators, a date-range
@@ -2387,6 +2416,13 @@ export type SchemaContext<$Item = any> = {
     validate?: boolean
     closeForm?: boolean
   }): Promise<boolean>
+  /**
+   * Reloads the items of the list or object that the
+   * component is or is in, from its resource, and resolves
+   * once they're loaded. Sources without their own resource
+   * have nothing to load. Throws outside of sources.
+   */
+  reload(): Promise<void>
   /**
    * Closes the form, navigating to its parent route.
    * Resolves to `true` if the form closed, `false` if it's
@@ -3164,6 +3200,11 @@ interface AdminOptions {
   login?: {
     additionalComponents?: Components
     redirectAfterLogin?: string
+    /**
+     * Adds a passkey login to the login dialog, and a security dialog to the
+     * account menu that manages the user's passkeys.
+     */
+    passkeys?: boolean
   }
   /**
    * Controls the loading spinner displayed in the

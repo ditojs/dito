@@ -871,6 +871,7 @@ import {
   TimestampedMixin,
   UserMixin,
   SessionMixin,
+  CredentialMixin,
   AssetMixin
 } from '@ditojs/server'
 ```
@@ -885,6 +886,7 @@ already applied to [`Model`](#class-model), as a ready-made base class:
 | `TimestampedMixin` | `TimestampedModel` |
 | `UserMixin`        | `UserModel`        |
 | `SessionMixin`     | `SessionModel`     |
+| `CredentialMixin`  | `CredentialModel`  |
 | `AssetMixin`       | `AssetModel`       |
 
 The properties a mixin adds merge with the model's own
@@ -1075,6 +1077,33 @@ const app = new Application({
 
 Sessions are read and written in the transaction of the request, if there is
 one.
+
+### CredentialMixin
+
+```js
+import { CredentialModel } from '@ditojs/server'
+
+export class Credential extends CredentialModel {}
+```
+
+A model to store the credentials of users beyond their password, for now
+their [passkeys](controllers.md#userscontroller). One table holds the
+credentials of all user models. Use it with `app.auth.credentials.modelClass`,
+the model's name or class, see [`config.app`](application.md#configapp).
+
+| Property     | Description                                                                 |
+| ------------ | --------------------------------------------------------------------------- |
+| `type`       | `string`, required: `'passkey'`.                                            |
+| `userModel`  | `string`, required: the name of the user's model class.                     |
+| `userId`     | `string`, required: the id of the user, also of integer ids.                |
+| `key`        | `string`, nullable, unique per `userModel`: the credential id of passkeys.  |
+| `name`       | `string`, nullable: the name of the provider of passkeys, e.g. `'1Password'`. |
+| `data`       | `object`, hidden: the public key, signature counter and transports of passkeys. |
+| `createdAt`  | `timestamp`, set on insert.                                                 |
+| `lastUsedAt` | `timestamp`, nullable: the time of the last login with the credential.     |
+
+Credentials refer to their users without foreign keys, so deleting users
+through their model deletes their credentials too.
 
 ### AssetMixin
 

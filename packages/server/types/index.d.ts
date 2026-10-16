@@ -197,6 +197,30 @@ export interface ApplicationConfig {
      * set. This setting has no effect.
      */
     passport?: boolean
+    auth?: {
+      /**
+       * The model that stores the credentials of all user models, e.g. their
+       * passkeys.
+       */
+      credentials?: {
+        /**
+         * The model class, or the name it was registered with, e.g.
+         * `Credential`. Its model uses `CredentialMixin`.
+         */
+        modelClass: string | Class<Model>
+      }
+      /**
+       * Enables passkeys, which need `session` and `credentials`.
+       */
+      passkeys?: {
+        /** The name of the app shown by authenticators. */
+        name: string
+        /** The domain that the passkeys belong to, e.g. `'example.com'`. */
+        id: string
+        /** The origins of the frontends that use the passkeys. */
+        origins: string[]
+      }
+    }
     /**
      * Set signed cookie keys.
      *
@@ -2405,8 +2429,11 @@ export class Controller {
    * @overridable
    */
   configure(): void
-  /* @overridable */
-  setup(): void
+  /**
+   * Sets up the routes of the actions and asset uploads. Internal: apps
+   * override `initialize()` instead.
+   */
+  setup(): void | Promise<void>
   /**
    * To be overridden in sub-classes, if the controller needs to initialize.
    * @overridable
@@ -4329,6 +4356,28 @@ export const SessionMixin: <T extends Constructor<{}>>(
   }>
 
 export const SessionModel: ReturnType<typeof SessionMixin<typeof Model>>
+
+export const CredentialMixin: <T extends Constructor<{}>>(
+  target: T
+) => T &
+  Constructor<{
+    /** `'passkey'` */
+    type: string
+    /** The name of the user's model class. */
+    userModel: string
+    userId: string
+    /** The credential id of passkeys. */
+    key: string | null
+    /** The label that the user gave the credential. */
+    name: string | null
+    data: Record<string, unknown>
+    createdAt: Date
+    lastUsedAt: Date | null
+  }>
+
+export const CredentialModel: ReturnType<
+  typeof CredentialMixin<typeof Model>
+>
 
 export const UserMixin: <T extends Constructor<{}>>(
   target: T

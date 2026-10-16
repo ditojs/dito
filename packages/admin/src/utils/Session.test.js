@@ -1,7 +1,14 @@
 import { vi } from 'vitest'
 import { shallowRef } from 'vue'
+import { startAuthentication } from '@simplewebauthn/browser'
 import { Session } from './Session.ts'
 import AdminUser from '../AdminUser.js'
+
+// The DOM of the tests has no WebAuthn, so we answer the passkey login with a
+// fixed response. The e2e tests run it in a browser:
+vi.mock('@simplewebauthn/browser', () => ({
+  startAuthentication: vi.fn(async () => ({ id: 'passkey' }))
+}))
 
 const user = { id: 1, username: 'tester' }
 
@@ -18,7 +25,9 @@ function createSession({
     users: {
       login: { method: 'post', path: 'login' },
       logout: { method: 'post', path: 'logout' },
-      session: { method: 'get', path: 'session' }
+      session: { method: 'get', path: 'session' },
+      passkeyLoginOptions: { method: 'post', path: 'passkey-login-options' },
+      passkeyLogin: { method: 'post', path: 'passkey-login' }
     },
     resources: { any: resource => `/${resource.path}` },
     getApiUrl: ({ url }) => url,
@@ -120,6 +129,44 @@ describe('Session', () => {
         title: 'Authentication Error',
         text: 'Wrong password'
       })
+    })
+
+    it('logs in with a passkey', async () => {
+      const { session, sessionUser, api } = createSession({
+        responses: {
+          'post /passkey-login-options': { challenge: 'challenge' },
+          'post /passkey-login': { user: { ...user } }
+        },
+        loginData: ['passkey']
+      })
+      expect(await session.login()).toEqual(user)
+      expect(startAuthentication).toHaveBeenCalledWith({
+        optionsJSON: { challenge: 'challenge' }
+      })
+      expect(api.request).toHaveBeenLastCalledWith({
+        method: 'post',
+        url: '/passkey-login',
+        data: { id: 'passkey' }
+      })
+      expect(sessionUser.value).toEqual(user)
+    })
+
+    it('asks again quietly when the passkey prompt is cancelled', async () => {
+      startAuthentication.mockRejectedValueOnce(
+        Object.assign(new Error('The operation was cancelled.'), {
+          name: 'NotAllowedError'
+        })
+      )
+      const { session, userInterface } = createSession({
+        responses: {
+          'post /passkey-login-options': { challenge: 'challenge' },
+          'post /passkey-login': { user: { ...user } }
+        },
+        loginData: ['passkey', 'passkey']
+      })
+      expect(await session.login()).toEqual(user)
+      expect(userInterface.requestLoginData).toHaveBeenCalledTimes(2)
+      expect(userInterface.notify).not.toHaveBeenCalled()
     })
 
     it('returns `null` when the user cancels', async () => {

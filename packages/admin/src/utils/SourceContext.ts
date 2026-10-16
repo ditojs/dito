@@ -21,7 +21,7 @@ export interface SourceContext {
   createItem(schema: Schema, type?: string | null, index?: number | null): any
   // Each item reads its own label, so that edits only update theirs:
   getSourceItemLabel(item: any, index?: number | null): any
-  reload(): void
+  reload(): Promise<void> | undefined
   // Through the resource of the source or of the button:
   submit(button: SubmitButton): Promise<boolean>
 }

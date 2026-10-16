@@ -3,6 +3,7 @@
   v-if="isReady"
   :id="componentPath"
   ref="element"
+  :class="{ 'dito-object--text': !isInlined && !schema.component }"
 )
   .dito-object-content(
     v-if="objectData"
@@ -89,6 +90,11 @@ export default DitoTypeObject
   > .dito-edit-buttons {
     flex: 1 0 0%;
     margin-left: $form-spacing;
+  }
+
+  // Align the text of rendered items with the text of their buttons:
+  &--text {
+    align-items: baseline;
   }
 }
 </style>

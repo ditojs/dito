@@ -957,6 +957,7 @@ loads as too.
 | ------ | ---- | ------- | ----------- |
 | `type` | `'list'` | | Required. |
 | `filters` | `object` | | Filters shown in a panel in the sidebar, see [Filters](#filters). |
+| `empty` | `SchemaValue<string>` | | The text of a row shown while the list has no items, e.g. `'No books yet.'`. Without it, empty lists show no row. |
 
 ```js
 books: {

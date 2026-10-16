@@ -25,7 +25,18 @@ version, see the upgrade guides in `docs/`.
 - **server:** `UserMixin.login()` reads the credentials only from the request body, where Passport's local strategy also read them from the query string.
 - **server:** Dito.js logs users in and restores them from the session itself, instead of through koa-passport. Passport's `ctx.req.user` mirror of `ctx.state.user` and custom Passport strategies through Dito.js are gone.
 - **server:** `UsersController` only treats users of its own model class as logged in, not users of its sub-classes, which have their own tables and ids. This affects apps that serve sub-classed user models through the parent's `UsersController`: their `session`, `self` and `logout` actions no longer mistake such users for the parent's user with the same id.
+- **server:** `Controller.setup()` is internal, like `Model.setup()`, and may be asynchronous: apps override `initialize()` instead.
 - **server:** `UserMixin.sessionQuery()` is internal: `sessionScope` sets the scopes of the users of logins and sessions.
+- **admin:** Dialogs validate their data when submitted, like forms, and only resolve once it's valid, where they resolved with invalid data, e.g. with empty `required` fields.
+
+### New
+
+- **server:** Users log in with passkeys, with `app.auth.passkeys`, sessions stored on the server and the optional peer dependency `@simplewebauthn/server`. `UsersController` adds `'post passkey-login-options'` and `'post passkey-login'`, and lets users manage their own passkeys through `'get passkeys'`, `'post passkey-options'`, `'post passkeys'` and `'delete passkeys/:id'`, see [Passkeys](docs/guide/server/controllers.md#passkeys). Passkeys are named after their providers, e.g. `'1Password'`, through the new dependency `aaguids`.
+- **server:** `UsersController` lets users change their password through `'post password'`, with the current password. Subclasses that set `collection.allow` list it to route it.
+- **server:** `CredentialMixin` and `CredentialModel` store the credentials of all user models in one table, set in `app.auth.credentials`. Deleting users deletes their credentials.
+- **admin:** `login: { passkeys: true }` adds a passkey login to the login dialog, and a Security dialog to the account menu that changes the user's password, and lists, adds and removes the user's passkeys. Requires the new peer dependency `@simplewebauthn/browser`.
+- **admin:** The `empty` option of lists shows a row with its text while the list has no items, e.g. `empty: 'No books yet.'`.
+- **admin:** `context.reload()` reloads the items of the list or object that the component is or is in, e.g. after a list button changed them on the server.
 
 ### New
 
@@ -43,6 +54,7 @@ version, see the upgrade guides in `docs/`.
 
 ### Fixes
 
+- **admin:** Lists outside of routes, e.g. in dialogs, keep their scope, page, order and filters to themselves, instead of loading the query of the current route and navigating to their changes. Lists in routes still change them through the route.
 - **router:** A trailing slash of the `prefix` option is removed unless in strict mode, so `new Router({ prefix: '/api/' })` routes `/users` as `/api/users` instead of `/api//users` (#336).
 - **router:** `**` routes added after a `*` route at the same position match, e.g. `/a/**` after `/a/*`, instead of being nested under the `*` route and never matching (#330).
 - **router:** Params and `*` at the same position are both tried, e.g. `/a/1/y` finds `/a/*/y` next to `/a/:id/x`, where only the route added first was tried. A param and `*` that end at the same position, e.g. `/a/:id` and `/a/*`, are the same route, so the one added last wins, as with two params, where the one added first won (#331).

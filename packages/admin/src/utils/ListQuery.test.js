@@ -4,8 +4,10 @@ import { ListQuery } from './ListQuery.js'
 function createListQuery({
   routeQuery = {},
   storedQuery,
-  defaultQuery = { scope: 'all', order: 'title asc' }
+  defaultQuery = { scope: 'all', order: 'title asc' },
+  isInRoute = true
 } = {}) {
+  const onChange = vi.fn()
   const route = { path: '/books', query: routeQuery, hash: '#main' }
   const store = { query: storedQuery }
   const router = {
@@ -20,9 +22,11 @@ function createListQuery({
     router,
     getRoute: () => route,
     getSourceStore: () => store,
-    getDefaultQuery: () => defaultQuery
+    getDefaultQuery: () => defaultQuery,
+    isInRoute: () => isInRoute,
+    onChange
   })
-  return { listQuery, router, route, store }
+  return { listQuery, router, route, store, onChange }
 }
 
 describe('ListQuery', () => {
@@ -70,6 +74,17 @@ describe('ListQuery', () => {
         order: 'title asc',
         page: 0
       })
+    })
+
+    it('stores the changed query of lists outside of routes', async () => {
+      const { listQuery, router, store, onChange } = createListQuery({
+        storedQuery: { scope: 'all', order: 'title asc' },
+        isInRoute: false
+      })
+      await listQuery.update({ order: 'title desc' })
+      expect(router.push).not.toHaveBeenCalled()
+      expect(store.query).toEqual({ scope: 'all', order: 'title desc' })
+      expect(onChange).toHaveBeenCalledOnce()
     })
 
     it('removes values that are changed to `undefined`', async () => {

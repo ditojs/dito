@@ -90,6 +90,10 @@
     }
   }
 
+  &__row--empty > td {
+    color: $color-placeholder;
+  }
+
   &--larger-padding {
     // Add more spacing to cells in tables except those containing edit buttons,
     // to better align cell texts with edit buttons.
