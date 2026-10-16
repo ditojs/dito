@@ -1,15 +1,13 @@
-import { getCommonOffset } from '@ditojs/utils'
+import { escapeRegExp, getCommonOffset } from '@ditojs/utils'
 
 // Node Types:
-const TYPE_STATIC = 0 //       /static/patch
-const TYPE_PARAM = 1 //        /prefix/:param/suffix
-const TYPE_PLACEHOLDER = 2 //  /prefix/*/suffix  (a.k.a shallow wildcard)
-const TYPE_MATCH_ANY = 3 //    /prefix/**/suffix (a.k.a deep wildcard)
+const TYPE_STATIC = 0 //      /static/path
+const TYPE_PARAM = 1 //       /prefix/:param/suffix, /prefix/*/suffix
+const TYPE_MATCH_ANY = 2 //   /prefix/**/suffix
 
-// Char Codes
-const CHAR_SLASH = '/'[0]
-const CHAR_PARAM = ':'[0]
-const CHAR_WILDCARD = '*'[0]
+// Keys of wildcards, named `$` and `$$` when their route is set up:
+const SYMBOL_PLACEHOLDER = Symbol('$')
+const SYMBOL_MATCH_ANY = Symbol('$$')
 
 export default class Node {
   constructor(...args) {
@@ -27,6 +25,7 @@ export default class Node {
     this.label = prefix[0]
     this.prefix = prefix
     this.children = []
+    this.hasMatchAny = false
     this.parameters = parameters
     this.handler = handler
     this.paramKey = null
@@ -41,44 +40,54 @@ export default class Node {
     if (this.type === TYPE_MATCH_ANY) {
       parameters.setupPathPattern(this.prefix)
     }
+    parameters.setupWildcardKeys()
   }
 
   addChild(child) {
-    this.children.push(child)
-    this.hasMatchAny ||= child.type === TYPE_MATCH_ANY
+    const { children } = this
+    if (child.type === TYPE_MATCH_ANY) {
+      // `find()` tries match-any children in their order, so insert them
+      // before the first less specific one:
+      const index = children.findIndex(
+        node => (
+          node.type === TYPE_MATCH_ANY &&
+          compareMatchAnyPatterns(child.prefix, node.prefix) < 0
+        )
+      )
+      children.splice(index >= 0 ? index : children.length, 0, child)
+      this.hasMatchAny = true
+    } else {
+      children.push(child)
+    }
   }
 
   add(path, handler) {
     const parameters = new Parameters()
     for (let pos = 0, length = path.length; pos < length; pos++) {
       const ch = path[pos]
-      if (ch === CHAR_WILDCARD && path[pos + 1] === CHAR_WILDCARD) {
-        // Deep wildcard (**): matches any path, with a optional suffix:
+      if (ch === '*' && path[pos + 1] === '*') {
+        // Match-any (**): matches any path, with an optional suffix:
         this.insert(TYPE_STATIC, path.slice(0, pos))
         this.insert(TYPE_MATCH_ANY, path, parameters, handler)
         return
-      } else if (ch === CHAR_PARAM || ch === CHAR_WILDCARD) {
-        // Param (:param) or shallow wildcard (*):
-        const isWildcard = ch === CHAR_WILDCARD
-        const type = isWildcard ? TYPE_PLACEHOLDER : TYPE_PARAM
+      } else if (ch === ':' || ch === '*') {
+        // Param (:param) or placeholder (*), a param with a generated key:
         this.insert(TYPE_STATIC, path.slice(0, pos))
-        pos++ // Skip colon or wildcard.
-        const start = pos
-        // Move pos to the next occurrence of the slash or the end:
-        pos += path.slice(pos).match(/^([^/]*)/)[1].length
+        const start = pos + 1 // Skip colon or wildcard.
+        pos = getSegmentEnd(path, start)
         parameters.addKey(
-          isWildcard ? parameters.getPlaceholderKey() : path.slice(start, pos)
+          ch === '*' ? SYMBOL_PLACEHOLDER : path.slice(start, pos)
         )
-        // Chop out param name from path, but keep colon.
-        path = path.slice(0, start) + path.slice(pos)
+        // Chop out param name or wildcard, but keep a colon for both.
+        path = `${path.slice(0, start - 1)}:${path.slice(pos)}`
         length = path.length // Update length after changing path.
 
         if (start === length) {
-          this.insert(type, path, parameters, handler)
+          this.insert(TYPE_PARAM, path, parameters, handler)
           return
         }
         pos = start
-        this.insert(type, path.slice(0, pos), parameters)
+        this.insert(TYPE_PARAM, path.slice(0, pos), parameters)
       }
     }
     this.insert(TYPE_STATIC, path, parameters, handler)
@@ -111,8 +120,14 @@ export default class Node {
       } else if (pos < prefix.length) {
         prefix = prefix.slice(pos)
         const label = prefix[0]
-        const child = current.children.find(child => child.label === label)
-        if (child !== undefined && child.type !== TYPE_MATCH_ANY) {
+        // Match-any nodes aren't shared, only re-added to replace handlers:
+        const child = current.children.find(
+          child =>
+            child.type === TYPE_MATCH_ANY
+              ? child.prefix === prefix
+              : child.label === label
+        )
+        if (child) {
           // Go deeper
           current = child
           continue
@@ -122,13 +137,14 @@ export default class Node {
         current.addChild(node)
         current = node // Switch to child to set handler and parameters
       }
-      if (handler) {
-        current.setup(parameters, handler)
-      }
       if (parameters) {
         // Remember the last entry from the list of param names that keeps
-        // growing during parsing as the name of the current node.
+        // growing during parsing as the name of the current node, before
+        // `setup()` names the wildcards.
         current.paramKey = parameters.getLastKey()
+      }
+      if (handler) {
+        current.setup(parameters, handler)
       }
       break
     }
@@ -147,12 +163,12 @@ export default class Node {
       return null
     }
 
-    const pos = getCommonOffset(this.prefix, path)
+    const pos = getCommonOffset(prefix, path)
     const prefixLength = prefix.length
     const fullMatch = pos === prefixLength
     if (fullMatch) {
       path = path.slice(prefixLength)
-    } else if (this.type !== TYPE_PARAM && this.type !== TYPE_PLACEHOLDER) {
+    } else if (this.type !== TYPE_PARAM) {
       // If the path doesn't fully match the prefix, we only need to look
       // further on param nodes, which can have overlapping static children.
       return null
@@ -172,20 +188,13 @@ export default class Node {
       }
     }
 
-    // Node not found
+    // Only static nodes can follow the value of a param node:
     if (!fullMatch) return null
 
-    // Param / placeholder node
-    const paramChild = this.children.find(
-      child => child.type === TYPE_PARAM || child.type === TYPE_PLACEHOLDER
-    )
+    // Param node
+    const paramChild = this.children.find(child => child.type === TYPE_PARAM)
     if (paramChild) {
-      // Find the position of the next slash:
-      let pos = 0
-      const max = path.length
-      while (pos < max && path[pos] !== CHAR_SLASH) {
-        pos++
-      }
+      const pos = getSegmentEnd(path, 0)
       parameterValues.push(path.slice(0, pos))
       const result = paramChild.find(path.slice(pos), parameterValues)
       if (result) {
@@ -216,7 +225,9 @@ export default class Node {
     const lines = [
       `${format(prefix, tail, '└── ', '├── ')}${
         this.type === TYPE_PARAM
-          ? `${this.prefix}${this.paramKey}`
+          ? this.paramKey === SYMBOL_PLACEHOLDER
+            ? '*'
+            : `${this.prefix}${this.paramKey}`
           : this.prefix
       }${
         handler ? ` ${handler}` : ''
@@ -237,20 +248,10 @@ class Parameters {
   constructor() {
     this.keys = []
     this.pathPattern = null
-    this.matchAnyIndex = 0
-    this.placeholderIndex = 0
   }
 
   addKey(key) {
     this.keys.push(key)
-  }
-
-  getMatchAnyKey() {
-    return `$$${this.matchAnyIndex++}`
-  }
-
-  getPlaceholderKey() {
-    return `$${this.placeholderIndex++}`
   }
 
   getLastKey() {
@@ -258,51 +259,66 @@ class Parameters {
   }
 
   matchPathPattern(path) {
-    const match = this.pathPattern?.exec(path)
-    return match ? Object.values(match.groups) : null
+    return this.pathPattern?.exec(path)?.slice(1)
   }
 
   setupPathPattern(path) {
-    // Replace all '**' with '.+?' and all '*' with '[^/]+'.
-    // Use named groups to merge multiple ** or * into one.
+    // Replace all '**' with '.+?', all '*' and params with '[^/]+', and match
+    // everything else literally:
     const pattern = []
     for (const token of path.split('/')) {
       if (token === '**') {
-        const key = this.getMatchAnyKey()
-        pattern.push(`(?<${key}>.+?)`)
-        this.addKey(key)
+        pattern.push('(.+?)')
+        this.addKey(SYMBOL_MATCH_ANY)
       } else if (token === '*') {
-        const key = this.getPlaceholderKey()
-        pattern.push(`(?<${key}>[^/]+)`)
-        this.addKey(key)
+        pattern.push('([^/]+)')
+        this.addKey(SYMBOL_PLACEHOLDER)
       } else if (token.startsWith(':')) {
-        const key = token.slice(1)
-        pattern.push(`(?<${key}>[^/]+)`)
-        this.addKey(key)
+        pattern.push('([^/]+)')
+        this.addKey(token.slice(1))
       } else {
-        pattern.push(token)
+        pattern.push(escapeRegExp(token))
       }
     }
     this.pathPattern = new RegExp(`^${pattern.join('/')}$`)
   }
 
-  getObject(values) {
-    // Convert parameters and values to a params object, but rename path pattern
-    // groups back to param names
-    const object = {}
-    let i = 0
-    for (const key of this.keys) {
-      const name = key.startsWith('$$')
-        ? this.matchAnyIndex === 1
-          ? '$$'
+  setupWildcardKeys() {
+    // Name wildcards `$` and `$$`, or `$0`, `$1`, … when there are several:
+    for (const symbol of [SYMBOL_PLACEHOLDER, SYMBOL_MATCH_ANY]) {
+      const { description } = symbol
+      const isNumbered = this.keys.filter(key => key === symbol).length > 1
+      let index = 0
+      this.keys = this.keys.map(key =>
+        key === symbol
+          ? isNumbered
+            ? `${description}${index++}`
+            : description
           : key
-        : key.startsWith('$')
-          ? this.placeholderIndex === 1
-            ? '$'
-            : key
-          : key
-      object[name] = values[i++]
+      )
     }
-    return object
   }
+
+  getObject(values) {
+    return Object.fromEntries(this.keys.map((key, i) => [key, values[i]]))
+  }
+}
+
+function getSegmentEnd(path, pos) {
+  const end = path.indexOf('/', pos)
+  return end >= 0 ? end : path.length
+}
+
+// Sort match-any patterns with more segments first, then more static ones:
+function compareMatchAnyPatterns(pattern1, pattern2) {
+  const tokens1 = pattern1.split('/')
+  const tokens2 = pattern2.split('/')
+  return (
+    tokens2.length - tokens1.length ||
+    tokens2.filter(isStaticToken).length - tokens1.filter(isStaticToken).length
+  )
+}
+
+function isStaticToken(token) {
+  return token !== '*' && token !== '**' && !token.startsWith(':')
 }

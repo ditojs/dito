@@ -43,8 +43,14 @@ new Router({ prefix, strict } = {})
 | `**` | One or more segments, also in the middle of a path: `/covers/**/large`. | `$$`, or `$$0`, `$$1`, … with several |
 
 Static segments take precedence over params, and params over `**`. Of several
-`**` routes that match, the one added first wins. A path ending in `/**`
-doesn't match the path before it: `/covers/**` doesn't match `/covers`.
+`**` routes that match at the same position, the one with more segments wins,
+then the one with more static segments, then the one added first:
+`/covers/**/large` wins over `/covers/**/:size`, and both over `/covers/**`. A
+path ending in `/**` doesn't match the path before it: `/covers/**` doesn't
+match `/covers`.
+
+`*` and `**` only work as whole segments, and params can't use the names of
+wildcards, e.g. `$` or `$0`.
 
 ```js
 router.get('/books/*/chapters/*', handler)

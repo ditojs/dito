@@ -249,6 +249,16 @@ describe('Router', () => {
     expect(result.handler).toBeUndefined()
   })
 
+  it('lets the route added last win of a param and a placeholder', () => {
+    const paramHandler = () => {}
+    const placeholderHandler = () => {}
+    router.add('GET', '/books/:id', paramHandler)
+    router.add('GET', '/books/*', placeholderHandler)
+    result = router.find('GET', '/books/one')
+    expect(result.handler).toBe(placeholderHandler)
+    expect(result.params).toEqual({ $: 'one' })
+  })
+
   it('numbers the params of multiple placeholders', () => {
     router.add('GET', '/books/*/chapters/*', handler)
     result = router.find('GET', '/books/one/chapters/two')
@@ -263,6 +273,101 @@ describe('Router', () => {
     expect(result.params).toEqual({ $$: 'soups/stews', $0: '3', $1: '4' })
   })
 
+  it('handles match-any nodes added after placeholders', () => {
+    createRoutes(router, [
+      ['GET', '/a/*', 'placeholder'],
+      ['GET', '/a/**', 'any']
+    ])
+
+    result = router.find('GET', '/a/b')
+    expect(result.handler?.name).toBe('placeholder')
+    expect(result.params).toEqual({ $: 'b' })
+
+    result = router.find('GET', '/a/b/c')
+    expect(result.handler?.name).toBe('any')
+    expect(result.params).toEqual({ $$: 'b/c' })
+  })
+
+  it('handles params and placeholders at the same position', () => {
+    createRoutes(router, [
+      ['GET', '/a/:id/x', 'param'],
+      ['GET', '/a/*/y', 'placeholder']
+    ])
+
+    result = router.find('GET', '/a/1/x')
+    expect(result.handler?.name).toBe('param')
+    expect(result.params).toEqual({ id: '1' })
+
+    result = router.find('GET', '/a/1/y')
+    expect(result.handler?.name).toBe('placeholder')
+    expect(result.params).toEqual({ $: '1' })
+  })
+
+  it('tries the most specific match-any nodes first', () => {
+    createRoutes(router, [
+      ['GET', '/a/**', 'any'],
+      ['GET', '/a/**/:action', 'action'],
+      ['GET', '/a/**/edit', 'edit'],
+      ['GET', '/a/**/edit/*', 'editAny']
+    ])
+
+    result = router.find('GET', '/a/b/c')
+    expect(result.handler?.name).toBe('action')
+    expect(result.params).toEqual({ $$: 'b', action: 'c' })
+
+    result = router.find('GET', '/a/b/edit')
+    expect(result.handler?.name).toBe('edit')
+    expect(result.params).toEqual({ $$: 'b' })
+
+    result = router.find('GET', '/a/b/edit/c')
+    expect(result.handler?.name).toBe('editAny')
+    expect(result.params).toEqual({ $$: 'b', $: 'c' })
+
+    result = router.find('GET', '/a/b')
+    expect(result.handler?.name).toBe('any')
+  })
+
+  it('replaces the handlers of re-added match-any nodes', () => {
+    createRoutes(router, [
+      ['GET', '/a/**', 'first'],
+      ['GET', '/a/**', 'second']
+    ])
+    expect(router.find('GET', '/a/b').handler?.name).toBe('second')
+  })
+
+  it('matches the static text of match-any nodes literally', () => {
+    router.add('GET', '/a/**/x.json', handler)
+    router.add('GET', '/b/**/(x)/:id', handler)
+
+    expect(router.find('GET', '/a/b/xajson').handler).toBeUndefined()
+    expect(router.find('GET', '/a/b/x.json').handler).toBe(handler)
+    expect(router.find('GET', '/b/c/x/1').handler).toBeUndefined()
+
+    result = router.find('GET', '/b/c/(x)/1')
+    expect(result.handler).toBe(handler)
+    expect(result.params).toEqual({ $$: 'c', id: '1' })
+  })
+
+  it('supports any param names after match-any nodes', () => {
+    router.add('GET', '/a/**/:my-id', handler)
+    result = router.find('GET', '/a/b/c/1')
+    expect(result.handler).toBe(handler)
+    expect(result.params).toEqual({ '$$': 'b/c', 'my-id': '1' })
+  })
+
+  it('keeps params starting with $ apart from wildcards', () => {
+    router.add('GET', '/a/*/:$x', handler)
+    router.add('GET', '/b/**/:$$x', handler)
+
+    result = router.find('GET', '/a/1/2')
+    expect(result.handler).toBe(handler)
+    expect(result.params).toEqual({ $: '1', $x: '2' })
+
+    result = router.find('GET', '/b/1/2/3')
+    expect(result.handler).toBe(handler)
+    expect(result.params).toEqual({ $$: '1/2', $$x: '3' })
+  })
+
   it('handles match-any nodes with suffixes', () => {
     createRoutes(router, [
       ['GET', '/static/**/suffix', 'one'],
@@ -275,10 +380,10 @@ describe('Router', () => {
       deindent`
         / children=1
         └── static/ children=4
-            ├── **/suffix one() children=0
-            ├── **/suffix/**/more two() children=0
+            ├── **/suffix/*/1/:param/2/**/end four() children=0
             ├── **/suffix/*/1/:param/2 three() children=0
-            └── **/suffix/*/1/:param/2/**/end four() children=0
+            ├── **/suffix/**/more two() children=0
+            └── **/suffix one() children=0
       `.trim()
     )
 
