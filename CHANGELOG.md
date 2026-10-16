@@ -3,6 +3,12 @@
 The changes of each release of Dito.js. For upgrading to a new major
 version, see the upgrade guides in `docs/`.
 
+## 4.7.2 (unreleased)
+
+### New
+
+- **admin:** The zips that `clipboard: { interchange: true }` downloads store their files under their names, e.g. `files/cover.png`, instead of their storage keys, numbering different files of the same name, also when they only differ in case. Zips downloaded with 4.7.0 and 4.7.1 still upload (#323).
+
 ## 4.7.1 (2026-10-16)
 
 ### New
