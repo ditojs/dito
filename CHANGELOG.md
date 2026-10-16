@@ -11,6 +11,18 @@ version, see the upgrade guides in `docs/`.
 - **router:** HEAD requests, e.g. of link checkers and health probes, are handled by the GET route of their path when no HEAD route matches, where they responded with 501, and `Allow` lists HEAD wherever it lists GET. Misses of HEAD requests respond with 404 like those of GET requests (#329).
 - **router:** `add()`, `find()` and the `exclude` argument of `getAllowedMethods()` take methods in any case, e.g. `add('get', …)` matches `find('GET', …)`. This only affects code that calls the router directly with lowercase methods, as the server always passes them uppercase (#335).
 - **router:** Routes with `*` or `**` inside a segment, e.g. `/files/*.json` or `/files/**.json`, or with a param inside a segment after `**`, e.g. `/files/**/tech-doc-:format`, throw an error when added, where they matched any segment, ignoring the rest of it, or never matched.
+- **server:** `UserMixin.login()` reads the credentials only from the request body, where Passport's local strategy also read them from the query string.
+- **server:** Dito.js logs users in and restores them from the session itself, instead of through koa-passport. Passport's `ctx.req.user` mirror of `ctx.state.user` and custom Passport strategies through Dito.js are gone.
+- **server:** `UsersController` only treats users of its own model class as logged in, not users of its sub-classes, which have their own tables and ids. This affects apps that serve sub-classed user models through the parent's `UsersController`: their `session`, `self` and `logout` actions no longer mistake such users for the parent's user with the same id.
+- **server:** `UserMixin.sessionQuery()` is internal: `sessionScope` sets the scopes of the users of logins and sessions.
+
+### Deprecations
+
+- **server:** `app.passport` has no effect: users are always handled, with sessions when `app.session` is set.
+
+### Improvements
+
+- **server:** `@ditojs/server` no longer depends on `koa-passport` and `passport-local`. Existing sessions stay valid.
 
 ### Fixes
 

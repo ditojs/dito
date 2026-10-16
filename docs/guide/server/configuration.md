@@ -36,7 +36,6 @@ export default {
     normalizePaths: true,
     proxy: true,
     session: { modelClass: 'Session' },
-    passport: true,
     keys: [env.APP_KEY]
   },
 
@@ -101,7 +100,7 @@ export default {
   - `keys`: the secret keys for signed cookies. They also sign uploaded
     files, see [Storages](storages.md#signatures). Dito.js removes them from
     `app.config`.
-  - `session` and `passport`: needed for users who log in, see
+  - `session`: needed for users who log in, see
     [Controllers: users and sessions](controllers.md#users-and-sessions).
 
   The middleware that is on by default (`helmet`, `cors`, `compress`, `etag`,
