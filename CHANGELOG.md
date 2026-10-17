@@ -36,6 +36,7 @@ version, see the upgrade guides in `docs/`.
 - **utils:** `isUrl()` returns `false` for invalid URLs with long paths right away, where the time doubled with each path segment, taking seconds for 28 segments. URLs ending in a lone `?` or `#` are valid too (#348).
 - **utils:** `clone()` copies typed arrays, and Node.js buffers stay buffers, where it copied their elements one by one into a plain object (#350).
 - **utils:** `deindent` interpolates `null` and `undefined` as in template literals, where it threw a `TypeError` (#352).
+- **utils:** Errors that the callback of `toCallback()` throws reject the returned promise, where the callback was called a second time with them (#353).
 
 ## 4.7.2 (2026-10-16)
 
