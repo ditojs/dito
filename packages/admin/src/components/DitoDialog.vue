@@ -25,7 +25,7 @@
         generateLabels
       )
         template(#buttons)
-          DitoButtons.dito-buttons--large(
+          DitoButtons.dito-dialog__buttons.dito-buttons--large(
             ref="dialogButtons"
             :buttons="buttonSchemas"
             :data="dialogData"
@@ -204,6 +204,11 @@ export default {
   // so that password managers (e.g. 1Password) find the submit button first.
   .dito-container:has(.dito-button--cancel) {
     order: -1;
+  }
+
+  // Keep buttons that are wider than the components off the edges:
+  &__buttons {
+    padding-inline: $content-padding;
   }
 
   &__form {

@@ -55,21 +55,7 @@ export function showSecurityDialog(adminContext, { passkeys, totp }) {
                     required: true,
                     autofocus: true
                   },
-                  password: {
-                    type: 'password',
-                    label: 'New Password',
-                    autocomplete: 'new-password',
-                    required: true
-                  },
-                  confirmation: {
-                    type: 'password',
-                    label: 'Confirm New Password',
-                    autocomplete: 'new-password',
-                    required: true,
-                    validate: ({ value, item }) => (
-                      value === item.password || 'must match the new password'
-                    )
-                  }
+                  ...createNewPasswordComponents()
                 },
                 buttons: {
                   cancel: {},
@@ -268,6 +254,29 @@ export function createCodeComponent() {
     autocomplete: 'one-time-code',
     autofocus: true,
     width: codeWidth
+  }
+}
+
+// The new password and its confirmation, of the Security dialog and of password
+// resets:
+export function createNewPasswordComponents({ autofocus = false } = {}) {
+  return {
+    password: {
+      type: 'password',
+      label: 'New Password',
+      autocomplete: 'new-password',
+      autofocus,
+      required: true
+    },
+    confirmation: {
+      type: 'password',
+      label: 'Confirm New Password',
+      autocomplete: 'new-password',
+      required: true,
+      validate: ({ value, item }) => (
+        value === item.password || 'must match the new password'
+      )
+    }
   }
 }
 

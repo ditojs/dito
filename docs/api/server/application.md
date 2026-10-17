@@ -123,7 +123,10 @@ app: {
       id: 'example.com',
       origins: ['https://example.com', 'https://admin.example.com']
     },
-    totp: { issuer: 'Example' }
+    totp: { issuer: 'Example' },
+    passwordReset: {
+      confirmUrl: 'https://example.com/admin/#password-reset={token}'
+    }
   }
 }
 ```
@@ -131,13 +134,16 @@ app: {
 | Key                      | Type                       | Description                                                                                      |
 | ------------------------ | -------------------------- | ------------------------------------------------------------------------------------------------ |
 | `credentials.modelClass` | `string \| Class<Model>`   | The model that stores the credentials of all user models, using [`CredentialMixin`](model.md#credentialmixin). |
-| `credentials.secret`     | `string`                   | A long random string, required by `totp`, that encrypts the TOTP secrets and hashes the backup codes. It is separate from `keys`, which can rotate: changing it makes the stored TOTP secrets and backup codes unusable. |
+| `credentials.secret`     | `string`                   | A long random string, required by `totp` and `passwordReset`, that encrypts the TOTP secrets and hashes the backup codes and password reset tokens. It is separate from `keys`, which can rotate: changing it makes the stored TOTP secrets, backup codes and password reset links unusable. |
 | `passkeys`               | `object`                   | Enables the passkeys of [`UsersController`](controllers.md#userscontroller). Needs `credentials` and a `session` stored on the server, through `modelClass` or `store`, else the setup fails. |
 | `passkeys.name`          | `string`                   | The name of the app that authenticators show.                                                    |
 | `passkeys.id`            | `string`                   | The domain that the passkeys belong to, the WebAuthn relying party id. Frontends on this domain or its subdomains can use them. |
 | `passkeys.origins`       | `string[]`                 | The origins of the frontends that log in with passkeys, which may differ from the API's.        |
 | `totp`                   | `object`                   | Enables two-factor authentication with TOTP in [`UsersController`](controllers.md#userscontroller). Needs `credentials`, `credentials.secret` and a `session` stored on the server, else the setup fails. |
 | `totp.issuer`            | `string`                   | The name of the app that authenticator apps show.                                                |
+| `passwordReset`          | `object`                   | Enables password resets by email in [`UsersController`](controllers.md#userscontroller), which sends the emails through [`sendPasswordReset()`](controllers.md#sendpasswordreset). Needs `credentials`, `credentials.secret` and a `session` stored on the server, else the setup fails. |
+| `passwordReset.confirmUrl` | `string`                 | The URL of the page that the emails link to, with a `{token}` placeholder for the token, best in the fragment, e.g. `'https://example.com/admin/#password-reset={token}'` for the admin's [`login.passwordReset`](../admin/admin.md). One URL for the whole app: all users controllers send links to it. |
+| `passwordReset.expires`  | `number \| string`         | How long the links are valid, in milliseconds or as a duration string, e.g. `'30m'`. Default `'1h'`. |
 
 Passkeys need the optional peer dependency `@simplewebauthn/server`, TOTP
 needs `otpauth`.
