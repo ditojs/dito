@@ -46,6 +46,7 @@ new DitoAdmin(element, options)
 | `options.login.additionalComponents` | `Components` | Components added to the login dialog after `username` and `password`. Their values are sent with the credentials. |
 | `options.login.redirectAfterLogin` | `string` | A URL to load after a successful login, instead of resolving the views in place. |
 | `options.login.passkeys` | `boolean` | Adds a Login with Passkey button to the login dialog, and a Security item to the account menu, whose dialog lists, adds and removes the user's passkeys. Needs passkeys on the server, see [Passkeys](../../guide/server/controllers.md#passkeys), and the peer dependency `@simplewebauthn/browser`. |
+| `options.login.totp` | `boolean` | Adds a Security item to the account menu, whose dialog sets up two-factor authentication with TOTP, with a QR code for the authenticator app and the backup codes, and turns it off again. Needs TOTP on the server, see [Two-factor authentication](../../guide/server/controllers.md#two-factor-authentication), and the peer dependency `lean-qr`. The login dialog asks for the code whenever the server requires one. |
 | `options.spinner` | `{ size?: string, color?: string } \| null` | Size and color of the loading spinner in the header. `null` hides it. |
 | `options.account.settings` | `Form \| Promise \| () => …` | The form of the account settings, which the account menu opens at `/account/settings`, to edit the logged-in user through [`api.users.self`](#users). Also a promise or a function returning it, e.g. a dynamic `import()`. Its `label` is the view's label, default `'Settings'`. See [Account settings](../../guide/admin/views.md#account-settings). |
 
@@ -152,16 +153,19 @@ api: {
     passkeyLoginOptions: { path: 'passkey-login-options', method: 'post' },
     passkeyLogin: { path: 'passkey-login', method: 'post' },
     passkeyOptions: { path: 'passkey-options', method: 'post' },
-    passkeys: { path: 'passkeys' }
+    passkeys: { path: 'passkeys' },
+    loginCode: { path: 'login-code', method: 'post' },
+    totp: { path: 'totp' },
+    totpConfirm: { path: 'totp-confirm', method: 'post' }
   }
 }
 ```
 
 `users.path` is the collection of the user model; `users: 'users'` is short
-for `users: { path: 'users' }`. `login`, `logout`, `session`, `self` and the
-passkey resources of `login.passkeys` are resources nested under it, shown here
-with their defaults, so the admin logs in through `POST users/login`. The
-server's `UsersController` provides them.
+for `users: { path: 'users' }`. `login`, `logout`, `session`, `self`,
+`loginCode`, the passkey resources of `login.passkeys` and the TOTP resources
+of `login.totp` are resources nested under it, shown here with their defaults, so the admin logs in through
+`POST users/login`. The server's `UsersController` provides them.
 The admin reads `user` from the responses of `login` and `session`, and
 `success` from the response of `logout`. The
 [account settings](#parameters) load the logged-in user from `self` and patch
@@ -360,7 +364,11 @@ session.login(): Promise<AdminUser | null>
 
 Shows the login dialog and posts the credentials to `api.users.login`, or
 logs in with a passkey through `api.users.passkeyLogin`, asking again after
-each failure, until it succeeds or the user cancels. With
+each failure, until it succeeds or the user cancels. When the response has
+`codeRequired`, for users with TOTP, it asks for the code of their
+authenticator app or a backup code, and posts it to `api.users.loginCode`,
+asking again after wrong codes, and for the password when the user cancels or
+the login expires. With
 `login.redirectAfterLogin`, a successful login loads that URL instead.
 
 ##### Return value

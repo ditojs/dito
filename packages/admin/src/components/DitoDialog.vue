@@ -117,6 +117,10 @@ export default {
 
       focusTrapOptions: {
         immediate: true,
+        // Browsers only focus `autofocus` inputs when the page loads:
+        initialFocus: () => (
+          dialog.value.querySelector('[autofocus]') ?? undefined
+        ),
         fallbackFocus: () => dialog.value,
         // Only dialogs with a cancel button or without buttons can be
         // cancelled, see `onKeyDown()`. The trap is also deactivated on

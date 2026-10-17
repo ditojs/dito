@@ -208,6 +208,11 @@ export interface ApplicationConfig {
          * `Credential`. Its model uses `CredentialMixin`.
          */
         modelClass: string | Class<Model>
+        /**
+         * A long random string that encrypts the TOTP secrets and hashes the
+         * backup codes, required by `totp`. Changing it invalidates them.
+         */
+        secret?: string
       }
       /**
        * Enables passkeys, which need `session` and `credentials`.
@@ -219,6 +224,14 @@ export interface ApplicationConfig {
         id: string
         /** The origins of the frontends that use the passkeys. */
         origins: string[]
+      }
+      /**
+       * Enables two-factor authentication with TOTP, which needs `session`,
+       * `credentials` and `credentials.secret`.
+       */
+      totp?: {
+        /** The name of the app shown by authenticator apps. */
+        issuer: string
       }
     }
     /**
@@ -4361,7 +4374,7 @@ export const CredentialMixin: <T extends Constructor<{}>>(
   target: T
 ) => T &
   Constructor<{
-    /** `'passkey'` */
+    /** `'passkey'`, `'totp'` or `'backup-code'` */
     type: string
     /** The name of the user's model class. */
     userModel: string
@@ -4414,12 +4427,13 @@ export const UserMixin: <T extends Constructor<{}>>(
 
     /**
      * Authenticates a user with the credentials of the request body, and
-     * logs them in.
+     * logs them in. Resolves to `null` for users with TOTP, who are logged
+     * in once they enter a code through `'post login-code'`.
      */
     login(
       ctx: KoaContext,
       options?: Record<string, unknown>
-    ): Promise<InstanceType<typeof UserModel>>
+    ): Promise<InstanceType<typeof UserModel> | null>
   }
 
 export const UserModel: ReturnType<typeof UserMixin<typeof Model>>

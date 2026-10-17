@@ -9,6 +9,7 @@ export type User = Record<string, any>
 
 interface UserInterface {
   requestLoginData(): Promise<Record<string, any> | 'passkey' | null>
+  requestLoginCode(): Promise<{ code: string } | null>
   notify(options: NotifyOptions): void
 }
 
@@ -43,9 +44,14 @@ export class Session {
   }
 
   // `requestLoginData()` returns the credentials, `'passkey'` to log in with a
-  // passkey, or `null` when cancelled.
-  attachUserInterface({ requestLoginData, notify }: UserInterface) {
-    const userInterface = { requestLoginData, notify }
+  // passkey, or `null` when cancelled. `requestLoginCode()` returns the TOTP or
+  // backup code of users with TOTP, or `null` when cancelled.
+  attachUserInterface({
+    requestLoginData,
+    requestLoginCode,
+    notify
+  }: UserInterface) {
+    const userInterface = { requestLoginData, requestLoginCode, notify }
     this.#userInterface = userInterface
     return () => {
       if (this.#userInterface === userInterface) {
@@ -79,7 +85,9 @@ export class Session {
       } else {
         response = await this.#request(users.login, loginData)
       }
-      user = response.data.user
+      user = response.data.codeRequired
+        ? await this.#loginWithCode()
+        : response.data.user
     } catch (error) {
       // Ask again quietly when the passkey prompt is cancelled:
       if (!isPasskeyPromptCancelled(error)) {
@@ -87,13 +95,39 @@ export class Session {
       }
       return this.login()
     }
-    if (this.#redirectAfterLogin) {
-      location.replace(this.#redirectAfterLogin)
+    if (user) {
+      if (this.#redirectAfterLogin) {
+        location.replace(this.#redirectAfterLogin)
+      } else {
+        this.#setUser(user)
+        await this.#resolveViews()
+      }
+      return user
     } else {
-      this.#setUser(user)
-      await this.#resolveViews()
+      // The code step was cancelled or has expired, so ask for the password:
+      return this.login()
     }
-    return user
+  }
+
+  // Ask for the code of users with TOTP until it's accepted, or resolve to
+  // `null` to go back to the password:
+  async #loginWithCode(): Promise<User | null> {
+    const codeData = await this.#userInterface?.requestLoginCode()
+    if (codeData) {
+      try {
+        const response = await this.#request(
+          this.#api.users.loginCode,
+          codeData
+        )
+        return response.data.user
+      } catch (error: any) {
+        this.#notifyError(error)
+        // Wrong codes answer 401, missing or expired logins 400:
+        return error.response?.status === 401 ? this.#loginWithCode() : null
+      }
+    } else {
+      return null
+    }
   }
 
   // Resolve to whether the user was logged out:

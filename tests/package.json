@@ -25,6 +25,7 @@
     "better-sqlite3": "^13.0.3",
     "knex": "^3.3.0",
     "objection": "^3.3.0",
+    "otpauth": "^9.5.2",
     "vitest": "^5.0.3"
   }
 }
