@@ -3,6 +3,7 @@ import {
   isObject,
   isDate,
   isRegExp,
+  isTypedArray,
   isFunction,
   isPromise
 } from '../base/index.js'
@@ -42,6 +43,10 @@ export function clone(value, options) {
       for (let i = 0, l = value.length; i < l; i++) {
         copy[i] = handleValue(value[i])
       }
+    } else if (isTypedArray(value)) {
+      // Use the `slice()` of all typed arrays, which keeps their class, e.g.
+      // `Buffer`, since `Buffer#slice()` doesn't copy:
+      copy = storeClone(value, Uint8Array.prototype.slice.call(value))
     } else if (isObject(value)) {
       // Rely on arg.clone() if it exists and assume it creates an actual clone.
       if (isFunction(value.clone)) {
@@ -53,7 +58,6 @@ export function clone(value, options) {
         // Prevent calling the actual constructor since it is not guaranteed to
         // work as intended here, and only clone non-inherited own properties.
         copy = storeClone(value, Object.create(Object.getPrototypeOf(value)))
-        clones.set(value, copy)
         const keys = enumerable ? Object.keys(value) : Reflect.ownKeys(value)
         for (const key of keys) {
           if (descriptors) {

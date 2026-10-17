@@ -66,6 +66,10 @@ export function isRegExp(arg) {
   return !!arg && toString.call(arg) === '[object RegExp]'
 }
 
+export function isTypedArray(arg) {
+  return ArrayBuffer.isView(arg) && toString.call(arg) !== '[object DataView]'
+}
+
 export function isPromise(arg) {
   return !!arg && isFunction(arg.then) && isFunction(arg.catch)
 }

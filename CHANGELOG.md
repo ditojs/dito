@@ -21,6 +21,7 @@ version, see the upgrade guides in `docs/`.
 
 - **ui:** `DitoMenuButton` takes `floating`, which opens the menu below the button as a separate panel with a tip pointing at the button (#344).
 - **admin:** The account menu opens as a floating panel, right-aligned with the user name, and leaves the name unchanged while it is open (#344).
+- **utils:** `isTypedArray()` checks for typed arrays, e.g. `Uint8Array`, including Node.js buffers (#350).
 
 ### Fixes
 
@@ -32,6 +33,7 @@ version, see the upgrade guides in `docs/`.
 - **router:** Params starting with `$` keep their names next to wildcards, e.g. `$x` in `/a/*/:$x`, instead of being renamed to `$` or `$$` and replacing the wildcard's value (#334).
 - **admin:** Everything behind the topmost dialog is inert: the page, the navigation, the sidebar and other dialogs. Select All in a dialog no longer selects the values behind it, and assistive technology can't reach them either.
 - **utils:** `isUrl()` returns `false` for invalid URLs with long paths right away, where the time doubled with each path segment, taking seconds for 28 segments. URLs ending in a lone `?` or `#` are valid too (#348).
+- **utils:** `clone()` copies typed arrays, and Node.js buffers stay buffers, where it copied their elements one by one into a plain object (#350).
 
 ## 4.7.2 (2026-10-16)
 

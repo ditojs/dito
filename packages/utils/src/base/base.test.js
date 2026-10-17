@@ -10,6 +10,7 @@ import {
   isNumber,
   isDate,
   isRegExp,
+  isTypedArray,
   isPromise,
   isAsync,
   isInteger,
@@ -412,6 +413,39 @@ describe('isRegExp()', () => {
     (value, expected) => {
       it(`returns ${expected}`, () => {
         expect(isRegExp(value)).toBe(expected)
+      })
+    }
+  )
+})
+
+describe('isTypedArray()', () => {
+  describe.each([
+    [null, false],
+    [object, false],
+    [array, false],
+    [arrayLike, false],
+    [string, false],
+    [number, false],
+    [boolean, false],
+    [date, false],
+    [regexp, false],
+    [symbol, false],
+    [instance, false],
+    [promise, false],
+    [func, false],
+    [lambda, false],
+    [asyncFunc, false],
+    [asyncLambda, false],
+    [new Uint8Array(1), true],
+    [new Float64Array(1), true],
+    [Buffer.from('a'), true],
+    [new DataView(new ArrayBuffer(1)), false],
+    [new ArrayBuffer(1), false]
+  ])(
+    'isTypedArray(%o)',
+    (value, expected) => {
+      it(`returns ${expected}`, () => {
+        expect(isTypedArray(value)).toBe(expected)
       })
     }
   )
