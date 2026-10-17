@@ -9,14 +9,17 @@ import aaguids from 'aaguids'
 import { ModelController } from './ModelController.js'
 import {
   getUserIdentifier,
-  parseUserIdentifier
+  parseUserIdentifier,
+  updatePasswordFingerprint
 } from '../middleware/handleUser.js'
 import {
   authTimeout,
   backupCodeCount,
   codeLockTime,
-  maxCodeFailures
+  maxCodeFailures,
+  passwordResetInterval
 } from '../utils/auth.js'
+import { getDuration } from '../utils/duration.js'
 import {
   AuthenticationError,
   AuthorizationError,
@@ -36,6 +39,8 @@ export class UsersController extends ModelController {
       'get session': true,
       'post passkey-login-options': true,
       'post passkey-login': true,
+      'post password-reset': true,
+      'post password-reset-confirm': true,
       // Users manage their own password and passkeys:
       'post password': ctx => this.isAuthenticated(ctx),
       'get passkeys': ctx => this.isAuthenticated(ctx),
@@ -118,10 +123,103 @@ export class UsersController extends ModelController {
           await user
             .$query(ctx.transaction)
             .patch({ [passwordProperty]: password })
+          updatePasswordFingerprint(ctx, user)
           return { success: true }
         } else {
           throw new AuthenticationError({
             message: 'Password is incorrect',
+            status: 400
+          })
+        }
+      }
+    },
+
+    // Answer the same whether the user exists or not, so that the answer
+    // doesn't tell which usernames exist:
+    async 'post password-reset'(ctx) {
+      const { usernameProperty } = this.modelClass.definition.options
+      const username = ctx.request.body[usernameProperty]
+      if (!username) {
+        throw new ResponseError({
+          message: `Missing ${usernameProperty}`,
+          status: 400
+        })
+      }
+      const user = await this.modelClass
+        .sessionQuery(ctx.transaction)
+        .findOne(usernameProperty, username)
+      if (user) {
+        const query = getPasswordResetQuery(
+          this.modelClass,
+          user,
+          ctx.transaction
+        )
+        const isThrottled = !!(await query
+          .clone()
+          .findOne('createdAt', '>', getTimeAgo(passwordResetInterval)))
+        if (!isThrottled) {
+          // Clean up the expired tokens of the user:
+          await query
+            .clone()
+            .where('createdAt', '<=', getTimeAgo(this.passwordReset.expires))
+            .delete()
+          const token = randomBytes(32).toString('base64url')
+          await this.modelClass.credentialClass.query(ctx.transaction).insert({
+            type: 'password-reset',
+            userModel: this.modelClass.name,
+            userId: `${user.$id()}`,
+            key: hashPasswordResetToken(this, token)
+          })
+          const url = this.passwordReset.confirmUrl.replace('{token}', token)
+          // Don't wait for the email, so that the answer takes about as long as
+          // for unknown usernames, and failures don't tell either:
+          this.sendPasswordReset(ctx, user, url).catch(err => {
+            this.app.emit('error', err, ctx)
+          })
+        }
+      }
+      return { success: true }
+    },
+
+    'post password-reset-confirm': {
+      parameters: {
+        token: { type: 'string', required: true },
+        password: { type: 'string', required: true }
+      },
+
+      async handler(ctx, { token, password }) {
+        const { modelClass } = this
+        // Lock the token, so that concurrent requests can't use it twice:
+        const user = await modelClass.credentialClass.transaction(
+          ctx.transaction,
+          async trx => {
+            const credential = await modelClass
+              .credentialQuery(trx)
+              .findOne({
+                type: 'password-reset',
+                key: hashPasswordResetToken(this, token)
+              })
+              .where('createdAt', '>', getTimeAgo(this.passwordReset.expires))
+              .forUpdate()
+            const user = credential
+              ? await modelClass.sessionQuery(trx).findById(credential.userId)
+              : null
+            if (user) {
+              const { passwordProperty } = modelClass.definition.options
+              // The password property validates the password and sets its
+              // hash, which ends the other sessions of the user:
+              await user.$query(trx).patch({ [passwordProperty]: password })
+              await getPasswordResetQuery(modelClass, user, trx).delete()
+            }
+            return user
+          }
+        )
+        if (user) {
+          updatePasswordFingerprint(ctx, user)
+          return { success: true }
+        } else {
+          throw new AuthenticationError({
+            message: 'Invalid or expired token',
             status: 400
           })
         }
@@ -398,11 +496,17 @@ export class UsersController extends ModelController {
     const { session, auth } = this.app.config.app
     this.passkeys = auth?.passkeys ?? null
     this.totp = auth?.totp ?? null
+    this.passwordReset = auth?.passwordReset
+      ? {
+          ...auth.passwordReset,
+          expires: getDuration(auth.passwordReset.expires ?? '1h')
+        }
+      : null
 
     // Passkey challenges and pending logins are kept in the session, stored on
-    // the server so that old cookies can't replay them, and both need
+    // the server so that old cookies can't replay them, and all need
     // credentials:
-    const checkAuth = name => {
+    const checkAuth = (name, needsSecret = false) => {
       if (!(session?.modelClass || session?.store || session?.ContextStore)) {
         throw new ControllerError(
           this,
@@ -414,6 +518,13 @@ export class UsersController extends ModelController {
           this,
           `Unable to use ${name} without credentials, see ` +
           `'app.auth.credentials'.`
+        )
+      } else if (needsSecret && !auth.credentials.secret) {
+        // Credentials are encrypted and hashed with a secret of their own, not
+        // `app.keys`, since rotating those would make them unusable:
+        throw new ControllerError(
+          this,
+          `Unable to use ${name} without 'app.auth.credentials.secret'.`
         )
       }
     }
@@ -437,13 +548,25 @@ export class UsersController extends ModelController {
           `Invalid TOTP, missing 'app.auth.totp.issuer'.`
         )
       }
-      checkAuth('TOTP')
-      // TOTP secrets are encrypted with a secret of their own, not `app.keys`,
-      // since rotating those would make them unreadable:
-      if (!auth.credentials.secret) {
+      checkAuth('TOTP', true)
+    }
+    if (this.passwordReset) {
+      if (!this.passwordReset.confirmUrl?.includes('{token}')) {
         throw new ControllerError(
           this,
-          `Unable to use TOTP without 'app.auth.credentials.secret'.`
+          `Invalid password reset, 'app.auth.passwordReset.confirmUrl' ` +
+          `needs a '{token}' placeholder.`
+        )
+      }
+      checkAuth('password reset', true)
+      if (
+        this.sendPasswordReset ===
+        UsersController.prototype.sendPasswordReset
+      ) {
+        throw new ControllerError(
+          this,
+          `Unable to use password reset without overriding ` +
+          `'sendPasswordReset()'.`
         )
       }
     }
@@ -474,12 +597,13 @@ export class UsersController extends ModelController {
   // @override
   processValues(values) {
     const processed = super.processValues(values)
-    // Without passkeys or TOTP, we don't route their actions, which are all in
-    // `collection`:
+    // Without passkeys, TOTP or password reset, we don't route their actions,
+    // which are all in `collection`:
     if (values === this.collection) {
       for (const name of [
         ...(this.passkeys ? [] : passkeyActions),
-        ...(this.totp ? [] : totpActions)
+        ...(this.totp ? [] : totpActions),
+        ...(this.passwordReset ? [] : passwordResetActions)
       ]) {
         delete processed.values[name]
       }
@@ -498,6 +622,15 @@ export class UsersController extends ModelController {
     } else {
       throw new AuthorizationError()
     }
+  }
+
+  // @override
+  async executeAndFetchById(action, ctx, modify, body) {
+    const result = await super.executeAndFetchById(action, ctx, modify, body)
+    // Keep the session of users that change their own password, e.g. in
+    // `PATCH /users/self`:
+    updatePasswordFingerprint(ctx, result)
+    return result
   }
 
   isAuthenticated(ctx) {
@@ -535,6 +668,17 @@ export class UsersController extends ModelController {
       user,
       error
     }
+  }
+
+  // Send the user the email with the `url` that resets their password, with
+  // `app.auth.passwordReset`:
+  // @overridable
+  async sendPasswordReset(/* ctx, user, url */) {
+    throw new ControllerError(
+      this,
+      `Unable to send password resets without overriding ` +
+      `'sendPasswordReset()'.`
+    )
   }
 
   // Verify a TOTP code, or consume a backup code of the user. Too many wrong
@@ -614,6 +758,12 @@ const totpActions = [
   'post totp',
   'post totp-confirm',
   'delete totp'
+]
+
+// Only routed with `app.auth.passwordReset`, as apps send the emails:
+const passwordResetActions = [
+  'post password-reset',
+  'post password-reset-confirm'
 ]
 
 // The lengths of the IV and the authentication tag of AES-256-GCM:
@@ -719,6 +869,25 @@ function decrypt(secret, value, user) {
     decipher.update(buffer.subarray(ivLength + tagLength)),
     decipher.final()
   ]).toString('utf8')
+}
+
+function getPasswordResetQuery(modelClass, user, trx) {
+  return modelClass.credentialQuery(trx).where({
+    type: 'password-reset',
+    userId: `${user.$id()}`
+  })
+}
+
+// Tokens are random, so a fast hash suffices, as for backup codes:
+function hashPasswordResetToken(controller, token) {
+  const { secret } = controller.app.config.app.auth.credentials
+  return createHmac('sha256', deriveKey(secret, 'password-reset'))
+    .update(token)
+    .digest('hex')
+}
+
+function getTimeAgo(duration) {
+  return new Date(Date.now() - duration)
 }
 
 // Backup codes are random, so a fast hash suffices. Keyed with the secret, a

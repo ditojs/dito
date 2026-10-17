@@ -9,7 +9,7 @@ exported by `@ditojs/server`:
 | [`CollectionController`](#collectioncontroller) | Base class of model and relation controllers. Not extended directly. |
 | [`ModelController`](#modelcontroller)     | CRUD routes for a model's collection and members, plus its relations. |
 | [`RelationController`](#relationcontroller) | Routes for a relation of a model controller. Created from `relations`, never extended. |
-| [`UsersController`](#userscontroller)     | A model controller with login, logout, session, passkey and TOTP actions. |
+| [`UsersController`](#userscontroller)     | A model controller with login, logout, session, passkey, TOTP and password reset actions. |
 | [`AdminController`](#admincontroller)     | Serves Dito.js Admin. |
 
 Controllers are registered through the `controllers` option of the
@@ -848,6 +848,28 @@ and after the current one for clocks that drift. Each backup code is deleted
 once used. Passkey logins don't ask for codes. A subclass that sets
 `collection.allow` has to list the TOTP actions too, else they aren't routed.
 
+With [`app.auth.passwordReset`](./application.md#configappauth), users who
+forgot their password set a new one through a link that the app emails them,
+with these collection actions, which aren't routed without it:
+
+| Action                           | Response |
+| -------------------------------- | ------------------------------------------------------- |
+| `'post password-reset'`          | Emails a link to the user of the username in the body, under the model's `usernameProperty`, through [`sendPasswordReset()`](#sendpasswordreset): `{ success: true }`, also for unknown usernames, or 400 without a username. |
+| `'post password-reset-confirm'`  | Sets the password of the link's user to `{ token, password }`, validated by the user model: `{ success }`, or 400 with `'Invalid or expired token'`. Doesn't log in. |
+
+The answer of `'post password-reset'` doesn't tell whether the user exists: it
+doesn't wait for the email, and users get at most one email a minute. Each
+link works once, until it expires, and setting the password invalidates the
+user's other links. Only users of the controller's `modelClass` are found,
+through their `sessionScope`. Limit the rate of requests per client in the app
+or the proxy in front of it. A subclass that sets `collection.allow` has to
+list the password reset actions too, else they aren't routed.
+
+Changing the password ends the user's other sessions, through
+`'post password'`, a password reset or any other change of `hash`. A session
+that changes its own user's password through the controller, also in
+`PATCH /users/self`, stays logged in.
+
 TOTP is only asked for by [`UserMixin.login()`](./model.md#static-login), and
 thus by `'post login'`. `ctx.login(user)` logs in without it, by design, e.g.
 for impersonation or custom login flows. The credentials of TOTP are stored
@@ -856,12 +878,13 @@ user model classes on one table each have their own, so TOTP set up through
 one isn't asked for by logins through the other.
 
 The controller's [`authorize`](#authorize) doesn't apply to `login`, `logout`,
-`session`, `password`, the passkey and the TOTP actions, which authenticate
-users, or are only allowed for the authenticated user; `self` follows it. Its
-member actions default to `authorize: ['$self']`, and are routed when listed
-in `allow` like on other model controllers. In member routes, `self` stands
-for the authenticated user, see [`getMemberId()`](#getmemberid-1), e.g.
-`PATCH /users/self` runs `member.patch` on them.
+`session`, `password`, the passkey, TOTP and password reset actions, which
+authenticate users, or are only allowed for the authenticated user; `self`
+follows it. Its member actions default to `authorize: ['$self']`, and are
+routed when listed in `allow` like on other model controllers. In member
+routes, `self` stands for the authenticated user, see
+[`getMemberId()`](#getmemberid-1), e.g. `PATCH /users/self` runs
+`member.patch` on them.
 
 ```js
 import { UsersController } from '@ditojs/server'
@@ -879,6 +902,29 @@ const isAuthenticated = controller.isAuthenticated(ctx)
 ```
 
 Returns whether the request is authenticated with a user of `modelClass`.
+
+### sendPasswordReset()
+
+```js
+export class Users extends UsersController {
+  modelClass = User
+
+  // @override
+  async sendPasswordReset(ctx, user, url) {
+    await this.app.services.mailer.send({
+      to: user.email,
+      subject: 'Reset your password',
+      text: `Set a new password within the next hour: ${url}`
+    })
+  }
+}
+```
+
+Sends `user` the email with `url`, the `confirmUrl` of
+[`app.auth.passwordReset`](./application.md#configappauth) with the token, for
+`'post password-reset'`. Apps override it with `app.auth.passwordReset`, else
+the setup fails. The answer doesn't wait for it, so its errors are only emitted
+as `'error'` on the app.
 
 ### getMemberId()
 

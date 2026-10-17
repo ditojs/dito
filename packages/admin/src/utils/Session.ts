@@ -8,8 +8,12 @@ import type { Api } from './types.ts'
 export type User = Record<string, any>
 
 interface UserInterface {
-  requestLoginData(): Promise<Record<string, any> | 'passkey' | null>
+  requestLoginData(): Promise<
+    Record<string, any> | 'passkey' | 'passwordReset' | null
+  >
   requestLoginCode(): Promise<{ code: string } | null>
+  requestPasswordReset(): Promise<Record<string, any> | null>
+  requestNewPassword(): Promise<{ password: string } | null>
   notify(options: NotifyOptions): void
 }
 
@@ -44,14 +48,24 @@ export class Session {
   }
 
   // `requestLoginData()` returns the credentials, `'passkey'` to log in with a
-  // passkey, or `null` when cancelled. `requestLoginCode()` returns the TOTP or
-  // backup code of users with TOTP, or `null` when cancelled.
+  // passkey, `'passwordReset'` to reset the password, or `null` when cancelled.
+  // `requestLoginCode()` returns the TOTP or backup code of users with TOTP,
+  // `requestPasswordReset()` the username to reset the password of, and
+  // `requestNewPassword()` the new password, or `null` when cancelled.
   attachUserInterface({
     requestLoginData,
     requestLoginCode,
+    requestPasswordReset,
+    requestNewPassword,
     notify
   }: UserInterface) {
-    const userInterface = { requestLoginData, requestLoginCode, notify }
+    const userInterface = {
+      requestLoginData,
+      requestLoginCode,
+      requestPasswordReset,
+      requestNewPassword,
+      notify
+    }
     this.#userInterface = userInterface
     return () => {
       if (this.#userInterface === userInterface) {
@@ -61,6 +75,14 @@ export class Session {
   }
 
   async start() {
+    // The link of password reset emails opens the admin with the token:
+    const url = new URL(location.href)
+    const token = url.searchParams.get('password-reset')
+    if (token) {
+      await this.#confirmPasswordReset(token)
+      url.searchParams.delete('password-reset')
+      history.replaceState(history.state, '', url)
+    }
     if (await this.fetchUser()) {
       await this.#resolveViews()
     } else {
@@ -73,6 +95,9 @@ export class Session {
     const loginData = await this.#userInterface?.requestLoginData()
     if (!loginData) {
       return null
+    } else if (loginData === 'passwordReset') {
+      await this.#requestPasswordReset()
+      return this.login()
     }
     let user
     try {
@@ -131,6 +156,40 @@ export class Session {
     }
   }
 
+  async #requestPasswordReset() {
+    const data = await this.#userInterface?.requestPasswordReset()
+    if (data) {
+      try {
+        await this.#request(this.#api.users.passwordReset, data)
+        // The server doesn't tell whether the account exists:
+        this.#userInterface?.notify({
+          type: 'info',
+          text: 'If the account exists, we sent you an email.'
+        })
+      } catch (error) {
+        this.#notifyError(error)
+      }
+    }
+  }
+
+  async #confirmPasswordReset(token: string) {
+    const data = await this.#userInterface?.requestNewPassword()
+    if (data) {
+      try {
+        await this.#request(this.#api.users.passwordResetConfirm, {
+          token,
+          password: data.password
+        })
+        this.#userInterface?.notify({
+          type: 'success',
+          text: 'Your password was changed. Please log in.'
+        })
+      } catch (error) {
+        this.#notifyError(error)
+      }
+    }
+  }
+
   // Resolve to whether the user was logged out:
   async logout(): Promise<boolean> {
     try {
@@ -185,7 +244,9 @@ export class Session {
   }
 
   #notifyError(error: any) {
-    const responseError = error.response?.data?.error || error
+    // Logins answer their errors in `error`, other actions in `message`:
+    const { data } = error.response ?? {}
+    const responseError = data?.error || data?.message || error
     if (this.#userInterface) {
       this.#userInterface.notify({
         type: 'error',

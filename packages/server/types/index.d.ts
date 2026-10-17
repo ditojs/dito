@@ -210,7 +210,8 @@ export interface ApplicationConfig {
         modelClass: string | Class<Model>
         /**
          * A long random string that encrypts the TOTP secrets and hashes the
-         * backup codes, required by `totp`. Changing it invalidates them.
+         * backup codes and password reset tokens, required by `totp` and
+         * `passwordReset`. Changing it invalidates them.
          */
         secret?: string
       }
@@ -232,6 +233,24 @@ export interface ApplicationConfig {
       totp?: {
         /** The name of the app shown by authenticator apps. */
         issuer: string
+      }
+      /**
+       * Enables password resets by email, which need `session`, `credentials`
+       * and `credentials.secret`, and `UsersController.sendPasswordReset()`.
+       */
+      passwordReset?: {
+        /**
+         * The URL of the page that the email links to, with a `{token}`
+         * placeholder, e.g.
+         * `'https://example.com/admin/?password-reset={token}'`.
+         */
+        confirmUrl: string
+        /**
+         * How long the link is valid, in milliseconds or as a duration string.
+         *
+         * @defaultValue `'1h'`
+         */
+        expires?: number | string
       }
     }
     /**
@@ -2848,6 +2867,11 @@ export class UsersController<
    * and the user is an instance of the controller's model.
    */
   isAuthenticated(ctx: KoaContext): boolean
+  /**
+   * Sends the user the email with the `url` that resets their password, with
+   * `app.auth.passwordReset`. Apps override it.
+   */
+  sendPasswordReset(ctx: KoaContext, user: M, url: string): Promise<void>
 }
 
 export class AdminController extends Controller {
@@ -4374,12 +4398,12 @@ export const CredentialMixin: <T extends Constructor<{}>>(
   target: T
 ) => T &
   Constructor<{
-    /** `'passkey'`, `'totp'` or `'backup-code'` */
+    /** `'passkey'`, `'totp'`, `'backup-code'` or `'password-reset'` */
     type: string
     /** The name of the user's model class. */
     userModel: string
     userId: string
-    /** The credential id of passkeys. */
+    /** The credential id of passkeys, the hash of password reset tokens. */
     key: string | null
     /** The label that the user gave the credential. */
     name: string | null

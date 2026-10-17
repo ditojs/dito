@@ -375,7 +375,7 @@ describe('UsersController', () => {
     const expectDroppedUser = async (request: any) => {
       expect((await request('/members/session')).data.authenticated).toBe(false)
       const [session] = await Session.query()
-      expect(session.value.passport).toEqual({})
+      expect(session.value.passport).toBeUndefined()
     }
 
     it('drops users excluded by the session scope', async () => {
@@ -388,6 +388,22 @@ describe('UsersController', () => {
       const request = await loginOther()
       await Member.query().deleteById(other.id)
       await expectDroppedUser(request)
+    })
+
+    it('drops users whose password changed', async () => {
+      const request = await loginOther()
+      await Member.query().patchById(other.id, { password: 'changed' } as any)
+      await expectDroppedUser(request)
+    })
+
+    it('keeps sessions from before password fingerprints', async () => {
+      const request = await loginOther()
+      const [session] = await Session.query()
+      await session.$query().patch({
+        value: { passport: { user: `Member-${other.id}` } }
+      } as any)
+      await Member.query().patchById(other.id, { password: 'changed' } as any)
+      expect((await request('/members/session')).data.authenticated).toBe(true)
     })
 
     it('passes on errors of the session query', async context => {
@@ -482,6 +498,8 @@ describe('UsersController', () => {
       expect(self.data).toMatchObject({ id: other.id, nickname: 'Bobo' })
       expect(self.data).not.toHaveProperty('hash')
       expect((await Member.query().findById(member.id))!.nickname).toBeNull()
+      // Changing the own password keeps the session:
+      expect((await request('/members/session')).data.authenticated).toBe(true)
       // The password is hashed like in other patches:
       const login = await createClient(url)('/members/login', {
         method: 'POST',
@@ -565,6 +583,27 @@ describe('UsersController', () => {
       expect(response.status).toBe(200)
       expect(response.data).toEqual({ success: true })
       expect(await isPassword('changed')).toBe(true)
+    })
+
+    it('ends the other sessions of the user, but not its own', async () => {
+      const other = createClient(url)
+      await other('/readers/login', {
+        method: 'POST',
+        body: { username: 'ada', password: 'secret' }
+      })
+      expect((await other('/readers/session')).data.authenticated).toBe(true)
+      const request = createClient(url)
+      await request('/readers/login', {
+        method: 'POST',
+        body: { username: 'ada', password: 'secret' }
+      })
+      const response = await request('/readers/password', {
+        method: 'POST',
+        body: { currentPassword: 'secret', password: 'changed' }
+      })
+      expect(response.status).toBe(200)
+      expect((await request('/readers/session')).data.authenticated).toBe(true)
+      expect((await other('/readers/session')).data.authenticated).toBe(false)
     })
 
     it('rejects wrong current passwords', async () => {
