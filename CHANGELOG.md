@@ -38,6 +38,7 @@ version, see the upgrade guides in `docs/`.
 - **utils:** `deindent` interpolates `null` and `undefined` as in template literals, where it threw a `TypeError` (#352).
 - **utils:** Errors that the callback of `toCallback()` throws reject the returned promise, where the callback was called a second time with them (#353).
 - **utils:** `flatten()` handles nested arrays of any length, where those with more than about 100,000 items threw a `Maximum call stack size exceeded` error (#354).
+- **utils:** Data paths other than strings, arrays, `null` and `undefined` throw an `Invalid data path` error, where `parseDataPath()` returned `undefined` and e.g. `getValueAtDataPath(obj, 0)` threw `parsedPath is not iterable` (#369).
 
 ## 4.7.2 (2026-10-16)
 

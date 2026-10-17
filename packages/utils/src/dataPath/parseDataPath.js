@@ -12,5 +12,7 @@ export function parseDataPath(path) {
       // Expand array property access notation ([])
       .replace(/\[['"]?([^'"\]]*)['"]?\]/g, '/$1')
     return /^\//.test(str) ? str.slice(1).split('/') : str.split('/')
+  } else if (path != null) {
+    throw new Error(`Invalid data path: '${path}'.`)
   }
 }
