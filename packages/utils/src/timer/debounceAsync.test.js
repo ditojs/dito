@@ -41,14 +41,15 @@ describe('debounceAsync()', () => {
 
   it('should pass through return value', async () => {
     expect.assertions(2)
-    const func = vi.fn().mockResolvedValueOnce(fixture)
+    const func = vi.fn(async () => fixture)
     const debounced = debounceAsync(func, 1000)
     const promises = []
     promises.push(debounced())
     vi.advanceTimersByTime(1000)
     promises.push(debounced())
+    vi.advanceTimersByTime(1000)
     expect(await Promise.all(promises)).toStrictEqual([fixture, fixture])
-    expect(func).toBeCalledTimes(1)
+    expect(func).toBeCalledTimes(2)
   })
 
   it('should pass through `this`', async () => {
@@ -62,8 +63,9 @@ describe('debounceAsync()', () => {
     promises.push(debounced.call(obj))
     vi.advanceTimersByTime(1000)
     promises.push(debounced.call(obj))
+    vi.advanceTimersByTime(1000)
     expect(await Promise.all(promises)).toStrictEqual([obj, obj])
-    expect(func).toBeCalledTimes(1)
+    expect(func).toBeCalledTimes(2)
   })
 
   it('should allow to cancel', async () => {
@@ -159,5 +161,52 @@ describe('debounceAsync()', () => {
     const results = await Promise.all(promises)
     expect(results).toStrictEqual(new Array(11).fill(undefined))
     expect(func).toBeCalledTimes(2)
+  })
+
+  it('should settle calls during a pending run with their own run', async () => {
+    const func = vi.fn(async value => {
+      await new Promise(resolve => setTimeout(resolve, 500))
+      return value
+    })
+    const debounced = debounceAsync(func, 1000)
+    const first = debounced('first')
+    await vi.advanceTimersByTimeAsync(1200)
+    const second = debounced('second')
+    await vi.advanceTimersByTimeAsync(2000)
+    expect(await first).toBe('first')
+    expect(await second).toBe('second')
+    expect(func).toBeCalledTimes(2)
+  })
+
+  it('should cancel calls made during a pending run', async () => {
+    const func = vi.fn(async () => {
+      await new Promise(resolve => setTimeout(resolve, 500))
+      throw new Error('boom')
+    })
+    const debounced = debounceAsync(func, 1000)
+    const first = debounced()
+    const rejection = expect(first).rejects.toThrow('boom')
+    await vi.advanceTimersByTimeAsync(1200)
+    const second = debounced()
+    expect(debounced.cancel()).toBe(true)
+    expect(await second).toBeUndefined()
+    await vi.advanceTimersByTimeAsync(500)
+    await rejection
+    expect(func).toBeCalledTimes(1)
+  })
+
+  it('should settle calls during the immediate run with its result', async () => {
+    const func = vi.fn(async () => {
+      await new Promise(resolve => setTimeout(resolve, 500))
+      return fixture
+    })
+    const debounced = debounceAsync(func, { delay: 1000, immediate: true })
+    const first = debounced()
+    await vi.advanceTimersByTimeAsync(200)
+    const second = debounced()
+    await vi.advanceTimersByTimeAsync(500)
+    expect(await first).toBe(fixture)
+    expect(await second).toBe(fixture)
+    expect(func).toBeCalledTimes(1)
   })
 })

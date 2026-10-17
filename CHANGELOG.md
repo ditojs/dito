@@ -15,6 +15,7 @@ version, see the upgrade guides in `docs/`.
 - **admin:** Fields only validate on blur when they were edited while focused, so passing through empty required fields, or clicking the label of a focused field, no longer shows errors. Submitting still validates all fields. Fields validated on every blur.
 - **router:** Routes with `*` or `**` inside a segment, e.g. `/files/*.json` or `/files/**.json`, or with a param inside a segment after `**`, e.g. `/files/**/tech-doc-:format`, throw an error when added, where they matched any segment, ignoring the rest of it, or never matched.
 - **server:** Files that several overlapping asset data paths reach, e.g. `'content.items[**].file'` and `'**.file'`, count once per place in the data, with the storage and config of the first data path, where they counted once per data path. Apps with overlapping asset data paths should run `db:recount_assets` after upgrading, to correct the stored counts.
+- **utils:** `debounceAsync()` resolves calls made while a run is pending with the result of their own run, where they received the pending run's result, and `cancel()` only settles calls that wait for the timer, where it also resolved those of a pending run, whose rejection then threw an unhandled `TypeError`. Debounced `search` filters of the admin now get the options of the search term they were called with (#347, #349).
 
 ### New
 

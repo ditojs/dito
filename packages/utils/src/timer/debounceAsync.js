@@ -5,25 +5,28 @@ export function debounceAsync(func, options) {
 
   let timer = null
   let callbacks = []
-  let result
+  let leadingRun
 
-  const resolve = result => {
-    for (const { resolve } of callbacks) {
+  const resolve = (entries, result) => {
+    for (const { resolve } of entries) {
       resolve(result)
     }
-    callbacks = []
   }
 
   const execute = async (that, args) => {
+    // Only settle the promises waiting when the run starts, calls made during
+    // the run wait for their own run:
+    const waiting = callbacks
+    callbacks = []
     try {
-      result = await func.apply(that, args)
-      resolve(result)
+      const result = await func.apply(that, args)
+      resolve(waiting, result)
+      return result
     } catch (err) {
       // Convention: reject the last waiting promise, while all the others are
       // resolved with undefined.
-      const { reject } = callbacks.pop()
-      result = undefined
-      resolve(undefined)
+      const { reject } = waiting.pop()
+      resolve(waiting, undefined)
       reject(err)
     }
   }
@@ -38,13 +41,13 @@ export function debounceAsync(func, options) {
           execute(this, args)
         }
       }, delay)
-      if (immediate && !callNow && callbacks.length === 0) {
-        // The leading call already settled, so share its result:
-        resolve(result)
+      if (immediate && !callNow) {
+        // Share the result of the leading call, once it settles:
+        resolve(leadingRun)
       } else {
         callbacks.push({ resolve, reject })
         if (callNow) {
-          execute(this, args)
+          leadingRun = execute(this, args)
         }
       }
     })
@@ -53,7 +56,8 @@ export function debounceAsync(func, options) {
   debounced.cancel = function () {
     const pending = timer !== null
     if (pending) {
-      resolve(undefined)
+      resolve(callbacks, undefined)
+      callbacks = []
       clearTimeout(timer)
       timer = null
     }
