@@ -23,6 +23,11 @@ describe('flatten()', () => {
     expect(flatten(array)).toStrictEqual(expected)
   })
 
+  it('should support nested arrays with many items', () => {
+    const items = Array(200_000).fill(1)
+    expect(flatten([items])).toStrictEqual(items)
+  })
+
   it('should return an empty array for non array-like objects', () => {
     expect(flatten({ 0: 'a' })).toStrictEqual([])
   })
