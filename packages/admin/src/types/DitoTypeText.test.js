@@ -225,9 +225,11 @@ describe('DitoTypeText', () => {
         schema: { components: { email: { type: 'email' } } }
       })
       const input = findField('email').find('input')
+      await input.trigger('focus')
       await input.setValue('reader@')
       await input.trigger('blur')
       expect(getErrors('email')).toHaveLength(1)
+      await input.trigger('focus')
       await input.setValue('reader@example.com')
       await input.trigger('blur')
       expect(getErrors('email')).toEqual([])

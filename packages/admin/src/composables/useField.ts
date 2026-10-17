@@ -207,7 +207,9 @@ export function useField(
     set(newValue) {
       field.value.value = newValue
       hasEmittedInput = true
-      isEdited = true
+      if (focused.value) {
+        isEdited = true
+      }
       emitEvent('input')
     }
   })
@@ -215,13 +217,13 @@ export function useField(
   const handlers: FieldEventHandlers = {
     onFocus() {
       focused.value = true
-      isEdited = false
       emitEvent('focus')
     },
 
     onBlur() {
       focused.value = false
       if (isEdited) {
+        isEdited = false
         validate()
       }
       emitEvent('blur')

@@ -87,16 +87,14 @@ const DitoTypeColor = {
     }
 
     function onBlur() {
-      field.onBlur()
-      changeOnceEdited.emitIfDone()
-    }
-
-    watch(canUpdateValue, canUpdateValue => {
-      if (canUpdateValue && convertedValue.value !== null) {
+      // Write the value typed into the input before the blur validates it:
+      if (convertedValue.value !== null) {
         setEditedValue(convertedValue.value)
         convertedValue.value = null
       }
-    })
+      field.onBlur()
+      changeOnceEdited.emitIfDone()
+    }
 
     watch(showPopup, showPopup => {
       if (!showPopup) {
@@ -144,7 +142,7 @@ const DitoTypeColor = {
             if (canUpdateValue.value) {
               setEditedValue(converted)
             } else {
-              // Store to change later, once `canUpdateValue` is true again.
+              // Store to write on blur, see `onBlur()`:
               convertedValue.value = converted
             }
           }

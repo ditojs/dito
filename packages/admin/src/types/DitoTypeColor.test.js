@@ -44,6 +44,28 @@ describe('DitoTypeColor', () => {
     await vi.waitFor(() => expect(data.background).toBe('#00ff00'))
   })
 
+  it('validates entered colors on blur', async () => {
+    const { findField, getErrors, settle } = await mountSchema({
+      schema: {
+        components: {
+          background: {
+            type: 'color',
+            validate: ({ value }) => value !== '#000000'
+          }
+        }
+      },
+      data: { background: '#ff8000' }
+    })
+    const input = findField('background').find('input')
+    await input.trigger('focus')
+    await enterValue(input, '000000')
+    await input.trigger('blur')
+    await settle()
+    expect(getErrors('background')).toEqual([
+      'The background field is invalid.'
+    ])
+  })
+
   it('ignores invalid colors', async () => {
     const { findField, data } = await mountSchema({
       schema: { components: { background: { type: 'color' } } },
