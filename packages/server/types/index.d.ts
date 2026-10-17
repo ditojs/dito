@@ -193,9 +193,8 @@ export interface ApplicationConfig {
           modelClass?: string | Class<Model>
         })
     /**
-     * Enable passport authentication middleware
-     *
-     * @defaultValue `false`
+     * @deprecated Users are always handled, with sessions when `session` is
+     * set. This setting has no effect.
      */
     passport?: boolean
     /**
@@ -592,7 +591,7 @@ export class Application<$Models extends Models = Models> {
   setupKnex(): void
   /**
    * Configures all Koa middleware (logger, error
-   * handling, CORS, compression, session, passport,
+   * handling, CORS, compression, session, users,
    * etc.).
    */
   setupMiddleware(middleware?: Koa.Middleware): void
@@ -4356,24 +4355,22 @@ export const UserMixin: <T extends Constructor<{}>>(
       usernameProperty?: string
       passwordProperty?: string
       /**
-       * This option can be used to specify (eager) scopes to be applied when
-       * the user is deserialized from the session.
+       * Scopes applied when loading the user of a login or a session.
        */
       sessionScope?: OrArrayOf<string>
     }
 
-    /** Registers the passport strategy for this user class. */
+    /** Defines the password property that sets the hash. */
     setup(): void
 
-    /** Authenticates a user via Passport. */
+    /**
+     * Authenticates a user with the credentials of the request body, and
+     * logs them in.
+     */
     login(
       ctx: KoaContext,
       options?: Record<string, unknown>
     ): Promise<InstanceType<typeof UserModel>>
-
-    sessionQuery(
-      trx?: Knex.Transaction
-    ): QueryBuilder<InstanceType<typeof UserModel>>
   }
 
 export const UserModel: ReturnType<typeof UserMixin<typeof Model>>

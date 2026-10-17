@@ -520,17 +520,15 @@ every exported controller is registered and routed.
 
 ## Users and sessions
 
-Logging in needs sessions, Passport, a user model and a users controller.
+Logging in needs sessions, a user model and a users controller.
 
-The configuration turns on sessions and Passport, and the keys that sign the
-session cookie:
+The configuration turns on sessions, and the keys that sign the session cookie:
 
 ```js
 // config/index.js
 export default {
   app: {
     session: { modelClass: 'Session' },
-    passport: true,
     keys: [process.env.APP_KEY]
   }
 }
