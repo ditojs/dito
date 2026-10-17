@@ -1038,7 +1038,10 @@ Returns `boolean`: whether this user is the logged in user of the request,
 Logged in users are stored in the session as `<ModelName>-<id>`, so several
 user model classes can be used side by side. When a session is loaded, the
 user is fetched with the `sessionScope` and set as `ctx.state.user`; users that
-no longer exist, or that the session scope excludes, end the session.
+no longer exist, that the session scope excludes, or whose `hash` changed since
+the login, end the session. The session stores a hash of `hash` for this, and
+`UsersController` updates it when users change their own password, so their
+own session stays logged in.
 `ctx.login(user, { session: false })` logs a user in for the request only, and
 `ctx.isAuthenticated()` tells whether the request has a user.
 
@@ -1091,16 +1094,16 @@ export class Credential extends CredentialModel {}
 ```
 
 A model to store the credentials of users beyond their password: their
-[passkeys and TOTP](controllers.md#userscontroller). One table holds the
+[passkeys, TOTP and password reset tokens](controllers.md#userscontroller). One table holds the
 credentials of all user models. Use it with `app.auth.credentials.modelClass`,
 the model's name or class, see [`config.app`](application.md#configapp).
 
 | Property     | Description                                                                 |
 | ------------ | --------------------------------------------------------------------------- |
-| `type`       | `string`, required: `'passkey'`, `'totp'`, one per user, or `'backup-code'`, ten per user with TOTP. |
+| `type`       | `string`, required: `'passkey'`, `'totp'`, one per user, `'backup-code'`, ten per user with TOTP, or `'password-reset'`. |
 | `userModel`  | `string`, required: the name of the user's model class.                     |
 | `userId`     | `string`, required: the id of the user, also of integer ids.                |
-| `key`        | `string`, nullable, unique per `userModel`: the credential id of passkeys.  |
+| `key`        | `string`, nullable, unique per `userModel`: the credential id of passkeys, the hash of password reset tokens. |
 | `name`       | `string`, nullable: the name of the provider of passkeys, e.g. `'1Password'`. |
 | `data`       | `object`, hidden: the public key, signature counter and transports of passkeys, the encrypted secret and the time step of the last accepted code of TOTP, the hash of backup codes. |
 | `createdAt`  | `timestamp`, set on insert.                                                 |

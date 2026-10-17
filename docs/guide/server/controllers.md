@@ -717,6 +717,67 @@ dialog asks for the code, and its `login.totp` option sets up and turns off
 TOTP in the account menu, see
 [`DitoAdmin`](../../api/admin/admin.md#parameters).
 
+### Password reset
+
+Users who forgot their password can set a new one through a link that the app
+emails them. Add the model for the credentials as for passkeys, with a secret
+as for TOTP, set the URL of the page that the link opens, and send the emails
+in the users controller:
+
+```js
+// config/index.js
+export default {
+  app: {
+    session: { modelClass: 'Session' },
+    auth: {
+      credentials: {
+        modelClass: 'Credential',
+        secret: process.env.CREDENTIALS_SECRET
+      },
+      passwordReset: {
+        confirmUrl: 'https://example.com/reset-password#token={token}',
+        expires: '1h'
+      }
+    }
+  }
+}
+```
+
+```js
+export class Users extends UsersController {
+  modelClass = User
+
+  async sendPasswordReset(ctx, user, url) {
+    await sendEmail({
+      to: user.email,
+      subject: 'Reset your password',
+      text: `Set a new password within the next hour: ${url}`
+    })
+  }
+}
+```
+
+The token goes in the fragment of the URL, which browsers don't send to
+servers, also not in the `Referer` header. The page of the link reads it and
+posts it with the new password. The request answers with the same response and
+status whether the user exists or not:
+
+```js
+await post('password-reset', { username })
+// On the page of the link:
+const token = new URLSearchParams(location.hash.slice(1)).get('token')
+await post('password-reset-confirm', { token, password })
+```
+
+Each link works once, until it expires, and doesn't log in: the user logs in
+with the new password afterwards. Users get at most one email a minute, and
+changing the password ends their other sessions. The time of the answer can
+still differ for existing users, so limit the rate of requests per client in
+the proxy in front of the app. The admin's `login.passwordReset` option adds
+the request to its login dialog, with `confirmUrl` pointing to the admin, e.g.
+`'https://example.com/admin/#password-reset={token}'`, see
+[`DitoAdmin`](../../api/admin/admin.md#parameters).
+
 ## Admin
 
 The `AdminController` serves the admin interface at its path. In development

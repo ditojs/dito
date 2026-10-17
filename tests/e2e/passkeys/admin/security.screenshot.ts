@@ -110,6 +110,23 @@ test.describe('screenshots', () => {
     await expectScreenshot(page, 'login-passkeys.png')
   })
 
+  test('password reset dialog', async ({ page, url }) => {
+    await page.goto(`${url}/admin/`)
+    await page.getByRole('button', { name: 'Forgot password?' }).click()
+    const dialog = page.getByRole('dialog', { name: 'Reset Password' })
+    await expect(dialog.getByLabel('Username')).toBeFocused()
+    await expectScreenshot(page, 'password-reset.png')
+  })
+
+  test('set new password dialog', async ({ page, url }) => {
+    await page.goto(`${url}/admin/#password-reset=token`)
+    const dialog = page.getByRole('dialog', { name: 'Set New Password' })
+    await expect(
+      dialog.getByLabel('New Password', { exact: true })
+    ).toBeFocused()
+    await expectScreenshot(page, 'password-reset-confirm.png')
+  })
+
   test('security dialog without passkeys', async ({ page, url }) => {
     await login(page, url)
     const dialog = await openSecurity(page)
