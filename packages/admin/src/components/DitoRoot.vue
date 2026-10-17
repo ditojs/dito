@@ -19,13 +19,18 @@
       :promise="dialog.promise"
       :data="dialog.data"
       :settings="dialog.settings"
+      :inert="key !== topDialogKey"
       @remove="removeDialog(key)"
     )
   DitoNavigation#dito-navigation(
     ref="navigation"
     :class="`dito-navigation--${menu.state}`"
+    :inert="!!topDialogKey"
   )
-  main.dito-page.dito-scroll-parent(:class="adminContext.pageClass")
+  main.dito-page.dito-scroll-parent(
+    :class="adminContext.pageClass"
+    :inert="!!topDialogKey"
+  )
     DitoHeader(
       :spinner="options.spinner"
       :isLoading="adminContext.loadingTracker.isLoading"
@@ -44,6 +49,7 @@
   DitoSidebar(
     ref="aside"
     :class="`dito-sidebar--${sidebar.state}`"
+    :inert="!!topDialogKey"
   )
     DitoAccount(
       v-if="adminContext.user"
@@ -249,6 +255,9 @@ export default {
       hasSessionStarted,
       menu,
       sidebar,
+      // Everything behind the topmost dialog is inert, so that it can't be
+      // selected, focused or clicked:
+      topDialogKey: computed(() => Object.keys(dialogs).at(-1) ?? null),
       rootClasses: computed(() => ({
         'dito-root--overlay-sidebar': sidebar.isOverlay,
         'dito-root--sliding-sidebar': sidebar.isSliding

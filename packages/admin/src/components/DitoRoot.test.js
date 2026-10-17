@@ -189,6 +189,43 @@ describe('DitoRoot', () => {
       ).rejects.toThrow(`Unsupported schema key 'data' in 'confirm'`)
       expect(admin.root.dialogs).toEqual({})
     })
+
+    it('makes everything behind the topmost dialog inert', async () => {
+      const admin = await mountAdmin({ views: {} })
+      const showDialog = () =>
+        admin.context.showDialog({
+          components: {},
+          buttons: { done: { type: 'submit', text: 'Done' } }
+        })
+      // Skip closed dialogs that are still leaving:
+      const getDialogs = () =>
+        admin.wrapper.findAll('.dito-dialog:not(.dito-dialog-leave-active)')
+      const getInert = () => ({
+        page: (
+          admin.wrapper.find('.dito-page').attributes('inert') !== undefined
+        ),
+        dialogs: getDialogs().map(
+          dialog => dialog.attributes('inert') !== undefined
+        )
+      })
+      const closeTopDialog = async () => {
+        await getDialogs().at(-1).find('form').trigger('submit')
+        await flushPromises()
+      }
+      expect(getInert()).toEqual({ page: false, dialogs: [] })
+      showDialog()
+      await flushPromises()
+      showDialog()
+      await flushPromises()
+      expect(getInert()).toEqual({ page: true, dialogs: [true, false] })
+      for (const selector of ['.dito-navigation', '.dito-sidebar']) {
+        expect(admin.wrapper.find(selector).attributes('inert')).toBe('')
+      }
+      await closeTopDialog()
+      expect(getInert()).toEqual({ page: true, dialogs: [false] })
+      await closeTopDialog()
+      expect(getInert()).toEqual({ page: false, dialogs: [] })
+    })
   })
 
   describe('session start', () => {
