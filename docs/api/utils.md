@@ -188,10 +188,12 @@ draft.chapters.push({ title: 'Epilogue' }) // `book.chapters` is unchanged
 equals(arg1, arg2)
 ```
 
-Compares two values deeply: arrays element by element, objects by their own
-enumerable keys, and everything else by `valueOf()`, so that dates with the
-same time are equal, and so are `NaN` and `NaN`, or `0` and `-0`. There is no
-type coercion: `1` and `'1'` differ.
+Compares two values deeply: arrays and typed arrays element by element, objects
+by their own enumerable keys, and everything else by `valueOf()`, so that dates
+with the same time are equal, and so are `NaN` and `NaN`, or `0` and `-0`.
+Values of different types are never equal, and there is no type coercion: `1`
+and `'1'` differ. Maps, sets and regular expressions aren't supported, as they
+have no keys to compare.
 
 ```js
 equals({ tags: ['novel'] }, { tags: ['novel'] }) // true
