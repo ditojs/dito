@@ -32,5 +32,22 @@ describe('normalizeDataPath()', () => {
       .toStrictEqual('object/value')
     expect(normalizeDataPath('/object1/object2/./object3/value'))
       .toStrictEqual('object1/object2/object3/value')
+    expect(normalizeDataPath('/object/property1//./object/value'))
+      .toStrictEqual('object/value')
+  })
+
+  it('should throw for paths that lead above the root', () => {
+    expect(() => normalizeDataPath('../object')).toThrow(
+      `Invalid data path: '../object' leads above the root.`
+    )
+    expect(() => normalizeDataPath('/object/../../value')).toThrow(
+      `Invalid data path: '/object/../../value' leads above the root.`
+    )
+    expect(() => normalizeDataPath('/object//..')).toThrow(
+      `Invalid data path: '/object//..' leads above the root.`
+    )
+    expect(() => normalizeDataPath(['object', '..', '..'])).toThrow(
+      `Invalid data path: 'object/../..' leads above the root.`
+    )
   })
 })

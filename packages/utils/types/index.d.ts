@@ -870,8 +870,7 @@ export function getValueAtDataPath(
  * Normalizes a data path to a standard format using forward slashes.
  * Converts property access notation, JSON pointers, and relative paths
  * to normalized relative path format. Resolves relative tokens (`..`
- * and `.`), and drops the `..` that lead above the root silently, unlike
- * {@link resolveDataPath}, which throws.
+ * and `.`), and throws if a `..` leads above the root.
  * @see {@link parseDataPath} for supported path formats.
  */
 export function normalizeDataPath(path: OrArrayOf<string>): string

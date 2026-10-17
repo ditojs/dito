@@ -334,7 +334,7 @@ describe('useSchemaContext()', () => {
       chapterContext.clearErrors('title')
       expect(dataModel.getErrorDataPaths()).toEqual([])
       expect(() => context.isValid('../title')).toThrow(
-        `Invalid data path: '../title' leads above the root from ''.`
+        `Invalid data path: '../title' leads above the root.`
       )
       await admin.navigate('/items/1/notes/0')
       const form = admin.getRouteComponent(isForm)

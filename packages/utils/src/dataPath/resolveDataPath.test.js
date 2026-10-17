@@ -30,10 +30,13 @@ describe('resolveDataPath()', () => {
 
   it('should throw for paths that lead above the root', () => {
     expect(() => resolveDataPath('items/0', '../../..')).toThrow(
-      `Invalid data path: '../../..' leads above the root from 'items/0'.`
+      `Invalid data path: 'items/0/../../..' leads above the root.`
     )
     expect(() => resolveDataPath('items/0', '/..')).toThrow(
-      `Invalid data path: '/..' leads above the root from 'items/0'.`
+      `Invalid data path: '/..' leads above the root.`
+    )
+    expect(() => resolveDataPath('items/0', '/items//..')).toThrow(
+      `Invalid data path: '/items//..' leads above the root.`
     )
   })
 })

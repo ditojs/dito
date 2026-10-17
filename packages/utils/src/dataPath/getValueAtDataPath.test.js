@@ -82,6 +82,16 @@ describe('getValueAtDataPath()', () => {
       .toEqual(['one', 'two', 'one', 'two'])
   })
 
+  it('should keep array values of wildcard matches', () => {
+    const data = {
+      a: { x: [1, 2], y: { z: [5] } },
+      b: { x: [3], y: { z: [6, 7] } }
+    }
+    expect(getValueAtDataPath(data, '*/x')).toEqual([[1, 2], [3]])
+    expect(getValueAtDataPath(data, '*/y/*')).toEqual([[5], [6, 7]])
+    expect(getValueAtDataPath(data, '*/y/**')).toEqual([[5], 5, [6, 7], 6, 7])
+  })
+
   it('should return deep wildcard matches', () => {
     const data = {
       object: {
