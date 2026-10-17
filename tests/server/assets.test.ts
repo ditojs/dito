@@ -1309,6 +1309,11 @@ describe('asset references', () => {
       expect(storage.verifyAssetFile(signedFile)).toBe(true)
     }
     expect(content.footer.file).toBeNull()
+    // Sign copies, leaving the files of the record untouched:
+    for (const loadedFile of [header.file, ...gallery.files]) {
+      expect(loadedFile).toBeInstanceOf(AssetFile)
+      expect(loadedFile).not.toHaveProperty('signature')
+    }
   })
 
   it('recounts each location of overlapping data paths once', async () => {
