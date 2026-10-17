@@ -14,6 +14,7 @@ version, see the upgrade guides in `docs/`.
 - **admin:** Dialogs focus their submit button, also in confirmations, unless a component sets `autofocus`; pressing Enter submits. They focused their first focusable element, e.g. Cancel in confirmations.
 - **admin:** Fields only validate on blur when they were edited while focused, so passing through empty required fields, or clicking the label of a focused field, no longer shows errors. Submitting still validates all fields. Fields validated on every blur.
 - **router:** Routes with `*` or `**` inside a segment, e.g. `/files/*.json` or `/files/**.json`, or with a param inside a segment after `**`, e.g. `/files/**/tech-doc-:format`, throw an error when added, where they matched any segment, ignoring the rest of it, or never matched.
+- **server:** A place in the data that several overlapping asset data paths reach, e.g. `'content.items[**].file'` and `'**.file'`, belongs to the first of them: its file counts once, where it counted once per data path, and loads with the storage of the first data path, where the last one won. Apps with overlapping asset data paths should run `db:recount_assets` after upgrading, to correct the stored counts.
 
 ### New
 

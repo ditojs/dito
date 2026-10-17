@@ -36,7 +36,8 @@ function makeFakeModel(assets) {
         return name === 'test' ? storage : null
       }
     },
-    definition: { assets }
+    definition: { assets },
+    _getAssetFiles: Model._getAssetFiles
   }
 }
 
@@ -129,7 +130,7 @@ describe('Model._forEachAssetFile()', () => {
     })
     const json = {
       cover: { key: 'cover.png' },
-      gallery: [{ key: 'a.png' }, null, [{ key: 'b.png' }]]
+      gallery: [{ key: 'a.png' }, null, { key: 'b.png' }]
     }
     const keys = []
     Model._forEachAssetFile.call(model, json, (file, storage) => {
