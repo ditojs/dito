@@ -13,7 +13,6 @@ import {
   parseDataPath,
   normalizeDataPath,
   getEntriesAtDataPath,
-  setValueAtDataPath,
   groupBy,
   assignDeeply,
   formatPlainDate,
@@ -1108,10 +1107,23 @@ export class Model extends objection.Model {
   static _mapAssetFiles(json, callback) {
     const { assets } = this.definition
     if (assets) {
-      // Write each file back to its own location:
+      // Write each file back to its own location, into copies of the objects
+      // along its path, as nested objects are shared with the model:
+      const copies = new Set()
       for (const { file, path, dataPath } of this._getAssetFiles(json)) {
         const storage = this.app.getStorage(assets[dataPath].storage)
-        setValueAtDataPath(json, path, callback(file, storage))
+        const parts = parseDataPath(path)
+        const last = parts.pop()
+        let parent = json
+        for (const part of parts) {
+          let value = parent[part]
+          if (!copies.has(value)) {
+            value = parent[part] = isArray(value) ? [...value] : { ...value }
+            copies.add(value)
+          }
+          parent = value
+        }
+        parent[last] = callback(file, storage)
       }
     }
   }
