@@ -12,7 +12,7 @@ entry point, `@ditojs/utils`, an ES module with TypeScript types.
 
 | Section | Exports |
 | ------- | ------- |
-| [Base and type checks](#base-and-type-checks) | `is()`, `isArray()`, `isPlainObject()`, `isPlainArray()`, `isObject()`, `isFunction()`, `isNumber()`, `isString()`, `isBoolean()`, `isModule()`, `isDate()`, `isRegExp()`, `isPromise()`, `isInteger()`, `isAsync()`, `isArrayLike()`, `isEmpty()`, `asObject()`, `asArray()`, `asFunction()` |
+| [Base and type checks](#base-and-type-checks) | `is()`, `isArray()`, `isPlainObject()`, `isPlainArray()`, `isObject()`, `isFunction()`, `isNumber()`, `isString()`, `isBoolean()`, `isModule()`, `isDate()`, `isRegExp()`, `isTypedArray()`, `isPromise()`, `isInteger()`, `isAsync()`, `isArrayLike()`, `isEmpty()`, `asObject()`, `asArray()`, `asFunction()` |
 | [Arrays](#arrays) | `flatten()`, `shuffle()` |
 | [Objects](#objects) | `clone()`, `equals()`, `groupBy()`, `mapKeys()`, `mapValues()`, `mergeDeeply()`, `assignDeeply()`, `pick()`, `pickBy()` |
 | [Strings](#strings) | `camelize()`, `capitalize()`, `decamelize()`, `hyphenate()`, `underscore()`, `labelize()`, `deindent()`, `escapeRegExp()`, `getCommonPrefix()`, `getCommonOffset()`, `isAbsoluteUrl()`, `isUrl()`, `isDomain()`, `isHostname()`, `isEmail()`, `isCreditCard()` |
@@ -55,6 +55,7 @@ boolean; in TypeScript, most of them are type guards.
 | `isModule(arg)` | ES module namespace objects, e.g. from `import * as models`. |
 | `isDate(arg)` | `Date` objects, also from other realms. |
 | `isRegExp(arg)` | Regular expressions. |
+| `isTypedArray(arg)` | Typed arrays, e.g. `Uint8Array`, including Node.js buffers, but not `DataView`. |
 | `isPromise(arg)` | Objects with `then()` and `catch()` methods. |
 | `isInteger(arg)` | Integer numbers (`Number.isInteger()`). |
 | `isAsync(arg)` | Functions declared with `async`. Not regular functions that return promises. |
@@ -160,10 +161,12 @@ clone(value, options?)
 Returns a deep copy of `value`. Handles circular references, and keeps the
 prototype of objects without calling their constructor.
 
-- Dates and regular expressions are copied.
+- Dates, regular expressions and typed arrays, including Node.js buffers, are
+  copied.
 - Objects with a `clone()` method are copied by calling `value.clone(options)`.
 - Promises are copied as `value.then()`.
-- Other objects get the own keys of `value`, copied recursively.
+- Other objects get the own keys of `value`, copied recursively. This doesn't
+  work for objects that keep their data internally, like maps and sets.
 - Primitives and functions are returned as they are.
 
 | Option | Default | Description |

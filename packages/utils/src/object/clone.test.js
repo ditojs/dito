@@ -30,6 +30,22 @@ describe('clone()', () => {
     expect(copy).not.toBe(regexp)
   })
 
+  it('should clone typed arrays', () => {
+    const array = new Float32Array([1.5, 2.5])
+    const copy = clone(array)
+    expect(copy).toStrictEqual(array)
+    expect(copy.buffer).not.toBe(array.buffer)
+  })
+
+  it('should clone buffers as buffers', () => {
+    const buffer = Buffer.from('abc')
+    const copy = clone(buffer)
+    expect(Buffer.isBuffer(copy)).toBe(true)
+    expect(copy).toStrictEqual(buffer)
+    copy[0] = 0
+    expect(buffer[0]).toBe(97)
+  })
+
   it('should return functions unmodified', () => {
     const func = () => {}
     expect(clone(func)).toBe(func)

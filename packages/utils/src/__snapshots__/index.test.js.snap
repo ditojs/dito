@@ -64,6 +64,7 @@ exports[`index > exports all symbols 1`] = `
   "isPromise": [Function],
   "isRegExp": [Function],
   "isString": [Function],
+  "isTypedArray": [Function],
   "isUrl": [Function],
   "labelize": [Function],
   "mapConcurrently": [Function],

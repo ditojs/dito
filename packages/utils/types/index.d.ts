@@ -66,6 +66,12 @@ export function isDate(arg: any): arg is Date
 export function isRegExp(arg: any): arg is RegExp
 
 /**
+ * Determines whether the supplied value is a typed array, e.g. a Uint8Array or
+ * a Node.js Buffer.
+ */
+export function isTypedArray(arg: any): arg is ArrayBufferView
+
+/**
  * Determines whether the supplied value is a Promise.
  */
 export function isPromise(arg: any): arg is Promise<any>
