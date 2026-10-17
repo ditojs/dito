@@ -91,7 +91,10 @@ import {
 import { RouteTree } from '../utils/RouteTree.ts'
 import { FileDropTargets } from '../utils/FileDropTargets.js'
 import { adminContextKey, fileDropTargetsKey } from '../utils/keys.ts'
-import { createCodeComponent } from '../utils/security.js'
+import {
+  createCodeComponent,
+  createNewPasswordComponents
+} from '../utils/security.js'
 
 export default {
   components: { DitoDialog },
@@ -162,9 +165,14 @@ export default {
       {
         notify,
         // Return the entered credentials, `'passkey'` to log in with a passkey,
-        // or `null` if the user cancels:
+        // `'passwordReset'` to reset the password, or `null` if the user
+        // cancels:
         requestLoginData() {
-          const { additionalComponents, passkeys } = props.options.login || {}
+          const {
+            additionalComponents,
+            passkeys,
+            passwordReset
+          } = props.options.login || {}
           // Browsers with WebAuthn have `PublicKeyCredential`:
           const hasPasskeys = passkeys && !!window.PublicKeyCredential
           return showDialog({
@@ -194,6 +202,14 @@ export default {
                 }
               }),
 
+              ...(passwordReset && {
+                passwordReset: {
+                  type: 'button',
+                  text: 'Forgot password?',
+                  onClick: ({ closeDialog }) => closeDialog('passwordReset')
+                }
+              }),
+
               // `DitoDialog` adds the click event of the cancel button:
               cancel: {
                 type: 'button',
@@ -220,6 +236,53 @@ export default {
                 text: 'Cancel'
               }
             }
+          })
+        },
+
+        // Return the username to reset the password of, or `null` if the user
+        // cancels:
+        requestPasswordReset() {
+          return showDialog({
+            components: {
+              username: {
+                type: 'text',
+                autocomplete: 'username',
+                autofocus: true,
+                required: true
+              }
+            },
+            buttons: {
+              send: {
+                type: 'submit',
+                text: 'Send Email'
+              },
+
+              cancel: {
+                type: 'button',
+                text: 'Cancel'
+              }
+            },
+            settings: { label: 'Reset Password' }
+          })
+        },
+
+        // Return the new password of a password reset, or `null` if the user
+        // cancels:
+        requestNewPassword() {
+          return showDialog({
+            components: createNewPasswordComponents({ autofocus: true }),
+            buttons: {
+              change: {
+                type: 'submit',
+                text: 'Set Password'
+              },
+
+              cancel: {
+                type: 'button',
+                text: 'Cancel'
+              }
+            },
+            settings: { label: 'Set New Password' }
           })
         }
       }

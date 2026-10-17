@@ -72,4 +72,19 @@ describe('Application', () => {
       }
     })
   })
+
+  it('accepts a password reset in app.auth', () => {
+    assertType<ApplicationConfig>({
+      app: {
+        session: { modelClass: 'Session' },
+        auth: {
+          credentials: { modelClass: 'Credential', secret: 'secret' },
+          passwordReset: {
+            confirmUrl: 'https://example.com/admin/?password-reset={token}',
+            expires: '30m'
+          }
+        }
+      }
+    })
+  })
 })

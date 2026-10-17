@@ -7,8 +7,15 @@ import { User } from './models/User.js'
 
 export { expect } from '@playwright/test'
 
+// The links of the password reset emails, which the tests open:
+export const sentPasswordResets: string[] = []
+
 class Users extends UsersController {
   override modelClass = User
+
+  override async sendPasswordReset(ctx: unknown, user: User, url: string) {
+    sentPasswordResets.push(url)
+  }
 }
 
 // Browsers only allow passkeys in secure contexts, so the admin runs on
@@ -32,12 +39,16 @@ export const test = defineScenario({
       normalizePaths: true,
       helmet: false,
       keys: ['passkeys-secret'],
-      // Passkeys and TOTP need sessions stored on the server:
+      // Passkeys, TOTP and password resets need sessions stored on the server:
       session: { modelClass: 'Session' },
       auth: {
         credentials: { modelClass: 'Credential', secret: 'credentials-secret' },
         passkeys,
-        totp: { issuer: 'Example' }
+        totp: { issuer: 'Example' },
+        // The tests open the token of the links on the admin's own URL:
+        passwordReset: {
+          confirmUrl: 'http://localhost/admin/?password-reset={token}'
+        }
       }
     }
   },
@@ -52,6 +63,7 @@ export const test = defineScenario({
     })
   },
   beforeEach: async () => {
+    sentPasswordResets.length = 0
     await User.query().insert({ username: 'ada', password: 'secret' } as any)
   }
 })

@@ -717,6 +717,66 @@ dialog asks for the code, and its `login.totp` option sets up and turns off
 TOTP in the account menu, see
 [`DitoAdmin`](../../api/admin/admin.md#parameters).
 
+### Password reset
+
+Users who forgot their password can set a new one through a link that the app
+emails them. Add the model for the credentials as for passkeys, with a secret
+as for TOTP, set the URL of the page that the link opens, and send the emails
+in the users controller:
+
+```js
+// config/index.js
+export default {
+  app: {
+    session: { modelClass: 'Session' },
+    auth: {
+      credentials: {
+        modelClass: 'Credential',
+        secret: process.env.CREDENTIALS_SECRET
+      },
+      passwordReset: {
+        confirmUrl: 'https://example.com/reset-password?token={token}',
+        expires: '1h'
+      }
+    }
+  }
+}
+```
+
+```js
+export class Users extends UsersController {
+  modelClass = User
+
+  async sendPasswordReset(ctx, user, url) {
+    await sendEmail({
+      to: user.email,
+      subject: 'Reset your password',
+      text: `Set a new password within the next hour: ${url}`
+    })
+  }
+}
+```
+
+The page of the link reads the token and posts it with the new password. The
+request answers the same whether the user exists or not, so it tells nothing
+about which usernames exist:
+
+```js
+await post('password-reset', { username })
+// On the page of the link:
+const token = new URL(location.href).searchParams.get('token')
+await post('password-reset-confirm', { token, password })
+```
+
+Each link works once, until it expires, and doesn't log in: the user logs in
+with the new password afterwards. Users get at most one email a minute, and
+changing the password ends their other sessions. Limiting the rate of
+requests per client is up to the app or the proxy in front of it. The admin's
+`login.passwordReset` option adds the request to its login dialog, with
+`confirmUrl` pointing to the admin, e.g.
+`'https://example.com/admin/?password-reset={token}'`, see
+[`DitoAdmin`](../../api/admin/admin.md#parameters).
+
 ## Admin
 
 The `AdminController` serves the admin interface at its path. In development

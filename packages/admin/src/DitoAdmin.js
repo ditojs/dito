@@ -60,6 +60,8 @@ export default class DitoAdmin {
       logout: 'post',
       session: 'get',
       password: 'post',
+      passwordReset: 'post',
+      passwordResetConfirm: 'post',
       passkeyLoginOptions: 'post',
       passkeyLogin: 'post',
       passkeyOptions: 'post',

@@ -6,5 +6,6 @@ export const dashboard = {
 
 export const login = {
   passkeys: true,
-  totp: true
+  totp: true,
+  passwordReset: true
 } as const

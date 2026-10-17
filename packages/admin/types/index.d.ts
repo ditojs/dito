@@ -298,6 +298,13 @@ export interface ApiConfig {
      */
     password?: { path?: string; method?: HttpMethod }
     /**
+     * The password reset endpoints of `login.passwordReset`, posted to with
+     * the username and with the token and the new password, with the default
+     * paths `'password-reset'` and `'password-reset-confirm'`.
+     */
+    passwordReset?: { path?: string; method?: HttpMethod }
+    passwordResetConfirm?: { path?: string; method?: HttpMethod }
+    /**
      * The passkey endpoints of `login.passkeys`, posted to, with the default
      * paths `'passkey-login-options'`, `'passkey-login'` and
      * `'passkey-options'`.
@@ -3222,6 +3229,12 @@ interface AdminOptions {
      * the user's two-factor authentication with TOTP.
      */
     totp?: boolean
+    /**
+     * Adds a "Forgot password?" button to the login dialog, which asks the
+     * server to email a link that opens the admin with `?password-reset=`
+     * and the token, to set a new password.
+     */
+    passwordReset?: boolean
   }
   /**
    * Controls the loading spinner displayed in the
