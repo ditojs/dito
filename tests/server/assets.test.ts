@@ -808,11 +808,15 @@ describe('asset references', () => {
   class Album extends Model {
     declare id: number
     declare cover: AssetFile | null
-    declare photos: AssetFile[] | null
+    declare photos: (AssetFile | null)[] | null
 
     static override properties: ModelProperties = {
       cover: { type: 'object', nullable: true },
-      photos: { type: 'array', items: { type: 'object' }, nullable: true }
+      photos: {
+        type: 'array',
+        items: { type: 'object', nullable: true },
+        nullable: true
+      }
     }
 
     static override assets = {
@@ -862,7 +866,8 @@ describe('asset references', () => {
     }
 
     static override assets = {
-      '**.file': { storage: 'memory' }
+      '**.file': { storage: 'memory' },
+      '**.files': { storage: 'memory' }
     }
   }
 
@@ -877,12 +882,35 @@ describe('asset references', () => {
     // Overlapping data paths that both reach the files of `content.items`:
     static override assets = {
       'content.items[**].file': { storage: 'memory', readDimensions: true },
+      '**.file': { storage: 'memory' }
+    }
+  }
+
+  class Brochure extends Model {
+    declare id: number
+    declare content: Record<string, any> | null
+
+    static override properties: ModelProperties = {
+      content: { type: 'object', nullable: true }
+    }
+
+    // Overlapping data paths with different storages:
+    static override assets = {
+      'content.items[**].file': { storage: 'memory' },
       '**.file': { storage: 'other' }
     }
   }
 
   class Asset extends AssetMixin(Model) {}
-  const app = createApp({ Album, Track, Clip, Page, Article, Asset })
+  const app = createApp({
+    Album,
+    Track,
+    Clip,
+    Page,
+    Article,
+    Brochure,
+    Asset
+  })
   app.addStorage(new MemoryStorage(app, 'other', {} as StorageConfig))
   const storage = app.getStorage('memory') as MemoryStorage
 
@@ -1182,13 +1210,19 @@ describe('asset references', () => {
     expect(await getCount(file)).toBe(1)
     await Article.query().patchById(article.id, { content: { items: [] } })
     expect(await getCount(file)).toBe(0)
+    await Article.query().patchById(article.id, {
+      content: { items: [{ file: copy(file) }] }
+    })
+    expect(await getCount(file)).toBe(1)
+    await Article.query().deleteById(article.id)
+    expect(await getCount(file)).toBe(0)
   })
 
   it('finds each location of overlapping data paths once, through the first', async () => {
     const file = await upload('overlapping-found.jpg')
     // Skip the asset hooks, to only test how references are found:
     await Article.knex()(Article.tableName).insert({
-      content: JSON.stringify({ items: [{ file }, { file }] })
+      content: JSON.stringify({ header: { file }, items: [{ file }, { file }] })
     })
     const references = await app.getAssetReferences({ keys: [file.key] })
     const config = { storage: 'memory', readDimensions: true }
@@ -1197,13 +1231,84 @@ describe('asset references', () => {
     ).toEqual(
       expect.arrayContaining([
         { dataPath: 'content/items/0/file', config },
-        { dataPath: 'content/items/1/file', config }
+        { dataPath: 'content/items/1/file', config },
+        { dataPath: 'content/header/file', config: { storage: 'memory' } }
       ])
     )
-    expect(references).toHaveLength(2)
+    expect(references).toHaveLength(3)
+  })
+
+  it('filters overlapping data paths by the storage of the first', async () => {
+    const file = await upload('overlapping-filtered.jpg')
+    // Skip the asset hooks, to only test how references are found:
+    await Brochure.knex()(Brochure.tableName).insert({
+      content: JSON.stringify({ items: [{ file }] })
+    })
+    expect(
+      await app.getAssetReferences({ keys: [file.key], storage: 'memory' })
+    ).toHaveLength(1)
     expect(
       await app.getAssetReferences({ keys: [file.key], storage: 'other' })
     ).toEqual([])
+  })
+
+  it('loads files of overlapping data paths with the first storage', async () => {
+    const file = await upload('overlapping-loaded.jpg')
+    const brochure = await Brochure.query().insertAndFetch({
+      content: { items: [{ file: copy(file) }] }
+    })
+    const loaded = await Brochure.query().findById(brochure.id)
+    expect(loaded!.content!.items[0].file.storage.name).toBe('memory')
+    const json = loaded!.toJSON()
+    expect(storage.verifyAssetFile(json.content!.items[0].file)).toBe(true)
+  })
+
+  it('loads and signs the files of loaded records', async () => {
+    const cover = await upload('signed-cover.jpg')
+    const photo = await upload('signed-photo.jpg')
+    const album = await Album.query().insertAndFetch({
+      cover: copy(cover),
+      photos: [copy(photo), null, copy(photo)]
+    })
+    expect(await getCount(photo)).toBe(2)
+    const loaded = (await Album.query().findById(album.id))!
+    const [first, empty, last] = loaded.photos!
+    for (const file of [loaded.cover!, first!, last!]) {
+      expect(file).toBeInstanceOf(AssetFile)
+      expect(file.storage).toBe(storage)
+    }
+    expect(empty).toBeNull()
+    const json = loaded.toJSON()
+    const photos = json.photos!
+    for (const file of [json.cover!, photos[0]!, photos[2]!]) {
+      expect(storage.verifyAssetFile(file)).toBe(true)
+    }
+    expect(photos[1]).toBeNull()
+    // Sign copies, leaving the files of the record untouched:
+    expect(loaded.cover).not.toHaveProperty('signature')
+    expect(loaded.photos![0]).not.toHaveProperty('signature')
+  })
+
+  it('loads and signs the files of wildcard data paths', async () => {
+    const file = await upload('signed-nested.jpg')
+    const page = await Page.query().insertAndFetch({
+      content: {
+        header: { file: copy(file) },
+        footer: { file: null },
+        gallery: { files: [copy(file), copy(file)] }
+      }
+    })
+    const loaded = (await Page.query().findById(page.id))!
+    const { header, gallery } = loaded.content!
+    for (const loadedFile of [header.file, ...gallery.files]) {
+      expect(loadedFile).toBeInstanceOf(AssetFile)
+      expect(loadedFile.storage).toBe(storage)
+    }
+    const content = loaded.toJSON().content!
+    for (const signedFile of [content.header.file, ...content.gallery.files]) {
+      expect(storage.verifyAssetFile(signedFile)).toBe(true)
+    }
+    expect(content.footer.file).toBeNull()
   })
 
   it('recounts each location of overlapping data paths once', async () => {

@@ -29,7 +29,6 @@ import {
   assignDeeply,
   parseDataPath,
   normalizeDataPath,
-  getEntriesAtDataPath,
   groupBy,
   mapConcurrently,
   toPromiseCallback
@@ -1141,34 +1140,24 @@ export class Application extends Koa {
           }
         }
         for (const item of await query) {
-          // Overlapping data paths can reach the same location: count it once,
-          // for the first data path that reaches it, also when `storage`
-          // filters that one out.
-          const paths = new Set()
-          for (const dataPath in assets) {
+          // Find the files through all data paths, as each location belongs
+          // to the first one, also when `storage` filters that one out:
+          const files = modelClass._getAssetFiles(item)
+          for (const { file, path, dataPath } of files) {
             const config = assets[dataPath]
-            const entries = getEntriesAtDataPath(item, dataPath, () => {})
-            for (const [path, value] of Object.entries(entries)) {
-              for (const [index, file] of asArray(value).entries()) {
-                const filePath = isArray(value) ? `${path}/${index}` : path
-                if (file && !paths.has(filePath)) {
-                  paths.add(filePath)
-                  if (
-                    (!storage || config.storage === storage) &&
-                    (!keySet || keySet.has(file.key))
-                  ) {
-                    references.push({
-                      key: file.key,
-                      file,
-                      model: modelName,
-                      id: item.$id(),
-                      dataPath: filePath,
-                      storage: config.storage,
-                      config
-                    })
-                  }
-                }
-              }
+            if (
+              (!storage || config.storage === storage) &&
+              (!keySet || keySet.has(file.key))
+            ) {
+              references.push({
+                key: file.key,
+                file,
+                model: modelName,
+                id: item.$id(),
+                dataPath: path,
+                storage: config.storage,
+                config
+              })
             }
           }
         }
