@@ -55,10 +55,17 @@ describe('parseDataPath()', () => {
     expect(actual).not.toBe(array)
   })
 
-  it('should return undefined for values other than array / string', () => {
-    expect(parseDataPath({})).toBe(undefined)
-    expect(parseDataPath(false)).toBe(undefined)
-    expect(parseDataPath(10)).toBe(undefined)
+  it('should return undefined for null and undefined', () => {
+    expect(parseDataPath(null)).toBe(undefined)
+    expect(parseDataPath(undefined)).toBe(undefined)
+  })
+
+  it('should throw for other values than array / string', () => {
+    expect(() => parseDataPath({})).toThrow(
+      `Invalid data path: '[object Object]'.`
+    )
+    expect(() => parseDataPath(false)).toThrow(`Invalid data path: 'false'.`)
+    expect(() => parseDataPath(10)).toThrow(`Invalid data path: '10'.`)
   })
 
   it('should parse an empty string to an empty array', () => {
