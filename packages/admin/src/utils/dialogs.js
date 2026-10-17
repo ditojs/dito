@@ -8,7 +8,6 @@ export const transientNote = (
   'in order to persist this change.'
 )
 
-// Cancel comes first, to be focused first:
 export async function confirm({ adminContext }, { message, verb }) {
   const result = await adminContext.showDialog({
     components: {

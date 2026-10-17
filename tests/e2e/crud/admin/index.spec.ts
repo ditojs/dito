@@ -3,6 +3,8 @@ import {
   DitoListView,
   DitoForm
 } from '../../../utils/pages.js'
+import { getConfirmDialog } from '../../../utils/dialogs.js'
+import { Widget } from '../models/Widget.js'
 
 test.describe('crud', () => {
   test('create, edit, delete round-trip', async ({ page, url }) => {
@@ -36,5 +38,22 @@ test.describe('crud', () => {
     // Delete.
     await list.list.delete('B')
     await expect(list.list.getRow('B')).not.toBeVisible()
+  })
+
+  test('confirm deletions with Enter', async ({ page, url }) => {
+    await Widget.query().insert({ name: 'A' })
+    const list = new DitoListView(page, url, 'Widget')
+    await list.navigate('/widgets')
+    const row = list.list.getRow('A')
+    await row.hover()
+    await row.getByRole('button', { name: 'Delete' }).click()
+    // The dialog focuses its submit button, also in confirmations:
+    const dialog = getConfirmDialog(page)
+    await expect(
+      dialog.getByRole('button', { name: 'Delete', exact: true })
+    ).toBeFocused()
+    await page.keyboard.press('Enter')
+    await expect(dialog).toHaveCount(0)
+    await expect(row).not.toBeVisible()
   })
 })

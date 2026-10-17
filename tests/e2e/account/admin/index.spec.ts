@@ -24,6 +24,13 @@ function isSelfResponse(method: string) {
 }
 
 test.describe('account settings', () => {
+  test('focus the username of the login dialog', async ({ page, url }) => {
+    await page.goto(`${url}/admin/`)
+    // `autofocus` takes precedence over the dialog's submit button:
+    const dialog = page.locator('.dito-dialog')
+    await expect(dialog.getByLabel('Username')).toBeFocused()
+  })
+
   test('edit the logged-in user', async ({ page, browser, url }) => {
     await login(page, url, ['ada', 'secret'])
     await expect(getAccountButton(page)).toHaveText('ada')

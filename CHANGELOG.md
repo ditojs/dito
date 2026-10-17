@@ -11,6 +11,7 @@ version, see the upgrade guides in `docs/`.
 - **router:** HEAD requests, e.g. of link checkers and health probes, are handled by the GET route of their path when no HEAD route matches, where they responded with 501, and `Allow` lists HEAD wherever it lists GET. Misses of HEAD requests respond with 404 like those of GET requests (#329).
 - **router:** `add()`, `find()` and the `exclude` argument of `getAllowedMethods()` take methods in any case, e.g. `add('get', …)` matches `find('GET', …)`. This only affects code that calls the router directly with lowercase methods, as the server always passes them uppercase (#335).
 - **admin:** The login and logout labels read "Sign In" and "Sign Out", in the header, the login dialog and the account menu, where they read "Login" and "Logout". Tests that find these buttons by their names need the new ones (#344).
+- **admin:** Dialogs focus their submit button, also in confirmations, unless a component sets `autofocus`; pressing Enter submits. They focused their first focusable element, e.g. Cancel in confirmations.
 - **router:** Routes with `*` or `**` inside a segment, e.g. `/files/*.json` or `/files/**.json`, or with a param inside a segment after `**`, e.g. `/files/**/tech-doc-:format`, throw an error when added, where they matched any segment, ignoring the rest of it, or never matched.
 
 ### New

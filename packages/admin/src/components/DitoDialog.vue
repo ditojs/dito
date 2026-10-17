@@ -26,6 +26,7 @@
       )
         template(#buttons)
           DitoButtons.dito-buttons--large(
+            ref="dialogButtons"
             :buttons="buttonSchemas"
             :data="dialogData"
           )
@@ -70,6 +71,7 @@ export default {
       components: props.components
     }))
     const dialog = useTemplateRef('dialog')
+    const dialogButtons = useTemplateRef('dialogButtons')
 
     const resolve = value => {
       props.promise.resolve(value)
@@ -117,6 +119,16 @@ export default {
 
       focusTrapOptions: {
         immediate: true,
+        // Focus the submit button, unless a component has `autofocus` or
+        // focused itself, e.g. multiselects. `undefined` falls back to the
+        // focused or first tabbable element:
+        initialFocus: () => (
+          dialog.value.querySelector('[autofocus]') || (
+            !dialog.value.contains(document.activeElement) &&
+            dialogButtons.value?.$el.querySelector('[type="submit"]')
+          ) ||
+          undefined
+        ),
         fallbackFocus: () => dialog.value,
         // Only dialogs with a cancel button or without buttons can be
         // cancelled, see `onKeyDown()`. The trap is also deactivated on
