@@ -6,6 +6,11 @@ describe('escapeHtml()', () => {
       .toBe('&lt;div id=&quot;me, myself &amp; i&quot;/&gt;')
   })
 
+  it('should escape single quotes', () => {
+    expect(escapeHtml(`<div title='it's me'/>`))
+      .toBe('&lt;div title=&#39;it&#39;s me&#39;/&gt;')
+  })
+
   it('should return an empty string if nothing can be processed', () => {
     expect(escapeHtml()).toBe('')
     expect(escapeHtml(null)).toBe('')

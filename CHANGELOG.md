@@ -19,6 +19,9 @@ version, see the upgrade guides in `docs/`.
 - **utils:** `equals()` never treats values of different types as equal, e.g. a buffer and an object with the same keys, or a `Uint8Array` and an array, where it compared all objects by their keys. Typed arrays are compared element by element, like arrays (#373).
 - **utils:** `*` in `getValueAtDataPath()` only merges the values it finds into one array when the rest of the path has wildcards too, so values that are arrays themselves are kept, e.g. `'*/x'` returns `[[1, 2], [3]]` where it returned `[1, 2, 3]`, like `**` and `getEntriesAtDataPath()` do. This affects app code that reads array values through `*`, e.g. with `dataPath` in schemas (#357).
 - **utils:** `normalizeDataPath()` throws for a `..` that leads above the root, e.g. `'../items'`, where it dropped it silently, and resolves a `.` or `..` right after a `//`, where it kept it. `resolveDataPath()` resolves through `normalizeDataPath()`, so its error names the joined path, `Invalid data path: 'items/0/../../..' leads above the root.`, where it named both paths. This affects app code that passes such paths to `normalizeDataPath()`, and tests that check the error of `resolveDataPath()` or of the schema context's `validate()`, `verify()` and `clearErrors()` (#358).
+- **utils:** `capitalize()` doesn't start new words after digits, e.g. `capitalize('the 1st place')` returns `'The 1st Place'`, where it returned `'The 1St Place'` (#356).
+- **utils:** `escapeHtml()` escapes single quotes as `&#39;`, so its result is safe inside single-quoted attributes, where it left them unescaped (#359).
+- **utils:** `isAbsoluteUrl()` only accepts letters, digits, plus, period and hyphen in schemes, e.g. `isAbsoluteUrl('a,b:c')` returns `false`, where commas were accepted too (#360).
 
 ### New
 

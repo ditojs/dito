@@ -3,9 +3,15 @@ export function escapeHtml(html) {
     ? html
         .toString()
         .replace(
-          /["&<>]/g,
+          /["'&<>]/g,
           chr =>
-            ({ '"': '&quot;', '&': '&amp;', '<': '&lt;', '>': '&gt;' })[chr]
+            ({
+              '"': '&quot;',
+              [`'`]: '&#39;',
+              '&': '&amp;',
+              '<': '&lt;',
+              '>': '&gt;'
+            })[chr]
         )
     : ''
 }

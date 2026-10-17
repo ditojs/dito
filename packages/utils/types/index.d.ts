@@ -939,7 +939,8 @@ export function mixin<T extends new (...args: any[]) => any>(
 /* ---------------------------------- html ---------------------------------- */
 
 /**
- * Escapes double quotes, ampersands, and angle brackets (`"&<>`).
+ * Escapes double and single quotes, ampersands, and angle brackets
+ * (`"'&<>`).
  *
  * @param html The html to escape.
  * @returns The newly escaped html.

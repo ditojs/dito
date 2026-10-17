@@ -12,4 +12,10 @@ describe('isAbsoluteUrl()', () => {
     expect(isAbsoluteUrl('../index.html')).toBe(false)
     expect(isAbsoluteUrl('../static//index.html')).toBe(false)
   })
+
+  it('should only allow letters, digits, +, . and - in schemes', () => {
+    expect(isAbsoluteUrl('svn+ssh://example.com')).toBe(true)
+    expect(isAbsoluteUrl('a-b.c:d')).toBe(true)
+    expect(isAbsoluteUrl('a,b:c')).toBe(false)
+  })
 })

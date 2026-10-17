@@ -17,8 +17,9 @@ describe('capitalize()', () => {
     expect(capitalize('some normal text')).toBe('Some Normal Text')
   })
 
-  it('should consider numbers as word-breaks', () => {
-    expect(capitalize('one234five')).toBe('One234Five')
+  it('should not consider numbers as word-breaks', () => {
+    expect(capitalize('one234five')).toBe('One234five')
+    expect(capitalize('the 1st place')).toBe('The 1st Place')
   })
 
   it('should support umlauts', () => {
