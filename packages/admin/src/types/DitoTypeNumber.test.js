@@ -92,9 +92,11 @@ describe('DitoTypeNumber', () => {
         }
       })
       const input = findField('rating').find('input')
+      await input.trigger('focus')
       await enterValue(input, '7')
       await input.trigger('blur')
       expect(getErrors('rating')).toHaveLength(1)
+      await input.trigger('focus')
       await enterValue(input, '4')
       await input.trigger('blur')
       expect(getErrors('rating')).toEqual([])
@@ -107,9 +109,11 @@ describe('DitoTypeNumber', () => {
         }
       })
       const input = findField('price').find('input')
+      await input.trigger('focus')
       await enterValue(input, '1.255')
       await input.trigger('blur')
       expect(getErrors('price')).toHaveLength(1)
+      await input.trigger('focus')
       await enterValue(input, '1.25')
       await input.trigger('blur')
       expect(getErrors('price')).toEqual([])

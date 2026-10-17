@@ -100,9 +100,7 @@ describe('useField()', () => {
 
     it('shows the errors of the value right after it changed', async () => {
       const { findField, getErrors, settle } = await mountRequiredTitle('Emma')
-      const input = findField('title').find('input')
-      await enterValue(input, '')
-      await input.trigger('blur')
+      await edit(findField('title').find('input'), '')
       await settle()
       expect(getErrors('title')).toEqual(['The title field is required.'])
     })
