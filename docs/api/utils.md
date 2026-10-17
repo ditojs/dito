@@ -589,14 +589,15 @@ normalizeDataPath(path)
 ```
 
 Returns `path` as a slash-separated string without leading or trailing slash,
-with `.` and `..` resolved. `..` that lead above the root are dropped. A `//`
+with `.` and `..` resolved. It throws if a `..` leads above the root. A `//`
 inside the path starts again from the root, so that joined absolute paths
 resolve to the last one.
 
 ```js
 normalizeDataPath('items[1].book.title') // 'items/1/book/title'
 normalizeDataPath('/items/0/../1/quantity') // 'items/1/quantity'
-normalizeDataPath('../items') // 'items'
+normalizeDataPath('../items')
+// Error: Invalid data path: '../items' leads above the root.
 ```
 
 ### resolveDataPath()
@@ -606,16 +607,15 @@ resolveDataPath(dataPath, path)
 ```
 
 Resolves `path` relative to `dataPath`, or from the root if `path` starts with
-`/`, and returns the result like `normalizeDataPath()`. Unlike
-`normalizeDataPath()`, it throws if the result leads above the root. Wildcards
-are kept.
+`/`, and normalizes the result with `normalizeDataPath()`, which throws if it
+leads above the root. Wildcards are kept.
 
 ```js
 resolveDataPath('items/0', 'quantity') // 'items/0/quantity'
 resolveDataPath('items/0', '../1/quantity') // 'items/1/quantity'
 resolveDataPath('items/0', '/customer/name') // 'customer/name'
 resolveDataPath('items/0', '../../..')
-// Error: Invalid data path: '../../..' leads above the root from 'items/0'.
+// Error: Invalid data path: 'items/0/../../..' leads above the root.
 ```
 
 ### getValueAtDataPath()
@@ -632,8 +632,9 @@ path, and its return value is returned. Without `handleError`, it throws
 `Invalid path: <path>`.
 
 With wildcards, it returns an array of all matched values: for `*`, the values
-of each child at the rest of the path, flattened one level; for `**`, all
-matches depth-first, leaving out what doesn't exist.
+of each child at the rest of the path, merged into one array if the rest has
+wildcards too; for `**`, all matches depth-first, leaving out what doesn't
+exist.
 
 ```js
 getValueAtDataPath(order, 'items/0/quantity') // 1

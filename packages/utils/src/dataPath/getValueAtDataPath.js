@@ -18,12 +18,17 @@ export function getValueAtDataPath(
       index++
       continue
     } else if (isObject && part === '*') {
-      // Support wildcards on arrays and objects
+      // Support wildcards on arrays and objects, and merge the results of
+      // nested wildcards:
       const pathNested = parsedPath.slice(index + 1)
       const values = isArray(obj) ? obj : Object.values(obj)
+      const hasWildcard = (
+        pathNested.includes('*') ||
+        pathNested.includes('**')
+      )
       return values
         .map(value => getValueAtDataPath(value, pathNested, handleError))
-        .flat(1)
+        .flat(hasWildcard ? 1 : 0)
     } else if (part === '**') {
       // Support deep wildcards on arrays and objects:
       const entries = getDeepWildcardEntries(obj, parsedPath.slice(index), [])
