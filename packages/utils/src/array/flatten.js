@@ -1,14 +1,17 @@
 import { isArray } from '../base/index.js'
 
-export function flatten(array, maxDepth = Infinity, _depth = 0) {
+export function flatten(array, maxDepth = Infinity) {
   const res = []
-  for (let i = 0, l = array.length; i < l; i++) {
-    const value = array[i]
-    if (_depth < maxDepth && isArray(value)) {
-      res.push(...flatten(value, maxDepth, _depth + 1))
-    } else {
-      res.push(value)
+  const add = (array, depth) => {
+    for (let i = 0, l = array.length; i < l; i++) {
+      const value = array[i]
+      if (depth < maxDepth && isArray(value)) {
+        add(value, depth + 1)
+      } else {
+        res.push(value)
+      }
     }
   }
+  add(array, 0)
   return res
 }
