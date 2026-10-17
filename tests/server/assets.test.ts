@@ -866,8 +866,24 @@ describe('asset references', () => {
     }
   }
 
+  class Article extends Model {
+    declare id: number
+    declare content: Record<string, any> | null
+
+    static override properties: ModelProperties = {
+      content: { type: 'object', nullable: true }
+    }
+
+    // Overlapping data paths that both reach the files of `content.items`:
+    static override assets = {
+      'content.items[**].file': { storage: 'memory', readDimensions: true },
+      '**.file': { storage: 'other' }
+    }
+  }
+
   class Asset extends AssetMixin(Model) {}
-  const app = createApp({ Album, Track, Clip, Page, Asset })
+  const app = createApp({ Album, Track, Clip, Page, Article, Asset })
+  app.addStorage(new MemoryStorage(app, 'other', {} as StorageConfig))
   const storage = app.getStorage('memory') as MemoryStorage
 
   beforeAll(async () => {
@@ -1148,6 +1164,56 @@ describe('asset references', () => {
     ])
     await Page.query().patchById(page.id, { content: {} })
     expect(await getCount(file)).toBe(0)
+  })
+
+  it('counts each location of overlapping data paths once', async () => {
+    const file = await upload('overlapping.jpg')
+    const article = await Article.query().insertAndFetch({
+      content: { items: [{ file: copy(file) }] }
+    })
+    expect(await getCount(file)).toBe(1)
+    await Article.query().patchById(article.id, {
+      content: { items: [{ file: copy(file) }, { file: copy(file) }] }
+    })
+    expect(await getCount(file)).toBe(2)
+    await Article.query().patchById(article.id, {
+      content: { items: [{ file: copy(file) }] }
+    })
+    expect(await getCount(file)).toBe(1)
+    await Article.query().patchById(article.id, { content: { items: [] } })
+    expect(await getCount(file)).toBe(0)
+  })
+
+  it('finds each location of overlapping data paths once, through the first', async () => {
+    const file = await upload('overlapping-found.jpg')
+    // Skip the asset hooks, to only test how references are found:
+    await Article.knex()(Article.tableName).insert({
+      content: JSON.stringify({ items: [{ file }, { file }] })
+    })
+    const references = await app.getAssetReferences({ keys: [file.key] })
+    const config = { storage: 'memory', readDimensions: true }
+    expect(
+      references.map(({ dataPath, config }) => ({ dataPath, config }))
+    ).toEqual(
+      expect.arrayContaining([
+        { dataPath: 'content/items/0/file', config },
+        { dataPath: 'content/items/1/file', config }
+      ])
+    )
+    expect(references).toHaveLength(2)
+    expect(
+      await app.getAssetReferences({ keys: [file.key], storage: 'other' })
+    ).toEqual([])
+  })
+
+  it('recounts each location of overlapping data paths once', async () => {
+    const file = await upload('overlapping-recount.jpg')
+    // Skip the asset hooks, to only test how references are counted:
+    await Article.knex()(Article.tableName).insert({
+      content: JSON.stringify({ items: [{ file }, { file }] })
+    })
+    await app.recountAssets()
+    expect(await getCount(file)).toBe(2)
   })
 
   describe('in transactions', () => {

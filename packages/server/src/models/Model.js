@@ -8,7 +8,6 @@ import {
   isPromise,
   isEmpty,
   asArray,
-  flatten,
   clone,
   equals,
   parseDataPath,
@@ -1345,23 +1344,29 @@ function mapAssetFiles(data, storage, callback) {
 }
 
 function getFilesPerAssetDataPath(items, dataPaths) {
-  return dataPaths.reduce(
-    (allFiles, dataPath) => {
-      allFiles[dataPath] = asArray(items).reduce(
-        (files, item) => {
-          // Ignore data paths that don't resolve, e.g. missing parents.
-          const data = asArray(getValueAtDataPath(item, dataPath, noop))
-          // Use flatten() as dataPath may contain wildcards, resulting in
-          // nested files arrays.
-          files.push(...flatten(data).filter(file => !!file))
-          return files
-        },
-        []
-      )
-      return allFiles
-    },
-    {}
+  const filesPerDataPath = Object.fromEntries(
+    dataPaths.map(dataPath => [dataPath, []])
   )
+  for (const item of asArray(items)) {
+    // Overlapping data paths can reach the same location: count it once, for
+    // the first data path that reaches it.
+    const paths = new Set()
+    for (const dataPath of dataPaths) {
+      // Ignore data paths that don't resolve, e.g. missing parents. Wildcard
+      // data paths expand to the entries of their concrete paths.
+      const entries = getEntriesAtDataPath(item, dataPath, noop)
+      for (const [path, value] of Object.entries(entries)) {
+        for (const [index, file] of asArray(value).entries()) {
+          const filePath = isArray(value) ? `${path}/${index}` : path
+          if (file && !paths.has(filePath)) {
+            paths.add(filePath)
+            filesPerDataPath[dataPath].push(file)
+          }
+        }
+      }
+    }
+  }
+  return filesPerDataPath
 }
 
 // Collect the files that occur more often in `filesByKey` than in
