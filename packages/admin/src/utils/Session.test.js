@@ -21,6 +21,7 @@ function createSession({
   loginCodes = [],
   passwordResets = [],
   newPasswords = [],
+  accessConfirmations = [],
   resolvedViews = [true],
   redirectAfterLogin = null
 } = {}) {
@@ -33,7 +34,8 @@ function createSession({
       passkeyLogin: { method: 'post', path: 'passkey-login' },
       loginCode: { method: 'post', path: 'login-code' },
       passwordReset: { method: 'post', path: 'password-reset' },
-      passwordResetConfirm: { method: 'post', path: 'password-reset-confirm' }
+      passwordResetConfirm: { method: 'post', path: 'password-reset-confirm' },
+      confirmAccess: { method: 'post', path: 'confirm-access' }
     },
     resources: { any: resource => `/${resource.path}` },
     getApiUrl: ({ url }) => url,
@@ -59,6 +61,9 @@ function createSession({
     requestLoginCode: vi.fn(async () => loginCodes.shift() ?? null),
     requestPasswordReset: vi.fn(async () => passwordResets.shift() ?? null),
     requestNewPassword: vi.fn(async () => newPasswords.shift() ?? null),
+    requestAccessConfirmation: vi.fn(
+      async () => accessConfirmations.shift() ?? null
+    ),
     notify: vi.fn()
   }
   const detach = session.attachUserInterface(userInterface)
@@ -601,6 +606,89 @@ describe('Session', () => {
       expect(consoleError).toHaveBeenCalledWith(error)
       expect(userInterface.notify).not.toHaveBeenCalled()
       consoleError.mockRestore()
+    })
+  })
+
+  describe('confirmAccess()', () => {
+    const success = { success: true }
+
+    it('confirms the access with the password', async () => {
+      const { session, api } = createSession({
+        responses: { 'post /confirm-access': success },
+        accessConfirmations: [{ password: 'secret' }]
+      })
+      expect(await session.confirmAccess()).toBe(true)
+      expect(api.request).toHaveBeenLastCalledWith({
+        method: 'post',
+        url: '/confirm-access',
+        data: { password: 'secret' }
+      })
+    })
+
+    it('asks users with TOTP for the code after the password', async () => {
+      let attempt = 0
+      const { session, api, userInterface } = createSession({
+        responses: {
+          'post /confirm-access': () =>
+            ++attempt === 1 ? { success: false, codeRequired: true } : success
+        },
+        accessConfirmations: [{ password: 'secret' }],
+        loginCodes: [{ code: '123456' }]
+      })
+      expect(await session.confirmAccess()).toBe(true)
+      expect(userInterface.requestLoginCode).toHaveBeenCalledOnce()
+      expect(api.request).toHaveBeenLastCalledWith({
+        method: 'post',
+        url: '/confirm-access',
+        data: { password: 'secret', code: '123456' }
+      })
+    })
+
+    it('ends when the code is cancelled', async () => {
+      const { session, userInterface } = createSession({
+        responses: {
+          'post /confirm-access': { success: false, codeRequired: true }
+        },
+        accessConfirmations: [{ password: 'secret' }, { password: 'secret' }]
+      })
+      expect(await session.confirmAccess()).toBe(false)
+      expect(userInterface.requestLoginCode).toHaveBeenCalledOnce()
+      expect(userInterface.requestAccessConfirmation).toHaveBeenCalledOnce()
+    })
+
+    it('confirms the access with a passkey', async () => {
+      const { session, api } = createSession({
+        responses: {
+          'post /passkey-login-options': { challenge: 'challenge' },
+          'post /confirm-access': success
+        },
+        accessConfirmations: ['passkey']
+      })
+      expect(await session.confirmAccess()).toBe(true)
+      expect(api.request).toHaveBeenLastCalledWith({
+        method: 'post',
+        url: '/confirm-access',
+        data: { passkey: { id: 'passkey' } }
+      })
+    })
+
+    it('asks again after failures, until the user cancels', async () => {
+      const { session, userInterface } = createSession({
+        responses: {
+          'post /confirm-access': Object.assign(new Error('Failed'), {
+            response: {
+              status: 401,
+              data: { message: 'Password is incorrect' }
+            }
+          })
+        },
+        accessConfirmations: [{ password: 'wrong' }]
+      })
+      expect(await session.confirmAccess()).toBe(false)
+      expect(userInterface.requestAccessConfirmation).toHaveBeenCalledTimes(2)
+      expect(userInterface.notify).toHaveBeenCalledWith(
+        expect.objectContaining({ text: 'Password is incorrect' })
+      )
     })
   })
 })

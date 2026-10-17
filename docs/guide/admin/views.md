@@ -172,15 +172,15 @@ export default {
       type: 'email',
       label: 'Email',
       required: true
-    },
-    // Only sent when a new password is entered:
-    password: {
-      type: 'password',
-      label: 'New Password'
     }
   }
 }
 ```
+
+Passwords don't change through `PATCH /api/users/self`, but through
+`'post password'` of the `UsersController`, which the Security dialog of the
+account menu uses, see
+[Confirmed access](../server/controllers.md#confirmed-access).
 
 On the server, `PATCH /users/self` goes through the `patch` member action of
 the `UsersController`, so the users need to be allowed to patch themselves:

@@ -35,10 +35,8 @@ export default {
       items: computed(() =>
         [
           settingsRoute.value && { value: 'settings', label: 'Settings' },
-          (props.passkeys || props.totp) && {
-            value: 'security',
-            label: 'Security'
-          },
+          // Users change their password there, also without passkeys or TOTP:
+          { value: 'security', label: 'Security' },
           { value: 'logout', label: 'Sign Out' }
         ].filter(Boolean)
       ),

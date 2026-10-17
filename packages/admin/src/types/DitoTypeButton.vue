@@ -105,10 +105,13 @@ const DitoTypeButton = {
             await services.submit?.()
           }
         } catch (error) {
-          const context = field.createContext({ error })
-          const res = await emitEvent('error', { context })
-          if (res === undefined && !context.wasNotified) {
-            services.adminContext.notify({ type: 'error', text: error })
+          // Aborted requests, e.g. cancelled confirmations, end quietly:
+          if (error?.name !== 'AbortError') {
+            const context = field.createContext({ error })
+            const res = await emitEvent('error', { context })
+            if (res === undefined && !context.wasNotified) {
+              services.adminContext.notify({ type: 'error', text: error })
+            }
           }
         } finally {
           isRunning.value = false

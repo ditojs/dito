@@ -292,6 +292,47 @@ export default {
             },
             settings: { label: 'Set New Password' }
           })
+        },
+
+        // Return the password to confirm the access with, `'passkey'` to
+        // confirm it with a passkey, or `null` if the user cancels:
+        requestAccessConfirmation() {
+          const hasPasskeys = (
+            props.options.login?.passkeys &&
+            !!window.PublicKeyCredential
+          )
+          return showDialog({
+            components: {
+              password: {
+                type: 'password',
+                label: 'Password',
+                info: 'Confirm your access to change your security settings.',
+                autocomplete: 'current-password',
+                autofocus: true,
+                required: true
+              }
+            },
+            buttons: {
+              confirm: {
+                type: 'submit',
+                text: 'Confirm'
+              },
+
+              ...(hasPasskeys && {
+                passkey: {
+                  type: 'button',
+                  text: 'Use Passkey',
+                  onClick: ({ closeDialog }) => closeDialog('passkey')
+                }
+              }),
+
+              cancel: {
+                type: 'button',
+                text: 'Cancel'
+              }
+            },
+            settings: { label: 'Confirm Access' }
+          })
         }
       }
     )

@@ -57,10 +57,6 @@ class Guest extends UserModel {
 class Members extends UsersController {
   override modelClass = Member
 
-  override member: any = {
-    allow: ['patch']
-  }
-
   // Not async, so that its errors are thrown right away:
   override sendPasswordReset(ctx: any, user: Member, url: string) {
     if (user.username === 'broken') {
@@ -343,18 +339,15 @@ describe('Password reset', () => {
   })
 
   it('deletes the tokens of the user with password changes', async () => {
-    for (const [path, method, body] of [
-      ['password', 'POST', { currentPassword: 'secret', password: 'changed' }],
-      ['self', 'PATCH', { password: 'changed' }]
-    ] as const) {
-      await Member.query().patchById(member.id, { password: 'secret' } as any)
-      const token = await getToken()
-      const { request } = await login('secret')
-      const response = await request(`/members/${path}`, { method, body })
-      expect(response.status).toBe(200)
-      expect(await Credential.query()).toEqual([])
-      expect((await confirmReset(token, 'another')).status).toBe(400)
-    }
+    const token = await getToken()
+    const { request } = await login('secret')
+    const response = await request('/members/password', {
+      method: 'POST',
+      body: { currentPassword: 'secret', password: 'changed' }
+    })
+    expect(response.status).toBe(200)
+    expect(await Credential.query()).toEqual([])
+    expect((await confirmReset(token, 'another')).status).toBe(400)
   })
 
   it('rejects expired tokens', async () => {

@@ -87,4 +87,12 @@ describe('Application', () => {
       }
     })
   })
+
+  it('accepts the confirmed access in app.auth', () => {
+    assertType<ApplicationConfig>({
+      app: {
+        auth: { reconfirmAccessAfter: '5m' }
+      }
+    })
+  })
 })

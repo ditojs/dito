@@ -804,7 +804,21 @@ inherited actions, see [`allow`](#allow): a subclass that sets
 | `'post logout'`      | `{ success, authenticated }` |
 | `'get session'`      | `{ authenticated, user }` |
 | `'get self'`         | The authenticated user through `member.get`, or `null`. |
-| `'post password'`    | Changes the password of the authenticated user to `password` in the body, after verifying `currentPassword`: `{ success }`, or 400 if `currentPassword` is wrong. The new password is validated by the user model, e.g. its `minLength`. |
+| `'post password'`    | Changes the password of the authenticated user to `password` in the body, after verifying `currentPassword`: `{ success }`, or 400 if `currentPassword` is wrong. The new password is validated by the user model, e.g. its `minLength`. Needs confirmed access. |
+| `'post confirm-access'` | Confirms the access of the authenticated user with `{ password }`, plus `code` for users with TOTP, or with `{ passkey }`, the response of `startAuthentication()` for the options of `'post passkey-login-options'`: `{ success }`, `{ success: false, codeRequired: true }` without a code, or 401 with `'Password is incorrect'`, `'Code is incorrect'` or `'Passkey is incorrect'`. |
+
+Logins and `'post confirm-access'` confirm the access of the session for
+[`app.auth.reconfirmAccessAfter`](./application.md#configappauth). Without
+it, `'post password'`, `'post passkey-options'`, `'post passkeys'`,
+`'delete passkeys/:id'`, `'post totp'`, `'post totp-confirm'` and
+`'delete totp'` answer 403 with
+`{ message: 'Confirmation required', confirmationRequired: true }`, see
+[Confirmed access](../../guide/server/controllers.md#confirmed-access), and so
+do `patch` and `put` actions that change the username.
+`hasConfirmedAccess(ctx)` does the same for the `authorize` of other actions.
+The `patch`, `put` and `post` actions answer 400 for bodies with the `hash`,
+and `patch` and `put` also for bodies with the password. With `relate`, `post`
+treats users with ids like updates.
 
 With [`app.auth.passkeys`](./application.md#configappauth), users log in with
 passkeys and manage their own ones through these collection actions, which
@@ -838,7 +852,7 @@ collection actions, which aren't routed without it:
 | `'get totp'`           | `{ enabled, backupCodes }`, with the number of the remaining backup codes. |
 | `'post totp'`          | A new secret, kept in the session until it is confirmed: `{ uri, secret }`, the `otpauth://` URI for the QR code of authenticator apps, and the secret in base32 to enter by hand. 409 if TOTP is already set up. |
 | `'post totp-confirm'`  | Stores the secret with `{ code }`, a code of the new secret, and creates 10 backup codes: `{ backupCodes }`, only shown in this response. |
-| `'delete totp'`        | Turns TOTP off with `{ code }`, a TOTP code or a backup code, and deletes the backup codes: `{ success }`. |
+| `'delete totp'`        | Turns TOTP off and deletes the backup codes: `{ success }`. Needs confirmed access. |
 
 For users with TOTP, `'post login'` with the right password doesn't log in, but
 responds with status 200 and `{ success: false, codeRequired: true,
@@ -846,7 +860,7 @@ authenticated: false, user: null }`, and keeps a pending login in the session,
 see [`login()`](./model.md#static-login), with a new session id.
 `'post login-code'` completes it within 5 minutes. Wrong codes answer
 `'Code is incorrect'` with status 401, also in `'post totp-confirm'` and
-`'delete totp'`, and missing or expired pending logins and setups status 400.
+`'post confirm-access'`, and missing or expired pending logins and setups status 400.
 Ten wrong codes in a row lock the account for 15 minutes, across pending
 logins and sessions: the tenth and all codes during the lock answer
 `'Too many attempts'` with status 400. Ten wrong codes in `'post totp-confirm'`
@@ -870,20 +884,18 @@ user exists or not, and doesn't wait for the email, but the time it takes can
 still differ, as it stores a token for existing users. Users get at most one
 email a minute. Limit the rate of requests per client in the proxy in front of
 the app. Each link works once, until it expires, and setting the password, also
-through `'post password'` or a member `patch` or `update`, invalidates the
-user's other links. Only users of the controller's `modelClass` are found,
-through their `sessionScope`. A subclass that sets `collection.allow` has to
-list the password reset actions too, else they aren't routed, and only
-controllers that route `'post password-reset'` need to override
-`sendPasswordReset()`. All users controllers of the app share the one
-`confirmUrl` of `app.auth.passwordReset`.
+through `'post password'`, invalidates the user's other links. Only users of
+the controller's `modelClass` are found, through their `sessionScope`. A
+subclass that sets `collection.allow` has to list the password reset actions
+too, else they aren't routed, and only controllers that route
+`'post password-reset'` need to override `sendPasswordReset()`. All users
+controllers of the app share the one `confirmUrl` of `app.auth.passwordReset`.
 
 Any change of a user's `hash` ends the sessions of the user. The session of the
-request that changes the password stays logged in after `'post password'`,
-`'post password-reset-confirm'` and the member `patch` and `update` of
-`UsersController`, e.g. `PATCH /users/self`. Elsewhere, e.g. in other
-controllers, custom actions or collection patches, it ends too, unless the
-action logs the user in again with `ctx.login(user)` afterwards.
+request that changes the password stays logged in after `'post password'` and
+`'post password-reset-confirm'`. Elsewhere, e.g. in other controllers or custom
+actions, it ends too, unless the action logs the user in again with
+`ctx.login(user)` afterwards.
 
 TOTP is only asked for by [`UserMixin.login()`](./model.md#static-login), and
 thus by `'post login'`. `ctx.login(user)` logs in without it, by design, e.g.

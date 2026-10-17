@@ -71,13 +71,12 @@ test.describe('TOTP', () => {
     const [credential] = await Credential.query().where('type', 'totp')
     expect(credential.lastUsedAt).toBeInstanceOf(Date)
 
-    // Turn off TOTP with a backup code:
+    // Turn off TOTP, with the access confirmed by the login:
     const turnOff = await openSecurity(page)
     await turnOff.getByRole('button', { name: 'Turn Off' }).click()
     const confirm = page.getByRole('dialog', {
-      name: 'Turn Off Two-Factor Authentication'
+      name: 'Do you really want to turn off two-factor authentication?'
     })
-    await confirm.getByLabel('Authentication Code').fill(backupCodes[0])
     await confirm.getByRole('button', { name: 'Turn Off' }).click()
     await expect(turnOff).toContainText('Not set up')
     expect(await Credential.query()).toEqual([])

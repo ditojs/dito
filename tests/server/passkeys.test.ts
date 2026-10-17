@@ -299,13 +299,13 @@ describe('Passkeys', () => {
     })
     // Let the challenge of the stored session expire:
     const session = (await Session.query()).find(
-      session => session.value.passkeyChallenge
+      session => session.value.authenticationChallenge
     )!
     await session.$query().patch({
       value: {
         ...session.value,
-        passkeyChallenge: {
-          ...session.value.passkeyChallenge,
+        authenticationChallenge: {
+          ...session.value.authenticationChallenge,
           expires: Date.now() - 1
         }
       }

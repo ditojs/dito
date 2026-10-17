@@ -144,6 +144,7 @@ app: {
 | `passwordReset`          | `object`                   | Enables password resets by email in [`UsersController`](controllers.md#userscontroller), which sends the emails through [`sendPasswordReset()`](controllers.md#sendpasswordreset). Needs `credentials`, `credentials.secret` and a `session` stored on the server, else the setup fails. |
 | `passwordReset.confirmUrl` | `string`                 | The URL of the page that the emails link to, with a `{token}` placeholder for the token, best in the fragment, e.g. `'https://example.com/admin/#password-reset={token}'` for the admin's [`login.passwordReset`](../admin/admin.md). One URL for the whole app: all users controllers send links to it. |
 | `passwordReset.expires`  | `number \| string`         | How long the links are valid, in milliseconds or as a duration string, e.g. `'30m'`. Default `'1h'`. |
+| `reconfirmAccessAfter`   | `number \| string`         | How long logins and `'post confirm-access'` confirm the access for the security changes of [`UsersController`](controllers.md#userscontroller), in milliseconds or as a duration string. Default `'10m'`. |
 
 Passkeys need the optional peer dependency `@simplewebauthn/server`, TOTP
 needs `otpauth`.

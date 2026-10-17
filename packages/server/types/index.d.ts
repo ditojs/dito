@@ -252,6 +252,14 @@ export interface ApplicationConfig {
          */
         expires?: number | string
       }
+      /**
+       * How long logins and `'post confirm-access'` confirm the access of
+       * sessions for the security changes of `UsersController`, in
+       * milliseconds or as a duration string.
+       *
+       * @defaultValue `'10m'`
+       */
+      reconfirmAccessAfter?: number | string
     }
     /**
      * Set signed cookie keys.
@@ -2876,6 +2884,12 @@ export class UsersController<
    * and the user is an instance of the controller's model.
    */
   isAuthenticated(ctx: KoaContext): boolean
+  /**
+   * Like `isAuthenticated()`, but throws a 403 error with
+   * `confirmationRequired` for users without confirmed access, see
+   * `app.auth.reconfirmAccessAfter`. For the `authorize` of security changes.
+   */
+  hasConfirmedAccess(ctx: KoaContext): boolean
   /**
    * Sends the user the email with the `url` that resets their password, with
    * `app.auth.passwordReset`. Apps override it.

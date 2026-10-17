@@ -14,6 +14,7 @@ interface UserInterface {
   requestLoginCode(): Promise<{ code: string } | null>
   requestPasswordReset(): Promise<Record<string, any> | null>
   requestNewPassword(): Promise<{ password: string } | null>
+  requestAccessConfirmation(): Promise<{ password: string } | 'passkey' | null>
   notify(options: NotifyOptions): void
 }
 
@@ -50,13 +51,16 @@ export class Session {
   // `requestLoginData()` returns the credentials, `'passkey'` to log in with a
   // passkey, `'passwordReset'` to reset the password, or `null` when cancelled.
   // `requestLoginCode()` returns the TOTP or backup code of users with TOTP,
-  // `requestPasswordReset()` the username to reset the password of, and
-  // `requestNewPassword()` the new password, or `null` when cancelled.
+  // `requestPasswordReset()` the username to reset the password of,
+  // `requestNewPassword()` the new password, and `requestAccessConfirmation()`
+  // the password or `'passkey'` to confirm the access with, or `null` when
+  // cancelled.
   attachUserInterface({
     requestLoginData,
     requestLoginCode,
     requestPasswordReset,
     requestNewPassword,
+    requestAccessConfirmation,
     notify
   }: UserInterface) {
     const userInterface = {
@@ -64,6 +68,7 @@ export class Session {
       requestLoginCode,
       requestPasswordReset,
       requestNewPassword,
+      requestAccessConfirmation,
       notify
     }
     this.#userInterface = userInterface
@@ -105,9 +110,10 @@ export class Session {
       const { users } = this.#api
       let response
       if (loginData === 'passkey') {
-        const options = await this.#request(users.passkeyLoginOptions)
-        const passkey = await startAuthentication({ optionsJSON: options.data })
-        response = await this.#request(users.passkeyLogin, passkey)
+        response = await this.#request(
+          users.passkeyLogin,
+          await this.#getPasskey()
+        )
       } else {
         response = await this.#request(users.login, loginData)
       }
@@ -154,6 +160,43 @@ export class Session {
       }
     } else {
       return null
+    }
+  }
+
+  // Security changes need a recent login, or a confirmation of the access with
+  // the password and the code of users with TOTP, or with a passkey. Ask again
+  // after each failure, and resolve to whether the access was confirmed:
+  async confirmAccess(): Promise<boolean> {
+    const data = await this.#userInterface?.requestAccessConfirmation()
+    if (data) {
+      try {
+        const { users } = this.#api
+        const body =
+          data === 'passkey' ? { passkey: await this.#getPasskey() } : data
+        let response = await this.#request(users.confirmAccess, body)
+        if (response.data.codeRequired) {
+          const codeData = await this.#userInterface?.requestLoginCode()
+          if (codeData) {
+            response = await this.#request(users.confirmAccess, {
+              ...body,
+              ...codeData
+            })
+          } else {
+            // Cancelling the code ends the confirmation, like the password:
+            return false
+          }
+        }
+        if (response.data.success) {
+          return true
+        }
+      } catch (error) {
+        if (!isPasskeyPromptCancelled(error)) {
+          this.#notifyError(error)
+        }
+      }
+      return this.confirmAccess()
+    } else {
+      return false
     }
   }
 
@@ -251,6 +294,12 @@ export class Session {
     if (!(await this.#viewRegistry.resolve())) {
       await this.login()
     }
+  }
+
+  // Answer a challenge of the server with a passkey of the browser:
+  async #getPasskey() {
+    const options = await this.#request(this.#api.users.passkeyLoginOptions)
+    return startAuthentication({ optionsJSON: options.data })
   }
 
   #request(resource: any, data: any = null) {

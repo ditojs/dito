@@ -150,12 +150,38 @@ class Profiles extends UsersController {
   }
 }
 
-// Members that patch any member, also their password:
+// Members that create, update and patch any member:
 class Moderators extends UsersController {
   override modelClass = Member
+  override collection: any = {
+    allow: ['post', 'put', 'patch'],
+    authorize: { post: true, put: true, patch: true }
+  }
+
   override member: any = {
-    allow: ['patch'],
-    authorize: { patch: true }
+    allow: ['put', 'patch'],
+    authorize: { put: true, patch: true }
+  }
+}
+
+// Members that relate existing members when posting them with ids:
+class Relaters extends UsersController {
+  override modelClass = Member
+  override relate = true
+  override collection: any = {
+    allow: ['post'],
+    authorize: { post: true }
+  }
+}
+
+// Members that delete themselves with confirmed access, as the docs show:
+class Deleters extends UsersController {
+  override modelClass = Member
+  override member: any = {
+    allow: ['delete'],
+    authorize: {
+      delete: (ctx: any) => this.hasConfirmedAccess(ctx) && '$self'
+    }
   }
 }
 
@@ -192,7 +218,9 @@ describe('UsersController', () => {
       SubWriters,
       Editors,
       Profiles,
-      Moderators
+      Moderators,
+      Relaters,
+      Deleters
     }
   })
 
@@ -463,23 +491,6 @@ describe('UsersController', () => {
       expect((await request('/members/session')).data.authenticated).toBe(true)
     })
 
-    it(`keeps the session that changes others' passwords`, async () => {
-      const request = createClient(url)
-      await request('/members/login', {
-        method: 'POST',
-        body: { username: 'ada', password: 'secret' }
-      })
-      const response = await request(`/moderators/${other.id}`, {
-        method: 'PATCH',
-        body: { password: 'changed' }
-      })
-      expect(response.status).toBe(200)
-      expect((await request('/members/session')).data).toMatchObject({
-        authenticated: true,
-        user: { id: member.id }
-      })
-    })
-
     it('passes on errors of the session query', async context => {
       context.skip(isSQLiteTest, 'SQLite compares text with integer ids')
       const request = await loginOther()
@@ -566,22 +577,126 @@ describe('UsersController', () => {
       })
       const self = await request('/members/self', {
         method: 'PATCH',
-        body: { nickname: 'Bobo', password: 'changed' }
+        body: { nickname: 'Bobo' }
       })
       expect(self.status).toBe(200)
       expect(self.data).toMatchObject({ id: other.id, nickname: 'Bobo' })
       expect(self.data).not.toHaveProperty('hash')
       expect((await Member.query().findById(member.id))!.nickname).toBeNull()
-      // Changing the own password keeps the session:
-      expect((await request('/members/session')).data.authenticated).toBe(true)
-      // The password is hashed like in other patches:
+    } finally {
+      await Member.query().deleteById(other.id)
+    }
+  })
+
+  it('only changes passwords through `post password`', async () => {
+    const request = createClient(url)
+    await request('/members/login', {
+      method: 'POST',
+      body: { username: 'ada', password: 'secret' }
+    })
+    for (const [path, method, body] of [
+      ['/members/self', 'PATCH', { nickname: 'Countess', password: 'changed' }],
+      [`/moderators/${member.id}`, 'PATCH', { password: 'changed' }],
+      [`/moderators/${member.id}`, 'PUT', { username: 'ada', password: 'x' }],
+      ['/moderators', 'PATCH', [{ id: member.id, password: 'changed' }]],
+      ['/moderators', 'PUT', [{ id: member.id, password: 'changed' }]]
+    ] as const) {
+      const response = await request(path, { method, body })
+      expect(response.status).toBe(400)
+      expect(response.data).toEqual({
+        type: 'BodyValidation',
+        message: `Unable to change 'password' outside of 'post password'`
+      })
+    }
+    const stored = (await Member.query().findById(member.id))!
+    expect(stored.nickname).toBeNull()
+    expect(await stored.$verifyPassword('secret')).toBe(true)
+  })
+
+  it('never sets the hash of the password directly', async () => {
+    const request = createClient(url)
+    await request('/members/login', {
+      method: 'POST',
+      body: { username: 'ada', password: 'secret' }
+    })
+    // A real hash, of the password 'changed':
+    const { hash } = Member.fromJson({
+      username: 'ada',
+      password: 'changed'
+    } as any)
+    for (const [path, method, body] of [
+      ['/members/self', 'PATCH', { hash }],
+      [`/moderators/${member.id}`, 'PUT', { username: 'ada', hash }],
+      ['/moderators', 'PATCH', [{ id: member.id, hash }]],
+      ['/moderators', 'PUT', [{ id: member.id, hash }]],
+      ['/moderators', 'POST', { username: 'cy', hash }]
+    ] as const) {
+      const response = await request(path, { method, body })
+      expect(response.status).toBe(400)
+      expect(response.data).toEqual({
+        type: 'BodyValidation',
+        message: `Unable to change 'hash' outside of 'post password'`
+      })
+    }
+    const stored = (await Member.query().findById(member.id))!
+    expect(await stored.$verifyPassword('secret')).toBe(true)
+    expect(await Member.query().findOne('username', 'cy')).toBeUndefined()
+  })
+
+  it('validates related users with ids like updates', async () => {
+    // Without a login, so without confirmed access:
+    const request = createClient(url)
+    for (const [body, status] of [
+      [{ id: member.id, hash: 'pwned' }, 400],
+      [{ id: member.id, password: 'changed' }, 400],
+      [{ id: member.id, username: 'eve' }, 403]
+    ] as const) {
+      const response = await request('/relaters', { method: 'POST', body })
+      expect(response.status).toBe(status)
+    }
+    const stored = (await Member.query().findById(member.id))!
+    expect(stored.username).toBe('ada')
+    expect(await stored.$verifyPassword('secret')).toBe(true)
+  })
+
+  it('only lets users delete themselves with confirmed access', async () => {
+    const [cy, dee] = await Promise.all(
+      ['cy', 'dee'].map(username =>
+        Member.query().insert({ username, password: 'secret' } as any)
+      )
+    )
+    try {
+      const request = createClient(url)
+      await request('/members/login', {
+        method: 'POST',
+        body: { username: 'cy', password: 'secret' }
+      })
+      const other = await request(`/deleters/${dee.id}`, { method: 'DELETE' })
+      expect(other.status).toBe(401)
+      const self = await request('/deleters/self', { method: 'DELETE' })
+      expect(self.status).toBe(200)
+      expect(await Member.query().findById(cy.id)).toBeUndefined()
+      expect(await Member.query().findById(dee.id)).toBeDefined()
+    } finally {
+      await Member.query().whereIn('id', [cy.id, dee.id]).delete()
+    }
+  })
+
+  it('creates users with passwords', async () => {
+    const request = createClient(url)
+    const response = await request('/moderators', {
+      method: 'POST',
+      body: { username: 'cy', password: 'secret' }
+    })
+    expect(response.status).toBe(201)
+    try {
       const login = await createClient(url)('/members/login', {
         method: 'POST',
-        body: { username: 'bo', password: 'changed' }
+        body: { username: 'cy', password: 'secret' }
       })
       expect(login.data.success).toBe(true)
     } finally {
-      await Member.query().deleteById(other.id)
+      await Member.query().deleteById(response.data.id)
     }
   })
 

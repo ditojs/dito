@@ -581,8 +581,9 @@ export class Users extends UsersController {
 - `GET /users/self` returns the logged-in user.
 - In member routes, `self` stands for the logged-in user, e.g.
   `PATCH /users/self` runs the member's `patch` action on them, if it is
-  allowed. The admin's [account settings](../admin/views.md#account-settings)
-  use it.
+  allowed, but doesn't change passwords, see
+  [Confirmed access](#confirmed-access). The admin's
+  [account settings](../admin/views.md#account-settings) use it.
 
 `authorize` on the controller doesn't apply to login, logout and session,
 which authenticate, so users can always log in; `self` follows it. Member
@@ -710,7 +711,8 @@ const { user } = response
 
 Ten wrong codes in a row lock the account for 15 minutes. `GET /users/totp`
 tells whether TOTP is set up and how many backup codes are left, and
-`DELETE /users/totp` with `{ code }` turns it off. Only password logins through
+`DELETE /users/totp` turns it off, with
+[confirmed access](#confirmed-access). Only password logins through
 `login()` ask for the code, while `ctx.login(user)` logs in without it, e.g.
 to impersonate users. The admin's login
 dialog asks for the code, and its `login.totp` option sets up and turns off
@@ -777,6 +779,86 @@ the proxy in front of the app. The admin's `login.passwordReset` option adds
 the request to its login dialog, with `confirmUrl` pointing to the admin, e.g.
 `'https://example.com/admin/#password-reset={token}'`, see
 [`DitoAdmin`](../../api/admin/admin.md#parameters).
+
+### Confirmed access
+
+Security changes need confirmed access, so that a session alone, e.g. a stolen
+one, can't change how the account logs in: changing the password through
+`'post password'` or the username, adding and removing passkeys, and turning
+TOTP on and off. Logging in confirms the access, also with a passkey or with
+the TOTP code, for the time of `reconfirmAccessAfter`:
+
+```js
+// config/index.js
+export default {
+  app: {
+    auth: {
+      reconfirmAccessAfter: '10m' // The default
+    }
+  }
+}
+```
+
+Later, these actions answer status 403 with `confirmationRequired`, and the
+user confirms the access again with their password, plus the code of their
+authenticator app or a backup code if they use TOTP, or with a passkey:
+
+```js
+let response = await post('confirm-access', { password })
+if (response.codeRequired) {
+  response = await post('confirm-access', { password, code: '123456' })
+}
+// Or with a passkey, through the options of passkey logins:
+const optionsJSON = await post('passkey-login-options')
+await post('confirm-access', {
+  passkey: await startAuthentication({ optionsJSON })
+})
+```
+
+Wrong codes count towards the lock of the account, as in logins. Passwords
+only change through `'post password'`: the `patch` and `put` actions of users
+controllers answer 400 for bodies with a password or its `hash`, while `post`
+still creates users with a password. Changing the username through them needs
+confirmed access, as password resets go to it. The admin asks to confirm the
+access whenever an action answers `confirmationRequired`, and then repeats the
+action.
+
+Protect other changes the same way, e.g. the `email` that the app sends the
+password resets to, or custom actions with
+`authorize: { 'post export': ctx => this.hasConfirmedAccess(ctx) }`:
+
+```js
+export class Users extends UsersController {
+  modelClass = User
+
+  member = {
+    allow: ['get', 'patch'],
+
+    async patch(ctx, modify) {
+      const { email } = ctx.request.body
+      if (email !== undefined) {
+        // Compare with the user that is patched, not the logged-in one:
+        const user = await this.modelClass.query().findById(ctx.memberId)
+        // `hasConfirmedAccess()` throws 403 with `confirmationRequired` without
+        // confirmed access, and returns `false` for users of other models:
+        if (email !== user?.email && !this.hasConfirmedAccess(ctx)) {
+          throw new AuthorizationError()
+        }
+      }
+      return super.patch(ctx, modify)
+    }
+  }
+}
+```
+
+Passwords set through other routes of the app aren't covered: relations and
+graphs that include user models, other controllers, and new users created
+through an authorized collection `post`. Keep such routes to admins. Deleting
+users through the member `delete`, e.g. `DELETE /users/self`, doesn't need
+confirmed access either: apps that allow it can protect it with
+`authorize: { delete: ctx => this.hasConfirmedAccess(ctx) && '$self' }` in
+`member`, keeping `'$self'`, which the setting replaces, so that users only
+delete themselves.
 
 ## Admin
 
