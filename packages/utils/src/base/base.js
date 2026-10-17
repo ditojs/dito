@@ -1,12 +1,7 @@
 export const { isArray } = Array
+export const { is } = Object
+export const { isInteger } = Number
 const { toString } = Object.prototype
-
-export const is = (
-  Object.is ||
-  // SameValue algorithm:
-  // istanbul ignore next
-  ((x, y) => (x === y ? x !== 0 || 1 / x === 1 / y : x !== x && y !== y))
-)
 
 export function isPlainObject(arg) {
   const ctor = arg?.constructor
@@ -73,17 +68,6 @@ export function isTypedArray(arg) {
 export function isPromise(arg) {
   return !!arg && isFunction(arg.then) && isFunction(arg.catch)
 }
-
-export const isInteger = (
-  Number.isInteger ||
-  function isInteger(arg) {
-    return (
-      isNumber(arg) &&
-      isFinite(arg) &&
-      Math.floor(arg) === arg
-    )
-  }
-)
 
 export function isAsync(arg) {
   return arg?.[Symbol.toStringTag] === 'AsyncFunction'

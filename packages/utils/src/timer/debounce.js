@@ -9,7 +9,7 @@ export function debounce(func, options) {
   const debounced = function (...args) {
     const callNow = immediate && !timer
     clearTimeout(timer)
-    timer = setTimeout(async () => {
+    timer = setTimeout(() => {
       timer = null
       if (!immediate) {
         result = func.apply(this, args)
