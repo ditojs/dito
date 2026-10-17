@@ -3,84 +3,74 @@
 The changes of each release of Dito.js. For upgrading to a new major
 version, see the upgrade guides in `docs/`.
 
+## Unreleased
+
+### Behaviour changes
+
+- **server:** Dito.js handles logins and sessions itself instead of through koa-passport, which `@ditojs/server` no longer depends on. `ctx.req.user` and custom Passport strategies are gone, `app.passport` has no effect, and `UserMixin.login()` reads the credentials only from the request body. Existing sessions stay valid.
+- **server:** Changing a user's password ends their other sessions.
+- **server:** `UsersController` only treats users of its own model class as logged in, not users of its sub-classes.
+- **server:** `Controller.setup()` and `UserMixin.sessionQuery()` are internal: apps override `initialize()` and set `sessionScope` instead.
+- **admin:** Dialogs validate their data on submit, like forms, and only resolve once it's valid.
+- **admin:** `@simplewebauthn/browser` and `lean-qr` are required peer dependencies of `@ditojs/admin`.
+
+### New
+
+- **server, admin:** Logins with passkeys, with `app.auth.passkeys` and `login: { passkeys: true }`, see [Passkeys](docs/guide/server/controllers.md#passkeys).
+- **server, admin:** Two-factor authentication with TOTP, with `app.auth.totp` and `login: { totp: true }`, see [Two-factor authentication](docs/guide/server/controllers.md#two-factor-authentication).
+- **server, admin:** Password resets by email, with `app.auth.passwordReset` and `login: { passwordReset: true }`, see [Password reset](docs/guide/server/controllers.md#password-reset).
+- **server, admin:** Users change their password through `'post password'` of `UsersController`, and the Security dialog of the account menu.
+- **server:** `CredentialMixin` and `CredentialModel` store the credentials of all user models in one table, set in `app.auth.credentials`.
+- **admin:** `settings.minDuration` keeps dialogs visible for a minimum time.
+- **admin:** The `empty` option of lists shows a text while a list has no items.
+- **admin:** `context.reload()` reloads the items of the list or object that a component is in.
+
+### Fixes
+
+- **admin:** Dialog buttons that are wider than their components stay off the dialog's edges.
+- **admin:** Failed logins show the message of the server's response.
+- **admin:** Errors of `context.request()` carry the `status` of their response.
+- **admin:** Lists outside of routes, e.g. in dialogs, keep their scope, page, order and filters to themselves instead of using the route's.
+
 ## 4.8.0 (2026-10-18)
 
 ### Behaviour changes
 
-- **router:** Requests for paths that no method handles respond with 404, where they responded with 405 and an empty `Allow` header, or with 501 and an `Allow` header listing every method with routes. 405 and 501 remain for paths that other methods handle, with these methods in `Allow`. OPTIONS requests for such paths respond with 404 instead of 200 with an empty `Allow` header (#328).
-- **router:** HEAD requests, e.g. of link checkers and health probes, are handled by the GET route of their path when no HEAD route matches, where they responded with 501, and `Allow` lists HEAD wherever it lists GET, also in `getAllowedMethods()`. Misses of HEAD requests respond with 404 like those of GET requests. GET handlers therefore also run for HEAD requests, so handlers with side effects, e.g. ones that log downloads, need to check `ctx.method` (#329).
-- **router:** `add()`, `find()` and the `exclude` argument of `getAllowedMethods()` take methods in any case, e.g. `add('get', …)` matches `find('GET', …)`. This only affects code that calls the router directly with lowercase methods, as the server always passes them uppercase (#335).
-- **admin:** The login and logout labels read "Sign In" and "Sign Out", in the header, the login dialog and the account menu, where they read "Login" and "Logout". Tests that find these buttons by their names need the new ones (#344).
-- **admin:** Dialogs focus their submit button, also in confirmations, unless a component sets `autofocus`; pressing Enter submits. They focused their first focusable element, e.g. Cancel in confirmations.
-- **admin:** Fields only validate on blur when they were edited while focused, so passing through empty required fields, or clicking the label of a focused field, no longer shows errors. Submitting still validates all fields. Fields validated on every blur.
-- **router:** Routes with `*` or `**` inside a segment, e.g. `/files/*.json` or `/files/**.json`, or with a param inside a segment after `**`, e.g. `/files/**/tech-doc-:format`, throw an error when added, where they matched any segment, ignoring the rest of it, or never matched.
-- **server:** A place in the data that several overlapping asset data paths reach, e.g. `'content.items[**].file'` and `'**.file'`, belongs to the first of them: its file counts once, where it counted once per data path, and loads and is signed with the storage of the first data path, where the last one won. Apps with overlapping asset data paths should run `db:recount_assets` after upgrading, to correct the stored counts.
-- **utils:** `debounceAsync()` resolves calls made while a run is pending with the result of their own run, where they received the pending run's result, and `cancel()` only settles calls that wait for the timer, where it also resolved those of a pending run, whose rejection then threw an unhandled `TypeError`. Debounced `search` filters of the admin now get the options of the search term they were called with (#347, #349).
-- **utils:** `equals()` never treats values of different types as equal, e.g. a buffer and an object with the same keys, or a `Uint8Array` and an array, where it compared all objects by their keys. Typed arrays are compared element by element, like arrays (#373).
-- **utils:** `*` in `getValueAtDataPath()` only merges the values it finds into one array when the rest of the path has wildcards too, so values that are arrays themselves are kept, e.g. `'*/x'` returns `[[1, 2], [3]]` where it returned `[1, 2, 3]`, like `**` and `getEntriesAtDataPath()` do. This affects app code that reads array values through `*`, e.g. with `dataPath` in schemas (#357).
-- **utils:** `normalizeDataPath()` throws for a `..` that leads above the root, e.g. `'../items'`, where it dropped it silently, and resolves a `.` right after a `//`, where it kept it, and throws for a `..` there, as `//` starts again at the root. `resolveDataPath()` resolves through `normalizeDataPath()`, so its error names the joined path, `Invalid data path: 'items/0/../../..' leads above the root.`, where it named both paths. This affects app code that passes such paths to `normalizeDataPath()`, and tests that check the error of `resolveDataPath()` or of the schema context's `validate()`, `verify()` and `clearErrors()` (#358).
-- **utils:** `capitalize()` doesn't start new words after digits, e.g. `capitalize('the 1st place')` returns `'The 1st Place'`, where it returned `'The 1St Place'`. This also changes the column names that the server derives with it for the join tables of `through` relations, for property names with such words (#356).
-- **utils:** `escapeHtml()` escapes single quotes as `&#39;`, so its result is safe inside single-quoted attributes, where it left them unescaped (#359).
-- **utils:** `isAbsoluteUrl()` only accepts letters, digits, plus, period and hyphen in schemes, e.g. `isAbsoluteUrl('a,b:c')` returns `false`, where commas were accepted too (#360).
-- **server:** `UserMixin.login()` reads the credentials only from the request body, where Passport's local strategy also read them from the query string.
-- **server:** Dito.js logs users in and restores them from the session itself, instead of through koa-passport. Passport's `ctx.req.user` mirror of `ctx.state.user` and custom Passport strategies through Dito.js are gone.
-- **server:** `UsersController` only treats users of its own model class as logged in, not users of its sub-classes, which have their own tables and ids. This affects apps that serve sub-classed user models through the parent's `UsersController`: their `session`, `self` and `logout` actions no longer mistake such users for the parent's user with the same id.
-- **server:** `Controller.setup()` is internal, like `Model.setup()`, and may be asynchronous: apps override `initialize()` instead.
-- **server:** `UserMixin.sessionQuery()` is internal: `sessionScope` sets the scopes of the users of logins and sessions.
-- **server:** With `app.auth.totp`, `UserMixin.login()` doesn't log in users with TOTP and resolves to `null`, and `'post login'` answers `{ success: false, codeRequired: true }` for them, with status 200: they log in with their code through `'post login-code'`.
-- **server:** Changing a user's password ends their sessions: sessions store a hash of the user's `hash` at login, and end once it changes. The session of the request stays logged in after `'post password'`, `'post password-reset-confirm'` and the member `patch` and `update` of `UsersController`, e.g. `PATCH /users/self`. Elsewhere, e.g. in other controllers, custom actions or collection patches, it ends too, unless the action calls `ctx.login(user)` afterwards. Sessions from before this release, and logins of users loaded without `hash`, stay valid until their next login.
-- **admin:** Dialogs validate their data when submitted, like forms, and only resolve once it's valid, where they resolved with invalid data, e.g. with empty `required` fields.
-- **admin:** `@simplewebauthn/browser` and `lean-qr` are required peer dependencies of `@ditojs/admin`: admin apps install them, also without `login.passkeys` or `login.totp`.
+- **router:** Paths without a route for the request's method respond with 404 instead of 405 or 501 (#328).
+- **router:** HEAD requests run the GET route of their path. GET handlers with side effects need to check `ctx.method` (#329).
+- **router:** Methods can be passed in any case to `add()`, `find()` and `getAllowedMethods()` (#335).
+- **router:** Routes with `*` or `**` inside a segment, e.g. `/files/*.json`, or with a param inside a segment after `**`, throw when added.
+- **admin:** The login and logout labels read "Sign In" and "Sign Out" (#344).
+- **admin:** Dialogs focus their submit button, also in confirmations, so Enter confirms.
+- **admin:** Fields only validate on blur when they were edited.
+- **server:** A place in the data that several overlapping asset data paths reach, e.g. `'content.items[**].file'` and `'**.file'`, counts once and uses the first path's storage. Apps with overlapping paths should run `db:recount_assets` after upgrading (#385, #387).
+- **utils:** `debounceAsync()` resolves each call with the result of its own run, and `cancel()` only settles calls that still wait (#347, #349).
+- **utils:** `equals()` never treats values of different types as equal, and compares typed arrays element by element (#373).
+- **utils:** `*` in `getValueAtDataPath()` keeps values that are arrays instead of merging them (#357).
+- **utils:** `normalizeDataPath()` and `resolveDataPath()` throw for a `..` that leads above the root (#358).
+- **utils:** `capitalize()` doesn't start new words after digits, e.g. `'1st'`. This can also change the column names of generated join tables (#356).
+- **utils:** `escapeHtml()` escapes single quotes (#359).
+- **utils:** `isAbsoluteUrl()` only accepts valid characters in schemes (#360).
 
 ### New
 
-- **server:** Users log in with passkeys, with `app.auth.passkeys`, sessions stored on the server and the optional peer dependency `@simplewebauthn/server`. `UsersController` adds `'post passkey-login-options'` and `'post passkey-login'`, and lets users manage their own passkeys through `'get passkeys'`, `'post passkey-options'`, `'post passkeys'` and `'delete passkeys/:id'`, see [Passkeys](docs/guide/server/controllers.md#passkeys). Passkeys are named after their providers, e.g. `'1Password'`, through the new dependency `aaguids`.
-- **server:** `UsersController` lets users change their password through `'post password'`, with the current password. Subclasses that set `collection.allow` list it to route it.
-- **server:** `CredentialMixin` and `CredentialModel` store the credentials of all user models in one table, set in `app.auth.credentials`. Deleting users deletes their credentials.
-- **server:** Two-factor authentication with TOTP, with `app.auth.totp`, `app.auth.credentials.secret`, sessions stored on the server and the optional peer dependency `otpauth`. Users with TOTP enter a code from their authenticator app or one of their backup codes after the password, through `'post login-code'`, and set up and turn off TOTP through `'get totp'`, `'post totp'`, `'post totp-confirm'` and `'delete totp'`, see [Two-factor authentication](docs/guide/server/controllers.md#two-factor-authentication). Ten wrong codes in a row lock the account for 15 minutes. Passkey logins don't ask for codes.
-- **server:** Password resets by email, with `app.auth.passwordReset`, `app.auth.credentials.secret` and sessions stored on the server. `UsersController` adds `'post password-reset'`, which emails a link through the app's `sendPasswordReset()` and answers the same for unknown usernames, and `'post password-reset-confirm'`, which sets the new password with the link's token. Links work once, until they expire after `expires`, `'1h'` by default, and changing the password invalidates them. One `confirmUrl` serves the whole app, see [Password reset](docs/guide/server/controllers.md#password-reset).
-- **admin:** `login: { passwordReset: true }` adds a Forgot password? button to the login dialog, which requests the email, and opening the admin with `#password-reset=` and the token of the link asks for the new password, again after validation errors.
-- **admin:** `login: { passkeys: true }` adds a passkey login to the login dialog, and a Security dialog to the account menu that changes the user's password, and lists, adds and removes the user's passkeys. Requires the new peer dependency `@simplewebauthn/browser`.
-- **admin:** The login dialog asks users with TOTP for the code of their authenticator app, or a backup code, after the password. `login: { totp: true }` adds a Security dialog to the account menu that changes the user's password, sets up TOTP with a QR code and shows the backup codes, and turns it off again. Requires the new peer dependency `lean-qr`.
-- **admin:** Dialogs take `settings.minDuration`, the time in milliseconds that they stay visible when they're submitted right after they opened. The code dialog of the login stays for a second, so users see their password manager fill in the code.
-- **admin:** The `empty` option of lists shows a row with its text while the list has no items, e.g. `empty: 'No books yet.'`.
-- **admin:** `context.reload()` reloads the items of the list or object that the component is or is in, e.g. after a list button changed them on the server.
-
-### New
-
-- **ui:** `DitoMenuButton` takes `floating`, which opens the menu below the button as a separate panel with a tip pointing at the button (#344).
-- **admin:** The account menu opens as a floating panel, right-aligned with the user name, and leaves the name unchanged while it is open (#344).
-- **utils:** `isTypedArray()` checks for typed arrays, e.g. `Uint8Array`, including Node.js buffers (#350).
-
-### Deprecations
-
-- **server:** `app.passport` has no effect: users are always handled, with sessions when `app.session` is set.
-
-### Improvements
-
-- **server:** `@ditojs/server` no longer depends on `koa-passport` and `passport-local`. Existing sessions stay valid.
+- **ui:** `DitoMenuButton` takes `floating`, which opens the menu as a separate panel below the button (#344).
+- **admin:** The account menu opens as a floating panel (#344).
+- **utils:** `isTypedArray()` checks for typed arrays, including Node.js buffers (#350).
 
 ### Fixes
 
-- **admin:** Dialogs keep buttons that are wider than their components off their edges.
-- **admin:** Failed login requests notify the `message` of their response, e.g. of a passkey login without a challenge, instead of `'Request failed with status code: 400'`.
-- **admin:** Errors of `context.request()` carry the `status` of their response, as documented.
-- **admin:** Lists outside of routes, e.g. in dialogs, keep their scope, page, order and filters to themselves, instead of loading the query of the current route and navigating to their changes. Lists in routes still change them through the route.
-- **router:** A trailing slash of the `prefix` option is removed unless in strict mode, so `new Router({ prefix: '/api/' })` routes `/users` as `/api/users` instead of `/api//users` (#336).
-- **router:** `**` routes added after a `*` route at the same position match, e.g. `/a/**` after `/a/*`, instead of being nested under the `*` route and never matching (#330).
-- **router:** Params and `*` at the same position are both tried, e.g. `/a/1/y` finds `/a/*/y` next to `/a/:id/x`, where only the route added first was tried. A param and `*` that end at the same position, e.g. `/a/:id` and `/a/*`, are the same route, so the one added last wins, as with two params, where the one added first won (#331).
-- **router:** Of several `**` routes that match at the same position, the one with more segments wins, then the one with more static segments, e.g. `/f/**/edit` over `/f/**`, where the one added first won. Adding the same `**` route again replaces its handler, as with all other routes, instead of keeping the first one (#332).
-- **router:** The text after `**` is matched literally, e.g. `/f/**/x.json` doesn't match `/f/a/xajson` anymore, and params after `**` can have any name, e.g. `:my-id`, which threw an `Invalid capture group name` error (#333).
-- **router:** Params starting with `$` keep their names next to wildcards, e.g. `$x` in `/a/*/:$x`, instead of being renamed to `$` or `$$` and replacing the wildcard's value (#334).
-- **admin:** Color fields validate the colors typed into them on blur, where they wrote them only after the blur, so they were only validated on submit.
-- **admin:** Everything behind the topmost dialog is inert: the page, the navigation, the sidebar and other dialogs. Select All in a dialog no longer selects the values behind it, and assistive technology can't reach them either.
-- **server:** `toJSON()` signs copies of the asset files inside JSON columns, e.g. `content.header.file`, where it replaced the record's own file objects with the signed copies (#388).
-- **utils:** `isUrl()` returns `false` for invalid URLs with long paths right away, where the time doubled with each path segment, taking seconds for 28 segments. URLs ending in a lone `?` or `#` are valid too (#348).
-- **utils:** `clone()` copies typed arrays, and Node.js buffers stay buffers, where it copied their elements one by one into a plain object (#350).
-- **utils:** `deindent` interpolates `null` and `undefined` as in template literals, where it threw a `TypeError` (#352).
-- **utils:** Errors that the callback of `toCallback()` throws reject the returned promise, where the callback was called a second time with them (#353).
-- **utils:** `flatten()` handles nested arrays of any length, where those with more than about 100,000 items threw a `Maximum call stack size exceeded` error (#354).
-- **utils:** Data paths other than strings, arrays, `null` and `undefined` throw an `Invalid data path` error, where `parseDataPath()` returned `undefined` and e.g. `getValueAtDataPath(obj, 0)` threw `parsedPath is not iterable` (#369).
+- **router:** Fixes to matching `*`, `**` and params next to each other (#330–#334).
+- **router:** A trailing slash in the `prefix` option is ignored (#336).
+- **admin:** Color fields validate the color typed into them on blur (#390).
+- **admin:** Everything behind the topmost dialog is inert.
+- **server:** `toJSON()` no longer replaces a record's own asset files with the signed copies (#388).
+- **utils:** `isUrl()` stays fast for long invalid URLs, and accepts URLs ending in `?` or `#` (#348).
+- **utils:** `clone()` copies typed arrays and Node.js buffers (#350).
+- **utils:** `deindent` interpolates `null` and `undefined` (#352).
+- **utils:** `toCallback()` calls its callback only once (#353).
+- **utils:** `flatten()` handles arrays of any length (#354).
+- **utils:** Invalid data paths, e.g. numbers, throw a clear error (#369).
 
 ## 4.7.2 (2026-10-16)
 
