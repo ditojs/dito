@@ -12,7 +12,6 @@ import {
   equals,
   parseDataPath,
   normalizeDataPath,
-  getValueAtDataPath,
   getEntriesAtDataPath,
   setValueAtDataPath,
   groupBy,
@@ -1074,14 +1073,34 @@ export class Model extends objection.Model {
 
   // Assets handling
 
+  static _getAssetFiles(json, dataPaths = Object.keys(this.definition.assets)) {
+    const files = []
+    // Overlapping data paths can reach the same location: it belongs to the
+    // first data path that reaches it.
+    const filePaths = new Set()
+    for (const dataPath of dataPaths) {
+      // Wildcard data paths (e.g. `**.file`) expand to multiple concrete
+      // paths, each with its own location. Ignore data paths that don't
+      // resolve, e.g. missing parents.
+      const entries = getEntriesAtDataPath(json, dataPath, noop)
+      for (const [path, value] of Object.entries(entries)) {
+        for (const [index, file] of asArray(value).entries()) {
+          const filePath = isArray(value) ? `${path}/${index}` : path
+          if (file && !filePaths.has(filePath)) {
+            filePaths.add(filePath)
+            files.push({ file, path: filePath, dataPath })
+          }
+        }
+      }
+    }
+    return files
+  }
+
   static _forEachAssetFile(json, callback) {
     const { assets } = this.definition
     if (assets) {
-      for (const dataPath in assets) {
-        const data = getValueAtDataPath(json, dataPath, noop)
-        if (!data) continue
-        const storage = this.app.getStorage(assets[dataPath].storage)
-        forEachAssetFile(data, storage, callback)
+      for (const { file, dataPath } of this._getAssetFiles(json)) {
+        callback(file, this.app.getStorage(assets[dataPath].storage))
       }
     }
   }
@@ -1089,21 +1108,10 @@ export class Model extends objection.Model {
   static _mapAssetFiles(json, callback) {
     const { assets } = this.definition
     if (assets) {
-      for (const dataPath in assets) {
+      // Write each file back to its own location:
+      for (const { file, path, dataPath } of this._getAssetFiles(json)) {
         const storage = this.app.getStorage(assets[dataPath].storage)
-        // Wildcard data paths (e.g. `**.file`) expand to multiple concrete
-        // paths; iterate them so each match is written back to its own
-        // location instead of the flattened wildcard result.
-        const entries = getEntriesAtDataPath(json, dataPath, noop)
-        for (const [path, data] of Object.entries(entries)) {
-          if (data) {
-            setValueAtDataPath(
-              json,
-              path,
-              mapAssetFiles(data, storage, callback)
-            )
-          }
-        }
+        setValueAtDataPath(json, path, callback(file, storage))
       }
     }
   }
@@ -1199,10 +1207,12 @@ export class Model extends objection.Model {
             : beforeItems.map(() => inputItems[0])
 
         const beforeFilesPerDataPath = getFilesPerAssetDataPath(
+          this,
           beforeItems,
           dataPaths
         )
         const afterFilesPerDataPath = getFilesPerAssetDataPath(
+          this,
           afterItems,
           dataPaths
         )
@@ -1326,44 +1336,14 @@ function loadAssetDataPaths(query, dataPaths) {
 
 const noop = () => {}
 
-function forEachAssetFile(data, storage, callback) {
-  if (isArray(data)) {
-    for (const item of data) {
-      forEachAssetFile(item, storage, callback)
-    }
-  } else if (data) {
-    callback(data, storage)
-  }
-}
-
-function mapAssetFiles(data, storage, callback) {
-  if (isArray(data)) {
-    return data.map(item => mapAssetFiles(item, storage, callback))
-  }
-  return data ? callback(data, storage) : data
-}
-
-function getFilesPerAssetDataPath(items, dataPaths) {
+function getFilesPerAssetDataPath(modelClass, items, dataPaths) {
   const filesPerDataPath = Object.fromEntries(
     dataPaths.map(dataPath => [dataPath, []])
   )
   for (const item of asArray(items)) {
-    // Overlapping data paths can reach the same location: count it once, for
-    // the first data path that reaches it.
-    const paths = new Set()
-    for (const dataPath of dataPaths) {
-      // Ignore data paths that don't resolve, e.g. missing parents. Wildcard
-      // data paths expand to the entries of their concrete paths.
-      const entries = getEntriesAtDataPath(item, dataPath, noop)
-      for (const [path, value] of Object.entries(entries)) {
-        for (const [index, file] of asArray(value).entries()) {
-          const filePath = isArray(value) ? `${path}/${index}` : path
-          if (file && !paths.has(filePath)) {
-            paths.add(filePath)
-            filesPerDataPath[dataPath].push(file)
-          }
-        }
-      }
+    const files = modelClass._getAssetFiles(item, dataPaths)
+    for (const { file, dataPath } of files) {
+      filesPerDataPath[dataPath].push(file)
     }
   }
   return filesPerDataPath
