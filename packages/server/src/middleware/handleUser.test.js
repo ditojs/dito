@@ -5,6 +5,7 @@ import { Model, UserModel } from '../models/index.js'
 
 const uuid = '4b0b6f1e-2c3d-4e5f-8a9b-0c1d2e3f4a5b'
 const goneId = '00000000-0000-4000-8000-000000000000'
+const passwordId = '9c8b7a6f-5e4d-4c3b-8a2f-1e0d9c8b7a6f'
 const events = []
 
 class Reader extends UserModel {
@@ -54,6 +55,13 @@ class Readers extends Controller {
     async 'post login'(ctx) {
       const { id, session } = ctx.request.body
       await ctx.login(await Reader.query().findById(id), { session })
+      return getState(ctx)
+    },
+
+    // Log in users loaded without their `hash`:
+    async 'post id-login'(ctx) {
+      const { id } = ctx.request.body
+      await ctx.login(await Reader.query().findById(id).select('id'))
       return getState(ctx)
     },
 
@@ -140,6 +148,8 @@ describe('handleUser()', { timeout: 30_000 }, () => {
     }
     await Reader.query().insert({ id: uuid, username: 'someone' })
     await KeyedReader.query().insert({ key: 'k-1', username: 'someone' })
+    // `Reader` replaces the properties of `UserMixin`, so we set `hash` here:
+    await knex('Reader').insert({ id: passwordId, hash: 'hash' })
     await app.start()
   })
 
@@ -190,6 +200,13 @@ describe('handleUser()', { timeout: 30_000 }, () => {
         identifier: null
       })
     }
+  })
+
+  it('keeps the session of users logged in without their hash', async () => {
+    expect((await request('id-login', { id: passwordId })).user).toBe(
+      passwordId
+    )
+    expect((await request('state')).user).toBe(passwordId)
   })
 
   it('refuses to log in models that are not users', async () => {

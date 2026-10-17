@@ -182,7 +182,8 @@ describe('DitoRoot', () => {
               : { user: { id: 1, username: data?.username } },
           '/login-code': { user: { id: 3, username: 'totp-user' } },
           '/passkey-login-options': { challenge: 'challenge' },
-          '/passkey-login': { user: { id: 2, username: 'passkey-user' } }
+          '/passkey-login': { user: { id: 2, username: 'passkey-user' } },
+          '/password-reset': { success: true }
         }
         return method === 'post' && url in responses
           ? { data: responses[url] }
@@ -292,6 +293,40 @@ describe('DitoRoot', () => {
     it('offers passkeys only with the option', async () => {
       const { dialog } = await mountLoggedOut({})
       expect(dialog.text()).not.toContain('Login with Passkey')
+    })
+
+    it('requests a password reset, and then asks to log in', async () => {
+      const { admin, request, dialog } = await mountLoggedOut({
+        login: { passwordReset: true }
+      })
+      const button = dialog
+        .findAll('button')
+        .find(button => button.text() === 'Forgot password?')
+      await button.trigger('click')
+      await flushPromises()
+      // The login dialog may still be leaving:
+      const reset = admin.wrapper.findAll('.dito-dialog').at(-1)
+      expect(reset.find('input[name="password"]').exists()).toBe(false)
+      await enterValue(reset.find('input[name="username"]'), 'reader')
+      await reset.find('button[type="submit"]').trigger('click')
+      await flushPromises()
+      expect(request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          method: 'post',
+          url: '/password-reset',
+          data: { username: 'reader' }
+        })
+      )
+      expect(admin.wrapper.find('.dito-notification').text()).toContain(
+        'If the account exists, we sent you an email.'
+      )
+      const login = admin.wrapper.findAll('.dito-dialog').at(-1)
+      expect(login.find('input[name="password"]').exists()).toBe(true)
+    })
+
+    it('offers password resets only with the option', async () => {
+      const { dialog } = await mountLoggedOut({})
+      expect(dialog.text()).not.toContain('Forgot password?')
     })
   })
 

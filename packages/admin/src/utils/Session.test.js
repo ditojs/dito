@@ -19,6 +19,8 @@ function createSession({
   responses = {},
   loginData = [{ username: 'tester', password: 'secret' }],
   loginCodes = [],
+  passwordResets = [],
+  newPasswords = [],
   resolvedViews = [true],
   redirectAfterLogin = null
 } = {}) {
@@ -29,7 +31,9 @@ function createSession({
       session: { method: 'get', path: 'session' },
       passkeyLoginOptions: { method: 'post', path: 'passkey-login-options' },
       passkeyLogin: { method: 'post', path: 'passkey-login' },
-      loginCode: { method: 'post', path: 'login-code' }
+      loginCode: { method: 'post', path: 'login-code' },
+      passwordReset: { method: 'post', path: 'password-reset' },
+      passwordResetConfirm: { method: 'post', path: 'password-reset-confirm' }
     },
     resources: { any: resource => `/${resource.path}` },
     getApiUrl: ({ url }) => url,
@@ -53,6 +57,8 @@ function createSession({
   const userInterface = {
     requestLoginData: vi.fn(async () => loginData.shift() ?? null),
     requestLoginCode: vi.fn(async () => loginCodes.shift() ?? null),
+    requestPasswordReset: vi.fn(async () => passwordResets.shift() ?? null),
+    requestNewPassword: vi.fn(async () => newPasswords.shift() ?? null),
     notify: vi.fn()
   }
   const detach = session.attachUserInterface(userInterface)
@@ -108,7 +114,162 @@ describe('Session', () => {
     })
   })
 
+  describe('start() with a password reset link', () => {
+    const resetUrl = '/admin/books?page=2#password-reset=token'
+    const getPath = () => location.pathname + location.search + location.hash
+
+    beforeEach(() => {
+      history.replaceState(null, '', resetUrl)
+    })
+
+    afterEach(() => {
+      history.replaceState(null, '', '/')
+    })
+
+    it('sets the new password, and then asks to log in', async () => {
+      const { session, api, userInterface } = createSession({
+        responses: {
+          'post /password-reset-confirm': { success: true },
+          'get /session': { user: null },
+          'post /login': { user: { ...user } }
+        },
+        newPasswords: [{ password: 'changed', confirmation: 'changed' }]
+      })
+      await session.start()
+      expect(api.request).toHaveBeenCalledWith({
+        method: 'post',
+        url: '/password-reset-confirm',
+        data: { token: 'token', password: 'changed' }
+      })
+      expect(userInterface.notify).toHaveBeenCalledWith({
+        type: 'success',
+        text: 'Your password was changed. Please log in.'
+      })
+      expect(userInterface.requestLoginData).toHaveBeenCalledOnce()
+      expect(getPath()).toBe('/admin/books?page=2')
+    })
+
+    it('notifies invalid tokens, and then asks to log in', async () => {
+      const error = 'Invalid or expired token'
+      const { session, userInterface } = createSession({
+        responses: {
+          'post /password-reset-confirm': Object.assign(new Error(error), {
+            response: { status: 400, data: { message: error } }
+          }),
+          'get /session': { user: null },
+          'post /login': { user: { ...user } }
+        },
+        newPasswords: [{ password: 'changed', confirmation: 'changed' }]
+      })
+      await session.start()
+      expect(userInterface.notify).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'error', text: error })
+      )
+      expect(userInterface.requestLoginData).toHaveBeenCalledOnce()
+      expect(getPath()).toBe('/admin/books?page=2')
+    })
+
+    it('asks again with the token for invalid passwords', async () => {
+      let attempt = 0
+      const { session, api, userInterface } = createSession({
+        responses: {
+          'post /password-reset-confirm': () => {
+            if (attempt++ === 0) {
+              throw Object.assign(new Error('Validation error'), {
+                response: {
+                  status: 400,
+                  data: {
+                    type: 'ModelValidation',
+                    message: 'The provided data is not valid',
+                    errors: {
+                      password: [
+                        { message: 'must NOT have fewer than 6 characters' }
+                      ]
+                    }
+                  }
+                }
+              })
+            }
+            return { success: true }
+          },
+          'get /session': { user: null },
+          'post /login': { user: { ...user } }
+        },
+        newPasswords: [
+          { password: 'short', confirmation: 'short' },
+          { password: 'changed', confirmation: 'changed' }
+        ]
+      })
+      await session.start()
+      expect(userInterface.notify).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'error',
+          text: ['password must NOT have fewer than 6 characters']
+        })
+      )
+      expect(userInterface.requestNewPassword).toHaveBeenCalledTimes(2)
+      expect(api.request).toHaveBeenLastCalledWith(
+        expect.objectContaining({ url: '/login' })
+      )
+      expect(api.request).toHaveBeenCalledWith({
+        method: 'post',
+        url: '/password-reset-confirm',
+        data: { token: 'token', password: 'changed' }
+      })
+      expect(userInterface.notify).toHaveBeenCalledWith({
+        type: 'success',
+        text: 'Your password was changed. Please log in.'
+      })
+    })
+
+    it('removes the token when the dialog is cancelled', async () => {
+      const { session, api } = createSession({
+        responses: {
+          'get /session': { user: null },
+          'post /login': { user: { ...user } }
+        }
+      })
+      await session.start()
+      expect(api.request).not.toHaveBeenCalledWith(
+        expect.objectContaining({ url: '/password-reset-confirm' })
+      )
+      expect(getPath()).toBe('/admin/books?page=2')
+    })
+  })
+
   describe('login()', () => {
+    it('requests a password reset, and then asks to log in', async () => {
+      const { session, api, userInterface } = createSession({
+        responses: {
+          'post /password-reset': { success: true },
+          'post /login': { user: { ...user } }
+        },
+        loginData: ['passwordReset', { username: 'tester', password: 'new' }],
+        passwordResets: [{ username: 'tester' }]
+      })
+      expect(await session.login()).toEqual(user)
+      expect(api.request).toHaveBeenCalledWith({
+        method: 'post',
+        url: '/password-reset',
+        data: { username: 'tester' }
+      })
+      expect(userInterface.notify).toHaveBeenCalledWith({
+        type: 'info',
+        text: 'If the account exists, we sent you an email.'
+      })
+      expect(userInterface.requestLoginData).toHaveBeenCalledTimes(2)
+    })
+
+    it('asks to log in when the password reset is cancelled', async () => {
+      const { session, api, userInterface } = createSession({
+        responses: { 'post /login': { user: { ...user } } },
+        loginData: ['passwordReset', { username: 'tester', password: 'x' }]
+      })
+      expect(await session.login()).toEqual(user)
+      expect(api.request).toHaveBeenCalledOnce()
+      expect(userInterface.notify).not.toHaveBeenCalled()
+    })
+
     it('asks again after failures, until it succeeds', async () => {
       let attempt = 0
       const { session, userInterface } = createSession({

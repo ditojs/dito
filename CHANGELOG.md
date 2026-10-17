@@ -17,6 +17,7 @@ version, see the upgrade guides in `docs/`.
 - **server:** `Controller.setup()` is internal, like `Model.setup()`, and may be asynchronous: apps override `initialize()` instead.
 - **server:** `UserMixin.sessionQuery()` is internal: `sessionScope` sets the scopes of the users of logins and sessions.
 - **server:** With `app.auth.totp`, `UserMixin.login()` doesn't log in users with TOTP and resolves to `null`, and `'post login'` answers `{ success: false, codeRequired: true }` for them, with status 200: they log in with their code through `'post login-code'`.
+- **server:** Changing a user's password ends their sessions: sessions store a hash of the user's `hash` at login, and end once it changes. The session of the request stays logged in after `'post password'`, `'post password-reset-confirm'` and the member `patch` and `update` of `UsersController`, e.g. `PATCH /users/self`. Elsewhere, e.g. in other controllers, custom actions or collection patches, it ends too, unless the action calls `ctx.login(user)` afterwards. Sessions from before this release, and logins of users loaded without `hash`, stay valid until their next login.
 - **admin:** Dialogs validate their data when submitted, like forms, and only resolve once it's valid, where they resolved with invalid data, e.g. with empty `required` fields.
 - **admin:** `@simplewebauthn/browser` and `lean-qr` are required peer dependencies of `@ditojs/admin`: admin apps install them, also without `login.passkeys` or `login.totp`.
 
@@ -26,6 +27,8 @@ version, see the upgrade guides in `docs/`.
 - **server:** `UsersController` lets users change their password through `'post password'`, with the current password. Subclasses that set `collection.allow` list it to route it.
 - **server:** `CredentialMixin` and `CredentialModel` store the credentials of all user models in one table, set in `app.auth.credentials`. Deleting users deletes their credentials.
 - **server:** Two-factor authentication with TOTP, with `app.auth.totp`, `app.auth.credentials.secret`, sessions stored on the server and the optional peer dependency `otpauth`. Users with TOTP enter a code from their authenticator app or one of their backup codes after the password, through `'post login-code'`, and set up and turn off TOTP through `'get totp'`, `'post totp'`, `'post totp-confirm'` and `'delete totp'`, see [Two-factor authentication](docs/guide/server/controllers.md#two-factor-authentication). Ten wrong codes in a row lock the account for 15 minutes. Passkey logins don't ask for codes.
+- **server:** Password resets by email, with `app.auth.passwordReset`, `app.auth.credentials.secret` and sessions stored on the server. `UsersController` adds `'post password-reset'`, which emails a link through the app's `sendPasswordReset()` and answers the same for unknown usernames, and `'post password-reset-confirm'`, which sets the new password with the link's token. Links work once, until they expire after `expires`, `'1h'` by default, and changing the password invalidates them. One `confirmUrl` serves the whole app, see [Password reset](docs/guide/server/controllers.md#password-reset).
+- **admin:** `login: { passwordReset: true }` adds a Forgot password? button to the login dialog, which requests the email, and opening the admin with `#password-reset=` and the token of the link asks for the new password, again after validation errors.
 - **admin:** `login: { passkeys: true }` adds a passkey login to the login dialog, and a Security dialog to the account menu that changes the user's password, and lists, adds and removes the user's passkeys. Requires the new peer dependency `@simplewebauthn/browser`.
 - **admin:** The login dialog asks users with TOTP for the code of their authenticator app, or a backup code, after the password. `login: { totp: true }` adds a Security dialog to the account menu that changes the user's password, sets up TOTP with a QR code and shows the backup codes, and turns it off again. Requires the new peer dependency `lean-qr`.
 - **admin:** The `empty` option of lists shows a row with its text while the list has no items, e.g. `empty: 'No books yet.'`.
@@ -41,6 +44,8 @@ version, see the upgrade guides in `docs/`.
 
 ### Fixes
 
+- **admin:** Dialogs keep buttons that are wider than their components off their edges.
+- **admin:** Failed login requests notify the `message` of their response, e.g. of a passkey login without a challenge, instead of `'Request failed with status code: 400'`.
 - **admin:** Errors of `context.request()` carry the `status` of their response, as documented.
 - **admin:** Dialogs focus their input with `autofocus`, also when it isn't the first one, where they focused the first input.
 - **admin:** Lists outside of routes, e.g. in dialogs, keep their scope, page, order and filters to themselves, instead of loading the query of the current route and navigating to their changes. Lists in routes still change them through the route.
