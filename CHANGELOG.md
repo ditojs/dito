@@ -28,6 +28,7 @@ version, see the upgrade guides in `docs/`.
 - **router:** Of several `**` routes that match at the same position, the one with more segments wins, then the one with more static segments, e.g. `/f/**/edit` over `/f/**`, where the one added first won. Adding the same `**` route again replaces its handler, as with all other routes, instead of keeping the first one (#332).
 - **router:** The text after `**` is matched literally, e.g. `/f/**/x.json` doesn't match `/f/a/xajson` anymore, and params after `**` can have any name, e.g. `:my-id`, which threw an `Invalid capture group name` error (#333).
 - **router:** Params starting with `$` keep their names next to wildcards, e.g. `$x` in `/a/*/:$x`, instead of being renamed to `$` or `$$` and replacing the wildcard's value (#334).
+- **admin:** Everything behind the topmost dialog is inert: the page, the navigation, the sidebar and other dialogs. Select All in a dialog no longer selects the values behind it, and assistive technology can't reach them either.
 
 ## 4.7.2 (2026-10-16)
 
