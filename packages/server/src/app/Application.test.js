@@ -889,8 +889,8 @@ describe('Application', () => {
       })
     })
 
-    it('handles users with passport, also without sessions', async () => {
-      const app = createKitchenApp({ passport: true })
+    it('handles users, also without sessions', async () => {
+      const app = createKitchenApp()
       await withServer(app, async url => {
         const response = await fetch(`${url}/kitchen/login`)
         expect(await response.json()).toEqual({ hasLogin: true })

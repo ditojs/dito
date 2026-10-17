@@ -2,6 +2,7 @@ import type { ModelProperties } from '@ditojs/server'
 import { SessionModel, UserModel, UsersController } from '@ditojs/server'
 import { createTestApp, getAppUrl } from '../utils/app.js'
 import { createTestDatabase } from '../utils/database.js'
+import { isSQLiteTest } from '../utils/test-knex.js'
 
 const loginEvents: string[] = []
 const patchTransactions: boolean[] = []
@@ -13,10 +14,18 @@ class Member extends UserModel {
   declare username: string
   declare nickname: string | null
 
+  static override options = {
+    sessionScope: 'current'
+  }
+
   static override properties: ModelProperties = {
     nickname: {
       type: 'string'
     }
+  }
+
+  static override scopes = {
+    current: (query: any) => query.whereNot('username', 'retired')
   }
 
   static override hooks: any = {
@@ -38,6 +47,9 @@ class Member extends UserModel {
   }
 }
 
+// Dito gives subclasses their own tables, so their ids overlap with members:
+class Lead extends Member {}
+
 class Members extends UsersController {
   override modelClass = Member
 
@@ -48,7 +60,8 @@ class Members extends UsersController {
       'post login',
       'post logout',
       'get session',
-      'get self'
+      'get self',
+      'post broken-login'
     ],
     'authorize': {
       get: true
@@ -61,6 +74,15 @@ class Members extends UsersController {
       async handler(ctx: any) {
         const response = await super['post login'](ctx)
         return { ...response, transacted: !!ctx.transaction }
+      }
+    },
+
+    // Fail after logging in, to roll back the session with the transaction:
+    'post broken-login': {
+      transacted: true,
+      async handler(ctx: any) {
+        await Member.login(ctx)
+        throw new Error('Login is broken')
       }
     }
   }
@@ -94,6 +116,10 @@ class Editors extends UsersController {
   }
 }
 
+class Leads extends UsersController {
+  override modelClass = Lead
+}
+
 // Users that only admins may access, while anyone can log in and out:
 class Admins extends UsersController {
   override modelClass = Member
@@ -109,12 +135,11 @@ describe('UsersController', () => {
         keys: ['test-secret'],
         session: {
           modelClass: 'Session'
-        },
-        passport: true
+        }
       }
     },
-    models: { Session, Member },
-    controllers: { Members, Admins, Readers, Editors }
+    models: { Session, Member, Lead },
+    controllers: { Members, Leads, Admins, Readers, Editors }
   })
 
   let url: string
@@ -155,16 +180,18 @@ describe('UsersController', () => {
   }
 
   beforeAll(async () => {
-    await createTestDatabase(app, Member)
+    await createTestDatabase(app, Member, Lead)
     // Session ids are strings, not auto-incrementing integers.
     await app.knex.schema.createTable('Session', table => {
       table.string('id').primary()
       table.jsonb('value')
     })
     // The computed `password` property isn't stored in the database.
-    await app.knex.schema.alterTable('Member', table => {
-      table.dropColumn('password')
-    })
+    for (const name of ['Member', 'Lead']) {
+      await app.knex.schema.alterTable(name, table => {
+        table.dropColumn('password')
+      })
+    }
     await app.start()
     url = getAppUrl(app)
     member = await Member.query().insert({
@@ -312,7 +339,118 @@ describe('UsersController', () => {
     const logout = await request('/members/logout', { method: 'POST' })
     expect(logout.data).toEqual({ success: true, authenticated: false })
     expect(loginEvents).toEqual(['before logout ada', 'after logout ada'])
+    expect(await Session.query()).toEqual([])
     expect((await request('/members/session')).data.authenticated).toBe(false)
+  })
+
+  it('regenerates the session id on login', async () => {
+    const request = createClient()
+    const credentials = { username: 'ada', password: 'secret' }
+    await request('/members/login', { method: 'POST', body: credentials })
+    const [before] = await Session.query()
+    await request('/members/login', { method: 'POST', body: credentials })
+    const sessions = await Session.query()
+    expect(sessions).toHaveLength(1)
+    expect(sessions[0].id).not.toBe(before.id)
+  })
+
+  it('does not read credentials from the query string', async () => {
+    const request = createClient()
+    const login = await request('/members/login?username=ada&password=secret', {
+      method: 'POST',
+      body: {}
+    })
+    expect(login.status).toBe(400)
+    expect(login.data.error).toBe('Missing credentials')
+  })
+
+  it('leaves no session behind when a transacted login fails', async () => {
+    const request = createClient()
+    const login = await request('/members/broken-login', {
+      method: 'POST',
+      body: { username: 'ada', password: 'secret' }
+    })
+    expect(login.status).toBe(500)
+    expect(await Session.query()).toEqual([])
+    expect((await request('/members/session')).data.authenticated).toBe(false)
+  })
+
+  describe('session users', () => {
+    let other: Member
+
+    beforeEach(async () => {
+      other = await Member.query().insert({
+        username: 'bo',
+        password: 'secret'
+      } as any)
+    })
+
+    afterEach(async () => {
+      await Member.query().deleteById(other.id)
+    })
+
+    const loginOther = async () => {
+      const request = createClient()
+      await request('/members/login', {
+        method: 'POST',
+        body: { username: 'bo', password: 'secret' }
+      })
+      expect((await request('/members/session')).data.authenticated).toBe(true)
+      return request
+    }
+
+    const expectDroppedUser = async (request: any) => {
+      expect((await request('/members/session')).data.authenticated).toBe(false)
+      const [session] = await Session.query()
+      expect(session.value.passport).toEqual({})
+    }
+
+    it('drops users excluded by the session scope', async () => {
+      const request = await loginOther()
+      await Member.query().patchById(other.id, { username: 'retired' })
+      await expectDroppedUser(request)
+    })
+
+    it('drops users that no longer exist', async () => {
+      const request = await loginOther()
+      await Member.query().deleteById(other.id)
+      await expectDroppedUser(request)
+    })
+
+    it('passes on errors of the session query', async context => {
+      context.skip(isSQLiteTest, 'SQLite compares text with integer ids')
+      const request = await loginOther()
+      await Session.query().patch({
+        value: { passport: { user: 'Member-not-a-number' } }
+      } as any)
+      expect((await request('/members/session')).status).toBe(400)
+    })
+  })
+
+  it('only authenticates users of its own model class', async () => {
+    const lead = await Lead.query().insert({
+      id: member.id,
+      username: 'lea',
+      password: 'secret'
+    } as any)
+    try {
+      const request = createClient()
+      await request('/leads/login', {
+        method: 'POST',
+        body: { username: 'lea', password: 'secret' }
+      })
+      expect((await request('/leads/session')).data).toMatchObject({
+        authenticated: true,
+        user: { id: lead.id, username: 'lea' }
+      })
+      expect((await request('/members/session')).data).toEqual({
+        authenticated: false,
+        user: null
+      })
+      expect((await request('/members/self')).status).toBe(204)
+    } finally {
+      await Lead.query().deleteById(lead.id)
+    }
   })
 
   it('does not log out unauthenticated requests', async () => {
