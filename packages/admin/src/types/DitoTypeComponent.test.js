@@ -130,7 +130,7 @@ describe('DitoTypeComponent', () => {
           rating: {
             type: 'component',
             component: RatingStars,
-            required: true,
+            validate: ({ value }) => value > 1 || 'needs two stars',
             onFocus: focus,
             onBlur: blur
           }
@@ -141,11 +141,13 @@ describe('DitoTypeComponent', () => {
     const button = findField('rating')
     // The button doesn't emit them, so they fall through as native events:
     await button.trigger('focus')
+    await button.trigger('click')
     await button.trigger('blur')
     expect(focus).toHaveBeenCalledOnce()
     expect(blur).toHaveBeenCalledOnce()
-    // Blur validates the value, and the errors are linked to the component:
-    expect(getErrors('rating')).toEqual(['The rating field is required.'])
+    // Blur validates the edited value, and the errors are linked to the
+    // component:
+    expect(getErrors('rating')).toEqual(['The rating field needs two stars.'])
     await settle()
     expect(findField('rating').attributes('aria-invalid')).toBe('true')
     expect(findField('rating').attributes('aria-describedby')).toBe(

@@ -204,14 +204,16 @@ describe('DitoTypeText', () => {
   })
 
   describe('validation', () => {
-    it('shows the errors of required fields on blur', async () => {
+    it('shows the errors of required fields on blur after edits', async () => {
       const { findField, getErrors } = await mountSchema({
         schema: {
           components: { title: { type: 'text', required: true } }
-        }
+        },
+        data: { title: 'Dune' }
       })
       const input = findField('title').find('input')
       await input.trigger('focus')
+      await input.setValue('')
       await input.trigger('blur')
       expect(getErrors('title')).toEqual(['The title field is required.'])
       await input.setValue('Dune')
