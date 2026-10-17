@@ -292,6 +292,24 @@ export interface ApiConfig {
        */
       path?: string
     }
+    /**
+     * The passkey endpoints of `login.passkeys`, posted to, with the default
+     * paths `'passkey-login-options'`, `'passkey-login'` and
+     * `'passkey-options'`.
+     */
+    passkeyLoginOptions?: { path?: string; method?: HttpMethod }
+    passkeyLogin?: { path?: string; method?: HttpMethod }
+    passkeyOptions?: { path?: string; method?: HttpMethod }
+    /**
+     * The passkeys of the logged-in user, listed, added and deleted by the
+     * security dialog.
+     */
+    passkeys?: {
+      /**
+       * @defaultValue `'passkeys'`
+       */
+      path?: string
+    }
   }
   /**
    * Custom resource path handlers, keyed by resource type. Merged
@@ -2388,6 +2406,13 @@ export type SchemaContext<$Item = any> = {
     closeForm?: boolean
   }): Promise<boolean>
   /**
+   * Reloads the items of the list or object that the
+   * component is or is in, from its resource, and resolves
+   * once they're loaded. Sources without their own resource
+   * have nothing to load. Throws outside of sources.
+   */
+  reload(): Promise<void>
+  /**
    * Closes the form, navigating to its parent route.
    * Resolves to `true` if the form closed, `false` if it's
    * still open, e.g. when the user chose to stay instead of
@@ -3164,6 +3189,11 @@ interface AdminOptions {
   login?: {
     additionalComponents?: Components
     redirectAfterLogin?: string
+    /**
+     * Adds a passkey login to the login dialog, and a security dialog to the
+     * account menu that manages the user's passkeys.
+     */
+    passkeys?: boolean
   }
   /**
    * Controls the loading spinner displayed in the

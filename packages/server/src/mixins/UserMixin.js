@@ -1,5 +1,5 @@
 import bcrypt from 'bcryptjs'
-import { mixin, asArray } from '@ditojs/utils'
+import { mixin, asArray, isString } from '@ditojs/utils'
 import { AuthenticationError } from '../errors/index.js'
 
 export const UserMixin = mixin(
@@ -12,6 +12,9 @@ export const UserMixin = mixin(
         // the user is deserialized from the session.
         sessionScope: undefined
       }
+
+      // The model class of `app.auth.credentials`, set up in `setup()`:
+      static credentialClass = null
 
       static get properties() {
         const {
@@ -38,6 +41,22 @@ export const UserMixin = mixin(
           lastLogin: {
             type: 'timestamp',
             nullable: true
+          }
+        }
+      }
+
+      static hooks = {
+        // Credentials refer to their users without foreign keys, so we delete
+        // them along with their users:
+        async 'before:delete'({ asFindQuery, transaction }) {
+          if (this.credentialClass) {
+            const users = await asFindQuery().select(
+              this.getIdPropertyArray()
+            )
+            const userIds = users.map(user => `${user.$id()}`)
+            await this.credentialQuery(transaction)
+              .whereIn('userId', userIds)
+              .delete()
           }
         }
       }
@@ -75,6 +94,17 @@ export const UserMixin = mixin(
 
           configurable: true
         })
+        const { modelClass } = this.app.config.app.auth?.credentials ?? {}
+        if (modelClass) {
+          this.credentialClass = isString(modelClass)
+            ? this.app.models[modelClass]
+            : modelClass
+          if (!this.credentialClass) {
+            throw new Error(
+              `Unable to find credential model class: '${modelClass}'.`
+            )
+          }
+        }
       }
 
       static async login(ctx, options) {
@@ -109,6 +139,16 @@ export const UserMixin = mixin(
         return this.query(trx).withScope(
           ...asArray(this.definition.options.sessionScope)
         )
+      }
+
+      static credentialQuery(trx) {
+        if (this.credentialClass) {
+          return this.credentialClass.query(trx).where('userModel', this.name)
+        } else {
+          throw new Error(
+            `Unable to query credentials without 'app.auth.credentials'.`
+          )
+        }
       }
     }
 )

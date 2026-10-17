@@ -47,6 +47,7 @@
   )
     DitoAccount(
       v-if="adminContext.user"
+      :passkeys="!!options.login?.passkeys"
     )
     button.dito-login(
       v-else-if="hasSessionStarted"
@@ -158,9 +159,12 @@ export default {
     const detachSessionUserInterface = adminContext.session.attachUserInterface(
       {
         notify,
-        // Return the entered credentials, or `null` if the user cancels:
+        // Return the entered credentials, `'passkey'` to log in with a passkey,
+        // or `null` if the user cancels:
         requestLoginData() {
-          const { additionalComponents } = props.options.login || {}
+          const { additionalComponents, passkeys } = props.options.login || {}
+          // Browsers with WebAuthn have `PublicKeyCredential`:
+          const hasPasskeys = passkeys && !!window.PublicKeyCredential
           return showDialog({
             components: {
               username: {
@@ -179,6 +183,14 @@ export default {
                 type: 'submit',
                 text: 'Login'
               },
+
+              ...(hasPasskeys && {
+                passkey: {
+                  type: 'button',
+                  text: 'Login with Passkey',
+                  onClick: ({ closeDialog }) => closeDialog('passkey')
+                }
+              }),
 
               // `DitoDialog` adds the click event of the cancel button:
               cancel: {

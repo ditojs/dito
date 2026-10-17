@@ -3,13 +3,23 @@ import { formatQuery } from './route.js'
 
 // The scope, page, order and filters of a list: The route holds them, for
 // links and reloads, and the store of the source remembers them for when we
-// navigate back. All changes go through the router.
+// navigate back. All changes of routed lists go through the router, lists
+// outside of routes, e.g. in dialogs, only store them.
 export class ListQuery {
-  constructor({ router, getRoute, getSourceStore, getDefaultQuery }) {
+  constructor({
+    router,
+    getRoute,
+    getSourceStore,
+    getDefaultQuery,
+    isRouted,
+    onChange
+  }) {
     this.router = router
     this.getRoute = getRoute
     this.getSourceStore = getSourceStore
     this.getDefaultQuery = getDefaultQuery
+    this.isRouted = isRouted
+    this.onChange = onChange
     this.pendingNavigation = null
   }
 
@@ -27,20 +37,26 @@ export class ListQuery {
     if (resetPage && changedQuery.page != null) {
       changedQuery.page = 0
     }
-    const promise = this.router.push({
-      query: changedQuery,
-      // Preserve the hash for tabs:
-      hash: this.getRoute().hash
-    })
-    const navigation = { query: changedQuery, promise }
-    this.pendingNavigation = navigation
-    const settle = () => {
-      if (this.pendingNavigation === navigation) {
-        this.pendingNavigation = null
+    if (this.isRouted()) {
+      const promise = this.router.push({
+        query: changedQuery,
+        // Preserve the hash for tabs:
+        hash: this.getRoute().hash
+      })
+      const navigation = { query: changedQuery, promise }
+      this.pendingNavigation = navigation
+      const settle = () => {
+        if (this.pendingNavigation === navigation) {
+          this.pendingNavigation = null
+        }
       }
+      promise.then(settle, settle)
+      return promise
+    } else {
+      this.getSourceStore().query = changedQuery
+      this.onChange()
+      return Promise.resolve()
     }
-    promise.then(settle, settle)
-    return promise
   }
 
   // Resolve to whether the pending navigation reached its query, as guards

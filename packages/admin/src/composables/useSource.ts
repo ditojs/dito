@@ -101,7 +101,8 @@ export function useSource(
     getRequestQuery
   } = useListQuery(props, {
     getPaginate: () => paginate.value,
-    isRouted: () => providesData.value,
+    // Lists outside of routes, e.g. in dialogs, keep the query to themselves:
+    isRouted: () => providesData.value && !!routeContext,
     onChange: () => loadData()
   })
 
@@ -161,7 +162,7 @@ export function useSource(
   // item, have nothing to load:
   const loadData = () => {
     if (!isTransient.value) {
-      requestData()
+      return requestData()
     }
   }
 
