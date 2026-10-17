@@ -87,6 +87,11 @@ describe('isUrl()', () => {
       })
     }
   )
+
+  it('returns false for long invalid paths without backtracking', () => {
+    // Exponential backtracking in the path takes seconds here:
+    expect(isUrl('http://a.com' + '/a'.repeat(27) + ' ')).toBe(false)
+  }, 1000)
 })
 
 // https://data.iana.org/TLD/tlds-alpha-by-domain.txt

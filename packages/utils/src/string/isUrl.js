@@ -1,6 +1,3 @@
-// TODO: There's a contradiction between isUrl() and isAbsoluteUrl(), where
-// isUrl() returns `true` for 'google.com', and isAbsoluteUrl() returns `false`!
-
 const isUrlRegExp = new RegExp(
   '^((https?|ftps?|mailto|rtsp|mms)?://)?' + // user:pass@
   `(([0-9a-z_!~*'().&=+$%-]+:)?[0-9a-z_!~*'().&=+$%-]*@)?` +
@@ -13,8 +10,7 @@ const isUrlRegExp = new RegExp(
   '([a-z]{2,61}|xn--[0-9a-z][0-9a-z-]{0,61}[0-9a-z])' +
   ')' + // top level domain.
   '(:[0-9]{1,5})?' + // port
-  '((/?)|' + // allow ending in a slash
-  `([/?#][0-9a-z_!~*'().;:@&=+$,%/?#-]+)+/?)$`, // path
+  `([/?#][0-9a-z_!~*'().;:@&=+$,%/?#-]*)?$`, // path
   'i'
 )
 
