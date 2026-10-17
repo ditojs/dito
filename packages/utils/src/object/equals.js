@@ -1,4 +1,6 @@
-import { is, isArray, isObject } from '../base/index.js'
+import { is, isArray, isObject, isTypedArray } from '../base/index.js'
+
+const { toString } = Object.prototype
 
 export function equals(arg1, arg2) {
   if (arg1 === arg2) {
@@ -10,7 +12,10 @@ export function equals(arg1, arg2) {
     if (is(arg1, arg2)) {
       return true
     }
-    if (isArray(arg1) && isArray(arg2)) {
+    if (
+      isArray(arg1) && isArray(arg2) ||
+      isTypedArray(arg1) && isSameType(arg1, arg2)
+    ) {
       let { length } = arg1
       if (length === arg2.length) {
         while (length--) {
@@ -20,7 +25,7 @@ export function equals(arg1, arg2) {
         }
         return true
       }
-    } else if (isObject(arg1) && isObject(arg2)) {
+    } else if (isObject(arg1) && isObject(arg2) && isSameType(arg1, arg2)) {
       const keys = Object.keys(arg1)
       if (keys.length === Object.keys(arg2).length) {
         for (const key of keys) {
@@ -33,4 +38,11 @@ export function equals(arg1, arg2) {
     }
   }
   return false
+}
+
+function isSameType(arg1, arg2) {
+  return (
+    arg1.constructor === arg2.constructor ||
+    toString.call(arg1) === toString.call(arg2)
+  )
 }

@@ -165,8 +165,9 @@ export function clone<T>(value: T, options?: {
 
 /**
  * Determines whether the supplied values can be considered equal through
- * recursive comparison of object properties and array elements. Non-objects
- * and non-arrays are compared using the SameValue algorithm.
+ * recursive comparison of object properties and array elements, including
+ * typed arrays. Non-objects and non-arrays are compared using the SameValue
+ * algorithm. Values of different types are never equal.
  */
 export function equals(arg1: any, arg2: any): boolean
 
