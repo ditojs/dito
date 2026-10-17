@@ -692,15 +692,16 @@ describe('DitoTypeMultiselect', () => {
         components: {
           genre: {
             type: 'multiselect',
-            required: true,
             searchable: true,
-            options: genres
+            stayOpen: true,
+            options: genres,
+            validate: ({ value }) => value !== 'drama' || 'is not allowed'
           }
         }
       }
     })
     const field = findField('genre')
-    await open(field)
+    await selectOption(field, 'Drama')
     // Searchable multiselects stay open when they lose the focus:
     await field.find('.multiselect').trigger('blur')
     await flushPromises()
@@ -708,7 +709,7 @@ describe('DitoTypeMultiselect', () => {
     getComponent('genre').$refs.element.deactivate()
     await flushPromises()
     expect(field.find('.multiselect--active').exists()).toBe(false)
-    expect(getErrors('genre')).toEqual(['The genre field is required.'])
+    expect(getErrors('genre')).toEqual(['The genre field is not allowed.'])
   })
 
   it('marks plain values without option as unavailable', async () => {

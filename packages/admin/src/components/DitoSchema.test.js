@@ -609,17 +609,24 @@ describe('DitoSchema', () => {
       const result = await mountSchema({
         schema: {
           components: { title: { type: 'text', required: true } }
-        }
+        },
+        data: { title: 'Dune' }
       })
       return { ...result, input: result.findField('title').find('input') }
+    }
+
+    // Clears the title like the user does, which validates it on blur:
+    async function clearTitle(input) {
+      await input.trigger('focus')
+      await enterValue(input, '')
+      await input.trigger('blur')
     }
 
     it('links the errors to their input for assistive technology', async () => {
       const { input, findContainer } = await mountRequiredTitle()
       expect(input.attributes('aria-invalid')).toBeUndefined()
       expect(input.attributes('aria-describedby')).toBeUndefined()
-      await input.trigger('focus')
-      await input.trigger('blur')
+      await clearTitle(input)
       const errors = findContainer('title').find('.dito-errors')
       expect(errors.attributes('role')).toBe('alert')
       expect(errors.attributes('id')).toBe('title-errors')
@@ -635,8 +642,7 @@ describe('DitoSchema', () => {
     it('displays the errors in the document, not in tooltips', async () => {
       const { input, getErrors } = await mountRequiredTitle()
       for (let i = 0; i < 3; i++) {
-        await input.trigger('focus')
-        await input.trigger('blur')
+        await clearTitle(input)
       }
       expect(getErrors('title')).toEqual(['The title field is required.'])
       expect(document.querySelector('[data-tippy-root]')).toBe(null)
@@ -644,8 +650,7 @@ describe('DitoSchema', () => {
 
     it('keeps the errors when focusing their input', async () => {
       const { input, getErrors } = await mountRequiredTitle()
-      await input.trigger('focus')
-      await input.trigger('blur')
+      await clearTitle(input)
       await input.trigger('focus')
       expect(getErrors('title')).toEqual(['The title field is required.'])
     })

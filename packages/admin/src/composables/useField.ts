@@ -199,11 +199,15 @@ export function useField(
   // Edits emit `input` when they change the value, and `change` when they're
   // done. Edits that don't write the value, e.g. of lists, emit both at once:
   let hasEmittedInput = false
+  // Only validate fields on blur that were edited while focused, not the
+  // ones that the user merely passes through:
+  let isEdited = false
   const value = computed({
     get: () => field.value.value,
     set(newValue) {
       field.value.value = newValue
       hasEmittedInput = true
+      isEdited = true
       emitEvent('input')
     }
   })
@@ -211,12 +215,15 @@ export function useField(
   const handlers: FieldEventHandlers = {
     onFocus() {
       focused.value = true
+      isEdited = false
       emitEvent('focus')
     },
 
     onBlur() {
       focused.value = false
-      validate()
+      if (isEdited) {
+        validate()
+      }
       emitEvent('blur')
     },
 

@@ -58,16 +58,26 @@ describe('useField()', () => {
         data: { title }
       })
 
-    // Leaves the field like the user does, which validates its value:
-    async function leave(input) {
+    // Edits and leaves the field like the user does, which validates it:
+    async function edit(input, value) {
       await input.trigger('focus')
+      await enterValue(input, value)
       await input.trigger('blur')
     }
 
+    it(`doesn't validate fields that are left without edits`, async () => {
+      const { findField, getErrors, settle } = await mountRequiredTitle(null)
+      const input = findField('title').find('input')
+      await input.trigger('focus')
+      await input.trigger('blur')
+      await settle()
+      expect(getErrors('title')).toEqual([])
+    })
+
     it('shows the errors on blur until the value changes', async () => {
       const { findField, getErrors, dataModel, data, settle } =
-        await mountRequiredTitle(null)
-      await leave(findField('title').find('input'))
+        await mountRequiredTitle('Emma')
+      await edit(findField('title').find('input'), '')
       await settle()
       expect(getErrors('title')).toEqual(['The title field is required.'])
       // E.g. a button that generates the value:
@@ -76,18 +86,14 @@ describe('useField()', () => {
       expect(getErrors('title')).toEqual([])
     })
 
-    it('keeps the errors of the server and of the field on blur', async () => {
+    it('keeps the errors of the field on blur', async () => {
       const { findField, getErrors, dataModel, settle } =
         await mountRequiredTitle('Emma')
-      dataModel.replaceErrors(
-        { title: [{ message: 'is taken' }] },
-        { server: true }
-      )
       dataModel.addError('title', 'Unable to load the titles.')
-      await leave(findField('title').find('input'))
+      await edit(findField('title').find('input'), '')
       await settle()
       expect(getErrors('title')).toEqual([
-        'The title field is taken.',
+        'The title field is required.',
         'Unable to load the titles.'
       ])
     })
@@ -109,8 +115,8 @@ describe('useField()', () => {
         })
 
       const getBlurErrors = async (isbn, validate) => {
-        const { findField, getErrors, settle } = await mountIsbn(isbn, validate)
-        await leave(findField('isbn').find('input'))
+        const { findField, getErrors, settle } = await mountIsbn(null, validate)
+        await edit(findField('isbn').find('input'), isbn)
         await settle()
         return getErrors('isbn')
       }
@@ -154,7 +160,7 @@ describe('useField()', () => {
             },
             data: { isbn: '978-0-14-143951-8' }
           })
-        await leave(findField('isbn').find('input'))
+        await edit(findField('isbn').find('input'), '978-0-14-143951-8')
         await settle()
         expect(getErrors('isbn')).toEqual([])
         expect(getComponent('isbn').context.isValid()).toBe(true)
