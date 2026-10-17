@@ -178,4 +178,8 @@ text
           text`
     )
   })
+
+  it('should interpolate null and undefined like template literals', () => {
+    expect(deindent`a ${null} b ${undefined}`).toBe('a null b undefined')
+  })
 })

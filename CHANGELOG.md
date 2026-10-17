@@ -35,6 +35,7 @@ version, see the upgrade guides in `docs/`.
 - **admin:** Everything behind the topmost dialog is inert: the page, the navigation, the sidebar and other dialogs. Select All in a dialog no longer selects the values behind it, and assistive technology can't reach them either.
 - **utils:** `isUrl()` returns `false` for invalid URLs with long paths right away, where the time doubled with each path segment, taking seconds for 28 segments. URLs ending in a lone `?` or `#` are valid too (#348).
 - **utils:** `clone()` copies typed arrays, and Node.js buffers stay buffers, where it copied their elements one by one into a plain object (#350).
+- **utils:** `deindent` interpolates `null` and `undefined` as in template literals, where it threw a `TypeError` (#352).
 
 ## 4.7.2 (2026-10-16)
 
