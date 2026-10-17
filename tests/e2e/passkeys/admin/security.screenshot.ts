@@ -204,9 +204,9 @@ test.describe('screenshots', () => {
     const security = await openSecurity(page)
     await security.getByRole('button', { name: 'Turn Off' }).click()
     const dialog = page.getByRole('dialog', {
-      name: 'Turn Off Two-Factor Authentication'
+      name: 'Do you really want to turn off two-factor authentication?'
     })
-    await expect(dialog.getByLabel('Authentication Code')).toBeFocused()
+    await expect(dialog.getByRole('button', { name: 'Turn Off' })).toBeVisible()
     await expectScreenshot(page, 'totp-turn-off.png')
   })
 })

@@ -66,7 +66,8 @@ export default class DitoAdmin {
       passkeyLogin: 'post',
       passkeyOptions: 'post',
       loginCode: 'post',
-      totpConfirm: 'post'
+      totpConfirm: 'post',
+      confirmAccess: 'post'
     }
     for (const [name, method] of Object.entries(methods)) {
       users[name] = getResource(users[name] || hyphenate(name), {

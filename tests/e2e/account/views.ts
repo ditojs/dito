@@ -10,8 +10,7 @@ export const account = {
     label: 'Account',
     components: {
       username: { type: 'text', label: 'Username' },
-      email: { type: 'email', label: 'Email' },
-      password: { type: 'password', label: 'New Password' }
+      email: { type: 'email', label: 'Email' }
     }
   }
 } as const

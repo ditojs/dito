@@ -1,6 +1,7 @@
 import { startRegistration } from '@simplewebauthn/browser'
 import DitoQrCode from '../components/DitoQrCode.vue'
 import { isPasskeyPromptCancelled } from './Session.ts'
+import { confirm } from './dialogs.js'
 
 // Dialogs are as wide as their content, up to their `width` setting, so
 // components as wide as the setting fill them:
@@ -207,26 +208,20 @@ export function showSecurityDialog(adminContext, { passkeys, totp }) {
             turnOff: {
               text: 'Turn Off',
               if: ({ item }) => item.enabled,
-              async onClick(context) {
-                const { request, reload } = context
-                const result = await submitCode(
-                  context,
+              // Without confirmed access, requests ask for the code first:
+              async onClick({ request, reload }) {
+                const isConfirmed = await confirm(
+                  { adminContext },
                   {
-                    components: { code: createCodeComponent() },
-                    buttons: {
-                      cancel: {},
-                      turnOff: { type: 'submit', text: 'Turn Off' }
-                    },
-                    settings: { label: 'Turn Off Two-Factor Authentication' }
-                  },
-                  code =>
-                    request({
-                      resource: users.totp,
-                      method: 'delete',
-                      data: { code }
-                    })
+                    message: (
+                      'Do you really want to turn off two-factor ' +
+                      'authentication?'
+                    ),
+                    verb: 'turn off'
+                  }
                 )
-                if (result) {
+                if (isConfirmed) {
+                  await request({ resource: users.totp, method: 'delete' })
                   await reload()
                 }
               }
@@ -244,7 +239,7 @@ export function showSecurityDialog(adminContext, { passkeys, totp }) {
   })
 }
 
-// The code field of the login and the security dialogs:
+// The code field of the login dialog, also when confirming the access:
 export function createCodeComponent() {
   return {
     type: 'text',

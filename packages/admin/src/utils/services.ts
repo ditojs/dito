@@ -99,7 +99,21 @@ export async function sendRequest(
   if (checkUser) {
     await session.ensureUser()
   }
-  const response = await api.request({ method, url, query, data, signal })
+  const send = () => api.request({ method, url, query, data, signal })
+  const response = await send().catch(async error => {
+    // Security changes answer `confirmationRequired` without a recent login,
+    // so we confirm the access and send them again. Cancelled confirmations
+    // end the request quietly, like aborted ones:
+    if (checkUser && error.response?.data?.confirmationRequired) {
+      if (await session.confirmAccess()) {
+        return send()
+      } else {
+        throw new DOMException('The confirmation was cancelled.', 'AbortError')
+      }
+    } else {
+      throw error
+    }
+  })
   // Fetch the own user again when it changed, through its member or `self`:
   if (checkUser && method === 'patch') {
     const { users } = api

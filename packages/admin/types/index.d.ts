@@ -334,6 +334,12 @@ export interface ApiConfig {
      */
     totp?: { path?: string }
     totpConfirm?: { path?: string; method?: HttpMethod }
+    /**
+     * Posted to with the password, the code of users with TOTP or a passkey,
+     * when security changes answer `confirmationRequired`, with the default
+     * path `'confirm-access'`.
+     */
+    confirmAccess?: { path?: string; method?: HttpMethod }
   }
   /**
    * Custom resource path handlers, keyed by resource type. Merged

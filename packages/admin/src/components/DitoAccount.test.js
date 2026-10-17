@@ -26,8 +26,8 @@ describe('DitoAccount', () => {
     const logout = vi.spyOn(session, 'logout').mockResolvedValue()
     const { button, items } = await openMenu(admin)
     expect(button.text()).toBe('tester')
-    expect(items.map(item => item.text())).toEqual(['Sign Out'])
-    await items[0].trigger('click')
+    expect(items.map(item => item.text())).toEqual(['Security', 'Sign Out'])
+    await items[1].trigger('click')
     expect(logout).toHaveBeenCalledOnce()
     expect(button.attributes('aria-expanded')).toBe('false')
   })
@@ -78,7 +78,11 @@ describe('DitoAccount', () => {
     it('opens the settings of the user from the menu', async () => {
       const { admin, request } = await mountWithSettings()
       const { items } = await openMenu(admin)
-      expect(items.map(item => item.text())).toEqual(['Settings', 'Sign Out'])
+      expect(items.map(item => item.text())).toEqual([
+        'Settings',
+        'Security',
+        'Sign Out'
+      ])
       await items[0].trigger('click')
       await flushPromises()
       expect(admin.router.currentRoute.value.path).toBe('/account/settings')
@@ -119,8 +123,10 @@ describe('DitoAccount', () => {
 
   describe('security', () => {
     // A server with passkeys, which adds and deletes them, and changes the
-    // password 'secret':
+    // password 'secret'. Without `isConfirmed`, the changes need the access
+    // confirmed with the password first. `login` sets the admin's options:
     const mountWithPasskeys = async ({
+      login = { passkeys: true },
       passkeys = [
         {
           id: 1,
@@ -128,10 +134,33 @@ describe('DitoAccount', () => {
           createdAt: '2026-01-02T12:00:00Z',
           lastUsedAt: null
         }
-      ]
+      ],
+      isConfirmed = true
     } = {}) => {
       const request = vi.fn(({ method = 'get', url, data }) => {
-        if (url === '/users/session') {
+        const isChange = method !== 'get' && url !== '/users/confirm-access'
+        if (isChange && !isConfirmed) {
+          throw Object.assign(new Error('Request failed'), {
+            response: {
+              status: 403,
+              data: {
+                message: 'Confirmation required',
+                confirmationRequired: true
+              }
+            }
+          })
+        } else if (url === '/users/confirm-access') {
+          isConfirmed = data.password === 'secret'
+          if (!isConfirmed) {
+            throw Object.assign(new Error('Request failed'), {
+              response: {
+                status: 401,
+                data: { message: 'Password is incorrect' }
+              }
+            })
+          }
+          return { data: { success: true } }
+        } else if (url === '/users/session') {
           return { data: { user: { id: 1, username: 'tester' } } }
         } else if (url === '/users/passkeys' && method === 'get') {
           return { data: passkeys }
@@ -168,7 +197,7 @@ describe('DitoAccount', () => {
         views,
         api: { users: { path: 'users' } },
         request,
-        options: { login: { passkeys: true } }
+        options: { login }
       })
       const { items } = await openMenu(admin)
       expect(items.map(item => item.text())).toEqual(['Security', 'Sign Out'])
@@ -266,6 +295,109 @@ describe('DitoAccount', () => {
       )
     })
 
+    const confirmAccess = async (admin, password) => {
+      const dialog = getLastDialog(admin)
+      expect(dialog.attributes('aria-label')).toBe('Confirm Access')
+      await enterValue(dialog.find('input[name="password"]'), password)
+      await dialog.find('button[type="submit"]').trigger('click')
+      await flushPromises()
+    }
+
+    describe('confirmed access', () => {
+      it('confirms the access, and then adds the passkey', async () => {
+        const { admin, request, getRows } = await mountWithPasskeys({
+          isConfirmed: false
+        })
+        await findButton(admin, 'Add Passkey').trigger('click')
+        await flushPromises()
+        await confirmAccess(admin, 'secret')
+        expect(request).toHaveBeenCalledWith(
+          expect.objectContaining({
+            method: 'post',
+            url: '/users/confirm-access',
+            data: { password: 'secret' }
+          })
+        )
+        expect(
+          request.mock.calls.filter(
+            ([{ url }]) => url === '/users/passkey-options'
+          )
+        ).toHaveLength(2)
+        expect(getRows()).toEqual([
+          '1PasswordJanuary 2, 2026Never',
+          'PasskeyJanuary 3, 2026Never'
+        ])
+      })
+
+      it('asks again after a wrong password', async () => {
+        const { admin, getRows } = await mountWithPasskeys({
+          isConfirmed: false
+        })
+        await findButton(admin, 'Add Passkey').trigger('click')
+        await flushPromises()
+        await confirmAccess(admin, 'wrong')
+        expect(admin.wrapper.text()).toContain('Password is incorrect')
+        await confirmAccess(admin, 'secret')
+        expect(getRows()).toHaveLength(2)
+      })
+
+      it('confirms the access, and then deletes the passkey', async () => {
+        const { admin, request, getRows } = await mountWithPasskeys({
+          isConfirmed: false
+        })
+        await admin.wrapper
+          .find('.dito-dialog .dito-list .dito-button--delete')
+          .trigger('click')
+        await flushPromises()
+        await findButton(admin, 'Delete').trigger('click')
+        await flushPromises()
+        await confirmAccess(admin, 'secret')
+        expect(
+          request.mock.calls.filter(
+            ([{ method, url }]) => (
+              method === 'delete' && url === '/users/passkeys/1'
+            )
+          )
+        ).toHaveLength(2)
+        expect(getRows()).toEqual(['No passkeys yet.'])
+      })
+
+      it('stops quietly when the confirmation is cancelled', async () => {
+        const { admin, request, getRows } = await mountWithPasskeys({
+          isConfirmed: false
+        })
+        const notify = vi.spyOn(admin.context, 'notify')
+        const cancel = async () => {
+          await flushPromises()
+          const dialog = getLastDialog(admin)
+          expect(dialog.attributes('aria-label')).toBe('Confirm Access')
+          await findButton(admin, 'Cancel').trigger('click')
+          await flushPromises()
+        }
+        await findButton(admin, 'Add Passkey').trigger('click')
+        await cancel()
+        // A button without its own error handling:
+        await findButton(admin, 'Change').trigger('click')
+        await flushPromises()
+        const dialog = getLastDialog(admin)
+        for (const [name, value] of Object.entries({
+          currentPassword: 'secret',
+          password: 'changed',
+          confirmation: 'changed'
+        })) {
+          await enterValue(dialog.find(`input[name="${name}"]`), value)
+        }
+        await dialog.find('button[type="submit"]').trigger('click')
+        await cancel()
+        expect(notify).not.toHaveBeenCalled()
+        expect(startRegistration).not.toHaveBeenCalled()
+        expect(request).not.toHaveBeenCalledWith(
+          expect.objectContaining({ url: '/users/confirm-access' })
+        )
+        expect(getRows()).toHaveLength(1)
+      })
+    })
+
     describe('password', () => {
       const changePassword = async (admin, values) => {
         await findButton(admin, 'Change').trigger('click')
@@ -278,6 +410,39 @@ describe('DitoAccount', () => {
         await flushPromises()
         return dialog
       }
+
+      it('changes the password without passkeys or TOTP', async () => {
+        const { admin, request } = await mountWithPasskeys({
+          login: {},
+          isConfirmed: false
+        })
+        const notify = vi.spyOn(admin.context, 'notify')
+        const security = getLastDialog(admin)
+        expect(security.findAll('.dito-object')).toHaveLength(1)
+        expect(security.find('.dito-list').exists()).toBe(false)
+        await changePassword(admin, {
+          currentPassword: 'secret',
+          password: 'changed',
+          confirmation: 'changed'
+        })
+        await confirmAccess(admin, 'secret')
+        expect(
+          request.mock.calls.filter(([{ url }]) => url === '/users/password')
+        ).toHaveLength(2)
+        expect(request).toHaveBeenLastCalledWith(
+          expect.objectContaining({
+            method: 'post',
+            url: '/users/password',
+            data: { currentPassword: 'secret', password: 'changed' }
+          })
+        )
+        expect(notify).toHaveBeenCalledWith(
+          expect.objectContaining({
+            type: 'success',
+            text: 'Your password was changed.'
+          })
+        )
+      })
 
       it('shows a placeholder instead of the password', async () => {
         const { admin } = await mountWithPasskeys()
@@ -391,7 +556,6 @@ describe('DitoAccount', () => {
             enabled = true
             return { data: { backupCodes } }
           } else if (url === '/users/totp' && method === 'delete') {
-            checkCode(data.code)
             enabled = false
             return { data: { success: true } }
           }
@@ -491,20 +655,22 @@ describe('DitoAccount', () => {
         expect(getState()).toContain('Not set up')
       })
 
-      it('turns off TOTP with a code', async () => {
+      it('turns off TOTP after asking, without a code', async () => {
         const { admin, request, getState } = await mountWithTotp({
           enabled: true
         })
         expect(getState()).toContain('Enabled · 10 backup codes left')
         await findButton(admin, 'Turn Off').trigger('click')
         await flushPromises()
-        await submitCode(admin, '123456')
+        const dialog = getLastDialog(admin)
+        expect(dialog.text()).toContain(
+          'Do you really want to turn off two-factor authentication?'
+        )
+        expect(dialog.find('input[name="code"]').exists()).toBe(false)
+        await dialog.find('button[type="submit"]').trigger('click')
+        await flushPromises()
         expect(request).toHaveBeenCalledWith(
-          expect.objectContaining({
-            method: 'delete',
-            url: '/users/totp',
-            data: { code: '123456' }
-          })
+          expect.objectContaining({ method: 'delete', url: '/users/totp' })
         )
         expect(getState()).toContain('Not set up')
       })

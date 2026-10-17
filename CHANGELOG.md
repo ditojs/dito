@@ -9,6 +9,8 @@ version, see the upgrade guides in `docs/`.
 
 - **server:** Dito.js handles logins and sessions itself instead of through koa-passport, which `@ditojs/server` no longer depends on. `ctx.req.user` and custom Passport strategies are gone, `app.passport` has no effect, and `UserMixin.login()` reads the credentials only from the request body. Existing sessions stay valid.
 - **server:** Changing a user's password ends their other sessions.
+- **server:** The `patch` and `put` actions of `UsersController` no longer accept passwords, which only change through `'post password'`: apps that change passwords in a form through `PATCH /users/self` use the admin's Security dialog or `'post password'` instead. Admins can't set the passwords of other users through them any more, only password resets can.
+- **server:** The actions of `UsersController` no longer accept the `hash` of the password, and changing the username through `patch` and `put` needs confirmed access.
 - **server:** `UsersController` only treats users of its own model class as logged in, not users of its sub-classes.
 - **server:** `Controller.setup()` and `UserMixin.sessionQuery()` are internal: apps override `initialize()` and set `sessionScope` instead.
 - **admin:** Dialogs validate their data on submit, like forms, and only resolve once it's valid.
@@ -20,6 +22,7 @@ version, see the upgrade guides in `docs/`.
 - **server, admin:** Two-factor authentication with TOTP, with `app.auth.totp` and `login: { totp: true }`, see [Two-factor authentication](docs/guide/server/controllers.md#two-factor-authentication).
 - **server, admin:** Password resets by email, with `app.auth.passwordReset` and `login: { passwordReset: true }`, see [Password reset](docs/guide/server/controllers.md#password-reset).
 - **server, admin:** Users change their password through `'post password'` of `UsersController`, and the Security dialog of the account menu.
+- **server, admin:** Security changes need confirmed access, from a recent login or `'post confirm-access'` within `app.auth.reconfirmAccessAfter`. Turning off TOTP takes it instead of a code. See [Confirmed access](docs/guide/server/controllers.md#confirmed-access).
 - **server:** Authorize functions are called with their controller as `this`, in relations the `RelationController`.
 - **server:** `CredentialMixin` and `CredentialModel` store the credentials of all user models in one table, set in `app.auth.credentials`.
 - **admin:** `settings.minDuration` keeps dialogs visible for a minimum time.

@@ -385,21 +385,6 @@ describe('TOTP', () => {
       expect(right.data.error).toBe('Too many attempts')
     })
 
-    it('count when turning off TOTP too', async () => {
-      const { request: self, totp } = await setupTotp()
-      const remove = (code: string) =>
-        self('/members/totp', { method: 'DELETE', body: { code } })
-      for (let i = 0; i < 9; i++) {
-        expect((await remove('wrong')).status).toBe(401)
-      }
-      const { request } = await loginWithPassword()
-      const last = await postCode(request, 'wrong')
-      expect(last.data.error).toBe('Too many attempts')
-      const right = await remove(getNextCode(totp))
-      expect(right.status).toBe(400)
-      expect(right.data.message).toBe('Too many attempts')
-    })
-
     it('start anew after a right code', async () => {
       const { totp } = await setupTotp()
       const { request } = await loginWithPassword()
@@ -565,31 +550,13 @@ describe('TOTP', () => {
     expect(login.data).toMatchObject({ success: true, authenticated: true })
   })
 
-  it('turns off TOTP with a code', async () => {
-    const { request, totp } = await setupTotp()
-    const wrong = await request('/members/totp', {
-      method: 'DELETE',
-      body: { code: 'wrong' }
-    })
-    expect(wrong.status).toBe(401)
-    const remove = await request('/members/totp', {
-      method: 'DELETE',
-      body: { code: getNextCode(totp) }
-    })
+  it('turns off TOTP with confirmed access, without a code', async () => {
+    const { request } = await setupTotp()
+    const remove = await request('/members/totp', { method: 'DELETE' })
     expect(remove.data).toEqual({ success: true })
     expect(await Credential.query()).toEqual([])
     const { login } = await loginWithPassword()
     expect(login.data).toMatchObject({ success: true, authenticated: true })
-  })
-
-  it('turns off TOTP with a backup code', async () => {
-    const { request, backupCodes } = await setupTotp()
-    const remove = await request('/members/totp', {
-      method: 'DELETE',
-      body: { code: backupCodes[3] }
-    })
-    expect(remove.data).toEqual({ success: true })
-    expect(await Credential.query()).toEqual([])
   })
 
   it('only lets logged-in users manage their TOTP', async () => {
