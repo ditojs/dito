@@ -2,10 +2,12 @@ export function toCallback(asyncFunction) {
   return async (...args) => {
     // The last argument is the callback function
     const done = args.pop()
+    let result
     try {
-      done(null, await asyncFunction(...args))
+      result = await asyncFunction(...args)
     } catch (err) {
-      done(err)
+      return done(err)
     }
+    done(null, result)
   }
 }
