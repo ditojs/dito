@@ -174,7 +174,8 @@ export async function down(knex) {
 
 Passkeys, two-factor authentication and password resets are opt-in. The admin
 offers each one when the users controller at `api.users` in the server's
-`config.admin.api` routes it, see
+`config.admin.api` routes it, and requests it under the action names of
+`UsersController` below `api.users.path`, see
 [`authentication`](api/admin/admin.md#globalconfig).
 
 - [Passkeys](guide/server/controllers.md#passkeys), through

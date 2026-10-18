@@ -93,7 +93,8 @@ export default [
     }
   },
   {
-    files: ['**/*.test.*'],
+    // The admin's tests against servers share their helpers in `tests/admin`:
+    files: ['**/*.test.*', 'tests/admin/**/*'],
 
     languageOptions: {
       globals: {

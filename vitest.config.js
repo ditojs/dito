@@ -1,7 +1,11 @@
 import { defineConfig } from 'vitest/config'
 import createVuePlugin from '@vitejs/plugin-vue'
 
-const componentPackages = 'packages/{admin,ui}/src/**'
+const componentTests = [
+  'packages/{admin,ui}/src/**/*.test.*',
+  // The admin's tests against servers:
+  'tests/admin/**/*.test.*'
+]
 const excludedDirectories = [
   '**/node_modules/**',
   '**/e2e/**',
@@ -26,7 +30,7 @@ export default defineConfig({
           // collecting pglite's dead wasm code, and crashes the worker:
           // https://github.com/nodejs/node/issues/66366
           execArgv: ['--no-wasm-code-gc'],
-          exclude: [...excludedDirectories, `${componentPackages}/*.test.*`]
+          exclude: [...excludedDirectories, ...componentTests]
         }
       },
       {
@@ -34,7 +38,7 @@ export default defineConfig({
         plugins: [createVuePlugin()],
         test: {
           name: 'components',
-          include: [`${componentPackages}/*.test.*`],
+          include: componentTests,
           environment: 'happy-dom'
         }
       }

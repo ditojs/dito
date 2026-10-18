@@ -6,8 +6,9 @@ export type Schema = Record<string, any>
 export type Data = Record<string, any>
 export type Resource = Record<string, any>
 
-// The API configuration with the defaults that `DitoAdmin` sets up:
-export type Api = ApiConfig &
+// The API configuration with the defaults that `DitoAdmin` sets up, and the
+// resources of `users` that it derives:
+export type Api = Omit<ApiConfig, 'users'> &
   Required<
     Pick<
       ApiConfig,
@@ -18,12 +19,11 @@ export type Api = ApiConfig &
       | 'isApiUrl'
       | 'normalizePath'
       | 'denormalizePath'
-      | 'users'
       | 'resources'
       | 'headers'
       | 'defaults'
     >
-  >
+  > & { users: Record<string, Resource> }
 
 // The components that `walkSchemaData()` walks, with the data they edit:
 export interface SchemaDataEntry {

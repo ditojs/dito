@@ -147,34 +147,24 @@ api: {
     login: { path: 'login', method: 'post' },
     logout: { path: 'logout', method: 'post' },
     session: { path: 'session', method: 'get' },
-    self: { path: 'self' },
-    password: { path: 'password', method: 'post' },
-    passwordReset: { path: 'password-reset', method: 'post' },
-    passwordResetConfirm: { path: 'password-reset-confirm', method: 'post' },
-    passkeyLoginOptions: { path: 'passkey-login-options', method: 'post' },
-    passkeyLogin: { path: 'passkey-login', method: 'post' },
-    passkeyOptions: { path: 'passkey-options', method: 'post' },
-    passkeys: { path: 'passkeys' },
-    loginCode: { path: 'login-code', method: 'post' },
-    totp: { path: 'totp' },
-    totpConfirm: { path: 'totp-confirm', method: 'post' },
-    confirmAccess: { path: 'confirm-access', method: 'post' }
+    self: { path: 'self' }
   }
 }
 ```
 
 `users.path` is the collection of the user model; `users: 'users'` is short
-for `users: { path: 'users' }`. `login`, `logout`, `session`, `self`,
-`password`, `loginCode`, `confirmAccess` and the resources of password resets,
-passkeys and TOTP, which the admin uses when the server enables them, see
-[`authentication`](#globalconfig), are resources nested under it, shown here
-with their defaults, so the admin logs in through `POST users/login`. The
-server's `UsersController` provides them. The admin reads `user` from the
-responses of `login` and `session`, and `success` from the response of
-`logout`. The [account settings](#parameters) load the logged-in user from
-`self` and patch it there, after which the admin fetches the session's user
-again. Requests that answer `confirmationRequired` ask for the password, the
-TOTP code or a passkey, post them to `confirmAccess` and are sent again. See
+for `users: { path: 'users' }`. `login`, `logout`, `session` and `self` are
+resources nested under it, shown here with their defaults, so the admin logs in
+through `POST users/login`. The password changes, password resets, passkeys and
+TOTP, which the admin offers when the server enables them, see
+[`authentication`](#globalconfig), use the action names of `UsersController`
+under it, e.g. `POST users/passkey-login`. The server's `UsersController`
+provides them all. The admin reads `user` from the responses of `login` and
+`session`, and `success` from the response of `logout`. The
+[account settings](#parameters) load the logged-in user from `self` and patch
+it there, after which the admin fetches the session's user again. Requests that
+answer `confirmationRequired` ask for the password, the TOTP code or a passkey,
+post them to `confirm-access` and are sent again. See
 [AdminContext](#session) for the session that uses them.
 
 ### defaults
@@ -368,12 +358,12 @@ session.login(): Promise<AdminUser | null>
 ```
 
 Shows the login dialog and posts the credentials to `api.users.login`, or
-logs in with a passkey through `api.users.passkeyLogin`, asking again after
-each failure, until it succeeds or the user cancels. When the response has
-`codeRequired`, for users with TOTP, it asks for the code of their
-authenticator app or a backup code, and posts it to `api.users.loginCode`,
-asking again after wrong codes, and for the password when the user cancels or
-the login expires. With `authentication.hasPasswordReset`, it requests a password
+logs in with a passkey through `passkey-login` under [`api.users`](#users),
+asking again after each failure, until it succeeds or the user cancels. When
+the response has `codeRequired`, for users with TOTP, it asks for the code of
+their authenticator app or a backup code, and posts it to `login-code`, asking
+again after wrong codes, and for the password when the user cancels or the
+login expires. With `authentication.hasPasswordReset`, it requests a password
 reset instead when the user chooses Forgot password?, and then asks to log in
 again.
 With `login.redirectAfterLogin`, a successful login loads that URL instead.
@@ -476,10 +466,10 @@ admin reads the configuration from that option, and keeps its `settings` in
 | `base` | `string` | The base path of the admin's routes. |
 | `api` | `ApiConfig` | The API configuration. `AdminController` sets `normalizePaths` from `config.app.normalizePaths` unless `config.admin.api` sets it. |
 | `settings` | `object` | The admin's global settings, see [`admin.context.settings`](#settings). |
-| `authentication.hasPasswordChange` | `boolean` | Set when the users controller at [`api.users`](#users) routes `'post password'`. Changes the user's password in the Security dialog of the account menu, through [`api.users.password`](#users). The account menu only offers the Security dialog with `hasPasswordChange`, `hasPasskeys` or `hasTotp`. |
+| `authentication.hasPasswordChange` | `boolean` | Set when the users controller at [`api.users`](#users) routes `'post password'`. Changes the user's password in the Security dialog of the account menu. The account menu only offers the Security dialog with `hasPasswordChange`, `hasPasskeys` or `hasTotp`. |
 | `authentication.hasPasskeys` | `boolean` | Set when the users controller at `api.users` routes the passkey actions, with [`PasskeyService`](../../guide/server/controllers.md#passkeys). Adds a Sign In with Passkey button to the login dialog, and lists, adds and removes the user's passkeys, named after their providers, in the Security dialog of the account menu. Needs the peer dependency `@simplewebauthn/browser`. |
 | `authentication.hasTotp` | `boolean` | Set when the users controller at `api.users` routes the TOTP actions, with [`TotpService`](../../guide/server/controllers.md#two-factor-authentication). Sets up two-factor authentication with TOTP in the Security dialog of the account menu, with a QR code for the authenticator app and the backup codes, and turns it off again. Needs the peer dependency `lean-qr`. The login dialog asks for the code whenever the server requires one. |
-| `authentication.hasPasswordReset` | `boolean` | Set when the users controller at `api.users` routes the password reset actions, with [`config.app.authentication.passwordReset`](../../guide/server/controllers.md#password-reset). Adds a Forgot password? button to the login dialog, which asks for the username and posts it to [`api.users.passwordReset`](#users), for the server to email a link. The link opens the admin with `#password-reset=` and the token, which asks for the new password, posts it to `api.users.passwordResetConfirm`, asking again with the server's validation errors, and removes the token from the URL, before asking to log in. |
+| `authentication.hasPasswordReset` | `boolean` | Set when the users controller at `api.users` routes the password reset actions, with [`config.app.authentication.passwordReset`](../../guide/server/controllers.md#password-reset). Adds a Forgot password? button to the login dialog, which asks for the username and posts it to `'post password-reset'`, for the server to email a link. The link opens the admin with `#password-reset=` and the token, which asks for the new password, posts it with the token to `'post password-reset-confirm'`, asking again with the server's validation errors, and removes the token from the URL, before asking to log in. |
 
 The server reads `api.users` from its `config.admin.api` to find the users
 controller, so apps that only pass `api` to `new DitoAdmin()` set `api.users`

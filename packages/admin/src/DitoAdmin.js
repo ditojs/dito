@@ -55,36 +55,38 @@ export default class DitoAdmin {
 
     // Allow configuring the auth resources, e.g. `api.users.path = '/admins'`:
     const users = getResource(api.users, { type: 'collection' }) || {}
-    const methods = {
-      login: 'post',
-      logout: 'post',
-      session: 'get',
-      password: 'post',
-      passwordReset: 'post',
-      passwordResetConfirm: 'post',
-      passkeyLoginOptions: 'post',
-      passkeyLogin: 'post',
-      passkeyOptions: 'post',
-      loginCode: 'post',
-      totpConfirm: 'post',
-      confirmAccess: 'post'
-    }
+    const methods = { login: 'post', logout: 'post', session: 'get' }
     for (const [name, method] of Object.entries(methods)) {
-      users[name] = getResource(users[name] || hyphenate(name), {
-        method,
-        parent: users
-      })
+      users[name] = getResource(users[name] || name, { method, parent: users })
     }
     // The own user, that the account settings load and patch:
     users.self = getResource(users.self || 'self', { parent: users })
-    // The passkeys of the own user, that the security dialog manages:
-    users.passkeys = getResource(users.passkeys || 'passkeys', {
+    // The server only detects its authentication features under the names of
+    // dito's actions, so we derive their resources from these:
+    const actions = [
+      'password',
+      'passwordReset',
+      'passwordResetConfirm',
+      'passkeyLoginOptions',
+      'passkeyLogin',
+      'passkeyOptions',
+      'loginCode',
+      'totpConfirm',
+      'confirmAccess'
+    ]
+    for (const name of actions) {
+      users[name] = getResource(hyphenate(name), {
+        method: 'post',
+        parent: users
+      })
+    }
+    // The passkeys and the TOTP of the own user, that the security dialog
+    // manages:
+    users.passkeys = getResource('passkeys', {
       type: 'collection',
       parent: users
     })
-    // The TOTP of the own user, loaded, set up and turned off by the security
-    // dialog through its methods:
-    users.totp = getResource(users.totp || 'totp', { parent: users })
+    users.totp = getResource('totp', { parent: users })
     api.users = users
 
     // Apps may override the handlers of resource paths:

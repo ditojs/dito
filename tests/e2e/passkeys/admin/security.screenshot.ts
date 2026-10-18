@@ -1,7 +1,9 @@
-import type { Page } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
+import { TOTP } from 'otpauth'
 import { test, expect } from '../fixtures.js'
 import { expectScreenshot, phone } from '../../screenshots/scenes.js'
 import { Credential } from '../models/Credential.js'
+import { Session } from '../models/Session.js'
 import { User } from '../models/User.js'
 
 // Screenshots of the login and Security dialogs, compared against the
@@ -61,34 +63,9 @@ async function addTotp() {
   } as any)
 }
 
-// The server creates a random secret for each setup, and only confirms codes
-// of it, so we answer both with fixed data for screenshots that stay the same:
-async function mockTotpSetup(page: Page) {
-  const secret = 'JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP'
-  await page.route('**/api/users/totp', route =>
-    route.request().method() === 'POST'
-      ? route.fulfill({
-          json: {
-            uri: `otpauth://totp/Example:ada?issuer=Example&secret=${secret}`,
-            secret
-          }
-        })
-      : route.continue()
-  )
-  await page.route('**/api/users/totp-confirm', route =>
-    route.fulfill({
-      json: {
-        backupCodes: Array.from(
-          { length: 10 },
-          (_, index) => `${index}a2b4-c6d8e`
-        )
-      }
-    })
-  )
-}
-
+// Opens the setup, and returns its dialog and the TOTP of the key that it
+// shows:
 async function openTotpSetup(page: Page, url: string) {
-  await mockTotpSetup(page)
   await login(page, url)
   const security = await openSecurity(page)
   await security.getByRole('button', { name: 'Set Up' }).click()
@@ -96,8 +73,16 @@ async function openTotpSetup(page: Page, url: string) {
     name: 'Set Up Two-Factor Authentication'
   })
   await expect(dialog.getByRole('img', { name: 'QR code' })).toBeVisible()
-  return dialog
+  const secret = await dialog.getByLabel('Or enter the key').inputValue()
+  return { dialog, totp: new TOTP({ secret: secret.replaceAll(' ', '') }) }
 }
+
+// The server creates a random key for each setup, and random backup codes, so
+// we mask them for screenshots that stay the same:
+const getTotpMask = (dialog: Locator) => [
+  dialog.getByRole('img', { name: 'QR code' }),
+  dialog.getByRole('textbox', { name: 'Or enter the key' })
+]
 
 test.describe('screenshots', () => {
   test('login dialog with passkeys', async ({ page, url }) => {
@@ -206,18 +191,22 @@ test.describe('screenshots', () => {
   })
 
   test('TOTP setup dialog', async ({ page, url }) => {
-    const dialog = await openTotpSetup(page, url)
+    const { dialog } = await openTotpSetup(page, url)
     await expect(dialog.getByLabel('Authentication Code')).toBeFocused()
-    await expectScreenshot(page, 'totp-setup.png')
+    await expectScreenshot(page, 'totp-setup.png', {
+      mask: getTotpMask(dialog)
+    })
   })
 
   test('backup codes dialog', async ({ page, url }) => {
-    const setup = await openTotpSetup(page, url)
-    await setup.getByLabel('Authentication Code').fill('123456')
+    const { dialog: setup, totp } = await openTotpSetup(page, url)
+    await setup.getByLabel('Authentication Code').fill(totp.generate())
     await setup.getByRole('button', { name: 'Turn On' }).click()
     const dialog = page.getByRole('dialog', { name: 'Backup Codes' })
-    await expect(dialog.getByRole('textbox')).toHaveValue(/0a2b4-c6d8e/)
-    await expectScreenshot(page, 'totp-backup-codes.png')
+    await expect(dialog.getByRole('textbox')).toHaveValue(/^\w{5}-\w{5}/)
+    await expectScreenshot(page, 'totp-backup-codes.png', {
+      mask: [dialog.getByRole('textbox')]
+    })
   })
 
   test('turn off TOTP dialog', async ({ page, url }) => {
@@ -284,13 +273,15 @@ test.describe('phone screenshots', () => {
   test('confirm access dialog', async ({ page, url }) => {
     await login(page, url)
     const security = await openSecurity(page)
-    // The login confirmed the access, so we answer as after its expiry:
-    await page.route('**/api/users/totp', route =>
-      route.fulfill({
-        status: 403,
-        json: { message: 'Confirmation required', confirmationRequired: true }
-      })
-    )
+    // Let the access that the login confirmed expire, as time would:
+    const [session] = await Session.query()
+    const { value } = session as any
+    await session.$query().patch({
+      value: {
+        ...value,
+        confirmedAccess: { ...value.confirmedAccess, expires: 0 }
+      }
+    } as any)
     await security.getByRole('button', { name: 'Set Up' }).click()
     const dialog = page.getByRole('dialog', { name: 'Confirm Access' })
     await expect(dialog.getByLabel('Password')).toBeFocused()
@@ -322,17 +313,21 @@ test.describe('phone screenshots', () => {
   })
 
   test('TOTP setup dialog', async ({ page, url }) => {
-    const dialog = await openTotpSetup(page, url)
+    const { dialog } = await openTotpSetup(page, url)
     await expect(dialog.getByLabel('Authentication Code')).toBeFocused()
-    await expectScreenshot(page, 'phone-totp-setup.png')
+    await expectScreenshot(page, 'phone-totp-setup.png', {
+      mask: getTotpMask(dialog)
+    })
   })
 
   test('backup codes dialog', async ({ page, url }) => {
-    const setup = await openTotpSetup(page, url)
-    await setup.getByLabel('Authentication Code').fill('123456')
+    const { dialog: setup, totp } = await openTotpSetup(page, url)
+    await setup.getByLabel('Authentication Code').fill(totp.generate())
     await setup.getByRole('button', { name: 'Turn On' }).click()
     const dialog = page.getByRole('dialog', { name: 'Backup Codes' })
-    await expect(dialog.getByRole('textbox')).toHaveValue(/0a2b4-c6d8e/)
-    await expectScreenshot(page, 'phone-totp-backup-codes.png')
+    await expect(dialog.getByRole('textbox')).toHaveValue(/^\w{5}-\w{5}/)
+    await expectScreenshot(page, 'phone-totp-backup-codes.png', {
+      mask: [dialog.getByRole('textbox')]
+    })
   })
 })
