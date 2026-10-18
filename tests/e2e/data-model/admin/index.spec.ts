@@ -177,7 +177,7 @@ test.describe('data model', () => {
     await expect(doubleAmounts.nth(1)).toHaveValue('4')
     const lines = page.getByRole('region', { name: 'Lines', exact: true })
     await lines
-      .locator(':scope > table > tbody > tr')
+      .locator(':scope > .dito-list__table > table > tbody > tr')
       .nth(1)
       .getByRole('button', { name: 'Remove' })
       .click()

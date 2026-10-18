@@ -65,7 +65,7 @@ function getErrors(scope: Locator, label: string) {
 function getRows(scope: Locator, label: string) {
   return scope
     .getByRole('region', { name: label, exact: true })
-    .locator(':scope > table > tbody > tr')
+    .locator(':scope > .dito-list__table > table > tbody > tr')
 }
 
 const message = /must match pattern/

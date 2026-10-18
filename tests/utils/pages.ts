@@ -267,7 +267,7 @@ export class DitoNestedList {
   }
 
   get table() {
-    return this.container.locator(':scope > table')
+    return this.container.locator(':scope > .dito-list__table > table')
   }
 
   get rows() {
