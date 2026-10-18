@@ -2570,11 +2570,12 @@ export type SchemaContext<$Item = any> = {
       /** The accessible label of the dialog. */
       label?: string
       /**
-       * The maximum width of the dialog in pixels.
+       * The maximum width of the dialog's content, without its padding: a
+       * number in pixels, or a CSS length.
        *
-       * @defaultValue `480`
+       * @defaultValue `'35em'`
        */
-      width?: number
+      width?: number | string
       /** Whether clicking outside of the dialog closes it. */
       clickToClose?: boolean
       /**

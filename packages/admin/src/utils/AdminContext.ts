@@ -14,7 +14,7 @@ export interface DialogOptions {
   data?: Record<string, any>
   settings?: {
     label?: string
-    width?: number
+    width?: number | string
     clickToClose?: boolean
     minDuration?: number
   }

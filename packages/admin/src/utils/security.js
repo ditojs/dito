@@ -2,10 +2,8 @@ import { startRegistration } from '@simplewebauthn/browser'
 import DitoQrCode from '../components/DitoQrCode.vue'
 import { confirm } from './dialogs.js'
 
-// Dialogs are as wide as their content, up to their `width` setting, so
-// components as wide as the setting fill them:
-const securityWidth = 600
-const codeWidth = '360px'
+// The code dialogs fit the TOTP key:
+const codeWidth = '25em'
 
 // The Security dialog of the account menu, which changes the password and
 // manages the passkeys and the TOTP of the logged-in user:
@@ -45,7 +43,6 @@ export function showSecurityDialog(adminContext) {
         password: {
           type: 'object',
           label: 'Password',
-          width: `${securityWidth}px`,
           render: () => '••••••••',
           buttons: {
             change: {
@@ -96,7 +93,6 @@ export function showSecurityDialog(adminContext) {
         passkeys: {
           type: 'list',
           label: 'Passkeys',
-          width: `${securityWidth}px`,
           resource: users.passkeys,
           deletable: true,
           itemLabel: ({ item }) =>
@@ -140,7 +136,6 @@ export function showSecurityDialog(adminContext) {
         totp: {
           type: 'object',
           label: 'Two-Factor Authentication',
-          width: `${securityWidth}px`,
           resource: users.totp,
           render: ({ item }) =>
             item.enabled
@@ -175,8 +170,7 @@ export function showSecurityDialog(adminContext) {
                         label: 'Authentication Code',
                         placeholder: '123456',
                         autocomplete: 'one-time-code',
-                        autofocus: true,
-                        width: codeWidth
+                        autofocus: true
                       }
                     },
                     buttons: {
@@ -185,7 +179,10 @@ export function showSecurityDialog(adminContext) {
                     },
                     // Group the key for reading:
                     data: { uri, secret: secret.match(/.{1,4}/g).join(' ') },
-                    settings: { label: 'Set Up Two-Factor Authentication' }
+                    settings: {
+                      label: 'Set Up Two-Factor Authentication',
+                      width: codeWidth
+                    }
                   },
                   code =>
                     request({ resource: users.totpConfirm, data: { code } })
@@ -202,7 +199,6 @@ export function showSecurityDialog(adminContext) {
                           'from your authenticator app.\nThey are only ' +
                           'shown now.'
                         ),
-                        width: codeWidth,
                         readonly: true,
                         lines: 5
                       }
@@ -213,7 +209,7 @@ export function showSecurityDialog(adminContext) {
                     data: {
                       backupCodes: formatBackupCodes(result.backupCodes)
                     },
-                    settings: { label: 'Backup Codes' }
+                    settings: { label: 'Backup Codes', width: codeWidth }
                   })
                   await reload()
                 }
@@ -250,7 +246,7 @@ export function showSecurityDialog(adminContext) {
     },
     // The password row has nothing to load, but objects need a value:
     data: authentication.hasPasswordChange ? { password: {} } : {},
-    settings: { label: 'Security', width: securityWidth }
+    settings: { label: 'Security', width: '46em' }
   })
 }
 
@@ -307,8 +303,7 @@ export function createCodeDialog() {
         info: 'Enter the code from your authenticator app, or a backup code.',
         placeholder: '123456',
         autocomplete: 'one-time-code',
-        autofocus: true,
-        width: codeWidth
+        autofocus: true
       }
     },
     buttons: {
@@ -323,7 +318,7 @@ export function createCodeDialog() {
       }
     },
     // Show password managers filling in the code:
-    settings: { minDuration: 1000 }
+    settings: { minDuration: 1000, width: codeWidth }
   }
 }
 

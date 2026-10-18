@@ -166,6 +166,9 @@ export async function down(knex) {
   `@ditojs/admin` requires.
 - Dialogs validate their data on submit, like forms, and only resolve once it
   is valid.
+- The `width` setting of dialogs is the width of their content, without their
+  padding. Reduce the widths of dialogs that set one by 32 pixels to keep their
+  size.
 
 ## New
 
