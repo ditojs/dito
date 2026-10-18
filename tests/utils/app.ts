@@ -7,6 +7,7 @@ import { createTestKnex } from './test-knex.js'
 type TestApp = Application & { knex: Knex }
 
 interface TestAppOptions {
+  services?: Record<string, any>
   models?: Record<string, any>
   controllers?: Record<string, any>
   admin?: {
@@ -55,6 +56,7 @@ export function createTestApp(
         }
       })
     },
+    services: options.services ?? {},
     models: options.models ?? {},
     controllers: options.controllers ?? {},
     ...(options.middleware && { middleware: options.middleware }),

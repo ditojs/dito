@@ -4,6 +4,7 @@ import { Storage } from './Storage.js'
 import { PassThrough } from 'stream'
 import consumers from 'stream/consumers'
 import { readMediaAttributes } from 'leather'
+import { importPeer } from '../utils/module.js'
 
 export class S3Storage extends Storage {
   static type = 's3'
@@ -21,9 +22,8 @@ export class S3Storage extends Storage {
       ...options
     } = this.config
 
-    // "@aws-sdk/client-s3" is a peer-dependency, and importing it costly,
-    // so we do it lazily.
-    const { S3 } = await import('@aws-sdk/client-s3')
+    // Importing the S3 client is costly, so we only do it when it's used:
+    const { S3 } = await importPeer(this, '@aws-sdk/client-s3')
     this.s3 = new S3(s3)
     this.acl = acl
     this.bucket = bucket

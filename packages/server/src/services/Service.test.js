@@ -204,6 +204,17 @@ describe('Application services', () => {
     expect(app.getService('catalog')).toBe(null)
   })
 
+  it('sets up services that are configured as `true` with their defaults', async () => {
+    const app = createApp({
+      services: { catalog: BookCatalogService },
+      config: { services: { catalog: true } }
+    })
+    await app.setupServices()
+    const service = app.getService('catalog')
+    expect(service.isInitialized).toBe(true)
+    expect(service.config).toEqual({})
+  })
+
   it('throws when the configuration of a service is missing', async () => {
     const app = createApp({
       services: { catalog: BookCatalogService },

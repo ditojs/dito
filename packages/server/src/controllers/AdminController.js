@@ -6,6 +6,7 @@ import { Controller } from './Controller.js'
 import { handleConnectMiddleware } from '../middleware/index.js'
 import { ControllerError } from '../errors/index.js'
 import { formatJson } from '../utils/json.js'
+import { importPeer } from '../utils/module.js'
 
 export class AdminController extends Controller {
   // @override
@@ -127,7 +128,7 @@ export class AdminController extends Controller {
       (await this.defineViteConfig())
     )
 
-    const { createServer } = await import('vite')
+    const { createServer } = await importPeer(this, 'vite')
     const config = assignDeeply(defaultConfig, viteConfig)
     const server = await createServer(config)
 
@@ -152,12 +153,16 @@ export class AdminController extends Controller {
   }
 
   async defineViteConfig(config = {}) {
-    // The build tools are optional peer dependencies, only needed to build or
-    // develop the admin, so import them lazily:
-    const { defineConfig } = await import('vite')
-    const { default: createVuePlugin } = await import('@vitejs/plugin-vue')
-    const { testModuleIdentifier, getPostCssConfig } =
-      await import('@ditojs/build')
+    // The build tools are only needed to build or develop the admin:
+    const { defineConfig } = await importPeer(this, 'vite')
+    const { default: createVuePlugin } = await importPeer(
+      this,
+      '@vitejs/plugin-vue'
+    )
+    const { testModuleIdentifier, getPostCssConfig } = await importPeer(
+      this,
+      '@ditojs/build'
+    )
     const isDevelopment = this.mode === 'development'
 
     const root = this.resolveConfigPath('root')

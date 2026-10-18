@@ -304,11 +304,12 @@ export class Application extends Koa {
             throw new Error(`Configuration missing for service '${name}'`)
           }
           // As a convention, the configuration of a service can be set to
-          // `false` in order to entirely deactivate the service.
+          // `false` in order to entirely deactivate the service, and to `true`
+          // to use its defaults.
           if (config === false) {
             delete this.services[name]
           } else {
-            service.configure(config)
+            service.configure(config === true ? {} : config)
             this.on('before:start', () => service.start())
             this.on('after:stop', () => service.stop())
             await service.initialize()
@@ -446,7 +447,7 @@ export class Application extends Koa {
       Object.values(this.controllers)
         .filter(controller => !controller.isInitialized)
         .map(async controller => {
-          await controller.setup()
+          controller.setup()
           await controller.initialize()
           // Each controller can also compose their own middleware (or app),
           // e.g.  as used in `AdminController`:

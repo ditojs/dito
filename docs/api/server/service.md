@@ -90,6 +90,52 @@ await service.stop()
 Called on the application's `'after:stop'` event. Does nothing by default.
 *Hook.* Returns `Promise<void>`.
 
+## PasskeyService
+
+```js
+import { PasskeyService } from '@ditojs/server'
+
+const app = new Application({ services: { passkeys: PasskeyService } })
+```
+
+Registered under any name, it adds the passkey actions of
+[`UsersController`](controllers.md#userscontroller), see
+[Passkeys](../../guide/server/controllers.md#passkeys). It needs
+[`app.name`](application.md#configapp), `app.auth.credentials` and a `session`
+stored on the server, through `modelClass` or `store`, and imports the optional
+peer dependencies `@simplewebauthn/server` and `aaguids`, else the setup fails.
+
+| Key       | Type       | Default | Description |
+| --------- | ---------- | ------- | ----------- |
+| `domain`  | `string`   | The domain of the request | The domain that the passkeys belong to, the WebAuthn relying party id, e.g. `'example.com'` for an API on `api.example.com` whose passkeys are shared with the pages of `example.com` and its other subdomains. |
+| `origins` | `string[]` | The pages of `domain` and its subdomains | The origins of the pages that may use the passkeys, e.g. to exclude untrusted subdomains. By default, the pages need https, or `localhost`. |
+
+Passkeys are bound to the exact domain they were registered on: without
+`domain`, those of `www.example.com` don't work on `example.com` and the other
+way round. Set `domain` when the app is served under several hostnames. Behind
+a proxy, the domain of the request comes from `X-Forwarded-Host` with
+`app.proxy`, so the proxy needs to set or overwrite that header, as Caddy and
+most proxies do: otherwise clients choose the domain.
+
+## TotpService
+
+```js
+import { TotpService } from '@ditojs/server'
+
+const app = new Application({ services: { totp: TotpService } })
+```
+
+Registered under any name, it adds two-factor authentication with TOTP to
+[`UsersController`](controllers.md#userscontroller), see
+[Two-factor authentication](../../guide/server/controllers.md#two-factor-authentication).
+It needs [`app.name`](application.md#configapp), `app.auth.credentials` and a
+`session` stored on the server, and imports the optional peer dependency
+`otpauth`, else the setup fails.
+
+| Key      | Type     | Description |
+| -------- | -------- | ----------- |
+| `secret` | `string` | Required. A long random string that encrypts the TOTP secrets and hashes the backup codes: changing it makes them unusable. |
+
 ## Typed services
 
 `app.services` can be typed through module augmentation:

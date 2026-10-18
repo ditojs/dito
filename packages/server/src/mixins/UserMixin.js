@@ -1,8 +1,6 @@
 import bcrypt from 'bcryptjs'
 import { mixin, asArray, isString } from '@ditojs/utils'
 import { AuthenticationError } from '../errors/index.js'
-import { getUserIdentifier } from '../middleware/handleUser.js'
-import { authTimeout } from '../utils/auth.js'
 
 export const UserMixin = mixin(
   Model =>
@@ -108,7 +106,7 @@ export const UserMixin = mixin(
         }
       }
 
-      static async login(ctx, options) {
+      static async authenticate(ctx) {
         const {
           usernameProperty,
           passwordProperty
@@ -129,27 +127,7 @@ export const UserMixin = mixin(
             ? await user.$verifyPassword(password)
             : await verifyPassword(password, null)
           if (isValid) {
-            const totp = this.app.config.app.auth?.totp
-              ? await this.credentialQuery(ctx.transaction).findOne({
-                  type: 'totp',
-                  userId: `${user.$id()}`
-                })
-              : null
-            if (totp) {
-              // Users with TOTP are only logged in once they enter a code,
-              // through `'post login-code'` of `UsersController`. Until then,
-              // there is no user to return. Like `ctx.login()`, regenerate
-              // the session id against session fixation:
-              ctx.session.pendingLogin = {
-                user: getUserIdentifier(user),
-                expires: Date.now() + authTimeout
-              }
-              await ctx.session.regenerate()
-              return null
-            } else {
-              await ctx.login(user, options)
-              return user
-            }
+            return user
           } else {
             throw new AuthenticationError('Password or username is incorrect')
           }

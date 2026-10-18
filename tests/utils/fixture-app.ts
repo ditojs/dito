@@ -7,7 +7,8 @@ import {
   type ApplicationControllers,
   type Model,
   type ModelControllerActions,
-  type ModelControllerMemberActions
+  type ModelControllerMemberActions,
+  type Services
 } from '@ditojs/server'
 import {
   createTestApp,
@@ -24,6 +25,7 @@ interface StartTestAppOptions {
   dirname: string
   models: Record<string, typeof Model>
   controllers: Record<string, unknown>
+  services?: Services
   config?: Record<string, unknown>
   /** Merged into the admin's api config. */
   api?: Record<string, unknown>
@@ -34,6 +36,7 @@ export function startTestApp(opts: StartTestAppOptions): TestApp {
   const app = createTestApp({
     models: opts.models,
     controllers: opts.controllers,
+    services: opts.services,
     admin: {
       name: path.basename(opts.dirname),
       views: path.join(opts.dirname, 'views.ts'),
@@ -106,6 +109,8 @@ export interface ScenarioOptions {
   /** Controllers, keyed by name. Models without a controller named after
    * their plural (e.g. `Widgets` for `Widget`) get a `ScenarioController`. */
   controllers?: ApplicationControllers
+  /** Services, e.g. `PasskeyService`. */
+  services?: Services
   /** Extra tables to clear before the models, e.g. join tables. */
   tables?: string[]
   /** Extra config merged into the app config. */
@@ -129,6 +134,7 @@ export async function startScenario({
   dirname,
   models,
   controllers = {},
+  services,
   tables = [],
   config,
   api: adminApi,
@@ -155,6 +161,7 @@ export async function startScenario({
     dirname,
     models,
     controllers: { admin: AdminController, api },
+    services,
     config,
     api: adminApi
   })

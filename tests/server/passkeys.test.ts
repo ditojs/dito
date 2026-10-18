@@ -1,5 +1,6 @@
 import {
   CredentialModel,
+  PasskeyService,
   SessionModel,
   UserModel,
   UsersController
@@ -66,8 +67,7 @@ class TransactedMembers extends UsersController {
 }
 
 const passkeys = {
-  name: 'Example',
-  id: 'example.com',
+  domain: 'example.com',
   origins: ['https://example.com']
 }
 
@@ -75,16 +75,16 @@ describe('Passkeys', () => {
   const app = createTestApp({
     config: {
       app: {
+        name: 'Example',
         normalizePaths: true,
         helmet: false,
         keys: ['test-secret'],
         session: { modelClass: 'Session' },
-        auth: {
-          credentials: { modelClass: 'Credential' },
-          passkeys
-        }
-      }
+        auth: { credentials: { modelClass: 'Credential' } }
+      },
+      services: { passkeys }
     },
+    services: { passkeys: PasskeyService },
     models: { Session, Credential, Member, Guest },
     controllers: { Members, Guests, TransactedMembers }
   })
@@ -365,6 +365,25 @@ describe('Passkeys', () => {
     expect(await Credential.query()).toEqual([])
   })
 
+  it('only accepts the configured origins', async () => {
+    const request = await loginWithPassword()
+    const options = await request('/members/passkey-options', {
+      method: 'POST'
+    })
+    // Subdomains of the domain are only accepted when listed in `origins`:
+    const authenticator = createAuthenticator({
+      origin: 'https://admin.example.com',
+      rpId: 'example.com'
+    })
+    const passkey = await request('/members/passkeys', {
+      method: 'POST',
+      body: authenticator.register(options.data)
+    })
+    expect(passkey.status).toBe(400)
+    expect(passkey.data.message).toMatch(/origin "https:\/\/admin\./)
+    expect(await Credential.query()).toEqual([])
+  })
+
   it('consumes registration challenges also in transacted controllers', async () => {
     const request = await loginWithPassword()
     const options = await request('/transacted-members/passkey-options', {
@@ -532,28 +551,170 @@ describe('Passkeys turned off', () => {
   })
 })
 
-describe('Passkeys setup', () => {
-  const setup = async (
-    app: Record<string, any>,
-    { awaitSetup = true } = {}
+describe('Passkey domains', () => {
+  // Each app needs its own models, as models are only set up once:
+  const createDomainApp = (
+    config: Record<string, unknown> | true,
+    { proxy = true } = {}
   ) => {
+    class Session extends SessionModel {}
+    class Credential extends CredentialModel {}
+    class User extends UserModel {}
+    class Users extends UsersController {
+      override modelClass = User
+    }
+    const app = createTestApp({
+      config: {
+        app: {
+          name: 'Example',
+          normalizePaths: true,
+          // Trust `X-Forwarded-Host`, as the requests reach the app through
+          // its loopback address:
+          proxy,
+          keys: ['test-secret'],
+          session: { modelClass: 'Session' },
+          auth: { credentials: { modelClass: 'Credential' } }
+        },
+        services: { passkeys: config }
+      },
+      services: { passkeys: PasskeyService },
+      models: { Session, Credential, User },
+      controllers: { Users }
+    })
+    // Register a passkey through a page of `origin`, with requests to `host`:
+    const register = async (host: string, origin: string) => {
+      const request = createClient(getAppUrl(app), {
+        'x-forwarded-host': host
+      })
+      await request('/users/login', {
+        method: 'POST',
+        body: { username: 'ada', password: 'secret' }
+      })
+      const options = await request('/users/passkey-options', {
+        method: 'POST'
+      })
+      const authenticator = createAuthenticator({
+        origin,
+        rpId: options.data.rp.id
+      })
+      const passkey = await request('/users/passkeys', {
+        method: 'POST',
+        body: authenticator.register(options.data)
+      })
+      // Log in with the passkey again, on the same page, with requests to
+      // `loginHost`:
+      const login = async (loginHost = host) => {
+        const request = createClient(getAppUrl(app), {
+          'x-forwarded-host': loginHost
+        })
+        const options = await request('/users/passkey-login-options', {
+          method: 'POST'
+        })
+        const response = await request('/users/passkey-login', {
+          method: 'POST',
+          body: authenticator.authenticate(options.data)
+        })
+        return { rpId: options.data.rpId, status: response.status }
+      }
+      return { rpId: options.data.rp.id, status: passkey.status, login }
+    }
+    beforeAll(async () => {
+      await createTestDatabase(app, Session, Credential, User)
+      await app.knex.schema.alterTable('User', table => {
+        table.dropColumn('password')
+      })
+      await app.start()
+      await User.query().insert({ username: 'ada', password: 'secret' } as any)
+    })
+    afterAll(async () => {
+      await app.stop()
+      await app.knex.destroy()
+    })
+    return { register }
+  }
+
+  describe('by default', () => {
+    const { register } = createDomainApp(true)
+
+    it('belong to the domain of the request', async () => {
+      const { login, ...registration } = await register(
+        'example.org',
+        'https://example.org'
+      )
+      expect(registration).toEqual({ rpId: 'example.org', status: 200 })
+      expect(await login()).toEqual({ rpId: 'example.org', status: 200 })
+      // Other domains, also subdomains, don't accept them:
+      for (const host of ['example.net', 'www.example.org']) {
+        expect(await login(host)).toEqual({ rpId: host, status: 401 })
+      }
+    })
+
+    it('are used by the pages of the domain and its subdomains', async () => {
+      for (const origin of [
+        'https://admin.example.org',
+        'https://a.b.example.org:8443'
+      ]) {
+        expect((await register('example.org', origin)).status).toBe(200)
+      }
+    })
+
+    it('are used over http only on localhost', async () => {
+      expect(
+        await register('localhost:8080', 'http://localhost:8080')
+      ).toMatchObject({ rpId: 'localhost', status: 200 })
+      expect(
+        await register('example.org', 'http://example.org')
+      ).toMatchObject({ status: 400 })
+    })
+
+    it('reject the pages of other domains', async () => {
+      for (const origin of [
+        'https://example.com',
+        'https://notexample.org',
+        'https://example.org.example.com'
+      ]) {
+        expect((await register('example.org', origin)).status).toBe(400)
+      }
+    })
+  })
+
+  describe('without app.proxy', () => {
+    const { register } = createDomainApp(true, { proxy: false })
+
+    it('ignore the forwarded host of the request', async () => {
+      expect(
+        await register('example.org', 'https://example.org')
+      ).toMatchObject({ rpId: '127.0.0.1', status: 400 })
+    })
+  })
+
+  describe('with a domain', () => {
+    const { register } = createDomainApp({ domain: 'example.org' })
+
+    it('are shared by the subdomains', async () => {
+      const { login, ...registration } = await register(
+        'api.example.org',
+        'https://www.example.org'
+      )
+      expect(registration).toEqual({ rpId: 'example.org', status: 200 })
+      expect(await login()).toEqual({ rpId: 'example.org', status: 200 })
+    })
+  })
+})
+
+describe('Passkeys setup', () => {
+  const setup = async (app: Record<string, any>) => {
     // Models are only set up once, so each app needs its own user model:
     class User extends UserModel {}
     class Users extends UsersController {
       override modelClass = User
-
-      override setup() {
-        // Sub-classes may not await `super.setup()`, and still expect the
-        // routes to be set up after calling it:
-        const promise = super.setup()
-        const { handler } = this.app.router.find('POST', `${this.url}/passkeys`)
-        isRouted = !!handler
-        return awaitSetup ? promise : undefined
-      }
     }
-    let isRouted = false
     const testApp = createTestApp({
-      config: { app: { keys: ['test-secret'], ...app } },
+      config: {
+        app: { name: 'Example', keys: ['test-secret'], ...app },
+        services: { passkeys: true }
+      },
+      services: { passkeys: PasskeyService },
       models: { Session, Credential, User },
       controllers: { Users }
     })
@@ -562,59 +723,31 @@ describe('Passkeys setup', () => {
     } finally {
       await testApp.knex.destroy()
     }
-    return isRouted
   }
 
-  it('sets up the routes before importing', async () => {
-    const config = {
-      session: { modelClass: 'Session' },
-      auth: { credentials: { modelClass: 'Credential' }, passkeys }
-    }
-    for (const awaitSetup of [true, false]) {
-      expect(await setup(config, { awaitSetup })).toBe(true)
-    }
-  })
+  const credentials = { modelClass: 'Credential' }
 
-  it(`throws errors also for sub-classes that don't await setup`, async () => {
+  it('requires the name of the app', async () => {
     await expect(
-      setup({ auth: { passkeys } }, { awaitSetup: false })
-    ).rejects.toThrow(`Unable to use passkeys without sessions stored`)
+      setup({
+        name: undefined,
+        session: { modelClass: 'Session' },
+        auth: { credentials }
+      })
+    ).rejects.toThrow(`Invalid passkeys, missing 'app.name'.`)
   })
 
   it('requires sessions stored on the server', async () => {
     for (const session of [undefined, true, { maxAge: 1000 }]) {
-      await expect(
-        setup({
-          session,
-          auth: { credentials: { modelClass: 'Credential' }, passkeys }
-        })
-      ).rejects.toThrow(
+      await expect(setup({ session, auth: { credentials } })).rejects.toThrow(
         `Unable to use passkeys without sessions stored on the server, ` +
         `see 'app.session'.`
       )
     }
   })
 
-  it('requires the name, id and origins of passkeys', async () => {
-    for (const key of ['name', 'id', 'origins']) {
-      await expect(
-        setup({
-          session: { modelClass: 'Session' },
-          auth: {
-            credentials: { modelClass: 'Credential' },
-            passkeys: { ...passkeys, [key]: undefined }
-          }
-        })
-      ).rejects.toThrow(
-        `Invalid passkeys, missing 'app.auth.passkeys.${key}'.`
-      )
-    }
-  })
-
   it('requires credentials', async () => {
-    await expect(
-      setup({ session: { modelClass: 'Session' }, auth: { passkeys } })
-    ).rejects.toThrow(
+    await expect(setup({ session: { modelClass: 'Session' } })).rejects.toThrow(
       `Unable to use passkeys without credentials, see 'app.auth.credentials'.`
     )
   })

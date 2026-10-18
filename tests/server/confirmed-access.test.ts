@@ -2,7 +2,9 @@ import { vi } from 'vitest'
 import {
   Controller,
   CredentialModel,
+  PasskeyService,
   SessionModel,
+  TotpService,
   UserModel,
   UsersController
 } from '@ditojs/server'
@@ -47,23 +49,22 @@ describe('Confirmed access', () => {
   const app = createTestApp({
     config: {
       app: {
+        name: 'Example',
         normalizePaths: true,
         helmet: false,
         keys: ['test-secret'],
         session: { modelClass: 'Session' },
         auth: {
           credentials: { modelClass: 'Credential' },
-          secret: 'auth-secret',
-          passkeys: {
-            name: 'Example',
-            id: 'example.com',
-            origins: ['https://example.com']
-          },
-          totp: { issuer: 'Example' },
           reconfirmAccessAfter: '5m'
         }
+      },
+      services: {
+        passkeys: { domain: 'example.com', origins: ['https://example.com'] },
+        totp: { secret: 'totp-secret' }
       }
     },
+    services: { passkeys: PasskeyService, totp: TotpService },
     models: { Session, Credential, Member },
     controllers: { Members, Impersonations }
   })

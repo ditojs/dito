@@ -21,7 +21,7 @@ import type {
   Validator,
   Schema
 } from '@ditojs/server'
-import { Model, Service } from '@ditojs/server'
+import { Model, Service, UserModel } from '@ditojs/server'
 import type { RelationMapping, ValidatorContext } from 'objection'
 import type * as ModelsType from '../../server/models'
 import { Task, Tag } from '../../server/models'
@@ -1206,6 +1206,17 @@ describe('KoaContextState — typed ctx.state', () => {
     expectTypeOf(ctx.state.user.$hasRole('admin')).toEqualTypeOf<
       string | false
     >()
+  })
+
+  it('UserModel.authenticate() resolves to the user', () => {
+    expectTypeOf(UserModel.authenticate)
+      .parameter(0)
+      .toEqualTypeOf<KoaContext>()
+    expectTypeOf(UserModel.authenticate({} as KoaContext)).toEqualTypeOf<
+      Promise<InstanceType<typeof UserModel>>
+    >()
+    // @ts-expect-error `login()` is renamed to `authenticate()`:
+    UserModel.login
   })
 
   it('ctx.state includes augmented properties', () => {

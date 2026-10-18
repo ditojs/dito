@@ -542,9 +542,6 @@ importers:
       '@vitejs/plugin-vue':
         specifier: ^6.0.0
         version: 6.0.9(vite@8.3.4(@types/node@26.6.4)(sass@1.105.1)(yaml@2.9.1))(vue@3.5.43(typescript@6.0.3))
-      aaguids:
-        specifier: ^0.0.71
-        version: 0.0.71
       ajv:
         specifier: ^8.20.0
         version: 8.20.0
@@ -569,6 +566,9 @@ importers:
       helmet:
         specifier: ^8.3.0
         version: 8.3.0
+      keygrip:
+        specifier: ^1.1.0
+        version: 1.1.0
       koa:
         specifier: ^3.2.1
         version: 3.2.1
@@ -681,6 +681,9 @@ importers:
       '@types/node':
         specifier: ^26.6.4
         version: 26.6.4
+      aaguids:
+        specifier: ^0.0.71
+        version: 0.0.71
       knex:
         specifier: ^3.3.0
         version: 3.3.0(better-sqlite3@13.0.3)(pg@8.23.1)(supports-color@7.2.0)

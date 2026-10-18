@@ -126,6 +126,11 @@ export interface ApplicationConfig {
       }
   app?: {
     /**
+     * The name of the app, shown by passkey managers and authenticator apps.
+     * Required by `PasskeyService` and `TotpService`.
+     */
+    name?: string
+    /**
      * Whether to normalize paths from camel case to kebab case.
      *
      * @defaultValue `false`
@@ -218,32 +223,7 @@ export interface ApplicationConfig {
         modelClass: string | Class<Model>
       }
       /**
-       * A long random string that encrypts the TOTP secrets, hashes the backup
-       * codes and signs the password reset links, required by `totp` and
-       * `passwordReset`. Changing it invalidates them.
-       */
-      secret?: string
-      /**
-       * Enables passkeys, which need `session` and `credentials`.
-       */
-      passkeys?: {
-        /** The name of the app shown by authenticators. */
-        name: string
-        /** The domain that the passkeys belong to, e.g. `'example.com'`. */
-        id: string
-        /** The origins of the frontends that use the passkeys. */
-        origins: string[]
-      }
-      /**
-       * Enables two-factor authentication with TOTP, which needs `session`,
-       * `credentials` and `secret`.
-       */
-      totp?: {
-        /** The name of the app shown by authenticator apps. */
-        issuer: string
-      }
-      /**
-       * Enables password resets by email, which need `secret` and
+       * Enables password resets by email, which need `keys` and
        * `UsersController.sendPasswordReset()`.
        */
       passwordReset?: {
@@ -270,7 +250,7 @@ export interface ApplicationConfig {
       reconfirmAccessAfter?: number | string
     }
     /**
-     * Set signed cookie keys.
+     * Set signed cookie keys, which also sign the password reset links.
      *
      * @see https://github.com/koajs/koa/blob/master/docs/api/index.md#appkeys
      */
@@ -288,10 +268,10 @@ export interface ApplicationConfig {
     typeParsers?: Record<number, <I extends string | Buffer>(value: I) => any>
   }
   /**
-   * Service configurations keyed by service name. Pass
-   * `false` as a value to disable a service.
+   * Service configurations keyed by service name. Pass `true` to use the
+   * defaults of a service, and `false` to disable it.
    */
-  services?: Record<string, Record<string, unknown> | false>
+  services?: Record<string, Record<string, unknown> | boolean>
   storages?: StorageConfigs
   /** Logger configuration at the application level. */
   logger?: {
@@ -2492,11 +2472,8 @@ export class Controller {
    * @overridable
    */
   configure(): void
-  /**
-   * Sets up the routes of the actions and asset uploads. Internal: apps
-   * override `initialize()` instead.
-   */
-  setup(): void | Promise<void>
+  /* @overridable */
+  setup(): void
   /**
    * To be overridden in sub-classes, if the controller needs to initialize.
    * @overridable
@@ -3737,6 +3714,119 @@ export class Service<$Config extends object = Record<string, unknown>> {
 
   get logger(): PinoLogger
 }
+/**
+ * Logins with passkeys, through the optional peer dependencies
+ * `@simplewebauthn/server` and `aaguids`. Needs `app.name`, sessions stored on
+ * the server and `app.auth.credentials`.
+ */
+export class PasskeyService extends Service<{
+  /**
+   * The domain that the passkeys belong to, e.g. `'example.com'` to share them
+   * with its subdomains.
+   *
+   * @defaultValue The domain of the request.
+   */
+  domain?: string
+  /**
+   * The origins of the pages that may use the passkeys, e.g.
+   * `['https://example.com']`.
+   *
+   * @defaultValue The pages of `domain` and its subdomains.
+   */
+  origins?: string[]
+}> {
+  /**
+   * The options of a passkey login for `startAuthentication()`, with their
+   * challenge kept in the session.
+   */
+  createAuthenticationOptions(ctx: KoaContext): Promise<Record<string, unknown>>
+
+  /**
+   * Verifies the response of `startAuthentication()` against the challenge in
+   * the session, and updates the counter of the passkey's `credential`.
+   * Rejects with an `AuthenticationError` for missing or expired challenges
+   * and passkeys that don't verify.
+   */
+  verifyAuthentication(
+    ctx: KoaContext,
+    response: Record<string, unknown>,
+    credential: InstanceType<typeof CredentialModel> | null
+  ): Promise<void>
+
+  /**
+   * The options of a new passkey of the user for `startRegistration()`,
+   * excluding the passkeys in `credentials`, with their challenge kept in the
+   * session.
+   */
+  createRegistrationOptions(
+    ctx: KoaContext,
+    user: InstanceType<typeof UserModel>,
+    credentials: InstanceType<typeof CredentialModel>[]
+  ): Promise<Record<string, unknown>>
+
+  /**
+   * Verifies the response of `startRegistration()` against the challenge in
+   * the session, and resolves to the values of its credential. Rejects with an
+   * `AuthenticationError` for missing or expired challenges and passkeys that
+   * don't verify.
+   */
+  verifyRegistration(
+    ctx: KoaContext,
+    response: Record<string, unknown>
+  ): Promise<{
+    key: string
+    name: string
+    data: Record<string, unknown>
+  }>
+}
+
+/**
+ * Two-factor authentication with TOTP, through the optional peer dependency
+ * `otpauth`. Needs `app.name`, sessions stored on the server and
+ * `app.auth.credentials`.
+ */
+export class TotpService extends Service<{
+  /**
+   * A long random string that encrypts the TOTP secrets and hashes the backup
+   * codes. Changing it makes them unusable.
+   */
+  secret: string
+}> {
+  /**
+   * Creates a new secret for the user, kept in the session until
+   * `confirmSecret()`, with the `otpauth://` URI for the QR code of
+   * authenticator apps.
+   */
+  createSecret(
+    ctx: KoaContext,
+    user: InstanceType<typeof UserModel>
+  ): { uri: string; secret: string }
+
+  /**
+   * Stores the secret of the session once the user confirms it with a code,
+   * and resolves to the new backup codes. Rejects with an
+   * `AuthenticationError` for wrong codes and missing or expired setups, which
+   * end after too many wrong codes, and with a `ResponseError` if TOTP is
+   * already set up.
+   */
+  confirmSecret(
+    ctx: KoaContext,
+    user: InstanceType<typeof UserModel>,
+    code: string
+  ): Promise<string[]>
+
+  /**
+   * Verifies a TOTP code, or consumes a backup code of the user. Rejects with
+   * an `AuthenticationError` for wrong codes, and while too many wrong codes
+   * lock the account.
+   */
+  verifyCode(
+    ctx: KoaContext,
+    user: InstanceType<typeof UserModel>,
+    code: string
+  ): Promise<void>
+}
+
 export type Services = Record<string, Class<Service> | Service>
 
 /**
@@ -4503,14 +4593,10 @@ export const UserMixin: <T extends Constructor<{}>>(
     setup(): void
 
     /**
-     * Authenticates a user with the credentials of the request body, and
-     * logs them in. Resolves to `null` for users with TOTP, who are logged
-     * in once they enter a code through `'post login-code'`.
+     * Checks the credentials of the request body, and resolves to their user,
+     * without logging them in.
      */
-    login(
-      ctx: KoaContext,
-      options?: Record<string, unknown>
-    ): Promise<InstanceType<typeof UserModel> | null>
+    authenticate(ctx: KoaContext): Promise<InstanceType<typeof UserModel>>
 
     /** @internal */
     sessionQuery(

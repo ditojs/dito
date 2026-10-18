@@ -7,12 +7,13 @@ version, see the upgrade guides in `docs/`.
 
 ### Behaviour changes
 
-- **server:** Dito.js handles logins and sessions itself instead of through koa-passport, which `@ditojs/server` no longer depends on. `ctx.req.user` and custom Passport strategies are gone, `app.passport` has no effect, and `UserMixin.login()` reads the credentials only from the request body. Existing sessions stay valid.
+- **server:** Dito.js handles logins and sessions itself instead of through koa-passport, which `@ditojs/server` no longer depends on. `ctx.req.user` and custom Passport strategies are gone, `app.passport` has no effect, and `UserMixin.authenticate()` reads the credentials only from the request body. Existing sessions stay valid.
 - **server:** Changing a user's password ends their other sessions.
 - **server:** The `patch` and `put` actions of `UsersController` no longer accept passwords, which only change through `'post password'`: apps that change passwords in a form through `PATCH /users/self` use the admin's Security dialog or `'post password'` instead. Admins can't set the passwords of other users through them any more, only password resets can.
 - **server:** The actions of `UsersController` no longer accept the `hash` of the password, and changing the username through `patch` and `put` needs confirmed access.
 - **server:** `UsersController` only treats users of its own model class as logged in, not users of its sub-classes.
-- **server:** `Controller.setup()` and `UserMixin.sessionQuery()` are internal: apps override `initialize()` and set `sessionScope` instead.
+- **server:** `UserMixin.sessionQuery()` is internal: apps set `sessionScope` instead.
+- **server:** `UserMixin.login()` is renamed to `authenticate()`, which only checks the credentials and resolves to their user, without logging them in: apps that called `login()` call `ctx.login(await User.authenticate(ctx))` instead, which skips TOTP: apps with TOTP log users in through `'post login'` of `UsersController`.
 - **server:** The session cookie defaults to `sameSite: 'lax'`, which `app.session.sameSite` overrides.
 - **server:** Session models need an `expiresAt` column: add it with a migration, see [Upgrading to 5.x](docs/upgrading-to-5.x.md#sessions).
 - **server:** Unused assets are released every hour instead of after writes of asset data, so `assets.deleteUnusedAfter: 0` releases them at the next run. Apps that release them on a schedule of their own can drop it.
@@ -22,16 +23,17 @@ version, see the upgrade guides in `docs/`.
 
 ### New
 
-- **server, admin:** Logins with passkeys, with `app.auth.passkeys` and `login: { passkeys: true }`, see [Passkeys](docs/guide/server/controllers.md#passkeys).
-- **server, admin:** Two-factor authentication with TOTP, with `app.auth.totp` and `login: { totp: true }`, see [Two-factor authentication](docs/guide/server/controllers.md#two-factor-authentication).
+- **server, admin:** Logins with passkeys, with `PasskeyService` and `login: { passkeys: true }`, see [Passkeys](docs/guide/server/controllers.md#passkeys).
+- **server, admin:** Two-factor authentication with TOTP, with `TotpService` and `login: { totp: true }`, see [Two-factor authentication](docs/guide/server/controllers.md#two-factor-authentication).
 - **server, admin:** Password resets by email, with `app.auth.passwordReset` and `login: { passwordReset: true }`, see [Password reset](docs/guide/server/controllers.md#password-reset).
-- **server:** Password reset links stop working when the user logs in or changes their password or username, as their tokens are signed with these values instead of stored.
+- **server:** Password reset links stop working when the user logs in or changes their password or username, as their tokens are signed with `app.keys` together with these values instead of stored.
 - **server:** `UsersController#getPasswordResetTokenValues()` adds further values that password reset links depend on, e.g. the email.
 - **server, admin:** Users change their password through `'post password'` of `UsersController`, and the Security dialog of the account menu.
 - **server, admin:** Security changes need confirmed access, from a recent login or `'post confirm-access'` within `app.auth.reconfirmAccessAfter`. Turning off TOTP takes it instead of a code. See [Confirmed access](docs/guide/server/controllers.md#confirmed-access).
 - **server:** Authorize functions are called with their controller as `this`, in relations the `RelationController`.
 - **server:** `CredentialMixin` and `CredentialModel` store the credentials of all user models in one table, set in `app.auth.credentials`.
-- **server:** `app.auth.secret` encrypts the TOTP secrets, hashes the backup codes and signs the password reset links.
+- **server:** `app.name` names the app for passkey managers and authenticator apps.
+- **server:** A service configured as `true` in `config.services` is set up with its defaults.
 - **admin:** `settings.minDuration` keeps dialogs visible for a minimum time.
 - **admin:** The `empty` option of lists shows a text while a list has no items.
 - **admin:** `context.reload()` reloads the items of the list or object that a component is in.

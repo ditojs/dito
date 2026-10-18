@@ -224,16 +224,17 @@ describe('UserMixin', () => {
     expect(bob.$isLoggedIn(ctx)).toBe(false)
   })
 
-  describe('login()', () => {
-    it('logs in users with the configured username property', async () => {
+  describe('authenticate()', () => {
+    it('checks users with the configured username property', async () => {
       const ctx = createLoginContext({
         email: 'alice@example.com',
         password: 'open sesame'
       })
-      const user = (await Librarian.login(ctx, { session: true })) as Librarian
+      const user = (await Librarian.authenticate(ctx)) as Librarian
       expect(user).toBeInstanceOf(Librarian)
       expect(user.id).toBe(alice.id)
-      expect(ctx.login).toHaveBeenCalledWith(user, { session: true })
+      // The caller logs the user in:
+      expect(ctx.login).not.toHaveBeenCalled()
     })
 
     it('rejects wrong passwords with an AuthenticationError', async () => {
@@ -241,7 +242,7 @@ describe('UserMixin', () => {
         email: 'alice@example.com',
         password: 'wrong'
       })
-      const error = await Librarian.login(ctx).catch(error => error)
+      const error = await Librarian.authenticate(ctx).catch(error => error)
       expect(error).toBeInstanceOf(AuthenticationError)
       expect(error.message).toBe('Password or username is incorrect')
       expect(error.status).toBe(401)
@@ -253,7 +254,7 @@ describe('UserMixin', () => {
         email: 'nobody@example.com',
         password: 'open sesame'
       })
-      await expect(Librarian.login(ctx)).rejects.toBeInstanceOf(
+      await expect(Librarian.authenticate(ctx)).rejects.toBeInstanceOf(
         AuthenticationError
       )
     })
@@ -263,19 +264,8 @@ describe('UserMixin', () => {
         email: 'bob@example.com',
         password: 'retired'
       })
-      await expect(Librarian.login(ctx)).rejects.toBeInstanceOf(
+      await expect(Librarian.authenticate(ctx)).rejects.toBeInstanceOf(
         AuthenticationError
-      )
-    })
-
-    it('rejects when logging in the session fails', async () => {
-      const ctx = createLoginContext({
-        email: 'alice@example.com',
-        password: 'open sesame'
-      })
-      ctx.login.mockRejectedValue(new Error('Session store is down'))
-      await expect(Librarian.login(ctx)).rejects.toThrow(
-        'Session store is down'
       )
     })
 
@@ -289,7 +279,9 @@ describe('UserMixin', () => {
         throw new Error('Database is down')
       })
       try {
-        await expect(Librarian.login(ctx)).rejects.toThrow('Database is down')
+        await expect(Librarian.authenticate(ctx)).rejects.toThrow(
+          'Database is down'
+        )
       } finally {
         query.mockRestore()
       }

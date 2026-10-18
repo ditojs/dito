@@ -978,19 +978,17 @@ Set as `static options` on the model:
 | `hash`               | `string`, hidden: never sent to clients.                                            |
 | `lastLogin`          | `timestamp`, nullable. `UsersController` sets it on each login.                     |
 
-#### `static` login()
+#### `static` authenticate()
 
 ```js
-const user = await User.login(ctx, options?)
+const user = await User.authenticate(ctx)
 ```
 
-Authenticates the credentials in the request body, under `usernameProperty` and
-`passwordProperty`, and logs the user in with `ctx.login(user, options)`.
-Resolves to the user. With `app.auth.totp`, users with TOTP aren't logged in
-yet: it keeps a pending login in the session, with a new session id, which
-[`'post login-code'`](controllers.md#userscontroller) completes with their
-code, and resolves to `null`. Only `login()` asks for TOTP, not
-`ctx.login()`. Rejects with an
+Checks the credentials in the request body, under `usernameProperty` and
+`passwordProperty`, and resolves to their user, without logging them in: the
+caller does so with `ctx.login(user)`, or
+[`'post login'`](controllers.md#userscontroller), which asks users with TOTP
+for their code first. Rejects with an
 [`AuthenticationError`](errors.md#authenticationerror): status 400 with "Missing
 credentials", or 401 with "Password or username is incorrect".
 
@@ -1065,9 +1063,9 @@ own session stays logged in.
 
 #### Login events
 
-`ctx.login()` and `ctx.logout()`, which `UsersController` and
-[`login()`](#static-login) call, emit `'before:login'`, `'after:login'`,
-`'before:logout'` and `'after:logout'` on the user's model class, with the user
+`ctx.login()` and `ctx.logout()`, which `UsersController` calls, emit
+`'before:login'`, `'after:login'`, `'before:logout'` and `'after:logout'` on
+the user's model class, with the user
 and the options of the call as arguments:
 
 ```js

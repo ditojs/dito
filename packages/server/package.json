@@ -38,7 +38,6 @@
     "@koa/cors": "^5.0.0",
     "@koa/etag": "^5.0.2",
     "@koa/multer": "^4.0.0",
-    "aaguids": "^0.0.71",
     "ajv": "^8.20.0",
     "ajv-formats": "^3.0.1",
     "bcryptjs": "^3.0.3",
@@ -47,6 +46,7 @@
     "eventemitter2": "^6.4.9",
     "file-type": "^22.1.1",
     "helmet": "^8.3.0",
+    "keygrip": "^1.1.0",
     "koa": "^3.2.1",
     "koa-bodyparser": "^4.4.1",
     "koa-compose": "^4.1.0",
@@ -78,6 +78,7 @@
     "@ditojs/build": "workspace:^",
     "@simplewebauthn/server": "^14.0.0",
     "@vitejs/plugin-vue": "^6.0.0",
+    "aaguids": "0.0.x",
     "knex": "^3.3.0",
     "objection": "^3.3.0",
     "otpauth": "^9.0.0",
@@ -94,6 +95,9 @@
       "optional": true
     },
     "@vitejs/plugin-vue": {
+      "optional": true
+    },
+    "aaguids": {
       "optional": true
     },
     "otpauth": {
@@ -115,6 +119,7 @@
     "@types/koa__multer": "^2.0.8",
     "@types/multer-s3": "^3.0.3",
     "@types/node": "^26.6.4",
+    "aaguids": "^0.0.71",
     "knex": "^3.3.0",
     "objection": "^3.3.0",
     "otpauth": "^9.5.2",
