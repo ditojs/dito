@@ -35,7 +35,7 @@ refund: {
 
 `showDialog()` takes the dialog's `components`, like those of a form, its
 `buttons`, its initial `data`, and `settings` such as its accessible `label`
-and its maximum `width` in pixels, see
+and the maximum `width` of its content, see
 [`showDialog()`](../../api/admin/context.md#showdialog). A `submit`
 button resolves the dialog with its data, and a button named `cancel` cancels
 it.

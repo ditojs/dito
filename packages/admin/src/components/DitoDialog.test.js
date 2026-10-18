@@ -50,6 +50,20 @@ describe('DitoDialog', () => {
     expect(dialog.attributes('aria-label')).toBe('Rename Book')
   })
 
+  it('sizes its content with `settings.width` in pixels or CSS lengths', async () => {
+    const getWidth = async width => {
+      const { dialog } = await showDialog({
+        components,
+        buttons: { cancel: {} },
+        settings: { width }
+      })
+      return dialog.element.style.getPropertyValue('--width')
+    }
+    expect(await getWidth(400)).toBe('400px')
+    expect(await getWidth('25em')).toBe('25em')
+    expect(await getWidth(undefined)).toBe('')
+  })
+
   it('closes with `clickToClose` only when the overlay is clicked', async () => {
     const result = await showDialog({
       components,

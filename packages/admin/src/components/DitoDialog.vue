@@ -4,7 +4,7 @@
   role="dialog"
   :aria-label="settings.label || 'Dialog'"
   aria-modal="true"
-  :style="{ '--width': settings.width ? `${settings.width}px` : null }"
+  :style="{ '--width': width }"
   @mouseup.self="onMouseUp"
   @keydown="onKeyDown"
 )
@@ -34,7 +34,7 @@
 
 <script>
 import { computed, useTemplateRef } from 'vue'
-import { clone } from '@ditojs/utils'
+import { clone, isNumber } from '@ditojs/utils'
 import { UseFocusTrap } from '@vueuse/integrations/useFocusTrap/component'
 import { useContainer } from '../composables/useContainer.ts'
 import { getButtonSchemas, hasSubmitButton } from '../utils/schema/lookup.js'
@@ -51,10 +51,7 @@ export default {
     data: { type: Object, default: () => ({}) },
     settings: {
       type: Object,
-      default: () => ({
-        width: 480,
-        clickToClose: false
-      })
+      default: () => ({ clickToClose: false })
     }
   },
 
@@ -128,6 +125,12 @@ export default {
       dialogData,
       buttonSchemas,
       submit,
+
+      // Numbers are pixels, strings any CSS length:
+      width: computed(() => {
+        const { width } = props.settings
+        return isNumber(width) ? `${width}px` : width
+      }),
 
       focusTrapOptions: {
         immediate: true,
@@ -217,7 +220,8 @@ export default {
     box-sizing: border-box;
     background: white;
     border-radius: $border-radius;
-    max-width: var(--width, 480px);
+    // The width is that of the content, without the padding around it:
+    max-width: calc(var(--width, 35em) + 2 * #{$content-padding});
     max-height: 100%;
     box-shadow: 0 20px 60px -2px rgb(27, 33, 58, 0.4);
   }
