@@ -3,7 +3,7 @@
 The changes of each release of Dito.js. For upgrading to a new major
 version, see the upgrade guides in `docs/`.
 
-## Unreleased
+## 5.0.0 (2026-10-19)
 
 ### Behaviour changes
 
@@ -23,6 +23,7 @@ version, see the upgrade guides in `docs/`.
 - **admin:** Dialogs validate their data on submit, like forms.
 - **admin:** The `width` setting of dialogs is the width of their content, without their padding, and takes any CSS length besides pixel numbers. It defaults to `'35em'`, slightly wider than the 480 pixels before.
 - **admin:** `@simplewebauthn/browser` and `lean-qr` are required peer dependencies.
+- **admin:** Single list views scroll their table between the list header and the buttons, instead of the whole view. Scope buttons no longer shrink their labels, and scroll in their own row when they don't fit.
 - **server:** Dito.js uses objection 4.2, see [Objection 4](docs/upgrading-to-5.x.md#objection-4) for the changes that come with it.
 
 ### New
@@ -44,6 +45,7 @@ version, see the upgrade guides in `docs/`.
 
 ### Fixes
 
+- **admin:** The admin fits phone windows: the page can't be widened or panned, the overlay menu closes from its title bar, wide tables, scopes and header tabs scroll, and dialogs fit the window.
 - **admin:** Password managers no longer offer to sign in on edit forms, and fill in the password dialogs of the logged-in user, which pass them the username.
 - **server:** Empty `PATCH` requests to existing members answer with the unchanged member instead of 404.
 - **server:** Logins with unknown usernames take as long as wrong passwords, and usernames and passwords that aren't strings answer like wrong ones.
