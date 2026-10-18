@@ -282,9 +282,12 @@ export function useField(
           type: Number
         })
         attributes.placeholder = placeholder.value
-        attributes.autocomplete = getSchemaValue('autocomplete', {
-          type: String
-        })
+        const autocomplete = getSchemaValue('autocomplete', { type: String })
+        attributes.autocomplete = autocomplete
+        // Keep password managers out of fields that aren't about logins:
+        if (!isCredentialAutocomplete(autocomplete)) {
+          Object.assign(attributes, passwordManagerIgnoreAttributes)
+        }
       }
     }
     return attributes
@@ -336,3 +339,25 @@ export function useField(
 }
 
 export type Field = ReturnType<typeof useField>
+
+// Password managers ignore `autocomplete="off"`, but each reads an attribute of
+// its own: 1Password, LastPass, Bitwarden and Dashlane:
+const passwordManagerIgnoreAttributes = {
+  'data-1p-ignore': '',
+  'data-lpignore': 'true',
+  'data-bwignore': '',
+  'data-form-type': 'other'
+}
+
+// The `autocomplete` tokens of the fields that password managers fill in:
+const credentialTokens = new Set([
+  'username',
+  'current-password',
+  'new-password',
+  'one-time-code',
+  'webauthn'
+])
+
+function isCredentialAutocomplete(autocomplete?: string) {
+  return !!autocomplete?.split(/\s+/).some(token => credentialTokens.has(token))
+}

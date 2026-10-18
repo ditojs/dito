@@ -118,7 +118,7 @@ that can be cleared.
 | `placeholder` | `SchemaValue<string>` | | The hint shown in empty inputs, and in selects while no option is selected. Multiselects also take `false`, see [`multiselect`](#multiselect). |
 | `info` | `SchemaValue<TextOrHtml>` | | Info shown in a tooltip next to the label, see [Text and HTML](#text-and-html). Line breaks in text show. |
 | `maxLength` | `SchemaValue<number>` | | The maximum length of text input. |
-| `autocomplete` | `SchemaValue<'on' \| 'off'>` | | The `autocomplete` attribute of text inputs. |
+| `autocomplete` | `SchemaValue<'on' \| 'off'>` | | The `autocomplete` attribute of text inputs. Fields without a credential token like `username`, `current-password`, `new-password` or `one-time-code` also tell password managers to ignore them. |
 | `width` | `SchemaValue<…>` | `1` (full); `'auto'` for buttons, `checkboxes`, `radio`, `switch` | See [Layout options](#layout-options). |
 | `break` | `'before' \| 'after' \| 'both'` | | Forces a line break before or after the component. |
 | `class` | `string \| Record<string, boolean>` | | CSS classes added to the component's container. |

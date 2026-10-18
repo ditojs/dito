@@ -49,6 +49,7 @@ version, see the upgrade guides in `docs/`.
 
 ### Fixes
 
+- **admin:** Password managers no longer offer to sign in on edit forms, and fill in the password dialogs of the logged-in user, which pass them the username.
 - **server:** Empty `PATCH` requests to existing members answer with the unchanged member instead of 404.
 - **server:** Logins with unknown usernames take as long as wrong passwords, and usernames and passwords that aren't strings answer like wrong ones.
 - **server:** `super` calls work in actions in the options form, e.g. `{ handler, parameters }`, instead of throwing.
