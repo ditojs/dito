@@ -13,7 +13,10 @@ import {
   getAllKeys,
   getInheritanceChain
 } from '../utils/object.js'
-import { parseHandlerDefinition } from '../utils/handler.js'
+import {
+  convertHandlerDefinitions,
+  getHandlerDefinition
+} from '../utils/handler.js'
 import { isHttpMethod } from '../utils/http.js'
 import { describeFunction } from '../utils/function.js'
 import { formatJson } from '../utils/json.js'
@@ -190,18 +193,17 @@ export class Controller {
   }
 
   setupActions(type) {
-    const {
-      values: actions,
-      authorize
-    } = this.processValues(this.inheritValues(type))
+    const values = this.inheritValues(type)
+    convertHandlerDefinitions(values)
+    const { values: actions, authorize } = this.processValues(values)
     if (actions) {
       const namesByIdentifier = {}
-      for (const [name, action] of Object.entries(actions)) {
-        const { identifier, handler } = this.setupAction(
+      for (const name of Object.keys(actions)) {
+        const { identifier } = this.setupAction(
           type,
           actions,
           name,
-          action,
+          getHandlerDefinition(values, name),
           authorize[name]
         )
         const otherName = namesByIdentifier[identifier]
@@ -214,9 +216,6 @@ export class Controller {
           )
         }
         namesByIdentifier[identifier] = name
-        // Replace the action object with the converted action handler, so they
-        // too can benefit from prototypal inheritance:
-        actions[name] = handler
       }
       // Expose a direct reference to the controller on the action object, but
       // also make it inherit from the controller so that all its public fields
@@ -231,25 +230,12 @@ export class Controller {
     return actions
   }
 
-  setupAction(type, actions, name, action, authorize) {
-    // Parse the definition before changing its prototype below, so that its
-    // settings can't be inherited from the parent actions object.
-    const definition = parseHandlerDefinition(action)
+  setupAction(type, actions, name, definition, authorize) {
     if (!definition) {
       throw new ControllerError(
         this,
-        `Missing handler in '${name}' action: ${formatJson(action)}`
+        `Missing handler in '${name}' action: ${formatJson(actions[name])}`
       )
-    }
-    if (isObject(action)) {
-      // In order to support `super` calls in the `handler` function in object
-      // notation, deploy this crazy JS sorcery: Make the action inherit from
-      // the parent of the actions object that defines it, which may also be
-      // the one of a parent class:
-      const definingActions = getInheritanceChain(actions).findLast(
-        object => Object.hasOwn(object, name) && object[name] === action
-      )
-      Object.setPrototypeOf(action, Object.getPrototypeOf(definingActions))
     }
     // Action naming convention: `'<method> <path>'`, or just `'<method>'` for
     // the default methods.
