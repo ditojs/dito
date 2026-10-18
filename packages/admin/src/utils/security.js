@@ -37,37 +37,42 @@ export function showSecurityDialog(adminContext) {
 
   return adminContext.showDialog({
     components: {
-      // The password itself is never shown, so render a placeholder:
-      password: {
-        type: 'object',
-        label: 'Password',
-        width: `${securityWidth}px`,
-        render: () => '••••••••',
-        buttons: {
-          change: {
-            text: 'Change',
-            async onClick({ showDialog, request, notify }) {
-              const data = await showDialog({
-                components: createNewPasswordComponents({ autofocus: true }),
-                buttons: {
-                  cancel: {},
-                  change: { type: 'submit', text: 'Change Password' }
-                },
-                settings: { label: 'Change Password' }
-              })
-              if (data) {
-                await request({
-                  resource: users.password,
-                  data: { password: data.password }
+      ...(authentication.hasPasswordChange && {
+        // The password itself is never shown, so render a placeholder:
+        password: {
+          type: 'object',
+          label: 'Password',
+          width: `${securityWidth}px`,
+          render: () => '••••••••',
+          buttons: {
+            change: {
+              text: 'Change',
+              async onClick({ showDialog, request, notify }) {
+                const data = await showDialog({
+                  components: createNewPasswordComponents({ autofocus: true }),
+                  buttons: {
+                    cancel: {},
+                    change: { type: 'submit', text: 'Change Password' }
+                  },
+                  settings: { label: 'Change Password' }
                 })
-                notify({ type: 'success', text: 'Your password was changed.' })
+                if (data) {
+                  await request({
+                    resource: users.password,
+                    data: { password: data.password }
+                  })
+                  notify({
+                    type: 'success',
+                    text: 'Your password was changed.'
+                  })
+                }
               }
             }
           }
         }
-      },
+      }),
 
-      ...(authentication.passkeys && {
+      ...(authentication.hasPasskeys && {
         passkeys: {
           type: 'list',
           label: 'Passkeys',
@@ -111,7 +116,7 @@ export function showSecurityDialog(adminContext) {
         }
       }),
 
-      ...(authentication.totp && {
+      ...(authentication.hasTotp && {
         totp: {
           type: 'object',
           label: 'Two-Factor Authentication',
@@ -224,7 +229,7 @@ export function showSecurityDialog(adminContext) {
       cancel: { text: 'Close' }
     },
     // The password row has nothing to load, but objects need a value:
-    data: { password: {} },
+    data: authentication.hasPasswordChange ? { password: {} } : {},
     settings: { label: 'Security', width: securityWidth }
   })
 }
@@ -253,7 +258,7 @@ export function createLoginDialog(authentication, additionalComponents = {}) {
 
       ...createPasskeyButtons(authentication, 'Sign In with Passkey'),
 
-      ...(authentication.passwordReset && {
+      ...(authentication.hasPasswordReset && {
         passwordReset: {
           type: 'button',
           text: 'Forgot password?',
@@ -407,10 +412,10 @@ export function isPasskeyPromptCancelled(error) {
 
 // The button that closes the dialog with `'passkey'`, to be spread into the
 // buttons, only in browsers with WebAuthn, which have `PublicKeyCredential`:
-function createPasskeyButtons({ passkeys }, text) {
-  const hasPasskeys = passkeys && !!window.PublicKeyCredential
+function createPasskeyButtons({ hasPasskeys }, text) {
+  const shouldOfferPasskeys = hasPasskeys && !!window.PublicKeyCredential
   return (
-    hasPasskeys && {
+    shouldOfferPasskeys && {
       passkey: {
         type: 'button',
         text,

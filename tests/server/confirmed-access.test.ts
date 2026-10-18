@@ -25,6 +25,15 @@ class Member extends UserModel {
   declare id: number
 }
 
+// Users of another model, with their own confirmed access:
+class Guest extends UserModel {
+  declare id: number
+}
+
+class Guests extends UsersController {
+  override modelClass = Guest
+}
+
 class Members extends UsersController {
   override modelClass = Member
   override member: any = {
@@ -36,9 +45,16 @@ class Members extends UsersController {
 class Admins extends UsersController {
   override modelClass = Member
   override member: any = {
-    allow: ['patch'],
-    authorize: { patch: true }
+    allow: ['patch', 'put'],
+    authorize: { patch: true, put: true }
   }
+}
+
+// Opens all its collection actions, which keeps the confirmation of the
+// security changes:
+class OpenMembers extends UsersController {
+  override modelClass = Member
+  override collection: any = { authorize: true }
 }
 
 // Log in another user without 'post login', as apps do to impersonate users:
@@ -74,8 +90,8 @@ describe('Confirmed access', () => {
       }
     },
     services: { passkeys: PasskeyService, totp: TotpService },
-    models: { Session, Credential, Member },
-    controllers: { Members, Admins, Impersonations }
+    models: { Session, Credential, Member, Guest },
+    controllers: { Members, Guests, Admins, OpenMembers, Impersonations }
   })
 
   let url: string
@@ -150,14 +166,20 @@ describe('Confirmed access', () => {
   }
 
   beforeAll(async () => {
-    await createTestDatabase(app, Session, Member, Credential)
-    await app.knex.schema.alterTable('Member', table => {
-      table.dropColumn('password')
-    })
+    await createTestDatabase(app, Session, Member, Guest, Credential)
+    for (const name of ['Member', 'Guest']) {
+      await app.knex.schema.alterTable(name, table => {
+        table.dropColumn('password')
+      })
+    }
     await app.start()
     url = getAppUrl(app)
     await Member.query().insert({
       username: 'ada',
+      password: 'secret'
+    } as any)
+    await Guest.query().insert({
+      username: 'gil',
       password: 'secret'
     } as any)
   })
@@ -208,6 +230,74 @@ describe('Confirmed access', () => {
     for (const response of [
       ...(await requestChanges(request)),
       await post(request, 'confirm-access', { password: 'secret' })
+    ]) {
+      expect(response.status).toBe(401)
+    }
+  })
+
+  it('checks the login also with an open `authorize`', async () => {
+    const request = createClient(url)
+    for (const response of [
+      await request('/open-members/confirm-access', {
+        method: 'POST',
+        body: { password: 'secret' }
+      }),
+      await request('/open-members/passkeys'),
+      await request('/open-members/totp')
+    ]) {
+      expect(response.status).toBe(401)
+    }
+  })
+
+  it('checks the confirmed access also with an open `authorize`', async () => {
+    const requestOpenChanges = async (request: Client) => {
+      const statuses = []
+      for (const [method, path] of [
+        ['POST', 'password'],
+        ['POST', 'passkey-options'],
+        ['POST', 'passkeys'],
+        ['DELETE', 'passkeys/0'],
+        ['POST', 'totp'],
+        ['POST', 'totp-confirm'],
+        ['DELETE', 'totp']
+      ]) {
+        const response = await request(`/open-members/${path}`, {
+          method,
+          body: { password: 'changed', code: 'wrong' }
+        })
+        statuses.push(response.status)
+      }
+      return statuses
+    }
+    expect(await requestOpenChanges(createClient(url))).toEqual(
+      Array(7).fill(401)
+    )
+    const { request } = await loginWithPassword()
+    expireAccess()
+    expect(await requestOpenChanges(request)).toEqual(Array(7).fill(403))
+    expect(await Member.query().findOne('username', 'ada')).toBeDefined()
+  })
+
+  it('denies security changes to users of other models', async () => {
+    const request = createClient(url)
+    await request('/guests/login', {
+      method: 'POST',
+      body: { username: 'gil', password: 'secret' }
+    })
+    // The guest's own access is confirmed:
+    const options = await request('/guests/passkey-options', { method: 'POST' })
+    expect(options.status).toBe(200)
+    const { id } = (await Member.query().findOne('username', 'ada'))!
+    for (const response of [
+      ...(await requestChanges(request)),
+      await request(`/admins/${id}`, {
+        method: 'PATCH',
+        body: { password: 'changed' }
+      }),
+      await request(`/admins/${id}`, {
+        method: 'PUT',
+        body: { username: 'ada', password: 'changed' }
+      })
     ]) {
       expect(response.status).toBe(401)
     }

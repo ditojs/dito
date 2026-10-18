@@ -31,9 +31,10 @@ export interface NotifyOptions {
 
 // The authentication features that the server enables:
 export interface Authentication {
-  passkeys?: boolean
-  totp?: boolean
-  passwordReset?: boolean
+  hasPasskeys?: boolean
+  hasTotp?: boolean
+  hasPasswordChange?: boolean
+  hasPasswordReset?: boolean
 }
 
 // Rendered by `DitoRoot`:

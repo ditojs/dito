@@ -64,7 +64,12 @@ describe('AdminController hosting', () => {
       base: '/admin',
       api: { normalizePaths: true },
       settings: { theme: 'dark' },
-      authentication: { passkeys: false, totp: false, passwordReset: false }
+      authentication: {
+        hasPasskeys: false,
+        hasTotp: false,
+        hasPasswordChange: false,
+        hasPasswordReset: false
+      }
     })
   })
 

@@ -68,7 +68,7 @@ class EmailMembers extends Members {
 class Relaters extends Members {
   override relate = true
   override collection: any = {
-    allow: ['post'],
+    allow: ['post', 'post confirm-access'],
     authorize: { post: true }
   }
 }
@@ -76,7 +76,7 @@ class Relaters extends Members {
 // Members that patch any member through the collection:
 class Moderators extends Members {
   override collection: any = {
-    allow: ['patch'],
+    allow: ['patch', 'post confirm-access'],
     authorize: { patch: true }
   }
 }

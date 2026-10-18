@@ -6,8 +6,7 @@ import {
   authTimeout,
   getTotpQuery,
   getUserIdentifier,
-  parseUserIdentifier,
-  updatePasswordFingerprint
+  parseUserIdentifier
 } from '../utils/auth.js'
 import { getDuration } from '../utils/duration.js'
 import {
@@ -32,19 +31,18 @@ export class UsersController extends ModelController {
       'post passkey-login': true,
       'post password-reset': true,
       'post password-reset-confirm': true,
-      // Users manage their own password and passkeys, and need confirmed
-      // access to change them:
+      // Users manage their own password, passkeys and TOTP, which the handlers
+      // check too:
       'post confirm-access': isAuthenticated,
-      'post password': hasConfirmedAccess,
+      'post password': isAuthenticated,
       'get passkeys': isAuthenticated,
-      'post passkey-options': hasConfirmedAccess,
-      'post passkeys': hasConfirmedAccess,
-      'delete passkeys/:id': hasConfirmedAccess,
-      // ...and their TOTP:
+      'post passkey-options': isAuthenticated,
+      'post passkeys': isAuthenticated,
+      'delete passkeys/:id': isAuthenticated,
       'get totp': isAuthenticated,
-      'post totp': hasConfirmedAccess,
-      'post totp-confirm': hasConfirmedAccess,
-      'delete totp': hasConfirmedAccess
+      'post totp': isAuthenticated,
+      'post totp-confirm': isAuthenticated,
+      'delete totp': isAuthenticated
     },
 
     'post login'(ctx) {
@@ -134,6 +132,7 @@ export class UsersController extends ModelController {
       },
 
       async handler(ctx, { password, code, passkey }) {
+        checkAuthentication(this, ctx)
         const { user } = ctx.state
         if (this.passkeys && passkey) {
           // The passkeys of other users verify too, but don't confirm:
@@ -163,14 +162,13 @@ export class UsersController extends ModelController {
       },
 
       async handler(ctx, { password }) {
+        checkConfirmedAccess(this, ctx)
         const { user } = ctx.state
         const { passwordProperty } = this.modelClass.definition.options
         // The password property validates the password and sets its hash:
         await user
           .$query(ctx.transaction)
           .patch({ [passwordProperty]: password })
-        // Keep the session of the user, while their other sessions end:
-        await updatePasswordFingerprint(ctx, user)
         return { success: true }
       }
     },
@@ -217,7 +215,6 @@ export class UsersController extends ModelController {
           await user
             .$query(ctx.transaction)
             .patch({ [passwordProperty]: password })
-          await updatePasswordFingerprint(ctx, user)
           return { success: true }
         } else {
           throw new AuthenticationError({
@@ -250,6 +247,7 @@ export class UsersController extends ModelController {
     },
 
     'get passkeys'(ctx) {
+      checkAuthentication(this, ctx)
       return getPasskeyQuery(this.modelClass, ctx).select(
         'id',
         'name',
@@ -259,6 +257,7 @@ export class UsersController extends ModelController {
     },
 
     async 'post passkey-options'(ctx) {
+      checkConfirmedAccess(this, ctx)
       return this.passkeys.createRegistrationOptions(
         ctx,
         ctx.state.user,
@@ -270,6 +269,7 @@ export class UsersController extends ModelController {
       transacted: false, // See 'post confirm-access'.
 
       async handler(ctx) {
+        checkConfirmedAccess(this, ctx)
         const passkey = await this.passkeys.verifyRegistration(
           ctx,
           ctx.request.body
@@ -287,6 +287,7 @@ export class UsersController extends ModelController {
     },
 
     async 'delete passkeys/:id'(ctx) {
+      checkConfirmedAccess(this, ctx)
       const count = await getPasskeyQuery(this.modelClass, ctx)
         .deleteById(ctx.params.id)
       if (count > 0) {
@@ -297,6 +298,7 @@ export class UsersController extends ModelController {
     },
 
     async 'get totp'(ctx) {
+      checkAuthentication(this, ctx)
       const totp = await getTotpQuery(ctx.state.user, ctx.transaction).first()
       return {
         enabled: !!totp,
@@ -305,6 +307,7 @@ export class UsersController extends ModelController {
     },
 
     async 'post totp'(ctx) {
+      checkConfirmedAccess(this, ctx)
       const { user } = ctx.state
       if (await hasTotp(this, ctx, user)) {
         throw new ResponseError({
@@ -316,6 +319,7 @@ export class UsersController extends ModelController {
     },
 
     async 'post totp-confirm'(ctx) {
+      checkConfirmedAccess(this, ctx)
       const backupCodes = await this.totp.confirmSecret(
         ctx,
         ctx.state.user,
@@ -326,6 +330,7 @@ export class UsersController extends ModelController {
     },
 
     async 'delete totp'(ctx) {
+      checkConfirmedAccess(this, ctx)
       await getTotpQuery(ctx.state.user, ctx.transaction).delete()
       return { success: true }
     }
@@ -409,6 +414,22 @@ export class UsersController extends ModelController {
       }
     }
     super.setup()
+    // Actions that need confirmed access are only routed together with the
+    // action that confirms it, after `allow` and `processValues()`:
+    if (!this.collection['post confirm-access']) {
+      const name = [
+        ...confirmedAccessActions,
+        // Relating users with ids updates them:
+        ...(this.relate ? ['post'] : [])
+      ].find(action => this.collection[action] || this.member[action])
+      if (name) {
+        throw new ControllerError(
+          this,
+          `Unable to route '${name}' without 'post confirm-access', which ` +
+          `confirms the access it needs.`
+        )
+      }
+    }
     // Only controllers that route the password reset send its emails, after
     // `allow` and `processValues()`:
     if (
@@ -454,36 +475,31 @@ export class UsersController extends ModelController {
   }
 
   // @override
-  executeAndFetch(action, ctx, modify, body = ctx.request.body) {
-    return handleUserChanges(
+  async executeAndFetch(action, ctx, modify, body = ctx.request.body) {
+    await checkUserChanges(
       this,
       ctx,
       action,
-      asArray(body).map(user => [this.getModelId(user), user]),
-      () => super.executeAndFetch(action, ctx, modify, body)
+      asArray(body).map(user => [this.getModelId(user), user])
     )
+    return super.executeAndFetch(action, ctx, modify, body)
   }
 
   // @override
-  relateAndFetch(ctx, modify) {
-    return handleUserChanges(
+  async relateAndFetch(ctx, modify) {
+    await checkUserChanges(
       this,
       ctx,
       'relate',
-      asArray(ctx.request.body).map(user => [this.getModelId(user), user]),
-      () => super.relateAndFetch(ctx, modify)
+      asArray(ctx.request.body).map(user => [this.getModelId(user), user])
     )
+    return super.relateAndFetch(ctx, modify)
   }
 
   // @override
-  executeAndFetchById(action, ctx, modify, body = ctx.request.body) {
-    return handleUserChanges(
-      this,
-      ctx,
-      action,
-      [[ctx.memberId, body]],
-      () => super.executeAndFetchById(action, ctx, modify, body)
-    )
+  async executeAndFetchById(action, ctx, modify, body = ctx.request.body) {
+    await checkUserChanges(this, ctx, action, [[ctx.memberId, body]])
+    return super.executeAndFetchById(action, ctx, modify, body)
   }
 
   isAuthenticated(ctx) {
@@ -500,8 +516,16 @@ export class UsersController extends ModelController {
   // `confirmationRequired` instead of denying the access:
   hasConfirmedAccess(ctx) {
     if (this.isAuthenticated(ctx)) {
-      checkConfirmedAccess(ctx)
-      return true
+      const { user, expires } = ctx.session.confirmedAccess ?? {}
+      if (user === getUserIdentifier(ctx.state.user) && expires > Date.now()) {
+        return true
+      } else {
+        throw new AuthorizationError({
+          message: 'Confirmation required',
+          status: 403,
+          confirmationRequired: true
+        })
+      }
     } else {
       return false
     }
@@ -553,6 +577,20 @@ export class UsersController extends ModelController {
   }
 }
 
+// Only routed with 'post confirm-access', for password and username changes
+// and the security actions:
+const confirmedAccessActions = [
+  'patch',
+  'put',
+  'post password',
+  'post passkey-options',
+  'post passkeys',
+  'delete passkeys/:id',
+  'post totp',
+  'post totp-confirm',
+  'delete totp'
+]
+
 // Only routed with `PasskeyService`:
 const passkeyActions = [
   'post passkey-login-options',
@@ -583,8 +621,19 @@ function isAuthenticated(ctx) {
   return this.isAuthenticated(ctx)
 }
 
-function hasConfirmedAccess(ctx) {
-  return this.hasConfirmedAccess(ctx)
+// The handlers check the login and the confirmed access themselves, so that no
+// `authorize` setting can drop them. Without a login of a user of the
+// controller, we answer 401:
+function checkAuthentication(controller, ctx) {
+  if (!controller.isAuthenticated(ctx)) {
+    throw new AuthorizationError()
+  }
+}
+
+function checkConfirmedAccess(controller, ctx) {
+  if (!controller.hasConfirmedAccess(ctx)) {
+    throw new AuthorizationError()
+  }
 }
 
 function getPasskeyQuery(modelClass, ctx) {
@@ -632,11 +681,10 @@ async function hasTotp(controller, ctx, user, message) {
 
 // Setting passwords and changing usernames needs confirmed access, the latter
 // as password resets go to them. Hashes are never set directly. `users` are
-// `[id, user]` entries, which `write()` writes:
-async function handleUserChanges(controller, ctx, action, users, write) {
+// `[id, user]` entries:
+async function checkUserChanges(controller, ctx, action, users) {
   const { modelClass } = controller
   const { usernameProperty, passwordProperty } = modelClass.definition.options
-  let isOwnPasswordChange = false
   for (const [id, user] of users) {
     if (user?.hash !== undefined) {
       throw new ValidationError({
@@ -648,41 +696,16 @@ async function handleUserChanges(controller, ctx, action, users, write) {
     const isUpdate = action !== 'insert' && (action !== 'relate' || id != null)
     if (isUpdate) {
       if (user?.[passwordProperty] !== undefined) {
-        checkConfirmedAccess(ctx)
-        isOwnPasswordChange ||= `${id}` === `${ctx.state.user.$id()}`
+        checkConfirmedAccess(controller, ctx)
       }
       const username = user?.[usernameProperty]
       if (username !== undefined) {
         const stored = await modelClass.query(ctx.transaction).findById(id)
         if (stored?.[usernameProperty] !== username) {
-          checkConfirmedAccess(ctx)
+          checkConfirmedAccess(controller, ctx)
         }
       }
     }
-  }
-  const result = await write()
-  // Only password changes may update the fingerprint of the session, or
-  // stolen sessions could keep up with the changes of the owner:
-  if (isOwnPasswordChange) {
-    await updatePasswordFingerprint(ctx, result)
-  }
-  return result
-}
-
-// Answer 403 with `confirmationRequired` to users without a login or a
-// 'post confirm-access' within `app.authentication.reconfirmAccessAfter`:
-function checkConfirmedAccess(ctx) {
-  const { user, expires } = ctx.session.confirmedAccess ?? {}
-  if (
-    !ctx.state.user ||
-    user !== getUserIdentifier(ctx.state.user) ||
-    !(expires > Date.now())
-  ) {
-    throw new AuthorizationError({
-      message: 'Confirmation required',
-      status: 403,
-      confirmationRequired: true
-    })
   }
 }
 

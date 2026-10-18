@@ -58,7 +58,12 @@ describe('DitoAdmin', () => {
       {
         dito: {
           settings: { forceDragFallback: true },
-          authentication: { passkeys: true, totp: true, passwordReset: true }
+          authentication: {
+            hasPasskeys: true,
+            hasTotp: true,
+            hasPasswordChange: true,
+            hasPasswordReset: true
+          }
         },
         api: { users: { login: { path: 'sign-in' } } }
       }

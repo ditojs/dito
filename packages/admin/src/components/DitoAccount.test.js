@@ -26,11 +26,23 @@ describe('DitoAccount', () => {
     const logout = vi.spyOn(session, 'logout').mockResolvedValue()
     const { button, items } = await openMenu(admin)
     expect(button.text()).toBe('tester')
-    expect(items.map(item => item.text())).toEqual(['Security', 'Sign Out'])
-    await items[1].trigger('click')
+    expect(items.map(item => item.text())).toEqual(['Sign Out'])
+    await items[0].trigger('click')
     expect(logout).toHaveBeenCalledOnce()
     expect(button.attributes('aria-expanded')).toBe('false')
   })
+
+  it.for(['hasPasswordChange', 'hasPasskeys', 'hasTotp'])(
+    'offers the Security dialog with %s',
+    async name => {
+      const admin = await mountAdmin({
+        views,
+        authentication: { [name]: true }
+      })
+      const { items } = await openMenu(admin)
+      expect(items.map(item => item.text())).toEqual(['Security', 'Sign Out'])
+    }
+  )
 
   it(`has no account settings without the option`, async () => {
     const admin = await mountAdmin({ views })
@@ -78,11 +90,7 @@ describe('DitoAccount', () => {
     it('opens the settings of the user from the menu', async () => {
       const { admin, request } = await mountWithSettings()
       const { items } = await openMenu(admin)
-      expect(items.map(item => item.text())).toEqual([
-        'Settings',
-        'Security',
-        'Sign Out'
-      ])
+      expect(items.map(item => item.text())).toEqual(['Settings', 'Sign Out'])
       await items[0].trigger('click')
       await flushPromises()
       expect(admin.router.currentRoute.value.path).toBe('/account/settings')
@@ -127,7 +135,7 @@ describe('DitoAccount', () => {
     // changes need the access confirmed with the password first.
     // `authentication` sets the features that the server enables:
     const mountWithPasskeys = async ({
-      authentication = { passkeys: true },
+      authentication = { hasPasswordChange: true, hasPasskeys: true },
       passkeys = [
         {
           id: 1,
@@ -413,7 +421,7 @@ describe('DitoAccount', () => {
 
       it('changes the password without passkeys or TOTP', async () => {
         const { admin, request } = await mountWithPasskeys({
-          authentication: {},
+          authentication: { hasPasswordChange: true },
           isConfirmed: false
         })
         const notify = vi.spyOn(admin.context, 'notify')
@@ -450,7 +458,10 @@ describe('DitoAccount', () => {
           vi.stubGlobal('PublicKeyCredential', class {})
           try {
             const { admin } = await mountWithPasskeys({
-              authentication: { passkeys },
+              authentication: {
+                hasPasswordChange: true,
+                hasPasskeys: passkeys
+              },
               isConfirmed: false
             })
             await changePassword(admin, {
@@ -465,6 +476,14 @@ describe('DitoAccount', () => {
           }
         }
       )
+
+      it(`isn't shown without the password change`, async () => {
+        const { admin } = await mountWithPasskeys({
+          authentication: { hasPasskeys: true }
+        })
+        expect(getLastDialog(admin).find('.dito-object').exists()).toBe(false)
+        expect(findButton(admin, 'Change')).toBeUndefined()
+      })
 
       it('shows a placeholder instead of the password', async () => {
         const { admin } = await mountWithPasskeys()
@@ -584,7 +603,7 @@ describe('DitoAccount', () => {
           views,
           api: { users: { path: 'users' } },
           request,
-          authentication: { totp: true }
+          authentication: { hasTotp: true }
         })
         const { items } = await openMenu(admin)
         expect(items.map(item => item.text())).toEqual(['Security', 'Sign Out'])

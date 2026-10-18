@@ -75,6 +75,7 @@ class Members extends UsersController {
       'post logout',
       'get session',
       'get self',
+      'post confirm-access',
       'post broken-login'
     ],
     'authorize': {
@@ -126,13 +127,13 @@ class Readers extends UsersController {
 class Writers extends UsersController {
   override modelClass = Member
   override collection: any = {
-    allow: ['post login', 'post password']
+    allow: ['post login', 'post password', 'post confirm-access']
   }
 }
 
 class SubReaders extends Readers {
   override collection: any = {
-    allow: ['post login', 'post password']
+    allow: ['post login', 'post password', 'post confirm-access']
   }
 }
 
@@ -161,7 +162,7 @@ class Profiles extends UsersController {
 class Moderators extends UsersController {
   override modelClass = Member
   override collection: any = {
-    allow: ['post', 'put', 'patch'],
+    allow: ['post', 'put', 'patch', 'post confirm-access'],
     authorize: { post: true, put: true, patch: true }
   }
 
@@ -176,7 +177,7 @@ class Relaters extends UsersController {
   override modelClass = Member
   override relate = true
   override collection: any = {
-    allow: ['post'],
+    allow: ['post', 'post confirm-access'],
     authorize: { post: true }
   }
 }
@@ -211,6 +212,44 @@ class WrappedAdmins extends Admins {
   }
 }
 
+// Runs `beforeRacingPatch()` before patching, after the login of the request
+// was checked, to change the password in another session meanwhile. Not
+// transacted, so that the other session can write:
+let beforeRacingPatch: (() => Promise<void>) | null = null
+
+class Racers extends UsersController {
+  override modelClass = Member
+  override member: any = {
+    allow: ['patch'],
+
+    async patch(ctx: any, modify: any) {
+      await beforeRacingPatch?.()
+      return super.patch(ctx, modify)
+    }
+  }
+}
+
+// Changes the password of the logged-in member in the app's own actions, with
+// `$patch()` and with a graph patch:
+class Passwords extends Controller {
+  override actions: any = {
+    async 'post patch'(ctx: any) {
+      const { password } = ctx.request.body
+      await ctx.state.user.$patch({ password }, ctx.transaction)
+      return { success: true }
+    },
+
+    async 'post graph'(ctx: any) {
+      const { password } = ctx.request.body
+      await Member.query(ctx.transaction).patchDitoGraph({
+        id: ctx.state.user.id,
+        password
+      })
+      return { success: true }
+    }
+  }
+}
+
 describe('UsersController', () => {
   const app = createTestApp({
     config: {
@@ -237,7 +276,9 @@ describe('UsersController', () => {
       Profiles,
       Moderators,
       Relaters,
-      Deleters
+      Deleters,
+      Racers,
+      Passwords
     }
   })
 
@@ -588,21 +629,62 @@ describe('UsersController', () => {
       expect((await other('/members/session')).data.authenticated).toBe(false)
     })
 
-    it(`doesn't keep sessions through other patches of the user`, async () => {
-      const request = await loginOther()
-      for (const path of ['/members/self', '/profiles/self']) {
-        const response = await request(path, {
-          method: 'PATCH',
-          body: { nickname: 'Bobo' }
+    it.each(['patch', 'graph'])(
+      `keeps users who change their password in the app's own actions: %s`,
+      async action => {
+        const other = await loginOther()
+        const request = await loginOther()
+        const response = await request(`/passwords/${action}`, {
+          method: 'POST',
+          body: { password: 'changed' }
         })
         expect(response.status).toBe(200)
+        expect(
+          (await request('/members/session')).data.authenticated
+        ).toBe(true)
+        expect((await other('/members/session')).data.authenticated).toBe(false)
       }
+    )
+
+    it(`doesn't keep sessions through other patches of the user`, async () => {
+      const request = await loginOther()
       const other = await loginOther()
+      // Profiles answer without `hash`, so the patched user has none:
+      const patch = await request('/profiles/self', {
+        method: 'PATCH',
+        body: { nickname: 'Bobo' }
+      })
+      expect(patch.status).toBe(200)
+      // The patching session's next request follows the password change:
       const response = await other('/readers/password', {
         method: 'POST',
         body: { password: 'changed' }
       })
       expect(response.status).toBe(200)
+      expect((await other('/members/session')).data.authenticated).toBe(true)
+      expect((await request('/members/session')).data.authenticated).toBe(false)
+    })
+
+    it(`doesn't keep sessions through patches racing password changes`, async () => {
+      const other = await loginOther()
+      const request = await loginOther()
+      beforeRacingPatch = async () => {
+        const response = await other('/readers/password', {
+          method: 'POST',
+          body: { password: 'changed' }
+        })
+        expect(response.status).toBe(200)
+      }
+      try {
+        // The patch fetches the user with the changed `hash`:
+        const patch = await request('/racers/self', {
+          method: 'PATCH',
+          body: { nickname: 'Bobo' }
+        })
+        expect(patch.status).toBe(200)
+      } finally {
+        beforeRacingPatch = null
+      }
       expect((await other('/members/session')).data.authenticated).toBe(true)
       expect((await request('/members/session')).data.authenticated).toBe(false)
     })
@@ -704,8 +786,7 @@ describe('UsersController', () => {
     }
   })
 
-  it('only changes passwords with confirmed access', async () => {
-    // Without a login, so without confirmed access:
+  it('only changes passwords with a login', async () => {
     const request = createClient(url)
     for (const [path, method, body] of [
       [`/moderators/${member.id}`, 'PATCH', { password: 'changed' }],
@@ -714,8 +795,7 @@ describe('UsersController', () => {
       ['/moderators', 'PUT', [{ id: member.id, password: 'changed' }]]
     ] as const) {
       const response = await request(path, { method, body })
-      expect(response.status).toBe(403)
-      expect(response.data.confirmationRequired).toBe(true)
+      expect(response.status).toBe(401)
     }
     const stored = (await Member.query().findById(member.id))!
     expect(await stored.$verifyPassword('secret')).toBe(true)
@@ -752,12 +832,12 @@ describe('UsersController', () => {
   })
 
   it('validates related users with ids like updates', async () => {
-    // Without a login, so without confirmed access:
+    // Without a login:
     const request = createClient(url)
     for (const [body, status] of [
       [{ id: member.id, hash: 'pwned' }, 400],
-      [{ id: member.id, password: 'changed' }, 403],
-      [{ id: member.id, username: 'eve' }, 403]
+      [{ id: member.id, password: 'changed' }, 401],
+      [{ id: member.id, username: 'eve' }, 401]
     ] as const) {
       const response = await request('/relaters', { method: 'POST', body })
       expect(response.status).toBe(status)
@@ -1006,6 +1086,37 @@ describe('Session cookie', () => {
 })
 
 describe('UsersController setup', () => {
+  it.each([
+    ['patch', {}, { allow: ['patch'] }],
+    ['put', { allow: ['put'] }, { allow: ['get'] }],
+    ['post password', { allow: ['post password'] }, { allow: ['get'] }],
+    ['post', { allow: ['post'] }, { allow: ['get'] }, true]
+  ])(
+    `requires 'post confirm-access' with '%s'`,
+    async (name, collection, member, relate = false) => {
+      class User extends UserModel {}
+      class Users extends UsersController {
+        override modelClass = User
+        override relate = relate
+        override collection: any = { allow: [], ...collection }
+        override member: any = member
+      }
+      const app = createTestApp({
+        config: { app: { keys: ['test-secret'], session: true } },
+        models: { User },
+        controllers: { Users }
+      })
+      try {
+        await expect(app.setup()).rejects.toThrow(
+          `Unable to route '${name}' without 'post confirm-access', which ` +
+          `confirms the access it needs.`
+        )
+      } finally {
+        await app.knex.destroy()
+      }
+    }
+  )
+
   it('requires sessions', async () => {
     class User extends UserModel {}
     class Users extends UsersController {

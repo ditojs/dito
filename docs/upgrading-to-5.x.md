@@ -73,6 +73,11 @@ export async function down(knex) {
 
 ### Users
 
+- Users controllers that route actions that need confirmed access, `patch`,
+  `put`, `post` with `relate`, `'post password'` and the passkey and TOTP
+  actions that change them, need to route `'post confirm-access'` too, else
+  their setup throws: subclasses that set `collection.allow` add it to the
+  list.
 - `UserMixin.login(ctx)` is `authenticate(ctx)`. It only checks the
   credentials and returns the user, so code that logs users in itself calls
   `ctx.login(await User.authenticate(ctx))`, which skips TOTP. Users with TOTP
