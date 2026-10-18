@@ -480,11 +480,6 @@ export default DitoTypeList
     }
   }
 
-  &__table {
-    // Scroll tables that are wider than the list, instead of the page:
-    overflow: auto;
-  }
-
   &.dito-component--single {
     // The table scrolls between the header and the buttons:
     display: flex;
@@ -492,6 +487,9 @@ export default DitoTypeList
     height: 100%;
 
     #{$self}__table {
+      // Scroll tables that are wider or taller than the view in their own box.
+      // Only here, since it would clip the popups of nested lists:
+      overflow: auto;
       flex: 1 1 auto;
       min-height: 0;
       // End with the view's padding above the buttons, when scrolled down:
