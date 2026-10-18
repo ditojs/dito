@@ -171,7 +171,7 @@ describe('DitoRoot', () => {
   })
 
   describe('login dialog', () => {
-    const mountLoggedOut = async options => {
+    const mountLoggedOut = async authentication => {
       const request = vi.fn(({ method, url, data }) => {
         // Users named 'totp-user' have TOTP:
         const responses = {
@@ -189,7 +189,7 @@ describe('DitoRoot', () => {
           ? { data: responses[url] }
           : null
       })
-      const admin = await mountAdmin({ views: {}, request, options })
+      const admin = await mountAdmin({ views: {}, request, authentication })
       await admin.context.session.logout()
       await flushPromises()
       await admin.wrapper.find('button.dito-login').trigger('click')
@@ -203,7 +203,7 @@ describe('DitoRoot', () => {
 
     it('logs in with a passkey', async () => {
       const { admin, request, dialog } = await mountLoggedOut({
-        login: { passkeys: true }
+        passkeys: true
       })
       const button = dialog
         .findAll('button')
@@ -225,7 +225,7 @@ describe('DitoRoot', () => {
 
     it('sends no passkey with the password', async () => {
       const { admin, request, dialog } = await mountLoggedOut({
-        login: { passkeys: true }
+        passkeys: true
       })
       await enterValue(dialog.find('input[name="username"]'), 'reader')
       await enterValue(dialog.find('input[name="password"]'), 'secret')
@@ -302,14 +302,14 @@ describe('DitoRoot', () => {
       })
     })
 
-    it('offers passkeys only with the option', async () => {
+    it('offers passkeys only when the server enables them', async () => {
       const { dialog } = await mountLoggedOut({})
       expect(dialog.text()).not.toContain('Sign In with Passkey')
     })
 
     it('requests a password reset, and then asks to log in', async () => {
       const { admin, request, dialog } = await mountLoggedOut({
-        login: { passwordReset: true }
+        passwordReset: true
       })
       const button = dialog
         .findAll('button')
@@ -336,7 +336,7 @@ describe('DitoRoot', () => {
       expect(login.find('input[name="password"]').exists()).toBe(true)
     })
 
-    it('offers password resets only with the option', async () => {
+    it('offers password resets only when the server enables them', async () => {
       const { dialog } = await mountLoggedOut({})
       expect(dialog.text()).not.toContain('Forgot password?')
     })

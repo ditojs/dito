@@ -1,7 +1,6 @@
 import { vi } from 'vitest'
-import { shallowRef } from 'vue'
 import { startAuthentication } from '@simplewebauthn/browser'
-import { Session } from './Session.ts'
+import { AdminContext } from './AdminContext.ts'
 import AdminUser from '../AdminUser.js'
 
 // The DOM of the tests has no WebAuthn, so we answer the passkey login with a
@@ -14,7 +13,7 @@ const user = { id: 1, username: 'tester' }
 
 // Creates a session with an API that answers the `api.users` requests through
 // `responses`, keyed by method and path, e.g. `'get /session'`, and with a
-// view registry and a user interface that record their calls.
+// view registry, dialogs and notifications that record their calls.
 function createSession({
   responses = {},
   loginData = [{ username: 'tester', password: 'secret' }],
@@ -49,25 +48,38 @@ function createSession({
     resolve: vi.fn(async () => resolvedViews.shift() ?? true),
     clear: vi.fn()
   }
-  const sessionUser = shallowRef(null)
-  const session = new Session({
+  const adminContext = new AdminContext({
     api,
     viewRegistry,
-    user: sessionUser,
-    redirectAfterLogin
+    settings: {},
+    authentication: {},
+    login: { redirectAfterLogin }
   })
-  const userInterface = {
-    requestLoginData: vi.fn(async () => loginData.shift() ?? null),
-    requestLoginCode: vi.fn(async () => loginCodes.shift() ?? null),
-    requestPasswordReset: vi.fn(async () => passwordResets.shift() ?? null),
-    requestNewPassword: vi.fn(async () => newPasswords.shift() ?? null),
-    requestAccessConfirmation: vi.fn(
-      async () => accessConfirmations.shift() ?? null
-    ),
-    notify: vi.fn()
+  const dialogs = {
+    login: vi.fn(async () => loginData.shift() ?? null),
+    code: vi.fn(async () => loginCodes.shift() ?? null),
+    passwordReset: vi.fn(async () => passwordResets.shift() ?? null),
+    newPassword: vi.fn(async () => newPasswords.shift() ?? null),
+    confirmAccess: vi.fn(async () => accessConfirmations.shift() ?? null)
   }
-  const detach = session.attachUserInterface(userInterface)
-  return { session, sessionUser, api, viewRegistry, userInterface, detach }
+  // Tell the dialogs apart by their submit buttons:
+  const submitButtons = {
+    login: 'login',
+    verify: 'code',
+    send: 'passwordReset',
+    change: 'newPassword',
+    confirm: 'confirmAccess'
+  }
+  const notify = vi.fn()
+  adminContext.attachDialogsAndNotifications({
+    showDialog: ({ buttons }) => {
+      const key = Object.keys(submitButtons).find(key => key in buttons)
+      return dialogs[submitButtons[key]]()
+    },
+    notify
+  })
+  const { session } = adminContext
+  return { session, adminContext, api, viewRegistry, dialogs, notify }
 }
 
 describe('Session', () => {
@@ -77,19 +89,18 @@ describe('Session', () => {
 
   describe('start()', () => {
     it('resolves the views for the user of the session', async () => {
-      const { session, sessionUser, viewRegistry, userInterface } =
-        createSession({
-          responses: { 'get /session': { user: { ...user } } }
-        })
+      const { session, adminContext, viewRegistry, dialogs } = createSession({
+        responses: { 'get /session': { user: { ...user } } }
+      })
       await session.start()
-      expect(sessionUser.value).toEqual(user)
-      expect(sessionUser.value).toBeInstanceOf(AdminUser)
+      expect(adminContext.user).toEqual(user)
+      expect(adminContext.user).toBeInstanceOf(AdminUser)
       expect(viewRegistry.resolve).toHaveBeenCalledOnce()
-      expect(userInterface.requestLoginData).not.toHaveBeenCalled()
+      expect(dialogs.login).not.toHaveBeenCalled()
     })
 
     it('asks to log in without a user in the session', async () => {
-      const { session, sessionUser, api, viewRegistry } = createSession({
+      const { session, adminContext, api, viewRegistry } = createSession({
         responses: {
           'get /session': { user: null },
           'post /login': { user: { ...user } }
@@ -101,12 +112,12 @@ describe('Session', () => {
         url: '/login',
         data: { username: 'tester', password: 'secret' }
       })
-      expect(sessionUser.value).toEqual(user)
+      expect(adminContext.user).toEqual(user)
       expect(viewRegistry.resolve).toHaveBeenCalledOnce()
     })
 
     it('asks to log in again when the views fail to resolve', async () => {
-      const { session, userInterface, viewRegistry } = createSession({
+      const { session, dialogs, viewRegistry } = createSession({
         responses: {
           'get /session': { user: { ...user } },
           'post /login': { user: { ...user } }
@@ -114,7 +125,7 @@ describe('Session', () => {
         resolvedViews: [false, true]
       })
       await session.start()
-      expect(userInterface.requestLoginData).toHaveBeenCalledOnce()
+      expect(dialogs.login).toHaveBeenCalledOnce()
       expect(viewRegistry.resolve).toHaveBeenCalledTimes(2)
     })
   })
@@ -132,7 +143,7 @@ describe('Session', () => {
     })
 
     it('sets the new password, and then asks to log in', async () => {
-      const { session, api, userInterface } = createSession({
+      const { session, api, notify, dialogs } = createSession({
         responses: {
           'post /password-reset-confirm': { success: true },
           'get /session': { user: null },
@@ -146,17 +157,17 @@ describe('Session', () => {
         url: '/password-reset-confirm',
         data: { token: 'token', password: 'changed' }
       })
-      expect(userInterface.notify).toHaveBeenCalledWith({
+      expect(notify).toHaveBeenCalledWith({
         type: 'success',
         text: 'Your password was changed. Please log in.'
       })
-      expect(userInterface.requestLoginData).toHaveBeenCalledOnce()
+      expect(dialogs.login).toHaveBeenCalledOnce()
       expect(getPath()).toBe('/admin/books?page=2')
     })
 
     it('notifies invalid tokens, and then asks to log in', async () => {
       const error = 'Invalid or expired token'
-      const { session, userInterface } = createSession({
+      const { session, notify, dialogs } = createSession({
         responses: {
           'post /password-reset-confirm': Object.assign(new Error(error), {
             response: { status: 400, data: { message: error } }
@@ -167,16 +178,16 @@ describe('Session', () => {
         newPasswords: [{ password: 'changed', confirmation: 'changed' }]
       })
       await session.start()
-      expect(userInterface.notify).toHaveBeenCalledWith(
+      expect(notify).toHaveBeenCalledWith(
         expect.objectContaining({ type: 'error', text: error })
       )
-      expect(userInterface.requestLoginData).toHaveBeenCalledOnce()
+      expect(dialogs.login).toHaveBeenCalledOnce()
       expect(getPath()).toBe('/admin/books?page=2')
     })
 
     it('asks again with the token for invalid passwords', async () => {
       let attempt = 0
-      const { session, api, userInterface } = createSession({
+      const { session, api, notify, dialogs } = createSession({
         responses: {
           'post /password-reset-confirm': () => {
             if (attempt++ === 0) {
@@ -206,13 +217,13 @@ describe('Session', () => {
         ]
       })
       await session.start()
-      expect(userInterface.notify).toHaveBeenCalledWith(
+      expect(notify).toHaveBeenCalledWith(
         expect.objectContaining({
           type: 'error',
           text: ['password must NOT have fewer than 6 characters']
         })
       )
-      expect(userInterface.requestNewPassword).toHaveBeenCalledTimes(2)
+      expect(dialogs.newPassword).toHaveBeenCalledTimes(2)
       expect(api.request).toHaveBeenLastCalledWith(
         expect.objectContaining({ url: '/login' })
       )
@@ -221,7 +232,7 @@ describe('Session', () => {
         url: '/password-reset-confirm',
         data: { token: 'token', password: 'changed' }
       })
-      expect(userInterface.notify).toHaveBeenCalledWith({
+      expect(notify).toHaveBeenCalledWith({
         type: 'success',
         text: 'Your password was changed. Please log in.'
       })
@@ -244,7 +255,7 @@ describe('Session', () => {
 
   describe('login()', () => {
     it('requests a password reset, and then asks to log in', async () => {
-      const { session, api, userInterface } = createSession({
+      const { session, api, notify, dialogs } = createSession({
         responses: {
           'post /password-reset': { success: true },
           'post /login': { user: { ...user } }
@@ -258,26 +269,26 @@ describe('Session', () => {
         url: '/password-reset',
         data: { username: 'tester' }
       })
-      expect(userInterface.notify).toHaveBeenCalledWith({
+      expect(notify).toHaveBeenCalledWith({
         type: 'info',
         text: 'If the account exists, we sent you an email.'
       })
-      expect(userInterface.requestLoginData).toHaveBeenCalledTimes(2)
+      expect(dialogs.login).toHaveBeenCalledTimes(2)
     })
 
     it('asks to log in when the password reset is cancelled', async () => {
-      const { session, api, userInterface } = createSession({
+      const { session, api, notify } = createSession({
         responses: { 'post /login': { user: { ...user } } },
         loginData: ['passwordReset', { username: 'tester', password: 'x' }]
       })
       expect(await session.login()).toEqual(user)
       expect(api.request).toHaveBeenCalledOnce()
-      expect(userInterface.notify).not.toHaveBeenCalled()
+      expect(notify).not.toHaveBeenCalled()
     })
 
     it('asks again after failures, until it succeeds', async () => {
       let attempt = 0
-      const { session, userInterface } = createSession({
+      const { session, notify, dialogs } = createSession({
         responses: {
           'post /login': () => {
             if (++attempt === 1) {
@@ -291,8 +302,8 @@ describe('Session', () => {
         loginData: [{ username: 'tester' }, { username: 'tester' }]
       })
       expect(await session.login()).toEqual(user)
-      expect(userInterface.requestLoginData).toHaveBeenCalledTimes(2)
-      expect(userInterface.notify).toHaveBeenCalledWith({
+      expect(dialogs.login).toHaveBeenCalledTimes(2)
+      expect(notify).toHaveBeenCalledWith({
         type: 'error',
         error: 'Wrong password',
         title: 'Authentication Error',
@@ -301,7 +312,7 @@ describe('Session', () => {
     })
 
     it('logs in with a passkey', async () => {
-      const { session, sessionUser, api } = createSession({
+      const { session, adminContext, api } = createSession({
         responses: {
           'post /passkey-login-options': { challenge: 'challenge' },
           'post /passkey-login': { user: { ...user } }
@@ -317,7 +328,7 @@ describe('Session', () => {
         url: '/passkey-login',
         data: { id: 'passkey' }
       })
-      expect(sessionUser.value).toEqual(user)
+      expect(adminContext.user).toEqual(user)
     })
 
     it('asks again quietly when the passkey prompt is cancelled', async () => {
@@ -326,7 +337,7 @@ describe('Session', () => {
           name: 'NotAllowedError'
         })
       )
-      const { session, userInterface } = createSession({
+      const { session, notify, dialogs } = createSession({
         responses: {
           'post /passkey-login-options': { challenge: 'challenge' },
           'post /passkey-login': { user: { ...user } }
@@ -334,8 +345,8 @@ describe('Session', () => {
         loginData: ['passkey', 'passkey']
       })
       expect(await session.login()).toEqual(user)
-      expect(userInterface.requestLoginData).toHaveBeenCalledTimes(2)
-      expect(userInterface.notify).not.toHaveBeenCalled()
+      expect(dialogs.login).toHaveBeenCalledTimes(2)
+      expect(notify).not.toHaveBeenCalled()
     })
 
     describe('with TOTP', () => {
@@ -347,7 +358,7 @@ describe('Session', () => {
         })
 
       it('asks for the code after the password', async () => {
-        const { session, sessionUser, api } = createSession({
+        const { session, adminContext, api } = createSession({
           responses: {
             'post /login': codeRequired,
             'post /login-code': { user: { ...user } }
@@ -360,12 +371,12 @@ describe('Session', () => {
           url: '/login-code',
           data: { code: '123456' }
         })
-        expect(sessionUser.value).toEqual(user)
+        expect(adminContext.user).toEqual(user)
       })
 
       it('asks for the code again after a wrong one', async () => {
         let attempt = 0
-        const { session, userInterface } = createSession({
+        const { session, notify, dialogs } = createSession({
           responses: {
             'post /login': codeRequired,
             'post /login-code': () => {
@@ -378,15 +389,15 @@ describe('Session', () => {
           loginCodes: [{ code: '000000' }, { code: '123456' }]
         })
         expect(await session.login()).toEqual(user)
-        expect(userInterface.requestLoginData).toHaveBeenCalledOnce()
-        expect(userInterface.requestLoginCode).toHaveBeenCalledTimes(2)
-        expect(userInterface.notify).toHaveBeenCalledWith(
+        expect(dialogs.login).toHaveBeenCalledOnce()
+        expect(dialogs.code).toHaveBeenCalledTimes(2)
+        expect(notify).toHaveBeenCalledWith(
           expect.objectContaining({ text: 'Code is incorrect' })
         )
       })
 
       it('asks for the password when the code is cancelled', async () => {
-        const { session, userInterface } = createSession({
+        const { session, notify, dialogs } = createSession({
           responses: {
             'post /login': codeRequired,
             'post /login-code': { user: { ...user } }
@@ -395,15 +406,15 @@ describe('Session', () => {
           loginCodes: [null, { code: '123456' }]
         })
         expect(await session.login()).toEqual(user)
-        expect(userInterface.requestLoginData).toHaveBeenCalledTimes(2)
-        expect(userInterface.notify).not.toHaveBeenCalled()
+        expect(dialogs.login).toHaveBeenCalledTimes(2)
+        expect(notify).not.toHaveBeenCalled()
       })
 
       it('asks for the password after too many codes or once expired', async () => {
         for (const message of [
           'Missing or expired login', 'Too many attempts'
         ]) {
-          const { session, userInterface } = createSession({
+          const { session, notify, dialogs } = createSession({
             responses: {
               'post /login': codeRequired,
               'post /login-code': createError(400, message)
@@ -412,9 +423,9 @@ describe('Session', () => {
             loginCodes: [{ code: '123456' }]
           })
           expect(await session.login()).toBe(null)
-          expect(userInterface.requestLoginData).toHaveBeenCalledTimes(2)
-          expect(userInterface.requestLoginCode).toHaveBeenCalledOnce()
-          expect(userInterface.notify).toHaveBeenCalledWith(
+          expect(dialogs.login).toHaveBeenCalledTimes(2)
+          expect(dialogs.code).toHaveBeenCalledOnce()
+          expect(notify).toHaveBeenCalledWith(
             expect.objectContaining({ text: message })
           )
         }
@@ -425,28 +436,6 @@ describe('Session', () => {
       const { session, api } = createSession({ loginData: [] })
       expect(await session.login()).toBe(null)
       expect(api.request).not.toHaveBeenCalled()
-    })
-
-    it(`doesn't ask without a user interface`, async () => {
-      const { session, userInterface, detach } = createSession()
-      detach()
-      expect(await session.login()).toBe(null)
-      expect(userInterface.requestLoginData).not.toHaveBeenCalled()
-    })
-
-    it(`keeps a newer user interface when detaching an older one`, async () => {
-      const { session, userInterface, detach } = createSession({
-        responses: { 'post /login': { user: { ...user } } }
-      })
-      const newerInterface = {
-        requestLoginData: vi.fn(async () => ({ username: 'tester' })),
-        notify: vi.fn()
-      }
-      session.attachUserInterface(newerInterface)
-      detach()
-      expect(await session.login()).toEqual(user)
-      expect(newerInterface.requestLoginData).toHaveBeenCalledOnce()
-      expect(userInterface.requestLoginData).not.toHaveBeenCalled()
     })
 
     it('redirects after logging in if configured', async () => {
@@ -464,7 +453,7 @@ describe('Session', () => {
 
   describe('logout()', () => {
     it('clears the user and the views', async () => {
-      const { session, sessionUser, viewRegistry } = createSession({
+      const { session, adminContext, viewRegistry } = createSession({
         responses: {
           'get /session': { user: { ...user } },
           'post /logout': { success: true }
@@ -472,12 +461,12 @@ describe('Session', () => {
       })
       await session.start()
       expect(await session.logout()).toBe(true)
-      expect(sessionUser.value).toBe(null)
+      expect(adminContext.user).toBe(null)
       expect(viewRegistry.clear).toHaveBeenCalledOnce()
     })
 
     it(`keeps the user when the server doesn't confirm`, async () => {
-      const { session, sessionUser, viewRegistry } = createSession({
+      const { session, adminContext, viewRegistry } = createSession({
         responses: {
           'get /session': { user: { ...user } },
           'post /logout': { success: false }
@@ -485,7 +474,7 @@ describe('Session', () => {
       })
       await session.start()
       expect(await session.logout()).toBe(false)
-      expect(sessionUser.value).toEqual(user)
+      expect(adminContext.user).toEqual(user)
       expect(viewRegistry.clear).not.toHaveBeenCalled()
     })
 
@@ -494,7 +483,7 @@ describe('Session', () => {
         .spyOn(console, 'error')
         .mockImplementation(() => {})
       const error = new Error('Network down')
-      const { session, sessionUser } = createSession({
+      const { session, adminContext } = createSession({
         responses: {
           'get /session': { user: { ...user } },
           'post /logout': error
@@ -503,7 +492,7 @@ describe('Session', () => {
       await session.start()
       expect(await session.logout()).toBe(false)
       expect(consoleError).toHaveBeenCalledWith(error)
-      expect(sessionUser.value).toEqual(user)
+      expect(adminContext.user).toEqual(user)
       consoleError.mockRestore()
     })
   })
@@ -511,21 +500,20 @@ describe('Session', () => {
   describe('ensureUser()', () => {
     it('asks to log in once the session expired', async () => {
       let hasExpired = false
-      const { session, sessionUser, viewRegistry, userInterface } =
-        createSession({
-          responses: {
-            'get /session': () => ({ user: hasExpired ? null : { ...user } }),
-            'post /login': { user: { ...user } }
-          }
-        })
+      const { session, adminContext, viewRegistry, dialogs } = createSession({
+        responses: {
+          'get /session': () => ({ user: hasExpired ? null : { ...user } }),
+          'post /login': { user: { ...user } }
+        }
+      })
       await session.start()
       expect(await session.ensureUser()).toEqual(user)
-      expect(userInterface.requestLoginData).not.toHaveBeenCalled()
+      expect(dialogs.login).not.toHaveBeenCalled()
       hasExpired = true
       expect(await session.ensureUser()).toEqual(user)
       expect(viewRegistry.clear).toHaveBeenCalledOnce()
-      expect(userInterface.requestLoginData).toHaveBeenCalledOnce()
-      expect(sessionUser.value).toEqual(user)
+      expect(dialogs.login).toHaveBeenCalledOnce()
+      expect(adminContext.user).toEqual(user)
       expect(viewRegistry.resolve).toHaveBeenCalledTimes(2)
     })
   })
@@ -571,11 +559,11 @@ describe('Session', () => {
 
   describe('fetchUser()', () => {
     it('notifies when the session request fails', async () => {
-      const { session, userInterface } = createSession({
+      const { session, notify } = createSession({
         responses: { 'get /session': new Error('Network down') }
       })
       expect(await session.fetchUser()).toBe(null)
-      expect(userInterface.notify).toHaveBeenCalledWith(
+      expect(notify).toHaveBeenCalledWith(
         expect.objectContaining({ title: 'Authentication Error' })
       )
     })
@@ -584,28 +572,13 @@ describe('Session', () => {
       const error = Object.assign(new Error('Request failed'), {
         response: { data: { error: 'Session store unavailable' } }
       })
-      const { session, userInterface } = createSession({
+      const { session, notify } = createSession({
         responses: { 'get /session': error }
       })
       await session.fetchUser()
-      expect(userInterface.notify).toHaveBeenCalledWith(
+      expect(notify).toHaveBeenCalledWith(
         expect.objectContaining({ text: 'Session store unavailable' })
       )
-    })
-
-    it('logs the error without a user interface', async () => {
-      const consoleError = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
-      const error = new Error('Network down')
-      const { session, userInterface, detach } = createSession({
-        responses: { 'get /session': error }
-      })
-      detach()
-      expect(await session.fetchUser()).toBe(null)
-      expect(consoleError).toHaveBeenCalledWith(error)
-      expect(userInterface.notify).not.toHaveBeenCalled()
-      consoleError.mockRestore()
     })
   })
 
@@ -627,7 +600,7 @@ describe('Session', () => {
 
     it('asks users with TOTP for the code after the password', async () => {
       let attempt = 0
-      const { session, api, userInterface } = createSession({
+      const { session, api, dialogs } = createSession({
         responses: {
           'post /confirm-access': () =>
             ++attempt === 1 ? { success: false, codeRequired: true } : success
@@ -636,7 +609,7 @@ describe('Session', () => {
         loginCodes: [{ code: '123456' }]
       })
       expect(await session.confirmAccess()).toBe(true)
-      expect(userInterface.requestLoginCode).toHaveBeenCalledOnce()
+      expect(dialogs.code).toHaveBeenCalledOnce()
       expect(api.request).toHaveBeenLastCalledWith({
         method: 'post',
         url: '/confirm-access',
@@ -645,15 +618,15 @@ describe('Session', () => {
     })
 
     it('ends when the code is cancelled', async () => {
-      const { session, userInterface } = createSession({
+      const { session, dialogs } = createSession({
         responses: {
           'post /confirm-access': { success: false, codeRequired: true }
         },
         accessConfirmations: [{ password: 'secret' }, { password: 'secret' }]
       })
       expect(await session.confirmAccess()).toBe(false)
-      expect(userInterface.requestLoginCode).toHaveBeenCalledOnce()
-      expect(userInterface.requestAccessConfirmation).toHaveBeenCalledOnce()
+      expect(dialogs.code).toHaveBeenCalledOnce()
+      expect(dialogs.confirmAccess).toHaveBeenCalledOnce()
     })
 
     it('confirms the access with a passkey', async () => {
@@ -673,7 +646,7 @@ describe('Session', () => {
     })
 
     it('asks again after failures, until the user cancels', async () => {
-      const { session, userInterface } = createSession({
+      const { session, notify, dialogs } = createSession({
         responses: {
           'post /confirm-access': Object.assign(new Error('Failed'), {
             response: {
@@ -685,8 +658,8 @@ describe('Session', () => {
         accessConfirmations: [{ password: 'wrong' }]
       })
       expect(await session.confirmAccess()).toBe(false)
-      expect(userInterface.requestAccessConfirmation).toHaveBeenCalledTimes(2)
-      expect(userInterface.notify).toHaveBeenCalledWith(
+      expect(dialogs.confirmAccess).toHaveBeenCalledTimes(2)
+      expect(notify).toHaveBeenCalledWith(
         expect.objectContaining({ text: 'Password is incorrect' })
       )
     })

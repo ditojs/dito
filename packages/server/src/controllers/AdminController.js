@@ -1,8 +1,9 @@
 import path from 'path'
 import Koa from 'koa'
 import serve from 'koa-static'
-import { assignDeeply } from '@ditojs/utils'
+import { assignDeeply, isString } from '@ditojs/utils'
 import { Controller } from './Controller.js'
+import { UsersController } from './UsersController.js'
 import { handleConnectMiddleware } from '../middleware/index.js'
 import { ControllerError } from '../errors/index.js'
 import { formatJson } from '../utils/json.js'
@@ -44,13 +45,31 @@ export class AdminController extends Controller {
     // Expose api config and definitions to browser side:
     // Pass on the `config.app.normalizePaths` setting to Dito.js Admin:
     const { api = {}, settings = {} } = this.config
+    // The admin offers what the users controller at `api.users` routes, which
+    // it reaches inside `api.url` like `getApiUrl()`:
+    const { url = '/', users } = api
+    const usersPath = (isString(users) ? users : users?.path) ?? ''
+    const { pathname } = new URL(
+      `${url.replace(/\/+$/, '')}/${usersPath.replace(/^\/+/, '')}`,
+      'http://localhost'
+    )
+    const controller = this.app.getController(pathname.replace(/\/$/, ''))
+    const isRouted = name => (
+      controller instanceof UsersController &&
+      !!controller.collection[name]
+    )
     return {
       base: this.url,
       api: {
         ...api,
         normalizePaths: api.normalizePaths ?? this.app.config.app.normalizePaths
       },
-      settings
+      settings,
+      authentication: {
+        passkeys: isRouted('post passkey-login'),
+        totp: isRouted('post login-code'),
+        passwordReset: isRouted('post password-reset')
+      }
     }
   }
 

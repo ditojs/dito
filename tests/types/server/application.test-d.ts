@@ -75,7 +75,7 @@ describe('Application', () => {
       app: {
         name: 'Example',
         session: { modelClass: 'Session' },
-        auth: { credentials: { modelClass: 'Credential' } }
+        authentication: { credentials: { modelClass: 'Credential' } }
       },
       services: {
         passkeys: { domain: 'example.com', origins: ['https://example.com'] },
@@ -127,11 +127,11 @@ describe('Application', () => {
     >()
   })
 
-  it('accepts a password reset in app.auth', () => {
+  it('accepts a password reset in app.authentication', () => {
     assertType<ApplicationConfig>({
       app: {
         keys: ['test-secret'],
-        auth: {
+        authentication: {
           passwordReset: {
             confirmUrl: 'https://example.com/admin/#password-reset={token}',
             expiresAfter: '30m'
@@ -141,10 +141,10 @@ describe('Application', () => {
     })
   })
 
-  it('accepts the confirmed access in app.auth', () => {
+  it('accepts the confirmed access in app.authentication', () => {
     assertType<ApplicationConfig>({
       app: {
-        auth: { reconfirmAccessAfter: '5m' }
+        authentication: { reconfirmAccessAfter: '5m' }
       }
     })
   })

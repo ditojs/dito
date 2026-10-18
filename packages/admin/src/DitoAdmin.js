@@ -26,7 +26,7 @@ const knownOptions = ['login', 'spinner', 'account']
 
 export default class DitoAdmin {
   constructor(el, {
-    // The base, api and settings passed from `AdminController`:
+    // The `dito` object passed from `AdminController`:
     dito: ditoObject = globalThis.dito ?? {},
     api,
     views = {},
@@ -158,7 +158,8 @@ export default class DitoAdmin {
       router,
       viewRegistry,
       settings: ditoObject.settings ?? {},
-      redirectAfterLogin: options.login?.redirectAfterLogin
+      authentication: ditoObject.authentication ?? {},
+      login: options.login
     }))
 
     const app = (this.app = createApp({

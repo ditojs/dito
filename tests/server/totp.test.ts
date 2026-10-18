@@ -57,7 +57,7 @@ class TransactedMembers extends UsersController {
   override transacted = true
 }
 
-const auth = { credentials: { modelClass: 'Credential' } }
+const authentication = { credentials: { modelClass: 'Credential' } }
 
 type Client = ReturnType<typeof createClient>
 
@@ -70,7 +70,7 @@ describe('TOTP', () => {
         helmet: false,
         keys: ['test-secret'],
         session: { modelClass: 'Session' },
-        auth
+        authentication
       },
       services: {
         passkeys: { domain: 'example.com', origins: ['https://example.com'] },
@@ -669,7 +669,7 @@ describe('TOTP removed from apps', () => {
         normalizePaths: true,
         keys: ['test-secret'],
         session: { modelClass: 'Session' },
-        auth
+        authentication
       }
     },
     models: { Session, Credential, User },
@@ -785,7 +785,7 @@ describe('TOTP setup', () => {
 
   it('requires sessions stored on the server', async () => {
     for (const session of [true, { maxAge: 1000 }]) {
-      await expect(setup({ session, auth })).rejects.toThrow(
+      await expect(setup({ session, authentication })).rejects.toThrow(
         `Unable to use TOTP without sessions stored on the server, ` +
         `see 'app.session'.`
       )
@@ -794,18 +794,21 @@ describe('TOTP setup', () => {
 
   it('requires credentials', async () => {
     await expect(setup({ session })).rejects.toThrow(
-      `Unable to use TOTP without credentials, see 'app.auth.credentials'.`
+      `Unable to use TOTP without credentials, see ` +
+      `'app.authentication.credentials'.`
     )
   })
 
   it('requires the secret', async () => {
     await expect(
-      setup({ session, auth }, { secret: undefined })
+      setup({ session, authentication }, { secret: undefined })
     ).rejects.toThrow(`Invalid TOTP, missing 'services.totp.secret'.`)
   })
 
   it('requires the name of the app', async () => {
-    await expect(setup({ name: undefined, session, auth })).rejects.toThrow(
+    await expect(
+      setup({ name: undefined, session, authentication })
+    ).rejects.toThrow(
       `Invalid TOTP, missing 'app.name'.`
     )
   })

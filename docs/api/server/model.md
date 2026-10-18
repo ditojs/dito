@@ -1114,8 +1114,9 @@ export class Credential extends CredentialModel {}
 
 A model to store the credentials of users beyond their password: their
 [passkeys and TOTP](controllers.md#userscontroller). One table holds the
-credentials of all user models. Use it with `app.auth.credentials.modelClass`,
-the model's name or class, see [`config.app`](application.md#configapp).
+credentials of all user models. Use it with
+`app.authentication.credentials.modelClass`, the model's name or class, see
+[`config.app`](application.md#configapp).
 
 | Property     | Description                                                                 |
 | ------------ | --------------------------------------------------------------------------- |

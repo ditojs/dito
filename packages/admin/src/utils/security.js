@@ -1,6 +1,5 @@
 import { startRegistration } from '@simplewebauthn/browser'
 import DitoQrCode from '../components/DitoQrCode.vue'
-import { isPasskeyPromptCancelled } from './Session.ts'
 import { confirm } from './dialogs.js'
 
 // Dialogs are as wide as their content, up to their `width` setting, so
@@ -10,8 +9,9 @@ const codeWidth = '360px'
 
 // The Security dialog of the account menu, which changes the password and
 // manages the passkeys and the TOTP of the logged-in user:
-export function showSecurityDialog(adminContext, { passkeys, totp }) {
-  const { users } = adminContext.api
+export function showSecurityDialog(adminContext) {
+  const { api, authentication } = adminContext
+  const { users } = api
   const formatDate = ({ value, format }) =>
     value ? format(value, { date: true }) : 'Never'
 
@@ -67,7 +67,7 @@ export function showSecurityDialog(adminContext, { passkeys, totp }) {
         }
       },
 
-      ...(passkeys && {
+      ...(authentication.passkeys && {
         passkeys: {
           type: 'list',
           label: 'Passkeys',
@@ -111,7 +111,7 @@ export function showSecurityDialog(adminContext, { passkeys, totp }) {
         }
       }),
 
-      ...(totp && {
+      ...(authentication.totp && {
         totp: {
           type: 'object',
           label: 'Two-Factor Authentication',
@@ -229,16 +229,150 @@ export function showSecurityDialog(adminContext, { passkeys, totp }) {
   })
 }
 
-// The code field of the login dialog, also when confirming the access:
-export function createCodeComponent() {
+// The login dialog resolves to the credentials, to `'passkey'` to log in with a
+// passkey, or to `'passwordReset'` to reset the password:
+export function createLoginDialog(authentication, additionalComponents = {}) {
   return {
-    type: 'text',
-    label: 'Authentication Code',
-    info: 'Enter the code from your authenticator app, or a backup code.',
-    placeholder: '123456',
-    autocomplete: 'one-time-code',
-    autofocus: true,
-    width: codeWidth
+    components: {
+      username: {
+        type: 'text',
+        autofocus: true
+      },
+      password: {
+        type: 'password'
+      },
+      ...additionalComponents
+    },
+    // NOTE: Login comes first in DOM order for password managers, CSS places
+    // cancel first:
+    buttons: {
+      login: {
+        type: 'submit',
+        text: 'Sign In'
+      },
+
+      ...createPasskeyButtons(authentication, 'Sign In with Passkey'),
+
+      ...(authentication.passwordReset && {
+        passwordReset: {
+          type: 'button',
+          text: 'Forgot password?',
+          onClick: ({ closeDialog }) => closeDialog('passwordReset')
+        }
+      }),
+
+      // `DitoDialog` adds the click event of the cancel button:
+      cancel: {
+        type: 'button',
+        text: 'Cancel'
+      }
+    }
+  }
+}
+
+// The code of users with TOTP, when logging in and when confirming the access:
+export function createCodeDialog() {
+  return {
+    components: {
+      code: {
+        type: 'text',
+        label: 'Authentication Code',
+        info: 'Enter the code from your authenticator app, or a backup code.',
+        placeholder: '123456',
+        autocomplete: 'one-time-code',
+        autofocus: true,
+        width: codeWidth
+      }
+    },
+    buttons: {
+      verify: {
+        type: 'submit',
+        text: 'Verify'
+      },
+
+      cancel: {
+        type: 'button',
+        text: 'Cancel'
+      }
+    },
+    // Show password managers filling in the code:
+    settings: { minDuration: 1000 }
+  }
+}
+
+// The username to reset the password of:
+export function createPasswordResetDialog() {
+  return {
+    components: {
+      username: {
+        type: 'text',
+        autocomplete: 'username',
+        autofocus: true,
+        required: true
+      }
+    },
+    buttons: {
+      send: {
+        type: 'submit',
+        text: 'Send Email'
+      },
+
+      cancel: {
+        type: 'button',
+        text: 'Cancel'
+      }
+    },
+    settings: { label: 'Reset Password' }
+  }
+}
+
+// The new password of a password reset:
+export function createNewPasswordDialog() {
+  return {
+    components: createNewPasswordComponents({ autofocus: true }),
+    buttons: {
+      change: {
+        type: 'submit',
+        text: 'Set Password'
+      },
+
+      cancel: {
+        type: 'button',
+        text: 'Cancel'
+      }
+    },
+    settings: { label: 'Set New Password' }
+  }
+}
+
+// The confirm access dialog resolves to the password, or to `'passkey'` to
+// confirm the access with a passkey:
+export function createConfirmAccessDialog(authentication) {
+  return {
+    components: {
+      password: {
+        type: 'password',
+        label: 'Password',
+        info: 'Confirm your access to change your security settings.',
+        autocomplete: 'current-password',
+        autofocus: true,
+        required: true
+      }
+    },
+    buttons: {
+      confirm: {
+        type: 'submit',
+        text: 'Confirm'
+      },
+
+      ...createPasskeyButtons(authentication, 'Use Passkey'),
+
+      cancel: {
+        type: 'button',
+        text: 'Cancel'
+      }
+    },
+    settings: { label: 'Confirm Access' }
   }
 }
 
@@ -263,6 +397,27 @@ export function createNewPasswordComponents({ autofocus = false } = {}) {
       )
     }
   }
+}
+
+// Browsers reject passkey prompts that users cancel or let time out with these
+// WebAuthn errors:
+export function isPasskeyPromptCancelled(error) {
+  return ['NotAllowedError', 'AbortError'].includes(error.name)
+}
+
+// The button that closes the dialog with `'passkey'`, to be spread into the
+// buttons, only in browsers with WebAuthn, which have `PublicKeyCredential`:
+function createPasskeyButtons({ passkeys }, text) {
+  const hasPasskeys = passkeys && !!window.PublicKeyCredential
+  return (
+    hasPasskeys && {
+      passkey: {
+        type: 'button',
+        text,
+        onClick: ({ closeDialog }) => closeDialog('passkey')
+      }
+    }
+  )
 }
 
 // Two codes per line:

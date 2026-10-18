@@ -101,9 +101,10 @@ const app = new Application({ services: { passkeys: PasskeyService } })
 Registered under any name, it adds the passkey actions of
 [`UsersController`](controllers.md#userscontroller), see
 [Passkeys](../../guide/server/controllers.md#passkeys). It needs
-[`app.name`](application.md#configapp), `app.auth.credentials` and a `session`
-stored on the server, through `modelClass` or `store`, and imports the optional
-peer dependencies `@simplewebauthn/server` and `aaguids`, else the setup fails.
+[`app.name`](application.md#configapp), `app.authentication.credentials` and a
+`session` stored on the server, through `modelClass` or `store`, and imports the
+optional peer dependencies `@simplewebauthn/server` and `aaguids`, else the
+setup fails.
 
 | Key       | Type       | Default | Description |
 | --------- | ---------- | ------- | ----------- |
@@ -128,9 +129,9 @@ const app = new Application({ services: { totp: TotpService } })
 Registered under any name, it adds two-factor authentication with TOTP to
 [`UsersController`](controllers.md#userscontroller), see
 [Two-factor authentication](../../guide/server/controllers.md#two-factor-authentication).
-It needs [`app.name`](application.md#configapp), `app.auth.credentials` and a
-`session` stored on the server, and imports the optional peer dependency
-`otpauth`, else the setup fails.
+It needs [`app.name`](application.md#configapp),
+`app.authentication.credentials` and a `session` stored on the server, and
+imports the optional peer dependency `otpauth`, else the setup fails.
 
 | Key      | Type     | Description |
 | -------- | -------- | ----------- |

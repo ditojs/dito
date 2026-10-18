@@ -35,8 +35,8 @@ describe('AdminContext', () => {
             ? { data: { user: { id: 2, username: data.username } } }
             : null
     })
-    admin.context.session.attachUserInterface({
-      requestLoginData: async () => ({ username: 'reader', password: 'x' }),
+    admin.context.attachDialogsAndNotifications({
+      showDialog: async () => ({ username: 'reader', password: 'x' }),
       notify: vi.fn()
     })
     return admin

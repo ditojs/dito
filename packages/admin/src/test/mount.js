@@ -100,13 +100,14 @@ export async function mountForm({
 // waits until the views are resolved and their routes are set up.
 // `request(options)` handles the API requests other than the session request,
 // and returns the response as `{ data }` or throws. `api` is merged into the
-// API settings, e.g. `api.defaults` or `api.formats`, and `settings` are the
-// settings of the `dito` object.
+// API settings, e.g. `api.defaults` or `api.formats`, and `settings` and
+// `authentication` are the ones of the `dito` object.
 export async function mountAdmin({
   views,
   request = null,
   api = {},
   settings = {},
+  authentication = {},
   options = {}
 }) {
   // The router uses the web history, reset it to start at the root:
@@ -124,7 +125,7 @@ export async function mountAdmin({
     return request(options)
   })
   // `AdminController` provides the `dito` object as `window.dito` too:
-  window.dito = { base: '/', settings }
+  window.dito = { base: '/', settings, authentication }
   const dito = new DitoAdmin(element, {
     dito: window.dito,
     api: { url: '/', ...api, request: requestStub },
