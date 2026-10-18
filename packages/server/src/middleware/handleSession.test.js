@@ -134,7 +134,7 @@ describe('handleSession()', () => {
     try {
       expect((await request()).status).toBe(500)
       expect(errors[0].message).toBe(
-        `Unable to find model class: 'MissingSession'`
+        `Unable to find model class: 'MissingSession'.`
       )
     } finally {
       close()

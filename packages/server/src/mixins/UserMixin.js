@@ -1,7 +1,10 @@
 import bcrypt from 'bcryptjs'
 import { mixin, asArray, isString } from '@ditojs/utils'
 import { AuthenticationError } from '../errors/index.js'
-import { getPasswordFingerprint, getUserIdentifier } from '../utils/auth.js'
+import {
+  getPasswordFingerprint,
+  getUserIdentifier
+} from '../utils/authentication.js'
 
 export const UserMixin = mixin(
   Model =>
@@ -181,14 +184,7 @@ export const UserMixin = mixin(
       }
 
       static credentialQuery(trx) {
-        if (this.credentialClass) {
-          return this.credentialClass.query(trx).where('userModel', this.name)
-        } else {
-          throw new Error(
-            `Unable to query credentials without ` +
-            `'app.authentication.credentials'.`
-          )
-        }
+        return this.credentialClass.query(trx).where('userModel', this.name)
       }
     }
 )

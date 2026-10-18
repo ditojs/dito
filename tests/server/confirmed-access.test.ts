@@ -36,6 +36,12 @@ class Guests extends UsersController {
 
 class Members extends UsersController {
   override modelClass = Member
+  override collection: any = {
+    'get confirmed'(this: Members, ctx: any) {
+      return { confirmed: this.hasConfirmedAccess(ctx) }
+    }
+  }
+
   override member: any = {
     allow: ['patch', 'put']
   }
@@ -223,6 +229,19 @@ describe('Confirmed access', () => {
     expect((await request('/members/passkeys')).status).toBe(200)
     expect((await request('/members/totp')).status).toBe(200)
     expect(await Credential.query().where('type', 'passkey')).toHaveLength(1)
+  })
+
+  it('tells whether the access is confirmed, without asking for it', async () => {
+    const { request } = await loginWithPassword()
+    const confirmed = await request('/members/confirmed')
+    expect(confirmed.data).toEqual({ confirmed: true })
+    expireAccess()
+    const expired = await request('/members/confirmed')
+    expect(expired.status).toBe(200)
+    expect(expired.data).toEqual({ confirmed: false })
+    const anonymous = await createClient(url)('/members/confirmed')
+    expect(anonymous.status).toBe(200)
+    expect(anonymous.data).toEqual({ confirmed: false })
   })
 
   it('denies security changes without a login', async () => {

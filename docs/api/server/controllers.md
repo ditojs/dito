@@ -833,7 +833,9 @@ also of other users, e.g. by admins. The handlers check it, and the login for
 `'post confirm-access'`, `'get passkeys'` and `'get totp'`, also with an
 `authorize` that opens the actions, and answer 401 without a login of a user
 of the controller's `modelClass`.
-`hasConfirmedAccess(ctx)` does the same for the `authorize` of other actions.
+`checkConfirmedAccess(ctx)` answers the same for other actions and their
+`authorize`, and `hasConfirmedAccess(ctx)` tells whether the access is
+confirmed.
 The `patch`, `put` and `post` actions answer 400 for bodies with the `hash`.
 With `relate`, `post` treats users with ids like updates.
 
@@ -879,7 +881,7 @@ While `TotpService` isn't registered, users with TOTP can't log in with their
 password: `'post login'` and `'post confirm-access'` answer like for a wrong
 password, and emit the misconfiguration as `'error'` on the app. Wrong codes
 answer `'Code is incorrect'` with status 401, also in `'post totp-confirm'`
-and `'post confirm-access'`, and missing or expired pending logins and setups
+and `'post confirm-access'`, and missing or expired pending logins and secrets
 status 400.
 Ten wrong codes in a row lock the account for 15 minutes, across pending
 logins and sessions: the tenth and all codes during the lock answer
@@ -887,8 +889,9 @@ logins and sessions: the tenth and all codes during the lock answer
 don't count, as the user already has the secret. Each TOTP code is accepted
 once, also the one that confirmed the setup and of concurrent requests, as well
 as the codes before and after the current one for clocks that drift. Each
-backup code is removed once used. Passkey logins don't ask for codes. A subclass that sets
-`collection.allow` has to list the TOTP actions too, else they aren't routed.
+backup code is removed once used. Passkey logins don't ask for codes. A
+subclass that sets `collection.allow` has to list the TOTP actions too, else
+they aren't routed.
 
 With
 [`app.authentication.passwordReset`](./application.md#configappauthentication),

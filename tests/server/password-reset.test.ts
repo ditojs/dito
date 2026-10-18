@@ -229,8 +229,8 @@ describe('Password reset', () => {
 
   it('rejects requests without a valid username', async () => {
     for (const [body, message] of [
-      [{}, 'Missing username'],
-      [{ username: ['ada'] }, 'Invalid username']
+      [{}, `Missing 'username'`],
+      [{ username: ['ada'] }, `Invalid 'username'`]
     ] as const) {
       const response = await createClient(url)('/members/password-reset', {
         method: 'POST',

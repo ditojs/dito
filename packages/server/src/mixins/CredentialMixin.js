@@ -40,8 +40,7 @@ export const CredentialMixin = mixin(
         },
 
         createdAt: {
-          type: 'timestamp',
-          default: 'now()'
+          type: 'timestamp'
         },
 
         lastUsedAt: {
