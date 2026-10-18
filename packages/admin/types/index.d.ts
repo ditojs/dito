@@ -2562,7 +2562,7 @@ export type SchemaContext<$Item = any> = {
    * it's closed with: its data when submitted, `undefined`
    * when cancelled, or the value of `closeDialog()`.
    */
-  showDialog(options: {
+  showDialog<$Result = unknown>(options: {
     components?: Components
     buttons: Buttons<any>
     data?: Record<string, any>
@@ -2577,8 +2577,16 @@ export type SchemaContext<$Item = any> = {
       width?: number
       /** Whether clicking outside of the dialog closes it. */
       clickToClose?: boolean
+      /**
+       * The time in milliseconds that the dialog stays visible at least,
+       * when it's submitted right after it opened, e.g. by a password
+       * manager.
+       *
+       * @defaultValue `0`
+       */
+      minDuration?: number
     }
-  }): Promise<unknown>
+  }): Promise<$Result | undefined>
   /**
    * Closes the dialog that the context belongs to, and
    * resolves `showDialog()` with `value`. Throws outside

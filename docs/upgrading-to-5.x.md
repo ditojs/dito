@@ -6,7 +6,8 @@ This guide describes how to upgrade an app from Dito.js 4.x to 5.x.
 ## Objection 4
 
 Dito.js uses objection 4.2, an ES module that needs knex 3.3, and TypeScript
-5.8 for its types. Its
+5.8 for its types: update the app's `objection` dependency to `^4.2.0`, the
+peer of `@ditojs/server`. Its
 [migration guide](https://ditojs.github.io/objection/release-notes/migration.html)
 covers its own changes. Check these in your app:
 
@@ -30,8 +31,9 @@ covers its own changes. Check these in your app:
   the five `*QueryBuilderType` members.
 - Validation errors of nested models in graphs have keys with slashes, e.g.
   `chapters/1/title`, starting with the model's index for array input.
-- Collection and member `DELETE` requests answer 400 for `range`, `limit` and
-  `offset`.
+- Deletes and unrelates with `range`, `limit` or `offset` throw a
+  `QueryBuilderError`, which collection and member `DELETE` requests answer
+  with 400.
 
 ## Server
 
@@ -142,8 +144,8 @@ export async function down(knex) {
   that logs users in itself calls `ctx.login(await User.authenticate(ctx))`,
   which skips TOTP. Users with TOTP log in through `'post login'` of
   `UsersController`.
-- The `patch` and `put` actions of `UsersController` reject `hash`. Setting a
-  password or changing the username needs
+- The `post`, `patch` and `put` actions of `UsersController` reject `hash`.
+  Setting a password or changing the username needs
   [confirmed access](guide/server/controllers.md#confirmed-access), also when
   admins change other users. Without it, they answer 403 with
   `confirmationRequired`, and the admin asks the user to confirm. Sessions
@@ -173,13 +175,17 @@ offers each one when the users controller at `api.users` in the server's
 [`authentication`](api/admin/admin.md#globalconfig).
 
 - [Passkeys](guide/server/controllers.md#passkeys), through
-  [`PasskeyService`](api/server/service.md#passkeyservice).
+  [`PasskeyService`](api/server/service.md#passkeyservice), with the new
+  optional peer dependencies `@simplewebauthn/server` and `aaguids`.
 - [Two-factor authentication](guide/server/controllers.md#two-factor-authentication),
-  through [`TotpService`](api/server/service.md#totpservice).
+  through [`TotpService`](api/server/service.md#totpservice), with the new
+  optional peer dependency `otpauth`.
 - [Password reset](guide/server/controllers.md#password-reset) by email,
   through `app.authentication.passwordReset`.
 
 Passkeys and TOTP need [`config.app.name`](api/server/application.md#configapp),
-the name that passkey managers and authenticator apps show, and a model for the
-credentials in
+the name that passkey managers and authenticator apps show, sessions stored on
+the server, through `modelClass`, `store` or `ContextStore` in
+[`config.app.session`](api/server/application.md#configapp), and a model for
+the credentials in
 [`config.app.authentication`](api/server/application.md#configappauthentication).

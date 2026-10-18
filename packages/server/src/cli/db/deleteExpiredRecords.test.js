@@ -12,6 +12,8 @@ describe('deleteExpiredRecords()', () => {
       config: { log: { silent: true }, knex: createTestKnex() },
       models: { Session }
     })
+    // Freeze the time, so that the valid session can't expire meanwhile:
+    vi.useFakeTimers({ toFake: ['Date'] })
     try {
       await createTestDatabase(app)
       await Session.query().insert([
@@ -24,6 +26,7 @@ describe('deleteExpiredRecords()', () => {
         'valid'
       ])
     } finally {
+      vi.useRealTimers()
       await app.knex.destroy()
     }
   })

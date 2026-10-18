@@ -7,6 +7,7 @@ import {
   type AssetReference,
   type CredentialModel,
   type KoaContext,
+  type KoaSession,
   type Model,
   type ModelAsset,
   type Services,
@@ -55,6 +56,9 @@ describe('Application', () => {
     >()
     expectTypeOf<App['releaseUnusedAssets']>().toBeCallableWith({
       olderThan: 0
+    })
+    expectTypeOf<App['releaseUnusedAssets']>().toBeCallableWith({
+      olderThan: false
     })
     expectTypeOf<App['releaseUnusedAssets']>().toBeCallableWith({
       // @ts-expect-error: `timeThreshold` is renamed to `olderThan`.
@@ -139,6 +143,13 @@ describe('Application', () => {
         }
       }
     })
+  })
+
+  it('carries the session in the request locals', () => {
+    const application = {} as Application
+    expectTypeOf(application.requestLocals.session).toEqualTypeOf<
+      KoaSession | null | undefined
+    >()
   })
 
   it('accepts the confirmed access in app.authentication', () => {

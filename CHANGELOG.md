@@ -13,7 +13,7 @@ version, see the upgrade guides in `docs/`.
 - **server:** `UsersController` needs `app.session`, and `'post confirm-access'` when it routes `patch`, `put` or other actions that need confirmed access, else its setup throws.
 - **server:** `UsersController` only treats users of its own model class as logged in, not users of its subclasses.
 - **server:** Changing a user's password ends their other sessions. When users change their own password, the session of the request stays logged in.
-- **server:** `patch` and `put` of `UsersController` reject `hash`, and need confirmed access of a user of the controller's model class to set passwords or change usernames, also of other users. Without a login, they answer 401, without confirmed access 403 with `confirmationRequired`, and the admin asks the user to confirm.
+- **server:** `post`, `patch` and `put` of `UsersController` reject `hash`, and `patch` and `put` need confirmed access of a user of the controller's model class to set passwords or change usernames, also of other users. Without a login, they answer 401, without confirmed access 403 with `confirmationRequired`, and the admin asks the user to confirm.
 - **server:** The session cookie defaults to `sameSite: 'lax'`.
 - **server:** Session models need an `expiresAt` column, see [Upgrading to 5.x](docs/upgrading-to-5.x.md#sessions).
 - **server:** Unused assets are released every hour instead of after writes of asset data.
@@ -28,7 +28,7 @@ version, see the upgrade guides in `docs/`.
 - **server:** A model listed twice in a many-to-many relation of a graph gets one join row.
 - **server:** In the types, `patchAndFetch()`, `updateAndFetch()`, `upsert()` and `upsertAndFetch()` take objection's `PartialModelPatch` and `PartialModelRow`, which reject relation data and `Partial<M>`. Custom query builders that extend dito's `QueryBuilder` declare `RebindType` instead of the five `*QueryBuilderType` members.
 - **server:** The validation errors of nested models in graphs have keys with slashes, e.g. `chapters/1/title`, which start with the model's index for array input, e.g. `1/chapters/1/title`.
-- **server:** Collection and member `DELETE` requests answer 400 for `range`, `limit` and `offset`, which deletes can't apply. With `offset`, they deleted all matching rows.
+- **server:** Deletes and unrelates with `range`, `limit` or `offset`, which they can't apply, throw a `QueryBuilderError`, which collection and member `DELETE` requests answer with 400. With `offset`, they deleted all matching rows.
 
 ### New
 

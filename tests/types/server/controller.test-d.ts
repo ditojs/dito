@@ -1,6 +1,10 @@
 import { expectTypeOf, assertType, describe, it } from 'vitest'
 import { Controller, ModelController } from '@ditojs/server'
-import type { AdminController } from '@ditojs/server'
+import type {
+  AdminController,
+  UserModel,
+  UsersController
+} from '@ditojs/server'
 import type {
   ApplicationControllers,
   CollectionController,
@@ -434,6 +438,23 @@ describe('KoaContext', () => {
     expectTypeOf(ctx.state.user.$isLoggedIn({} as KoaContext)).toBeBoolean()
   })
 
+  it('logs users in and out', () => {
+    const ctx = {} as KoaContext
+    const user = ctx.state.user
+    expectTypeOf(ctx.login(user)).toEqualTypeOf<Promise<void>>()
+    expectTypeOf(ctx.logIn(user, { session: false })).toEqualTypeOf<
+      Promise<void>
+    >()
+    expectTypeOf(ctx.logout()).toEqualTypeOf<Promise<void>>()
+    expectTypeOf(ctx.logOut({ reason: 'expired' })).toEqualTypeOf<
+      Promise<void>
+    >()
+    expectTypeOf(ctx.isAuthenticated()).toBeBoolean()
+    expectTypeOf(ctx.isUnauthenticated()).toBeBoolean()
+    // @ts-expect-error: Only users log in.
+    ctx.login({} as Model)
+  })
+
   it('ctx.state allows unknown keys without augmentation', () => {
     const ctx = {} as KoaContext
     expectTypeOf(ctx.state.anything).toBeUnknown()
@@ -623,5 +644,22 @@ describe('Controller settings', () => {
         }
       }
     }
+  })
+})
+
+describe('UsersController', () => {
+  it('declares its public methods', () => {
+    type User = InstanceType<typeof UserModel>
+    const controller = {} as UsersController<User>
+    const ctx = {} as KoaContext
+    const user = {} as User
+    expectTypeOf(controller.isAuthenticated(ctx)).toBeBoolean()
+    expectTypeOf(controller.hasConfirmedAccess(ctx)).toBeBoolean()
+    expectTypeOf(
+      controller.sendPasswordReset(ctx, user, 'https://example.com')
+    ).toEqualTypeOf<void | Promise<void>>()
+    expectTypeOf(controller.getPasswordResetTokenValues(user)).toEqualTypeOf<
+      unknown[]
+    >()
   })
 })

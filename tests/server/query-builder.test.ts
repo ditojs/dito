@@ -879,6 +879,24 @@ describe('QueryBuilder', () => {
   })
 
   describe('write operations', () => {
+    it('rejects pagination in deletes and unrelates', async () => {
+      await insertRecipes()
+      const cook = await Cook.query().insert({ name: 'Ada' })
+      await Recipe.query().patch({ cookId: cook.id })
+      const message = (name: string) =>
+        `Unsupported '${name}' in deletes and unrelates.`
+      await expect(Recipe.query().delete().offset(1)).rejects.toThrow(
+        message('offset')
+      )
+      await expect(Recipe.query().delete().range(0, 1)).rejects.toThrow(
+        message('range')
+      )
+      await expect(
+        cook.$relatedQuery('recipes').unrelate().limit(1)
+      ).rejects.toThrow(message('limit'))
+      expect(await Recipe.query().where('cookId', cook.id)).toHaveLength(3)
+    })
+
     it('restarts identities when truncating', async () => {
       await insertRecipes()
       await Recipe.query().truncate()

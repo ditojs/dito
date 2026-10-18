@@ -1,10 +1,6 @@
 import { isObject, isArray, asArray } from '@ditojs/utils'
 import { Controller } from './Controller.js'
-import {
-  ControllerError,
-  QueryBuilderError,
-  ValidationError
-} from '../errors/index.js'
+import { ControllerError, ValidationError } from '../errors/index.js'
 
 // Abstract base class for ModelController and RelationController
 export class CollectionController extends Controller {
@@ -257,7 +253,6 @@ export class CollectionController extends Controller {
     },
 
     async delete(ctx, modify) {
-      rejectPaginationParams(ctx.filteredQuery)
       const count = await this.execute(ctx, async (query, trx) => {
         query
           // Clear the controller's scopes, but keep the ones requested through
@@ -312,7 +307,6 @@ export class CollectionController extends Controller {
     },
 
     async delete(ctx, modify) {
-      rejectPaginationParams(ctx.filteredQuery)
       const count = await this.execute(ctx, (query, trx) =>
         query
           // Clear the controller's scopes, but keep the ones requested through
@@ -345,18 +339,6 @@ function lockForUpdate(controller, builder, trx) {
     )
   }
   builder.forUpdate()
-}
-
-// knex rejects `limit` in deletes and leaves out `offset`, which would delete
-// all matching rows instead of a page:
-function rejectPaginationParams(params) {
-  for (const key of ['range', 'limit', 'offset']) {
-    if (params[key] != null) {
-      throw new QueryBuilderError(
-        `Unsupported query parameter in deletes: '${key}'.`
-      )
-    }
-  }
 }
 
 function formatRouteUrl(url, params) {

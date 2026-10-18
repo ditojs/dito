@@ -164,6 +164,28 @@ test.describe('screenshots', () => {
     await expectScreenshot(page, 'change-password.png')
   })
 
+  test('invalid password notification above the dialog', async ({
+    page,
+    url
+  }) => {
+    await login(page, url)
+    const security = await openSecurity(page)
+    await security.getByRole('button', { name: 'Change', exact: true }).click()
+    const dialog = page.getByRole('dialog', { name: 'Change Password' })
+    await dialog.getByLabel('New Password', { exact: true }).fill('short')
+    await dialog.getByLabel('Confirm New Password').fill('short')
+    await dialog.getByRole('button', { name: 'Change Password' }).click()
+    await expect(page.locator('.dito-notification')).toContainText(
+      'password must NOT have fewer than 6 characters'
+    )
+    // The dialog asks again, once the submitted one has left:
+    await expect(dialog).toHaveCount(1)
+    await expect(
+      dialog.getByLabel('New Password', { exact: true })
+    ).toBeFocused()
+    await expectScreenshot(page, 'change-password-invalid.png')
+  })
+
   test('login code dialog', async ({ page, url }) => {
     await addTotp()
     await page.goto(`${url}/admin/`)

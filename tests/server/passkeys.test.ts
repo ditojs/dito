@@ -287,7 +287,11 @@ describe('Passkeys', () => {
       method: 'POST'
     })
     const body = authenticator.authenticate(options.data)
-    await request('/members/passkey-login', { method: 'POST', body })
+    const first = await request('/members/passkey-login', {
+      method: 'POST',
+      body
+    })
+    expect(first.data.success).toBe(true)
     const login = await request('/members/passkey-login', {
       method: 'POST',
       body

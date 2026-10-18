@@ -169,8 +169,8 @@ application too.
 - `app.logger` is a [Pino](https://getpino.io/) logger. Inside a request, it
   is the request's logger, which logs the request id with every message.
 - `app.requestLocals` holds the locals of the current request: its
-  `transaction` on transacted routes, and its `logger`. Code deep inside a
-  service can use the request's transaction without passing it around:
+  `transaction` on transacted routes, its `logger` and its `session`. Code deep
+  inside a service can use the request's transaction without passing it around:
 
   ```js
   const { transaction } = this.app.requestLocals

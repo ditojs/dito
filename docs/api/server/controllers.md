@@ -50,7 +50,7 @@ value other than `undefined` becomes the response body.
 | `after`       | `function(ctx, result)`                 | An `after:` [hook](#hooks) of this action only. |
 | `parameters`  | `object` \| `array` \| `[schema, options]` | Validated parameters, see [Parameters](#parameters). |
 | `response`    | `Schema & { name? }` \| `[schema, options]` | Schema of the returned value. With `name`, the value is sent wrapped as `{ [name]: value }`. |
-| `authorize`   | [`Authorize`](#authorize)               | Authorization of this action, overriding the one of its actions object and controller. |
+| `authorize`   | [`Authorize`](#authorize)               | Authorization of this action. It ranks above the `authorize` of the actions object it's written in and of the controller, but below the actions objects of subclasses, see [Authorize](#authorize). |
 | `transacted`  | `boolean`                               | Runs the action in a transaction, available as `ctx.transaction`. Default: the controller's `transacted`; without either, the default write actions of controllers with `graph` or `assets` are transacted. |
 | `scope`       | `string \| string[]`                    | Scopes applied to the member query of `from: 'member'` parameters. |
 | `path`        | `string`                                | Overrides the path taken from the action name. |
@@ -203,8 +203,8 @@ ranks above its base class, so the order is: the subclass's action, the
 subclass's actions object, the base class's action, the base class's actions
 object, and so on, with the controller last. The first setting in this order
 decides, also `false`: a subclass's actions object can open a base class's
-action with `authorize: false`. A denied request responds with an
-[`AuthorizationError`](./errors.md#authorizationerror) (401).
+action with `authorize: true`, or close it with `authorize: false`. Denied
+requests get an [`AuthorizationError`](./errors.md#authorizationerror) (401).
 
 See [Authorization](../../guide/server/controllers.md#authorization) for
 examples.
@@ -971,9 +971,10 @@ export class Users extends UsersController {
 Sends `user` the email with `url`, the `confirmUrl` of
 [`app.authentication.passwordReset`](./application.md#configappauthentication)
 with the token, for `'post password-reset'`. Controllers that route it
-override it, else the setup fails. It may be asynchronous. The answer doesn't
-wait for it, so its errors, also synchronous ones, are only emitted as `'error'`
-on the app.
+override it, else the setup fails. It may be asynchronous. It runs after the
+answer, which doesn't wait for it, so its errors, also synchronous ones, are
+only emitted as `'error'` on the app, and `ctx` only serves to read the
+request: its `transaction` is already finished.
 
 ### getPasswordResetTokenValues()
 

@@ -585,8 +585,8 @@ export class Users extends UsersController {
 - `GET /users/self` returns the logged-in user.
 - In member routes, `self` stands for the logged-in user, e.g.
   `PATCH /users/self` runs the member's `patch` action on them, if it is
-  allowed, but doesn't change passwords, see
-  [Confirmed access](#confirmed-access). The admin's
+  allowed, and changes their password or username only with
+  [confirmed access](#confirmed-access). The admin's
   [account settings](../admin/views.md#account-settings) use it.
 
 Wrong passwords don't lock accounts, so that others can't lock users out:
@@ -600,8 +600,21 @@ extra relations and `$verifyPassword()` isn't overridden.
 which authenticate, so users can always log in; `self` follows it. Member
 actions are only allowed for the user themselves (`'$self'`) by default; the
 example also allows admins. If a subclass sets `collection.allow`, it has to
-list the routes above too, e.g.
-`allow: ['get', 'post login', 'post logout', 'get session', 'get self']`.
+list the routes above too, and `'post confirm-access'` for the member's
+`patch`, which needs it, see [Confirmed access](#confirmed-access):
+
+```js
+collection = {
+  allow: [
+    'get',
+    'post login',
+    'post logout',
+    'get session',
+    'get self',
+    'post confirm-access'
+  ]
+}
+```
 
 In actions, `ctx.state.user` is the logged-in user. The admin logs in through
 these routes, see the [admin guide](../admin/index.md).
@@ -857,7 +870,7 @@ action.
 
 Protect other changes the same way, e.g. the `email` that the app sends the
 password resets to, or custom actions with
-`authorize: { 'post export': ctx => this.hasConfirmedAccess(ctx) }`:
+`authorize: { 'post export'(ctx) { return this.hasConfirmedAccess(ctx) } }`:
 
 ```js
 export class Users extends UsersController {
@@ -902,10 +915,20 @@ Passwords set through other routes of the app aren't covered: relations and
 graphs that include user models, other controllers, and new users created
 through an authorized collection `post`. Keep such routes to admins. Deleting
 users through the member `delete`, e.g. `DELETE /users/self`, doesn't need
-confirmed access either: apps that allow it can protect it with
-`authorize: { delete: ctx => this.hasConfirmedAccess(ctx) && '$self' }` in
-`member`, keeping `'$self'`, which the setting replaces, so that users only
-delete themselves.
+confirmed access either: apps that allow it can protect it in `member`,
+keeping `'$self'`, which the setting replaces, so that users only delete
+themselves:
+
+```js
+member = {
+  allow: ['get', 'patch', 'delete'],
+  authorize: {
+    delete(ctx) {
+      return this.hasConfirmedAccess(ctx) && '$self'
+    }
+  }
+}
+```
 
 ## Admin
 

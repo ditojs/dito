@@ -70,9 +70,9 @@ if (isConfirmed) {
 }
 ```
 
-Submitting doesn't validate the data, and Enter in an input submits any
-dialog. Check the values once the dialog resolved, or validate in a button's
-handler with `context.validate()` and close the dialog with
+Submitting validates the data like forms do, and the dialog only resolves once
+it is valid. Enter in an input submits any dialog. Other buttons validate in
+their handler with `context.validate()` and close the dialog with
 `context.closeDialog(data)`:
 
 ```js

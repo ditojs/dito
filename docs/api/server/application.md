@@ -163,7 +163,7 @@ The admin settings are read by
 | `controllers`    | `Record<string, Controller>`             | Controllers by URL.                                                                                 |
 | `logger`         | `pino.Logger`                            | The logger of the current request (with its request id) inside a request, else the app's logger.   |
 | `requestStorage` | `AsyncLocalStorage`                      | The async local storage that carries the request locals through each request.                        |
-| `requestLocals`  | `{ transaction?, logger? }`              | The locals of the current request: its transaction (on transacted routes) and logger. `{}` outside of requests. |
+| `requestLocals`  | `{ transaction?, logger?, session? }`    | The locals of the current request: its transaction (on transacted routes), logger and session. `{}` outside of requests. |
 
 #### Example
 
@@ -697,8 +697,8 @@ app.logError(error, ctx?)
 
 Logs an error, unless its `expose` flag or Koa's `app.silent` is set:
 `ResponseError`s with a status below 500 at level `info`, others at `error`,
-through the request's logger if `ctx` is given. [`start()`](#start) registers it
-for the `'error'` event. *Hook.*
+through the request's logger if `ctx` is given. The app calls it for its
+`'error'` events, unless `log.errors` is `false`. *Hook.*
 
 ### formatError()
 
@@ -738,13 +738,12 @@ calls it from [`deleteExpiredRecords()`](#deleteexpiredrecords).
 
 | Name            | Type                  | Description                                           |
 | --------------- | --------------------- | ----------------------------------------------------- |
-| `olderThan`     | `string \| number`    | Overrides `deleteUnusedAfter` and `deleteUnsavedAfter`. |
+| `olderThan`     | `string \| number \| false` | Overrides `deleteUnusedAfter` and `deleteUnsavedAfter`. `false` keeps the assets. Invalid durations throw. |
 | `transaction`   | `Transaction`         | Transaction to run in.                                |
 | `concurrency`   | `number`              | Concurrent file removals. Default `8`.                |
 
 Returns `Promise<Model[]>`: the released asset records. Files that failed to be
-removed carry the `error`, which is also emitted as `'error'`. Unknown options
-throw.
+removed carry the `error`, which is also emitted as `'error'`.
 
 ### getAssetReferences()
 

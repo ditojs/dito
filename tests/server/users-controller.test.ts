@@ -1,3 +1,4 @@
+import { vi } from 'vitest'
 import type { ModelProperties } from '@ditojs/server'
 import bcrypt from 'bcryptjs'
 import {
@@ -188,7 +189,9 @@ class Deleters extends UsersController {
   override member: any = {
     allow: ['delete'],
     authorize: {
-      delete: (ctx: any) => this.hasConfirmedAccess(ctx) && '$self'
+      delete(this: Deleters, ctx: any) {
+        return this.hasConfirmedAccess(ctx) && '$self'
+      }
     }
   }
 }
@@ -853,6 +856,8 @@ describe('UsersController', () => {
         Member.query().insert({ username, password: 'secret' } as any)
       )
     )
+    // Fake `Date` to move the clock past the confirmed access of the login:
+    vi.useFakeTimers({ toFake: ['Date'] })
     try {
       const request = createClient(url)
       await request('/members/login', {
@@ -861,11 +866,21 @@ describe('UsersController', () => {
       })
       const other = await request(`/deleters/${dee.id}`, { method: 'DELETE' })
       expect(other.status).toBe(401)
+      vi.setSystemTime(Date.now() + 10 * 60 * 1000 + 1)
+      const expired = await request('/deleters/self', { method: 'DELETE' })
+      expect(expired.status).toBe(403)
+      expect(expired.data.confirmationRequired).toBe(true)
+      expect(await Member.query().findById(cy.id)).toBeDefined()
+      await request('/deleters/confirm-access', {
+        method: 'POST',
+        body: { password: 'secret' }
+      })
       const self = await request('/deleters/self', { method: 'DELETE' })
       expect(self.status).toBe(200)
       expect(await Member.query().findById(cy.id)).toBeUndefined()
       expect(await Member.query().findById(dee.id)).toBeDefined()
     } finally {
+      vi.useRealTimers()
       await Member.query().whereIn('id', [cy.id, dee.id]).delete()
     }
   })

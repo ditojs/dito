@@ -24,7 +24,10 @@ export function showSecurityDialog(adminContext) {
       try {
         return await submit(data.code)
       } catch (error) {
-        context.notify({ type: 'error', error, text: error.message })
+        // Cancelled confirmations of the access end quietly:
+        if (error.name !== 'AbortError') {
+          context.notify({ type: 'error', error, text: error.message })
+        }
         // Wrong codes answer 401:
         return error.status === 401
           ? submitCode(context, dialog, submit)
@@ -48,28 +51,41 @@ export function showSecurityDialog(adminContext) {
             change: {
               text: 'Change',
               async onClick({ showDialog, request, notify }) {
-                const data = await showDialog({
-                  components: {
-                    username: usernameComponent,
-                    ...createNewPasswordComponents({ autofocus: true })
-                  },
-                  buttons: {
-                    cancel: {},
-                    change: { type: 'submit', text: 'Change Password' }
-                  },
-                  data: { username: adminContext.user.username },
-                  settings: { label: 'Change Password' }
-                })
-                if (data) {
-                  await request({
-                    resource: users.password,
-                    data: { password: data.password }
+                // Ask again for invalid passwords, like password resets:
+                const changePassword = async () => {
+                  const data = await showDialog({
+                    components: {
+                      username: usernameComponent,
+                      ...createNewPasswordComponents({ autofocus: true })
+                    },
+                    buttons: {
+                      cancel: {},
+                      change: { type: 'submit', text: 'Change Password' }
+                    },
+                    data: { username: adminContext.user.username },
+                    settings: { label: 'Change Password' }
                   })
-                  notify({
-                    type: 'success',
-                    text: 'Your password was changed.'
-                  })
+                  if (data) {
+                    try {
+                      await request({
+                        resource: users.password,
+                        data: { password: data.password }
+                      })
+                      notify({
+                        type: 'success',
+                        text: 'Your password was changed.'
+                      })
+                    } catch (error) {
+                      if (error.errors) {
+                        notify(createInvalidPasswordNotification(error.errors))
+                        await changePassword()
+                      } else {
+                        throw error
+                      }
+                    }
+                  }
                 }
+                await changePassword()
               }
             }
           }
@@ -416,6 +432,17 @@ export function createNewPasswordComponents({ autofocus = false } = {}) {
         value === item.password || 'must match the new password'
       )
     }
+  }
+}
+
+// The notification of the validation errors of new passwords:
+export function createInvalidPasswordNotification(errors) {
+  return {
+    type: 'error',
+    title: 'Invalid Password',
+    text: Object.entries(errors).flatMap(([path, errs]) =>
+      errs.map(({ message }) => `${path} ${message}`)
+    )
   }
 }
 

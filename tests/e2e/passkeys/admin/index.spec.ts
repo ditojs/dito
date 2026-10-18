@@ -63,9 +63,15 @@ test.describe('passkeys', () => {
     const [credential] = await Credential.query()
     expect(credential.lastUsedAt).toBeInstanceOf(Date)
 
-    // Delete the passkey:
+    // The passkey shows its last use, and is deleted:
     const dialog = await openSecurity(page)
-    await expect(dialog.locator('tbody tr')).not.toContainText('Never')
+    await expect(dialog.locator('.dito-cell--last-used-at')).toHaveText(
+      credential.lastUsedAt!.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      })
+    )
     await dialog.getByRole('button', { name: 'Delete' }).click()
     await page
       .getByRole('dialog', {
