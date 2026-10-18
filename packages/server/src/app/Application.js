@@ -64,6 +64,12 @@ import {
 import { AsyncLocalStorage } from 'async_hooks'
 
 export class Application extends Koa {
+  static {
+    // Override Koa's events with our own EventEmitter that adds support for
+    // asynchronous events.
+    EventEmitter.mixin(this.prototype)
+  }
+
   #logger
   #deleteExpiredRecordsEvery
   #deleteExpiredRecordsInterval
@@ -1351,10 +1357,6 @@ export class Application extends Koa {
     return this.requestLocals.logger ?? this.#logger
   }
 }
-
-// Override Koa's events with our own EventEmitter that adds support for
-// asynchronous events.
-EventEmitter.mixin(Application.prototype)
 
 function getOptions(options) {
   return isObject(options) ? options : {}

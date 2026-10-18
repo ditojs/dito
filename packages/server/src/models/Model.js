@@ -39,6 +39,14 @@ import RelationAccessor from './RelationAccessor.js'
 import definitions from './definitions/index.js'
 
 export class Model extends objection.Model {
+  static {
+    EventEmitter.mixin(this)
+    KnexHelper.mixin(this)
+    // Expose a selection of QueryBuilder methods as static methods on model
+    // classes
+    QueryBuilder.mixin(this)
+  }
+
   static app = null // Set by `Application.addModel()`
   static isInitialized = false
   static referenceValidator = null
@@ -1278,11 +1286,6 @@ export class Model extends objection.Model {
     )
   }
 }
-
-EventEmitter.mixin(Model)
-KnexHelper.mixin(Model)
-// Expose a selection of QueryBuilder methods as static methods on model classes
-QueryBuilder.mixin(Model)
 
 const metaMap = new WeakMap()
 

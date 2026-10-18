@@ -32,6 +32,10 @@ import {
 } from '@ditojs/utils'
 
 export class Controller {
+  static {
+    EventEmitter.mixin(this.prototype)
+  }
+
   name = null
   path = null
   url = null
@@ -637,8 +641,6 @@ export class Controller {
     }
   }
 }
-
-EventEmitter.mixin(Controller.prototype)
 
 const inheritanceMap = new WeakMap()
 
