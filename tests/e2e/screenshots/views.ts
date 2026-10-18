@@ -1,3 +1,4 @@
+import type { ListSchema } from '@ditojs/admin'
 import type { Project } from './models/Project.js'
 import { createWidgetView } from '../../utils/views.js'
 
@@ -349,14 +350,18 @@ export const projects = createWidgetView<Project>(
 
 // Further views in a sub-menu, for screenshots of the menus, each listing the
 // projects of one scope.
-function createScopeView(scope: 'planned' | 'done') {
+function createScopeView(
+  scope: 'planned' | 'done',
+  listOptions: Partial<ListSchema<Project>> = {}
+) {
   return createWidgetView<Project>(
     'Project',
     'projects',
     {},
     {
       columns: { name: { label: 'Name' } },
-      scopes: { [scope]: { defaultScope: true } }
+      scopes: { [scope]: { defaultScope: true } },
+      ...listOptions
     }
   )
 }
@@ -365,7 +370,29 @@ export const reports = {
   type: 'menu',
   label: 'Reports',
   items: {
-    planned: { ...createScopeView('planned'), label: 'Planned Projects' },
+    planned: {
+      // A list and scopes wider than narrow windows, with a button below:
+      ...createScopeView('planned', {
+        creatable: true,
+        paginate: 20,
+        scopes: {
+          $default: { label: 'All Projects' },
+          planned: { label: 'Planned Projects', defaultScope: true },
+          active: { label: 'Active Projects' },
+          done: { label: 'Done Projects' }
+        },
+        columns: {
+          name: { label: 'Name' },
+          status: { label: 'Status' },
+          budget: { label: 'Budget' },
+          priority: { label: 'Priority' },
+          progress: { label: 'Progress' },
+          startDate: { label: 'Start Date' },
+          website: { label: 'Website' }
+        }
+      }),
+      label: 'Planned Projects'
+    },
     done: { ...createScopeView('done'), label: 'Done Projects' }
   }
 } as const

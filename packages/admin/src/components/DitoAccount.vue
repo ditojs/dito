@@ -67,7 +67,8 @@ export default {
   & &__button {
     min-width: 0;
     min-height: $input-height;
-    padding: $button-round-padding;
+    // As far from the sides as the name is from the top and bottom:
+    padding: 0 calc(($input-height - 1em) / 2 - $border-width);
     border-radius: 2 * $border-radius;
     font: inherit;
     line-height: 1em;

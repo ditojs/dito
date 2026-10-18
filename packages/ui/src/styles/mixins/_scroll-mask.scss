@@ -1,0 +1,32 @@
+// Scroll sideways without a scrollbar, and fade out on the sides that the
+// `--masked-start` and `--masked-end` modifiers mark as hidden:
+@mixin scroll-mask {
+  $size: 1em;
+
+  --mask-start: 0em;
+  --mask-end: 0em;
+
+  overflow-x: auto;
+  // Leave room for the fades when scrolling items into view:
+  scroll-padding-inline: $size;
+  scrollbar-width: none;
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    black var(--mask-start),
+    black calc(100% - var(--mask-end)),
+    transparent
+  );
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  &--masked-start {
+    --mask-start: #{$size};
+  }
+
+  &--masked-end {
+    --mask-end: #{$size};
+  }
+}

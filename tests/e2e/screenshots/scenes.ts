@@ -91,3 +91,11 @@ export async function expectScreenshot(page: Page, name: string) {
   await page.evaluate(() => document.fonts.ready)
   await expect(page).toHaveScreenshot(name)
 }
+
+// A phone in portrait. Unlike narrow viewports, phones widen the page to
+// content that overflows the window, which the admin has to prevent:
+export const phone = {
+  viewport: { width: 390, height: 844 },
+  isMobile: true,
+  hasTouch: true
+}

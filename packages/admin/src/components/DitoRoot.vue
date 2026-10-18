@@ -27,6 +27,12 @@
     :class="`dito-navigation--${menu.state}`"
     :inert="!!topDialogKey"
   )
+    button.dito-navigation__close(
+      v-if="menu.isOverlay"
+      type="button"
+      aria-label="Close Menu"
+      @click="menu.toggle()"
+    )
   main.dito-page.dito-scroll-parent(
     :class="adminContext.pageClass"
     :inert="!!topDialogKey"
@@ -243,6 +249,10 @@ let dialogId = 0
 }
 
 .dito-root {
+  // Only the admin's containers scroll. Clip what reaches beyond the window,
+  // e.g. the header backgrounds, so that phones can't pan it:
+  overflow: hidden;
+
   // The page's content reaches under the header of the overlay sidebar, while
   // the page's header stays next to it:
   &--overlay-sidebar .dito-page__content {

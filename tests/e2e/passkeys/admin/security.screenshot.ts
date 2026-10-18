@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test'
 import { test, expect } from '../fixtures.js'
-import { expectScreenshot } from '../../screenshots/scenes.js'
+import { expectScreenshot, phone } from '../../screenshots/scenes.js'
 import { Credential } from '../models/Credential.js'
 import { User } from '../models/User.js'
 
@@ -230,5 +230,109 @@ test.describe('screenshots', () => {
     })
     await expect(dialog.getByRole('button', { name: 'Turn Off' })).toBeVisible()
     await expectScreenshot(page, 'totp-turn-off.png')
+  })
+})
+
+test.describe('phone screenshots', () => {
+  test.use(phone)
+
+  test('login dialog', async ({ page, url }) => {
+    await page.goto(`${url}/admin/`)
+    await expect(
+      page.getByRole('button', { name: 'Sign In with Passkey' })
+    ).toBeVisible()
+    await expectScreenshot(page, 'phone-login.png')
+  })
+
+  test('login code dialog', async ({ page, url }) => {
+    await addTotp()
+    await page.goto(`${url}/admin/`)
+    const dialog = page.getByRole('dialog')
+    await dialog.getByLabel('Username').fill('ada')
+    await dialog.getByLabel('Password').fill('secret')
+    await dialog.getByRole('button', { name: 'Sign In', exact: true }).click()
+    await expect(dialog.getByLabel('Authentication Code')).toBeFocused()
+    await expectScreenshot(page, 'phone-login-code.png')
+  })
+
+  test('password reset dialog', async ({ page, url }) => {
+    await page.goto(`${url}/admin/`)
+    await page.getByRole('button', { name: 'Forgot password?' }).click()
+    const dialog = page.getByRole('dialog', { name: 'Reset Password' })
+    await expect(dialog.getByLabel('Username')).toBeFocused()
+    await expectScreenshot(page, 'phone-password-reset.png')
+  })
+
+  test('set new password dialog', async ({ page, url }) => {
+    await page.goto(`${url}/admin/#password-reset=token`)
+    const dialog = page.getByRole('dialog', { name: 'Set New Password' })
+    await expect(
+      dialog.getByLabel('New Password', { exact: true })
+    ).toBeFocused()
+    await expectScreenshot(page, 'phone-password-reset-confirm.png')
+  })
+
+  test('security dialog', async ({ page, url }) => {
+    await addPasskeys()
+    await login(page, url)
+    await addTotp()
+    const dialog = await openSecurity(page)
+    await expect(dialog.locator('tbody tr')).toHaveCount(2)
+    await expectScreenshot(page, 'phone-security.png')
+  })
+
+  test('confirm access dialog', async ({ page, url }) => {
+    await login(page, url)
+    const security = await openSecurity(page)
+    // The login confirmed the access, so we answer as after its expiry:
+    await page.route('**/api/users/totp', route =>
+      route.fulfill({
+        status: 403,
+        json: { message: 'Confirmation required', confirmationRequired: true }
+      })
+    )
+    await security.getByRole('button', { name: 'Set Up' }).click()
+    const dialog = page.getByRole('dialog', { name: 'Confirm Access' })
+    await expect(dialog.getByLabel('Password')).toBeFocused()
+    await expectScreenshot(page, 'phone-confirm-access.png')
+  })
+
+  test('change password dialog', async ({ page, url }) => {
+    await login(page, url)
+    const security = await openSecurity(page)
+    await security.getByRole('button', { name: 'Change', exact: true }).click()
+    const dialog = page.getByRole('dialog', { name: 'Change Password' })
+    await expect(
+      dialog.getByLabel('New Password', { exact: true })
+    ).toBeFocused()
+    await expectScreenshot(page, 'phone-change-password.png')
+  })
+
+  test('delete passkey confirmation', async ({ page, url }) => {
+    await addPasskeys()
+    await login(page, url)
+    const security = await openSecurity(page)
+    await security.getByRole('button', { name: 'Delete' }).first().click()
+    await expect(
+      page.getByRole('dialog', {
+        name: 'Do you really want to delete the 1Password passkey?'
+      })
+    ).toBeVisible()
+    await expectScreenshot(page, 'phone-delete-passkey.png')
+  })
+
+  test('TOTP setup dialog', async ({ page, url }) => {
+    const dialog = await openTotpSetup(page, url)
+    await expect(dialog.getByLabel('Authentication Code')).toBeFocused()
+    await expectScreenshot(page, 'phone-totp-setup.png')
+  })
+
+  test('backup codes dialog', async ({ page, url }) => {
+    const setup = await openTotpSetup(page, url)
+    await setup.getByLabel('Authentication Code').fill('123456')
+    await setup.getByRole('button', { name: 'Turn On' }).click()
+    const dialog = page.getByRole('dialog', { name: 'Backup Codes' })
+    await expect(dialog.getByRole('textbox')).toHaveValue(/0a2b4-c6d8e/)
+    await expectScreenshot(page, 'phone-totp-backup-codes.png')
   })
 })

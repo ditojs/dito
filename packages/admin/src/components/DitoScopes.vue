@@ -42,15 +42,14 @@ export default {
 .dito-scopes {
   white-space: nowrap;
   display: flex;
+  // Scroll the scopes that don't fit, with room for the focus ring:
+  overflow-x: auto;
+  padding: $border-width;
+  margin: -$border-width;
 
   .dito-button {
-    @include ellipsis;
-
     border-radius: 0;
-    // A bit more than the width of ellipsis, to prevent replacing short words
-    // with ellipsis.
-    min-width: 3em;
-    flex: 0 1 auto;
+    flex: 0 0 auto;
 
     &:first-child {
       border-top-left-radius: 1em;

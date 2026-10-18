@@ -1,5 +1,13 @@
 <template lang="pug">
-.dito-tabs(role="tablist")
+.dito-tabs(
+  ref="element"
+  role="tablist"
+  :class=`{
+    'dito-tabs--masked-start': isMaskedStart,
+    'dito-tabs--masked-end': isMaskedEnd
+  }`
+  @scroll.passive="updateMasks"
+)
   a.dito-tabs__link(
     v-for="(tabSchema, key) in tabs"
     :id="getTabId(key)"
@@ -15,8 +23,9 @@
 </template>
 
 <script>
-import { inject } from 'vue'
+import { inject, nextTick, useTemplateRef, watch } from 'vue'
 import { useSchemaValue } from '../composables/useSchemaValue.ts'
+import { useScrollMask } from '../composables/useScrollMask.ts'
 import { componentPathKey } from '../utils/keys.ts'
 
 export default {
@@ -34,8 +43,41 @@ export default {
     const schemaComponentPath = inject(componentPathKey)
     const getTabId = key => `${schemaComponentPath.path}-tab-${key}`
 
+    // The tabs scroll where the header is too narrow for them:
+    const element = useTemplateRef('element')
+    const {
+      isMaskedStart,
+      isMaskedEnd,
+      update: updateMasks
+    } = useScrollMask(element)
+    // Scroll the selected tab into view, clear of the fades, but not the tabs
+    // themselves, as `scrollIntoView()` would:
+    watch(
+      () => props.modelValue,
+      async key => {
+        await nextTick()
+        const tab = document.getElementById(getTabId(key))
+        if (tab) {
+          const bounds = element.value.getBoundingClientRect()
+          const { left, right } = tab.getBoundingClientRect()
+          const padding = parseFloat(
+            getComputedStyle(element.value).scrollPaddingLeft
+          )
+          const offset = (
+            Math.min(left - bounds.left - padding, 0) +
+            Math.max(right - bounds.right + padding, 0)
+          )
+          element.value.scrollLeft += offset
+        }
+      },
+      { immediate: true, flush: 'post' }
+    )
+
     return {
       getTabId,
+      isMaskedStart,
+      isMaskedEnd,
+      updateMasks,
       getLabelText: useSchemaValue(props.context).getLabelText,
 
       getTabPanelId(key) {
@@ -74,6 +116,11 @@ export default {
 
 .dito-tabs {
   display: flex;
+
+  .dito-header & {
+    min-width: 0;
+    @include scroll-mask;
+  }
 
   &__link {
     @include user-select(none);

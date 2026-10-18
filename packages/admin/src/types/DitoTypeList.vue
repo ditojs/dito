@@ -31,9 +31,11 @@
     .dito-spacer(
       v-else-if="hasPagination"
     )
-    DitoLabelButtons(:labelId="labelId")
+    DitoLabelButtons(
+      v-if="hasClipboard"
+      :labelId="labelId"
+    )
       DitoClipboard(
-        v-if="hasClipboard"
         :clipboard="schema.clipboard"
         :schema="schema"
         :label="labelText"
@@ -51,107 +53,108 @@
       :limit="paginate"
       :total="total || 0"
     )
-  table.dito-table(
-    :class=`{
-      'dito-table--separators': isInlined,
-      'dito-table--larger-padding': hasEditButtons && !isInlined,
-      'dito-table--alternate-colors': !isInlined,
-      'dito-table--even-count': hasEvenCount
-    }`
-  )
-    DitoTableHead(
-      v-if="columns"
-      :listQuery="listQuery"
-      :columns="columns"
-      :hasEditButtons="hasEditButtons"
-      :context="context"
+  .dito-list__table
+    table.dito-table(
+      :class=`{
+        'dito-table--separators': isInlined,
+        'dito-table--larger-padding': hasEditButtons && !isInlined,
+        'dito-table--alternate-colors': !isInlined,
+        'dito-table--even-count': hasEvenCount
+      }`
     )
-    DitoDraggable(
-      as="tbody"
-      :options="getDraggableOptions()"
-      :draggable="draggable"
-      :modelValue="listData"
-    )
-      tr.dito-table__row(
-        v-for="(item, index) in listData"
-        :id="getComponentPath(index)"
-        :key="getItemUid(schema, item)"
-        :class="{ 'dito-table__row--error': dataModel.hasErrorsWithin(item) }"
+      DitoTableHead(
+        v-if="columns"
+        :listQuery="listQuery"
+        :columns="columns"
+        :hasEditButtons="hasEditButtons"
+        :context="context"
       )
-        template(
-          v-if="columns"
+      DitoDraggable(
+        as="tbody"
+        :options="getDraggableOptions()"
+        :draggable="draggable"
+        :modelValue="listData"
+      )
+        tr.dito-table__row(
+          v-for="(item, index) in listData"
+          :id="getComponentPath(index)"
+          :key="getItemUid(schema, item)"
+          :class="{ 'dito-table__row--error': dataModel.hasErrorsWithin(item) }"
         )
           template(
-            v-for="column in columns"
+            v-if="columns"
           )
-            DitoTableCell(
-              v-if="shouldRenderSchema(column)"
-              :key="column.name"
-              :class="getCellClass(column)"
-              :cell="column"
-              :schema="schema"
-              :dataPath="getDataPath(index)"
-              :data="item"
-              :store="store"
-              :nested="false"
-              :disabled="disabled || isLoading"
+            template(
+              v-for="column in columns"
             )
-        template(
-          v-else
-        )
-          td
-            DitoSourceItem(
+              DitoTableCell(
+                v-if="shouldRenderSchema(column)"
+                :key="column.name"
+                :class="getCellClass(column)"
+                :cell="column"
+                :schema="schema"
+                :dataPath="getDataPath(index)"
+                :data="item"
+                :store="store"
+                :nested="false"
+                :disabled="disabled || isLoading"
+              )
+          template(
+            v-else
+          )
+            td
+              DitoSourceItem(
+                :schema="schema"
+                :formSchema="getItemFormSchema(schema, item, context)"
+                :dataPath="getDataPath(index)"
+                :data="item"
+                :index="index"
+                :store="getItemStore(item)"
+                :disabled="disabled || isLoading"
+                :collapsed="collapsed"
+                :collapsible="collapsible"
+                :deletable="deletable"
+                :draggable="draggable && listData.length > 1"
+                :editable="editable"
+                :editPath="getEditPath(index)"
+                :createPath="sourceContext.createPath"
+                :insertIndex="creatable && draggable ? index : null"
+                @delete="deleteItem(item, index)"
+                @move="delta => moveItem(index, delta)"
+              )
+          td.dito-table__buttons(
+            v-if="hasCellEditButtons"
+          )
+            DitoEditButtons(
               :schema="schema"
               :formSchema="getItemFormSchema(schema, item, context)"
               :dataPath="getDataPath(index)"
               :data="item"
-              :index="index"
               :store="getItemStore(item)"
               :disabled="disabled || isLoading"
-              :collapsed="collapsed"
-              :collapsible="collapsible"
               :deletable="deletable"
-              :draggable="draggable && listData.length > 1"
+              :draggable="draggable"
               :editable="editable"
               :editPath="getEditPath(index)"
-              :createPath="sourceContext.createPath"
-              :insertIndex="creatable && draggable ? index : null"
               @delete="deleteItem(item, index)"
               @move="delta => moveItem(index, delta)"
             )
-        td.dito-table__buttons(
-          v-if="hasCellEditButtons"
+        tr.dito-table__row.dito-table__row--empty(
+          v-if="emptyText && !listData.length && !isLoading"
         )
-          DitoEditButtons(
-            :schema="schema"
-            :formSchema="getItemFormSchema(schema, item, context)"
-            :dataPath="getDataPath(index)"
-            :data="item"
-            :store="getItemStore(item)"
-            :disabled="disabled || isLoading"
-            :deletable="deletable"
-            :draggable="draggable"
-            :editable="editable"
-            :editPath="getEditPath(index)"
-            @delete="deleteItem(item, index)"
-            @move="delta => moveItem(index, delta)"
-          )
-      tr.dito-table__row.dito-table__row--empty(
-        v-if="emptyText && !listData.length && !isLoading"
+          td(:colspan="numColumns") {{ emptyText }}
+      //- Render the list buttons inside the table when not in a single
+      //- component view, with the item that holds the list as their data:
+      tfoot(
+        v-if="hasListButtons && !single"
       )
-        td(:colspan="numColumns") {{ emptyText }}
-    //- Render the list buttons inside the table when not in a single
-    //- component view, with the item that holds the list as their data:
-    tfoot(
-      v-if="hasListButtons && !single"
-    )
-      tr
-        td.dito-table__buttons(:colspan="numColumns")
-          DitoEditButtons(
-            v-bind="listButtonsAttributes"
-            :data="data"
-          )
-  //- ...and outside, sticky to the bottom, when in a single component view,
+        tr
+          td.dito-table__buttons(:colspan="numColumns")
+            DitoEditButtons(
+              v-bind="listButtonsAttributes"
+              :data="data"
+            )
+  //- ...and outside, at the bottom, when in a single component view,
   //- with the list data as their item, e.g. for buttons that store its order:
   DitoEditButtons.dito-buttons--large.dito-buttons--main.dito-buttons--sticky(
     v-if="hasListButtons && single"
@@ -440,7 +443,10 @@ export default DitoTypeList
 
   &__header {
     display: flex;
+    // Wrap the pagination below scopes that don't fit next to it:
+    flex-wrap: wrap;
     justify-content: space-between;
+    row-gap: $content-padding-half;
     padding-bottom: $content-padding-half;
     @include user-select(none);
 
@@ -468,33 +474,59 @@ export default DitoTypeList
         margin-left: $form-spacing;
       }
     }
+
+    .dito-pagination {
+      margin-left: auto;
+    }
+  }
+
+  &__table {
+    // Scroll tables that are wider than the list, instead of the page:
+    overflow: auto;
   }
 
   &.dito-component--single {
-    // So that list buttons can be sticky to the bottom:
-    display: grid;
-    grid-template-rows: min-content;
+    // The table scrolls between the header and the buttons:
+    display: flex;
+    flex-direction: column;
     height: 100%;
 
-    // Make single list header, navigation and buttons sticky to the top and
-    // bottom:
-    #{$self}__header {
+    #{$self}__table {
+      flex: 1 1 auto;
+      min-height: 0;
+      // End with the view's padding above the buttons, when scrolled down:
+      padding-bottom: var(--pane-padding);
+    }
+
+    // Scroll up to the view's edges, from where the content starts:
+    #{$self}__table,
+    .dito-scopes {
+      margin-inline: calc(-1 * var(--pane-padding));
+      padding-inline: var(--pane-padding);
+    }
+
+    > .dito-buttons {
+      // Span the list, also for its border and shadow, right below the table:
+      align-self: stretch;
+      margin-top: 0;
+    }
+
+    .dito-table-head {
       position: sticky;
       top: 0;
-      margin-top: -$content-padding;
-      padding-top: $content-padding;
       background: $content-color-background;
       z-index: 1;
-
-      + .dito-table {
-        .dito-table-head {
-          position: sticky;
-          top: calc($input-height + $content-padding + $content-padding-half);
-          background: $content-color-background;
-          z-index: 1;
-        }
-      }
     }
+  }
+}
+
+// Single lists fill the view, so that they can scroll their tables themselves:
+.dito-schema-content:has(> .dito-pane--single > .dito-container > .dito-list) {
+  display: flex;
+  flex-direction: column;
+
+  > .dito-pane {
+    min-height: 0;
   }
 }
 </style>

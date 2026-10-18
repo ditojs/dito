@@ -561,6 +561,7 @@ export default {
   }
 
   &__buttons {
+    flex-shrink: 0;
     margin-left: var(--button-margin, 0);
   }
 }

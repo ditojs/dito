@@ -12,6 +12,6 @@
   font-family: $font-family-sans;
   -moz-osx-font-smoothing: grayscale;
   -webkit-font-smoothing: antialiased;
-  overflow-x: hidden;
-  max-width: 100%;
+  // Only the admin's containers scroll, so don't let phones bounce the page:
+  overscroll-behavior: none;
 }

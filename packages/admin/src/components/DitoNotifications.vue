@@ -114,7 +114,6 @@ export default {
 
   flex: 1;
   box-sizing: border-box;
-  margin-left: $form-spacing;
 
   .dito-header {
     span {
@@ -133,11 +132,14 @@ export default {
 
   .vue-notification-group {
     position: absolute;
-    left: 0;
+    // Inside the column, which takes no room when the window is full:
+    left: $form-spacing;
     top: 0;
     width: $notification-width;
 
-    @container (width < #{$notification-width + $content-padding}) {
+    @container (
+      width < #{$form-spacing + $notification-width + $content-padding}
+    ) {
       left: unset;
       right: $content-padding;
     }
