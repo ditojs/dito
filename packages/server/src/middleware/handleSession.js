@@ -53,7 +53,7 @@ const createSessionStore = modelClass =>
         ? ctx.app.models[modelClass]
         : modelClass
       if (!this.modelClass) {
-        throw new Error(`Unable to find model class: '${modelClass}'`)
+        throw new Error(`Unable to find model class: '${modelClass}'.`)
       }
     }
 

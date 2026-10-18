@@ -1,3 +1,4 @@
+import { createHmac, hkdfSync } from 'node:crypto'
 import { vi } from 'vitest'
 import {
   CredentialModel,
@@ -209,6 +210,22 @@ describe('TOTP', () => {
     for (const code of backupCodes) {
       expect(stored).not.toContain(code.replace('-', ''))
     }
+    // The hashes are keyed with the service's secret, through HKDF with the
+    // salt 'dito-credentials', which stored credentials depend on:
+    const key = hkdfSync(
+      'sha256',
+      'totp-secret',
+      'dito-credentials',
+      'backup-code',
+      32
+    )
+    expect(credential.data.backupCodes).toEqual(
+      backupCodes.map((code: string) =>
+        createHmac('sha256', Buffer.from(key))
+          .update(code.replace('-', ''))
+          .digest('hex')
+      )
+    )
 
     // Each setup is confirmed once:
     const again = await request('/members/totp-confirm', {
@@ -216,7 +233,7 @@ describe('TOTP', () => {
       body: { code: totp.generate() }
     })
     expect(again.status).toBe(400)
-    expect(again.data.message).toBe('Missing or expired TOTP setup')
+    expect(again.data.message).toBe('Missing or expired TOTP confirmation')
   })
 
   it('keeps setups after wrong codes, also in transacted controllers', async () => {

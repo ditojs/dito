@@ -1,6 +1,9 @@
 import { Service } from './Service.js'
 import { AuthenticationError } from '../errors/index.js'
-import { authTimeout } from '../utils/auth.js'
+import {
+  authenticationTimeout,
+  insertCredential
+} from '../utils/authentication.js'
 import { importPeer } from '../utils/module.js'
 
 export class PasskeyService extends Service {
@@ -33,7 +36,7 @@ export class PasskeyService extends Service {
 
   // Verify the response of `startAuthentication()` against the challenge in
   // the session, and update the `credential` of its passkey:
-  async verifyAuthentication(ctx, response, credential) {
+  async verifyAuthentication(ctx, credential, response) {
     const challenge = consumeChallenge(ctx, 'authentication')
     const { verified, authenticationInfo } = credential
       ? await Promise.try(() =>
@@ -93,8 +96,8 @@ export class PasskeyService extends Service {
   }
 
   // Verify the response of `startRegistration()` against the challenge in the
-  // session, and return the values of its credential:
-  async verifyRegistration(ctx, response) {
+  // session, and store its passkey as a credential of the user:
+  async verifyRegistration(ctx, user, response) {
     const challenge = consumeChallenge(ctx, 'registration')
     const { verified, registrationInfo } = await Promise.try(() =>
       this.#webAuthn.verifyRegistrationResponse({
@@ -108,17 +111,22 @@ export class PasskeyService extends Service {
     })
     if (verified) {
       const { credential, aaguid } = registrationInfo
-      return {
-        key: credential.id,
-        // Name passkeys after their providers, e.g. '1Password'. Anonymous
-        // providers send an all-zero AAGUID, which isn't listed:
-        name: this.#aaguids[aaguid] ?? 'Passkey',
-        data: {
-          publicKey: Buffer.from(credential.publicKey).toString('base64url'),
-          counter: credential.counter,
-          transports: credential.transports
-        }
-      }
+      return insertCredential(
+        user,
+        'passkey',
+        {
+          key: credential.id,
+          // Name passkeys after their providers, e.g. '1Password'. Anonymous
+          // providers send an all-zero AAGUID, which isn't listed:
+          name: this.#aaguids[aaguid] ?? 'Passkey',
+          data: {
+            publicKey: Buffer.from(credential.publicKey).toString('base64url'),
+            counter: credential.counter,
+            transports: credential.transports
+          }
+        },
+        ctx.transaction
+      )
     } else {
       throw new AuthenticationError({
         message: 'Passkey is incorrect',
@@ -156,12 +164,12 @@ function getDomainOrigin(response, domain) {
   return isAllowed ? origin : `https://${domain}`
 }
 
-// Registrations and authentications keep their challenges apart, so that
-// confirming the access with a passkey doesn't end a pending registration:
+// Registrations and authentications keep their challenges apart: confirming
+// the access with a passkey doesn't end a pending registration:
 function storeChallenge(ctx, type, { challenge }) {
   ctx.session[`${type}Challenge`] = {
     challenge,
-    expires: Date.now() + authTimeout
+    expires: Date.now() + authenticationTimeout
   }
 }
 

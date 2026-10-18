@@ -2,7 +2,7 @@ import {
   getPasswordFingerprint,
   getUserIdentifier,
   parseUserIdentifier
-} from '../utils/auth.js'
+} from '../utils/authentication.js'
 
 export function handleUser() {
   return async (ctx, next) => {

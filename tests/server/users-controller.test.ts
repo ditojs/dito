@@ -190,7 +190,8 @@ class Deleters extends UsersController {
     allow: ['delete'],
     authorize: {
       delete(this: Deleters, ctx: any) {
-        return this.hasConfirmedAccess(ctx) && '$self'
+        this.checkConfirmedAccess(ctx)
+        return '$self'
       }
     }
   }
@@ -826,7 +827,7 @@ describe('UsersController', () => {
       expect(response.status).toBe(400)
       expect(response.data).toEqual({
         type: 'BodyValidation',
-        message: `Unable to change 'hash', change 'password' instead`
+        message: `Unable to change 'hash', change 'password' instead.`
       })
     }
     const stored = (await Member.query().findById(member.id))!

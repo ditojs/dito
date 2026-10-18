@@ -758,9 +758,9 @@ and how many backup codes are left, and `DELETE /users/totp` turns it off, with
 [confirmed access](#confirmed-access). Only password logins through
 `'post login'` ask for the code, while `ctx.login(user)` logs in without it,
 e.g. to impersonate users. Users with TOTP can't log in with their password
-while the app doesn't register `TotpService`. The admin's login
-dialog asks for the code, and with `TotpService` its account menu sets up and
-turns off TOTP, see [`DitoAdmin`](../../api/admin/admin.md#globalconfig).
+while the app doesn't register `TotpService`. The admin's login dialog asks for
+the code, and with `TotpService` its account menu sets up and turns off TOTP,
+see [`DitoAdmin`](../../api/admin/admin.md#globalconfig).
 
 ### Password reset
 
@@ -868,9 +868,11 @@ password resets go to it. They answer 400 for bodies with the `hash`, while
 access whenever an action answers `confirmationRequired`, and then repeats the
 action.
 
-Protect other changes the same way, e.g. the `email` that the app sends the
-password resets to, or custom actions with
-`authorize: { 'post export'(ctx) { return this.hasConfirmedAccess(ctx) } }`:
+Protect other changes the same way with `checkConfirmedAccess(ctx)`, which
+answers 401 without a login of a user of the controller's model, and 403 with
+`confirmationRequired` without confirmed access, e.g. for the `email` that the
+app sends the password resets to, or in the `authorize` of custom actions.
+`hasConfirmedAccess(ctx)` only tells whether the access is confirmed:
 
 ```js
 export class Users extends UsersController {
@@ -884,10 +886,8 @@ export class Users extends UsersController {
       if (email !== undefined) {
         // Compare with the user that is patched, not the logged-in one:
         const user = await this.modelClass.query().findById(ctx.memberId)
-        // `hasConfirmedAccess()` throws 403 with `confirmationRequired` without
-        // confirmed access, and returns `false` for users of other models:
-        if (email !== user?.email && !this.hasConfirmedAccess(ctx)) {
-          throw new AuthorizationError()
+        if (email !== user?.email) {
+          this.checkConfirmedAccess(ctx)
         }
       }
       return super.patch(ctx, modify)
@@ -924,7 +924,8 @@ member = {
   allow: ['get', 'patch', 'delete'],
   authorize: {
     delete(ctx) {
-      return this.hasConfirmedAccess(ctx) && '$self'
+      this.checkConfirmedAccess(ctx)
+      return '$self'
     }
   }
 }

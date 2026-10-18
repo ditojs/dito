@@ -107,17 +107,13 @@ describe('Application', () => {
       Promise<Record<string, unknown>>
     >()
     expectTypeOf(
-      passkeys.verifyAuthentication(ctx, {}, {} as Credential)
+      passkeys.verifyAuthentication(ctx, {} as Credential, {})
     ).toEqualTypeOf<Promise<void>>()
     expectTypeOf(
       passkeys.createRegistrationOptions(ctx, user, [])
     ).toEqualTypeOf<Promise<Record<string, unknown>>>()
-    expectTypeOf(passkeys.verifyRegistration(ctx, {})).toEqualTypeOf<
-      Promise<{
-        key: string
-        name: string
-        data: Record<string, unknown>
-      }>
+    expectTypeOf(passkeys.verifyRegistration(ctx, user, {})).toEqualTypeOf<
+      Promise<Credential>
     >()
     expectTypeOf(totp.createSecret(ctx, user)).toEqualTypeOf<{
       uri: string

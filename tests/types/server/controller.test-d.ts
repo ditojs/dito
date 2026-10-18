@@ -655,6 +655,7 @@ describe('UsersController', () => {
     const user = {} as User
     expectTypeOf(controller.isAuthenticated(ctx)).toBeBoolean()
     expectTypeOf(controller.hasConfirmedAccess(ctx)).toBeBoolean()
+    expectTypeOf(controller.checkConfirmedAccess(ctx)).toBeVoid()
     expectTypeOf(
       controller.sendPasswordReset(ctx, user, 'https://example.com')
     ).toEqualTypeOf<void | Promise<void>>()

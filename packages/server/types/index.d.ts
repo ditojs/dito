@@ -2901,12 +2901,17 @@ export class UsersController<
    */
   isAuthenticated(ctx: KoaContext): boolean
   /**
-   * Like `isAuthenticated()`, but throws a 403 error with
-   * `confirmationRequired` for users without confirmed access, see
-   * `app.authentication.reconfirmAccessAfter`. For the `authorize` of
-   * security changes.
+   * Returns whether the authenticated user of the controller's model has
+   * confirmed their access within
+   * `app.authentication.reconfirmAccessAfter`.
    */
   hasConfirmedAccess(ctx: KoaContext): boolean
+  /**
+   * Throws a 401 error without a login of a user of the controller's model,
+   * and a 403 error with `confirmationRequired` without confirmed access. For
+   * actions and the `authorize` of security changes.
+   */
+  checkConfirmedAccess(ctx: KoaContext): void
   /**
    * Sends the user the email with the `url` that resets their password, with
    * `app.authentication.passwordReset`. Apps override it. It runs after the
@@ -3774,8 +3779,8 @@ export class PasskeyService extends Service<{
    */
   verifyAuthentication(
     ctx: KoaContext,
-    response: Record<string, unknown>,
-    credential: InstanceType<typeof CredentialModel> | null
+    credential: InstanceType<typeof CredentialModel> | null,
+    response: Record<string, unknown>
   ): Promise<void>
 
   /**
@@ -3791,18 +3796,15 @@ export class PasskeyService extends Service<{
 
   /**
    * Verifies the response of `startRegistration()` against the challenge in
-   * the session, and resolves to the values of its credential. Rejects with an
-   * `AuthenticationError` for missing or expired challenges and passkeys that
-   * don't verify.
+   * the session, and stores its passkey as a credential of the user, which it
+   * resolves to. Rejects with an `AuthenticationError` for missing or expired
+   * challenges and passkeys that don't verify.
    */
   verifyRegistration(
     ctx: KoaContext,
+    user: InstanceType<typeof UserModel>,
     response: Record<string, unknown>
-  ): Promise<{
-    key: string
-    name: string
-    data: Record<string, unknown>
-  }>
+  ): Promise<InstanceType<typeof CredentialModel>>
 }
 
 /**
@@ -3830,7 +3832,7 @@ export class TotpService extends Service<{
   /**
    * Stores the secret of the session once the user confirms it with a code,
    * and resolves to the new backup codes. Rejects with an
-   * `AuthenticationError` for wrong codes and missing or expired setups, and
+   * `AuthenticationError` for wrong codes and missing or expired secrets, and
    * with a `ResponseError` if TOTP is already set up.
    */
   confirmSecret(
