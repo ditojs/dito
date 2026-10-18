@@ -25,7 +25,7 @@ function getRecordedContexts(page: Page) {
 async function openItemForm(page: Page, list: string) {
   await page
     .getByRole('region', { name: list, exact: true })
-    .locator(':scope > table > tbody > tr')
+    .locator(':scope > .dito-list__table > table > tbody > tr')
     .first()
     .getByRole('link', { name: 'Edit' })
     .click()

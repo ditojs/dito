@@ -21,7 +21,7 @@ test.describe('child pages', () => {
     await page.goto(`${url}/admin/pages/${parent.id}`)
     const rows = page
       .getByRole('region', { name: 'Child Pages', exact: true })
-      .locator(':scope > table > tbody > tr')
+      .locator(':scope > .dito-list__table > table > tbody > tr')
     await expect(rows).toHaveCount(2)
     // Leaving a dirty form would ask for confirmation.
     await page.getByRole('button', { name: 'Cancel', exact: true }).click()
