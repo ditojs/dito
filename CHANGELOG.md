@@ -42,6 +42,7 @@ version, see the upgrade guides in `docs/`.
 ### Fixes
 
 - **server:** Logins with unknown usernames compare the password against a dummy hash like wrong passwords, and usernames and passwords that aren't strings answer like wrong ones.
+- **server:** `super` calls in actions reach inherited actions in the options form, e.g. `{ handler, parameters }`, instead of throwing.
 - **admin:** Dialog buttons that are wider than their components stay off the dialog's edges.
 - **admin:** Failed logins show the message of the server's response.
 - **admin:** Errors of `context.request()` carry the `status` of their response.

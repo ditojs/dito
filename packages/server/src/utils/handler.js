@@ -1,4 +1,5 @@
-import { isFunction, asArray } from '@ditojs/utils'
+import { isObject, isFunction, asArray } from '@ditojs/utils'
+import { getInheritanceChain } from './object.js'
 
 /**
  * Parses a handler definition into a plain descriptor, without modifying the
@@ -69,3 +70,33 @@ export function parseHandlerDefinition(definition) {
     extra
   }
 }
+
+// Replace object-form definitions on all levels of `values` with their
+// handlers, so `super` finds functions, and let `super` in `handler()` reach
+// the parent level. Parse them before, as they inherit from it afterwards:
+export function convertHandlerDefinitions(values) {
+  for (const level of getInheritanceChain(values)) {
+    const definitions = definitionsByLevel.get(level) ?? {}
+    for (const [key, definition] of Object.entries(level)) {
+      if (isObject(definition) && isFunction(definition.handler)) {
+        definitions[key] = parseHandlerDefinition(definition)
+        level[key] = definitions[key].handler
+        Object.setPrototypeOf(definition, Object.getPrototypeOf(level))
+      }
+    }
+    definitionsByLevel.set(level, definitions)
+  }
+}
+
+// Parse the definition of `values[key]` as given on the level that defines it:
+export function getHandlerDefinition(values, key) {
+  const level = getInheritanceChain(values).find(
+    object => Object.hasOwn(object, key)
+  )
+  return (
+    definitionsByLevel.get(level)?.[key] ??
+    parseHandlerDefinition(values[key])
+  )
+}
+
+const definitionsByLevel = new WeakMap()

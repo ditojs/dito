@@ -4,7 +4,7 @@ import { CollectionController } from './CollectionController.js'
 import { RelationController } from './RelationController.js'
 import { ControllerError } from '../errors/index.js'
 import { setupPropertyInheritance } from '../utils/object.js'
-import { parseHandlerDefinition } from '../utils/handler.js'
+import { getHandlerDefinition } from '../utils/handler.js'
 
 export class ModelController extends CollectionController {
   // @override
@@ -38,7 +38,7 @@ export class ModelController extends CollectionController {
       ['get', 'patch'].map(name => [
         name,
         this.processAuthorize(
-          parseHandlerDefinition(memberActions[name])?.authorize ??
+          getHandlerDefinition(memberActions, name)?.authorize ??
           authorize[name]
         )
       ])

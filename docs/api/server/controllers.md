@@ -34,8 +34,12 @@ An action is a handler function or an options object with a `handler`. The
 handler is called with the actions object as `this`, which inherits from the
 controller (`this.query()`, `this.app`, …) and exposes it as
 `this.controller`. `super.<action>()` calls the inherited action of the same
-object, e.g. `super.get(ctx)`. A returned value other than `undefined` becomes
-the response body.
+object, e.g. `super.get(ctx)`, in both forms. In the options form, `super`
+depends on the object the `handler` is written in: for handlers assigned from
+elsewhere and for options objects that are copied or shared between
+controllers, use the function form, as shared options objects follow the last
+controller set up with them, also in the `authorize` they inherit. A returned
+value other than `undefined` becomes the response body.
 
 ### Action options
 
