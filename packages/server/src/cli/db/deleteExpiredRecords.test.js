@@ -41,7 +41,8 @@ describe('deleteExpiredRecords()', () => {
     const logError = vi.spyOn(app, 'logError').mockImplementation(() => {})
     expect(await deleteExpiredRecords(app)).toBe(false)
     expect(logError).toHaveBeenCalledExactlyOnceWith(
-      new Error('Pantry is locked')
+      new Error('Pantry is locked'),
+      undefined
     )
   })
 })

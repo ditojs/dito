@@ -803,35 +803,19 @@ describe('Application', () => {
       await vi.waitFor(() => expect(app.server).toBeNull())
     })
 
-    it('logs errors emitted while running', async () => {
+    it('logs errors emitted on the app', async () => {
       const app = createApp()
       const logError = vi.spyOn(app, 'logError').mockImplementation(() => {})
-      // Re-bind the spy, as `start()` registers `this.logError`.
-      await app.start()
-      await app.emit('error', new Error('Burnt'))
-      await app.stop()
-      // Without the listener, unhandled errors are thrown again.
-      await expect(app.emit('error', new Error('Ignored'))).rejects.toThrow(
-        'Ignored'
-      )
-      expect(logError).toHaveBeenCalledTimes(1)
-      expect(logError.mock.calls[0][0].message).toBe('Burnt')
+      const error = new Error('Burnt')
+      await app.emit('error', error)
+      expect(logError).toHaveBeenCalledExactlyOnceWith(error, undefined)
     })
 
-    it('does not log errors emitted while running with `log.errors: false`', async () => {
-      const info = vi.spyOn(console, 'info').mockImplementation(() => {})
+    it('does not log errors with `log.errors: false`', async () => {
       const app = createApp({ config: { log: { errors: false } } })
       const logError = vi.spyOn(app, 'logError')
-      const onError = vi.fn()
-      app.on('error', onError)
-      try {
-        await app.start()
-        await app.emit('error', new Error('Burnt'))
-        await app.stop()
-      } finally {
-        info.mockRestore()
-      }
-      expect(onError).toHaveBeenCalledTimes(1)
+      // Emitting errors without other listeners doesn't reject:
+      await app.emit('error', new Error('Burnt'))
       expect(logError).not.toHaveBeenCalled()
     })
 
@@ -877,7 +861,6 @@ describe('Application', () => {
         config: { app: config, log: { errors: false } },
         models: createModels(deleted)
       })
-      app.on('error', () => {})
       const advanceTime = async ms => {
         await vi.advanceTimersByTimeAsync(ms)
         return deleted.length
@@ -903,15 +886,6 @@ describe('Application', () => {
       await app.deleteExpiredRecords()
       expect(deleted).toEqual(['Pantry', 'Fridge'])
       expect(onError).toHaveBeenCalledExactlyOnceWith(
-        new Error('Pantry is locked')
-      )
-    })
-
-    it('logs the errors without error listeners', async () => {
-      const app = createApp({ models: createModels([]) })
-      const logError = vi.spyOn(app, 'logError').mockImplementation(() => {})
-      await app.deleteExpiredRecords()
-      expect(logError).toHaveBeenCalledExactlyOnceWith(
         new Error('Pantry is locked')
       )
     })

@@ -19,6 +19,7 @@ version, see the upgrade guides in `docs/`.
 - **server:** Unused assets are released every hour instead of after writes of asset data, so `assets.deleteUnusedAfter: 0` releases them at the next run. Apps that release them on a schedule of their own can drop it.
 - **server:** `assets.cleanupTimeThreshold` and `danglingTimeThreshold` are renamed to `deleteUnusedAfter` and `deleteUnsavedAfter`, and the `timeThreshold` option of `app.releaseUnusedAssets()` to `olderThan`. `false` keeps the assets. Unknown asset options and invalid durations throw on startup.
 - **server:** Actions that a subclass redefines keep the `authorize` of the inherited action unless they set their own, instead of falling back to the actions object or the controller. This can open as well as close access: a redefined action whose parent has `authorize: true` stays open. An `authorize` on a subclass's actions object ranks above the one on the inherited action.
+- **server:** The app logs the errors emitted on it also before `start()` and after `stop()`, and `log.errors: false` only stops it from logging them, so emitting `'error'` without listeners of your own no longer rejects. With `log.errors: false`, nothing logs request errors any more (Koa's own fallback included), and `dito db:delete_expired_records` reports failures only through its exit code.
 - **admin:** Dialogs validate their data on submit, like forms, and only resolve once it's valid.
 - **admin:** `@simplewebauthn/browser` and `lean-qr` are required peer dependencies of `@ditojs/admin`.
 
