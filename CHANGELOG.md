@@ -7,45 +7,43 @@ version, see the upgrade guides in `docs/`.
 
 ### Behaviour changes
 
-- **server:** Dito.js handles logins and sessions itself instead of through koa-passport, which `@ditojs/server` no longer depends on. `ctx.req.user` and custom Passport strategies are gone, `app.passport` has no effect, and `UserMixin.authenticate()` reads the credentials only from the request body. Existing sessions stay valid.
-- **server:** Changing a user's password ends their other sessions. When users change their own password, the session of the request stays logged in, wherever the password is set.
-- **server:** The actions of `UsersController` no longer accept the `hash` of the password, and setting the password or changing the username through `patch` and `put` needs confirmed access of a user of the controller's model class, also when admins set the passwords of other users. Without a login, they answer 401, without confirmed access 403 with `confirmationRequired`, and the admin asks the user to confirm the access.
-- **server:** `UsersController` throws on setup without `app.session`, which its logins need, and when it routes actions that need confirmed access without `'post confirm-access'`: `patch`, `put`, `post` with `relate`, `'post password'` and the passkey and TOTP actions that change them.
-- **server:** `UsersController` only treats users of its own model class as logged in, not users of its sub-classes.
+- **server:** Dito.js handles logins and sessions itself instead of through koa-passport. `app.passport` has no effect, and `ctx.req.user` and custom Passport strategies are gone. Existing sessions stay valid.
+- **server:** `UserMixin.login()` is now `authenticate()`, which reads the credentials only from the request body and resolves to their user without logging them in.
 - **server:** `UserMixin.sessionQuery()` is internal: apps set `sessionScope` instead.
-- **server:** `UserMixin.login()` is renamed to `authenticate()`, which only checks the credentials and resolves to their user, without logging them in: apps that called `login()` call `ctx.login(await User.authenticate(ctx))` instead, which skips TOTP: apps with TOTP log users in through `'post login'` of `UsersController`.
-- **server:** The session cookie defaults to `sameSite: 'lax'`, which `app.session.sameSite` overrides.
-- **server:** Session models need an `expiresAt` column: add it with a migration, see [Upgrading to 5.x](docs/upgrading-to-5.x.md#sessions).
-- **server:** Unused assets are released every hour instead of after writes of asset data, so `assets.deleteUnusedAfter: 0` releases them at the next run. Apps that release them on a schedule of their own can drop it.
-- **server:** `assets.cleanupTimeThreshold` and `danglingTimeThreshold` are renamed to `deleteUnusedAfter` and `deleteUnsavedAfter`, and the `timeThreshold` option of `app.releaseUnusedAssets()` to `olderThan`. `false` keeps the assets. Unknown asset options and invalid durations throw on startup.
-- **server:** Actions that a subclass redefines keep the `authorize` of the inherited action unless they set their own, instead of falling back to the actions object or the controller. This can open as well as close access: a redefined action whose parent has `authorize: true` stays open. An `authorize` on a subclass's actions object ranks above the one on the inherited action.
-- **server:** The app logs the errors emitted on it also before `start()` and after `stop()`, and `log.errors: false` only stops it from logging them, so emitting `'error'` without listeners of your own no longer rejects. With `log.errors: false`, nothing logs request errors any more (Koa's own fallback included), and `dito db:delete_expired_records` reports failures only through its exit code.
-- **admin:** Dialogs validate their data on submit, like forms, and only resolve once it's valid.
-- **admin:** `@simplewebauthn/browser` and `lean-qr` are required peer dependencies of `@ditojs/admin`.
+- **server:** `UsersController` needs `app.session`, and `'post confirm-access'` when it routes `patch`, `put` or other actions that need confirmed access, else its setup throws.
+- **server:** `UsersController` only treats users of its own model class as logged in, not users of its subclasses.
+- **server:** Changing a user's password ends their other sessions. When users change their own password, the session of the request stays logged in.
+- **server:** `patch` and `put` of `UsersController` reject `hash`, and need confirmed access of a user of the controller's model class to set passwords or change usernames, also of other users. Without a login, they answer 401, without confirmed access 403 with `confirmationRequired`, and the admin asks the user to confirm.
+- **server:** The session cookie defaults to `sameSite: 'lax'`.
+- **server:** Session models need an `expiresAt` column, see [Upgrading to 5.x](docs/upgrading-to-5.x.md#sessions).
+- **server:** Unused assets are released every hour instead of after writes of asset data.
+- **server:** `assets.cleanupTimeThreshold` and `danglingTimeThreshold` are renamed to `deleteUnusedAfter` and `deleteUnsavedAfter`, and the `timeThreshold` option of `app.releaseUnusedAssets()` to `olderThan`. Unknown asset options and invalid durations throw on startup.
+- **server:** Actions that a subclass redefines keep the `authorize` of the inherited action unless they set their own, and a subclass's actions object ranks above it. This can open as well as close access.
+- **server:** The app always listens to its `'error'` events, also before `start()`, and `log.errors: false` only stops logging them. With it, nothing logs request errors, Koa's fallback included.
+- **admin:** Dialogs validate their data on submit, like forms.
+- **admin:** `@simplewebauthn/browser` and `lean-qr` are required peer dependencies.
 
 ### New
 
-- **server, admin:** Logins with passkeys, with `PasskeyService`, see [Passkeys](docs/guide/server/controllers.md#passkeys).
-- **server, admin:** Two-factor authentication with TOTP, with `TotpService`, see [Two-factor authentication](docs/guide/server/controllers.md#two-factor-authentication).
+- **server, admin:** Logins with passkeys, through `PasskeyService`, see [Passkeys](docs/guide/server/controllers.md#passkeys).
+- **server, admin:** Two-factor authentication with TOTP, through `TotpService`, see [Two-factor authentication](docs/guide/server/controllers.md#two-factor-authentication).
 - **server, admin:** Password resets by email, with `app.authentication.passwordReset`, see [Password reset](docs/guide/server/controllers.md#password-reset).
-- **server:** Password reset links stop working when the user logs in or changes their password or username, as their tokens are signed with `app.keys` together with these values instead of stored.
-- **server:** `UsersController#getPasswordResetTokenValues()` adds further values that password reset links depend on, e.g. the email.
-- **server, admin:** Users change their password through `'post password'` of `UsersController`, and the Security dialog of the account menu.
-- **server, admin:** Security changes need confirmed access, from a recent login or `'post confirm-access'` within `app.authentication.reconfirmAccessAfter`. Turning off TOTP takes it instead of a code. See [Confirmed access](docs/guide/server/controllers.md#confirmed-access).
-- **server:** Authorize functions are called with their controller as `this`, in relations the `RelationController`.
-- **server, admin:** The admin offers password changes, passkeys, TOTP and password resets when the users controller at its `api.users` routes them, through `authentication` in `AdminController#getGlobalConfig()`: `hasPasswordChange`, `hasPasskeys`, `hasTotp` and `hasPasswordReset`.
-- **server:** `CredentialMixin` and `CredentialModel` store the credentials of all user models in one table, set in `app.authentication.credentials`.
+- **server, admin:** Security changes need confirmed access, from a recent login or `'post confirm-access'`, see [Confirmed access](docs/guide/server/controllers.md#confirmed-access).
+- **server:** Users change their own password through `'post password'` of `UsersController`.
+- **server, admin:** The admin offers password changes, passkeys, TOTP and password resets when the users controller at `api.users` in the server's `config.admin.api` routes them.
+- **server:** `CredentialMixin` and `CredentialModel` store the passkeys and TOTP of all user models in one table.
 - **server:** `app.name` names the app for passkey managers and authenticator apps.
-- **server:** A service configured as `true` in `config.services` is set up with its defaults.
+- **server:** Authorize functions are called with their controller as `this`.
+- **server:** Services configured as `true` in `config.services` are set up with their defaults.
+- **server:** Started apps delete expired records every hour, through `app.deleteExpiredRecords()` and `Model.deleteExpiredRecords()`: expired sessions, unused assets and the records of models that override it. `config.app.deleteExpiredRecordsEvery` sets the interval, and `dito db:delete_expired_records` runs it once.
 - **admin:** `settings.minDuration` keeps dialogs visible for a minimum time.
 - **admin:** The `empty` option of lists shows a text while a list has no items.
 - **admin:** `context.reload()` reloads the items of the list or object that a component is in.
-- **server:** Apps that call `app.start()` delete expired records every hour, through `app.deleteExpiredRecords()` and `Model.deleteExpiredRecords()`: expired sessions and unused assets, and the records of apps' own models that override it. `config.app.deleteExpiredRecordsEvery` sets the interval, and `dito db:delete_expired_records` runs it once, e.g. from cron.
 
 ### Fixes
 
-- **server:** Logins with unknown usernames compare the password against a dummy hash like wrong passwords, and usernames and passwords that aren't strings answer like wrong ones.
-- **server:** `super` calls in actions reach inherited actions in the options form, e.g. `{ handler, parameters }`, instead of throwing.
+- **server:** Logins with unknown usernames take as long as wrong passwords, and usernames and passwords that aren't strings answer like wrong ones.
+- **server:** `super` calls work in actions in the options form, e.g. `{ handler, parameters }`, instead of throwing.
 - **admin:** Dialog buttons that are wider than their components stay off the dialog's edges.
 - **admin:** Failed logins show the message of the server's response.
 - **admin:** Errors of `context.request()` carry the `status` of their response.

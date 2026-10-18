@@ -3,7 +3,40 @@
 This guide describes how to upgrade an app from Dito.js 4.x to 5.x.
 [`CHANGELOG.md`](../CHANGELOG.md) lists all changes.
 
+## Objection 4
+
+<!-- TODO: To be filled with the PR that updates to Objection.js 4. -->
+
 ## Server
+
+### Logins and sessions
+
+Dito.js logs users in and keeps them in the session itself, without
+koa-passport:
+
+- Remove `app.passport` from the configuration, it has no effect. Users are
+  always handled, with sessions when `app.session` is set.
+- `ctx.req.user` and custom Passport strategies are gone. Use
+  `ctx.state.user`. `ctx.login()`, `ctx.logout()` and `ctx.isAuthenticated()`
+  stay, see [Sessions](api/server/model.md#sessions).
+- Existing sessions stay valid: the session keeps the user under the same key
+  as Passport did.
+- The session cookie defaults to `sameSite: 'lax'`. Admins on another site
+  than the server need `'none'`, see
+  [`config.app`](api/server/application.md#configapp).
+- [`UsersController`](api/server/controllers.md#userscontroller) needs
+  `app.session`, else its setup throws.
+- `UsersController` only treats users of its own model class as logged in, not
+  users of its subclasses.
+- Apps that override `UserMixin.sessionQuery()` set the `sessionScope` option
+  instead, see [`UserMixin`](api/server/model.md#usermixin).
+
+### Errors
+
+The app always listens to its `'error'` events, also before `start()`.
+`log.errors: false` only stops it from logging them, and then nothing logs
+request errors, not even Koa's fallback: apps that turn it off log them in an
+`'error'` listener of their own.
 
 ### Expired records
 
@@ -70,15 +103,57 @@ export async function down(knex) {
   are subclassed, and compare them with the `authorize` of the subclasses'
   actions objects and of the actions they redefine. See
   [`authorize`](api/server/controllers.md#authorize) for the order.
+- Authorize functions are called with the controller as `this`. This only
+  changes methods and `function`s, where `this` was `undefined`; arrow
+  functions keep theirs.
+- `super` calls in actions in the options form, e.g. `{ handler, parameters }`,
+  reach the inherited action instead of throwing.
 
 ### Users
 
-- Users controllers that route actions that need confirmed access, `patch`,
-  `put`, `post` with `relate`, `'post password'` and the passkey and TOTP
-  actions that change them, need to route `'post confirm-access'` too, else
-  their setup throws: subclasses that set `collection.allow` add it to the
-  list.
 - `UserMixin.login(ctx)` is `authenticate(ctx)`. It only checks the
-  credentials and returns the user, so code that logs users in itself calls
-  `ctx.login(await User.authenticate(ctx))`, which skips TOTP. Users with TOTP
-  log in through `'post login'` of `UsersController`.
+  credentials, read only from the request body, and returns the user, so code
+  that logs users in itself calls `ctx.login(await User.authenticate(ctx))`,
+  which skips TOTP. Users with TOTP log in through `'post login'` of
+  `UsersController`.
+- The `patch` and `put` actions of `UsersController` reject `hash`. Setting a
+  password or changing the username needs
+  [confirmed access](guide/server/controllers.md#confirmed-access), also when
+  admins change other users. Without it, they answer 403 with
+  `confirmationRequired`, and the admin asks the user to confirm. Sessions
+  from before the upgrade have no confirmed access yet.
+- Only logged-in users of the controller's own model class can set passwords
+  and change usernames through it, others get 401, also admins of another
+  user model class.
+- Users controllers that route `patch`, `put`, `post` with `relate` or other
+  actions that need confirmed access also need `'post confirm-access'`, else
+  their setup throws: subclasses that set `collection.allow` add it to the
+  list, and `'post password'` for the admin's password change.
+- Changing a user's password ends their other sessions. The session of the
+  request in which users change their own password stays logged in.
+
+## Admin
+
+- Install the peer dependencies `@simplewebauthn/browser` and `lean-qr`, which
+  `@ditojs/admin` requires.
+- Dialogs validate their data on submit, like forms, and only resolve once it
+  is valid.
+
+## New
+
+Passkeys, two-factor authentication and password resets are opt-in. The admin
+offers each one when the users controller at `api.users` in the server's
+`config.admin.api` routes it, see
+[`authentication`](api/admin/admin.md#globalconfig).
+
+- [Passkeys](guide/server/controllers.md#passkeys), through
+  [`PasskeyService`](api/server/service.md#passkeyservice).
+- [Two-factor authentication](guide/server/controllers.md#two-factor-authentication),
+  through [`TotpService`](api/server/service.md#totpservice).
+- [Password reset](guide/server/controllers.md#password-reset) by email,
+  through `app.authentication.passwordReset`.
+
+Passkeys and TOTP need [`config.app.name`](api/server/application.md#configapp),
+the name that passkey managers and authenticator apps show, and a model for the
+credentials in
+[`config.app.authentication`](api/server/application.md#configappauthentication).

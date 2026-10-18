@@ -688,8 +688,8 @@ const { user } = await post(
 `'post passkey-login-options'` keeps its challenge in the session, so each
 request without a session stores a new one: limit its rate like that of
 [logins](#users-and-sessions). `GET /users/passkeys` lists the user's passkeys,
-and `DELETE /users/passkeys/:id` removes one. The admin offers both once the
-app registers `PasskeyService`, see
+and `DELETE /users/passkeys/:id` removes one. The admin offers both when its
+users controller routes the passkey actions, see
 [`DitoAdmin`](../../api/admin/admin.md#globalconfig).
 
 ### Two-factor authentication
