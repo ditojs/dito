@@ -124,10 +124,10 @@ describe('DitoAccount', () => {
   describe('security', () => {
     // A server with passkeys, which adds and deletes them, and changes the
     // password to one of at least 6 characters. Without `isConfirmed`, the
-    // changes need the access confirmed with the password first. `login` sets
-    // the admin's options:
+    // changes need the access confirmed with the password first.
+    // `authentication` sets the features that the server enables:
     const mountWithPasskeys = async ({
-      login = { passkeys: true },
+      authentication = { passkeys: true },
       passkeys = [
         {
           id: 1,
@@ -198,7 +198,7 @@ describe('DitoAccount', () => {
         views,
         api: { users: { path: 'users' } },
         request,
-        options: { login }
+        authentication
       })
       const { items } = await openMenu(admin)
       expect(items.map(item => item.text())).toEqual(['Security', 'Sign Out'])
@@ -413,7 +413,7 @@ describe('DitoAccount', () => {
 
       it('changes the password without passkeys or TOTP', async () => {
         const { admin, request } = await mountWithPasskeys({
-          login: {},
+          authentication: {},
           isConfirmed: false
         })
         const notify = vi.spyOn(admin.context, 'notify')
@@ -442,6 +442,29 @@ describe('DitoAccount', () => {
           })
         )
       })
+
+      it.for([true, false])(
+        'offers passkeys to confirm the access only with passkeys: %s',
+        async passkeys => {
+          // Browsers with WebAuthn have `PublicKeyCredential`:
+          vi.stubGlobal('PublicKeyCredential', class {})
+          try {
+            const { admin } = await mountWithPasskeys({
+              authentication: { passkeys },
+              isConfirmed: false
+            })
+            await changePassword(admin, {
+              password: 'changed',
+              confirmation: 'changed'
+            })
+            const dialog = getLastDialog(admin)
+            expect(dialog.attributes('aria-label')).toBe('Confirm Access')
+            expect(dialog.text().includes('Use Passkey')).toBe(passkeys)
+          } finally {
+            vi.unstubAllGlobals()
+          }
+        }
+      )
 
       it('shows a placeholder instead of the password', async () => {
         const { admin } = await mountWithPasskeys()
@@ -561,7 +584,7 @@ describe('DitoAccount', () => {
           views,
           api: { users: { path: 'users' } },
           request,
-          options: { login: { totp: true } }
+          authentication: { totp: true }
         })
         const { items } = await openMenu(admin)
         expect(items.map(item => item.text())).toEqual(['Security', 'Sign Out'])

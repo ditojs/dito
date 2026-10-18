@@ -53,8 +53,6 @@
   )
     DitoAccount(
       v-if="adminContext.user"
-      :passkeys="!!options.login?.passkeys"
-      :totp="!!options.login?.totp"
     )
     button.dito-login(
       v-else-if="hasSessionStarted"
@@ -97,10 +95,6 @@ import {
 import { RouteTree } from '../utils/RouteTree.ts'
 import { FileDropTargets } from '../utils/FileDropTargets.js'
 import { adminContextKey, fileDropTargetsKey } from '../utils/keys.ts'
-import {
-  createCodeComponent,
-  createNewPasswordComponents
-} from '../utils/security.js'
 
 export default {
   components: { DitoDialog },
@@ -109,7 +103,7 @@ export default {
     options: { type: Object, default: () => ({}) }
   },
 
-  setup(props) {
+  setup() {
     const adminContext = inject(adminContextKey)
     const { domOn } = useDomEvents()
     const root = useTemplateRef('root')
@@ -163,183 +157,8 @@ export default {
 
     const notify = options => notifications.value.notify(options)
 
-    adminContext.attachDialogsAndNotifications({
-      showDialog,
-      notify
-    })
-    const detachSessionUserInterface = adminContext.session.attachUserInterface(
-      {
-        notify,
-        // Return the entered credentials, `'passkey'` to log in with a passkey,
-        // `'passwordReset'` to reset the password, or `null` if the user
-        // cancels:
-        requestLoginData() {
-          const {
-            additionalComponents,
-            passkeys,
-            passwordReset
-          } = props.options.login || {}
-          // Browsers with WebAuthn have `PublicKeyCredential`:
-          const hasPasskeys = passkeys && !!window.PublicKeyCredential
-          return showDialog({
-            components: {
-              username: {
-                type: 'text',
-                autofocus: true
-              },
-              password: {
-                type: 'password'
-              },
-              ...additionalComponents
-            },
-            // NOTE: Login comes first in DOM order for password managers, CSS
-            // places cancel first:
-            buttons: {
-              login: {
-                type: 'submit',
-                text: 'Sign In'
-              },
-
-              ...(hasPasskeys && {
-                passkey: {
-                  type: 'button',
-                  text: 'Sign In with Passkey',
-                  onClick: ({ closeDialog }) => closeDialog('passkey')
-                }
-              }),
-
-              ...(passwordReset && {
-                passwordReset: {
-                  type: 'button',
-                  text: 'Forgot password?',
-                  onClick: ({ closeDialog }) => closeDialog('passwordReset')
-                }
-              }),
-
-              // `DitoDialog` adds the click event of the cancel button:
-              cancel: {
-                type: 'button',
-                text: 'Cancel'
-              }
-            }
-          })
-        },
-
-        // Return the code of users with TOTP, or `null` if the user cancels:
-        requestLoginCode() {
-          return showDialog({
-            components: {
-              code: createCodeComponent()
-            },
-            buttons: {
-              verify: {
-                type: 'submit',
-                text: 'Verify'
-              },
-
-              cancel: {
-                type: 'button',
-                text: 'Cancel'
-              }
-            },
-            // Show password managers filling in the code:
-            settings: { minDuration: 1000 }
-          })
-        },
-
-        // Return the username to reset the password of, or `null` if the user
-        // cancels:
-        requestPasswordReset() {
-          return showDialog({
-            components: {
-              username: {
-                type: 'text',
-                autocomplete: 'username',
-                autofocus: true,
-                required: true
-              }
-            },
-            buttons: {
-              send: {
-                type: 'submit',
-                text: 'Send Email'
-              },
-
-              cancel: {
-                type: 'button',
-                text: 'Cancel'
-              }
-            },
-            settings: { label: 'Reset Password' }
-          })
-        },
-
-        // Return the new password of a password reset, or `null` if the user
-        // cancels:
-        requestNewPassword() {
-          return showDialog({
-            components: createNewPasswordComponents({ autofocus: true }),
-            buttons: {
-              change: {
-                type: 'submit',
-                text: 'Set Password'
-              },
-
-              cancel: {
-                type: 'button',
-                text: 'Cancel'
-              }
-            },
-            settings: { label: 'Set New Password' }
-          })
-        },
-
-        // Return the password to confirm the access with, `'passkey'` to
-        // confirm it with a passkey, or `null` if the user cancels:
-        requestAccessConfirmation() {
-          const hasPasskeys = (
-            props.options.login?.passkeys &&
-            !!window.PublicKeyCredential
-          )
-          return showDialog({
-            components: {
-              password: {
-                type: 'password',
-                label: 'Password',
-                info: 'Confirm your access to change your security settings.',
-                autocomplete: 'current-password',
-                autofocus: true,
-                required: true
-              }
-            },
-            buttons: {
-              confirm: {
-                type: 'submit',
-                text: 'Confirm'
-              },
-
-              ...(hasPasskeys && {
-                passkey: {
-                  type: 'button',
-                  text: 'Use Passkey',
-                  onClick: ({ closeDialog }) => closeDialog('passkey')
-                }
-              }),
-
-              cancel: {
-                type: 'button',
-                text: 'Cancel'
-              }
-            },
-            settings: { label: 'Confirm Access' }
-          })
-        }
-      }
-    )
-    onUnmounted(() => {
-      detachSessionUserInterface()
-      sidebarObserver.disconnect()
-    })
+    adminContext.attachDialogsAndNotifications({ showDialog, notify })
+    onUnmounted(() => sidebarObserver.disconnect())
 
     onMounted(async () => {
       const sidebarElement = aside.value.$el

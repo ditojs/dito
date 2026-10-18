@@ -4,7 +4,7 @@ import { LoadingTracker } from './LoadingTracker.ts'
 import { UiRegistry } from './UiRegistry.ts'
 import { flattenViews } from './schema/setup.js'
 import type { RouteTree } from './RouteTree.ts'
-import { Session, type User } from './Session.ts'
+import { Session, type User, type LoginOptions } from './Session.ts'
 import type { ViewRegistry } from './ViewRegistry.js'
 import type { Api, Schema } from './types.ts'
 
@@ -16,6 +16,7 @@ export interface DialogOptions {
     label?: string
     width?: number
     clickToClose?: boolean
+    minDuration?: number
   }
 }
 
@@ -28,9 +29,20 @@ export interface NotifyOptions {
   duration?: number
 }
 
+// The authentication features that the server enables:
+export interface Authentication {
+  passkeys?: boolean
+  totp?: boolean
+  passwordReset?: boolean
+}
+
 // Rendered by `DitoRoot`:
 export interface DialogsAndNotifications {
-  showDialog(options: DialogOptions): Promise<unknown>
+  // Dialogs resolve to their data, to the value of `closeDialog()`, or to
+  // `undefined` when cancelled:
+  showDialog<$Result = unknown>(
+    options: DialogOptions
+  ): Promise<$Result | undefined>
   notify(options: NotifyOptions): void
 }
 
@@ -39,6 +51,7 @@ export class AdminContext {
   readonly api: Api
   readonly router: Router
   readonly settings: Record<string, any>
+  readonly authentication: Authentication
   readonly session: Session
   readonly #user = shallowRef<User | null>(null)
   readonly title = document.title || 'Dito.js Admin'
@@ -56,22 +69,25 @@ export class AdminContext {
     router,
     viewRegistry,
     settings,
-    redirectAfterLogin
+    authentication,
+    login
   }: {
     api: Api
     router: Router
     viewRegistry: ViewRegistry
     settings: Record<string, any>
-    redirectAfterLogin?: string | null
+    authentication: Authentication
+    login?: LoginOptions
   }) {
     this.api = api
     this.router = router
     this.settings = settings
+    this.authentication = authentication
     this.session = new Session({
-      api,
+      adminContext: this,
       viewRegistry,
       user: this.#user,
-      redirectAfterLogin
+      login
     })
     this.#viewRegistry = viewRegistry
   }
@@ -106,8 +122,8 @@ export class AdminContext {
     this.#dialogsAndNotifications = dialogsAndNotifications
   }
 
-  showDialog(options: DialogOptions) {
-    return this.#dialogsAndNotifications!.showDialog(options)
+  showDialog<$Result = unknown>(options: DialogOptions) {
+    return this.#dialogsAndNotifications!.showDialog<$Result>(options)
   }
 
   notify(options: NotifyOptions) {

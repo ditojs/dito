@@ -1,21 +1,24 @@
 import type { ShallowRef } from 'vue'
 import { startAuthentication } from '@simplewebauthn/browser'
 import AdminUser from '../AdminUser.js'
+import {
+  createLoginDialog,
+  createCodeDialog,
+  createPasswordResetDialog,
+  createNewPasswordDialog,
+  createConfirmAccessDialog,
+  isPasskeyPromptCancelled
+} from './security.js'
 import type { ViewRegistry } from './ViewRegistry.js'
-import type { NotifyOptions } from './AdminContext.ts'
+import type { AdminContext } from './AdminContext.ts'
 import type { Api } from './types.ts'
 
 export type User = Record<string, any>
 
-interface UserInterface {
-  requestLoginData(): Promise<
-    Record<string, any> | 'passkey' | 'passwordReset' | null
-  >
-  requestLoginCode(): Promise<{ code: string } | null>
-  requestPasswordReset(): Promise<Record<string, any> | null>
-  requestNewPassword(): Promise<{ password: string } | null>
-  requestAccessConfirmation(): Promise<{ password: string } | 'passkey' | null>
-  notify(options: NotifyOptions): void
+// The `login` options of the admin:
+export interface LoginOptions {
+  additionalComponents?: Record<string, any>
+  redirectAfterLogin?: string
 }
 
 // The views depend on the user, so we resolve them for each login and clear
@@ -23,60 +26,30 @@ interface UserInterface {
 // context hands out.
 
 export class Session {
+  readonly #adminContext: AdminContext
   readonly #api: Api
   readonly #viewRegistry: ViewRegistry
-  readonly #redirectAfterLogin: string | null
-  #userInterface: UserInterface | null = null
+  readonly #login: LoginOptions
   readonly #user: ShallowRef<User | null>
   // The responses of `request({ cache: 'global' })`, kept for the same user:
   loadCache: Record<string, Promise<any>> = {}
 
   constructor({
-    api,
+    adminContext,
     viewRegistry,
     user,
-    redirectAfterLogin = null
+    login = {}
   }: {
-    api: Api
+    adminContext: AdminContext
     viewRegistry: ViewRegistry
     user: ShallowRef<User | null>
-    redirectAfterLogin?: string | null
+    login?: LoginOptions
   }) {
-    this.#api = api
+    this.#adminContext = adminContext
+    this.#api = adminContext.api
     this.#viewRegistry = viewRegistry
     this.#user = user
-    this.#redirectAfterLogin = redirectAfterLogin
-  }
-
-  // `requestLoginData()` returns the credentials, `'passkey'` to log in with a
-  // passkey, `'passwordReset'` to reset the password, or `null` when cancelled.
-  // `requestLoginCode()` returns the TOTP or backup code of users with TOTP,
-  // `requestPasswordReset()` the username to reset the password of,
-  // `requestNewPassword()` the new password, and `requestAccessConfirmation()`
-  // the password or `'passkey'` to confirm the access with, or `null` when
-  // cancelled.
-  attachUserInterface({
-    requestLoginData,
-    requestLoginCode,
-    requestPasswordReset,
-    requestNewPassword,
-    requestAccessConfirmation,
-    notify
-  }: UserInterface) {
-    const userInterface = {
-      requestLoginData,
-      requestLoginCode,
-      requestPasswordReset,
-      requestNewPassword,
-      requestAccessConfirmation,
-      notify
-    }
-    this.#userInterface = userInterface
-    return () => {
-      if (this.#userInterface === userInterface) {
-        this.#userInterface = null
-      }
-    }
+    this.#login = login
   }
 
   async start() {
@@ -98,7 +71,14 @@ export class Session {
 
   // Ask again after each failure, until it succeeds or the user cancels:
   async login(): Promise<User | null> {
-    const loginData = await this.#userInterface?.requestLoginData()
+    const loginData = await this.#adminContext.showDialog<
+      Record<string, any> | 'passkey' | 'passwordReset'
+    >(
+      createLoginDialog(
+        this.#adminContext.authentication,
+        this.#login.additionalComponents
+      )
+    )
     if (!loginData) {
       return null
     } else if (loginData === 'passwordReset') {
@@ -128,8 +108,9 @@ export class Session {
       return this.login()
     }
     if (user) {
-      if (this.#redirectAfterLogin) {
-        location.replace(this.#redirectAfterLogin)
+      const { redirectAfterLogin } = this.#login
+      if (redirectAfterLogin) {
+        location.replace(redirectAfterLogin)
       } else {
         this.#setUser(user)
         await this.#resolveViews()
@@ -144,7 +125,9 @@ export class Session {
   // Ask for the code of users with TOTP until it's accepted, or resolve to
   // `null` to go back to the password:
   async #loginWithCode(): Promise<User | null> {
-    const codeData = await this.#userInterface?.requestLoginCode()
+    const codeData = await this.#adminContext.showDialog<{ code: string }>(
+      createCodeDialog()
+    )
     if (codeData) {
       try {
         const response = await this.#request(
@@ -167,7 +150,9 @@ export class Session {
   // the password and the code of users with TOTP, or with a passkey. Ask again
   // after each failure, and resolve to whether the access was confirmed:
   async confirmAccess(): Promise<boolean> {
-    const data = await this.#userInterface?.requestAccessConfirmation()
+    const data = await this.#adminContext.showDialog<
+      { password: string } | 'passkey'
+    >(createConfirmAccessDialog(this.#adminContext.authentication))
     if (data) {
       try {
         const { users } = this.#api
@@ -175,7 +160,9 @@ export class Session {
           data === 'passkey' ? { passkey: await this.#getPasskey() } : data
         let response = await this.#request(users.confirmAccess, body)
         if (response.data.codeRequired) {
-          const codeData = await this.#userInterface?.requestLoginCode()
+          const codeData = await this.#adminContext.showDialog<{
+            code: string
+          }>(createCodeDialog())
           if (codeData) {
             response = await this.#request(users.confirmAccess, {
               ...body,
@@ -201,12 +188,14 @@ export class Session {
   }
 
   async #requestPasswordReset() {
-    const data = await this.#userInterface?.requestPasswordReset()
+    const data = await this.#adminContext.showDialog<{ username: string }>(
+      createPasswordResetDialog()
+    )
     if (data) {
       try {
         await this.#request(this.#api.users.passwordReset, data)
         // The server doesn't tell whether the account exists:
-        this.#userInterface?.notify({
+        this.#adminContext.notify({
           type: 'info',
           text: 'If the account exists, we sent you an email.'
         })
@@ -217,14 +206,16 @@ export class Session {
   }
 
   async #confirmPasswordReset(token: string) {
-    const data = await this.#userInterface?.requestNewPassword()
+    const data = await this.#adminContext.showDialog<{ password: string }>(
+      createNewPasswordDialog()
+    )
     if (data) {
       try {
         await this.#request(this.#api.users.passwordResetConfirm, {
           token,
           password: data.password
         })
-        this.#userInterface?.notify({
+        this.#adminContext.notify({
           type: 'success',
           text: 'Your password was changed. Please log in.'
         })
@@ -233,7 +224,7 @@ export class Session {
         const errors: Record<string, { message: string }[]> | undefined =
           error.response?.data?.errors
         if (errors) {
-          this.#userInterface?.notify({
+          this.#adminContext.notify({
             type: 'error',
             title: 'Invalid Password',
             text: Object.entries(errors).flatMap(([path, errs]) =>
@@ -311,21 +302,11 @@ export class Session {
     // Logins answer their errors in `error`, other actions in `message`:
     const { data } = error.response ?? {}
     const responseError = data?.error || data?.message || error
-    if (this.#userInterface) {
-      this.#userInterface.notify({
-        type: 'error',
-        error: responseError,
-        title: 'Authentication Error',
-        text: responseError
-      })
-    } else {
-      console.error(responseError)
-    }
+    this.#adminContext.notify({
+      type: 'error',
+      error: responseError,
+      title: 'Authentication Error',
+      text: responseError
+    })
   }
-}
-
-// Browsers reject passkey prompts that users cancel or let time out with these
-// WebAuthn errors:
-export function isPasskeyPromptCancelled(error: any) {
-  return ['NotAllowedError', 'AbortError'].includes(error.name)
 }

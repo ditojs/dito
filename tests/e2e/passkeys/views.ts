@@ -3,9 +3,3 @@ export const dashboard = {
   label: 'Dashboard',
   components: {}
 } as const
-
-export const login = {
-  passkeys: true,
-  totp: true,
-  passwordReset: true
-} as const

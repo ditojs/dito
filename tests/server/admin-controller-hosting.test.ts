@@ -63,7 +63,8 @@ describe('AdminController hosting', () => {
     expect(JSON.parse(match![1])).toEqual({
       base: '/admin',
       api: { normalizePaths: true },
-      settings: { theme: 'dark' }
+      settings: { theme: 'dark' },
+      authentication: { passkeys: false, totp: false, passwordReset: false }
     })
   })
 

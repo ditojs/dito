@@ -24,15 +24,16 @@ version, see the upgrade guides in `docs/`.
 
 ### New
 
-- **server, admin:** Logins with passkeys, with `PasskeyService` and `login: { passkeys: true }`, see [Passkeys](docs/guide/server/controllers.md#passkeys).
-- **server, admin:** Two-factor authentication with TOTP, with `TotpService` and `login: { totp: true }`, see [Two-factor authentication](docs/guide/server/controllers.md#two-factor-authentication).
-- **server, admin:** Password resets by email, with `app.auth.passwordReset` and `login: { passwordReset: true }`, see [Password reset](docs/guide/server/controllers.md#password-reset).
+- **server, admin:** Logins with passkeys, with `PasskeyService`, see [Passkeys](docs/guide/server/controllers.md#passkeys).
+- **server, admin:** Two-factor authentication with TOTP, with `TotpService`, see [Two-factor authentication](docs/guide/server/controllers.md#two-factor-authentication).
+- **server, admin:** Password resets by email, with `app.authentication.passwordReset`, see [Password reset](docs/guide/server/controllers.md#password-reset).
 - **server:** Password reset links stop working when the user logs in or changes their password or username, as their tokens are signed with `app.keys` together with these values instead of stored.
 - **server:** `UsersController#getPasswordResetTokenValues()` adds further values that password reset links depend on, e.g. the email.
 - **server, admin:** Users change their password through `'post password'` of `UsersController`, and the Security dialog of the account menu.
-- **server, admin:** Security changes need confirmed access, from a recent login or `'post confirm-access'` within `app.auth.reconfirmAccessAfter`. Turning off TOTP takes it instead of a code. See [Confirmed access](docs/guide/server/controllers.md#confirmed-access).
+- **server, admin:** Security changes need confirmed access, from a recent login or `'post confirm-access'` within `app.authentication.reconfirmAccessAfter`. Turning off TOTP takes it instead of a code. See [Confirmed access](docs/guide/server/controllers.md#confirmed-access).
 - **server:** Authorize functions are called with their controller as `this`, in relations the `RelationController`.
-- **server:** `CredentialMixin` and `CredentialModel` store the credentials of all user models in one table, set in `app.auth.credentials`.
+- **server, admin:** The admin offers passkeys, TOTP and password resets when the users controller at its `api.users` routes them, through `authentication` in `AdminController#getGlobalConfig()`.
+- **server:** `CredentialMixin` and `CredentialModel` store the credentials of all user models in one table, set in `app.authentication.credentials`.
 - **server:** `app.name` names the app for passkey managers and authenticator apps.
 - **server:** A service configured as `true` in `config.services` is set up with its defaults.
 - **admin:** `settings.minDuration` keeps dialogs visible for a minimum time.

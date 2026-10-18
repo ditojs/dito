@@ -90,7 +90,7 @@ class Guests extends UsersController {
 }
 
 // Password resets only need `app.keys`, no credentials or stored sessions:
-const auth = {
+const authentication = {
   passwordReset: {
     confirmUrl: 'https://example.com/admin/#password-reset={token}',
     expiresAfter: '30m'
@@ -105,7 +105,7 @@ describe('Password reset', () => {
         helmet: false,
         keys: ['test-secret'],
         session: true,
-        auth
+        authentication
       }
     },
     models: { Member, Guest },
@@ -543,21 +543,25 @@ describe('Password reset setup', () => {
   }
 
   const session = true
-  const { passwordReset } = auth
+  const { passwordReset } = authentication
 
   it('requires the keys', async () => {
     await expect(
-      setup({ keys: undefined, session, auth: { passwordReset } })
+      setup({ keys: undefined, session, authentication: { passwordReset } })
     ).rejects.toThrow(`Unable to use password reset without 'app.keys'.`)
   })
 
   it('requires a confirm URL with a token', async () => {
     for (const confirmUrl of [undefined, 'https://example.com/admin/']) {
       await expect(
-        setup({ session, auth: { ...auth, passwordReset: { confirmUrl } } })
+        setup({
+          session,
+          authentication: { ...authentication, passwordReset: { confirmUrl } }
+        })
       ).rejects.toThrow(
-        `Invalid password reset, 'app.auth.passwordReset.confirmUrl' needs ` +
-        `a '{token}' placeholder.`
+        `Invalid password reset, ` +
+        `'app.authentication.passwordReset.confirmUrl' needs a '{token}' ` +
+        `placeholder.`
       )
     }
   })
@@ -577,7 +581,12 @@ describe('Password reset setup', () => {
     }
     const testApp = createTestApp({
       config: {
-        app: { normalizePaths: true, keys: ['test-secret'], session, auth }
+        app: {
+          normalizePaths: true,
+          keys: ['test-secret'],
+          session,
+          authentication
+        }
       },
       models: { User },
       controllers: { Users, Admins }
@@ -595,7 +604,7 @@ describe('Password reset setup', () => {
 
   it('requires sendPasswordReset() to be overridden', async () => {
     await expect(
-      setup({ session, auth }, { isOverridden: false })
+      setup({ session, authentication }, { isOverridden: false })
     ).rejects.toThrow(
       `Unable to use password reset without overriding 'sendPasswordReset()'.`
     )

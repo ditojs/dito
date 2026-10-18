@@ -210,7 +210,7 @@ export interface ApplicationConfig {
      * set. This setting has no effect.
      */
     passport?: boolean
-    auth?: {
+    authentication?: {
       /**
        * The model that stores the credentials of all user models, e.g. their
        * passkeys.
@@ -2887,12 +2887,13 @@ export class UsersController<
   /**
    * Like `isAuthenticated()`, but throws a 403 error with
    * `confirmationRequired` for users without confirmed access, see
-   * `app.auth.reconfirmAccessAfter`. For the `authorize` of security changes.
+   * `app.authentication.reconfirmAccessAfter`. For the `authorize` of
+   * security changes.
    */
   hasConfirmedAccess(ctx: KoaContext): boolean
   /**
    * Sends the user the email with the `url` that resets their password, with
-   * `app.auth.passwordReset`. Apps override it.
+   * `app.authentication.passwordReset`. Apps override it.
    */
   sendPasswordReset(ctx: KoaContext, user: M, url: string): void | Promise<void>
   /**
@@ -2917,6 +2918,11 @@ export class AdminController extends Controller {
     base: string
     api: AdminConfig['api']
     settings: AdminConfig['settings']
+    authentication: {
+      passkeys: boolean
+      totp: boolean
+      passwordReset: boolean
+    }
   }
 
   sendGlobalConfig(ctx: Koa.Context): void
@@ -3717,7 +3723,7 @@ export class Service<$Config extends object = Record<string, unknown>> {
 /**
  * Logins with passkeys, through the optional peer dependencies
  * `@simplewebauthn/server` and `aaguids`. Needs `app.name`, sessions stored on
- * the server and `app.auth.credentials`.
+ * the server and `app.authentication.credentials`.
  */
 export class PasskeyService extends Service<{
   /**
@@ -3783,7 +3789,7 @@ export class PasskeyService extends Service<{
 /**
  * Two-factor authentication with TOTP, through the optional peer dependency
  * `otpauth`. Needs `app.name`, sessions stored on the server and
- * `app.auth.credentials`.
+ * `app.authentication.credentials`.
  */
 export class TotpService extends Service<{
   /**

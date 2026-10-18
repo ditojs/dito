@@ -19,12 +19,7 @@ import { showSecurityDialog } from '../utils/security.js'
 export default {
   components: { DitoMenuButton },
 
-  props: {
-    passkeys: { type: Boolean, default: false },
-    totp: { type: Boolean, default: false }
-  },
-
-  setup(props) {
+  setup() {
     const adminContext = inject(adminContextKey)
     const router = useRouter()
     const settingsRoute = computed(
@@ -46,7 +41,7 @@ export default {
           // Navigate to the path, which also opens the view's object form:
           router.push(router.resolve(settingsRoute.value).path)
         } else if (value === 'security') {
-          showSecurityDialog(adminContext, props)
+          showSecurityDialog(adminContext)
         } else if (value === 'logout') {
           adminContext.session.logout()
         }

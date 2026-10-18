@@ -819,8 +819,8 @@ throws.
 | `'post confirm-access'` | Confirms the access of the authenticated user with `{ password }`, plus `code` for users with TOTP, or with `{ passkey }`, the response of `startAuthentication()` for the options of `'post passkey-login-options'`: `{ success }`, `{ success: false, codeRequired: true }` without a code, or 401 with `'Password is incorrect'`, `'Code is incorrect'` or `'Passkey is incorrect'`. |
 
 Logins and `'post confirm-access'` confirm the access of the session for
-[`app.auth.reconfirmAccessAfter`](./application.md#configappauth). Without
-it, `'post password'`, `'post passkey-options'`, `'post passkeys'`,
+[`app.authentication.reconfirmAccessAfter`](./application.md#configappauthentication).
+Without it, `'post password'`, `'post passkey-options'`, `'post passkeys'`,
 `'delete passkeys/:id'`, `'post totp'`, `'post totp-confirm'` and
 `'delete totp'` answer 403 with
 `{ message: 'Confirmation required', confirmationRequired: true }`, see
@@ -884,9 +884,10 @@ as the codes before and after the current one for clocks that drift. Each
 backup code is removed once used. Passkey logins don't ask for codes. A subclass that sets
 `collection.allow` has to list the TOTP actions too, else they aren't routed.
 
-With [`app.auth.passwordReset`](./application.md#configappauth), users who
-forgot their password set a new one through a link that the app emails them,
-with these collection actions, which aren't routed without it:
+With
+[`app.authentication.passwordReset`](./application.md#configappauthentication),
+users who forgot their password set a new one through a link that the app
+emails them, with these collection actions, which aren't routed without it:
 
 | Action                           | Response |
 | -------------------------------- | ------------------------------------------------------- |
@@ -902,7 +903,8 @@ users of the controller's `modelClass` are found, through their `sessionScope`.
 A subclass that sets `collection.allow` has to list the password reset actions
 too, else they aren't routed, and only controllers that route
 `'post password-reset'` need to override `sendPasswordReset()`. All users
-controllers of the app share the one `confirmUrl` of `app.auth.passwordReset`.
+controllers of the app share the one `confirmUrl` of
+`app.authentication.passwordReset`.
 
 Any change of a user's `hash` ends the sessions of the user. Sessions without a
 fingerprint of the password, from before fingerprints or from `ctx.login(user)`
@@ -964,10 +966,11 @@ export class Users extends UsersController {
 ```
 
 Sends `user` the email with `url`, the `confirmUrl` of
-[`app.auth.passwordReset`](./application.md#configappauth) with the token, for
-`'post password-reset'`. Controllers that route it override it, else the setup
-fails. It may be asynchronous. The answer doesn't wait for it, so its errors,
-also synchronous ones, are only emitted as `'error'` on the app.
+[`app.authentication.passwordReset`](./application.md#configappauthentication)
+with the token, for `'post password-reset'`. Controllers that route it
+override it, else the setup fails. It may be asynchronous. The answer doesn't
+wait for it, so its errors, also synchronous ones, are only emitted as `'error'`
+on the app.
 
 ### getPasswordResetTokenValues()
 
@@ -1023,14 +1026,18 @@ views (URLs containing `/views`). Configured through
 ### getGlobalConfig()
 
 ```js
-const { base, api, settings } = controller.getGlobalConfig()
+const { base, api, settings, authentication } = controller.getGlobalConfig()
 ```
 
 Returns the configuration that the admin receives in the browser as
 `window.dito`: `base` (the controller's `url`), `api` (`config.admin.api` with
-`normalizePaths` defaulting to `config.app.normalizePaths`) and `settings`
-(`config.admin.settings`). *Hook.* Returns `{ base: string, api: ApiConfig,
-settings: object }`.
+`normalizePaths` defaulting to `config.app.normalizePaths`), `settings`
+(`config.admin.settings`) and `authentication`, the features that the
+`UsersController` at `api.users` inside `api.url` routes: `passkeys` with
+`'post passkey-login'`, `totp` with `'post login-code'` and `passwordReset`
+with `'post password-reset'`, all `false` without one. *Hook.* Returns
+`{ base: string, api: ApiConfig, settings: object, authentication: { passkeys:
+boolean, totp: boolean, passwordReset: boolean } }`.
 
 ### sendGlobalConfig()
 

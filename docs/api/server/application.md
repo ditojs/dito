@@ -98,7 +98,7 @@ augmentation of `ApplicationConfig` for project-specific settings.
 | `name`           | `string`                                         |         | The name of the app, shown by passkey managers and authenticator apps. Required by [`PasskeyService`](service.md#passkeyservice) and [`TotpService`](service.md#totpservice). |
 | `normalizePaths` | `boolean`                                        | `false` | Hyphenates camelCase route paths (`relatedBooks` → `related-books`). Passed on to the admin.                 |
 | `proxy`          | `boolean`                                        | `false` | Trusts proxy header fields (Koa's `app.proxy`).                                                              |
-| `keys`           | `string[]`                                       |         | Signed cookie keys (Koa's `app.keys`), which also sign the links of `auth.passwordReset`: the first key signs, all keys verify, so keys can rotate. Removed from `app.config`. |
+| `keys`           | `string[]`                                       |         | Signed cookie keys (Koa's `app.keys`), which also sign the links of `authentication.passwordReset`: the first key signs, all keys verify, so keys can rotate. Removed from `app.config`. |
 | `responseTime`   | `boolean \| object`                              | `true`  | Adds the `X-Response-Time` header, options of koa-response-time.                                             |
 | `helmet`         | `boolean \| object`                              | `true`  | Security headers, options of [helmet](https://helmetjs.github.io/).                                          |
 | `cors`           | `boolean \| object`                              | `true`  | CORS, options of [@koa/cors](https://github.com/koajs/cors#corsoptions).                                     |
@@ -108,14 +108,14 @@ augmentation of `ApplicationConfig` for project-specific settings.
 | `deleteExpiredRecordsEvery` | `string \| number \| false`          | `'1h'`  | How often [`deleteExpiredRecords()`](#deleteexpiredrecords) runs, only in apps that call [`start()`](#start), first one interval after it, at most 24 days (Node's timers can't wait longer). `false` never runs it. Apps that don't start the server, e.g. with their own HTTP server through `app.callback()` or in short-lived processes, call `deleteExpiredRecords()` themselves or run [`db:delete_expired_records`](#commands) on a schedule. |
 | `session`        | `boolean \| object`                              | `false` | Sessions through [koa-session](https://github.com/koajs/session), with `sameSite: 'lax'` as the default for the cookie: admins on another site than the server need `'none'`, which requires `secure`, and behind a TLS proxy also `app.proxy: true`. `modelClass` (a name or a model class) stores them in a model, e.g. one using [`SessionMixin`](model.md#sessionmixin). `autoCommit` (default `true`) commits the session after each request, on transacted routes only when the request succeeds. |
 | `passport`       | `boolean`                                        |         | Deprecated, without effect: users are always handled, see [`UserMixin`](model.md#usermixin). |
-| `auth`           | `object`                                         |         | Authentication beyond passwords, see [`config.app.auth`](#configappauth).                                     |
+| `authentication` | `object`                                       |         | Authentication beyond passwords, see [`config.app.authentication`](#configappauthentication).                |
 
-### config.app.auth
+### config.app.authentication
 
 ```js
 app: {
   session: { modelClass: 'Session' },
-  auth: {
+  authentication: {
     credentials: { modelClass: 'Credential' },
     passwordReset: {
       confirmUrl: 'https://example.com/admin/#password-reset={token}'
@@ -128,7 +128,7 @@ app: {
 | ------------------------ | -------------------------- | ------------------------------------------------------------------------------------------------ |
 | `credentials.modelClass` | `string \| Class<Model>`   | The model that stores the credentials of all user models, using [`CredentialMixin`](model.md#credentialmixin). Needed by [`PasskeyService`](service.md#passkeyservice) and [`TotpService`](service.md#totpservice). |
 | `passwordReset`          | `object`                   | Enables password resets by email in [`UsersController`](controllers.md#userscontroller), which sends the emails through [`sendPasswordReset()`](controllers.md#sendpasswordreset). Needs `keys`, else the setup fails. |
-| `passwordReset.confirmUrl` | `string`                 | The URL of the page that the emails link to, with a `{token}` placeholder for the token, best in the fragment, e.g. `'https://example.com/admin/#password-reset={token}'` for the admin's [`login.passwordReset`](../admin/admin.md). One URL for the whole app: all users controllers send links to it. |
+| `passwordReset.confirmUrl` | `string`                 | The URL of the page that the emails link to, with a `{token}` placeholder for the token, best in the fragment, e.g. `'https://example.com/admin/#password-reset={token}'` for the admin's [password reset](../admin/admin.md#globalconfig). One URL for the whole app: all users controllers send links to it. |
 | `passwordReset.expiresAfter` | `number \| string`     | How long the links are valid, in milliseconds or as a duration string, e.g. `'30m'`. Default `'1h'`. |
 | `reconfirmAccessAfter`   | `number \| string`         | How long logins and `'post confirm-access'` confirm the access for the security changes of [`UsersController`](controllers.md#userscontroller), in milliseconds or as a duration string. Default `'10m'`. |
 

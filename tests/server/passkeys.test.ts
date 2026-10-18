@@ -80,7 +80,7 @@ describe('Passkeys', () => {
         helmet: false,
         keys: ['test-secret'],
         session: { modelClass: 'Session' },
-        auth: { credentials: { modelClass: 'Credential' } }
+        authentication: { credentials: { modelClass: 'Credential' } }
       },
       services: { passkeys }
     },
@@ -573,7 +573,7 @@ describe('Passkey domains', () => {
           proxy,
           keys: ['test-secret'],
           session: { modelClass: 'Session' },
-          auth: { credentials: { modelClass: 'Credential' } }
+          authentication: { credentials: { modelClass: 'Credential' } }
         },
         services: { passkeys: config }
       },
@@ -732,14 +732,16 @@ describe('Passkeys setup', () => {
       setup({
         name: undefined,
         session: { modelClass: 'Session' },
-        auth: { credentials }
+        authentication: { credentials }
       })
     ).rejects.toThrow(`Invalid passkeys, missing 'app.name'.`)
   })
 
   it('requires sessions stored on the server', async () => {
     for (const session of [true, { maxAge: 1000 }]) {
-      await expect(setup({ session, auth: { credentials } })).rejects.toThrow(
+      await expect(
+        setup({ session, authentication: { credentials } })
+      ).rejects.toThrow(
         `Unable to use passkeys without sessions stored on the server, ` +
         `see 'app.session'.`
       )
@@ -748,13 +750,14 @@ describe('Passkeys setup', () => {
 
   it('requires credentials', async () => {
     await expect(setup({ session: { modelClass: 'Session' } })).rejects.toThrow(
-      `Unable to use passkeys without credentials, see 'app.auth.credentials'.`
+      `Unable to use passkeys without credentials, see ` +
+      `'app.authentication.credentials'.`
     )
   })
 
   it('requires a known credential model', async () => {
     await expect(
-      setup({ auth: { credentials: { modelClass: 'Unknown' } } })
+      setup({ authentication: { credentials: { modelClass: 'Unknown' } } })
     ).rejects.toThrow(`Unable to find credential model class: 'Unknown'.`)
   })
 })

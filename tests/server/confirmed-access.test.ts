@@ -63,7 +63,7 @@ describe('Confirmed access', () => {
         helmet: false,
         keys: ['test-secret'],
         session: { modelClass: 'Session' },
-        auth: {
+        authentication: {
           credentials: { modelClass: 'Credential' },
           reconfirmAccessAfter: '5m'
         }

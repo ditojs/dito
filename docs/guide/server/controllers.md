@@ -635,7 +635,7 @@ export default {
   app: {
     name: 'Example', // Shown by passkey managers.
     session: { modelClass: 'Session' },
-    auth: {
+    authentication: {
       credentials: { modelClass: 'Credential' }
     }
   },
@@ -688,8 +688,9 @@ const { user } = await post(
 `'post passkey-login-options'` keeps its challenge in the session, so each
 request without a session stores a new one: limit its rate like that of
 [logins](#users-and-sessions). `GET /users/passkeys` lists the user's passkeys,
-and `DELETE /users/passkeys/:id` removes one. The admin offers both with its
-`login.passkeys` option, see [`DitoAdmin`](../../api/admin/admin.md#parameters).
+and `DELETE /users/passkeys/:id` removes one. The admin offers both once the
+app registers `PasskeyService`, see
+[`DitoAdmin`](../../api/admin/admin.md#globalconfig).
 
 ### Two-factor authentication
 
@@ -705,7 +706,7 @@ export default {
   app: {
     name: 'Example', // Shown by authenticator apps.
     session: { modelClass: 'Session' },
-    auth: {
+    authentication: {
       credentials: { modelClass: 'Credential' }
     }
   },
@@ -745,9 +746,8 @@ and how many backup codes are left, and `DELETE /users/totp` turns it off, with
 `'post login'` ask for the code, while `ctx.login(user)` logs in without it,
 e.g. to impersonate users. Users with TOTP can't log in with their password
 while the app doesn't register `TotpService`. The admin's login
-dialog asks for the code, and its `login.totp` option sets up and turns off
-TOTP in the account menu, see
-[`DitoAdmin`](../../api/admin/admin.md#parameters).
+dialog asks for the code, and with `TotpService` its account menu sets up and
+turns off TOTP, see [`DitoAdmin`](../../api/admin/admin.md#globalconfig).
 
 ### Password reset
 
@@ -760,7 +760,7 @@ the link opens, and send the emails in the users controller:
 export default {
   app: {
     keys: [process.env.APP_KEY],
-    auth: {
+    authentication: {
       passwordReset: {
         confirmUrl: 'https://example.com/reset-password#token={token}',
         expiresAfter: '1h'
@@ -808,10 +808,9 @@ makes each link work once. It doesn't log in: the user logs in with the new
 password afterwards, and changing the password ends their other sessions.
 Limit the rate of requests per client in the proxy in front of the app, like
 that of [logins](#users-and-sessions): there is no limit of emails per user.
-The admin's `login.passwordReset` option adds
-the request to its login dialog, with `confirmUrl` pointing to the admin, e.g.
-`'https://example.com/admin/#password-reset={token}'`, see
-[`DitoAdmin`](../../api/admin/admin.md#parameters).
+The admin adds the request to its login dialog, with `confirmUrl` pointing to
+the admin, e.g. `'https://example.com/admin/#password-reset={token}'`, see
+[`DitoAdmin`](../../api/admin/admin.md#globalconfig).
 
 ### Confirmed access
 
@@ -825,7 +824,7 @@ the TOTP code, for the time of `reconfirmAccessAfter`:
 // config/index.js
 export default {
   app: {
-    auth: {
+    authentication: {
       reconfirmAccessAfter: '10m' // The default
     }
   }
@@ -925,6 +924,7 @@ export class Admin extends AdminController {
 Register it at the top level of the application's `controllers`, so that it
 is served at `/admin`, see [Application](application.md#namespaces). Its
 `authorize` protects the admin's views. The admin receives
-`config.admin.api` and `config.admin.settings` in the browser; overriding
+`config.admin.api`, `config.admin.settings` and the authentication features
+that the app enables in the browser; overriding
 `getGlobalConfig()` changes what it receives. Setting up the admin is
 described in the [admin guide](../admin/index.md).

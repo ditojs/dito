@@ -52,11 +52,14 @@ describe('DitoAdmin', () => {
     ])
   })
 
-  it('accepts the settings and the users resource of the global config', () => {
+  it('accepts the global config and the users resource', () => {
     assertType<ConstructorParameters<typeof DitoAdmin>>([
       '#app',
       {
-        dito: { settings: { forceDragFallback: true } },
+        dito: {
+          settings: { forceDragFallback: true },
+          authentication: { passkeys: true, totp: true, passwordReset: true }
+        },
         api: { users: { login: { path: 'sign-in' } } }
       }
     ])
@@ -66,12 +69,7 @@ describe('DitoAdmin', () => {
     assertType<ConstructorParameters<typeof DitoAdmin>>([
       '#app',
       {
-        login: {
-          redirectAfterLogin: '/books',
-          passkeys: true,
-          totp: true,
-          passwordReset: true
-        },
+        login: { redirectAfterLogin: '/books' },
         spinner: null
       }
     ])

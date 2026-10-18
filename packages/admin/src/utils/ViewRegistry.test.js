@@ -129,8 +129,8 @@ describe('ViewRegistry across sessions', () => {
       }
     })
     const { session } = admin.context
-    session.attachUserInterface({
-      requestLoginData: async () => ({ username: 'tester', password: 'x' }),
+    admin.context.attachDialogsAndNotifications({
+      showDialog: async () => ({ username: 'tester', password: 'x' }),
       notify: vi.fn()
     })
     await session.logout()

@@ -338,7 +338,7 @@ export class UsersController extends ModelController {
   // @override
   setup() {
     const { app } = this
-    const { session, auth } = app.config.app
+    const { session, authentication } = app.config.app
     // Users log in through sessions, which also keep their confirmed access:
     if (!session) {
       throw new ControllerError(
@@ -351,11 +351,15 @@ export class UsersController extends ModelController {
       service => service instanceof PasskeyService
     )
     this.totp = app.findService(service => service instanceof TotpService)
-    this.reconfirmAccessAfter = getDuration(auth?.reconfirmAccessAfter ?? '10m')
-    this.passwordReset = auth?.passwordReset
+    this.reconfirmAccessAfter = getDuration(
+      authentication?.reconfirmAccessAfter ?? '10m'
+    )
+    this.passwordReset = authentication?.passwordReset
       ? {
-          ...auth.passwordReset,
-          expiresAfter: getDuration(auth.passwordReset.expiresAfter ?? '1h'),
+          ...authentication.passwordReset,
+          expiresAfter: getDuration(
+            authentication.passwordReset.expiresAfter ?? '1h'
+          ),
           // Sign the links like Koa signs cookies, with the first of `app.keys`
           // while accepting all of them, so that keys can be rotated:
           keys: isArray(app.keys) ? new Keygrip(app.keys, 'sha256') : app.keys
@@ -377,7 +381,7 @@ export class UsersController extends ModelController {
         throw new ControllerError(
           this,
           `Unable to use ${name} without credentials, see ` +
-          `'app.auth.credentials'.`
+          `'app.authentication.credentials'.`
         )
       }
     }
@@ -392,8 +396,9 @@ export class UsersController extends ModelController {
       if (!this.passwordReset.confirmUrl?.includes('{token}')) {
         throw new ControllerError(
           this,
-          `Invalid password reset, 'app.auth.passwordReset.confirmUrl' ` +
-          `needs a '{token}' placeholder.`
+          `Invalid password reset, ` +
+          `'app.authentication.passwordReset.confirmUrl' needs a '{token}' ` +
+          `placeholder.`
         )
       }
       if (!this.passwordReset.keys) {
@@ -491,7 +496,7 @@ export class UsersController extends ModelController {
   }
 
   // Security changes need a login or a 'post confirm-access' of the user within
-  // `app.auth.reconfirmAccessAfter`. Without one, we answer 403 with
+  // `app.authentication.reconfirmAccessAfter`. Without one, we answer 403 with
   // `confirmationRequired` instead of denying the access:
   hasConfirmedAccess(ctx) {
     if (this.isAuthenticated(ctx)) {
@@ -532,7 +537,7 @@ export class UsersController extends ModelController {
   }
 
   // Send the user the email with the `url` that resets their password, with
-  // `app.auth.passwordReset`:
+  // `app.authentication.passwordReset`:
   // @overridable
   async sendPasswordReset(/* ctx, user, url */) {
     // To be overridden in sub-classes that route 'post password-reset'.
@@ -567,7 +572,7 @@ const totpActions = [
   'delete totp'
 ]
 
-// Only routed with `app.auth.passwordReset`, as apps send the emails:
+// Only routed with `app.authentication.passwordReset`, as apps send the emails:
 const passwordResetActions = [
   'post password-reset',
   'post password-reset-confirm'
@@ -665,7 +670,7 @@ async function handleUserChanges(controller, ctx, action, users, write) {
 }
 
 // Answer 403 with `confirmationRequired` to users without a login or a
-// 'post confirm-access' within `app.auth.reconfirmAccessAfter`:
+// 'post confirm-access' within `app.authentication.reconfirmAccessAfter`:
 function checkConfirmedAccess(ctx) {
   const { user, expires } = ctx.session.confirmedAccess ?? {}
   if (

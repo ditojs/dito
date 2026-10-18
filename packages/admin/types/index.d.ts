@@ -37,6 +37,32 @@ export interface GlobalConfig {
     forceDragFallback?: boolean
     [key: string]: any
   }
+  /**
+   * The authentication features that the users controller at `api.users`
+   * routes.
+   */
+  authentication?: {
+    /**
+     * Set with the passkey actions, through `PasskeyService`. Adds a passkey
+     * login to the login dialog, and the user's passkeys to the Security
+     * dialog of the account menu.
+     */
+    passkeys?: boolean
+    /**
+     * Set with the TOTP actions, through `TotpService`. Adds the setup of
+     * two-factor authentication with TOTP to the Security dialog of the
+     * account menu.
+     */
+    totp?: boolean
+    /**
+     * Set with the password reset actions, through
+     * `config.app.authentication.passwordReset`. Adds a "Forgot password?"
+     * button to the login dialog, which asks the server to email a link that
+     * opens the admin with `#password-reset=` and the token, to set a new
+     * password.
+     */
+    passwordReset?: boolean
+  }
 }
 
 /** @deprecated Use {@link GlobalConfig}. */
@@ -298,15 +324,15 @@ export interface ApiConfig {
      */
     password?: { path?: string; method?: HttpMethod }
     /**
-     * The password reset endpoints of `login.passwordReset`, posted to with
-     * the username and with the token and the new password, with the default
-     * paths `'password-reset'` and `'password-reset-confirm'`.
+     * The password reset endpoints of `authentication.passwordReset`, posted to
+     * with the username and with the token and the new password, with the
+     * default paths `'password-reset'` and `'password-reset-confirm'`.
      */
     passwordReset?: { path?: string; method?: HttpMethod }
     passwordResetConfirm?: { path?: string; method?: HttpMethod }
     /**
-     * The passkey endpoints of `login.passkeys`, posted to, with the default
-     * paths `'passkey-login-options'`, `'passkey-login'` and
+     * The passkey endpoints of `authentication.passkeys`, posted to, with the
+     * default paths `'passkey-login-options'`, `'passkey-login'` and
      * `'passkey-options'`.
      */
     passkeyLoginOptions?: { path?: string; method?: HttpMethod }
@@ -3199,7 +3225,8 @@ export class DitoAdmin<
     element: Element | string,
     options?: AdminOptions & {
       /**
-       * The base, api and settings passed from `AdminController`.
+       * The base, api, settings and authentication passed from
+       * `AdminController`.
        *
        * @defaultValue `globalThis.dito`
        */
@@ -3225,22 +3252,6 @@ interface AdminOptions {
   login?: {
     additionalComponents?: Components
     redirectAfterLogin?: string
-    /**
-     * Adds a passkey login to the login dialog, and a security dialog to the
-     * account menu that manages the user's passkeys.
-     */
-    passkeys?: boolean
-    /**
-     * Adds a security dialog to the account menu that sets up and turns off
-     * the user's two-factor authentication with TOTP.
-     */
-    totp?: boolean
-    /**
-     * Adds a "Forgot password?" button to the login dialog, which asks the
-     * server to email a link that opens the admin with `#password-reset=`
-     * and the token, to set a new password.
-     */
-    passwordReset?: boolean
   }
   /**
    * Controls the loading spinner displayed in the

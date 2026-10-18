@@ -13,7 +13,8 @@ export const UserMixin = mixin(
         sessionScope: undefined
       }
 
-      // The model class of `app.auth.credentials`, set up in `setup()`:
+      // The model class of `app.authentication.credentials`, set up in
+      // `setup()`:
       static credentialClass = null
 
       static get properties() {
@@ -93,7 +94,9 @@ export const UserMixin = mixin(
 
           configurable: true
         })
-        const { modelClass } = this.app.config.app.auth?.credentials ?? {}
+        const { modelClass } = (
+          this.app.config.app.authentication?.credentials ?? {}
+        )
         if (modelClass) {
           this.credentialClass = isString(modelClass)
             ? this.app.models[modelClass]
@@ -150,7 +153,8 @@ export const UserMixin = mixin(
           return this.credentialClass.query(trx).where('userModel', this.name)
         } else {
           throw new Error(
-            `Unable to query credentials without 'app.auth.credentials'.`
+            `Unable to query credentials without ` +
+            `'app.authentication.credentials'.`
           )
         }
       }
