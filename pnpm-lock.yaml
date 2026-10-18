@@ -743,6 +743,9 @@ importers:
       '@simplewebauthn/server':
         specifier: ^14.0.3
         version: 14.0.3
+      bcryptjs:
+        specifier: ^3.0.3
+        version: 3.0.3
       better-sqlite3:
         specifier: ^13.0.3
         version: 13.0.3

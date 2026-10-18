@@ -13,6 +13,7 @@ version, see the upgrade guides in `docs/`.
 - **server:** The actions of `UsersController` no longer accept the `hash` of the password, and changing the username through `patch` and `put` needs confirmed access.
 - **server:** `UsersController` only treats users of its own model class as logged in, not users of its sub-classes.
 - **server:** `Controller.setup()` and `UserMixin.sessionQuery()` are internal: apps override `initialize()` and set `sessionScope` instead.
+- **server:** The session cookie defaults to `sameSite: 'lax'`, which `app.session.sameSite` overrides.
 - **admin:** Dialogs validate their data on submit, like forms, and only resolve once it's valid.
 - **admin:** `@simplewebauthn/browser` and `lean-qr` are required peer dependencies of `@ditojs/admin`.
 
@@ -21,16 +22,20 @@ version, see the upgrade guides in `docs/`.
 - **server, admin:** Logins with passkeys, with `app.auth.passkeys` and `login: { passkeys: true }`, see [Passkeys](docs/guide/server/controllers.md#passkeys).
 - **server, admin:** Two-factor authentication with TOTP, with `app.auth.totp` and `login: { totp: true }`, see [Two-factor authentication](docs/guide/server/controllers.md#two-factor-authentication).
 - **server, admin:** Password resets by email, with `app.auth.passwordReset` and `login: { passwordReset: true }`, see [Password reset](docs/guide/server/controllers.md#password-reset).
+- **server:** Password reset links stop working when the user logs in or changes their password or username, as their tokens are signed with these values instead of stored.
+- **server:** `UsersController#getPasswordResetTokenValues()` adds further values that password reset links depend on, e.g. the email.
 - **server, admin:** Users change their password through `'post password'` of `UsersController`, and the Security dialog of the account menu.
 - **server, admin:** Security changes need confirmed access, from a recent login or `'post confirm-access'` within `app.auth.reconfirmAccessAfter`. Turning off TOTP takes it instead of a code. See [Confirmed access](docs/guide/server/controllers.md#confirmed-access).
 - **server:** Authorize functions are called with their controller as `this`, in relations the `RelationController`.
 - **server:** `CredentialMixin` and `CredentialModel` store the credentials of all user models in one table, set in `app.auth.credentials`.
+- **server:** `app.auth.secret` encrypts the TOTP secrets, hashes the backup codes and signs the password reset links.
 - **admin:** `settings.minDuration` keeps dialogs visible for a minimum time.
 - **admin:** The `empty` option of lists shows a text while a list has no items.
 - **admin:** `context.reload()` reloads the items of the list or object that a component is in.
 
 ### Fixes
 
+- **server:** Logins with unknown usernames compare the password against a dummy hash like wrong passwords, and usernames and passwords that aren't strings answer like wrong ones.
 - **admin:** Dialog buttons that are wider than their components stay off the dialog's edges.
 - **admin:** Failed logins show the message of the server's response.
 - **admin:** Errors of `context.request()` carry the `status` of their response.

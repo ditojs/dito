@@ -1,36 +1,18 @@
 import type { ModelProperties } from '@ditojs/server'
-import {
-  CredentialModel,
-  SessionModel,
-  UserModel,
-  UsersController
-} from '@ditojs/server'
+import { UserModel, UsersController } from '@ditojs/server'
 import { createTestApp, getAppUrl } from '../utils/app.js'
 import { createClient } from '../utils/client.js'
 import { createTestDatabase } from '../utils/database.js'
 
 const sentResets: { user: string; url: string }[] = []
-// Whether the request still had its transaction when sending:
-const sendTransactions: boolean[] = []
 
 const getLinkToken = (link: string) =>
   new URLSearchParams(new URL(link).hash.slice(1)).get('password-reset')!
 
-class Session extends SessionModel {
-  declare value: Record<string, any>
-}
-
-class Credential extends CredentialModel {
-  declare id: number
-  declare type: string
-  declare userModel: string
-  declare userId: string
-  declare key: string | null
-}
-
 class Member extends UserModel {
   declare id: number
   declare username: string
+  declare email: string | null
 
   static override options = {
     sessionScope: 'current'
@@ -41,6 +23,10 @@ class Member extends UserModel {
       type: 'string',
       computed: true,
       minLength: 6
+    },
+    email: {
+      type: 'string',
+      nullable: true
     }
   }
 
@@ -57,29 +43,41 @@ class Guest extends UserModel {
 class Members extends UsersController {
   override modelClass = Member
 
+  // Members change their username through `PATCH /members/self`:
+  override member: any = {
+    allow: ['patch']
+  }
+
   // Not async, so that its errors are thrown right away:
   override sendPasswordReset(ctx: any, user: Member, url: string) {
     if (user.username === 'broken') {
       throw new Error('Unable to send')
     }
     sentResets.push({ user: user.username, url })
-    sendTransactions.push(!!ctx.transaction)
   }
 }
 
-// Members whose password reset runs in a transaction, which fails on request:
-class TransactedMembers extends Members {
+// Members whose password reset links also depend on their email:
+class EmailMembers extends Members {
+  override getPasswordResetTokenValues(user: Member) {
+    return [...super.getPasswordResetTokenValues(user), user.email]
+  }
+}
+
+// Members that relate existing members when posting them with ids:
+class Relaters extends Members {
+  override relate = true
   override collection: any = {
-    'post password-reset': {
-      transacted: true,
-      async handler(ctx: any) {
-        const result = await super['post password-reset'](ctx)
-        if (ctx.request.body.fail) {
-          throw new Error('Failed')
-        }
-        return result
-      }
-    }
+    allow: ['post'],
+    authorize: { post: true }
+  }
+}
+
+// Members that patch any member through the collection:
+class Moderators extends Members {
+  override collection: any = {
+    allow: ['patch'],
+    authorize: { patch: true }
   }
 }
 
@@ -91,11 +89,12 @@ class Guests extends UsersController {
   }
 }
 
+// Password resets only need the secret, no credentials or stored sessions:
 const auth = {
-  credentials: { modelClass: 'Credential', secret: 'credentials-secret' },
+  secret: 'auth-secret',
   passwordReset: {
     confirmUrl: 'https://example.com/admin/#password-reset={token}',
-    expires: '30m'
+    expiresAfter: '30m'
   }
 }
 
@@ -106,12 +105,18 @@ describe('Password reset', () => {
         normalizePaths: true,
         helmet: false,
         keys: ['test-secret'],
-        session: { modelClass: 'Session' },
+        session: true,
         auth
       }
     },
-    models: { Session, Credential, Member, Guest },
-    controllers: { Members, Guests, TransactedMembers }
+    models: { Member, Guest },
+    controllers: {
+      Members,
+      EmailMembers,
+      Guests,
+      Relaters,
+      Moderators
+    }
   })
 
   let url: string
@@ -126,9 +131,9 @@ describe('Password reset', () => {
       body: typeof username === 'string' ? { username } : username
     })
 
-  // Request a reset for ada, and return the token of the sent link:
-  const getToken = async () => {
-    await requestReset()
+  // Request a reset for the user, and return the token of the sent link:
+  const getToken = async (username = 'ada', path = '/members') => {
+    await requestReset(username, path)
     const [{ url }] = sentResets.splice(0)
     return getLinkToken(url)
   }
@@ -136,18 +141,19 @@ describe('Password reset', () => {
   const confirmReset = async (
     token: string,
     password = 'changed',
-    request = createClient(url)
+    request = createClient(url),
+    path = '/members'
   ) =>
-    request('/members/password-reset-confirm', {
+    request(`${path}/password-reset-confirm`, {
       method: 'POST',
       body: { token, password }
     })
 
-  const login = async (password: string) => {
+  const login = async (password: string, username = 'ada') => {
     const request = createClient(url)
     const response = await request('/members/login', {
       method: 'POST',
-      body: { username: 'ada', password }
+      body: { username, password }
     })
     return { request, success: response.data.success }
   }
@@ -155,14 +161,14 @@ describe('Password reset', () => {
   const isAuthenticated = async (request: ReturnType<typeof createClient>) =>
     (await request('/members/session')).data.authenticated
 
-  // Move the creation of ada's tokens back in time:
-  const ageTokens = (milliseconds: number) =>
-    Credential.query()
-      .where('type', 'password-reset')
-      .patch({ createdAt: new Date(Date.now() - milliseconds) } as any)
+  const expectInvalid = async (token: string) => {
+    const response = await confirmReset(token)
+    expect(response.status).toBe(400)
+    expect(response.data.message).toBe('Invalid or expired token')
+  }
 
   beforeAll(async () => {
-    await createTestDatabase(app, Session, Member, Guest, Credential)
+    await createTestDatabase(app, Member, Guest)
     for (const table of ['Member', 'Guest']) {
       await app.knex.schema.alterTable(table, table => {
         table.dropColumn('password')
@@ -173,6 +179,7 @@ describe('Password reset', () => {
   })
 
   beforeEach(async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
     member = await Member.query().insert({
       username: 'ada',
       password: 'secret'
@@ -185,15 +192,13 @@ describe('Password reset', () => {
   })
 
   afterEach(async () => {
+    vi.useRealTimers()
     sentResets.length = 0
-    sendTransactions.length = 0
-    await app.knex('Session').del()
-    await app.knex('Credential').del()
     await app.knex('Member').del()
     await app.knex('Guest').del()
   })
 
-  it('sends a link with a token, stored hashed', async () => {
+  it('sends a link with a token', async () => {
     const response = await requestReset()
     expect(response.status).toBe(200)
     expect(response.data).toEqual({ success: true })
@@ -201,21 +206,10 @@ describe('Password reset', () => {
       {
         user: 'ada',
         url: expect.stringMatching(
-          /^https:\/\/example\.com\/admin\/#password-reset=[\w-]{43}$/
+          /^https:\/\/example\.com\/admin\/#password-reset=[\w-]+\.[\da-z]+\.[\w-]{43}$/
         )
       }
     ])
-    const token = getLinkToken(sentResets[0].url)
-    const credentials = await Credential.query()
-    expect(credentials).toEqual([
-      expect.objectContaining({
-        type: 'password-reset',
-        userModel: 'Member',
-        userId: `${member.id}`
-      })
-    ])
-    expect(credentials[0].key).toMatch(/^[0-9a-f]{64}$/)
-    expect(JSON.stringify(credentials)).not.toContain(token)
   })
 
   it('answers the same for unknown usernames', async () => {
@@ -268,47 +262,6 @@ describe('Password reset', () => {
     }
   })
 
-  it('sends one link for concurrent requests', async () => {
-    const responses = await Promise.all(
-      Array.from({ length: 5 }, () => requestReset())
-    )
-    expect(responses.map(({ status }) => status)).toEqual(Array(5).fill(200))
-    expect(sentResets).toHaveLength(1)
-    expect(await Credential.query()).toHaveLength(1)
-  })
-
-  it('sends links once the transaction of the request commits', async () => {
-    const response = await requestReset('ada', '/transacted-members')
-    expect(response.status).toBe(200)
-    expect(sentResets).toHaveLength(1)
-    expect(sendTransactions).toEqual([false])
-    // Requests that roll back don't send their links:
-    await ageTokens(61 * 1000)
-    const failed = await requestReset(
-      { username: 'ada', fail: true },
-      '/transacted-members'
-    )
-    expect(failed.status).toBe(500)
-    expect(sentResets).toHaveLength(1)
-  })
-
-  it('sends at most one link a minute', async () => {
-    await requestReset()
-    const response = await requestReset()
-    expect(response.data).toEqual({ success: true })
-    expect(sentResets).toHaveLength(1)
-    await ageTokens(61 * 1000)
-    await requestReset()
-    expect(sentResets).toHaveLength(2)
-  })
-
-  it('cleans up expired tokens with new ones', async () => {
-    await requestReset()
-    await ageTokens(31 * 60 * 1000)
-    await requestReset()
-    expect(await Credential.query()).toHaveLength(1)
-  })
-
   it('sets the new password, without logging in', async () => {
     const token = await getToken()
     const request = createClient(url)
@@ -323,46 +276,144 @@ describe('Password reset', () => {
   it('accepts each token only once', async () => {
     const token = await getToken()
     expect((await confirmReset(token)).status).toBe(200)
-    const response = await confirmReset(token, 'another')
-    expect(response.status).toBe(400)
-    expect(response.data.message).toBe('Invalid or expired token')
+    await expectInvalid(token)
     expect((await login('changed')).success).toBe(true)
   })
 
-  it('deletes all tokens of the user with the reset', async () => {
+  it('invalidates the other links of the user with the reset', async () => {
     const first = await getToken()
-    await ageTokens(61 * 1000)
+    vi.setSystemTime(Date.now() + 1000)
     const second = await getToken()
     expect((await confirmReset(second)).status).toBe(200)
-    expect((await confirmReset(first, 'another')).status).toBe(400)
-    expect(await Credential.query()).toEqual([])
+    await expectInvalid(first)
   })
 
-  it('deletes the tokens of the user with password changes', async () => {
+  it('invalidates the links of the user with logins', async () => {
     const token = await getToken()
+    expect((await login('secret')).success).toBe(true)
+    expect((await confirmReset(token)).status).toBe(400)
+  })
+
+  it('invalidates the links of the user with password changes', async () => {
     const { request } = await login('secret')
+    const token = await getToken()
     const response = await request('/members/password', {
       method: 'POST',
       body: { currentPassword: 'secret', password: 'changed' }
     })
     expect(response.status).toBe(200)
-    expect(await Credential.query()).toEqual([])
     expect((await confirmReset(token, 'another')).status).toBe(400)
+  })
+
+  it('invalidates the links of the user with username changes', async () => {
+    const { request } = await login('secret')
+    const token = await getToken()
+    const response = await request('/members/self', {
+      method: 'PATCH',
+      body: { username: 'eve' }
+    })
+    expect(response.status).toBe(200)
+    expect((await confirmReset(token, 'another')).status).toBe(400)
+  })
+
+  it('invalidates the links of the user with username changes by relating', async () => {
+    const { request } = await login('secret')
+    const token = await getToken()
+    const response = await request('/relaters', {
+      method: 'POST',
+      body: { id: member.id, username: 'eve' }
+    })
+    expect(response.status).toBe(201)
+    expect(response.data.username).toBe('eve')
+    expect((await confirmReset(token, 'another')).status).toBe(400)
+  })
+
+  it('invalidates the links of the user with username changes in collections', async () => {
+    const { request } = await login('secret')
+    const token = await getToken()
+    const response = await request('/moderators', {
+      method: 'PATCH',
+      body: [{ id: member.id, username: 'eve' }]
+    })
+    expect(response.status).toBe(200)
+    expect(response.data).toMatchObject([{ username: 'eve' }])
+    expect((await confirmReset(token, 'another')).status).toBe(400)
+  })
+
+  it('keeps the links of the user with changes of other values', async () => {
+    const token = await getToken()
+    await Member.query().patchById(member.id, { email: 'ada@example.com' })
+    expect((await confirmReset(token)).status).toBe(200)
+  })
+
+  it('invalidates the links with changes of values added by overrides', async () => {
+    const confirm = async (token: string) =>
+      confirmReset(token, 'changed', createClient(url), '/email-members')
+    const token = await getToken('ada', '/email-members')
+    await Member.query().patchById(member.id, { email: 'ada@example.com' })
+    expect((await confirm(token)).status).toBe(400)
+    // Links sent after the change work:
+    const other = await getToken('ada', '/email-members')
+    expect((await confirm(other)).status).toBe(200)
+  })
+
+  it('keeps the links of other users', async () => {
+    await Member.query().insert({ username: 'bob', password: 'secret' } as any)
+    const token = await getToken('bob')
+    const { request } = await login('secret')
+    await request('/members/password', {
+      method: 'POST',
+      body: { currentPassword: 'secret', password: 'changed' }
+    })
+    await request('/members/self', {
+      method: 'PATCH',
+      body: { username: 'eve' }
+    })
+    expect((await confirmReset(token)).status).toBe(200)
+    expect((await login('changed', 'bob')).success).toBe(true)
   })
 
   it('rejects expired tokens', async () => {
     const token = await getToken()
-    await ageTokens(31 * 60 * 1000)
-    const response = await confirmReset(token)
-    expect(response.status).toBe(400)
-    expect(response.data.message).toBe('Invalid or expired token')
+    // The token is still accepted just before, as the validation shows:
+    vi.setSystemTime(Date.now() + 30 * 60 * 1000 - 1)
+    const response = await confirmReset(token, 'short')
+    expect(response.data.type).toBe('ModelValidation')
+    vi.setSystemTime(Date.now() + 1)
+    await expectInvalid(token)
     expect((await login('secret')).success).toBe(true)
   })
 
-  it('rejects unknown tokens', async () => {
-    const response = await confirmReset('unknown')
-    expect(response.status).toBe(400)
-    expect(response.data.message).toBe('Invalid or expired token')
+  it('rejects malformed tokens', async () => {
+    const token = await getToken()
+    const [id, time, mac] = token.split('.')
+    for (const malformed of [
+      'unknown',
+      '..',
+      `${id}.${time}`,
+      `${id}.${time}.${mac}.${mac}`,
+      `${id}.${time}x.${mac}`
+    ]) {
+      await expectInvalid(malformed)
+    }
+  })
+
+  it('rejects tokens with unknown or invalid ids', async () => {
+    const [, time, mac] = (await getToken()).split('.')
+    for (const id of [`${member.id + 1}`, 'unknown', '']) {
+      await expectInvalid(
+        `${Buffer.from(id).toString('base64url')}.${time}.${mac}`
+      )
+    }
+  })
+
+  it('rejects tokens with tampered MACs or times', async () => {
+    const token = await getToken()
+    const [id, time, mac] = token.split('.')
+    const tampered = `${mac[0] === 'a' ? 'b' : 'a'}${mac.slice(1)}`
+    await expectInvalid(`${id}.${time}.${tampered}`)
+    await expectInvalid(`${id}.${(parseInt(time, 36) + 1).toString(36)}.${mac}`)
+    expect((await confirmReset(token)).status).toBe(200)
   })
 
   it('only accepts tokens for their user model', async () => {
@@ -454,7 +505,7 @@ describe('Password reset setup', () => {
     }
     const testApp = createTestApp({
       config: { app: { keys: ['test-secret'], ...app } },
-      models: { Session, Credential, User },
+      models: { User },
       controllers: { Users: isOverridden ? SendingUsers : Users }
     })
     try {
@@ -464,24 +515,12 @@ describe('Password reset setup', () => {
     }
   }
 
-  const session = { modelClass: 'Session' }
+  const session = true
   const { passwordReset } = auth
 
-  it('requires sessions stored on the server', async () => {
-    await expect(setup({ session: true, auth })).rejects.toThrow(
-      `Unable to use password reset without sessions stored on the server, ` +
-      `see 'app.session'.`
-    )
-  })
-
-  it('requires the secret of the credentials', async () => {
-    await expect(
-      setup({
-        session,
-        auth: { credentials: { modelClass: 'Credential' }, passwordReset }
-      })
-    ).rejects.toThrow(
-      `Unable to use password reset without 'app.auth.credentials.secret'.`
+  it('requires the secret', async () => {
+    await expect(setup({ session, auth: { passwordReset } })).rejects.toThrow(
+      `Unable to use password reset without 'app.auth.secret'.`
     )
   })
 
@@ -513,7 +552,7 @@ describe('Password reset setup', () => {
       config: {
         app: { normalizePaths: true, keys: ['test-secret'], session, auth }
       },
-      models: { Session, Credential, User },
+      models: { User },
       controllers: { Users, Admins }
     })
     try {

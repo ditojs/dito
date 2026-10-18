@@ -104,7 +104,7 @@ augmentation of `ApplicationConfig` for project-specific settings.
 | `compress`       | `boolean \| object`                              | `true`  | Response compression, options of [koa-compress](https://github.com/koajs/compress#options). Brotli quality defaults to 4. |
 | `etag`           | `boolean`                                        | `true`  | Conditional GET and ETag headers.                                                                            |
 | `bodyParser`     | `object`                                         |         | Options of [koa-bodyparser](https://github.com/koajs/bodyparser#options).                                    |
-| `session`        | `boolean \| object`                              | `false` | Sessions through [koa-session](https://github.com/koajs/session). `modelClass` (a name or a model class) stores them in a model, e.g. one using [`SessionMixin`](model.md#sessionmixin). `autoCommit` (default `true`) commits the session after each request, on transacted routes only when the request succeeds. |
+| `session`        | `boolean \| object`                              | `false` | Sessions through [koa-session](https://github.com/koajs/session), with `sameSite: 'lax'` as the default for the cookie: admins on another site than the server need `'none'`, which requires `secure`, and behind a TLS proxy also `app.proxy: true`. `modelClass` (a name or a model class) stores them in a model, e.g. one using [`SessionMixin`](model.md#sessionmixin). `autoCommit` (default `true`) commits the session after each request, on transacted routes only when the request succeeds. |
 | `passport`       | `boolean`                                        |         | Deprecated, without effect: users are always handled, see [`UserMixin`](model.md#usermixin). |
 | `auth`           | `object`                                         |         | Authentication beyond passwords, see [`config.app.auth`](#configappauth).                                     |
 
@@ -114,10 +114,8 @@ augmentation of `ApplicationConfig` for project-specific settings.
 app: {
   session: { modelClass: 'Session' },
   auth: {
-    credentials: {
-      modelClass: 'Credential',
-      secret: process.env.CREDENTIALS_SECRET
-    },
+    credentials: { modelClass: 'Credential' },
+    secret: process.env.AUTH_SECRET,
     passkeys: {
       name: 'Example',
       id: 'example.com',
@@ -134,16 +132,16 @@ app: {
 | Key                      | Type                       | Description                                                                                      |
 | ------------------------ | -------------------------- | ------------------------------------------------------------------------------------------------ |
 | `credentials.modelClass` | `string \| Class<Model>`   | The model that stores the credentials of all user models, using [`CredentialMixin`](model.md#credentialmixin). |
-| `credentials.secret`     | `string`                   | A long random string, required by `totp` and `passwordReset`, that encrypts the TOTP secrets and hashes the backup codes and password reset tokens. It is separate from `keys`, which can rotate: changing it makes the stored TOTP secrets, backup codes and password reset links unusable. |
+| `secret`                 | `string`                   | A long random string, required by `totp` and `passwordReset`, that encrypts the TOTP secrets, hashes the backup codes and signs the password reset links. It is separate from `keys`, which can rotate: changing it makes the stored TOTP secrets, backup codes and password reset links unusable. |
 | `passkeys`               | `object`                   | Enables the passkeys of [`UsersController`](controllers.md#userscontroller). Needs `credentials` and a `session` stored on the server, through `modelClass` or `store`, else the setup fails. |
 | `passkeys.name`          | `string`                   | The name of the app that authenticators show.                                                    |
 | `passkeys.id`            | `string`                   | The domain that the passkeys belong to, the WebAuthn relying party id. Frontends on this domain or its subdomains can use them. |
 | `passkeys.origins`       | `string[]`                 | The origins of the frontends that log in with passkeys, which may differ from the API's.        |
-| `totp`                   | `object`                   | Enables two-factor authentication with TOTP in [`UsersController`](controllers.md#userscontroller). Needs `credentials`, `credentials.secret` and a `session` stored on the server, else the setup fails. |
+| `totp`                   | `object`                   | Enables two-factor authentication with TOTP in [`UsersController`](controllers.md#userscontroller). Needs `credentials`, `secret` and a `session` stored on the server, else the setup fails. |
 | `totp.issuer`            | `string`                   | The name of the app that authenticator apps show.                                                |
-| `passwordReset`          | `object`                   | Enables password resets by email in [`UsersController`](controllers.md#userscontroller), which sends the emails through [`sendPasswordReset()`](controllers.md#sendpasswordreset). Needs `credentials`, `credentials.secret` and a `session` stored on the server, else the setup fails. |
+| `passwordReset`          | `object`                   | Enables password resets by email in [`UsersController`](controllers.md#userscontroller), which sends the emails through [`sendPasswordReset()`](controllers.md#sendpasswordreset). Needs `secret`, else the setup fails. |
 | `passwordReset.confirmUrl` | `string`                 | The URL of the page that the emails link to, with a `{token}` placeholder for the token, best in the fragment, e.g. `'https://example.com/admin/#password-reset={token}'` for the admin's [`login.passwordReset`](../admin/admin.md). One URL for the whole app: all users controllers send links to it. |
-| `passwordReset.expires`  | `number \| string`         | How long the links are valid, in milliseconds or as a duration string, e.g. `'30m'`. Default `'1h'`. |
+| `passwordReset.expiresAfter` | `number \| string`     | How long the links are valid, in milliseconds or as a duration string, e.g. `'30m'`. Default `'1h'`. |
 | `reconfirmAccessAfter`   | `number \| string`         | How long logins and `'post confirm-access'` confirm the access for the security changes of [`UsersController`](controllers.md#userscontroller), in milliseconds or as a duration string. Default `'10m'`. |
 
 Passkeys need the optional peer dependency `@simplewebauthn/server`, TOTP

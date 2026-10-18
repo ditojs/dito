@@ -881,17 +881,19 @@ with these collection actions, which aren't routed without it:
 
 `'post password-reset'` answers with the same response and status whether the
 user exists or not, and doesn't wait for the email, but the time it takes can
-still differ, as it stores a token for existing users. Users get at most one
-email a minute. Limit the rate of requests per client in the proxy in front of
-the app. Each link works once, until it expires, and setting the password, also
-through `'post password'`, invalidates the user's other links. Only users of
-the controller's `modelClass` are found, through their `sessionScope`. A
-subclass that sets `collection.allow` has to list the password reset actions
+still differ, as it only signs a link for existing users. See
+[Password reset](../../guide/server/controllers.md#password-reset) for the
+links and their limits. Only
+users of the controller's `modelClass` are found, through their `sessionScope`.
+A subclass that sets `collection.allow` has to list the password reset actions
 too, else they aren't routed, and only controllers that route
 `'post password-reset'` need to override `sendPasswordReset()`. All users
 controllers of the app share the one `confirmUrl` of `app.auth.passwordReset`.
 
-Any change of a user's `hash` ends the sessions of the user. The session of the
+Any change of a user's `hash` ends the sessions of the user. Sessions without a
+fingerprint of the password, from before fingerprints or from `ctx.login(user)`
+with users loaded without `hash`, get one on their next request: a change before
+that doesn't end them. The session of the
 request that changes the password stays logged in after `'post password'` and
 `'post password-reset-confirm'`. Elsewhere, e.g. in other controllers or custom
 actions, it ends too, unless the action logs the user in again with
@@ -900,7 +902,8 @@ actions, it ends too, unless the action logs the user in again with
 TOTP is only asked for by [`UserMixin.login()`](./model.md#static-login), and
 thus by `'post login'`. `ctx.login(user)` logs in without it, by design, e.g.
 for impersonation or custom login flows. The credentials of TOTP are stored
-under the name of the user model class: renaming the class drops them, and two
+under the name of the user model class, which also encrypts their secrets:
+renaming the class drops them, also when their `userModel` is updated, and two
 user model classes on one table each have their own, so TOTP set up through
 one isn't asked for by logins through the other.
 
@@ -950,10 +953,21 @@ export class Users extends UsersController {
 Sends `user` the email with `url`, the `confirmUrl` of
 [`app.auth.passwordReset`](./application.md#configappauth) with the token, for
 `'post password-reset'`. Controllers that route it override it, else the setup
-fails. It may be asynchronous. It's called once the transaction of the request
-is committed, if the action is `transacted`, without `ctx.transaction`. The
-answer doesn't wait for it, so its errors, also synchronous ones, are only
-emitted as `'error'` on the app.
+fails. It may be asynchronous. The answer doesn't wait for it, so its errors,
+also synchronous ones, are only emitted as `'error'` on the app.
+
+### getPasswordResetTokenValues()
+
+```js
+const values = controller.getPasswordResetTokenValues(user)
+```
+
+Returns the values of `user` that the links of its password resets depend on,
+by default its `hash`, `lastLogin` and username, so that a login, a password
+change or a username change invalidates them. Overrides add further values,
+e.g. the `email`, see
+[Confirmed access](../../guide/server/controllers.md#confirmed-access). Dates
+count as ISO strings, missing values as `null`.
 
 ### getMemberId()
 

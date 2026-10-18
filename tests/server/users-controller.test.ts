@@ -1,5 +1,11 @@
 import type { ModelProperties } from '@ditojs/server'
-import { SessionModel, UserModel, UsersController } from '@ditojs/server'
+import bcrypt from 'bcryptjs'
+import {
+  Controller,
+  SessionModel,
+  UserModel,
+  UsersController
+} from '@ditojs/server'
 import { createTestApp, getAppUrl } from '../utils/app.js'
 import { createClient } from '../utils/client.js'
 import { createTestDatabase } from '../utils/database.js'
@@ -327,6 +333,48 @@ describe('UsersController', () => {
     expect((await request('/members/session')).data.authenticated).toBe(false)
   })
 
+  it('compares passwords of unknown usernames too', async () => {
+    // Spy on bcrypt, as the time of the comparison can't be measured reliably:
+    const compare = vi.spyOn(bcrypt, 'compare')
+    try {
+      const login = async (username: unknown) => {
+        compare.mockClear()
+        const response = await createClient(url)('/members/login', {
+          method: 'POST',
+          body: { username, password: 'wrong' }
+        })
+        return { ...response, compared: compare.mock.calls.length }
+      }
+      const known = await login('ada')
+      expect(known).toMatchObject({ status: 401, compared: 1 })
+      expect(await login('unknown')).toEqual(known)
+      expect(await login(['ada'])).toEqual(known)
+    } finally {
+      compare.mockRestore()
+    }
+  })
+
+  it('rejects usernames that are not strings like unknown ones', async () => {
+    for (const username of [['ada'], { username: 'ada' }]) {
+      const login = await createClient(url)('/members/login', {
+        method: 'POST',
+        body: { username, password: 'secret' }
+      })
+      expect(login.status).toBe(401)
+      expect(login.data.error).toBe('Password or username is incorrect')
+    }
+  })
+
+  it('rejects passwords that are not strings like wrong ones', async () => {
+    const request = createClient(url)
+    const login = await request('/members/login', {
+      method: 'POST',
+      body: { username: 'ada', password: 123 }
+    })
+    expect(login.status).toBe(401)
+    expect(login.data.error).toBe('Password or username is incorrect')
+  })
+
   it('rejects logins of members without a password', async () => {
     const invited = await Member.query().insert({ username: 'invited' } as any)
     try {
@@ -471,14 +519,16 @@ describe('UsersController', () => {
       await expectDroppedUser(request)
     })
 
-    it('keeps sessions from before password fingerprints', async () => {
+    it('ends sessions from before password fingerprints with password changes', async () => {
       const request = await loginOther()
       const [session] = await Session.query()
       await session.$query().patch({
         value: { passport: { user: `Member-${other.id}` } }
       } as any)
-      await Member.query().patchById(other.id, { password: 'changed' } as any)
+      // The first request adds the fingerprint:
       expect((await request('/members/session')).data.authenticated).toBe(true)
+      await Member.query().patchById(other.id, { password: 'changed' } as any)
+      await expectDroppedUser(request)
     })
 
     it('keeps users patched without their hash', async () => {
@@ -857,5 +907,49 @@ describe('UsersController', () => {
     expect((await request('/admins/self')).status).toBe(401)
     const logout = await request('/admins/logout', { method: 'POST' })
     expect(logout.data).toEqual({ success: true, authenticated: false })
+  })
+})
+
+// Sessions that only count visits, stored in the cookie:
+class Visits extends Controller {
+  override actions: any = {
+    'post .'(ctx: any) {
+      ctx.session.visits = (ctx.session.visits ?? 0) + 1
+      return { visits: ctx.session.visits }
+    }
+  }
+}
+
+describe('Session cookie', () => {
+  const getSetCookies = async (session: Record<string, any>) => {
+    const app = createTestApp({
+      config: {
+        app: { normalizePaths: true, keys: ['test-secret'], session }
+      },
+      controllers: { Visits }
+    })
+    await app.start()
+    try {
+      const response = await fetch(`${getAppUrl(app)}/visits`, {
+        method: 'POST'
+      })
+      expect(response.status).toBe(200)
+      return response.headers.getSetCookie()
+    } finally {
+      await app.stop()
+      await app.knex.destroy()
+    }
+  }
+
+  it.each([
+    [{}, '; samesite=lax'],
+    [{ sameSite: 'strict' }, '; samesite=strict'],
+    [{ sameSite: 'none' }, '; samesite=none']
+  ])('sets sameSite with %o', async (session, attribute) => {
+    const cookies = await getSetCookies(session)
+    expect(cookies).not.toEqual([])
+    for (const cookie of cookies) {
+      expect(cookie).toContain(attribute)
+    }
   })
 })

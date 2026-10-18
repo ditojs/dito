@@ -39,10 +39,11 @@ export const test = defineScenario({
       normalizePaths: true,
       helmet: false,
       keys: ['passkeys-secret'],
-      // Passkeys, TOTP and password resets need sessions stored on the server:
+      // Passkeys and TOTP need sessions stored on the server:
       session: { modelClass: 'Session' },
       auth: {
-        credentials: { modelClass: 'Credential', secret: 'credentials-secret' },
+        credentials: { modelClass: 'Credential' },
+        secret: 'auth-secret',
         passkeys,
         totp: { issuer: 'Example' },
         // The tests open the token of the links on the admin's own URL:
