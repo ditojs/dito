@@ -38,3 +38,25 @@ jobs:
       # provenance signature with a new one, where lerna's sigstore client
       # sends the same Rekor entry again and fails on its 409 conflict.
       - run: pnpm -r stage publish --no-git-checks
+
+  # Creates the GitHub release of the tag, or updates its notes when rerun,
+  # from the version's section in `CHANGELOG.md`.
+  release:
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      TAG: ${{ inputs.tag || github.ref_name }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refs/tags/${{ env.TAG }}
+      - run: node scripts/release-notes.js "$TAG" > notes.md
+      - run: |
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            gh release edit "$TAG" --notes-file notes.md
+          else
+            gh release create "$TAG" --verify-tag --notes-file notes.md
+          fi
