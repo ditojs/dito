@@ -64,8 +64,7 @@ export const UserMixin = mixin(
       }
 
       async $verifyPassword(password) {
-        // Users without a password, e.g. invited ones, can't log in:
-        return this.hash ? bcrypt.compare(password, this.hash) : false
+        return verifyPassword(password, this.hash)
       }
 
       $hasRole(...roles) {
@@ -91,7 +90,7 @@ export const UserMixin = mixin(
           },
 
           set(password) {
-            this.hash = bcrypt.hashSync(password, bcrypt.genSaltSync(10))
+            this.hash = bcrypt.hashSync(password, hashRounds)
           },
 
           configurable: true
@@ -119,11 +118,17 @@ export const UserMixin = mixin(
           [passwordProperty]: password
         } = ctx.request.body
         if (username && password) {
-          const user = await this.sessionQuery(ctx.transaction).findOne(
-            usernameProperty,
-            username
-          )
-          if (user && (await user.$verifyPassword(password))) {
+          // Usernames that aren't strings are compared like unknown ones:
+          const user = isString(username)
+            ? await this.sessionQuery(ctx.transaction).findOne(
+                usernameProperty,
+                username
+              )
+            : null
+          const isValid = user
+            ? await user.$verifyPassword(password)
+            : await verifyPassword(password, null)
+          if (isValid) {
             const totp = this.app.config.app.auth?.totp
               ? await this.credentialQuery(ctx.transaction).findOne({
                   type: 'totp',
@@ -173,3 +178,19 @@ export const UserMixin = mixin(
       }
     }
 )
+
+// The cost of the password hashes, also of the dummy one:
+const hashRounds = 10
+let dummyHash = null
+
+// Compare against a dummy hash for unknown users and users without a password,
+// e.g. invited ones, so that the time of the answer doesn't tell which
+// usernames exist. Passwords that aren't strings are just wrong:
+async function verifyPassword(password, hash) {
+  dummyHash ??= await bcrypt.hash('', hashRounds)
+  return (
+    isString(password) &&
+    (await bcrypt.compare(password, hash || dummyHash)) &&
+    !!hash
+  )
+}

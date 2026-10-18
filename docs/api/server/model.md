@@ -992,7 +992,8 @@ overriding it.
 const isValid = await user.$verifyPassword(password)
 ```
 
-Returns `Promise<boolean>`: whether `password` matches the stored hash.
+Returns `Promise<boolean>`: whether `password` matches the stored hash, `false`
+for users without a password and for passwords that aren't strings.
 
 #### $hasRole()
 
@@ -1094,16 +1095,16 @@ export class Credential extends CredentialModel {}
 ```
 
 A model to store the credentials of users beyond their password: their
-[passkeys, TOTP and password reset tokens](controllers.md#userscontroller). One table holds the
+[passkeys and TOTP](controllers.md#userscontroller). One table holds the
 credentials of all user models. Use it with `app.auth.credentials.modelClass`,
 the model's name or class, see [`config.app`](application.md#configapp).
 
 | Property     | Description                                                                 |
 | ------------ | --------------------------------------------------------------------------- |
-| `type`       | `string`, required: `'passkey'`, `'totp'`, one per user, `'backup-code'`, ten per user with TOTP, or `'password-reset'`. |
+| `type`       | `string`, required: `'passkey'`, `'totp'`, one per user, or `'backup-code'`, ten per user with TOTP. |
 | `userModel`  | `string`, required: the name of the user's model class.                     |
 | `userId`     | `string`, required: the id of the user, also of integer ids.                |
-| `key`        | `string`, nullable, unique per `userModel`: the credential id of passkeys, the hash of password reset tokens. |
+| `key`        | `string`, nullable, unique per `userModel`: the credential id of passkeys. |
 | `name`       | `string`, nullable: the name of the provider of passkeys, e.g. `'1Password'`. |
 | `data`       | `object`, hidden: the public key, signature counter and transports of passkeys, the encrypted secret and the time step of the last accepted code of TOTP, the hash of backup codes. |
 | `createdAt`  | `timestamp`, set on insert.                                                 |

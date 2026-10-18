@@ -78,10 +78,10 @@ describe('Application', () => {
       app: {
         session: { modelClass: 'Session' },
         auth: {
-          credentials: { modelClass: 'Credential', secret: 'secret' },
+          secret: 'auth-secret',
           passwordReset: {
             confirmUrl: 'https://example.com/admin/#password-reset={token}',
-            expires: '30m'
+            expiresAfter: '30m'
           }
         }
       }

@@ -15,12 +15,17 @@ export function handleUser() {
         : null
       if (
         user && (
-          // Sessions from before fingerprints were stored stay valid:
           passwordFingerprint === undefined ||
           passwordFingerprint === getPasswordFingerprint(user)
         )
       ) {
         ctx.state.user = user
+        // Sessions from before fingerprints, or of users logged in without
+        // `hash`, get their fingerprint now, so that password changes end them:
+        if (passwordFingerprint === undefined && user.hash !== undefined) {
+          ctx.session.passport.passwordFingerprint =
+            getPasswordFingerprint(user)
+        }
       } else {
         // End the session of users that no longer exist, are excluded by the
         // session scope, or changed their password since.
@@ -45,8 +50,8 @@ export function handleUser() {
         if (shouldUseSession) {
           session.passport = {
             user: getUserIdentifier(user),
-            // Users loaded without `hash` get sessions without fingerprints,
-            // like sessions from before them:
+            // Users loaded without `hash` get their fingerprint on the next
+            // request:
             ...(user.hash !== undefined && {
               passwordFingerprint: getPasswordFingerprint(user)
             })

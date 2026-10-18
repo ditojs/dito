@@ -536,7 +536,9 @@ export default {
 
 `session.modelClass` names a model that stores the sessions in the database.
 Without it, the session is stored in the cookie. Further `session` options are
-passed on to [koa-session](https://github.com/koajs/session).
+passed on to [koa-session](https://github.com/koajs/session). Expired sessions
+stay in the database: delete the rows whose `value._expire` lies in the past
+regularly. Sessions with `maxAge: 'session'` don't store `_expire`.
 
 The models use `SessionMixin` and `UserMixin`:
 
@@ -584,6 +586,13 @@ export class Users extends UsersController {
   allowed, but doesn't change passwords, see
   [Confirmed access](#confirmed-access). The admin's
   [account settings](../admin/views.md#account-settings) use it.
+
+Wrong passwords don't lock accounts, so that others can't lock users out:
+limit the rate of login and `'post confirm-access'` requests per client in the
+proxy in front of the app instead. Logins with unknown usernames compare the
+password against a dummy hash, so they take about as long as wrong passwords, as
+long as the stored hashes have the default cost, `sessionScope` doesn't load
+extra relations and `$verifyPassword()` isn't overridden.
 
 `authorize` on the controller doesn't apply to login, logout and session,
 which authenticate, so users can always log in; `self` follows it. Member
@@ -661,8 +670,10 @@ const { user } = await post(
 )
 ```
 
-`GET /users/passkeys` lists the user's passkeys, and
-`DELETE /users/passkeys/:id` removes one. The admin offers both with its
+`'post passkey-login-options'` keeps its challenge in the session, so each
+request without a session stores a new one: limit its rate like that of
+[logins](#users-and-sessions). `GET /users/passkeys` lists the user's passkeys,
+and `DELETE /users/passkeys/:id` removes one. The admin offers both with its
 `login.passkeys` option, see [`DitoAdmin`](../../api/admin/admin.md#parameters).
 
 ### Two-factor authentication
@@ -678,10 +689,8 @@ export default {
   app: {
     session: { modelClass: 'Session' },
     auth: {
-      credentials: {
-        modelClass: 'Credential',
-        secret: process.env.CREDENTIALS_SECRET
-      },
+      credentials: { modelClass: 'Credential' },
+      secret: process.env.AUTH_SECRET,
       totp: { issuer: 'Example' }
     }
   }
@@ -709,7 +718,10 @@ if (response.codeRequired) {
 const { user } = response
 ```
 
-Ten wrong codes in a row lock the account for 15 minutes. `GET /users/totp`
+Ten wrong codes in a row lock the account for 15 minutes.
+`'post confirm-access'` and `'post totp-confirm'` aren't transacted, also in
+transacted controllers, so that failed requests don't roll back the count of
+wrong codes: overrides of them need `transacted: false` too. `GET /users/totp`
 tells whether TOTP is set up and how many backup codes are left, and
 `DELETE /users/totp` turns it off, with
 [confirmed access](#confirmed-access). Only password logins through
@@ -722,23 +734,18 @@ TOTP in the account menu, see
 ### Password reset
 
 Users who forgot their password can set a new one through a link that the app
-emails them. Add the model for the credentials as for passkeys, with a secret
-as for TOTP, set the URL of the page that the link opens, and send the emails
-in the users controller:
+emails them. Set a secret as for TOTP and the URL of the page that the link
+opens, and send the emails in the users controller:
 
 ```js
 // config/index.js
 export default {
   app: {
-    session: { modelClass: 'Session' },
     auth: {
-      credentials: {
-        modelClass: 'Credential',
-        secret: process.env.CREDENTIALS_SECRET
-      },
+      secret: process.env.AUTH_SECRET,
       passwordReset: {
         confirmUrl: 'https://example.com/reset-password#token={token}',
-        expires: '1h'
+        expiresAfter: '1h'
       }
     }
   }
@@ -771,11 +778,17 @@ const token = new URLSearchParams(location.hash.slice(1)).get('token')
 await post('password-reset-confirm', { token, password })
 ```
 
-Each link works once, until it expires, and doesn't log in: the user logs in
-with the new password afterwards. Users get at most one email a minute, and
-changing the password ends their other sessions. The time of the answer can
-still differ for existing users, so limit the rate of requests per client in
-the proxy in front of the app. The admin's `login.passwordReset` option adds
+Nothing is stored for the links: the token carries the id of the user and its
+creation time, signed with `app.auth.secret` together with the
+values of
+[`getPasswordResetTokenValues()`](../../api/server/controllers.md#getpasswordresettokenvalues).
+A link works until `expiresAfter`, or until one of these values changes: a
+login, a password change or a username change invalidates it, and the new hash
+makes each link work once. It doesn't log in: the user logs in with the new
+password afterwards, and changing the password ends their other sessions.
+Limit the rate of requests per client in the proxy in front of the app, like
+that of [logins](#users-and-sessions): there is no limit of emails per user.
+The admin's `login.passwordReset` option adds
 the request to its login dialog, with `confirmUrl` pointing to the admin, e.g.
 `'https://example.com/admin/#password-reset={token}'`, see
 [`DitoAdmin`](../../api/admin/admin.md#parameters).
@@ -847,6 +860,21 @@ export class Users extends UsersController {
       }
       return super.patch(ctx, modify)
     }
+  }
+}
+```
+
+To invalidate the links of password resets already sent to the old `email`
+too, add it to the values that the links depend on, see
+[`getPasswordResetTokenValues()`](../../api/server/controllers.md#getpasswordresettokenvalues):
+
+```js
+export class Users extends UsersController {
+  modelClass = User
+
+  // @override
+  getPasswordResetTokenValues(user) {
+    return [...super.getPasswordResetTokenValues(user), user.email]
   }
 }
 ```

@@ -59,6 +59,12 @@ class Guests extends UsersController {
   override modelClass = Guest
 }
 
+// Members whose actions are all transacted, unless they declare otherwise:
+class TransactedMembers extends UsersController {
+  override modelClass = Member
+  override transacted = true
+}
+
 const passkeys = {
   name: 'Example',
   id: 'example.com',
@@ -80,7 +86,7 @@ describe('Passkeys', () => {
       }
     },
     models: { Session, Credential, Member, Guest },
-    controllers: { Members, Guests }
+    controllers: { Members, Guests, TransactedMembers }
   })
 
   let url: string
@@ -356,6 +362,27 @@ describe('Passkeys', () => {
       body: authenticator.register({ challenge: 'd3Jvbmc' })
     })
     expect(passkey.status).toBe(400)
+    expect(await Credential.query()).toEqual([])
+  })
+
+  it('consumes registration challenges also in transacted controllers', async () => {
+    const request = await loginWithPassword()
+    const options = await request('/transacted-members/passkey-options', {
+      method: 'POST'
+    })
+    const authenticator = createAuthenticator({
+      origin: 'https://example.com',
+      rpId: 'example.com'
+    })
+    const register = (challenge: string) =>
+      request('/transacted-members/passkeys', {
+        method: 'POST',
+        body: authenticator.register({ ...options.data, challenge })
+      })
+    expect((await register('d3Jvbmc')).status).toBe(400)
+    const passkey = await register(options.data.challenge)
+    expect(passkey.status).toBe(400)
+    expect(passkey.data.message).toBe('Missing or expired passkey challenge')
     expect(await Credential.query()).toEqual([])
   })
 

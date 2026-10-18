@@ -11,6 +11,8 @@ import { createClient } from '../utils/client.js'
 import { createTestDatabase } from '../utils/database.js'
 
 const loginEvents: string[] = []
+// The number of credential inserts that succeed before one fails:
+let insertsBeforeFailure = Infinity
 
 class Session extends SessionModel {
   declare value: Record<string, any>
@@ -23,6 +25,15 @@ class Credential extends CredentialModel {
   declare userId: string
   declare data: Record<string, any>
   declare lastUsedAt: Date | null
+
+  // Fail an insert on request, as database errors can't be caused otherwise:
+  static override hooks: any = {
+    'before:insert'() {
+      if (insertsBeforeFailure-- === 0) {
+        throw new Error('Unable to insert')
+      }
+    }
+  }
 }
 
 class Member extends UserModel {
@@ -49,6 +60,12 @@ class Guests extends UsersController {
   override modelClass = Guest
 }
 
+// Members whose actions are all transacted, unless they declare otherwise:
+class TransactedMembers extends UsersController {
+  override modelClass = Member
+  override transacted = true
+}
+
 const passkeys = {
   name: 'Example',
   id: 'example.com',
@@ -56,7 +73,8 @@ const passkeys = {
 }
 
 const auth = {
-  credentials: { modelClass: 'Credential', secret: 'credentials-secret' },
+  credentials: { modelClass: 'Credential' },
+  secret: 'auth-secret',
   passkeys,
   totp: { issuer: 'Example' }
 }
@@ -75,7 +93,7 @@ describe('TOTP', () => {
       }
     },
     models: { Session, Credential, Member, Guest },
-    controllers: { Members, Guests }
+    controllers: { Members, Guests, TransactedMembers }
   })
 
   let url: string
@@ -145,6 +163,7 @@ describe('TOTP', () => {
 
   afterEach(async () => {
     loginEvents.length = 0
+    insertsBeforeFailure = Infinity
     await app.knex('Session').del()
     await app.knex('Credential').del()
   })
@@ -225,6 +244,40 @@ describe('TOTP', () => {
     const again = await confirm(totp.generate())
     expect(again.data.message).toBe('Missing or expired TOTP setup')
     expect(await Credential.query()).toEqual([])
+  })
+
+  it('ends setups after too many wrong codes in transacted controllers', async () => {
+    const { request } = await loginWithPassword()
+    await request('/transacted-members/totp', { method: 'POST' })
+    for (let i = 1; i < 10; i++) {
+      const confirm = await request('/transacted-members/totp-confirm', {
+        method: 'POST',
+        body: { code: 'wrong' }
+      })
+      expect(confirm.status).toBe(401)
+    }
+    const last = await request('/transacted-members/totp-confirm', {
+      method: 'POST',
+      body: { code: 'wrong' }
+    })
+    expect(last.data.message).toBe('Too many attempts')
+  })
+
+  it('stores all credentials of a setup or none', async () => {
+    const { request } = await loginWithPassword()
+    const setup = await request('/members/totp', { method: 'POST' })
+    const totp = new TOTP({ secret: setup.data.secret })
+    const confirm = () =>
+      request('/members/totp-confirm', {
+        method: 'POST',
+        body: { code: totp.generate() }
+      })
+    insertsBeforeFailure = 5
+    expect((await confirm()).status).toBe(500)
+    expect(await Credential.query()).toEqual([])
+    // The setup stays for another try:
+    expect((await confirm()).status).toBe(200)
+    expect(await Credential.query()).toHaveLength(11)
   })
 
   it(`doesn't confirm setups once another one is confirmed`, async () => {
@@ -371,6 +424,38 @@ describe('TOTP', () => {
       const right = await postCode(request, getNextCode(totp))
       expect(right.status).toBe(400)
       expect(right.data.error).toBe('Too many attempts')
+      expect((await getTotpData()).lockedUntil).toBeGreaterThan(Date.now())
+    })
+
+    it('lock the account also in transacted controllers', async () => {
+      await setupTotp()
+      const { request } = await loginWithPassword('/transacted-members')
+      for (let i = 1; i < 10; i++) {
+        const login = await request('/transacted-members/login-code', {
+          method: 'POST',
+          body: { code: 'wrong' }
+        })
+        expect(login.status).toBe(401)
+      }
+      const last = await request('/transacted-members/login-code', {
+        method: 'POST',
+        body: { code: 'wrong' }
+      })
+      expect(last.data.error).toBe('Too many attempts')
+      expect((await getTotpData()).lockedUntil).toBeGreaterThan(Date.now())
+    })
+
+    it('lock the account when confirming the access in transacted controllers', async () => {
+      const { request } = await setupTotp()
+      const confirm = () =>
+        request('/transacted-members/confirm-access', {
+          method: 'POST',
+          body: { password: 'secret', code: 'wrong' }
+        })
+      for (let i = 1; i < 10; i++) {
+        expect((await confirm()).status).toBe(401)
+      }
+      expect((await confirm()).data.message).toBe('Too many attempts')
       expect((await getTotpData()).lockedUntil).toBeGreaterThan(Date.now())
     })
 
@@ -647,14 +732,14 @@ describe('TOTP setup', () => {
     )
   })
 
-  it('requires the secret of the credentials', async () => {
+  it('requires the secret', async () => {
     await expect(
       setup({
         session: { modelClass: 'Session' },
         auth: { credentials: { modelClass: 'Credential' }, totp }
       })
     ).rejects.toThrow(
-      `Unable to use TOTP without 'app.auth.credentials.secret'.`
+      `Unable to use TOTP without 'app.auth.secret'.`
     )
   })
 

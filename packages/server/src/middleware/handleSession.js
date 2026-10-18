@@ -5,6 +5,9 @@ import { isString } from '@ditojs/utils'
 export function handleSession(app, {
   modelClass,
   autoCommit = true,
+  // Only send the session cookie along with same-site requests and top-level
+  // navigations, against cross-site request forgery:
+  sameSite = 'lax',
   ...options
 } = {}) {
   if (modelClass) {
@@ -14,6 +17,7 @@ export function handleSession(app, {
     options.ContextStore = createSessionStore(modelClass)
   }
   options.autoCommit = false
+  options.sameSite = sameSite
   return compose([
     session(options, app),
     async (ctx, next) => {

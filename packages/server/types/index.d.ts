@@ -208,13 +208,13 @@ export interface ApplicationConfig {
          * `Credential`. Its model uses `CredentialMixin`.
          */
         modelClass: string | Class<Model>
-        /**
-         * A long random string that encrypts the TOTP secrets and hashes the
-         * backup codes and password reset tokens, required by `totp` and
-         * `passwordReset`. Changing it invalidates them.
-         */
-        secret?: string
       }
+      /**
+       * A long random string that encrypts the TOTP secrets, hashes the backup
+       * codes and signs the password reset links, required by `totp` and
+       * `passwordReset`. Changing it invalidates them.
+       */
+      secret?: string
       /**
        * Enables passkeys, which need `session` and `credentials`.
        */
@@ -228,15 +228,15 @@ export interface ApplicationConfig {
       }
       /**
        * Enables two-factor authentication with TOTP, which needs `session`,
-       * `credentials` and `credentials.secret`.
+       * `credentials` and `secret`.
        */
       totp?: {
         /** The name of the app shown by authenticator apps. */
         issuer: string
       }
       /**
-       * Enables password resets by email, which need `session`, `credentials`
-       * and `credentials.secret`, and `UsersController.sendPasswordReset()`.
+       * Enables password resets by email, which need `secret` and
+       * `UsersController.sendPasswordReset()`.
        */
       passwordReset?: {
         /**
@@ -250,7 +250,7 @@ export interface ApplicationConfig {
          *
          * @defaultValue `'1h'`
          */
-        expires?: number | string
+        expiresAfter?: number | string
       }
       /**
        * How long logins and `'post confirm-access'` confirm the access of
@@ -2895,6 +2895,12 @@ export class UsersController<
    * `app.auth.passwordReset`. Apps override it.
    */
   sendPasswordReset(ctx: KoaContext, user: M, url: string): void | Promise<void>
+  /**
+   * Returns the values of the user that the links of its password resets
+   * depend on, by default its `hash`, `lastLogin` and username. Apps override
+   * it to add further values, e.g. the `email`.
+   */
+  getPasswordResetTokenValues(user: M): unknown[]
 }
 
 export class AdminController extends Controller {
@@ -4421,12 +4427,12 @@ export const CredentialMixin: <T extends Constructor<{}>>(
   target: T
 ) => T &
   Constructor<{
-    /** `'passkey'`, `'totp'`, `'backup-code'` or `'password-reset'` */
+    /** `'passkey'`, `'totp'` or `'backup-code'` */
     type: string
     /** The name of the user's model class. */
     userModel: string
     userId: string
-    /** The credential id of passkeys, the hash of password reset tokens. */
+    /** The credential id of passkeys. */
     key: string | null
     /** The label that the user gave the credential. */
     name: string | null
