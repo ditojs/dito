@@ -23,13 +23,7 @@ version, see the upgrade guides in `docs/`.
 - **admin:** Dialogs validate their data on submit, like forms.
 - **admin:** The `width` setting of dialogs is the width of their content, without their padding, and takes any CSS length besides pixel numbers. It defaults to `'35em'`, slightly wider than the 480 pixels before.
 - **admin:** `@simplewebauthn/browser` and `lean-qr` are required peer dependencies.
-- **server:** Dito.js uses objection 4.2, an ES module that needs knex 3.3, and TypeScript 5.8 for its types, see its [migration guide](https://ditojs.github.io/objection/release-notes/migration.html). Among its changes for apps: the `result` of `after:` hooks has the shape that the query returns, e.g. one model or `undefined` for `first()`, and `before:` hooks get none; JSON in PostgreSQL `text` columns is no longer parsed; graph writes reject conflicting graphs and missing related rows before writing anything, and `insertDitoGraph()` rejects upsert options; `limit` and `offset` in the modifiers of graph fetches apply per parent; on PostgreSQL, JSON refs with one key compile to `->` and `->>`, so expression indexes on them need to be rebuilt.
-- **server:** `toFindQuery()` leaves out the resolved value and the fetched graph of the write too, besides its `runAfter()` callbacks.
-- **server:** `insert()` and `insertAndFetch()` insert arrays of models in one transaction on all databases, and outside PostgreSQL through objection's own batches instead of `insertGraph()`. On MySQL, objection throws for arrays of models without ids: insert these with `insertGraph()`.
-- **server:** A model listed twice in a many-to-many relation of a graph gets one join row.
-- **server:** In the types, `patchAndFetch()`, `updateAndFetch()`, `upsert()` and `upsertAndFetch()` take objection's `PartialModelPatch` and `PartialModelRow`, which reject relation data and `Partial<M>`. Custom query builders that extend dito's `QueryBuilder` declare `RebindType` instead of the five `*QueryBuilderType` members.
-- **server:** The validation errors of nested models in graphs have keys with slashes, e.g. `chapters/1/title`, which start with the model's index for array input, e.g. `1/chapters/1/title`.
-- **server:** Deletes and unrelates with `range`, `limit` or `offset`, which they can't apply, throw a `QueryBuilderError`, which collection and member `DELETE` requests answer with 400. With `offset`, they deleted all matching rows.
+- **server:** Dito.js uses objection 4.2, see [Objection 4](docs/upgrading-to-5.x.md#objection-4) for the changes that come with it.
 
 ### New
 

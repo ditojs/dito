@@ -801,9 +801,10 @@ the types.
 ## UsersController
 
 Extends [`ModelController`](#modelcontroller) for models with
-[`UserMixin`](./model.md#usermixin), with these collection actions. They are
-inherited actions, see [`allow`](#allow): a subclass that sets
-`collection.allow` has to list them too, e.g.
+[`UserMixin`](./model.md#usermixin), with these collection actions, and those
+of passkeys, TOTP and password resets below. They are all inherited actions,
+see [`allow`](#allow): a subclass that sets `collection.allow` has to list them
+too, else they aren't routed, e.g.
 `allow: ['get', 'post login', 'post logout', 'get session', 'get self']`, and
 `'post password'` and `'post confirm-access'` to let users change their
 password. Users controllers need `session` in
@@ -818,24 +819,21 @@ else their setup throws.
 | `'post logout'`      | `{ success, authenticated }` |
 | `'get session'`      | `{ authenticated, user }` |
 | `'get self'`         | The authenticated user through `member.get`, or `null`. |
-| `'post password'`    | Changes the password of the authenticated user to `password` in the body: `{ success }`. The new password is validated by the user model, e.g. its `minLength`. Needs confirmed access, but not a routed `patch`, which would let users change all their properties. |
+| `'post password'`    | Changes the password of the authenticated user to `password` in the body: `{ success }`. The new password is validated by the user model, e.g. its `minLength`. Doesn't need a routed `patch`, which would let users change all their properties. |
 | `'post confirm-access'` | Confirms the access of the authenticated user with `{ password }`, plus `code` for users with TOTP, or with `{ passkey }`, the response of `startAuthentication()` for the options of `'post passkey-login-options'`: `{ success }`, `{ success: false, codeRequired: true }` without a code, or 401 with `'Password is incorrect'`, `'Code is incorrect'` or `'Passkey is incorrect'`. |
 
 Logins and `'post confirm-access'` confirm the access of the session for
 [`app.authentication.reconfirmAccessAfter`](./application.md#configappauthentication).
 Without it, `'post password'`, `'post passkey-options'`, `'post passkeys'`,
-`'delete passkeys/:id'`, `'post totp'`, `'post totp-confirm'` and
-`'delete totp'` answer 403 with
+`'delete passkeys/:id'`, `'post totp'`, `'post totp-confirm'`, `'delete totp'`
+and the `patch` and `put` actions that change the username or set the password
+answer 403 with
 `{ message: 'Confirmation required', confirmationRequired: true }`, see
-[Confirmed access](../../guide/server/controllers.md#confirmed-access), and so
-do `patch` and `put` actions that change the username or set the password,
-also of other users, e.g. by admins. The handlers check it, and the login for
-`'post confirm-access'`, `'get passkeys'` and `'get totp'`, also with an
-`authorize` that opens the actions, and answer 401 without a login of a user
-of the controller's `modelClass`.
-`checkConfirmedAccess(ctx)` answers the same for other actions and their
-`authorize`, and `hasConfirmedAccess(ctx)` tells whether the access is
-confirmed.
+[Confirmed access](../../guide/server/controllers.md#confirmed-access). The
+handlers check it, and the login for `'post confirm-access'`, `'get passkeys'`
+and `'get totp'`, also with an `authorize` that opens the actions, and answer
+401 without a login of a user of the controller's `modelClass`, like
+[`checkConfirmedAccess()`](#checkconfirmedaccess).
 The `patch`, `put` and `post` actions answer 400 for bodies with the `hash`.
 With `relate`, `post` treats users with ids like updates.
 
@@ -852,10 +850,9 @@ which aren't routed without it:
 | `'post passkeys'`              | Stores the passkey of the response of `startRegistration()` in the body, named after its provider, e.g. `'1Password'`, or `'Passkey'` for unknown ones: `{ id, name, createdAt, lastUsedAt }`, or 409 for passkeys that are already registered. |
 | `'delete passkeys/:id'`        | Deletes a passkey of the authenticated user: `{ success }`, or 404 for other passkeys. |
 
-A subclass that sets `collection.allow` has to list the passkey actions too,
-else they aren't routed. The challenges of the options are kept in the
-session, and can be answered once within 5 minutes. Failed passkey logins
-answer `'Passkey is incorrect'`, and emit the reason as `'error'` on the app.
+The challenges of the options are kept in the session, and can be answered once
+within 5 minutes. Failed passkey logins answer `'Passkey is incorrect'`, and
+emit the reason as `'error'` on the app.
 Passkeys are discoverable and verify the user, e.g. with a fingerprint, so a
 passkey login counts as two factors. It only logs in users of the controller's
 `modelClass`, through their `sessionScope`, and fires the
@@ -889,9 +886,7 @@ logins and sessions: the tenth and all codes during the lock answer
 don't count, as the user already has the secret. Each TOTP code is accepted
 once, also the one that confirmed the setup and of concurrent requests, as well
 as the codes before and after the current one for clocks that drift. Each
-backup code is removed once used. Passkey logins don't ask for codes. A
-subclass that sets `collection.allow` has to list the TOTP actions too, else
-they aren't routed.
+backup code is removed once used. Passkey logins don't ask for codes.
 
 With
 [`app.authentication.passwordReset`](./application.md#configappauthentication),
@@ -904,22 +899,16 @@ emails them, with these collection actions, which aren't routed without it:
 | `'post password-reset-confirm'`  | Sets the password of the link's user to `{ token, password }`, validated by the user model: `{ success }`, or 400 with `'Invalid or expired token'`. Doesn't log in. |
 
 `'post password-reset'` answers with the same response and status whether the
-user exists or not, and doesn't wait for the email, but the time it takes can
-still differ, as it only signs a link for existing users. See
+user exists or not, but the time it takes can still differ, as it only signs a
+link for existing users. See
 [Password reset](../../guide/server/controllers.md#password-reset) for the
 links and their limits. Only
 users of the controller's `modelClass` are found, through their `sessionScope`.
-A subclass that sets `collection.allow` has to list the password reset actions
-too, else they aren't routed, and only controllers that route
-`'post password-reset'` need to override `sendPasswordReset()`. All users
-controllers of the app share the one `confirmUrl` of
+All users controllers of the app share the one `confirmUrl` of
 `app.authentication.passwordReset`.
 
-Any change of a user's `hash` ends the sessions of the user. Sessions without a
-fingerprint of the password, from before fingerprints or from `ctx.login(user)`
-with users loaded without `hash`, get one on their next request: a change before
-that doesn't end them. The session of users who change their own password
-stays logged in, see [Sessions](./model.md#sessions).
+Any change of a user's `hash` ends the sessions of the user, except the one in
+which users change their own password, see [Sessions](./model.md#sessions).
 
 TOTP is only asked for by `'post login'`. `ctx.login(user)` logs in without
 it, by design, e.g. for impersonation or custom login flows. The credentials
@@ -953,6 +942,27 @@ const isAuthenticated = controller.isAuthenticated(ctx)
 ```
 
 Returns whether the request is authenticated with a user of `modelClass`.
+
+### hasConfirmedAccess()
+
+```js
+const hasConfirmedAccess = controller.hasConfirmedAccess(ctx)
+```
+
+Returns whether the authenticated user of `modelClass` has confirmed their
+access within `app.authentication.reconfirmAccessAfter`, see
+[Confirmed access](../../guide/server/controllers.md#confirmed-access).
+
+### checkConfirmedAccess()
+
+```js
+controller.checkConfirmedAccess(ctx)
+```
+
+Throws a 401 error without a login of a user of `modelClass`, and a 403 error
+with `confirmationRequired` without confirmed access, to protect other actions
+and their `authorize` like the security changes of the controller, see
+[Confirmed access](../../guide/server/controllers.md#confirmed-access).
 
 ### getAuthenticationFeatures()
 

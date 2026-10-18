@@ -1058,9 +1058,12 @@ no longer exist, that the session scope excludes, or whose `hash` changed since
 the login, end the session. The session stores a hash of `hash` for this, and
 only updates it when the session's user changes their own password in a
 request of the session, wherever the password is set, so that this session
-stays logged in. Password changes written through a query without the user's
-id, e.g. `User.query().findById(id).patch({ password })`, can't be matched to
-the session and end it too.
+stays logged in. Sessions without this hash, from before Dito.js 5.0 or from
+`ctx.login(user)` with users loaded without `hash`, get it on their next
+request: a change before that doesn't end them. Password changes written
+through a query without the user's id, e.g.
+`User.query().findById(id).patch({ password })`, can't be matched to the
+session and end it too.
 `ctx.login(user, { session: false })` logs a user in for the request only, and
 `ctx.isAuthenticated()` tells whether the request has a user.
 
