@@ -15,7 +15,8 @@ import {
 } from '../utils/object.js'
 import {
   convertHandlerDefinitions,
-  getHandlerDefinition
+  getHandlerDefinition,
+  getOwnHandlerAuthorize
 } from '../utils/handler.js'
 import { isHttpMethod } from '../utils/http.js'
 import { describeFunction } from '../utils/function.js'
@@ -502,6 +503,8 @@ export class Controller {
     for (const current of chain) {
       handleAllow(getOwnProperty(current, 'allow'), current)
       handleAuthorize(getOwnProperty(current, 'authorize'), true)
+      // Settings on the handlers rank above the `authorize` of their level:
+      handleAuthorize(getOwnHandlerAuthorize(current), true)
     }
 
     // At the end of the chain, also support authorize settings on the

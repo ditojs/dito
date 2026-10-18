@@ -193,11 +193,17 @@ controller, which an arrow function keeps as its `this`.
 
 1. On an action itself.
 2. On an actions object: one value for all its actions, or an object keyed by
-   action name. Settings of base classes' actions objects apply too.
+   action name.
 3. On the controller, as a fallback for the actions without one. An object
    keyed by action name works here too.
 
-`false` denies on all three levels. A denied request responds with an
+The first two are inherited from base classes' actions objects, also by
+actions that a subclass redefines without their own `authorize`. Each class
+ranks above its base class, so the order is: the subclass's action, the
+subclass's actions object, the base class's action, the base class's actions
+object, and so on, with the controller last. The first setting in this order
+decides, also `false`: a subclass's actions object can open a base class's
+action with `authorize: false`. A denied request responds with an
 [`AuthorizationError`](./errors.md#authorizationerror) (401).
 
 See [Authorization](../../guide/server/controllers.md#authorization) for

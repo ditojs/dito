@@ -472,6 +472,184 @@ class Kitchen extends Staff {
   }
 }
 
+// Authorizes its actions on the actions themselves, which sub-classes inherit
+// when they redefine them:
+class Bakery extends Controller {
+  override authorize: any = 'admin'
+
+  override actions: any = {
+    'get bread': {
+      authorize: 'cook',
+      handler() {
+        return 'bread'
+      }
+    },
+
+    'get cake': {
+      authorize: true,
+      handler() {
+        return 'cake'
+      }
+    },
+
+    'get pie': {
+      authorize: 'cook',
+      handler() {
+        return 'pie'
+      }
+    },
+
+    'get tart': {
+      authorize: true,
+      handler() {
+        return 'tart'
+      }
+    },
+
+    'get roll'() {
+      return 'roll'
+    },
+
+    'get crumb': {
+      authorize: false,
+      handler() {
+        return 'crumb'
+      }
+    }
+  }
+}
+
+function bagel() {
+  return 'bagel'
+}
+bagel.authorize = 'cook'
+
+// Settings on actions objects rank above the actions of base classes:
+class Bakehouse extends Bakery {
+  override actions: any = {
+    'authorize': true,
+    'get bagel': bagel
+  }
+}
+
+class Breadhouse extends Bakehouse {
+  override actions: any = {
+    'authorize': {
+      'get crumb': true
+    },
+
+    'get bagel'(ctx: any) {
+      return `fresh ${super['get bagel'](ctx)}`
+    }
+  }
+}
+
+class Patisserie extends Bakery {
+  override actions: any = {
+    'authorize': {
+      'get pie': 'admin'
+    },
+
+    'get bread'(ctx: any) {
+      return `fresh ${super['get bread'](ctx)}`
+    },
+
+    'get cake'(ctx: any) {
+      return `fresh ${super['get cake'](ctx)}`
+    },
+
+    'get tart': {
+      authorize: 'cook',
+      handler(ctx: any) {
+        return `fresh ${super['get tart'](ctx)}`
+      }
+    }
+  }
+}
+
+class Confectionery extends Patisserie {
+  override actions: any = {
+    'get bread'(ctx: any) {
+      return `sweet ${super['get bread'](ctx)}`
+    },
+
+    'get pie'(ctx: any) {
+      return `sweet ${super['get pie'](ctx)}`
+    }
+  }
+}
+
+class Cookshelves extends ModelController<any> {
+  override modelClass = Cookbook
+  override authorize: any = 'admin'
+
+  override member: any = {
+    allow: ['get'],
+    get: {
+      authorize: true,
+      handler(ctx: any, modify: any) {
+        return super.get(ctx, modify)
+      }
+    }
+  }
+
+  override relations: any = {
+    recipes: {
+      authorize: 'admin',
+      relation: {
+        'allow': [],
+        'get count': {
+          authorize: 'cook',
+          handler() {
+            return 'count'
+          }
+        },
+        'get size': {
+          authorize: true,
+          handler() {
+            return 'size'
+          }
+        }
+      },
+      member: {
+        'allow': [],
+        'get label': {
+          authorize: 'cook',
+          handler() {
+            return 'label'
+          }
+        }
+      }
+    }
+  }
+}
+
+// Redefine the member and relation actions without their own `authorize`:
+class MemberCookshelves extends Cookshelves {
+  override member: any = {
+    get(ctx: any, modify: any) {
+      return super.get(ctx, modify)
+    }
+  }
+}
+
+class RelationCookshelves extends Cookshelves {
+  override relations: any = {
+    recipes: {
+      relation: {
+        'get count'(ctx: any) {
+          return super['get count'](ctx)
+        }
+      },
+      member: {
+        'get label'(ctx: any) {
+          return super['get label'](ctx)
+        }
+      }
+    }
+  }
+}
+
 describe('Controller authorization', () => {
   const app = createTestApp({
     models: { Member, Cookbook, Recipe, Review },
@@ -484,7 +662,14 @@ describe('Controller authorization', () => {
       ReadOnlyCookbooks,
       Pantry,
       Staff,
-      Kitchen
+      Kitchen,
+      Bakery,
+      Patisserie,
+      Confectionery,
+      Bakehouse,
+      Breadhouse,
+      MemberCookshelves,
+      RelationCookshelves
     },
     // Resolve the requesting user from a header, in place of a session.
     async middleware(ctx: any, next: any) {
@@ -868,6 +1053,81 @@ describe('Controller authorization', () => {
       const { cookbook } = await createCookbook(false)
       const path = `/cookbooks/${cookbook.id}/recipes`
       expect((await request(path, admin)).status).toBe(404)
+    })
+  })
+
+  describe('inherited action authorization', () => {
+    it('inherits the `authorize` of redefined actions', async () => {
+      const response = await request('/patisserie/bread', cook)
+      expect(response.status).toBe(200)
+      expect(response.data).toBe('fresh bread')
+      // The controller-level fallback ranks below the inherited setting.
+      expect((await request('/patisserie/bread', admin)).status).toBe(401)
+    })
+
+    it('keeps redefined actions with `authorize: true` open', async () => {
+      const response = await request('/patisserie/cake', null)
+      expect(response.status).toBe(200)
+      expect(response.data).toBe('fresh cake')
+    })
+
+    it('prefers map entries of sub-classes over parent actions', async () => {
+      expect((await request('/patisserie/pie', cook)).status).toBe(401)
+      expect((await request('/patisserie/pie', admin)).status).toBe(200)
+    })
+
+    it('prefers the own `authorize` of redefined actions', async () => {
+      expect((await request('/patisserie/tart', null)).status).toBe(401)
+      expect((await request('/patisserie/tart', cook)).status).toBe(200)
+    })
+
+    it('inherits across several levels', async () => {
+      const bread = await request('/confectionery/bread', cook)
+      expect(bread.status).toBe(200)
+      expect(bread.data).toBe('sweet fresh bread')
+      expect((await request('/confectionery/bread', admin)).status).toBe(401)
+      expect((await request('/confectionery/pie', cook)).status).toBe(401)
+      expect((await request('/confectionery/pie', admin)).status).toBe(200)
+    })
+
+    it('falls back to the controller-level `authorize` setting', async () => {
+      expect((await request('/patisserie/roll', cook)).status).toBe(401)
+      expect((await request('/patisserie/roll', admin)).status).toBe(200)
+    })
+
+    it('prefers values of sub-classes for all actions over parent actions', async () => {
+      expect((await request('/bakehouse/bread', null)).status).toBe(200)
+    })
+
+    it('inherits the `authorize` of function-form actions', async () => {
+      const bagel = await request('/breadhouse/bagel', cook)
+      expect(bagel.status).toBe(200)
+      expect(bagel.data).toBe('fresh bagel')
+      expect((await request('/breadhouse/bagel', null)).status).toBe(401)
+    })
+
+    it('lets map entries of sub-classes open parent actions with `authorize: false`', async () => {
+      expect((await request('/bakery/crumb', admin)).status).toBe(401)
+      expect((await request('/breadhouse/crumb', null)).status).toBe(200)
+    })
+
+    it('authorizes relations like the inherited `get` action of their parent', async () => {
+      const cookbook = await Cookbook.query().insert({ title: 'Soups' })
+      const path = `/member-cookshelves/${cookbook.id}/recipes/size`
+      expect((await request(path, null)).status).toBe(200)
+    })
+
+    it('inherits the `authorize` of redefined relation actions', async () => {
+      const cookbook = await Cookbook.query().insert({ title: 'Soups' })
+      const recipe = await Recipe.query().insert({
+        title: 'Soup',
+        cookbookId: cookbook.id
+      })
+      const path = `/relation-cookshelves/${cookbook.id}/recipes`
+      for (const action of ['count', `${recipe.id}/label`]) {
+        expect((await request(`${path}/${action}`, cook)).status).toBe(200)
+        expect((await request(`${path}/${action}`, admin)).status).toBe(401)
+      }
     })
   })
 

@@ -18,6 +18,7 @@ version, see the upgrade guides in `docs/`.
 - **server:** Session models need an `expiresAt` column: add it with a migration, see [Upgrading to 5.x](docs/upgrading-to-5.x.md#sessions).
 - **server:** Unused assets are released every hour instead of after writes of asset data, so `assets.deleteUnusedAfter: 0` releases them at the next run. Apps that release them on a schedule of their own can drop it.
 - **server:** `assets.cleanupTimeThreshold` and `danglingTimeThreshold` are renamed to `deleteUnusedAfter` and `deleteUnsavedAfter`, and the `timeThreshold` option of `app.releaseUnusedAssets()` to `olderThan`. `false` keeps the assets. Unknown asset options and invalid durations throw on startup.
+- **server:** Actions that a subclass redefines keep the `authorize` of the inherited action unless they set their own, instead of falling back to the actions object or the controller. This can open as well as close access: a redefined action whose parent has `authorize: true` stays open. An `authorize` on a subclass's actions object ranks above the one on the inherited action.
 - **admin:** Dialogs validate their data on submit, like forms, and only resolve once it's valid.
 - **admin:** `@simplewebauthn/browser` and `lean-qr` are required peer dependencies of `@ditojs/admin`.
 

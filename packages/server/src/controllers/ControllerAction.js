@@ -12,7 +12,7 @@ export default class ControllerAction {
     identifier,
     method,
     path,
-    _authorize
+    authorize
   ) {
     const {
       handler,
@@ -20,7 +20,6 @@ export default class ControllerAction {
       after,
       core,
       scope,
-      authorize,
       transacted,
       parameters,
       response,
@@ -40,9 +39,7 @@ export default class ControllerAction {
     this.method = method
     this.path = path
     this.scope = scope
-    // Allow action handlers to override the predetermined defaults for
-    // `authorize`:
-    this.authorize = authorize ?? _authorize
+    this.authorize = authorize
     this.transacted = !!(
       transacted ??
       controller.transacted ??
