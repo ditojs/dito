@@ -45,8 +45,8 @@ export class AdminController extends Controller {
     // Expose api config and definitions to browser side:
     // Pass on the `config.app.normalizePaths` setting to Dito.js Admin:
     const { api = {}, settings = {} } = this.config
-    // The admin offers the features whose actions the users controller at
-    // `api.users` routes, which it reaches inside `api.url` like `getApiUrl()`:
+    // The admin logs in through the users controller at `api.users`, which it
+    // reaches inside `api.url` like `getApiUrl()`:
     const { url = '/', users } = api
     const usersPath = (isString(users) ? users : users?.path) ?? ''
     const { pathname } = new URL(
@@ -54,10 +54,6 @@ export class AdminController extends Controller {
       'http://localhost'
     )
     const controller = this.app.getController(pathname.replace(/\/$/, ''))
-    const isRouted = (...names) => (
-      controller instanceof UsersController &&
-      names.every(name => !!controller.collection[name])
-    )
     return {
       base: this.url,
       api: {
@@ -65,28 +61,15 @@ export class AdminController extends Controller {
         normalizePaths: api.normalizePaths ?? this.app.config.app.normalizePaths
       },
       settings,
-      authentication: {
-        hasPasskeys: isRouted(
-          'post passkey-login-options',
-          'post passkey-login',
-          'get passkeys',
-          'post passkey-options',
-          'post passkeys',
-          'delete passkeys/:id'
-        ),
-        hasTotp: isRouted(
-          'post login-code',
-          'get totp',
-          'post totp',
-          'post totp-confirm',
-          'delete totp'
-        ),
-        hasPasswordChange: isRouted('post password'),
-        hasPasswordReset: isRouted(
-          'post password-reset',
-          'post password-reset-confirm'
-        )
-      }
+      authentication:
+        controller instanceof UsersController
+          ? controller.getAuthenticationFeatures()
+          : {
+              hasPasskeys: false,
+              hasTotp: false,
+              hasPasswordChange: false,
+              hasPasswordReset: false
+            }
     }
   }
 

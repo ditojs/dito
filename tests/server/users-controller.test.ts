@@ -1151,4 +1151,49 @@ describe('UsersController setup', () => {
       await app.knex.destroy()
     }
   })
+
+  it.each([
+    [{ reconfirmAccessAfter: 'soon' }, 'reconfirmAccessAfter', `'soon'`],
+    [{ reconfirmAccessAfter: 0 }, 'reconfirmAccessAfter', '0'],
+    [{ reconfirmAccessAfter: false }, 'reconfirmAccessAfter', 'false'],
+    [
+      {
+        passwordReset: {
+          confirmUrl: 'https://example.com/#password-reset={token}',
+          expiresAfter: false
+        }
+      },
+      'passwordReset.expiresAfter',
+      'false'
+    ],
+    [
+      {
+        passwordReset: {
+          confirmUrl: 'https://example.com/#password-reset={token}',
+          expiresAfter: 'one hour'
+        }
+      },
+      'passwordReset.expiresAfter',
+      `'one hour'`
+    ]
+  ])('rejects invalid durations: %o', async (authentication, name, value) => {
+    class User extends UserModel {}
+    class Users extends UsersController {
+      override modelClass = User
+      override sendPasswordReset() {}
+    }
+    const app = createTestApp({
+      config: { app: { keys: ['test-secret'], session: true, authentication } },
+      models: { User },
+      controllers: { Users }
+    })
+    try {
+      await expect(app.setup()).rejects.toThrow(
+        `Invalid duration for 'app.authentication.${name}': ${value}. ` +
+        'Use a duration above 0.'
+      )
+    } finally {
+      await app.knex.destroy()
+    }
+  })
 })

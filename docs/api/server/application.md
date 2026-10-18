@@ -107,7 +107,6 @@ augmentation of `ApplicationConfig` for project-specific settings.
 | `bodyParser`     | `object`                                         |         | Options of [koa-bodyparser](https://github.com/koajs/bodyparser#options).                                    |
 | `deleteExpiredRecordsEvery` | `string \| number \| false`          | `'1h'`  | How often [`deleteExpiredRecords()`](#deleteexpiredrecords) runs, only in apps that call [`start()`](#start), first one interval after it, at most 24 days (Node's timers can't wait longer). `false` never runs it. Apps that don't start the server, e.g. with their own HTTP server through `app.callback()` or in short-lived processes, call `deleteExpiredRecords()` themselves or run [`db:delete_expired_records`](#commands) on a schedule. |
 | `session`        | `boolean \| object`                              | `false` | Sessions through [koa-session](https://github.com/koajs/session), with `sameSite: 'lax'` as the default for the cookie: admins on another site than the server need `'none'`, which requires `secure`, and behind a TLS proxy also `app.proxy: true`. `modelClass` (a name or a model class) stores them in a model, e.g. one using [`SessionMixin`](model.md#sessionmixin). `autoCommit` (default `true`) commits the session after each request, on transacted routes only when the request succeeds. |
-| `passport`       | `boolean`                                        |         | Deprecated, without effect: users are always handled, see [`UserMixin`](model.md#usermixin). |
 | `authentication` | `object`                                       |         | Authentication beyond passwords, see [`config.app.authentication`](#configappauthentication).                |
 
 ### config.app.authentication
@@ -231,10 +230,11 @@ await app.deleteExpiredRecords()
 ```
 
 Calls [`deleteExpiredRecords()`](model.md#static-deleteexpiredrecords) on every
-model, each on its own, so that one failing doesn't stop the others. Their
-errors are emitted as `'error'` events. Runs every
-`config.app.deleteExpiredRecordsEvery` while the server is started, and can be
-called directly, e.g. from a script. Returns `Promise<void>`. *Hook.*
+model, each on its own, so that one failing doesn't stop the others, and then
+throws their errors together in an `AggregateError`. Runs every
+`config.app.deleteExpiredRecordsEvery` while the server is started, which
+emits the errors as `'error'` events, and can be called directly, e.g. from a
+script. Returns `Promise<void>`. *Hook.*
 
 ## Events
 

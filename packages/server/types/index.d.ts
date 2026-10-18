@@ -205,11 +205,6 @@ export interface ApplicationConfig {
            */
           modelClass?: string | Class<Model>
         })
-    /**
-     * @deprecated Users are always handled, with sessions when `session` is
-     * set. This setting has no effect.
-     */
-    passport?: boolean
     authentication?: {
       /**
        * The model that stores the credentials of all user models, e.g. their
@@ -638,7 +633,8 @@ export class Application<$Models extends Models = Models> {
   start(): Promise<void>
   stop(timeout?: number): Promise<void>
   /**
-   * Calls `deleteExpiredRecords()` on every model, and reports their errors.
+   * Calls `deleteExpiredRecords()` on every model, and throws their errors in
+   * an `AggregateError`.
    * @overridable
    */
   deleteExpiredRecords(): Promise<void>
@@ -2913,6 +2909,17 @@ export class UsersController<
    */
   checkConfirmedAccess(ctx: KoaContext): void
   /**
+   * Returns the features that the admin offers, those whose actions the
+   * controller routes, all of them.
+   */
+  getAuthenticationFeatures(): {
+    hasPasskeys: boolean
+    hasTotp: boolean
+    hasPasswordChange: boolean
+    hasPasswordReset: boolean
+  }
+
+  /**
    * Sends the user the email with the `url` that resets their password, with
    * `app.authentication.passwordReset`. Apps override it. It runs after the
    * answer, with `ctx` only to read the request, as its `transaction` is
@@ -2941,12 +2948,7 @@ export class AdminController extends Controller {
     base: string
     api: AdminConfig['api']
     settings: AdminConfig['settings']
-    authentication: {
-      hasPasskeys: boolean
-      hasTotp: boolean
-      hasPasswordChange: boolean
-      hasPasswordReset: boolean
-    }
+    authentication: ReturnType<UsersController['getAuthenticationFeatures']>
   }
 
   sendGlobalConfig(ctx: Koa.Context): void

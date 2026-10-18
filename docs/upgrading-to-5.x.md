@@ -42,8 +42,8 @@ covers its own changes. Check these in your app:
 Dito.js logs users in and keeps them in the session itself, without
 koa-passport:
 
-- Remove `app.passport` from the configuration, it has no effect. Users are
-  always handled, with sessions when `app.session` is set.
+- Remove `app.passport` from the configuration, it's gone. Users are always
+  handled, with sessions when `app.session` is set.
 - `ctx.req.user` and custom Passport strategies are gone. Use
   `ctx.state.user`. `ctx.login()`, `ctx.logout()` and `ctx.isAuthenticated()`
   stay, see [Sessions](api/server/model.md#sessions).

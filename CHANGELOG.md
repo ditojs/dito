@@ -7,7 +7,7 @@ version, see the upgrade guides in `docs/`.
 
 ### Behaviour changes
 
-- **server:** Dito.js handles logins and sessions itself instead of through koa-passport. `app.passport` has no effect, and `ctx.req.user` and custom Passport strategies are gone. Existing sessions stay valid.
+- **server:** Dito.js handles logins and sessions itself instead of through koa-passport. `app.passport` is removed, and `ctx.req.user` and custom Passport strategies are gone. Existing sessions stay valid.
 - **server:** `UserMixin.login()` is now `authenticate()`, which reads the credentials only from the request body and resolves to their user without logging them in.
 - **server:** `UserMixin.sessionQuery()` is internal: apps set `sessionScope` instead.
 - **server:** `UsersController` needs `app.session`, and `'post confirm-access'` when it routes `patch`, `put` or other actions that need confirmed access, else its setup throws.

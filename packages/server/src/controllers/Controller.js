@@ -195,7 +195,6 @@ export class Controller {
 
   setupActions(type) {
     const values = this.inheritValues(type)
-    convertHandlerDefinitions(values)
     const { values: actions, authorize } = this.processValues(values)
     if (actions) {
       const namesByIdentifier = {}
@@ -421,6 +420,8 @@ export class Controller {
 
   processValues(values) {
     if (!values) return {}
+    // All levels are linked now, by `inheritValues()` and its overrides:
+    convertHandlerDefinitions(values)
     // Respect `allow` settings and clear entries that aren't allowed.
     // Also collect and expand `authorize` settings so that in the end, an
     // `authorize` object can be returned with valid settings for all values.
