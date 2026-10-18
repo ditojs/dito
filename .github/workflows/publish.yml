@@ -1,9 +1,10 @@
 name: Publish
 
-# Publishes the packages of pushed version tags to npm, through npm's trusted
+# Stages the packages of pushed version tags on npm, through npm's trusted
 # publishing: npm trusts this workflow, so no tokens are needed. The versions
-# are created locally with `pnpm release`, which pushes the tags. Run it
-# manually with a tag to finish a release that failed partway.
+# are created locally with `pnpm release`, which pushes the tags, and go live
+# once a maintainer approves them with `pnpm stage approve`. Run it manually
+# with a tag to finish a release that failed partway.
 on:
   push:
     tags: ['v*']
@@ -33,7 +34,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
       - run: pnpm build
-      # Publishes the versions that aren't on npm yet. pnpm retries a failed
+      # Stages the versions that aren't on npm yet. pnpm retries a failed
       # provenance signature with a new one, where lerna's sigstore client
       # sends the same Rekor entry again and fails on its 409 conflict.
-      - run: pnpm -r publish --no-git-checks
+      - run: pnpm -r stage publish --no-git-checks
