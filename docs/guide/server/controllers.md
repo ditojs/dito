@@ -385,8 +385,9 @@ controllers of the user model), `'$owner'` (users for whom
 `ctx` and the member that returns one of them. See
 [`authorize`](../../api/server/controllers.md#authorize).
 
-An action's own `authorize` replaces the one of its actions object and
-controller. `false` denies wherever it is set.
+An action's own `authorize` replaces the one of its own actions object and the
+controller's. Subclasses inherit both, see
+[`authorize`](../../api/server/controllers.md#authorize) for the order.
 
 Staff notes belong to the user who wrote them: everyone with a role may read
 them, but only their author or an admin may change them. Actions that the

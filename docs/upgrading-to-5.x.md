@@ -58,6 +58,19 @@ export async function down(knex) {
 - Apps that call `app.releaseUnusedAssets()` on a schedule of their own, e.g.
   from a service, can drop it.
 
+### Controllers
+
+- Actions that a subclass redefines keep the `authorize` of the inherited
+  action unless they set their own, which can open as well as close access.
+- An `authorize` on a subclass's actions object, one value for all its actions
+  or an entry for one, ranks above the `authorize` of inherited actions, which
+  can open them: `actions = { authorize: true }` in a subclass opens a parent
+  action with `authorize: 'admin'`.
+- To check, look for actions with their own `authorize` in controllers that
+  are subclassed, and compare them with the `authorize` of the subclasses'
+  actions objects and of the actions they redefine. See
+  [`authorize`](api/server/controllers.md#authorize) for the order.
+
 ### Users
 
 - `UserMixin.login(ctx)` is `authenticate(ctx)`. It only checks the

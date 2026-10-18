@@ -201,6 +201,15 @@ class Admins extends UsersController {
   override authorize = 'admin'
 }
 
+// Redefines the login without its own `authorize`, which stays open:
+class WrappedAdmins extends Admins {
+  override collection: any = {
+    'post login'(ctx: any) {
+      return super['post login'](ctx)
+    }
+  }
+}
+
 describe('UsersController', () => {
   const app = createTestApp({
     config: {
@@ -218,6 +227,7 @@ describe('UsersController', () => {
       Members,
       Leads,
       Admins,
+      WrappedAdmins,
       Readers,
       Writers,
       SubReaders,
@@ -902,6 +912,15 @@ describe('UsersController', () => {
     expect((await request('/admins/self')).status).toBe(401)
     const logout = await request('/admins/logout', { method: 'POST' })
     expect(logout.data).toEqual({ success: true, authenticated: false })
+  })
+
+  it('keeps logins open when sub-classes redefine them', async () => {
+    const login = await createClient(url)('/wrapped-admins/login', {
+      method: 'POST',
+      body: { username: 'ada', password: 'secret' }
+    })
+    expect(login.status).toBe(200)
+    expect(login.data.success).toBe(true)
   })
 })
 

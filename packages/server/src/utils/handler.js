@@ -93,9 +93,23 @@ export function getHandlerDefinition(values, key) {
   const level = getInheritanceChain(values).find(
     object => Object.hasOwn(object, key)
   )
+  return getOwnHandlerDefinition(level, key)
+}
+
+// Collect the `authorize` settings of the handlers that `level` defines:
+export function getOwnHandlerAuthorize(level) {
+  const entries = Object.keys(level).map(
+    key => [key, getOwnHandlerDefinition(level, key)?.authorize]
+  )
+  return Object.fromEntries(
+    entries.filter(([, authorize]) => authorize != null)
+  )
+}
+
+function getOwnHandlerDefinition(level, key) {
   return (
     definitionsByLevel.get(level)?.[key] ??
-    parseHandlerDefinition(values[key])
+    parseHandlerDefinition(level[key])
   )
 }
 
