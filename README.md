@@ -108,7 +108,10 @@ pushes both. The pushed tag starts the
 stages the bumped ones on npm through npm's trusted publishing, without npm
 tokens or logins. Only repository admins can create `v*` tags. It stages only the
 versions that aren't on npm yet, so a release that failed partway is finished by
-rerunning it, or with `gh workflow run publish.yml -f tag=vX.Y.Z`.
+rerunning it, or with `gh workflow run publish.yml -f tag=vX.Y.Z`. It then
+creates the GitHub release of the tag, with the version's section of
+`CHANGELOG.md` as its notes, so the section needs to be named after the version
+before releasing.
 
 The staged versions go live once a maintainer approves them with two-factor
 authentication, after npm has scanned them:
