@@ -114,9 +114,17 @@ describe('SchemaContext', () => {
         components: { title: { type: 'text' } },
         buttons: { cancel: {}, apply: { type: 'submit' } },
         data: { title: 'Emma' },
-        settings: { label: 'Rename', width: 400, clickToClose: true }
+        settings: {
+          label: 'Rename',
+          width: 400,
+          clickToClose: true,
+          minDuration: 1000
+        }
       })
     ).toEqualTypeOf<Promise<unknown>>()
+    expectTypeOf(
+      context.showDialog<{ title: string }>({ buttons: {} })
+    ).toEqualTypeOf<Promise<{ title: string } | undefined>>()
     assertType(
       // @ts-expect-error Dialogs have no other settings.
       context.showDialog({ buttons: {}, settings: { height: 300 } })

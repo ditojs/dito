@@ -862,8 +862,10 @@ export class Application extends Koa {
     })
     this.isRunning = true
     if (this.#deleteExpiredRecordsEvery !== false) {
+      // Overrides can throw, and nobody awaits the timer:
       this.#deleteExpiredRecordsInterval = setInterval(
-        () => this.deleteExpiredRecords(),
+        () =>
+          this.deleteExpiredRecords().catch(error => this.emit('error', error)),
         this.#deleteExpiredRecordsEvery
       ).unref()
     }
@@ -924,7 +926,7 @@ export class Application extends Koa {
       try {
         await modelClass.deleteExpiredRecords()
       } catch (error) {
-        this.emit('error', error)
+        await this.emit('error', error)
       }
     }
   }
@@ -1265,6 +1267,14 @@ export class Application extends Koa {
   } = {}) {
     const AssetModel = this.getModel('Asset')
     const { assets } = this.config
+    // Fail on invalid durations like the asset options, as they would delete
+    // all unused assets:
+    if (olderThan !== null) {
+      checkDuration('olderThan', olderThan, {
+        min: 0,
+        usage: 'Use a duration, or `false` to keep the assets.'
+      })
+    }
     // Calculate the date math in JS instead of SQL, as there is no easy
     // cross-SQL way to do `now() - interval X hours`:
     const getDate = duration =>

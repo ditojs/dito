@@ -59,6 +59,16 @@ export class QueryBuilder extends objection.QueryBuilder {
         return result
       })
     }
+    // knex rejects `limit` in deletes and leaves out `offset`, which would
+    // delete all matching rows instead of a page:
+    if (this.isDelete() || this.isUnrelate()) {
+      const pagination = this.findOperation(/^(range|limit|offset)$/)
+      if (pagination) {
+        throw new QueryBuilderError(
+          `Unsupported '${pagination.name}' in deletes and unrelates.`
+        )
+      }
+    }
     this.#applyScopes()
     // Execute a clone in the transaction, so that the query itself isn't bound
     // to it and can be executed again:

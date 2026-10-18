@@ -427,6 +427,19 @@ describe('Asset handling', () => {
       expect(await Asset.query().findOne('key', file.key)).toBeDefined()
     })
 
+    it('rejects invalid durations', async () => {
+      const file = await createUploadedFile('pending.txt', 'pending')
+      await app.createAssets(storage, [file], 0)
+      await expect(
+        app.releaseUnusedAssets({ olderThan: 'soon' })
+      ).rejects.toThrow(
+        `Invalid duration for 'olderThan': 'soon'. Use a duration, or ` +
+        '`false` to keep the assets.'
+      )
+      expect(storage.dataByKey.has(file.key)).toBe(true)
+      expect(await Asset.query().findOne('key', file.key)).toBeDefined()
+    })
+
     it('emits errors of files that cannot be removed', async () => {
       const file = await createUploadedFile('stuck.txt', 'stuck')
       await app.createAssets(storage, [file], 0)

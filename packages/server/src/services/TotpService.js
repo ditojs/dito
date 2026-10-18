@@ -46,38 +46,43 @@ export class TotpService extends Service {
         status: 400
       })
     }
-    if (await getTotpQuery(user, ctx.transaction).first()) {
-      throw new ResponseError({
-        message: 'TOTP is already set up',
-        status: 409
-      })
-    }
-    const { secret } = totpSetup
-    const step = validateTotp(this.#createTotp(user, secret), code)
-    if (step !== null) {
-      const key = this.config.secret
-      const backupCodes = Array.from({ length: backupCodeCount }, () => {
-        // 40 random bits, as two groups of five hex digits:
-        const code = randomBytes(5).toString('hex')
-        return `${code.slice(0, 5)}-${code.slice(5)}`
-      })
-      await user.constructor.credentialClass.query(ctx.transaction).insert({
-        type: 'totp',
-        userModel: user.constructor.name,
-        userId: `${user.$id()}`,
-        data: {
-          secret: encrypt(key, secret, user),
-          // The confirmed code can't be used again:
-          step,
-          backupCodes: backupCodes.map(code => hashBackupCode(key, code))
-        }
-      })
-      delete ctx.session.totpSetup
-      return backupCodes
-    } else {
-      // Wrong codes don't count, as the user already knows the secret.
-      throw new AuthenticationError('Code is incorrect')
-    }
+    const { credentialClass } = user.constructor
+    return credentialClass.transaction(ctx.transaction, async trx => {
+      // Lock the user against concurrent confirmations, without its scopes:
+      await user.$query(trx).ignoreScope().forUpdate()
+      if (await getTotpQuery(user, trx).first()) {
+        throw new ResponseError({
+          message: 'TOTP is already set up',
+          status: 409
+        })
+      }
+      const { secret } = totpSetup
+      const step = validateTotp(this.#createTotp(user, secret), code)
+      if (step !== null) {
+        const key = this.config.secret
+        const backupCodes = Array.from({ length: backupCodeCount }, () => {
+          // 40 random bits, as two groups of five hex digits:
+          const code = randomBytes(5).toString('hex')
+          return `${code.slice(0, 5)}-${code.slice(5)}`
+        })
+        await credentialClass.query(trx).insert({
+          type: 'totp',
+          userModel: user.constructor.name,
+          userId: `${user.$id()}`,
+          data: {
+            secret: encrypt(key, secret, user),
+            // The confirmed code can't be used again:
+            step,
+            backupCodes: backupCodes.map(code => hashBackupCode(key, code))
+          }
+        })
+        delete ctx.session.totpSetup
+        return backupCodes
+      } else {
+        // Wrong codes don't count, as the user already knows the secret.
+        throw new AuthenticationError('Code is incorrect')
+      }
+    })
   }
 
   // Verify a TOTP code, or consume a backup code of the user. Too many wrong

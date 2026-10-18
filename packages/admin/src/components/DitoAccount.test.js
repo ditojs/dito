@@ -194,7 +194,15 @@ describe('DitoAccount', () => {
             throw Object.assign(new Error('Request failed'), {
               response: {
                 status: 400,
-                data: { message: 'The provided data is not valid' }
+                data: {
+                  type: 'ModelValidation',
+                  message: 'The provided data is not valid',
+                  errors: {
+                    password: [
+                      { message: 'must NOT have fewer than 6 characters' }
+                    ]
+                  }
+                }
               }
             })
           }
@@ -537,8 +545,8 @@ describe('DitoAccount', () => {
         )
       })
 
-      it('reports invalid passwords', async () => {
-        const { admin } = await mountWithPasskeys()
+      it('lists the errors of invalid passwords, and asks again', async () => {
+        const { admin, request } = await mountWithPasskeys()
         const notify = vi
           .spyOn(admin.context, 'notify')
           .mockImplementation(() => {})
@@ -546,10 +554,28 @@ describe('DitoAccount', () => {
           password: 'short',
           confirmation: 'short'
         })
-        expect(notify).toHaveBeenCalledWith(
-          expect.objectContaining({ type: 'error' })
-        )
+        expect(notify).toHaveBeenCalledWith({
+          type: 'error',
+          title: 'Invalid Password',
+          text: ['password must NOT have fewer than 6 characters']
+        })
         expect(notify).not.toHaveBeenCalledWith(
+          expect.objectContaining({ type: 'success' })
+        )
+        const dialog = getLastDialog(admin)
+        expect(dialog.attributes('aria-label')).toBe('Change Password')
+        for (const name of ['password', 'confirmation']) {
+          await enterValue(dialog.find(`input[name="${name}"]`), 'changed')
+        }
+        await dialog.find('button[type="submit"]').trigger('click')
+        await flushPromises()
+        expect(request).toHaveBeenLastCalledWith(
+          expect.objectContaining({
+            url: '/users/password',
+            data: { password: 'changed' }
+          })
+        )
+        expect(notify).toHaveBeenLastCalledWith(
           expect.objectContaining({ type: 'success' })
         )
       })
@@ -562,8 +588,12 @@ describe('DitoAccount', () => {
       )
 
       // A server with TOTP, without passkeys, which accepts the code
-      // '123456':
-      const mountWithTotp = async ({ enabled = false } = {}) => {
+      // '123456'. Without `isConfirmed`, the confirmed access expires before
+      // the code is entered:
+      const mountWithTotp = async ({
+        enabled = false,
+        isConfirmed = true
+      } = {}) => {
         const createError = (status, message) =>
           Object.assign(new Error(message), {
             response: { status, data: { message } }
@@ -590,6 +620,17 @@ describe('DitoAccount', () => {
               }
             }
           } else if (url === '/users/totp-confirm') {
+            if (!isConfirmed) {
+              throw Object.assign(new Error('Request failed'), {
+                response: {
+                  status: 403,
+                  data: {
+                    message: 'Confirmation required',
+                    confirmationRequired: true
+                  }
+                }
+              })
+            }
             checkCode(data.code)
             enabled = true
             return { data: { backupCodes } }
@@ -613,9 +654,6 @@ describe('DitoAccount', () => {
           admin.wrapper.find('.dito-dialog .dito-object[id$="totp"]').text()
         return { admin, request, getState }
       }
-
-      const getLastDialog = admin =>
-        admin.wrapper.findAll('.dito-dialog').at(-1)
 
       const submitCode = async (admin, code) => {
         const dialog = getLastDialog(admin)
@@ -682,6 +720,31 @@ describe('DitoAccount', () => {
           })
         )
         // Only the Security dialog stays, as the code dialog is leaving:
+        expect(
+          admin.wrapper.findAll('.dito-dialog:not(.dito-dialog-leave-active)')
+        ).toHaveLength(1)
+        expect(
+          request.mock.calls.filter(
+            ([{ url }]) => url === '/users/totp-confirm'
+          )
+        ).toHaveLength(1)
+        expect(getState()).toContain('Not set up')
+      })
+
+      it('stops quietly when the confirmation is cancelled', async () => {
+        const { admin, request, getState } = await mountWithTotp({
+          isConfirmed: false
+        })
+        const notify = vi.spyOn(admin.context, 'notify')
+        await findButton(admin, 'Set Up').trigger('click')
+        await flushPromises()
+        await submitCode(admin, '123456')
+        expect(getLastDialog(admin).attributes('aria-label')).toBe(
+          'Confirm Access'
+        )
+        await findButton(admin, 'Cancel').trigger('click')
+        await flushPromises()
+        expect(notify).not.toHaveBeenCalled()
         expect(
           admin.wrapper.findAll('.dito-dialog:not(.dito-dialog-leave-active)')
         ).toHaveLength(1)

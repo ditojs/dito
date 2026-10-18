@@ -113,11 +113,8 @@ export default {
   $notification-width: 300px;
 
   flex: 1;
-  z-index: $z-index-notifications;
   box-sizing: border-box;
   margin-left: $form-spacing;
-  // For the `@container` rule to work:
-  container-type: inline-size;
 
   .dito-header {
     span {
@@ -126,8 +123,12 @@ export default {
     }
   }
 
+  // Only the notifications show above dialogs, not the header:
   &__inner {
     position: relative;
+    z-index: $z-index-notifications;
+    // For the `@container` rule to work:
+    container-type: inline-size;
   }
 
   .vue-notification-group {

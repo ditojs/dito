@@ -561,7 +561,8 @@ export class UsersController extends ModelController {
   }
 
   // Send the user the email with the `url` that resets their password, with
-  // `app.authentication.passwordReset`:
+  // `app.authentication.passwordReset`. It runs after the answer, with `ctx`
+  // only to read the request:
   // @overridable
   async sendPasswordReset(/* ctx, user, url */) {
     // To be overridden in sub-classes that route 'post password-reset'.

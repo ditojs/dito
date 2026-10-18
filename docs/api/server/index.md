@@ -40,9 +40,10 @@ explains the concepts; these pages list the members.
 | [`CollectionController`](controllers.md#collectioncontroller) | The base of model and relation controllers.          |
 | [`ModelController`](controllers.md#modelcontroller) | REST controller of a model's collection, members and relations. |
 | [`RelationController`](controllers.md#relationcontroller) | The controllers of a model controller's relations.                 |
-| [`UsersController`](controllers.md#userscontroller) | Model controller with login, logout and session actions.           |
+| [`UsersController`](controllers.md#userscontroller) | Model controller with login, logout, session, passkey, TOTP and password reset actions. |
 | [`AdminController`](controllers.md#admincontroller) | Serves the Dito.js Admin.                                          |
 | [`Service`](service.md)                         | The base class of services.                                        |
+| [`PasskeyService`](service.md#passkeyservice), [`TotpService`](service.md#totpservice) | The services of passkeys and TOTP for `UsersController`. |
 | [`Storage`](storage.md), [`AssetFile`](storage.md#assetfile) | File storages and their files.                                  |
 | [`Validator`](validator.md)                     | The JSON schema validator.                                         |
 
@@ -53,6 +54,7 @@ explains the concepts; these pages list the members.
 | [`TimestampedMixin`, `TimestampedModel`](model.md#timestampedmixin) | `createdAt` and `updatedAt`.               |
 | [`UserMixin`, `UserModel`](model.md#usermixin)                  | Users that log in with a password.             |
 | [`SessionMixin`, `SessionModel`](model.md#sessionmixin)         | Session storage.                               |
+| [`CredentialMixin`, `CredentialModel`](model.md#credentialmixin) | The passkeys and TOTP of users.               |
 | [`AssetMixin`, `AssetModel`](model.md#assetmixin)               | Asset records.                                 |
 
 ## Registries and schema

@@ -360,14 +360,16 @@ describe('Password reset', () => {
     await Member.query().insert({ username: 'bob', password: 'secret' } as any)
     const token = await getToken('bob')
     const { request } = await login('secret')
-    await request('/members/password', {
+    const change = await request('/members/password', {
       method: 'POST',
-      body: { currentPassword: 'secret', password: 'changed' }
+      body: { password: 'changed' }
     })
-    await request('/members/self', {
+    expect(change.status).toBe(200)
+    const rename = await request('/members/self', {
       method: 'PATCH',
       body: { username: 'eve' }
     })
+    expect(rename.status).toBe(200)
     expect((await confirmReset(token)).status).toBe(200)
     expect((await login('changed', 'bob')).success).toBe(true)
   })

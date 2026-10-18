@@ -275,7 +275,9 @@ describe('Confirmed access', () => {
     const { request } = await loginWithPassword()
     expireAccess()
     expect(await requestOpenChanges(request)).toEqual(Array(7).fill(403))
-    expect(await Member.query().findOne('username', 'ada')).toBeDefined()
+    const ada = await Member.query().findOne('username', 'ada')
+    expect(await ada!.$verifyPassword('secret')).toBe(true)
+    expect(await Credential.query()).toEqual([])
   })
 
   it('denies security changes to users of other models', async () => {

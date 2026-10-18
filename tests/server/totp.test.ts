@@ -1,3 +1,4 @@
+import { vi } from 'vitest'
 import {
   CredentialModel,
   PasskeyService,
@@ -256,6 +257,27 @@ describe('TOTP', () => {
     expect(await Credential.query().where('type', 'totp')).toHaveLength(1)
   })
 
+  it('confirms only one of concurrent setups', async () => {
+    // Requests through the app don't overlap reliably, so we call the service
+    // directly, with the parts of contexts that it uses:
+    const totp = app.getService('totp') as TotpService
+    const contexts = [{ session: {} }, { session: {} }] as any[]
+    const codes = contexts.map(ctx => {
+      const { secret } = totp.createSecret(ctx, member)
+      return new TOTP({ secret }).generate()
+    })
+    const results = await Promise.allSettled(
+      contexts.map((ctx, index) =>
+        totp.confirmSecret(ctx, member, codes[index])
+      )
+    )
+    const statuses = results.map(result =>
+      result.status === 'fulfilled' ? 200 : result.reason.status
+    )
+    expect(statuses.sort()).toEqual([200, 409])
+    expect(await Credential.query().where('type', 'totp')).toHaveLength(1)
+  })
+
   it(`doesn't set up TOTP twice`, async () => {
     const { request } = await setupTotp()
     const setup = await request('/members/totp', { method: 'POST' })
@@ -315,9 +337,15 @@ describe('TOTP', () => {
   })
 
   it(`doesn't accept the code of the setup`, async () => {
-    const { totp } = await setupTotp()
-    const { login } = await loginWithCode(totp.generate())
-    expect(login.status).toBe(401)
+    // Freeze the time, so that the code can't change after the setup:
+    vi.useFakeTimers({ toFake: ['Date'] })
+    try {
+      const { totp } = await setupTotp()
+      const { login } = await loginWithCode(totp.generate())
+      expect(login.status).toBe(401)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('accepts each backup code once', async () => {

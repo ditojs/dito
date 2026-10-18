@@ -45,7 +45,7 @@ test.describe('password reset', () => {
     await expect(page.locator('.dito-notification').last()).toContainText(
       'Your password was changed. Please log in.'
     )
-    expect(page.url()).toBe(`${url}/admin/`)
+    await expect(page).toHaveURL(`${url}/admin/`)
 
     // The old password fails, the new one logs in:
     await login(page, 'secret')

@@ -62,9 +62,9 @@ $menu-padding-hor: $header-padding-hor - $menu-spacing;
 $menu-padding: $menu-padding-ver $menu-padding-hor;
 
 // Z-Indices
+$z-index-notifications: 5000;
 $z-index-dialog: 4000;
 $z-index-drag-overlay: 3000;
-$z-index-notifications: 2500;
 $z-index-sidebar: 2250;
 $z-index-header: 2000;
 $z-index-tippy: 750;

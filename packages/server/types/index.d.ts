@@ -563,6 +563,7 @@ export type Models = Record<string, Class<Model>>
 interface AsyncRequestLocals {
   transaction: objection.Transaction
   logger: PinoLogger
+  session: KoaSession | null
 }
 
 /** The router of an application, `@ditojs/router` by default. */
@@ -800,7 +801,7 @@ export class Application<$Models extends Models = Models> {
    * `deleteUnsavedAfter`, or past `olderThan` for both.
    */
   releaseUnusedAssets(options?: {
-    olderThan?: string | number | null
+    olderThan?: string | number | false | null
     transaction?: objection.Transaction | null
     concurrency?: number
   }): Promise<Model[]>
@@ -2908,7 +2909,9 @@ export class UsersController<
   hasConfirmedAccess(ctx: KoaContext): boolean
   /**
    * Sends the user the email with the `url` that resets their password, with
-   * `app.authentication.passwordReset`. Apps override it.
+   * `app.authentication.passwordReset`. Apps override it. It runs after the
+   * answer, with `ctx` only to read the request, as its `transaction` is
+   * finished.
    */
   sendPasswordReset(ctx: KoaContext, user: M, url: string): void | Promise<void>
   /**
@@ -4767,6 +4770,27 @@ export type KoaContext<$State = KoaContextState> = Koa.ParameterizedContext<
     transaction: objection.Transaction
     session: KoaSession | null
     logger: PinoLogger
+    /**
+     * Logs in `user` and regenerates the id of the session, passing `options`
+     * on to the login events of the user's model class. With `session:
+     * false`, the login only lasts for the request.
+     */
+    login(
+      user: InstanceType<typeof UserModel>,
+      options?: { session?: boolean; [key: string]: unknown }
+    ): Promise<void>
+    logIn(
+      user: InstanceType<typeof UserModel>,
+      options?: { session?: boolean; [key: string]: unknown }
+    ): Promise<void>
+    /**
+     * Logs out the user and clears the whole session, passing `options` on to
+     * the logout events of the user's model class.
+     */
+    logout(options?: Record<string, unknown>): Promise<void>
+    logOut(options?: Record<string, unknown>): Promise<void>
+    isAuthenticated(): boolean
+    isUnauthenticated(): boolean
   }
 > & {
   app: Application

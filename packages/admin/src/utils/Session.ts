@@ -7,11 +7,13 @@ import {
   createPasswordResetDialog,
   createNewPasswordDialog,
   createConfirmAccessDialog,
+  createInvalidPasswordNotification,
   isPasskeyPromptCancelled
 } from './security.js'
 import type { ViewRegistry } from './ViewRegistry.js'
 import type { AdminContext } from './AdminContext.ts'
 import type { Api } from './types.ts'
+import type { RequestMethodResponse } from '../../types/index.d.ts'
 
 export type User = Record<string, any>
 
@@ -55,12 +57,15 @@ export class Session {
   async start() {
     // The link of password reset emails opens the admin with the token in the
     // fragment, which browsers don't send to servers:
-    const url = new URL(location.href)
-    const token = new URLSearchParams(url.hash.slice(1)).get('password-reset')
+    const params = new URLSearchParams(location.hash.slice(1))
+    const token = params.get('password-reset')
     if (token) {
       await this.#confirmPasswordReset(token)
-      url.hash = ''
-      history.replaceState(history.state, '', url)
+      // Remove the token through the router, which would otherwise restore it
+      // with its next navigation:
+      const { router } = this.#adminContext
+      const { path, query } = router.currentRoute.value
+      await router.replace({ path, query })
     }
     if (await this.fetchUser()) {
       await this.#resolveViews()
@@ -98,7 +103,7 @@ export class Session {
         response = await this.#request(users.login, loginData)
       }
       user = response.data.codeRequired
-        ? await this.#loginWithCode()
+        ? (await this.#requestWithCode(users.loginCode))?.data.user
         : response.data.user
     } catch (error) {
       // Ask again quietly when the passkey prompt is cancelled:
@@ -122,24 +127,26 @@ export class Session {
     }
   }
 
-  // Ask for the code of users with TOTP until it's accepted, or resolve to
-  // `null` to go back to the password:
-  async #loginWithCode(): Promise<User | null> {
+  // Ask for the code of users with TOTP until it's accepted, and send it with
+  // `data` to `resource`. Resolve to the response, or to `null` when the code
+  // is cancelled or no longer accepted:
+  async #requestWithCode(
+    resource: any,
+    data: Record<string, any> = {}
+  ): Promise<RequestMethodResponse<any> | null> {
     const codeData = await this.#adminContext.showDialog<{ code: string }>(
       createCodeDialog()
     )
     if (codeData) {
       try {
-        const response = await this.#request(
-          this.#api.users.loginCode,
-          codeData
-        )
-        return response.data.user
+        return await this.#request(resource, { ...data, ...codeData })
       } catch (error: any) {
         this.#notifyError(error)
         // Wrong codes answer 401, missing or expired logins and too many
         // attempts 400:
-        return error.response?.status === 401 ? this.#loginWithCode() : null
+        return error.response?.status === 401
+          ? this.#requestWithCode(resource, data)
+          : null
       }
     } else {
       return null
@@ -165,22 +172,16 @@ export class Session {
           data === 'passkey'
             ? { passkey: await this.#getPasskey() }
             : { password: data.password }
-        let response = await this.#request(users.confirmAccess, body)
+        const response = await this.#request(users.confirmAccess, body)
         if (response.data.codeRequired) {
-          const codeData = await this.#adminContext.showDialog<{
-            code: string
-          }>(createCodeDialog())
-          if (codeData) {
-            response = await this.#request(users.confirmAccess, {
-              ...body,
-              ...codeData
-            })
-          } else {
-            // Cancelling the code ends the confirmation, like the password:
-            return false
-          }
-        }
-        if (response.data.success) {
+          // Cancelling the code ends the confirmation, like the password, and
+          // so do expired logins and too many attempts:
+          const codeResponse = await this.#requestWithCode(
+            users.confirmAccess,
+            body
+          )
+          return !!codeResponse?.data.success
+        } else if (response.data.success) {
           return true
         }
       } catch (error) {
@@ -228,16 +229,9 @@ export class Session {
         })
       } catch (error: any) {
         // Ask again with the same token for invalid passwords:
-        const errors: Record<string, { message: string }[]> | undefined =
-          error.response?.data?.errors
+        const errors = error.response?.data?.errors
         if (errors) {
-          this.#adminContext.notify({
-            type: 'error',
-            title: 'Invalid Password',
-            text: Object.entries(errors).flatMap(([path, errs]) =>
-              errs.map(({ message }) => `${path} ${message}`)
-            )
-          })
+          this.#adminContext.notify(createInvalidPasswordNotification(errors))
           await this.#confirmPasswordReset(token)
         } else {
           this.#notifyError(error)

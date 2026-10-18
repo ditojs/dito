@@ -41,8 +41,9 @@ export default {
   transition: flex-basis $sidebar-duration;
 
   > .dito-header {
-    // Above the notifications, whose header continues it to the window edge:
-    z-index: $z-index-notifications + 1;
+    // Above the header of the notifications, which continues it to the window
+    // edge:
+    z-index: $z-index-header + 1;
     // Leave room for the button, for when the sidebar reaches the window edge:
     padding-right: $header-height;
   }

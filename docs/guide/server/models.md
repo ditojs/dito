@@ -341,13 +341,15 @@ export class Order extends TimestampedMixin(Model) {
 - `TimestampedMixin` adds `createdAt` and `updatedAt`, set when models are
   inserted and updated.
 - `UserMixin` and `SessionMixin` are for users who log in, see
-  [Controllers: users and sessions](controllers.md#users-and-sessions).
+  [Controllers: users and sessions](controllers.md#users-and-sessions), and
+  `CredentialMixin` for their passkeys and TOTP, see
+  [Passkeys](controllers.md#passkeys).
 - `AssetMixin` is for the records of uploaded files, see
   [Storages and assets](storages.md#the-asset-model).
 
 Each mixin is also exported applied to `Model`: `TimestampedModel`,
-`UserModel`, `SessionModel` and `AssetModel`. These classes have no name of
-their own, so always extend them, which also names the table:
+`UserModel`, `SessionModel`, `CredentialModel` and `AssetModel`. These classes
+have no name of their own, so always extend them, which also names the table:
 `class Order extends TimestampedModel {}`. The
 [Mixins API](../../api/server/model.md#mixins) describes each.
 
@@ -504,7 +506,7 @@ export class Genre extends Model {
 ```
 
 `static setup()` runs right before it and is used by mixins, e.g. `UserMixin`
-registers its authentication strategy there. Subclasses that override it need
+defines its password property there. Subclasses that override it need
 to call `super.setup()`.
 
 ### Converting data

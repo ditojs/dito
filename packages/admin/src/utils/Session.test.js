@@ -1,4 +1,5 @@
 import { vi } from 'vitest'
+import { createRouter, createWebHistory } from 'vue-router'
 import { startAuthentication } from '@simplewebauthn/browser'
 import { AdminContext } from './AdminContext.ts'
 import AdminUser from '../AdminUser.js'
@@ -38,18 +39,25 @@ function createSession({
     },
     resources: { any: resource => `/${resource.path}` },
     getApiUrl: ({ url }) => url,
-    request: vi.fn(async ({ method, url }) => {
+    request: vi.fn(async ({ method, url, data }) => {
       const response = responses[`${method} ${url}`]
       if (response instanceof Error) throw response
-      return { data: typeof response === 'function' ? response() : response }
+      return {
+        data: typeof response === 'function' ? response(data) : response
+      }
     })
   }
   const viewRegistry = {
     resolve: vi.fn(async () => resolvedViews.shift() ?? true),
     clear: vi.fn()
   }
+  const router = createRouter({
+    routes: [{ name: 'catch-all', path: '/:_(.*)', components: {} }],
+    history: createWebHistory()
+  })
   const adminContext = new AdminContext({
     api,
+    router,
     viewRegistry,
     settings: {},
     authentication: {},
@@ -142,15 +150,23 @@ describe('Session', () => {
       history.replaceState(null, '', '/')
     })
 
+    // Navigate to the link, as the router does when the admin starts:
+    async function createSessionWithLink(options) {
+      const result = createSession(options)
+      await result.adminContext.router.replace(resetUrl)
+      return result
+    }
+
     it('sets the new password, and then asks to log in', async () => {
-      const { session, api, notify, dialogs } = createSession({
-        responses: {
-          'post /password-reset-confirm': { success: true },
-          'get /session': { user: null },
-          'post /login': { user: { ...user } }
-        },
-        newPasswords: [{ password: 'changed', confirmation: 'changed' }]
-      })
+      const { session, adminContext, api, notify, dialogs } =
+        await createSessionWithLink({
+          responses: {
+            'post /password-reset-confirm': { success: true },
+            'get /session': { user: null },
+            'post /login': { user: { ...user } }
+          },
+          newPasswords: [{ password: 'changed', confirmation: 'changed' }]
+        })
       await session.start()
       expect(api.request).toHaveBeenCalledWith({
         method: 'post',
@@ -163,11 +179,14 @@ describe('Session', () => {
       })
       expect(dialogs.login).toHaveBeenCalledOnce()
       expect(getPath()).toBe('/admin/books?page=2')
+      expect(adminContext.router.currentRoute.value.fullPath).toBe(
+        '/admin/books?page=2'
+      )
     })
 
     it('notifies invalid tokens, and then asks to log in', async () => {
       const error = 'Invalid or expired token'
-      const { session, notify, dialogs } = createSession({
+      const { session, notify, dialogs } = await createSessionWithLink({
         responses: {
           'post /password-reset-confirm': Object.assign(new Error(error), {
             response: { status: 400, data: { message: error } }
@@ -187,7 +206,7 @@ describe('Session', () => {
 
     it('asks again with the token for invalid passwords', async () => {
       let attempt = 0
-      const { session, api, notify, dialogs } = createSession({
+      const { session, api, notify, dialogs } = await createSessionWithLink({
         responses: {
           'post /password-reset-confirm': () => {
             if (attempt++ === 0) {
@@ -239,7 +258,7 @@ describe('Session', () => {
     })
 
     it('removes the token when the dialog is cancelled', async () => {
-      const { session, api } = createSession({
+      const { session, adminContext, api } = await createSessionWithLink({
         responses: {
           'get /session': { user: null },
           'post /login': { user: { ...user } }
@@ -250,6 +269,9 @@ describe('Session', () => {
         expect.objectContaining({ url: '/password-reset-confirm' })
       )
       expect(getPath()).toBe('/admin/books?page=2')
+      expect(adminContext.router.currentRoute.value.fullPath).toBe(
+        '/admin/books?page=2'
+      )
     })
   })
 
@@ -629,6 +651,32 @@ describe('Session', () => {
         url: '/confirm-access',
         data: { password: 'secret', code: '123456' }
       })
+    })
+
+    it('asks for the code again after a wrong one', async () => {
+      const { session, notify, dialogs } = await createConfirmingSession({
+        responses: {
+          'post /confirm-access': ({ code }) => {
+            if (code === '000000') {
+              throw Object.assign(new Error('Failed'), {
+                response: {
+                  status: 401,
+                  data: { message: 'Code is incorrect' }
+                }
+              })
+            }
+            return code ? success : { success: false, codeRequired: true }
+          }
+        },
+        accessConfirmations: [{ password: 'secret' }],
+        loginCodes: [{ code: '000000' }, { code: '123456' }]
+      })
+      expect(await session.confirmAccess()).toBe(true)
+      expect(dialogs.confirmAccess).toHaveBeenCalledOnce()
+      expect(dialogs.code).toHaveBeenCalledTimes(2)
+      expect(notify).toHaveBeenCalledWith(
+        expect.objectContaining({ text: 'Code is incorrect' })
+      )
     })
 
     it('ends when the code is cancelled', async () => {

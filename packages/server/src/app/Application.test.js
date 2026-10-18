@@ -15,8 +15,11 @@ import {
   isSQLiteTest
 } from '../../../../tests/utils/test-knex.ts'
 
-function createApp({ config, ...options } = {}) {
-  return new Application({
+function createApp(
+  { config, ...options } = {},
+  ApplicationClass = Application
+) {
+  return new ApplicationClass({
     ...options,
     config: {
       log: { silent: true },
@@ -887,6 +890,40 @@ describe('Application', () => {
       expect(deleted).toEqual(['Pantry', 'Fridge'])
       expect(onError).toHaveBeenCalledExactlyOnceWith(
         new Error('Pantry is locked')
+      )
+    })
+
+    it('waits for the error listeners', async () => {
+      const app = createApp({ models: createModels([]) })
+      const handled = []
+      app.on('error', async error => {
+        await new Promise(resolve => setTimeout(resolve, 0))
+        handled.push(error.message)
+      })
+      await app.deleteExpiredRecords()
+      expect(handled).toEqual(['Pantry is locked'])
+    })
+
+    it('emits the errors of overridden deletions while running', async () => {
+      class LockedApplication extends Application {
+        // @override
+        async deleteExpiredRecords() {
+          throw new Error('Kitchen is locked')
+        }
+      }
+      const app = createApp({}, LockedApplication)
+      const onError = vi.fn()
+      app.on('error', onError)
+      vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] })
+      try {
+        await app.start()
+        await vi.advanceTimersByTimeAsync(hour)
+        await app.stop()
+      } finally {
+        vi.useRealTimers()
+      }
+      expect(onError).toHaveBeenCalledExactlyOnceWith(
+        new Error('Kitchen is locked')
       )
     })
 

@@ -828,6 +828,8 @@ describe('ModelController', () => {
         '/books?offset=1',
         '/books?limit=1',
         '/books?range=0,1',
+        '/books?offset[]=1',
+        '/books?limit[]=1',
         `/books/${bestiary.id}?offset=1`
       ]) {
         const response = await request(path, { method: 'DELETE' })
