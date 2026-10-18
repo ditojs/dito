@@ -538,9 +538,7 @@ export default {
 `session.modelClass` names a model that stores the sessions in the database.
 Without it, the session is stored in the cookie. Further `session` options are
 passed on to [koa-session](https://github.com/koajs/session). Expired sessions
-are deleted by
-[`app.deleteExpiredRecords()`](../../api/server/application.md#deleteexpiredrecords),
-except those with `maxAge: 'session'`, which have no expiry.
+are deleted, see [`SessionMixin`](../../api/server/model.md#sessionmixin).
 
 The models use `SessionMixin` and `UserMixin`:
 
@@ -599,9 +597,9 @@ extra relations and `$verifyPassword()` isn't overridden.
 `authorize` on the controller doesn't apply to login, logout and session,
 which authenticate, so users can always log in; `self` follows it. Member
 actions are only allowed for the user themselves (`'$self'`) by default; the
-example also allows admins. If a subclass sets `collection.allow`, it has to
-list the routes above too, and `'post confirm-access'` for the member's
-`patch`, which needs it, see [Confirmed access](#confirmed-access):
+example also allows admins. A subclass that sets `collection.allow` lists the
+inherited routes too, and `'post confirm-access'` for the member's `patch`, see
+[`UsersController`](../../api/server/controllers.md#userscontroller):
 
 ```js
 collection = {
@@ -750,15 +748,12 @@ if (response.codeRequired) {
 const { user } = response
 ```
 
-Ten wrong codes in a row lock the account for 15 minutes.
 `'post confirm-access'` isn't transacted, also in transacted controllers, so
-that failed requests don't roll back the count of wrong codes: overrides of it
-need `transacted: false` too. `GET /users/totp` tells whether TOTP is set up
-and how many backup codes are left, and `DELETE /users/totp` turns it off, with
-[confirmed access](#confirmed-access). Only password logins through
-`'post login'` ask for the code, while `ctx.login(user)` logs in without it,
-e.g. to impersonate users. Users with TOTP can't log in with their password
-while the app doesn't register `TotpService`. The admin's login dialog asks for
+that failed requests don't roll back the count of wrong codes, which
+[lock the account](../../api/server/controllers.md#userscontroller): overrides
+of it need `transacted: false` too. `GET /users/totp` tells whether TOTP is set
+up and how many backup codes are left, and `DELETE /users/totp` turns it off,
+with [confirmed access](#confirmed-access). The admin's login dialog asks for
 the code, and with `TotpService` its account menu sets up and turns off TOTP,
 see [`DitoAdmin`](../../api/admin/admin.md#globalconfig).
 
@@ -799,8 +794,7 @@ export class Users extends UsersController {
 
 The token goes in the fragment of the URL, which browsers don't send to
 servers, also not in the `Referer` header. The page of the link reads it and
-posts it with the new password. The request answers with the same response and
-status whether the user exists or not:
+posts it with the new password:
 
 ```js
 await post('password-reset', { username })
@@ -815,10 +809,9 @@ of
 [`getPasswordResetTokenValues()`](../../api/server/controllers.md#getpasswordresettokenvalues).
 Links signed with the other keys stay valid, so new keys can be added in front
 while the old ones are rotated out.
-A link works until `expiresAfter`, or until one of these values changes: a
-login, a password change or a username change invalidates it, and the new hash
-makes each link work once. It doesn't log in: the user logs in with the new
-password afterwards, and changing the password ends their other sessions.
+A link works until `expiresAfter`, or until one of these values changes, so
+the new hash makes each link work once. The user logs in with the new password
+afterwards.
 Limit the rate of requests per client in the proxy in front of the app, like
 that of [logins](#users-and-sessions): there is no limit of emails per user.
 The admin adds the request to its login dialog, with `confirmUrl` pointing to
@@ -860,19 +853,16 @@ await post('confirm-access', {
 })
 ```
 
-Wrong codes count towards the lock of the account, as in logins. The `patch`
-and `put` actions of users controllers need it too, to set a password, also
-when admins set the passwords of other users, and to change the username, as
-password resets go to it. They answer 400 for bodies with the `hash`, while
-`post` creates users with a password without it. The admin asks to confirm the
-access whenever an action answers `confirmationRequired`, and then repeats the
-action.
+The `patch` and `put` actions of users controllers need it too, to set a
+password, also when admins set the passwords of other users, and to change the
+username, as password resets go to it, while `post` creates users with a
+password without it. The admin asks to confirm the access whenever an action
+answers `confirmationRequired`, and then repeats the action.
 
-Protect other changes the same way with `checkConfirmedAccess(ctx)`, which
-answers 401 without a login of a user of the controller's model, and 403 with
-`confirmationRequired` without confirmed access, e.g. for the `email` that the
-app sends the password resets to, or in the `authorize` of custom actions.
-`hasConfirmedAccess(ctx)` only tells whether the access is confirmed:
+Protect other changes the same way with
+[`checkConfirmedAccess(ctx)`](../../api/server/controllers.md#checkconfirmedaccess),
+e.g. for the `email` that the app sends the password resets to, or in the
+`authorize` of custom actions:
 
 ```js
 export class Users extends UsersController {

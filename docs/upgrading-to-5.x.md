@@ -21,8 +21,10 @@ covers its own changes. Check these in your app:
   expression indexes on them.
 - `toFindQuery()` leaves out the resolved value and the fetched graph of the
   write too, besides its `runAfter()` callbacks.
-- On MySQL, `insert()` and `insertAndFetch()` throw for arrays of models
-  without ids: insert these with `insertGraph()`.
+- `insert()` and `insertAndFetch()` insert arrays of models in one transaction
+  on all databases, and outside PostgreSQL through objection's own batches
+  instead of `insertGraph()`. On MySQL, they throw for arrays of models without
+  ids: insert these with `insertGraph()`.
 - A model listed twice in a many-to-many relation of a graph gets one join row.
 - In TypeScript, `patchAndFetch()`, `updateAndFetch()`, `upsert()` and
   `upsertAndFetch()` take objection's `PartialModelPatch` and
@@ -30,10 +32,11 @@ covers its own changes. Check these in your app:
   builders that extend dito's `QueryBuilder` declare `RebindType` instead of
   the five `*QueryBuilderType` members.
 - Validation errors of nested models in graphs have keys with slashes, e.g.
-  `chapters/1/title`, starting with the model's index for array input.
+  `chapters/1/title`, starting with the model's index for array input, e.g.
+  `1/chapters/1/title`.
 - Deletes and unrelates with `range`, `limit` or `offset` throw a
   `QueryBuilderError`, which collection and member `DELETE` requests answer
-  with 400.
+  with 400. With `offset`, they deleted all matching rows.
 
 ## Server
 
@@ -49,9 +52,9 @@ koa-passport:
   stay, see [Sessions](api/server/model.md#sessions).
 - Existing sessions stay valid: the session keeps the user under the same key
   as Passport did.
-- The session cookie defaults to `sameSite: 'lax'`. Admins on another site
-  than the server need `'none'`, see
-  [`config.app`](api/server/application.md#configapp).
+- The session cookie defaults to `sameSite: 'lax'`, see
+  [`config.app`](api/server/application.md#configapp) for admins on another
+  site than the server.
 - [`UsersController`](api/server/controllers.md#userscontroller) needs
   `app.session`, else its setup throws.
 - `UsersController` only treats users of its own model class as logged in, not
@@ -69,14 +72,13 @@ request errors, not even Koa's fallback: apps that turn it off log them in an
 ### Expired records
 
 Once started with `app.start()`, the application deletes expired records every
-hour, first one hour after the start, through
+hour through
 [`app.deleteExpiredRecords()`](api/server/application.md#deleteexpiredrecords),
 which calls [`deleteExpiredRecords()`](api/server/model.md#static-deleteexpiredrecords)
-on every model. `config.app.deleteExpiredRecordsEvery` changes the interval,
-`false` turns it off. Apps that don't call `app.start()`, e.g. with their own
-HTTP server through `app.callback()`, or that only run briefly, call
-`app.deleteExpiredRecords()` themselves or run `dito db:delete_expired_records`
-on a schedule, e.g. from cron.
+on every model. See
+[`config.app.deleteExpiredRecordsEvery`](api/server/application.md#configapp)
+for the interval, and for apps that don't call `app.start()` or only run
+briefly.
 
 ### Sessions
 
@@ -153,10 +155,11 @@ export async function down(knex) {
 - Only logged-in users of the controller's own model class can set passwords
   and change usernames through it, others get 401, also admins of another
   user model class.
-- Users controllers that route `patch`, `put`, `post` with `relate` or other
-  actions that need confirmed access also need `'post confirm-access'`, else
-  their setup throws: subclasses that set `collection.allow` add it to the
-  list, and `'post password'` for the admin's password change.
+- Users controllers that route actions that need confirmed access, e.g.
+  `patch`, also need `'post confirm-access'`, else their setup throws, see
+  [`UsersController`](api/server/controllers.md#userscontroller): subclasses
+  that set `collection.allow` add it to the list, and `'post password'` for the
+  admin's password change.
 - Changing a user's password ends their other sessions. The session of the
   request in which users change their own password stays logged in.
 
@@ -187,9 +190,5 @@ offers each one when the users controller at `api.users` in the server's
 - [Password reset](guide/server/controllers.md#password-reset) by email,
   through `app.authentication.passwordReset`.
 
-Passkeys and TOTP need [`config.app.name`](api/server/application.md#configapp),
-the name that passkey managers and authenticator apps show, sessions stored on
-the server, through `modelClass`, `store` or `ContextStore` in
-[`config.app.session`](api/server/application.md#configapp), and a model for
-the credentials in
-[`config.app.authentication`](api/server/application.md#configappauthentication).
+`PasskeyService` and `TotpService` list the configuration that they need, e.g.
+sessions stored on the server.
