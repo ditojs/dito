@@ -52,7 +52,8 @@ describe('Confirmed access', () => {
         keys: ['test-secret'],
         session: { modelClass: 'Session' },
         auth: {
-          credentials: { modelClass: 'Credential', secret: 'secret' },
+          credentials: { modelClass: 'Credential' },
+          secret: 'auth-secret',
           passkeys: {
             name: 'Example',
             id: 'example.com',
