@@ -11,7 +11,19 @@ export const SessionMixin = mixin(
 
         value: {
           type: 'object'
+        },
+
+        expiresAt: {
+          type: 'timestamp',
+          nullable: true,
+          index: true
         }
+      }
+
+      // @override
+      static async deleteExpiredRecords() {
+        await super.deleteExpiredRecords()
+        await this.query().where('expiresAt', '<', new Date()).delete()
       }
     }
 )

@@ -28,10 +28,10 @@ test.describe('model hooks', () => {
       files: [file2]
     })
 
+    // `deleteUnusedAfter` is 0, so the next run releases file1:
+    await AssetWidget.app!.deleteExpiredRecords()
     const asset1 = await Asset.query().findOne({ key: file1.key })
     const asset2 = await Asset.query().findOne({ key: file2.key })
-
-    // `cleanupTimeThreshold` is 0, so file1 is released right away:
     expect(asset1).toBeUndefined()
     expect(asset2!.count).toBe(1)
   })

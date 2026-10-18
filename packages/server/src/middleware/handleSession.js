@@ -67,7 +67,13 @@ const createSessionStore = modelClass =>
     }
 
     async set(id, value) {
-      await this.query().upsert({ ...this.modelClass.getReference(id), value })
+      // Sessions with `maxAge: 'session'` have no `_expire`:
+      const { _expire } = value
+      await this.query().upsert({
+        ...this.modelClass.getReference(id),
+        value,
+        expiresAt: _expire ? new Date(_expire) : null
+      })
     }
 
     async destroy(key) {

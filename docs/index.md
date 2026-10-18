@@ -60,4 +60,5 @@ Every public class, function and schema option:
 
 ## Upgrading
 
-Coming from 3.x? See [Upgrading to 4.x](upgrading-to-4.x.md).
+Coming from 3.x? See [Upgrading to 4.x](upgrading-to-4.x.md). Coming from 4.x?
+See [Upgrading to 5.x](upgrading-to-5.x.md).

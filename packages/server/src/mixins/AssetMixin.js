@@ -66,6 +66,12 @@ export const AssetMixin = mixin(
       }
 
       // @override
+      static async deleteExpiredRecords() {
+        await super.deleteExpiredRecords()
+        await this.app.releaseUnusedAssets()
+      }
+
+      // @override
       $parseJson(json, options = {}) {
         const { trusted = false } = options
         const { file, storage } = json

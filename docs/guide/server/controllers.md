@@ -537,8 +537,9 @@ export default {
 `session.modelClass` names a model that stores the sessions in the database.
 Without it, the session is stored in the cookie. Further `session` options are
 passed on to [koa-session](https://github.com/koajs/session). Expired sessions
-stay in the database: delete the rows whose `value._expire` lies in the past
-regularly. Sessions with `maxAge: 'session'` don't store `_expire`.
+are deleted by
+[`app.deleteExpiredRecords()`](../../api/server/application.md#deleteexpiredrecords),
+except those with `maxAge: 'session'`, which have no expiry.
 
 The models use `SessionMixin` and `UserMixin`:
 

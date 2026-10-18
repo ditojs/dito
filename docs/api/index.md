@@ -13,4 +13,5 @@ introductions and examples, see the guides in the [docs](../index.md).
 
 All packages are ES modules. Their entry points are listed on each package's
 page; anything not documented here is internal. For the changes since 3.x,
-see [Upgrading to 4.x](../upgrading-to-4.x.md).
+see [Upgrading to 4.x](../upgrading-to-4.x.md), since 4.x
+[Upgrading to 5.x](../upgrading-to-5.x.md).

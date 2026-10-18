@@ -77,8 +77,8 @@ export const test = base.extend<{ url: string }, { workerUrl: string }>({
               }
             },
             assets: {
-              cleanupTimeThreshold: '0s',
-              danglingTimeThreshold: '24h'
+              deleteUnusedAfter: '0s',
+              deleteUnsavedAfter: '24h'
             }
           }
         })

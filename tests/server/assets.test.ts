@@ -127,8 +127,7 @@ describe('asset handling with an Asset model', () => {
       'handleAddedAndRemovedAssets',
       'handleModifiedAssets',
       'addForeignAssets',
-      'createAssets',
-      'releaseUnusedAssets'
+      'createAssets'
     ] as const
     const spies = methodNames.map(name => vi.spyOn(app, name))
     try {
@@ -360,52 +359,58 @@ describe('Asset handling', () => {
     })
   })
 
-  describe('handleAddedAndRemovedAssets()', () => {
-    it('schedules the release of unused assets after the cleanup time', async () => {
-      const assets = app.config.assets!
-      const { cleanupTimeThreshold } = assets
-      assets.cleanupTimeThreshold = '1ms'
-      const release = vi.spyOn(app, 'releaseUnusedAssets')
-      try {
-        const [asset]: any[] = await app.createAssets(storage, [
-          await createUploadedFile('scheduled.txt', 'scheduled')
-        ])
-        await app.handleAddedAndRemovedAssets(storage, [asset.file], [], [])
-        expect(release).not.toHaveBeenCalled()
-        await vi.waitFor(() => expect(release).toHaveBeenCalledTimes(1))
-        expect(release).toHaveBeenLastCalledWith()
-      } finally {
-        assets.cleanupTimeThreshold = cleanupTimeThreshold
-        release.mockRestore()
-      }
-    })
-
-    it('schedules no release without cleanup time', async () => {
-      const assets = app.config.assets!
-      const { cleanupTimeThreshold } = assets
-      assets.cleanupTimeThreshold = 0
-      const release = vi.spyOn(app, 'releaseUnusedAssets')
-      try {
-        const [asset]: any[] = await app.createAssets(storage, [
-          await createUploadedFile('instant.txt', 'instant')
-        ])
-        await app.handleAddedAndRemovedAssets(storage, [], [asset.file], [])
-        // Give a wrongly scheduled release the time to happen.
-        await new Promise(resolve => setTimeout(resolve, 20))
-        expect(release).not.toHaveBeenCalled()
-      } finally {
-        assets.cleanupTimeThreshold = cleanupTimeThreshold
-        release.mockRestore()
-      }
-    })
-  })
-
   describe('releaseUnusedAssets()', () => {
+    const day = 24 * 60 * 60 * 1000
+
+    // Creates an asset without references that last changed two days ago,
+    // after its creation if it is unused, or at its creation if unsaved:
+    async function createExpiredAsset(name: string, isUnused: boolean) {
+      const file = await createUploadedFile(name, name)
+      await app.createAssets(storage, [file], 0)
+      const updatedAt = new Date(Date.now() - 2 * day)
+      const createdAt = isUnused ? new Date(Date.now() - 3 * day) : updatedAt
+      await Asset.knex()(Asset.tableName)
+        .where('key', file.key)
+        .update({ createdAt, updatedAt })
+      return file.key
+    }
+
+    it('runs through `app.deleteExpiredRecords()`', async () => {
+      const unusedKey = await createExpiredAsset('expired-unused.txt', true)
+      const unsavedKey = await createExpiredAsset('expired-unsaved.txt', false)
+      await app.deleteExpiredRecords()
+      for (const key of [unusedKey, unsavedKey]) {
+        expect(await Asset.query().findOne('key', key)).toBeUndefined()
+        expect(storage.dataByKey.has(key)).toBe(false)
+      }
+    })
+
+    it('keeps assets with `false` durations', async () => {
+      const unusedKey = await createExpiredAsset('kept-unused.txt', true)
+      const unsavedKey = await createExpiredAsset('kept-unsaved.txt', false)
+      const assets = app.config.assets!
+      const { deleteUnusedAfter, deleteUnsavedAfter } = assets
+      const getReleasedKeys = async () =>
+        (await app.releaseUnusedAssets()).map((asset: any) => asset.key)
+      try {
+        assets.deleteUnusedAfter = false
+        assets.deleteUnsavedAfter = false
+        expect(await getReleasedKeys()).toEqual([])
+        assets.deleteUnsavedAfter = '24h'
+        expect(await getReleasedKeys()).toEqual([unsavedKey])
+        assets.deleteUnusedAfter = '24h'
+        assets.deleteUnsavedAfter = false
+        expect(await getReleasedKeys()).toEqual([unusedKey])
+      } finally {
+        Object.assign(assets, { deleteUnusedAfter, deleteUnsavedAfter })
+      }
+    })
+
     it('removes unreferenced assets and their files', async () => {
       const file = await createUploadedFile('unused.txt', 'unused')
       await app.createAssets(storage, [file], 0)
       const released: any[] = await app.releaseUnusedAssets({
-        timeThreshold: 0
+        olderThan: 0
       })
       expect(released.map(asset => asset.key)).toContain(file.key)
       expect(storage.dataByKey.has(file.key)).toBe(false)
@@ -416,7 +421,7 @@ describe('Asset handling', () => {
       const file = await createUploadedFile('used.txt', 'used')
       await app.createAssets(storage, [file], 1)
       const released: any[] = await app.releaseUnusedAssets({
-        timeThreshold: 0
+        olderThan: 0
       })
       expect(released.map(asset => asset.key)).not.toContain(file.key)
       expect(await Asset.query().findOne('key', file.key)).toBeDefined()
@@ -433,7 +438,7 @@ describe('Asset handling', () => {
       app.on('error', onError)
       try {
         const released: any[] = await app.releaseUnusedAssets({
-          timeThreshold: 0
+          olderThan: 0
         })
         const asset = released.find(asset => asset.key === file.key)
         expect(asset?.error).toBe(error)
@@ -633,17 +638,17 @@ describe('asset reference counting', () => {
     return asset?.count
   }
 
-  async function withCleanupTimeThreshold(
-    threshold: string | number,
+  async function withDeleteUnusedAfter(
+    duration: string | number,
     callback: () => Promise<void>
   ) {
     const assets = app.config.assets!
-    const { cleanupTimeThreshold } = assets
-    assets.cleanupTimeThreshold = threshold
+    const { deleteUnusedAfter } = assets
+    assets.deleteUnusedAfter = duration
     try {
       await callback()
     } finally {
-      assets.cleanupTimeThreshold = cleanupTimeThreshold
+      assets.deleteUnusedAfter = deleteUnusedAfter
     }
   }
 
@@ -766,23 +771,24 @@ describe('asset reference counting', () => {
     expect(await getCount(file)).toBe(0)
   })
 
-  it('releases files right after their last reference without cleanup time', async () => {
-    await withCleanupTimeThreshold(0, async () => {
+  it('releases files at the next run after their last reference without delay', async () => {
+    await withDeleteUnusedAfter(0, async () => {
       const album = await Album.query().insertAndFetch({
         cover: await upload('released.jpg')
       })
       const { key } = album.cover!
       await Album.query().patchById(album.id, { cover: null })
+      expect(storage.dataByKey.has(key)).toBe(true)
+      await app.deleteExpiredRecords()
       expect(await Asset.query().findOne('key', key)).toBeUndefined()
       expect(storage.dataByKey.has(key)).toBe(false)
     })
   })
 
-  it('keeps unsaved uploads for the dangling time without cleanup time', async () => {
-    await withCleanupTimeThreshold(0, async () => {
+  it('keeps unsaved uploads for `deleteUnsavedAfter` without delay for unused ones', async () => {
+    await withDeleteUnusedAfter(0, async () => {
       const pending = await upload('pending.jpg')
-      // Saving any other files releases unused assets:
-      await Album.query().insert({ cover: await upload('saved.jpg') })
+      await app.deleteExpiredRecords()
       expect(await getCount(pending)).toBe(0)
       expect(storage.dataByKey.has(pending.key)).toBe(true)
       await Album.query().insert({ cover: pending })
@@ -790,7 +796,7 @@ describe('asset reference counting', () => {
     })
   })
 
-  it('keeps released files for the cleanup time', async () => {
+  it('keeps released files for `deleteUnusedAfter`', async () => {
     const album = await Album.query().insertAndFetch({
       cover: await upload('restored.jpg')
     })
@@ -948,17 +954,17 @@ describe('asset references', () => {
     return asset?.count
   }
 
-  async function withCleanupTimeThreshold(
-    threshold: string | number,
+  async function withDeleteUnusedAfter(
+    duration: string | number,
     callback: () => Promise<void>
   ) {
     const assets = app.config.assets!
-    const { cleanupTimeThreshold } = assets
-    assets.cleanupTimeThreshold = threshold
+    const { deleteUnusedAfter } = assets
+    assets.deleteUnusedAfter = duration
     try {
       await callback()
     } finally {
-      assets.cleanupTimeThreshold = cleanupTimeThreshold
+      assets.deleteUnusedAfter = deleteUnusedAfter
     }
   }
 
@@ -1067,14 +1073,15 @@ describe('asset references', () => {
   it('keeps referenced files and corrects their count', async () => {
     const warn = vi.spyOn(app.logger, 'warn').mockImplementation(() => {})
     try {
-      await withCleanupTimeThreshold(0, async () => {
+      await withDeleteUnusedAfter(0, async () => {
         const file = await upload('missed.jpg')
         const track = await Track.query().insertAndFetch({
           artwork: copy(file)
         })
         await insertWithoutHooks({ artwork: copy(file) })
-        // Removing the counted reference would release the file right away:
+        // Without the counted reference, the next run would release the file:
         await Track.query().deleteById(track.id)
+        await app.deleteExpiredRecords()
         expect(await getCount(file)).toBe(1)
         expect(storage.dataByKey.has(file.key)).toBe(true)
         expect(warn).toHaveBeenCalledWith(
@@ -1327,103 +1334,37 @@ describe('asset references', () => {
   })
 
   describe('in transactions', () => {
-    it('releases unused files once the transaction is committed', async () => {
-      await withCleanupTimeThreshold(0, async () => {
+    it('releases unused files after the transaction is committed', async () => {
+      await withDeleteUnusedAfter(0, async () => {
         const track = await Track.query().insertAndFetch({
           artwork: await upload('committed.jpg')
         })
         const { key } = track.artwork!
         await Track.transaction(async trx => {
           await Track.query(trx).patchById(track.id, { artwork: null })
-          expect(storage.dataByKey.has(key)).toBe(true)
         })
-        await vi.waitFor(() => expect(storage.dataByKey.has(key)).toBe(false))
+        await app.deleteExpiredRecords()
+        expect(storage.dataByKey.has(key)).toBe(false)
         expect(await Asset.query().findOne('key', key)).toBeUndefined()
       })
     })
 
     it('keeps the files of rolled back transactions', async () => {
-      await withCleanupTimeThreshold(0, async () => {
+      await withDeleteUnusedAfter(0, async () => {
         const track = await Track.query().insertAndFetch({
           artwork: await upload('rolled-back.jpg')
         })
         const { key } = track.artwork!
-        const release = vi.spyOn(app, 'releaseUnusedAssets')
-        try {
-          await expect(
-            Track.transaction(async trx => {
-              await Track.query(trx).patchById(track.id, { artwork: null })
-              throw new Error('Rolled back')
-            })
-          ).rejects.toThrow('Rolled back')
-          await vi.waitFor(() => expect(release).toHaveBeenCalledOnce())
-          await release.mock.results[0].value
-        } finally {
-          release.mockRestore()
-        }
+        await expect(
+          Track.transaction(async trx => {
+            await Track.query(trx).patchById(track.id, { artwork: null })
+            throw new Error('Rolled back')
+          })
+        ).rejects.toThrow('Rolled back')
+        await app.deleteExpiredRecords()
         expect(storage.dataByKey.has(key)).toBe(true)
         expect(await getCount(track.artwork!)).toBe(1)
       })
-    })
-
-    it('releases once for all writes of a transaction', async () => {
-      const first = await upload('first.jpg')
-      const second = await upload('second.jpg')
-      const release = vi.spyOn(app, 'releaseUnusedAssets')
-      try {
-        await Track.transaction(async trx => {
-          await Track.query(trx).insert({ artwork: first })
-          // Nested transactions are released with the outer one:
-          await Track.transaction(trx, async trx => {
-            await Track.query(trx).insert({ artwork: second })
-          })
-          expect(release).not.toHaveBeenCalled()
-        })
-        await vi.waitFor(() => expect(release).toHaveBeenCalledOnce())
-      } finally {
-        release.mockRestore()
-      }
-    })
-  })
-
-  describe('errors of releases', () => {
-    // Releases fail on database or storage errors, which we can't cause here:
-    function failReleases() {
-      return vi
-        .spyOn(app, 'releaseUnusedAssets')
-        .mockRejectedValue(new Error('Release failed'))
-    }
-
-    it('logs them after transactions without error listeners', async () => {
-      const file = await upload('logged.jpg')
-      const release = failReleases()
-      const logError = vi.spyOn(app, 'logError').mockImplementation(() => {})
-      try {
-        await Track.transaction(async trx => {
-          await Track.query(trx).insert({ artwork: file })
-        })
-        await vi.waitFor(() =>
-          expect(logError).toHaveBeenCalledWith(new Error('Release failed'))
-        )
-      } finally {
-        release.mockRestore()
-        logError.mockRestore()
-      }
-    })
-
-    it('emits them after writes, which they do not fail', async () => {
-      const file = await upload('emitted.jpg')
-      const release = failReleases()
-      const onError = vi.fn()
-      app.on('error', onError)
-      try {
-        const track = await Track.query().insertAndFetch({ artwork: file })
-        expect(track.artwork).toMatchObject({ key: file.key })
-        expect(onError).toHaveBeenCalledWith(new Error('Release failed'))
-      } finally {
-        app.off('error', onError)
-        release.mockRestore()
-      }
     })
   })
 

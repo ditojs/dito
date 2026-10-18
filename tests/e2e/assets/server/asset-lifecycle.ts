@@ -35,7 +35,8 @@ test.describe('asset lifecycle', () => {
       files: [file2]
     })
 
-    // `cleanupTimeThreshold` is 0, so file1 is released right away:
+    // `deleteUnusedAfter` is 0, so the next run releases file1:
+    await AssetWidget.app!.deleteExpiredRecords()
     const asset1 = await Asset.query().findOne({ key: file1.key })
     expect(asset1).toBeUndefined()
 
@@ -54,7 +55,8 @@ test.describe('asset lifecycle', () => {
 
     await AssetWidget.query().deleteById(id)
 
-    // `cleanupTimeThreshold` is 0, so the file is released right away:
+    // `deleteUnusedAfter` is 0, so the next run releases the file:
+    await AssetWidget.app!.deleteExpiredRecords()
     asset = await Asset.query().findOne({ key: fileObj.key })
     expect(asset).toBeUndefined()
   })
@@ -82,7 +84,7 @@ test.describe('asset lifecycle', () => {
   test('dangling cleanup removes old uploads', async ({ url }) => {
     const fileObj = await uploadViaApi(url)
 
-    // Backdate the never persisted upload past `danglingTimeThreshold`, via
+    // Backdate the never persisted upload past `deleteUnsavedAfter`, via
     // raw knex, as the TimestampedMixin hooks set `updatedAt` to now:
     await Asset.knex()
       .table(Asset.tableName)
@@ -105,7 +107,7 @@ test.describe('asset lifecycle', () => {
 
     // File was just uploaded (count=0) but
     // should NOT be cleaned up because
-    // danglingTimeThreshold is 24h
+    // deleteUnsavedAfter is 24h
     const app = AssetWidget.app!
     await app.releaseUnusedAssets()
 

@@ -207,16 +207,20 @@ or removed, and files can't be added from code or imported.
 ### Cleanup
 
 Files that no model references anymore are removed, along with their records,
-once they haven't changed for `config.assets.cleanupTimeThreshold`. Files that
+once they haven't changed for `config.assets.deleteUnusedAfter`. Files that
 were uploaded but never saved in a model are removed after
-`config.assets.danglingTimeThreshold`. Both default to 24 hours.
+`config.assets.deleteUnsavedAfter`. Both default to 24 hours, and `false` keeps
+the files.
 
-Dito.js checks for such files once writes of asset data are committed. Before
-removing a file, it checks that no data references it anymore, as writes that
-skip the model hooks, e.g. of scripts and seeds, don't count the references
-they add. To clean up on a schedule as well, call `app.releaseUnusedAssets()`,
-e.g. from a [service](services.md). `pnpm db:recount_assets` sets the counts to
-the references in the data again.
+These are minimum ages: the application checks for such files with
+[`app.deleteExpiredRecords()`](../../api/server/application.md#deleteexpiredrecords),
+every `config.app.deleteExpiredRecordsEvery` (one hour by default), and removes
+them at the first run after them. Before removing a file, it checks that no
+data references it anymore, as writes that skip the model hooks, e.g. of
+scripts and seeds, don't count the references they add. To remove unused
+files right away, e.g. from an admin action, call
+`app.releaseUnusedAssets({ olderThan: 0 })`. `pnpm db:recount_assets` sets the
+counts to the references in the data again.
 
 ## Adding files in code
 

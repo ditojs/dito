@@ -14,6 +14,9 @@ version, see the upgrade guides in `docs/`.
 - **server:** `UsersController` only treats users of its own model class as logged in, not users of its sub-classes.
 - **server:** `Controller.setup()` and `UserMixin.sessionQuery()` are internal: apps override `initialize()` and set `sessionScope` instead.
 - **server:** The session cookie defaults to `sameSite: 'lax'`, which `app.session.sameSite` overrides.
+- **server:** Session models need an `expiresAt` column: add it with a migration, see [Upgrading to 5.x](docs/upgrading-to-5.x.md#sessions).
+- **server:** Unused assets are released every hour instead of after writes of asset data, so `assets.deleteUnusedAfter: 0` releases them at the next run. Apps that release them on a schedule of their own can drop it.
+- **server:** `assets.cleanupTimeThreshold` and `danglingTimeThreshold` are renamed to `deleteUnusedAfter` and `deleteUnsavedAfter`, and the `timeThreshold` option of `app.releaseUnusedAssets()` to `olderThan`. `false` keeps the assets. Unknown asset options and invalid durations throw on startup.
 - **admin:** Dialogs validate their data on submit, like forms, and only resolve once it's valid.
 - **admin:** `@simplewebauthn/browser` and `lean-qr` are required peer dependencies of `@ditojs/admin`.
 
@@ -32,6 +35,7 @@ version, see the upgrade guides in `docs/`.
 - **admin:** `settings.minDuration` keeps dialogs visible for a minimum time.
 - **admin:** The `empty` option of lists shows a text while a list has no items.
 - **admin:** `context.reload()` reloads the items of the list or object that a component is in.
+- **server:** Apps that call `app.start()` delete expired records every hour, through `app.deleteExpiredRecords()` and `Model.deleteExpiredRecords()`: expired sessions and unused assets, and the records of apps' own models that override it. `config.app.deleteExpiredRecordsEvery` sets the interval, and `dito db:delete_expired_records` runs it once, e.g. from cron.
 
 ### Fixes
 

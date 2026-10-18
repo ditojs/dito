@@ -67,12 +67,10 @@ describe('Model asset hooks', () => {
       title: 'Soups'
     } as any)
     const handleAssets = vi.spyOn(app, 'handleAddedAndRemovedAssets')
-    const release = vi.spyOn(app, 'releaseUnusedAssets')
     await Cookbook.query().patchAndFetchById(cookbook.id, {
       title: 'Stews'
     } as any)
     expect(handleAssets).not.toHaveBeenCalled()
-    expect(release).not.toHaveBeenCalled()
   })
 
   it('handles the asset files of writes with asset data', async () => {
@@ -80,17 +78,8 @@ describe('Model asset hooks', () => {
       title: 'Soups'
     } as any)
     const handleAssets = vi.spyOn(app, 'handleAddedAndRemovedAssets')
-    // Release unused assets after the write, once the record stores the file:
-    const release = vi
-      .spyOn(app, 'releaseUnusedAssets')
-      .mockImplementation(async () => {
-        const stored = await Cookbook.query().findById(cookbook.id)
-        expect(stored?.cover).toMatchObject({ name: 'cover.txt' })
-        return []
-      })
     const cover = AssetFile.create({ name: 'cover.txt', data: 'cover' })
     await Cookbook.query().patchAndFetchById(cookbook.id, { cover } as any)
-    expect(release).toHaveBeenCalledOnce()
     expect(handleAssets).toHaveBeenCalledOnce()
     const [storage, addedFiles] = handleAssets.mock.calls[0]
     expect(storage.name).toBe('memory')

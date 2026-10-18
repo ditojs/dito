@@ -47,6 +47,13 @@ describe('Application', () => {
     expectTypeOf<ReturnType<App['releaseUnusedAssets']>>().toEqualTypeOf<
       Promise<Model[]>
     >()
+    expectTypeOf<App['releaseUnusedAssets']>().toBeCallableWith({
+      olderThan: 0
+    })
+    expectTypeOf<App['releaseUnusedAssets']>().toBeCallableWith({
+      // @ts-expect-error: `timeThreshold` is renamed to `olderThan`.
+      timeThreshold: 0
+    })
     expectTypeOf<ReturnType<App['getAssetReferences']>>().toEqualTypeOf<
       Promise<AssetReference[]>
     >()

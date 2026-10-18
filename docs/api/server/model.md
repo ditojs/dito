@@ -402,6 +402,23 @@ Counts the rows, with the arguments of
 [`count()`](https://vincit.github.io/objection.js/api/query-builder/other-methods.html#count).
 Returns `Promise<number>`.
 
+### `static` deleteExpiredRecords()
+
+```js
+export class Visit extends Model {
+  // Keep visits for 30 days:
+  static async deleteExpiredRecords() {
+    const date = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+    await this.query().where('createdAt', '<', date).delete()
+  }
+}
+```
+
+Deletes the model's expired records. Does nothing on `Model`; `SessionMixin`
+deletes expired sessions and `AssetMixin` releases unused assets.
+[`app.deleteExpiredRecords()`](application.md#deleteexpiredrecords) calls it on
+every model, every hour by default. Returns `Promise<void>`. *Hook.*
+
 ### `static` fromJson()
 
 ```js
@@ -1068,7 +1085,8 @@ export class Session extends SessionModel {}
 ```
 
 A model to store [koa-session](https://github.com/koajs/session) sessions in
-the database. Adds `id` (`string`, primary) and `value` (`object`). Use it with
+the database. Adds `id` (`string`, primary), `value` (`object`) and
+`expiresAt` (`timestamp`, nullable, indexed). Use it with
 `app.session.modelClass`, the model's name or class:
 
 ```js
@@ -1084,7 +1102,9 @@ const app = new Application({
 ```
 
 Sessions are read and written in the transaction of the request, if there is
-one.
+one. [`app.deleteExpiredRecords()`](application.md#deleteexpiredrecords)
+deletes sessions past their `expiresAt`. Sessions with `maxAge: 'session'` have
+no `expiresAt` and are never deleted, as only the browser knows when they end.
 
 ### CredentialMixin
 
@@ -1137,4 +1157,5 @@ It includes `TimestampedMixin` and adds:
 | `count`   | `integer`, unsigned, default `0`: the number of references to the file.     |
 
 See [`app.releaseUnusedAssets()`](application.md#releaseunusedassets) for how
-unused files are removed.
+unused files are removed, through
+[`app.deleteExpiredRecords()`](application.md#deleteexpiredrecords).
