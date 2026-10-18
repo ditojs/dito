@@ -147,10 +147,11 @@ class Editors extends UsersController {
   }
 }
 
-// Members whose patches answer without `hash`, as their scope omits it:
+// Members whose graph patches answer without `hash`, as their scope omits it:
 class Profiles extends UsersController {
   override modelClass = Member
   override scope = 'profile'
+  override graph = true
   override member: any = {
     allow: ['patch']
   }
@@ -546,6 +547,66 @@ describe('UsersController', () => {
       expect((await request('/members/session')).data.authenticated).toBe(true)
     })
 
+    it('keeps users who change their password', async () => {
+      const other = await loginOther()
+      const request = await loginOther()
+      const response = await request('/members/self', {
+        method: 'PATCH',
+        body: { password: 'changed' }
+      })
+      expect(response.status).toBe(200)
+      expect((await request('/members/session')).data.authenticated).toBe(true)
+      expect((await other('/members/session')).data.authenticated).toBe(false)
+    })
+
+    it('ends the sessions of users whose password admins change', async () => {
+      const request = await loginOther()
+      const admin = createClient(url)
+      await admin('/members/login', {
+        method: 'POST',
+        body: { username: 'ada', password: 'secret' }
+      })
+      const response = await admin(`/moderators/${other.id}`, {
+        method: 'PATCH',
+        body: { password: 'changed' }
+      })
+      expect(response.status).toBe(200)
+      expect((await admin('/members/session')).data.authenticated).toBe(true)
+      expect((await request('/members/session')).data.authenticated).toBe(false)
+    })
+
+    it('keeps users who change their password without their hash', async () => {
+      const other = await loginOther()
+      const request = await loginOther()
+      const response = await request('/profiles/self', {
+        method: 'PATCH',
+        body: { password: 'changed' }
+      })
+      expect(response.status).toBe(200)
+      expect(response.data).not.toHaveProperty('hash')
+      expect((await request('/members/session')).data.authenticated).toBe(true)
+      expect((await other('/members/session')).data.authenticated).toBe(false)
+    })
+
+    it(`doesn't keep sessions through other patches of the user`, async () => {
+      const request = await loginOther()
+      for (const path of ['/members/self', '/profiles/self']) {
+        const response = await request(path, {
+          method: 'PATCH',
+          body: { nickname: 'Bobo' }
+        })
+        expect(response.status).toBe(200)
+      }
+      const other = await loginOther()
+      const response = await other('/readers/password', {
+        method: 'POST',
+        body: { password: 'changed' }
+      })
+      expect(response.status).toBe(200)
+      expect((await other('/members/session')).data.authenticated).toBe(true)
+      expect((await request('/members/session')).data.authenticated).toBe(false)
+    })
+
     it('passes on errors of the session query', async context => {
       context.skip(isSQLiteTest, 'SQLite compares text with integer ids')
       const request = await loginOther()
@@ -643,28 +704,20 @@ describe('UsersController', () => {
     }
   })
 
-  it('only changes passwords through `post password`', async () => {
+  it('only changes passwords with confirmed access', async () => {
+    // Without a login, so without confirmed access:
     const request = createClient(url)
-    await request('/members/login', {
-      method: 'POST',
-      body: { username: 'ada', password: 'secret' }
-    })
     for (const [path, method, body] of [
-      ['/members/self', 'PATCH', { nickname: 'Countess', password: 'changed' }],
       [`/moderators/${member.id}`, 'PATCH', { password: 'changed' }],
       [`/moderators/${member.id}`, 'PUT', { username: 'ada', password: 'x' }],
       ['/moderators', 'PATCH', [{ id: member.id, password: 'changed' }]],
       ['/moderators', 'PUT', [{ id: member.id, password: 'changed' }]]
     ] as const) {
       const response = await request(path, { method, body })
-      expect(response.status).toBe(400)
-      expect(response.data).toEqual({
-        type: 'BodyValidation',
-        message: `Unable to change 'password' outside of 'post password'`
-      })
+      expect(response.status).toBe(403)
+      expect(response.data.confirmationRequired).toBe(true)
     }
     const stored = (await Member.query().findById(member.id))!
-    expect(stored.nickname).toBeNull()
     expect(await stored.$verifyPassword('secret')).toBe(true)
   })
 
@@ -690,7 +743,7 @@ describe('UsersController', () => {
       expect(response.status).toBe(400)
       expect(response.data).toEqual({
         type: 'BodyValidation',
-        message: `Unable to change 'hash' outside of 'post password'`
+        message: `Unable to change 'hash', change 'password' instead`
       })
     }
     const stored = (await Member.query().findById(member.id))!
@@ -703,7 +756,7 @@ describe('UsersController', () => {
     const request = createClient(url)
     for (const [body, status] of [
       [{ id: member.id, hash: 'pwned' }, 400],
-      [{ id: member.id, password: 'changed' }, 400],
+      [{ id: member.id, password: 'changed' }, 403],
       [{ id: member.id, username: 'eve' }, 403]
     ] as const) {
       const response = await request('/relaters', { method: 'POST', body })
@@ -823,10 +876,7 @@ describe('UsersController', () => {
     })
 
     it('changes the password of the user', async () => {
-      const response = await changePassword({
-        currentPassword: 'secret',
-        password: 'changed'
-      })
+      const response = await changePassword({ password: 'changed' })
       expect(response.status).toBe(200)
       expect(response.data).toEqual({ success: true })
       expect(await isPassword('changed')).toBe(true)
@@ -835,10 +885,7 @@ describe('UsersController', () => {
     it.each(['writers', 'sub-readers', 'sub-writers'])(
       'changes the password through the sub-class at /%s',
       async path => {
-        const response = await changePassword(
-          { currentPassword: 'secret', password: 'changed' },
-          path
-        )
+        const response = await changePassword({ password: 'changed' }, path)
         expect(response.status).toBe(200)
         expect(await isPassword('changed')).toBe(true)
       }
@@ -858,27 +905,17 @@ describe('UsersController', () => {
       })
       const response = await request('/readers/password', {
         method: 'POST',
-        body: { currentPassword: 'secret', password: 'changed' }
+        body: { password: 'changed' }
       })
       expect(response.status).toBe(200)
       expect((await request('/readers/session')).data.authenticated).toBe(true)
       expect((await other('/readers/session')).data.authenticated).toBe(false)
     })
 
-    it('rejects wrong current passwords', async () => {
-      const response = await changePassword({
-        currentPassword: 'wrong',
-        password: 'changed'
-      })
-      expect(response.status).toBe(400)
-      expect(response.data).toEqual({ message: 'Password is incorrect' })
-      expect(await isPassword('secret')).toBe(true)
-    })
-
     it('validates the new password', async () => {
       for (const [body, type] of [
-        [{ currentPassword: 'secret' }, 'ParameterValidation'],
-        [{ currentPassword: 'secret', password: 'short' }, 'ModelValidation']
+        [{}, 'ParameterValidation'],
+        [{ password: 'short' }, 'ModelValidation']
       ] as const) {
         const response = await changePassword(body)
         expect(response.status).toBe(400)
@@ -890,7 +927,7 @@ describe('UsersController', () => {
     it('rejects password changes without a login', async () => {
       const response = await createClient(url)('/readers/password', {
         method: 'POST',
-        body: { currentPassword: 'secret', password: 'changed' }
+        body: { password: 'changed' }
       })
       expect(response.status).toBe(401)
       expect(await isPassword('secret')).toBe(true)
@@ -964,6 +1001,27 @@ describe('Session cookie', () => {
     expect(cookies).not.toEqual([])
     for (const cookie of cookies) {
       expect(cookie).toContain(attribute)
+    }
+  })
+})
+
+describe('UsersController setup', () => {
+  it('requires sessions', async () => {
+    class User extends UserModel {}
+    class Users extends UsersController {
+      override modelClass = User
+    }
+    const app = createTestApp({
+      config: { app: { keys: ['test-secret'] } },
+      models: { User },
+      controllers: { Users }
+    })
+    try {
+      await expect(app.setup()).rejects.toThrow(
+        `Unable to log in users without sessions, see 'app.session'.`
+      )
+    } finally {
+      await app.knex.destroy()
     }
   })
 })

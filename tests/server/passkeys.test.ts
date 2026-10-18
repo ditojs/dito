@@ -738,7 +738,7 @@ describe('Passkeys setup', () => {
   })
 
   it('requires sessions stored on the server', async () => {
-    for (const session of [undefined, true, { maxAge: 1000 }]) {
+    for (const session of [true, { maxAge: 1000 }]) {
       await expect(setup({ session, auth: { credentials } })).rejects.toThrow(
         `Unable to use passkeys without sessions stored on the server, ` +
         `see 'app.session'.`

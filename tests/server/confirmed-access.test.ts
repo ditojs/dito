@@ -32,6 +32,15 @@ class Members extends UsersController {
   }
 }
 
+// Members that admins patch, also other members than themselves:
+class Admins extends UsersController {
+  override modelClass = Member
+  override member: any = {
+    allow: ['patch'],
+    authorize: { patch: true }
+  }
+}
+
 // Log in another user without 'post login', as apps do to impersonate users:
 class Impersonations extends Controller {
   override actions: any = {
@@ -66,7 +75,7 @@ describe('Confirmed access', () => {
     },
     services: { passkeys: PasskeyService, totp: TotpService },
     models: { Session, Credential, Member },
-    controllers: { Members, Impersonations }
+    controllers: { Members, Admins, Impersonations }
   })
 
   let url: string
@@ -129,9 +138,10 @@ describe('Confirmed access', () => {
     await post(request, 'totp'),
     await post(request, 'totp-confirm', { code: 'wrong' }),
     await request('/members/totp', { method: 'DELETE' }),
-    await post(request, 'password', {
-      currentPassword: 'secret',
-      password: 'secret'
+    await post(request, 'password', { password: 'secret' }),
+    await request('/members/self', {
+      method: 'PATCH',
+      body: { password: 'secret' }
     })
   ]
 
@@ -172,7 +182,7 @@ describe('Confirmed access', () => {
     const { passkey } = await registerPasskey(request)
     const responses = await requestChanges(request, passkey.id)
     expect(responses.map(({ status }) => status)).toEqual([
-      200, 400, 200, 200, 401, 200, 200
+      200, 400, 200, 200, 401, 200, 200, 200
     ])
   })
 
@@ -433,6 +443,67 @@ describe('Confirmed access', () => {
       const { request } = await loginWithPassword()
       expireAccess()
       expect((await patchSelf(request, { username: 'ada' })).status).toBe(200)
+    })
+  })
+
+  describe('password changes', () => {
+    const isPassword = async (username: string, password: string) =>
+      (await Member.query().findOne('username', username))!.$verifyPassword(
+        password
+      )
+
+    afterEach(async () => {
+      await Member.query().patch({ password: 'secret' } as any)
+    })
+
+    it('need confirmed access', async () => {
+      const { request } = await loginWithPassword()
+      expireAccess()
+      for (const method of ['PATCH', 'PUT']) {
+        const response = await request('/members/self', {
+          method,
+          body: { username: 'ada', password: 'changed' }
+        })
+        expect(response.status).toBe(403)
+        expect(response.data.confirmationRequired).toBe(true)
+      }
+      expect(await isPassword('ada', 'secret')).toBe(true)
+      await post(request, 'confirm-access', { password: 'secret' })
+      const patch = await request('/members/self', {
+        method: 'PATCH',
+        body: { password: 'changed' }
+      })
+      expect(patch.status).toBe(200)
+      expect(await isPassword('ada', 'changed')).toBe(true)
+      // The session of the request stays logged in:
+      expect((await post(request, 'passkey-options')).status).toBe(200)
+    })
+
+    it('let admins set the passwords of other users', async () => {
+      const other = await Member.query().insert({
+        username: 'bo',
+        password: 'secret'
+      } as any)
+      try {
+        const { request } = await loginWithPassword()
+        expireAccess()
+        const patch = () =>
+          request(`/admins/${other.id}`, {
+            method: 'PATCH',
+            body: { password: 'changed' }
+          })
+        expect((await patch()).status).toBe(403)
+        expect(await isPassword('bo', 'secret')).toBe(true)
+        await post(request, 'confirm-access', { password: 'secret' })
+        expect((await patch()).status).toBe(200)
+        expect(await isPassword('bo', 'changed')).toBe(true)
+        expect(await isPassword('ada', 'secret')).toBe(true)
+        expect((await request('/members/session')).data.authenticated).toBe(
+          true
+        )
+      } finally {
+        await Member.query().deleteById(other.id)
+      }
     })
   })
 

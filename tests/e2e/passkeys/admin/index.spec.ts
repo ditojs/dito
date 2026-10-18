@@ -82,7 +82,6 @@ test.describe('passkeys', () => {
     const security = await openSecurity(page)
     await security.getByRole('button', { name: 'Change', exact: true }).click()
     const dialog = page.getByRole('dialog', { name: 'Change Password' })
-    await dialog.getByLabel('Current Password').fill('secret')
     await dialog.getByLabel('New Password', { exact: true }).fill('changed')
     await dialog.getByLabel('Confirm New Password').fill('changed')
     await dialog.getByRole('button', { name: 'Change Password' }).click()

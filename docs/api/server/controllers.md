@@ -805,7 +805,9 @@ Extends [`ModelController`](#modelcontroller) for models with
 inherited actions, see [`allow`](#allow): a subclass that sets
 `collection.allow` has to list them too, e.g.
 `allow: ['get', 'post login', 'post logout', 'get session', 'get self']`, and
-`'post password'` to let users change their password.
+`'post password'` to let users change their password. Users controllers need
+`session` in [`config.app`](./application.md#configapp), else their setup
+throws.
 
 | Action               | Response |
 | -------------------- | ------------------------------------------------------- |
@@ -813,7 +815,7 @@ inherited actions, see [`allow`](#allow): a subclass that sets
 | `'post logout'`      | `{ success, authenticated }` |
 | `'get session'`      | `{ authenticated, user }` |
 | `'get self'`         | The authenticated user through `member.get`, or `null`. |
-| `'post password'`    | Changes the password of the authenticated user to `password` in the body, after verifying `currentPassword`: `{ success }`, or 400 if `currentPassword` is wrong. The new password is validated by the user model, e.g. its `minLength`. Needs confirmed access. |
+| `'post password'`    | Changes the password of the authenticated user to `password` in the body: `{ success }`. The new password is validated by the user model, e.g. its `minLength`. Needs confirmed access, but not a routed `patch`, which would let users change all their properties. |
 | `'post confirm-access'` | Confirms the access of the authenticated user with `{ password }`, plus `code` for users with TOTP, or with `{ passkey }`, the response of `startAuthentication()` for the options of `'post passkey-login-options'`: `{ success }`, `{ success: false, codeRequired: true }` without a code, or 401 with `'Password is incorrect'`, `'Code is incorrect'` or `'Passkey is incorrect'`. |
 
 Logins and `'post confirm-access'` confirm the access of the session for
@@ -823,11 +825,11 @@ it, `'post password'`, `'post passkey-options'`, `'post passkeys'`,
 `'delete totp'` answer 403 with
 `{ message: 'Confirmation required', confirmationRequired: true }`, see
 [Confirmed access](../../guide/server/controllers.md#confirmed-access), and so
-do `patch` and `put` actions that change the username.
+do `patch` and `put` actions that change the username or set the password,
+also of other users, e.g. by admins.
 `hasConfirmedAccess(ctx)` does the same for the `authorize` of other actions.
-The `patch`, `put` and `post` actions answer 400 for bodies with the `hash`,
-and `patch` and `put` also for bodies with the password. With `relate`, `post`
-treats users with ids like updates.
+The `patch`, `put` and `post` actions answer 400 for bodies with the `hash`.
+With `relate`, `post` treats users with ids like updates.
 
 With [`PasskeyService`](./service.md#passkeyservice) registered, users log in
 with passkeys and manage their own ones through these collection actions,
@@ -875,11 +877,11 @@ and `'post confirm-access'`, and missing or expired pending logins and setups
 status 400.
 Ten wrong codes in a row lock the account for 15 minutes, across pending
 logins and sessions: the tenth and all codes during the lock answer
-`'Too many attempts'` with status 400. Ten wrong codes in `'post totp-confirm'`
-end the setup the same way. Each TOTP code is accepted once, also the one that
-confirmed the setup and of concurrent requests, as well as the codes before
-and after the current one for clocks that drift. Each backup code is deleted
-once used. Passkey logins don't ask for codes. A subclass that sets
+`'Too many attempts'` with status 400. Wrong codes in `'post totp-confirm'`
+don't count, as the user already has the secret. Each TOTP code is accepted
+once, also the one that confirmed the setup and of concurrent requests, as well
+as the codes before and after the current one for clocks that drift. Each
+backup code is removed once used. Passkey logins don't ask for codes. A subclass that sets
 `collection.allow` has to list the TOTP actions too, else they aren't routed.
 
 With [`app.auth.passwordReset`](./application.md#configappauth), users who
@@ -906,10 +908,10 @@ Any change of a user's `hash` ends the sessions of the user. Sessions without a
 fingerprint of the password, from before fingerprints or from `ctx.login(user)`
 with users loaded without `hash`, get one on their next request: a change before
 that doesn't end them. The session of the
-request that changes the password stays logged in after `'post password'` and
-`'post password-reset-confirm'`. Elsewhere, e.g. in other controllers or custom
-actions, it ends too, unless the action logs the user in again with
-`ctx.login(user)` afterwards.
+request that changes the password stays logged in after `'post password'`,
+`patch`, `put` and `'post password-reset-confirm'`. Elsewhere, e.g. in other
+controllers or custom actions, it ends too, unless the action logs the user in
+again with `ctx.login(user)` afterwards.
 
 TOTP is only asked for by `'post login'`. `ctx.login(user)` logs in without
 it, by design, e.g. for impersonation or custom login flows. The credentials

@@ -737,11 +737,10 @@ const { user } = response
 ```
 
 Ten wrong codes in a row lock the account for 15 minutes.
-`'post confirm-access'` and `'post totp-confirm'` aren't transacted, also in
-transacted controllers, so that failed requests don't roll back the count of
-wrong codes: overrides of them need `transacted: false` too. `GET /users/totp`
-tells whether TOTP is set up and how many backup codes are left, and
-`DELETE /users/totp` turns it off, with
+`'post confirm-access'` isn't transacted, also in transacted controllers, so
+that failed requests don't roll back the count of wrong codes: overrides of it
+need `transacted: false` too. `GET /users/totp` tells whether TOTP is set up
+and how many backup codes are left, and `DELETE /users/totp` turns it off, with
 [confirmed access](#confirmed-access). Only password logins through
 `'post login'` ask for the code, while `ctx.login(user)` logs in without it,
 e.g. to impersonate users. Users with TOTP can't log in with their password
@@ -849,11 +848,11 @@ await post('confirm-access', {
 })
 ```
 
-Wrong codes count towards the lock of the account, as in logins. Passwords
-only change through `'post password'`: the `patch` and `put` actions of users
-controllers answer 400 for bodies with a password or its `hash`, while `post`
-still creates users with a password. Changing the username through them needs
-confirmed access, as password resets go to it. The admin asks to confirm the
+Wrong codes count towards the lock of the account, as in logins. The `patch`
+and `put` actions of users controllers need it too, to set a password, also
+when admins set the passwords of other users, and to change the username, as
+password resets go to it. They answer 400 for bodies with the `hash`, while
+`post` creates users with a password without it. The admin asks to confirm the
 access whenever an action answers `confirmationRequired`, and then repeats the
 action.
 

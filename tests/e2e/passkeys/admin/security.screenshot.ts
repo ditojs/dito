@@ -50,17 +50,15 @@ async function addPasskeys() {
 }
 
 // TOTP with all backup codes left. The login and the security dialog only check
-// that the credentials exist:
+// that the credential exists, and count its backup codes:
 async function addTotp() {
   const user = await User.query().findOne({ username: 'ada' })
-  for (const type of ['totp', ...Array(10).fill('backup-code')]) {
-    await Credential.query().insert({
-      type,
-      userModel: 'User',
-      userId: `${user!.id}`,
-      data: {}
-    } as any)
-  }
+  await Credential.query().insert({
+    type: 'totp',
+    userModel: 'User',
+    userId: `${user!.id}`,
+    data: { backupCodes: Array(10).fill('') }
+  } as any)
 }
 
 // The server creates a random secret for each setup, and only confirms codes
@@ -160,7 +158,9 @@ test.describe('screenshots', () => {
     const security = await openSecurity(page)
     await security.getByRole('button', { name: 'Change', exact: true }).click()
     const dialog = page.getByRole('dialog', { name: 'Change Password' })
-    await expect(dialog.getByLabel('Current Password')).toBeFocused()
+    await expect(
+      dialog.getByLabel('New Password', { exact: true })
+    ).toBeFocused()
     await expectScreenshot(page, 'change-password.png')
   })
 

@@ -48,16 +48,7 @@ export function showSecurityDialog(adminContext, { passkeys, totp }) {
             text: 'Change',
             async onClick({ showDialog, request, notify }) {
               const data = await showDialog({
-                components: {
-                  currentPassword: {
-                    type: 'password',
-                    label: 'Current Password',
-                    autocomplete: 'current-password',
-                    required: true,
-                    autofocus: true
-                  },
-                  ...createNewPasswordComponents()
-                },
+                components: createNewPasswordComponents({ autofocus: true }),
                 buttons: {
                   cancel: {},
                   change: { type: 'submit', text: 'Change Password' }
@@ -65,10 +56,9 @@ export function showSecurityDialog(adminContext, { passkeys, totp }) {
                 settings: { label: 'Change Password' }
               })
               if (data) {
-                const { currentPassword, password } = data
                 await request({
                   resource: users.password,
-                  data: { currentPassword, password }
+                  data: { password: data.password }
                 })
                 notify({ type: 'success', text: 'Your password was changed.' })
               }

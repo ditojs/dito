@@ -298,7 +298,7 @@ describe('Password reset', () => {
     const token = await getToken()
     const response = await request('/members/password', {
       method: 'POST',
-      body: { currentPassword: 'secret', password: 'changed' }
+      body: { password: 'changed' }
     })
     expect(response.status).toBe(200)
     expect((await confirmReset(token, 'another')).status).toBe(400)
