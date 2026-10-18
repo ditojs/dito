@@ -49,11 +49,15 @@ export function showSecurityDialog(adminContext) {
               text: 'Change',
               async onClick({ showDialog, request, notify }) {
                 const data = await showDialog({
-                  components: createNewPasswordComponents({ autofocus: true }),
+                  components: {
+                    username: usernameComponent,
+                    ...createNewPasswordComponents({ autofocus: true })
+                  },
                   buttons: {
                     cancel: {},
                     change: { type: 'submit', text: 'Change Password' }
                   },
+                  data: { username: adminContext.user.username },
                   settings: { label: 'Change Password' }
                 })
                 if (data) {
@@ -352,9 +356,10 @@ export function createNewPasswordDialog() {
 
 // The confirm access dialog resolves to the password, or to `'passkey'` to
 // confirm the access with a passkey:
-export function createConfirmAccessDialog(authentication) {
+export function createConfirmAccessDialog(authentication, user) {
   return {
     components: {
+      username: usernameComponent,
       password: {
         type: 'password',
         label: 'Password',
@@ -377,8 +382,18 @@ export function createConfirmAccessDialog(authentication) {
         text: 'Cancel'
       }
     },
+    data: { username: user.username },
     settings: { label: 'Confirm Access' }
   }
+}
+
+// Password managers need the username of password dialogs to know whose
+// password it is, so dialogs about the logged-in user pass it on hidden:
+const usernameComponent = {
+  type: 'text',
+  autocomplete: 'username',
+  readonly: true,
+  visible: false
 }
 
 // The new password and its confirmation, of the Security dialog and of password

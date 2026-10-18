@@ -152,12 +152,19 @@ export class Session {
   async confirmAccess(): Promise<boolean> {
     const data = await this.#adminContext.showDialog<
       { password: string } | 'passkey'
-    >(createConfirmAccessDialog(this.#adminContext.authentication))
+    >(
+      createConfirmAccessDialog(
+        this.#adminContext.authentication,
+        this.#adminContext.user
+      )
+    )
     if (data) {
       try {
         const { users } = this.#api
         const body =
-          data === 'passkey' ? { passkey: await this.#getPasskey() } : data
+          data === 'passkey'
+            ? { passkey: await this.#getPasskey() }
+            : { password: data.password }
         let response = await this.#request(users.confirmAccess, body)
         if (response.data.codeRequired) {
           const codeData = await this.#adminContext.showDialog<{

@@ -72,9 +72,9 @@ function createSession({
   }
   const notify = vi.fn()
   adminContext.attachDialogsAndNotifications({
-    showDialog: ({ buttons }) => {
-      const key = Object.keys(submitButtons).find(key => key in buttons)
-      return dialogs[submitButtons[key]]()
+    showDialog: dialog => {
+      const key = Object.keys(submitButtons).find(key => key in dialog.buttons)
+      return dialogs[submitButtons[key]](dialog)
     },
     notify
   })
@@ -585,12 +585,26 @@ describe('Session', () => {
   describe('confirmAccess()', () => {
     const success = { success: true }
 
+    // Access is only confirmed for logged-in users:
+    async function createConfirmingSession({ responses, ...options }) {
+      const result = createSession({
+        ...options,
+        responses: { 'get /session': { user: { ...user } }, ...responses }
+      })
+      await result.session.start()
+      return result
+    }
+
     it('confirms the access with the password', async () => {
-      const { session, api } = createSession({
+      const { session, api, dialogs } = await createConfirmingSession({
         responses: { 'post /confirm-access': success },
         accessConfirmations: [{ password: 'secret' }]
       })
       expect(await session.confirmAccess()).toBe(true)
+      // Password managers get the username, the server only the password:
+      expect(dialogs.confirmAccess.mock.calls[0][0].data).toEqual({
+        username: 'tester'
+      })
       expect(api.request).toHaveBeenLastCalledWith({
         method: 'post',
         url: '/confirm-access',
@@ -600,7 +614,7 @@ describe('Session', () => {
 
     it('asks users with TOTP for the code after the password', async () => {
       let attempt = 0
-      const { session, api, dialogs } = createSession({
+      const { session, api, dialogs } = await createConfirmingSession({
         responses: {
           'post /confirm-access': () =>
             ++attempt === 1 ? { success: false, codeRequired: true } : success
@@ -618,7 +632,7 @@ describe('Session', () => {
     })
 
     it('ends when the code is cancelled', async () => {
-      const { session, dialogs } = createSession({
+      const { session, dialogs } = await createConfirmingSession({
         responses: {
           'post /confirm-access': { success: false, codeRequired: true }
         },
@@ -630,7 +644,7 @@ describe('Session', () => {
     })
 
     it('confirms the access with a passkey', async () => {
-      const { session, api } = createSession({
+      const { session, api } = await createConfirmingSession({
         responses: {
           'post /passkey-login-options': { challenge: 'challenge' },
           'post /confirm-access': success
@@ -646,7 +660,7 @@ describe('Session', () => {
     })
 
     it('asks again after failures, until the user cancels', async () => {
-      const { session, notify, dialogs } = createSession({
+      const { session, notify, dialogs } = await createConfirmingSession({
         responses: {
           'post /confirm-access': Object.assign(new Error('Failed'), {
             response: {

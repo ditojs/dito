@@ -152,6 +152,33 @@ describe('DitoTypeText', () => {
     })
   })
 
+  it('keeps password managers out of fields that are not about logins', async () => {
+    const { findField } = await mountSchema({
+      schema: {
+        components: {
+          username: { type: 'text' },
+          email: { type: 'email', autocomplete: 'off' },
+          login: { type: 'text', autocomplete: 'username' },
+          password: { type: 'password', autocomplete: 'new-password' }
+        }
+      }
+    })
+    const ignore = {
+      'data-1p-ignore': '',
+      'data-lpignore': 'true',
+      'data-bwignore': '',
+      'data-form-type': 'other'
+    }
+    const attributes = name => findField(name).find('input').attributes()
+    expect(attributes('username')).toMatchObject(ignore)
+    expect(attributes('email')).toMatchObject(ignore)
+    for (const name of ['login', 'password']) {
+      for (const key in ignore) {
+        expect(attributes(name)).not.toHaveProperty(key)
+      }
+    }
+  })
+
   it('uses the text of label objects as the title of the input', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const { findField } = await mountSchema({
