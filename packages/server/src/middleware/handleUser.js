@@ -1,4 +1,8 @@
-import { createHash } from 'node:crypto'
+import {
+  getPasswordFingerprint,
+  getUserIdentifier,
+  parseUserIdentifier
+} from '../utils/auth.js'
 
 export function handleUser() {
   return async (ctx, next) => {
@@ -81,33 +85,4 @@ export function handleUser() {
     // Don't set back `ctx.logger` because the context is still valid. It is
     // used in `logResponse()` of the `logRequests()` middleware, among others.
   }
-}
-
-// To support multiple user model classes, sessions identify users by both their
-// model class name and id:
-export function getUserIdentifier(user) {
-  return `${user.constructor.name}-${user.$id()}`
-}
-
-export function parseUserIdentifier(identifier) {
-  // Only split at the first hyphen, since ids may contain hyphens (UUIDs):
-  const [, modelName, id] = identifier.match(/^([^-]+)-(.+)$/) ?? []
-  return { modelName, id }
-}
-
-// Keep the session of a user that changed their password, while their other
-// sessions end:
-export function updatePasswordFingerprint(ctx, user) {
-  const { passport } = ctx.session ?? {}
-  if (passport?.user === getUserIdentifier(user)) {
-    passport.passwordFingerprint = getPasswordFingerprint(user)
-  }
-}
-
-// Sessions can be stored in cookies, so they store a hash of the password hash,
-// not the hash itself:
-function getPasswordFingerprint(user) {
-  return user.hash
-    ? createHash('sha256').update(user.hash).digest('base64url')
-    : null
 }

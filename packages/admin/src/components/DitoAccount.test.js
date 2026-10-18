@@ -123,8 +123,9 @@ describe('DitoAccount', () => {
 
   describe('security', () => {
     // A server with passkeys, which adds and deletes them, and changes the
-    // password 'secret'. Without `isConfirmed`, the changes need the access
-    // confirmed with the password first. `login` sets the admin's options:
+    // password to one of at least 6 characters. Without `isConfirmed`, the
+    // changes need the access confirmed with the password first. `login` sets
+    // the admin's options:
     const mountWithPasskeys = async ({
       login = { passkeys: true },
       passkeys = [
@@ -181,11 +182,11 @@ describe('DitoAccount', () => {
           passkeys = passkeys.filter(passkey => passkey.id !== 1)
           return { data: { success: true } }
         } else if (url === '/users/password' && method === 'post') {
-          if (data.currentPassword !== 'secret') {
+          if (data.password.length < 6) {
             throw Object.assign(new Error('Request failed'), {
               response: {
                 status: 400,
-                data: { message: 'Password is incorrect' }
+                data: { message: 'The provided data is not valid' }
               }
             })
           }
@@ -381,7 +382,6 @@ describe('DitoAccount', () => {
         await flushPromises()
         const dialog = getLastDialog(admin)
         for (const [name, value] of Object.entries({
-          currentPassword: 'secret',
           password: 'changed',
           confirmation: 'changed'
         })) {
@@ -421,7 +421,6 @@ describe('DitoAccount', () => {
         expect(security.findAll('.dito-object')).toHaveLength(1)
         expect(security.find('.dito-list').exists()).toBe(false)
         await changePassword(admin, {
-          currentPassword: 'secret',
           password: 'changed',
           confirmation: 'changed'
         })
@@ -433,7 +432,7 @@ describe('DitoAccount', () => {
           expect.objectContaining({
             method: 'post',
             url: '/users/password',
-            data: { currentPassword: 'secret', password: 'changed' }
+            data: { password: 'changed' }
           })
         )
         expect(notify).toHaveBeenCalledWith(
@@ -450,14 +449,14 @@ describe('DitoAccount', () => {
         expect(row.text()).toBe('••••••••Change')
       })
 
-      it('asks for the current and the new password', async () => {
+      it('asks for the new password only', async () => {
         const { admin } = await mountWithPasskeys()
         await findButton(admin, 'Change').trigger('click')
         await flushPromises()
         const dialog = getLastDialog(admin)
         const getAutocomplete = name =>
           dialog.find(`input[name="${name}"]`).attributes('autocomplete')
-        expect(getAutocomplete('currentPassword')).toBe('current-password')
+        expect(dialog.findAll('input[type="password"]')).toHaveLength(2)
         expect(getAutocomplete('password')).toBe('new-password')
         expect(getAutocomplete('confirmation')).toBe('new-password')
       })
@@ -466,7 +465,6 @@ describe('DitoAccount', () => {
         const { admin, request } = await mountWithPasskeys()
         const notify = vi.spyOn(admin.context, 'notify')
         await changePassword(admin, {
-          currentPassword: 'secret',
           password: 'changed',
           confirmation: 'changed'
         })
@@ -474,7 +472,7 @@ describe('DitoAccount', () => {
           expect.objectContaining({
             method: 'post',
             url: '/users/password',
-            data: { currentPassword: 'secret', password: 'changed' }
+            data: { password: 'changed' }
           })
         )
         expect(notify).toHaveBeenCalledWith(
@@ -488,7 +486,6 @@ describe('DitoAccount', () => {
       it(`doesn't submit a confirmation that doesn't match`, async () => {
         const { admin, request } = await mountWithPasskeys()
         const dialog = await changePassword(admin, {
-          currentPassword: 'secret',
           password: 'changed',
           confirmation: 'chagned'
         })
@@ -498,15 +495,14 @@ describe('DitoAccount', () => {
         )
       })
 
-      it('reports wrong current passwords', async () => {
+      it('reports invalid passwords', async () => {
         const { admin } = await mountWithPasskeys()
         const notify = vi
           .spyOn(admin.context, 'notify')
           .mockImplementation(() => {})
         await changePassword(admin, {
-          currentPassword: 'wrong',
-          password: 'changed',
-          confirmation: 'changed'
+          password: 'short',
+          confirmation: 'short'
         })
         expect(notify).toHaveBeenCalledWith(
           expect.objectContaining({ type: 'error' })

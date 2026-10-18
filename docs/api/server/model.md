@@ -1056,8 +1056,8 @@ user model classes can be used side by side. When a session is loaded, the
 user is fetched with the `sessionScope` and set as `ctx.state.user`; users that
 no longer exist, that the session scope excludes, or whose `hash` changed since
 the login, end the session. The session stores a hash of `hash` for this, and
-`UsersController` updates it when users change their own password, so their
-own session stays logged in.
+`UsersController` only updates it when the session's user changes their own
+password through its actions, so that this session stays logged in.
 `ctx.login(user, { session: false })` logs a user in for the request only, and
 `ctx.isAuthenticated()` tells whether the request has a user.
 
@@ -1119,12 +1119,12 @@ the model's name or class, see [`config.app`](application.md#configapp).
 
 | Property     | Description                                                                 |
 | ------------ | --------------------------------------------------------------------------- |
-| `type`       | `string`, required: `'passkey'`, `'totp'`, one per user, or `'backup-code'`, ten per user with TOTP. |
+| `type`       | `string`, required: `'passkey'`, or `'totp'`, one per user.                |
 | `userModel`  | `string`, required: the name of the user's model class.                     |
 | `userId`     | `string`, required: the id of the user, also of integer ids.                |
 | `key`        | `string`, nullable, unique per `userModel`: the credential id of passkeys. |
 | `name`       | `string`, nullable: the name of the provider of passkeys, e.g. `'1Password'`. |
-| `data`       | `object`, hidden: the public key, signature counter and transports of passkeys, the encrypted secret and the time step of the last accepted code of TOTP, the hash of backup codes. |
+| `data`       | `object`, hidden: the public key, signature counter and transports of passkeys, the encrypted secret and the time step of the last accepted code of TOTP, along with the hashes of its unused backup codes. |
 | `createdAt`  | `timestamp`, set on insert.                                                 |
 | `lastUsedAt` | `timestamp`, nullable: the time of the last login with the credential.     |
 

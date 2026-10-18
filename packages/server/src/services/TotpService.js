@@ -7,8 +7,11 @@ import {
 } from 'node:crypto'
 import { Service } from './Service.js'
 import { AuthenticationError, ResponseError } from '../errors/index.js'
-import { getUserIdentifier } from '../middleware/handleUser.js'
-import { authTimeout, getTotpQuery } from '../utils/auth.js'
+import {
+  authTimeout,
+  getTotpQuery,
+  getUserIdentifier
+} from '../utils/auth.js'
 import { importPeer } from '../utils/module.js'
 
 export class TotpService extends Service {
@@ -29,11 +32,7 @@ export class TotpService extends Service {
   // and keep it in the session until the user confirms it with a code:
   createSecret(ctx, user) {
     const { base32: secret } = new this.#otpAuth.Secret()
-    ctx.session.totpSetup = {
-      secret,
-      expires: Date.now() + authTimeout,
-      failures: 0
-    }
+    ctx.session.totpSetup = { secret, expires: Date.now() + authTimeout }
     return { uri: this.#createTotp(user, secret).toString(), secret }
   }
 
@@ -47,7 +46,7 @@ export class TotpService extends Service {
         status: 400
       })
     }
-    if (await getTotpQuery(user, ctx.transaction).findOne({ type: 'totp' })) {
+    if (await getTotpQuery(user, ctx.transaction).first()) {
       throw new ResponseError({
         message: 'TOTP is already set up',
         status: 409
@@ -62,47 +61,34 @@ export class TotpService extends Service {
         const code = randomBytes(5).toString('hex')
         return `${code.slice(0, 5)}-${code.slice(5)}`
       })
-      // Store the credentials all together or not at all:
-      const { credentialClass } = user.constructor
-      await credentialClass.transaction(ctx.transaction, async trx => {
-        // Batch inserts only work on PostgreSQL:
-        for (const [type, data] of [
+      await user.constructor.credentialClass.query(ctx.transaction).insert({
+        type: 'totp',
+        userModel: user.constructor.name,
+        userId: `${user.$id()}`,
+        data: {
+          secret: encrypt(key, secret, user),
           // The confirmed code can't be used again:
-          ['totp', { secret: encrypt(key, secret, user), step }],
-          ...backupCodes.map(code => [
-            'backup-code',
-            { hash: hashBackupCode(key, code) }
-          ])
-        ]) {
-          await credentialClass.query(trx).insert({
-            type,
-            userModel: user.constructor.name,
-            userId: `${user.$id()}`,
-            data
-          })
+          step,
+          backupCodes: backupCodes.map(code => hashBackupCode(key, code))
         }
       })
       delete ctx.session.totpSetup
       return backupCodes
-    } else if (++totpSetup.failures >= maxCodeFailures) {
-      // The setup starts over after too many wrong codes:
-      delete ctx.session.totpSetup
-      throw createTooManyAttemptsError()
     } else {
+      // Wrong codes don't count, as the user already knows the secret.
       throw new AuthenticationError('Code is incorrect')
     }
   }
 
   // Verify a TOTP code, or consume a backup code of the user. Too many wrong
-  // codes in a row lock the account for a while. The credentials stay locked
-  // meanwhile, so that concurrent requests can't use the same code or miss a
-  // failure:
+  // codes in a row lock the account for a while. The TOTP credential stays
+  // locked meanwhile, so that concurrent requests can't use the same code or
+  // miss a failure:
   async verifyCode(ctx, user, code) {
     const key = this.config.secret
     const { isValid, isLocked } = await user.constructor.credentialClass
       .transaction(ctx.transaction, async trx => {
-        const credentials = await getTotpQuery(user, trx).forUpdate()
-        const totp = credentials.find(({ type }) => type === 'totp')
+        const totp = await getTotpQuery(user, trx).forUpdate().first()
         if (totp) {
           const { data } = totp
           if (data.lockedUntil > Date.now()) {
@@ -113,21 +99,19 @@ export class TotpService extends Service {
             code
           )
           const hash = hashBackupCode(key, code)
-          const backupCode = credentials.find(
-            ({ type, data }) => type === 'backup-code' && data.hash === hash
-          )
-          // Each code is only accepted once, and backup codes are deleted:
+          // Each code is only accepted once, and backup codes are removed:
           const isTotpCode = step !== null && step > data.step
-          const isValid = isTotpCode || !!backupCode
-          if (backupCode && !isTotpCode) {
-            await backupCode.$query(trx).delete()
-          }
+          const isBackupCode = !isTotpCode && data.backupCodes.includes(hash)
+          const isValid = isTotpCode || isBackupCode
           const failures = isValid ? 0 : (data.failures ?? 0) + 1
           const isLocked = failures >= maxCodeFailures
           await totp.$query(trx).patch({
             data: {
               ...data,
               step: isTotpCode ? step : data.step,
+              backupCodes: isBackupCode
+                ? data.backupCodes.filter(backupCode => backupCode !== hash)
+                : data.backupCodes,
               // The count starts anew once the lock ends:
               failures: isLocked ? 0 : failures,
               lockedUntil: isLocked ? Date.now() + codeLockTime : null
@@ -141,7 +125,12 @@ export class TotpService extends Service {
       })
     // Throw after the transaction, which keeps the failures:
     if (isLocked) {
-      throw createTooManyAttemptsError()
+      // The attempt that uses up the limit answers it too, so that clients
+      // don't ask for another code:
+      throw new AuthenticationError({
+        message: 'Too many attempts',
+        status: 400
+      })
     }
     if (!isValid) {
       throw new AuthenticationError('Code is incorrect')
@@ -167,12 +156,6 @@ const backupCodeCount = 10
 // The lengths of the IV and the authentication tag of AES-256-GCM:
 const ivLength = 12
 const tagLength = 16
-
-// The attempt that uses up the limit answers it too, so that clients don't ask
-// for another code:
-function createTooManyAttemptsError() {
-  return new AuthenticationError({ message: 'Too many attempts', status: 400 })
-}
 
 // Return the time step of a valid code, or `null`. Accept the previous and the
 // next code too, for clocks that drift:

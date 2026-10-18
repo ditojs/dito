@@ -13,8 +13,6 @@ import { createClient } from '../utils/client.js'
 import { createTestDatabase } from '../utils/database.js'
 
 const loginEvents: string[] = []
-// The number of credential inserts that succeed before one fails:
-let insertsBeforeFailure = Infinity
 
 class Session extends SessionModel {
   declare value: Record<string, any>
@@ -27,15 +25,6 @@ class Credential extends CredentialModel {
   declare userId: string
   declare data: Record<string, any>
   declare lastUsedAt: Date | null
-
-  // Fail an insert on request, as database errors can't be caused otherwise:
-  static override hooks: any = {
-    'before:insert'() {
-      if (insertsBeforeFailure-- === 0) {
-        throw new Error('Unable to insert')
-      }
-    }
-  }
 }
 
 class Member extends UserModel {
@@ -160,7 +149,6 @@ describe('TOTP', () => {
 
   afterEach(async () => {
     loginEvents.length = 0
-    insertsBeforeFailure = Infinity
     await app.knex('Session').del()
     await app.knex('Credential').del()
   })
@@ -204,14 +192,18 @@ describe('TOTP', () => {
       backupCodes: 10
     })
 
-    // The secret is stored encrypted, and the backup codes hashed:
+    // The secret is stored encrypted, and the backup codes hashed, all in one
+    // credential:
     const credentials = await Credential.query()
-    const [credential] = credentials.filter(({ type }) => type === 'totp')
+    expect(credentials).toHaveLength(1)
+    const [credential] = credentials
     expect(credential).toMatchObject({
+      type: 'totp',
       userModel: 'Member',
       userId: `${member.id}`
     })
-    const stored = JSON.stringify(credentials.map(({ data }) => data))
+    expect(credential.data.backupCodes).toHaveLength(10)
+    const stored = JSON.stringify(credential.data)
     expect(stored).not.toContain(setup.data.secret)
     for (const code of backupCodes) {
       expect(stored).not.toContain(code.replace('-', ''))
@@ -226,55 +218,22 @@ describe('TOTP', () => {
     expect(again.data.message).toBe('Missing or expired TOTP setup')
   })
 
-  it('ends setups after too many wrong codes', async () => {
+  it('keeps setups after wrong codes, also in transacted controllers', async () => {
     const { request } = await loginWithPassword()
-    const setup = await request('/members/totp', { method: 'POST' })
+    const setup = await request('/transacted-members/totp', { method: 'POST' })
     const confirm = (code: string) =>
-      request('/members/totp-confirm', { method: 'POST', body: { code } })
-    for (let i = 1; i < 10; i++) {
-      expect((await confirm('wrong')).status).toBe(401)
-    }
-    const last = await confirm('wrong')
-    expect(last.status).toBe(400)
-    expect(last.data.message).toBe('Too many attempts')
-    const totp = new TOTP({ secret: setup.data.secret })
-    const again = await confirm(totp.generate())
-    expect(again.data.message).toBe('Missing or expired TOTP setup')
-    expect(await Credential.query()).toEqual([])
-  })
-
-  it('ends setups after too many wrong codes in transacted controllers', async () => {
-    const { request } = await loginWithPassword()
-    await request('/transacted-members/totp', { method: 'POST' })
-    for (let i = 1; i < 10; i++) {
-      const confirm = await request('/transacted-members/totp-confirm', {
+      request('/transacted-members/totp-confirm', {
         method: 'POST',
-        body: { code: 'wrong' }
+        body: { code }
       })
-      expect(confirm.status).toBe(401)
+    for (let i = 0; i < 20; i++) {
+      const wrong = await confirm('wrong')
+      expect(wrong.status).toBe(401)
+      expect(wrong.data.message).toBe('Code is incorrect')
     }
-    const last = await request('/transacted-members/totp-confirm', {
-      method: 'POST',
-      body: { code: 'wrong' }
-    })
-    expect(last.data.message).toBe('Too many attempts')
-  })
-
-  it('stores all credentials of a setup or none', async () => {
-    const { request } = await loginWithPassword()
-    const setup = await request('/members/totp', { method: 'POST' })
     const totp = new TOTP({ secret: setup.data.secret })
-    const confirm = () =>
-      request('/members/totp-confirm', {
-        method: 'POST',
-        body: { code: totp.generate() }
-      })
-    insertsBeforeFailure = 5
-    expect((await confirm()).status).toBe(500)
-    expect(await Credential.query()).toEqual([])
-    // The setup stays for another try:
-    expect((await confirm()).status).toBe(200)
-    expect(await Credential.query()).toHaveLength(11)
+    expect((await confirm(totp.generate())).status).toBe(200)
+    expect(await Credential.query()).toHaveLength(1)
   })
 
   it(`doesn't confirm setups once another one is confirmed`, async () => {
@@ -374,8 +333,12 @@ describe('TOTP', () => {
       enabled: true,
       backupCodes: 9
     })
+    const [credential] = await Credential.query()
+    expect(credential.data.backupCodes).toHaveLength(9)
     const second = await loginWithCode(code)
     expect(second.login.status).toBe(401)
+    // The other backup codes stay:
+    expect((await loginWithCode(backupCodes[1])).login.data.success).toBe(true)
   })
 
   it('regenerates the session id for the code', async () => {
@@ -821,7 +784,7 @@ describe('TOTP setup', () => {
   const session = { modelClass: 'Session' }
 
   it('requires sessions stored on the server', async () => {
-    for (const session of [undefined, true]) {
+    for (const session of [true, { maxAge: 1000 }]) {
       await expect(setup({ session, auth })).rejects.toThrow(
         `Unable to use TOTP without sessions stored on the server, ` +
         `see 'app.session'.`

@@ -3,11 +3,12 @@ import { asArray, isArray, isString } from '@ditojs/utils'
 import { ModelController } from './ModelController.js'
 import { PasskeyService, TotpService } from '../services/index.js'
 import {
+  authTimeout,
+  getTotpQuery,
   getUserIdentifier,
   parseUserIdentifier,
   updatePasswordFingerprint
-} from '../middleware/handleUser.js'
-import { authTimeout, getTotpQuery } from '../utils/auth.js'
+} from '../utils/auth.js'
 import { getDuration } from '../utils/duration.js'
 import {
   AuthenticationError,
@@ -154,29 +155,23 @@ export class UsersController extends ModelController {
       }
     },
 
+    // Let users change their password without routing `patch`, which would let
+    // them change all their properties:
     'post password': {
       parameters: {
-        currentPassword: { type: 'string', required: true },
         password: { type: 'string', required: true }
       },
 
-      async handler(ctx, { currentPassword, password }) {
+      async handler(ctx, { password }) {
         const { user } = ctx.state
-        if (await user.$verifyPassword(currentPassword)) {
-          const { passwordProperty } = this.modelClass.definition.options
-          // The password property validates the password and sets its hash:
-          await user
-            .$query(ctx.transaction)
-            .patch({ [passwordProperty]: password })
-          // Keep the session of the user, while their other sessions end:
-          updatePasswordFingerprint(ctx, user)
-          return { success: true }
-        } else {
-          throw new AuthenticationError({
-            message: 'Password is incorrect',
-            status: 400
-          })
-        }
+        const { passwordProperty } = this.modelClass.definition.options
+        // The password property validates the password and sets its hash:
+        await user
+          .$query(ctx.transaction)
+          .patch({ [passwordProperty]: password })
+        // Keep the session of the user, while their other sessions end:
+        await updatePasswordFingerprint(ctx, user)
+        return { success: true }
       }
     },
 
@@ -222,7 +217,7 @@ export class UsersController extends ModelController {
           await user
             .$query(ctx.transaction)
             .patch({ [passwordProperty]: password })
-          updatePasswordFingerprint(ctx, user)
+          await updatePasswordFingerprint(ctx, user)
           return { success: true }
         } else {
           throw new AuthenticationError({
@@ -302,11 +297,10 @@ export class UsersController extends ModelController {
     },
 
     async 'get totp'(ctx) {
-      const credentials = await getTotpQuery(ctx.state.user, ctx.transaction)
-      const types = credentials.map(({ type }) => type)
+      const totp = await getTotpQuery(ctx.state.user, ctx.transaction).first()
       return {
-        enabled: types.includes('totp'),
-        backupCodes: types.filter(type => type === 'backup-code').length
+        enabled: !!totp,
+        backupCodes: totp?.data.backupCodes.length ?? 0
       }
     },
 
@@ -321,18 +315,14 @@ export class UsersController extends ModelController {
       return this.totp.createSecret(ctx, user)
     },
 
-    'post totp-confirm': {
-      transacted: false, // See 'post confirm-access'.
-
-      async handler(ctx) {
-        const backupCodes = await this.totp.confirmSecret(
-          ctx,
-          ctx.state.user,
-          ctx.request.body.code
-        )
-        // The backup codes are stored hashed, so users only see them now:
-        return { backupCodes }
-      }
+    async 'post totp-confirm'(ctx) {
+      const backupCodes = await this.totp.confirmSecret(
+        ctx,
+        ctx.state.user,
+        ctx.request.body.code
+      )
+      // The backup codes are stored hashed, so users only see them now:
+      return { backupCodes }
     },
 
     async 'delete totp'(ctx) {
@@ -349,6 +339,13 @@ export class UsersController extends ModelController {
   setup() {
     const { app } = this
     const { session, auth } = app.config.app
+    // Users log in through sessions, which also keep their confirmed access:
+    if (!session) {
+      throw new ControllerError(
+        this,
+        `Unable to log in users without sessions, see 'app.session'.`
+      )
+    }
     // Apps use passkeys and TOTP by registering their services:
     this.passkeys = app.findService(
       service => service instanceof PasskeyService
@@ -369,7 +366,7 @@ export class UsersController extends ModelController {
     // the server so that old cookies can't replay them, and both need
     // credentials:
     const checkCredentials = name => {
-      if (!(session?.modelClass || session?.store || session?.ContextStore)) {
+      if (!(session.modelClass || session.store || session.ContextStore)) {
         throw new ControllerError(
           this,
           `Unable to use ${name} without sessions stored on the server, ` +
@@ -452,31 +449,36 @@ export class UsersController extends ModelController {
   }
 
   // @override
-  async executeAndFetch(action, ctx, modify, body = ctx.request.body) {
-    await validateUserChanges(
+  executeAndFetch(action, ctx, modify, body = ctx.request.body) {
+    return handleUserChanges(
       this,
       ctx,
       action,
-      asArray(body).map(user => [this.getModelId(user), user])
+      asArray(body).map(user => [this.getModelId(user), user]),
+      () => super.executeAndFetch(action, ctx, modify, body)
     )
-    return super.executeAndFetch(action, ctx, modify, body)
   }
 
   // @override
-  async relateAndFetch(ctx, modify) {
-    await validateUserChanges(
+  relateAndFetch(ctx, modify) {
+    return handleUserChanges(
       this,
       ctx,
       'relate',
-      asArray(ctx.request.body).map(user => [this.getModelId(user), user])
+      asArray(ctx.request.body).map(user => [this.getModelId(user), user]),
+      () => super.relateAndFetch(ctx, modify)
     )
-    return super.relateAndFetch(ctx, modify)
   }
 
   // @override
-  async executeAndFetchById(action, ctx, modify, body = ctx.request.body) {
-    await validateUserChanges(this, ctx, action, [[ctx.memberId, body]])
-    return super.executeAndFetchById(action, ctx, modify, body)
+  executeAndFetchById(action, ctx, modify, body = ctx.request.body) {
+    return handleUserChanges(
+      this,
+      ctx,
+      action,
+      [[ctx.memberId, body]],
+      () => super.executeAndFetchById(action, ctx, modify, body)
+    )
   }
 
   isAuthenticated(ctx) {
@@ -533,11 +535,7 @@ export class UsersController extends ModelController {
   // `app.auth.passwordReset`:
   // @overridable
   async sendPasswordReset(/* ctx, user, url */) {
-    throw new ControllerError(
-      this,
-      `Unable to send password resets without overriding ` +
-      `'sendPasswordReset()'.`
-    )
+    // To be overridden in sub-classes that route 'post password-reset'.
   }
 
   // Password reset links only work while these values of the user stay the
@@ -611,7 +609,7 @@ async function verifyPasskey(controller, ctx, response) {
 // passwords, which doesn't tell that the password was right:
 async function hasTotp(controller, ctx, user, message) {
   const totp = user.constructor.credentialClass
-    ? await getTotpQuery(user, ctx.transaction).findOne({ type: 'totp' })
+    ? await getTotpQuery(user, ctx.transaction).first()
     : null
   if (totp && !controller.totp) {
     controller.app.emit(
@@ -627,42 +625,49 @@ async function hasTotp(controller, ctx, user, message) {
   return !!totp
 }
 
-// Passwords are set when users are created, but only change through
-// 'post password', which needs confirmed access and the current password, and
-// their hashes are never set directly. Usernames only change with confirmed
-// access, as password resets go to them. `users` are `[id, user]` entries:
-async function validateUserChanges(controller, ctx, action, users) {
+// Setting passwords and changing usernames needs confirmed access, the latter
+// as password resets go to them. Hashes are never set directly. `users` are
+// `[id, user]` entries, which `write()` writes:
+async function handleUserChanges(controller, ctx, action, users, write) {
   const { modelClass } = controller
   const { usernameProperty, passwordProperty } = modelClass.definition.options
+  let isOwnPasswordChange = false
   for (const [id, user] of users) {
-    // Relating users with ids updates them:
-    const isInsert = action === 'insert' || action === 'relate' && id == null
-    const property =
-      user?.hash !== undefined
-        ? 'hash'
-        : !isInsert && user?.[passwordProperty] !== undefined
-          ? passwordProperty
-          : null
-    if (property) {
+    if (user?.hash !== undefined) {
       throw new ValidationError({
         type: 'BodyValidation',
-        message: `Unable to change '${property}' outside of 'post password'`
+        message: `Unable to change 'hash', change '${passwordProperty}' instead`
       })
     }
-    const username = user?.[usernameProperty]
-    if (!isInsert && username !== undefined) {
-      const stored = await modelClass.query(ctx.transaction).findById(id)
-      if (stored?.[usernameProperty] !== username) {
+    // Relating users with ids updates them:
+    const isUpdate = action !== 'insert' && (action !== 'relate' || id != null)
+    if (isUpdate) {
+      if (user?.[passwordProperty] !== undefined) {
         checkConfirmedAccess(ctx)
+        isOwnPasswordChange ||= `${id}` === `${ctx.state.user.$id()}`
+      }
+      const username = user?.[usernameProperty]
+      if (username !== undefined) {
+        const stored = await modelClass.query(ctx.transaction).findById(id)
+        if (stored?.[usernameProperty] !== username) {
+          checkConfirmedAccess(ctx)
+        }
       }
     }
   }
+  const result = await write()
+  // Only password changes may update the fingerprint of the session, or
+  // stolen sessions could keep up with the changes of the owner:
+  if (isOwnPasswordChange) {
+    await updatePasswordFingerprint(ctx, result)
+  }
+  return result
 }
 
 // Answer 403 with `confirmationRequired` to users without a login or a
 // 'post confirm-access' within `app.auth.reconfirmAccessAfter`:
 function checkConfirmedAccess(ctx) {
-  const { user, expires } = ctx.session?.confirmedAccess ?? {}
+  const { user, expires } = ctx.session.confirmedAccess ?? {}
   if (
     !ctx.state.user ||
     user !== getUserIdentifier(ctx.state.user) ||

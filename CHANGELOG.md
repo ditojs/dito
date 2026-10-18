@@ -9,8 +9,8 @@ version, see the upgrade guides in `docs/`.
 
 - **server:** Dito.js handles logins and sessions itself instead of through koa-passport, which `@ditojs/server` no longer depends on. `ctx.req.user` and custom Passport strategies are gone, `app.passport` has no effect, and `UserMixin.authenticate()` reads the credentials only from the request body. Existing sessions stay valid.
 - **server:** Changing a user's password ends their other sessions.
-- **server:** The `patch` and `put` actions of `UsersController` no longer accept passwords, which only change through `'post password'`: apps that change passwords in a form through `PATCH /users/self` use the admin's Security dialog or `'post password'` instead. Admins can't set the passwords of other users through them any more, only password resets can.
-- **server:** The actions of `UsersController` no longer accept the `hash` of the password, and changing the username through `patch` and `put` needs confirmed access.
+- **server:** The actions of `UsersController` no longer accept the `hash` of the password, and setting the password or changing the username through `patch` and `put` needs confirmed access, also when admins set the passwords of other users. Without it, they answer 403 with `confirmationRequired`, and the admin asks the user to confirm the access.
+- **server:** `UsersController` throws on setup without `app.session`, which its logins need.
 - **server:** `UsersController` only treats users of its own model class as logged in, not users of its sub-classes.
 - **server:** `UserMixin.sessionQuery()` is internal: apps set `sessionScope` instead.
 - **server:** `UserMixin.login()` is renamed to `authenticate()`, which only checks the credentials and resolves to their user, without logging them in: apps that called `login()` call `ctx.login(await User.authenticate(ctx))` instead, which skips TOTP: apps with TOTP log users in through `'post login'` of `UsersController`.

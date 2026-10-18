@@ -3805,9 +3805,8 @@ export class TotpService extends Service<{
   /**
    * Stores the secret of the session once the user confirms it with a code,
    * and resolves to the new backup codes. Rejects with an
-   * `AuthenticationError` for wrong codes and missing or expired setups, which
-   * end after too many wrong codes, and with a `ResponseError` if TOTP is
-   * already set up.
+   * `AuthenticationError` for wrong codes and missing or expired setups, and
+   * with a `ResponseError` if TOTP is already set up.
    */
   confirmSecret(
     ctx: KoaContext,
@@ -4541,7 +4540,7 @@ export const CredentialMixin: <T extends Constructor<{}>>(
   target: T
 ) => T &
   Constructor<{
-    /** `'passkey'`, `'totp'` or `'backup-code'` */
+    /** `'passkey'` or `'totp'` */
     type: string
     /** The name of the user's model class. */
     userModel: string

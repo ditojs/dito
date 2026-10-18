@@ -293,8 +293,8 @@ export interface ApiConfig {
       path?: string
     }
     /**
-     * Posted to by the security dialog with the current and the new password,
-     * with the default path `'password'`.
+     * Posted to by the security dialog with the new password, with the
+     * default path `'password'`.
      */
     password?: { path?: string; method?: HttpMethod }
     /**

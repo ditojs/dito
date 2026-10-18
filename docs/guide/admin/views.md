@@ -177,9 +177,8 @@ export default {
 }
 ```
 
-Passwords don't change through `PATCH /api/users/self`, but through
-`'post password'` of the `UsersController`, which the Security dialog of the
-account menu uses, see
+The Security dialog of the account menu changes the password through
+`'post password'` of the `UsersController`, which needs no `patch`, see
 [Confirmed access](../server/controllers.md#confirmed-access).
 
 On the server, `PATCH /users/self` goes through the `patch` member action of
