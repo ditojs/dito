@@ -6,6 +6,7 @@ nav.dito-navigation.dito-scroll-parent(aria-label="Main navigation")
   )
     h1
       RouterLink.dito-link(to="/") {{ adminContext.title }}
+      slot
     DitoMenu.dito-scroll(:nodes="adminContext.routeTree?.nodes ?? []")
 </template>
 
@@ -91,7 +92,7 @@ export default {
   }
 
   h1 {
-    display: block;
+    display: flex;
     line-height: $header-line-height;
     font-weight: bold;
     background: $color-darker;
@@ -99,8 +100,31 @@ export default {
     color: $color-white;
 
     .dito-link {
-      display: block;
+      flex: 1 1 auto;
       padding: $header-padding;
+    }
+  }
+
+  // The button that closes the overlay menu, which covers the header's toggle:
+  &__close {
+    position: relative;
+    flex: 0 0 auto;
+    width: $header-height;
+    padding: 0;
+    border: 0;
+    color: $color-white;
+    background: none;
+
+    &::before {
+      @extend %icon-clear;
+    }
+
+    &:hover {
+      color: $color-light;
+    }
+
+    &:focus-visible {
+      @include focus-ring;
     }
   }
 }

@@ -27,17 +27,9 @@ nav.dito-trail(aria-label="Breadcrumb")
 </template>
 
 <script>
-import {
-  computed,
-  inject,
-  nextTick,
-  onMounted,
-  onUnmounted,
-  ref,
-  useTemplateRef,
-  watch
-} from 'vue'
+import { computed, inject, nextTick, useTemplateRef, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useScrollMask } from '../composables/useScrollMask.ts'
 import { adminContextKey } from '../utils/keys.ts'
 
 export default {
@@ -50,16 +42,13 @@ export default {
       adminContext.ui.routes.filter(route => !route.isLeaving)
     )
 
-    // The trail scrolls where the header is too narrow for it, and fades out
-    // on the sides that it hides:
+    // The trail scrolls where the header is too narrow for it:
     const items = useTemplateRef('items')
-    const isMaskedStart = ref(false)
-    const isMaskedEnd = ref(false)
-    const updateMasks = () => {
-      const { scrollLeft, clientWidth, scrollWidth } = items.value
-      isMaskedStart.value = scrollLeft > 0
-      isMaskedEnd.value = scrollLeft + clientWidth < scrollWidth - 1
-    }
+    const {
+      isMaskedStart,
+      isMaskedEnd,
+      update: updateMasks
+    } = useScrollMask(items)
     // Show the current route at the end of the trail:
     watch(
       () => trail.value.length,
@@ -69,12 +58,6 @@ export default {
       },
       { immediate: true, flush: 'post' }
     )
-    let observer = null
-    onMounted(() => {
-      observer = new ResizeObserver(updateMasks)
-      observer.observe(items.value)
-    })
-    onUnmounted(() => observer.disconnect())
 
     return {
       trail,
@@ -112,36 +95,14 @@ export default {
   display: flex;
   box-sizing: border-box;
   height: 3em;
-  // Take the room that the header leaves, and scroll the items within it:
-  flex: 1;
+  // Take the room that the header leaves, and share it with the tabs when
+  // there isn't enough, scrolling the items within it:
+  flex: 1 1 auto;
   min-width: 0;
 
   &__items {
-    --mask-start: 0em;
-    --mask-end: 0em;
-
     display: flex;
-    overflow-x: auto;
-    scrollbar-width: none;
-    mask-image: linear-gradient(
-      to right,
-      transparent,
-      black var(--mask-start),
-      black calc(100% - var(--mask-end)),
-      transparent
-    );
-
-    &::-webkit-scrollbar {
-      display: none;
-    }
-
-    &--masked-start {
-      --mask-start: 2em;
-    }
-
-    &--masked-end {
-      --mask-end: 2em;
-    }
+    @include scroll-mask;
   }
 
   li {

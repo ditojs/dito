@@ -91,6 +91,12 @@ export default {
     justify-content: flex-end;
     padding: 0 $header-padding-hor;
 
+    // ...as do tabs, the only content that shrinks:
+    &:has(.dito-tabs) {
+      flex-shrink: 1;
+      min-width: 0;
+    }
+
     .dito-button {
       margin: 0 0 $tab-margin $tab-margin;
     }

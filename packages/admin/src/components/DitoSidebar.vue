@@ -62,7 +62,8 @@ export default {
 
   &:has(#{$self}__teleport:empty) {
     > .dito-header {
-      padding-right: 0;
+      // As far from the window's edge as the account button from the top:
+      padding-right: calc(($header-height - $input-height) / 2);
     }
 
     .dito-header__toggle {
