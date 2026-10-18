@@ -261,10 +261,12 @@ export function createLoginDialog(authentication, additionalComponents = {}) {
     components: {
       username: {
         type: 'text',
+        autocomplete: 'username',
         autofocus: true
       },
       password: {
-        type: 'password'
+        type: 'password',
+        autocomplete: 'current-password'
       },
       ...additionalComponents
     },

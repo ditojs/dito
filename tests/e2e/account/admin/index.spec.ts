@@ -31,6 +31,18 @@ test.describe('account settings', () => {
     await expect(dialog.getByLabel('Username')).toBeFocused()
   })
 
+  test('let password managers fill the login dialog', async ({ page, url }) => {
+    await page.goto(`${url}/admin/`)
+    const dialog = page.locator('.dito-dialog')
+    const username = dialog.getByLabel('Username')
+    const password = dialog.getByLabel('Password')
+    await expect(username).toHaveAttribute('autocomplete', 'username')
+    await expect(password).toHaveAttribute('autocomplete', 'current-password')
+    for (const field of [username, password]) {
+      await expect(field).not.toHaveAttribute('data-1p-ignore')
+    }
+  })
+
   test('edit the logged-in user', async ({ page, url }) => {
     await login(page, url, ['ada', 'secret'])
     await expect(getAccountButton(page)).toHaveText('ada')
