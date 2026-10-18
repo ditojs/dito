@@ -89,13 +89,41 @@ describe('describeFunction()', () => {
       .toBe('() => ...')
   })
 
-  it('returns undefined for method shorthands and classes', () => {
-    const object = {
-      list(shelf) {
-        return shelf
+  it('describes methods like functions', () => {
+    const shelf = {
+      list(books) {
+        return books
+      },
+      async fetch(books) {
+        return books
       }
     }
-    expect(describeFunction(object.list)).toBeUndefined()
-    expect(describeFunction(class Shelf {})).toBeUndefined()
+    // Quoted keys, in an object of their own to keep the others unquoted:
+    const actions = {
+      'post shelf'(ctx) {
+        return ctx
+      },
+      async 'get shelf'(ctx) {
+        return ctx
+      }
+    }
+    expect(describeFunction(shelf.list))
+      .toBe('function (books) { ... }')
+    expect(describeFunction(shelf.fetch))
+      .toBe('async function (books) { ... }')
+    expect(describeFunction(actions['post shelf']))
+      .toBe('function (ctx) { ... }')
+    expect(describeFunction(actions['get shelf']))
+      .toBe('async function (ctx) { ... }')
+  })
+
+  it('returns undefined for classes', () => {
+    class Shelf {
+      constructor(books) {
+        this.books = books
+      }
+    }
+    expect(describeFunction(class Box {})).toBeUndefined()
+    expect(describeFunction(Shelf)).toBeUndefined()
   })
 })

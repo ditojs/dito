@@ -17,6 +17,7 @@ import type {
   ControllerActions,
   ModelControllerRelation,
   ControllerAuthorize,
+  ControllerAssets,
   Authorize,
   HttpMethod,
   HTTPMethod,
@@ -595,5 +596,32 @@ describe('Controller settings', () => {
         expectTypeOf(result).toBeAny()
       }
     })
+  })
+
+  it('calls authorize functions with the controller as `this`', () => {
+    class Books extends ModelController<Model> {
+      override collection: ModelControllerActions<Books> = {
+        'authorize': {
+          get(ctx) {
+            expectTypeOf(this).toEqualTypeOf<Books>()
+            return ctx.state.user?.constructor === this.modelClass
+          }
+        },
+        'post import': {
+          authorize(ctx) {
+            return ctx.state.user?.constructor === this.modelClass
+          },
+          handler() {}
+        }
+      }
+
+      override assets: ControllerAssets<Books> = {
+        authorize: {
+          image(ctx) {
+            return ctx.state.user?.constructor === this.modelClass
+          }
+        }
+      }
+    }
   })
 })

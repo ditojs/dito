@@ -574,7 +574,7 @@ export class Controller {
       return () => authorize
     } else if (isFunction(authorize)) {
       return async (ctx, member) => {
-        const res = await authorize(ctx, member)
+        const res = await authorize.call(this, ctx, member)
         // Deny access if the function forgot to return a value.
         // Otherwise pass res through `processAuthorize()` to
         // support strings & arrays.

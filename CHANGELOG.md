@@ -20,6 +20,7 @@ version, see the upgrade guides in `docs/`.
 - **server, admin:** Two-factor authentication with TOTP, with `app.auth.totp` and `login: { totp: true }`, see [Two-factor authentication](docs/guide/server/controllers.md#two-factor-authentication).
 - **server, admin:** Password resets by email, with `app.auth.passwordReset` and `login: { passwordReset: true }`, see [Password reset](docs/guide/server/controllers.md#password-reset).
 - **server, admin:** Users change their password through `'post password'` of `UsersController`, and the Security dialog of the account menu.
+- **server:** Authorize functions are called with their controller as `this`, in relations the `RelationController`.
 - **server:** `CredentialMixin` and `CredentialModel` store the credentials of all user models in one table, set in `app.auth.credentials`.
 - **admin:** `settings.minDuration` keeps dialogs visible for a minimum time.
 - **admin:** The `empty` option of lists shows a text while a list has no items.

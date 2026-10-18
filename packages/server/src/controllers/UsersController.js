@@ -43,16 +43,16 @@ export class UsersController extends ModelController {
       'post password-reset': true,
       'post password-reset-confirm': true,
       // Users manage their own password and passkeys:
-      'post password': ctx => this.isAuthenticated(ctx),
-      'get passkeys': ctx => this.isAuthenticated(ctx),
-      'post passkey-options': ctx => this.isAuthenticated(ctx),
-      'post passkeys': ctx => this.isAuthenticated(ctx),
-      'delete passkeys/:id': ctx => this.isAuthenticated(ctx),
+      'post password': isAuthenticated,
+      'get passkeys': isAuthenticated,
+      'post passkey-options': isAuthenticated,
+      'post passkeys': isAuthenticated,
+      'delete passkeys/:id': isAuthenticated,
       // ...and their TOTP:
-      'get totp': ctx => this.isAuthenticated(ctx),
-      'post totp': ctx => this.isAuthenticated(ctx),
-      'post totp-confirm': ctx => this.isAuthenticated(ctx),
-      'delete totp': ctx => this.isAuthenticated(ctx)
+      'get totp': isAuthenticated,
+      'post totp': isAuthenticated,
+      'post totp-confirm': isAuthenticated,
+      'delete totp': isAuthenticated
     },
 
     'post login'(ctx) {
@@ -793,6 +793,11 @@ const passwordResetActions = [
 // The lengths of the IV and the authentication tag of AES-256-GCM:
 const ivLength = 12
 const tagLength = 16
+
+// Called with the controller as `this` through `processAuthorize()`:
+function isAuthenticated(ctx) {
+  return this.isAuthenticated(ctx)
+}
 
 function getPasskeyQuery(modelClass, ctx) {
   return modelClass.credentialQuery(ctx.transaction).where({

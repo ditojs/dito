@@ -1328,14 +1328,14 @@ export type ControllerAsset = ModelAsset & {
  * Map of data paths, with support for `*` and `**` wildcards, to their asset
  * upload route configurations.
  */
-export type ControllerAssets = {
+export type ControllerAssets<$Controller = Controller> = {
   [dataPath: string]:
     | ControllerAsset
     | OrReadOnly<string[]>
-    | ControllerAuthorize
+    | ControllerAuthorize<$Controller>
     | undefined
   allow?: OrReadOnly<string[]>
-  authorize?: ControllerAuthorize
+  authorize?: ControllerAuthorize<$Controller>
 }
 
 export interface ModelOptions extends objection.ModelOptions {
@@ -2422,13 +2422,13 @@ export class Controller {
    * The authorization of all actions and asset uploads that don't have their
    * own, or of each by its action name or asset data path.
    */
-  authorize?: ControllerAuthorize
+  authorize?: ControllerAuthorize<this>
   actions?: ControllerActions<this>
   /**
    * The asset upload routes, by data path, or `true` on collection
    * controllers to use the model's asset definitions.
    */
-  assets?: boolean | ControllerAssets
+  assets?: boolean | ControllerAssets<this>
   /**
    * Hooks that run before or after actions, by keys like
    * `'before:actions:post-import'`. Keys can list several hooks separated by
@@ -2606,18 +2606,27 @@ type ModelDataProperties<$Model extends Model = Model> = {
  *   `UserModel.$hasRole()`.
  * - `function`: Dynamically resolves to any of the above.
  */
-export type Authorize =
+export type Authorize<$Controller = Controller> =
   | boolean
   | OrArrayOf<LiteralUnion<'$self' | '$owner'>>
-  | ((ctx: KoaContext, member?: Model) => OrPromiseOf<Authorize>)
+  | {
+      // See `ControllerHandler` for the bivariance, inlined for the recursion:
+      bivarianceHack(
+        this: $Controller,
+        ctx: KoaContext,
+        member?: Model
+      ): OrPromiseOf<Authorize<$Controller>>
+    }['bivarianceHack']
 
 /**
  * The authorization of a controller or an actions object: one setting for all
  * its actions, or settings by action name, e.g. `{ 'post import': 'admin' }`.
  */
-export type ControllerAuthorize = Authorize | Record<string, Authorize>
+export type ControllerAuthorize<$Controller = Controller> =
+  | Authorize<$Controller>
+  | Record<string, Authorize<$Controller>>
 
-export type BaseControllerActionOptions = {
+export type BaseControllerActionOptions<$Controller = Controller> = {
   /**
    * The path to which the action is mapped, defined in relation to the route
    * path of its controller. By default, the part of the action name after its
@@ -2637,7 +2646,7 @@ export type BaseControllerActionOptions = {
    * - Any string: `ctx.state.user` is checked for this role through the
    *   overridable `UserModel.$hasRole()` method.
    */
-  authorize?: Authorize
+  authorize?: Authorize<$Controller>
   /**
    * Provides a schema for the value returned from the action handler and
    * optionally maps the value to a key inside a returned object when it
@@ -2678,7 +2687,7 @@ export type ValidationOptions = Record<string, any>
 export type ControllerActionOptions<
   $Controller extends Controller = Controller,
   $Params = Record<string, any>
-> = BaseControllerActionOptions & {
+> = BaseControllerActionOptions<$Controller> & {
   /**
    * Defines validated parameters for the action handler.
    * The handler receives a single parameter object with
@@ -2703,7 +2712,7 @@ export type ControllerActionOptions<
 } & ActionHooks<$Controller>
 
 export type ModelControllerActionOptions<$ModelController = ModelController> =
-  BaseControllerActionOptions & {
+  BaseControllerActionOptions<$ModelController> & {
     /**
      * Defines validated parameters for the action handler.
      * The handler receives a single parameter object with
@@ -2772,7 +2781,7 @@ export type ModelControllerAction<$ModelController = ModelController> =
 export type ModelControllerActions<$ModelController = ModelController> = {
   [name: ControllerActionName]: ModelControllerAction<$ModelController>
   allow?: OrReadOnly<ControllerActionName[]>
-  authorize?: ControllerAuthorize
+  authorize?: ControllerAuthorize<$ModelController>
 }
 
 type ModelControllerMemberAction<
@@ -2798,7 +2807,7 @@ export type ModelControllerMemberActions<
 > = {
   [name: ControllerActionName]: ModelControllerMemberAction<$ModelController>
   allow?: OrReadOnly<ControllerActionName[]>
-  authorize?: ControllerAuthorize
+  authorize?: ControllerAuthorize<$ModelController>
 }
 
 /**
@@ -2856,7 +2865,7 @@ export type ControllerActions<
 } & {
   [name: ControllerActionName]: ControllerAction<$Controller, any>
   allow?: OrReadOnly<ControllerActionName[]>
-  authorize?: ControllerAuthorize
+  authorize?: ControllerAuthorize<$Controller>
 }
 
 export class UsersController<
