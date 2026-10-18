@@ -8,9 +8,9 @@ version, see the upgrade guides in `docs/`.
 ### Behaviour changes
 
 - **server:** Dito.js handles logins and sessions itself instead of through koa-passport, which `@ditojs/server` no longer depends on. `ctx.req.user` and custom Passport strategies are gone, `app.passport` has no effect, and `UserMixin.authenticate()` reads the credentials only from the request body. Existing sessions stay valid.
-- **server:** Changing a user's password ends their other sessions.
-- **server:** The actions of `UsersController` no longer accept the `hash` of the password, and setting the password or changing the username through `patch` and `put` needs confirmed access, also when admins set the passwords of other users. Without it, they answer 403 with `confirmationRequired`, and the admin asks the user to confirm the access.
-- **server:** `UsersController` throws on setup without `app.session`, which its logins need.
+- **server:** Changing a user's password ends their other sessions. When users change their own password, the session of the request stays logged in, wherever the password is set.
+- **server:** The actions of `UsersController` no longer accept the `hash` of the password, and setting the password or changing the username through `patch` and `put` needs confirmed access of a user of the controller's model class, also when admins set the passwords of other users. Without a login, they answer 401, without confirmed access 403 with `confirmationRequired`, and the admin asks the user to confirm the access.
+- **server:** `UsersController` throws on setup without `app.session`, which its logins need, and when it routes actions that need confirmed access without `'post confirm-access'`: `patch`, `put`, `post` with `relate`, `'post password'` and the passkey and TOTP actions that change them.
 - **server:** `UsersController` only treats users of its own model class as logged in, not users of its sub-classes.
 - **server:** `UserMixin.sessionQuery()` is internal: apps set `sessionScope` instead.
 - **server:** `UserMixin.login()` is renamed to `authenticate()`, which only checks the credentials and resolves to their user, without logging them in: apps that called `login()` call `ctx.login(await User.authenticate(ctx))` instead, which skips TOTP: apps with TOTP log users in through `'post login'` of `UsersController`.
@@ -33,7 +33,7 @@ version, see the upgrade guides in `docs/`.
 - **server, admin:** Users change their password through `'post password'` of `UsersController`, and the Security dialog of the account menu.
 - **server, admin:** Security changes need confirmed access, from a recent login or `'post confirm-access'` within `app.authentication.reconfirmAccessAfter`. Turning off TOTP takes it instead of a code. See [Confirmed access](docs/guide/server/controllers.md#confirmed-access).
 - **server:** Authorize functions are called with their controller as `this`, in relations the `RelationController`.
-- **server, admin:** The admin offers passkeys, TOTP and password resets when the users controller at its `api.users` routes them, through `authentication` in `AdminController#getGlobalConfig()`.
+- **server, admin:** The admin offers password changes, passkeys, TOTP and password resets when the users controller at its `api.users` routes them, through `authentication` in `AdminController#getGlobalConfig()`: `hasPasswordChange`, `hasPasskeys`, `hasTotp` and `hasPasswordReset`.
 - **server:** `CredentialMixin` and `CredentialModel` store the credentials of all user models in one table, set in `app.authentication.credentials`.
 - **server:** `app.name` names the app for passkey managers and authenticator apps.
 - **server:** A service configured as `true` in `config.services` is set up with its defaults.

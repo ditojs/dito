@@ -20,15 +20,16 @@ export function handleUser() {
       if (
         user && (
           passwordFingerprint === undefined ||
-          passwordFingerprint === getPasswordFingerprint(user)
+          passwordFingerprint === getPasswordFingerprint(user.hash)
         )
       ) {
         ctx.state.user = user
         // Sessions from before fingerprints, or of users logged in without
         // `hash`, get their fingerprint now, so that password changes end them:
         if (passwordFingerprint === undefined && user.hash !== undefined) {
-          ctx.session.passport.passwordFingerprint =
-            getPasswordFingerprint(user)
+          ctx.session.passport.passwordFingerprint = getPasswordFingerprint(
+            user.hash
+          )
         }
       } else {
         // End the session of users that no longer exist, are excluded by the
@@ -57,7 +58,7 @@ export function handleUser() {
             // Users loaded without `hash` get their fingerprint on the next
             // request:
             ...(user.hash !== undefined && {
-              passwordFingerprint: getPasswordFingerprint(user)
+              passwordFingerprint: getPasswordFingerprint(user.hash)
             })
           }
           // Regenerate the session id against session fixation, which also

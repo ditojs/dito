@@ -25,13 +25,17 @@ export default {
     const settingsRoute = computed(
       () => adminContext.routeTree?.getViewRoute('accountSettings') ?? null
     )
+    const { hasPasswordChange, hasPasskeys, hasTotp } =
+      adminContext.authentication
     return {
       adminContext,
       items: computed(() =>
         [
           settingsRoute.value && { value: 'settings', label: 'Settings' },
-          // Users change their password there, also without passkeys or TOTP:
-          { value: 'security', label: 'Security' },
+          (hasPasswordChange || hasPasskeys || hasTotp) && {
+            value: 'security',
+            label: 'Security'
+          },
           { value: 'logout', label: 'Sign Out' }
         ].filter(Boolean)
       ),

@@ -47,13 +47,18 @@ export interface GlobalConfig {
      * login to the login dialog, and the user's passkeys to the Security
      * dialog of the account menu.
      */
-    passkeys?: boolean
+    hasPasskeys?: boolean
     /**
      * Set with the TOTP actions, through `TotpService`. Adds the setup of
      * two-factor authentication with TOTP to the Security dialog of the
      * account menu.
      */
-    totp?: boolean
+    hasTotp?: boolean
+    /**
+     * Set with `'post password'`. Adds the password change to the Security
+     * dialog of the account menu.
+     */
+    hasPasswordChange?: boolean
     /**
      * Set with the password reset actions, through
      * `config.app.authentication.passwordReset`. Adds a "Forgot password?"
@@ -61,7 +66,7 @@ export interface GlobalConfig {
      * opens the admin with `#password-reset=` and the token, to set a new
      * password.
      */
-    passwordReset?: boolean
+    hasPasswordReset?: boolean
   }
 }
 
@@ -319,20 +324,20 @@ export interface ApiConfig {
       path?: string
     }
     /**
-     * Posted to by the security dialog with the new password, with the
-     * default path `'password'`.
+     * Posted to by the security dialog with the new password, with
+     * `authentication.hasPasswordChange` and the default path `'password'`.
      */
     password?: { path?: string; method?: HttpMethod }
     /**
-     * The password reset endpoints of `authentication.passwordReset`, posted to
-     * with the username and with the token and the new password, with the
-     * default paths `'password-reset'` and `'password-reset-confirm'`.
+     * The password reset endpoints of `authentication.hasPasswordReset`,
+     * posted to with the username and with the token and the new password,
+     * with the default paths `'password-reset'` and `'password-reset-confirm'`.
      */
     passwordReset?: { path?: string; method?: HttpMethod }
     passwordResetConfirm?: { path?: string; method?: HttpMethod }
     /**
-     * The passkey endpoints of `authentication.passkeys`, posted to, with the
-     * default paths `'passkey-login-options'`, `'passkey-login'` and
+     * The passkey endpoints of `authentication.hasPasskeys`, posted to, with
+     * the default paths `'passkey-login-options'`, `'passkey-login'` and
      * `'passkey-options'`.
      */
     passkeyLoginOptions?: { path?: string; method?: HttpMethod }

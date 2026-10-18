@@ -203,7 +203,7 @@ describe('DitoRoot', () => {
 
     it('logs in with a passkey', async () => {
       const { admin, request, dialog } = await mountLoggedOut({
-        passkeys: true
+        hasPasskeys: true
       })
       const button = dialog
         .findAll('button')
@@ -225,7 +225,7 @@ describe('DitoRoot', () => {
 
     it('sends no passkey with the password', async () => {
       const { admin, request, dialog } = await mountLoggedOut({
-        passkeys: true
+        hasPasskeys: true
       })
       await enterValue(dialog.find('input[name="username"]'), 'reader')
       await enterValue(dialog.find('input[name="password"]'), 'secret')
@@ -309,7 +309,7 @@ describe('DitoRoot', () => {
 
     it('requests a password reset, and then asks to log in', async () => {
       const { admin, request, dialog } = await mountLoggedOut({
-        passwordReset: true
+        hasPasswordReset: true
       })
       const button = dialog
         .findAll('button')

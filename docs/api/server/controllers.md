@@ -805,9 +805,12 @@ Extends [`ModelController`](#modelcontroller) for models with
 inherited actions, see [`allow`](#allow): a subclass that sets
 `collection.allow` has to list them too, e.g.
 `allow: ['get', 'post login', 'post logout', 'get session', 'get self']`, and
-`'post password'` to let users change their password. Users controllers need
-`session` in [`config.app`](./application.md#configapp), else their setup
-throws.
+`'post password'` and `'post confirm-access'` to let users change their
+password. Users controllers need `session` in
+[`config.app`](./application.md#configapp), and `'post confirm-access'` when
+they route an action that needs confirmed access: `patch`, `put`, `post` with
+`relate`, `'post password'` and the passkey and TOTP actions that change them,
+else their setup throws.
 
 | Action               | Response |
 | -------------------- | ------------------------------------------------------- |
@@ -826,7 +829,10 @@ Without it, `'post password'`, `'post passkey-options'`, `'post passkeys'`,
 `{ message: 'Confirmation required', confirmationRequired: true }`, see
 [Confirmed access](../../guide/server/controllers.md#confirmed-access), and so
 do `patch` and `put` actions that change the username or set the password,
-also of other users, e.g. by admins.
+also of other users, e.g. by admins. The handlers check it, and the login for
+`'post confirm-access'`, `'get passkeys'` and `'get totp'`, also with an
+`authorize` that opens the actions, and answer 401 without a login of a user
+of the controller's `modelClass`.
 `hasConfirmedAccess(ctx)` does the same for the `authorize` of other actions.
 The `patch`, `put` and `post` actions answer 400 for bodies with the `hash`.
 With `relate`, `post` treats users with ids like updates.
@@ -909,11 +915,8 @@ controllers of the app share the one `confirmUrl` of
 Any change of a user's `hash` ends the sessions of the user. Sessions without a
 fingerprint of the password, from before fingerprints or from `ctx.login(user)`
 with users loaded without `hash`, get one on their next request: a change before
-that doesn't end them. The session of the
-request that changes the password stays logged in after `'post password'`,
-`patch`, `put` and `'post password-reset-confirm'`. Elsewhere, e.g. in other
-controllers or custom actions, it ends too, unless the action logs the user in
-again with `ctx.login(user)` afterwards.
+that doesn't end them. The session of users who change their own password
+stays logged in, see [Sessions](./model.md#sessions).
 
 TOTP is only asked for by `'post login'`. `ctx.login(user)` logs in without
 it, by design, e.g. for impersonation or custom login flows. The credentials
@@ -1033,11 +1036,12 @@ Returns the configuration that the admin receives in the browser as
 `window.dito`: `base` (the controller's `url`), `api` (`config.admin.api` with
 `normalizePaths` defaulting to `config.app.normalizePaths`), `settings`
 (`config.admin.settings`) and `authentication`, the features that the
-`UsersController` at `api.users` inside `api.url` routes: `passkeys` with
-`'post passkey-login'`, `totp` with `'post login-code'` and `passwordReset`
-with `'post password-reset'`, all `false` without one. *Hook.* Returns
-`{ base: string, api: ApiConfig, settings: object, authentication: { passkeys:
-boolean, totp: boolean, passwordReset: boolean } }`.
+`UsersController` at `api.users` inside `api.url` routes with all their
+actions: `hasPasskeys` with the passkey actions, `hasTotp` with the TOTP
+actions, `hasPasswordChange` with `'post password'` and `hasPasswordReset` with
+the password reset actions, all `false` without one. *Hook.* Returns `{ base: string, api: ApiConfig, settings:
+object, authentication: { hasPasskeys: boolean, hasTotp: boolean,
+hasPasswordChange: boolean, hasPasswordReset: boolean } }`.
 
 ### sendGlobalConfig()
 

@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs'
 import { mixin, asArray, isString } from '@ditojs/utils'
 import { AuthenticationError } from '../errors/index.js'
+import { getPasswordFingerprint, getUserIdentifier } from '../utils/auth.js'
 
 export const UserMixin = mixin(
   Model =>
@@ -16,6 +17,10 @@ export const UserMixin = mixin(
       // The model class of `app.authentication.credentials`, set up in
       // `setup()`:
       static credentialClass = null
+
+      // The hash that the password property set, so that only updates that set
+      // the password refresh the session, with the hash they wrote:
+      #passwordHash = null
 
       static get properties() {
         const {
@@ -79,6 +84,30 @@ export const UserMixin = mixin(
         return this.$is(ctx.state.user)
       }
 
+      // @override
+      async $afterUpdate(opt, queryContext) {
+        await super.$afterUpdate(opt, queryContext)
+        // When users change their own password, we keep the session of the
+        // request while their other sessions end. Instance queries patch with
+        // separate models, so the user is the instance in `opt.old`:
+        const hash = this.#passwordHash
+        if (hash) {
+          this.#passwordHash = null
+          const { passport } = this.constructor.app.requestLocals.session ?? {}
+          if (passport?.user === getUserIdentifier(opt.old ?? this)) {
+            passport.passwordFingerprint = getPasswordFingerprint(hash)
+          }
+        }
+      }
+
+      // @override
+      $clone(options) {
+        const clone = super.$clone(options)
+        // Graph saves write clones of the models that received the password:
+        clone.#passwordHash = this.#passwordHash
+        return clone
+      }
+
       static setup() {
         super.setup()
         const { passwordProperty } = this.definition.options
@@ -89,7 +118,10 @@ export const UserMixin = mixin(
           },
 
           set(password) {
-            this.hash = bcrypt.hashSync(password, hashRounds)
+            this.hash = this.#passwordHash = bcrypt.hashSync(
+              password,
+              hashRounds
+            )
           },
 
           configurable: true

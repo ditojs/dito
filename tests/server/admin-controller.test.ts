@@ -91,13 +91,40 @@ describe('AdminController', () => {
       override sendPasswordReset() {}
     }
 
-    // The users controller of the admin, which routes neither password resets
-    // nor passkeys:
+    // A users controller that routes TOTP, but neither password changes and
+    // resets nor passkeys:
     class Editors extends Members {
       override modelClass = Editor
 
       override collection: any = {
-        allow: ['post login', 'post login-code', 'post logout', 'get session']
+        allow: [
+          'post login',
+          'post login-code',
+          'post logout',
+          'get session',
+          'post confirm-access',
+          'get totp',
+          'post totp',
+          'post totp-confirm',
+          'delete totp'
+        ]
+      }
+    }
+
+    // A users controller that routes the logins with passkeys and TOTP codes,
+    // but not the actions that manage them:
+    class Readers extends Members {
+      override modelClass = Editor
+
+      override collection: any = {
+        allow: [
+          'post login',
+          'post login-code',
+          'post passkey-login-options',
+          'post passkey-login',
+          'post logout',
+          'get session'
+        ]
       }
     }
 
@@ -130,7 +157,7 @@ describe('AdminController', () => {
           },
           services,
           models: { Session, Credential, Member, Editor },
-          controllers: { api: { Members, Editors } }
+          controllers: { api: { Members, Editors, Readers } }
         }
       )
       try {
@@ -143,25 +170,37 @@ describe('AdminController', () => {
 
     it('passes no features without a users controller', async () => {
       expect(await getAuthentication('authors')).toEqual({
-        passkeys: false,
-        totp: false,
-        passwordReset: false
+        hasPasskeys: false,
+        hasTotp: false,
+        hasPasswordChange: false,
+        hasPasswordReset: false
       })
     })
 
     it('passes the features of the users controller at `api.users`', async () => {
       expect(await getAuthentication('members')).toEqual({
-        passkeys: true,
-        totp: true,
-        passwordReset: true
+        hasPasskeys: true,
+        hasTotp: true,
+        hasPasswordChange: true,
+        hasPasswordReset: true
       })
     })
 
     it(`passes only the features that the admin's controller routes`, async () => {
       expect(await getAuthentication('/editors')).toEqual({
-        passkeys: false,
-        totp: true,
-        passwordReset: false
+        hasPasskeys: false,
+        hasTotp: true,
+        hasPasswordChange: false,
+        hasPasswordReset: false
+      })
+    })
+
+    it('passes no features without the actions that manage them', async () => {
+      expect(await getAuthentication('/readers')).toEqual({
+        hasPasskeys: false,
+        hasTotp: false,
+        hasPasswordChange: false,
+        hasPasswordReset: false
       })
     })
 
@@ -170,7 +209,12 @@ describe('AdminController', () => {
         await getAuthentication('members', {
           config: { passkeys: false, totp: false }
         })
-      ).toEqual({ passkeys: false, totp: false, passwordReset: true })
+      ).toEqual({
+        hasPasskeys: false,
+        hasTotp: false,
+        hasPasswordChange: true,
+        hasPasswordReset: true
+      })
     })
 
     it('passes the features of subclasses of the services', async () => {
@@ -180,7 +224,12 @@ describe('AdminController', () => {
           services: { passkeys: Passkeys },
           config: { passkeys: true }
         })
-      ).toEqual({ passkeys: true, totp: false, passwordReset: true })
+      ).toEqual({
+        hasPasskeys: true,
+        hasTotp: false,
+        hasPasswordChange: true,
+        hasPasswordReset: true
+      })
     })
   })
 })

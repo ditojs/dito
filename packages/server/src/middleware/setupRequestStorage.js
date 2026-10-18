@@ -7,6 +7,9 @@ export function setupRequestStorage(requestStorage) {
         },
         get logger() {
           return ctx.logger
+        },
+        get session() {
+          return ctx.session
         }
       },
       next

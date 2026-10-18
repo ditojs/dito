@@ -1056,8 +1056,11 @@ user model classes can be used side by side. When a session is loaded, the
 user is fetched with the `sessionScope` and set as `ctx.state.user`; users that
 no longer exist, that the session scope excludes, or whose `hash` changed since
 the login, end the session. The session stores a hash of `hash` for this, and
-`UsersController` only updates it when the session's user changes their own
-password through its actions, so that this session stays logged in.
+only updates it when the session's user changes their own password in a
+request of the session, wherever the password is set, so that this session
+stays logged in. Password changes written through a query without the user's
+id, e.g. `User.query().findById(id).patch({ password })`, can't be matched to
+the session and end it too.
 `ctx.login(user, { session: false })` logs a user in for the request only, and
 `ctx.isAuthenticated()` tells whether the request has a user.
 

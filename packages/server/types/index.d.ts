@@ -2919,9 +2919,10 @@ export class AdminController extends Controller {
     api: AdminConfig['api']
     settings: AdminConfig['settings']
     authentication: {
-      passkeys: boolean
-      totp: boolean
-      passwordReset: boolean
+      hasPasskeys: boolean
+      hasTotp: boolean
+      hasPasswordChange: boolean
+      hasPasswordReset: boolean
     }
   }
 
