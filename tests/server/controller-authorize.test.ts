@@ -417,6 +417,61 @@ class Pantry extends Controller {
   }
 }
 
+// Authorizes through its own fields, which sub-classes can override:
+class Staff extends ModelController<any> {
+  override modelClass = Member
+
+  managerRole = 'admin'
+
+  override collection: any = {
+    allow: ['get'],
+    authorize: {
+      get(this: Staff) {
+        return this.managerRole
+      }
+    }
+  }
+
+  override member: any = {
+    allow: ['get', 'patch'],
+    authorize: {
+      get(this: Staff) {
+        return ['$self', this.managerRole]
+      },
+      patch(this: Staff) {
+        return this.managerRole
+      }
+    }
+  }
+
+  // In relations, `this` is the relation controller, below its `parent`:
+  override relations: any = {
+    recipes: {
+      relation: {
+        allow: ['get'],
+        authorize: {
+          get(this: any) {
+            return this.parent.managerRole
+          }
+        }
+      }
+    }
+  }
+}
+
+// Inherits the authorization of `get`, and overrides the one of `patch`:
+class Kitchen extends Staff {
+  override managerRole = 'cook'
+
+  override member: any = {
+    authorize: {
+      patch() {
+        return '$self'
+      }
+    }
+  }
+}
+
 describe('Controller authorization', () => {
   const app = createTestApp({
     models: { Member, Cookbook, Recipe, Review },
@@ -427,7 +482,9 @@ describe('Controller authorization', () => {
       Cookbooks,
       SharedCookbooks,
       ReadOnlyCookbooks,
-      Pantry
+      Pantry,
+      Staff,
+      Kitchen
     },
     // Resolve the requesting user from a header, in place of a session.
     async middleware(ctx: any, next: any) {
@@ -832,6 +889,34 @@ describe('Controller authorization', () => {
 
     it('denies access when authorize functions return nothing', async () => {
       expect((await request('/recipes/forgetful', admin)).status).toBe(401)
+    })
+
+    it('calls authorize functions with the controller as `this`', async () => {
+      expect((await request('/staff', admin)).status).toBe(200)
+      expect((await request('/staff', cook)).status).toBe(401)
+      expect((await request(`/staff/${guest.id}`, guest)).status).toBe(200)
+      expect((await request(`/staff/${guest.id}`, cook)).status).toBe(401)
+    })
+
+    it('calls inherited authorize functions with the sub-class', async () => {
+      expect((await request('/kitchen', cook)).status).toBe(200)
+      expect((await request('/kitchen', admin)).status).toBe(401)
+      expect((await request(`/kitchen/${guest.id}`, cook)).status).toBe(200)
+      const patch = (user: Member) =>
+        request(`/kitchen/${guest.id}`, user, {
+          method: 'PATCH',
+          body: { roles: [] }
+        })
+      expect((await patch(cook)).status).toBe(401)
+      expect((await patch(guest)).status).toBe(200)
+    })
+
+    it('calls relation authorize functions with the relation', async () => {
+      const path = (controller: string) => `/${controller}/${guest.id}/recipes`
+      expect((await request(path('staff'), admin)).status).toBe(200)
+      expect((await request(path('staff'), cook)).status).toBe(401)
+      expect((await request(path('kitchen'), cook)).status).toBe(200)
+      expect((await request(path('kitchen'), admin)).status).toBe(401)
     })
 
     it('supports async authorize functions', async () => {

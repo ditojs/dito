@@ -115,6 +115,23 @@ class Readers extends UsersController {
   override modelClass = Member
 }
 
+// Sub-classes with their own `collection` inherit the authorization of the
+// password, passkey and TOTP actions, also two levels deep:
+class Writers extends UsersController {
+  override modelClass = Member
+  override collection: any = {
+    allow: ['post login', 'post password']
+  }
+}
+
+class SubReaders extends Readers {
+  override collection: any = {
+    allow: ['post login', 'post password']
+  }
+}
+
+class SubWriters extends Writers {}
+
 // Members whose patches need a role:
 class Editors extends UsersController {
   override modelClass = Member
@@ -170,6 +187,9 @@ describe('UsersController', () => {
       Leads,
       Admins,
       Readers,
+      Writers,
+      SubReaders,
+      SubWriters,
       Editors,
       Profiles,
       Moderators
@@ -613,13 +633,16 @@ describe('UsersController', () => {
   })
 
   describe('password changes', () => {
-    const changePassword = async (body: Record<string, unknown>) => {
+    const changePassword = async (
+      body: Record<string, unknown>,
+      path = 'readers'
+    ) => {
       const request = createClient(url)
-      await request('/readers/login', {
+      await request(`/${path}/login`, {
         method: 'POST',
         body: { username: 'ada', password: 'secret' }
       })
-      return request('/readers/password', { method: 'POST', body })
+      return request(`/${path}/password`, { method: 'POST', body })
     }
 
     const isPassword = async (password: string) =>
@@ -638,6 +661,18 @@ describe('UsersController', () => {
       expect(response.data).toEqual({ success: true })
       expect(await isPassword('changed')).toBe(true)
     })
+
+    it.each(['writers', 'sub-readers', 'sub-writers'])(
+      'changes the password through the sub-class at /%s',
+      async path => {
+        const response = await changePassword(
+          { currentPassword: 'secret', password: 'changed' },
+          path
+        )
+        expect(response.status).toBe(200)
+        expect(await isPassword('changed')).toBe(true)
+      }
+    )
 
     it('ends the other sessions of the user, but not its own', async () => {
       const other = createClient(url)

@@ -1,8 +1,8 @@
 export function describeFunction(func) {
-  // A helper that describes a method by turning it int a short version without
-  // printing its body.
+  // A helper that describes a function by turning it into a short version
+  // without printing its body. Methods are described like functions.
   const match = func.toString().match(
-    /^\s*(async\s*|)(?:function[^(]*\(([^)]*)\)|\(([^)]*)\)\s*=>|(\S*)\s*=>)\s*(.)/
+    /^\s*(async\s*|)(?:(?:function[^(]*|'[^']*'|"[^"]*"|[\w$]+)\(([^)]*)\)|\(([^)]*)\)\s*=>|(\S*)\s*=>)\s*(.)/
   )
   if (match) {
     const body = match[5] === '{' ? '{ ... }' : '...'

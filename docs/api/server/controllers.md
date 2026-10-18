@@ -156,7 +156,11 @@ type Authorize =
   | boolean
   | string
   | string[]
-  | ((ctx: KoaContext, member?: Model) => Authorize | Promise<Authorize>)
+  | ((
+      this: Controller,
+      ctx: KoaContext,
+      member?: Model
+    ) => Authorize | Promise<Authorize>)
 
 // On controllers and actions objects, also keyed by action name (or by data
 // path on `assets`):
@@ -172,10 +176,14 @@ type ControllerAuthorize = Authorize | Record<string, Authorize>
 | `'$owner'` | `member.$hasOwner(user)` returns a truthy value, see [`$hasOwner()`](./model.md#hasowner). |
 | any string | `user.$hasRole(role)` returns a truthy value, see [`UserMixin`](./model.md#usermixin). |
 | array      | Any of its entries authorizes. |
-| function   | Called with `(ctx, member)`; its result is checked like a setting. Returning `undefined` denies, returning `null` authorizes like unset. |
+| function   | Called with `(ctx, member)` and the controller as `this`, in [relations](#relationcontroller) their `RelationController`, with the declaring controller as `this.parent`; its result is checked like a setting. Returning `undefined` denies, returning `null` authorizes like unset. |
 
 Strings and arrays deny requests without an authenticated user
 (`ctx.state.user`, see [`UserMixin`](./model.md#sessions)).
+
+In controllers that are subclassed, write functions that use `this` as methods,
+not arrow functions: subclasses inherit them from a separate instance of the
+controller, which an arrow function keeps as its `this`.
 
 `authorize` can be set in three places, from strongest to weakest:
 
