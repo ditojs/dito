@@ -180,6 +180,14 @@ export interface ApplicationConfig {
      */
     etag?: boolean
     /**
+     * How often `app.deleteExpiredRecords()` runs while the server is
+     * started, at most 24 days, or `false` to never run it.
+     *
+     * @defaultValue `'1h'`
+     * @see https://www.npmjs.com/package/parse-duration
+     */
+    deleteExpiredRecordsEvery?: string | number | false
+    /**
      * @defaultValue `false`
      * @see https://github.com/koajs/session
      */
@@ -291,24 +299,24 @@ export interface ApplicationConfig {
   } & PinoLoggerOptions
   assets?: {
     /**
-     * Threshold after which unused assets that haven't
-     * seen changes for given timeframe are removed.
+     * The minimum age after which unused assets without changes are deleted,
+     * at the next run of `app.deleteExpiredRecords()`, or `false` to keep
+     * them.
      *
      * @example '1 hr 20 mins'
      * @defaultValue `'24h'`
      * @see https://www.npmjs.com/package/parse-duration
      */
-    cleanupTimeThreshold?: string | number
+    deleteUnusedAfter?: string | number | false
     /**
-     * Threshold after which dangling assets (uploaded
-     * but never persisted) are removed. Cannot be set to
-     * 0 as the file would be deleted immediately after
-     * upload.
+     * The minimum age after which unsaved assets (uploaded but never stored in
+     * a model) are deleted, or `false` to keep them. Must not be `0`, or
+     * uploads would be deleted before their form is saved.
      *
      * @defaultValue `'24h'`
      * @see https://www.npmjs.com/package/parse-duration
      */
-    danglingTimeThreshold?: string | number
+    deleteUnsavedAfter?: string | number | false
   }
 }
 
@@ -648,6 +656,11 @@ export class Application<$Models extends Models = Models> {
   execute(): Promise<void>
   start(): Promise<void>
   stop(timeout?: number): Promise<void>
+  /**
+   * Calls `deleteExpiredRecords()` on every model, and reports their errors.
+   * @overridable
+   */
+  deleteExpiredRecords(): Promise<void>
 
   /** Configures the pino logger instance. */
   setupLogger(): void
@@ -802,9 +815,12 @@ export class Application<$Models extends Models = Models> {
     lost: { key: string; references: AssetReference[] }[]
   }>
 
-  /** Releases unused assets past the cleanup threshold. */
+  /**
+   * Releases unused and unsaved assets past `deleteUnusedAfter` and
+   * `deleteUnsavedAfter`, or past `olderThan` for both.
+   */
   releaseUnusedAssets(options?: {
-    timeThreshold?: string | number | null
+    olderThan?: string | number | null
     transaction?: objection.Transaction | null
     concurrency?: number
   }): Promise<Model[]>
@@ -823,9 +839,9 @@ export class Application<$Models extends Models = Models> {
 
   /**
    * Handles added, removed, and changed asset files.
-   * Imports foreign assets, updates counts, and schedules
-   * cleanup. Returns the imported files, or an empty array
-   * if no AssetModel is registered.
+   * Imports foreign assets and updates counts. Returns
+   * the imported files, or an empty array if no
+   * AssetModel is registered.
    */
   handleAddedAndRemovedAssets(
     storage: Storage,
@@ -1757,6 +1773,13 @@ export class Model extends ObjectionModel {
   static afterDelete(
     args: objection.StaticHookArguments<Model>
   ): Promise<void>
+
+  /**
+   * Deletes the model's expired records, called by
+   * `app.deleteExpiredRecords()`.
+   * @overridable
+   */
+  static deleteExpiredRecords(): Promise<void>
 
   static count: {
     (column?: objection.ColumnRef, options?: { as: string }): Promise<number>
@@ -4419,6 +4442,7 @@ export const SessionMixin: <T extends Constructor<{}>>(
   Constructor<{
     id: string
     value: Record<string, unknown>
+    expiresAt: Date | null
   }>
 
 export const SessionModel: ReturnType<typeof SessionMixin<typeof Model>>

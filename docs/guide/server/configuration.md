@@ -73,7 +73,7 @@ export default {
   },
 
   assets: {
-    cleanupTimeThreshold: '24h'
+    deleteUnusedAfter: '24h'
   }
 }
 ```

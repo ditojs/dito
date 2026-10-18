@@ -106,12 +106,9 @@ services, then models and controllers, so services can use storages in
 in a running server, such as timers, belongs in `start()`:
 
 ```js
-export class CleanupService extends Service {
+export class RatesService extends Service {
   async start() {
-    this.timer = setInterval(
-      () => this.app.releaseUnusedAssets(),
-      60 * 60 * 1000
-    )
+    this.timer = setInterval(() => this.updateRates(), 60 * 60 * 1000)
   }
 
   async stop() {

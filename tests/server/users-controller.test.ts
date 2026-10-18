@@ -234,12 +234,7 @@ describe('UsersController', () => {
   let member: Member
 
   beforeAll(async () => {
-    await createTestDatabase(app, Member, Lead)
-    // Session ids are strings, not auto-incrementing integers.
-    await app.knex.schema.createTable('Session', table => {
-      table.string('id').primary()
-      table.jsonb('value')
-    })
+    await createTestDatabase(app, Session, Member, Lead)
     // The computed `password` property isn't stored in the database.
     for (const name of ['Member', 'Lead']) {
       await app.knex.schema.alterTable(name, table => {

@@ -130,11 +130,11 @@ describe('Application', () => {
 
     it('merges the asset and logger options with the defaults', () => {
       const app = createApp({
-        config: { assets: { cleanupTimeThreshold: 0 } }
+        config: { assets: { deleteUnusedAfter: 0 } }
       })
       expect(app.config.assets).toEqual({
-        cleanupTimeThreshold: 0,
-        danglingTimeThreshold: '24h'
+        deleteUnusedAfter: 0,
+        deleteUnsavedAfter: '24h'
       })
       expect(app.config.logger).toMatchObject({
         level: 'silent',
@@ -146,13 +146,67 @@ describe('Application', () => {
     it('keeps the defaults of other applications untouched', () => {
       createApp({
         config: {
-          assets: { cleanupTimeThreshold: 0 },
+          assets: { deleteUnusedAfter: 0 },
           logger: { base: { app: 'other' } }
         }
       })
       const app = createApp()
-      expect(app.config.assets.cleanupTimeThreshold).toBe('24h')
+      expect(app.config.assets.deleteUnusedAfter).toBe('24h')
       expect(app.config.logger.base).toBe(null)
+    })
+
+    it('rejects unknown asset options', () => {
+      expect(() =>
+        createApp({ config: { assets: { cleanupTimeThreshold: '100y' } } })
+      ).toThrow(`Unknown asset option: 'assets.cleanupTimeThreshold'.`)
+    })
+
+    it('accepts `false` and durations for the asset options', () => {
+      for (const assets of [
+        { deleteUnusedAfter: '0s', deleteUnsavedAfter: false },
+        { deleteUnusedAfter: false, deleteUnsavedAfter: '1ms' }
+      ]) {
+        expect(createApp({ config: { assets } }).config.assets).toEqual(assets)
+      }
+    })
+
+    it.each([
+      ['deleteUnusedAfter', null, 'null'],
+      ['deleteUnusedAfter', '', `''`],
+      ['deleteUnusedAfter', 'soon', `'soon'`],
+      ['deleteUnusedAfter', -1, '-1'],
+      ['deleteUnusedAfter', true, 'true'],
+      ['deleteUnsavedAfter', 0, '0'],
+      ['deleteUnsavedAfter', '0s', `'0s'`]
+    ])('rejects %s: %o', (key, value, formatted) => {
+      expect(() => createApp({ config: { assets: { [key]: value } } })).toThrow(
+        `Invalid duration for 'assets.${key}': ${formatted}. Use a duration${
+          key === 'deleteUnsavedAfter' ? ' above 0' : ''
+        }, or \`false\` to keep the assets.`
+      )
+    })
+
+    it.each([
+      [0, '0'],
+      [null, 'null'],
+      ['soon', `'soon'`],
+      ['25d', `'25d'`],
+      ['30d', `'30d'`],
+      [Infinity, 'Infinity']
+    ])('rejects deleteExpiredRecordsEvery: %o', (value, formatted) => {
+      expect(() =>
+        createApp({ config: { app: { deleteExpiredRecordsEvery: value } } })
+      ).toThrow(
+        `Invalid duration for 'app.deleteExpiredRecordsEvery': ${formatted}. ` +
+        'Use a duration up to 24 days, or `false` to turn it off.'
+      )
+    })
+
+    it('accepts deleteExpiredRecordsEvery up to 24 days', () => {
+      const deleteExpiredRecordsEvery = '24d'
+      expect(() =>
+        createApp({ config: { app: { deleteExpiredRecordsEvery } } })
+      ).not.toThrow()
     })
 
     it('silences all logging with `log: false`', () => {
@@ -794,6 +848,86 @@ describe('Application', () => {
       } finally {
         exit.mockRestore()
       }
+    })
+  })
+
+  describe('expired records', () => {
+    const hour = 60 * 60 * 1000
+
+    function createModels(deleted) {
+      class Pantry extends Model {
+        static async deleteExpiredRecords() {
+          deleted.push('Pantry')
+          throw new Error('Pantry is locked')
+        }
+      }
+
+      class Fridge extends Model {
+        static async deleteExpiredRecords() {
+          deleted.push('Fridge')
+        }
+      }
+
+      return { Pantry, Fridge }
+    }
+
+    async function getDeletedWhileRunning(config, duration) {
+      const deleted = []
+      const app = createApp({
+        config: { app: config, log: { errors: false } },
+        models: createModels(deleted)
+      })
+      app.on('error', () => {})
+      const advanceTime = async ms => {
+        await vi.advanceTimersByTimeAsync(ms)
+        return deleted.length
+      }
+      vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] })
+      try {
+        await app.start()
+        const deletedBefore = await advanceTime(duration - 1)
+        const deletedAfter = await advanceTime(1)
+        await app.stop()
+        const deletedAfterStop = await advanceTime(duration)
+        return [deletedBefore, deletedAfter, deletedAfterStop]
+      } finally {
+        vi.useRealTimers()
+      }
+    }
+
+    it('deletes the expired records of each model on its own', async () => {
+      const deleted = []
+      const app = createApp({ models: createModels(deleted) })
+      const onError = vi.fn()
+      app.on('error', onError)
+      await app.deleteExpiredRecords()
+      expect(deleted).toEqual(['Pantry', 'Fridge'])
+      expect(onError).toHaveBeenCalledExactlyOnceWith(
+        new Error('Pantry is locked')
+      )
+    })
+
+    it('logs the errors without error listeners', async () => {
+      const app = createApp({ models: createModels([]) })
+      const logError = vi.spyOn(app, 'logError').mockImplementation(() => {})
+      await app.deleteExpiredRecords()
+      expect(logError).toHaveBeenCalledExactlyOnceWith(
+        new Error('Pantry is locked')
+      )
+    })
+
+    it('deletes expired records every hour while running', async () => {
+      expect(await getDeletedWhileRunning({}, hour)).toEqual([0, 2, 2])
+    })
+
+    it('deletes expired records every `deleteExpiredRecordsEvery`', async () => {
+      const config = { deleteExpiredRecordsEvery: '10m' }
+      expect(await getDeletedWhileRunning(config, hour / 6)).toEqual([0, 2, 2])
+    })
+
+    it('never deletes expired records with `deleteExpiredRecordsEvery: false`', async () => {
+      const config = { deleteExpiredRecordsEvery: false }
+      expect(await getDeletedWhileRunning(config, hour)).toEqual([0, 0, 0])
     })
   })
 

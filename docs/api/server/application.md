@@ -76,8 +76,8 @@ augmentation of `ApplicationConfig` for project-specific settings.
 | `knex.typeParsers`        | `Record<number, (value) => any>`                 |                 | PostgreSQL type parsers by type OID, applied when `knex.client` is `'postgresql'`. Parsers for `numeric` (1700) and `int8` (20) also install the matching array parsers. |
 | `storages`                | `Record<string, StorageConfig>`                  |                 | Storage configurations by name, see [Storage](storage.md).                                                                              |
 | `services`                | `Record<string, object \| false>`                |                 | Service configurations by service name. `false` removes the service. Each added service needs an entry.                                 |
-| `assets.cleanupTimeThreshold`  | `string \| number`                          | `'24h'`         | Duration after which unused assets without changes are removed. Strings are parsed by [parse-duration](https://www.npmjs.com/package/parse-duration). |
-| `assets.danglingTimeThreshold` | `string \| number`                          | `'24h'`         | Duration after which uploaded but never persisted assets are removed. Must not be `0`.                                                  |
+| `assets.deleteUnusedAfter`  | `string \| number \| false`                 | `'24h'`         | Minimum age of unused assets without changes before they are deleted, at the next run of [`deleteExpiredRecords()`](#deleteexpiredrecords). `false` keeps them. Strings are parsed by [parse-duration](https://www.npmjs.com/package/parse-duration). |
+| `assets.deleteUnsavedAfter` | `string \| number \| false`                 | `'24h'`         | Minimum age of uploaded but never saved assets before they are deleted, like `deleteUnusedAfter`. Must not be `0`. |
 
 ### config.log
 
@@ -104,6 +104,7 @@ augmentation of `ApplicationConfig` for project-specific settings.
 | `compress`       | `boolean \| object`                              | `true`  | Response compression, options of [koa-compress](https://github.com/koajs/compress#options). Brotli quality defaults to 4. |
 | `etag`           | `boolean`                                        | `true`  | Conditional GET and ETag headers.                                                                            |
 | `bodyParser`     | `object`                                         |         | Options of [koa-bodyparser](https://github.com/koajs/bodyparser#options).                                    |
+| `deleteExpiredRecordsEvery` | `string \| number \| false`          | `'1h'`  | How often [`deleteExpiredRecords()`](#deleteexpiredrecords) runs, only in apps that call [`start()`](#start), first one interval after it, at most 24 days (Node's timers can't wait longer). `false` never runs it. Apps that don't start the server, e.g. with their own HTTP server through `app.callback()` or in short-lived processes, call `deleteExpiredRecords()` themselves or run [`db:delete_expired_records`](#commands) on a schedule. |
 | `session`        | `boolean \| object`                              | `false` | Sessions through [koa-session](https://github.com/koajs/session), with `sameSite: 'lax'` as the default for the cookie: admins on another site than the server need `'none'`, which requires `secure`, and behind a TLS proxy also `app.proxy: true`. `modelClass` (a name or a model class) stores them in a model, e.g. one using [`SessionMixin`](model.md#sessionmixin). `autoCommit` (default `true`) commits the session after each request, on transacted routes only when the request succeeds. |
 | `passport`       | `boolean`                                        |         | Deprecated, without effect: users are always handled, see [`UserMixin`](model.md#usermixin). |
 | `auth`           | `object`                                         |         | Authentication beyond passwords, see [`config.app.auth`](#configappauth).                                     |
@@ -207,9 +208,10 @@ await app.start()
 ```
 
 Calls [`setup()`](#setup), emits `'before:start'` (which starts the services),
-listens on `config.server`, sets `isRunning` and emits `'after:start'`. Unless
-`log.errors` is `false`, errors emitted on the app are logged while it runs.
-Returns `Promise<void>`.
+listens on `config.server`, sets `isRunning`, starts the timer of
+[`deleteExpiredRecords()`](#deleteexpiredrecords) and emits `'after:start'`.
+Unless `log.errors` is `false`, errors emitted on the app are logged while it
+runs. Returns `Promise<void>`.
 
 ### stop()
 
@@ -217,7 +219,8 @@ Returns `Promise<void>`.
 await app.stop(timeout)
 ```
 
-Emits `'before:stop'`, clears `isRunning`, closes the server, and emits
+Stops the timer of [`deleteExpiredRecords()`](#deleteexpiredrecords), emits
+`'before:stop'`, clears `isRunning`, closes the server, and emits
 `'after:stop'` (which stops the services). Rejects if the server isn't
 running.
 
@@ -237,6 +240,18 @@ await app.execute()
 
 Calls [`start()`](#start), and on failure logs the error and exits the process
 with code `-1`. Returns `Promise<void>`.
+
+### deleteExpiredRecords()
+
+```js
+await app.deleteExpiredRecords()
+```
+
+Calls [`deleteExpiredRecords()`](model.md#static-deleteexpiredrecords) on every
+model, each on its own, so that one failing doesn't stop the others. Their
+errors are emitted as `'error'` events, or logged without listeners. Runs every
+`config.app.deleteExpiredRecordsEvery` while the server is started, and can be
+called directly, e.g. from a script. Returns `Promise<void>`. *Hook.*
 
 ## Events
 
@@ -724,24 +739,23 @@ controllers call `createAssets()` for uploads.
 
 ```js
 const released = await app.releaseUnusedAssets({
-  timeThreshold,
+  olderThan,
   transaction,
   concurrency
 })
 ```
 
 Removes the files and records of assets that are no longer referenced
-(`count` 0) and unchanged for `assets.cleanupTimeThreshold`, or never
-persisted for `assets.danglingTimeThreshold`. Assets that data still references
-despite their count are kept and get their count corrected, with a warning.
-Writes of asset data call it once their transaction is completed, in its own
-transaction, and report its errors through the `'error'` event, or log them.
+(`count` 0) and unchanged for `assets.deleteUnusedAfter`, or never saved for
+`assets.deleteUnsavedAfter`. Assets that data still references despite their
+count are kept and get their count corrected, with a warning. The asset model
+calls it from [`deleteExpiredRecords()`](#deleteexpiredrecords).
 
 #### Parameters
 
 | Name            | Type                  | Description                                           |
 | --------------- | --------------------- | ----------------------------------------------------- |
-| `timeThreshold` | `string \| number`    | Overrides both thresholds.                            |
+| `olderThan`     | `string \| number`    | Overrides `deleteUnusedAfter` and `deleteUnsavedAfter`. |
 | `transaction`   | `Transaction`         | Transaction to run in.                                |
 | `concurrency`   | `number`              | Concurrent file removals. Default `8`.                |
 
@@ -829,9 +843,8 @@ await app.handleAddedAndRemovedAssets(
 )
 ```
 
-Imports foreign files among the added and changed ones, adjusts the reference
-counts, and releases unused assets after `assets.cleanupTimeThreshold` when
-counts changed. Returns `Promise<AssetFile[]>`: the imported files. Each
+Imports foreign files among the added and changed ones, and adjusts the
+reference counts. Returns `Promise<AssetFile[]>`: the imported files. Each
 occurrence of a file in `addedFiles` and `removedFiles` adds or removes one
 reference. Throws an `AssetError` when an added file's asset was released in the
 meantime.
@@ -939,7 +952,8 @@ application. Projects usually wrap them in `package.json` scripts:
     "db:seed": "dito db:seed ./src/server/app.js",
     "db:create_migration": "dito db:create_migration ./src/server/app.js",
     "db:list_asset_config": "dito db:list_asset_config ./src/server/app.js",
-    "db:recount_assets": "dito db:recount_assets ./src/server/app.js"
+    "db:recount_assets": "dito db:recount_assets ./src/server/app.js",
+    "db:delete_expired_records": "dito db:delete_expired_records ./src/server/app.js"
   }
 }
 ```
@@ -960,6 +974,7 @@ when the command succeeds, and `1` with the error printed otherwise.
 | `db:create_migration`  | application   | Creates a migration for the tables of models. |
 | `db:list_asset_config` | application   | Prints the asset configuration of models. |
 | `db:recount_assets`    | application   | Recounts the references of all assets, see [`recountAssets()`](#recountassets). `--dry-run` only prints what it would change. |
+| `db:delete_expired_records` | application | Sets up the application and runs [`deleteExpiredRecords()`](#deleteexpiredrecords) once. Fails when a model's deletion fails. |
 | `console`              | application   | Starts the application with an interactive console. |
 
 Migrations are read from the directory set in the `knex.migrations`

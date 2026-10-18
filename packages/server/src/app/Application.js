@@ -20,6 +20,7 @@ import Router from '@ditojs/router'
 import {
   isArray,
   isObject,
+  isNumber,
   asArray,
   isPlainObject,
   isModule,
@@ -64,6 +65,8 @@ import { AsyncLocalStorage } from 'async_hooks'
 
 export class Application extends Koa {
   #logger
+  #deleteExpiredRecordsEvery
+  #deleteExpiredRecordsInterval
 
   constructor({
     basePath = process.cwd(),
@@ -97,6 +100,32 @@ export class Application extends Koa {
       logger: assignDeeply({}, defaultLoggerOptions, getOptions(logger)),
       ...rest
     }
+    // Fail loudly on unknown or invalid asset options, as falling back to the
+    // defaults would delete files that apps mean to keep:
+    for (const [key, value] of Object.entries(this.config.assets)) {
+      if (!(key in defaultAssetOptions)) {
+        throw new Error(`Unknown asset option: 'assets.${key}'.`)
+      }
+      // Unsaved uploads need time for their form to be saved:
+      const isUnsaved = key === 'deleteUnsavedAfter'
+      checkDuration(`assets.${key}`, value, {
+        min: isUnsaved ? 1 : 0,
+        usage: `Use a duration${
+          isUnsaved ? ' above 0' : ''
+        }, or \`false\` to keep the assets.`
+      })
+    }
+    const { deleteExpiredRecordsEvery = '1h' } = app
+    this.#deleteExpiredRecordsEvery = checkDuration(
+      'app.deleteExpiredRecordsEvery',
+      deleteExpiredRecordsEvery,
+      {
+        min: 1,
+        // Node fires intervals above about 24.8 days every millisecond:
+        max: getDuration('24d'),
+        usage: 'Use a duration up to 24 days, or `false` to turn it off.'
+      }
+    )
     this.keys = keys
     this.proxy = !!app.proxy
     this.validator = validator || new Validator()
@@ -822,6 +851,12 @@ export class Application extends Koa {
       })
     })
     this.isRunning = true
+    if (this.#deleteExpiredRecordsEvery !== false) {
+      this.#deleteExpiredRecordsInterval = setInterval(
+        () => this.deleteExpiredRecords(),
+        this.#deleteExpiredRecordsEvery
+      ).unref()
+    }
     await this.emit('after:start')
   }
 
@@ -829,6 +864,7 @@ export class Application extends Koa {
     if (!this.server) {
       throw new Error('Dito.js server is not running')
     }
+    clearInterval(this.#deleteExpiredRecordsInterval)
 
     const promise = (async () => {
       await this.emit('before:stop')
@@ -871,6 +907,23 @@ export class Application extends Koa {
     } catch (err) {
       this.logError(err)
       process.exit(-1)
+    }
+  }
+
+  // @overridable
+  async deleteExpiredRecords() {
+    // Delete the records of each model on its own, so that one failing doesn't
+    // stop the others, and report the errors, as nobody awaits the timer:
+    for (const modelClass of Object.values(this.models)) {
+      try {
+        await modelClass.deleteExpiredRecords()
+      } catch (error) {
+        if (this.listenerCount('error') > 0) {
+          this.emit('error', error)
+        } else {
+          this.logError(error)
+        }
+      }
     }
   }
 
@@ -934,17 +987,6 @@ export class Application extends Koa {
           changeCount(addedFiles, 1),
           changeCount(removedFiles, -1)
         ])
-        const cleanupTimeThreshold = getDuration(
-          this.config.assets.cleanupTimeThreshold
-        )
-        if (cleanupTimeThreshold > 0) {
-          setTimeout(
-            // Don't pass `transaction` here, as we want this delayed execution
-            // to create its own transaction.
-            () => this.releaseUnusedAssets(),
-            cleanupTimeThreshold
-          )
-        }
       }
     }
     return importedFiles
@@ -1215,43 +1257,41 @@ export class Application extends Koa {
   }
 
   async releaseUnusedAssets({
-    timeThreshold = null,
+    olderThan = null,
     transaction = null,
     concurrency = 8
   } = {}) {
     const AssetModel = this.getModel('Asset')
-    if (AssetModel) {
-      const { assets } = this.config
-      const cleanupTimeThreshold = getDuration(
-        timeThreshold ?? assets.cleanupTimeThreshold
-      )
-      const danglingTimeThreshold = getDuration(
-        timeThreshold ?? assets.danglingTimeThreshold
-      )
+    const { assets } = this.config
+    // Calculate the date math in JS instead of SQL, as there is no easy
+    // cross-SQL way to do `now() - interval X hours`:
+    const getDate = duration =>
+      duration === false ? null : subtractDuration(new Date(), duration)
+    const unusedDate = getDate(olderThan ?? assets.deleteUnusedAfter)
+    const unsavedDate = getDate(olderThan ?? assets.deleteUnsavedAfter)
+    if (AssetModel && (unusedDate || unsavedDate)) {
       return AssetModel.transaction(transaction, async trx => {
-        // Calculate the date math in JS instead of SQL, as there is no easy
-        // cross-SQL way to do `now() - interval X hours`:
-        // NOTE: `subtractDuration()` changes the passed date.
-        const cleanupDate = subtractDuration(new Date(), cleanupTimeThreshold)
-        const danglingDate = subtractDuration(new Date(), danglingTimeThreshold)
         const orphanedAssets = await AssetModel.query(trx)
           .where('count', 0)
-          .andWhere(query =>
-            query
-              // Assets that lost their last reference:
-              .where(query =>
+          .andWhere(query => {
+            // Assets that lost their last reference:
+            if (unusedDate) {
+              query.orWhere(query =>
                 query
                   .where('updatedAt', '!=', ref('createdAt'))
-                  .andWhere('updatedAt', '<=', cleanupDate)
+                  .andWhere('updatedAt', '<=', unusedDate)
               )
-              // Assets that were uploaded but never persisted, protected from
-              // being deleted right away when `cleanupTimeThreshold = 0`:
-              .orWhere(query =>
+            }
+            // Assets that were uploaded but never saved, protected from being
+            // deleted right away when `deleteUnusedAfter` is 0:
+            if (unsavedDate) {
+              query.orWhere(query =>
                 query
                   .where('updatedAt', '=', ref('createdAt'))
-                  .andWhere('updatedAt', '<=', danglingDate)
+                  .andWhere('updatedAt', '<=', unsavedDate)
               )
-          )
+            }
+          })
           // Make concurrent writes that reference these assets wait:
           .forUpdate()
         const unusedAssets = []
@@ -1319,15 +1359,29 @@ function getOptions(options) {
   return isObject(options) ? options : {}
 }
 
+// Durations are `false` to turn something off, or from `min` to `max` ms:
+function checkDuration(name, value, { min, max = Infinity, usage }) {
+  const duration = value === false ? value : getDuration(value)
+  if (
+    duration === false ||
+    isNumber(duration) && duration >= min && duration <= max
+  ) {
+    return duration
+  } else {
+    throw new Error(
+      `Invalid duration for '${name}': ${util.inspect(value)}. ${usage}`
+    )
+  }
+}
+
 const defaultAssetOptions = {
-  // Only remove unused or dangling assets that haven't seen changes for
-  // these given time frames. Set to `0` to clean up instantly.
-  cleanupTimeThreshold: '24h',
-  // Dangling assets are those that got uploaded but never actually persisted in
-  // the model. This can happen when the admin uploads a file but doesn't store
-  // the associated form. This cannot be set to 0 or else the the file would be
-  // deleted immediately after upload.
-  danglingTimeThreshold: '24h'
+  // Only delete unused assets that haven't seen changes for this long, or
+  // `false` to keep them:
+  deleteUnusedAfter: '24h',
+  // Unsaved assets got uploaded but never stored in a model, e.g. when the
+  // admin uploads a file but doesn't save the form. This must not be `0`, or
+  // uploads would be deleted before their form is saved:
+  deleteUnsavedAfter: '24h'
 }
 
 const { err, req, res } = pino.stdSerializers
