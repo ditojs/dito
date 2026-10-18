@@ -9,7 +9,7 @@ import {
   createConfirmAccessDialog,
   createInvalidPasswordNotification,
   isPasskeyPromptCancelled
-} from './security.js'
+} from '../dialogs/authentication.js'
 import type { ViewRegistry } from './ViewRegistry.js'
 import type { AdminContext } from './AdminContext.ts'
 import type { Api } from './types.ts'

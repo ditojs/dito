@@ -1,4 +1,7 @@
-import type { Page } from '@playwright/test'
+import type {
+  Page,
+  PageAssertionsToHaveScreenshotOptions
+} from '@playwright/test'
 import { expect } from './fixtures.js'
 import { Project } from './models/Project.js'
 
@@ -86,10 +89,14 @@ export async function openProject(page: Page, url: string, tab?: string) {
 // `toHaveScreenshot()` finishes transitions and animations itself, e.g. of
 // menus, pickers and notifications. The screenshots capture the viewport, as
 // the admin scrolls its own containers instead of the page.
-export async function expectScreenshot(page: Page, name: string) {
+export async function expectScreenshot(
+  page: Page,
+  name: string,
+  options?: PageAssertionsToHaveScreenshotOptions
+) {
   await page.waitForLoadState('networkidle')
   await page.evaluate(() => document.fonts.ready)
-  await expect(page).toHaveScreenshot(name)
+  await expect(page).toHaveScreenshot(name, options)
 }
 
 // A phone in portrait. Unlike narrow viewports, phones widen the page to

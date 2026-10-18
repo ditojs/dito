@@ -14,7 +14,7 @@ import { computed, inject } from 'vue'
 import { useRouter } from 'vue-router'
 import { DitoMenuButton } from '@ditojs/ui/src'
 import { adminContextKey } from '../utils/keys.ts'
-import { showSecurityDialog } from '../utils/security.js'
+import { showSecurityDialog } from '../dialogs/security.js'
 
 export default {
   components: { DitoMenuButton },

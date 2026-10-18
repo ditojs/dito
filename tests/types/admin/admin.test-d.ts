@@ -70,6 +70,16 @@ describe('DitoAdmin', () => {
     ])
   })
 
+  it(`rejects paths of the authentication features' resources`, () => {
+    assertType<ConstructorParameters<typeof DitoAdmin>>([
+      '#app',
+      {
+        // @ts-expect-error: They use the action names of `UsersController`.
+        api: { users: { passkeyLogin: { path: 'passkey-sign-in' } } }
+      }
+    ])
+  })
+
   it('accepts the login and spinner options', () => {
     assertType<ConstructorParameters<typeof DitoAdmin>>([
       '#app',

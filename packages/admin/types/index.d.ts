@@ -268,7 +268,9 @@ export interface ApiConfig {
   /**
    * Authentication resource configuration. The `path` defines the
    * user collection endpoint, and `login`, `logout`, and `session`
-   * are nested as child resources under it (e.g. `users/login`).
+   * are nested as child resources under it (e.g. `users/login`). The
+   * password changes, password resets, passkeys and TOTP use the action
+   * names of `UsersController` under it (e.g. `users/passkey-login`).
    */
   users?: {
     /**
@@ -323,54 +325,6 @@ export interface ApiConfig {
        */
       path?: string
     }
-    /**
-     * Posted to by the security dialog with the new password, with
-     * `authentication.hasPasswordChange` and the default path `'password'`.
-     */
-    password?: { path?: string; method?: HttpMethod }
-    /**
-     * The password reset endpoints of `authentication.hasPasswordReset`,
-     * posted to with the username and with the token and the new password,
-     * with the default paths `'password-reset'` and `'password-reset-confirm'`.
-     */
-    passwordReset?: { path?: string; method?: HttpMethod }
-    passwordResetConfirm?: { path?: string; method?: HttpMethod }
-    /**
-     * The passkey endpoints of `authentication.hasPasskeys`, posted to, with
-     * the default paths `'passkey-login-options'`, `'passkey-login'` and
-     * `'passkey-options'`.
-     */
-    passkeyLoginOptions?: { path?: string; method?: HttpMethod }
-    passkeyLogin?: { path?: string; method?: HttpMethod }
-    passkeyOptions?: { path?: string; method?: HttpMethod }
-    /**
-     * The passkeys of the logged-in user, listed, added and deleted by the
-     * security dialog.
-     */
-    passkeys?: {
-      /**
-       * @defaultValue `'passkeys'`
-       */
-      path?: string
-    }
-    /**
-     * Posted to with the code of users with TOTP, when the login answers
-     * `codeRequired`, with the default path `'login-code'`.
-     */
-    loginCode?: { path?: string; method?: HttpMethod }
-    /**
-     * The TOTP of the logged-in user, loaded, set up and turned off by the
-     * security dialog, and confirmed through `totpConfirm`, with the default
-     * paths `'totp'` and `'totp-confirm'`.
-     */
-    totp?: { path?: string }
-    totpConfirm?: { path?: string; method?: HttpMethod }
-    /**
-     * Posted to with the password, the code of users with TOTP or a passkey,
-     * when security changes answer `confirmationRequired`, with the default
-     * path `'confirm-access'`.
-     */
-    confirmAccess?: { path?: string; method?: HttpMethod }
   }
   /**
    * Custom resource path handlers, keyed by resource type. Merged

@@ -2,7 +2,8 @@
 // creates the app with its provides, plugins and directives, `DitoRoot` sets
 // up the routes of the views, and `DitoView` or `DitoForm` own the data and its
 // `DataModel`. Only the network is stubbed: `api.request()` answers the session
-// request with a user, and passes all other requests to the test's `request()`.
+// request with a user, and passes all other requests to the test's `request()`,
+// unless a real server answers them, see `mountAdmin()`.
 import { vi, afterEach } from 'vitest'
 import { nextTick } from 'vue'
 import { VueWrapper, DOMWrapper, flushPromises } from '@vue/test-utils'
@@ -97,21 +98,29 @@ export async function mountForm({
 }
 
 // Mounts `DitoAdmin` with `views` into a new element in the document, and
-// waits until the views are resolved and their routes are set up.
-// `request(options)` handles the API requests other than the session request,
-// and returns the response as `{ data }` or throws. `api` is merged into the
-// API settings, e.g. `api.defaults` or `api.formats`, and `settings` and
-// `authentication` are the ones of the `dito` object.
+// waits until the views are resolved and their routes are set up, or until it
+// asks to log in. `request(options)` handles the API requests other than the
+// session request, and returns the response as `{ data }` or throws. With the
+// URL of a `server`, e.g. of a scenario's app, the server answers all requests
+// instead. The admin starts at `path`. `api` is merged into the API settings,
+// e.g. `api.defaults` or `api.formats`, and `settings` and `authentication`
+// are the ones of the `dito` object.
 export async function mountAdmin({
   views,
   request = null,
+  server = null,
+  path = '/',
   api = {},
   settings = {},
   authentication = {},
   options = {}
 }) {
-  // The router uses the web history, reset it to start at the root:
-  window.history.replaceState(null, '', '/')
+  if (server) {
+    // Run the admin on the server's origin, which keeps its session cookie:
+    window.happyDOM.setURL(server)
+  }
+  // The router uses the web history, reset it to start at `path`:
+  window.history.replaceState(null, '', path)
   const element = document.createElement('div')
   document.body.appendChild(element)
   const requestStub = vi.fn(async options => {
@@ -128,7 +137,14 @@ export async function mountAdmin({
   window.dito = { base: '/', settings, authentication }
   const dito = new DitoAdmin(element, {
     dito: window.dito,
-    api: { url: '/', ...api, request: requestStub },
+    api: server
+      ? {
+          url: '/',
+          ...api,
+          // Unlike browsers, happy-dom caches responses without cache headers:
+          headers: { 'Cache-Control': 'no-cache', ...api.headers }
+        }
+      : { url: '/', ...api, request: requestStub },
     views,
     ...options
   })
@@ -136,9 +152,12 @@ export async function mountAdmin({
   const { router } = context
   const root = app._instance.proxy.$refs.root
   const wrapper = new VueWrapper(app, root)
-  // Wait for `DitoRoot` to fetch the user and add the routes of the views:
+  // Wait for `DitoRoot` to fetch the user and add the routes of the views, or
+  // to ask to log in:
   await vi.waitFor(() => {
-    if (!context.routeTree) throw new Error('Views not resolved yet')
+    if (!context.routeTree && !element.querySelector('.dito-dialog')) {
+      throw new Error('Views not resolved yet')
+    }
   })
   const admin = {
     dito,

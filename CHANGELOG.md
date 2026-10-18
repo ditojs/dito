@@ -38,7 +38,7 @@ version, see the upgrade guides in `docs/`.
 - **server, admin:** Password resets by email, with `app.authentication.passwordReset`, see [Password reset](docs/guide/server/controllers.md#password-reset).
 - **server, admin:** Security changes need confirmed access, from a recent login or `'post confirm-access'`, see [Confirmed access](docs/guide/server/controllers.md#confirmed-access).
 - **server:** Users change their own password through `'post password'` of `UsersController`.
-- **server, admin:** The admin offers password changes, passkeys, TOTP and password resets when the users controller at `api.users` in the server's `config.admin.api` routes them.
+- **server, admin:** The admin offers password changes, passkeys, TOTP and password resets when the users controller at `api.users` in the server's `config.admin.api` routes them, and requests them under their action names below `api.users.path`, e.g. `users/passkey-login`.
 - **server:** `CredentialMixin` and `CredentialModel` store the passkeys and TOTP of all user models in one table.
 - **server:** `app.name` names the app for passkey managers and authenticator apps.
 - **server:** Authorize functions are called with their controller as `this`.
