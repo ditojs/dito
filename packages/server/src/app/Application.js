@@ -132,6 +132,12 @@ export class Application extends Koa {
         usage: 'Use a duration up to 24 days, or `false` to turn it off.'
       }
     )
+    // Always listen to errors, as emitting them without listeners rejects:
+    this.on('error', (error, ctx) => {
+      if (this.config.log.errors !== false) {
+        this.logError(error, ctx)
+      }
+    })
     this.keys = keys
     this.proxy = !!app.proxy
     this.validator = validator || new Validator()
@@ -838,9 +844,6 @@ export class Application extends Koa {
   }
 
   async start() {
-    if (this.config.log.errors !== false) {
-      this.on('error', this.logError)
-    }
     // It's ok to call this multiple times, because only the entries in the
     // registers (storages, services, models, controllers) that weren't
     // initialized yet will be initialized.
@@ -902,10 +905,6 @@ export class Application extends Koa {
     } else {
       await promise
     }
-
-    if (this.config.log.errors !== false) {
-      this.off('error', this.logError)
-    }
   }
 
   async execute() {
@@ -925,11 +924,7 @@ export class Application extends Koa {
       try {
         await modelClass.deleteExpiredRecords()
       } catch (error) {
-        if (this.listenerCount('error') > 0) {
-          this.emit('error', error)
-        } else {
-          this.logError(error)
-        }
+        this.emit('error', error)
       }
     }
   }

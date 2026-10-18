@@ -194,8 +194,7 @@ await app.start()
 Calls [`setup()`](#setup), emits `'before:start'` (which starts the services),
 listens on `config.server`, sets `isRunning`, starts the timer of
 [`deleteExpiredRecords()`](#deleteexpiredrecords) and emits `'after:start'`.
-Unless `log.errors` is `false`, errors emitted on the app are logged while it
-runs. Returns `Promise<void>`.
+Returns `Promise<void>`.
 
 ### stop()
 
@@ -233,7 +232,7 @@ await app.deleteExpiredRecords()
 
 Calls [`deleteExpiredRecords()`](model.md#static-deleteexpiredrecords) on every
 model, each on its own, so that one failing doesn't stop the others. Their
-errors are emitted as `'error'` events, or logged without listeners. Runs every
+errors are emitted as `'error'` events. Runs every
 `config.app.deleteExpiredRecordsEvery` while the server is started, and can be
 called directly, e.g. from a script. Returns `Promise<void>`. *Hook.*
 
@@ -744,7 +743,8 @@ calls it from [`deleteExpiredRecords()`](#deleteexpiredrecords).
 | `concurrency`   | `number`              | Concurrent file removals. Default `8`.                |
 
 Returns `Promise<Model[]>`: the released asset records. Files that failed to be
-removed carry the `error`, which is also emitted as `'error'`.
+removed carry the `error`, which is also emitted as `'error'`. Unknown options
+throw.
 
 ### getAssetReferences()
 
