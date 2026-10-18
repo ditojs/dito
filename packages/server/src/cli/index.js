@@ -54,13 +54,20 @@ async function execute() {
     const res = await execute(arg, ...args)
     process.exit(res === true ? 0 : 1)
   } catch (err) {
-    if (err instanceof Error) {
-      console.error(
-        pico.red(`${err.detail ? `${err.detail}\n` : ''}${err.stack}`)
-      )
-    } else {
-      console.error(pico.red(err))
+    const report = error => {
+      if (error instanceof Error) {
+        console.error(
+          pico.red(`${error.detail ? `${error.detail}\n` : ''}${error.stack}`)
+        )
+        // Report the errors of `app.deleteExpiredRecords()` and others too:
+        if (error instanceof AggregateError) {
+          error.errors.forEach(report)
+        }
+      } else {
+        console.error(pico.red(error))
+      }
     }
+    report(err)
     process.exit(1)
   }
 }

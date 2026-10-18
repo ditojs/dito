@@ -15,11 +15,8 @@ import {
   isSQLiteTest
 } from '../../../../tests/utils/test-knex.ts'
 
-function createApp(
-  { config, ...options } = {},
-  ApplicationClass = Application
-) {
-  return new ApplicationClass({
+function createApp({ config, ...options } = {}) {
+  return new Application({
     ...options,
     config: {
       log: { silent: true },
@@ -886,32 +883,16 @@ describe('Application', () => {
       const app = createApp({ models: createModels(deleted) })
       const onError = vi.fn()
       app.on('error', onError)
-      await app.deleteExpiredRecords()
-      expect(deleted).toEqual(['Pantry', 'Fridge'])
-      expect(onError).toHaveBeenCalledExactlyOnceWith(
-        new Error('Pantry is locked')
-      )
-    })
-
-    it('waits for the error listeners', async () => {
-      const app = createApp({ models: createModels([]) })
-      const handled = []
-      app.on('error', async error => {
-        await new Promise(resolve => setTimeout(resolve, 0))
-        handled.push(error.message)
+      await expect(app.deleteExpiredRecords()).rejects.toMatchObject({
+        message: 'Unable to delete all expired records.',
+        errors: [new Error('Pantry is locked')]
       })
-      await app.deleteExpiredRecords()
-      expect(handled).toEqual(['Pantry is locked'])
+      expect(deleted).toEqual(['Pantry', 'Fridge'])
+      expect(onError).not.toHaveBeenCalled()
     })
 
-    it('emits the errors of overridden deletions while running', async () => {
-      class LockedApplication extends Application {
-        // @override
-        async deleteExpiredRecords() {
-          throw new Error('Kitchen is locked')
-        }
-      }
-      const app = createApp({}, LockedApplication)
+    it('emits the errors of the deletions while running', async () => {
+      const app = createApp({ models: createModels([]) })
       const onError = vi.fn()
       app.on('error', onError)
       vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] })
@@ -923,7 +904,7 @@ describe('Application', () => {
         vi.useRealTimers()
       }
       expect(onError).toHaveBeenCalledExactlyOnceWith(
-        new Error('Kitchen is locked')
+        expect.objectContaining({ errors: [new Error('Pantry is locked')] })
       )
     })
 

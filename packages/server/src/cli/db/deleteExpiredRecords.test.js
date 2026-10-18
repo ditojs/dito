@@ -31,7 +31,7 @@ describe('deleteExpiredRecords()', () => {
     }
   })
 
-  it('logs the errors and fails', async () => {
+  it('throws the errors', async () => {
     class Pantry extends Model {
       static async deleteExpiredRecords() {
         throw new Error('Pantry is locked')
@@ -41,11 +41,9 @@ describe('deleteExpiredRecords()', () => {
       config: { log: { silent: true } },
       models: { Pantry }
     })
-    const logError = vi.spyOn(app, 'logError').mockImplementation(() => {})
-    expect(await deleteExpiredRecords(app)).toBe(false)
-    expect(logError).toHaveBeenCalledExactlyOnceWith(
-      new Error('Pantry is locked'),
-      undefined
-    )
+    await expect(deleteExpiredRecords(app)).rejects.toMatchObject({
+      message: 'Unable to delete all expired records.',
+      errors: [new Error('Pantry is locked')]
+    })
   })
 })

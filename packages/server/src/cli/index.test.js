@@ -193,6 +193,24 @@ describe('dito cli', () => {
     expect(exit).toHaveBeenCalledWith(1)
   })
 
+  it('reports the errors of aggregate errors', async () => {
+    const file = await writeModule('app.js', 'export default {}')
+    db.migrate.mockRejectedValueOnce(
+      new AggregateError(
+        [new Error('Pantry is locked'), 'Fridge is locked'],
+        'Unable to delete all expired records.'
+      )
+    )
+    await run('db:migrate', file)
+    expect(errors).toHaveLength(3)
+    expect(errors[0]).toMatch(
+      /^AggregateError: Unable to delete all expired records\./
+    )
+    expect(errors[1]).toMatch(/^Error: Pantry is locked/)
+    expect(errors[2]).toBe('Fridge is locked')
+    expect(exit).toHaveBeenCalledWith(1)
+  })
+
   it('reports thrown values that are not errors', async () => {
     const file = await writeModule('app.js', 'export default {}')
     db.migrate.mockRejectedValueOnce('Database is locked')

@@ -656,6 +656,12 @@ describe('UsersController', () => {
     expectTypeOf(controller.isAuthenticated(ctx)).toBeBoolean()
     expectTypeOf(controller.hasConfirmedAccess(ctx)).toBeBoolean()
     expectTypeOf(controller.checkConfirmedAccess(ctx)).toBeVoid()
+    expectTypeOf(controller.getAuthenticationFeatures()).toEqualTypeOf<{
+      hasPasskeys: boolean
+      hasTotp: boolean
+      hasPasswordChange: boolean
+      hasPasswordReset: boolean
+    }>()
     expectTypeOf(
       controller.sendPasswordReset(ctx, user, 'https://example.com')
     ).toEqualTypeOf<void | Promise<void>>()

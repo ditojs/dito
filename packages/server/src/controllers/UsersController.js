@@ -8,7 +8,7 @@ import {
   getUserIdentifier,
   parseUserIdentifier
 } from '../utils/authentication.js'
-import { getDuration } from '../utils/duration.js'
+import { checkDuration } from '../utils/duration.js'
 import {
   AuthenticationError,
   AuthorizationError,
@@ -358,14 +358,18 @@ export class UsersController extends ModelController {
       service => service instanceof PasskeyService
     )
     this.totp = app.findService(service => service instanceof TotpService)
-    this.reconfirmAccessAfter = getDuration(
-      authentication?.reconfirmAccessAfter ?? '10m'
+    this.reconfirmAccessAfter = checkDuration(
+      'app.authentication.reconfirmAccessAfter',
+      authentication?.reconfirmAccessAfter ?? '10m',
+      { min: 1, usage: 'Use a duration above 0.' }
     )
     this.passwordReset = authentication?.passwordReset
       ? {
           ...authentication.passwordReset,
-          expiresAfter: getDuration(
-            authentication.passwordReset.expiresAfter ?? '1h'
+          expiresAfter: checkDuration(
+            'app.authentication.passwordReset.expiresAfter',
+            authentication.passwordReset.expiresAfter ?? '1h',
+            { min: 1, usage: 'Use a duration above 0.' }
           ),
           // Sign the links like Koa signs cookies, with the first of `app.keys`
           // while accepting all of them, to rotate keys:
@@ -533,6 +537,17 @@ export class UsersController extends ModelController {
         status: 403,
         confirmationRequired: true
       })
+    }
+  }
+
+  // The admin offers the features whose actions we route, all of them:
+  getAuthenticationFeatures() {
+    const isRouted = names => names.every(name => this.collection[name])
+    return {
+      hasPasskeys: isRouted(passkeyActions),
+      hasTotp: isRouted(totpActions),
+      hasPasswordChange: isRouted(['post password']),
+      hasPasswordReset: isRouted(passwordResetActions)
     }
   }
 

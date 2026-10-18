@@ -71,45 +71,39 @@ export function parseHandlerDefinition(definition) {
   }
 }
 
-// Replace object-form definitions on all levels of `values` with their
-// handlers, so `super` finds functions, and let `super` in `handler()` reach
-// the parent level. Parse them before, as they inherit from it afterwards:
+// Parse the handler definitions on all levels of `values` once, as levels are
+// shared, and replace object-form ones with their handlers, so `super` finds
+// functions, and let `super` in `handler()` reach the parent level:
 export function convertHandlerDefinitions(values) {
   for (const level of getInheritanceChain(values)) {
     const definitions = definitionsByLevel.get(level) ?? {}
-    for (const [key, definition] of Object.entries(level)) {
-      if (isObject(definition) && isFunction(definition.handler)) {
-        definitions[key] = parseHandlerDefinition(definition)
+    for (const [key, value] of Object.entries(level)) {
+      definitions[key] ??= parseHandlerDefinition(value)
+      if (isObject(value) && definitions[key]) {
         level[key] = definitions[key].handler
-        Object.setPrototypeOf(definition, Object.getPrototypeOf(level))
+        Object.setPrototypeOf(value, Object.getPrototypeOf(level))
       }
     }
     definitionsByLevel.set(level, definitions)
   }
 }
 
-// Parse the definition of `values[key]` as given on the level that defines it:
+// Get the definition of `values[key]` as given on the level that defines it:
 export function getHandlerDefinition(values, key) {
   const level = getInheritanceChain(values).find(
     object => Object.hasOwn(object, key)
   )
-  return getOwnHandlerDefinition(level, key)
+  return definitionsByLevel.get(level)[key]
 }
 
 // Collect the `authorize` settings of the handlers that `level` defines:
 export function getOwnHandlerAuthorize(level) {
+  const definitions = definitionsByLevel.get(level)
   const entries = Object.keys(level).map(
-    key => [key, getOwnHandlerDefinition(level, key)?.authorize]
+    key => [key, definitions[key]?.authorize]
   )
   return Object.fromEntries(
     entries.filter(([, authorize]) => authorize != null)
-  )
-}
-
-function getOwnHandlerDefinition(level, key) {
-  return (
-    definitionsByLevel.get(level)?.[key] ??
-    parseHandlerDefinition(level[key])
   )
 }
 

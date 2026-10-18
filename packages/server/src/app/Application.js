@@ -20,7 +20,6 @@ import Router from '@ditojs/router'
 import {
   isArray,
   isObject,
-  isNumber,
   asArray,
   isPlainObject,
   isModule,
@@ -41,7 +40,11 @@ import { Storage } from '../storage/index.js'
 import { drivers } from '../drivers/index.js'
 import { convertSchema } from '../schema/index.js'
 import { isHttpMethod } from '../utils/http.js'
-import { getDuration, subtractDuration } from '../utils/duration.js'
+import {
+  checkDuration,
+  getDuration,
+  subtractDuration
+} from '../utils/duration.js'
 import { resolveFileUrl } from '../utils/asset.js'
 import {
   ResponseError,
@@ -116,6 +119,7 @@ export class Application extends Koa {
       const isUnsaved = key === 'deleteUnsavedAfter'
       checkDuration(`assets.${key}`, value, {
         min: isUnsaved ? 1 : 0,
+        allowFalse: true,
         usage: `Use a duration${
           isUnsaved ? ' above 0' : ''
         }, or \`false\` to keep the assets.`
@@ -129,6 +133,7 @@ export class Application extends Koa {
         min: 1,
         // Node fires intervals above about 24.8 days every millisecond:
         max: getDuration('24d'),
+        allowFalse: true,
         usage: 'Use a duration up to 24 days, or `false` to turn it off.'
       }
     )
@@ -862,7 +867,7 @@ export class Application extends Koa {
     })
     this.isRunning = true
     if (this.#deleteExpiredRecordsEvery !== false) {
-      // Overrides can throw, and nobody awaits the timer:
+      // Nobody awaits the timer, so we emit its errors:
       this.#deleteExpiredRecordsInterval = setInterval(
         () =>
           this.deleteExpiredRecords().catch(error => this.emit('error', error)),
@@ -921,13 +926,17 @@ export class Application extends Koa {
   // @overridable
   async deleteExpiredRecords() {
     // Delete the records of each model on its own, so that one failing doesn't
-    // stop the others, and report the errors, as nobody awaits the timer:
+    // stop the others, and throw their errors together:
+    const errors = []
     for (const modelClass of Object.values(this.models)) {
       try {
         await modelClass.deleteExpiredRecords()
       } catch (error) {
-        await this.emit('error', error)
+        errors.push(error)
       }
+    }
+    if (errors.length > 0) {
+      throw new AggregateError(errors, 'Unable to delete all expired records.')
     }
   }
 
@@ -1272,6 +1281,7 @@ export class Application extends Koa {
     if (olderThan !== null) {
       checkDuration('olderThan', olderThan, {
         min: 0,
+        allowFalse: true,
         usage: 'Use a duration, or `false` to keep the assets.'
       })
     }
@@ -1365,21 +1375,6 @@ export class Application extends Koa {
 
 function getOptions(options) {
   return isObject(options) ? options : {}
-}
-
-// Durations are `false` to turn something off, or from `min` to `max` ms:
-function checkDuration(name, value, { min, max = Infinity, usage }) {
-  const duration = value === false ? value : getDuration(value)
-  if (
-    duration === false ||
-    isNumber(duration) && duration >= min && duration <= max
-  ) {
-    return duration
-  } else {
-    throw new Error(
-      `Invalid duration for '${name}': ${util.inspect(value)}. ${usage}`
-    )
-  }
 }
 
 const defaultAssetOptions = {

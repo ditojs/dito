@@ -96,6 +96,16 @@ describe('Application', () => {
     } | null>()
   })
 
+  it('rejects the removed `app.passport`', () => {
+    assertType<ApplicationConfig>({
+      app: {
+        name: 'Example',
+        // @ts-expect-error: `app.passport` is removed.
+        passport: true
+      }
+    })
+  })
+
   it('declares the methods of the passkey and TOTP services', () => {
     type User = InstanceType<typeof UserModel>
     type Credential = InstanceType<typeof CredentialModel>

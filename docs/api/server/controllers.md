@@ -954,6 +954,18 @@ const isAuthenticated = controller.isAuthenticated(ctx)
 
 Returns whether the request is authenticated with a user of `modelClass`.
 
+### getAuthenticationFeatures()
+
+```js
+const { hasPasskeys, hasTotp, hasPasswordChange, hasPasswordReset } =
+  controller.getAuthenticationFeatures()
+```
+
+Returns the features that the controller routes with all their actions, which
+the admin offers: `hasPasskeys` with the passkey actions, `hasTotp` with the
+TOTP actions, `hasPasswordChange` with `'post password'` and
+`hasPasswordReset` with the password reset actions.
+
 ### sendPasswordReset()
 
 ```js
@@ -1039,11 +1051,10 @@ const { base, api, settings, authentication } = controller.getGlobalConfig()
 Returns the configuration that the admin receives in the browser as
 `window.dito`: `base` (the controller's `url`), `api` (`config.admin.api` with
 `normalizePaths` defaulting to `config.app.normalizePaths`), `settings`
-(`config.admin.settings`) and `authentication`, the features that the
-`UsersController` at `api.users` inside `api.url` routes with all their
-actions: `hasPasskeys` with the passkey actions, `hasTotp` with the TOTP
-actions, `hasPasswordChange` with `'post password'` and `hasPasswordReset` with
-the password reset actions, all `false` without one. *Hook.* Returns `{ base: string, api: ApiConfig, settings:
+(`config.admin.settings`) and `authentication`, the
+[`getAuthenticationFeatures()`](#getauthenticationfeatures) of the
+`UsersController` at `api.users` inside `api.url`, all `false` without one.
+*Hook.* Returns `{ base: string, api: ApiConfig, settings:
 object, authentication: { hasPasskeys: boolean, hasTotp: boolean,
 hasPasswordChange: boolean, hasPasswordReset: boolean } }`.
 
