@@ -89,9 +89,8 @@ class Guests extends UsersController {
   }
 }
 
-// Password resets only need the secret, no credentials or stored sessions:
+// Password resets only need `app.keys`, no credentials or stored sessions:
 const auth = {
-  secret: 'auth-secret',
   passwordReset: {
     confirmUrl: 'https://example.com/admin/#password-reset={token}',
     expiresAfter: '30m'
@@ -398,6 +397,34 @@ describe('Password reset', () => {
     }
   })
 
+  it('signs tokens with the first key and accepts all keys', async () => {
+    const { keys } = app as { keys: string[] }
+    const token = await getToken()
+    // Rotate the keys, as apps do by adding a new key in front:
+    keys.unshift('new-secret')
+    try {
+      const rotated = await getToken()
+      expect(rotated.split('.')[2]).not.toBe(token.split('.')[2])
+      keys.pop()
+      // Without the old key, only the token signed with the new key works:
+      await expectInvalid(token)
+      expect((await confirmReset(rotated)).status).toBe(200)
+    } finally {
+      keys.splice(0, keys.length, 'test-secret')
+    }
+  })
+
+  it('accepts tokens signed with older keys', async () => {
+    const { keys } = app as { keys: string[] }
+    const token = await getToken()
+    keys.unshift('new-secret')
+    try {
+      expect((await confirmReset(token)).status).toBe(200)
+    } finally {
+      keys.splice(0, keys.length, 'test-secret')
+    }
+  })
+
   it('rejects tokens with unknown or invalid ids', async () => {
     const [, time, mac] = (await getToken()).split('.')
     for (const id of [`${member.id + 1}`, 'unknown', '']) {
@@ -518,10 +545,10 @@ describe('Password reset setup', () => {
   const session = true
   const { passwordReset } = auth
 
-  it('requires the secret', async () => {
-    await expect(setup({ session, auth: { passwordReset } })).rejects.toThrow(
-      `Unable to use password reset without 'app.auth.secret'.`
-    )
+  it('requires the keys', async () => {
+    await expect(
+      setup({ keys: undefined, session, auth: { passwordReset } })
+    ).rejects.toThrow(`Unable to use password reset without 'app.keys'.`)
   })
 
   it('requires a confirm URL with a token', async () => {

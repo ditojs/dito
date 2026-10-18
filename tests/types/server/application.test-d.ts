@@ -1,11 +1,17 @@
 import { assertType, expectTypeOf, describe, it } from 'vitest'
-import type {
-  Application,
-  ApplicationConfig,
-  AssetReference,
-  Model,
-  ModelAsset,
-  Storage
+import {
+  PasskeyService,
+  TotpService,
+  type Application,
+  type ApplicationConfig,
+  type AssetReference,
+  type CredentialModel,
+  type KoaContext,
+  type Model,
+  type ModelAsset,
+  type Services,
+  type Storage,
+  type UserModel
 } from '@ditojs/server'
 import type { app } from './fixtures.ts'
 
@@ -64,28 +70,68 @@ describe('Application', () => {
     >().toEqualTypeOf<AssetReference[]>()
   })
 
-  it('accepts credentials and passkeys in app.auth', () => {
+  it('accepts the services of passkeys and TOTP', () => {
     assertType<ApplicationConfig>({
       app: {
+        name: 'Example',
         session: { modelClass: 'Session' },
-        auth: {
-          credentials: { modelClass: 'Credential' },
-          passkeys: {
-            name: 'Example',
-            id: 'example.com',
-            origins: ['https://example.com']
-          }
-        }
+        auth: { credentials: { modelClass: 'Credential' } }
+      },
+      services: {
+        passkeys: { domain: 'example.com', origins: ['https://example.com'] },
+        totp: { secret: 'totp-secret' }
       }
     })
+    assertType<Services>({ passkeys: PasskeyService, totp: TotpService })
+    expectTypeOf<PasskeyService['config']>().toEqualTypeOf<{
+      domain?: string
+      origins?: string[]
+    } | null>()
+    expectTypeOf<TotpService['config']>().toEqualTypeOf<{
+      secret: string
+    } | null>()
+  })
+
+  it('declares the methods of the passkey and TOTP services', () => {
+    type User = InstanceType<typeof UserModel>
+    type Credential = InstanceType<typeof CredentialModel>
+    const passkeys = {} as PasskeyService
+    const totp = {} as TotpService
+    const ctx = {} as KoaContext
+    const user = {} as User
+    expectTypeOf(passkeys.createAuthenticationOptions(ctx)).toEqualTypeOf<
+      Promise<Record<string, unknown>>
+    >()
+    expectTypeOf(
+      passkeys.verifyAuthentication(ctx, {}, {} as Credential)
+    ).toEqualTypeOf<Promise<void>>()
+    expectTypeOf(
+      passkeys.createRegistrationOptions(ctx, user, [])
+    ).toEqualTypeOf<Promise<Record<string, unknown>>>()
+    expectTypeOf(passkeys.verifyRegistration(ctx, {})).toEqualTypeOf<
+      Promise<{
+        key: string
+        name: string
+        data: Record<string, unknown>
+      }>
+    >()
+    expectTypeOf(totp.createSecret(ctx, user)).toEqualTypeOf<{
+      uri: string
+      secret: string
+    }>()
+    expectTypeOf(totp.confirmSecret(ctx, user, '123456')).toEqualTypeOf<
+      Promise<string[]>
+    >()
+    expectTypeOf(totp.verifyCode(ctx, user, '123456')).toEqualTypeOf<
+      Promise<void>
+    >()
   })
 
   it('accepts a password reset in app.auth', () => {
     assertType<ApplicationConfig>({
       app: {
-        session: { modelClass: 'Session' },
+        keys: ['test-secret'],
         auth: {
-          secret: 'auth-secret',
           passwordReset: {
             confirmUrl: 'https://example.com/admin/#password-reset={token}',
             expiresAfter: '30m'

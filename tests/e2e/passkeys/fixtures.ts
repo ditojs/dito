@@ -1,5 +1,4 @@
-import { UsersController } from '@ditojs/server'
-import { getAppUrl } from '../../utils/app.js'
+import { PasskeyService, TotpService, UsersController } from '@ditojs/server'
 import { defineScenario } from '../../utils/fixture-app.js'
 import { Credential } from './models/Credential.js'
 import { Session } from './models/Session.js'
@@ -23,19 +22,15 @@ class Users extends UsersController {
 export const getLocalUrl = (url: string) =>
   url.replace('//127.0.0.1:', '//localhost:')
 
-const passkeys = {
-  name: 'Example',
-  id: 'localhost',
-  origins: [] as string[]
-}
-
 export const test = defineScenario({
   dirname: import.meta.dirname,
   models: { Session, User, Credential },
   controllers: { Users },
+  services: { passkeys: PasskeyService, totp: TotpService },
   api: { users: 'users' },
   config: {
     app: {
+      name: 'Example',
       normalizePaths: true,
       helmet: false,
       keys: ['passkeys-secret'],
@@ -43,14 +38,16 @@ export const test = defineScenario({
       session: { modelClass: 'Session' },
       auth: {
         credentials: { modelClass: 'Credential' },
-        secret: 'auth-secret',
-        passkeys,
-        totp: { issuer: 'Example' },
         // The tests open the token of the links on the admin's own URL:
         passwordReset: {
           confirmUrl: 'http://localhost/admin/#password-reset={token}'
         }
       }
+    },
+    services: {
+      // The passkeys belong to the domain of the requests, `localhost`:
+      passkeys: true,
+      totp: { secret: 'totp-secret' }
     }
   },
   setup: async app => {
@@ -58,10 +55,6 @@ export const test = defineScenario({
     await app.knex.schema.alterTable('User', table =>
       table.dropColumn('password')
     )
-    // The origin's port is only known once the app listens:
-    app.on('after:start', () => {
-      passkeys.origins.push(getLocalUrl(getAppUrl(app)))
-    })
   },
   beforeEach: async () => {
     sentPasswordResets.length = 0

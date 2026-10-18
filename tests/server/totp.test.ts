@@ -1,6 +1,8 @@
 import {
   CredentialModel,
+  PasskeyService,
   SessionModel,
+  TotpService,
   UserModel,
   UsersController
 } from '@ditojs/server'
@@ -66,18 +68,7 @@ class TransactedMembers extends UsersController {
   override transacted = true
 }
 
-const passkeys = {
-  name: 'Example',
-  id: 'example.com',
-  origins: ['https://example.com']
-}
-
-const auth = {
-  credentials: { modelClass: 'Credential' },
-  secret: 'auth-secret',
-  passkeys,
-  totp: { issuer: 'Example' }
-}
+const auth = { credentials: { modelClass: 'Credential' } }
 
 type Client = ReturnType<typeof createClient>
 
@@ -85,13 +76,19 @@ describe('TOTP', () => {
   const app = createTestApp({
     config: {
       app: {
+        name: 'Example',
         normalizePaths: true,
         helmet: false,
         keys: ['test-secret'],
         session: { modelClass: 'Session' },
         auth
+      },
+      services: {
+        passkeys: { domain: 'example.com', origins: ['https://example.com'] },
+        totp: { secret: 'totp-secret' }
       }
     },
+    services: { passkeys: PasskeyService, totp: TotpService },
     models: { Session, Credential, Member, Guest },
     controllers: { Members, Guests, TransactedMembers }
   })
@@ -692,15 +689,125 @@ describe('TOTP turned off', () => {
   })
 })
 
+describe('TOTP removed from apps', () => {
+  // Models are only set up once, so the app needs its own models:
+  class Session extends SessionModel {}
+  class Credential extends CredentialModel {}
+  class User extends UserModel {
+    declare id: number
+  }
+  class Users extends UsersController {
+    override modelClass = User
+  }
+
+  const app = createTestApp({
+    config: {
+      app: {
+        normalizePaths: true,
+        keys: ['test-secret'],
+        session: { modelClass: 'Session' },
+        auth
+      }
+    },
+    models: { Session, Credential, User },
+    controllers: { Users }
+  })
+
+  beforeAll(async () => {
+    await createTestDatabase(app, Session, Credential, User)
+    await app.knex.schema.alterTable('User', table => {
+      table.dropColumn('password')
+    })
+    await app.start()
+  })
+
+  afterAll(async () => {
+    await app.stop()
+    await app.knex.destroy()
+  })
+
+  const errors: Error[] = []
+  const onError = (error: Error) => errors.push(error)
+
+  beforeEach(async () => {
+    app.on('error', onError)
+    await User.query().insert({ username: 'ada', password: 'secret' } as any)
+  })
+
+  afterEach(async () => {
+    app.off('error', onError)
+    errors.length = 0
+    await app.knex('Credential').del()
+    await app.knex('User').del()
+  })
+
+  const login = (request: Client, password = 'secret') =>
+    request('/users/login', {
+      method: 'POST',
+      body: { username: 'ada', password }
+    })
+
+  const addTotp = async () => {
+    const user = await User.query().findOne('username', 'ada')
+    await Credential.query().insert({
+      type: 'totp',
+      userModel: 'User',
+      userId: `${user!.id}`,
+      data: {}
+    } as any)
+  }
+
+  // The answer doesn't tell that the password was right:
+  const expectWrongPassword = (response: any, message: string) => {
+    expect(response.status).toBe(401)
+    expect(response.data.message ?? response.data.error).toBe(message)
+    expect(errors.map(({ message }) => message)).toContain(
+      `Controller Users: Unable to authenticate users with TOTP without ` +
+      `'TotpService'.`
+    )
+  }
+
+  it(`don't log in users with TOTP without their code`, async () => {
+    await addTotp()
+    const request = createClient(getAppUrl(app))
+    const response = await login(request)
+    expectWrongPassword(response, 'Password or username is incorrect')
+    expect(response.data).toMatchObject({
+      success: false,
+      authenticated: false
+    })
+    // Like for a wrong password:
+    const wrong = await login(createClient(getAppUrl(app)), 'wrong')
+    expect(wrong.status).toBe(response.status)
+    expect(wrong.data).toEqual(response.data)
+    expect((await request('/users/session')).data.authenticated).toBe(false)
+  })
+
+  it(`don't confirm the access of users with TOTP without their code`, async () => {
+    const request = createClient(getAppUrl(app))
+    expect((await login(request)).data.success).toBe(true)
+    await addTotp()
+    const response = await request('/users/confirm-access', {
+      method: 'POST',
+      body: { password: 'secret' }
+    })
+    expectWrongPassword(response, 'Password is incorrect')
+  })
+})
+
 describe('TOTP setup', () => {
-  const setup = async (app: Record<string, any>) => {
+  const setup = async (app: Record<string, any>, totp = {}) => {
     // Models are only set up once, so each app needs its own user model:
     class User extends UserModel {}
     class Users extends UsersController {
       override modelClass = User
     }
     const testApp = createTestApp({
-      config: { app: { keys: ['test-secret'], ...app } },
+      config: {
+        app: { name: 'Example', keys: ['test-secret'], ...app },
+        services: { totp: { secret: 'totp-secret', ...totp } }
+      },
+      services: { totp: TotpService },
       models: { Session, Credential, User },
       controllers: { Users }
     })
@@ -711,13 +818,11 @@ describe('TOTP setup', () => {
     }
   }
 
-  const totp = { issuer: 'Example' }
+  const session = { modelClass: 'Session' }
 
   it('requires sessions stored on the server', async () => {
     for (const session of [undefined, true]) {
-      await expect(
-        setup({ session, auth: { credentials: auth.credentials, totp } })
-      ).rejects.toThrow(
+      await expect(setup({ session, auth })).rejects.toThrow(
         `Unable to use TOTP without sessions stored on the server, ` +
         `see 'app.session'.`
       )
@@ -725,30 +830,20 @@ describe('TOTP setup', () => {
   })
 
   it('requires credentials', async () => {
-    await expect(
-      setup({ session: { modelClass: 'Session' }, auth: { totp } })
-    ).rejects.toThrow(
+    await expect(setup({ session })).rejects.toThrow(
       `Unable to use TOTP without credentials, see 'app.auth.credentials'.`
     )
   })
 
   it('requires the secret', async () => {
     await expect(
-      setup({
-        session: { modelClass: 'Session' },
-        auth: { credentials: { modelClass: 'Credential' }, totp }
-      })
-    ).rejects.toThrow(
-      `Unable to use TOTP without 'app.auth.secret'.`
-    )
+      setup({ session, auth }, { secret: undefined })
+    ).rejects.toThrow(`Invalid TOTP, missing 'services.totp.secret'.`)
   })
 
-  it('requires the issuer', async () => {
-    await expect(
-      setup({
-        session: { modelClass: 'Session' },
-        auth: { credentials: auth.credentials, totp: {} }
-      })
-    ).rejects.toThrow(`Invalid TOTP, missing 'app.auth.totp.issuer'.`)
+  it('requires the name of the app', async () => {
+    await expect(setup({ name: undefined, session, auth })).rejects.toThrow(
+      `Invalid TOTP, missing 'app.name'.`
+    )
   })
 })

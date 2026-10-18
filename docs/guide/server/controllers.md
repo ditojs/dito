@@ -608,8 +608,8 @@ these routes, see the [admin guide](../admin/index.md).
 ### Passkeys
 
 Users can also log in with passkeys, without a password. Install the optional
-peer dependency `@simplewebauthn/server`, add a model for the credentials, and
-turn on passkeys:
+peer dependencies `@simplewebauthn/server` and `aaguids`, add a model for the
+credentials, and register `PasskeyService`:
 
 ```js
 import { Model, CredentialMixin } from '@ditojs/server'
@@ -618,23 +618,36 @@ export class Credential extends CredentialMixin(Model) {}
 ```
 
 ```js
+import { Application, PasskeyService } from '@ditojs/server'
+
+const app = new Application({
+  config,
+  services: { passkeys: PasskeyService },
+  models,
+  controllers
+})
+```
+
+```js
 // config/index.js
 export default {
   app: {
+    name: 'Example', // Shown by passkey managers.
     session: { modelClass: 'Session' },
     auth: {
-      credentials: { modelClass: 'Credential' },
-      passkeys: {
-        name: 'Example',
-        id: 'example.com',
-        origins: ['https://example.com']
-      }
+      credentials: { modelClass: 'Credential' }
     }
+  },
+  services: {
+    passkeys: true
   }
 }
 ```
 
-The users controller then adds the passkey routes, see
+The passkeys belong to the domain of the requests, and the pages of that domain
+and its subdomains can use them. [`PasskeyService`](../../api/server/service.md#passkeyservice)
+configures another domain, e.g. to share them between subdomains, or limits the
+pages. The users controller then adds the passkey routes, see
 [`UsersController`](../../api/server/controllers.md#userscontroller). In the
 browser, `@simplewebauthn/browser` runs them against the authenticator. A
 logged-in user adds a passkey:
@@ -681,19 +694,22 @@ and `DELETE /users/passkeys/:id` removes one. The admin offers both with its
 
 Users can protect their password logins with a second factor, the codes of an
 authenticator app (TOTP). Install the optional peer dependency `otpauth`, add
-the model for the credentials as for passkeys, and turn on TOTP with a secret
-of its own, a long random string that encrypts the users' TOTP secrets:
+the model for the credentials and `app.name` as for passkeys, and register
+`TotpService` (`services: { totp: TotpService }`) with a secret, a long random
+string that encrypts the users' TOTP secrets:
 
 ```js
 // config/index.js
 export default {
   app: {
+    name: 'Example', // Shown by authenticator apps.
     session: { modelClass: 'Session' },
     auth: {
-      credentials: { modelClass: 'Credential' },
-      secret: process.env.AUTH_SECRET,
-      totp: { issuer: 'Example' }
+      credentials: { modelClass: 'Credential' }
     }
+  },
+  services: {
+    totp: { secret: process.env.TOTP_SECRET }
   }
 }
 ```
@@ -726,8 +742,9 @@ wrong codes: overrides of them need `transacted: false` too. `GET /users/totp`
 tells whether TOTP is set up and how many backup codes are left, and
 `DELETE /users/totp` turns it off, with
 [confirmed access](#confirmed-access). Only password logins through
-`login()` ask for the code, while `ctx.login(user)` logs in without it, e.g.
-to impersonate users. The admin's login
+`'post login'` ask for the code, while `ctx.login(user)` logs in without it,
+e.g. to impersonate users. Users with TOTP can't log in with their password
+while the app doesn't register `TotpService`. The admin's login
 dialog asks for the code, and its `login.totp` option sets up and turns off
 TOTP in the account menu, see
 [`DitoAdmin`](../../api/admin/admin.md#parameters).
@@ -735,15 +752,15 @@ TOTP in the account menu, see
 ### Password reset
 
 Users who forgot their password can set a new one through a link that the app
-emails them. Set a secret as for TOTP and the URL of the page that the link
-opens, and send the emails in the users controller:
+emails them. Set `app.keys`, which sign the links, and the URL of the page that
+the link opens, and send the emails in the users controller:
 
 ```js
 // config/index.js
 export default {
   app: {
+    keys: [process.env.APP_KEY],
     auth: {
-      secret: process.env.AUTH_SECRET,
       passwordReset: {
         confirmUrl: 'https://example.com/reset-password#token={token}',
         expiresAfter: '1h'
@@ -780,9 +797,11 @@ await post('password-reset-confirm', { token, password })
 ```
 
 Nothing is stored for the links: the token carries the id of the user and its
-creation time, signed with `app.auth.secret` together with the
-values of
+creation time, signed with the first of `app.keys` together with the values
+of
 [`getPasswordResetTokenValues()`](../../api/server/controllers.md#getpasswordresettokenvalues).
+Links signed with the other keys stay valid, so new keys can be added in front
+while the old ones are rotated out.
 A link works until `expiresAfter`, or until one of these values changes: a
 login, a password change or a username change invalidates it, and the new hash
 makes each link work once. It doesn't log in: the user logs in with the new

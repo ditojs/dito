@@ -294,9 +294,8 @@ application. Sets up `hooks`, `name`, `path` and `url`. Call
 controller.setup()
 ```
 
-Sets up the routes of the actions and asset uploads, before `initialize()`.
-Internal: dito's controllers override it, and may do so asynchronously. Apps
-override [`initialize()`](#initialize) instead, which needs no `super`.
+Sets up the routes of the actions and asset uploads. Call `super.setup()`.
+*Hook.*
 
 ### initialize()
 
@@ -800,7 +799,7 @@ inherited actions, see [`allow`](#allow): a subclass that sets
 
 | Action               | Response |
 | -------------------- | ------------------------------------------------------- |
-| `'post login'`       | Logs in through [`modelClass.login(ctx)`](./model.md#static-login) and sets `lastLogin`: `{ success, authenticated, user, error }`. A failed login responds with the error's status, by default 401, and emits it as `'error'` on the app. |
+| `'post login'`       | Logs in the user of [`modelClass.authenticate(ctx)`](./model.md#static-authenticate) and sets `lastLogin`: `{ success, authenticated, user, error }`. A failed login responds with the error's status, by default 401, and emits it as `'error'` on the app. |
 | `'post logout'`      | `{ success, authenticated }` |
 | `'get session'`      | `{ authenticated, user }` |
 | `'get self'`         | The authenticated user through `member.get`, or `null`. |
@@ -820,9 +819,9 @@ The `patch`, `put` and `post` actions answer 400 for bodies with the `hash`,
 and `patch` and `put` also for bodies with the password. With `relate`, `post`
 treats users with ids like updates.
 
-With [`app.auth.passkeys`](./application.md#configappauth), users log in with
-passkeys and manage their own ones through these collection actions, which
-aren't routed without it:
+With [`PasskeyService`](./service.md#passkeyservice) registered, users log in
+with passkeys and manage their own ones through these collection actions,
+which aren't routed without it:
 
 | Action                         | Response |
 | ------------------------------ | ------------------------------------------------------- |
@@ -842,8 +841,8 @@ passkey login counts as two factors. It only logs in users of the controller's
 `modelClass`, through their `sessionScope`, and fires the
 [login events](./model.md#login-events).
 
-With [`app.auth.totp`](./application.md#configappauth), users with TOTP enter a
-code after their password, and set up and turn off their TOTP through these
+With [`TotpService`](./service.md#totpservice) registered, users with TOTP enter
+a code after their password, and set up and turn off their TOTP through these
 collection actions, which aren't routed without it:
 
 | Action                 | Response |
@@ -857,10 +856,13 @@ collection actions, which aren't routed without it:
 For users with TOTP, `'post login'` with the right password doesn't log in, but
 responds with status 200 and `{ success: false, codeRequired: true,
 authenticated: false, user: null }`, and keeps a pending login in the session,
-see [`login()`](./model.md#static-login), with a new session id.
-`'post login-code'` completes it within 5 minutes. Wrong codes answer
-`'Code is incorrect'` with status 401, also in `'post totp-confirm'` and
-`'post confirm-access'`, and missing or expired pending logins and setups status 400.
+with a new session id. `'post login-code'` completes it within 5 minutes.
+While `TotpService` isn't registered, users with TOTP can't log in with their
+password: `'post login'` and `'post confirm-access'` answer like for a wrong
+password, and emit the misconfiguration as `'error'` on the app. Wrong codes
+answer `'Code is incorrect'` with status 401, also in `'post totp-confirm'`
+and `'post confirm-access'`, and missing or expired pending logins and setups
+status 400.
 Ten wrong codes in a row lock the account for 15 minutes, across pending
 logins and sessions: the tenth and all codes during the lock answer
 `'Too many attempts'` with status 400. Ten wrong codes in `'post totp-confirm'`
@@ -899,13 +901,12 @@ request that changes the password stays logged in after `'post password'` and
 actions, it ends too, unless the action logs the user in again with
 `ctx.login(user)` afterwards.
 
-TOTP is only asked for by [`UserMixin.login()`](./model.md#static-login), and
-thus by `'post login'`. `ctx.login(user)` logs in without it, by design, e.g.
-for impersonation or custom login flows. The credentials of TOTP are stored
-under the name of the user model class, which also encrypts their secrets:
-renaming the class drops them, also when their `userModel` is updated, and two
-user model classes on one table each have their own, so TOTP set up through
-one isn't asked for by logins through the other.
+TOTP is only asked for by `'post login'`. `ctx.login(user)` logs in without
+it, by design, e.g. for impersonation or custom login flows. The credentials
+of TOTP are stored under the name of the user model class, which also encrypts
+their secrets: renaming the class drops them, also when their `userModel` is
+updated, and two user model classes on one table each have their own, so TOTP
+set up through one isn't asked for by logins through the other.
 
 The controller's [`authorize`](#authorize) doesn't apply to `login`, `logout`,
 `session`, `password`, the passkey, TOTP and password reset actions, which

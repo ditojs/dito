@@ -1,25 +1,13 @@
-import {
-  createCipheriv,
-  createDecipheriv,
-  createHmac,
-  hkdfSync,
-  randomBytes,
-  timingSafeEqual
-} from 'node:crypto'
-import aaguids from 'aaguids'
-import { asArray, isString } from '@ditojs/utils'
+import Keygrip from 'keygrip'
+import { asArray, isArray, isString } from '@ditojs/utils'
 import { ModelController } from './ModelController.js'
+import { PasskeyService, TotpService } from '../services/index.js'
 import {
   getUserIdentifier,
   parseUserIdentifier,
   updatePasswordFingerprint
 } from '../middleware/handleUser.js'
-import {
-  authTimeout,
-  backupCodeCount,
-  codeLockTime,
-  maxCodeFailures
-} from '../utils/auth.js'
+import { authTimeout, getTotpQuery } from '../utils/auth.js'
 import { getDuration } from '../utils/duration.js'
 import {
   AuthenticationError,
@@ -59,7 +47,24 @@ export class UsersController extends ModelController {
     },
 
     'post login'(ctx) {
-      return this.handleLogin(ctx, () => this.modelClass.login(ctx))
+      return this.handleLogin(ctx, async () => {
+        const user = await this.modelClass.authenticate(ctx)
+        const message = 'Password or username is incorrect'
+        if (await hasTotp(this, ctx, user, message)) {
+          // Users with TOTP are only logged in once they enter a code, through
+          // 'post login-code'. Until then, there is no user to return. Like
+          // `ctx.login()`, regenerate the session id against session fixation:
+          ctx.session.pendingLogin = {
+            user: getUserIdentifier(user),
+            expires: Date.now() + authTimeout
+          }
+          await ctx.session.regenerate()
+          return null
+        } else {
+          await ctx.login(user)
+          return user
+        }
+      })
     },
 
     // The second step of password logins of users with TOTP, with a TOTP code
@@ -77,13 +82,14 @@ export class UsersController extends ModelController {
           const user = await this.modelClass
             .sessionQuery(ctx.transaction)
             .findById(id)
-          const { code } = ctx.request.body
-          if (user && (await this.verifyCode(ctx, user, code))) {
+          if (user) {
+            await this.totp.verifyCode(ctx, user, ctx.request.body.code)
             delete ctx.session.pendingLogin
             await ctx.login(user)
             return user
+          } else {
+            throw new AuthenticationError('Code is incorrect')
           }
-          throw new AuthenticationError('Code is incorrect')
         } else {
           throw new AuthenticationError({
             message: 'Missing or expired login',
@@ -129,17 +135,18 @@ export class UsersController extends ModelController {
       async handler(ctx, { password, code, passkey }) {
         const { user } = ctx.state
         if (this.passkeys && passkey) {
-          if (!(await verifyPasskey(this, ctx, passkey))?.$is(user)) {
+          // The passkeys of other users verify too, but don't confirm:
+          if (!(await verifyPasskey(this, ctx, passkey)).$is(user)) {
             throw new AuthenticationError('Passkey is incorrect')
           }
         } else if (!(password && (await user.$verifyPassword(password)))) {
           throw new AuthenticationError('Password is incorrect')
-        } else if (this.totp && (await hasTotp(this.modelClass, ctx))) {
+        } else if (await hasTotp(this, ctx, user, 'Password is incorrect')) {
           // Like password logins, ask users with TOTP for a code:
-          if (!code) {
+          if (code) {
+            await this.totp.verifyCode(ctx, user, code)
+          } else {
             return { success: false, codeRequired: true }
-          } else if (!(await this.verifyCode(ctx, user, code))) {
-            throw new AuthenticationError('Code is incorrect')
           }
         }
         storeConfirmedAccess(this, ctx, user)
@@ -235,26 +242,15 @@ export class UsersController extends ModelController {
         : null
     },
 
-    async 'post passkey-login-options'(ctx) {
-      const { generateAuthenticationOptions } = this.webAuthn
-      // Passkeys are discoverable, so the browser offers them without a
-      // username:
-      const options = await generateAuthenticationOptions({
-        rpID: this.passkeys.id,
-        userVerification: 'required'
-      })
-      storeChallenge(ctx, 'authentication', options)
-      return options
+    'post passkey-login-options'(ctx) {
+      return this.passkeys.createAuthenticationOptions(ctx)
     },
 
     'post passkey-login'(ctx) {
       return this.handleLogin(ctx, async () => {
         const user = await verifyPasskey(this, ctx, ctx.request.body)
-        if (user) {
-          await ctx.login(user)
-          return user
-        }
-        throw new AuthenticationError('Passkey is incorrect')
+        await ctx.login(user)
+        return user
       })
     },
 
@@ -268,70 +264,30 @@ export class UsersController extends ModelController {
     },
 
     async 'post passkey-options'(ctx) {
-      const { generateRegistrationOptions } = this.webAuthn
-      const { user } = ctx.state
-      const { usernameProperty } = this.modelClass.definition.options
-      const passkeys = await getPasskeyQuery(this.modelClass, ctx)
-      const options = await generateRegistrationOptions({
-        rpName: this.passkeys.name,
-        rpID: this.passkeys.id,
-        userName: user[usernameProperty],
-        // Don't register the same authenticator twice:
-        excludeCredentials: passkeys.map(({ key, data }) => ({
-          id: key,
-          transports: data.transports
-        })),
-        authenticatorSelection: {
-          residentKey: 'required',
-          userVerification: 'required'
-        }
-      })
-      storeChallenge(ctx, 'registration', options)
-      return options
+      return this.passkeys.createRegistrationOptions(
+        ctx,
+        ctx.state.user,
+        await getPasskeyQuery(this.modelClass, ctx)
+      )
     },
 
     'post passkeys': {
       transacted: false, // See 'post confirm-access'.
 
       async handler(ctx) {
-        const { verifyRegistrationResponse } = this.webAuthn
-        const verification = await verifyRegistrationResponse({
-          response: ctx.request.body,
-          expectedChallenge: consumeChallenge(ctx, 'registration'),
-          expectedOrigin: this.passkeys.origins,
-          expectedRPID: this.passkeys.id
-        }).catch(err => {
-          // Failed verifications are bad requests, not server errors:
-          throw new AuthenticationError({ message: err.message, status: 400 })
-        })
-        if (verification.verified) {
-          const { credential, aaguid } = verification.registrationInfo
-          // Name passkeys after their providers, e.g. '1Password'. Anonymous
-          // providers send an all-zero AAGUID, which isn't listed:
-          const name = aaguids[aaguid] ?? 'Passkey'
-          const { id, createdAt } = await this.modelClass.credentialClass
-            .query(ctx.transaction)
-            .insert({
-              type: 'passkey',
-              userModel: this.modelClass.name,
-              userId: `${ctx.state.user.$id()}`,
-              key: credential.id,
-              name,
-              data: {
-                publicKey: Buffer.from(credential.publicKey).toString(
-                  'base64url'
-                ),
-                counter: credential.counter,
-                transports: credential.transports
-              }
-            })
-          return { id, name, createdAt, lastUsedAt: null }
-        } else {
-          throw new AuthenticationError({
-            message: 'Passkey is incorrect',
-            status: 400
+        const passkey = await this.passkeys.verifyRegistration(
+          ctx,
+          ctx.request.body
+        )
+        const { id, createdAt } = await this.modelClass.credentialClass
+          .query(ctx.transaction)
+          .insert({
+            type: 'passkey',
+            userModel: this.modelClass.name,
+            userId: `${ctx.state.user.$id()}`,
+            ...passkey
           })
-        }
+        return { id, name: passkey.name, createdAt, lastUsedAt: null }
       }
     },
 
@@ -346,12 +302,7 @@ export class UsersController extends ModelController {
     },
 
     async 'get totp'(ctx) {
-      const { user } = ctx.state
-      const credentials = await getTotpQuery(
-        this.modelClass,
-        user,
-        ctx.transaction
-      )
+      const credentials = await getTotpQuery(ctx.state.user, ctx.transaction)
       const types = credentials.map(({ type }) => type)
       return {
         enabled: types.includes('totp'),
@@ -359,95 +310,33 @@ export class UsersController extends ModelController {
       }
     },
 
-    // Keep the new secret in the session until the user confirms it with a
-    // code:
     async 'post totp'(ctx) {
-      if (await hasTotp(this.modelClass, ctx)) {
+      const { user } = ctx.state
+      if (await hasTotp(this, ctx, user)) {
         throw new ResponseError({
           message: 'TOTP is already set up',
           status: 409
         })
       }
-      const { base32: secret } = new this.otpAuth.Secret()
-      ctx.session.totpSetup = {
-        secret,
-        expires: Date.now() + authTimeout,
-        failures: 0
-      }
-      return {
-        uri: createTotp(this, ctx.state.user, secret).toString(),
-        secret
-      }
+      return this.totp.createSecret(ctx, user)
     },
 
     'post totp-confirm': {
       transacted: false, // See 'post confirm-access'.
 
       async handler(ctx) {
-        const { user } = ctx.state
-        const { totpSetup } = ctx.session
-        if (!(totpSetup?.expires > Date.now())) {
-          throw new AuthenticationError({
-            message: 'Missing or expired TOTP setup',
-            status: 400
-          })
-        } else if (await hasTotp(this.modelClass, ctx)) {
-          throw new ResponseError({
-            message: 'TOTP is already set up',
-            status: 409
-          })
-        }
-        const { secret } = totpSetup
-        const step = validateTotp(
-          createTotp(this, user, secret),
+        const backupCodes = await this.totp.confirmSecret(
+          ctx,
+          ctx.state.user,
           ctx.request.body.code
         )
-        if (step !== null) {
-          const key = this.app.config.app.auth.secret
-          const backupCodes = Array.from({ length: backupCodeCount }, () => {
-            // 40 random bits, as two groups of five hex digits:
-            const code = randomBytes(5).toString('hex')
-            return `${code.slice(0, 5)}-${code.slice(5)}`
-          })
-          // Store the credentials all together or not at all:
-          const { credentialClass } = this.modelClass
-          await credentialClass.transaction(ctx.transaction, async trx => {
-            // Batch inserts only work on PostgreSQL:
-            for (const [type, data] of [
-              // The confirmed code can't be used again:
-              ['totp', { secret: encrypt(key, secret, user), step }],
-              ...backupCodes.map(code => [
-                'backup-code',
-                { hash: hashBackupCode(key, code) }
-              ])
-            ]) {
-              await credentialClass.query(trx).insert({
-                type,
-                userModel: this.modelClass.name,
-                userId: `${user.$id()}`,
-                data
-              })
-            }
-          })
-          delete ctx.session.totpSetup
-          // The backup codes are stored hashed, so users only see them now:
-          return { backupCodes }
-        } else if (++totpSetup.failures >= maxCodeFailures) {
-          // The setup starts over after too many wrong codes:
-          delete ctx.session.totpSetup
-          throw createTooManyAttemptsError()
-        } else {
-          throw new AuthenticationError('Code is incorrect')
-        }
+        // The backup codes are stored hashed, so users only see them now:
+        return { backupCodes }
       }
     },
 
     async 'delete totp'(ctx) {
-      await getTotpQuery(
-        this.modelClass,
-        ctx.state.user,
-        ctx.transaction
-      ).delete()
+      await getTotpQuery(ctx.state.user, ctx.transaction).delete()
       return { success: true }
     }
   }
@@ -458,14 +347,21 @@ export class UsersController extends ModelController {
 
   // @override
   setup() {
-    const { session, auth } = this.app.config.app
-    this.passkeys = auth?.passkeys ?? null
-    this.totp = auth?.totp ?? null
+    const { app } = this
+    const { session, auth } = app.config.app
+    // Apps use passkeys and TOTP by registering their services:
+    this.passkeys = app.findService(
+      service => service instanceof PasskeyService
+    )
+    this.totp = app.findService(service => service instanceof TotpService)
     this.reconfirmAccessAfter = getDuration(auth?.reconfirmAccessAfter ?? '10m')
     this.passwordReset = auth?.passwordReset
       ? {
           ...auth.passwordReset,
-          expiresAfter: getDuration(auth.passwordReset.expiresAfter ?? '1h')
+          expiresAfter: getDuration(auth.passwordReset.expiresAfter ?? '1h'),
+          // Sign the links like Koa signs cookies, with the first of `app.keys`
+          // while accepting all of them, so that keys can be rotated:
+          keys: isArray(app.keys) ? new Keygrip(app.keys, 'sha256') : app.keys
         }
       : null
 
@@ -479,7 +375,8 @@ export class UsersController extends ModelController {
           `Unable to use ${name} without sessions stored on the server, ` +
           `see 'app.session'.`
         )
-      } else if (!this.modelClass.credentialClass) {
+      }
+      if (!this.modelClass.credentialClass) {
         throw new ControllerError(
           this,
           `Unable to use ${name} without credentials, see ` +
@@ -487,38 +384,12 @@ export class UsersController extends ModelController {
         )
       }
     }
-    // TOTP and password resets use a secret of their own, not `app.keys`,
-    // since rotating those would make their credentials and links unusable:
-    const checkSecret = name => {
-      if (!auth.secret) {
-        throw new ControllerError(
-          this,
-          `Unable to use ${name} without 'app.auth.secret'.`
-        )
-      }
-    }
 
     if (this.passkeys) {
       checkCredentials('passkeys')
-      const missingKey = ['name', 'id', 'origins'].find(
-        key => !this.passkeys[key]
-      )
-      if (missingKey) {
-        throw new ControllerError(
-          this,
-          `Invalid passkeys, missing 'app.auth.passkeys.${missingKey}'.`
-        )
-      }
     }
     if (this.totp) {
-      if (!this.totp.issuer) {
-        throw new ControllerError(
-          this,
-          `Invalid TOTP, missing 'app.auth.totp.issuer'.`
-        )
-      }
       checkCredentials('TOTP')
-      checkSecret('TOTP')
     }
     if (this.passwordReset) {
       if (!this.passwordReset.confirmUrl?.includes('{token}')) {
@@ -528,11 +399,13 @@ export class UsersController extends ModelController {
           `needs a '{token}' placeholder.`
         )
       }
-      checkSecret('password reset')
+      if (!this.passwordReset.keys) {
+        throw new ControllerError(
+          this,
+          `Unable to use password reset without 'app.keys'.`
+        )
+      }
     }
-    // Set up the routes before importing, so that sub-classes that don't await
-    // `super.setup()` still get them before `initialize()`, and configuration
-    // errors are thrown right away:
     super.setup()
     // Only controllers that route the password reset send its emails, after
     // `allow` and `processValues()`:
@@ -546,31 +419,13 @@ export class UsersController extends ModelController {
         `'sendPasswordReset()'.`
       )
     }
-    // The libraries are optional peer dependencies, so we only import them
-    // when they are used:
-    const importModule = (name, module) =>
-      import(module).catch(err => {
-        throw err.code === 'ERR_MODULE_NOT_FOUND'
-          ? new ControllerError(
-              this,
-              `Unable to use ${name} without '${module}'.`
-            )
-          : err
-      })
-    return Promise.all([
-      this.passkeys && importModule('passkeys', '@simplewebauthn/server'),
-      this.totp && importModule('TOTP', 'otpauth')
-    ]).then(([webAuthn, otpAuth]) => {
-      this.webAuthn = webAuthn
-      this.otpAuth = otpAuth
-    })
   }
 
   // @override
   processValues(values) {
     const processed = super.processValues(values)
-    // Without passkeys, TOTP or password reset, we don't route their actions,
-    // which are all in `collection`:
+    // Without the services of passkeys and TOTP or without password reset, we
+    // don't route their actions, which are all in `collection`:
     if (values === this.collection) {
       for (const name of [
         ...(this.passkeys ? [] : passkeyActions),
@@ -655,7 +510,7 @@ export class UsersController extends ModelController {
         await user.$patch({ lastLogin: new Date() }, ctx.transaction)
         storeConfirmedAccess(this, ctx, user)
       } else {
-        // `UserMixin.login()` asks users with TOTP for a code first:
+        // 'post login' asks users with TOTP for a code first:
         codeRequired = true
       }
     } catch (err) {
@@ -693,67 +548,9 @@ export class UsersController extends ModelController {
     const { usernameProperty } = this.modelClass.definition.options
     return [user.hash, user.lastLogin, user[usernameProperty]]
   }
-
-  // Verify a TOTP code, or consume a backup code of the user. Too many wrong
-  // codes in a row lock the account for a while. The credentials stay locked
-  // meanwhile, so that concurrent requests can't use the same code or miss a
-  // failure:
-  async verifyCode(ctx, user, code) {
-    const key = this.app.config.app.auth.secret
-    const { isValid, isLocked } = await this.modelClass.credentialClass
-      .transaction(ctx.transaction, async trx => {
-        const credentials = await getTotpQuery(
-          this.modelClass,
-          user,
-          trx
-        ).forUpdate()
-        const totp = credentials.find(({ type }) => type === 'totp')
-        if (totp) {
-          const { data } = totp
-          if (data.lockedUntil > Date.now()) {
-            return { isValid: false, isLocked: true }
-          }
-          const step = validateTotp(
-            createTotp(this, user, decrypt(key, data.secret, user)),
-            code
-          )
-          const hash = hashBackupCode(key, code)
-          const backupCode = credentials.find(
-            ({ type, data }) => type === 'backup-code' && data.hash === hash
-          )
-          // Each code is only accepted once, and backup codes are deleted:
-          const isTotpCode = step !== null && step > data.step
-          const isValid = isTotpCode || !!backupCode
-          if (backupCode && !isTotpCode) {
-            await backupCode.$query(trx).delete()
-          }
-          const failures = isValid ? 0 : (data.failures ?? 0) + 1
-          const isLocked = failures >= maxCodeFailures
-          await totp.$query(trx).patch({
-            data: {
-              ...data,
-              step: isTotpCode ? step : data.step,
-              // The count starts anew once the lock ends:
-              failures: isLocked ? 0 : failures,
-              lockedUntil: isLocked ? Date.now() + codeLockTime : null
-            },
-            ...(isTotpCode && { lastUsedAt: new Date() })
-          })
-          return { isValid, isLocked }
-        } else {
-          return { isValid: false, isLocked: false }
-        }
-      })
-    // Throw after the transaction, which keeps the failures:
-    if (isLocked) {
-      throw createTooManyAttemptsError()
-    }
-    return isValid
-  }
 }
 
-// Only routed with `app.auth.passkeys`, as they import the optional peer
-// dependency `@simplewebauthn/server`:
+// Only routed with `PasskeyService`:
 const passkeyActions = [
   'post passkey-login-options',
   'post passkey-login',
@@ -763,8 +560,7 @@ const passkeyActions = [
   'delete passkeys/:id'
 ]
 
-// Only routed with `app.auth.totp`, as they import the optional peer
-// dependency `otpauth`:
+// Only routed with `TotpService`:
 const totpActions = [
   'post login-code',
   'get totp',
@@ -778,10 +574,6 @@ const passwordResetActions = [
   'post password-reset',
   'post password-reset-confirm'
 ]
-
-// The lengths of the IV and the authentication tag of AES-256-GCM:
-const ivLength = 12
-const tagLength = 16
 
 // Called with the controller as `this` through `processAuthorize()`:
 function isAuthenticated(ctx) {
@@ -799,151 +591,40 @@ function getPasskeyQuery(modelClass, ctx) {
   })
 }
 
-// Registrations and authentications keep their challenges apart, so that
-// confirming the access with a passkey doesn't end a pending registration:
-function storeChallenge(ctx, type, { challenge }) {
-  ctx.session[`${type}Challenge`] = {
-    challenge,
-    expires: Date.now() + authTimeout
-  }
-}
-
-// Each challenge can only be answered once, before it expires:
-function consumeChallenge(ctx, type) {
-  const key = `${type}Challenge`
-  const { challenge, expires } = ctx.session[key] ?? {}
-  delete ctx.session[key]
-  if (challenge && expires > Date.now()) {
-    return challenge
-  } else {
-    throw new AuthenticationError({
-      message: 'Missing or expired passkey challenge',
-      status: 400
-    })
-  }
-}
-
-// Verify the response of `startAuthentication()` against the challenge in the
-// session, and resolve to the user of the passkey, or `null`:
+// Resolve to the user of the passkey that answered the challenge in the
+// session:
 async function verifyPasskey(controller, ctx, response) {
-  const { modelClass, passkeys, webAuthn } = controller
-  const challenge = consumeChallenge(ctx, 'authentication')
+  const { modelClass, passkeys } = controller
   const credential = await modelClass
     .credentialQuery(ctx.transaction)
     .findOne({ type: 'passkey', key: response.id ?? null })
   const user = credential
     ? await modelClass.sessionQuery(ctx.transaction).findById(credential.userId)
     : null
-  if (user) {
-    const { publicKey, counter, transports } = credential.data
-    const { verified, authenticationInfo } = await webAuthn
-      .verifyAuthenticationResponse({
-        response,
-        expectedChallenge: challenge,
-        expectedOrigin: passkeys.origins,
-        expectedRPID: passkeys.id,
-        credential: {
-          id: credential.key,
-          publicKey: Buffer.from(publicKey, 'base64url'),
-          counter,
-          transports
-        }
-      })
-      .catch(err => {
-        // Don't tell clients why, but keep the reason for the logs:
-        throw new AuthenticationError({
-          message: 'Passkey is incorrect',
-          cause: err
-        })
-      })
-    if (verified) {
-      await credential.$patch(
-        {
-          data: {
-            ...credential.data,
-            counter: authenticationInfo.newCounter
-          },
-          lastUsedAt: new Date()
-        },
-        ctx.transaction
-      )
-      return user
-    }
+  // The passkeys of users excluded by the session scope stay unused:
+  await passkeys.verifyAuthentication(ctx, response, user && credential)
+  return user
+}
+
+// Users with TOTP always need a code, also when the app no longer registers
+// `TotpService`. Then we report it, and answer with the `message` of wrong
+// passwords, which doesn't tell that the password was right:
+async function hasTotp(controller, ctx, user, message) {
+  const totp = user.constructor.credentialClass
+    ? await getTotpQuery(user, ctx.transaction).findOne({ type: 'totp' })
+    : null
+  if (totp && !controller.totp) {
+    controller.app.emit(
+      'error',
+      new ControllerError(
+        controller,
+        `Unable to authenticate users with TOTP without 'TotpService'.`
+      ),
+      ctx
+    )
+    throw new AuthenticationError(message)
   }
-  return null
-}
-
-// The attempt that uses up the limit answers it too, so that clients don't ask
-// for another code:
-function createTooManyAttemptsError() {
-  return new AuthenticationError({ message: 'Too many attempts', status: 400 })
-}
-
-function getTotpQuery(modelClass, user, trx) {
-  return modelClass
-    .credentialQuery(trx)
-    .where('userId', `${user.$id()}`)
-    .whereIn('type', ['totp', 'backup-code'])
-}
-
-async function hasTotp(modelClass, ctx) {
-  return !!(await getTotpQuery(
-    modelClass,
-    ctx.state.user,
-    ctx.transaction
-  ).findOne({ type: 'totp' }))
-}
-
-function createTotp(controller, user, secret) {
-  const { usernameProperty } = controller.modelClass.definition.options
-  return new controller.otpAuth.TOTP({
-    issuer: controller.totp.issuer,
-    label: user[usernameProperty],
-    secret
-  })
-}
-
-// Return the time step of a valid code, or `null`. Accept the previous and the
-// next code too, for clocks that drift:
-function validateTotp(totp, code) {
-  const timestamp = Date.now()
-  const delta = totp.validate({ token: `${code}`, timestamp, window: 1 })
-  return delta !== null ? totp.counter({ timestamp }) + delta : null
-}
-
-// `app.auth.secret` is a long random string, so HKDF suffices to derive a key
-// for each use:
-function deriveKey(secret, use) {
-  return Buffer.from(hkdfSync('sha256', secret, 'dito-auth', use, 32))
-}
-
-// Encrypt with AES-256-GCM, with a random IV and the authentication tag stored
-// before the encrypted value. The user is authenticated data, so the value
-// can't be moved to other users:
-function encrypt(secret, value, user) {
-  const iv = randomBytes(ivLength)
-  const cipher = createCipheriv('aes-256-gcm', deriveKey(secret, 'totp'), iv)
-  cipher.setAAD(Buffer.from(getUserIdentifier(user)))
-  const encrypted = Buffer.concat([
-    cipher.update(value, 'utf8'),
-    cipher.final()
-  ])
-  return Buffer.concat([iv, cipher.getAuthTag(), encrypted]).toString('base64')
-}
-
-function decrypt(secret, value, user) {
-  const buffer = Buffer.from(value, 'base64')
-  const decipher = createDecipheriv(
-    'aes-256-gcm',
-    deriveKey(secret, 'totp'),
-    buffer.subarray(0, ivLength)
-  )
-  decipher.setAAD(Buffer.from(getUserIdentifier(user)))
-  decipher.setAuthTag(buffer.subarray(ivLength, ivLength + tagLength))
-  return Buffer.concat([
-    decipher.update(buffer.subarray(ivLength + tagLength)),
-    decipher.final()
-  ]).toString('utf8')
+  return !!totp
 }
 
 // Passwords are set when users are created, but only change through
@@ -1002,36 +683,32 @@ function storeConfirmedAccess(controller, ctx, user) {
   }
 }
 
-// Tokens carry the user's id and their creation time, with a MAC that also
-// covers the values of the user, so that nothing is stored. Dates count as ISO
-// strings, missing values as `null`:
+// Tokens carry the user's id and their creation time, with a signature that
+// also covers the values of the user, so that nothing is stored:
 function createPasswordResetToken(controller, user, time) {
-  const { secret } = controller.app.config.app.auth
-  const values = controller.getPasswordResetTokenValues(user)
   const id = Buffer.from(`${user.$id()}`).toString('base64url')
-  const mac = createHmac('sha256', deriveKey(secret, 'password-reset'))
-    .update(JSON.stringify([getUserIdentifier(user), time, ...values]))
-    .digest('base64url')
-  return `${id}.${time.toString(36)}.${mac}`
+  const signature = controller.passwordReset.keys.sign(
+    getPasswordResetData(controller, user, time)
+  )
+  return `${id}.${time.toString(36)}.${signature}`
 }
 
-// Find the user of a token that hasn't expired, by recreating it:
+// Find the user of a token that hasn't expired and is signed with one of
+// `app.keys`:
 async function findPasswordResetUser(controller, ctx, token) {
-  const [encodedId, encodedTime] = token.split('.')
+  const { keys, expiresAfter } = controller.passwordReset
+  const match = token.match(/^([\w-]*)\.([\da-z]+)\.([\w-]+)$/)
+  const [, encodedId, encodedTime, signature] = match ?? []
   const time = parseInt(encodedTime, 36)
-  if (Date.now() - time < controller.passwordReset.expiresAfter) {
+  if (match && Date.now() - time < expiresAfter) {
     try {
       const id = Buffer.from(encodedId, 'base64url').toString()
       const user = await controller.modelClass
         .sessionQuery(ctx.transaction)
         .findById(controller.validateId(id))
-      const expected = Buffer.from(
-        user ? createPasswordResetToken(controller, user, time) : ''
-      )
-      const actual = Buffer.from(token)
       const isValid = (
-        expected.length === actual.length &&
-        timingSafeEqual(expected, actual)
+        user &&
+        keys.verify(getPasswordResetData(controller, user, time), signature)
       )
       return isValid ? user : null
     } catch (err) {
@@ -1047,10 +724,11 @@ async function findPasswordResetUser(controller, ctx, token) {
   }
 }
 
-// Backup codes are random, so a fast hash suffices. Keyed with the secret, a
-// leaked database alone doesn't allow guessing them:
-function hashBackupCode(secret, code) {
-  return createHmac('sha256', deriveKey(secret, 'backup-code'))
-    .update(`${code}`.toLowerCase().replace(/[^0-9a-f]/g, ''))
-    .digest('hex')
+// Dates count as ISO strings, missing values as `null`:
+function getPasswordResetData(controller, user, time) {
+  return JSON.stringify([
+    getUserIdentifier(user),
+    time,
+    ...controller.getPasswordResetTokenValues(user)
+  ])
 }

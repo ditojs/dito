@@ -2,8 +2,9 @@
 // logins of users with TOTP:
 export const authTimeout = 5 * 60 * 1000 // 5 minutes
 
-// Wrong TOTP and backup codes in a row lock the account for a while:
-export const maxCodeFailures = 10
-export const codeLockTime = 15 * 60 * 1000 // 15 minutes
-
-export const backupCodeCount = 10
+export function getTotpQuery(user, trx) {
+  return user.constructor
+    .credentialQuery(trx)
+    .where('userId', `${user.$id()}`)
+    .whereIn('type', ['totp', 'backup-code'])
+}

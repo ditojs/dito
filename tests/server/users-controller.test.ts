@@ -95,7 +95,7 @@ class Members extends UsersController {
     'post broken-login': {
       transacted: true,
       async handler(ctx: any) {
-        await Member.login(ctx)
+        await ctx.login(await Member.authenticate(ctx))
         throw new Error('Login is broken')
       }
     }

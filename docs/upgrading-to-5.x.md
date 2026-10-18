@@ -57,3 +57,10 @@ export async function down(knex) {
   `app.deleteExpiredRecords()` or `app.releaseUnusedAssets()`.
 - Apps that call `app.releaseUnusedAssets()` on a schedule of their own, e.g.
   from a service, can drop it.
+
+### Users
+
+- `UserMixin.login(ctx)` is `authenticate(ctx)`. It only checks the
+  credentials and returns the user, so code that logs users in itself calls
+  `ctx.login(await User.authenticate(ctx))`, which skips TOTP. Users with TOTP
+  log in through `'post login'` of `UsersController`.

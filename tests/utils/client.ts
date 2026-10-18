@@ -1,8 +1,11 @@
 // tests/utils/client.ts
 
 // A JSON client of the app at `url` with a minimal cookie jar, to keep the
-// session between requests.
-export function createClient(url: string) {
+// session between requests, and optional headers for all requests.
+export function createClient(
+  url: string,
+  headers: Record<string, string> = {}
+) {
   const cookies = new Map<string, string>()
   return async (
     path: string,
@@ -11,6 +14,7 @@ export function createClient(url: string) {
     const response = await fetch(`${url}${path}`, {
       method,
       headers: {
+        ...headers,
         'accept': 'application/json',
         'content-type': 'application/json',
         'cookie': [...cookies]

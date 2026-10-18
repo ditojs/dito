@@ -78,8 +78,9 @@ The application keeps services under their names: `app.services.mail`, or
 ## Configuration
 
 Every registered service needs an entry in `config.services`; starting the
-application throws without one. Setting the entry to `false` removes the
-service, e.g. to turn it off in development:
+application throws without one. Setting the entry to `true` sets up the
+service with its defaults, and `false` removes the service, e.g. to turn it off
+in development:
 
 ```js
 services: {
