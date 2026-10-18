@@ -21,6 +21,10 @@ import { getScope } from '../utils/scope.js'
 const SYMBOL_ALL = Symbol('all')
 
 export class QueryBuilder extends objection.QueryBuilder {
+  static {
+    KnexHelper.mixin(this.prototype)
+  }
+
   #ignoreGraph = false
   #scopes = { default: true } // Eager-apply the default scope
   #allowScopes = null
@@ -715,8 +719,6 @@ export class QueryBuilder extends objection.QueryBuilder {
     }
   }
 }
-
-KnexHelper.mixin(QueryBuilder.prototype)
 
 // Add conversion of identifiers to all `where` statements, as well as to
 // `select` and `orderBy`, by detecting use of model properties and expanding

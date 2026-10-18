@@ -1,6 +1,12 @@
 import { QueryBuilder } from '../query/index.js'
 
 export default class RelationAccessor {
+  static {
+    // Expose a selection of QueryBuilder methods as instance methods on
+    // relations.
+    QueryBuilder.mixin(this.prototype)
+  }
+
   constructor(relation, modelClass, model) {
     this.relation = relation
     this.name = relation.name
@@ -36,6 +42,3 @@ export default class RelationAccessor {
     return joinModelClass
   }
 }
-
-// Expose a selection of QueryBuilder methods as instance methods on relations.
-QueryBuilder.mixin(RelationAccessor.prototype)
