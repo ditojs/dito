@@ -1,0 +1,666 @@
+import { vi } from 'vitest'
+import {
+  mountSchema,
+  mountForm,
+  mountAdminWithGenresView
+} from '../test/mount.js'
+
+const genres = [
+  { value: 'fiction', label: 'Fiction' },
+  { value: 'poetry', label: 'Poetry' },
+  { value: 'drama', label: 'Drama' }
+]
+
+function getOptions(field) {
+  return field
+    .findAll('option')
+    .map(option => [option.attributes('value'), option.text()])
+}
+
+describe('DitoSelectType', () => {
+  describe('options', () => {
+    it('labelizes options that are plain values', async () => {
+      const { findField, data } = await mountSchema({
+        schema: {
+          components: {
+            format: { type: 'select', options: ['hardcover', 'e-book'] }
+          }
+        },
+        data: { format: 'e-book' }
+      })
+      const field = findField('format')
+      expect(getOptions(field)).toEqual([
+        ['hardcover', 'Hardcover'],
+        ['e-book', 'E Book']
+      ])
+      expect(field.find('select').element.value).toBe('e-book')
+      await field.find('select').setValue('hardcover')
+      expect(data.format).toBe('hardcover')
+    })
+
+    it('uses the `value` and `label` keys of option objects', async () => {
+      const { findField, data } = await mountSchema({
+        schema: {
+          components: { genre: { type: 'select', options: genres } }
+        }
+      })
+      const field = findField('genre')
+      expect(getOptions(field)).toEqual([
+        ['fiction', 'Fiction'],
+        ['poetry', 'Poetry'],
+        ['drama', 'Drama']
+      ])
+      await field.find('select').setValue('drama')
+      expect(data.genre).toBe('drama')
+    })
+
+    it('uses the keys and label functions of `options`', async () => {
+      const { findField, data } = await mountSchema({
+        schema: {
+          components: {
+            authorId: {
+              type: 'select',
+              options: {
+                data: [
+                  { id: 1, first: 'Jane', last: 'Austen' },
+                  { id: 2, first: 'Mary', last: 'Shelley' }
+                ],
+                value: 'id',
+                label: ({ option }) => `${option.last}, ${option.first}`
+              }
+            }
+          }
+        }
+      })
+      const field = findField('authorId')
+      expect(getOptions(field).map(([, label]) => label)).toEqual([
+        'Austen, Jane',
+        'Shelley, Mary'
+      ])
+      await field.find('select').setValue('2')
+      // The values of the options are matched, not their strings:
+      expect(data.authorId).toBe(2)
+    })
+
+    it('groups the options with `options.group`', async () => {
+      const { findField, data } = await mountSchema({
+        schema: {
+          components: {
+            book: {
+              type: 'select',
+              options: {
+                data: [
+                  { value: 'emma', label: 'Emma', shelf: 'Classics' },
+                  { value: 'dune', label: 'Dune', shelf: 'Sci-Fi' },
+                  {
+                    value: 'persuasion',
+                    label: 'Persuasion',
+                    shelf: 'Classics'
+                  }
+                ],
+                group: 'shelf'
+              }
+            }
+          }
+        }
+      })
+      const groups = findField('book').findAll('optgroup')
+      expect(groups.map(group => group.attributes('label'))).toEqual([
+        'Classics',
+        'Sci-Fi'
+      ])
+      expect(groups[0].findAll('option').map(option => option.text())).toEqual(
+        ['Emma', 'Persuasion']
+      )
+      await findField('book').find('select').setValue('persuasion')
+      // The `value` keys of the grouped options are used as their values:
+      expect(data.book).toBe('persuasion')
+    })
+
+    it('groups the options by the result of an `options.group` callback', async () => {
+      const { findField } = await mountSchema({
+        schema: {
+          components: {
+            book: {
+              type: 'select',
+              options: {
+                data: [
+                  { value: 'emma', label: 'Emma', year: 1815 },
+                  { value: 'dune', label: 'Dune', year: 1965 },
+                  { value: 'persuasion', label: 'Persuasion', year: 1817 }
+                ],
+                group: ({ option }) =>
+                  option.year < 1900 ? 'Classic' : 'Modern'
+              }
+            }
+          }
+        }
+      })
+      const groups = findField('book').findAll('optgroup')
+      expect(
+        groups.map(group => [
+          group.attributes('label'),
+          group.findAll('option').map(option => option.text())
+        ])
+      ).toEqual([
+        ['Classic', ['Emma', 'Persuasion']],
+        ['Modern', ['Dune']]
+      ])
+    })
+
+    it('loads options through `request()` once per form with `cache`', async () => {
+      const request = vi.fn(({ url }) =>
+        url === 'genres' ? { data: genres } : null
+      )
+      const { findField, data } = await mountForm({
+        schema: {
+          components: {
+            genre: {
+              type: 'select',
+              options: {
+                data: ({ request }) =>
+                  request({ url: 'genres', cache: 'local' })
+              }
+            },
+            subgenre: {
+              type: 'select',
+              options: {
+                data: ({ request }) =>
+                  request({ url: 'genres', cache: 'local' })
+              }
+            }
+          }
+        },
+        data: { genre: 'poetry', subgenre: null },
+        request
+      })
+      expect(request).toHaveBeenCalledOnce()
+      expect(getOptions(findField('subgenre'))).toHaveLength(3)
+      expect(data.genre).toBe('poetry')
+    })
+
+    it('reloads options when the data that they depend on changes', async () => {
+      const loadCities = vi.fn(
+        async country =>
+          ({
+            ch: [{ value: 'bsl', label: 'Basel' }],
+            fr: [{ value: 'lyo', label: 'Lyon' }]
+          })[country]
+      )
+      const { findField, data, settle } = await mountSchema({
+        schema: {
+          components: {
+            country: { type: 'select', options: ['ch', 'fr'] },
+            city: {
+              type: 'select',
+              options: {
+                data: ({ item }) =>
+                  item.country ? () => loadCities(item.country) : []
+              }
+            }
+          }
+        },
+        data: { country: 'ch', city: 'bsl' }
+      })
+      expect(getOptions(findField('city'))).toEqual([['bsl', 'Basel']])
+      await findField('country').find('select').setValue('fr')
+      await settle()
+      expect(getOptions(findField('city'))).toEqual([['lyo', 'Lyon']])
+      // The city of the previous country isn't an option anymore, but stays:
+      expect(data.city).toBe('bsl')
+      expect(loadCities).toHaveBeenCalledTimes(2)
+    })
+
+    it('keeps plain values whose option disappeared and shows them as unavailable', async () => {
+      const { findField, data, settle } = await mountSchema({
+        schema: {
+          components: {
+            country: { type: 'select', options: ['ch', 'fr'] },
+            city: {
+              type: 'select',
+              options: {
+                data: ({ item }) =>
+                  item.country === 'ch' ? ['Basel'] : ['Lyon']
+              }
+            }
+          }
+        },
+        data: { country: 'ch', city: 'Basel' }
+      })
+      const getCityOptions = () =>
+        findField('city')
+          .findAll('option')
+          .map(option => [option.text(), option.element.disabled])
+      expect(getCityOptions()).toEqual([['Basel', false]])
+      await findField('country').find('select').setValue('fr')
+      await settle()
+      // The value is kept, not cleared without the user noticing:
+      expect(data.city).toBe('Basel')
+      expect(getCityOptions()).toEqual([
+        ['Basel (unavailable)', true],
+        ['Lyon', false]
+      ])
+      // happy-dom reports `value` wrongly for disabled options, but selects
+      // the right one:
+      const select = findField('city').find('select').element
+      expect(select.options[select.selectedIndex].text).toBe(
+        'Basel (unavailable)'
+      )
+    })
+
+    it('keeps values missing from the options when saving other values', async () => {
+      const { findField, data, routeComponent, settle, submit } =
+        await mountForm({
+          schema: {
+            components: {
+              title: { type: 'text' },
+              author: {
+                type: 'select',
+                options: {
+                  data: [{ id: 1, name: 'Jane' }],
+                  label: 'name',
+                  value: 'id'
+                }
+              }
+            }
+          },
+          data: { title: 'Emma', author: 2 },
+          request: ({ data }) => ({ data })
+        })
+      expect(data.author).toBe(2)
+      expect(routeComponent.routeContext.isDirty).toBe(false)
+      await findField('title').find('input').setValue('Persuasion')
+      await settle()
+      expect(await submit()).toEqual({
+        id: 1,
+        title: 'Persuasion',
+        author: 2
+      })
+    })
+
+    it('selects object values that equal options without a value key', async () => {
+      const { findField } = await mountSchema({
+        schema: {
+          components: {
+            city: {
+              type: 'select',
+              options: {
+                data: [{ name: 'Basel' }, { name: 'Lyon' }],
+                label: 'name'
+              }
+            }
+          }
+        },
+        // A copy of the option, as stored values are loaded separately:
+        data: { city: { name: 'Lyon' } }
+      })
+      const field = findField('city')
+      expect(field.findAll('option').map(option => option.text())).toEqual([
+        'Basel',
+        'Lyon'
+      ])
+      const select = field.find('select').element
+      expect(select.options[select.selectedIndex].text).toBe('Lyon')
+    })
+
+    it('matches values through `options.equals` before showing them as unavailable', async () => {
+      const { findField } = await mountSchema({
+        schema: {
+          components: {
+            country: {
+              type: 'select',
+              options: {
+                data: [
+                  { value: 'ch', label: 'Switzerland' },
+                  { value: 'fr', label: 'France' }
+                ],
+                equals: ({ value, option }) => (
+                  value?.toLowerCase() === option.value
+                )
+              }
+            }
+          }
+        },
+        data: { country: 'FR' }
+      })
+      expect(
+        findField('country')
+          .findAll('option')
+          .map(option => option.text())
+      ).toEqual(['Switzerland', 'France'])
+    })
+
+    it('shows the errors of options that fail to load', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+      const { getErrors } = await mountForm({
+        schema: {
+          components: {
+            genre: {
+              type: 'select',
+              options: {
+                data: async () => {
+                  throw new Error('Genres are unavailable')
+                }
+              }
+            }
+          }
+        },
+        data: { genre: null }
+      })
+      expect(getErrors('genre')).toEqual(['Genres are unavailable'])
+    })
+
+    it(
+      'shows the error of options that fail to load only once ' +
+      'after the data is replaced',
+      async () => {
+        vi.spyOn(console, 'error').mockImplementation(() => {})
+        const { getErrors, routeComponent, settle } = await mountSchema({
+          schema: {
+            components: {
+              genre: {
+                type: 'select',
+                options: {
+                  data: async () => {
+                    throw new Error('Genres are unavailable')
+                  }
+                }
+              }
+            }
+          }
+        })
+        routeComponent.dataContext.resetItem({ genre: null })
+        await settle()
+        expect(getErrors('genre')).toEqual(['Genres are unavailable'])
+      }
+    )
+    it('warns once about `search`, which only multiselects support', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      await mountSchema({
+        schema: {
+          components: {
+            genre: { type: 'select', options: genres, search: () => genres }
+          }
+        }
+      })
+      expect(warn).toHaveBeenCalledExactlyOnceWith(
+        `Unsupported schema key 'search' in 'genre' is ignored: ` +
+        `Only multiselects support it.`
+      )
+      warn.mockRestore()
+    })
+  })
+
+  describe('values', () => {
+    it(
+      'keeps values without option once loaded, without making the form ' +
+      'dirty',
+      async () => {
+        const { data, routeComponent } = await mountForm({
+          schema: {
+            components: {
+              genre: {
+                type: 'select',
+                options: { data: async () => genres }
+              }
+            }
+          },
+          data: { genre: 'opera' }
+        })
+        expect(data.genre).toBe('opera')
+        expect(routeComponent.routeContext.isDirty).toBe(false)
+      }
+    )
+
+    it('replaces the references that the component displays', async () => {
+      const authors = [
+        { id: 1, name: 'Mary Shelley' },
+        { id: 2, name: 'Bram Stoker' }
+      ]
+      const { data } = await mountSchema({
+        schema: {
+          components: {
+            author: {
+              type: 'select',
+              relate: true,
+              options: { data: async () => authors, label: 'name' },
+              formatValue: ({ value }) => value && { id: value },
+              parseValue: ({ value }) => value?.name
+            }
+          }
+        },
+        data: { author: 2 }
+      })
+      expect(data.author).toBe('Bram Stoker')
+    })
+
+    it('computes a default option from the loaded options', async () => {
+      const { data } = await mountSchema({
+        schema: {
+          components: {
+            genre: {
+              type: 'select',
+              options: { data: async () => genres },
+              computeValue: ({ value, options }) => value ?? options[0].value
+            }
+          }
+        }
+      })
+      expect(data.genre).toBe('fiction')
+    })
+
+    it('shows the `placeholder` while no option is selected', async () => {
+      const { findField, data } = await mountSchema({
+        schema: {
+          components: {
+            genre: {
+              type: 'select',
+              options: genres,
+              placeholder: 'Choose a genre',
+              clearable: true
+            }
+          }
+        }
+      })
+      const field = findField('genre')
+      const select = field.find('select').element
+      const placeholder = select.options[0]
+      expect(placeholder.text).toBe('Choose a genre')
+      expect(placeholder.disabled && placeholder.hidden).toBe(true)
+      expect(select.selectedIndex).toBe(0)
+      expect(field.classes()).toContain('dito-select--placeholder')
+      await field.find('select').setValue('drama')
+      expect(field.classes()).not.toContain('dito-select--placeholder')
+      await field.find('.dito-affixes__clear').trigger('click')
+      expect(data.genre).toBe(null)
+      expect(select.selectedIndex).toBe(0)
+      expect(field.classes()).toContain('dito-select--placeholder')
+    })
+
+    it('clears the value with the clear button', async () => {
+      const { findField, data } = await mountSchema({
+        schema: {
+          components: {
+            genre: { type: 'select', options: genres, clearable: true }
+          }
+        },
+        data: { genre: 'drama' }
+      })
+      await findField('genre').find('.dito-affixes__clear').trigger('click')
+      expect(data.genre).toBe(null)
+    })
+  })
+
+  describe('relate', () => {
+    const teamSchema = {
+      components: {
+        members: {
+          type: 'list',
+          inlined: true,
+          form: {
+            type: 'form',
+            components: { name: { type: 'text' } }
+          }
+        },
+        captain: {
+          type: 'select',
+          relate: true,
+          options: { dataPath: 'members', label: 'name' }
+        }
+      }
+    }
+
+    it('stores the related option objects as the value', async () => {
+      const { findField, data } = await mountSchema({
+        schema: teamSchema,
+        data: {
+          members: [
+            { id: 1, name: 'Ada' },
+            { id: 2, name: 'Grace' }
+          ],
+          captain: null
+        }
+      })
+      const field = findField('captain')
+      expect(getOptions(field)).toEqual([
+        ['1', 'Ada'],
+        ['2', 'Grace']
+      ])
+      await field.find('select').setValue('2')
+      expect(data.captain).toBe(data.members[1])
+    })
+
+    it('replaces references with the related options', async () => {
+      const { data } = await mountSchema({
+        schema: teamSchema,
+        data: {
+          members: [
+            { id: 1, name: 'Ada' },
+            { id: 2, name: 'Grace' }
+          ],
+          captain: { id: 1 }
+        }
+      })
+      expect(data.captain).toBe(data.members[0])
+    })
+
+    it('sends related objects as references with only their id', async () => {
+      const { findField, submit } = await mountForm({
+        schema: teamSchema,
+        data: {
+          members: [
+            { id: 1, name: 'Ada' },
+            { id: 2, name: 'Grace' }
+          ],
+          captain: null
+        },
+        request: ({ data }) => ({ data })
+      })
+      await findField('captain').find('select').setValue('2')
+      const payload = await submit()
+      expect(payload.captain).toEqual({ id: 2 })
+      expect(payload.members).toEqual([
+        { id: 1, name: 'Ada' },
+        { id: 2, name: 'Grace' }
+      ])
+    })
+
+    it('gives options without ids temporary ids once selected', async () => {
+      // New members don't have ids yet, so they are their own option values,
+      // and the selected one gets a temporary id for the relation to refer to.
+      const { findField, data, submit } = await mountForm({
+        schema: teamSchema,
+        data: {
+          members: [{ name: 'Ada' }, { name: 'Grace' }],
+          captain: null
+        },
+        request: ({ data }) => ({ data })
+      })
+      const select = findField('captain').find('select')
+      await select.trigger('focus')
+      expect(select.findAll('option').map(option => option.text())).toEqual([
+        'Ada',
+        'Grace'
+      ])
+      select.element.selectedIndex = 1
+      await select.trigger('change')
+      expect(data.captain).toBe(data.members[1])
+      expect(data.members[1].id).toMatch(/^@\d+$/)
+      expect(data.members[0].id).toBe(undefined)
+      const payload = await submit()
+      // The temporary id becomes a reference between the member and captain:
+      const reference = payload.members[1]['#id']
+      expect(reference).toEqual(expect.any(String))
+      expect(payload.captain).toEqual({ '#ref': reference })
+      expect(payload.members).toEqual([
+        { name: 'Ada' },
+        { '#id': reference, 'name': 'Grace' }
+      ])
+    })
+
+    it('relates by the key given in `relate`', async () => {
+      const { findField, data, submit } = await mountForm({
+        schema: {
+          components: {
+            ...teamSchema.components,
+            captain: { ...teamSchema.components.captain, relate: 'code' }
+          }
+        },
+        data: {
+          members: [
+            { code: 'ada', name: 'Ada' },
+            { code: 'grace', name: 'Grace' }
+          ],
+          captain: { code: 'ada' }
+        },
+        request: ({ data }) => ({ data })
+      })
+      expect(data.captain).toBe(data.members[0])
+      await findField('captain').find('select').setValue('grace')
+      expect(data.captain).toBe(data.members[1])
+      const payload = await submit()
+      expect(payload.captain).toEqual({ code: 'grace' })
+    })
+  })
+
+  describe('editable', () => {
+    const genreSchema = {
+      type: 'select',
+      editable: true,
+      view: 'genres',
+      options: {
+        data: [
+          { id: 1, name: 'Fiction' },
+          { id: 2, name: 'Poetry' }
+        ],
+        value: 'id',
+        label: 'name'
+      }
+    }
+
+    it('links the selected option to its form in `view`', async () => {
+      const { admin } = await mountAdminWithGenresView({
+        components: { genre: genreSchema },
+        data: { genre: 2 }
+      })
+      const field = admin.wrapper.find('.dito-select')
+      const link = field.find('.dito-options-edit-buttons a')
+      expect(link.attributes('href')).toBe('/genres/2')
+      await field.find('select').setValue('1')
+      expect(link.attributes('href')).toBe('/genres/1')
+    })
+
+    it('disables the link without a selected option', async () => {
+      const { admin } = await mountAdminWithGenresView({
+        components: { genre: genreSchema },
+        data: { genre: null }
+      })
+      const field = admin.wrapper.find('.dito-select')
+      const link = field.find('.dito-options-edit-buttons a')
+      expect(link.attributes('aria-disabled')).toBe('true')
+      await field.find('select').setValue('1')
+      expect(link.attributes('aria-disabled')).toBeUndefined()
+      expect(link.attributes('href')).toBe('/genres/1')
+    })
+  })
+})

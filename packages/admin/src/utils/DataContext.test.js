@@ -10,7 +10,7 @@ import {
 import DitoDialog from '../components/DitoDialog.vue'
 import DitoPanel from '../components/DitoPanel.vue'
 import DitoSchema from '../components/DitoSchema.vue'
-import DitoTypeText from '../types/DitoTypeText.vue'
+import DitoTextType from '../types/DitoTextType.vue'
 
 describe('DataContext', () => {
   const chaptersSchema = {
@@ -118,7 +118,7 @@ describe('DataContext', () => {
     })
     await flushPromises()
     const mode = admin.wrapper
-      .findAllComponents(DitoTypeText)
+      .findAllComponents(DitoTextType)
       .find(({ vm }) => vm.componentPath === 'speed/mode').vm
     mode.context.closeDialog(mode.context.item.mode)
     expect(await promise).toBe('fast')

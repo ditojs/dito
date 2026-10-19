@@ -6,7 +6,7 @@ import {
   mountSchema,
   unmountAdmin
 } from '../test/mount.js'
-import DitoTypeButton from '../types/DitoTypeButton.vue'
+import DitoButtonType from '../types/DitoButtonType.vue'
 import { RequestError } from '../utils/request.js'
 
 // Returns a request that is pending until `resolve()` or `reject()` is called,
@@ -450,7 +450,7 @@ describe('useResource()', () => {
       const request = vi.fn()
       const { wrapper } = await mountRecipesWithPublishButton(request)
       const share = wrapper
-        .findAllComponents(DitoTypeButton)
+        .findAllComponents(DitoButtonType)
         .find(({ vm }) => vm.schema.name === 'share').vm
       expect(await share.context.submit()).toBe(false)
       expect(request).not.toHaveBeenCalled()

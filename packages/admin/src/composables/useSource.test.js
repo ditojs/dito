@@ -10,7 +10,7 @@ import {
   isView,
   isForm
 } from '../test/mount.js'
-import DitoTypeList from '../types/DitoTypeList.vue'
+import DitoListType from '../types/DitoListType.vue'
 import { getTypeDescriptor } from '../utils/schema/types.ts'
 
 async function mountBookForm({
@@ -466,7 +466,7 @@ describe('useSource()', () => {
       })
       await admin.navigate('/books')
       const [source] = admin.wrapper
-        .findAllComponents(DitoTypeList)
+        .findAllComponents(DitoListType)
         .map(({ vm }) => vm)
       const getLoadQueries = () =>
         admin.request.mock.calls
@@ -535,7 +535,7 @@ describe('useSource()', () => {
         })
         await flushPromises()
         const source = admin.wrapper
-          .findAllComponents(DitoTypeList)
+          .findAllComponents(DitoListType)
           .map(({ vm }) => vm)
           .find(({ schema }) => schema.name === 'authors')
         const getLoadQueries = () =>

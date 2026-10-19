@@ -4,7 +4,7 @@ import {
   defineType as defineTypeDescriptor,
   getTypes
 } from './utils/schema/types.ts'
-import { wrapCustomComponent } from './types/DitoTypeComponent.vue'
+import { wrapCustomComponent } from './types/DitoComponentType.vue'
 
 export { DitoAdmin }
 // Layout sections place their components with `DitoField` and `DitoPane`:

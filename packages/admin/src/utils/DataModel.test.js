@@ -35,7 +35,7 @@ defineType({
 })
 defineType({ type: 'object', sourceType: 'object' })
 defineType({ type: 'submit', submitsData: true })
-// Like `DitoTypeUpload`, which leaves out files that aren't uploaded yet:
+// Like `DitoUploadType`, which leaves out files that aren't uploaded yet:
 defineType({
   type: 'upload',
   serializeValue: ({ value }) => (value?.isUploaded ? value.name : null)
