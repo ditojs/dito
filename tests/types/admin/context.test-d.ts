@@ -96,6 +96,7 @@ describe('SchemaContext', () => {
     >()
     assertType(context.request({ resource: 'pages', cache: 'local' }))
     assertType(context.request({ url: '/api/pages' }))
+    assertType(context.request({ url: '/api/pages', abortOnUnmount: true }))
     // @ts-expect-error A request needs a url or a resource.
     assertType(context.request({ method: 'get' }))
   })

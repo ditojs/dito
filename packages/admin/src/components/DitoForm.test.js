@@ -1142,7 +1142,8 @@ describe('DitoForm', () => {
           const { context } = this
           const poll = async () => {
             const { exportStatus, exportProgress } = await context.request({
-              url: 'exports/1'
+              url: 'exports/1',
+              abortOnUnmount: true
             })
             context.mergeItem({ exportStatus, exportProgress })
             poll()

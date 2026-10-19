@@ -35,6 +35,8 @@ export interface RequestOptions {
   // Cache for the admin session, or while the component's route or dialog is
   // shown:
   cache?: 'global' | 'local'
+  // End without settling when the component unmounts:
+  abortOnUnmount?: boolean
 }
 
 export interface DownloadOptions {
@@ -134,21 +136,26 @@ export async function sendRequest(
 
 export function request(
   services: Services,
-  { cache, ...options }: RequestOptions
+  { cache, abortOnUnmount, ...options }: RequestOptions
 ): Promise<any> {
+  if (cache && abortOnUnmount) {
+    throw new Error(
+      'Unable to abort cached requests on unmount, as other components ' +
+      'share them.'
+    )
+  }
   const loadCache: Record<string, Promise<any>> | null =
     cache === 'global'
       ? services.adminContext.session.loadCache
       : cache === 'local'
         ? (services.dataContext?.loadCache ?? null)
         : null
-  const { resource } = options
-  const method = options.method || resource?.method
   // Requests to resources are told apart by the URLs that they resolve to:
+  const { resource } = options
   const cacheKey = loadCache
     ? getRequestCacheKey({
         ...options,
-        method,
+        method: options.method || resource?.method,
         url: (
           options.url || (resource ? getResourceUrl(services, resource) : null)
         )
@@ -157,10 +164,7 @@ export function request(
   if (loadCache && cacheKey in loadCache) {
     return loadCache[cacheKey]
   }
-  // Reads end with their component, like the loads of forms, unless others
-  // share their cached response. Writes complete, as they change the server:
-  const shouldEndWithComponent = !loadCache && (method || 'get') === 'get'
-  const signals = [options.signal, shouldEndWithComponent && services.signal]
+  const signals = [options.signal, abortOnUnmount && services.signal]
   // NOTE: Cache the promise, not its result:
   const res = sendRequest(services, {
     ...options,
@@ -170,7 +174,7 @@ export function request(
     .catch(error => {
       // Nothing waits for the requests of unmounted components, so their
       // promises don't settle, and their callers' code doesn't run on:
-      if (shouldEndWithComponent && services.signal.aborted) {
+      if (abortOnUnmount && services.signal.aborted) {
         return new Promise(() => {})
       }
       // Failed requests aren't cached, so they can be retried:
