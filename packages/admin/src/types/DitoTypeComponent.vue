@@ -98,22 +98,28 @@ function checkContract(component, schema) {
       const keys = isArray(declared) ? declared : Object.keys(declared ?? {})
       return names.filter(name => !keys.includes(name))
     }
-    const valueProps = ['modelValue']
-    const valueEmits = ['update:modelValue', 'change']
-    const missingValueMembers = [
-      ...getMissing(component.props, valueProps),
-      ...getMissing(component.emits, valueEmits)
-    ]
+    const missingModelProps = getMissing(component.props, ['modelValue'])
+    const missingModelEmits = getMissing(component.emits, ['update:modelValue'])
     // Fields without a `default` may only display, with components that
-    // declare none of the value's props and emits:
+    // declare neither the value nor its updates. They may still declare
+    // `change`, to keep the native events of their own inputs to themselves:
     const isDisplayOnly = (
       schema &&
       !('default' in schema) &&
-      missingValueMembers.length === valueProps.length + valueEmits.length
+      missingModelProps.length > 0 &&
+      missingModelEmits.length > 0
     )
     const missing = [
       ...getMissing(component.props, ['schema', 'context']),
-      ...(isDisplayOnly ? [] : missingValueMembers)
+      ...(
+        isDisplayOnly
+          ? []
+          : [
+              ...missingModelProps,
+              ...missingModelEmits,
+              ...getMissing(component.emits, ['change'])
+            ]
+      )
     ]
     if (missing.length > 0) {
       console.warn(
