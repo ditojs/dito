@@ -205,6 +205,23 @@ describe('DitoTypeComponent', () => {
       warn.mockRestore()
     })
 
+    it('may declare `change` for inputs of their own', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      await mountSchema({
+        schema: {
+          components: {
+            readingTime: {
+              type: 'component',
+              component: { ...ReadingTime, emits: ['change'] }
+            }
+          }
+        },
+        data: { words: 500 }
+      })
+      expect(warn).not.toHaveBeenCalled()
+      warn.mockRestore()
+    })
+
     it('still need them with a `default`', async () => {
       const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
       await mountSchema({
