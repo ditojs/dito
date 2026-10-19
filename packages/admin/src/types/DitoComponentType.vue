@@ -3,12 +3,10 @@ component(
   :is="customComponent"
   :id="componentPath"
   ref="element"
-  v-bind="attributes"
+  v-bind="isDisplayOnly ? attributes : { ...attributes, ...model }"
   :schema="schema"
   :context="context"
-  :modelValue="value"
   :errorsElementId="errorsElementId"
-  @update:modelValue="newValue => (value = newValue)"
 )
   template(
     v-if="$slots.default"
@@ -52,12 +50,21 @@ const DitoComponentType = {
       props,
       { members }
     )
+    const customComponent = computed(() => props.schema.component)
     return {
       context,
       componentPath,
-      value,
       attributes,
-      customComponent: computed(() => props.schema.component)
+      customComponent,
+      // Display-only components get no value, or it falls through as an
+      // attribute to their root element:
+      isDisplayOnly: computed(() =>
+        isDisplayOnly(customComponent.value, props.schema)
+      ),
+      model: computed(() => ({
+        'modelValue': value.value,
+        'onUpdate:modelValue': newValue => (value.value = newValue)
+      }))
     }
   }
 }
@@ -84,7 +91,8 @@ export function wrapCustomComponent(component) {
     setup(props, context) {
       return {
         ...DitoComponentType.setup(props, context),
-        customComponent: component
+        customComponent: component,
+        isDisplayOnly: false
       }
     }
   }
@@ -94,30 +102,16 @@ export function wrapCustomComponent(component) {
 // would emit the schema's `change` event a second time:
 function checkContract(component, schema) {
   if (process.env.NODE_ENV !== 'production' && component) {
-    const getMissing = (declared, names) => {
-      const keys = isArray(declared) ? declared : Object.keys(declared ?? {})
-      return names.filter(name => !keys.includes(name))
-    }
-    const missingModelProps = getMissing(component.props, ['modelValue'])
-    const missingModelEmits = getMissing(component.emits, ['update:modelValue'])
-    // Fields without a `default` may only display, with components that
-    // declare neither the value nor its updates. They may still declare
-    // `change`, to keep the native events of their own inputs to themselves:
-    const isDisplayOnly = (
-      schema &&
-      !('default' in schema) &&
-      missingModelProps.length > 0 &&
-      missingModelEmits.length > 0
-    )
+    const getMissing = (declared, names) =>
+      names.filter(name => !isDeclared(declared, name))
     const missing = [
       ...getMissing(component.props, ['schema', 'context']),
       ...(
-        isDisplayOnly
+        schema && isDisplayOnly(component, schema)
           ? []
           : [
-              ...missingModelProps,
-              ...missingModelEmits,
-              ...getMissing(component.emits, ['change'])
+              ...getMissing(component.props, ['modelValue']),
+              ...getMissing(component.emits, ['update:modelValue', 'change'])
             ]
       )
     ]
@@ -130,6 +124,23 @@ function checkContract(component, schema) {
       )
     }
   }
+}
+
+// Fields without a `default` may only display, with components that declare
+// neither the value nor its updates. They may still declare `change`, to keep
+// the native events of their own inputs to themselves:
+function isDisplayOnly(component, schema) {
+  return (
+    !('default' in schema) &&
+    !isDeclared(component.props, 'modelValue') &&
+    !isDeclared(component.emits, 'update:modelValue')
+  )
+}
+
+function isDeclared(declared, name) {
+  return isArray(declared)
+    ? declared.includes(name)
+    : Object.hasOwn(declared ?? {}, name)
 }
 
 export default DitoComponentType
