@@ -28,23 +28,33 @@ const files = fs
 
 const entries = new Map()
 for (const file of files) {
-  for (const section of fs.readFileSync(file, 'utf8').split(/^### /m)) {
+  const [text, ...sections] = fs.readFileSync(file, 'utf8').split(/^### /m)
+  if (text.trim()) {
+    fail(`Invalid text before the first heading in '${file}'.`)
+  }
+  if (sections.length === 0) {
+    fail(`Unable to find changelog entries in '${file}'.`)
+  }
+  for (const section of sections) {
     const [heading, ...lines] = section.split('\n')
     // Each entry is a list item, with its indented lines:
     const items = lines
       .join('\n')
-      .trim()
       .split(/\n(?=- )/)
+      .map(item => item.trim())
       .filter(Boolean)
-    if (heading && items.length > 0) {
-      entries.set(heading, [...(entries.get(heading) ?? []), ...items])
+    if (!kinds.includes(heading)) {
+      fail(`Unknown heading '### ${heading}' in '${file}'.`)
     }
+    if (items.length === 0) {
+      fail(`Unable to find entries under '### ${heading}' in '${file}'.`)
+    }
+    entries.set(heading, [...(entries.get(heading) ?? []), ...items])
   }
 }
 
 if (entries.size === 0) {
-  console.error(`Unable to find changelog entries in '${folder}'.`)
-  process.exit(1)
+  fail(`Unable to find changelog entries in '${folder}'.`)
 }
 
 const rank = (list, value) =>
@@ -70,4 +80,9 @@ fs.writeFileSync(
 )
 for (const file of files) {
   fs.rmSync(file)
+}
+
+function fail(message) {
+  console.error(message)
+  process.exit(1)
 }

@@ -591,6 +591,12 @@ class Storeroom extends Larder {
   }
 }
 
+class Basement extends Larder {
+  override actions: any = {
+    'get hidden': false
+  }
+}
+
 class Spices extends ModelController<any> {
   override modelClass = Ingredient
 
@@ -626,7 +632,7 @@ describe('Dropped actions', () => {
   beforeAll(async () => {
     app = createTestApp({
       models: { Ingredient },
-      controllers: { Larder, Storeroom, Spices, LocalSpices }
+      controllers: { Larder, Storeroom, Basement, Spices, LocalSpices }
     })
     await createTestDatabase(app)
     await app.start()
@@ -645,6 +651,11 @@ describe('Dropped actions', () => {
   it('drops inherited actions set to `false`', async () => {
     expect(await getStatus('/larder/stock')).toBe(200)
     expect(await getStatus('/larder/hidden')).toBe(404)
+  })
+
+  it('drops actions again that a parent dropped already', async () => {
+    expect(await getStatus('/basement/stock')).toBe(200)
+    expect(await getStatus('/basement/hidden')).toBe(404)
   })
 
   it('routes dropped actions again when sub-classes define them', async () => {

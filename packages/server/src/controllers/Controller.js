@@ -484,7 +484,7 @@ export class Controller {
       }
       for (const key of getOwnKeys(current)) {
         if (current[key] === false) {
-          if (!Object.getPrototypeOf(current)[key]) {
+          if (!(key in Object.getPrototypeOf(current))) {
             throw new ControllerError(
               this,
               `Unable to drop '${key}': no inherited action.`
