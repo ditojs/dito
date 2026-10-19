@@ -51,7 +51,7 @@ function createDataModel(schema, data, options) {
   })
   // The entry of the list at `name` for the change API:
   const getListEntry = name => ({
-    schema: schema.components[name],
+    schema: schema.fields[name],
     list: dataModel.data[name],
     dataPath: name
   })
@@ -67,9 +67,9 @@ describe('DataModel', () => {
   it('sets the defaults of missing values when the data is set up', () => {
     const schema = {
       type: 'form',
-      components: {
+      fields: {
         title: { type: 'text', default: 'Untitled' },
-        tags: { type: 'list', form: { type: 'form', components: {} } }
+        tags: { type: 'list', form: { type: 'form', fields: {} } }
       }
     }
     const { dataModel, data } = createDataModel(schema, {
@@ -85,12 +85,12 @@ describe('DataModel', () => {
     // E.g. items that code adds, in which the components edit the defaults.
     const schema = {
       type: 'form',
-      components: {
+      fields: {
         chapters: {
           type: 'list',
           form: {
             type: 'form',
-            components: {
+            fields: {
               title: { type: 'text' },
               status: { type: 'text', default: 'draft' }
             }
@@ -111,7 +111,7 @@ describe('DataModel', () => {
   it('sets the defaults of replaced data', async () => {
     const schema = {
       type: 'form',
-      components: { title: { type: 'text', default: 'Untitled' } }
+      fields: { title: { type: 'text', default: 'Untitled' } }
     }
     const { dataModel } = createDataModel(schema, {})
     dataModel.replace(reactive({}))
@@ -123,7 +123,7 @@ describe('DataModel', () => {
   it('writes computed values and keeps them current', async () => {
     const schema = {
       type: 'form',
-      components: { title: { type: 'text' }, slug }
+      fields: { title: { type: 'text' }, slug }
     }
     const { dataModel, data } = createDataModel(schema, {
       title: 'Hello World'
@@ -142,7 +142,7 @@ describe('DataModel', () => {
     // A compute that keeps the first value it sees, like a price on order:
     const schema = {
       type: 'form',
-      components: {
+      fields: {
         price: { type: 'text' },
         orderedPrice: {
           type: 'computed',
@@ -161,12 +161,12 @@ describe('DataModel', () => {
   it('writes computed values of fields in tabs and unnested sections', () => {
     const schema = {
       type: 'form',
-      components: { title: { type: 'text' } },
+      fields: { title: { type: 'text' } },
       tabs: {
         meta: {
           type: 'tab',
-          components: {
-            seo: { type: 'section', components: { slug } }
+          fields: {
+            seo: { type: 'section', fields: { slug } }
           }
         }
       }
@@ -179,7 +179,7 @@ describe('DataModel', () => {
   it('writes the computed value back when the value changes', async () => {
     const schema = {
       type: 'form',
-      components: {
+      fields: {
         tags: { type: 'text', computeValue: ({ value }) => value ?? [] }
       }
     }
@@ -194,7 +194,7 @@ describe('DataModel', () => {
   it('keeps values that `computeValue()` returns `undefined` for', async () => {
     const schema = {
       type: 'form',
-      components: { title: { type: 'text', computeValue: () => undefined } }
+      fields: { title: { type: 'text', computeValue: () => undefined } }
     }
     const { dataModel, data } = createDataModel(schema, { title: 'Hello' })
     data.title = 'Changed'
@@ -209,7 +209,7 @@ describe('DataModel', () => {
     )
     const schema = {
       type: 'form',
-      components: { entries: { type: 'text', computeValue } }
+      fields: { entries: { type: 'text', computeValue } }
     }
     const { dataModel, data } = createDataModel(schema, {
       entries: [{ name: 'One' }]
@@ -228,7 +228,7 @@ describe('DataModel', () => {
     )
     const schema = {
       type: 'form',
-      components: { names: { type: 'computed', computeValue } }
+      fields: { names: { type: 'computed', computeValue } }
     }
     const { dataModel, data } = createDataModel(schema, {
       authors: [{ name: 'Jane' }]
@@ -250,14 +250,14 @@ describe('DataModel', () => {
     // E.g. sizes that are stored as numbers, and edited as value and unit.
     const schema = {
       type: 'form',
-      components: {
+      fields: {
         padding: {
           type: 'object',
           computeValue: ({ value }) =>
             typeof value === 'number' ? { value, units: 'rem' } : value,
           form: {
             type: 'form',
-            components: {
+            fields: {
               value: { type: 'text' },
               units: { type: 'text' }
             }
@@ -280,13 +280,13 @@ describe('DataModel', () => {
       }))
     const schema = {
       type: 'form',
-      components: {
+      fields: {
         tracks: {
           type: 'list',
           computeValue,
           form: {
             type: 'form',
-            components: {
+            fields: {
               name: { type: 'text' },
               volume: { type: 'text', default: 0 },
               // Buttons have no value, and don't get a key in the items:
@@ -309,7 +309,7 @@ describe('DataModel', () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     const schema = {
       type: 'form',
-      components: {
+      fields: {
         count: {
           type: 'text',
           computeValue: ({ item }) => (item.other ?? 0) + 1
@@ -339,7 +339,7 @@ describe('DataModel', () => {
     let callCount = 0
     const schema = {
       type: 'form',
-      components: {
+      fields: {
         title: { type: 'text' },
         token: {
           type: 'text',
@@ -361,7 +361,7 @@ describe('DataModel', () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     const schema = {
       type: 'form',
-      components: {
+      fields: {
         broken: {
           type: 'text',
           if: () => {
@@ -383,7 +383,7 @@ describe('DataModel', () => {
   it('skips components whose `if` evaluates to `false`', async () => {
     const schema = {
       type: 'form',
-      components: {
+      fields: {
         title: { type: 'text' },
         hasSlug: { type: 'text' },
         slug: { ...slug, if: ({ item }) => item.hasSlug }
@@ -407,12 +407,12 @@ describe('DataModel', () => {
   it('writes computed values of list items, including added ones', async () => {
     const schema = {
       type: 'form',
-      components: {
+      fields: {
         chapters: {
           type: 'list',
           form: {
             type: 'form',
-            components: { title: { type: 'text' }, slug }
+            fields: { title: { type: 'text' }, slug }
           }
         }
       }
@@ -438,11 +438,11 @@ describe('DataModel', () => {
   it('skips sources with their own resource', () => {
     const schema = {
       type: 'form',
-      components: {
+      fields: {
         chapters: {
           type: 'list',
           resource: 'chapters',
-          form: { type: 'form', components: { title: { type: 'text' }, slug } }
+          form: { type: 'form', fields: { title: { type: 'text' }, slug } }
         }
       }
     }
@@ -457,14 +457,14 @@ describe('DataModel', () => {
     // The panels display the data that contains the sources.
     const schema = {
       type: 'form',
-      components: {
+      fields: {
         title: { type: 'text' },
         chapters: {
           type: 'list',
           resource: 'chapters',
-          form: { type: 'form', components: { title: { type: 'text' }, slug } },
+          form: { type: 'form', fields: { title: { type: 'text' }, slug } },
           panels: {
-            info: { type: 'panel', components: { slug } }
+            info: { type: 'panel', fields: { slug } }
           }
         }
       }
@@ -478,16 +478,16 @@ describe('DataModel', () => {
     dataModel.stop()
   })
 
-  describe('components created by `components()` callbacks', () => {
+  describe('components created by `fields()` callbacks', () => {
     // E.g. fields that depend on the selected template.
     const getSchema = createComponents => ({
       type: 'form',
-      components: {
+      fields: {
         fields: { type: 'list', defaultValue: () => [] },
         values: {
           type: 'section',
           nested: true,
-          components: createComponents
+          fields: createComponents
         }
       }
     })
@@ -522,7 +522,7 @@ describe('DataModel', () => {
           computeValue: () => item.title.toUpperCase()
         }
       }))
-      schema.components.title = { type: 'text' }
+      schema.fields.title = { type: 'text' }
       const { dataModel, data } = createDataModel(schema, {
         title: 'Book',
         fields: [],
@@ -539,7 +539,7 @@ describe('DataModel', () => {
     it('creates them only when the data that they read changes', async () => {
       const createComponents = vi.fn(createFieldComponents)
       const schema = getSchema(createComponents)
-      schema.components.title = { type: 'text' }
+      schema.fields.title = { type: 'text' }
       const { dataModel, data } = createDataModel(schema, {
         title: 'Book',
         fields: ['name'],
@@ -560,7 +560,7 @@ describe('DataModel', () => {
   it('resolves values from data schemas', async () => {
     const schema = {
       type: 'form',
-      components: {
+      fields: {
         title: { type: 'text' },
         upper: {
           type: 'computed',
@@ -594,7 +594,7 @@ describe('DataModel', () => {
     const resolvers = []
     const schema = {
       type: 'form',
-      components: {
+      fields: {
         title: { type: 'text' },
         loaded: {
           type: 'computed',
@@ -631,7 +631,7 @@ describe('DataModel', () => {
 
     const createTopicSchema = loadTopics => ({
       type: 'form',
-      components: {
+      fields: {
         category: {
           type: 'select',
           options: {
@@ -684,7 +684,7 @@ describe('DataModel', () => {
     it('shares the option objects with the components', async () => {
       const schema = {
         type: 'form',
-        components: {
+        fields: {
           size: {
             type: 'select',
             options: { data: async () => [{ id: 1 }, { id: 2 }] },
@@ -695,7 +695,7 @@ describe('DataModel', () => {
       const { dataModel, data } = createDataModel(schema, {})
       await dataModel.waitUntilSettled()
       const options = dataModel.getOptionsResolver({
-        schema: schema.components.size,
+        schema: schema.fields.size,
         data,
         name: 'size',
         dataPath: 'size',
@@ -710,7 +710,7 @@ describe('DataModel', () => {
       const data = vi.fn(async () => [{ value: 'news' }])
       const schema = {
         type: 'form',
-        components: {
+        fields: {
           category: { type: 'select', options: { data } }
         }
       }
@@ -725,7 +725,7 @@ describe('DataModel', () => {
       const error = vi.spyOn(console, 'error').mockImplementation(() => {})
       const schema = {
         type: 'form',
-        components: {
+        fields: {
           genre: {
             type: 'select',
             options: {
@@ -750,7 +750,7 @@ describe('DataModel', () => {
     it('computes values when options point to missing data', async () => {
       const schema = {
         type: 'form',
-        components: {
+        fields: {
           genre: {
             type: 'select',
             options: { dataPath: 'genres' },
@@ -771,7 +771,7 @@ describe('DataModel', () => {
       // E.g. selecting from the values that another list of the form holds:
       const schema = {
         type: 'form',
-        components: {
+        fields: {
           genres: { type: 'text' },
           genre: {
             type: 'select',
@@ -797,7 +797,7 @@ describe('DataModel', () => {
   describe('dirty state', () => {
     const schema = {
       type: 'form',
-      components: {
+      fields: {
         title: { type: 'text' },
         slug,
         chapters: {
@@ -805,7 +805,7 @@ describe('DataModel', () => {
           orderKey: 'position',
           form: {
             type: 'form',
-            components: {
+            fields: {
               title: { type: 'text' },
               status: { type: 'text', default: 'draft' }
             }
@@ -962,7 +962,7 @@ describe('DataModel', () => {
       const { dataModel, data, getListEntry } = createDataModel(
         {
           type: 'form',
-          components: {
+          fields: {
             books: {
               type: 'list',
               resource: { path: 'books' },
@@ -990,7 +990,7 @@ describe('DataModel', () => {
       const { dataModel, data, getListEntry } = createDataModel(
         {
           type: 'form',
-          components: {
+          fields: {
             title: { type: 'text' },
             books: {
               type: 'list',
@@ -1021,7 +1021,7 @@ describe('DataModel', () => {
       const { dataModel, data, getListEntry } = createDataModel(
         {
           type: 'form',
-          components: {
+          fields: {
             books: {
               type: 'list',
               resource: { path: 'books' },
@@ -1042,16 +1042,16 @@ describe('DataModel', () => {
 
     it('marks changes inside sources with their own resource for them', () => {
       // E.g. the children of the items of a tree with a resource:
-      const chapters = { type: 'list', form: { type: 'form', components: {} } }
+      const chapters = { type: 'list', form: { type: 'form', fields: {} } }
       const { dataModel, data } = createDataModel(
         {
           type: 'form',
-          components: {
+          fields: {
             books: {
               type: 'list',
               resource: { path: 'books' },
               buttons: { submit: { type: 'submit' } },
-              form: { type: 'form', components: { chapters } }
+              form: { type: 'form', fields: { chapters } }
             }
           }
         },
@@ -1072,7 +1072,7 @@ describe('DataModel', () => {
     describe('writes inside sources with their own resource', () => {
       const chapters = {
         type: 'list',
-        form: { type: 'form', components: { title: { type: 'text' } } }
+        form: { type: 'form', fields: { title: { type: 'text' } } }
       }
 
       // The container can't save, only the source with its own resource:
@@ -1080,12 +1080,12 @@ describe('DataModel', () => {
         return createDataModel(
           {
             type: 'form',
-            components: {
+            fields: {
               books: {
                 type: 'list',
                 resource: { path: 'books' },
                 buttons: { submit: { type: 'submit' } },
-                form: { type: 'form', components: { chapters } }
+                form: { type: 'form', fields: { chapters } }
               }
             }
           },
@@ -1221,7 +1221,7 @@ describe('DataModel', () => {
         type: 'list',
         form: {
           type: 'form',
-          components: {
+          fields: {
             title: { type: 'text' },
             note: { type: 'text', exclude: true }
           }
@@ -1229,20 +1229,20 @@ describe('DataModel', () => {
       }
       const schema = {
         type: 'form',
-        components: {
+        fields: {
           title: { type: 'text' },
           note: { type: 'text', exclude: true },
           details: {
             type: 'section',
             nested: true,
             exclude: true,
-            components: { summary: { type: 'text' } }
+            fields: { summary: { type: 'text' } }
           },
           author: {
             type: 'object',
             form: {
               type: 'form',
-              components: { name: { type: 'text' } }
+              fields: { name: { type: 'text' } }
             }
           },
           chapters: chapterList
@@ -1321,7 +1321,7 @@ describe('DataModel', () => {
         const { dataModel, data, getListEntry } = createDataModel(
           {
             type: 'form',
-            components: {
+            fields: {
               books: {
                 type: 'list',
                 resource: { path: 'books' },
@@ -1345,7 +1345,7 @@ describe('DataModel', () => {
         const { dataModel, data } = createDataModel(
           {
             type: 'form',
-            components: {
+            fields: {
               note: {
                 type: 'text',
                 exclude: () => {
@@ -1391,7 +1391,7 @@ describe('DataModel', () => {
       const { dataModel, data } = createDataModel(
         {
           type: 'form',
-          components: {
+          fields: {
             title: { type: 'text' },
             size: {
               type: 'select',
@@ -1422,16 +1422,16 @@ describe('DataModel', () => {
   describe('mergeFromServer()', () => {
     const schema = {
       type: 'form',
-      components: {
+      fields: {
         title: { type: 'text' },
         chapters: {
           type: 'list',
-          form: { type: 'form', components: { title: { type: 'text' } } }
+          form: { type: 'form', fields: { title: { type: 'text' } } }
         },
         reviews: {
           type: 'list',
           resource: { path: 'reviews' },
-          form: { type: 'form', components: { text: { type: 'text' } } }
+          form: { type: 'form', fields: { text: { type: 'text' } } }
         }
       }
     }
@@ -1477,13 +1477,13 @@ describe('DataModel', () => {
       const { dataModel, data } = createDataModel(
         {
           type: 'form',
-          components: {
+          fields: {
             width: {
               type: 'section',
               nested: true,
               computeValue: ({ value }) =>
                 isPlainObject(value) ? value : { value, units: 'rem' },
-              components: { value: { type: 'text' } }
+              fields: { value: { type: 'text' } }
             }
           }
         },
@@ -1498,7 +1498,7 @@ describe('DataModel', () => {
       const { dataModel, data } = createDataModel(
         {
           type: 'form',
-          components: {
+          fields: {
             title: { type: 'text' },
             label: {
               type: 'computed',
@@ -1521,16 +1521,16 @@ describe('DataModel', () => {
       type: 'list',
       form: {
         type: 'form',
-        components: {
+        fields: {
           title: { type: 'text' },
           notes: {
             type: 'list',
-            form: { type: 'form', components: { text: { type: 'text' } } }
+            form: { type: 'form', fields: { text: { type: 'text' } } }
           }
         }
       }
     }
-    const schema = { type: 'form', components: { chapters: chapterList } }
+    const schema = { type: 'form', fields: { chapters: chapterList } }
 
     it('merges copies into the item in place, matching their uids', () => {
       const { dataModel, data } = createDataModel(schema, {
@@ -1584,12 +1584,12 @@ describe('DataModel', () => {
         type: 'list',
         form: {
           type: 'form',
-          components: {
+          fields: {
             title: { type: 'text' },
             details: {
               type: 'section',
               nested: true,
-              components: {
+              fields: {
                 chapter: {
                   type: 'computed',
                   computeValue: ({ parentItem }) => parentItem
@@ -1600,7 +1600,7 @@ describe('DataModel', () => {
         }
       }
       const { dataModel, data } = createDataModel(
-        { type: 'form', components: { chapters: chapterList } },
+        { type: 'form', fields: { chapters: chapterList } },
         { chapters: [{ title: 'One', details: {} }] }
       )
       await nextTick()
@@ -1640,21 +1640,21 @@ describe('DataModel', () => {
   describe('errors', () => {
     const schema = {
       type: 'form',
-      components: {
+      fields: {
         title: { type: 'text' },
         details: {
           type: 'section',
           nested: true,
-          components: { subtitle: { type: 'text' } }
+          fields: { subtitle: { type: 'text' } }
         },
         chapters: {
           type: 'list',
-          form: { type: 'form', components: { title: { type: 'text' } } }
+          form: { type: 'form', fields: { title: { type: 'text' } } }
         },
         tags: {
           type: 'list',
           wrapPrimitives: 'name',
-          form: { type: 'form', components: { name: { type: 'text' } } }
+          form: { type: 'form', fields: { name: { type: 'text' } } }
         }
       }
     }
@@ -1938,12 +1938,12 @@ describe('DataModel', () => {
     it('finds and copies the errors within data that holds its ancestors', async () => {
       const schema = {
         type: 'form',
-        components: {
+        fields: {
           title: { type: 'text' },
           details: {
             type: 'section',
             nested: true,
-            components: {
+            fields: {
               book: {
                 type: 'computed',
                 computeValue: ({ parentItem }) => parentItem
@@ -1977,12 +1977,12 @@ describe('DataModel', () => {
     // compute that keeps valid genres and selects the first one otherwise:
     const createShelfSchema = ({ loadGenres, computeValue }) => ({
       type: 'form',
-      components: {
+      fields: {
         books: {
           type: 'list',
           form: {
             type: 'form',
-            components: {
+            fields: {
               title: { type: 'text' },
               genre: {
                 type: 'select',
@@ -2065,12 +2065,12 @@ describe('DataModel', () => {
       const { dataModel, data } = createDataModel(
         {
           type: 'form',
-          components: {
+          fields: {
             books: {
               type: 'list',
               form: {
                 type: 'form',
-                components: {
+                fields: {
                   title: { type: 'text' },
                   position: { type: 'text', computeValue },
                   path: {
@@ -2123,13 +2123,13 @@ describe('DataModel', () => {
       const emptyAddress = { street: '' }
       const schema = {
         type: 'form',
-        components: {
+        fields: {
           address: {
             type: 'object',
             computeValue: ({ value }) => value ?? emptyAddress,
             form: {
               type: 'form',
-              components: {
+              fields: {
                 street: { type: 'text' },
                 country: { type: 'text', default: 'Nowhere' }
               }
@@ -2150,13 +2150,13 @@ describe('DataModel', () => {
       const chapters = Object.freeze([firstChapter, secondChapter])
       const schema = {
         type: 'form',
-        components: {
+        fields: {
           chapters: {
             type: 'list',
             computeValue: ({ value }) => value ?? chapters,
             form: {
               type: 'form',
-              components: {
+              fields: {
                 title: { type: 'text' },
                 status: { type: 'text', default: 'draft' }
               }
@@ -2180,13 +2180,13 @@ describe('DataModel', () => {
       const emptyChapter = Object.freeze({ title: '' })
       const schema = {
         type: 'form',
-        components: {
+        fields: {
           chapters: {
             type: 'list',
             computeValue: ({ value }) => value ?? [emptyChapter, emptyChapter],
             form: {
               type: 'form',
-              components: {
+              fields: {
                 title: { type: 'text' },
                 status: { type: 'text', default: 'draft' }
               }
@@ -2214,7 +2214,7 @@ describe('DataModel', () => {
       vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
       const schema = {
         type: 'form',
-        components: {
+        fields: {
           preview: {
             type: 'computed',
             data: () => () =>
@@ -2244,7 +2244,7 @@ describe('DataModel', () => {
     it('works for components without data and component paths', () => {
       const schema = {
         type: 'form',
-        components: { title: { type: 'text' }, slug }
+        fields: { title: { type: 'text' }, slug }
       }
       const data = reactive({ title: 'Hello World' })
       const dataModel = new DataModel({
@@ -2278,18 +2278,18 @@ describe('DataModel', () => {
       // E.g. books that are added to an author inherit the author's language:
       const schema = {
         type: 'form',
-        components: {
+        fields: {
           authors: {
             type: 'list',
             form: {
               type: 'form',
-              components: {
+              fields: {
                 language: { type: 'text' },
                 books: {
                   type: 'list',
                   form: {
                     type: 'form',
-                    components: {
+                    fields: {
                       title: { type: 'text' },
                       language: {
                         type: 'text',
@@ -2320,12 +2320,12 @@ describe('DataModel', () => {
       defineType({ type: 'note', ignoresMissingValue })
       const schema = {
         type: 'form',
-        components: {
+        fields: {
           chapters: {
             type: 'list',
             form: {
               type: 'form',
-              components: { note: { type: 'note', default: 'None' } }
+              fields: { note: { type: 'note', default: 'None' } }
             }
           }
         }
@@ -2349,8 +2349,8 @@ describe('DataModel', () => {
       const schema = {
         type: 'form',
         tabs: {
-          main: { type: 'tab', components: { title } },
-          preview: { type: 'tab', components: { title } }
+          main: { type: 'tab', fields: { title } },
+          preview: { type: 'tab', fields: { title } }
         }
       }
       const { dataModel, data } = createDataModel(schema, { title: 'Emma' })
@@ -2367,7 +2367,7 @@ describe('DataModel', () => {
       const upper = vi.fn(({ item }) => item.title.toUpperCase())
       const createSchema = computeValue => ({
         type: 'form',
-        components: {
+        fields: {
           title: { type: 'text' },
           label: { type: 'text', computeValue }
         }
@@ -2398,7 +2398,7 @@ describe('DataModel', () => {
         if: false,
         options: { data: loadGenres }
       }
-      const schema = { type: 'form', components: { genre } }
+      const schema = { type: 'form', fields: { genre } }
       const { dataModel, data } = createDataModel(schema, {})
       const entry = {
         schema: genre,
@@ -2423,7 +2423,7 @@ describe('DataModel', () => {
       const summary = vi.fn(({ item }) => `About ${item.title}`)
       const schema = {
         type: 'form',
-        components: {
+        fields: {
           title: { type: 'text' },
           isShort: {
             type: 'text',
@@ -2453,7 +2453,7 @@ describe('DataModel', () => {
       // Unlike failing `if` conditions, failing computes aren't caught:
       const schema = {
         type: 'form',
-        components: {
+        fields: {
           title: {
             type: 'text',
             computeValue: () => {
@@ -2471,12 +2471,12 @@ describe('DataModel', () => {
       const loads = []
       const schema = {
         type: 'form',
-        components: {
+        fields: {
           books: {
             type: 'list',
             form: {
               type: 'form',
-              components: {
+              fields: {
                 title: { type: 'text' },
                 slug,
                 summary: {

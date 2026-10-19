@@ -73,7 +73,7 @@ describe('the contexts of components', () => {
   it('describe the item that holds the value, or the item itself', async () => {
     const { data } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           title: { type: 'text', label: recordLabel('field') },
           go: { type: 'button', label: recordLabel('button') },
           chapters: {
@@ -89,7 +89,7 @@ describe('the contexts of components', () => {
             form: {
               type: 'form',
               onInitialize: record('inlinedFormEvent'),
-              components: {
+              fields: {
                 heading: { type: 'text', label: recordLabel('fieldInItem') },
                 notes: {
                   type: 'list',
@@ -102,7 +102,7 @@ describe('the contexts of components', () => {
                   },
                   form: {
                     type: 'form',
-                    components: { text: { type: 'text' } }
+                    fields: { text: { type: 'text' } }
                   }
                 }
               }
@@ -111,13 +111,13 @@ describe('the contexts of components', () => {
           details: {
             type: 'section',
             onInitialize: record('sectionEvent'),
-            components: { subtitle: { type: 'text' } }
+            fields: { subtitle: { type: 'text' } }
           },
           meta: {
             type: 'section',
             nested: true,
             onInitialize: record('nestedSectionEvent'),
-            components: {
+            fields: {
               year: { type: 'text', label: recordLabel('fieldInSection') }
             }
           },
@@ -127,7 +127,7 @@ describe('the contexts of components', () => {
             form: {
               type: 'form',
               onInitialize: record('objectFormEvent'),
-              components: { name: { type: 'text' } }
+              fields: { name: { type: 'text' } }
             },
             buttons: {
               check: { type: 'button', label: recordLabel('objectButton') }
@@ -142,13 +142,13 @@ describe('the contexts of components', () => {
             form: {
               type: 'form',
               deletable: recordIf('cellEditButtons'),
-              components: { text: { type: 'text' } }
+              fields: { text: { type: 'text' } }
             }
           },
           refs: {
             type: 'list',
             render: context => recordLabel('listRender')(context),
-            form: { type: 'form', components: { title: { type: 'text' } } }
+            form: { type: 'form', fields: { title: { type: 'text' } } }
           },
           tags: {
             type: 'list',
@@ -156,7 +156,7 @@ describe('the contexts of components', () => {
             wrapPrimitives: 'value',
             form: {
               type: 'form',
-              components: {
+              fields: {
                 value: { type: 'text', label: recordLabel('wrappedValue') }
               }
             }
@@ -242,17 +242,17 @@ describe('the contexts of components', () => {
     const isRendered = vi.fn(() => true)
     const { data, routeComponent } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           address: {
             type: 'object',
             inlined: true,
             form: {
               type: 'form',
-              components: {
+              fields: {
                 details: {
                   type: 'section',
                   if: isRendered,
-                  components: { zip: { type: 'text' } }
+                  fields: { zip: { type: 'text' } }
                 }
               }
             }
@@ -279,14 +279,14 @@ describe('the contexts of components', () => {
   it('describe the item of nested sections when they toggle', async () => {
     const { data, findContainer } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           meta: {
             type: 'section',
             nested: true,
             label: 'Meta',
             collapsible: true,
             onToggle: record('toggle'),
-            components: { year: { type: 'text' } }
+            fields: { year: { type: 'text' } }
           }
         }
       },
@@ -312,14 +312,14 @@ describe('the contexts of components', () => {
     }))
     const { data, getComponent, settle } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           chapters: {
             type: 'list',
             inlined: true,
             form: {
               type: 'form',
-              components: {
-                details: { type: 'section', components: getComponents }
+              fields: {
+                details: { type: 'section', fields: getComponents }
               }
             }
           }
@@ -353,14 +353,14 @@ describe('the contexts of components', () => {
     const computeValue = vi.fn(() => undefined)
     await mountSchema({
       schema: {
-        components: {
+        fields: {
           tags: {
             type: 'list',
             inlined: true,
             wrapPrimitives: 'value',
             form: {
               type: 'form',
-              components: {
+              fields: {
                 value: { type: 'text', if: isRendered, computeValue }
               }
             }
@@ -388,7 +388,7 @@ describe('the contexts of components', () => {
     async function mountBook() {
       return mountForm({
         schema: {
-          components: {
+          fields: {
             title: { type: 'text' },
             chapters: {
               type: 'list',
@@ -397,7 +397,7 @@ describe('the contexts of components', () => {
                 type: 'form',
                 onInitialize: record('formEvent'),
                 onChange: record('formChange'),
-                components: {
+                fields: {
                   heading: { type: 'text' },
                   check: { type: 'button', onClick: record('buttonClick') }
                 },
@@ -416,7 +416,7 @@ describe('the contexts of components', () => {
               form: {
                 type: 'form',
                 onInitialize: record('objectFormEvent'),
-                components: { year: { type: 'text' } }
+                fields: { year: { type: 'text' } }
               }
             }
           }
@@ -498,7 +498,7 @@ describe('the contexts of components', () => {
   it('give submit events the context of the click', async () => {
     const { findField, data } = await mountForm({
       schema: {
-        components: {
+        fields: {
           chapters: {
             type: 'list',
             resource: { path: 'chapters' },
@@ -559,7 +559,7 @@ describe('the contexts of components', () => {
       views: {
         books: {
           type: 'view',
-          component: {
+          field: {
             type: 'list',
             resource: { path: 'books' },
             columns: { title: {} },
@@ -574,7 +574,7 @@ describe('the contexts of components', () => {
                 onSuccess: record('success')
               }
             },
-            form: { type: 'form', components: { title: { type: 'text' } } }
+            form: { type: 'form', fields: { title: { type: 'text' } } }
           }
         }
       },
@@ -599,12 +599,12 @@ describe('the contexts of components', () => {
     it('describe the data that the panels display', async () => {
       const { data, routeComponent } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             title: { type: 'text' },
             info: {
               type: 'panel',
               nested: true,
-              components: {
+              fields: {
                 note: { type: 'text', label: recordLabel('nestedPanelField') }
               }
             }
@@ -612,7 +612,7 @@ describe('the contexts of components', () => {
           panels: {
             side: {
               type: 'panel',
-              components: {
+              fields: {
                 summary: { type: 'text', label: recordLabel('panelField') }
               },
               buttons: {
@@ -622,7 +622,7 @@ describe('the contexts of components', () => {
             details: {
               type: 'panel',
               nested: true,
-              components: {
+              fields: {
                 color: { type: 'text', label: recordLabel('nestedPanelValue') }
               }
             },
@@ -630,7 +630,7 @@ describe('the contexts of components', () => {
               type: 'panel',
               data: { query: 'Persuasion' },
               onInitialize: record('ownPanelEvent'),
-              components: {
+              fields: {
                 query: { type: 'text', label: recordLabel('ownPanelField') }
               }
             }
@@ -687,12 +687,12 @@ describe('the contexts of components', () => {
     it('edit the data around panels with their own data', async () => {
       const { data, routeComponent } = await mountSchema({
         schema: {
-          components: { title: { type: 'text' } },
+          fields: { title: { type: 'text' } },
           panels: {
             search: {
               type: 'panel',
               data: { query: 'Persuasion' },
-              components: {
+              fields: {
                 query: { type: 'text', label: recordLabel('ownPanelField') }
               }
             }
@@ -715,7 +715,7 @@ describe('the contexts of components', () => {
       const createPanel = query => ({
         type: 'panel',
         data: { query },
-        components: {
+        fields: {
           query: {
             type: 'text',
             if: context => {
@@ -727,7 +727,7 @@ describe('the contexts of components', () => {
       })
       const { routeComponent } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             title: { type: 'text' },
             filter: createPanel('Emma')
           },
@@ -765,13 +765,13 @@ describe('the contexts of components', () => {
         views: {
           test: {
             type: 'view',
-            components: {
+            fields: {
               chapters: {
                 type: 'list',
                 inlined: true,
                 form: {
                   type: 'form',
-                  components: {
+                  fields: {
                     notes: {
                       type: 'list',
                       resource: { path: 'notes' },
@@ -780,7 +780,7 @@ describe('the contexts of components', () => {
                       },
                       form: {
                         type: 'form',
-                        components: { text: { type: 'text' } }
+                        fields: { text: { type: 'text' } }
                       }
                     }
                   }
@@ -815,11 +815,11 @@ describe('the contexts of components', () => {
 
   it('describe the data of dialogs', async () => {
     const admin = await mountAdmin({
-      views: { test: { type: 'view', components: { title: { type: 'text' } } } }
+      views: { test: { type: 'view', fields: { title: { type: 'text' } } } }
     })
     await admin.navigate('/test')
     admin.context.showDialog({
-      components: {
+      fields: {
         name: { type: 'text', label: recordLabel('dialogField') }
       },
       buttons: { ok: { type: 'submit', label: recordLabel('dialogButton') } },

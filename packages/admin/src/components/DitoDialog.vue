@@ -45,7 +45,7 @@ export default {
   emits: ['remove'],
 
   props: {
-    components: { type: Object, default: () => ({}) },
+    fields: { type: Object, default: () => ({}) },
     buttons: { type: Object, default: null },
     promise: { type: Object, required: true },
     data: { type: Object, default: () => ({}) },
@@ -58,14 +58,14 @@ export default {
   setup(props, { emit }) {
     // Make sure dialog data contains all the expected keys
     const initialData = clone(props.data)
-    for (const key in props.components) {
+    for (const key in props.fields) {
       if (!(key in initialData)) {
         initialData[key] = null
       }
     }
     const schema = computed(() => ({
       type: 'dialog',
-      components: props.components
+      fields: props.fields
     }))
     const dialog = useTemplateRef('dialog')
     const dialogButtons = useTemplateRef('dialogButtons')

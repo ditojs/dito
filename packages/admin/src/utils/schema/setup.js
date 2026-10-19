@@ -8,7 +8,8 @@ import {
   camelize,
   assignDeeply,
   mapConcurrently,
-  getValueAtDataPath
+  getValueAtDataPath,
+  deprecate
 } from '@ditojs/utils'
 import { markRaw } from 'vue'
 import { getTypeDescriptor } from './types.ts'
@@ -16,6 +17,7 @@ import {
   iterateSchemaComponents,
   iterateNestedSchemaComponents,
   isForm,
+  isSchema,
   isView,
   isPage,
   isTab,
@@ -49,6 +51,21 @@ const removedSchemaKeys = {
   'groupBy': `'options.group'`,
   'onOpen': onToggle,
   'events.open': onToggle
+}
+
+// The deprecated keys of schemas, by the keys that replace them:
+const renamedSchemaKeys = {
+  fields: {
+    oldKey: 'components',
+    deprecation: 'Schema `components` are deprecated, use `fields` instead.'
+  },
+  field: {
+    oldKey: 'component',
+    deprecation: (
+      'The `component` of views with a schema is deprecated, ' +
+      'use `field` instead.'
+    )
+  }
 }
 
 // The events of forms that `onSuccess()` replaces:
@@ -220,6 +237,12 @@ export async function setupView(api, schema, name) {
 }
 
 export function applySchemaDefaults(api, schema, name = schema.name) {
+  // Rename the deprecated keys before the defaults, which see the new ones:
+  renameSchemaKey(schema, 'fields')
+  // Only views take schemas in `component`, all other schemas Vue components:
+  if (isView(schema) && isSchema(schema.component)) {
+    renameSchemaKey(schema, 'field')
+  }
   let defaults = (
     api.defaults[schema.type] ||
     api.defaults[camelize(schema.type)]
@@ -270,14 +293,14 @@ export function applyNestedSchemaDefaults(api, schema) {
 }
 
 export async function setupForms(api, schema) {
-  const { form, forms, components } = schema
+  const { form, forms, fields } = schema
   if (forms) {
     schema.forms = await resolveSchemas(forms, form => setupForm(api, form))
   } else if (form) {
     schema.form = await setupForm(api, form)
-  } else if (isObject(components)) {
-    // NOTE: Forms of `components()` callbacks can only be set up with data:
-    await setupForm(api, { type: 'form', components })
+  } else if (isObject(fields)) {
+    // NOTE: Forms of `fields()` callbacks can only be set up with data:
+    await setupForm(api, { type: 'form', fields })
   }
 }
 
@@ -286,10 +309,10 @@ export async function setupForm(api, schema) {
   if (!isForm(schema)) {
     throw new Error(`Invalid form schema: '${getSchemaIdentifier(schema)}'`)
   }
-  if (schema.component && !schema.components) {
-    throw new Error(`Invalid form schema: 'component' needs 'components'.`)
-  }
   applySchemaDefaults(api, schema)
+  if (schema.component && !schema.fields) {
+    throw new Error(`Invalid form schema: 'component' needs 'fields'.`)
+  }
   await Promise.all([
     resolveSchemaComponent(schema),
     setupNestedSchemas(api, schema)
@@ -381,5 +404,15 @@ export function assertRemovedSchemaKeys(
         }': Use ${replacement} instead.`
       )
     }
+  }
+}
+
+// Setup removes the old keys, so those still there come from the app, and win:
+export function renameSchemaKey(schema, key) {
+  const { oldKey, deprecation } = renamedSchemaKeys[key]
+  if (schema[oldKey] !== undefined) {
+    deprecate(deprecation)
+    schema[key] = schema[oldKey]
+    delete schema[oldKey]
   }
 }

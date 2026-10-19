@@ -38,7 +38,7 @@ describe('PageSchema', () => {
       type: 'page',
       component: ProductPage,
       // @ts-expect-error: Pages hold no schema components.
-      components: {}
+      fields: {}
     })
   })
 })

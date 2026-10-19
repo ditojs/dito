@@ -35,13 +35,13 @@ describe('DitoPane', () => {
   it('places the components of `names` in rows', async () => {
     const { wrapper, findContainer } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           name: {
             type: 'section',
             component: createLayout(() =>
               h(DitoPane, { names: ['last', 'first'] })
             ),
-            components: {
+            fields: {
               title: { type: 'text', label: 'Title' },
               first: { type: 'text', label: 'First', width: '1/3' },
               last: { type: 'text', label: 'Last', width: '2/3' }
@@ -65,11 +65,11 @@ describe('DitoPane', () => {
   it('places all components without `names`', async () => {
     const { wrapper } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           name: {
             type: 'section',
             component: createLayout(() => h(DitoPane)),
-            components: {
+            fields: {
               first: { type: 'text', label: 'First' },
               last: { type: 'text', label: 'Last' }
             }
@@ -86,13 +86,13 @@ describe('DitoPane', () => {
   it('is registered globally, for layouts with templates', async () => {
     const { wrapper } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           name: {
             type: 'section',
             component: createLayout(() =>
               h(resolveComponent('DitoPane'), { names: ['last'] })
             ),
-            components: {
+            fields: {
               first: { type: 'text', label: 'First' },
               last: { type: 'text', label: 'Last' }
             }
@@ -106,14 +106,14 @@ describe('DitoPane', () => {
   it('places panes next to fields in the same layout', async () => {
     const { wrapper } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           name: {
             type: 'section',
             component: createLayout(() => [
               h(DitoSchemaField, { name: 'title' }),
               h(DitoPane, { names: ['first', 'last'] })
             ]),
-            components: {
+            fields: {
               title: { type: 'text', label: 'Title' },
               first: { type: 'text', label: 'First', width: '1/2' },
               last: { type: 'text', label: 'Last', width: '1/2' }
@@ -157,13 +157,13 @@ describe('DitoPane', () => {
     }))
     const { wrapper, findContainer } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           name: {
             type: 'section',
             component: createLayout(() =>
               h(DitoPane, { names: ['isVisible', 'title'] })
             ),
-            components: {
+            fields: {
               title: { type: 'text', label: 'Title', width: '1/2' },
               isVisible: { type: 'checkbox', label: false, width: '1/2' }
             }
@@ -184,12 +184,12 @@ describe('DitoPane', () => {
   it('edits, validates and submits the components like the pane', async () => {
     const { wrapper, routeComponent, data, submit } = await mountForm({
       schema: {
-        components: {
+        fields: {
           name: {
             type: 'section',
             nested: true,
             component: createLayout(() => h(DitoPane)),
-            components: { first: { type: 'text', required: true } }
+            fields: { first: { type: 'text', required: true } }
           }
         }
       },
@@ -218,7 +218,7 @@ describe('DitoPane', () => {
         component: createLayout(() =>
           h(DitoPane, { names: ['first', 'middle'] })
         ),
-        components: { first: { type: 'text' } }
+        fields: { first: { type: 'text' } }
       },
       `Unknown component: 'middle'.`
     ],
@@ -229,7 +229,7 @@ describe('DitoPane', () => {
     ]
   ])('throws for %s', async (_, name, message) => {
     const admin = await mountAdmin({
-      views: { test: { type: 'view', components: { name } } }
+      views: { test: { type: 'view', fields: { name } } }
     })
     const errorHandler = vi.fn()
     admin.app.config.errorHandler = errorHandler

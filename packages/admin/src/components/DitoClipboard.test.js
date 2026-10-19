@@ -14,7 +14,7 @@ async function mountBookForm(clipboard = true) {
   const result = await mountForm({
     schema: {
       clipboard,
-      components: { title: { type: 'text' } }
+      fields: { title: { type: 'text' } }
     },
     data: { title: 'Emma' }
   })
@@ -73,11 +73,11 @@ describe('DitoClipboard', () => {
     const { wrapper, data, dataModel } = await mountForm({
       schema: {
         clipboard: { paste },
-        components: {
+        fields: {
           authors: {
             type: 'list',
             inlined: true,
-            form: { type: 'form', components: { name: { type: 'text' } } }
+            form: { type: 'form', fields: { name: { type: 'text' } } }
           },
           mainAuthor: {
             type: 'select',
@@ -143,7 +143,7 @@ describe('DitoClipboard', () => {
   it('copies the items of nested forms without their ids', async () => {
     const { admin } = await mountForm({
       schema: {
-        components: {
+        fields: {
           chapters: {
             type: 'list',
             editable: true,
@@ -152,14 +152,14 @@ describe('DitoClipboard', () => {
               type: 'form',
               name: 'chapter',
               clipboard: true,
-              components: {
+              fields: {
                 title: { type: 'text' },
                 sections: {
                   type: 'list',
                   inlined: true,
                   form: {
                     type: 'form',
-                    components: { name: { type: 'text' } }
+                    fields: { name: { type: 'text' } }
                   }
                 }
               }
@@ -197,7 +197,7 @@ describe('DitoClipboard', () => {
   it('keeps the position of the item that the data is pasted into', async () => {
     const { admin } = await mountForm({
       schema: {
-        components: {
+        fields: {
           chapters: {
             type: 'list',
             editable: true,
@@ -205,7 +205,7 @@ describe('DitoClipboard', () => {
             form: {
               type: 'form',
               clipboard: true,
-              components: { title: { type: 'text' } }
+              fields: { title: { type: 'text' } }
             }
           }
         }
@@ -237,15 +237,15 @@ describe('DitoClipboard', () => {
   })
 
   it('gives the forms of objects their clipboard, not of lists', async () => {
-    const form = { type: 'form', components: { title: { type: 'text' } } }
+    const form = { type: 'form', fields: { title: { type: 'text' } } }
     const { findField, findContainer } = await mountForm({
       schema: {
-        components: {
+        fields: {
           chapters: {
             type: 'list',
             inlined: true,
             clipboard: true,
-            components: { title: { type: 'text' } }
+            fields: { title: { type: 'text' } }
           },
           books: { type: 'list', inlined: true, clipboard: true, form },
           cover: { type: 'object', inlined: true, clipboard: true, form }
@@ -281,9 +281,9 @@ describe('DitoClipboard', () => {
       forms: {
         novel: {
           type: 'form',
-          components: { title: { type: 'text' }, author: relateAuthor }
+          fields: { title: { type: 'text' }, author: relateAuthor }
         },
-        comic: { type: 'form', components: { artist: { type: 'text' } } }
+        comic: { type: 'form', fields: { artist: { type: 'text' } } }
       },
       ...settings
     })
@@ -291,13 +291,13 @@ describe('DitoClipboard', () => {
     async function mountShelves({ books, shelf } = {}) {
       const result = await mountForm({
         schema: {
-          components: {
+          fields: {
             authors: {
               type: 'list',
               inlined: true,
               form: {
                 type: 'form',
-                components: { name: { type: 'text' } }
+                fields: { name: { type: 'text' } }
               }
             },
             books: createBooks(books),
@@ -305,7 +305,7 @@ describe('DitoClipboard', () => {
             shelf: {
               type: 'section',
               nested: true,
-              components: { books: createBooks(shelf) }
+              fields: { books: createBooks(shelf) }
             },
             magazines: createBooks()
           }
@@ -352,22 +352,22 @@ describe('DitoClipboard', () => {
       const { data, wrapper } = await mountForm({
         schema: {
           clipboard: true,
-          components: {
+          fields: {
             blocks: {
               type: 'list',
               forms: {
                 article: {
                   type: 'form',
-                  components: { title: { type: 'text' } }
+                  fields: { title: { type: 'text' } }
                 },
                 default: {
                   type: 'form',
-                  components: {
+                  fields: {
                     targets: {
                       type: 'list',
                       form: {
                         type: 'form',
-                        components: { name: { type: 'text' } }
+                        fields: { name: { type: 'text' } }
                       },
                       computeValue: () => ({})
                     }
@@ -424,12 +424,12 @@ describe('DitoClipboard', () => {
           forms: {
             comic: {
               type: 'form',
-              components: { artist: { type: 'text' } }
+              fields: { artist: { type: 'text' } }
             },
             novel: {
               type: 'form',
               creatable: false,
-              components: { title: { type: 'text' } }
+              fields: { title: { type: 'text' } }
             }
           }
         }
@@ -471,13 +471,13 @@ describe('DitoClipboard', () => {
         schema: {
           name: 'book',
           clipboard: true,
-          components: {
+          fields: {
             chapters: {
               type: 'list',
               inlined: true,
               creatable: true,
               clipboard: true,
-              components: { title: { type: 'text' } }
+              fields: { title: { type: 'text' } }
             },
             files: { type: 'upload', multiple: true, clipboard: true }
           }
@@ -511,13 +511,13 @@ describe('DitoClipboard', () => {
       async function mountFonts(fonts) {
         const result = await mountForm({
           schema: {
-            components: {
+            fields: {
               fonts: {
                 type: 'list',
                 inlined: true,
                 form: {
                   type: 'form',
-                  components: {
+                  fields: {
                     cuts: {
                       type: 'list',
                       wrapPrimitives: 'name',
@@ -532,7 +532,7 @@ describe('DitoClipboard', () => {
                       form: {
                         type: 'form',
                         compact: true,
-                        components: { name: { type: 'text' } }
+                        fields: { name: { type: 'text' } }
                       }
                     }
                   }
@@ -598,14 +598,14 @@ describe('DitoClipboard', () => {
       const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
       const { findField } = await mountForm({
         schema: {
-          components: {
+          fields: {
             chapters: {
               type: 'list',
               resource: { path: 'chapters' },
               clipboard: true,
               form: {
                 type: 'form',
-                components: { title: { type: 'text' } }
+                fields: { title: { type: 'text' } }
               }
             }
           }
@@ -681,7 +681,7 @@ describe('DitoClipboard', () => {
           tabs: {
             main: {
               type: 'tab',
-              components: {
+              fields: {
                 title: { type: 'text' },
                 author: relateRecords('authors'),
                 chapters: {
@@ -689,7 +689,7 @@ describe('DitoClipboard', () => {
                   inlined: true,
                   form: {
                     type: 'form',
-                    components: {
+                    fields: {
                       title: { type: 'text' },
                       narrator: relateRecords('authors')
                     }
@@ -699,7 +699,7 @@ describe('DitoClipboard', () => {
             },
             more: {
               type: 'tab',
-              components: {
+              fields: {
                 genres: relateRecords('genres', {
                   type: 'multiselect',
                   multiple: true
@@ -756,11 +756,11 @@ describe('DitoClipboard', () => {
         schema: {
           name: 'book',
           clipboard: true,
-          components: {
+          fields: {
             authors: {
               type: 'list',
               inlined: true,
-              form: { type: 'form', components: { name: { type: 'text' } } }
+              form: { type: 'form', fields: { name: { type: 'text' } } }
             },
             mainAuthor: {
               type: 'select',

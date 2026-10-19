@@ -13,7 +13,7 @@ option and member.
 - The server hosts the admin through an `AdminController`, and serves the
   global `dito` object with the `api` and `settings` of `config.admin`.
 - The admin's entry module creates a `DitoAdmin` with your views.
-- Views hold components, e.g. a list of books. Lists open forms to edit their
+- Views hold fields, e.g. a list of books. Lists open forms to edit their
   items, and forms hold fields.
 - Data is loaded from and saved to API resources, e.g. `books` for
   `/api/books`, which the server's model controllers provide.
@@ -134,7 +134,7 @@ export * from './books.js'
 export const books = {
   type: 'view',
   label: 'Books',
-  component: {
+  field: {
     type: 'list',
     resource: 'books',
     columns: {
@@ -155,7 +155,7 @@ export const books = {
 export const bookForm = {
   type: 'form',
   label: 'Book',
-  components: {
+  fields: {
     title: { type: 'text', required: true },
     price: { type: 'number', decimals: 2, prefix: '€', width: '1/2' },
     publishedAt: { type: 'date', width: '1/2' },

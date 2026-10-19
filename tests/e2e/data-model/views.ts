@@ -78,7 +78,7 @@ export const articles = createWidgetView<ArticleItem>(
           type: 'tab',
           label: 'Main',
           defaultTab: true,
-          components: {
+          fields: {
             title: { type: 'text', label: 'Title' },
             // Displays the computed `slug` of the Meta tab, which isn't
             // rendered, as its section is collapsed.
@@ -121,7 +121,7 @@ export const articles = createWidgetView<ArticleItem>(
               type: 'section',
               label: 'Chooser',
               nested: true,
-              components: {
+              fields: {
                 topic: {
                   type: 'select',
                   label: 'Chosen Topic',
@@ -222,7 +222,7 @@ export const articles = createWidgetView<ArticleItem>(
                 value.length > 0 ? value : [''],
               form: {
                 type: 'form',
-                components: {
+                fields: {
                   keyword: { type: 'text', label: 'Keyword' }
                 }
               }
@@ -237,7 +237,7 @@ export const articles = createWidgetView<ArticleItem>(
             preview: {
               type: 'section',
               if: ({ item }) => !!item.previewKey,
-              components: {
+              fields: {
                 previewText: {
                   type: 'computed',
                   exclude: true,
@@ -289,7 +289,7 @@ export const articles = createWidgetView<ArticleItem>(
               deletable: true,
               form: {
                 type: 'form',
-                components: {
+                fields: {
                   amount: { type: 'number', label: 'Amount' },
                   doubleAmount: {
                     type: 'number',
@@ -314,20 +314,20 @@ export const articles = createWidgetView<ArticleItem>(
           type: 'tab',
           label: 'Stats',
           if: ({ item }) => item.title !== 'Draft',
-          components: {
+          fields: {
             views: { type: 'text', label: 'Views', exclude: true }
           }
         },
         meta: {
           type: 'tab',
           label: 'Meta',
-          components: {
+          fields: {
             seo: {
               type: 'section',
               label: 'SEO',
               collapsible: true,
               collapsed: true,
-              components: {
+              fields: {
                 slug: {
                   type: 'computed',
                   computeValue: ({ item }) => (

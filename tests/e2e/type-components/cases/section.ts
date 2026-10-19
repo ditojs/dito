@@ -11,7 +11,7 @@ interface Width {
 // `'50%'`, and converted to objects that their nested forms edit, and back.
 const box = {
   nested: true,
-  components: {
+  fields: {
     name: text('Name'),
     width: {
       type: 'section',
@@ -25,7 +25,7 @@ const box = {
             : { value: value ?? null, units: 'rem' },
       serializeValue: ({ value: { value, units } }: { value: Width }) =>
         value === null || units === 'rem' ? value : `${value}${units}`,
-      components: {
+      fields: {
         value: { type: 'number', label: 'Value' },
         units: text('Units')
       }
@@ -39,7 +39,7 @@ export default [
       title: 'stores nested fields as an object',
       schema: {
         nested: true,
-        components: { first: text('First'), last: text('Last') }
+        fields: { first: text('First'), last: text('Last') }
       },
       value: { First: 'Ada', Last: 'Lovelace' },
       stored: { first: 'Ada', last: 'Lovelace' },
@@ -49,7 +49,7 @@ export default [
       title: 'stores values of computed components',
       schema: {
         nested: true,
-        components: {
+        fields: {
           first: text('First'),
           upper: {
             type: 'computed',
@@ -66,7 +66,7 @@ export default [
       title: 'stores values of data components',
       schema: {
         nested: true,
-        components: {
+        fields: {
           first: text('First'),
           upper: {
             type: 'data',
@@ -82,7 +82,7 @@ export default [
       title: 'keeps values of hidden components',
       schema: {
         nested: true,
-        components: { first: text('First'), secret: { type: 'hidden' } }
+        fields: { first: text('First'), secret: { type: 'hidden' } }
       },
       seed: { first: 'Ada', secret: 'kept' },
       value: { First: 'Grace' },
@@ -92,7 +92,7 @@ export default [
       title: 'changes values with button click events',
       schema: {
         nested: true,
-        components: {
+        fields: {
           first: text('First'),
           fill: {
             type: 'button',

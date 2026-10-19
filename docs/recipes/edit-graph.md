@@ -54,7 +54,7 @@ author:
 ```js
 export const bookForm = {
   type: 'form',
-  components: {
+  fields: {
     title: { type: 'text', required: true },
     author: {
       type: 'select',
@@ -74,7 +74,7 @@ export const bookForm = {
       deletable: true,
       collapsible: true,
       itemLabel: 'title',
-      components: {
+      fields: {
         title: { type: 'text', required: true },
         text: { type: 'markup', marks: { bold: true, italic: true } }
       }

@@ -51,13 +51,13 @@ In the admin, the select takes its options from the edited chapters:
 ```js
 export const bookForm = {
   type: 'form',
-  components: {
+  fields: {
     title: { type: 'text', required: true },
     chapters: {
       type: 'list',
       creatable: true,
       deletable: true,
-      components: {
+      fields: {
         title: { type: 'text' }
       }
     },

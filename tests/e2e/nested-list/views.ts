@@ -16,7 +16,7 @@ export const widgets = createWidgetView<Widget>(
       draggable: true,
       form: {
         type: 'form',
-        components: {
+        fields: {
           label: { type: 'text', label: 'Label' }
         }
       }

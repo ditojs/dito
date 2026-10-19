@@ -13,7 +13,7 @@ describe('Section components', () => {
     assertType<Components<ParentWithSection>>({
       details: {
         type: 'section',
-        components: {
+        fields: {
           title: { type: 'text' }
         }
       }
@@ -39,7 +39,7 @@ describe('Section components', () => {
     assertType<Components<ParentWithSection>>({
       details: {
         type: 'section',
-        components: {
+        fields: {
           title: { type: 'text' },
           // @ts-expect-error 'nonExistent' is not a key of ParentWithSection
           nonExistent: { type: 'text' }
@@ -64,7 +64,7 @@ describe('Section components', () => {
       details: {
         type: 'section',
         component: Layout,
-        components: {
+        fields: {
           title: { type: 'text' }
         }
       }
@@ -80,7 +80,7 @@ describe('Section components', () => {
   it('accepts section with form prop', () => {
     const sectionForm: FormSchema<ParentWithSection> = {
       type: 'form',
-      components: {
+      fields: {
         title: { type: 'text' }
       }
     }
@@ -102,7 +102,7 @@ describe('Section tabs', () => {
         tabs: {
           general: {
             type: 'tab',
-            components: {
+            fields: {
               title: { type: 'text' }
             }
           }
@@ -119,7 +119,7 @@ describe('Section tabs', () => {
         tabs: {
           main: {
             type: 'tab',
-            components: {
+            fields: {
               street: { type: 'text' },
               city: { type: 'text' }
             }
@@ -136,7 +136,7 @@ describe('Nested sections', () => {
       address: {
         type: 'section',
         nested: true,
-        components: {
+        fields: {
           street: { type: 'text' },
           city: { type: 'text' }
         }
@@ -149,7 +149,7 @@ describe('Nested sections', () => {
       address: {
         type: 'section',
         nested: true,
-        components: {
+        fields: {
           street: { type: 'text' },
           // @ts-expect-error 'zipCode' is not a key of Address
           zipCode: { type: 'text' }
@@ -163,7 +163,7 @@ describe('Nested sections', () => {
       address: {
         type: 'section',
         nested: true,
-        components: {
+        fields: {
           street: {
             type: 'text',
             onChange({ item }) {
@@ -183,7 +183,7 @@ describe('Nested sections', () => {
         nested: true,
         form: {
           type: 'form',
-          components: {
+          fields: {
             street: { type: 'text' },
             city: { type: 'text' }
           }
@@ -196,7 +196,7 @@ describe('Nested sections', () => {
     assertType<Components<ParentWithAddress>>({
       address: {
         type: 'section',
-        components: {
+        fields: {
           title: { type: 'text' }
         }
       }

@@ -33,7 +33,7 @@ export async function prompt(
   const messageName = `dito-prompt-message-${++promptCount}`
   const result = await showMessageDialog(adminContext, message, {
     messageName,
-    components: {
+    fields: {
       value: {
         type,
         label: false,
@@ -90,16 +90,16 @@ export async function confirmAndRemove(
 function showMessageDialog(
   adminContext,
   message,
-  { messageName = 'message', components, buttons, data }
+  { messageName = 'message', fields, buttons, data }
 ) {
   return adminContext.showDialog({
-    components: {
+    fields: {
       [messageName]: {
         type: 'component',
         component: DitoConfirmMessage,
         label: false
       },
-      ...components
+      ...fields
     },
     buttons,
     data: { [messageName]: message, ...data },

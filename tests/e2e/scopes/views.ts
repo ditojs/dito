@@ -23,7 +23,7 @@ export const widgets = createWidgetView<Widget>(
     },
     filters: {
       search: {
-        components: {
+        fields: {
           search: { label: 'Search', type: 'text' }
         }
       }

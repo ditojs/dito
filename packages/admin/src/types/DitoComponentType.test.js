@@ -35,7 +35,7 @@ describe('DitoComponentType', () => {
     const change = vi.fn()
     const { findField, data } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           rating: {
             type: 'component',
             component: RatingStars,
@@ -58,7 +58,7 @@ describe('DitoComponentType', () => {
   it('passes the schema and the reactive context', async () => {
     const { findField, wrapper } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           title: { type: 'text' },
           rating: {
             type: 'component',
@@ -77,7 +77,7 @@ describe('DitoComponentType', () => {
   it('resolves components that are imported asynchronously', async () => {
     const { findField } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           rating: {
             type: 'component',
             // Like `import('./RatingStars.vue')`:
@@ -96,7 +96,7 @@ describe('DitoComponentType', () => {
   it('only sets a value with `default`', async () => {
     const { data } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           rating: { type: 'component', component: RatingStars },
           votes: { type: 'component', component: RatingStars, default: 0 }
         }
@@ -109,7 +109,7 @@ describe('DitoComponentType', () => {
   it('sets no value with `default: undefined`', async () => {
     const { data } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           rating: {
             type: 'component',
             component: RatingStars,
@@ -126,7 +126,7 @@ describe('DitoComponentType', () => {
     const blur = vi.fn()
     const { findField, getErrors, settle } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           rating: {
             type: 'component',
             component: RatingStars,
@@ -160,7 +160,7 @@ describe('DitoComponentType', () => {
     const { emits, ...UndeclaredStars } = RatingStars
     await mountSchema({
       schema: {
-        components: {
+        fields: {
           rating: {
             type: 'component',
             component: { ...UndeclaredStars, name: 'UndeclaredStars' }
@@ -193,7 +193,7 @@ describe('DitoComponentType', () => {
       const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
       const { findField } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             readingTime: { type: 'component', component: ReadingTime }
           }
         },
@@ -208,7 +208,7 @@ describe('DitoComponentType', () => {
     it('get no value, even if the item holds one at their name', async () => {
       const { findField, wrapper, data } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             readingTime: { type: 'component', component: ReadingTime },
             rating: { type: 'component', component: RatingStars }
           }
@@ -229,7 +229,7 @@ describe('DitoComponentType', () => {
       const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
       await mountSchema({
         schema: {
-          components: {
+          fields: {
             readingTime: {
               type: 'component',
               component: { ...ReadingTime, emits: ['change'] }
@@ -246,7 +246,7 @@ describe('DitoComponentType', () => {
       const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
       await mountSchema({
         schema: {
-          components: {
+          fields: {
             readingTime: {
               type: 'component',
               component: { ...ReadingTime, name: 'ReadingTime' },
@@ -272,7 +272,7 @@ describe('DitoComponentType', () => {
         const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
         const { findField, wrapper, data } = await mountSchema({
           schema: {
-            components: {
+            fields: {
               rating: { type: 'component', component }
             }
           },
@@ -314,7 +314,7 @@ describe('defineType()', () => {
   it('passes the options of custom types in their context', async () => {
     const { findField } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           genre: {
             type: 'genre-chips',
             options: [
@@ -346,7 +346,7 @@ describe('defineType()', () => {
     defineType({ type: 'subheading', hasLabel: true, component })
     const { findContainer } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           title: { type: 'heading', label: 'Title' },
           subtitle: { type: 'subheading', label: 'Subtitle' }
         }
@@ -364,12 +364,12 @@ describe('DitoPanelType', () => {
   it('renders its components in the sidebar with the same data', async () => {
     const { wrapper, data } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           title: { type: 'text' },
           summary: {
             type: 'panel',
             label: 'Summary',
-            components: { notes: { type: 'textarea' } }
+            fields: { notes: { type: 'textarea' } }
           }
         }
       },

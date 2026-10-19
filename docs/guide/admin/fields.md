@@ -1,6 +1,6 @@
 # Fields
 
-Fields edit the values of an item. Each field's key in `components` is the key
+Fields edit the values of an item. Each field's key in `fields` is the key
 of its value: `title: { type: 'text' }` edits `item.title`.
 
 The admin has field types for text, numbers, booleans, dates, choices, rich

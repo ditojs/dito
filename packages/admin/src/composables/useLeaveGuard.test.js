@@ -15,7 +15,7 @@ describe('useLeaveGuard()', () => {
     it('asks before replacing the item of a form with a longer id', async () => {
       const confirm = stubConfirm(false)
       const { admin, wrapper, routeComponent } = await mountForm({
-        schema: { components: { title: { type: 'text' } } },
+        schema: { fields: { title: { type: 'text' } } },
         data: { title: 'Dune' },
         request: ({ url }) =>
           url === '/items/12' ? { data: { id: 12, title: 'Emma' } } : null
@@ -32,7 +32,7 @@ describe('useLeaveGuard()', () => {
     it('leaves the form once the user discards the changes', async () => {
       const confirm = stubConfirm(true)
       const { admin, wrapper, routeComponent } = await mountForm({
-        schema: { components: { title: { type: 'text' } } },
+        schema: { fields: { title: { type: 'text' } } },
         data: { title: 'Dune' }
       })
       await enterValue(wrapper.find('input[name="title"]'), 'Dune Messiah')
@@ -46,7 +46,7 @@ describe('useLeaveGuard()', () => {
 
     it('asks only once for navigations while the dialog is open', async () => {
       const { admin, wrapper, routeComponent } = await mountForm({
-        schema: { components: { title: { type: 'text' } } },
+        schema: { fields: { title: { type: 'text' } } },
         data: { title: 'Dune' }
       })
       await enterValue(wrapper.find('input[name="title"]'), 'Dune Messiah')
@@ -71,12 +71,12 @@ describe('useLeaveGuard()', () => {
         views: {
           'books': {
             type: 'view',
-            components: { title: { type: 'text' } },
+            fields: { title: { type: 'text' } },
             buttons: { save: { type: 'submit' } }
           },
           'books-archive': {
             type: 'view',
-            components: { title: { type: 'text' } }
+            fields: { title: { type: 'text' } }
           }
         }
       })
@@ -99,7 +99,7 @@ describe('useLeaveGuard()', () => {
         views: {
           books: {
             type: 'view',
-            component: {
+            field: {
               type: 'list',
               resource: { path: 'books' },
               deletable: true,
@@ -108,7 +108,7 @@ describe('useLeaveGuard()', () => {
           },
           authors: {
             type: 'view',
-            components: { name: { type: 'text' } }
+            fields: { name: { type: 'text' } }
           }
         },
         request: ({ method = 'get', url }) => {
@@ -145,7 +145,7 @@ describe('useLeaveGuard()', () => {
         views: {
           books: {
             type: 'view',
-            component: {
+            field: {
               type: 'list',
               resource: { path: 'books' },
               draggable: true,
@@ -162,7 +162,7 @@ describe('useLeaveGuard()', () => {
           },
           authors: {
             type: 'view',
-            components: { name: { type: 'text' } }
+            fields: { name: { type: 'text' } }
           }
         },
         request: ({ method = 'get', url, data }) =>
@@ -195,7 +195,7 @@ describe('useLeaveGuard()', () => {
         views: {
           books: {
             type: 'view',
-            component: {
+            field: {
               type: 'list',
               resource: { path: 'books' },
               draggable: true,
@@ -207,7 +207,7 @@ describe('useLeaveGuard()', () => {
           },
           authors: {
             type: 'view',
-            components: { name: { type: 'text' } }
+            fields: { name: { type: 'text' } }
           }
         },
         request: () => ({
@@ -234,7 +234,7 @@ describe('useLeaveGuard()', () => {
       const confirm = stubConfirm(false)
       const { admin, wrapper, routeComponent, submit } = await mountForm({
         schema: {
-          components: { title: { type: 'text' } },
+          fields: { title: { type: 'text' } },
           // Stay in the form, to be redirected to the created item:
           buttons: { submit: { closeForm: false } }
         },
@@ -258,7 +258,7 @@ describe('useLeaveGuard()', () => {
         const response = Promise.withResolvers()
         const result = await mountForm({
           schema: {
-            components: { title: { type: 'text' } },
+            fields: { title: { type: 'text' } },
             // Stay in the form, to be redirected to the created item:
             buttons: { submit: { closeForm: false } }
           },
@@ -393,7 +393,7 @@ describe('useLeaveGuard()', () => {
       it(`doesn't close the form after opening another item`, async () => {
         const response = Promise.withResolvers()
         const { admin, wrapper, routeComponent } = await mountForm({
-          schema: { components: { title: { type: 'text' } } },
+          schema: { fields: { title: { type: 'text' } } },
           data: { title: 'Dune' },
           request: ({ method = 'get', url }) =>
             method === 'patch'
@@ -454,14 +454,14 @@ describe('useLeaveGuard()', () => {
       const confirm = stubConfirm(false)
       const { admin, wrapper, routeComponent } = await mountForm({
         schema: {
-          components: {
+          fields: {
             title: { type: 'text' },
             chapters: {
               type: 'list',
               editable: true,
               form: {
                 type: 'form',
-                components: { title: { type: 'text' } }
+                fields: { title: { type: 'text' } }
               }
             }
           }
@@ -479,21 +479,21 @@ describe('useLeaveGuard()', () => {
 
   describe('mutating nested forms', () => {
     const schema = {
-      components: {
+      fields: {
         chapters: {
           type: 'list',
           editable: true,
           mutate: true,
           form: {
             type: 'form',
-            components: {
+            fields: {
               title: { type: 'text' },
               details: {
                 type: 'section',
                 label: 'Details',
                 collapsible: true,
                 collapsed: true,
-                components: { summary: { type: 'text', required: true } }
+                fields: { summary: { type: 'text', required: true } }
               }
             }
           }

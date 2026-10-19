@@ -13,7 +13,7 @@ describe('useSchemaEvents()', () => {
     const onDblclick = vi.fn()
     const { findField } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           title: {
             type: 'text',
             onMouseenter,
@@ -35,7 +35,7 @@ describe('useSchemaEvents()', () => {
     let context = null
     const { findField } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           title: {
             type: 'text',
             onChange(ctx) {
@@ -56,14 +56,14 @@ describe('useSchemaEvents()', () => {
     const dataPaths = []
     const { findField, data, settle } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           title: { type: 'text' },
           author: {
             type: 'object',
             inlined: true,
             form: {
               type: 'form',
-              components: { name: { type: 'text' } }
+              fields: { name: { type: 'text' } }
             }
           },
           chapters: {
@@ -71,7 +71,7 @@ describe('useSchemaEvents()', () => {
             inlined: true,
             form: {
               type: 'form',
-              components: { heading: { type: 'text' } }
+              fields: { heading: { type: 'text' } }
             }
           }
         },
@@ -100,13 +100,13 @@ describe('useSchemaEvents()', () => {
     }
     const { findField } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           chapters: {
             type: 'list',
             inlined: true,
             form: {
               type: 'form',
-              components: { heading: { type: 'text', onChange } },
+              fields: { heading: { type: 'text', onChange } },
               onChange
             }
           }
@@ -127,7 +127,7 @@ describe('useSchemaEvents()', () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     const { findField } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           title: { type: 'text', onDblclick: 'not a function' }
         }
       }
@@ -142,7 +142,7 @@ describe('useSchemaEvents()', () => {
     const onChange = vi.fn()
     const { findField } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           title: { type: 'text', onChange: () => false },
           author: { type: 'text' }
         },

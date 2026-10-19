@@ -4,7 +4,7 @@ describe('DitoSpacerType', () => {
   it(`doesn't generate a label from its name`, async () => {
     const { wrapper } = await mountForm({
       schema: {
-        components: {
+        fields: {
           title: { type: 'text' },
           gap: { type: 'spacer' }
         }
@@ -17,7 +17,7 @@ describe('DitoSpacerType', () => {
   it(`doesn't add a value to new items`, async () => {
     const { data } = await mountForm({
       schema: {
-        components: {
+        fields: {
           title: { type: 'text' },
           gap: { type: 'spacer' }
         }
@@ -29,7 +29,7 @@ describe('DitoSpacerType', () => {
   it(`doesn't send a value`, async () => {
     const { submit } = await mountForm({
       schema: {
-        components: {
+        fields: {
           title: { type: 'text' },
           gap: { type: 'spacer' }
         }

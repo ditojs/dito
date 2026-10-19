@@ -121,7 +121,7 @@ describe('SchemaContext', () => {
     const context = {} as SchemaContext<Entry>
     expectTypeOf(
       context.showDialog({
-        components: { title: { type: 'text' } },
+        fields: { title: { type: 'text' } },
         buttons: { cancel: {}, apply: { type: 'submit' } },
         data: { title: 'Emma' },
         settings: {
@@ -141,11 +141,11 @@ describe('SchemaContext', () => {
     )
     assertType(
       // @ts-expect-error The data and settings are part of the options.
-      context.showDialog({ components: {}, buttons: {} }, { data: {} })
+      context.showDialog({ fields: {}, buttons: {} }, { data: {} })
     )
     assertType(
       // @ts-expect-error Dialogs need their buttons.
-      context.showDialog({ components: {} })
+      context.showDialog({ fields: {} })
     )
   })
 

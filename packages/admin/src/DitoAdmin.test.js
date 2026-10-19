@@ -131,7 +131,7 @@ describe('DitoAdmin', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     createAdmin({
       spinner: null,
-      account: { settings: { type: 'form', components: {} } },
+      account: { settings: { type: 'form', fields: {} } },
       catalog: 'books',
       shelves: 3
     })

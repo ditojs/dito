@@ -9,7 +9,7 @@ import {
 } from '@ditojs/utils'
 import { getText } from './html.js'
 import { getNamedSchemas } from './schema/lookup.js'
-import { applyNestedSchemaDefaults } from './schema/setup.js'
+import { applyNestedSchemaDefaults, renameSchemaKey } from './schema/setup.js'
 import { deserializeData } from './schema/data.js'
 
 export const filterComponents = {
@@ -104,7 +104,7 @@ export function createFiltersPanel(api, filters, dataPath, query) {
       return filtersData
     },
 
-    components: createFiltersComponents(filterSchemas),
+    fields: createFiltersComponents(filterSchemas),
     buttons: createButtons(false),
     panelButtons: createButtons(true),
 
@@ -146,20 +146,22 @@ function getFilterName(dataName) {
 function createFiltersComponents(filters) {
   const comps = {}
   for (const filter of Object.values(getNamedSchemas(filters) || {})) {
+    // Filters aren't schemas, so they don't pass `applySchemaDefaults()`:
+    renameSchemaKey(filter, 'fields')
     // Use the properties of default filters as the base of `form` too, so
     // things like `label` can be changed:
     const { filter: type, width, ...form } = filter
-    const components = type
+    const fields = type
       ? filterComponents[type]?.(filter)
-      : filter.components
-    if (components) {
+      : filter.fields
+    if (fields) {
       form.type = 'form'
-      form.components = {}
+      form.fields = {}
       // Convert labels to placeholders, which are text:
-      for (const [key, component] of Object.entries(components)) {
+      for (const [key, component] of Object.entries(fields)) {
         if (component) {
           const { label } = component
-          form.components[key] = {
+          form.fields[key] = {
             ...component,
             label: false,
             placeholder: isObject(label)
@@ -186,8 +188,8 @@ function createFiltersComponents(filters) {
 }
 
 function getComponentsForFilter(schema, dataName) {
-  const component = schema.components[dataName]
-  return component?.form?.components
+  const component = schema.fields[dataName]
+  return component?.form?.fields
 }
 
 function formatFiltersData(schema, data) {
@@ -233,7 +235,7 @@ function parseFiltersData(schema, query) {
     }
   }
   const filtersData = {}
-  for (const dataName in schema.components) {
+  for (const dataName in schema.fields) {
     const data = {}
     // Map the params from the query back to the keys of the form components:
     const args = filters[getFilterName(dataName)]

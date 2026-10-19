@@ -19,7 +19,7 @@ async function mountBookForm({
 } = {}) {
   return mountForm({
     schema: {
-      components: {
+      fields: {
         chapters: {
           type: 'list',
           inlined: true,
@@ -28,7 +28,7 @@ async function mountBookForm({
           form: {
             type: 'form',
             label: 'Chapter',
-            components: { title: { type: 'text' } }
+            fields: { title: { type: 'text' } }
           }
         }
       }
@@ -130,14 +130,14 @@ describe('useSource()', () => {
       const confirm = stubConfirm()
       const { findField, data } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             address: {
               type: 'object',
               inlined: true,
               deletable: true,
               form: {
                 type: 'form',
-                components: { street: { type: 'text' } }
+                fields: { street: { type: 'text' } }
               }
             }
           }
@@ -161,14 +161,14 @@ describe('useSource()', () => {
       const requests = []
       const { findField, routeComponent } = await mountForm({
         schema: {
-          components: {
+          fields: {
             title: { type: 'text' },
             reviews: {
               type: 'list',
               resource: { path: 'reviews' },
               deletable: true,
               onChange,
-              form: { type: 'form', components: { text: { type: 'text' } } }
+              form: { type: 'form', fields: { text: { type: 'text' } } }
             }
           }
         },
@@ -191,14 +191,14 @@ describe('useSource()', () => {
       stubConfirm()
       const { findField, routeComponent } = await mountForm({
         schema: {
-          components: {
+          fields: {
             title: { type: 'text' },
             reviews: {
               type: 'list',
               resource: { path: 'reviews' },
               exclude: false,
               deletable: true,
-              form: { type: 'form', components: { text: { type: 'text' } } }
+              form: { type: 'form', fields: { text: { type: 'text' } } }
             }
           }
         },
@@ -218,12 +218,12 @@ describe('useSource()', () => {
       let reload = null
       const { findField, data, routeComponent } = await mountForm({
         schema: {
-          components: {
+          fields: {
             reviews: {
               type: 'list',
               resource: { path: 'reviews' },
               deletable: true,
-              form: { type: 'form', components: { text: { type: 'text' } } },
+              form: { type: 'form', fields: { text: { type: 'text' } } },
               buttons: { save: { type: 'submit' } }
             }
           }
@@ -261,14 +261,14 @@ describe('useSource()', () => {
       let reload = null
       const { findField, data, routeComponent } = await mountForm({
         schema: {
-          components: {
+          fields: {
             title: { type: 'text' },
             reviews: {
               type: 'list',
               resource: { path: 'reviews' },
               deletable: true,
               orderKey: 'position',
-              form: { type: 'form', components: { text: { type: 'text' } } }
+              form: { type: 'form', fields: { text: { type: 'text' } } }
             }
           }
         },
@@ -297,13 +297,13 @@ describe('useSource()', () => {
       let review = { id: 7, text: 'Great' }
       const { findField, data, routeComponent } = await mountForm({
         schema: {
-          components: {
+          fields: {
             title: { type: 'text' },
             review: {
               type: 'object',
               resource: { path: 'review' },
               deletable: true,
-              form: { type: 'form', components: { text: { type: 'text' } } }
+              form: { type: 'form', fields: { text: { type: 'text' } } }
             }
           }
         },
@@ -327,7 +327,7 @@ describe('useSource()', () => {
       views: {
         books: {
           type: 'view',
-          component: {
+          field: {
             type: 'list',
             resource: { path: 'books' },
             columns: { title: {} },
@@ -364,12 +364,12 @@ describe('useSource()', () => {
     it('open the form of their item', async () => {
       const { admin, routeComponent } = await mountForm({
         schema: {
-          components: {
+          fields: {
             chapters: {
               type: 'list',
               form: {
                 type: 'form',
-                components: { title: { type: 'text' } }
+                fields: { title: { type: 'text' } }
               }
             }
           }
@@ -402,7 +402,7 @@ describe('useSource()', () => {
         views: {
           books: {
             type: 'view',
-            component: {
+            field: {
               type: 'list',
               resource: { path: 'books' },
               columns
@@ -453,7 +453,7 @@ describe('useSource()', () => {
         views: {
           books: {
             type: 'view',
-            component: {
+            field: {
               type: 'list',
               resource: { path: 'books' },
               columns: {
@@ -507,7 +507,7 @@ describe('useSource()', () => {
     it('changes the query of lists without resource through the route', async () => {
       const { admin, getComponent } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             books: { type: 'list', columns: { title: { sortable: true } } }
           }
         },
@@ -524,7 +524,7 @@ describe('useSource()', () => {
     describe('in dialogs', () => {
       async function showAuthorsDialog(admin) {
         admin.context.showDialog({
-          components: {
+          fields: {
             authors: {
               type: 'list',
               resource: { path: 'authors' },
@@ -591,7 +591,7 @@ describe('useSource()', () => {
       let titles = ['Emma']
       const { findField } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             books: {
               type: 'list',
               resource: { path: 'books' },
@@ -628,7 +628,7 @@ describe('useSource()', () => {
       let context = null
       await mountSchema({
         schema: {
-          components: {
+          fields: {
             title: {
               type: 'text',
               computeValue: computeContext => {
@@ -650,7 +650,7 @@ describe('useSource()', () => {
       // remove them from the edited data:
       const { schemaComponent, data } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             authors: { type: 'list', columns: { name: {} } }
           }
         },
@@ -683,9 +683,9 @@ describe('useSource()', () => {
   describe('loading data', () => {
     // Unlike `mountSchema()`, doesn't set the data of the view after its
     // sources loaded theirs.
-    async function mountView(components, request) {
+    async function mountView(fields, request) {
       const admin = await mountAdmin({
-        views: { test: { type: 'view', components } },
+        views: { test: { type: 'view', fields } },
         request
       })
       await admin.navigate('/test')
@@ -725,7 +725,7 @@ describe('useSource()', () => {
       const books = {
         type: 'list',
         resource: { path: 'books' },
-        form: { type: 'form', components: { tags } }
+        form: { type: 'form', fields: { tags } }
       }
 
       it('deserializes the items that it loads', async () => {
@@ -747,7 +747,7 @@ describe('useSource()', () => {
     it('ignores objects that lists in forms load', async () => {
       const { data, getComponent } = await mountForm({
         schema: {
-          components: {
+          fields: {
             title: { type: 'text' },
             reviews: {
               type: 'list',
@@ -769,7 +769,7 @@ describe('useSource()', () => {
           publisher: {
             type: 'object',
             resource: { path: 'publisher' },
-            form: { type: 'form', components: { name: { type: 'text' } } }
+            form: { type: 'form', fields: { name: { type: 'text' } } }
           }
         },
         () => ({ data: { id: 1, name: 'Penguin' } })
@@ -783,13 +783,13 @@ describe('useSource()', () => {
       const requests = []
       const { admin } = await mountForm({
         schema: {
-          components: {
+          fields: {
             title: { type: 'text' },
             reviews: {
               type: 'list',
               resource: { path: 'reviews' },
               editable: true,
-              form: { type: 'form', components: { text: { type: 'text' } } }
+              form: { type: 'form', fields: { text: { type: 'text' } } }
             }
           }
         },
@@ -813,7 +813,7 @@ describe('useSource()', () => {
     it('unwraps list results in the data of the parent', async () => {
       const { getComponent, data } = await mountSchema({
         schema: {
-          components: { books: { type: 'list', columns: { title: {} } } }
+          fields: { books: { type: 'list', columns: { title: {} } } }
         },
         data: {
           books: { results: [{ id: 1, title: 'Emma' }], total: 7 }
@@ -829,7 +829,7 @@ describe('useSource()', () => {
       const request = vi.fn(() => ({ data: [] }))
       const { getComponent } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             books: {
               type: 'list',
               resource: { path: 'books' },
@@ -849,7 +849,7 @@ describe('useSource()', () => {
     it('defaults to the first scope', async () => {
       const { getComponent } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             books: {
               type: 'list',
               scopes: { all: {}, recent: {} },
@@ -866,12 +866,12 @@ describe('useSource()', () => {
     it('edits primitive values through wrapped items', async () => {
       const { getComponent, data, settle } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             tags: {
               type: 'list',
               inlined: true,
               wrapPrimitives: 'tag',
-              form: { type: 'form', components: { tag: { type: 'text' } } }
+              form: { type: 'form', fields: { tag: { type: 'text' } } }
             }
           }
         },
@@ -891,13 +891,13 @@ describe('useSource()', () => {
     it('inserts items at the index and opens collapsible ones', async () => {
       const { getComponent, data, settle } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             chapters: {
               type: 'list',
               inlined: true,
               collapsible: true,
               collapsed: true,
-              form: { type: 'form', components: { title: { type: 'text' } } }
+              form: { type: 'form', fields: { title: { type: 'text' } } }
             }
           }
         },
@@ -921,13 +921,13 @@ describe('useSource()', () => {
     it('opens the appended item of collapsible lists', async () => {
       const { getComponent, settle } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             chapters: {
               type: 'list',
               inlined: true,
               collapsible: true,
               collapsed: true,
-              form: { type: 'form', components: { title: { type: 'text' } } }
+              form: { type: 'form', fields: { title: { type: 'text' } } }
             }
           }
         },
@@ -944,13 +944,13 @@ describe('useSource()', () => {
     const mountReviews = (reviews, request = null) =>
       mountForm({
         schema: {
-          components: {
+          fields: {
             title: { type: 'text' },
             reviews: {
               type: 'list',
               resource: { path: 'reviews' },
               deletable: true,
-              form: { type: 'form', components: { text: { type: 'text' } } }
+              form: { type: 'form', fields: { text: { type: 'text' } } }
             }
           }
         },
@@ -1001,7 +1001,7 @@ describe('useSource()', () => {
   describe('routes', () => {
     const createChapterForm = () => ({
       type: 'form',
-      components: { title: { type: 'text' } }
+      fields: { title: { type: 'text' } }
     })
 
     const createChaptersSchema = (schema = {}) => ({
@@ -1043,17 +1043,17 @@ describe('useSource()', () => {
       ]
       const { admin, findField, settle } = await mountForm({
         schema: {
-          components: {
+          fields: {
             meta: {
               type: 'object',
-              components: {
+              fields: {
                 reviews: {
                   type: 'list',
                   resource: { path: 'reviews' },
                   editable: true,
                   form: {
                     type: 'form',
-                    components: { title: { type: 'text' } }
+                    fields: { title: { type: 'text' } }
                   }
                 }
               }
@@ -1085,9 +1085,9 @@ describe('useSource()', () => {
     it('stops forms that contain themselves at their `maxDepth`', async () => {
       const categoryForm = {
         type: 'form',
-        components: { name: { type: 'text' } }
+        fields: { name: { type: 'text' } }
       }
-      categoryForm.components.subcategories = {
+      categoryForm.fields.subcategories = {
         type: 'list',
         editable: true,
         maxDepth: 2,
@@ -1104,7 +1104,7 @@ describe('useSource()', () => {
         views: {
           categories: {
             type: 'view',
-            component: {
+            field: {
               type: 'list',
               resource: { path: 'categories' },
               form: categoryForm
@@ -1130,10 +1130,10 @@ describe('useSource()', () => {
     it('renders the lists in inlined objects without routes', async () => {
       const { admin } = await mountForm({
         schema: {
-          components: {
+          fields: {
             meta: {
               type: 'object',
-              components: { notes: { type: 'list', itemLabel: 'text' } }
+              fields: { notes: { type: 'list', itemLabel: 'text' } }
             }
           }
         },
@@ -1145,13 +1145,13 @@ describe('useSource()', () => {
     it('adds the nested routes of forms shared by several lists', async () => {
       const bookForm = {
         type: 'form',
-        components: { chapters: createChaptersSchema() }
+        fields: { chapters: createChaptersSchema() }
       }
       const admin = await mountAdmin({
         views: {
           books: {
             type: 'view',
-            component: {
+            field: {
               type: 'list',
               resource: { path: 'books' },
               form: bookForm
@@ -1159,7 +1159,7 @@ describe('useSource()', () => {
           },
           drafts: {
             type: 'view',
-            component: {
+            field: {
               type: 'list',
               resource: { path: 'drafts' },
               form: bookForm
@@ -1188,7 +1188,7 @@ describe('useSource()', () => {
 
     it('opens the forms of items of lists with a `path`', async () => {
       const { admin } = await mountView(
-        { components: { chapters: createChaptersSchema({ path: 'parts' }) } },
+        { fields: { chapters: createChaptersSchema({ path: 'parts' }) } },
         { chapters }
       )
       expect(await getFormData(admin, '/test/parts/1')).toEqual({
@@ -1199,11 +1199,11 @@ describe('useSource()', () => {
     it('opens the forms of items of lists in nested sections', async () => {
       const { admin } = await mountView(
         {
-          components: {
+          fields: {
             book: {
               type: 'section',
               nested: true,
-              components: { chapters: createChaptersSchema() }
+              fields: { chapters: createChaptersSchema() }
             }
           }
         },
@@ -1216,7 +1216,7 @@ describe('useSource()', () => {
 
     it('opens the forms of items of lists with normalized paths', async () => {
       const { admin } = await mountView(
-        { components: { tableOfURLs: createChaptersSchema() } },
+        { fields: { tableOfURLs: createChaptersSchema() } },
         { tableOfURLs: chapters },
         { api: { normalizePaths: true } }
       )
@@ -1228,9 +1228,9 @@ describe('useSource()', () => {
     it('links the items of lists in sections of single-component views', async () => {
       const { admin, view } = await mountView(
         {
-          component: {
+          field: {
             type: 'section',
-            components: { chapters: createChaptersSchema() }
+            fields: { chapters: createChaptersSchema() }
           }
         },
         { chapters }
@@ -1243,10 +1243,10 @@ describe('useSource()', () => {
     it('links the items of lists in inlined objects to their forms', async () => {
       const { admin, view } = await mountView(
         {
-          components: {
+          fields: {
             book: {
               type: 'object',
-              components: { chapters: createChaptersSchema() }
+              fields: { chapters: createChaptersSchema() }
             }
           }
         },
@@ -1263,7 +1263,7 @@ describe('useSource()', () => {
       async function mountLinkedList() {
         const { admin, view } = await mountView(
           {
-            components: {
+            fields: {
               books: {
                 type: 'list',
                 view: 'books',
@@ -1277,7 +1277,7 @@ describe('useSource()', () => {
             views: {
               books: {
                 type: 'view',
-                components: {
+                fields: {
                   items: {
                     type: 'list',
                     resource: { path: 'books' },
@@ -1313,7 +1313,7 @@ describe('useSource()', () => {
         type: 'list',
         inlined: true,
         resource: { path: 'books' },
-        form: { type: 'form', components: {} }
+        form: { type: 'form', fields: {} }
       }
       await expect(
         getTypeDescriptor(schema).setupSchema({ schema, api, name: 'books' })
@@ -1325,7 +1325,7 @@ describe('useSource()', () => {
         type: 'object',
         inlined: true,
         resource: { path: 'publisher' },
-        form: { type: 'form', components: {} }
+        form: { type: 'form', fields: {} }
       }
       await expect(
         getTypeDescriptor(schema).setupSchema({
@@ -1341,7 +1341,7 @@ describe('useSource()', () => {
         type: 'list',
         wrapPrimitives: 'tag',
         mutate: true,
-        form: { type: 'form', components: { tag: { type: 'text' } } }
+        form: { type: 'form', fields: { tag: { type: 'text' } } }
       }
       await expect(
         getTypeDescriptor(schema).setupSchema({ schema, api, name: 'tags' })

@@ -30,7 +30,7 @@ async function dragResizeHandle(handle, startY, endY) {
 describe('DitoMarkupType', () => {
   it('displays the value in the editor', async () => {
     const { findField } = await mountSchema({
-      schema: { components: { body: { type: 'markup' } } },
+      schema: { fields: { body: { type: 'markup' } } },
       data: { body: '<p>Call me <strong>Ishmael</strong>.</p>' }
     })
     expect(findField('body').find('.ProseMirror').html()).toContain(
@@ -41,7 +41,7 @@ describe('DitoMarkupType', () => {
   it('renders the toolbar buttons of the enabled marks and nodes', async () => {
     const { findField } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           body: {
             type: 'markup',
             marks: { bold: true, italic: true, link: true },
@@ -66,7 +66,7 @@ describe('DitoMarkupType', () => {
   it('applies marks to the selection and writes the value', async () => {
     const { findField, getComponent, data } = await mountSchema({
       schema: {
-        components: { body: { type: 'markup', marks: { bold: true } } }
+        fields: { body: { type: 'markup', marks: { bold: true } } }
       },
       data: { body: '<p>Emma</p>' }
     })
@@ -84,7 +84,7 @@ describe('DitoMarkupType', () => {
   it('formats blocks as headings of the enabled levels', async () => {
     const { findField, getComponent, data } = await mountSchema({
       schema: {
-        components: { body: { type: 'markup', nodes: { heading: [2] } } }
+        fields: { body: { type: 'markup', nodes: { heading: [2] } } }
       },
       data: { body: '<p>Chapter One</p>' }
     })
@@ -95,7 +95,7 @@ describe('DitoMarkupType', () => {
 
   it('updates the editor when the value changes', async () => {
     const { findField, data, settle } = await mountSchema({
-      schema: { components: { body: { type: 'markup' } } },
+      schema: { fields: { body: { type: 'markup' } } },
       data: { body: '<p>Emma</p>' }
     })
     data.body = '<p>Persuasion</p>'
@@ -106,7 +106,7 @@ describe('DitoMarkupType', () => {
   it('stores single paragraphs without `<p>` with `hardBreak`', async () => {
     const { getComponent, data } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           caption: { type: 'markup', hardBreak: true, marks: { bold: true } }
         }
       },
@@ -121,7 +121,7 @@ describe('DitoMarkupType', () => {
   it(`doesn't allow editing disabled fields`, async () => {
     const { getComponent, data, settle } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           isLocked: { type: 'checkbox' },
           body: { type: 'markup', disabled: ({ item }) => item.isLocked }
         }
@@ -138,7 +138,7 @@ describe('DitoMarkupType', () => {
     const onChange = vi.fn()
     const { getComponent, data } = await mountForm({
       schema: {
-        components: {
+        fields: {
           body: { type: 'markup', marks: { italic: true }, onChange }
         }
       },
@@ -155,7 +155,7 @@ describe('DitoMarkupType', () => {
   // Edits that don't blur the editor, e.g. links applied through the dialog:
   it('submits edits made right before saving', async () => {
     const { getComponent, submit } = await mountForm({
-      schema: { components: { body: { type: 'markup' } } },
+      schema: { fields: { body: { type: 'markup' } } },
       data: { body: '<p>Emma</p>' },
       request: ({ data }) => ({ data })
     })
@@ -168,7 +168,7 @@ describe('DitoMarkupType', () => {
   it('applies subscript with `marks.subscript`', async () => {
     const { findField, getComponent, data } = await mountSchema({
       schema: {
-        components: { formula: { type: 'markup', marks: { subscript: true } } }
+        fields: { formula: { type: 'markup', marks: { subscript: true } } }
       },
       data: { formula: '<p>H2O</p>' }
     })
@@ -180,7 +180,7 @@ describe('DitoMarkupType', () => {
   it('applies superscript with `marks.superscript`', async () => {
     const { findField, getComponent, data } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           formula: { type: 'markup', marks: { superscript: true } }
         }
       },
@@ -194,7 +194,7 @@ describe('DitoMarkupType', () => {
   it('passes `autofocus` and `enableRules` to the editor', async () => {
     const { getComponent } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           body: { type: 'markup' },
           notes: {
             type: 'markup',
@@ -216,7 +216,7 @@ describe('DitoMarkupType', () => {
 
   it('clears the editor when the value becomes null with `hardBreak`', async () => {
     const { getComponent, data, settle } = await mountSchema({
-      schema: { components: { caption: { type: 'markup', hardBreak: true } } },
+      schema: { fields: { caption: { type: 'markup', hardBreak: true } } },
       data: { caption: 'Emma' }
     })
     data.caption = null
@@ -227,7 +227,7 @@ describe('DitoMarkupType', () => {
   it(`doesn't submit forms with the toolbar buttons`, async () => {
     const { findField } = await mountSchema({
       schema: {
-        components: { body: { type: 'markup', marks: { bold: true } } }
+        fields: { body: { type: 'markup', marks: { bold: true } } }
       }
     })
     const types = findField('body')
@@ -239,7 +239,7 @@ describe('DitoMarkupType', () => {
   it('resizes the editor by dragging and with the arrow keys', async () => {
     const { findField, settle } = await mountSchema({
       schema: {
-        components: { body: { type: 'markup', resizable: true } }
+        fields: { body: { type: 'markup', resizable: true } }
       }
     })
     const field = findField('body')
@@ -258,7 +258,7 @@ describe('DitoMarkupType', () => {
 
   describe('links', () => {
     const schema = {
-      components: { body: { type: 'markup', marks: { link: true } } }
+      fields: { body: { type: 'markup', marks: { link: true } } }
     }
 
     // Clicks the link button and returns the wrapper of the dialog it opens.
@@ -389,7 +389,7 @@ describe('DitoMarkupType', () => {
     const marks = ['underline', 'strike', 'small', 'code']
     const { findField, getComponent } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           body: {
             type: 'markup',
             marks: Object.fromEntries(marks.map(mark => [mark, true]))
@@ -417,7 +417,7 @@ describe('DitoMarkupType', () => {
   it('parses, sets and unsets `<small>` with `marks.small`', async () => {
     const { getComponent } = await mountSchema({
       schema: {
-        components: { body: { type: 'markup', marks: { small: true } } }
+        fields: { body: { type: 'markup', marks: { small: true } } }
       },
       data: { body: '<p><small>Emma</small></p>' }
     })
@@ -434,7 +434,7 @@ describe('DitoMarkupType', () => {
     const nodes = ['bulletList', 'orderedList', 'blockquote', 'codeBlock']
     const { findField, getComponent } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           body: {
             type: 'markup',
             nodes: Object.fromEntries(nodes.map(node => [node, true]))
@@ -463,7 +463,7 @@ describe('DitoMarkupType', () => {
   it('supports all heading levels with `nodes.heading: true`', async () => {
     const { getComponent } = await mountSchema({
       schema: {
-        components: { body: { type: 'markup', nodes: { heading: true } } }
+        fields: { body: { type: 'markup', nodes: { heading: true } } }
       },
       data: { body: '<h2>Emma</h2>' }
     })
@@ -473,7 +473,7 @@ describe('DitoMarkupType', () => {
   it('sets paragraphs with the paragraph button', async () => {
     const { findField, getComponent, data } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           body: {
             type: 'markup',
             nodes: { paragraph: true, heading: [1] }
@@ -490,7 +490,7 @@ describe('DitoMarkupType', () => {
   it('parses horizontal rules with `nodes.horizontalRule`', async () => {
     const { getComponent } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           body: { type: 'markup', nodes: { horizontalRule: true } }
         }
       },
@@ -504,7 +504,7 @@ describe('DitoMarkupType', () => {
   it('undoes and redoes edits with the history buttons', async () => {
     const { findField, getComponent } = await mountForm({
       schema: {
-        components: { body: { type: 'markup', tools: { history: true } } }
+        fields: { body: { type: 'markup', tools: { history: true } } }
       },
       data: { body: '<p>Emma</p>' }
     })
@@ -521,7 +521,7 @@ describe('DitoMarkupType', () => {
   it('adds footnotes with `tools.footnotes`', async () => {
     const { findField, getComponent } = await mountSchema({
       schema: {
-        components: { body: { type: 'markup', tools: { footnotes: true } } }
+        fields: { body: { type: 'markup', tools: { footnotes: true } } }
       },
       data: { body: '<p>Emma</p>' }
     })
@@ -535,7 +535,7 @@ describe('DitoMarkupType', () => {
 
   it('clears the editor when the value becomes null', async () => {
     const { getComponent, data, settle } = await mountSchema({
-      schema: { components: { body: { type: 'markup' } } },
+      schema: { fields: { body: { type: 'markup' } } },
       data: { body: '<p>Emma</p>' }
     })
     data.body = null
@@ -548,7 +548,7 @@ describe('DitoMarkupType', () => {
     const blur = vi.fn()
     const { getComponent, focusField } = await mountSchema({
       schema: {
-        components: { body: { type: 'markup', onFocus: focus, onBlur: blur } }
+        fields: { body: { type: 'markup', onFocus: focus, onBlur: blur } }
       }
     })
     const component = getComponent('body')
@@ -575,7 +575,7 @@ describe('DitoMarkupType', () => {
 
     it('inserts hard breaks with Shift-Enter', async () => {
       const { getComponent } = await mountSchema({
-        schema: { components: { body: { type: 'markup' } } },
+        schema: { fields: { body: { type: 'markup' } } },
         data: { body: '<p>Emma</p>' }
       })
       const { editor } = getComponent('body')
@@ -587,7 +587,7 @@ describe('DitoMarkupType', () => {
     it('inserts hard breaks with Enter with `hardBreak`', async () => {
       const { getComponent } = await mountSchema({
         schema: {
-          components: { caption: { type: 'markup', hardBreak: true } }
+          fields: { caption: { type: 'markup', hardBreak: true } }
         },
         data: { caption: 'Emma' }
       })
@@ -600,7 +600,7 @@ describe('DitoMarkupType', () => {
     it('pastes paragraphs as lines with `hardBreak`', async () => {
       const { getComponent, data } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             caption: { type: 'markup', hardBreak: true, marks: { bold: true } }
           }
         },
@@ -620,7 +620,7 @@ describe('DitoMarkupType', () => {
     it('pastes into the existing line with `hardBreak`', async () => {
       const { getComponent, data } = await mountSchema({
         schema: {
-          components: { caption: { type: 'markup', hardBreak: true } }
+          fields: { caption: { type: 'markup', hardBreak: true } }
         },
         data: { caption: 'Emma' }
       })
@@ -633,7 +633,7 @@ describe('DitoMarkupType', () => {
     it('pastes inline content into the line with `hardBreak`', async () => {
       const { getComponent, data } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             caption: { type: 'markup', hardBreak: true, marks: { bold: true } }
           }
         },
@@ -650,7 +650,7 @@ describe('DitoMarkupType', () => {
     it('keeps empty lines when pasting paragraphs with `hardBreak`', async () => {
       const { getComponent } = await mountSchema({
         schema: {
-          components: { caption: { type: 'markup', hardBreak: true } }
+          fields: { caption: { type: 'markup', hardBreak: true } }
         },
         data: { caption: '' }
       })
@@ -663,7 +663,7 @@ describe('DitoMarkupType', () => {
     it('pastes the text of block nodes as lines with `hardBreak`', async () => {
       const { getComponent } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             caption: {
               type: 'markup',
               hardBreak: true,

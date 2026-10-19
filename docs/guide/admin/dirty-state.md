@@ -27,7 +27,7 @@ themselves. Nor are writes to values that no field shows, e.g.
 objects: only the values that their forms show are sent.
 
 ```js
-components: {
+fields: {
   title: { type: 'text' },
   // A helper value that isn't saved, so editing it doesn't make the form dirty:
   showPreview: { type: 'switch', exclude: true }

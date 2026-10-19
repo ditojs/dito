@@ -12,7 +12,7 @@ describe('DitoColorType', () => {
 
   it('displays the color as hex digits with a preview', async () => {
     const { findField } = await mountSchema({
-      schema: { components: { background: { type: 'color' } } },
+      schema: { fields: { background: { type: 'color' } } },
       data: { background: '#FF8000' }
     })
     const field = findField('background')
@@ -24,7 +24,7 @@ describe('DitoColorType', () => {
 
   it('displays colors with alpha as eight hex digits', async () => {
     const { findField } = await mountSchema({
-      schema: { components: { overlay: { type: 'color', alpha: true } } },
+      schema: { fields: { overlay: { type: 'color', alpha: true } } },
       data: { overlay: 'rgba(0, 0, 255, 0.5)' }
     })
     expect(findField('overlay').find('input').element.value).toBe('0000ff80')
@@ -32,7 +32,7 @@ describe('DitoColorType', () => {
 
   it('writes entered colors once the input is blurred', async () => {
     const { findField, data } = await mountSchema({
-      schema: { components: { background: { type: 'color' } } },
+      schema: { fields: { background: { type: 'color' } } },
       data: { background: '#ff8000' }
     })
     const input = findField('background').find('input')
@@ -47,7 +47,7 @@ describe('DitoColorType', () => {
   it('validates entered colors on blur', async () => {
     const { findField, getErrors, settle } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           background: {
             type: 'color',
             validate: ({ value }) => value !== '#000000'
@@ -68,7 +68,7 @@ describe('DitoColorType', () => {
 
   it('ignores invalid colors', async () => {
     const { findField, data } = await mountSchema({
-      schema: { components: { background: { type: 'color' } } },
+      schema: { fields: { background: { type: 'color' } } },
       data: { background: '#ff8000' }
     })
     await enterValue(findField('background').find('input'), 'nope')
@@ -78,7 +78,7 @@ describe('DitoColorType', () => {
   it('converts colors to the color format of `format`', async () => {
     const { findField, data } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           rgb: { type: 'color', format: 'rgb' },
           hex8: { type: 'color', format: 'hex8' }
         }
@@ -93,7 +93,7 @@ describe('DitoColorType', () => {
   it('rejects the color format `name`', async () => {
     const schema = {
       type: 'view',
-      components: { background: { type: 'color', format: 'name' } }
+      fields: { background: { type: 'color', format: 'name' } }
     }
     await expect(
       setupView({ defaults: {}, normalizePath: hyphenate }, schema, 'colors')
@@ -104,7 +104,7 @@ describe('DitoColorType', () => {
     const onChange = vi.fn()
     const { findField, data } = await mountForm({
       schema: {
-        components: { background: { type: 'color', onChange } }
+        fields: { background: { type: 'color', onChange } }
       },
       data: { background: '#ff8000' }
     })
@@ -122,7 +122,7 @@ describe('DitoColorType', () => {
     const onChange = vi.fn()
     const { getComponent, data, settle } = await mountForm({
       schema: {
-        components: { background: { type: 'color', onChange } }
+        fields: { background: { type: 'color', onChange } }
       },
       data: { background: '#ff8000' }
     })
@@ -142,7 +142,7 @@ describe('DitoColorType', () => {
     const onChange = vi.fn()
     const { findField, data } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           background: { type: 'color', clearable: true, onChange }
         }
       },
@@ -157,7 +157,7 @@ describe('DitoColorType', () => {
     const onChange = vi.fn()
     const { getComponent, data, settle } = await mountForm({
       schema: {
-        components: { background: { type: 'color', onChange } }
+        fields: { background: { type: 'color', onChange } }
       },
       data: { background: '#ff8000' }
     })
@@ -175,7 +175,7 @@ describe('DitoColorType', () => {
 
   it(`doesn't write entered colors once cleared`, async () => {
     const { findField, getComponent, data, settle } = await mountSchema({
-      schema: { components: { background: { type: 'color' } } },
+      schema: { fields: { background: { type: 'color' } } },
       data: { background: '#ff8000' }
     })
     const input = findField('background').find('input')
@@ -191,7 +191,7 @@ describe('DitoColorType', () => {
     const onChange = vi.fn()
     const { data, settle } = await mountForm({
       schema: {
-        components: { background: { type: 'color', onChange } }
+        fields: { background: { type: 'color', onChange } }
       },
       data: { background: '#ff8000' }
     })
@@ -205,7 +205,7 @@ describe('DitoColorType', () => {
     const formats = ['prgb', 'hsl', 'hsv', 'hex3', 'hex4', 'hex6']
     const { findField, data } = await mountSchema({
       schema: {
-        components: Object.fromEntries(
+        fields: Object.fromEntries(
           formats.map(format => [format, { type: 'color', format }])
         )
       }
@@ -225,7 +225,7 @@ describe('DitoColorType', () => {
 
   it('keeps the alpha channel of hex colors with transparency', async () => {
     const { findField, data } = await mountSchema({
-      schema: { components: { overlay: { type: 'color', alpha: true } } }
+      schema: { fields: { overlay: { type: 'color', alpha: true } } }
     })
     await enterValue(findField('overlay').find('input'), '0000ff80')
     expect(data.overlay).toBe('#0000ff80')
@@ -233,7 +233,7 @@ describe('DitoColorType', () => {
 
   it('opens the picker with black and no preview without a value', async () => {
     const { findField, getComponent } = await mountSchema({
-      schema: { components: { background: { type: 'color' } } }
+      schema: { fields: { background: { type: 'color' } } }
     })
     expect(findField('background').find('.dito-color__preview').exists()).toBe(
       false
@@ -245,7 +245,7 @@ describe('DitoColorType', () => {
 
   it('keeps the value when picking the same color', async () => {
     const { getComponent, data, dataModel, settle } = await mountSchema({
-      schema: { components: { background: { type: 'color' } } },
+      schema: { fields: { background: { type: 'color' } } },
       data: { background: 'red' }
     })
     const color = getComponent('background')

@@ -11,7 +11,7 @@ offers it, see [Several kinds of items](./lists.md#several-kinds-of-items).
 export const bookForm = {
   type: 'form',
   label: 'Book',
-  components: {
+  fields: {
     title: { type: 'text', required: true },
     isbn: { type: 'text' },
     publishedAt: { type: 'date' },
@@ -81,7 +81,7 @@ See [Buttons](./buttons.md) for buttons that submit to other resources.
 ```js
 export const bookForm = {
   type: 'form',
-  components: { … },
+  fields: { … },
 
   onLoad({ itemLabel }) {
     console.log(`Editing ${itemLabel}`)
@@ -200,13 +200,13 @@ exportJob: {
   [hooks](../server/controllers.md#hooks) when they aren't columns of the
   model.
 
-## Components that depend on the data
+## Fields that depend on the data
 
-`components` can be a callback that creates them from the context. It runs
+`fields` can be a callback that creates them from the context. It runs
 again when the data it reads changes:
 
 ```js
-components: ({ item }) => ({
+fields: ({ item }) => ({
   title: { type: 'text' },
   ...(item.format === 'ebook'
     ? { fileSize: { type: 'number', suffix: 'MB' } }
@@ -227,12 +227,12 @@ start a new edition of a book from an existing one:
 export const bookForm = {
   type: 'form',
   clipboard: true,
-  components: {
+  fields: {
     title: { type: 'text' },
     summary: { type: 'textarea' },
     chapters: {
       type: 'list',
-      components: { title: { type: 'text' } }
+      fields: { title: { type: 'text' } }
     }
   }
 }
@@ -302,7 +302,7 @@ list as a whole:
 - Lists with their own `resource` and tree lists don't support it.
 
 The items themselves only get Copy and Paste buttons through the `clipboard`
-of their form, e.g. `form: { components, clipboard: true }`.
+of their form, e.g. `form: { fields, clipboard: true }`.
 
 ### Download and Upload
 

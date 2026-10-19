@@ -59,7 +59,7 @@ function createModule(exports) {
 
 const createBookForm = () => ({
   type: 'form',
-  components: {
+  fields: {
     title: { type: 'text' },
     isbn: { type: 'text' }
   }
@@ -342,8 +342,8 @@ describe('applySchemaDefaults()', () => {
 })
 
 describe('the schema keys of 3.x', () => {
-  const setupBookView = components =>
-    setupView(createApi(), { type: 'view', components }, 'books')
+  const setupBookView = fields =>
+    setupView(createApi(), { type: 'view', fields }, 'books')
 
   it.each([
     ['format', 'formatValue()'],
@@ -362,7 +362,7 @@ describe('the schema keys of 3.x', () => {
     'rejects the component member definitions in %s',
     async key => {
       await expect(
-        setupForm(createApi(), { type: 'form', [key]: {}, components: {} })
+        setupForm(createApi(), { type: 'form', [key]: {}, fields: {} })
       ).rejects.toThrow(`Unsupported schema key '${key}' in 'form'`)
     }
   )
@@ -374,7 +374,7 @@ describe('the schema keys of 3.x', () => {
     ['events.submit', { events: { submit() {} } }]
   ])('rejects the event %s of forms', async (key, schema) => {
     await expect(
-      setupForm(createApi(), { type: 'form', components: {}, ...schema })
+      setupForm(createApi(), { type: 'form', fields: {}, ...schema })
     ).rejects.toThrow(
       `Unsupported schema key '${key}' in 'form': ` +
       `Use 'onSuccess()' with 'context.isCreating' instead.`
@@ -437,7 +437,7 @@ describe('the schema keys of 3.x', () => {
       {
         filters: {
           type: 'panel',
-          components: {},
+          fields: {},
           panelButtons: { order: { type: 'button', data: {} } }
         }
       }
@@ -450,15 +450,15 @@ describe('the schema keys of 3.x', () => {
           panels: {
             hints: {
               type: 'panel',
-              components: {},
+              fields: {},
               buttons: { order: { type: 'button', data: {} } }
             }
           }
         }
       }
     ]
-  ])('rejects the keys of the buttons of %s', async (_, components) => {
-    await expect(setupBookView(components)).rejects.toThrow(
+  ])('rejects the keys of the buttons of %s', async (_, fields) => {
+    await expect(setupBookView(fields)).rejects.toThrow(
       `Unsupported schema key 'data' in 'order'`
     )
   })
@@ -467,7 +467,7 @@ describe('the schema keys of 3.x', () => {
     await expect(
       setupForm(createApi(), {
         type: 'form',
-        components: {},
+        fields: {},
         buttons: { submit: { data: {} } }
       })
     ).rejects.toThrow(`Unsupported schema key 'data' in 'submit'`)
@@ -483,15 +483,15 @@ describe('the schema keys of 3.x', () => {
     await expect(
       setupBookView({
         count: { type: 'computed', data: () => ({}) },
-        filters: { type: 'panel', data: () => ({}), components: {} }
+        filters: { type: 'panel', data: () => ({}), fields: {} }
       })
     ).resolves.toBe(undefined)
   })
 })
 
 describe('the schema key nested', () => {
-  const setupBookView = components =>
-    setupView(createApi(), { type: 'view', components }, 'books')
+  const setupBookView = fields =>
+    setupView(createApi(), { type: 'view', fields }, 'books')
 
   it.each([true, false])(
     'rejects nested: %s on types that nest their data anyway',
@@ -508,8 +508,8 @@ describe('the schema key nested', () => {
   it('keeps nested of sections and panels', async () => {
     await expect(
       setupBookView({
-        details: { type: 'section', nested: true, components: {} },
-        filters: { type: 'panel', nested: false, components: {} }
+        details: { type: 'section', nested: true, fields: {} },
+        filters: { type: 'panel', nested: false, fields: {} }
       })
     ).resolves.toBe(undefined)
   })
@@ -517,7 +517,7 @@ describe('the schema key nested', () => {
   it('rejects nested panels with their own data', async () => {
     await expect(
       setupBookView({
-        search: { type: 'panel', nested: true, data: {}, components: {} }
+        search: { type: 'panel', nested: true, data: {}, fields: {} }
       })
     ).rejects.toThrow(
       `Unsupported schema key 'nested' in 'search': ` +
@@ -526,42 +526,150 @@ describe('the schema key nested', () => {
   })
 })
 
+describe('the deprecated keys components and component', () => {
+  const componentsDeprecation =
+    'Schema `components` are deprecated, use `fields` instead.'
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('renames components to fields in all schemas, warning once', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const api = createApi({ text: { trim: true } })
+    const library = {
+      type: 'view',
+      components: {
+        details: { type: 'section', components: { title: { type: 'text' } } },
+        authors: { type: 'list', components: { name: { type: 'text' } } },
+        books: {
+          type: 'list',
+          form: { type: 'form', components: { isbn: { type: 'text' } } }
+        }
+      },
+      tabs: {
+        stats: { type: 'tab', components: { total: { type: 'text' } } }
+      },
+      panels: {
+        search: { type: 'panel', components: { term: { type: 'text' } } }
+      }
+    }
+    await setupView(api, library, 'library')
+    const { details, authors, books } = library.fields
+    expect(details.fields.title.trim).toBe(true)
+    expect(authors.fields.name.trim).toBe(true)
+    expect(books.form.fields.isbn.trim).toBe(true)
+    expect(library.tabs.stats.fields.total.trim).toBe(true)
+    expect(library.panels.search.fields.term.trim).toBe(true)
+    expect(library).not.toHaveProperty('components')
+    expect(warn.mock.calls).toEqual([[componentsDeprecation]])
+  })
+
+  it('renames the component of views to field, warning once', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const api = createApi({ text: { trim: true } })
+    const createBooksView = () => ({
+      type: 'view',
+      component: { type: 'list', form: createBookForm() }
+    })
+    const books = createBooksView()
+    await setupView(api, books, 'books')
+    await setupView(api, createBooksView(), 'books')
+    expect(books.field.form.fields.title.trim).toBe(true)
+    expect(books).not.toHaveProperty('component')
+    expect(warn.mock.calls).toEqual([
+      [
+        'The `component` of views with a schema is deprecated, ' +
+        'use `field` instead.'
+      ]
+    ])
+  })
+
+  it('renames components before the defaults, which see fields', () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const defaults = vi.fn()
+    const components = { title: { type: 'text' } }
+    applySchemaDefaults(createApi({ section: defaults }), {
+      type: 'section',
+      components
+    })
+    expect(defaults).toHaveBeenCalledWith({
+      type: 'section',
+      fields: components
+    })
+  })
+
+  it('keeps the Vue components of forms, sections, fields and pages', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const layout = { name: 'BookLayout' }
+    const form = await setupForm(createApi(), {
+      type: 'form',
+      component: layout,
+      fields: {
+        details: {
+          type: 'section',
+          component: layout,
+          fields: { title: { type: 'text' } }
+        },
+        rating: { type: 'component', component: layout }
+      }
+    })
+    const page = { type: 'page', component: layout }
+    await setupView(createApi(), page, 'tools')
+    expect(form.component).toBe(layout)
+    expect(form.fields.details.component).toBe(layout)
+    expect(form.fields.rating.component).toBe(layout)
+    expect(page.component).toBe(layout)
+    expect(warn).not.toHaveBeenCalled()
+  })
+
+  it('uses the components of extensions of set-up schemas', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const form = await setupForm(createApi(), createBookForm())
+    const extended = await setupForm(createApi(), {
+      ...form,
+      components: { ...form.fields, published: { type: 'date' } }
+    })
+    expect(Object.keys(extended.fields)).toEqual(['title', 'isbn', 'published'])
+  })
+})
+
 describe('applyNestedSchemaDefaults()', () => {
   it('applies defaults to components in sections, tabs and forms', () => {
     const api = createApi({ text: { trim: true } })
     const schema = {
       type: 'form',
-      components: {
+      fields: {
         title: { type: 'text' },
         details: {
           type: 'section',
-          components: { subtitle: { type: 'text' } }
+          fields: { subtitle: { type: 'text' } }
         },
         chapters: {
           type: 'list',
-          form: { type: 'form', components: { heading: { type: 'text' } } }
+          form: { type: 'form', fields: { heading: { type: 'text' } } }
         }
       },
       tabs: {
-        notes: { type: 'tab', components: { remark: { type: 'text' } } }
+        notes: { type: 'tab', fields: { remark: { type: 'text' } } }
       }
     }
     applyNestedSchemaDefaults(api, schema)
-    const { components, tabs } = schema
-    expect(components.title.trim).toBe(true)
-    expect(components.details.components.subtitle.trim).toBe(true)
-    expect(components.chapters.form.components.heading.trim).toBe(true)
-    expect(tabs.notes.components.remark.trim).toBe(true)
+    const { fields, tabs } = schema
+    expect(fields.title.trim).toBe(true)
+    expect(fields.details.fields.subtitle.trim).toBe(true)
+    expect(fields.chapters.form.fields.heading.trim).toBe(true)
+    expect(tabs.notes.fields.remark.trim).toBe(true)
   })
 
-  it('skips components created by `components()` callbacks', () => {
+  it('skips components created by `fields()` callbacks', () => {
     const api = createApi({ text: { trim: true } })
-    const components = vi.fn(() => ({ title: { type: 'text' } }))
+    const fields = vi.fn(() => ({ title: { type: 'text' } }))
     applyNestedSchemaDefaults(api, {
       type: 'form',
-      components: { fields: { type: 'section', components } }
+      fields: { fields: { type: 'section', fields } }
     })
-    expect(components).not.toHaveBeenCalled()
+    expect(fields).not.toHaveBeenCalled()
   })
 })
 
@@ -576,8 +684,8 @@ describe('setupForm()', () => {
       Promise.resolve(createModule({ default: createBookForm() }))
     )
     expect(form.compact).toBe(true)
-    expect(form.components.title.trim).toBe(true)
-    expect(form.components.isbn.trim).toBe(true)
+    expect(form.fields.title.trim).toBe(true)
+    expect(form.fields.isbn.trim).toBe(true)
   })
 
   it(`rejects schemas that aren't forms`, async () => {
@@ -590,14 +698,14 @@ describe('setupForm()', () => {
     const api = createApi({ text: { trim: true } })
     const form = await setupForm(api, {
       type: 'form',
-      components: {
+      fields: {
         details: {
           type: 'section',
-          components: { subtitle: { type: 'text' } }
+          fields: { subtitle: { type: 'text' } }
         }
       }
     })
-    expect(form.components.details.components.subtitle.trim).toBe(true)
+    expect(form.fields.details.fields.subtitle.trim).toBe(true)
   })
 
   it('resolves the tabs and panels of forms', async () => {
@@ -611,7 +719,7 @@ describe('setupForm()', () => {
       tabs: {
         notes: Promise.resolve(
           createModule({
-            default: { type: 'tab', components: { remark: { type: 'text' } } }
+            default: { type: 'tab', fields: { remark: { type: 'text' } } }
           })
         )
       },
@@ -620,7 +728,7 @@ describe('setupForm()', () => {
           createModule({
             summary: {
               type: 'panel',
-              components: { excerpt: { type: 'text' } }
+              fields: { excerpt: { type: 'text' } }
             }
           })
         )
@@ -629,13 +737,13 @@ describe('setupForm()', () => {
     expect(form.tabs.notes).toEqual({
       type: 'tab',
       defaultTab: false,
-      components: { remark: { type: 'text', trim: true } }
+      fields: { remark: { type: 'text', trim: true } }
     })
     expect(form.panels.summary).toEqual({
       type: 'panel',
       name: 'summary',
       sticky: true,
-      components: { excerpt: { type: 'text', trim: true } }
+      fields: { excerpt: { type: 'text', trim: true } }
     })
   })
 
@@ -643,14 +751,14 @@ describe('setupForm()', () => {
     // E.g. categories with lists of sub-categories that use the same form:
     const setupList = vi.fn()
     const api = createApi({ list: setupList })
-    const categoryForm = { type: 'form', components: {} }
-    categoryForm.components.subcategories = {
+    const categoryForm = { type: 'form', fields: {} }
+    categoryForm.fields.subcategories = {
       type: 'list',
       form: categoryForm
     }
     await setupForm(api, categoryForm)
     expect(setupList).toHaveBeenCalledTimes(1)
-    expect(categoryForm.components.subcategories.name).toBe('subcategories')
+    expect(categoryForm.fields.subcategories.name).toBe('subcategories')
   })
 })
 
@@ -662,7 +770,7 @@ describe('setupForms()', () => {
       form: Promise.resolve(createModule({ default: createBookForm() }))
     }
     await setupForms(api, schema)
-    expect(schema.form.components.title.trim).toBe(true)
+    expect(schema.form.fields.title.trim).toBe(true)
   })
 
   it('resolves `forms` and stores them back on the schema', async () => {
@@ -676,8 +784,8 @@ describe('setupForms()', () => {
     }
     await setupForms(api, schema)
     expect(Object.keys(schema.forms)).toEqual(['novel', 'comic'])
-    expect(schema.forms.novel.components.title.trim).toBe(true)
-    expect(schema.forms.comic.components.isbn.trim).toBe(true)
+    expect(schema.forms.novel.fields.title.trim).toBe(true)
+    expect(schema.forms.comic.fields.isbn.trim).toBe(true)
   })
 
   it('resolves the component of forms', async () => {
@@ -687,21 +795,21 @@ describe('setupForms()', () => {
       form: {
         type: 'form',
         component: async () => ({ name: 'BookLayout' }),
-        components: {}
+        fields: {}
       }
     }
     await setupForms(createApi(), schema)
     expect(schema.form.component).toEqual({ name: 'BookLayout' })
   })
 
-  it('rejects forms with a component and no components', async () => {
+  it('rejects forms with a component and no fields', async () => {
     const schema = {
       type: 'list',
       name: 'books',
       form: { type: 'form', component: { name: 'BookEditor' } }
     }
     await expect(setupForms(createApi(), schema)).rejects.toThrow(
-      `Invalid form schema: 'component' needs 'components'.`
+      `Invalid form schema: 'component' needs 'fields'.`
     )
   })
 
@@ -709,18 +817,18 @@ describe('setupForms()', () => {
     const api = createApi({ text: { trim: true } })
     const schema = {
       type: 'object',
-      components: { street: { type: 'text' } }
+      fields: { street: { type: 'text' } }
     }
     await setupForms(api, schema)
-    expect(schema.components.street.trim).toBe(true)
+    expect(schema.fields.street.trim).toBe(true)
     expect(schema.form).toBe(undefined)
   })
 
-  it('leaves `components()` callbacks to be set up with the data', async () => {
+  it('leaves `fields()` callbacks to be set up with the data', async () => {
     const api = createApi()
-    const components = vi.fn(() => ({}))
-    await setupForms(api, { type: 'section', components })
-    expect(components).not.toHaveBeenCalled()
+    const fields = vi.fn(() => ({}))
+    await setupForms(api, { type: 'section', fields })
+    expect(fields).not.toHaveBeenCalled()
   })
 })
 
@@ -749,31 +857,31 @@ describe('setupSchemaComponents()', () => {
     const api = createApi({ text: { trim: true } })
     const schema = {
       type: 'form',
-      components: {},
+      fields: {},
       panels: {
-        summary: { type: 'panel', components: { excerpt: { type: 'text' } } }
+        summary: { type: 'panel', fields: { excerpt: { type: 'text' } } }
       }
     }
     await setupSchemaComponents(api, schema)
-    expect(schema.panels.summary.components.excerpt.trim).toBe(true)
+    expect(schema.panels.summary.fields.excerpt.trim).toBe(true)
   })
 
   it('sets up the panels of components too', async () => {
     const api = createApi({ text: { trim: true } })
     const schema = {
       type: 'form',
-      components: {
+      fields: {
         title: {
           type: 'text',
           panels: {
-            hints: { type: 'panel', components: { hint: { type: 'text' } } }
+            hints: { type: 'panel', fields: { hint: { type: 'text' } } }
           }
         }
       }
     }
     await setupSchemaComponents(api, schema)
-    expect(schema.components.title.trim).toBe(true)
-    expect(schema.components.title.panels.hints.components.hint.trim).toBe(
+    expect(schema.fields.title.trim).toBe(true)
+    expect(schema.fields.title.panels.hints.fields.hint.trim).toBe(
       true
     )
   })
@@ -788,31 +896,31 @@ describe('setupView()', () => {
     const api = createApi({ text: { trim: true } })
     const books = {
       type: 'view',
-      component: {
+      field: {
         type: 'list',
         form: createBookForm()
       }
     }
     await setupView(api, books, 'books')
     expect(books.name).toBe('books')
-    expect(books.component.form.components.title.trim).toBe(true)
+    expect(books.field.form.fields.title.trim).toBe(true)
   })
 
   it('resolves the tabs of views', async () => {
     const api = createApi({ text: { trim: true } })
     const dashboard = {
       type: 'view',
-      components: {},
+      fields: {},
       tabs: {
         stats: Promise.resolve(
           createModule({
-            default: { type: 'tab', components: { total: { type: 'text' } } }
+            default: { type: 'tab', fields: { total: { type: 'text' } } }
           })
         )
       }
     }
     await setupView(api, dashboard, 'dashboard')
-    expect(dashboard.tabs.stats.components.total.trim).toBe(true)
+    expect(dashboard.tabs.stats.fields.total.trim).toBe(true)
   })
 
   it('sets up the items of menus', async () => {
@@ -820,7 +928,7 @@ describe('setupView()', () => {
     const catalog = {
       type: 'menu',
       items: {
-        bookAuthors: { type: 'view', components: {} }
+        bookAuthors: { type: 'view', fields: {} }
       }
     }
     await setupView(api, catalog, 'catalog')
@@ -880,10 +988,10 @@ describe('resolveSchemaComponent()', () => {
     const api = createApi()
     const form = await setupForm(api, {
       type: 'form',
-      components: {
+      fields: {
         cover: { type: 'component', component: { name: 'BookCover' } }
       }
     })
-    expect(form.components.cover.component).toEqual({ name: 'BookCover' })
+    expect(form.fields.cover.component).toEqual({ name: 'BookCover' })
   })
 })

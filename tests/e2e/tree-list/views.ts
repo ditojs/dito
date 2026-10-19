@@ -15,7 +15,7 @@ export const libraries = createWidgetView<Library>('name', 'libraries', {
     draggable: true,
     form: {
       type: 'form',
-      components: { name: { type: 'text', label: 'Shelf Name' } }
+      fields: { name: { type: 'text', label: 'Shelf Name' } }
     },
     children: {
       name: 'books',
@@ -27,7 +27,7 @@ export const libraries = createWidgetView<Library>('name', 'libraries', {
       draggable: true,
       form: {
         type: 'form',
-        components: { name: { type: 'text', label: 'Book Title' } }
+        fields: { name: { type: 'text', label: 'Book Title' } }
       }
     }
   },

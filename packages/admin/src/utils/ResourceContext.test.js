@@ -5,13 +5,13 @@ import { mountForm, settle, isForm, enterValue } from '../test/mount.js'
 describe('ResourceContext', () => {
   const chapterForm = {
     type: 'form',
-    components: { title: { type: 'text' } }
+    fields: { title: { type: 'text' } }
   }
 
   const mountBook = ({ request = () => ({ data: [] }) } = {}) =>
     mountForm({
       schema: {
-        components: {
+        fields: {
           chapters: {
             type: 'list',
             resource: { path: 'chapters' },
@@ -27,7 +27,7 @@ describe('ResourceContext', () => {
           notes: {
             type: 'list',
             inlined: true,
-            form: { type: 'form', components: { text: { type: 'text' } } }
+            form: { type: 'form', fields: { text: { type: 'text' } } }
           }
         }
       },
@@ -76,13 +76,13 @@ describe('ResourceContext', () => {
   it('continues the form in lists of inlined items', async () => {
     const { getComponent } = await mountForm({
       schema: {
-        components: {
+        fields: {
           notes: {
             type: 'list',
             inlined: true,
             form: {
               type: 'form',
-              components: {
+              fields: {
                 links: {
                   type: 'list',
                   resource: { path: 'links' },
@@ -127,7 +127,7 @@ describe('ResourceContext', () => {
     const openNoteForm = async () => {
       const result = await mountForm({
         schema: {
-          components: {
+          fields: {
             notes: {
               type: 'list',
               editable: true,
@@ -135,7 +135,7 @@ describe('ResourceContext', () => {
               columns: { text: {} },
               form: {
                 type: 'form',
-                components: { text: { type: 'text' } }
+                fields: { text: { type: 'text' } }
               }
             }
           }
@@ -199,7 +199,7 @@ describe('ResourceContext', () => {
   it('is continued by the forms of tree items from their route', async () => {
     const { admin, request } = await mountForm({
       schema: {
-        components: {
+        fields: {
           pages: {
             type: 'tree-list',
             resource: { path: 'pages' },

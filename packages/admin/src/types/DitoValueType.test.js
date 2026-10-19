@@ -5,7 +5,7 @@ describe('DitoValueType', () => {
   it('computes the value from other values of the item', async () => {
     const { findField, data } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           title: { type: 'text' },
           slug: {
             type: 'value',
@@ -25,7 +25,7 @@ describe('DitoValueType', () => {
   it(`isn't visible, unless it's made visible as readonly field`, async () => {
     const { findField } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           hidden: { type: 'value', computeValue: () => 'secret' },
           shown: {
             type: 'value',
@@ -45,7 +45,7 @@ describe('DitoValueType', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const { findField, data } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           title: { type: 'text' },
           slug: {
             type: 'computed',
@@ -79,12 +79,12 @@ describe('DitoValueType', () => {
   it('resolves the value of `data` and `dataPath`', async () => {
     const { data } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           shelf: {
             type: 'object',
             form: {
               type: 'form',
-              components: { name: { type: 'text' } }
+              fields: { name: { type: 'text' } }
             }
           },
           shelfName: { type: 'value', dataPath: 'shelf/name' },
@@ -100,7 +100,7 @@ describe('DitoValueType', () => {
   it('sends the computed value, unless it is excluded', async () => {
     const { submit } = await mountForm({
       schema: {
-        components: {
+        fields: {
           pages: { type: 'number' },
           sheets: {
             type: 'value',
@@ -124,7 +124,7 @@ describe('DitoValueType', () => {
   it(`doesn't make the form dirty with computed values`, async () => {
     const { routeComponent } = await mountForm({
       schema: {
-        components: {
+        fields: {
           title: { type: 'text' },
           initials: {
             type: 'value',
@@ -142,7 +142,7 @@ describe('DitoValueType', () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     const { data } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           counter: {
             type: 'value',
             computeValue: ({ value }) => (value ?? 0) + 1
@@ -163,7 +163,7 @@ describe('DitoLabelType', () => {
   it('displays the value as label without sending it', async () => {
     const { findField, submit } = await mountForm({
       schema: {
-        components: {
+        fields: {
           heading: { type: 'label', default: 'Details' },
           title: { type: 'text' }
         }

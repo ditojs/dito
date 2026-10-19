@@ -21,7 +21,7 @@ async function mountBookForm(request) {
   const result = await mountForm({
     schema: {
       label: 'Book',
-      components: { name: { type: 'text' } }
+      fields: { name: { type: 'text' } }
     },
     data: { name: maliciousName },
     request
@@ -40,7 +40,7 @@ describe('DitoForm', () => {
     const { wrapper } = await mountForm({
       schema: {
         label: 'Show',
-        components: { name: { type: 'text' } }
+        fields: { name: { type: 'text' } }
       },
       data: { name: 'Tom & Jerry' }
     })
@@ -58,7 +58,7 @@ describe('DitoForm', () => {
     )
     const { wrapper, findField } = await mountForm({
       schema: {
-        components: {
+        fields: {
           title: { type: 'text' },
           preview: { type: 'button', text: 'Preview' }
         },
@@ -127,7 +127,7 @@ describe('DitoForm', () => {
   describe('cancel button', () => {
     it('closes the form and returns to the list', async () => {
       const { admin, wrapper, request } = await mountForm({
-        schema: { label: 'Book', components: { title: { type: 'text' } } },
+        schema: { label: 'Book', fields: { title: { type: 'text' } } },
         data: { title: 'Emma' }
       })
       expect(admin.router.currentRoute.value.path).toBe('/items/1')
@@ -148,14 +148,14 @@ describe('DitoForm', () => {
     it('leaves single-component views of objects for the root', async () => {
       const admin = await mountAdmin({
         views: {
-          books: { type: 'view', label: 'Books', components: {} },
+          books: { type: 'view', label: 'Books', fields: {} },
           settings: {
             type: 'view',
             label: 'Settings',
-            component: {
+            field: {
               type: 'object',
               resource: { path: 'settings' },
-              form: { type: 'form', components: { name: { type: 'text' } } }
+              form: { type: 'form', fields: { name: { type: 'text' } } }
             }
           }
         },
@@ -173,7 +173,7 @@ describe('DitoForm', () => {
     it('calls `onCancel()` once the form is closed', async () => {
       const onCancel = vi.fn()
       const { admin, wrapper } = await mountForm({
-        schema: { components: { title: { type: 'text' } }, onCancel },
+        schema: { fields: { title: { type: 'text' } }, onCancel },
         data: { title: 'Emma' }
       })
       await wrapper
@@ -189,7 +189,7 @@ describe('DitoForm', () => {
       const { wrapper } = await mountForm({
         schema: {
           label: 'Book',
-          components: { name: { type: 'text' } },
+          fields: { name: { type: 'text' } },
           onCancel({ itemLabel }) {
             labels.push(itemLabel)
           }
@@ -210,7 +210,7 @@ describe('DitoForm', () => {
       await mountForm({
         schema: {
           label: 'Book',
-          components: { name: { type: 'text' } },
+          fields: { name: { type: 'text' } },
           onLoad({ itemLabel }) {
             labels.push(itemLabel)
           }
@@ -225,7 +225,7 @@ describe('DitoForm', () => {
       const { wrapper, settle } = await mountForm({
         schema: {
           label: 'Book',
-          components: {
+          fields: {
             name: { type: 'text' },
             note: {
               type: 'text',
@@ -248,7 +248,7 @@ describe('DitoForm', () => {
       const itemLabels = []
       const { admin } = await mountForm({
         schema: {
-          components: {
+          fields: {
             chapters: {
               type: 'list',
               editable: true,
@@ -258,7 +258,7 @@ describe('DitoForm', () => {
               },
               form: {
                 type: 'form',
-                components: { title: { type: 'text' } }
+                fields: { title: { type: 'text' } }
               }
             }
           }
@@ -280,7 +280,7 @@ describe('DitoForm', () => {
         schema: {
           label: 'Book',
           component,
-          components: { title: { type: 'text' } }
+          fields: { title: { type: 'text' } }
         },
         data: { title: 'Emma', notes: 'Not shown' },
         request: ({ data }) => ({ data: { id: 1, ...data } })
@@ -321,7 +321,7 @@ describe('DitoForm', () => {
       2: { id: 2, title: 'Persuasion' }
     }
     const { admin, routeComponent, findField } = await mountForm({
-      schema: { components: { title: { type: 'text' } } },
+      schema: { fields: { title: { type: 'text' } } },
       data: books[1],
       request: ({ method = 'get', url }) => {
         const id = url.match(/^\/items\/(\d+)$/)?.[1]
@@ -343,7 +343,7 @@ describe('DitoForm', () => {
     async function mountPublishableForm(publish) {
       return mountForm({
         schema: {
-          components: {
+          fields: {
             title: { type: 'text' },
             slug: {
               type: 'text',
@@ -426,7 +426,7 @@ describe('DitoForm', () => {
       }
       const result = await mountForm({
         schema: {
-          components: {
+          fields: {
             title: { type: 'text', if: addItem },
             slug: {
               type: 'text',
@@ -454,12 +454,12 @@ describe('DitoForm', () => {
     it('make the draft of nested forms dirty, not the parent', async () => {
       const { admin, routeComponent, data } = await mountForm({
         schema: {
-          components: {
+          fields: {
             chapters: {
               type: 'list',
               form: {
                 type: 'form',
-                components: {
+                fields: {
                   title: { type: 'text' },
                   rename: {
                     type: 'button',
@@ -488,7 +488,7 @@ describe('DitoForm', () => {
   })
 
   describe('dirty state', () => {
-    const titleSchema = { components: { title: { type: 'text' } } }
+    const titleSchema = { fields: { title: { type: 'text' } } }
 
     it('stays dirty when an edit is reverted', async () => {
       const { wrapper, routeComponent, settle } = await mountForm({
@@ -505,7 +505,7 @@ describe('DitoForm', () => {
     it('stays clean when excluded fields are edited', async () => {
       const { wrapper, routeComponent, settle } = await mountForm({
         schema: {
-          components: {
+          fields: {
             title: { type: 'text' },
             note: { type: 'text', exclude: true }
           }
@@ -566,7 +566,7 @@ describe('DitoForm', () => {
     it('stays clean when a component writes the value that it has', async () => {
       const form = await mountForm({
         schema: {
-          components: {
+          fields: {
             title: { type: 'text' },
             tags: { type: 'multiselect', options: ['novel', 'classic'] }
           },
@@ -594,7 +594,7 @@ describe('DitoForm', () => {
       async function mountChaptersForm() {
         const result = await mountForm({
           schema: {
-            components: {
+            fields: {
               title: { type: 'text' },
               chapters: {
                 type: 'list',
@@ -659,14 +659,14 @@ describe('DitoForm', () => {
       stubConfirm(true)
       const { findField, routeComponent, data, settle } = await mountForm({
         schema: {
-          components: {
+          fields: {
             chapters: {
               type: 'list',
               inlined: true,
               creatable: true,
               draggable: true,
               deletable: true,
-              form: { type: 'form', components: { title: { type: 'text' } } }
+              form: { type: 'form', fields: { title: { type: 'text' } } }
             }
           }
         },
@@ -705,14 +705,14 @@ describe('DitoForm', () => {
       form: {
         type: 'form',
         label,
-        components: { name: { type: 'text' } }
+        fields: { name: { type: 'text' } }
       }
     })
 
     it('reloads the list of the saved item', async () => {
       const { admin, findField, settle } = await mountForm({
         schema: {
-          components: {
+          fields: {
             notes: createNestedListSchema('Note'),
             tags: createNestedListSchema('Tag')
           }
@@ -750,7 +750,7 @@ describe('DitoForm', () => {
     function mountBookForm(respond = data => ({ id: 1, ...data })) {
       return mountForm({
         schema: {
-          components: {
+          fields: {
             title: { type: 'text' },
             chapters: {
               type: 'list',
@@ -759,7 +759,7 @@ describe('DitoForm', () => {
               form: {
                 type: 'form',
                 label: 'Chapter',
-                components: { title: { type: 'text' } }
+                fields: { title: { type: 'text' } }
               }
             },
             reviews: {
@@ -819,7 +819,7 @@ describe('DitoForm', () => {
       const chapter = { title: 'Three' }
       routeComponent.dataContext.model.insert(
         {
-          schema: routeComponent.schema.components.chapters,
+          schema: routeComponent.schema.fields.chapters,
           list: chapters,
           dataPath: 'chapters'
         },
@@ -910,17 +910,17 @@ describe('DitoForm', () => {
         views: {
           items: {
             type: 'view',
-            component: {
+            field: {
               type: 'list',
               resource: { path: 'items' },
               forms: {
                 book: {
                   type: 'form',
-                  components: { title: { type: 'text', default: 'Untitled' } }
+                  fields: { title: { type: 'text', default: 'Untitled' } }
                 },
                 film: {
                   type: 'form',
-                  components: { director: { type: 'text' } }
+                  fields: { director: { type: 'text' } }
                 }
               }
             }
@@ -934,7 +934,7 @@ describe('DitoForm', () => {
       form.dataContext.resetItem({})
       await settle(form)
       expect(form.data).toEqual({ id: 1, type: 'book', title: 'Untitled' })
-      expect(Object.keys(form.schema.components)).toEqual(['title'])
+      expect(Object.keys(form.schema.fields)).toEqual(['title'])
       form.dataContext.resetItem({ id: 2, type: 'film' })
       await settle(form)
       expect(form.data).toEqual({ id: 2, type: 'film', director: null })
@@ -944,7 +944,7 @@ describe('DitoForm', () => {
   describe('mergeItem()', () => {
     const chapterForm = {
       type: 'form',
-      components: {
+      fields: {
         title: { type: 'text' },
         pages: { type: 'number' }
       }
@@ -955,7 +955,7 @@ describe('DitoForm', () => {
     async function mountBookForm({ mutate = false } = {}) {
       const result = await mountForm({
         schema: {
-          components: {
+          fields: {
             title: { type: 'text' },
             exportStatus: { type: 'text', exclude: true },
             exportedAt: { type: 'date', exclude: true },
@@ -1043,12 +1043,12 @@ describe('DitoForm', () => {
     it('deserializes only the merged values, with the whole item', async () => {
       const { data, getComponent, settle } = await mountForm({
         schema: {
-          components: {
+          fields: {
             title: { type: 'text' },
             // Unnested components hold values of the item too:
             details: {
               type: 'section',
-              components: {
+              fields: {
                 status: {
                   type: 'text',
                   deserializeValue: ({ value, item }) =>
@@ -1110,13 +1110,13 @@ describe('DitoForm', () => {
     it('applies the excluded values merged into drafts without an edit', async () => {
       const { admin, data, routeComponent } = await mountForm({
         schema: {
-          components: {
+          fields: {
             chapters: {
               type: 'list',
               editable: true,
               form: {
                 type: 'form',
-                components: {
+                fields: {
                   title: { type: 'text' },
                   proofStatus: { type: 'text', exclude: true }
                 }
@@ -1146,7 +1146,7 @@ describe('DitoForm', () => {
       const { dataModel, routeComponent, getComponent, settle } =
         await mountForm({
           schema: {
-            components: {
+            fields: {
               title: { type: 'text', required: true },
               exportStatus: { type: 'text', required: true, exclude: true }
             }
@@ -1237,7 +1237,7 @@ describe('DitoForm', () => {
       }
       const { data, routeComponent, settle } = await mountForm({
         schema: {
-          components: {
+          fields: {
             title: { type: 'text' },
             exportStatus: { type: 'text', exclude: true },
             exportProgress: { type: 'number', exclude: true },
@@ -1274,7 +1274,7 @@ describe('DitoForm', () => {
     const chapterForm = {
       type: 'form',
       label: 'Chapter',
-      components: { title: { type: 'text' } }
+      fields: { title: { type: 'text' } }
     }
 
     // Mounts a book form whose chapters and author are edited in nested forms,
@@ -1288,7 +1288,7 @@ describe('DitoForm', () => {
       const result = await mountForm({
         schema: {
           label: 'Book',
-          components: {
+          fields: {
             title: { type: 'text' },
             chapters: {
               type: 'list',
@@ -1305,7 +1305,7 @@ describe('DitoForm', () => {
               form: {
                 type: 'form',
                 label: 'Author',
-                components: { name: { type: 'text' } }
+                fields: { name: { type: 'text' } }
               }
             }
           }
@@ -1392,7 +1392,7 @@ describe('DitoForm', () => {
     it('applies the response of buttons with resources to the draft', async () => {
       const { admin, data } = await mountForm({
         schema: {
-          components: {
+          fields: {
             chapters: {
               type: 'list',
               editable: true,
@@ -1457,18 +1457,18 @@ describe('DitoForm', () => {
     it('update the sections of created items with computed values', async () => {
       const { admin } = await mountForm({
         schema: {
-          components: {
+          fields: {
             chapters: {
               type: 'list',
               editable: true,
               creatable: true,
               form: {
                 type: 'form',
-                components: {
+                fields: {
                   kind: { type: 'text', computeValue: () => 'draft' },
                   details: {
                     type: 'section',
-                    components: ({ item }) => ({
+                    fields: ({ item }) => ({
                       ...(item.kind === 'draft' && {
                         title: { type: 'text', default: 'Untitled' }
                       })
@@ -1488,7 +1488,7 @@ describe('DitoForm', () => {
     it('edit the items that they added at their index', async () => {
       const { admin } = await mountForm({
         schema: {
-          components: {
+          fields: {
             chapters: {
               type: 'list',
               editable: true,
@@ -1566,13 +1566,13 @@ describe('DitoForm', () => {
     it('edits the objects that it created at their own route', async () => {
       const { admin } = await mountForm({
         schema: {
-          components: {
+          fields: {
             author: {
               type: 'object',
               creatable: true,
               form: {
                 type: 'form',
-                components: { name: { type: 'text' } },
+                fields: { name: { type: 'text' } },
                 buttons: { submit: { closeForm: false } }
               }
             }
@@ -1600,20 +1600,20 @@ describe('DitoForm', () => {
 
   describe('applying nested forms', () => {
     // Mounts a book form whose chapters are edited in nested forms with the
-    // `components`, and opens the form of the `chapter`.
-    async function openChapterForm(components, chapter) {
+    // `fields`, and opens the form of the `chapter`.
+    async function openChapterForm(fields, chapter) {
       const submitted = []
       const result = await mountForm({
         schema: {
           label: 'Book',
-          components: {
+          fields: {
             title: { type: 'text' },
             chapters: {
               type: 'list',
               editable: true,
               itemLabel: 'title',
               columns: { title: {}, wordCount: {} },
-              form: { type: 'form', label: 'Chapter', components }
+              form: { type: 'form', label: 'Chapter', fields }
             }
           }
         },
@@ -1694,7 +1694,7 @@ describe('DitoForm', () => {
           details: {
             type: 'section',
             nested: true,
-            components: {
+            fields: {
               chapter: {
                 type: 'computed',
                 exclude: true,
@@ -1749,7 +1749,7 @@ describe('DitoForm', () => {
           type: 'list',
           inlined: true,
           creatable: true,
-          form: { type: 'form', components: { name: { type: 'text' } } }
+          form: { type: 'form', fields: { name: { type: 'text' } } }
         },
         featured: {
           type: 'select',
@@ -1821,14 +1821,14 @@ describe('DitoForm', () => {
       views: {
         books: {
           type: 'view',
-          component: {
+          field: {
             type: 'list',
             resource: { path: 'books' },
             editable: true,
             creatable: true,
             form: {
               type: 'form',
-              components: {
+              fields: {
                 title: { type: 'text' },
                 chapters: {
                   type: 'list',
@@ -1837,7 +1837,7 @@ describe('DitoForm', () => {
                   creatable: true,
                   form: {
                     type: 'form',
-                    components: { title: { type: 'text' } }
+                    fields: { title: { type: 'text' } }
                   }
                 }
               }
@@ -1869,7 +1869,7 @@ describe('DitoForm', () => {
     it('opens the created item unless the form closes', async () => {
       const { admin, submit, routeComponent } = await mountForm({
         schema: {
-          components: { title: { type: 'text' } },
+          fields: { title: { type: 'text' } },
           buttons: { submit: { closeForm: false } }
         },
         request: ({ method, data }) =>
@@ -1887,7 +1887,7 @@ describe('DitoForm', () => {
     it('opens the created item without loading it', async () => {
       const { admin, submit, routeComponent, request } = await mountForm({
         schema: {
-          components: { title: { type: 'text' } },
+          fields: { title: { type: 'text' } },
           buttons: { submit: { closeForm: false } }
         },
         request: ({ method, data }) =>
@@ -1913,13 +1913,13 @@ describe('DitoForm', () => {
         views: {
           items: {
             type: 'view',
-            component: {
+            field: {
               type: 'list',
               resource: { path: 'items' },
               idKey: 'code',
               form: {
                 type: 'form',
-                components: { title: { type: 'text' } },
+                fields: { title: { type: 'text' } },
                 buttons: { submit: { closeForm: false } }
               }
             }
@@ -1946,7 +1946,7 @@ describe('DitoForm', () => {
     const mountSavingForm = schema =>
       mountForm({
         schema: {
-          components: { title: { type: 'text' } },
+          fields: { title: { type: 'text' } },
           buttons: { submit: { closeForm: false } },
           ...schema
         },
@@ -1986,7 +1986,7 @@ describe('DitoForm', () => {
       const labels = []
       const { admin, submit } = await mountSavingForm({
         label: 'Book',
-        components: { name: { type: 'text' } },
+        fields: { name: { type: 'text' } },
         onSuccess({ itemLabel }) {
           labels.push(itemLabel)
         }
@@ -2007,7 +2007,7 @@ describe('DitoForm', () => {
       vi.spyOn(console, 'error').mockImplementation(() => {})
       const onError = vi.fn(() => true)
       const { submit, admin } = await mountForm({
-        schema: { components: { title: { type: 'text' } }, onError },
+        schema: { fields: { title: { type: 'text' } }, onError },
         data: { title: 'Emma' },
         request: ({ method = 'get', data }) => {
           if (method === 'get') return { data }
@@ -2026,7 +2026,7 @@ describe('DitoForm', () => {
       const { submit } = await mountForm({
         schema: {
           label: 'Book',
-          components: { name: { type: 'text' } },
+          fields: { name: { type: 'text' } },
           onError({ itemLabel }) {
             labels.push(itemLabel)
           }
@@ -2050,7 +2050,7 @@ describe('DitoForm', () => {
       form: {
         type: 'form',
         label: 'Recipe',
-        components: { name: { type: 'text' } }
+        fields: { name: { type: 'text' } }
       }
     }
 
@@ -2068,7 +2068,7 @@ describe('DitoForm', () => {
     it('apply their changes to the data of the view', async () => {
       const { admin, data } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             recipes: recipesSchema,
             // Views with resources provide the data of their nested forms:
             cooks: {
@@ -2094,7 +2094,7 @@ describe('DitoForm', () => {
     // continue, and its data path is relative to the data of the view.
     it('open in views without resources', async () => {
       const { admin, data } = await mountSchema({
-        schema: { components: { recipes: recipesSchema } },
+        schema: { fields: { recipes: recipesSchema } },
         data: { recipes: [{ name: 'Pancakes' }] }
       })
       await admin.navigate('/test/recipes/0')
@@ -2117,7 +2117,7 @@ describe('DitoForm', () => {
           recipes: {
             type: 'view',
             path: 'cookbook',
-            component: recipesSchema
+            field: recipesSchema
           }
         }
       })
@@ -2144,7 +2144,7 @@ describe('DitoForm', () => {
             items: {
               cookbook: {
                 type: 'view',
-                components: { recipes: recipesSchema }
+                fields: { recipes: recipesSchema }
               }
             }
           }
@@ -2172,8 +2172,8 @@ describe('DitoForm', () => {
         ...recipesSchema,
         form: {
           ...recipesSchema.form,
-          components: {
-            ...recipesSchema.form.components,
+          fields: {
+            ...recipesSchema.form.fields,
             kitchen: {
               type: 'text',
               computeValue: ({ rootItem }) => rootItem?.venue ?? null
@@ -2197,7 +2197,7 @@ describe('DitoForm', () => {
       it('provide the root item in multi-component views', async () => {
         const { admin, routeComponent: view } = await mountSchema({
           schema: {
-            components: {
+            fields: {
               venue: { type: 'text' },
               recipes: recipesWithKitchenSchema
             }
@@ -2216,7 +2216,7 @@ describe('DitoForm', () => {
             recipes: {
               type: 'view',
               path: 'cookbook',
-              component: recipesWithKitchenSchema
+              field: recipesWithKitchenSchema
             }
           }
         })
@@ -2239,7 +2239,7 @@ describe('DitoForm', () => {
     it('edit the item in the data of the parent form directly', async () => {
       const { admin, data, routeComponent } = await mountForm({
         schema: {
-          components: {
+          fields: {
             chapters: {
               type: 'list',
               editable: true,
@@ -2247,7 +2247,7 @@ describe('DitoForm', () => {
               mutate: true,
               form: {
                 type: 'form',
-                components: { title: { type: 'text' } }
+                fields: { title: { type: 'text' } }
               }
             }
           }
@@ -2278,7 +2278,7 @@ describe('DitoForm', () => {
     it('clear the errors of their item only once submitted', async () => {
       const { admin, routeComponent, dataModel } = await mountForm({
         schema: {
-          components: {
+          fields: {
             title: { type: 'text' },
             chapters: {
               type: 'list',
@@ -2286,7 +2286,7 @@ describe('DitoForm', () => {
               mutate: true,
               form: {
                 type: 'form',
-                components: { title: { type: 'text' } },
+                fields: { title: { type: 'text' } },
                 buttons: {
                   apply: {
                     type: 'submit',
@@ -2318,7 +2318,7 @@ describe('DitoForm', () => {
     it('reset their item in place like loaded data', async () => {
       const { admin, data, dataModel } = await mountForm({
         schema: {
-          components: {
+          fields: {
             chapters: {
               type: 'list',
               editable: true,
@@ -2326,7 +2326,7 @@ describe('DitoForm', () => {
               orderKey: 'position',
               form: {
                 type: 'form',
-                components: {
+                fields: {
                   title: { type: 'text', default: 'Untitled' },
                   pages: { type: 'number' }
                 }
@@ -2361,7 +2361,7 @@ describe('DitoForm', () => {
 
     const chapterForm = {
       type: 'form',
-      components: {
+      fields: {
         title: { type: 'text' },
         slug: {
           type: 'text',
@@ -2373,7 +2373,7 @@ describe('DitoForm', () => {
     it('compute the values of the items that they create', async () => {
       const { admin, data } = await mountForm({
         schema: {
-          components: {
+          fields: {
             chapters: {
               type: 'list',
               creatable: true,
@@ -2405,7 +2405,7 @@ describe('DitoForm', () => {
         views: {
           chapters: {
             type: 'view',
-            component: {
+            field: {
               type: 'list',
               resource: { path: 'chapters' },
               mutate: true,
@@ -2429,7 +2429,7 @@ describe('DitoForm', () => {
   // the collection resource, see the `$route` watcher, but sets up a new item.
   it('sets up a new item when navigating to its create route', async () => {
     const { admin, routeComponent } = await mountForm({
-      schema: { components: { title: { type: 'text' } } },
+      schema: { fields: { title: { type: 'text' } } },
       data: { title: 'Emma' }
     })
     await admin.navigate('/items/create')
@@ -2450,7 +2450,7 @@ describe('DitoForm', () => {
     }
     const { admin } = await mountForm({
       schema: {
-        components: {
+        fields: {
           title: { type: 'text', default: 'Untitled', computeValue }
         }
       }
@@ -2467,7 +2467,7 @@ describe('DitoForm', () => {
   it('drops the pending load of an item when creating one', async () => {
     const pendingLoad = Promise.withResolvers()
     const { admin, routeComponent } = await mountForm({
-      schema: { components: { title: { type: 'text' } } },
+      schema: { fields: { title: { type: 'text' } } },
       data: { title: 'Emma' },
       request: ({ method = 'get', url }) => {
         if (method === 'get' && url === '/items/2') return pendingLoad.promise
@@ -2484,7 +2484,7 @@ describe('DitoForm', () => {
 
   it('loads the item when navigating to it from the create route', async () => {
     const { admin, routeComponent } = await mountForm({
-      schema: { components: { title: { type: 'text' } } },
+      schema: { fields: { title: { type: 'text' } } },
       request: ({ method = 'get', url }) => {
         if (method === 'get' && url === '/items/1') {
           return { data: { id: 1, title: 'Emma' } }
@@ -2505,17 +2505,17 @@ describe('DitoForm', () => {
       views: {
         blocks: {
           type: 'view',
-          component: {
+          field: {
             type: 'list',
             resource: { path: 'blocks' },
             forms: {
               heading: {
                 type: 'form',
-                components: { text: { type: 'text' } }
+                fields: { text: { type: 'text' } }
               },
               image: {
                 type: 'form',
-                components: { url: { type: 'url' } }
+                fields: { url: { type: 'url' } }
               }
             }
           }
@@ -2532,7 +2532,7 @@ describe('DitoForm', () => {
   it('submits without validation with `validate: false`', async () => {
     const { wrapper, request, settle } = await mountForm({
       schema: {
-        components: { title: { type: 'text', required: true } },
+        fields: { title: { type: 'text', required: true } },
         buttons: { submit: { closeForm: false } }
       },
       data: { title: '' },
@@ -2566,6 +2566,51 @@ describe('DitoForm', () => {
       })
     )
   })
+
+  it('renders and saves the deprecated `component` and `components`', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const book = { id: 1, title: 'Dune' }
+    const request = vi.fn(({ method = 'get', url, data }) =>
+      method === 'get'
+        ? { data: url === '/books' ? [book] : book }
+        : { data }
+    )
+    const admin = await mountAdmin({
+      views: {
+        books: {
+          type: 'view',
+          component: {
+            type: 'list',
+            resource: { path: 'books' },
+            form: { type: 'form', components: { title: { type: 'text' } } }
+          }
+        }
+      },
+      request
+    })
+    await admin.navigate('/books/1')
+    await settle(admin.getRouteComponent(isForm))
+    const input = admin.wrapper.find('input[name="title"]')
+    expect(input.element.value).toBe('Dune')
+    await enterValue(input, 'Emma')
+    await admin.wrapper.find('button[id$="submit"]').trigger('click')
+    await vi.waitFor(() =>
+      expect(request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          method: 'patch',
+          url: '/books/1',
+          data: { id: 1, title: 'Emma' }
+        })
+      )
+    )
+    expect(warn.mock.calls).toEqual([
+      [
+        'The `component` of views with a schema is deprecated, ' +
+        'use `field` instead.'
+      ],
+      ['Schema `components` are deprecated, use `fields` instead.']
+    ])
+  })
 })
 
 describe('deserializing', () => {
@@ -2578,7 +2623,7 @@ describe('deserializing', () => {
 
   it('deserializes the item that it loads', async () => {
     const { data } = await mountForm({
-      schema: { components: { tags } },
+      schema: { fields: { tags } },
       data: { tags: ['novel', 'classic'] }
     })
     expect(data.tags).toBe('novel, classic')
@@ -2586,7 +2631,7 @@ describe('deserializing', () => {
 
   it('deserializes the item that a save responds with', async () => {
     const { data, wrapper, submit } = await mountForm({
-      schema: { components: { tags } },
+      schema: { fields: { tags } },
       data: { tags: ['novel'] },
       request: () => ({ data: { id: 1, tags: ['novel', 'classic'] } })
     })
@@ -2598,11 +2643,11 @@ describe('deserializing', () => {
   it('deserializes the data that nested forms replace their item with', async () => {
     const { admin, data } = await mountForm({
       schema: {
-        components: {
+        fields: {
           chapters: {
             type: 'list',
             editable: true,
-            form: { type: 'form', components: { tags } }
+            form: { type: 'form', fields: { tags } }
           }
         }
       },

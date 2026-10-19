@@ -25,7 +25,7 @@ export const pageOrder: ViewSchema<Page> = {
   type: 'view',
   label: 'Page Order',
   path: 'page-order',
-  component: {
+  field: {
     type: 'list',
     label: 'Page Order',
     itemLabel: 'name',

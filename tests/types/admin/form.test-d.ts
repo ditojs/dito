@@ -8,7 +8,7 @@ describe('FormSchema assignability', () => {
   it('FormSchema<Specific> is assignable to FormSchema<any>', () => {
     const specific: FormSchema<Entry> = {
       type: 'form',
-      components: {
+      fields: {
         title: { type: 'text' }
       }
     }
@@ -18,7 +18,7 @@ describe('FormSchema assignability', () => {
   it('FormSchema<Specific> is assignable to ResolvableForm', () => {
     const specific: FormSchema<Entry> = {
       type: 'form',
-      components: {
+      fields: {
         title: { type: 'text' }
       }
     }
@@ -27,14 +27,14 @@ describe('FormSchema assignability', () => {
 
   it('Record<string, FormSchema<$Item>> is assignable to ResolvableForm<$Item>', () => {
     const module: Record<string, FormSchema<Entry>> = {
-      entryForm: { type: 'form', components: {} }
+      entryForm: { type: 'form', fields: {} }
     }
     assertType<ResolvableForm<Entry>>(module)
   })
 
   it('Record<string, FormSchema<WrongType>> is not assignable to ResolvableForm<$Item>', () => {
     const module: Record<string, FormSchema<Parent>> = {
-      parentForm: { type: 'form', components: {} }
+      parentForm: { type: 'form', fields: {} }
     }
     // @ts-expect-error FormSchema<Parent> isn't a ResolvableForm<Entry>
     assertType<ResolvableForm<Entry>>(module)
@@ -43,7 +43,7 @@ describe('FormSchema assignability', () => {
   it('() => import() pattern is assignable to ResolvableForm', () => {
     const importForm = () =>
       Promise.resolve({
-        default: { type: 'form', components: {} } as FormSchema<Entry>
+        default: { type: 'form', fields: {} } as FormSchema<Entry>
       })
     assertType<ResolvableForm<Entry>>(importForm)
   })
@@ -122,14 +122,14 @@ describe('FormSchema assignability', () => {
   it('typed FormSchema variable used as form prop in list component', () => {
     const childForm: FormSchema<Entry> = {
       type: 'form',
-      components: {
+      fields: {
         title: { type: 'text' }
       }
     }
 
     const parentForm: FormSchema<Parent> = {
       type: 'form',
-      components: {
+      fields: {
         title: { type: 'text' },
         entries: {
           type: 'list',
@@ -146,14 +146,14 @@ describe('FormSchema assignability', () => {
     assertType<FormSchema<Entry>>({
       type: 'form',
       component: Layout,
-      components: {
+      fields: {
         title: { type: 'text' }
       }
     })
     assertType<FormSchema<Entry>>({
       type: 'form',
       component: () => Promise.resolve(Layout),
-      components: {
+      fields: {
         title: { type: 'text' }
       }
     })

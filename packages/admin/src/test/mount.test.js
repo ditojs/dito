@@ -4,7 +4,7 @@ import { confirm } from '../utils/dialogs.js'
 describe('mountSchema()', () => {
   it('renders the components of the schema with the data', async () => {
     const { wrapper, data } = await mountSchema({
-      schema: { components: { title: { type: 'text' } } },
+      schema: { fields: { title: { type: 'text' } } },
       data: { title: 'Dune' }
     })
     const input = wrapper.find('input[name="title"]')
@@ -17,7 +17,7 @@ describe('mountSchema()', () => {
 describe('mountForm()', () => {
   it('loads the data of the item into the form', async () => {
     const { wrapper, data } = await mountForm({
-      schema: { components: { title: { type: 'text' } } },
+      schema: { fields: { title: { type: 'text' } } },
       data: { title: 'Dune' }
     })
     expect(data.title).toBe('Dune')

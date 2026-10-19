@@ -8,12 +8,12 @@ callbacks and all [event handlers](./events.md).
 ```js
 export default {
   type: 'view',
-  component: {
+  field: {
     type: 'list',
     resource: 'books',
     form: {
       type: 'form',
-      components: {
+      fields: {
         title: { type: 'text' },
         price: {
           type: 'number',
@@ -260,7 +260,7 @@ the running state early, e.g. before awaiting a dialog.
   async onClick(context) {
     context.isRunning = false
     const result = await context.showDialog({
-      components: { … },
+      fields: { … },
       buttons: { … }
     })
   }
@@ -793,7 +793,7 @@ Also available outside of schemas as `admin.context.showDialog()`, see
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| `options.components` | `Components` | The components of the dialog. Components that produce routes, e.g. lists with routed forms, throw. |
+| `options.fields` | `Components` | The fields of the dialog. Fields that produce routes, e.g. lists with routed forms, throw. |
 | `options.buttons` | `Buttons` | The buttons. A `submit` button resolves the dialog with its data, a button named `cancel` cancels it unless it has its own `onClick()`. |
 | `options.data` | `Record<string, any>` | The initial data. |
 | `options.settings.label` | `string` | The accessible label of the dialog. Defaults to `'Dialog'`. |
@@ -815,7 +815,7 @@ cancelled, or the value passed to [`closeDialog()`](#closedialog).
 ```js
 async onClick({ showDialog, notify }) {
   const result = await showDialog({
-    components: { quantity: { type: 'integer', label: 'Quantity' } },
+    fields: { quantity: { type: 'integer', label: 'Quantity' } },
     buttons: { cancel: {}, order: { type: 'submit', text: 'Order' } },
     data: { quantity: 1 }
   })

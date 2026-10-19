@@ -19,7 +19,7 @@ export const widgets = createWidgetView<Widget>(
       editable: true,
       form: {
         type: 'form',
-        components: {
+        fields: {
           label: { type: 'text', label: 'Label' }
         }
       }

@@ -3,17 +3,17 @@ import type { Components, ListSchema, ViewSchema } from '@ditojs/admin'
 export function createWidgetView<T>(
   itemLabel: string,
   resource: string,
-  components: Components<T>,
+  fields: Components<T>,
   listOptions: Partial<ListSchema<T>> = {}
 ): ViewSchema<T> {
   return {
     type: 'view',
-    component: {
+    field: {
       type: 'list',
       itemLabel,
       resource: { path: resource },
       editable: true,
-      form: { type: 'form', components },
+      form: { type: 'form', fields },
       ...listOptions
     }
   }

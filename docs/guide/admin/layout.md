@@ -1,6 +1,6 @@
 # Layout
 
-Components are laid out in lines, in the order of `components`. Sections group
+Fields are laid out in lines, in the order of `fields`. Sections group
 them, tabs split a form into pages, and panels add boxes to the sidebar.
 
 ## Widths and lines
@@ -9,7 +9,7 @@ Each component takes the full width of the line unless it sets `width`. A line
 holds components until their widths exceed it:
 
 ```js
-components: {
+fields: {
   title: { type: 'text' },
   price: { type: 'number', width: '1/3' },
   isAvailable: { type: 'switch', width: '1/6' },
@@ -28,7 +28,7 @@ Components sit at the top of their line. `align` places them at its
 `'center'` or `'bottom'` instead, e.g. a switch next to a textarea:
 
 ```js
-components: {
+fields: {
   summary: { type: 'textarea', lines: 4, width: '3/4' },
   isFeatured: { type: 'switch', width: '1/4', align: 'bottom' }
 }
@@ -44,7 +44,7 @@ sales: {
   label: 'Sales',
   collapsible: true,
   collapsed: ({ item }) => item.isArchived,
-  components: {
+  fields: {
     price: { type: 'number', decimals: 2, width: '1/2' },
     stock: { type: 'integer', width: '1/2' }
   },
@@ -63,7 +63,7 @@ shippingAddress: {
   type: 'section',
   label: 'Shipping Address',
   nested: true, // Edits `item.shippingAddress.street`, …
-  components: {
+  fields: {
     street: { type: 'text' },
     city: { type: 'text', width: '1/2' },
     country: { type: 'text', width: '1/2' }
@@ -76,8 +76,8 @@ The section's callbacks and events then describe that object: `item` is
 [The context](./context.md#which-item-a-context-describes).
 
 Only sections and [panels](#panels) take `nested`; other types throw for it.
-The `components` of sections can be a callback, like those of forms, see
-[Forms](./forms.md#components-that-depend-on-the-data).
+The `fields` of sections can be a callback, like those of forms, see
+[Forms](./forms.md#fields-that-depend-on-the-data).
 
 `clipboard: true` on a section copies and pastes its data, see
 [Clipboard](./forms.md#clipboard).
@@ -93,7 +93,7 @@ export const book = {
     content: {
       type: 'tab',
       label: 'Content',
-      components: {
+      fields: {
         title: { type: 'text' },
         summary: { type: 'textarea' }
       }
@@ -102,7 +102,7 @@ export const book = {
       type: 'tab',
       label: 'Sales',
       defaultTab: ({ item }) => !!item.publishedAt,
-      components: {
+      fields: {
         price: { type: 'number' },
         stock: { type: 'integer' }
       }
@@ -124,13 +124,13 @@ Panels are boxes in the sidebar, given in `panels` of any schema:
 ```js
 export const book = {
   type: 'form',
-  components: { … },
+  fields: { … },
   panels: {
     statistics: {
       type: 'panel',
       label: 'Statistics',
       sticky: true,
-      components: {
+      fields: {
         wordCount: {
           type: 'value',
           visible: true,
@@ -156,7 +156,7 @@ panels: {
     type: 'panel',
     label: 'Discount',
     data: { percent: 10 },
-    components: {
+    fields: {
       percent: { type: 'integer', suffix: '%' },
       apply: {
         type: 'button',

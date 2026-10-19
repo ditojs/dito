@@ -15,7 +15,7 @@ describe('useField()', () => {
       const blur = vi.fn()
       const { focusField, findField } = await mountSchema({
         schema: {
-          components: { title: { type: 'text', onFocus: focus, onBlur: blur } }
+          fields: { title: { type: 'text', onFocus: focus, onBlur: blur } }
         },
         data: { title: 'Emma' }
       })
@@ -32,7 +32,7 @@ describe('useField()', () => {
 
     it('focuses native element refs themselves', async () => {
       const { focusField, findField } = await mountSchema({
-        schema: { components: { summary: { type: 'textarea' } } },
+        schema: { fields: { summary: { type: 'textarea' } } },
         data: { summary: 'A novel' }
       })
       const textarea = findField('summary').element
@@ -43,7 +43,7 @@ describe('useField()', () => {
 
     it(`skips root nodes that can't be focused without an element ref`, async () => {
       const { focusField } = await mountSchema({
-        schema: { components: { gap: { type: 'spacer' } } }
+        schema: { fields: { gap: { type: 'spacer' } } }
       })
       await expect(focusField('gap')).resolves.toBe(undefined)
     })
@@ -53,7 +53,7 @@ describe('useField()', () => {
     const mountRequiredTitle = title =>
       mountSchema({
         schema: {
-          components: { title: { type: 'text', required: true } }
+          fields: { title: { type: 'text', required: true } }
         },
         data: { title }
       })
@@ -108,7 +108,7 @@ describe('useField()', () => {
     describe('validate()', () => {
       const mountIsbn = (isbn, validate) =>
         mountSchema({
-          schema: { components: { isbn: { type: 'text', validate } } },
+          schema: { fields: { isbn: { type: 'text', validate } } },
           data: { isbn }
         })
 
@@ -148,7 +148,7 @@ describe('useField()', () => {
         const { getComponent, findField, getErrors, settle } =
           await mountSchema({
             schema: {
-              components: {
+              fields: {
                 isbn: {
                   type: 'text',
                   formatValue: ({ value }) => value.replaceAll('-', ''),
@@ -177,13 +177,13 @@ describe('useField()', () => {
       it('fails the submit, also in nested forms', async () => {
         const { submit, getErrors } = await mountForm({
           schema: {
-            components: {
+            fields: {
               editions: {
                 type: 'list',
                 inlined: true,
                 form: {
                   type: 'form',
-                  components: {
+                  fields: {
                     format: { type: 'text' },
                     isbn: {
                       type: 'text',
@@ -218,7 +218,7 @@ describe('useField()', () => {
       const change = vi.fn()
       const { findField, data } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             title: {
               type: 'text',
               formatValue: ({ value }) => value?.toUpperCase(),
@@ -241,11 +241,11 @@ describe('useField()', () => {
   // `input` fires for each edit that changes the value, `change` once the edit
   // is done. Both bubble to the form with the data paths of the edited values:
   describe('input', () => {
-    const mountWithEvents = async (components, options = {}) => {
+    const mountWithEvents = async (fields, options = {}) => {
       const events = []
       const result = await mountForm({
         schema: {
-          components,
+          fields,
           onInput: ({ dataPath, value }) => {
             events.push(['input', dataPath, value])
           },
@@ -273,7 +273,7 @@ describe('useField()', () => {
           author: {
             type: 'object',
             inlined: true,
-            form: { type: 'form', components: { name: { type: 'text' } } }
+            form: { type: 'form', fields: { name: { type: 'text' } } }
           }
         },
         { data: { title: null, author: { name: null } } }
@@ -356,7 +356,7 @@ describe('useField()', () => {
             inlined: true,
             creatable: true,
             deletable: true,
-            form: { type: 'form', components: { title: { type: 'text' } } }
+            form: { type: 'form', fields: { title: { type: 'text' } } }
           }
         },
         { data: { chapters: [{ title: 'One' }] } }

@@ -12,9 +12,9 @@ defineType({ type: 'section', component, defaultNested: false })
 defineType({ type: 'list', component, sourceType: 'list' })
 defineType({ type: 'object', component, sourceType: 'object' })
 
-const createForm = (components: Record<string, any> = {}) => ({
+const createForm = (fields: Record<string, any> = {}) => ({
   type: 'form',
-  components: { title: { type: 'text' }, ...components }
+  fields: { title: { type: 'text' }, ...fields }
 })
 
 const createList = (options: Record<string, any> = {}) => ({
@@ -212,14 +212,14 @@ describe('mergeData()', () => {
     mergeData(
       {
         type: 'form',
-        components: {
+        fields: {
           main: {
             type: 'section',
-            components: { chapters: createList() }
+            fields: { chapters: createList() }
           }
         },
         tabs: {
-          layout: { type: 'tab', components: { chapters: createList() } }
+          layout: { type: 'tab', fields: { chapters: createList() } }
         }
       },
       target,
@@ -324,7 +324,7 @@ describe('mergeData()', () => {
       createForm({
         prices: createList({
           wrapPrimitives: 'price',
-          form: { type: 'form', components: { price: { type: 'text' } } }
+          form: { type: 'form', fields: { price: { type: 'text' } } }
         })
       }),
       target,

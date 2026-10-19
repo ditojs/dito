@@ -9,7 +9,7 @@ export const albums = createWidgetView<Album>(
     columns: { title: { label: 'Title' } },
     form: {
       type: 'form',
-      components: {
+      fields: {
         title: { type: 'text', label: 'Title' },
         // The tracks are edited in nested forms, which are transient: Their
         // changes only apply to the album's data.
@@ -23,7 +23,7 @@ export const albums = createWidgetView<Album>(
           form: {
             type: 'form',
             label: 'Track',
-            components: {
+            fields: {
               title: { type: 'text', label: 'Track Title' },
               length: { type: 'text', label: 'Length' },
               // Resets the data of the transient form, like actions that load
@@ -45,7 +45,7 @@ export const albums = createWidgetView<Album>(
         people: {
           type: 'panel',
           label: 'People',
-          components: {
+          fields: {
             credits: {
               type: 'list',
               label: 'Credits',
@@ -55,7 +55,7 @@ export const albums = createWidgetView<Album>(
               form: {
                 type: 'form',
                 label: 'Credit',
-                components: {
+                fields: {
                   name: { type: 'text', label: 'Credit Name' },
                   role: { type: 'text', label: 'Role' }
                 }

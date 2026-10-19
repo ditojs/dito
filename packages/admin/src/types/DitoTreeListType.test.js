@@ -14,12 +14,12 @@ import DitoDraggable from '../components/DitoDraggable.vue'
 const pageForm = {
   type: 'form',
   label: 'Page',
-  components: { title: { type: 'text' } }
+  fields: { title: { type: 'text' } }
 }
 
 function createSiteSchema(pages = {}) {
   return {
-    components: {
+    fields: {
       pages: {
         type: 'tree-list',
         label: 'Pages',
@@ -85,7 +85,7 @@ describe('DitoTreeListType', () => {
 
   it('marks the tree and its items with their roles', async () => {
     const schema = createSiteSchema()
-    schema.components.pages.collapsed = false
+    schema.fields.pages.collapsed = false
     const { findField } = await mountForm({ schema, data: site })
     const tree = findField('pages').find('[role="tree"]')
     expect(tree.attributes('aria-label')).toBe('Pages')
@@ -106,8 +106,8 @@ describe('DitoTreeListType', () => {
 
   it('expands all items with `collapsed: false`', async () => {
     const schema = createSiteSchema()
-    schema.components.pages.collapsed = false
-    schema.components.pages.children.collapsed = false
+    schema.fields.pages.collapsed = false
+    schema.fields.pages.children.collapsed = false
     const { findField } = await mountForm({ schema, data: site })
     expect(getLabels(findField('pages'))).toEqual([
       'About',
@@ -151,13 +151,13 @@ describe('DitoTreeListType', () => {
   })
 
   it.each([
-    ['open', 'trees', 'pages', 'collapsed', schema => schema.components.pages],
+    ['open', 'trees', 'pages', 'collapsed', schema => schema.fields.pages],
     [
       'expanded',
       'their children',
       'subpages',
       'collapsed: false',
-      schema => schema.components.pages.children
+      schema => schema.fields.pages.children
     ]
   ])('rejects `%s` in %s', async (key, _, name, replacement, getTree) => {
     const schema = { type: 'view', ...createSiteSchema() }
@@ -173,7 +173,7 @@ describe('DitoTreeListType', () => {
 
   it('sets up the buttons of their children', async () => {
     const schema = { type: 'view', ...createSiteSchema() }
-    schema.components.pages.children.buttons = {
+    schema.fields.pages.children.buttons = {
       order: { type: 'button', data: {} }
     }
     await expect(
@@ -183,13 +183,13 @@ describe('DitoTreeListType', () => {
 
   it('renders the `properties` of the items', async () => {
     const schema = createSiteSchema()
-    schema.components.pages.children.properties = {
+    schema.fields.pages.children.properties = {
       slug: {
         label: 'Slug',
         render: ({ item }) => item.title.toLowerCase()
       }
     }
-    schema.components.pages.children.collapsed = false
+    schema.fields.pages.children.collapsed = false
     const { findField } = await mountForm({ schema, data: site })
     const properties = findField('pages')
       .findAll('.dito-properties')
@@ -219,7 +219,7 @@ describe('DitoTreeListType', () => {
 
   it('navigates to the form of the item with the edit button', async () => {
     const schema = createSiteSchema()
-    schema.components.pages.children.editable = true
+    schema.fields.pages.children.editable = true
     const { admin, findField } = await mountForm({ schema, data: site })
     // Edit the second subpage of the first page:
     await findField('pages').findAll('.dito-button--edit')[1].trigger('click')
@@ -231,7 +231,7 @@ describe('DitoTreeListType', () => {
 
   it('shows the server errors of items in their forms', async () => {
     const schema = createSiteSchema()
-    schema.components.pages.children.editable = true
+    schema.fields.pages.children.editable = true
     const { admin, submit } = await mountForm({
       schema,
       data: site,
@@ -261,7 +261,7 @@ describe('DitoTreeListType', () => {
 
   it('shows the server errors of items in their open forms', async () => {
     const schema = createSiteSchema()
-    schema.components.pages.children.editable = true
+    schema.fields.pages.children.editable = true
     const { admin, wrapper, routeComponent } = await mountForm({
       schema,
       data: site,
@@ -303,7 +303,7 @@ describe('DitoTreeListType', () => {
 
   it('marks the items with errors within them', async () => {
     const schema = createSiteSchema()
-    schema.components.pages.collapsed = false
+    schema.fields.pages.collapsed = false
     const { findField, dataModel, data } = await mountForm({
       schema,
       data: site
@@ -328,7 +328,7 @@ describe('DitoTreeListType', () => {
 
   it('opens the items that come into the edit path', async () => {
     const schema = createSiteSchema()
-    schema.components.pages.children.editable = true
+    schema.fields.pages.children.editable = true
     const { admin, findField } = await mountForm({ schema, data: site })
     expect(getLabels(findField('pages'))).toEqual(['About', 'Contact'])
     await admin.navigate('/items/1/pages/0/subpages/1')
@@ -342,7 +342,7 @@ describe('DitoTreeListType', () => {
 
   it('provides the serialized draft and root item to the forms of its items', async () => {
     const schema = createSiteSchema()
-    schema.components.pages.children.editable = true
+    schema.fields.pages.children.editable = true
     const { admin } = await mountForm({ schema, data: site })
     await admin.navigate('/items/1/pages/0/subpages/1')
     const form = admin.getRouteComponent(isForm)
@@ -361,7 +361,7 @@ describe('DitoTreeListType', () => {
 
   it('reopens closed items of expanded trees that come into the edit path', async () => {
     const schema = createSiteSchema({ collapsed: false })
-    schema.components.pages.children.editable = true
+    schema.fields.pages.children.editable = true
     const { admin, findField } = await mountForm({ schema, data: site })
     const about = findField('pages').findAll('.dito-tree-branch')[0]
     expect(about.attributes('aria-expanded')).toBe('true')
@@ -375,7 +375,7 @@ describe('DitoTreeListType', () => {
   it('opens the items of expanded trees without edit routes', async () => {
     const { findField } = await mountForm({
       schema: {
-        components: {
+        fields: {
           pages: {
             type: 'tree-list',
             itemLabel: 'title',
@@ -415,10 +415,10 @@ describe('DitoTreeListType', () => {
   })
 
   it('ignores the edit paths of trees with similar paths', async () => {
-    const pagesSchema = createSiteSchema({ editable: true }).components.pages
+    const pagesSchema = createSiteSchema({ editable: true }).fields.pages
     const { admin, findField } = await mountForm({
       schema: {
-        components: {
+        fields: {
           pages: pagesSchema,
           drafts: { ...pagesSchema, label: 'Drafts', path: 'pages-drafts' }
         }
@@ -434,10 +434,10 @@ describe('DitoTreeListType', () => {
 
   it('passes the data path of the value to `render()` of properties', async () => {
     const schema = createSiteSchema()
-    schema.components.pages.children.properties = {
+    schema.fields.pages.children.properties = {
       slug: { render: ({ dataPath }) => dataPath }
     }
-    schema.components.pages.children.collapsed = false
+    schema.fields.pages.children.collapsed = false
     const { findField } = await mountForm({ schema, data: site })
     expect(
       findField('pages')
@@ -448,10 +448,10 @@ describe('DitoTreeListType', () => {
 
   it('shows loaded dates in properties as their type formats them', async () => {
     const schema = createSiteSchema()
-    Object.assign(schema.components.pages.children, {
+    Object.assign(schema.fields.pages.children, {
       form: {
         ...pageForm,
-        components: { ...pageForm.components, published: { type: 'date' } }
+        fields: { ...pageForm.fields, published: { type: 'date' } }
       },
       properties: { published: {} },
       collapsed: false
@@ -474,11 +474,11 @@ describe('DitoTreeListType', () => {
 
   it('disables the edit buttons of disabled trees', async () => {
     const schema = createSiteSchema({ disabled: true, draggable: true })
-    Object.assign(schema.components.pages.children, {
+    Object.assign(schema.fields.pages.children, {
       deletable: true,
       draggable: true
     })
-    schema.components.pages.collapsed = false
+    schema.fields.pages.collapsed = false
     const { findField } = await mountForm({ schema, data: site })
     const field = findField('pages')
     const removeButtons = field.findAll('.dito-button--remove')
@@ -497,12 +497,12 @@ describe('DitoTreeListType', () => {
   describe('reordering', () => {
     function createDraggableSiteSchema() {
       const schema = createSiteSchema({ draggable: true })
-      Object.assign(schema.components.pages.children, {
+      Object.assign(schema.fields.pages.children, {
         editable: true,
         deletable: true,
         draggable: true
       })
-      schema.components.pages.collapsed = false
+      schema.fields.pages.collapsed = false
       return schema
     }
 
@@ -676,7 +676,7 @@ describe('DitoTreeListType', () => {
     it('reorders the children of tree objects in the object', async () => {
       const { admin, findField, data, routeComponent } = await mountForm({
         schema: {
-          components: {
+          fields: {
             site: {
               type: 'tree-object',
               children: {
@@ -720,7 +720,7 @@ describe('DitoTreeListType', () => {
 
   describe('editing children in nested forms', () => {
     const siteSchema = {
-      components: {
+      fields: {
         site: {
           type: 'tree-object',
           children: {
@@ -851,14 +851,14 @@ describe('DitoTreeListType', () => {
 
     it('opens the grandchildren of tree objects with `collapsed: false`', async () => {
       const schema = structuredClone(siteSchema)
-      schema.components.site.children.collapsed = false
+      schema.fields.site.children.collapsed = false
       const { findField } = await mountForm({ schema, data: siteData })
       expect(getLabels(findField('site'))).toEqual(['About', 'Team', 'Contact'])
     })
 
     it('reopens the children of tree objects in the edit path', async () => {
       const schema = structuredClone(siteSchema)
-      schema.components.site.children.collapsed = false
+      schema.fields.site.children.collapsed = false
       const { admin, findField, settle } = await mountForm({
         schema,
         data: siteData
@@ -876,8 +876,8 @@ describe('DitoTreeListType', () => {
 
     it('adds no child routes to tree lists without forms', async () => {
       const schema = createSiteSchema()
-      delete schema.components.pages.form
-      schema.components.pages.children.editable = true
+      delete schema.fields.pages.form
+      schema.fields.pages.children.editable = true
       const { admin, findField } = await mountForm({ schema, data: site })
       const paths = admin.router.getRoutes().map(route => route.path)
       expect(paths.filter(path => path.includes('/pages'))).toEqual([])
@@ -920,7 +920,7 @@ describe('DitoTreeListType', () => {
       },
       {
         type: 'single-component view',
-        schema: { component: siteSchema.components.site },
+        schema: { field: siteSchema.fields.site },
         data: { test: siteData.site },
         name: 'test',
         path: '/test'
@@ -944,13 +944,13 @@ describe('DitoTreeListType', () => {
 
     describe('of tree objects with forms', () => {
       const siteWithFormSchema = {
-        ...siteSchema.components.site,
-        form: { type: 'form', components: { name: { type: 'text' } } }
+        ...siteSchema.fields.site,
+        form: { type: 'form', fields: { name: { type: 'text' } } }
       }
 
       it('open the forms of their children in single-component views', async () => {
         const { admin, settle } = await mountSchema({
-          schema: { component: siteWithFormSchema },
+          schema: { field: siteWithFormSchema },
           data: { test: siteData.site }
         })
         await admin.navigate('/test/pages/1')
@@ -961,7 +961,7 @@ describe('DitoTreeListType', () => {
 
       it(`don't add their own child routes to the routes of children`, async () => {
         const { admin } = await mountSchema({
-          schema: { components: { site: siteWithFormSchema } },
+          schema: { fields: { site: siteWithFormSchema } },
           data: siteData
         })
         const paths = admin.router
@@ -974,9 +974,9 @@ describe('DitoTreeListType', () => {
 
     it('opens the forms of the children of tree lists in a single-component view', async () => {
       const schema = createSiteSchema({ editable: true })
-      schema.components.pages.children.editable = true
+      schema.fields.pages.children.editable = true
       const { admin, findField, settle } = await mountSchema({
-        schema: { component: schema.components.pages },
+        schema: { field: schema.fields.pages },
         data: { test: site.pages }
       })
       await findButton(findField('test'), 'Contact', '.dito-button--edit')

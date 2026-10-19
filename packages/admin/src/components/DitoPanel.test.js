@@ -8,13 +8,13 @@ describe('DitoPanel', () => {
   it('edits its own data in its own form with object `data`', async () => {
     const { wrapper, data } = await mountSchema({
       schema: {
-        components: { title: { type: 'text' } },
+        fields: { title: { type: 'text' } },
         panels: {
           search: {
             type: 'panel',
             label: 'Search',
             data: { query: 'Emma' },
-            components: { query: { type: 'text' } }
+            fields: { query: { type: 'text' } }
           }
         }
       },
@@ -31,13 +31,13 @@ describe('DitoPanel', () => {
     const createData = vi.fn(() => ({ query: 'Emma' }))
     const { wrapper } = await mountSchema({
       schema: {
-        components: { title: { type: 'text' } },
+        fields: { title: { type: 'text' } },
         panels: {
           search: {
             type: 'panel',
             label: 'Search',
             data: createData,
-            components: { query: { type: 'text' } }
+            fields: { query: { type: 'text' } }
           }
         }
       },
@@ -56,7 +56,7 @@ describe('DitoPanel', () => {
     const isQueryRendered = vi.fn(({ item }) => item.query === 'Emma')
     const { wrapper } = await mountSchema({
       schema: {
-        components: { title: { type: 'text' } },
+        fields: { title: { type: 'text' } },
         panels: {
           search: {
             type: 'panel',
@@ -64,7 +64,7 @@ describe('DitoPanel', () => {
             data: createData,
             if: isRendered,
             visible: isVisible,
-            components: {
+            fields: {
               query: { type: 'text', if: isQueryRendered }
             }
           }
@@ -89,13 +89,13 @@ describe('DitoPanel', () => {
       type: 'panel',
       label,
       data: { query },
-      components: {
+      fields: {
         query: { type: 'text', if: ({ item }) => !!item.query }
       }
     })
     const { wrapper } = await mountSchema({
       schema: {
-        components: { filter: createPanel('Filter', '') },
+        fields: { filter: createPanel('Filter', '') },
         panels: {
           search: createPanel('Search', ''),
           titles: createPanel('Titles', 'Emma')
@@ -113,12 +113,12 @@ describe('DitoPanel', () => {
     const click = vi.fn()
     const { wrapper } = await mountSchema({
       schema: {
-        components: { title: { type: 'text' } },
+        fields: { title: { type: 'text' } },
         panels: {
           summary: {
             type: 'panel',
             label: 'Summary',
-            components: { notes: { type: 'textarea' } },
+            fields: { notes: { type: 'textarea' } },
             buttons: {
               refresh: {
                 type: 'button',
@@ -140,18 +140,18 @@ describe('DitoPanel', () => {
   it('disables all components and buttons inside it', async () => {
     const { wrapper } = await mountSchema({
       schema: {
-        components: { title: { type: 'text' } },
+        fields: { title: { type: 'text' } },
         panels: {
           summary: {
             type: 'panel',
             label: 'Summary',
             disabled: true,
-            components: {
+            fields: {
               notes: { type: 'textarea' },
               isRead: { type: 'checkbox' },
               details: {
                 type: 'section',
-                components: { pages: { type: 'number' } }
+                fields: { pages: { type: 'number' } }
               }
             },
             buttons: {
@@ -179,13 +179,13 @@ describe('DitoPanel', () => {
     const click = vi.fn()
     const { wrapper } = await mountSchema({
       schema: {
-        components: { title: { type: 'text' } },
+        fields: { title: { type: 'text' } },
         panels: {
           search: {
             type: 'panel',
             label: 'Search',
             data: { query: 'Emma' },
-            components: {
+            fields: {
               query: { type: 'text' },
               refresh: { type: 'button', onClick: click }
             }
@@ -205,13 +205,13 @@ describe('DitoPanel', () => {
     const click = vi.fn()
     const { wrapper } = await mountSchema({
       schema: {
-        components: { title: { type: 'text' } },
+        fields: { title: { type: 'text' } },
         panels: {
           search: {
             type: 'panel',
             label: 'Search',
             data: { id: 7, query: 'Emma' },
-            components: {
+            fields: {
               query: { type: 'text' },
               refresh: { type: 'button', onClick: click }
             }
@@ -227,7 +227,7 @@ describe('DitoPanel', () => {
   it('computes the values of its own data in its own data model', async () => {
     const { wrapper, dataModel, settle } = await mountSchema({
       schema: {
-        components: { title: { type: 'text' } },
+        fields: { title: { type: 'text' } },
         // Both can save, so both would be dirty after edits:
         buttons: { save: { type: 'submit' } },
         panels: {
@@ -236,7 +236,7 @@ describe('DitoPanel', () => {
             label: 'Stats',
             data: () => ({ words: 2 }),
             buttons: { apply: { type: 'submit' } },
-            components: {
+            fields: {
               words: { type: 'number' },
               pages: {
                 type: 'number',
@@ -263,12 +263,12 @@ describe('DitoPanel', () => {
   it('gives the callbacks of its own data the contexts of its form', async () => {
     const { wrapper } = await mountForm({
       schema: {
-        components: { title: { type: 'text' } },
+        fields: { title: { type: 'text' } },
         panels: {
           links: {
             type: 'panel',
             data: () => ({}),
-            components: {
+            fields: {
               url: {
                 type: 'text',
                 computeValue: ({ getResourceUrl }) => getResourceUrl()
@@ -295,13 +295,13 @@ describe('DitoPanel', () => {
     const click = vi.fn()
     const { wrapper, getComponent } = await mountSchema({
       schema: {
-        components: { title: { type: 'text' } },
+        fields: { title: { type: 'text' } },
         panels: {
           search: {
             type: 'panel',
             label: 'Search',
             data: { query: '' },
-            components: { query: { type: 'text', required: true } },
+            fields: { query: { type: 'text', required: true } },
             buttons: {
               check: { type: 'button', text: 'Check', onClick: click },
               apply: { type: 'submit' }

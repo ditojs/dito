@@ -34,7 +34,7 @@ export const assets = createWidgetView<AssetWidget>(
 // Forms that download their data with its files as a zip, and upload it again:
 export const interchange: ViewSchema<AssetWidget> = {
   type: 'view',
-  component: {
+  field: {
     type: 'list',
     itemLabel: 'files',
     resource: { path: 'asset-widgets' },
@@ -42,7 +42,7 @@ export const interchange: ViewSchema<AssetWidget> = {
     form: {
       type: 'form',
       clipboard: { interchange: true },
-      components: {
+      fields: {
         files: {
           type: 'upload',
           extensions: 'gif,jpg,jpeg,png,webp',
@@ -59,14 +59,14 @@ export const interchange: ViewSchema<AssetWidget> = {
 
 export const nestedAssets: ViewSchema<NestedAssetWidget> = {
   type: 'view',
-  component: {
+  field: {
     type: 'list',
     itemLabel: 'sections',
     resource: { path: 'nested-asset-widgets' },
     editable: true,
     form: {
       type: 'form',
-      components: {
+      fields: {
         sections: {
           type: 'list',
           label: 'Sections',
@@ -74,7 +74,7 @@ export const nestedAssets: ViewSchema<NestedAssetWidget> = {
           creatable: true,
           form: {
             type: 'form',
-            components: {
+            fields: {
               items: {
                 type: 'list',
                 label: 'Items',
@@ -82,7 +82,7 @@ export const nestedAssets: ViewSchema<NestedAssetWidget> = {
                 creatable: true,
                 form: {
                   type: 'form',
-                  components: {
+                  fields: {
                     items: {
                       type: 'list',
                       label: 'Sub-items',
@@ -90,7 +90,7 @@ export const nestedAssets: ViewSchema<NestedAssetWidget> = {
                       creatable: true,
                       form: {
                         type: 'form',
-                        components: {
+                        fields: {
                           image: {
                             type: 'upload',
                             extensions: 'png',

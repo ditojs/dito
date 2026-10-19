@@ -40,7 +40,7 @@ describe('DitoSchemaPane', () => {
     stubLayout()
     const { wrapper, findContainer, data, settle } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           hasSubtitle: { type: 'checkbox', label: false, width: '1/3' },
           subtitle: {
             type: 'text',
@@ -71,13 +71,13 @@ describe('DitoSchemaPane', () => {
     stubLayout()
     const { wrapper, findContainer } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           name: { type: 'text', label: 'Name', width: '1/3' },
           captain: { type: 'checkbox', label: false, width: '1/3' },
           details: {
             type: 'section',
             width: '1/3',
-            components: { coach: { type: 'text' } }
+            fields: { coach: { type: 'text' } }
           }
         }
       },
@@ -99,7 +99,7 @@ describe('DitoSchemaPane', () => {
       'sections',
       {
         type: 'section',
-        components: { title: { type: 'text', label: 'Title' } }
+        fields: { title: { type: 'text', label: 'Title' } }
       }
     ],
     [
@@ -110,7 +110,7 @@ describe('DitoSchemaPane', () => {
         inlined: true,
         form: {
           type: 'form',
-          components: { title: { type: 'text', label: 'Title' } }
+          fields: { title: { type: 'text', label: 'Title' } }
         }
       }
     ]
@@ -118,7 +118,7 @@ describe('DitoSchemaPane', () => {
     stubLayout()
     const { wrapper, findContainer } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           inStock: { type: 'checkbox', label: false, width: '1/2' },
           details: { ...schema, width: '1/2' }
         }
@@ -135,7 +135,7 @@ describe('DitoSchemaPane', () => {
     stubLayout({ 1: 20 })
     const { wrapper, findContainer } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           weight: { type: 'slider', label: 'Weight', width: '1/3' },
           isVariable: {
             type: 'switch',
@@ -158,7 +158,7 @@ describe('DitoSchemaPane', () => {
     stubLayout()
     const { wrapper, findContainer, data, settle } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           name: { type: 'text', label: 'Name', width: '1/3' },
           captain: { type: 'checkbox', label: false, width: '1/3' },
           coach: {
@@ -196,7 +196,7 @@ describe('DitoSchemaPane', () => {
     })
     const { wrapper, findContainer } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           name: { type: 'text', label: 'Name', width: '1/2' },
           captain: { type: 'checkbox', label: false, width: '1/2' }
         }
@@ -215,13 +215,13 @@ describe('DitoSchemaPane', () => {
     stubLayout()
     const { wrapper } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           coach: {
             type: 'object',
             inlined: true,
             form: {
               type: 'form',
-              components: { name: { type: 'text', if: false } }
+              fields: { name: { type: 'text', if: false } }
             }
           }
         }
@@ -240,18 +240,18 @@ describe('DitoSchemaPane', () => {
   it('updates its positions when its components change', async () => {
     const { wrapper, data, settle } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           blocks: {
             type: 'list',
             inlined: true,
             forms: {
               heading: {
                 type: 'form',
-                components: { text: { type: 'text' } }
+                fields: { text: { type: 'text' } }
               },
               image: {
                 type: 'form',
-                components: { url: { type: 'url' }, caption: { type: 'text' } }
+                fields: { url: { type: 'url' }, caption: { type: 'text' } }
               }
             }
           }
@@ -282,7 +282,7 @@ describe('DitoSchemaPane', () => {
             tabs: {
               details: {
                 type: 'tab',
-                components: { title: { type: 'text' } }
+                fields: { title: { type: 'text' } }
               },
               // Tabs may only have panels, without components:
               notes: { type: 'tab' }
@@ -318,7 +318,7 @@ describe('DitoSchemaPane', () => {
 
   it(`doesn't navigate when focusing components outside of tabs`, async () => {
     const { admin, focusField } = await mountSchema({
-      schema: { components: { title: { type: 'text' } } },
+      schema: { fields: { title: { type: 'text' } } },
       data: { title: 'Emma' }
     })
     await focusField('title')

@@ -30,7 +30,7 @@ export const books = createWidgetView<Book>(
       form: {
         type: 'form',
         label: 'Chapter',
-        components: {
+        fields: {
           title: { type: 'text', label: 'Chapter Title' },
           // Stored with its prefix, which `serializeValue()` adds when saving.
           code: {
@@ -63,7 +63,7 @@ export const books = createWidgetView<Book>(
       form: {
         type: 'form',
         label: 'Volume',
-        components: {
+        fields: {
           title: { type: 'text', label: 'Volume Title' }
         }
       },
@@ -74,7 +74,7 @@ export const books = createWidgetView<Book>(
         form: {
           type: 'form',
           label: 'Part',
-          components: {
+          fields: {
             title: { type: 'text', label: 'Part Title' }
           }
         }

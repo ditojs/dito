@@ -20,7 +20,7 @@ vi.mock('@simplewebauthn/browser', async () =>
 
 const { getUrl, getAuthentication, post, logIn, setUpTotp } = startPasskeysApp()
 
-const views = { books: { type: 'view', label: 'Books', components: {} } }
+const views = { books: { type: 'view', label: 'Books', fields: {} } }
 
 vi.setConfig({ testTimeout: 30_000 })
 

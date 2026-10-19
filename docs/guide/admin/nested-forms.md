@@ -8,7 +8,7 @@ its data.
 ```js
 export const book = {
   type: 'form',
-  components: {
+  fields: {
     title: { type: 'text' },
     chapters: {
       type: 'list',
@@ -20,7 +20,7 @@ export const book = {
       form: {
         type: 'form',
         label: 'Chapter',
-        components: {
+        fields: {
           title: { type: 'text', required: true },
           text: { type: 'markup' }
         }
@@ -59,7 +59,7 @@ Nested forms don't save, so they fire `onApply()` instead of `onSuccess()`:
 form: {
   type: 'form',
   label: 'Chapter',
-  components: { … },
+  fields: { … },
   onApply({ item, isCreating }) {
     console.log(`${isCreating ? 'Added' : 'Changed'} chapter ${item.title}`)
   },
@@ -108,7 +108,7 @@ keywords: {
   editable: true,
   form: {
     type: 'form',
-    components: { keyword: { type: 'text' } }
+    fields: { keyword: { type: 'text' } }
   }
 }
 ```

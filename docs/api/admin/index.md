@@ -29,8 +29,8 @@ For an introduction, see the [admin guide](../../guide/admin/index.md).
 | ------ | ----------- |
 | `default`, `DitoAdmin` | The [DitoAdmin](./admin.md) class |
 | `defineType()` | Defines a custom component type, see [`defineType()`](./types.md#definetype) |
-| `DitoSchemaField` | Places a component of a section or form with `component`, see [Laying out fields](../../guide/admin/custom-types.md#laying-out-fields). `DitoField` is its deprecated alias until 6.0 |
-| `DitoPane` | Places components of a section or form with `component` in rows, see [Laying out fields](../../guide/admin/custom-types.md#laying-out-fields) |
+| `DitoSchemaField` | Places a field of a section or form with `component`, see [Laying out fields](../../guide/admin/custom-types.md#laying-out-fields). `DitoField` is its deprecated alias until 6.0 |
+| `DitoPane` | Places fields of a section or form with `component` in rows, see [Laying out fields](../../guide/admin/custom-types.md#laying-out-fields) |
 | `useDitoContext()` | Returns the [context](./context.md) of the form or page, or of the list item, that the calling component is in |
 
 All other exports are TypeScript types, see [Types](./types.md).

@@ -8,7 +8,7 @@ describe('DitoTrail', () => {
   })
 
   const views = {
-    books: { type: 'view', label: 'Books', components: {} }
+    books: { type: 'view', label: 'Books', fields: {} }
   }
 
   // Dispatches a click on the first trail link, like the browser does, and
@@ -55,13 +55,13 @@ describe('DitoTrail', () => {
   it('lists the routes by level when navigating', async () => {
     const { admin } = await mountForm({
       schema: {
-        components: {
+        fields: {
           chapters: {
             type: 'list',
             form: {
               type: 'form',
               label: 'Chapter',
-              components: { title: { type: 'text' } }
+              fields: { title: { type: 'text' } }
             }
           }
         }
@@ -85,7 +85,7 @@ describe('DitoTrail', () => {
   it('shows the labels of views as text', async () => {
     const admin = await mountAdmin({
       views: {
-        books: { type: 'view', label: 'Books & <i>Films</i>', components: {} }
+        books: { type: 'view', label: 'Books & <i>Films</i>', fields: {} }
       }
     })
     await admin.navigate('/books')
@@ -97,13 +97,13 @@ describe('DitoTrail', () => {
   it('shows the text of `{ html }` form labels', async () => {
     const { admin } = await mountForm({
       schema: {
-        components: {
+        fields: {
           chapters: {
             type: 'list',
             form: {
               type: 'form',
               label: { html: '<b>Chapter</b>' },
-              components: { title: { type: 'text' } }
+              fields: { title: { type: 'text' } }
             }
           }
         }

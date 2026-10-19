@@ -2,7 +2,7 @@ import { mountForm, settle } from '../test/mount.js'
 
 function getChaptersSchema(form = {}) {
   return {
-    components: {
+    fields: {
       chapters: {
         type: 'list',
         editable: true,
@@ -10,7 +10,7 @@ function getChaptersSchema(form = {}) {
         itemLabel: 'title',
         form: {
           type: 'form',
-          components: { title: { type: 'text' } },
+          fields: { title: { type: 'text' } },
           ...form
         }
       }

@@ -8,12 +8,12 @@ export default Object.fromEntries(
       type: 'view',
       label,
       path,
-      component: {
+      field: {
         type: 'object',
         resource: 'cases/1',
         form: {
           type: 'form',
-          components: { [name]: schema }
+          fields: { [name]: schema }
         }
       }
     }

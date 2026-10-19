@@ -10,11 +10,11 @@ describe('DitoSectionType', () => {
   it('renders its components with the data of the parent', async () => {
     const { findField, findContainer, data } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           details: {
             type: 'section',
             label: 'Details',
-            components: {
+            fields: {
               title: { type: 'text' },
               pages: { type: 'number' }
             }
@@ -40,7 +40,7 @@ describe('DitoSectionType', () => {
   it('displays its label in its container with a compact form', async () => {
     const { findContainer } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           dimensions: {
             type: 'section',
             label: 'Dimensions',
@@ -48,7 +48,7 @@ describe('DitoSectionType', () => {
             form: {
               type: 'form',
               compact: true,
-              components: { width: { type: 'number' } }
+              fields: { width: { type: 'number' } }
             }
           }
         }
@@ -65,11 +65,11 @@ describe('DitoSectionType', () => {
   it('holds its data in an object with `nested`', async () => {
     const { findField, data, submit } = await mountForm({
       schema: {
-        components: {
+        fields: {
           dimensions: {
             type: 'section',
             nested: true,
-            components: {
+            fields: {
               width: { type: 'number' },
               height: { type: 'number', default: 20 }
             }
@@ -91,11 +91,11 @@ describe('DitoSectionType', () => {
   it(`has no value with \`default: undefined\` without \`nested\``, async () => {
     const { wrapper, data } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           details: {
             type: 'section',
             default: undefined,
-            components: { title: { type: 'text' } }
+            fields: { title: { type: 'text' } }
           }
         }
       }
@@ -108,15 +108,15 @@ describe('DitoSectionType', () => {
   it('borders its content below its label', async () => {
     const { findField } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           details: {
             type: 'section',
             label: 'Details',
-            components: { title: { type: 'text' } }
+            fields: { title: { type: 'text' } }
           },
           extras: {
             type: 'section',
-            components: { pages: { type: 'number' } }
+            fields: { pages: { type: 'number' } }
           }
         }
       }
@@ -130,11 +130,11 @@ describe('DitoSectionType', () => {
   it('marks itself as a region with its label', async () => {
     const { findField } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           details: {
             type: 'section',
             label: 'Details',
-            components: { title: { type: 'text' } }
+            fields: { title: { type: 'text' } }
           }
         }
       }
@@ -147,11 +147,11 @@ describe('DitoSectionType', () => {
   it('labels its region with the text of `{ html }` labels', async () => {
     const { findField } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           details: {
             type: 'section',
             label: { html: '<b>Details</b> &amp; notes' },
-            components: { title: { type: 'text' } }
+            fields: { title: { type: 'text' } }
           }
         }
       }
@@ -165,14 +165,14 @@ describe('DitoSectionType', () => {
     const onToggle = vi.fn()
     const { findField, findContainer } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           details: {
             type: 'section',
             label: 'Details',
             collapsible: true,
             collapsed: true,
             onToggle,
-            components: { title: { type: 'text' } }
+            fields: { title: { type: 'text' } }
           }
         }
       },
@@ -203,13 +203,13 @@ describe('DitoSectionType', () => {
     const { findField } = await mountForm({
       schema: {
         onChange: onOuterChange,
-        components: {
+        fields: {
           details: {
             type: 'section',
             onInitialize,
             onChange,
             onClick,
-            components: {
+            fields: {
               title: { type: 'text' },
               check: { type: 'button', label: 'Check' }
             }
@@ -232,12 +232,12 @@ describe('DitoSectionType', () => {
   it('renders components conditionally with `if`', async () => {
     const { findField, data, settle } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           isSeries: { type: 'checkbox' },
           series: {
             type: 'section',
             if: ({ item }) => item.isSeries,
-            components: { volume: { type: 'number' } }
+            fields: { volume: { type: 'number' } }
           }
         }
       },
@@ -254,12 +254,12 @@ describe('DitoSectionType', () => {
   it('disables all components inside it, also in nested sections', async () => {
     const { wrapper, settle } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           isLocked: { type: 'checkbox' },
           details: {
             type: 'section',
             disabled: ({ item }) => item.isLocked,
-            components: {
+            fields: {
               title: { type: 'text' },
               isRead: { type: 'checkbox' },
               format: { type: 'select', options: ['hardcover', 'e-book'] },
@@ -267,7 +267,7 @@ describe('DitoSectionType', () => {
               dimensions: {
                 type: 'section',
                 nested: true,
-                components: { width: { type: 'number' } }
+                fields: { width: { type: 'number' } }
               }
             }
           }
@@ -300,13 +300,13 @@ describe('DitoSectionType', () => {
   it('reveals the components with errors in collapsed sections', async () => {
     const { findField, submit, getErrors } = await mountForm({
       schema: {
-        components: {
+        fields: {
           details: {
             type: 'section',
             label: 'Details',
             collapsible: true,
             collapsed: true,
-            components: { title: { type: 'text', required: true } }
+            fields: { title: { type: 'text', required: true } }
           }
         }
       },
@@ -328,19 +328,19 @@ describe('DitoSectionType', () => {
   it('reveals the components with errors in sections of list items', async () => {
     const { findField, submit, getErrors } = await mountForm({
       schema: {
-        components: {
+        fields: {
           chapters: {
             type: 'list',
             inlined: true,
             form: {
               type: 'form',
-              components: {
+              fields: {
                 details: {
                   type: 'section',
                   label: 'Details',
                   collapsible: true,
                   collapsed: true,
-                  components: { title: { type: 'text', required: true } }
+                  fields: { title: { type: 'text', required: true } }
                 }
               }
             }
@@ -362,12 +362,12 @@ describe('DitoSectionType', () => {
   it('shares the width of its container with its components', async () => {
     const { findContainer } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           details: {
             type: 'section',
             label: 'Details',
             width: '1/2',
-            components: {
+            fields: {
               title: { type: 'text', width: '1/4' },
               subtitle: { type: 'text', width: '1/2' }
             }
@@ -384,20 +384,20 @@ describe('DitoSectionType', () => {
     expect(getMobileBasis('subtitle')).toBe('100%')
   })
 
-  it('passes the items of its data to `components()`', async () => {
+  it('passes the items of its data to `fields()`', async () => {
     const contexts = []
     const { data } = await mountForm({
       schema: {
-        components: {
+        fields: {
           publisher: {
             type: 'object',
             inlined: true,
             form: {
               type: 'form',
-              components: {
+              fields: {
                 address: {
                   type: 'section',
-                  components: ({ item, parentItem }) => {
+                  fields: ({ item, parentItem }) => {
                     contexts.push({ item, parentItem })
                     return { city: { type: 'text' } }
                   }
@@ -416,17 +416,17 @@ describe('DitoSectionType', () => {
   })
 
   it.each([
-    ['tabs', { tabs: { main: { type: 'tab', components: {} } } }],
+    ['tabs', { tabs: { main: { type: 'tab', fields: {} } } }],
     ['collapsible', { collapsible: true }],
     ['clipboard', { clipboard: true }]
   ])('rejects `%s` together with `component`', async (key, options) => {
     const schema = {
       type: 'view',
-      components: {
+      fields: {
         details: {
           type: 'section',
           component: { render: () => null },
-          components: { title: { type: 'text' } },
+          fields: { title: { type: 'text' } },
           ...options
         }
       }

@@ -3,7 +3,7 @@ import { flushPromises } from '@vue/test-utils'
 import { mountAdmin, isForm, settle, enterValue } from '../test/mount.js'
 
 describe('DitoAccount', () => {
-  const views = { test: { type: 'view', label: 'Test', components: {} } }
+  const views = { test: { type: 'view', label: 'Test', fields: {} } }
 
   const openMenu = async admin => {
     const account = admin.wrapper.find('.dito-account')
@@ -68,7 +68,7 @@ describe('DitoAccount', () => {
             settings: async () => ({
               type: 'form',
               label: 'Account',
-              components: {
+              fields: {
                 username: { type: 'text' },
                 email: { type: 'email' }
               }

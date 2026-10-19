@@ -13,12 +13,12 @@ async function mountMenu() {
       books: {
         type: 'view',
         label: 'Books',
-        components: { title: { type: 'text' } }
+        fields: { title: { type: 'text' } }
       },
       authors: {
         type: 'view',
         label: 'Authors',
-        components: { name: { type: 'text' } }
+        fields: { name: { type: 'text' } }
       }
     }
   })
@@ -37,19 +37,19 @@ async function mountSidebar() {
       books: {
         type: 'view',
         label: 'Books',
-        components: {
+        fields: {
           title: { type: 'text' },
           summary: {
             type: 'panel',
             label: 'Summary',
-            components: { notes: { type: 'textarea' } }
+            fields: { notes: { type: 'textarea' } }
           }
         }
       },
       authors: {
         type: 'view',
         label: 'Authors',
-        components: { name: { type: 'text' } }
+        fields: { name: { type: 'text' } }
       }
     }
   })

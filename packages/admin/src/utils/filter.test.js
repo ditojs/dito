@@ -27,7 +27,7 @@ function createBookFilters() {
     },
     genres: {
       width: '1/2',
-      components: {
+      fields: {
         genres: {
           type: 'multiselect',
           options: ['fiction', 'poetry', 'essay']
@@ -35,7 +35,7 @@ function createBookFilters() {
       }
     },
     available: {
-      components: {
+      fields: {
         available: {
           type: 'checkbox',
           label: 'Only Available'
@@ -111,41 +111,41 @@ describe('createFiltersPanel()', () => {
       disabled: false
     })
     // Filter data keys are prefixed with `$` to not clash with other data:
-    expect(Object.keys(panel.components)).toEqual([
+    expect(Object.keys(panel.fields)).toEqual([
       '$title',
       '$author',
       '$published',
       '$genres',
       '$available'
     ])
-    expect(panel.components.$genres).toMatchObject({
+    expect(panel.fields.$genres).toMatchObject({
       type: 'object',
       label: 'Genres',
       width: '1/2',
       inlined: true
     })
-    expect(panel.components.$genres.default()).toEqual({})
+    expect(panel.fields.$genres.default()).toEqual({})
   })
 
   it('keeps explicit filter labels and derives the others from the name', () => {
     const { panel } = createPanel()
-    expect(panel.components.$published.label).toBe('Published Between')
-    expect(panel.components.$author.label).toBe('Author')
+    expect(panel.fields.$published.label).toBe('Published Between')
+    expect(panel.fields.$author.label).toBe('Author')
   })
 
   it('converts the labels of filter components to placeholders', () => {
     const { panel } = createPanel()
-    const { components } = panel.components.$title.form
-    expect(components.operator).toMatchObject({
+    const { fields } = panel.fields.$title.form
+    expect(fields.operator).toMatchObject({
       label: false,
       placeholder: 'Operator'
     })
-    expect(components.text).toMatchObject({
+    expect(fields.text).toMatchObject({
       label: false,
       placeholder: 'Text'
     })
     // Custom components keep their own labels as placeholders:
-    expect(panel.components.$available.form.components.available).toMatchObject(
+    expect(panel.fields.$available.form.fields.available).toMatchObject(
       { label: false, placeholder: 'Only Available' }
     )
   })
@@ -155,7 +155,7 @@ describe('createFiltersPanel()', () => {
     const { panel } = createPanel({
       filters: {
         price: {
-          components: {
+          fields: {
             from: { type: 'number', label: { text: 'From & <up>' } },
             to: { type: 'number', label: { html: '<b>To</b> &amp; under' } },
             currency: { type: 'text', label }
@@ -163,15 +163,38 @@ describe('createFiltersPanel()', () => {
         }
       }
     })
-    const { components } = panel.components.$price.form
-    expect(components.from.placeholder).toBe('From & <up>')
-    expect(components.to.placeholder).toBe('To & under')
-    expect(components.currency.placeholder).toBe(label)
+    const { fields } = panel.fields.$price.form
+    expect(fields.from.placeholder).toBe('From & <up>')
+    expect(fields.to.placeholder).toBe('To & under')
+    expect(fields.currency.placeholder).toBe(label)
+  })
+
+  it('supports the deprecated `components` of filters, warning once', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const { panel } = createPanel({
+      filters: {
+        price: {
+          components: {
+            min: { type: 'number', label: 'Min' },
+            max: { type: 'number' }
+          }
+        }
+      },
+      query: { filter: 'price:10,20' }
+    })
+    const { fields } = panel.fields.$price.form
+    expect(fields.min).toMatchObject({ type: 'number', placeholder: 'Min' })
+    expect(fields.max.placeholder).toBe('Max')
+    expect(panel.data()).toEqual({ $price: { min: 10, max: 20 } })
+    expect(warn.mock.calls).toEqual([
+      ['Schema `components` are deprecated, use `fields` instead.']
+    ])
+    warn.mockRestore()
   })
 
   it('leaves out the operator component of text filters without operators', () => {
     const { panel } = createPanel()
-    expect(Object.keys(panel.components.$author.form.components)).toEqual([
+    expect(Object.keys(panel.fields.$author.form.fields)).toEqual([
       'text'
     ])
   })
@@ -180,12 +203,12 @@ describe('createFiltersPanel()', () => {
     const { panel } = createPanel({
       defaults: { text: { trim: true } }
     })
-    expect(panel.components.$author.form.components.text.trim).toBe(true)
+    expect(panel.fields.$author.form.fields.text.trim).toBe(true)
   })
 
   it('creates a panel without components for empty filters', () => {
     const { panel } = createPanel({ filters: { sticky: false } })
-    expect(panel.components).toEqual({})
+    expect(panel.fields).toEqual({})
     expect(panel.data()).toEqual({})
   })
 

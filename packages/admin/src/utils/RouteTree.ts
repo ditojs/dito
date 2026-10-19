@@ -350,7 +350,7 @@ export class SourceNode extends RouteNode {
     return (
       parent instanceof ViewNode &&
       isSingleComponentView(parent.schema) &&
-      schema === parent.schema.component
+      schema === parent.schema.field
     )
   }
 
@@ -587,7 +587,7 @@ function forEachSource(
     const componentDataPath = appendDataPath(dataPath, name)
     if (getSourceType(component)) {
       callback(component, componentDataPath)
-    } else if (component.components) {
+    } else if (component.fields) {
       // Only nested sections hold the data of their components:
       forEachSource(
         component,
@@ -676,7 +676,7 @@ function isBeyondMaxDepth(
 function getForms(schema: Schema): Schema[] {
   return schema.forms
     ? Object.values(schema.forms)
-    : [schema.form ?? schema.components].filter(Boolean)
+    : [schema.form ?? schema.fields].filter(Boolean)
 }
 
 // Step through the sources that `dataPath` leads to, with the key of the item

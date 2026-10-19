@@ -1,12 +1,12 @@
 # Views
 
 Views are the pages of the admin. Each view gets an entry in the navigation
-menu and a URL, and holds the components that it displays. The `views` option
+menu and a URL, and holds the fields that it displays. The `views` option
 of `DitoAdmin` maps names to views, or to menus that group them.
 
-## Single-component views
+## Single-field views
 
-Most views display one list. Give the view a `component`, and the view acts on
+Most views display one list. Give the view a `field`, and the view acts on
 that list: the list fills the page without a label of its own, and the forms
 of its items are routed under the view's path, e.g. `/admin/authors/1`.
 
@@ -15,7 +15,7 @@ of its items are routed under the view's path, e.g. `/admin/authors/1`.
 export const authors = {
   type: 'view',
   label: 'Authors',
-  component: {
+  field: {
     type: 'list',
     resource: 'authors',
     columns: ['name'],
@@ -29,9 +29,9 @@ export const authors = {
 The view's name, its key in `views`, sets its path: `authors` is served at
 `/admin/authors`. `path` sets another one.
 
-## Views with several components
+## Views with several fields
 
-With `components`, a view lays out several components like a form, e.g. two
+With `fields`, a view lays out several fields like a form, e.g. two
 lists side by side:
 
 ```js
@@ -39,7 +39,7 @@ lists side by side:
 export const orders = {
   type: 'view',
   label: 'Orders',
-  components: {
+  fields: {
     openOrders: {
       type: 'list',
       label: 'Open',
@@ -65,7 +65,7 @@ export const orders = {
 The forms of such lists are routed under the view's path and the list's name,
 e.g. `/admin/orders/open-orders/12` with `app.normalizePaths`.
 
-A view's components edit the view's own data, which it doesn't load or save
+A view's fields edit the view's own data, which it doesn't load or save
 itself: lists with a `resource` load and save their items, and
 [buttons](./buttons.md) can send requests. Views without a button of type
 `submit` are never dirty, see
@@ -74,7 +74,7 @@ itself: lists with a `resource` load and save their items, and
 ## Pages
 
 A `page` is a view whose content is a Vue component, e.g. for tools that don't
-edit data through components:
+edit data through fields:
 
 ```js
 // src/admin/views/cachePurge.js
@@ -158,7 +158,7 @@ export const users = {
   type: 'view',
   label: 'Users',
   if: ({ user }) => user.hasRole('admin'),
-  component: { … }
+  field: { … }
 }
 ```
 
@@ -192,7 +192,7 @@ new DitoAdmin('#dito-admin', {
 export default {
   type: 'form',
   label: 'Account',
-  components: {
+  fields: {
     email: {
       type: 'email',
       label: 'Email',

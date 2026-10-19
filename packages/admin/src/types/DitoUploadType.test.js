@@ -41,7 +41,7 @@ describe('DitoUploadType', () => {
   it('lists the stored files with their size', async () => {
     const { findField } = await mountForm({
       schema: {
-        components: { attachments: { type: 'upload', multiple: true } }
+        fields: { attachments: { type: 'upload', multiple: true } }
       },
       data: { attachments: [cover, scan] }
     })
@@ -54,7 +54,7 @@ describe('DitoUploadType', () => {
   it('sends single files with a `multiple()` callback that is false', async () => {
     const { submit } = await mountForm({
       schema: {
-        components: {
+        fields: {
           attachment: { type: 'upload', multiple: ({ item }) => item.isGallery }
         }
       },
@@ -67,7 +67,7 @@ describe('DitoUploadType', () => {
   it('renders files with `render()`', async () => {
     const { findField } = await mountForm({
       schema: {
-        components: {
+        fields: {
           attachments: {
             type: 'upload',
             multiple: true,
@@ -90,7 +90,7 @@ describe('DitoUploadType', () => {
         tabs: {
           files: {
             type: 'tab',
-            components: { file: { type: 'upload', label: 'File' } }
+            fields: { file: { type: 'upload', label: 'File' } }
           }
         }
       }
@@ -103,7 +103,7 @@ describe('DitoUploadType', () => {
   it('links files to the URLs of `downloadUrl()`', async () => {
     const { findField } = await mountForm({
       schema: {
-        components: {
+        fields: {
           file: {
             type: 'upload',
             downloadUrl: ({ value }) => `/files/${value.name}`
@@ -123,7 +123,7 @@ describe('DitoUploadType', () => {
     const confirm = stubConfirm(true)
     const { findField, data, routeComponent } = await mountForm({
       schema: {
-        components: {
+        fields: {
           attachments: { type: 'upload', multiple: true, deletable: true },
           file: { type: 'upload', deletable: true }
         }
@@ -148,7 +148,7 @@ describe('DitoUploadType', () => {
     stubConfirm(true)
     const { admin, findField } = await mountForm({
       schema: {
-        components: { file: { type: 'upload', deletable: true } }
+        fields: { file: { type: 'upload', deletable: true } }
       },
       data: { file: { ...scan, name: 'Tom & Jerry.pdf' } }
     })
@@ -169,7 +169,7 @@ describe('DitoUploadType', () => {
     const confirm = stubConfirm(false)
     const { findField, data } = await mountForm({
       schema: {
-        components: {
+        fields: {
           attachments: { type: 'upload', multiple: true, deletable: true }
         }
       },
@@ -187,7 +187,7 @@ describe('DitoUploadType', () => {
     const confirm = stubConfirm()
     const { findField, data } = await mountForm({
       schema: {
-        components: {
+        fields: {
           attachments: { type: 'upload', multiple: true, deletable: true },
           file: { type: 'upload', deletable: true }
         }
@@ -216,7 +216,7 @@ describe('DitoUploadType', () => {
     const onChange = vi.fn()
     const { findField, getComponent, data, routeComponent } = await mountForm({
       schema: {
-        components: {
+        fields: {
           attachments: { type: 'upload', multiple: true, onChange }
         }
       },
@@ -266,7 +266,7 @@ describe('DitoUploadType', () => {
   it('removes files that fail to upload and notifies the error', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
     const { getComponent, data } = await mountForm({
-      schema: { components: { file: { type: 'upload' } } }
+      schema: { fields: { file: { type: 'upload' } } }
     })
     const upload = getComponent('file')
     const uploadFile = createUploadFile(cover)
@@ -286,7 +286,7 @@ describe('DitoUploadType', () => {
     async function submitWhileUploading() {
       const { wrapper, getComponent, request, settle } = await mountForm({
         schema: {
-          components: { attachments: { type: 'upload', multiple: true } }
+          fields: { attachments: { type: 'upload', multiple: true } }
         },
         data: { attachments: [scan] },
         request: ({ data }) => ({ data })
@@ -345,7 +345,7 @@ describe('DitoUploadType', () => {
 
   it('posts uploads to the upload resource of the data path', async () => {
     const { getComponent } = await mountForm({
-      schema: { components: { coverImage: { type: 'upload' } } },
+      schema: { fields: { coverImage: { type: 'upload' } } },
       data: { coverImage: null }
     })
     expect(getComponent('coverImage').uploadPath).toBe(
@@ -355,7 +355,7 @@ describe('DitoUploadType', () => {
 
   it('posts uploads with the API headers but without `Content-Type`', async () => {
     const { wrapper, getComponent } = await mountForm({
-      schema: { components: { file: { type: 'upload' } } },
+      schema: { fields: { file: { type: 'upload' } } },
       data: { file: null },
       api: { headers: { Authorization: 'Bearer secret' } }
     })
@@ -371,7 +371,7 @@ describe('DitoUploadType', () => {
 
   it('posts uploads with credentials for CORS credentials', async () => {
     const { getComponent } = await mountForm({
-      schema: { components: { file: { type: 'upload' } } },
+      schema: { fields: { file: { type: 'upload' } } },
       data: { file: null },
       api: { cors: { credentials: true } }
     })
@@ -382,7 +382,7 @@ describe('DitoUploadType', () => {
 
   it(`doesn't post uploads in views without resource`, async () => {
     const { getComponent, findField } = await mountSchema({
-      schema: { components: { coverImage: { type: 'upload' } } }
+      schema: { fields: { coverImage: { type: 'upload' } } }
     })
     expect(getComponent('coverImage').uploadPath).toBe(null)
     expect(findField('coverImage').find('.dito-upload__footer').exists()).toBe(
@@ -393,7 +393,7 @@ describe('DitoUploadType', () => {
   it(`doesn't submit forms with its buttons`, async () => {
     const { findField } = await mountForm({
       schema: {
-        components: {
+        fields: {
           file: { type: 'upload', deletable: true },
           attachments: { type: 'upload', multiple: true }
         }
@@ -413,7 +413,7 @@ describe('DitoUploadType', () => {
     const secondScan = { key: 'scan-2.pdf', ...scan, size: 24_000 }
     const { findField, data } = await mountForm({
       schema: {
-        components: {
+        fields: {
           attachments: { type: 'upload', multiple: true, deletable: true }
         }
       },
@@ -433,7 +433,7 @@ describe('DitoUploadType', () => {
   it('passes `accept` and `maxSize` to the file input', async () => {
     const { findField, wrapper } = await mountForm({
       schema: {
-        components: {
+        fields: {
           file: {
             type: 'upload',
             accept: ['image/*', '.pdf'],
@@ -454,7 +454,7 @@ describe('DitoUploadType', () => {
   it('links files with `url` to their own URL', async () => {
     const { findField } = await mountForm({
       schema: {
-        components: {
+        fields: {
           file: { type: 'upload', downloadUrl: () => '/files/other.pdf' }
         }
       },
@@ -469,7 +469,7 @@ describe('DitoUploadType', () => {
     stubConfirm(true)
     const { findField, getComponent, data } = await mountForm({
       schema: {
-        components: {
+        fields: {
           attachments: { type: 'upload', multiple: true, deletable: true }
         }
       },
@@ -497,7 +497,7 @@ describe('DitoUploadType', () => {
   it('adds uploading files to multiple uploads without value', async () => {
     const { getComponent, data } = await mountForm({
       schema: {
-        components: { attachments: { type: 'upload', multiple: true } }
+        fields: { attachments: { type: 'upload', multiple: true } }
       },
       data: { attachments: null }
     })
@@ -510,7 +510,7 @@ describe('DitoUploadType', () => {
   it('ignores finished uploads of files that were removed meanwhile', async () => {
     const { getComponent, data } = await mountForm({
       schema: {
-        components: { attachments: { type: 'upload', multiple: true } }
+        fields: { attachments: { type: 'upload', multiple: true } }
       },
       data: { attachments: [scan] }
     })
@@ -529,7 +529,7 @@ describe('DitoUploadType', () => {
   it('removes uploaded files without a file in the response', async () => {
     const { getComponent, data } = await mountForm({
       schema: {
-        components: { attachments: { type: 'upload', multiple: true } }
+        fields: { attachments: { type: 'upload', multiple: true } }
       },
       data: { attachments: [scan] }
     })
@@ -546,7 +546,7 @@ describe('DitoUploadType', () => {
   it('notifies unknown upload errors with their code', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
     const { getComponent } = await mountForm({
-      schema: { components: { file: { type: 'upload' } } }
+      schema: { fields: { file: { type: 'upload' } } }
     })
     const upload = getComponent('file')
     const uploadFile = createUploadFile(cover)
@@ -560,7 +560,7 @@ describe('DitoUploadType', () => {
 
   it('opens the file dialog of the hidden input with the upload button', async () => {
     const { findField } = await mountForm({
-      schema: { components: { file: { type: 'upload' } } },
+      schema: { fields: { file: { type: 'upload' } } },
       data: { file: null }
     })
     const field = findField('file')
@@ -621,7 +621,7 @@ describe('DitoUploadType', () => {
       const requests = stubXMLHttpRequest()
       const { wrapper, findField, data } = await mountForm({
         schema: {
-          components: { attachments: { type: 'upload', multiple: true } }
+          fields: { attachments: { type: 'upload', multiple: true } }
         },
         data: { attachments: [] }
       })
@@ -681,7 +681,7 @@ describe('DitoUploadType', () => {
       const requests = stubXMLHttpRequest()
       const { wrapper, findField } = await mountForm({
         schema: {
-          components: { attachments: { type: 'upload', multiple: true } }
+          fields: { attachments: { type: 'upload', multiple: true } }
         },
         data: { attachments: [] }
       })
@@ -699,7 +699,7 @@ describe('DitoUploadType', () => {
       const requests = stubXMLHttpRequest()
       const { wrapper, findField } = await mountForm({
         schema: {
-          components: {
+          fields: {
             attachments: { type: 'upload', multiple: true, thumbnails: true }
           }
         },
@@ -731,7 +731,7 @@ describe('DitoUploadType', () => {
       vi.spyOn(URL, 'revokeObjectURL').mockImplementation(revokeObjectURL)
       const result = await mountForm({
         schema: {
-          components: {
+          fields: {
             file: {
               type: 'upload',
               downloadUrl
@@ -821,7 +821,7 @@ describe('DitoUploadType', () => {
     async function mountAttachments(attachments = {}) {
       return mountForm({
         schema: {
-          components: {
+          fields: {
             attachments: {
               type: 'upload',
               multiple: true,
@@ -895,7 +895,7 @@ describe('DitoUploadType', () => {
     async function mountUploads() {
       return mountSchema({
         schema: {
-          components: {
+          fields: {
             title: { type: 'text' },
             attachments: { type: 'upload', multiple: true },
             cover: { type: 'upload', disabled: true }
@@ -932,7 +932,7 @@ describe('DitoUploadType', () => {
     it('accepts files once the upload is enabled, and not after', async () => {
       const { findField, data, settle } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             isLocked: { type: 'checkbox' },
             cover: { type: 'upload', disabled: ({ item }) => item.isLocked }
           }
@@ -956,7 +956,7 @@ describe('DitoUploadType', () => {
     it('stops accepting files once the upload is removed', async () => {
       const { wrapper, findField, data, settle } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             hasCover: { type: 'checkbox' },
             cover: { type: 'upload', if: ({ item }) => item.hasCover }
           }
@@ -987,7 +987,7 @@ describe('DitoUploadType', () => {
     it(`doesn't show the overlay without enabled uploads`, async () => {
       const { wrapper, findField } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             title: { type: 'text' },
             cover: { type: 'upload', disabled: true }
           }
@@ -1011,7 +1011,7 @@ describe('DitoUploadType', () => {
     async function mountImages({ name = 'images', schema, data }) {
       const result = await mountForm({
         schema: {
-          components: {
+          fields: {
             [name]: { type: 'upload', clipboard: true, ...schema }
           }
         },
@@ -1121,7 +1121,7 @@ describe('DitoUploadType', () => {
         schema: {
           name: 'gallery',
           clipboard: true,
-          components: { title: { type: 'text' } }
+          fields: { title: { type: 'text' } }
         },
         data: { title: 'Emma' }
       })

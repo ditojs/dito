@@ -40,7 +40,7 @@ In the admin, a button of the list shows the dialog:
 ```js
 export const books = {
   type: 'view',
-  component: {
+  field: {
     type: 'list',
     resource: 'books',
     form: bookForm,
@@ -53,7 +53,7 @@ export const books = {
           // Let the button take clicks again while the dialog is open:
           context.isRunning = false
           const data = await showDialog({
-            components: {
+            fields: {
               isbn: { type: 'text', label: 'ISBN' },
               stock: { type: 'integer', min: 0 }
             },

@@ -15,14 +15,14 @@ describe('DitoSchema', () => {
   it('shares the width of inlined schemas with their components', async () => {
     const { findContainer } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           ingredients: {
             type: 'list',
             inlined: true,
             width: '1/2',
             form: {
               type: 'form',
-              components: {
+              fields: {
                 name: { type: 'text', width: '1/2' },
                 amount: { type: 'number', width: '1/4' }
               }
@@ -46,17 +46,17 @@ describe('DitoSchema', () => {
         tabs: {
           details: {
             type: 'tab',
-            components: {
+            fields: {
               summary: {
                 type: 'panel',
                 label: 'Summary',
-                components: { notes: { type: 'textarea' } }
+                fields: { notes: { type: 'textarea' } }
               }
             }
           },
           history: {
             type: 'tab',
-            components: { published: { type: 'text' } }
+            fields: { published: { type: 'text' } }
           }
         }
       },
@@ -82,15 +82,15 @@ describe('DitoSchema', () => {
         tabs: {
           details: {
             type: 'tab',
-            components: { title: { type: 'text' } }
+            fields: { title: { type: 'text' } }
           },
           history: {
             type: 'tab',
-            components: {
+            fields: {
               summary: {
                 type: 'panel',
                 label: 'Summary',
-                components: { notes: { type: 'text', required: true } }
+                fields: { notes: { type: 'text', required: true } }
               }
             }
           }
@@ -111,22 +111,22 @@ describe('DitoSchema', () => {
         tabs: {
           details: {
             type: 'tab',
-            components: { title: { type: 'text' } }
+            fields: { title: { type: 'text' } }
           },
           history: {
             type: 'tab',
-            components: {
+            fields: {
               author: {
                 type: 'object',
                 inlined: true,
                 form: {
                   type: 'form',
-                  components: { name: { type: 'text' } },
+                  fields: { name: { type: 'text' } },
                   panels: {
                     summary: {
                       type: 'panel',
                       label: 'Summary',
-                      components: { notes: { type: 'text', required: true } }
+                      fields: { notes: { type: 'text', required: true } }
                     }
                   }
                 }
@@ -148,18 +148,18 @@ describe('DitoSchema', () => {
         tabs: {
           details: {
             type: 'tab',
-            components: {
+            fields: {
               author: {
                 type: 'object',
                 inlined: true,
                 form: {
                   type: 'form',
-                  components: { name: { type: 'text' } },
+                  fields: { name: { type: 'text' } },
                   panels: {
                     summary: {
                       type: 'panel',
                       label: 'Summary',
-                      components: { notes: { type: 'textarea' } }
+                      fields: { notes: { type: 'textarea' } }
                     }
                   }
                 }
@@ -168,7 +168,7 @@ describe('DitoSchema', () => {
           },
           history: {
             type: 'tab',
-            components: { published: { type: 'text' } }
+            fields: { published: { type: 'text' } }
           }
         }
       },
@@ -186,11 +186,11 @@ describe('DitoSchema', () => {
 
   describe('tabs', () => {
     const createTabs = defaultTab => ({
-      details: { type: 'tab', components: { title: { type: 'text' } } },
+      details: { type: 'tab', fields: { title: { type: 'text' } } },
       reviews: {
         type: 'tab',
         defaultTab,
-        components: { rating: { type: 'number' } }
+        fields: { rating: { type: 'number' } }
       }
     })
 
@@ -250,7 +250,7 @@ describe('DitoSchema', () => {
           views: {
             items: {
               type: 'view',
-              component: {
+              field: {
                 type: 'list',
                 resource: { path: 'items' },
                 form: {
@@ -333,10 +333,10 @@ describe('DitoSchema', () => {
       const { submit, getErrors, schemaComponent } = await mountForm({
         schema: {
           tabs: {
-            details: { type: 'tab', components: { title: { type: 'text' } } },
+            details: { type: 'tab', fields: { title: { type: 'text' } } },
             reviews: {
               type: 'tab',
-              components: { rating: { type: 'number', required: true } }
+              fields: { rating: { type: 'number', required: true } }
             }
           }
         },
@@ -353,7 +353,7 @@ describe('DitoSchema', () => {
   // ditojs/dito#192: The forms of the items of trees and lists in tabs are
   // nested routes, whose path doesn't carry the hash of the parent's tab.
   describe('tabs with forms of nested routes', () => {
-    const pageForm = { type: 'form', components: { title: { type: 'text' } } }
+    const pageForm = { type: 'form', fields: { title: { type: 'text' } } }
 
     it.each([
       ['tree-list', { type: 'tree-list', editable: true }],
@@ -362,10 +362,10 @@ describe('DitoSchema', () => {
       const { admin, schemaComponent, wrapper } = await mountForm({
         schema: {
           tabs: {
-            details: { type: 'tab', components: { title: { type: 'text' } } },
+            details: { type: 'tab', fields: { title: { type: 'text' } } },
             planning: {
               type: 'tab',
-              components: {
+              fields: {
                 pages: { ...source, path: 'pages', form: pageForm }
               }
             }
@@ -397,16 +397,16 @@ describe('DitoSchema', () => {
       const tabs = Object.fromEntries(
         pageTabs.map(name => [
           name,
-          { type: 'tab', components: { [name]: { type: 'text' } } }
+          { type: 'tab', fields: { [name]: { type: 'text' } } }
         ])
       )
       const { admin, schemaComponent, wrapper } = await mountForm({
         schema: {
           tabs: {
-            details: { type: 'tab', components: { title: { type: 'text' } } },
+            details: { type: 'tab', fields: { title: { type: 'text' } } },
             planning: {
               type: 'tab',
-              components: {
+              fields: {
                 pages: {
                   type: 'tree-list',
                   editable: true,
@@ -466,8 +466,8 @@ describe('DitoSchema', () => {
       const tabbedPageForm = {
         type: 'form',
         tabs: {
-          content: { type: 'tab', components: { title: { type: 'text' } } },
-          text: { type: 'tab', components: { body: { type: 'textarea' } } }
+          content: { type: 'tab', fields: { title: { type: 'text' } } },
+          text: { type: 'tab', fields: { body: { type: 'textarea' } } }
         }
       }
       const item = { id: 1, title: 'Site', pages: [{ title: 'About' }] }
@@ -475,7 +475,7 @@ describe('DitoSchema', () => {
         views: {
           items: {
             type: 'view',
-            component: {
+            field: {
               type: 'list',
               resource: { path: 'items' },
               form: {
@@ -483,11 +483,11 @@ describe('DitoSchema', () => {
                 tabs: {
                   details: {
                     type: 'tab',
-                    components: { title: { type: 'text' } }
+                    fields: { title: { type: 'text' } }
                   },
                   planning: {
                     type: 'tab',
-                    components: {
+                    fields: {
                       pages: {
                         type: 'list',
                         editable: true,
@@ -536,12 +536,12 @@ describe('DitoSchema', () => {
     const { wrapper } = await mountSchema({
       schema: {
         clipboard: true,
-        components: {
+        fields: {
           details: {
             type: 'section',
             label: 'Details',
             clipboard: true,
-            components: { title: { type: 'text' } }
+            fields: { title: { type: 'text' } }
           }
         }
       },
@@ -568,12 +568,12 @@ describe('DitoSchema', () => {
           type: 'view',
           label: 'Books',
           wide: true,
-          components: { title: { type: 'text' } }
+          fields: { title: { type: 'text' } }
         },
         authors: {
           type: 'view',
           label: 'Authors',
-          components: { name: { type: 'text' } }
+          fields: { name: { type: 'text' } }
         }
       }
     })
@@ -590,13 +590,13 @@ describe('DitoSchema', () => {
     async function mountCollapsedSection() {
       const result = await mountSchema({
         schema: {
-          components: {
+          fields: {
             title: { type: 'text' },
             details: {
               type: 'section',
               collapsible: true,
               collapsed: true,
-              components: { notes: { type: 'textarea' } }
+              fields: { notes: { type: 'textarea' } }
             }
           }
         },
@@ -637,7 +637,7 @@ describe('DitoSchema', () => {
     async function mountRequiredTitle() {
       const result = await mountSchema({
         schema: {
-          components: { title: { type: 'text', required: true } }
+          fields: { title: { type: 'text', required: true } }
         },
         data: { title: 'Dune' }
       })
@@ -687,7 +687,7 @@ describe('DitoSchema', () => {
     it('focuses the first invalid field on submit, with errors', async () => {
       const { submit, findField, getErrors } = await mountForm({
         schema: {
-          components: {
+          fields: {
             title: { type: 'text', required: true },
             author: { type: 'text', required: true }
           }
@@ -706,13 +706,13 @@ describe('DitoSchema', () => {
     const createTitleTabs = summaryTitle => ({
       summary: {
         type: 'tab',
-        components: {
+        fields: {
           title: { type: 'text', required: true, ...summaryTitle }
         }
       },
       details: {
         type: 'tab',
-        components: { title: { type: 'text', required: true } }
+        fields: { title: { type: 'text', required: true } }
       }
     })
 
@@ -760,11 +760,11 @@ describe('DitoSchema', () => {
         return { data: [] }
       }
 
-    async function mountBookForm(errors, components = {}) {
+    async function mountBookForm(errors, fields = {}) {
       const result = await mountForm({
         schema: {
           label: 'Book',
-          components: { title: { type: 'text' }, ...components }
+          fields: { title: { type: 'text' }, ...fields }
         },
         data: { title: 'Emma' },
         request: respondWithErrors(errors)
@@ -814,7 +814,7 @@ describe('DitoSchema', () => {
             type: 'section',
             label: 'Details',
             collapsible: true,
-            components: { subtitle: { type: 'text' } }
+            fields: { subtitle: { type: 'text' } }
           }
         }
       )
@@ -836,8 +836,8 @@ describe('DitoSchema', () => {
         {
           schema: {
             tabs: {
-              main: { type: 'tab', components: { title: { type: 'text' } } },
-              notes: { type: 'tab', components: { summary: { type: 'text' } } }
+              main: { type: 'tab', fields: { title: { type: 'text' } } },
+              notes: { type: 'tab', fields: { summary: { type: 'text' } } }
             }
           },
           data: { title: 'Emma', summary: 'Short' },
@@ -860,7 +860,7 @@ describe('DitoSchema', () => {
     it('shows the errors of items in their nested forms', async () => {
       const { admin, submit, getErrors } = await mountForm({
         schema: {
-          components: {
+          fields: {
             title: { type: 'text' },
             chapters: {
               type: 'list',
@@ -868,7 +868,7 @@ describe('DitoSchema', () => {
               itemLabel: 'title',
               form: {
                 type: 'form',
-                components: {
+                fields: {
                   title: { type: 'text' },
                   pages: { type: 'number' }
                 }
@@ -903,7 +903,7 @@ describe('DitoSchema', () => {
     it('clears the filters with their clear button', async () => {
       const { admin, settle } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             books: {
               type: 'list',
               resource: { path: 'books' },
@@ -932,7 +932,7 @@ describe('DitoSchema', () => {
     it('shows them in the filters panel', async () => {
       const { admin, settle } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             books: {
               type: 'list',
               resource: { path: 'books' },
@@ -967,7 +967,7 @@ describe('DitoSchema', () => {
     async function mountCollapsedAuthor() {
       return mountSchema({
         schema: {
-          components: {
+          fields: {
             author: {
               type: 'object',
               inlined: true,
@@ -975,7 +975,7 @@ describe('DitoSchema', () => {
               collapsed: true,
               form: {
                 type: 'form',
-                components: { name: { type: 'text', required: true } }
+                fields: { name: { type: 'text', required: true } }
               }
             }
           }
@@ -1002,11 +1002,11 @@ describe('DitoSchema', () => {
       const { admin, schemaComponent } = await mountSchema({
         schema: {
           tabs: {
-            details: { type: 'tab', components: { title: { type: 'text' } } },
+            details: { type: 'tab', fields: { title: { type: 'text' } } },
             drafts: {
               type: 'tab',
               if: false,
-              components: { notes: { type: 'text' } }
+              fields: { notes: { type: 'text' } }
             }
           }
         },
@@ -1024,7 +1024,7 @@ describe('DitoSchema', () => {
             drafts: {
               type: 'tab',
               if: false,
-              components: { notes: { type: 'text' } }
+              fields: { notes: { type: 'text' } }
             }
           }
         },
@@ -1043,18 +1043,18 @@ describe('DitoSchema', () => {
       views: {
         blocks: {
           type: 'view',
-          component: {
+          field: {
             type: 'list',
             resource: { path: 'blocks' },
             forms: {
               heading: {
                 type: 'form',
                 onInitialize: initialize,
-                components: { text: { type: 'text' } }
+                fields: { text: { type: 'text' } }
               },
               image: {
                 type: 'form',
-                components: { url: { type: 'url' } }
+                fields: { url: { type: 'url' } }
               }
             }
           }

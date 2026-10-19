@@ -50,7 +50,7 @@ function getNotifications() {
 }
 
 const bookSchema = {
-  components: {
+  fields: {
     title: { type: 'text' },
     publish: {
       type: 'button',
@@ -85,9 +85,9 @@ describe('useResource()', () => {
     it(`don't notify the errors of their handlers as request errors`, async () => {
       const { button, notify } = await mountBookFormWithNotify({
         schema: {
-          components: {
+          fields: {
             publish: {
-              ...bookSchema.components.publish,
+              ...bookSchema.fields.publish,
               onSuccess() {
                 throw new Error('Publishing failed')
               }
@@ -105,10 +105,10 @@ describe('useResource()', () => {
     it('keep the loading state until all of them are done', async () => {
       const first = createPendingRequest()
       const second = createPendingRequest()
-      const publish = bookSchema.components.publish
+      const publish = bookSchema.fields.publish
       const { admin, getComponent } = await mountBookForm({
         schema: {
-          components: {
+          fields: {
             first: { ...publish, resource: { path: 'first', method: 'post' } },
             second: { ...publish, resource: { path: 'second', method: 'post' } }
           }
@@ -174,7 +174,7 @@ describe('useResource()', () => {
       const submitRequest = createPendingRequest()
       const { wrapper, getComponent } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             books: {
               type: 'list',
               resource: { path: 'books' },
@@ -206,9 +206,9 @@ describe('useResource()', () => {
       let finishHandler
       const { getComponent } = await mountBookForm({
         schema: {
-          components: {
+          fields: {
             publish: {
-              ...bookSchema.components.publish,
+              ...bookSchema.fields.publish,
               onSuccess: () =>
                 new Promise(resolve => {
                   finishHandler = resolve
@@ -250,11 +250,11 @@ describe('useResource()', () => {
 
   describe('handleRequest() errors', () => {
     const listSchema = {
-      components: {
+      fields: {
         books: {
           type: 'list',
           resource: { path: 'books' },
-          form: { type: 'form', components: { title: { type: 'text' } } }
+          form: { type: 'form', fields: { title: { type: 'text' } } }
         }
       }
     }
@@ -282,9 +282,9 @@ describe('useResource()', () => {
         views: {
           books: {
             type: 'view',
-            component: {
-              ...listSchema.components.books,
-              form: { type: 'form', components: { title: { type: 'text' } } }
+            field: {
+              ...listSchema.fields.books,
+              form: { type: 'form', fields: { title: { type: 'text' } } }
             }
           }
         },
@@ -343,13 +343,13 @@ describe('useResource()', () => {
       const requests = []
       const { wrapper } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             recipes: {
               type: 'list',
               resource: { path: 'recipes' },
               form: {
                 type: 'form',
-                components: { name: { type: 'text' } }
+                fields: { name: { type: 'text' } }
               },
               buttons: {
                 publish: {
@@ -384,13 +384,13 @@ describe('useResource()', () => {
     const mountRecipesWithPublishButton = request =>
       mountSchema({
         schema: {
-          components: {
+          fields: {
             recipes: {
               type: 'list',
               resource: { path: 'recipes' },
               form: {
                 type: 'form',
-                components: { name: { type: 'text' } }
+                fields: { name: { type: 'text' } }
               },
               buttons: {
                 publish: {
@@ -461,7 +461,7 @@ describe('useResource()', () => {
     const reviewsSchema = {
       type: 'list',
       resource: { path: '/reviews' },
-      form: { type: 'form', components: { text: { type: 'text' } } }
+      form: { type: 'form', fields: { text: { type: 'text' } } }
     }
     const unauthorized = ({ url }) => {
       if (url === '/reviews') {
@@ -473,7 +473,7 @@ describe('useResource()', () => {
     it('shows the error on lists that load their data in forms', async () => {
       const { getComponent, getErrors } = await mountForm({
         schema: {
-          components: { title: { type: 'text' }, reviews: reviewsSchema }
+          fields: { title: { type: 'text' }, reviews: reviewsSchema }
         },
         data: { title: 'Orlando' },
         request: unauthorized
@@ -490,7 +490,7 @@ describe('useResource()', () => {
       let isAuthorized = false
       const { getComponent, getErrors } = await mountForm({
         schema: {
-          components: { title: { type: 'text' }, reviews: reviewsSchema }
+          fields: { title: { type: 'text' }, reviews: reviewsSchema }
         },
         data: { title: 'Orlando' },
         request: request =>
@@ -505,7 +505,7 @@ describe('useResource()', () => {
 
     it('notifies the error on lists of views', async () => {
       const { getErrors } = await mountSchema({
-        schema: { components: { reviews: reviewsSchema } },
+        schema: { fields: { reviews: reviewsSchema } },
         request: unauthorized
       })
       expect(getErrors('reviews')).toEqual([])
@@ -519,14 +519,14 @@ describe('useResource()', () => {
   describe('showing server validation errors', () => {
     const authorSchema = {
       label: 'Author',
-      components: {
+      fields: {
         name: { type: 'text' },
         books: {
           type: 'list',
           inlined: true,
           form: {
             type: 'form',
-            components: { title: { type: 'text' } }
+            fields: { title: { type: 'text' } }
           }
         }
       }
@@ -585,12 +585,12 @@ describe('useResource()', () => {
     async function mountFilteredBooks(errors) {
       const { wrapper } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             books: {
               type: 'list',
               resource: { path: 'books' },
               filters: { title: { filter: 'text' } },
-              form: { type: 'form', components: { title: { type: 'text' } } }
+              form: { type: 'form', fields: { title: { type: 'text' } } }
             }
           }
         },

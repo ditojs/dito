@@ -13,7 +13,7 @@ describe('ObjectSchema', () => {
       type: 'object',
       form: {
         type: 'form',
-        components: {
+        fields: {
           street: { type: 'text' },
           city: { type: 'text' }
         }
@@ -45,7 +45,7 @@ describe('ObjectSchema', () => {
         type: 'object',
         form: {
           type: 'form',
-          components: {
+          fields: {
             street: { type: 'text' }
           }
         } satisfies FormSchema<Address>
@@ -60,7 +60,7 @@ describe('TreeListSchema', () => {
       type: 'tree-list',
       form: {
         type: 'form',
-        components: {
+        fields: {
           title: { type: 'text' }
         }
       } satisfies FormSchema<Entry>

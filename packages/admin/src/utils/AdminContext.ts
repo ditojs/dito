@@ -10,6 +10,8 @@ import type { ViewRegistry } from './ViewRegistry.js'
 import type { Api, Schema } from './types.ts'
 
 export interface DialogOptions {
+  fields?: Record<string, Schema>
+  /** @deprecated Use `fields`. */
   components?: Record<string, Schema>
   buttons?: Record<string, Schema>
   data?: Record<string, any>

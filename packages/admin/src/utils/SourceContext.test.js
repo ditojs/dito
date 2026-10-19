@@ -9,7 +9,7 @@ import {
 describe('SourceContext', () => {
   const pageForm = {
     type: 'form',
-    components: { title: { type: 'text' } }
+    fields: { title: { type: 'text' } }
   }
 
   const openForm = async (admin, path) => {
@@ -22,7 +22,7 @@ describe('SourceContext', () => {
   it('is provided by sources to the components of their items', async () => {
     const { getComponent } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           chapters: {
             type: 'list',
             inlined: true,
@@ -46,7 +46,7 @@ describe('SourceContext', () => {
   it('provides the query of lists as `sourceQuery`', async () => {
     const { getComponent } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           books: {
             type: 'list',
             resource: { path: 'books' },
@@ -70,7 +70,7 @@ describe('SourceContext', () => {
   it(`isn't continued by the forms of tree items`, async () => {
     const { admin, getComponent } = await mountForm({
       schema: {
-        components: {
+        fields: {
           pages: {
             type: 'tree-list',
             itemLabel: 'title',
@@ -92,7 +92,7 @@ describe('SourceContext', () => {
     const chapters = [{ id: 7, title: 'Arrakis' }]
     const { admin, request } = await mountForm({
       schema: {
-        components: {
+        fields: {
           chapters: {
             type: 'list',
             resource: { path: 'chapters' },

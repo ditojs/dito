@@ -3,7 +3,7 @@ import { mountSchema, mountForm } from '../test/mount.js'
 describe('DitoCheckboxType', () => {
   it('checks the checkbox for `true` and writes the checked state', async () => {
     const { findField, data } = await mountSchema({
-      schema: { components: { isRead: { type: 'checkbox' } } },
+      schema: { fields: { isRead: { type: 'checkbox' } } },
       data: { isRead: true }
     })
     const checkbox = findField('isRead').find('input[type="checkbox"]')
@@ -15,7 +15,7 @@ describe('DitoCheckboxType', () => {
   it('disables readonly checkboxes, as only text fields support readonly', async () => {
     const { findField } = await mountSchema({
       schema: {
-        components: { isRead: { type: 'checkbox', readonly: true } }
+        fields: { isRead: { type: 'checkbox', readonly: true } }
       }
     })
     const checkbox = findField('isRead').find('input')
@@ -26,7 +26,7 @@ describe('DitoCheckboxType', () => {
 describe('DitoSwitchType', () => {
   it('defaults to `false` and toggles the value', async () => {
     const { findField, data } = await mountSchema({
-      schema: { components: { isPublic: { type: 'switch' } } }
+      schema: { fields: { isPublic: { type: 'switch' } } }
     })
     expect(data.isPublic).toBe(false)
     await findField('isPublic').find('input').setValue(true)
@@ -36,7 +36,7 @@ describe('DitoSwitchType', () => {
   it('displays the labels of the checked state', async () => {
     const { findField, data, settle } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           isPublic: {
             type: 'switch',
             labels: { checked: 'Public', unchecked: 'Private' }
@@ -54,7 +54,7 @@ describe('DitoSwitchType', () => {
 
   it('sends the switched value', async () => {
     const { findField, submit } = await mountForm({
-      schema: { components: { isPublic: { type: 'switch' } } },
+      schema: { fields: { isPublic: { type: 'switch' } } },
       data: { isPublic: false },
       request: ({ data }) => ({ data })
     })

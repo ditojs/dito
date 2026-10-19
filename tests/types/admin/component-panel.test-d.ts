@@ -12,7 +12,7 @@ describe('Panel components', () => {
       links: {
         type: 'panel',
         label: 'Links',
-        components: {
+        fields: {
           title: { type: 'text' }
         }
       }
@@ -23,7 +23,7 @@ describe('Panel components', () => {
     assertType<Components<ParentWithPanel>>({
       links: {
         type: 'panel',
-        components: {
+        fields: {
           title: {
             type: 'text',
             if({ item }) {
@@ -40,7 +40,7 @@ describe('Panel components', () => {
     assertType<Components<ParentWithPanel>>({
       links: {
         type: 'panel',
-        components: {
+        fields: {
           // @ts-expect-error 'nonExistent' is not a key of ParentWithPanel
           nonExistent: { type: 'text' }
         }

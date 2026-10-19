@@ -14,12 +14,12 @@ import DitoTextType from '../types/DitoTextType.vue'
 
 describe('DataContext', () => {
   const chaptersSchema = {
-    components: {
+    fields: {
       chapters: {
         type: 'list',
         form: {
           type: 'form',
-          components: { title: { type: 'text' } }
+          fields: { title: { type: 'text' } }
         }
       }
     }
@@ -31,7 +31,7 @@ describe('DataContext', () => {
       routeComponent: view,
       getComponent
     } = await mountSchema({
-      schema: { components: { title: { type: 'text' } } },
+      schema: { fields: { title: { type: 'text' } } },
       data: { title: 'Emma' }
     })
     const { dataContext } = view
@@ -44,7 +44,7 @@ describe('DataContext', () => {
 
   it('tells the state of the data reactively', async () => {
     const { routeComponent: form, wrapper } = await mountForm({
-      schema: { components: { title: { type: 'text' } } },
+      schema: { fields: { title: { type: 'text' } } },
       data: { title: 'Emma' }
     })
     const dataContext = form.dataContext
@@ -71,9 +71,9 @@ describe('DataContext', () => {
   it('holds the data of mutating forms in the model of the parent', async () => {
     const { admin, routeComponent: parent } = await mountForm({
       schema: {
-        components: {
+        fields: {
           chapters: {
-            ...chaptersSchema.components.chapters,
+            ...chaptersSchema.fields.chapters,
             mutate: true
           }
         }
@@ -90,7 +90,7 @@ describe('DataContext', () => {
   it('is provided by dialogs, which it closes', async () => {
     const admin = await mountAdmin({ views: {} })
     const promise = admin.context.showDialog({
-      components: { title: { type: 'text' } },
+      fields: { title: { type: 'text' } },
       buttons: { cancel: {} }
     })
     await flushPromises()
@@ -103,15 +103,15 @@ describe('DataContext', () => {
 
   it('closes dialogs from panels with their own data in them', async () => {
     const admin = await mountAdmin({
-      views: { books: { type: 'view', components: {} } }
+      views: { books: { type: 'view', fields: {} } }
     })
     await admin.navigate('/books')
     const promise = admin.context.showDialog({
-      components: {
+      fields: {
         speed: {
           type: 'panel',
           data: { mode: 'fast' },
-          components: { mode: { type: 'text' } }
+          fields: { mode: { type: 'text' } }
         }
       },
       buttons: { cancel: {} }
@@ -127,7 +127,7 @@ describe('DataContext', () => {
   it('is provided by panels with their own data', async () => {
     const { wrapper, routeComponent: view } = await mountSchema({
       schema: {
-        components: {
+        fields: {
           recipes: {
             type: 'list',
             resource: { path: 'recipes' },
@@ -147,7 +147,7 @@ describe('DataContext', () => {
   describe('validate()', () => {
     it('shows the errors until they are cleared', async () => {
       const { routeComponent, getErrors, dataModel } = await mountSchema({
-        schema: { components: { title: { type: 'text', required: true } } },
+        schema: { fields: { title: { type: 'text', required: true } } },
         data: { title: '' }
       })
       expect(routeComponent.dataContext.validate()).toBe(false)
@@ -162,7 +162,7 @@ describe('DataContext', () => {
     it('hides the errors of values that code changed', async () => {
       const { routeComponent, getErrors, data, dataModel } = await mountSchema(
         {
-          schema: { components: { title: { type: 'text', required: true } } },
+          schema: { fields: { title: { type: 'text', required: true } } },
           data: { title: '' }
         }
       )
@@ -179,7 +179,7 @@ describe('DataContext', () => {
     it('replaces only the errors of matching fields', async () => {
       const { routeComponent, getErrors, data } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             title: { type: 'text', required: true },
             author: { type: 'text', required: true }
           }
@@ -201,7 +201,7 @@ describe('DataContext', () => {
     it('verifies matching data silently', async () => {
       const { routeComponent, getErrors } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             title: { type: 'text', required: true },
             author: { type: 'text', required: true }
           }
@@ -223,12 +223,12 @@ describe('DataContext', () => {
     const mountInvalidSchema = async () => {
       const result = await mountSchema({
         schema: {
-          components: {
+          fields: {
             title: { type: 'text', required: true },
             address: {
               type: 'section',
               nested: true,
-              components: {
+              fields: {
                 city: { type: 'text', required: true },
                 zip: { type: 'text', required: true }
               }
@@ -238,7 +238,7 @@ describe('DataContext', () => {
               inlined: true,
               form: {
                 type: 'form',
-                components: { title: { type: 'text', required: true } }
+                fields: { title: { type: 'text', required: true } }
               }
             }
           }
@@ -287,7 +287,7 @@ describe('DataContext', () => {
     it('replaces the errors, and notifies them once', async () => {
       const { routeComponent, admin, getErrors } = await mountSchema({
         schema: {
-          components: { title: { type: 'text' }, author: { type: 'text' } }
+          fields: { title: { type: 'text' }, author: { type: 'text' } }
         },
         data: { title: 'Emma', author: 'Jane' }
       })
@@ -313,7 +313,7 @@ describe('DataContext', () => {
     it('shows them on the field of the value', async () => {
       const { routeComponent, admin, getErrors } = await mountSchema({
         schema: {
-          components: {
+          fields: {
             address: {
               type: 'code',
               formatValue: ({ value }) => JSON.stringify(value),

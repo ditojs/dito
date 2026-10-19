@@ -63,12 +63,12 @@ export const books = createWidgetView<
           type: 'tab',
           label: 'Main',
           defaultTab: true,
-          components: {
+          fields: {
             title: text('Title', 'title'),
             publishing: {
               type: 'section',
               label: 'Publishing',
-              components: {
+              fields: {
                 subtitle: text('Subtitle', 'subtitle')
               }
             },
@@ -76,7 +76,7 @@ export const books = createWidgetView<
             links: {
               type: 'panel',
               label: 'Links',
-              components: {
+              fields: {
                 website: text('Website', 'website')
               }
             },
@@ -84,7 +84,7 @@ export const books = createWidgetView<
               type: 'section',
               label: 'Meta',
               nested: true,
-              components: {
+              fields: {
                 note: text('Note', 'meta.note')
               }
             },
@@ -94,7 +94,7 @@ export const books = createWidgetView<
               inlined: true,
               form: {
                 type: 'form',
-                components: { name: text('Name', 'tags.name') }
+                fields: { name: text('Name', 'tags.name') }
               }
             },
             chapters: {
@@ -104,7 +104,7 @@ export const books = createWidgetView<
               editable: true,
               form: {
                 type: 'form',
-                components: { title: text('Title', 'chapters.title') }
+                fields: { title: text('Title', 'chapters.title') }
               }
             },
             notes: {
@@ -115,7 +115,7 @@ export const books = createWidgetView<
               mutate: true,
               form: {
                 type: 'form',
-                components: { text: text('Text', 'notes.text') }
+                fields: { text: text('Text', 'notes.text') }
               }
             },
             prices: {
@@ -125,7 +125,7 @@ export const books = createWidgetView<
               wrapPrimitives: 'price',
               form: {
                 type: 'form',
-                components: {
+                fields: {
                   price: {
                     type: 'number',
                     label: 'Price',
@@ -139,7 +139,7 @@ export const books = createWidgetView<
         details: {
           type: 'tab',
           label: 'Details',
-          components: {
+          fields: {
             edition: text('Edition', 'edition')
           }
         }
@@ -148,7 +148,7 @@ export const books = createWidgetView<
         info: {
           type: 'panel',
           label: 'Info',
-          components: {
+          fields: {
             isbn: text('ISBN', 'isbn')
           }
         }
