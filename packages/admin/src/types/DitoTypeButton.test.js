@@ -72,6 +72,20 @@ describe('DitoTypeButton', () => {
     expect(button.attributes('aria-label')).toBeUndefined()
   })
 
+  it('styles buttons as primary through `primary`', async () => {
+    const { findField } = await mountSchema({
+      schema: {
+        components: {
+          remove: { type: 'button', primary: ({ item }) => item.isSaved },
+          cancel: { type: 'button' }
+        }
+      },
+      data: { isSaved: true }
+    })
+    expect(findField('remove').classes()).toContain('dito-button--primary')
+    expect(findField('cancel').classes()).not.toContain('dito-button--primary')
+  })
+
   it('is excluded from the data', async () => {
     const { data } = await mountSchema({
       schema: { components: { shuffle: { type: 'button' } } }

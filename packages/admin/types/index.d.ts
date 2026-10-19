@@ -1375,6 +1375,13 @@ export interface ButtonSchema<$Item = any>
    */
   type: 'button' | 'submit'
   closeForm?: SchemaValue<$Item, {}, boolean>
+  /**
+   * Gives the button the look of submit buttons, and the focus in dialogs
+   * without a submit button, without submitting.
+   *
+   * @defaultValue `false`
+   */
+  primary?: SchemaValue<$Item, {}, boolean>
   text?: SchemaValue<$Item, {}, string>
   resource?: Resource
   onClick?: ItemEventHandler<$Item>

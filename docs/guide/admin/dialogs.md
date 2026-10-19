@@ -63,6 +63,7 @@ buttons: {
   cancel: {},
   save: {
     text: 'Save',
+    primary: true,
     onClick({ validate, closeDialog, item }) {
       if (validate()) {
         closeDialog(item)
@@ -71,6 +72,9 @@ buttons: {
   }
 }
 ```
+
+`primary: true` gives such a button the look of a `submit` button and the
+dialog's initial focus, without submitting the dialog.
 
 ## Confirmations, prompts and alerts
 
