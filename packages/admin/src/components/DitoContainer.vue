@@ -44,6 +44,12 @@
     :errorsElementId="errors ? errorsElementId : null"
     :labelId="labelId"
   )
+    //- The content that layouts place in custom components, see `DitoField`:
+    template(
+      v-if="$slots.default"
+      #default
+    )
+      slot
   DitoErrors(
     :id="errorsElementId"
     :errors="errors"

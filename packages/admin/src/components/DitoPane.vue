@@ -8,6 +8,10 @@
   :aria-labelledby="tabId"
   :class="classes"
 )
+  //- Layout sections place the components themselves, with `DitoField`:
+  slot(
+    v-if="$slots.default"
+  )
   template(
     v-for=`{
       schema,
@@ -17,6 +21,7 @@
       nested,
       store
     }, index in componentSchemas`
+    v-else
   )
     //- A <span>, for the `.dito-container:first-of-type` selector:
     span.dito-pane__break(
@@ -70,7 +75,7 @@ import {
 import { shouldRenderSchema } from '../utils/schema/data.js'
 import { getItemFormSchema } from '../utils/schema/lookup.js'
 import { getItemAdapter } from '../utils/schema/types.ts'
-import { panelTabKey, sourceSchemaKey } from '../utils/keys.ts'
+import { layoutKey, panelTabKey, sourceSchemaKey } from '../utils/keys.ts'
 
 export default {
   props: {
@@ -87,12 +92,12 @@ export default {
     generateLabels: { type: Boolean, default: false }
   },
 
-  setup(props) {
+  setup(props, { slots }) {
     const services = useServices()
     const { getChildStore } = useStore(props)
     const sourceSchema = inject(sourceSchemaKey, null)
     // Tabs add their name, as they don't appear in data paths:
-    const { parentComponentPath } = useComponentPath(
+    const { componentPath, parentComponentPath } = useComponentPath(
       () => props.dataPath,
       parent =>
         props.tab ? appendDataPath(parent.path, props.tab) : parent.path
@@ -135,6 +140,29 @@ export default {
         }
       )
     })
+
+    // Layout sections place the components with `DitoField`, and nested panes
+    // end the layout above them:
+    provide(
+      layoutKey,
+      slots.default
+        ? {
+            props,
+            componentPath,
+            getEntry(name) {
+              const index = componentSchemas.value.findIndex(
+                ({ schema }) => schema.name === name
+              )
+              return index >= 0
+                ? {
+                    ...componentSchemas.value[index],
+                    shouldRender: shouldRenderComponentByIndex.value[index]
+                  }
+                : null
+            }
+          }
+        : null
+    )
 
     const isSingleComponent = computed(
       () => props.single && componentSchemas.value.length === 1

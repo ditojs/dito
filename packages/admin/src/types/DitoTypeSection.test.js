@@ -1,6 +1,8 @@
 import { vi } from 'vitest'
 import { toRaw } from 'vue'
 import { flushPromises } from '@vue/test-utils'
+import { hyphenate } from '@ditojs/utils'
+import { setupView } from '../utils/schema/setup.js'
 import { mountSchema, mountForm, enterValue } from '../test/mount.js'
 import DitoTypeSection from './DitoTypeSection.vue'
 
@@ -389,5 +391,28 @@ describe('DitoTypeSection', () => {
     expect(contexts).toHaveLength(1)
     expect(toRaw(contexts[0].item)).toBe(toRaw(data.publisher))
     expect(toRaw(contexts[0].parentItem)).toBe(toRaw(data))
+  })
+
+  it.each([
+    ['tabs', { tabs: { main: { type: 'tab', components: {} } } }],
+    ['collapsible', { collapsible: true }],
+    ['clipboard', { clipboard: true }]
+  ])('rejects `%s` together with `component`', async (key, options) => {
+    const schema = {
+      type: 'view',
+      components: {
+        details: {
+          type: 'section',
+          component: { render: () => null },
+          components: { title: { type: 'text' } },
+          ...options
+        }
+      }
+    }
+    await expect(
+      setupView({ defaults: {}, normalizePath: hyphenate }, schema, 'books')
+    ).rejects.toThrow(
+      `Unsupported '${key}' in sections with 'component': 'details'.`
+    )
   })
 })

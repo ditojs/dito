@@ -8,7 +8,7 @@ import {
   TimeFormat
 } from '@ditojs/utils'
 import { RequireAtLeastOne, SetOptional } from 'type-fest'
-import { Component as VueComponent } from 'vue'
+import { Component as VueComponent, DefineComponent } from 'vue'
 import { Router as VueRouter } from 'vue-router'
 
 declare global {
@@ -1901,6 +1901,13 @@ export type SectionSchema<
      */
     compact?: boolean
     /**
+     * A Vue component that lays out the section's components instead of its
+     * pane, placing them with {@link DitoField}. It receives the `schema` and
+     * `context` of the section, and the section's label shows above it. Not
+     * supported together with `tabs`, `collapsible` and `clipboard`.
+     */
+    component?: Resolvable<VueComponent>
+    /**
      * Enables copy/paste for the section's data.
      */
     clipboard?: ClipboardConfig
@@ -3367,6 +3374,16 @@ export interface TypeDescriptor {
  * `type: 'component'`.
  */
 export function defineType(descriptor: TypeDescriptor): TypeDescriptor
+
+/**
+ * Places the component `name` of the `components` of a layout section, see
+ * {@link SectionSchema.component}, as the section's pane would render it. The
+ * default slot is passed on to the custom component of `type: 'component'`.
+ */
+export const DitoField: DefineComponent<{
+  /** The key of the component in the section's `components`. */
+  name: string
+}>
 
 export type HttpMethod =
   | 'get'

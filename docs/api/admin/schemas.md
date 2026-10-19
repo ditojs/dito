@@ -764,6 +764,7 @@ stored under the section's name, e.g. `item.address`.
 | `collapsed` | `SchemaValue<boolean>` | `false` | Whether the section is collapsed initially. Only with `collapsible`. |
 | `compact` | `boolean` | `false` | Renders with reduced spacing; the label then shows outside the section. |
 | `clipboard` | [`ClipboardConfig`](#clipboard) | | Adds copy and paste buttons for the section's data. |
+| `component` | `Resolvable<VueComponent>` | | Lays out the components with this Vue component instead of in rows, see below. Not supported together with `tabs`, `collapsible` and `clipboard`. |
 
 Events: `onToggle()`, `onInitialize()`, `onDestroy()` and `onLoad()`, and
 `onInput()`, `onChange()` and `onClick()` bubbling up from the section's
@@ -790,6 +791,13 @@ shippingAddress: {
   }
 }
 ```
+
+With `component`, the section's label shows above the component, which
+receives the props `schema` and `context` of the section. It places the
+components with `DitoField` of `@ditojs/admin`, whose prop `name` is a key of
+`components`, and whose default slot is passed on to the custom component of
+`type: 'component'` fields. See
+[Laying out fields](../../guide/admin/custom-types.md#laying-out-fields).
 
 In TypeScript, declare the keys of sections without `nested` as `never` in the
 item type, and those of nested sections as their object type, see

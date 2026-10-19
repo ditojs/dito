@@ -99,6 +99,12 @@ slot(name="prepend")
         :compact="compact"
         :generateLabels="generateLabels"
       )
+        //- The component of sections that lay out their components:
+        template(
+          v-if="$slots.default"
+          #default
+        )
+          slot
       slot(
         v-if="!inlined && dataContext.hasData"
         name="buttons"

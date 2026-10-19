@@ -15,6 +15,11 @@ DitoSchema.dito-schema-inlined(
   :generateLabels="!isCompact"
   @toggle="collapsed => $emit('toggle', collapsed)"
 )
+  template(
+    v-if="$slots.default"
+    #default
+  )
+    slot
   //- The edit buttons take the schema of the list or object that holds the
   //- item, while `schema` is the item's form. The schema passes their class:
   template(#edit-buttons="{ class: buttonsClass }")

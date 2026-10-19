@@ -10,6 +10,11 @@ component(
   :errorsElementId="errorsElementId"
   @update:modelValue="newValue => (value = newValue)"
 )
+  template(
+    v-if="$slots.default"
+    #default
+  )
+    slot
 </template>
 
 <script>
