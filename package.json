@@ -10,7 +10,7 @@
     "clean": "pnpm -r run clean",
     "build": "pnpm -r run build",
     "watch": "pnpm -r --parallel run watch",
-    "version": "pnpm install && git stage pnpm-lock.yaml",
+    "version": "node scripts/changelog.js && pnpm install && git stage pnpm-lock.yaml CHANGELOG.md changelog",
     "postinstall": "husky",
     "release": "lerna version",
     "test": "pnpm -r --parallel --include-workspace-root run /^test:/",
