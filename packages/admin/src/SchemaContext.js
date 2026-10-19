@@ -376,6 +376,11 @@ export default class SchemaContext {
       getDataContextFor(this, 'reset the item').resetItem(toModelData(data))
   }
 
+  get mergeItem() {
+    return data =>
+      getDataContextFor(this, 'merge the item').mergeItem(toModelData(data))
+  }
+
   get submit() {
     return options => {
       const { submit } = getServices(this)

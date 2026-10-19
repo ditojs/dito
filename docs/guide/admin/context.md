@@ -154,11 +154,11 @@ Inside the `itemLabel()` callback itself, it's `null`.
 ## The form's actions
 
 `isDirty`, `isCreating`, `validate()`, `isValid()`, `clearErrors()`,
-`markDirty()`, `resetItem()` and `submit()` act on the data of the closest
-form, view, dialog or panel with its own data. `closeForm()` closes the form
-and `closeDialog()` the dialog, `reload()` reloads the closest list or object,
-and `selectedTab` names the selected tab of the form. Where they don't apply,
-the methods throw, e.g. `closeForm()` outside of forms, `isDirty` and
+`markDirty()`, `resetItem()`, `mergeItem()` and `submit()` act on the data of
+the closest form, view, dialog or panel with its own data. `closeForm()` closes
+the form and `closeDialog()` the dialog, `reload()` reloads the closest list or
+object, and `selectedTab` names the selected tab of the form. Where they don't
+apply, the methods throw, e.g. `closeForm()` outside of forms, `isDirty` and
 `isCreating` are `false`, and `selectedTab` is `null`, also in forms without
 tabs. They're described in
 [Forms](./forms.md#acting-on-the-form-from-code),

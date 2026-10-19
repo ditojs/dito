@@ -1,9 +1,14 @@
-import { isArray, isObject } from '@ditojs/utils'
+import { isArray, isObject, pickBy } from '@ditojs/utils'
 import { isTemporaryId } from './data.js'
-import { getItemId, getItemUid, walkSchemaData } from './schema/data.js'
+import {
+  getItemId,
+  getItemUid,
+  walkSchemaData,
+  deserializeData
+} from './schema/data.js'
 import { hasFormSchema, hasMultipleFormSchemas } from './schema/lookup.js'
-import { isSourceWithResource } from './schema/structure.js'
-import type { Data, Schema, SchemaDataEntry } from './types.ts'
+import { hasNestedData, isSourceWithResource } from './schema/structure.js'
+import type { Data, Schema, SchemaDataEntry, WalkedEntry } from './types.ts'
 
 // The names of the values that are merged in place or kept, not replaced:
 interface Merge {
@@ -79,6 +84,43 @@ export function mergeData(
     }
   }
   return target
+}
+
+// Merge `values` from the server into `target` like `mergeData()`, but keep the
+// values that they lack. We deserialize them as part of the whole item, which
+// their callbacks see:
+export function mergeValues(
+  schema: Schema,
+  target: Data,
+  values: Data,
+  {
+    services,
+    dataPath,
+    rootData
+  }: {
+    services: object | null
+    dataPath: string
+    rootData: Data | null
+  }
+): Data {
+  const item = { ...target, ...values }
+  deserializeData(schema, item, {
+    services,
+    dataPath,
+    rootData,
+    // Walk the unnested components of the item, e.g. sections, but only the
+    // values of `values`:
+    shouldWalk: ({ schema, data, name }: WalkedEntry) => (
+      data !== item || !hasNestedData(schema) || Object.hasOwn(values, name!)
+    )
+  })
+  const isMerged = (_: unknown, key: PropertyKey) => Object.hasOwn(values, key)
+  return Object.assign(
+    target,
+    mergeData(schema, pickBy(target, isMerged), pickBy(item, isMerged), {
+      services
+    })
+  )
 }
 
 // Match the remaining items with the new items of `target` in order, as the

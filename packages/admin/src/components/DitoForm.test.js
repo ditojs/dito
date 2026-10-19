@@ -1,6 +1,6 @@
 import { vi } from 'vitest'
 import { flushPromises, DOMWrapper } from '@vue/test-utils'
-import { toRaw } from 'vue'
+import { h, toRaw } from 'vue'
 import {
   mountAdmin,
   mountForm,
@@ -896,6 +896,294 @@ describe('DitoForm', () => {
       form.dataContext.resetItem({ id: 2, type: 'film' })
       await settle(form)
       expect(form.data).toEqual({ id: 2, type: 'film', director: null })
+    })
+  })
+
+  describe('mergeItem()', () => {
+    const chapterForm = {
+      type: 'form',
+      components: {
+        title: { type: 'text' },
+        pages: { type: 'number' }
+      }
+    }
+
+    // Mounts a book form whose export is run on the server, which owns the
+    // status and the time of the export.
+    async function mountBookForm({ mutate = false } = {}) {
+      const result = await mountForm({
+        schema: {
+          components: {
+            title: { type: 'text' },
+            exportStatus: { type: 'text', exclude: true },
+            exportedAt: { type: 'date', exclude: true },
+            exportLabel: {
+              type: 'text',
+              exclude: true,
+              computeValue: ({ item }) => `Export ${item.exportStatus}`
+            },
+            chapters: {
+              type: 'list',
+              editable: true,
+              mutate,
+              form: chapterForm
+            }
+          }
+        },
+        data: {
+          title: 'Emma',
+          exportStatus: 'queued',
+          exportedAt: null,
+          chapters: [
+            { id: 1, title: 'One', pages: 3 },
+            { id: 2, title: 'Two', pages: 4 }
+          ]
+        }
+      })
+      const { context } = result.getComponent('title')
+      return { ...result, context }
+    }
+
+    it('leaves the data as it is without values to merge', async () => {
+      const { context } = await mountBookForm()
+      const item = context.mergeItem(null)
+      expect(item.title).toBe('Emma')
+      expect(context.item.chapters).toHaveLength(2)
+    })
+
+    it('merges the values as loaded and keeps the form clean', async () => {
+      const { data, context, settle } = await mountBookForm()
+      const item = context.mergeItem({
+        exportStatus: 'done',
+        exportedAt: '2026-10-19T10:00:00.000Z',
+        exportJob: { id: 7 }
+      })
+      await settle()
+      expect(item).toBe(data)
+      expect(data.title).toBe('Emma')
+      expect(data.exportStatus).toBe('done')
+      expect(data.exportedAt).toEqual(new Date('2026-10-19T10:00:00.000Z'))
+      // Values without a component are assigned as they are:
+      expect(data.exportJob).toEqual({ id: 7 })
+      // Computed values that depend on the merged values run again:
+      expect(data.exportLabel).toBe('Export done')
+      expect(context.isDirty).toBe(false)
+    })
+
+    it('keeps the edits of other values and the dirty state', async () => {
+      const { data, context, wrapper, settle } = await mountBookForm()
+      await enterValue(wrapper.find('input[name="title"]'), 'Persuasion')
+      expect(context.isDirty).toBe(true)
+      context.mergeItem({ exportStatus: 'done' })
+      await settle()
+      expect(data.title).toBe('Persuasion')
+      expect(data.exportStatus).toBe('done')
+      expect(context.isDirty).toBe(true)
+    })
+
+    it('merges lists by id to keep the identity of their items', async () => {
+      const { data, context, settle } = await mountBookForm()
+      const { chapters } = data
+      const [first, second] = chapters
+      context.mergeItem({
+        chapters: [
+          { id: 2, title: 'Two', pages: 5 },
+          { id: 1, title: 'One', pages: 3 }
+        ]
+      })
+      await settle()
+      expect(data.chapters).toBe(chapters)
+      expect(chapters).toEqual([second, first])
+      expect(second.pages).toBe(5)
+      expect(context.isDirty).toBe(false)
+    })
+
+    it('deserializes only the merged values, with the whole item', async () => {
+      const { data, getComponent, settle } = await mountForm({
+        schema: {
+          components: {
+            title: { type: 'text' },
+            // Unnested components hold values of the item too:
+            details: {
+              type: 'section',
+              components: {
+                status: {
+                  type: 'text',
+                  deserializeValue: ({ value, item }) =>
+                    `${item.title}: ${value}`
+                }
+              }
+            },
+            tags: {
+              type: 'text',
+              deserializeValue: ({ value }) => value.join(', ')
+            }
+          }
+        },
+        data: { title: 'Emma', status: 'queued', tags: ['novel'] }
+      })
+      getComponent('title').context.mergeItem({ status: 'done' })
+      await settle()
+      expect(data).toEqual({
+        id: 1,
+        title: 'Emma',
+        status: 'Emma: done',
+        tags: 'novel'
+      })
+    })
+
+    it('merges the values into the draft of nested forms', async () => {
+      const { admin, data, routeComponent } = await mountBookForm()
+      await admin.navigate('/items/1/chapters/0')
+      const form = admin.getRouteComponent(isForm)
+      await settle(form)
+      await enterValue(new DOMWrapper(form.$el).find('input'), 'Opening')
+      await settle(form)
+      const { context } = admin.getComponent(form, `${form.dataPath}/title`)
+      expect(context.mergeItem({ pages: 5 })).toBe(form.data)
+      await settle(form)
+      expect(form.data).toEqual({ id: 1, title: 'Opening', pages: 5 })
+      expect(form.dataContext.isDirty).toBe(true)
+      // The draft is only applied when the form is submitted:
+      expect(data.chapters[0]).toEqual({ id: 1, title: 'One', pages: 3 })
+      expect(routeComponent.routeContext.isDirty).toBe(false)
+    })
+
+    it('merges the values into the item of nested forms with `mutate` in place', async () => {
+      const { admin, data, routeComponent } = await mountBookForm({
+        mutate: true
+      })
+      await admin.navigate('/items/1/chapters/0')
+      const form = admin.getRouteComponent(isForm)
+      await settle(form)
+      const [chapter] = data.chapters
+      const { context } = admin.getComponent(form, `${form.dataPath}/title`)
+      expect(context.mergeItem({ pages: 5 })).toBe(chapter)
+      await settle(form)
+      expect(data.chapters[0]).toBe(chapter)
+      expect(chapter).toEqual({ id: 1, title: 'One', pages: 5 })
+      expect(routeComponent.routeContext.isDirty).toBe(false)
+    })
+
+    it('applies the excluded values merged into drafts without an edit', async () => {
+      const { admin, data, routeComponent } = await mountForm({
+        schema: {
+          components: {
+            chapters: {
+              type: 'list',
+              editable: true,
+              form: {
+                type: 'form',
+                components: {
+                  title: { type: 'text' },
+                  proofStatus: { type: 'text', exclude: true }
+                }
+              }
+            }
+          }
+        },
+        data: { chapters: [{ id: 1, title: 'One', proofStatus: 'queued' }] }
+      })
+      await admin.navigate('/items/1/chapters/0')
+      const form = admin.getRouteComponent(isForm)
+      await settle(form)
+      form.dataContext.mergeItem({ proofStatus: 'done' })
+      await new DOMWrapper(form.$el)
+        .find('.dito-buttons--main button[type="submit"]')
+        .trigger('click')
+      await settle(form)
+      expect(data.chapters[0]).toEqual({
+        id: 1,
+        title: 'One',
+        proofStatus: 'done'
+      })
+      expect(routeComponent.routeContext.isDirty).toBe(false)
+    })
+
+    it('clears the errors of the merged values when they change', async () => {
+      const { dataModel, routeComponent, getComponent, settle } =
+        await mountForm({
+          schema: {
+            components: {
+              title: { type: 'text', required: true },
+              exportStatus: { type: 'text', required: true, exclude: true }
+            }
+          },
+          data: { title: '', exportStatus: '' }
+        })
+      routeComponent.dataContext.validate()
+      await settle()
+      expect(dataModel.getErrors('exportStatus')).toHaveLength(1)
+      getComponent('title').context.mergeItem({ exportStatus: 'done' })
+      await settle()
+      expect(dataModel.getErrors('exportStatus')).toBe(null)
+      expect(dataModel.getErrors('title')).toHaveLength(1)
+    })
+
+    it('merges the values that components poll until they unmount', async () => {
+      // Answer the polls in turn, and leave them pending until then, or until
+      // their signal aborts, like `fetch()` does:
+      const resolves = []
+      const request = vi.fn(
+        ({ signal }) =>
+          new Promise((resolve, reject) => {
+            resolves.push(resolve)
+            signal.addEventListener('abort', () => reject(signal.reason))
+          })
+      )
+      // Like the guide's polling example, without the time between the polls:
+      const ExportProgress = {
+        props: {
+          schema: { type: Object, required: true },
+          context: { type: Object, required: true }
+        },
+
+        mounted() {
+          const { context } = this
+          const poll = async () => {
+            const { exportStatus, exportProgress } = await context.request({
+              url: 'exports/1'
+            })
+            context.mergeItem({ exportStatus, exportProgress })
+            poll()
+          }
+          poll()
+        },
+
+        render: () => h('p')
+      }
+      const { data, routeComponent, settle } = await mountForm({
+        schema: {
+          components: {
+            title: { type: 'text' },
+            exportStatus: { type: 'text', exclude: true },
+            exportProgress: { type: 'number', exclude: true },
+            exportJob: {
+              type: 'component',
+              component: ExportProgress,
+              // The component unmounts once the export is done:
+              if: ({ item }) => item.exportStatus !== 'done'
+            }
+          }
+        },
+        data: { title: 'Emma', exportStatus: 'queued', exportProgress: 0 },
+        request
+      })
+      const respond = async data => {
+        resolves.shift()({ data })
+        await settle()
+      }
+      await respond({ exportStatus: 'running', exportProgress: 50 })
+      expect(data).toMatchObject({
+        exportStatus: 'running',
+        exportProgress: 50
+      })
+      await respond({ exportStatus: 'done', exportProgress: 100 })
+      expect(data).toMatchObject({ exportStatus: 'done', exportProgress: 100 })
+      expect(routeComponent.routeContext.isDirty).toBe(false)
+      // The poll that started before the component unmounted ends with it:
+      expect(request).toHaveBeenCalledTimes(3)
+      expect(request.mock.calls[2][0].signal.aborted).toBe(true)
     })
   })
 
