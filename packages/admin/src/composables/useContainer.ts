@@ -17,6 +17,7 @@ import {
   sourceSchemaKey
 } from '../utils/keys.ts'
 import { useServices } from './useSchemaContext.ts'
+import type { ResourceContext } from '../utils/ResourceContext.ts'
 import type { RouteContext } from '../utils/RouteContext.ts'
 import type { Services } from '../utils/services.ts'
 import type { SourceContext } from '../utils/SourceContext.ts'
@@ -45,6 +46,10 @@ export interface ContainerOptions {
   closeDialog?: (value?: unknown) => void
   // Forms apply their data to their parent, or save it through their resource:
   submit?: DataContext['submit']
+  // The verbs of forms that submit, which their buttons read:
+  verbs?: () => Record<string, string>
+  // Forms with a resource of their own outside of routes:
+  resourceContext?: ResourceContext | null
   // Views and forms, which also provide the resource of the route:
   routeContext?: RouteContext
   // Views provide the source of their main component, forms none:
@@ -70,6 +75,8 @@ export function useContainer({
   copyErrors,
   closeDialog,
   submit,
+  verbs,
+  resourceContext,
   routeContext,
   sourceContext
 }: ContainerOptions) {
@@ -87,6 +94,8 @@ export function useContainer({
       routeContext,
       resourceContext: routeContext.resourceContext
     })
+  } else if (resourceContext) {
+    Object.assign(ownServices, { resourceContext })
   }
   if (hasSourceContext) {
     // Spreading would read the getter of the main source of views too early:
@@ -124,6 +133,7 @@ export function useContainer({
     closeDialog: closeDialog ?? parentDataContext?.closeDialog ?? null,
     // Panels with their own data submit the form that they're in:
     submit: submit ?? parentDataContext?.submit ?? null,
+    getVerbs: verbs ?? (() => parentDataContext?.verbs ?? null),
     // Views, forms and dialogs cache while they're shown, panels share theirs:
     loadCache:
       routeContext || closeDialog
@@ -149,6 +159,8 @@ export function useContainer({
   if (routeContext) {
     provide(routeContextKey, routeContext)
     provide(resourceContextKey, routeContext.resourceContext)
+  } else if (resourceContext) {
+    provide(resourceContextKey, resourceContext)
   }
   if (hasSourceContext) {
     provide(sourceContextKey, sourceContext)

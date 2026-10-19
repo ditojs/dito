@@ -1,0 +1,3 @@
+### New
+
+- **admin:** `useDitoForm()` sets up a form in any Vue component, e.g. of a page, with the options of forms and `resource` and `id`: it loads the item of `id`, reloads when `id` changes, creates an item when `id` is `null` and saves it after, and returns the form's context. `DitoSchemaForm` renders it with its buttons, and its default slot lays out the fields with `DitoSchemaField` and `DitoPane`. In pages, leaving the route asks to discard unsaved changes, which the trail and the browser's unload warning show. In dialogs, the form's submit button closes the dialog with the saved item.

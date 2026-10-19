@@ -388,7 +388,7 @@ export class RouteTree {
     this.#hiddenNodes = createViewNodes(hiddenViews)
   }
 
-  // Dialogs don't support forms with routes:
+  // Dialogs and forms of `useDitoForm()` don't support forms with routes:
   hasRoutedForms(): boolean {
     return this.nodes.some(node => !!findRoutedForm(node))
   }

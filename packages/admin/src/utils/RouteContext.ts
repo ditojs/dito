@@ -26,6 +26,12 @@ export interface RouteContext {
   readonly breadcrumb: string
   // The tab of the route's schema:
   selectedTab: string | null
+  // The form of `useDitoForm()` in the route's components, whose changes and
+  // item are the route's:
+  componentForm: {
+    readonly dataContext: DataContext
+    readonly itemLabel: string | null
+  } | null
   readonly verbs: Record<string, string>
   // The text of the label of the item that forms edit, `null` in views:
   readonly itemLabel: string | null

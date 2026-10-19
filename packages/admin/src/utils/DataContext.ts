@@ -54,6 +54,8 @@ export interface DataContext {
   readonly loadCache: Record<string, Promise<unknown>> | null
   // Forms and the containers in them, e.g. panels with their own data:
   readonly submit: Submit | null
+  // The verbs of forms that submit through it, e.g. `save` or `create`:
+  readonly verbs: Record<string, string> | null
   validate(match?: Match): boolean
   verify(match?: Match): boolean
   clearErrors(match?: Match): void
@@ -75,6 +77,7 @@ export interface DataContextOptions {
   closeDialog: ((value?: unknown) => void) | null
   loadCache: Record<string, Promise<unknown>> | null
   submit: Submit | null
+  getVerbs(): Record<string, string> | null
   resetItem(data: any): any
   mergeItem(data: any): any
   // Forms take over the errors of their item in the parent's data:
@@ -92,6 +95,7 @@ export function createDataContext({
   closeDialog,
   loadCache,
   submit,
+  getVerbs,
   resetItem,
   mergeItem,
   copyErrors
@@ -233,6 +237,10 @@ export function createDataContext({
     closeDialog,
     loadCache,
     submit,
+
+    get verbs() {
+      return getVerbs()
+    },
 
     validate(match?: Match) {
       const errors = getValidationErrors(match)

@@ -44,7 +44,6 @@ export function useLeaveGuard(
       !isPathWithin(to.path, routeContext.path)
     )
     if (isClosing) {
-      const { model } = routeContext.dataContext
       if (isMutating()) {
         // Mutating forms validate their data once, also the fields that
         // aren't mounted. Leaving again leaves the invalid data:
@@ -54,9 +53,16 @@ export function useLeaveGuard(
         )
         hasPreventedLeavingInvalidData = !ok
       } else {
-        // Data stays dirty while it's submitted, so wait for the submits:
-        if (model.hasPendingSubmits) {
-          await model.waitUntilSubmitted()
+        // Data stays dirty while it's submitted, so wait for the submits, also
+        // of the form in the route's components:
+        const models = [
+          routeContext.dataContext.model,
+          routeContext.componentForm?.dataContext.model
+        ]
+        for (const model of models) {
+          if (model?.hasPendingSubmits) {
+            await model.waitUntilSubmitted()
+          }
         }
         if (routeContext.isDirty) {
           discardConfirmation ??= confirm(

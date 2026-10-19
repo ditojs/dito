@@ -283,7 +283,7 @@ export function useForm({
         },
         notifyError: error => notifySubmitError(error)
       })
-    } else {
+    } else if (resource) {
       const payload = requests.getPayloadData(button, method)
       success = await requests.submitResource(
         button,
@@ -313,6 +313,11 @@ export function useForm({
             dataContext.showValidationErrors(errors)
         }
       )
+    } else {
+      // Forms without a resource keep their data, without a notification:
+      success = true
+      await callbacks.onSuccess()
+      await requests.emitButtonEvent(button, 'success', {})
     }
     return { success, isTransientSubmit }
   }
