@@ -64,6 +64,11 @@ const sections = ['news', 'releases']
 </script>
 ```
 
+Template forms are the `form` of a list or object with its own `resource`,
+which saves the item. Inlined lists and objects, ones without a `resource` and
+`forms` by type need `components`: their items are saved with the data around
+them, through the declared schema.
+
 There is a field component for every built-in type that holds or edits a
 value: `DitoTextField`, `DitoNumberField`, `DitoSelectField`, `DitoListField`,
 … , see [Exports](../../api/admin/index.md#exports).

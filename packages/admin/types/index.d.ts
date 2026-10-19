@@ -3215,7 +3215,8 @@ export interface FormSchema<$Item = any>
    * placing them with {@link DitoSchemaField} and {@link DitoPane}. It
    * receives the `schema` and `context` of the form. Without `components`, the
    * form takes its components from the field components in its template, e.g.
-   * {@link DitoTextField}. Not supported in `forms`.
+   * {@link DitoTextField}, which only the `form` of a list or object with its
+   * own `resource` supports.
    */
   component?: Resolvable<VueComponent>
   /**

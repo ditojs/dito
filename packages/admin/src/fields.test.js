@@ -1,13 +1,6 @@
 import { h, ref, vShow, withDirectives } from 'vue'
-import { DOMWrapper, flushPromises } from '@vue/test-utils'
-import {
-  mountForm,
-  mountSchema,
-  enterValue,
-  isForm,
-  settle,
-  stubConfirm
-} from './test/mount.js'
+import { flushPromises } from '@vue/test-utils'
+import { mountForm, enterValue, stubConfirm } from './test/mount.js'
 import {
   defineType,
   defineFieldComponent,
@@ -163,42 +156,6 @@ describe('template forms', () => {
     )
     expect(findInput('title').element.value).toBe('Emma')
     expect(await submit()).toEqual({ id: 1, title: 'Emma' })
-  })
-})
-
-describe('nested template forms', () => {
-  it('apply their changes to the data of their parent', async () => {
-    const { admin, data } = await mountSchema({
-      schema: {
-        components: {
-          chapters: {
-            type: 'list',
-            editable: true,
-            itemLabel: 'title',
-            form: {
-              type: 'form',
-              label: 'Chapter',
-              component: {
-                props: ['schema', 'context'],
-                render: () =>
-                  h(DitoTextField, { path: 'title', required: true })
-              }
-            }
-          }
-        }
-      },
-      data: { chapters: [{ title: 'One', notes: 'Kept' }] }
-    })
-    await admin.navigate('/test/chapters/0')
-    const form = admin.getRouteComponent(isForm)
-    await settle(form)
-    const element = new DOMWrapper(form.$el)
-    await enterValue(element.find('input'), 'First')
-    await element
-      .find('.dito-buttons--main button[type="submit"]')
-      .trigger('click')
-    await settle(form)
-    expect(data.chapters).toEqual([{ title: 'First', notes: 'Kept' }])
   })
 })
 

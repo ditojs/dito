@@ -17,6 +17,7 @@ import {
   iterateNestedSchemaComponents,
   isForm,
   isTemplateForm,
+  isInlined,
   isView,
   isTab,
   isPanel,
@@ -286,6 +287,21 @@ export async function setupForms(api, schema) {
     }
   } else if (form) {
     schema.form = await setupForm(api, form)
+    // Template forms only save their fields through their own resource, as
+    // the data around them is serialized with the declared schema:
+    if (isTemplateForm(schema.form)) {
+      if (isInlined(schema)) {
+        throw new Error(
+          `Unsupported 'component' without 'components' in the 'form' of ` +
+          `inlined '${schema.name}': Use 'components'.`
+        )
+      } else if (!schema.resource) {
+        throw new Error(
+          `Unsupported 'component' without 'components' in the 'form' of ` +
+          `'${schema.name}' without 'resource': Use 'components'.`
+        )
+      }
+    }
   } else if (isObject(components)) {
     // NOTE: Forms of `components()` callbacks can only be set up with data:
     await setupForm(api, { type: 'form', components })

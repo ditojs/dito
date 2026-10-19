@@ -684,6 +684,7 @@ describe('setupForms()', () => {
     const schema = {
       type: 'list',
       name: 'books',
+      resource: { path: 'books' },
       form: { type: 'form', component: async () => ({ name: 'BookEditor' }) }
     }
     await setupForms(createApi(), schema)
@@ -702,6 +703,32 @@ describe('setupForms()', () => {
     await expect(setupForms(createApi(), schema)).rejects.toThrow(
       `Unsupported 'component' without 'components' in the 'forms' of ` +
       `'books': Use 'form'.`
+    )
+  })
+
+  it('rejects template forms of sources without a resource', async () => {
+    const schema = {
+      type: 'list',
+      name: 'chapters',
+      editable: true,
+      form: { type: 'form', component: { name: 'ChapterEditor' } }
+    }
+    await expect(setupForms(createApi(), schema)).rejects.toThrow(
+      `Unsupported 'component' without 'components' in the 'form' of ` +
+      `'chapters' without 'resource': Use 'components'.`
+    )
+  })
+
+  it('rejects template forms of inlined sources', async () => {
+    const schema = {
+      type: 'object',
+      name: 'address',
+      inlined: true,
+      form: { type: 'form', component: { name: 'AddressEditor' } }
+    }
+    await expect(setupForms(createApi(), schema)).rejects.toThrow(
+      `Unsupported 'component' without 'components' in the 'form' of ` +
+      `inlined 'address': Use 'components'.`
     )
   })
 
