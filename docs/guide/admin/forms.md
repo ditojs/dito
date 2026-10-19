@@ -124,7 +124,9 @@ The text of the item's label is available in all of them, as `itemLabel`. See
 The [context](./context.md#the-forms-actions) offers the form's actions to all
 callbacks inside it, e.g. `isCreating`, `isDirty`, `submit()`, `closeForm()`
 and `validate()`. `closeForm()` resolves to `false` if the user chose to stay
-with unsaved changes.
+with unsaved changes. Outside of buttons, `submit()` submits the form like a
+click on its submit button, but leaves it open unless `closeForm: true` is
+passed, and throws if the form has none.
 
 `resetItem(data)` resets the data as if `data` was loaded, e.g. a server
 response:

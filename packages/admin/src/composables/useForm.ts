@@ -73,7 +73,7 @@ export function useForm({
   const { context, createContext } = useSchemaContext(dataContext, {
     services
   })
-  const { getLabelText } = useSchemaValue(context)
+  const { getLabelText, getSchemaValue } = useSchemaValue(context)
   // The events of the data, e.g. `load`, like the form's schema emits them:
   const createEventContext = (values?: Context) =>
     createContext({
@@ -126,6 +126,30 @@ export function useForm({
       )
     )
   )
+
+  // Outside of buttons, `context.submit()` submits with the form's submit
+  // button, with the values and events of its schema, but leaves the form open
+  // unless `closeForm` is passed:
+  const { emitEvent: emitSubmitEvent } = useSchemaEvents(
+    () => buttonSchemas.value.submit,
+    { services, createContext: createEventContext }
+  )
+  const getSubmitButton = (): SubmitButton => {
+    const schema = buttonSchemas.value.submit
+    if (schema) {
+      return {
+        schema,
+        context,
+        closeForm: false,
+        createContext: createEventContext,
+        getSchemaValue: (keyOrDataPath, options = {}) =>
+          getSchemaValue(keyOrDataPath, { schema, ...options }),
+        emitEvent: emitSubmitEvent
+      }
+    } else {
+      throw new Error('Unable to submit: The form has no submit button.')
+    }
+  }
 
   // Merge save responses into the item, to keep the identity of its objects.
   // In the data of their parent, the responses are edits still to apply:
@@ -300,6 +324,7 @@ export function useForm({
     getItemId,
     verbs,
     buttonSchemas,
+    getSubmitButton,
     itemLabelText,
     loadData,
     createData,

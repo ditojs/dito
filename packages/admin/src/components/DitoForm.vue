@@ -213,7 +213,8 @@ export default {
       // The components of the form don't see the source of its parent, e.g.
       // of a tree that renders the forms of its items:
       sourceContext: null,
-      submit: (button, options) => submit(button, options)
+      submit: (button, options) =>
+        submit(button ?? form.getSubmitButton(), options)
     })
 
     // The data, and the schema that the type of the item or of the item to

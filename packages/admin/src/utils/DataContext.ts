@@ -27,8 +27,9 @@ type Match = string | string[] | RegExp | ((dataPath: string) => boolean)
 
 type Errors = Record<string, { message: string }[]>
 
+// Without a button, forms submit with their submit button:
 type Submit = (
-  button: SubmitButton,
+  button: SubmitButton | null,
   options?: SubmitOptions
 ) => Promise<boolean>
 

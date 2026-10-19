@@ -2470,8 +2470,11 @@ export type SchemaContext<$Item = any> = {
    * belongs to, like buttons with a resource do when
    * clicked: through its list or other source, or else to
    * its form, which saves its data or applies it to its
-   * parent. Resolves with whether it succeeded. Throws
-   * outside of buttons of sources and forms.
+   * parent. Elsewhere in forms, it submits the form like a
+   * click on its submit button, but leaves it open unless
+   * `closeForm: true` is passed. Resolves with whether it
+   * succeeded. Throws in forms without a submit button, and
+   * outside of forms and buttons of sources.
    */
   submit(options?: {
     validate?: boolean

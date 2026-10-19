@@ -315,6 +315,166 @@ describe('DitoForm', () => {
     })
   })
 
+  describe('context.submit() outside of buttons', () => {
+    const mountSubmittingForm = schema =>
+      mountForm({
+        schema: { fields: { title: { type: 'text' } }, ...schema },
+        data: { title: 'Emma' },
+        request: ({ data }) => ({ data: { id: 1, ...data } })
+      })
+
+    const getSubmits = request =>
+      request.mock.calls
+        .map(([{ method = 'get', url, data }]) => ({ method, url, data }))
+        .filter(({ method }) => method !== 'get')
+
+    it('submits with the submit button of the form in form events', async () => {
+      let formContext = null
+      const onSuccess = vi.fn()
+      const { admin, request, settle } = await mountSubmittingForm({
+        buttons: { submit: { onSuccess } },
+        onLoad(context) {
+          formContext = context
+        }
+      })
+      expect(await formContext.submit()).toBe(true)
+      await settle()
+      expect(getSubmits(request)).toEqual([
+        { method: 'patch', url: '/items/1', data: { id: 1, title: 'Emma' } }
+      ])
+      expect(onSuccess).toHaveBeenCalledTimes(1)
+      // Unlike a click on the submit button, it leaves the form open:
+      expect(admin.router.currentRoute.value.path).toBe('/items/1')
+    })
+
+    it('closes the form with `closeForm: true`', async () => {
+      let formContext = null
+      const { admin, settle } = await mountSubmittingForm({
+        onLoad(context) {
+          formContext = context
+        }
+      })
+      expect(await formContext.submit({ closeForm: true })).toBe(true)
+      await settle()
+      expect(admin.router.currentRoute.value.path).toBe('/items')
+    })
+
+    it('submits to the resource of the submit button', async () => {
+      let layoutContext = null
+      const { request, settle } = await mountSubmittingForm({
+        component: {
+          props: ['schema', 'context'],
+          setup(props) {
+            layoutContext = props.context
+            return () => h(DitoSchemaField, { name: 'title' })
+          }
+        },
+        buttons: {
+          submit: { resource: { path: 'publish', method: 'post' } }
+        }
+      })
+      expect(await layoutContext.submit()).toBe(true)
+      await settle()
+      expect(getSubmits(request)).toMatchObject([
+        { method: 'post', url: '/items/1/publish' }
+      ])
+    })
+
+    it('submits the form of useDitoContext() in layout components', async () => {
+      let context = null
+      const { wrapper, request, settle } = await mountSubmittingForm({
+        component: {
+          props: ['schema', 'context'],
+          setup() {
+            context = useDitoContext()
+            return () => h(DitoSchemaField, { name: 'title' })
+          }
+        }
+      })
+      await enterValue(wrapper.find('input[name="title"]'), 'Persuasion')
+      expect(await context.submit()).toBe(true)
+      await settle()
+      expect(getSubmits(request)).toMatchObject([
+        { method: 'patch', data: { title: 'Persuasion' } }
+      ])
+    })
+
+    it('submits the form in callbacks of its fields', async () => {
+      const { wrapper, request, settle } = await mountSubmittingForm({
+        fields: {
+          title: { type: 'text', onChange: ({ submit }) => submit() }
+        }
+      })
+      await enterValue(wrapper.find('input[name="title"]'), 'Persuasion')
+      await settle()
+      expect(getSubmits(request)).toMatchObject([
+        { method: 'patch', data: { title: 'Persuasion' } }
+      ])
+    })
+
+    it('submits the form in callbacks of items of its lists', async () => {
+      const { wrapper, request, settle } = await mountForm({
+        schema: {
+          fields: {
+            chapters: {
+              type: 'list',
+              inlined: true,
+              form: {
+                type: 'form',
+                fields: {
+                  title: { type: 'text', onChange: ({ submit }) => submit() }
+                }
+              }
+            }
+          }
+        },
+        data: { chapters: [{ title: 'One' }] },
+        request: ({ data }) => ({ data: { id: 1, ...data } })
+      })
+      await enterValue(
+        wrapper.find('input[name="chapters/0/title"]'),
+        'Opening'
+      )
+      await settle()
+      expect(getSubmits(request)).toMatchObject([
+        { method: 'patch', data: { chapters: [{ title: 'Opening' }] } }
+      ])
+    })
+
+    it('throws in forms without a submit button', async () => {
+      let formContext = null
+      await mountSubmittingForm({
+        buttons: { submit: false },
+        onLoad(context) {
+          formContext = context
+        }
+      })
+      expect(() => formContext.submit()).toThrow(
+        'Unable to submit: The form has no submit button.'
+      )
+    })
+
+    it('throws in views, which have nothing to submit', async () => {
+      let viewContext = null
+      await mountSchema({
+        schema: {
+          fields: {
+            title: {
+              type: 'text',
+              label(context) {
+                viewContext = context
+                return 'Title'
+              }
+            }
+          }
+        }
+      })
+      expect(() => viewContext.submit()).toThrow(
+        'Unable to submit: There is no button of a form or source.'
+      )
+    })
+  })
+
   it('reloads the data when navigating to another item', async () => {
     const books = {
       1: { id: 1, title: 'Emma' },
