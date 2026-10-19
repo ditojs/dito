@@ -552,5 +552,54 @@ describe('useSchemaContext()', () => {
       await admin.wrapper.find('.dito-dialog form').trigger('submit')
       expect(await result).toEqual({ note: 'Read again' })
     })
+
+    it('ask for confirmations from the handlers of buttons', async () => {
+      let confirmation
+      const { admin, findField } = await mountSchema({
+        schema: {
+          components: {
+            reset: {
+              type: 'button',
+              onClick({ confirm }) {
+                confirmation = confirm('Reset Dune?', { action: 'Reset' })
+              }
+            }
+          }
+        }
+      })
+      await findField('reset').trigger('click')
+      await flushPromises()
+      const dialog = admin.wrapper.find('.dito-dialog')
+      expect(dialog.attributes('aria-label')).toBe('Reset Dune?')
+      const button = dialog.find('button[type="submit"]')
+      expect(button.text()).toBe('Reset')
+      await button.trigger('click')
+      expect(await confirmation).toBe(true)
+    })
+
+    it('ask for values and show alerts from the handlers of buttons', async () => {
+      let alerted
+      const { admin, findField } = await mountSchema({
+        schema: {
+          components: {
+            rename: {
+              type: 'button',
+              async onClick({ prompt, alert }) {
+                const title = await prompt('Title:', { value: 'Dune' })
+                alerted = alert(`Renamed to ${title}.`)
+              }
+            }
+          }
+        }
+      })
+      await findField('rename').trigger('click')
+      await flushPromises()
+      await admin.wrapper.find('.dito-dialog form').trigger('submit')
+      await flushPromises()
+      const dialog = admin.wrapper.findAll('.dito-dialog').at(-1)
+      expect(dialog.attributes('aria-label')).toBe('Renamed to Dune.')
+      await dialog.find('.dito-dialog__buttons button').trigger('click')
+      expect(await alerted).toBe(undefined)
+    })
   })
 })

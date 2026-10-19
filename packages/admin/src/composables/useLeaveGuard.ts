@@ -61,13 +61,9 @@ export function useLeaveGuard(
         if (routeContext.isDirty) {
           discardConfirmation ??= confirm(
             { adminContext },
-            {
-              message: (
-                'You have unsaved changes. ' +
-                `Do you really want to ${getCancelVerb()}?`
-              ),
-              verb: 'discard'
-            }
+            'You have unsaved changes. ' +
+            `Do you really want to ${getCancelVerb()}?`,
+            { action: 'Discard' }
           ).finally(() => {
             discardConfirmation = null
           })

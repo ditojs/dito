@@ -29,8 +29,7 @@ describe('stubConfirm()', () => {
   it('answers the confirmation dialogs with the mock', async () => {
     const answer = stubConfirm(false)
     const { root } = await mountAdmin({ views: {} })
-    const ask = () =>
-      confirm(root, { message: 'Delete <b>Dune</b>?', verb: 'delete' })
+    const ask = () => confirm(root, 'Delete <b>Dune</b>?')
     expect(await ask()).toBe(false)
     answer.mockReturnValue(true)
     expect(await ask()).toBe(true)

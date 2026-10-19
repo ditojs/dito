@@ -834,6 +834,105 @@ context.closeDialog(value?): void
 Closes the dialog that the context belongs to, resolving its `showDialog()`
 with `value`. Throws outside of dialogs.
 
+### confirm()
+
+```ts
+context.confirm(message, { action }?): Promise<boolean>
+```
+
+Asks for a confirmation in a dialog with the message, a Cancel button and a
+button to confirm.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| `message` | `string` | Trusted HTML, rendered as it is, or plain text, whose line breaks are kept. Escape interpolated values with `escapeHtml()` of [@ditojs/utils](../utils.md). Its text is the accessible label of the dialog. |
+| `options.action` | `string` | The text of the button to confirm. Defaults to `'OK'`. |
+
+#### Return value
+
+Resolves to `true` when confirmed, and to `false` when cancelled, also with
+Escape.
+
+#### Example
+
+```js
+async onClick({ confirm, request }) {
+  if (await confirm('Delete all reviews?', { action: 'Delete' })) {
+    await request({ method: 'delete', resource: { path: 'reviews' } })
+  }
+}
+```
+
+### prompt()
+
+```ts
+context.prompt(message, { action, value, type }?): Promise<unknown>
+```
+
+Asks for a value in a dialog with the message above a field, a Cancel button
+and a button to submit. The field validates like those of other dialogs, and
+it isn't required.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| `message` | `string` | Trusted HTML, rendered as it is, or plain text, whose line breaks are kept. Escape interpolated values with `escapeHtml()` of [@ditojs/utils](../utils.md). Its text is the accessible label of the dialog and the field. |
+| `options.action` | `string` | The text of the button to submit. Defaults to `'OK'`. |
+| `options.value` | `any` | The initial value of the field. |
+| `options.type` | `string` | The type of the field, any type of component that holds a value, e.g. `'email'`, `'number'` or `'textarea'`. Defaults to `'text'`. |
+
+#### Return value
+
+Resolves to the value of the field when submitted, also when it's empty, e.g.
+`null` for empty text, and to `undefined` when cancelled, also with Escape.
+
+#### Example
+
+```js
+async onClick({ prompt, request }) {
+  const email = await prompt('Send the invoice to:', {
+    action: 'Send',
+    type: 'email'
+  })
+  if (email !== undefined) {
+    const resource = { path: 'invoice/send' }
+    await request({ method: 'post', resource, data: { email } })
+  }
+}
+```
+
+### alert()
+
+```ts
+context.alert(message, { action }?): Promise<void>
+```
+
+Shows the message in a dialog with a single button.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| `message` | `string` | Trusted HTML, rendered as it is, or plain text, whose line breaks are kept. Escape interpolated values with `escapeHtml()` of [@ditojs/utils](../utils.md). Its text is the accessible label of the dialog. |
+| `options.action` | `string` | The text of the button. Defaults to `'OK'`. |
+
+#### Return value
+
+Resolves once the dialog is closed, with its button or with Escape.
+
+#### Example
+
+```js
+async onClick({ alert, item }) {
+  if (item.orders > 0) {
+    await alert('Books with orders can only be archived.')
+  }
+}
+```
+
 ### notify()
 
 ```ts

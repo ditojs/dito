@@ -606,6 +606,12 @@ export interface ComponentSchemaBase<$Item> extends SchemaBase<$Item> {
   autofocus?: SchemaValue<$Item, {}, boolean>
 
   /**
+   * The id of the element that labels the field, for fields without their
+   * own label, set as `aria-labelledby` of the input.
+   */
+  labelledBy?: SchemaValue<$Item, {}, string>
+
+  /**
    * Whether the field can be cleared.
    * @defaultValue `false`
    */
@@ -2592,6 +2598,51 @@ export type SchemaContext<$Item = any> = {
    */
   closeDialog(value?: unknown): void
   /**
+   * Asks for a confirmation in a dialog with the message, a Cancel button
+   * and a button with the text of `action`, and resolves to whether it was
+   * confirmed. The message is trusted HTML or plain text.
+   */
+  confirm(
+    message: string,
+    options?: {
+      /** The text of the button to confirm. @defaultValue `'OK'` */
+      action?: string
+    }
+  ): Promise<boolean>
+  /**
+   * Asks for a value in a dialog with a field of the type `type`, labelled
+   * with the message, a Cancel button and a button with the text of `action`.
+   * Resolves to the field's value once it validates, or to `undefined` when
+   * cancelled. The message is trusted HTML or plain text.
+   */
+  prompt<$Value = unknown>(
+    message: string,
+    options?: {
+      /** The text of the button to submit. @defaultValue `'OK'` */
+      action?: string
+      /** The initial value of the field. */
+      value?: $Value
+      /**
+       * The type of the field, any type of component that holds a value.
+       *
+       * @defaultValue `'text'`
+       */
+      type?: string
+    }
+  ): Promise<$Value | undefined>
+  /**
+   * Shows the message in a dialog with a button with the text of `action`,
+   * and resolves once it's closed, also with Escape. The message is trusted
+   * HTML or plain text.
+   */
+  alert(
+    message: string,
+    options?: {
+      /** The text of the button to close. @defaultValue `'OK'` */
+      action?: string
+    }
+  ): Promise<void>
+  /**
    * Displays a notification to the user, with the
    * paragraphs of either `text` or `html`.
    */
@@ -2678,6 +2729,9 @@ export interface AdminContext {
   /** All views flattened into a single record. */
   readonly flattenedViews: Record<string, ViewSchema>
   showDialog: SchemaContext['showDialog']
+  confirm: SchemaContext['confirm']
+  prompt: SchemaContext['prompt']
+  alert: SchemaContext['alert']
   notify: SchemaContext['notify']
 }
 

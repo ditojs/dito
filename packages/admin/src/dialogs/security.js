@@ -234,13 +234,8 @@ export function showSecurityDialog(adminContext) {
               async onClick({ request, reload }) {
                 const isConfirmed = await confirm(
                   { adminContext },
-                  {
-                    message: (
-                      'Do you really want to turn off two-factor ' +
-                      'authentication?'
-                    ),
-                    verb: 'turn off'
-                  }
+                  'Do you really want to turn off two-factor authentication?',
+                  { action: 'Turn Off' }
                 )
                 if (isConfirmed) {
                   await request({ resource: users.totp, method: 'delete' })

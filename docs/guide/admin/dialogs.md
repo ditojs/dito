@@ -51,24 +51,7 @@ The promise resolves to:
 - the value passed to `context.closeDialog(value)` from a handler inside the
   dialog.
 
-Escape only cancels dialogs that have a `cancel` button or no buttons.
-
-A confirmation only needs a label, as the result tells the answers apart:
-
-```js
-const isConfirmed = await context.showDialog({
-  components: {
-    message: { type: 'label', label: 'Delete all reviews of this book?' }
-  },
-  buttons: {
-    cancel: {},
-    delete: { type: 'submit', text: 'Delete' }
-  }
-})
-if (isConfirmed) {
-  await context.request({ method: 'delete', resource: { path: 'reviews' } })
-}
-```
+Escape only cancels dialogs that have a `cancel` button, or at most one button.
 
 Submitting validates the data like forms do, and the dialog only resolves once
 it is valid. Enter in an input submits any dialog. Other buttons validate in
@@ -89,6 +72,27 @@ buttons: {
 }
 ```
 
+## Confirmations, prompts and alerts
+
+For the cases of the browser's `confirm()`, `prompt()` and `alert()`, the
+context has methods of these names that show dito dialogs with a message and a
+button for the `action`, `'OK'` by default:
+[`confirm()`](../../api/admin/context.md#confirm) resolves to whether it was
+confirmed, [`prompt()`](../../api/admin/context.md#prompt) to the value of its
+field of the `type` or `undefined` when cancelled, and
+[`alert()`](../../api/admin/context.md#alert) once it's closed:
+
+```js
+const isConfirmed = await context.confirm(
+  'Delete all reviews of this book?',
+  { action: 'Delete' }
+)
+if (isConfirmed) {
+  await context.request({ method: 'delete', resource: { path: 'reviews' } })
+  await context.alert('All reviews were deleted.')
+}
+```
+
 ## Inside the dialog
 
 The dialog's components have contexts of their own, whose `item` and
@@ -101,11 +105,15 @@ components throw.
 
 ## Outside of callbacks
 
-`admin.context.showDialog()` shows dialogs from code outside of schemas, see
-[AdminContext](../../api/admin/admin.md#showdialog).
+`admin.context.showDialog()`, `confirm()`, `prompt()` and `alert()` show
+dialogs from code outside of schemas, see
+[AdminContext](../../api/admin/admin.md#methods).
 
 ## Reference
 
 - [Dialogs](../../api/admin/schemas.md#dialogs).
-- [`showDialog()`](../../api/admin/context.md#showdialog) and
-  [`closeDialog()`](../../api/admin/context.md#closedialog).
+- [`showDialog()`](../../api/admin/context.md#showdialog),
+  [`closeDialog()`](../../api/admin/context.md#closedialog),
+  [`confirm()`](../../api/admin/context.md#confirm),
+  [`prompt()`](../../api/admin/context.md#prompt) and
+  [`alert()`](../../api/admin/context.md#alert).

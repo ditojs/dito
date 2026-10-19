@@ -196,6 +196,18 @@ describe('DitoTypeText', () => {
     warn.mockRestore()
   })
 
+  it('labels the input by the element of `labelledBy`', async () => {
+    const { findField } = await mountSchema({
+      schema: {
+        components: {
+          title: { type: 'text', label: false, labelledBy: 'title-text' }
+        }
+      }
+    })
+    const input = findField('title').find('input')
+    expect(input.attributes('aria-labelledby')).toBe('title-text')
+  })
+
   it('uses the matching input types for the text based types', async () => {
     const { findField } = await mountSchema({
       schema: {

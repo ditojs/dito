@@ -116,9 +116,6 @@ export default {
         )
       )
     )
-    const hasButtons = computed(
-      () => Object.keys(buttonSchemas.value).length > 0
-    )
 
     return {
       schema,
@@ -142,7 +139,7 @@ export default {
           undefined
         ),
         fallbackFocus: () => dialog.value,
-        // Only dialogs with a cancel button or without buttons can be
+        // Only dialogs with a cancel button or at most one button can be
         // cancelled, see `onKeyDown()`. The trap is also deactivated on
         // unmount, e.g. after submitting, so it can't cancel then:
         escapeDeactivates: false
@@ -166,8 +163,10 @@ export default {
         // Escape keys that the dialog's components handled don't cancel it:
         if (
           event.key === 'Escape' &&
-          !event.defaultPrevented &&
-          (!!buttonSchemas.value.cancel || !hasButtons.value)
+          !event.defaultPrevented && (
+            !!buttonSchemas.value.cancel ||
+            Object.keys(buttonSchemas.value).length <= 1
+          )
         ) {
           event.preventDefault()
           cancel()

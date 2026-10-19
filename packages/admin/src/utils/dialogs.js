@@ -8,24 +8,59 @@ export const transientNote = (
   'in order to persist this change.'
 )
 
-export async function confirm({ adminContext }, { message, verb }) {
-  const result = await adminContext.showDialog({
+export async function confirm(
+  { adminContext },
+  message,
+  { action = 'OK' } = {}
+) {
+  const result = await showMessageDialog(adminContext, message, {
+    buttons: {
+      cancel: {},
+      confirm: { type: 'submit', text: action }
+    }
+  })
+  // Cancelled dialogs resolve with `undefined`:
+  return result !== undefined
+}
+
+export async function prompt(
+  { adminContext },
+  message,
+  { action = 'OK', value = null, type = 'text' } = {}
+) {
+  // Labels are cut off, so the message above labels the field instead, by the
+  // id of its component path, unique across dialogs:
+  const messageName = `dito-prompt-message-${++promptCount}`
+  const result = await showMessageDialog(adminContext, message, {
+    messageName,
     components: {
-      message: {
-        type: 'component',
-        component: DitoConfirmMessage,
-        label: false
+      value: {
+        type,
+        label: false,
+        labelledBy: messageName,
+        autofocus: true
       }
     },
     buttons: {
       cancel: {},
-      confirm: { type: 'submit', text: labelize(verb) }
+      confirm: { type: 'submit', text: action }
     },
-    data: { message },
-    settings: { label: getTextFromHtml(message) }
+    data: { value }
   })
-  // Cancelled dialogs resolve with `undefined`:
-  return result !== undefined
+  return result?.value
+}
+
+// Escape closes the alert too, as it has only one button:
+export async function alert(
+  { adminContext },
+  message,
+  { action = 'OK' } = {}
+) {
+  await showMessageDialog(adminContext, message, {
+    buttons: {
+      close: { type: 'submit', text: action }
+    }
+  })
 }
 
 // Transient removals still need the parent to be saved, so they are confirmed
@@ -38,10 +73,11 @@ export async function confirmAndRemove(
   const [verb, pastVerb] = isTransient
     ? [verbs.remove, verbs.removed]
     : [verbs.delete, verbs.deleted]
-  const isConfirmed = await confirm(services, {
-    message: `Do you really want to ${verb} ${label}?`,
-    verb
-  })
+  const isConfirmed = await confirm(
+    services,
+    `Do you really want to ${verb} ${label}?`,
+    { action: labelize(verb) }
+  )
   if (isConfirmed && (await remove()) !== false) {
     services.adminContext.notify({
       type: isTransient ? 'info' : 'success',
@@ -50,3 +86,25 @@ export async function confirmAndRemove(
     })
   }
 }
+
+function showMessageDialog(
+  adminContext,
+  message,
+  { messageName = 'message', components, buttons, data }
+) {
+  return adminContext.showDialog({
+    components: {
+      [messageName]: {
+        type: 'component',
+        component: DitoConfirmMessage,
+        label: false
+      },
+      ...components
+    },
+    buttons,
+    data: { [messageName]: message, ...data },
+    settings: { label: getTextFromHtml(message) }
+  })
+}
+
+let promptCount = 0

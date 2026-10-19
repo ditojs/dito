@@ -277,6 +277,9 @@ export function useField(
       }
       attributes.readonly = readonly.value
       attributes.autofocus = autofocus.value
+      attributes['aria-labelledby'] = getSchemaValue('labelledBy', {
+        type: String
+      })
       if (textField) {
         attributes.maxlength = getSchemaValue('maxLength', {
           type: Number
