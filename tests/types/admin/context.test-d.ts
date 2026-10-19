@@ -100,6 +100,14 @@ describe('SchemaContext', () => {
     assertType(context.request({ method: 'get' }))
   })
 
+  it('reads values relative to the item', () => {
+    const context = {} as SchemaContext<Entry>
+    expectTypeOf(context.getValueAt('../../font')).toBeAny()
+    expectTypeOf(context.getValueAt<string>('../title')).toBeString()
+    // @ts-expect-error Data paths are strings.
+    context.getValueAt(['..', 'title'])
+  })
+
   it('extends contexts with values', () => {
     const context = {} as SchemaContext<Entry>
     const extended = context.extend({ value: 1 })

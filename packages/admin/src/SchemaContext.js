@@ -298,6 +298,17 @@ export default class SchemaContext {
       getSchemaValue(key, { ...options, schema: this.schema, context: this })
   }
 
+  // Resolve data paths like `dataPath` of schemas, relative to the item:
+  get getValueAt() {
+    // Data that isn't there, e.g. after it was reset by code, has no value:
+    return dataPath =>
+      getValueAtDataPath(
+        this.rootItem,
+        resolveDataPath(this.itemDataPath, dataPath),
+        () => undefined
+      )
+  }
+
   get request() {
     return options => request(getServices(this), options)
   }

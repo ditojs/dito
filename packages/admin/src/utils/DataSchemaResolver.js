@@ -1,11 +1,5 @@
 import { computed, shallowRef } from 'vue'
-import {
-  isObject,
-  isFunction,
-  isPromise,
-  getValueAtDataPath,
-  resolveDataPath
-} from '@ditojs/utils'
+import { isObject, isFunction, isPromise } from '@ditojs/utils'
 import { toModelData } from './data.js'
 
 // Resolve data schemas, `{ data, dataPath }`, lazily: nothing loads before
@@ -78,13 +72,7 @@ export class DataSchemaResolver {
     if (data !== undefined) {
       return isFunction(data) ? data(this.createContext()) : data
     } else if (dataPath) {
-      const context = this.createContext()
-      // Data that isn't there, e.g. after it was reset by code, has no value:
-      return getValueAtDataPath(
-        context.rootItem,
-        resolveDataPath(context.itemDataPath, dataPath),
-        () => undefined
-      )
+      return this.createContext().getValueAt(dataPath)
     }
   }
 

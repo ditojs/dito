@@ -44,7 +44,8 @@ Data paths are slash-separated paths into the root data, e.g.
 `'chapters/0/title'`. The paths that the context hands out have no leading
 slash.
 
-Paths that are passed *in* to the context, e.g. to [`validate()`](#validate),
+Paths that are passed *in* to the context, e.g. to
+[`getValueAt()`](#getvalueat), [`validate()`](#validate),
 [`isValid()`](#isvalid) and [`clearErrors()`](#clearerrors), are relative to
 [`itemDataPath`](#itemdatapath), the item that the component sits in. A
 leading `/` makes them absolute, `..` goes up one level, and leading above the
@@ -395,6 +396,33 @@ The resolved value.
 
 ```js
 const columns = context.getSchemaValue('columns', { type: Number, default: 2 })
+```
+
+### getValueAt()
+
+```ts
+context.getValueAt<T>(dataPath): T
+```
+
+Returns the value at `dataPath`, a [data path](#data-paths) resolved like the
+`dataPath` of schemas. It reads the edited data, and callbacks that call it run
+again when the value changes.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| `dataPath` | `string` | The data path of the value, e.g. `'../../font'`. |
+
+#### Return value
+
+The value, or `undefined` if it isn't there.
+
+#### Example
+
+```js
+// In a field of a slice of a style, at 'styles/0/slices/0/…':
+const font = context.getValueAt('../../font') // 'styles/0/font'
 ```
 
 ### extend()

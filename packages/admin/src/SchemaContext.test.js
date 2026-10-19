@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import { reactive } from 'vue'
+import { reactive, nextTick } from 'vue'
 import SchemaContext from './SchemaContext.js'
 import { defineType } from './utils/schema/types.ts'
 import { mountSchema } from './test/mount.js'
@@ -420,6 +420,77 @@ describe('SchemaContext', () => {
       const getDefault = vi.fn(() => 0)
       expect(context.getSchemaValue('min', { default: getDefault })).toBe(0)
       expect(getDefault).toHaveBeenCalledWith(context)
+    })
+  })
+
+  describe('getValueAt()', () => {
+    const createBookContext = () =>
+      new SchemaContext(null, {
+        rootData: createLibrary(),
+        dataPath: 'authors/0/books/0/title',
+        nested: true
+      })
+
+    it('reads values relative to the item, like `dataPath` of schemas', () => {
+      const { getValueAt } = createBookContext()
+      expect(getValueAt('title')).toBe('First')
+      expect(getValueAt('../1/title')).toBe('Second')
+      expect(getValueAt('../../name')).toBe('Ann')
+      expect(getValueAt('../../../../name')).toBe('City Library')
+      expect(getValueAt('/authors/0/books/1/tags')).toEqual([])
+    })
+
+    it(`returns undefined for values that aren't there`, () => {
+      const { getValueAt } = createBookContext()
+      expect(getValueAt('subtitle')).toBe(undefined)
+      expect(getValueAt('../5/title')).toBe(undefined)
+    })
+
+    it('throws for paths above the root', () => {
+      const { getValueAt } = createBookContext()
+      expect(() => getValueAt('../../../../../name')).toThrow(
+        `Invalid data path: 'authors/0/books/0/../../../../../name' leads ` +
+        `above the root.`
+      )
+    })
+
+    it('reads the edited data in nested lists, reactively', async () => {
+      const { data } = await mountSchema({
+        schema: {
+          components: {
+            styles: {
+              type: 'list',
+              inlined: true,
+              form: {
+                type: 'form',
+                components: {
+                  font: { type: 'text' },
+                  slices: {
+                    type: 'list',
+                    inlined: true,
+                    form: {
+                      type: 'form',
+                      components: {
+                        font: {
+                          type: 'text',
+                          computeValue: ({ getValueAt }) =>
+                            getValueAt('../../font')
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        data: { styles: [{ font: 'Sans', slices: [{}] }] }
+      })
+      const [style] = data.styles
+      expect(style.slices[0].font).toBe('Sans')
+      style.font = 'Serif'
+      await nextTick()
+      expect(style.slices[0].font).toBe('Serif')
     })
   })
 

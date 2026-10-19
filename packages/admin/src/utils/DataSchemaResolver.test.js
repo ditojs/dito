@@ -1,6 +1,7 @@
 import { vi } from 'vitest'
 import { reactive, nextTick } from 'vue'
 import { DataSchemaResolver } from './DataSchemaResolver.js'
+import SchemaContext from '../SchemaContext.js'
 
 function createResolver(dataSchema, context = {}) {
   const pendingLoads = []
@@ -33,13 +34,13 @@ describe('DataSchemaResolver', () => {
   })
 
   it('resolves `dataPath` relative to the item of the context', () => {
-    const rootItem = reactive({ sizes: ['S', 'M'], item: { sizes: ['L'] } })
-    const context = { rootItem, itemDataPath: 'item' }
+    const rootData = reactive({ sizes: ['S', 'M'], item: { sizes: ['L'] } })
+    const context = new SchemaContext(null, { rootData, itemDataPath: 'item' })
     const resolve = dataPath =>
       createResolver({ dataPath }, context).resolver.value
-    expect(resolve('sizes')).toBe(rootItem.item.sizes)
-    expect(resolve('../sizes')).toBe(rootItem.sizes)
-    expect(resolve('/sizes')).toBe(rootItem.sizes)
+    expect(resolve('sizes')).toBe(rootData.item.sizes)
+    expect(resolve('../sizes')).toBe(rootData.sizes)
+    expect(resolve('/sizes')).toBe(rootData.sizes)
   })
 
   it('evaluates and loads nothing before it is read', async () => {

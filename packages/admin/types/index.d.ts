@@ -2368,6 +2368,12 @@ export type SchemaContext<$Item = any> = {
     }
   ): T
   /**
+   * Reads the value at `dataPath`, resolved like the `dataPath` of schemas:
+   * relative to `item`, e.g. `'../../font'`, or absolute with a leading `/`.
+   * Values that aren't there are `undefined`, paths above the root throw.
+   */
+  getValueAt<T = any>(dataPath: string): T
+  /**
    * Performs an API request to `url`, or else to `resource`, resolved
    * relative to the nearest form or list with a resource, and resolves with
    * the data of the response.

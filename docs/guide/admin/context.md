@@ -36,6 +36,8 @@ read, and run again when these change.
 - `parentItem` is the closest item above `item`, e.g. the book of a chapter,
   or `null`.
 - `rootItem` is the data of the form or view at the top.
+- [`getValueAt()`](../../api/admin/context.md#getvalueat) reads other values
+  by their [data path](#data-paths), e.g. of items above `parentItem`.
 - `serializedItem` and `serializedRootItem` are the same data, serialized as
   it would be sent to the server.
 
