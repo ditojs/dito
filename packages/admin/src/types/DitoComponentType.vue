@@ -102,16 +102,16 @@ export function wrapCustomComponent(component) {
 // would emit the schema's `change` event a second time:
 function checkContract(component, schema) {
   if (process.env.NODE_ENV !== 'production' && component) {
-    const getMissing = (declared, names) =>
-      names.filter(name => !isDeclared(declared, name))
+    const getMissing = (option, names) =>
+      names.filter(name => !isDeclared(component, option, name))
     const missing = [
-      ...getMissing(component.props, ['schema', 'context']),
+      ...getMissing('props', ['schema', 'context']),
       ...(
         schema && isDisplayOnly(component, schema)
           ? []
           : [
-              ...getMissing(component.props, ['modelValue']),
-              ...getMissing(component.emits, ['update:modelValue', 'change'])
+              ...getMissing('props', ['modelValue']),
+              ...getMissing('emits', ['update:modelValue', 'change'])
             ]
       )
     ]
@@ -132,15 +132,24 @@ function checkContract(component, schema) {
 function isDisplayOnly(component, schema) {
   return (
     !('default' in schema) &&
-    !isDeclared(component.props, 'modelValue') &&
-    !isDeclared(component.emits, 'update:modelValue')
+    !isDeclared(component, 'props', 'modelValue') &&
+    !isDeclared(component, 'emits', 'update:modelValue')
   )
 }
 
-function isDeclared(declared, name) {
-  return isArray(declared)
-    ? declared.includes(name)
-    : Object.hasOwn(declared ?? {}, name)
+// Look through `extends` and `mixins` too, as Vue merges their declarations:
+function isDeclared(component, option, name) {
+  const declared = component[option]
+  return (
+    (
+      isArray(declared)
+        ? declared.includes(name)
+        : Object.hasOwn(declared ?? {}, name)
+    ) ||
+    [component.extends, ...(component.mixins ?? [])].some(
+      parent => parent && isDeclared(parent, option, name)
+    )
+  )
 }
 
 export default DitoComponentType
