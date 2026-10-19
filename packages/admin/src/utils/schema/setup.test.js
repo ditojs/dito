@@ -680,6 +680,31 @@ describe('setupForms()', () => {
     expect(schema.forms.comic.components.isbn.trim).toBe(true)
   })
 
+  it('resolves the component of forms', async () => {
+    const schema = {
+      type: 'list',
+      name: 'books',
+      form: { type: 'form', component: async () => ({ name: 'BookEditor' }) }
+    }
+    await setupForms(createApi(), schema)
+    expect(schema.form.component).toEqual({ name: 'BookEditor' })
+  })
+
+  it('rejects template forms in `forms`', async () => {
+    const schema = {
+      type: 'list',
+      name: 'books',
+      forms: {
+        novel: { type: 'form', component: { name: 'NovelEditor' } },
+        comic: createBookForm()
+      }
+    }
+    await expect(setupForms(createApi(), schema)).rejects.toThrow(
+      `Unsupported 'component' without 'components' in the 'forms' of ` +
+      `'books': Use 'form'.`
+    )
+  })
+
   it('sets up inlined components without storing a form', async () => {
     const api = createApi({ text: { trim: true } })
     const schema = {

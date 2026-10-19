@@ -1211,6 +1211,7 @@ schemas, also as promises, functions returning them, or module namespaces of
 | `name` | `SchemaValue<string>` | | The name of the item model, used in labels. |
 | `label` | `SchemaValue<TextOrHtml \| boolean>` | the labelized name | The label of the form, e.g. in `'Edit Book'`. |
 | `components` | `Components` | | The components of the form. Can also be a callback that creates them from the context, which runs again when the data it reads changes. |
+| `component` | `Resolvable<VueComponent>` | | A Vue component that lays out the form's `components`, as in [`section`](#section), and receives the props `schema` and `context` of the form. Without `components`, the form takes its components from the field components in the template, see [Template forms](../../guide/admin/template-forms.md). Not supported in `forms`. |
 | `tabs` | `Record<string, object>` | | Shows groups of components in tabs, see [Tabs](#tabs). |
 | `idKey` | `string` | `'id'` | The key of the item's id. |
 | `buttons` | `Buttons` | | Merged into the default buttons, see below. |

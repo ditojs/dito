@@ -55,6 +55,12 @@ export function isForm(schema) {
   return isSchema(schema) && schema.type === 'form'
 }
 
+// Forms with a `component` and no `components` take their components from the
+// fields that the component registers:
+export function isTemplateForm(schema) {
+  return isForm(schema) && !!schema.component && !schema.components
+}
+
 export function isView(schema) {
   return isSchema(schema) && schema.type === 'view'
 }

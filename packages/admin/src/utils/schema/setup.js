@@ -16,6 +16,7 @@ import {
   iterateSchemaComponents,
   iterateNestedSchemaComponents,
   isForm,
+  isTemplateForm,
   isView,
   isTab,
   isPanel,
@@ -275,6 +276,14 @@ export async function setupForms(api, schema) {
   const { form, forms, components } = schema
   if (forms) {
     schema.forms = await resolveSchemas(forms, form => setupForm(api, form))
+    // Forms by type share the data model, whose schema is declared:
+    if (Object.values(schema.forms).some(isTemplateForm)) {
+      throw new Error(
+        `Unsupported 'component' without 'components' in the 'forms' of '${
+          schema.name
+        }': Use 'form'.`
+      )
+    }
   } else if (form) {
     schema.form = await setupForm(api, form)
   } else if (isObject(components)) {
@@ -289,7 +298,10 @@ export async function setupForm(api, schema) {
     throw new Error(`Invalid form schema: '${getSchemaIdentifier(schema)}'`)
   }
   applySchemaDefaults(api, schema)
-  await setupNestedSchemas(api, schema)
+  await Promise.all([
+    resolveSchemaComponent(schema),
+    setupNestedSchemas(api, schema)
+  ])
   await setupSchemaComponents(api, schema)
   return schema
 }

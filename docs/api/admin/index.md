@@ -2,8 +2,9 @@
 
 `@ditojs/admin` renders a Vue.js admin interface from view schemas. Its public
 API is the `DitoAdmin` class, `defineType()`, `DitoSchemaField`, `DitoPane`,
-the schema options and the contexts that schema callbacks and event handlers
-receive. Everything not documented here, including the admin's other Vue
+the field components of template forms, `defineFieldComponent()`,
+`useDitoContext()`, the schema options and the contexts that schema callbacks
+and event handlers receive. Everything not documented here, including the admin's other Vue
 components, is internal and may change in any release.
 
 ```js
@@ -31,6 +32,9 @@ For an introduction, see the [admin guide](../../guide/admin/index.md).
 | `defineType()` | Defines a custom component type, see [`defineType()`](./types.md#definetype) |
 | `DitoSchemaField` | Places a component of a section with `component`, see [`section`](./schemas.md#section). `DitoField` is its deprecated alias until 6.0 |
 | `DitoPane` | Places components of a section with `component` in rows, see [`section`](./schemas.md#section) |
+| `DitoButtonField`, `DitoCheckboxField`, `DitoCheckboxesField`, `DitoCodeField`, `DitoColorField`, `DitoComponentField`, `DitoCreditcardField`, `DitoDateField`, `DitoDatetimeField`, `DitoDomainField`, `DitoEmailField`, `DitoHostnameField`, `DitoIntegerField`, `DitoListField`, `DitoMarkupField`, `DitoMultiselectField`, `DitoNumberField`, `DitoObjectField`, `DitoPasswordField`, `DitoRadioField`, `DitoSelectField`, `DitoSliderField`, `DitoSubmitField`, `DitoSwitchField`, `DitoTelField`, `DitoTextField`, `DitoTextareaField`, `DitoTimeField`, `DitoUploadField`, `DitoUrlField`, `DitoValueField` | The field components of the built-in types, which declare the components of forms with `component` in their template, see [Template forms](../../guide/admin/template-forms.md). Their prop `path` is the path of the value, the other props are the options of the type |
+| `defineFieldComponent(type)` | Creates the field component of a type, e.g. of a custom type defined with `defineType()` |
+| `useDitoContext()` | Returns the [context](./context.md) of the form, or of the list item, that the calling component is in |
 
 All other exports are TypeScript types, see [Types](./types.md).
 
