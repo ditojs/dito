@@ -11,7 +11,7 @@ import {
   isView,
   isForm
 } from '../test/mount.js'
-import DitoTypeButton from '../types/DitoTypeButton.vue'
+import DitoButtonType from '../types/DitoButtonType.vue'
 
 const maliciousName = '<img src="x" onerror="alert(1)">'
 const escapedName = '&lt;img src=&quot;x&quot; onerror=&quot;alert(1)&quot;&gt;'
@@ -2497,7 +2497,7 @@ describe('DitoForm', () => {
       request: ({ data }) => ({ data })
     })
     const { submit } = wrapper
-      .findAllComponents(DitoTypeButton)
+      .findAllComponents(DitoButtonType)
       .find(({ vm }) => vm.schema.type === 'submit').vm.context
     expect(await submit()).toBe(false)
     expect(await submit({ validate: false })).toBe(true)

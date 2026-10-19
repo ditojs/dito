@@ -1,0 +1,1011 @@
+import { vi } from 'vitest'
+import { flushPromises } from '@vue/test-utils'
+import { underscore } from '@ditojs/utils'
+import {
+  mountSchema,
+  mountForm,
+  mountAdminWithGenresView
+} from '../test/mount.js'
+
+const genres = [
+  { value: 'fiction', label: 'Fiction' },
+  { value: 'poetry', label: 'Poetry' },
+  { value: 'drama', label: 'Drama' }
+]
+
+// Opens the multiselect, like clicking it does, so that its options render.
+async function open(field) {
+  await field.find('.multiselect').trigger('focus')
+  await flushPromises()
+}
+
+async function selectOption(field, label) {
+  await open(field)
+  const option = field
+    .findAll('.multiselect__element .multiselect__option')
+    .find(option => option.text() === label)
+  await option.trigger('click')
+  await flushPromises()
+}
+
+async function search(field, searchTerm) {
+  await open(field)
+  await field.find('.multiselect__input').setValue(searchTerm)
+  await flushPromises()
+}
+
+function getOptionLabels(field) {
+  return field
+    .findAll('.multiselect__element .multiselect__option')
+    .map(option => option.text())
+}
+
+async function addTag(field, text) {
+  await search(field, text)
+  await field.find('.multiselect__input').trigger('keydown.enter')
+  await flushPromises()
+}
+
+function getTagLabels(field) {
+  return field.findAll('.multiselect__tag').map(tag => tag.text())
+}
+
+describe('DitoMultiselectType', () => {
+  describe('single values', () => {
+    it('displays the label of the selected option', async () => {
+      const { findField } = await mountSchema({
+        schema: {
+          components: { genre: { type: 'multiselect', options: genres } }
+        },
+        data: { genre: 'poetry' }
+      })
+      expect(findField('genre').find('.multiselect__single').text()).toBe(
+        'Poetry'
+      )
+    })
+
+    it('tells option labels whether their option is selected', async () => {
+      const { findField } = await mountSchema({
+        schema: {
+          components: {
+            genre: {
+              type: 'multiselect',
+              options: {
+                data: genres,
+                label: ({ option, isSelected }) =>
+                  isSelected ? `${option.label} (Genre)` : option.label
+              }
+            },
+            genres: {
+              type: 'multiselect',
+              multiple: true,
+              options: {
+                data: genres,
+                label: ({ option, isSelected }) =>
+                  isSelected ? `${option.label} (Genre)` : option.label
+              }
+            }
+          }
+        },
+        data: { genre: 'poetry', genres: ['drama'] }
+      })
+      const field = findField('genre')
+      expect(field.find('.multiselect__single').text()).toBe('Poetry (Genre)')
+      await open(field)
+      expect(getOptionLabels(field)).toEqual([
+        'Fiction',
+        'Poetry (Genre)',
+        'Drama'
+      ])
+      const multipleField = findField('genres')
+      expect(getTagLabels(multipleField)).toEqual(['Drama (Genre)'])
+      await open(multipleField)
+      expect(getOptionLabels(multipleField)).toEqual([
+        'Fiction',
+        'Poetry',
+        'Drama (Genre)'
+      ])
+    })
+
+    it('only renders the options once opened', async () => {
+      const { findField } = await mountSchema({
+        schema: {
+          components: { genre: { type: 'multiselect', options: genres } }
+        }
+      })
+      const field = findField('genre')
+      expect(getOptionLabels(field)).toEqual([])
+      await open(field)
+      expect(getOptionLabels(field)).toEqual(['Fiction', 'Poetry', 'Drama'])
+    })
+
+    it('sets the value of the selected option and emits change', async () => {
+      const onChange = vi.fn()
+      const { findField, data } = await mountSchema({
+        schema: {
+          components: {
+            genre: { type: 'multiselect', options: genres, onChange }
+          }
+        }
+      })
+      await selectOption(findField('genre'), 'Drama')
+      expect(data.genre).toBe('drama')
+      await vi.waitFor(() => expect(onChange).toHaveBeenCalledOnce())
+      expect(onChange.mock.calls[0][0].value).toBe('drama')
+    })
+
+    it('matches values with `options.equals()`', async () => {
+      const { findField } = await mountSchema({
+        schema: {
+          components: {
+            genre: {
+              type: 'multiselect',
+              options: {
+                data: genres,
+                equals: ({ value, option }) => (
+                  value?.toLowerCase() === option.value
+                )
+              }
+            }
+          }
+        },
+        data: { genre: 'POETRY' }
+      })
+      expect(findField('genre').find('.multiselect__single').text()).toBe(
+        'Poetry'
+      )
+    })
+
+    it('clears the value with the clear button', async () => {
+      const { findField, data } = await mountSchema({
+        schema: {
+          components: {
+            genre: { type: 'multiselect', options: genres, clearable: true }
+          }
+        },
+        data: { genre: 'poetry' }
+      })
+      await findField('genre').find('.dito-affixes__clear').trigger('click')
+      expect(data.genre).toBe(null)
+    })
+
+    it('keeps `null` values instead of their `default`', async () => {
+      const { data } = await mountSchema({
+        schema: {
+          components: {
+            genre: { type: 'multiselect', options: genres, default: 'drama' }
+          }
+        },
+        data: { genre: null }
+      })
+      expect(data.genre).toBe(null)
+    })
+    it('links the selected option to its form in `view` when `editable`', async () => {
+      const { admin } = await mountAdminWithGenresView({
+        components: {
+          genre: {
+            type: 'multiselect',
+            editable: true,
+            view: 'genres',
+            options: genres
+          }
+        },
+        data: { genre: 'poetry' }
+      })
+      const link = admin.wrapper.find('.dito-options-edit-buttons a')
+      expect(link.attributes('href')).toBe('/genres/poetry')
+    })
+
+    it(`doesn't render edit buttons unless \`editable\``, async () => {
+      const { findField } = await mountSchema({
+        schema: {
+          components: {
+            genre: { type: 'multiselect', options: genres, view: 'genres' }
+          }
+        },
+        data: { genre: 'poetry' }
+      })
+      expect(
+        findField('genre').find('.dito-options-edit-buttons').exists()
+      ).toBe(false)
+    })
+  })
+
+  describe('multiple values', () => {
+    it('adds and removes the values of the selected options', async () => {
+      const { findField, data } = await mountSchema({
+        schema: {
+          components: {
+            genres: {
+              type: 'multiselect',
+              multiple: true,
+              default: [],
+              options: genres
+            }
+          }
+        },
+        data: { genres: ['drama'] }
+      })
+      const field = findField('genres')
+      expect(getTagLabels(field)).toEqual(['Drama'])
+      await selectOption(field, 'Fiction')
+      expect(data.genres).toEqual(['drama', 'fiction'])
+      expect(getTagLabels(field)).toEqual(['Drama', 'Fiction'])
+      await field.find('.multiselect__tag-icon').trigger('mousedown')
+      expect(data.genres).toEqual(['fiction'])
+    })
+
+    it('clears the values to an empty array with the clear button', async () => {
+      const { findField, data, settle } = await mountSchema({
+        schema: {
+          components: {
+            genres: {
+              type: 'multiselect',
+              multiple: true,
+              clearable: true,
+              default: ['drama'],
+              options: genres
+            }
+          }
+        },
+        data: { genres: ['poetry'] }
+      })
+      await findField('genres').find('.dito-affixes__clear').trigger('click')
+      await settle()
+      // Empty arrays aren't missing values that get the `default` again:
+      expect(data.genres).toEqual([])
+    })
+
+    it('holds an empty array by default', async () => {
+      const { data } = await mountSchema({
+        schema: {
+          components: {
+            genres: { type: 'multiselect', multiple: true, options: genres }
+          }
+        }
+      })
+      expect(data.genres).toEqual([])
+    })
+
+    it('loads `null` values as the `default`', async () => {
+      const { data } = await mountSchema({
+        schema: {
+          components: {
+            genres: {
+              type: 'multiselect',
+              multiple: true,
+              default: ['drama'],
+              options: genres
+            }
+          }
+        },
+        data: { genres: null }
+      })
+      expect(data.genres).toEqual(['drama'])
+    })
+
+    it('marks values without option as unavailable and keeps them', async () => {
+      const { findField, data } = await mountSchema({
+        schema: {
+          components: {
+            genres: {
+              type: 'multiselect',
+              multiple: true,
+              options: { data: async () => genres }
+            }
+          }
+        },
+        data: { genres: ['opera', 'poetry'] }
+      })
+      const field = findField('genres')
+      expect(getTagLabels(field)).toEqual(['opera', 'Poetry'])
+      expect(
+        field
+          .findAll('.multiselect__tag')
+          .map(tag => tag.classes('dito-multiselect__tag--unavailable'))
+      ).toEqual([true, false])
+      await selectOption(field, 'Drama')
+      expect(data.genres).toEqual(['opera', 'poetry', 'drama'])
+    })
+
+    it('adds new values as options with `taggable`', async () => {
+      const { findField, data } = await mountSchema({
+        schema: {
+          components: {
+            keywords: {
+              type: 'multiselect',
+              label: 'Keyword',
+              multiple: true,
+              searchable: true,
+              taggable: true,
+              options: ['classic']
+            }
+          }
+        },
+        data: { keywords: ['classic'] }
+      })
+      const field = findField('keywords')
+      expect(field.find('.multiselect__input').attributes('placeholder')).toBe(
+        'Search or add a Keyword'
+      )
+      await search(field, 'gothic')
+      await field.find('.multiselect__input').trigger('keydown.enter')
+      await flushPromises()
+      expect(data.keywords).toEqual(['classic', 'gothic'])
+      expect(getTagLabels(field)).toEqual(['Classic', 'Gothic'])
+    })
+
+    it('emits change for added tags and keeps the options', async () => {
+      const onChange = vi.fn()
+      const keywords = ['classic']
+      const { findField, data, getComponent } = await mountSchema({
+        schema: {
+          components: {
+            keywords: {
+              type: 'multiselect',
+              multiple: true,
+              searchable: true,
+              taggable: true,
+              options: { data: () => keywords },
+              onChange
+            }
+          }
+        }
+      })
+      const field = findField('keywords')
+      await search(field, 'gothic')
+      // `setValue()` triggers `change` on the search input, ignore it:
+      onChange.mockClear()
+      await field.find('.multiselect__input').trigger('keydown.enter')
+      await flushPromises()
+      expect(data.keywords).toEqual(['gothic'])
+      expect(onChange).toHaveBeenCalledOnce()
+      // The options of the data model aren't modified:
+      expect(keywords).toEqual(['classic'])
+      expect(getComponent('keywords').options).toEqual(['classic', 'gothic'])
+      expect(
+        field
+          .findAll('.multiselect__tag')
+          .map(tag => tag.classes('dito-multiselect__tag--unavailable'))
+      ).toEqual([false])
+    })
+
+    it('displays and keeps the tags of taggable multiselects without options', async () => {
+      const { findField, data } = await mountSchema({
+        schema: {
+          components: {
+            keywords: {
+              type: 'multiselect',
+              multiple: true,
+              searchable: true,
+              taggable: true
+            }
+          }
+        },
+        data: { keywords: ['classic', 'gothic'] }
+      })
+      const field = findField('keywords')
+      expect(getTagLabels(field)).toEqual(['Classic', 'Gothic'])
+      await search(field, 'modern')
+      await field.find('.multiselect__input').trigger('keydown.enter')
+      await flushPromises()
+      expect(data.keywords).toEqual(['classic', 'gothic', 'modern'])
+    })
+
+    it('adds tags as single values with `taggable`', async () => {
+      const onChange = vi.fn()
+      const { findField, data } = await mountSchema({
+        schema: {
+          components: {
+            language: {
+              type: 'multiselect',
+              searchable: true,
+              taggable: true,
+              options: ['English', 'German'],
+              onChange
+            }
+          }
+        },
+        data: { language: 'English' }
+      })
+      const field = findField('language')
+      await search(field, 'Romansh')
+      onChange.mockClear()
+      await field.find('.multiselect__input').trigger('keydown.enter')
+      await flushPromises()
+      expect(data.language).toBe('Romansh')
+      expect(onChange).toHaveBeenCalledOnce()
+      expect(field.find('.multiselect__single').text()).toBe('Romansh')
+    })
+
+    it('makes the tag remove icons focusable in document order', async () => {
+      const { findField } = await mountSchema({
+        schema: {
+          components: {
+            genres: { type: 'multiselect', multiple: true, options: genres }
+          }
+        },
+        data: { genres: ['drama'] }
+      })
+      expect(
+        findField('genres')
+          .find('.multiselect__tag-icon')
+          .attributes('tabindex')
+      ).toBe('0')
+    })
+
+    it('sends the values serialized by `serializeValue()`', async () => {
+      const { findField, submit } = await mountForm({
+        schema: {
+          components: {
+            genres: {
+              type: 'multiselect',
+              multiple: true,
+              options: genres,
+              // Empty lists are sent as `null`:
+              serializeValue: ({ value }) => (value?.length > 0 ? value : null)
+            }
+          }
+        },
+        data: { genres: ['drama'] },
+        request: ({ data }) => ({ data })
+      })
+      await findField('genres')
+        .find('.multiselect__tag-icon')
+        .trigger('mousedown')
+      expect(await submit()).toMatchObject({ genres: null })
+    })
+  })
+
+  it(
+    "doesn't put `null` into the placeholders of searchable " +
+    'multiselects without label',
+    async () => {
+      const { findField } = await mountForm({
+        schema: {
+          components: {
+            genre: {
+              type: 'multiselect',
+              label: false,
+              searchable: true,
+              options: genres
+            }
+          }
+        },
+        data: { genre: null }
+      })
+      const placeholder = findField('genre')
+        .find('.multiselect__input')
+        .attributes('placeholder')
+      expect(placeholder).not.toContain('null')
+    }
+  )
+
+  it('shows the default placeholder or none with boolean `placeholder`', async () => {
+    const { findField } = await mountForm({
+      schema: {
+        components: {
+          genre: {
+            type: 'multiselect',
+            searchable: true,
+            placeholder: true,
+            options: genres
+          },
+          mood: {
+            type: 'multiselect',
+            searchable: true,
+            placeholder: false,
+            options: genres
+          }
+        }
+      },
+      data: { genre: null, mood: null }
+    })
+    const getPlaceholder = dataPath =>
+      findField(dataPath).find('.multiselect__input').attributes('placeholder')
+    expect(getPlaceholder('genre')).toBe('Select or search Genre')
+    expect(getPlaceholder('mood')).toBe(undefined)
+  })
+
+  it('resolves `placeholder` callbacks', async () => {
+    const { findField } = await mountForm({
+      schema: {
+        components: {
+          genre: {
+            type: 'multiselect',
+            searchable: true,
+            placeholder: ({ item }) => `Genre of ${item.title}`,
+            options: genres
+          }
+        }
+      },
+      data: { title: 'Dracula', genre: null }
+    })
+    expect(
+      findField('genre').find('.multiselect__input').attributes('placeholder')
+    ).toBe('Genre of Dracula')
+  })
+
+  it('resolves `searchable` and `taggable` for the default placeholder', async () => {
+    const { findField } = await mountForm({
+      schema: {
+        components: {
+          genre: {
+            type: 'multiselect',
+            searchable: () => true,
+            taggable: () => false,
+            options: genres
+          }
+        }
+      },
+      data: { genre: null }
+    })
+    expect(
+      findField('genre').find('.multiselect__input').attributes('placeholder')
+    ).toBe('Select or search Genre')
+  })
+
+  describe('search', () => {
+    const authors = [
+      { id: 1, name: 'Jane Austen' },
+      { id: 2, name: 'Mary Shelley' },
+      { id: 3, name: 'Bram Stoker' }
+    ]
+
+    function createAuthorSchema(filter) {
+      return {
+        components: {
+          author: {
+            type: 'multiselect',
+            label: 'Author',
+            relate: true,
+            // Single values are only displayed when they're among the options:
+            options: {
+              data: ({ item }) => (item.author ? [item.author] : []),
+              label: 'name'
+            },
+            // Turns on searching without `searchable`:
+            search: { filter }
+          }
+        }
+      }
+    }
+
+    it('displays the options that the search filter returns', async () => {
+      const filter = vi.fn(async ({ searchTerm }) =>
+        authors.filter(author => author.name.includes(searchTerm))
+      )
+      const { findField, data } = await mountSchema({
+        schema: createAuthorSchema(filter)
+      })
+      const field = findField('author')
+      expect(field.find('.multiselect__input').attributes('placeholder')).toBe(
+        'Select or search Author'
+      )
+      await search(field, 'Sh')
+      expect(filter).toHaveBeenCalledOnce()
+      expect(getOptionLabels(field)).toEqual(['Mary Shelley'])
+      await field
+        .find('.multiselect__element .multiselect__option')
+        .trigger('click')
+      await flushPromises()
+      expect(data.author).toEqual({ id: 2, name: 'Mary Shelley' })
+    })
+
+    it('keeps related values that the search results lack', async () => {
+      const { findField } = await mountSchema({
+        schema: createAuthorSchema(async () => [authors[2]]),
+        data: { author: { id: 1, name: 'Jane Austen' } }
+      })
+      const field = findField('author')
+      expect(field.find('.multiselect__single').text()).toBe('Jane Austen')
+      await search(field, 'Stoker')
+      expect(getOptionLabels(field)).toEqual(['Bram Stoker'])
+    })
+
+    it('ignores the results of outdated searches', async () => {
+      const resolvers = new Map()
+      const filter = ({ searchTerm }) =>
+        new Promise(resolve => {
+          resolvers.set(searchTerm, resolve)
+        })
+      const { findField } = await mountSchema({
+        schema: createAuthorSchema(filter)
+      })
+      const field = findField('author')
+      await search(field, 'Au')
+      await search(field, 'Aus')
+      resolvers.get('Aus')([authors[0]])
+      await flushPromises()
+      resolvers.get('Au')([authors[1]])
+      await flushPromises()
+      expect(getOptionLabels(field)).toEqual(['Jane Austen'])
+    })
+
+    it('displays all options again once the search is cleared', async () => {
+      const { findField } = await mountSchema({
+        schema: createAuthorSchema(async () => [authors[2]]),
+        data: { author: { id: 1, name: 'Jane Austen' } }
+      })
+      const field = findField('author')
+      await search(field, 'Stoker')
+      expect(getOptionLabels(field)).toEqual(['Bram Stoker'])
+      await field.find('.multiselect__input').setValue('')
+      await flushPromises()
+      expect(getOptionLabels(field)).toEqual(['Jane Austen'])
+    })
+
+    it('shows thrown strings of failed searches as errors', async () => {
+      const { findField, getErrors } = await mountSchema({
+        schema: createAuthorSchema(async () => {
+          // eslint-disable-next-line no-throw-literal
+          throw 'Search is offline'
+        })
+      })
+      await search(findField('author'), 'Au')
+      expect(getErrors('author')).toEqual(['Search is offline'])
+    })
+
+    it('shows the errors of failed searches', async () => {
+      const { findField, getErrors } = await mountSchema({
+        schema: createAuthorSchema(async () => {
+          throw new Error('Search is unavailable')
+        })
+      })
+      await search(findField('author'), 'Au')
+      expect(getErrors('author')).toEqual(['Search is unavailable'])
+    })
+
+    it('removes the error of a failed search once a search succeeds', async () => {
+      const { findField, getErrors } = await mountSchema({
+        schema: createAuthorSchema(async ({ searchTerm }) => {
+          if (searchTerm === 'Au') {
+            throw new Error('Search is unavailable')
+          }
+          return [authors[0]]
+        })
+      })
+      const field = findField('author')
+      await search(field, 'Au')
+      expect(getErrors('author')).toEqual(['Search is unavailable'])
+      await search(field, 'Aus')
+      expect(getErrors('author')).toEqual([])
+    })
+  })
+
+  it('opens and focuses multiselects with `autofocus`', async () => {
+    const { getComponent } = await mountSchema({
+      schema: {
+        components: {
+          genre: { type: 'multiselect', autofocus: true, options: genres }
+        }
+      }
+    })
+    const genre = getComponent('genre')
+    expect(genre.$refs.element.isOpen).toBe(true)
+    expect(genre.populate).toBe(true)
+  })
+
+  it('validates only once the open multiselect is closed', async () => {
+    const { findField, getComponent, getErrors } = await mountSchema({
+      schema: {
+        components: {
+          genre: {
+            type: 'multiselect',
+            searchable: true,
+            stayOpen: true,
+            options: genres,
+            validate: ({ value }) => value !== 'drama' || 'is not allowed'
+          }
+        }
+      }
+    })
+    const field = findField('genre')
+    await selectOption(field, 'Drama')
+    // Searchable multiselects stay open when they lose the focus:
+    await field.find('.multiselect').trigger('blur')
+    await flushPromises()
+    expect(getErrors('genre')).toEqual([])
+    getComponent('genre').$refs.element.deactivate()
+    await flushPromises()
+    expect(field.find('.multiselect--active').exists()).toBe(false)
+    expect(getErrors('genre')).toEqual(['The genre field is not allowed.'])
+  })
+
+  it('marks plain values without option as unavailable', async () => {
+    const { findField } = await mountSchema({
+      schema: {
+        components: {
+          languages: {
+            type: 'multiselect',
+            multiple: true,
+            options: ['English', 'German']
+          }
+        }
+      },
+      data: { languages: ['Latin', 'German'] }
+    })
+    const tags = findField('languages').findAll('.multiselect__tag')
+    expect(tags.map(tag => tag.text())).toEqual(['Latin', 'German'])
+    expect(
+      tags.map(tag => tag.classes('dito-multiselect__tag--unavailable'))
+    ).toEqual([true, false])
+    expect(tags[0].attributes('title')).toBe('Not among the options')
+  })
+
+  it('adds tags as options with label and value with `taggable`', async () => {
+    const { findField, getComponent, data } = await mountSchema({
+      schema: {
+        components: {
+          genres: {
+            type: 'multiselect',
+            multiple: true,
+            searchable: true,
+            taggable: true,
+            options: genres
+          }
+        }
+      },
+      data: { genres: ['drama'] }
+    })
+    const field = findField('genres')
+    await search(field, 'opera')
+    await field.find('.multiselect__input').trigger('keydown.enter')
+    await flushPromises()
+    expect(data.genres).toEqual(['drama', 'opera'])
+    expect(getComponent('genres').options).toContainEqual({
+      label: 'opera',
+      value: 'opera'
+    })
+    expect(getTagLabels(field)).toEqual(['Drama', 'opera'])
+  })
+
+  describe('taggable converters', () => {
+    const mountGenres = taggable =>
+      mountSchema({
+        schema: {
+          components: {
+            genres: {
+              type: 'multiselect',
+              multiple: true,
+              searchable: true,
+              taggable,
+              options: genres
+            }
+          }
+        },
+        data: { genres: ['drama'] }
+      })
+
+    it('converts the value of added tags with `taggable.value`', async () => {
+      const { findField, getComponent, data } = await mountGenres({
+        value: ({ value }) => underscore(value)
+      })
+      const field = findField('genres')
+      await addTag(field, 'Science Fiction')
+      expect(data.genres).toEqual(['drama', 'science_fiction'])
+      expect(getComponent('genres').options).toContainEqual({
+        label: 'Science Fiction',
+        value: 'science_fiction'
+      })
+      expect(getTagLabels(field)).toEqual(['Drama', 'Science Fiction'])
+    })
+
+    it('converts the label of added tags with `taggable.label`', async () => {
+      const { findField, data } = await mountGenres({
+        label: ({ value }) => value.toUpperCase()
+      })
+      const field = findField('genres')
+      await addTag(field, 'opera')
+      expect(data.genres).toEqual(['drama', 'opera'])
+      expect(getTagLabels(field)).toEqual(['Drama', 'OPERA'])
+    })
+
+    it('converts both the label and value of added tags', async () => {
+      const { findField, data } = await mountGenres({
+        label: ({ value }) => value.toUpperCase(),
+        value: ({ value }) => underscore(value)
+      })
+      const field = findField('genres')
+      await addTag(field, 'Science Fiction')
+      expect(data.genres).toEqual(['drama', 'science_fiction'])
+      expect(getTagLabels(field)).toEqual(['Drama', 'SCIENCE FICTION'])
+    })
+
+    it('resolves `taggable` callbacks that return converters', async () => {
+      const { findField, data } = await mountGenres(
+        ({ item }) => item.genres && { value: ({ value }) => underscore(value) }
+      )
+      const field = findField('genres')
+      await addTag(field, 'Science Fiction')
+      expect(data.genres).toEqual(['drama', 'science_fiction'])
+    })
+
+    it('adds no tags when a `taggable` callback returns false', async () => {
+      const { findField, data } = await mountGenres(() => false)
+      const field = findField('genres')
+      await addTag(field, 'Science Fiction')
+      expect(data.genres).toEqual(['drama'])
+    })
+
+    it('stores converted values under the value key of the options', async () => {
+      const { findField, getComponent, data } = await mountSchema({
+        schema: {
+          components: {
+            genres: {
+              type: 'multiselect',
+              multiple: true,
+              searchable: true,
+              taggable: { value: ({ value }) => underscore(value) },
+              options: {
+                data: [{ key: 'drama', name: 'Drama' }],
+                label: 'name',
+                value: 'key'
+              }
+            }
+          }
+        },
+        data: { genres: [] }
+      })
+      const field = findField('genres')
+      await addTag(field, 'Science Fiction')
+      expect(data.genres).toEqual(['science_fiction'])
+      expect(getComponent('genres').options).toContainEqual({
+        name: 'Science Fiction',
+        key: 'science_fiction'
+      })
+    })
+
+    it('selects existing options that match converted values', async () => {
+      const options = [
+        { value: 'drama', label: 'Drama' },
+        { value: 'science_fiction', label: 'Sci-Fi' }
+      ]
+      const { findField, getComponent, data } = await mountSchema({
+        schema: {
+          components: {
+            genres: {
+              type: 'multiselect',
+              multiple: true,
+              searchable: true,
+              taggable: { value: ({ value }) => underscore(value) },
+              options
+            }
+          }
+        },
+        data: { genres: ['drama'] }
+      })
+      const field = findField('genres')
+      await addTag(field, 'Science Fiction')
+      expect(data.genres).toEqual(['drama', 'science_fiction'])
+      expect(getTagLabels(field)).toEqual(['Drama', 'Sci-Fi'])
+      expect(getComponent('genres').options).toEqual(options)
+      // Selected options aren't selected twice:
+      await addTag(field, 'Science  Fiction')
+      expect(data.genres).toEqual(['drama', 'science_fiction'])
+    })
+  })
+
+  it('groups the options with `options.group`', async () => {
+    const { findField, data } = await mountSchema({
+      schema: {
+        components: {
+          book: {
+            type: 'multiselect',
+            options: {
+              data: [
+                { value: 'emma', label: 'Emma', shelf: 'Classics' },
+                { value: 'dune', label: 'Dune', shelf: 'Sci-Fi' },
+                { value: 'persuasion', label: 'Persuasion', shelf: 'Classics' }
+              ],
+              group: 'shelf'
+            }
+          }
+        }
+      }
+    })
+    const field = findField('book')
+    await open(field)
+    expect(getOptionLabels(field)).toEqual([
+      'Classics',
+      'Emma',
+      'Persuasion',
+      'Sci-Fi',
+      'Dune'
+    ])
+    await selectOption(field, 'Dune')
+    expect(data.book).toBe('dune')
+  })
+
+  it('groups the options by the result of an `options.group` callback', async () => {
+    const { findField } = await mountSchema({
+      schema: {
+        components: {
+          book: {
+            type: 'multiselect',
+            options: {
+              data: [
+                { value: 'emma', label: 'Emma', year: 1815 },
+                { value: 'dune', label: 'Dune', year: 1965 },
+                { value: 'persuasion', label: 'Persuasion', year: 1817 }
+              ],
+              group: ({ option }) => (option.year < 1900 ? 'Classic' : 'Modern')
+            }
+          }
+        }
+      }
+    })
+    const field = findField('book')
+    await open(field)
+    expect(getOptionLabels(field)).toEqual([
+      'Classic',
+      'Emma',
+      'Persuasion',
+      'Modern',
+      'Dune'
+    ])
+  })
+
+  it(`doesn't add tags to grouped options with \`taggable\``, async () => {
+    const { findField, getComponent, data } = await mountSchema({
+      schema: {
+        components: {
+          books: {
+            type: 'multiselect',
+            multiple: true,
+            searchable: true,
+            taggable: true,
+            options: {
+              data: [
+                { value: 'emma', label: 'Emma', shelf: 'Classics' },
+                { value: 'dune', label: 'Dune', shelf: 'Sci-Fi' }
+              ],
+              group: 'shelf'
+            }
+          }
+        }
+      }
+    })
+    const field = findField('books')
+    await search(field, 'Ubik')
+    await field.find('.multiselect__input').trigger('keydown.enter')
+    await flushPromises()
+    expect(data.books).toEqual(['Ubik'])
+    expect(
+      getComponent('books').options.map(group => group.label)
+    ).toEqual(['Classics', 'Sci-Fi'])
+  })
+
+  it('selects multiple related objects and keeps unavailable ones', async () => {
+    const authors = [
+      { id: 1, name: 'Jane Austen' },
+      { id: 2, name: 'Mary Shelley' }
+    ]
+    const { findField, data } = await mountSchema({
+      schema: {
+        components: {
+          authors: {
+            type: 'multiselect',
+            multiple: true,
+            relate: true,
+            options: { data: authors, label: 'name', value: 'id' }
+          }
+        }
+      },
+      data: { authors: [{ id: 2 }, { id: 3, name: 'Bram Stoker' }] }
+    })
+    const field = findField('authors')
+    expect(getTagLabels(field)).toEqual(['Mary Shelley', 'Bram Stoker'])
+    expect(
+      field
+        .findAll('.multiselect__tag')
+        .map(tag => tag.classes('dito-multiselect__tag--unavailable'))
+    ).toEqual([false, true])
+    await selectOption(field, 'Jane Austen')
+    expect(data.authors).toEqual([
+      { id: 2, name: 'Mary Shelley' },
+      { id: 3, name: 'Bram Stoker' },
+      { id: 1, name: 'Jane Austen' }
+    ])
+  })
+})
