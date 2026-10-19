@@ -338,6 +338,28 @@ describe('DitoListField', () => {
       chapters: [{ title: 'Two' }, { title: 'Three' }]
     })
   })
+  it('reads the options of the item fields live after removing the first item', async () => {
+    const isRequired = ref(false)
+    const { wrapper, findContainer, findInputs, submit, settle } =
+      await mountTemplateForm(
+        renderChapters(
+          () => h(DitoTextField, { path: 'title', required: isRequired.value }),
+          { deletable: true }
+        )
+      )
+    stubConfirm(true)
+    await wrapper.findAll('.dito-button--remove')[0].trigger('click')
+    await settle()
+    isRequired.value = true
+    await settle()
+    await enterValue(findInputs()[0], '')
+    expect(await submit()).toBe(null)
+    expect(
+      findContainer('chapters/0/title')
+        .findAll('.dito-errors li')
+        .map(item => item.text())
+    ).toEqual(['The Title field is required.'])
+  })
 })
 
 describe('DitoObjectField', () => {

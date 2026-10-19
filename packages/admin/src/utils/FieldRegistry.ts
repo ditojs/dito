@@ -25,10 +25,8 @@ export interface FieldOptions {
   items?: FieldRegistry | null
 }
 
-// The fields that components register in a container, as the components of its
-// schema. Fields that unmount stay in it until the data is replaced, to keep
-// serializing their values, but only mounted fields validate. The fields of
-// list items register in the item form of their list, once for all items.
+// The fields that components register in a container, as its components.
+// Unmounted fields stay until the data is replaced, but don't validate.
 export class FieldRegistry {
   readonly #model: DataModel
   readonly #services: Services
@@ -77,12 +75,9 @@ export class FieldRegistry {
     })
   }
 
-  // Register the schema that `getSource()` returns, e.g. from the props of a
-  // field component, at `dataPath`. Its options are read live, only its `type`
-  // is fixed at registration. Fields with async setup, e.g. lazy components,
-  // join the schema once it's done, which `waitUntilSettled()` waits for. Of
-  // several mounted fields at the same path, e.g. in list items, the first one
-  // registers its schema.
+  // Register the schema that `getSource()` returns at `dataPath`, read live.
+  // Of several mounted fields at the same path, e.g. in list items, the first
+  // one provides the schema.
   register(
     dataPath: string,
     getSource: () => Schema,
@@ -120,7 +115,19 @@ export class FieldRegistry {
       schema: createFieldSchema(getSource, api, name),
       getParentDataPath,
       items,
-      unregister: () => this.#mountedFields.delete(field)
+      unregister: () => {
+        this.#mountedFields.delete(field)
+        // Another mounted field at the same path takes over, e.g. of an item:
+        if (this.#knownFields.get(dataPath) === field) {
+          const next = [...this.#mountedFields].find(
+            other => other.dataPath === dataPath
+          )
+          if (next) {
+            this.#knownFields.set(dataPath, next)
+            this.#scheduleUpdate()
+          }
+        }
+      }
     }
     this.#mountedFields.add(field)
     const setup = setupSchemaComponentAfterDefaults(
@@ -266,7 +273,7 @@ function createFieldSchema(
 }
 
 // Whether one data path contains the other, or they're the same:
-function isOverlapping(dataPath: string, other: string | null): boolean {
+function isOverlapping(dataPath: string, other: string): boolean {
   return (
     getRelativeDataPath(dataPath, other) !== null ||
     getRelativeDataPath(other, dataPath) !== null

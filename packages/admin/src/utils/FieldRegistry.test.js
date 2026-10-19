@@ -357,6 +357,21 @@ describe('FieldRegistry', () => {
     expect(field.schema.rows).toBe(7)
   })
 
+  it('passes the schema of a path on to the next mounted field', async () => {
+    const { registry, settle } = await mountPage()
+    const first = registry.register('notes', () => ({ type: 'textarea' }))
+    const second = registry.register('notes', () => ({ type: 'textarea' }))
+    await settle()
+    expect(registry.schema.components.notes).toBe(first.schema)
+    first.unregister()
+    await settle()
+    expect(registry.schema.components.notes).toBe(second.schema)
+    // Unmounted fields without a successor stay known:
+    second.unregister()
+    await settle()
+    expect(registry.schema.components.notes).toBe(second.schema)
+  })
+
   it('deserializes the values of fields that register after the load', async () => {
     const { model, settle } = await mountPage({ showDate: false })
     // The unregistered value stays as the server sent it:
