@@ -95,6 +95,66 @@ vue-router's `useRoute()`. Pages with required params, like
 `path: 'products/:id'`, have no menu item, as there is nothing to link to
 without them. Optional ones, like `:id?`, keep it.
 
+### Forms in pages
+
+A page sets up a form of its own with `useDitoForm()`, which takes the options
+of a [form](./forms.md), e.g. `fields`, `buttons`, `tabs` and its events, and
+`resource` and `id`. It loads the item of `id` from `resource` and saves it,
+loads the next item when `id` changes, and creates a new one when `id` is
+`null`, which it saves after creating it. It returns the form's
+[context](./context.md), e.g. for `context.isDirty` or `context.submit()`.
+`DitoSchemaForm` renders the form with its buttons:
+
+```js
+// src/admin/views/product.js
+export const product = {
+  type: 'page',
+  label: 'Product',
+  path: 'products/:id?',
+  component: () => import('./ProductPage.vue')
+}
+```
+
+```vue
+<!-- src/admin/views/ProductPage.vue -->
+<template>
+  <DitoSchemaForm>
+    <DitoPane />
+    <aside>{{ form.item?.name }}</aside>
+  </DitoSchemaForm>
+  <button type="button" @click="form.submit()">Publish</button>
+</template>
+
+<script setup>
+import { useRoute } from 'vue-router'
+import { useDitoForm, DitoSchemaForm, DitoPane } from '@ditojs/admin'
+
+const route = useRoute()
+const form = useDitoForm({
+  resource: 'products',
+  id: () => route.params.id || null,
+  fields: {
+    name: { type: 'text', label: 'Name', required: true },
+    price: { type: 'number', label: 'Price' }
+  }
+})
+</script>
+```
+
+The default slot of `DitoSchemaForm` lays out the fields, as in
+[Laying out fields](./custom-types.md#laying-out-fields); without it, the
+fields render in rows. The submit button saves or creates the item, and there
+is no cancel button. Without a `resource`, submitting validates the data and
+fires `onSuccess()`, without a request. Each component sets up one form;
+lists with forms of their own route, e.g. without `inlined: true`, aren't
+supported in it.
+
+The page's route takes the form's changes: leaving it, or switching to another
+`id`, asks to discard them, and the trail and the browser warn about them. The
+same component also works in a [dialog](./dialogs.md), as the `component` of a
+`type: 'component'` field, without the route: there, the form has a cancel
+button, and its submit button closes the dialog with the saved item.
+
 ## Menus
 
 A `menu` groups views under one entry of the navigation menu. Its `items`

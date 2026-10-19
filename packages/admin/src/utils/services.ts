@@ -52,9 +52,15 @@ export function getRootData({ dataContext }: Services) {
 // Forms and sources have their own verbs, e.g. `apply` in nested data:
 export function getVerbs({
   sourceContext,
+  dataContext,
   routeContext
 }: Services): Record<string, string> {
-  return (sourceContext ?? routeContext)?.verbs ?? defaultVerbs
+  return (
+    sourceContext?.verbs ??
+    dataContext?.verbs ??
+    routeContext?.verbs ??
+    defaultVerbs
+  )
 }
 
 // Wait until the data model wrote its derived values and finished its loads,

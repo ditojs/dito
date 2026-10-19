@@ -8,7 +8,11 @@ import {
   TimeFormat
 } from '@ditojs/utils'
 import { RequireAtLeastOne, SetOptional } from 'type-fest'
-import { Component as VueComponent, DefineComponent } from 'vue'
+import {
+  Component as VueComponent,
+  DefineComponent,
+  MaybeRefOrGetter
+} from 'vue'
 import { Router as VueRouter } from 'vue-router'
 
 declare global {
@@ -3543,6 +3547,36 @@ export const DitoPane: DefineComponent<{
  * calling component is in.
  */
 export function useDitoContext<$Item = any>(): DitoContext<$Item>
+
+/**
+ * Sets up a form in the calling component, with the options of
+ * {@link FormSchema}, which {@link DitoSchemaForm} renders. It loads the item
+ * of `id` from `resource` and saves it, or creates one when `id` is `null`.
+ * Returns the context of the form, e.g. for `isDirty` or `submit()`. In routes,
+ * leaving the route asks to discard unsaved changes.
+ */
+export function useDitoForm<$Item = any>(
+  options: Omit<FormSchema<$Item>, 'type'> & {
+    /**
+     * The resource of the item. Forms without one only validate their data
+     * when they're submitted, without a request.
+     */
+    resource?: Resource
+    /**
+     * The id of the item to load and save, or `null` to create one.
+     *
+     * @defaultValue `null`
+     */
+    id?: MaybeRefOrGetter<string | number | null>
+  }
+): DitoContext<$Item>
+
+/**
+ * Renders the form of {@link useDitoForm} of the component that it's in, with
+ * its buttons. Its default slot lays out the form's fields, placing them with
+ * {@link DitoSchemaField} and {@link DitoPane}.
+ */
+export const DitoSchemaForm: DefineComponent<{}>
 
 export type HttpMethod =
   | 'get'

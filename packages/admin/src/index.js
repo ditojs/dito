@@ -14,6 +14,9 @@ export {
 } from './components/DitoSchemaField.vue'
 export { default as DitoPane } from './components/DitoPane.vue'
 export { useDitoContext } from './composables/useDitoContext.ts'
+// Components set up forms of their own, which `DitoSchemaForm` renders:
+export { useDitoForm } from './composables/useDitoForm.ts'
+export { default as DitoSchemaForm } from './components/DitoSchemaForm.vue'
 export default DitoAdmin
 
 // The members of the public `TypeDescriptor`:

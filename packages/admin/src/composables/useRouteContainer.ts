@@ -132,6 +132,7 @@ export function useRouteContainer({
     parent,
     level,
     selectedTab: null,
+    componentForm: null,
     resourceContext: resourceContext ?? parent?.resourceContext ?? null,
 
     get dataContext() {
@@ -171,7 +172,10 @@ export function useRouteContainer({
     },
 
     get isDirty() {
-      return container.dataContext.isDirty
+      return (
+        container.dataContext.isDirty ||
+        !!routeContext.componentForm?.dataContext.isDirty
+      )
     },
 
     get breadcrumb() {
@@ -183,7 +187,7 @@ export function useRouteContainer({
     },
 
     get itemLabel() {
-      return itemLabel()
+      return itemLabel() ?? routeContext.componentForm?.itemLabel ?? null
     },
 
     loadingTracker: (

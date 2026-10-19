@@ -27,6 +27,12 @@ export interface Layout {
   getEntry(name: string): Record<string, any>
 }
 
+// The form of `useDitoForm()`, which `DitoSchemaForm` renders:
+export interface SchemaForm {
+  readonly dataContext: DataContext
+  readonly buttonSchemas: Ref<Record<string, Schema> | null>
+}
+
 export interface PanelTab {
   readonly tabName: string
   isTabSelected(): boolean
@@ -57,6 +63,7 @@ export const labelToggleKey: Key<Ref<LabelToggle | null>> =
     'labelToggle'
   )
 export const layoutKey: Key<Layout | null> = Symbol('layout')
+export const schemaFormKey: Key<SchemaForm> = Symbol('schemaForm')
 export const panelTabKey: Key<PanelTab | null> = Symbol('panelTab')
 export const accumulatedBasisKey: Key<MaybeRef<number | null>> =
   Symbol(
