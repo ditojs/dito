@@ -21,7 +21,7 @@
       :aria-expanded="!hasCollapsedItems"
       @click="toggleAll"
     )
-    DitoScopes(
+    DitoScopes.dito-list__scopes(
       v-if="scopes"
       :listQuery="listQuery"
       :scopes="scopes"
@@ -47,7 +47,7 @@
         :disabled="!creatable || disabled || readonly || isLoading"
         @paste="pasteItems"
       )
-    DitoPagination(
+    DitoPagination.dito-list__pagination(
       v-if="hasPagination"
       :listQuery="listQuery"
       :limit="paginate"
@@ -62,7 +62,7 @@
         'dito-table--even-count': hasEvenCount
       }`
     )
-      DitoTableHead(
+      DitoTableHead.dito-list__table-head(
         v-if="columns"
         :listQuery="listQuery"
         :columns="columns"
@@ -156,8 +156,9 @@
             )
   //- ...and outside, at the bottom, when in a single component view,
   //- with the list data as their item, e.g. for buttons that store its order:
-  DitoEditButtons.dito-buttons--large.dito-buttons--main.dito-buttons--sticky(
+  DitoEditButtons.dito-list__buttons.dito-buttons--large(
     v-if="hasListButtons && single"
+    :class="['dito-buttons--main', 'dito-buttons--sticky']"
     v-bind="listButtonsAttributes"
     :data="listData"
     :itemDataPath="dataPath"
@@ -454,8 +455,8 @@ export default DitoTypeList
       display: none;
     }
 
-    .dito-scopes,
-    .dito-pagination {
+    #{$self}__scopes,
+    #{$self}__pagination {
       display: flex;
       flex: 0 1 auto;
       min-width: 0;
@@ -470,12 +471,12 @@ export default DitoTypeList
     .dito-label-buttons {
       margin-left: auto;
 
-      + .dito-pagination {
+      + #{$self}__pagination {
         margin-left: $form-spacing;
       }
     }
 
-    .dito-pagination {
+    #{$self}__pagination {
       margin-left: auto;
     }
   }
@@ -490,7 +491,7 @@ export default DitoTypeList
       // Scroll tables that are wider or taller than the view in their own box.
       // Only here, since it would clip the popups of nested lists:
       overflow: auto;
-      flex: 1 1 auto;
+      flex: 1 1 0;
       min-height: 0;
       // End with the view's padding above the buttons, when scrolled down:
       padding-bottom: var(--pane-padding);
@@ -498,33 +499,23 @@ export default DitoTypeList
 
     // Scroll up to the view's edges, from where the content starts:
     #{$self}__table,
-    .dito-scopes {
+    #{$self}__scopes {
       margin-inline: calc(-1 * var(--pane-padding));
       padding-inline: var(--pane-padding);
     }
 
-    > .dito-buttons {
+    > #{$self}__buttons {
       // Span the list, also for its border and shadow, right below the table:
       align-self: stretch;
       margin-top: 0;
     }
 
-    .dito-table-head {
+    #{$self}__table-head {
       position: sticky;
       top: 0;
       background: $content-color-background;
       z-index: 1;
     }
-  }
-}
-
-// Single lists fill the view, so that they can scroll their tables themselves:
-.dito-schema-content:has(> .dito-pane--single > .dito-container > .dito-list) {
-  display: flex;
-  flex-direction: column;
-
-  > .dito-pane {
-    min-height: 0;
   }
 }
 </style>

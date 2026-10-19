@@ -36,8 +36,12 @@ slot(name="prepend")
         v-if="tabs"
         name="dito-fade"
       )
-        DitoTabs(
+        DitoTabs.dito-schema-header__tabs(
           v-if="opened"
+          :class=`{
+            'dito-tabs--header': isTopLevelSchema,
+            'dito-tabs--inlined': inlined
+          }`
           :modelValue="selectedTab"
           :tabs="renderedTabs"
           :context="context"
@@ -558,6 +562,16 @@ export default {
 
   > .dito-label {
     margin-bottom: 0;
+  }
+
+  &__tabs {
+    // Push clipboard to the right in the flex layout, see:
+    // https://codepen.io/tholex/pen/hveBx/
+    margin-left: auto;
+
+    &:last-child {
+      margin-right: auto;
+    }
   }
 
   &__buttons {

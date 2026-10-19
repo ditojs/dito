@@ -1,6 +1,6 @@
 <template lang="pug">
 aside.dito-sidebar
-  nav.dito-header
+  nav.dito-header.dito-sidebar__header
     slot
   #dito-sidebar.dito-sidebar__teleport.dito-scroll(
     ref="region"
@@ -40,7 +40,8 @@ export default {
   // `useSidebar()` animates the space of the docked sidebar:
   transition: flex-basis $sidebar-duration;
 
-  > .dito-header {
+  // Nested, to override the styles of `.dito-header`:
+  #{$self}__header {
     // Above the header of the notifications, which continues it to the window
     // edge:
     z-index: $z-index-header + 1;
@@ -48,7 +49,7 @@ export default {
     padding-right: $header-height;
   }
 
-  .dito-header__toggle {
+  #{$self}__toggle {
     // At the window edge, where it stays while the sidebar slides:
     position: fixed;
     top: 0;
@@ -61,12 +62,12 @@ export default {
   }
 
   &:has(#{$self}__teleport:empty) {
-    > .dito-header {
+    #{$self}__header {
       // As far from the window's edge as the account button from the top:
       padding-right: calc(($header-height - $input-height) / 2);
     }
 
-    .dito-header__toggle {
+    #{$self}__toggle {
       display: none;
     }
   }
