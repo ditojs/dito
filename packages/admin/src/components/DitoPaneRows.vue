@@ -3,8 +3,8 @@
 .dito-pane(
   v-resize="onResizePane"
 )
-  //- Layout sections place the components themselves, with `DitoField` and
-  //- `DitoPane`:
+  //- Layout sections place the components themselves, with `DitoSchemaField`
+  //- and `DitoPane`:
   slot(
     v-if="$slots.default"
   )

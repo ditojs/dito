@@ -1,6 +1,6 @@
 import { expectTypeOf, assertType, describe, it } from 'vitest'
 import { defineComponent, h, type Component } from 'vue'
-import { DitoField, DitoPane } from '@ditojs/admin'
+import { DitoSchemaField, DitoField, DitoPane } from '@ditojs/admin'
 import type { Components, FormSchema } from '@ditojs/admin'
 import type { Address, Entry, Parent, ParentWithAddress } from './fixtures.ts'
 
@@ -55,7 +55,7 @@ describe('Section components', () => {
         context: { type: Object, required: true }
       },
       setup: () => () => [
-        h(DitoField, { name: 'title' }),
+        h(DitoSchemaField, { name: 'title' }),
         h(DitoPane, { names: ['title'] }),
         h(DitoPane)
       ]
@@ -69,8 +69,12 @@ describe('Section components', () => {
         }
       }
     })
-    expectTypeOf(DitoField).toExtend<Component>()
+    expectTypeOf(DitoSchemaField).toExtend<Component>()
     expectTypeOf(DitoPane).toExtend<Component>()
+  })
+
+  it('keeps the deprecated name DitoField', () => {
+    expectTypeOf(DitoField).toEqualTypeOf<typeof DitoSchemaField>()
   })
 
   it('accepts section with form prop', () => {

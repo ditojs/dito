@@ -1,8 +1,8 @@
 # Admin API
 
 `@ditojs/admin` renders a Vue.js admin interface from view schemas. Its public
-API is the `DitoAdmin` class, `defineType()`, `DitoField`, `DitoPane`, the
-schema options and the contexts that schema callbacks and event handlers
+API is the `DitoAdmin` class, `defineType()`, `DitoSchemaField`, `DitoPane`,
+the schema options and the contexts that schema callbacks and event handlers
 receive. Everything not documented here, including the admin's other Vue
 components, is internal and may change in any release.
 
@@ -29,7 +29,7 @@ For an introduction, see the [admin guide](../../guide/admin/index.md).
 | ------ | ----------- |
 | `default`, `DitoAdmin` | The [DitoAdmin](./admin.md) class |
 | `defineType()` | Defines a custom component type, see [`defineType()`](./types.md#definetype) |
-| `DitoField` | Places a component of a section with `component`, see [`section`](./schemas.md#section) |
+| `DitoSchemaField` | Places a component of a section with `component`, see [`section`](./schemas.md#section). `DitoField` is its deprecated alias until 6.0 |
 | `DitoPane` | Places components of a section with `component` in rows, see [`section`](./schemas.md#section) |
 
 All other exports are TypeScript types, see [Types](./types.md).

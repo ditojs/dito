@@ -18,8 +18,8 @@ export interface LabelToggle {
   toggle(): void
 }
 
-// The panes of layout sections provide their components to `DitoField` and
-// `DitoPane`:
+// The panes of layout sections provide their components to `DitoSchemaField`
+// and `DitoPane`:
 export interface Layout {
   readonly props: Record<string, any>
   readonly componentPath: Ref<string>

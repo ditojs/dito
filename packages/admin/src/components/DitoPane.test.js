@@ -7,7 +7,7 @@ import {
   mountForm,
   enterValue
 } from '../test/mount.js'
-import DitoField from './DitoField.vue'
+import DitoSchemaField from './DitoSchemaField.vue'
 import DitoPane from './DitoPane.vue'
 import DitoPaneRows from './DitoPaneRows.vue'
 
@@ -110,7 +110,7 @@ describe('DitoPane', () => {
           name: {
             type: 'section',
             component: createLayout(() => [
-              h(DitoField, { name: 'title' }),
+              h(DitoSchemaField, { name: 'title' }),
               h(DitoPane, { names: ['first', 'last'] })
             ]),
             components: {

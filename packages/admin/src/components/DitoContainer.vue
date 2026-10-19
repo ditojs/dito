@@ -44,7 +44,8 @@
     :errorsElementId="errors ? errorsElementId : null"
     :labelId="labelId"
   )
-    //- The content that layouts place in custom components, see `DitoField`:
+    //- The content that layouts place in custom components, see
+    //- `DitoSchemaField`:
     template(
       v-if="$slots.default"
       #default

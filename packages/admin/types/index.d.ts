@@ -1915,7 +1915,7 @@ export type SectionSchema<
     compact?: boolean
     /**
      * A Vue component that lays out the section's components instead of its
-     * pane, placing them with {@link DitoField} and {@link DitoPane}. It
+     * pane, placing them with {@link DitoSchemaField} and {@link DitoPane}. It
      * receives the `schema` and `context` of the section, and the section's
      * label shows above it. Not supported together with `tabs`, `collapsible`
      * and `clipboard`.
@@ -3442,10 +3442,13 @@ export function defineType(descriptor: TypeDescriptor): TypeDescriptor
  * {@link SectionSchema.component}, as the section's pane would render it. The
  * default slot is passed on to the custom component of `type: 'component'`.
  */
-export const DitoField: DefineComponent<{
+export const DitoSchemaField: DefineComponent<{
   /** The key of the component in the section's `components`. */
   name: string
 }>
+
+/** @deprecated Use {@link DitoSchemaField}. */
+export const DitoField: typeof DitoSchemaField
 
 /**
  * Places the components `names` of the `components` of a layout section, see
