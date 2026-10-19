@@ -562,6 +562,14 @@ export interface ComponentSchemaBase<$Item> extends SchemaBase<$Item> {
   >
 
   /**
+   * The vertical position of the component in its line, when it shares the
+   * line with taller components.
+   *
+   * @defaultValue `'top'`
+   */
+  align?: SchemaValue<$Item, {}, 'top' | 'center' | 'bottom'>
+
+  /**
    * Whether the component is visible.
    *
    * @defaultValue `true`

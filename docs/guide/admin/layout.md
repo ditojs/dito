@@ -24,6 +24,16 @@ that grow or shrink to fit the line (`'>30%'`, `'<30%'`). `break` forces a new
 line before or after the component. See
 [Layout options](../../api/admin/schemas.md#layout-options).
 
+Components sit at the top of their line. `align` places them at its
+`'center'` or `'bottom'` instead, e.g. a switch next to a textarea:
+
+```js
+components: {
+  summary: { type: 'textarea', lines: 4, width: '3/4' },
+  isFeatured: { type: 'switch', width: '1/4', align: 'bottom' }
+}
+```
+
 ## Sections
 
 A section groups components under a header:

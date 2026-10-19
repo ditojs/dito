@@ -4,15 +4,21 @@ import { mountSchema, mountAdmin } from '../test/mount.js'
 import DitoPane from './DitoPane.vue'
 
 describe('DitoPane', () => {
-  // happy-dom doesn't lay out elements, so place all containers in one row,
-  // each three lines high without padding, at a font size of 16px:
-  function stubLayout() {
-    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({
-      x: 0,
-      y: 0,
-      width: 100,
-      height: 64
-    })
+  // happy-dom doesn't lay out elements, so place all containers next to each
+  // other in one row, each three lines high without padding, at a font size of
+  // 16px, and move the ones of `offsets` down by their offset:
+  function stubLayout(offsets = {}) {
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(
+      function () {
+        const index = +(this.dataset.index ?? 0)
+        return {
+          x: index * 100,
+          y: offsets[index] ?? 0,
+          width: 100,
+          height: 64
+        }
+      }
+    )
     const { getComputedStyle } = window
     vi.spyOn(window, 'getComputedStyle').mockImplementation(element => {
       const style = getComputedStyle(element)
@@ -94,6 +100,29 @@ describe('DitoPane', () => {
     await measureRows(wrapper)
     expect(
       findContainer('inStock').classes('dito-container--label-vertical')
+    ).toBe(true)
+  })
+
+  it('aligns the components in rows with components aligned vertically', async () => {
+    stubLayout({ 1: 20 })
+    const { wrapper, findContainer } = await mountSchema({
+      schema: {
+        components: {
+          weight: { type: 'slider', label: 'Weight', width: '1/3' },
+          isVariable: {
+            type: 'switch',
+            label: false,
+            width: '1/3',
+            align: 'bottom'
+          },
+          axis: { type: 'text', label: false, width: '1/3' }
+        }
+      },
+      data: { weight: 400, isVariable: true, axis: 'wght' }
+    })
+    await measureRows(wrapper)
+    expect(
+      findContainer('axis').classes('dito-container--label-vertical')
     ).toBe(true)
   })
 
@@ -206,7 +235,7 @@ describe('DitoPane', () => {
         .findAllComponents(DitoPane)
         .find(({ vm }) => vm.dataPath === 'blocks/0').vm
     const pane = getBlockPane()
-    pane.positions.push({ top: 0, height: 3 }, { top: 0, height: 3 })
+    pane.positions.push({ left: 0, height: 3 }, { left: 100, height: 3 })
     data.blocks[0].type = 'heading'
     await settle()
     expect(getBlockPane().$).toBe(pane.$)

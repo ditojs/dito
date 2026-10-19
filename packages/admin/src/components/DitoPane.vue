@@ -194,10 +194,11 @@ export default {
         return 0
       }
 
+      // Rows wrap back to the left, also with components aligned vertically:
       const isLastInRow = index => (
         renderedPositions[index] && (
           index === renderedPositions.length - 1 ||
-          findNextPosition(index).top > renderedPositions[index].top
+          findNextPosition(index).left <= renderedPositions[index].left
         )
       )
 
@@ -279,7 +280,7 @@ export default {
             const fontSize = parseFloat(style.fontSize)
             const height = bounds.height - 2 * padding
             positions.value[index] =
-              height <= 0 ? null : { top: bounds.y, height: height / fontSize }
+              height <= 0 ? null : { left: bounds.x, height: height / fontSize }
           }
         })
       }

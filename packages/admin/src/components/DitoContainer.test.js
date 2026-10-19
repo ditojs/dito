@@ -69,6 +69,26 @@ describe('DitoContainer', () => {
     expect(fill).toMatchObject({ grow: '1', shrink: '0', basis: 'auto' })
   })
 
+  it('aligns containers vertically in their line', async () => {
+    const aligns = ['top', 'center', 'bottom', 'middle']
+    const { findContainer } = await mountSchema({
+      schema: {
+        components: Object.fromEntries(
+          aligns.map(align => [align, { type: 'text', width: '1/4', align }])
+        )
+      }
+    })
+    const getAlignClasses = align =>
+      findContainer(align)
+        .classes()
+        .filter(name => name.startsWith('dito-container--align-'))
+    expect(getAlignClasses('top')).toEqual(['dito-container--align-top'])
+    expect(getAlignClasses('center')).toEqual(['dito-container--align-center'])
+    expect(getAlignClasses('bottom')).toEqual(['dito-container--align-bottom'])
+    // Unknown values are ignored, as unknown widths are:
+    expect(getAlignClasses('middle')).toEqual([])
+  })
+
   it('replaces labels with the label of their container', async () => {
     const { wrapper } = await mountSchema({
       schema: {
