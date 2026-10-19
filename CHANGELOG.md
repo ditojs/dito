@@ -3,7 +3,7 @@
 The changes of each release of Dito.js. For upgrading to a new major
 version, see the upgrade guides in `docs/`.
 
-## Unreleased
+## 5.0.1 (2026-10-19)
 
 ### New
 
@@ -12,6 +12,7 @@ version, see the upgrade guides in `docs/`.
 ### Fixes
 
 - **admin:** The dialog of the backup codes fits their label and two codes per line again.
+- **admin:** The Security dialog is at least as wide as its Change Password dialog, also when it only shows the password.
 
 ## 5.0.0 (2026-10-19)
 
