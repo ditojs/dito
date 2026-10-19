@@ -65,6 +65,7 @@ defineType({
   component: DitoObjectType,
   ...sourceTraits,
   sourceType: 'object',
+  alignsBelowLabels: false,
 
   async setupSchema({ schema, api, name }) {
     await Promise.all([

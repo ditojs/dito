@@ -34,6 +34,7 @@ const descriptorKeys = new Set([
   'hasLabel',
   'omitsSpacing',
   'rendersLabel',
+  'alignsBelowLabels',
   'submitsData',
   'hasEmbeddedForms',
   'getOptionsDataSchema',

@@ -52,7 +52,8 @@ const typeDefaults = {
   defaultValue: null,
   defaultNested: true,
   defaultVisible: true,
-  generatesLabel: true
+  generatesLabel: true,
+  alignsBelowLabels: true
 }
 
 const descriptorsByType: Record<string, TypeDescriptor> = {}

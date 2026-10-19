@@ -326,16 +326,9 @@ function getFileName(label) {
     }
   }
 
-  .dito-schema & {
-    // Push clipboard to the right in the flex layout, see:
-    // https://codepen.io/tholex/pen/hveBx/
-    margin-left: auto;
-  }
-
-  .dito-header & {
+  &--header#{&} {
     // Centered in the header, unlike the tabs, which sit on the page:
     align-self: center;
-    margin: 0 0 0 $tab-margin;
 
     .dito-button {
       // Keep the buttons joined, which `DitoHeader` spaces apart:

@@ -1,7 +1,7 @@
 <template lang="pug">
 .dito-section(
   ref="element"
-  :class="{ 'dito-section--labelled': !!schema.label && !hasLayout }"
+  :class="{ 'dito-section--labelled': isLabelled }"
   role="region"
   :aria-label="labelText || labelize(schema.name)"
 )
@@ -12,7 +12,8 @@
     :store="store"
     :label="hasLayout ? null : label"
     :info="hasLayout ? null : info"
-    :padding="schema.label && !hasLayout ? 'nested' : 'inlined'"
+    :padding="isLabelled ? 'nested' : 'inlined'"
+    :bordered="isLabelled"
     :disabled="disabled"
     :collapsed="collapsed"
     :collapsible="collapsible"
@@ -53,13 +54,16 @@ const DitoSectionType = {
     const collapsible = computed(() =>
       getSchemaValue('collapsible', { type: Boolean, default: false })
     )
+    // Layouts place the section's components, see `DitoSchemaField`:
+    const hasLayout = computed(() => !!props.schema.component)
     return {
       ...field,
       labelize,
       item,
       collapsible,
-      // Layouts place the section's components, see `DitoSchemaField`:
-      hasLayout: computed(() => !!props.schema.component),
+      hasLayout,
+      // The header with the label displays above the bordered content:
+      isLabelled: computed(() => !!props.schema.label && !hasLayout.value),
       collapsed: computed(
         () => (
           getSchemaValue('collapsed', { type: Boolean, default: false }) &&
@@ -78,6 +82,7 @@ defineType({
   component: DitoSectionType,
   ...nestableTraits,
   generatesLabel: false,
+  alignsBelowLabels: false,
 
   // The form's header shows the label, except in layouts and compact forms.
   // The form can depend on the item:
@@ -121,21 +126,6 @@ export default DitoSectionType
   // with the content of the section:
   &__schema > .dito-schema-header > button.dito-label {
     margin-left: $form-spacing + $border-width;
-  }
-
-  &--labelled > &__schema {
-    // Display the header with the label above the bordered content.
-    > .dito-schema-content {
-      border: $border-style;
-      border-radius: $border-radius;
-      margin-top: $form-spacing-half;
-    }
-
-    > .dito-schema-header + .dito-schema-content > .dito-pane {
-      // Inside the border, the content's margin replaces the spacing below the
-      // header, see `DitoSchema`.
-      margin-top: -$form-spacing-half;
-    }
   }
 }
 </style>

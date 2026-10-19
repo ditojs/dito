@@ -67,6 +67,33 @@ describe('DitoSchemaPane', () => {
     expect(isLabelVertical('title')).toBe(false)
   })
 
+  it('aligns the components in rows with labels by their types', async () => {
+    stubLayout()
+    const { wrapper, findContainer } = await mountSchema({
+      schema: {
+        components: {
+          name: { type: 'text', label: 'Name', width: '1/3' },
+          captain: { type: 'checkbox', label: false, width: '1/3' },
+          details: {
+            type: 'section',
+            width: '1/3',
+            components: { coach: { type: 'text' } }
+          }
+        }
+      },
+      data: { name: 'Rovers', captain: true, coach: 'Ada' }
+    })
+    await measureRows(wrapper)
+    const isAlignedBelowLabels = name =>
+      findContainer(name).classes('dito-container--below-labels')
+    expect(isAlignedBelowLabels('captain')).toBe(true)
+    // Sections, lists and objects are boxes that start at the top of the row:
+    expect(
+      findContainer('details').classes('dito-container--label-vertical')
+    ).toBe(true)
+    expect(isAlignedBelowLabels('details')).toBe(false)
+  })
+
   it.each([
     [
       'sections',

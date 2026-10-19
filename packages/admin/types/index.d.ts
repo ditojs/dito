@@ -3403,6 +3403,11 @@ export interface TypeDescriptor {
   /** The component renders as the label of its container, if it has one. */
   readonly rendersLabel?: boolean
   /**
+   * Components without a label align below the labels of the other components
+   * in their row, `true` if not set. Boxes like lists show at the top.
+   */
+  readonly alignsBelowLabels?: boolean
+  /**
    * Forms and sources count the buttons of the type like `submit` buttons, for
    * their dirty state and whether they can save. Submitting the data is up to
    * the component of the type, like the button component of `submit`.

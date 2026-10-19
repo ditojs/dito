@@ -369,6 +369,16 @@ rendersLabel?: boolean
 The component renders as the label of its container, when it has one, like
 `type: 'label'`.
 
+#### alignsBelowLabels
+
+```ts
+alignsBelowLabels?: boolean
+```
+
+Components without a label align below the labels of the other components in
+their row. Default `true`. Dito's sections, lists and objects set it to
+`false`: their boxes start at the top of the row.
+
 #### submitsData
 
 ```ts

@@ -105,6 +105,28 @@ describe('DitoSectionType', () => {
     expect('details' in data).toBe(false)
   })
 
+  it('borders its content below its label', async () => {
+    const { findField } = await mountSchema({
+      schema: {
+        components: {
+          details: {
+            type: 'section',
+            label: 'Details',
+            components: { title: { type: 'text' } }
+          },
+          extras: {
+            type: 'section',
+            components: { pages: { type: 'number' } }
+          }
+        }
+      }
+    })
+    const isBordered = name =>
+      findField(name).find('.dito-schema').classes('dito-schema--bordered')
+    expect(isBordered('details')).toBe(true)
+    expect(isBordered('extras')).toBe(false)
+  })
+
   it('marks itself as a region with its label', async () => {
     const { findField } = await mountSchema({
       schema: {
