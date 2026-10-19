@@ -8,6 +8,7 @@ DitoSchema.dito-schema-inlined(
   :info="info"
   :padding="padding ?? 'inlined'"
   :inlined="true"
+  :bordered="bordered"
   :disabled="disabled"
   :compact="isCompact"
   :collapsed="collapsed"
@@ -60,6 +61,7 @@ export default {
     label: { type: [String, Object], default: null },
     info: { type: [String, Object], default: null },
     padding: { type: String, default: null },
+    bordered: { type: Boolean, default: false },
     disabled: { type: Boolean, required: true },
     collapsed: { type: Boolean, default: false },
     collapsible: { type: Boolean, default: false },

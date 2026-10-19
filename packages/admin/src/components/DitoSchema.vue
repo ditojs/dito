@@ -1,7 +1,11 @@
 <template lang="pug">
 slot(name="prepend")
 .dito-schema(
-  :class="{ 'dito-scroll-parent': scrollable, 'dito-schema--open': opened }"
+  :class=`{
+    'dito-scroll-parent': scrollable,
+    'dito-schema--open': opened,
+    'dito-schema--bordered': bordered
+  }`
   v-bind="$attrs"
 )
   Teleport(
@@ -22,6 +26,7 @@ slot(name="prepend")
   )
     .dito-schema-header(
       v-if="active"
+      :class="{ 'dito-schema-header--teleported': isTopLevelSchema }"
     )
       DitoLabel(
         v-if="hasLabel"
@@ -49,6 +54,7 @@ slot(name="prepend")
         )
       DitoClipboard.dito-schema-header__buttons(
         v-if="clipboard"
+        :class="{ 'dito-clipboard--header': isTopLevelSchema }"
         :clipboard="clipboard"
         :schema="schema"
         :label="clipboardLabel"
@@ -181,6 +187,8 @@ export default {
     collapsed: { type: Boolean, default: false },
     collapsible: { type: Boolean, default: false },
     scrollable: { type: Boolean, default: false },
+    // Display the header above the content in a border:
+    bordered: { type: Boolean, default: false },
     hasOwnData: { type: Boolean, default: false },
     generateLabels: { type: Boolean, default: false }
   },
@@ -557,15 +565,31 @@ export default {
       grid-row-end: none;
     }
   }
+
+  &--bordered {
+    > .dito-schema-content {
+      border: $border-style;
+      border-radius: $border-radius;
+      margin-top: $form-spacing-half;
+    }
+
+    > .dito-schema-header + .dito-schema-content > .dito-pane {
+      // Inside the border, the content's margin replaces the spacing below the
+      // header:
+      margin-top: -$form-spacing-half;
+    }
+  }
 }
 
 .dito-schema-header {
+  $self: &;
+
   display: flex;
   justify-content: space-between;
   // Let nested labels with ellipsis shrink below their content width.
   min-width: 0;
 
-  .dito-header & {
+  &--teleported {
     // When teleported into main header.
     align-items: flex-end;
   }
@@ -587,6 +611,16 @@ export default {
   &__buttons {
     flex-shrink: 0;
     margin-left: var(--button-margin, 0);
+
+    &.dito-clipboard {
+      // Push clipboard to the right in the flex layout, see:
+      // https://codepen.io/tholex/pen/hveBx/
+      margin-left: auto;
+
+      #{$self}--teleported > & {
+        margin-left: $tab-margin;
+      }
+    }
   }
 }
 </style>

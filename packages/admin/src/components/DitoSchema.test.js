@@ -532,6 +532,35 @@ describe('DitoSchema', () => {
     })
   })
 
+  it('marks its header and clipboard when they show in the page header', async () => {
+    const { wrapper } = await mountSchema({
+      schema: {
+        clipboard: true,
+        components: {
+          details: {
+            type: 'section',
+            label: 'Details',
+            clipboard: true,
+            components: { title: { type: 'text' } }
+          }
+        }
+      },
+      data: { title: 'Emma' }
+    })
+    const pageHeader = wrapper.find('.dito-header .dito-schema-header')
+    const sectionHeader = wrapper.find('.dito-section .dito-schema-header')
+    expect(pageHeader.classes()).toContain('dito-schema-header--teleported')
+    expect(sectionHeader.classes()).not.toContain(
+      'dito-schema-header--teleported'
+    )
+    expect(pageHeader.find('.dito-clipboard').classes()).toContain(
+      'dito-clipboard--header'
+    )
+    expect(sectionHeader.find('.dito-clipboard').classes()).not.toContain(
+      'dito-clipboard--header'
+    )
+  })
+
   it('makes the page wide while a `wide` view is shown', async () => {
     const admin = await mountAdmin({
       views: {

@@ -401,6 +401,7 @@ defineType({
   ...sourceTraits,
   sourceType: 'list',
   hasLabelButtons: true,
+  alignsBelowLabels: false,
 
   getPanelSchema(api, schema, dataPath, source) {
     const { filters } = schema

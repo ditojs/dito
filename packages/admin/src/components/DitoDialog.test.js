@@ -41,6 +41,32 @@ describe('DitoDialog', () => {
     expect(dialog.text()).toContain('About')
   })
 
+  it('marks the container of its cancel button, with the class of the app', async () => {
+    const getClasses = async cancel => {
+      const { dialog } = await showDialog({
+        components,
+        buttons: { apply: { type: 'submit' }, cancel }
+      })
+      return dialog
+        .findAll('.dito-buttons__container')
+        .map(container => container.classes())
+    }
+    const [apply, cancel] = await getClasses({})
+    expect(apply).not.toContain('dito-dialog__cancel')
+    expect(cancel).toContain('dito-dialog__cancel')
+    const [, string] = await getClasses({ class: 'danger' })
+    expect(string).toEqual(
+      expect.arrayContaining(['dito-dialog__cancel', 'danger'])
+    )
+    const [, object] = await getClasses({
+      class: { danger: true, muted: false }
+    })
+    expect(object).toEqual(
+      expect.arrayContaining(['dito-dialog__cancel', 'danger'])
+    )
+    expect(object).not.toContain('muted')
+  })
+
   it('labels the dialog with `settings.label`', async () => {
     const { dialog } = await showDialog({
       components,

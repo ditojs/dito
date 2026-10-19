@@ -108,10 +108,16 @@ export default {
     const buttonSchemas = computed(() =>
       Object.fromEntries(
         Object.entries(getButtonSchemas(props.buttons) ?? {}).map(
-          // Add the default click event of the cancel button:
+          // Add the default click event and the class of the cancel button:
           ([key, schema]) => [
             key,
-            key === 'cancel' ? { onClick: cancel, ...schema } : schema
+            key === 'cancel'
+              ? {
+                  onClick: cancel,
+                  ...schema,
+                  class: ['dito-dialog__cancel', schema.class]
+                }
+              : schema
           ]
         )
       )
@@ -211,7 +217,7 @@ function toCssLength(length) {
 
   // Place cancel button visually first even though submit comes first in DOM,
   // so that password managers (e.g. 1Password) find the submit button first.
-  .dito-container:has(.dito-button--cancel) {
+  &__cancel {
     order: -1;
   }
 

@@ -1,7 +1,7 @@
 <template lang="pug">
 .dito-container(
   v-show="componentVisible"
-  :class="containerClasses"
+  :class="[containerClasses, schema.class]"
   :style="containerStyles"
 )
   Teleport(
@@ -242,7 +242,6 @@ export default {
       labelHtmlFor: computed(() => (props.nested ? componentPath.value : null)),
 
       containerClasses: computed(() => {
-        const { class: classes } = props.schema
         const align = getSchemaValue('align', { type: String })
         const prefix = 'dito-container'
         return {
@@ -251,9 +250,12 @@ export default {
           [`${prefix}--single`]: props.single,
           [`${prefix}--compact`]: props.compact,
           [`${prefix}--label-vertical`]: props.verticalLabels,
+          [`${prefix}--below-labels`]: (
+            props.verticalLabels &&
+            !!typeDescriptor.value?.alignsBelowLabels
+          ),
           [`${prefix}--omit-spacing`]: omitsSpacing(props.schema),
-          [`${prefix}--align-${align}`]: alignments.includes(align),
-          ...(isString(classes) ? { [classes]: true } : classes)
+          [`${prefix}--align-${align}`]: alignments.includes(align)
         }
       }),
 
@@ -377,11 +379,11 @@ export default {
     height: 100%; // So that list buttons can be sticky at the bottom;
   }
 
-  &--label-vertical {
+  &--below-labels {
     // For plain components without labels in rows with other components that
     // have labels, add some spacing to the top to align with the other
     // components (e.g.  buttons):
-    > .dito-component:first-child:not(.dito-section, .dito-list, .dito-object) {
+    > .dito-component:first-child {
       margin-top: $input-height;
     }
   }
