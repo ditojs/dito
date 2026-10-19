@@ -46,6 +46,7 @@ export interface SchemaDataWalk {
   dataPath?: string | null
   componentPath?: string
   serializedData?: Data | null
+  copyItem?: (sourceSchema: Schema, item: Data) => Data
   wrappedValueName?: string | null
   childSourceSchemas?: Schema[]
   before?: ((entry: SchemaDataEntry) => void) | null

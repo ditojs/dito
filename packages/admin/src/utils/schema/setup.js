@@ -191,6 +191,11 @@ export function setupSchemaComponents(api, schema) {
 
 export async function setupSchemaComponent(api, schema, name) {
   applySchemaDefaults(api, schema, name)
+  await setupSchemaComponentAfterDefaults(api, schema, name)
+}
+
+// For schemas that apply their defaults themselves, e.g. registered fields:
+export async function setupSchemaComponentAfterDefaults(api, schema, name) {
   await setupNestedSchemas(api, schema)
   await Promise.all([
     mapConcurrently(

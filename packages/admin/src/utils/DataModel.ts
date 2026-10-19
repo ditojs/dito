@@ -35,6 +35,7 @@ import {
   getParentDataPath,
   getRelativeDataPath
 } from './data.js'
+import { FieldRegistry } from './FieldRegistry.ts'
 import { mergeData, mergeValues } from './mergeData.ts'
 import { getOriginal } from './uid.js'
 import {
@@ -88,6 +89,8 @@ export interface DataModelOptions {
   canSave?: () => boolean
   // The services of the contexts that the model creates for callbacks:
   services?: Services | null
+  // Containers whose components are the fields that register in them:
+  hasFieldRegistry?: boolean
 }
 
 // The data that holds a value at `name`, which errors and records are keyed by,
@@ -159,8 +162,10 @@ export class DataModel {
   readonly #errors = shallowRef(new WeakEntryMap<ValueErrors>())
   readonly #fieldErrors = shallowRef(new WeakEntryMap<string[]>())
   #computedValueWriteCounts: Map<string | null, number> | null = null
-  // Data from the server, whose values are deserialized when it is set up:
+  // Data from the server, whose values are deserialized when it is set up, and
+  // with a field registry also for each field that registers later, once:
   readonly #dataToDeserialize = new WeakSet<Data>()
+  readonly #deserializedValues = new WeakEntryMap<boolean>()
   // New data, which gets all defaults when it is set up:
   readonly #newData = new WeakSet<Data>()
   // The editable data that contexts hand out by the data that they wrap, e.g.
@@ -171,6 +176,7 @@ export class DataModel {
   readonly #data: Ref<Data | null>
   readonly #options: Required<Omit<DataModelOptions, 'data'>>
   readonly #scope = effectScope(true)
+  readonly fieldRegistry: FieldRegistry | null
   // The watchers that clear the errors of values, which the data holds:
   #errorScope!: EffectScope
   #dataEntries!: ComputedRef<DataEntries>
@@ -188,8 +194,12 @@ export class DataModel {
       parent: () => null,
       canSave: () => hasSubmitButton(this.schema?.buttons),
       services: null,
+      hasFieldRegistry: false,
       ...options
     }
+    this.fieldRegistry = this.#options.hasFieldRegistry
+      ? this.#scope.run(() => new FieldRegistry(this, this.#options))!
+      : null
     this.#scope.run(() => {
       // Computed, as the root data of drafts is created:
       this.#rootData = computed(() => this.#options.rootData(this.data))
@@ -205,7 +215,10 @@ export class DataModel {
       watch(
         [() => this.schema, () => this.data],
         ([schema, data], previousValues) => {
-          if (data && this.#dataToDeserialize.delete(toRaw(data))) {
+          if (data && this.#dataToDeserialize.has(toRaw(data))) {
+            if (!this.fieldRegistry) {
+              this.#dataToDeserialize.delete(toRaw(data))
+            }
             this.#deserializeData(schema, data)
           }
           this.#initializeData(schema, data, {
@@ -234,7 +247,9 @@ export class DataModel {
 
   // Forms resolve their schema from their data, which they may not have yet:
   get schema(): Schema | null {
-    return this.data ? this.#options.schema() : null
+    return this.data
+      ? (this.fieldRegistry?.schema ?? this.#options.schema())
+      : null
   }
 
   get data(): Data | null {
@@ -377,6 +392,7 @@ export class DataModel {
   // Data that is replaced or reset, e.g. loaded or applied, isn't edited, and
   // its errors go with it:
   #resetState() {
+    this.fieldRegistry?.forgetUnmountedFields()
     this.markClean()
     this.#errorScope?.stop()
     this.#errorScope = effectScope(true)
@@ -397,10 +413,10 @@ export class DataModel {
     },
     value: any
   ) {
-    data[name] = deserializeData(
+    data[name] = this.#deserializeData(
       { components: { [name]: schema } },
       { [name]: value },
-      { ...this.#walkOptions, dataPath: getParentDataPath(dataPath) }
+      getParentDataPath(dataPath)
     )[name]
     this.markClean({ dataPath })
   }
@@ -870,13 +886,23 @@ export class DataModel {
     }
   }
 
-  #deserializeData(schema: Schema | null, data: Data) {
-    if (!isEmptySchema(schema)) {
-      deserializeData(schema!, data, {
-        ...this.#walkOptions,
-        dataPath: this.dataPath
-      })
-    }
+  #deserializeData(
+    schema: Schema | null,
+    data: Data,
+    dataPath = this.dataPath
+  ): Data {
+    return isEmptySchema(schema)
+      ? data
+      : deserializeData(schema!, data, {
+          ...this.#walkOptions,
+          dataPath,
+          ...(this.fieldRegistry && {
+            isDeserialized: (entry: FieldKey) =>
+              !!this.#deserializedValues.get(entry),
+            markDeserialized: (entry: FieldKey) =>
+              this.#deserializedValues.set(entry, true)
+          })
+        })
   }
 
   #getSerializedData(data = this.data, rootData = this.rootData): Data | null {
