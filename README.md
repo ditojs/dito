@@ -120,6 +120,10 @@ authentication, after npm has scanned them:
 pnpm stage approve # pick the versions to approve
 ```
 
+They can also be approved on npm's website, at
+`https://www.npmjs.com/settings/<username>/staged-packages/approve`, e.g. when
+npm rate limits the two-factor attempts of the command line.
+
 The trusted publishers on npm only allow staging, not direct publishing.
 
 All packages are always released together, also the ones that didn't change
