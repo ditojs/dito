@@ -726,15 +726,19 @@ context.submit(options?): Promise<boolean>
 
 Submits the data through the button that the context belongs to, as buttons
 with a resource do when clicked: through its list or other source, or else to
-its form, which saves its data or applies it to its parent. Throws outside of
-buttons of sources and forms.
+its form, which saves its data or applies it to its parent. Elsewhere in a
+form, e.g. in its events, layout component or field callbacks, it submits the
+form like a click on its submit button, with its `resource`, `onSuccess()` and
+`onError()`, but leaves the form open unless `closeForm: true` is passed.
+Throws in forms without a submit button, and outside of forms and buttons of
+sources.
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | `options.validate` | `boolean` | Validates first. Defaults to `true`. |
-| `options.closeForm` | `boolean` | Closes the form after a successful submit. Defaults to `false`. |
+| `options.closeForm` | `boolean` | Closes the form after a successful submit. Defaults to the button's `closeForm`, and to `false` outside of buttons. |
 
 #### Return value
 

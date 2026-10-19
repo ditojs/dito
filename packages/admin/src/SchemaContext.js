@@ -383,13 +383,17 @@ export default class SchemaContext {
 
   get submit() {
     return options => {
-      const { submit } = getServices(this)
-      if (!submit) {
+      const { submit, dataContext } = getServices(this)
+      if (submit) {
+        return submit(options)
+      } else if (dataContext?.submit) {
+        // Outside of buttons, forms submit with their submit button:
+        return dataContext.submit(null, options)
+      } else {
         throw new Error(
           'Unable to submit: There is no button of a form or source.'
         )
       }
-      return submit(options)
     }
   }
 
