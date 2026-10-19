@@ -34,18 +34,17 @@ export default {
   // window without being clipped:
   display: flex;
   flex-direction: column;
-  flex: 0 1 $sidebar-max-width;
-  max-width: $sidebar-max-width;
+  // Take the free room up to the window edge, so the header can place the
+  // account next to the toggle, the same in every layout:
+  flex: 1 1 $sidebar-max-width;
   min-width: $sidebar-min-width;
   // `useSidebar()` animates the space of the docked sidebar:
   transition: flex-basis $sidebar-duration;
 
   // Nested, to override the styles of `.dito-header`:
   #{$self}__header {
-    // Above the header of the notifications, which continues it to the window
-    // edge:
-    z-index: $z-index-header + 1;
-    // Leave room for the button, for when the sidebar reaches the window edge:
+    justify-content: flex-end;
+    // Leave room for the button at the window edge, also when it's hidden:
     padding-right: $header-height;
   }
 
@@ -61,20 +60,15 @@ export default {
     }
   }
 
-  &:has(#{$self}__teleport:empty) {
-    #{$self}__header {
-      // As far from the window's edge as the account button from the top:
-      padding-right: calc(($header-height - $input-height) / 2);
-    }
-
-    #{$self}__toggle {
-      display: none;
-    }
+  &:has(#{$self}__teleport:empty) #{$self}__toggle {
+    display: none;
   }
 
   &__teleport {
     // For the layout of `DitoContainer` in narrow sidebars:
     container: dito-sidebar / inline-size;
+    // The docked panels keep their width next to the page:
+    max-width: $sidebar-max-width;
     transition: transform $sidebar-duration;
 
     &:focus {
@@ -85,7 +79,7 @@ export default {
   &--collapsed,
   &--closed,
   &--open {
-    flex: 0 0 max-content;
+    flex: 1 0 max-content;
     min-width: 0;
   }
 

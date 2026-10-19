@@ -183,7 +183,8 @@ function getWidth(element: HTMLElement) {
 }
 
 // Sets the size of a sidebar's space and content without transitions, or
-// resets it with `null`:
+// resets it with `null`. The space keeps growing as its styles say, so the
+// sidebar on the right keeps reaching the window edge:
 function setSize(
   space: HTMLElement,
   content: HTMLElement,
@@ -193,8 +194,8 @@ function setSize(
   Object.assign(
     space.style,
     size
-      ? { flex: `0 0 ${size.from}px`, minWidth: '0', maxWidth: 'none' }
-      : { flex: '', minWidth: '', maxWidth: '' }
+      ? { flexBasis: `${size.from}px`, flexShrink: '0', minWidth: '0' }
+      : { flexBasis: '', flexShrink: '', minWidth: '' }
   )
   Object.assign(
     content.style,

@@ -302,6 +302,11 @@ $menu-button-padding: $menu-button-padding-ver 1em;
         left: auto;
         right: 1.5em;
       }
+
+      // ...or at the middle of the button, also when kept in the window:
+      &--bottom-center::before {
+        left: calc(50% - #{math.div($tip-side, 2)} - var(--dito-popup-shift));
+      }
     }
 
     .dito-menu-button__menu {
